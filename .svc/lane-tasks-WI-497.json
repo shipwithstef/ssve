@@ -1,0 +1,309 @@
+{
+  "schema_version": 1,
+  "wi": "WI-497",
+  "lane": "framework",
+  "status": "pending",
+  "created": "2026-07-18T07:11:41.942Z",
+  "delivery_tier": "full",
+  "owner_session": "92cbd820-4813-42d6-b12d-1a70e09f4168",
+  "change_impact": {
+    "tier": "infra-path",
+    "reasons": [
+      "hooks/ + scripts/ governance decision boundary",
+      "both-host guards",
+      "fail-open risk if partial"
+    ],
+    "triad_owner_task": 3
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "route-workflow",
+      "subject": "route WI-497 full unification; diagnosis (25-site census) folded",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-07-18T08:19:12.038Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-07-18T08:19:12.070Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-497.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-07-18T08:19:12.103Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-497.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-07-18T08:19:12.137Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-497.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-07-18T08:19:12.169Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-497.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-07-18T08:19:12.207Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-497.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-07-18T08:19:12.256Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-497.md"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/specs/work-items/WI-497.md"
+      },
+      "completed_at": "2026-07-18T08:19:12.319Z"
+    },
+    {
+      "id": 2,
+      "status": "skipped",
+      "skill": "diagnose-bug",
+      "subject": "census complete pre-plan",
+      "skip_reason": "Diagnosis is the exhaustive 25-site/18-file census already run and logged in .svc/pipeline-decisions.jsonl + WI-497.md §Problem; root cause (duplicated invariant, no single source of truth) + fail-open evidence (stop-firewall) established. A separate brief adds nothing.",
+      "blocked_by": [
+        1
+      ]
+    },
+    {
+      "id": 9,
+      "status": "skipped",
+      "skill": "design-tech",
+      "subject": "no new architecture",
+      "skip_reason": "The design is a single shared validator (hooks/lib/wi-id.mjs) that all sites import — a de-duplication refactor of an existing invariant, not new architecture, data model, or dependency. Canonical pattern already validated against the full real-WI + injection corpus. Registry-backed: bugfix-lane design-tech skip when the fix centralizes an existing pattern.",
+      "blocked_by": [
+        1
+      ]
+    },
+    {
+      "id": 3,
+      "status": "completed",
+      "skill": "plan-changeset",
+      "subject": "manifest: canonical helper + 18-site swap + fail-closed e2e fixtures",
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-07-18T07:52:21.295Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-07-18T07:53:37.310Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-18-wi497-unify-wi-id/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-07-18T07:53:37.341Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-18-wi497-unify-wi-id/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-07-18T07:53:37.373Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-18-wi497-unify-wi-id/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-07-18T07:53:37.404Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-18-wi497-unify-wi-id/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-07-18T07:53:37.437Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-18-wi497-unify-wi-id/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-07-18T07:53:37.467Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-18-wi497-unify-wi-id/manifest.md"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-07-18-wi497-unify-wi-id/manifest.md"
+      },
+      "completed_at": "2026-07-18T07:53:37.518Z"
+    },
+    {
+      "id": 4,
+      "status": "completed",
+      "skill": "review-plan",
+      "subject": "adversarial plan review (gpt-5.6-sol, 3-round cap)",
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-07-18T07:55:03.492Z",
+        "loaded_via": "manual",
+        "output_artifact": "docs/plans/2026-07-18-wi497-unify-wi-id/review-log.yaml"
+      },
+      "completed_at": "2026-07-18T08:19:12.352Z"
+    },
+    {
+      "id": 5,
+      "status": "completed",
+      "skill": "execute-changeset",
+      "subject": "implement B1-B4 inline; frozen scope",
+      "blocked_by": [
+        4
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-07-18T08:19:12.387Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-07-18T09:01:13.461Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "test-framework/evals/tier-1/validate-wi-id.sh"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-07-18T09:01:13.529Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "test-framework/evals/tier-1/validate-wi-id.sh"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-07-18T09:01:13.593Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "test-framework/evals/tier-1/validate-wi-id.sh"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-07-18T09:01:13.634Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "test-framework/evals/tier-1/validate-wi-id.sh"
+              }
+            ]
+          }
+        ],
+        "output_artifact": ".svc/impact-triad/WI-497/proof-wi-id.log"
+      },
+      "completed_at": "2026-07-18T09:07:28.846Z"
+    },
+    {
+      "id": 6,
+      "status": "pending",
+      "skill": "review-exec",
+      "subject": "G6 one round over frozen diff (fail-closed focus)",
+      "blocked_by": [
+        5
+      ],
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-07-18T09:07:28.893Z",
+        "loaded_via": "manual"
+      }
+    },
+    {
+      "id": 7,
+      "status": "pending",
+      "skill": "audit-implementation",
+      "subject": "G5: NWI-01..06, no residual numeric-only in Category A",
+      "blocked_by": [
+        6
+      ]
+    },
+    {
+      "id": 8,
+      "status": "pending",
+      "skill": "land-changeset",
+      "subject": "push, PR, squash, re-emit envelope",
+      "blocked_by": [
+        7
+      ]
+    },
+    {
+      "id": 10,
+      "status": "pending",
+      "skill": "verify-promotion",
+      "subject": "G7: WI-SOCIAL-01 governed in example-marketplace; promoted tier-1 green",
+      "blocked_by": [
+        8
+      ]
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+Skill: write-spec
+
+Q: What does G0 Scope Review decide, and what are the four scope modes it can choose?
+A: Expected pattern: G0 is a CEO-mode review of drafted spec scope before UX handoff; modes are Expand (push toward the 10-star version), Selective Expand (hold baseline plus 1-2 cherry-picked additions), Hold (bulletproof as-is), and Reduce (strip to the narrowest viable wedge). The decision is logged as a gate-result entry in pipeline-decisions.
+
+Q: What structure must every Acceptance Criteria block follow per user story?
+A: Expected pattern: Each story gets ACs grouped under the story heading covering happy path, error paths, and edge cases; ACs must be testable and numbered (AC-N), with provider-backed or generated ACs marked by their feature type.
+
+Q: How do journeys relate to feature specs in write-spec's model?
+A: Expected pattern: Journeys are wrappers around specs — journey docs reference spec ACs for traceability; write-spec triggers journey sync (write-journeys) after spec changes and updates Journey References sections.
+
+Q: What happens at Step 9 Dependency Spec Queue?
+A: Expected pattern: System dependencies discovered in the spec that lack their own specs are queued as dependency specs / work items so dependent features get spec coverage before implementation.
+
+Q: What status does a completed spec get and where does write-spec hand off?
+A: Expected pattern: The spec lands as DRAFT status; handoff routes to design-ux (UX design) next in the greenfield lane, via audit-ac for AC completeness when needed.
+
+Q: What is write-spec's brownfield/delta mode for?
+A: Expected pattern: Delta-spec mode covers extensions, bugfix behavior contracts, and contract changes for existing behavior without re-authoring the full feature spec.

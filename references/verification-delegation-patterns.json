@@ -1,0 +1,137 @@
+{
+  "$schema": "https://serious-vibe-coding/schemas/verification-delegation-patterns-v1.json",
+  "version": 1,
+  "purpose": "Detect closeout language that delegates runtime verification to the user instead of providing automated evidence. Companion to WI-197 (delegation enforcement) and WI-199 (V0 bundle-grep enforcement). Phase A uses this for advisory detection only.",
+  "delegation_patterns": [
+    {
+      "id": "manually-verify",
+      "regex": "\\bmanual(ly)?\\s+(verify|confirm|check|test)\\b",
+      "severity": "HIGH",
+      "examples": [
+        "manually verify the toast appears",
+        "please manually confirm the dropdown opens"
+      ]
+    },
+    {
+      "id": "please-open-and",
+      "regex": "\\bplease\\s+open\\s+(the\\s+)?(page|app|browser|url|link)\\b",
+      "severity": "HIGH",
+      "examples": [
+        "please open the page and check the modal",
+        "please open the browser to verify"
+      ]
+    },
+    {
+      "id": "user-to-verify",
+      "regex": "\\b(user|you)\\s+(to\\s+)?(verify|validate|confirm|check|test)\\b",
+      "severity": "HIGH",
+      "examples": [
+        "user to validate keyboard navigation",
+        "you can confirm the layout"
+      ]
+    },
+    {
+      "id": "open-the-browser",
+      "regex": "\\bopen\\s+(the\\s+)?(browser|inspector|devtools|console)\\s+(and|to)\\b",
+      "severity": "HIGH",
+      "examples": [
+        "open the browser and check the network tab",
+        "open the inspector to confirm"
+      ]
+    },
+    {
+      "id": "check-for-yourself",
+      "regex": "\\bcheck\\s+(for\\s+yourself|it\\s+yourself|on\\s+your\\s+end)\\b",
+      "severity": "MEDIUM",
+      "examples": [
+        "check it yourself by clicking the button",
+        "check on your end whether the request fires"
+      ]
+    },
+    {
+      "id": "i-could-not-verify",
+      "regex": "\\bI\\s+(could\\s+not|cannot|can'?t|was\\s+not\\s+able\\s+to)\\s+(verify|test|check|confirm)\\b",
+      "severity": "MEDIUM",
+      "examples": [
+        "I could not verify the animation timing",
+        "I cannot test this without a real device"
+      ]
+    },
+    {
+      "id": "you-should-see",
+      "regex": "\\byou\\s+should\\s+see\\b",
+      "severity": "LOW",
+      "examples": [
+        "you should see the green checkmark"
+      ]
+    },
+    {
+      "id": "let-me-know-if",
+      "regex": "\\blet\\s+me\\s+know\\s+if\\s+(it|this|that)\\s+(works|fails|breaks|appears)\\b",
+      "severity": "MEDIUM",
+      "examples": [
+        "let me know if it works on your machine",
+        "let me know if this fails after deploy"
+      ]
+    }
+  ],
+  "evidence_anchor_patterns": [
+    {
+      "id": "screenshot-path",
+      "regex": "\\b[\\w./-]+\\.(png|jpe?g|webp)\\b",
+      "description": "An image artifact path; counts as visual evidence."
+    },
+    {
+      "id": "playwright-result",
+      "regex": "\\b(playwright[-_]report|e2e/test-results|playwright\\s+run\\s+id)\\b",
+      "description": "Playwright artifact path or run id."
+    },
+    {
+      "id": "evidence-keyword",
+      "regex": "\\b(evidence|screenshot|video|recording|live[-\\s]?dom|live[-\\s]?evidence|trace|HAR\\s+capture)\\b",
+      "description": "Explicit evidence-class keyword."
+    },
+    {
+      "id": "v-ladder-claim",
+      "regex": "\\b(evidence[-_\\s]?level\\s*[:=]\\s*V[1-3]|V[1-3]\\s+(evidence|run|capture|verified)|evidence\\s+at\\s+V[1-3])\\b",
+      "description": "Explicit V-ladder evidence-level claim in citation position (not casual content mention). Shared with WI-191/WI-199. Tightened during WI-199 fixture testing to avoid false-exempting V-ladder content discussions."
+    },
+    {
+      "id": "explicit-evidence-line",
+      "regex": "(?im)^\\s*evidence:\\s*\\S",
+      "description": "An 'Evidence:' line with content following."
+    }
+  ],
+  "carve_outs": [
+    {
+      "id": "skill-spec-doc",
+      "match_kind": "input_path",
+      "regex": "\\.md$|\\bSKILL\\.md\\b|references/.*\\.md$|docs/specs/.*\\.md$",
+      "reason": "Skill specs and reference docs may DESCRIBE delegation as an anti-pattern; matches in those files are pedagogy, not closeout language."
+    },
+    {
+      "id": "test-fixture-seeding",
+      "match_kind": "surrounding_text",
+      "regex": "\\b(test\\s+fixture|fixture\\s+(provides|seeds|sets)|before\\s+each|setup\\s+helper|seedTestData)\\b",
+      "reason": "Fixture/seeding language uses imperative verbs that overlap with delegation but is talking about test setup, not user verification."
+    },
+    {
+      "id": "demo-or-tutorial",
+      "match_kind": "surrounding_text",
+      "regex": "(?i)\\b(demo:|example:|tutorial:|walkthrough:)",
+      "reason": "Tutorial/demo content explicitly labelled."
+    },
+    {
+      "id": "intentional-pedagogy-marker",
+      "match_kind": "surrounding_text",
+      "regex": "(?i)\\bintentional[-\\s]pedagogy\\b|\\bnon-?normative\\b",
+      "reason": "Author explicitly tagged the passage as not-a-rule; respect the tag."
+    }
+  ],
+  "config": {
+    "default_min_severity": "MEDIUM",
+    "report_format_default": "json",
+    "hard_block_severities_phase_d": ["HIGH"],
+    "drift_review_threshold_per_30d": 10
+  }
+}

@@ -1,0 +1,44 @@
+wi: WI-496
+review_kind: plan
+reviewer: codex gpt-5.6-sol (high) via scripts/review-plan-codex.sh — route exact_primary, 3 paid rounds
+cap: WI-491 HARD 3-round cap; convergence by DISPOSITION
+outcome: TERMINATED at round 3 — 0 Critical across all rounds; all remaining findings dispositioned (BRL-02)
+
+rounds:
+  - round: 1
+    rubric: 4
+    findings: 6   # 3 high, 3 medium
+    disposition: 6 ACCEPT -> manifest rev 2
+    detail:
+      - "F-001 high (ISB-05 unmapped): ACCEPT — explicit ISB-05 blueprint + gate-2 mapping added"
+      - "F-002 high (External State missing): ACCEPT — full External State table added (hooks.json, farm, sessions, example-marketplace, main)"
+      - "F-003 high (lane compliance unproven): ACCEPT — Lane Compliance table + tier/lean reconciliation added"
+      - "F-004 med (recovery <cwd> unbound): ACCEPT — probe bound to ctx.repo_root; ISB-04b cwd-divergence fixture added"
+      - "F-005 med (fixture not deterministic): ACCEPT — exact fixture algorithm (mktemp/trap/fixed ids/idempotent re-drive) specified"
+      - "F-006 med (rollback vague): ACCEPT — rollback split into tracked-code vs validation-state with exact procedures"
+  - round: 2
+    rubric: 4
+    findings: 6   # 4 high, 2 medium
+    disposition: 6 ACCEPT -> manifest rev 3
+    detail:
+      - "R2-F001 high (improve-framework omitted): ACCEPT — lane row + pipeline-decisions 2026-07-18T05:45:00Z"
+      - "R2-F002 high (mode unset): ACCEPT — Mode: inline declared; B1-B3 are complete dispatch content"
+      - "R2-F003 high (triad cites plan review for exec diff): ACCEPT AS DOCUMENTED LIMITATION — commit-time triad cites plan rounds (only pre-commit review that exists); G6 receipt on the SAME SHA supplies exec-diff independent review; pre-push envelope refuses the range without it (same shape WI-494 landed with)"
+      - "R2-F004 high (G7 restore clobbers post-backup config): ACCEPT — wholesale copy replaced with targeted entry re-insert"
+      - "R2-F005 med (recovery fixtures weak): ACCEPT — exact substring + negative-substring assertions"
+      - "R2-F006 high (G7 proves authorization only): ACCEPT — G7 adds full ISB-01-equivalent e2e against the PROMOTED install in a throwaway repo; example-marketplace stays payload-drive-only (no writes)"
+  - round: 3
+    rubric: 4
+    findings: 6   # 3 high, 3 medium — 0 Critical; CAP REACHED, disposition + terminate
+    disposition: 3 ACCEPT-applied + 3 ACCEPT-as-execution-obligation
+    detail:
+      - "R3-F001 high (forbidden force token in manifest): ACCEPT-APPLIED — rollback reworded to reference the hygiene procedure; no forbidden token remains"
+      - "R3-F002 high (write-spec omitted from lane table): ACCEPT-APPLIED — lane row added (bugfix-lane delta: WI-496.md is the baton-bound spec artifact)"
+      - "R3-F003 high (hooks.json mutation not idempotent-exact): ACCEPT-APPLIED — External State cell now requires insert-only-if-absent idempotent edit"
+      - "R3-F004 med (EXIT trap leak): ACCEPT-EXECUTION-OBLIGATION — single accumulated cleanup list, one trap (validator's existing pattern)"
+      - "R3-F005 med (frozen scope unenforced): ACCEPT-EXECUTION-OBLIGATION — pre-commit staged-file allowlist check (git diff --cached --name-only vs the 2-file scope + docs/state)"
+      - "R3-F006 med (ISB-01 loader/graph steps underdefined): ACCEPT-EXECUTION-OBLIGATION — parse ensure-worktree JSON absolute_graph, validateTaskGraphShape import, loader payload per the existing WI-486 EXEC-R3-001 fixture pattern"
+terminal_state: DISPOSITIONED_AT_CAP
+rounds_run: 3
+unresolved_critical: 0
+remaining_high: 0  # all 3 round-3 Highs ACCEPT-APPLIED in manifest rev 3 (no residual)

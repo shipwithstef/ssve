@@ -1,0 +1,485 @@
+{
+  "wi": "WI-366",
+  "batch": 2,
+  "lane": "framework",
+  "delivery_tier": "compressed",
+  "status": "completed",
+  "created_at": "2026-06-08T01:30:00Z",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "route-workflow \u2014 batch-2 scope (review-gate)",
+      "metadata": {
+        "skill": "route-workflow"
+      },
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-06-07T19:29:29.820Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-06-07T19:29:31.101Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-06-07T19:29:31.190Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-06-07T19:29:31.294Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-06-07T19:29:31.416Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-06-07T19:29:31.642Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-06-07T19:29:31.744Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "subject": "plan-changeset \u2014 diet manifest addendum",
+      "metadata": {
+        "skill": "plan-changeset"
+      },
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-06-07T19:29:30.058Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-06-07T19:29:32.033Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-06-07T19:29:32.138Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-06-07T19:29:32.244Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-06-07T19:29:32.449Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-06-07T19:29:32.522Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-06-07T19:29:32.611Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "subject": "execute-changeset \u2014 review-gate diet w/ gates",
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-06-07T19:29:30.191Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-06-07T19:29:32.789Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-06-07T19:29:32.917Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-06-07T19:29:33.057Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-06-07T19:29:33.130Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "subject": "review-exec \u2014 G6",
+      "metadata": {
+        "skill": "review-exec"
+      },
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-06-07T19:29:30.323Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-06-07T19:29:33.251Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-06-07T19:29:33.323Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-06-07T19:29:33.427Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-IterationLoop",
+            "ts": "2026-06-07T19:29:33.502Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerdictAndReceiptFinalize",
+            "ts": "2026-06-07T19:29:33.567Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "subject": "audit-implementation",
+      "metadata": {
+        "skill": "audit-implementation"
+      },
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-06-07T19:29:30.511Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextScopeConcern",
+            "ts": "2026-06-07T19:29:33.754Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecialistDispatchCoverageLedger",
+            "ts": "2026-06-07T19:29:33.868Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-HypothesisGeneration",
+            "ts": "2026-06-07T19:29:34.039Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-SubsystemBehaviorAudit",
+            "ts": "2026-06-07T19:29:34.170Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-FindingsConvergenceReport",
+            "ts": "2026-06-07T19:29:34.264Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-06-07T19:29:34.357Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "subject": "land-changeset",
+      "metadata": {
+        "skill": "land-changeset"
+      },
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-06-07T19:29:30.672Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-06-07T19:29:34.546Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-06-07T19:29:34.642Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-06-07T19:29:34.733Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-PushPrCreation",
+            "ts": "2026-06-07T19:29:34.829Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-MergeDecisionCleanup",
+            "ts": "2026-06-07T19:29:34.924Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SpecStatusSelfVerify",
+            "ts": "2026-06-07T19:29:35.057Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "subject": "verify-promotion \u2014 G7 + WI-366 VERIFIED flip",
+      "metadata": {
+        "skill": "verify-promotion"
+      },
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-06-07T19:29:30.908Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-06-07T19:29:35.249Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-06-07T19:29:35.347Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-06-07T19:29:35.439Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-06-07T19:29:35.544Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi366b2.log"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

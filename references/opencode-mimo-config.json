@@ -1,0 +1,71 @@
+{
+  "_comment": "Reference config for OpenCode CLI + Xiaomi MiMo via Token Plan. Install to ~/.config/opencode/opencode.json (macOS/Linux) or User Directory\\.config\\opencode\\opencode.json (Windows). Replace baseURL and apiKey per your plan: Pay-as-you-go uses api.xiaomimimo.com/v1 + sk-xxx; Token Plan uses token-plan-<region>.xiaomimimo.com/v1 + tp-xxx. Keep this reference in the svc repo for reproducibility — the actual user config lives outside the repo with real credentials.",
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "mimo": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "MiMo",
+      "options": {
+        "baseURL": "https://token-plan-ams.xiaomimimo.com/v1",
+        "apiKey": "${MIMO_API_KEY}"
+      },
+      "models": {
+        "mimo-v2.5-pro": {
+          "name": "MiMo-V2.5-Pro",
+          "limit": {
+            "context": 1048576,
+            "output": 131072
+          },
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          }
+        },
+        "mimo-v2.5": {
+          "name": "MiMo-V2.5",
+          "limit": {
+            "context": 1048576,
+            "output": 131072
+          },
+          "modalities": {
+            "input": ["text"],
+            "output": ["text"]
+          }
+        },
+        "mimo-v2-flash": {
+          "name": "MiMo-V2-Flash",
+          "limit": {
+            "context": 262144,
+            "output": 131072
+          },
+          "modalities": {
+            "input": ["text"],
+            "output": ["text"]
+          }
+        },
+        "mimo-v2-pro": {
+          "name": "MiMo-V2-Pro",
+          "limit": {
+            "context": 1048576,
+            "output": 131072
+          },
+          "modalities": {
+            "input": ["text"],
+            "output": ["text"]
+          }
+        },
+        "mimo-v2-omni": {
+          "name": "MiMo-V2-Omni",
+          "limit": {
+            "context": 1048576,
+            "output": 131072
+          },
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          }
+        }
+      }
+    }
+  }
+}

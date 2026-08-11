@@ -1,0 +1,134 @@
+Serious Vibe Coding Framework — Proprietary Source-Available License
+Copyright (c) 2026 SSVE Maintainer (s7an-it)
+All rights reserved.
+
+Contact for permissions: angelovsan@gmail.com
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+INTELLECTUAL PROPERTY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The Serious Vibe Coding (svc) framework — including all skills, methodology,
+documentation, scripts, tooling, naming conventions, and unique structural
+patterns contained in this repository — is the exclusive intellectual property
+of SSVE Maintainer (s7an-it).
+
+In the event that SSVE Maintainer is permanently incapacitated or deceased,
+all IP ownership and governance rights transfer to his immediate family as
+designated by him or by legal succession. No community member, contributor,
+or elected maintainer acquires ownership rights under any circumstances.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PERMITTED USE (FREE, NO PERMISSION REQUIRED)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+You are permitted, free of charge, to:
+
+  1. Use this framework as a tool to produce creative work, software,
+     applications, or services — including running them in production and
+     generating revenue from those creations. For example: building a mobile
+     app, a SaaS product, a client project, or any other work that uses this
+     framework as a development methodology or toolchain is permitted, even
+     if that work is commercial. What you build WITH this framework is yours.
+
+  2. Study the source code for educational purposes.
+
+  3. Submit contributions (pull requests, issues, discussions) to this
+     repository for the purpose of improving it, subject to the governance
+     terms below.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROHIBITED WITHOUT WRITTEN PERMISSION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The following are strictly prohibited unless you have received explicit
+written permission from SSVE Maintainer:
+
+  1. COMMERCIALIZING THE FRAMEWORK ITSELF — Selling, licensing, sublicensing,
+     or offering as a paid service this framework, its skills, its methodology,
+     its architecture, or any substantial portion of it. This includes: selling
+     access to the framework, wrapping it in a product that competes with or
+     substitutes for it, offering it as an agency service, or bundling it into
+     a tool where the framework's components are a core deliverable. Building
+     your own unrelated products using the framework as a development tool
+     is explicitly allowed (see Permitted Use, clause 1).
+
+  2. REDISTRIBUTION — Copying, republishing, mirroring, or distributing
+     this framework or any substantial portion of it, in original or
+     modified form, through any channel.
+
+  3. RESELLING — Selling access to, or charging for use of, this framework
+     or any system substantially powered by it.
+
+  4. RENAMING / REBRANDING — Publishing a renamed or rebranded version of
+     this framework, its methodology, or its unique structural components
+     as if they are original independent work.
+
+  5. FORKING FOR INDEPENDENT PROJECTS — Forking this repository to create
+     a separate, independently maintained project. Forks are only permitted
+     as a technical mechanism for submitting pull requests back to this
+     repository.
+
+  6. DERIVATIVE FRAMEWORKS — Creating a separate framework, tool, or
+     product that incorporates the unique methodology, skill architecture,
+     lane system, or naming conventions of this framework without permission.
+
+  7. SILENT INCORPORATION — Using unique, non-trivial parts of this
+     framework inside another repository or product without attribution
+     and without written permission.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REQUESTING PERMISSION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Permission for prohibited uses may be requested by contacting:
+angelovsan@gmail.com
+
+If permission is granted, the following conditions apply by default unless
+separately negotiated in writing:
+
+  a. ATTRIBUTION — Any product, service, content, or publication that uses
+     or is powered by this framework must clearly state:
+     "Built with Serious Vibe Coding by SSVE Maintainer (s7an-it)"
+     in a location reasonably visible to end users or readers.
+
+  b. SOCIAL PROMOTION — Any influencer, content creator, or social media
+     account that promotes, reviews, or demonstrates work produced using
+     this framework must reference the original source and author in the
+     same post or video.
+
+  c. PRIVATE / UNLISTED USE — If public attribution is not desired (e.g.,
+     for confidential commercial use), additional terms must be negotiated
+     and agreed in writing before use begins.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GOVERNANCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1. All pull requests and changes to this repository require approval
+     from SSVE Maintainer or a maintainer explicitly elected by him in
+     writing.
+
+  2. Elected maintainers are granted repository merge rights only. They
+     are not granted IP ownership, licensing authority, or governance
+     authority beyond what is explicitly delegated.
+
+  3. SSVE Maintainer retains the sole right to change this license, alter
+     governance structure, elect or remove maintainers, and determine the
+     future direction of the framework.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NO WARRANTY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This framework is provided "as is", without warranty of any kind, express
+or implied. The author is not liable for any claim, damages, or other
+liability arising from use of this software.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VIOLATIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Violation of these terms immediately terminates any rights granted under
+this license. The author reserves the right to pursue all available legal
+remedies for infringement.

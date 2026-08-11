@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "tokens": [
+    {
+      "pattern": "groq_svg_uploaded",
+      "reason": "Example Marketplace WI-233 specific evidence token. Leaked into scripts/validate-provider-fidelity-evidence.mjs:20 pre-PR-#120. Belongs in Example Marketplace's project-local config, not framework regex.",
+      "added_at": "2026-05-12",
+      "added_by": "WI-341"
+    },
+    {
+      "pattern": "Example Marketplace",
+      "reason": "Specific consumer-project name. Framework legitimately references Base44 (an integration target) but Example Marketplace is a customer-product name.",
+      "added_at": "2026-05-12",
+      "added_by": "WI-341"
+    }
+  ],
+  "framework_path_globs": [
+    "scripts/**",
+    "hooks/**",
+    "references/**",
+    "test-framework/**",
+    "*/SKILL.md"
+  ]
+}

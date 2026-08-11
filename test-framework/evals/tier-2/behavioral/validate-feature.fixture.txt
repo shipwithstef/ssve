@@ -1,0 +1,7 @@
+Detected duplicate intent.
+
+The existing spec at docs/specs/features/feature-match-discovery.md already covers timezone-based filtering under MATCH-04 and MATCH-05. The existing feature is currently in DRAFT status with the timezone AC already enumerated.
+
+Skipping the 8 business questions — this is not a net-new feature; it is an extension. Routing to write-spec in extend-feature mode against the existing spec rather than starting validate-feature's discovery flow.
+
+Next: /write-spec --mode extend-feature --target docs/specs/features/feature-match-discovery.md

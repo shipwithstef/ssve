@@ -1,0 +1,10 @@
+Skill: platform-operating-architect
+
+Q: What are the three output files produced by platform-operating-architect, and which file does it update?
+A: Expected pattern: Produces `docs/specs/platform-operating-model.md`, `docs/specs/environment-topology.md`, `docs/specs/integration-boundary-map.md`. Updates `docs/specs/router-context.md`.
+
+Q: What are the five operating model classifications (A through E) that platform-operating-architect produces?
+A: Expected pattern: A. Project Origin (ui-origin, code-first, mixed/ejected), B. Runtime Model (hosted-backend, hybrid-local-dev, fully-local), C. Deployment Authority (platform-native, repo-native, mixed-contract), D. Integration Surface (platform connectors, platform integrations, backend functions/adapters, direct external client access), E. Risk Level (low, medium, high).
+
+Q: What are the four environments that must always be produced in the environment topology?
+A: Expected pattern: local, private-dev, staging/preprod, and production.

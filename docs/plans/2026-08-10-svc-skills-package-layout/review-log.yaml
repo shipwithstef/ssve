@@ -1,0 +1,25 @@
+review_log:
+  wi: WI-530
+  plan: docs/plans/2026-08-10-svc-skills-package-layout/manifest.md
+  mechanical_validation: pass
+  external_state_review: pass
+  implementation_started_after_plan: true
+  plan_rounds:
+    - round: 1
+      reviewer: sol
+      result: revised
+      resolution: added skill-local executable rebasing, namespace matrix, root test-harness split, all-host proof, and no-follow source containment
+    - round: 2
+      reviewer: sol
+      result: pass
+      resolution: manifest covered the complete source migration and recovery contract before final execution review
+  execution_amendments:
+    result: reviewed_in_exact_execution_rounds
+    reason: reliability reviewers exposed additional deterministic migration and recovery states during implementation
+    additions:
+      - migration idempotency and post-lease receipt forward-completion
+      - controller and worktree state containment
+      - exact pre-intent controller resume
+      - strict manifest/source name bijection
+      - generation-lineage branch convergence and partial-write retry
+  terminal_state: REVISED_AND_REVIEWED

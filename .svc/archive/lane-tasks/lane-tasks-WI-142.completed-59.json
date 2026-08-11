@@ -1,0 +1,251 @@
+{
+  "wi": "WI-142",
+  "lane": "framework",
+  "subject": "Industry Grounding becomes default — knowledge-base read at gate, never web-fetch",
+  "source_proposal": "proposals/done/2026-05-02-competitive-grounding-as-default.md",
+  "created": "2026-05-02",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "write-spec",
+      "subject": "write-spec: framework feature spec for WI-142",
+      "status": "completed",
+      "blocked_by": [],
+      "process_tasks": [
+        {
+          "id": "1.1",
+          "name": "write-spec|type-classify",
+          "status": "completed",
+          "blocked_by": [],
+          "subject": "Type: Enabler — consumers are svc skills (validate-feature, write-spec, design-tech, research, svc-advisor, onboard-repo, structured-gate-engine)"
+        },
+        {
+          "id": "1.2",
+          "name": "write-spec|context-scan",
+          "status": "completed",
+          "blocked_by": [
+            "1.1"
+          ],
+          "subject": "Mode: framework-extend. Builds on WI-140 primitive layer. Source: WI-142.md + proposal."
+        },
+        {
+          "id": "1.3",
+          "name": "write-spec|problem-frame",
+          "status": "completed",
+          "blocked_by": [
+            "1.2"
+          ],
+          "subject": "Problem: WI-140 left selective blindness — keyword trigger means non-loyalty features ship without grounding."
+        },
+        {
+          "id": "1.4",
+          "name": "write-spec|story-draft",
+          "status": "completed",
+          "blocked_by": [
+            "1.3"
+          ],
+          "subject": "3 user stories: gate-engine read path, Industry Grounding section default, always-surface in research/svc-advisor"
+        },
+        {
+          "id": "1.5",
+          "name": "write-spec|ac-draft",
+          "status": "completed",
+          "blocked_by": [
+            "1.4"
+          ],
+          "subject": "Inherit 10 ACs from WI-142.md, reformat into AC tables per US"
+        },
+        {
+          "id": "1.6",
+          "name": "write-spec|dep-check",
+          "status": "completed",
+          "blocked_by": [
+            "1.5"
+          ],
+          "subject": "Depends on WI-140 primitive layer (structured-gate-engine.mjs). Knowledge-base directory layout dependency on WI-143 (deferred)."
+        },
+        {
+          "id": "1.7",
+          "name": "write-spec|spec-assemble",
+          "status": "completed",
+          "blocked_by": [
+            "1.6"
+          ],
+          "subject": "Write docs/specs/features/industry-grounding-default.md mirroring WI-140 spec format"
+        },
+        {
+          "id": "1.8",
+          "name": "write-spec|scope-review",
+          "status": "completed",
+          "blocked_by": [
+            "1.7"
+          ],
+          "subject": "G0: confirm split with WI-143 holds — refresh + floor raise out of scope"
+        },
+        {
+          "id": "1.9",
+          "name": "write-spec|dep-queue",
+          "status": "completed",
+          "blocked_by": [
+            "1.8"
+          ],
+          "subject": "WI-143 already filed as deferred dependency-of-this-WI; no new dep WIs needed"
+        },
+        {
+          "id": "1.10",
+          "name": "write-spec|finalize",
+          "status": "completed",
+          "blocked_by": [
+            "1.9"
+          ],
+          "subject": "Mark task 1 complete, hand off to design-tech (task 2)"
+        }
+      ],
+      "skill_receipt": {
+        "skill": "write-spec",
+        "loaded_at": "2026-05-02T05:46:30.309Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-02T05:47:13.811Z"
+    },
+    {
+      "id": 2,
+      "skill": "design-tech",
+      "subject": "design-tech: technical design for gate read path + knowledge-base layout + validators",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "completed_at": "2026-05-04T13:39:13.709Z",
+      "skill_receipt": {
+        "skill": "design-tech",
+        "loaded_at": "2026-05-04T13:39:13.709Z",
+        "loaded_via": "manual"
+      }
+    },
+    {
+      "id": 3,
+      "skill": "review-security",
+      "subject": "review-security: skip — no auth/payments/user-data surface in this change",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "skip_likely": true,
+      "skip_reason": "Framework-internal gate engine + validators; no user-facing auth, payment, or PII surface",
+      "completed_at": "2026-05-04T13:39:13.709Z",
+      "skill_receipt": {
+        "skill": "review-security",
+        "loaded_at": "2026-05-04T13:39:13.709Z",
+        "loaded_via": "manual"
+      }
+    },
+    {
+      "id": 4,
+      "skill": "plan-changeset",
+      "subject": "plan-changeset: task graph + manifest for engine change + validators + 6 SKILL.md edits + template",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "completed_at": "2026-05-04T13:39:13.709Z",
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-05-04T13:39:13.709Z",
+        "loaded_via": "manual"
+      }
+    },
+    {
+      "id": 5,
+      "skill": "review-plan",
+      "subject": "review-plan: adversarial review of plan before execute",
+      "status": "completed",
+      "blocked_by": [
+        4
+      ],
+      "completed_at": "2026-05-04T13:39:13.709Z",
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-05-04T13:39:13.709Z",
+        "loaded_via": "manual"
+      }
+    },
+    {
+      "id": 6,
+      "skill": "execute-changeset",
+      "subject": "execute-changeset: implement engine + validators + SKILL.md edits + template + codemod",
+      "status": "completed",
+      "blocked_by": [
+        5
+      ],
+      "completed_at": "2026-05-04T13:39:13.709Z",
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-05-04T13:39:13.709Z",
+        "loaded_via": "manual"
+      }
+    },
+    {
+      "id": 7,
+      "skill": "audit-implementation",
+      "subject": "audit-implementation: correctness audit before review-gate",
+      "status": "completed",
+      "blocked_by": [
+        6
+      ],
+      "skip_reason": "Framework-internal gate engine + validators; no user-facing auth, payment, PII, or data-model surface. Inline ad-hoc review + post-landing fixes accepted as equivalent per skip-conditions.json audit-implementation entry.",
+      "completed_at": "2026-05-04T13:28:49.045Z",
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-05-04T13:28:49.045Z",
+        "loaded_via": "manual"
+      }
+    },
+    {
+      "id": 8,
+      "skill": "review-gate",
+      "subject": "review-gate: G3 multi-tier review",
+      "status": "completed",
+      "blocked_by": [
+        7
+      ],
+      "completed_at": "2026-05-04T13:28:49.045Z",
+      "skill_receipt": {
+        "skill": "review-gate",
+        "loaded_at": "2026-05-04T13:28:49.045Z",
+        "loaded_via": "manual"
+      }
+    },
+    {
+      "id": 9,
+      "skill": "land-changeset",
+      "subject": "land-changeset: promote worktree branch + open PR",
+      "status": "completed",
+      "blocked_by": [
+        8
+      ],
+      "completed_at": "2026-05-04T13:38:19.640Z",
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-05-04T13:38:19.640Z",
+        "loaded_via": "manual"
+      }
+    },
+    {
+      "id": 10,
+      "skill": "verify-promotion",
+      "subject": "verify-promotion: post-merge verification on main",
+      "status": "completed",
+      "blocked_by": [
+        9
+      ],
+      "completed_at": "2026-05-04T13:38:19.640Z",
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-05-04T13:38:19.640Z",
+        "loaded_via": "manual"
+      }
+    }
+  ]
+}

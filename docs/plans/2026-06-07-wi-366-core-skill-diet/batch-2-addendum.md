@@ -1,0 +1,3 @@
+# WI-366 batch-2 addendum — review-gate diet
+
+Base: main b249f8a8 | Tier: compressed. review-gate 859→261 (−70%); 4 references/ files (five-step-protocol incl. §Phase receipt commands, gate-checklists, findings-feedback, specialized-gates) — VERBATIM moves; method per batch-1 + c9 learning applied (every mandate quoted from extraction: overview/gate-table/concern-gate/routing/self-verify kept verbatim wholesale; 5-step + specialized-gate mandates condensed FROM the extracted text). Gates: comprehension 3/3 (claude runner), structure/self-verify/chain/phase-migration/lint PASS. WI-366 totals: 3,646→1,028 lines (−72%) across 4 dieted skills + route-workflow verified.

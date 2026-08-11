@@ -1,0 +1,162 @@
+{
+  "version": 1,
+  "purpose": "Family-level preflight rollout registry for first-party svc skills.",
+  "rules": [
+    "Every included skill must be covered exactly once by a family unless it has a direct ## Preflight section.",
+    "Family coverage is a blocking rollout contract, not a substitute for skill-specific checks when a skill has unusual inputs or outputs.",
+    "Hook enforcement remains fail-open for missing contracts and fail-closed for declared .svc/preflight-<skill>.json contracts on first-party hosts."
+  ],
+  "families": [
+    {
+      "id": "product-definition",
+      "skills": [
+        "write-vision",
+        "analyze-domain",
+        "analyze-competitors",
+        "refresh-competitors",
+        "catalog-domain-capabilities",
+        "build-personas",
+        "write-journeys",
+        "test-journeys",
+        "validate-feature",
+        "write-spec"
+      ],
+      "required_context": [
+        "project-state",
+        "builder-profile",
+        "domain-profile",
+        "relevant-feature-or-journey-spec"
+      ],
+      "input_policy": "Resolve the target product artifact from project state, work item, or the spec index before writing.",
+      "output_policy": "Check intended docs/specs outputs are writable before producing durable artifacts."
+    },
+    {
+      "id": "planning-and-execution",
+      "skills": [
+        "craft-prompt", "blind-control-plan", "design-ux",
+        "design-ui",
+        "design-logo",
+        "design-tech",
+        "explore-solutions",
+        "explore-ux",
+        "plan-changeset",
+        "execute-changeset",
+        "write-e2e",
+        "review-gate",
+        "audit-implementation",
+        "land-changeset",
+        "verify-promotion",
+        "review-cross-model",
+        "review-plan",
+        "track-visuals",
+        "review-security",
+        "plan-blast-radius",
+        "track-topology-diff",
+        "review-exec"
+      ],
+      "required_context": [
+        "active-spec",
+        "accepted-plan-or-task-graph",
+        "worktree-state",
+        "declared-evidence-paths"
+      ],
+      "input_policy": "Validate the active spec/plan/task graph before action; for implementation, verify worktree and declared evidence paths.",
+      "output_policy": "Check code, evidence, and lane-task outputs before editing or claiming completion."
+    },
+    {
+      "id": "routing-and-state",
+      "skills": [
+        "route-workflow",
+        "capture-idea",
+        "audit-ac",
+        "sync-spec-code",
+        "onboard-repo",
+        "diagnose-bug",
+        "align-feature",
+        "audit-feature",
+        "decide",
+        "sync-work-items",
+        "list-work-items",
+        "discover-skills",
+        "svc-advisor",
+        "research",
+        "discuss-phase",
+        "dispatch-waves",
+        "honest-diagnosis",
+        "roadmap-evaluation",
+        "strategic-decision",
+        "recall-stack-knowledge"
+      ],
+      "required_context": [
+        "session-contract",
+        "spec-index",
+        "work-item-or-user-intent",
+        "relevant-state-file"
+      ],
+      "input_policy": "Resolve the bounded target through session contract, work-item index, and related specs before routing or diagnosing.",
+      "output_policy": "Check state, decision-log, work-item, and advice artifacts before writing durable changes."
+    },
+    {
+      "id": "framework-evolution",
+      "skills": [
+        "define-code-style",
+        "capability-registry",
+        "capability-concierge",
+        "test-framework",
+        "audit-session-execution",
+        "evolve-framework",
+        "blend-external",
+        "blend-private",
+        "create-skill",
+        "quick-fix",
+        "improve-framework",
+        "teach-project",
+        "plan-capabilities",
+        "reverse-engineer",
+        "audit-coverage",
+        "platform-operating-architect",
+        "evaluate-rule",
+        "launch-knowledge"
+      ],
+      "required_context": [
+        "framework-state",
+        "skills-manifest",
+        "affected-skill-contract",
+        "relevant-validator"
+      ],
+      "input_policy": "Identify the affected framework surface and validator before editing skills, hooks, manifests, or rules.",
+      "output_policy": "Check manifest, docs, hook, and tier-1 validator outputs before claiming the framework change is closed."
+    },
+    {
+      "id": "domain-and-growth",
+      "skills": [
+        "ingest-guide",
+        "ingest-guide-batch",
+        "analyze-marketing",
+        "extract-bootstrap",
+        "benchmark-landing",
+        "manage-learnings",
+        "wsl2-audio",
+        "mine-builder",
+        "find-opportunity",
+        "stage-revenue",
+        "base44-environment",
+        "monetization-architecture",
+        "assess-market-readiness",
+        "manage-finops",
+        "ad-video-script",
+        "generate-visuals",
+        "landing-page",
+        "suno-architect"
+      ],
+      "required_context": [
+        "builder-profile",
+        "domain-profile",
+        "capability-or-knowledge-index",
+        "target-output-contract"
+      ],
+      "input_policy": "Resolve the domain/tooling surface and relevant knowledge index before recommendations or generated assets.",
+      "output_policy": "Check generated docs, images, benchmarks, and capability artifacts are writable and evidence-backed."
+    }
+  ]
+}

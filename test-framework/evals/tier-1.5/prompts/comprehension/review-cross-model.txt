@@ -1,0 +1,10 @@
+Skill: review-cross-model
+
+Q: What is the tri-model orchestration process, and when is it used?
+A: Expected pattern: When both Codex CLI and Gemini CLI are available, run both in parallel plus Claude as the synthesizer. All 3 models agreeing = high confidence; 2 of 3 agreeing = medium confidence; all 3 disagreeing = low confidence, likely style issue.
+
+Q: What are the rules for accepting or rejecting findings from the second model?
+A: Expected pattern: Never reject without citing code that proves it is handled. Never accept without verifying the finding is real. Rejections must be more specific than acceptances. If uncertain, accept and mark for investigation.
+
+Q: What is the convergence target for review-cross-model, and what is the maximum number of rounds?
+A: Expected pattern: The target is no Critical and no High findings remaining — only Medium or lower. Maximum 3 rounds. If Critical findings persist after 3 rounds, escalate to user.

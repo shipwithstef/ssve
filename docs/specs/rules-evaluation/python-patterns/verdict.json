@@ -1,0 +1,35 @@
+{
+  "rule_path": "rules/python/patterns.md",
+  "rule_type": "steering",
+  "scope": "project",
+  "stack": "python",
+  "verdict": "adopt-with-edits",
+  "scores": {
+    "determinism_gain": 2,
+    "correctness_delta": 0,
+    "friction_cost": 0,
+    "convention_conflict": 0
+  },
+  "scenarios_evaluated": 3,
+  "tier2_ran": false,
+  "tier2_verdict": null,
+  "required_edits": [
+    "Remove Context Managers & Generators section (pure inflation — DG=0)",
+    "Scope @dataclass claim: 'Use @dataclass for internal DTOs. For types crossing API boundaries or needing validation, prefer Pydantic BaseModel.' Prevents conflict with FastAPI/Pydantic projects.",
+    "Remove ECC skill reference"
+  ],
+  "evidence": {
+    "default_transcript": "docs/specs/rules-evaluation/python-patterns/default-transcript.md",
+    "diff_and_verdict": "docs/specs/rules-evaluation/python-patterns/diff-and-verdict.md"
+  },
+  "suggested_registry_entry": {
+    "path": "rules/python/patterns.md",
+    "type": "steering",
+    "scope": "project",
+    "stack": "python",
+    "source": "blended:ecc",
+    "last_evaluated": "2026-04-13",
+    "source_sha": "125d5e619905d97b519a887d5bc7332dcc448a52"
+  },
+  "evaluated_at": "2026-04-13"
+}

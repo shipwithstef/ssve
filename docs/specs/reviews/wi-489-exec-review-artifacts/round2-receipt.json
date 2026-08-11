@@ -1,0 +1,185 @@
+{
+  "schema_version": 2,
+  "launcher_version": "2.2.0",
+  "cli_version": "codex-cli-exec 0.144.5",
+  "request_id": "693db947-af2f-4538-9dfd-5ab602fc2024",
+  "review_kind": "exec",
+  "package_sha256": "0111d6068589c2b53e0672a61e7a5f27b912621f5ea5cee72361b7ab54d2f4e1",
+  "findings_schema_sha256": "f742e7410648aea34b4eaad056466ec819dff20981e2ae60960889068172facf",
+  "cache_key": "20fd8192dcada6eeae5e1490f35774e0c5e54776944c4318d4daf7e110e0aeaa",
+  "fixture_mode": false,
+  "started_at": "2026-07-16T13:29:15.676Z",
+  "finished_at": "2026-07-16T13:33:48.332Z",
+  "status": "success",
+  "classification": "success",
+  "requested_tuple": {
+    "orchestrator": "claude",
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6-sol",
+    "effort": "high"
+  },
+  "invocation_tuple": {
+    "orchestrator": "claude",
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6-sol",
+    "effort": "high"
+  },
+  "effective_tuple": {
+    "orchestrator": "claude",
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6-sol",
+    "effort": "high"
+  },
+  "attempts": [
+    {
+      "index": 1,
+      "tuple": {
+        "orchestrator": "claude",
+        "host": "codex",
+        "family": "openai",
+        "model": "gpt-5.6-sol",
+        "effort": "high"
+      },
+      "started_at": "2026-07-16T13:29:15.816Z",
+      "finished_at": "2026-07-16T13:33:48.329Z",
+      "exit_code": 0,
+      "classification": "success",
+      "artifacts": {
+        "events": "/tmp/claude-1000/-home-dianast-app-workspaces-seriousvibecoding/337044a1-701f-40c8-8930-b03f561c448e/scratchpad/wi489-exec-review-r2/attempt-1-events.jsonl",
+        "stderr": "/tmp/claude-1000/-home-dianast-app-workspaces-seriousvibecoding/337044a1-701f-40c8-8930-b03f561c448e/scratchpad/wi489-exec-review-r2/attempt-1-stderr.log",
+        "findings": "/tmp/claude-1000/-home-dianast-app-workspaces-seriousvibecoding/337044a1-701f-40c8-8930-b03f561c448e/scratchpad/wi489-exec-review-r2/attempt-1-findings.json"
+      },
+      "usage": {
+        "input_tokens": 1312100,
+        "cached_input_tokens": 1155840,
+        "output_tokens": 8091,
+        "reasoning_output_tokens": 4906,
+        "observed_models": []
+      }
+    }
+  ],
+  "fallback": {
+    "eligible": false,
+    "used": false,
+    "reason": null
+  },
+  "override": {
+    "used": false,
+    "authority": null,
+    "source": null,
+    "path": null,
+    "expected_sha256": null,
+    "actual_sha256": null
+  },
+  "policy": {
+    "version": 3,
+    "profile": "codex-high",
+    "source": "fixed-policy",
+    "resolved_at": "2026-07-16T13:29:15.675Z",
+    "effective_window": {
+      "starts_at": null,
+      "ends_at": null
+    },
+    "cutover_utc": "2026-07-19T21:00:00Z",
+    "cutover_local": "2026-07-20 00:00:00 EEST",
+    "timezone": "Europe/Sofia",
+    "selection_sha256": null,
+    "selection_expires_at": null,
+    "selection_authority": null
+  },
+  "protocol": {
+    "process_invocations": 1,
+    "configured_turn_ceiling": null,
+    "configured_budget_usd": null,
+    "reported_turns": null,
+    "stop_reason": null,
+    "terminal_reason": null,
+    "errors": []
+  },
+  "route": {
+    "kind": "exact_primary",
+    "switching_enabled": false,
+    "cli_fallback_configured": false,
+    "evidence": "requested_primary"
+  },
+  "effective_effort": {
+    "value": "high",
+    "provenance": "requested"
+  },
+  "model_attestation": {
+    "level": "requested_accepted",
+    "requested_model": "gpt-5.6-sol",
+    "observed_models": [],
+    "evidence": "exact_model_argv_plus_successful_auth_schema_exit_no_server_model_echo"
+  },
+  "phase_guard": {
+    "applicable": false,
+    "kind": "exec",
+    "decision": "not-applicable",
+    "reason": null,
+    "wi": null,
+    "pre_execution_base": null,
+    "plan_manifest_sha256": null,
+    "exec_record_present": null,
+    "exec_record_path": null,
+    "implementation_diverged": null,
+    "diverged_files": [],
+    "base_resolved": null,
+    "override": {
+      "used": false,
+      "authority": null,
+      "source": null,
+      "path": null,
+      "expected_sha256": null,
+      "actual_sha256": null,
+      "kind": null
+    }
+  },
+  "package_context": {
+    "version": 1,
+    "context_root": "/workspace/seriousvibecoding/.worktrees/framework-WI-489-reviewer-routing-correction",
+    "base_package_sha256": "c17cf00302a66ac7196a0de9e57b251e000dbb0c29a2750b3cbca08fd3cd9fe8",
+    "files": [
+      {
+        "path": "target:AGENTS.md",
+        "sha256": "8a581d78b52cc5d8ea5e968067aa17ff8710ec119825cd4dc2adf00317e16e51",
+        "bytes": 23019
+      },
+      {
+        "path": "target:CLAUDE.md",
+        "sha256": "7642decad9c1522b0751d82b1a7d06d878e94e2019b08782576cd8660ad08464",
+        "bytes": 11370
+      },
+      {
+        "path": "framework:review-exec/SKILL.md",
+        "sha256": "b3a9c618469a848af104d0e6564c9d053cda541f697b702e02f798766dbe4f80",
+        "bytes": 13817
+      },
+      {
+        "path": "framework:review-cross-model/SKILL.md",
+        "sha256": "52ec7642ce1952429f26595a622f412ab88344c04789f457f15f81af981d5b32",
+        "bytes": 17815
+      }
+    ]
+  },
+  "cache": {
+    "disposition": "published",
+    "reusable": true,
+    "entry": "/workspace/seriousvibecoding/.worktrees/framework-WI-489-reviewer-routing-correction/.svc/external-review-cache/v1/20fd8192dcada6eeae5e1490f35774e0c5e54776944c4318d4daf7e110e0aeaa"
+  },
+  "artifacts": {
+    "findings": "/tmp/claude-1000/-home-dianast-app-workspaces-seriousvibecoding/337044a1-701f-40c8-8930-b03f561c448e/scratchpad/wi489-exec-review-r2/findings.json",
+    "receipt": "/tmp/claude-1000/-home-dianast-app-workspaces-seriousvibecoding/337044a1-701f-40c8-8930-b03f561c448e/scratchpad/wi489-exec-review-r2/receipt.json",
+    "capabilities": "/tmp/claude-1000/-home-dianast-app-workspaces-seriousvibecoding/337044a1-701f-40c8-8930-b03f561c448e/scratchpad/wi489-exec-review-r2/capabilities.log"
+  },
+  "usage": {
+    "input_tokens": 1312100,
+    "cached_input_tokens": 1155840,
+    "output_tokens": 8091,
+    "reasoning_output_tokens": 4906,
+    "observed_models": []
+  }
+}

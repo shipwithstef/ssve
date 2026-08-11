@@ -1,0 +1,38 @@
+review_log:
+  wi: WI-505
+  lane: framework
+  review_cycle: post-audit-corrected-freeze
+  reviewer: claude-opus-4-8/high (anthropic) via scripts/run-external-review.mjs
+  rounds_run: 2
+  unresolved_critical: 0
+  remaining_high: 0
+
+  round_1:
+    status: completed
+    verdict: pass-with-findings
+    request_id: 19c8fa13-0aa2-4613-8bed-12688a06c033
+    package_sha256: fefee794e1f3f3272177cb294c503eb60b4f34df7661a3fad8402bf3806dd867
+    findings: 5
+    critical: 0
+    high: 0
+    medium: 1
+    response: "The single medium requested unchanged authority-store source to prove present malformed v2 evidence throws rather than returning absent. No reproduced Critical/High defect. Added the explicit malformed-v2 no-mutation fixture and supplied exact dependency source."
+
+  round_2:
+    status: completed
+    verdict: pass-with-findings
+    request_id: 891c455c-bf97-4bc3-ba1c-e130e07d3884
+    package_sha256: ec8eaa352361ae985cfea3de2dbd5a867cdee3234414d3f4a2ff8ae41c68e33b
+    findings: 3
+    critical: 0
+    high: 0
+    medium: 0
+    response: "Rubric 9. Malformed-v2 fail-closed behavior, first-write provenance, same-generation foreign-owner denial, crash recovery, one-winner CAS, and data preservation certified. One false-deny-only symlink robustness Low and two compatibility/test-hook Info notes remain nonblocking."
+
+  bounded_exit:
+    disposition: accept-with-justification
+    residual_highs: []
+    residual_low:
+      - "WI505-R2-2: path.resolve comparison can false-deny a noncanonical symlink spelling; it cannot grant mismatched authority and normal ensure writes canonical worktree coordinates."
+
+  terminal_state: CONVERGED_WITH_BOUNDED_LOW_RESIDUAL

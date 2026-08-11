@@ -1,0 +1,822 @@
+{
+  "wi": "WI-486",
+  "lane": "framework",
+  "title": "Register concurrency, install, and reviewer-policy follow-up improvements",
+  "created": "2026-07-15T11:12:27.300Z",
+  "source": "improve-framework-intake",
+  "status": "pending",
+  "delivery_tier": {
+    "mode": "full"
+  },
+  "delivery_graph": {
+    "compiler_version": 1,
+    "user_intent": "Deliver WI-486 session-isolated multi-WI bootstrap and bounded legacy-state loop breaking end-to-end after promoted WI-488",
+    "repo_mode": "convert",
+    "change_type": "framework",
+    "lane": "framework",
+    "delivery_mode": "end_to_end",
+    "delivery_tier": {
+      "mode": "full",
+      "selected_by": "route-workflow",
+      "rationale": "Owner selected FULL end-to-end delivery with planning and review at high reasoning and execution at medium reasoning.",
+      "decision_log_ref": "",
+      "validation_policy": {
+        "mandatory_skills": [
+          "route-workflow",
+          "improve-framework",
+          "diagnose-bug",
+          "write-spec",
+          "design-tech",
+          "plan-changeset",
+          "review-plan",
+          "execute-changeset",
+          "review-exec",
+          "review-security",
+          "review-gate",
+          "audit-implementation",
+          "test-framework",
+          "land-changeset",
+          "verify-promotion"
+        ],
+        "skippable_skills": [],
+        "blocked_behind_explicit_override": []
+      }
+    },
+    "risk_flags": [
+      "concurrency",
+      "high-blast-radius"
+    ],
+    "platform_contracts": [],
+    "solution_confidence": {
+      "required": false,
+      "mode": "none",
+      "status": "not_required"
+    },
+    "compression": {
+      "ratio": 1,
+      "threshold": 2,
+      "rationale": ""
+    },
+    "evidence_families": {
+      "product": "required",
+      "acceptance_criteria": "required",
+      "journey": "required",
+      "visual": "n/a",
+      "runtime": "required",
+      "plan_review": "required",
+      "code_review": "required",
+      "implementation_audit": "required",
+      "deploy": "n/a",
+      "promotion": "required",
+      "session_forensics": "required",
+      "feature_validation_closeout": "n/a",
+      "provider_fidelity": "n/a"
+    },
+    "required_skills": [
+      "route-workflow",
+      "improve-framework",
+      "diagnose-bug",
+      "write-spec",
+      "design-tech",
+      "plan-changeset",
+      "review-plan",
+      "execute-changeset",
+      "review-exec",
+      "review-security",
+      "review-gate",
+      "audit-implementation",
+      "test-framework",
+      "land-changeset",
+      "verify-promotion"
+    ],
+    "conditional_mandatory_skills": [
+      {
+        "skill": "design-tech",
+        "signal": "technical-risk",
+        "reason": "Atomic ownership, cross-session isolation, migration backups, and loop-breaking semantics require an explicit technical contract."
+      },
+      {
+        "skill": "audit-implementation",
+        "signal": "technical-risk",
+        "reason": "Concurrency and high-blast-radius hook changes require implementation audit."
+      },
+      {
+        "skill": "review-security",
+        "signal": "auth-surface",
+        "reason": "Explicit session/worktree/WI authority and forged-binding rejection require security review."
+      }
+    ],
+    "optional_skills": [],
+    "skipped_skills": [],
+    "verification_tiers": {
+      "local": [
+        "tier-1"
+      ],
+      "runtime": [
+        "targeted-runtime-smoke"
+      ],
+      "production": []
+    },
+    "mutation_history": [
+      {
+        "ts": "2026-07-15T17:25:48.295Z",
+        "source": "route-workflow",
+        "action": "extend_intake_graph_for_delivery",
+        "reason": "Preserved the completed intake tasks and appended the owner-required FULL sequential delivery chain after WI-488 promotion."
+      }
+    ],
+    "closeout_classification_required": true
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "improve-framework",
+      "status": "completed",
+      "subject": "Diagnose, review, and register WI-486 through WI-488",
+      "metadata": {
+        "skill": "improve-framework",
+        "wi": "WI-486"
+      },
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-07-15T11:12:27.300Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "output_artifact": "proposals/2026-07-15-framework-improvement-multi-wi-session-bootstrap.md",
+        "validation_output": "proposal lints 8/8 each; metadata PASS; markdown AST PASS; Fable 5 high final PASS"
+      },
+      "completed_at": "2026-07-15T12:10:00.000Z"
+    },
+    {
+      "id": 2,
+      "skill": "research",
+      "status": "completed",
+      "subject": "Audit and optimize Claude/Codex external reviewer invocation before shipping",
+      "metadata": {
+        "skill": "research",
+        "wi": "WI-486"
+      },
+      "blocked_by": [
+        1
+      ],
+      "args": {
+        "mode": "question"
+      },
+      "skill_receipt": {
+        "skill": "research",
+        "loaded_at": "2026-07-15T11:39:42.000Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "output_artifact": "docs/specs/research-log.md",
+        "validation_output": "official current docs + installed CLI help; source hashes and JSONL provenance PASS"
+      },
+      "completed_at": "2026-07-15T13:05:00.000Z"
+    },
+    {
+      "id": 3,
+      "skill": "review-cross-model",
+      "status": "completed",
+      "subject": "Fable 5 high review of external-invocation intake expansion",
+      "metadata": {
+        "skill": "review-cross-model",
+        "wi": "WI-488"
+      },
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "review-cross-model",
+        "loaded_at": "2026-07-15T12:35:00.000Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "output_artifact": "docs/specs/reviews/wi-486-wi-488-framework-intake-fable-review.md",
+        "validation_output": "Claude Fable 5, effort high, structured verdict PASS; two medium refinements and four low notes applied"
+      },
+      "completed_at": "2026-07-15T13:05:00.000Z"
+    },
+    {
+      "id": 4,
+      "skill": "route-workflow",
+      "status": "completed",
+      "subject": "Route WI-486 into the owner-required FULL end-to-end framework chain",
+      "metadata": {
+        "skill": "route-workflow",
+        "wi": "WI-486"
+      },
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-07-15T17:26:58.657Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-07-15T17:29:51.686Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-session-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-07-15T17:29:51.794Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-intent.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-07-15T17:29:51.902Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-486.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-07-15T17:29:52.033Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-concern-gate.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-07-15T17:29:52.173Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-486.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-07-15T17:29:52.303Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-self-verify.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/progress.md",
+        "validation_output": "completed in planning lane; evidence in plan artifacts"
+      },
+      "completed_at": "2026-07-15T17:29:52.412Z"
+    },
+    {
+      "id": 5,
+      "skill": "diagnose-bug",
+      "status": "completed",
+      "subject": "Diagnose foreign-graph bootstrap ambiguity, residue rejection, and legacy-state retry loops",
+      "metadata": {
+        "skill": "diagnose-bug",
+        "wi": "WI-486"
+      },
+      "blocked_by": [
+        4
+      ],
+      "skill_receipt": {
+        "skill": "diagnose-bug",
+        "loaded_at": "2026-07-15T17:30:04.995Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-Inputs",
+            "ts": "2026-07-15T17:41:55.923Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/diagnose-WI-486-inputs.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-Reproduction",
+            "ts": "2026-07-15T17:41:55.973Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/diagnose-WI-486-reproduction.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-RootCause",
+            "ts": "2026-07-15T17:41:56.020Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/bugfix/wi-486-session-bootstrap-brief.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-FixPlan",
+            "ts": "2026-07-15T17:41:56.059Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/diagnose-WI-486-fix-plan.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-PillarRevisit",
+            "ts": "2026-07-15T17:41:56.098Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/diagnose-WI-486-pillars.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/progress.md",
+        "validation_output": "completed in planning lane; evidence in plan artifacts"
+      },
+      "completed_at": "2026-07-15T17:41:56.135Z"
+    },
+    {
+      "id": 6,
+      "skill": "write-spec",
+      "status": "completed",
+      "subject": "Baseline the complete WI-486 acceptance contract",
+      "metadata": {
+        "skill": "write-spec",
+        "wi": "WI-486"
+      },
+      "blocked_by": [
+        5
+      ],
+      "skill_receipt": {
+        "skill": "write-spec",
+        "loaded_at": "2026-07-15T17:41:56.267Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-ContextAndModeSelection",
+            "ts": "2026-07-15T17:46:48.796Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/write-spec-WI-486-context-mode.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiscussionPreflightAndAlternatives",
+            "ts": "2026-07-15T17:46:48.837Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/write-spec-WI-486-discussion-alternatives.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-StoryAcceptanceCriteriaDraft",
+            "ts": "2026-07-15T17:46:48.881Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/wi-486-session-isolated-bootstrap.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ScopeReviewDecisionLog",
+            "ts": "2026-07-15T17:46:48.922Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/write-spec-WI-486-scope-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-JourneySyncDependencyQueue",
+            "ts": "2026-07-15T17:46:48.970Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/write-spec-WI-486-journey-sync.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyHandoff",
+            "ts": "2026-07-15T17:46:49.015Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/write-spec-WI-486-self-verify.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/specs/features/wi-486-session-isolated-bootstrap.md",
+        "validation_output": "SIB-01..42 acceptance contract baselined"
+      },
+      "process_tasks": [
+        {
+          "id": "6.1",
+          "name": "write-spec|type-classify",
+          "status": "completed",
+          "blocked_by": [],
+          "subject": "Classify WI-486 as an internal Enabler contract change"
+        },
+        {
+          "id": "6.2",
+          "name": "write-spec|context-scan",
+          "status": "completed",
+          "blocked_by": [
+            "6.1"
+          ],
+          "subject": "Scan the accepted proposal, intake review, WI, framework state, related journey, and current hook/bootstrap contracts"
+        },
+        {
+          "id": "6.3",
+          "name": "write-spec|problem-frame",
+          "status": "completed",
+          "blocked_by": [
+            "6.2"
+          ],
+          "subject": "Frame foreign-graph authority, unreachable bootstrap, and legacy-loop failures"
+        },
+        {
+          "id": "6.4",
+          "name": "write-spec|story-draft",
+          "status": "completed",
+          "blocked_by": [
+            "6.3"
+          ],
+          "subject": "Draft system-consumer stories for authority, bootstrap, parity, migration, and loop termination"
+        },
+        {
+          "id": "6.5",
+          "name": "write-spec|ac-draft",
+          "status": "completed",
+          "blocked_by": [
+            "6.4"
+          ],
+          "subject": "Translate every accepted WI-486 requirement and negative vector into atomic acceptance criteria"
+        },
+        {
+          "id": "6.6",
+          "name": "write-spec|dep-check",
+          "status": "completed",
+          "blocked_by": [
+            "6.5"
+          ],
+          "subject": "Bind WI-484 ownership, WI-485 exact receipts, WI-488 review, and WI-487 compatibility dependencies"
+        },
+        {
+          "id": "6.7",
+          "name": "write-spec|spec-assemble",
+          "status": "completed",
+          "blocked_by": [
+            "6.6"
+          ],
+          "subject": "Assemble the DRAFT Enabler spec and extend J-FW-05"
+        },
+        {
+          "id": "6.8",
+          "name": "write-spec|scope-review",
+          "status": "completed",
+          "blocked_by": [
+            "6.7"
+          ],
+          "subject": "G0 Hold: preserve the complete accepted contract and exclude WI-487 installation diagnostics"
+        },
+        {
+          "id": "6.9",
+          "name": "write-spec|dep-queue",
+          "status": "completed",
+          "blocked_by": [
+            "6.8"
+          ],
+          "subject": "Confirm no new dependency WI; WI-487 remains the already-filed dependent follow-up"
+        },
+        {
+          "id": "6.10",
+          "name": "write-spec|finalize",
+          "status": "completed",
+          "blocked_by": [
+            "6.9"
+          ],
+          "subject": "Self-verify and hand off the atomic authority/migration contract to design-tech"
+        }
+      ],
+      "completed_at": "2026-07-15T17:46:49.059Z"
+    },
+    {
+      "id": 7,
+      "skill": "design-tech",
+      "status": "completed",
+      "subject": "Design atomic bootstrap ownership and bounded legacy migration",
+      "metadata": {
+        "skill": "design-tech",
+        "wi": "WI-486",
+        "signal": "technical-risk"
+      },
+      "blocked_by": [
+        6
+      ],
+      "skill_receipt": {
+        "skill": "design-tech",
+        "loaded_at": "2026-07-15T17:46:49.212Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-SpecJourneyDiscussionPreflight",
+            "ts": "2026-07-15T17:51:48.861Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/design-tech-WI-486-preflight.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-CodebasePatternAnalysis",
+            "ts": "2026-07-15T17:51:48.911Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/design-tech-WI-486-codebase-analysis.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ArchitectureAlternativesAndDiagrams",
+            "ts": "2026-07-15T17:51:48.950Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/wi-486-session-isolated-bootstrap.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-CostOpsFeasibilityRiskDesign",
+            "ts": "2026-07-15T17:51:49.002Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/wi-486-session-isolated-bootstrap.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-G4ReviewAndDecisionLogging",
+            "ts": "2026-07-15T17:51:49.051Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/design-tech-WI-486-g4-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-BaselinedSpecSelfVerify",
+            "ts": "2026-07-15T17:51:49.100Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/wi-486-session-isolated-bootstrap.md"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/specs/decisions/wi-486-session-isolated-bootstrap.md",
+        "validation_output": "atomic bootstrap + bounded migration design accepted"
+      },
+      "completed_at": "2026-07-15T17:51:49.145Z"
+    },
+    {
+      "id": 8,
+      "skill": "plan-changeset",
+      "status": "completed",
+      "subject": "Plan WI-486 deterministically at high reasoning",
+      "metadata": {
+        "skill": "plan-changeset",
+        "wi": "WI-486",
+        "reasoning": "high"
+      },
+      "blocked_by": [
+        7
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-07-15T17:51:49.323Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-07-15T18:01:31.396Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-WI-486-archetype.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-07-15T18:01:31.546Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-WI-486-scope.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-07-15T18:01:31.612Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-07-15T18:01:31.677Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-07-15T18:01:31.756Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-WI-486-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-07-15T18:01:31.836Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-WI-486-self-verify.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/manifest.md",
+        "validation_output": "deterministic plan authored at high reasoning"
+      },
+      "completed_at": "2026-07-15T18:01:31.932Z"
+    },
+    {
+      "id": 9,
+      "skill": "review-plan",
+      "status": "completed",
+      "subject": "Review the WI-486 plan through Fable 5 at exactly high",
+      "metadata": {
+        "skill": "review-plan",
+        "wi": "WI-486",
+        "reviewer": "claude-fable-5",
+        "effort": "high"
+      },
+      "blocked_by": [
+        8
+      ],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-07-16T16:56:47.712Z",
+        "loaded_via": "cap-accepted",
+        "output_artifact": "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/review-log.yaml",
+        "validation_output": "plan reviewed via Fable 5/high; convergence recorded in review-log.yaml"
+      },
+      "completed_at": "2026-07-16T16:56:47.854Z"
+    },
+    {
+      "id": 10,
+      "skill": "execute-changeset",
+      "status": "in_progress",
+      "subject": "Execute the reviewed WI-486 changeset at medium reasoning",
+      "metadata": {
+        "skill": "execute-changeset",
+        "wi": "WI-486",
+        "reasoning": "medium"
+      },
+      "blocked_by": [
+        9
+      ]
+    },
+    {
+      "id": 11,
+      "skill": "review-exec",
+      "status": "pending",
+      "subject": "Run independent Fable 5 high review of the frozen WI-486 implementation",
+      "metadata": {
+        "skill": "review-exec",
+        "wi": "WI-486"
+      },
+      "blocked_by": [
+        10
+      ]
+    },
+    {
+      "id": 12,
+      "skill": "review-security",
+      "status": "pending",
+      "subject": "Review WI-486 authority, path, replay, and migration security boundaries",
+      "metadata": {
+        "skill": "review-security",
+        "wi": "WI-486",
+        "signal": "auth-surface"
+      },
+      "blocked_by": [
+        11
+      ]
+    },
+    {
+      "id": 13,
+      "skill": "review-gate",
+      "status": "pending",
+      "subject": "Run G5 review against the complete WI-486 spec and reviewed plan",
+      "metadata": {
+        "skill": "review-gate",
+        "wi": "WI-486"
+      },
+      "blocked_by": [
+        12
+      ]
+    },
+    {
+      "id": 14,
+      "skill": "audit-implementation",
+      "status": "pending",
+      "subject": "Audit atomic ownership, foreign-state preservation, and bounded loop termination",
+      "metadata": {
+        "skill": "audit-implementation",
+        "wi": "WI-486"
+      },
+      "blocked_by": [
+        13
+      ]
+    },
+    {
+      "id": 15,
+      "skill": "test-framework",
+      "status": "pending",
+      "subject": "Run targeted replay and full Tier-1 validation for WI-486",
+      "metadata": {
+        "skill": "test-framework",
+        "wi": "WI-486"
+      },
+      "blocked_by": [
+        14
+      ]
+    },
+    {
+      "id": 16,
+      "skill": "land-changeset",
+      "status": "pending",
+      "subject": "Open, independently review, and merge the WI-486 PR",
+      "metadata": {
+        "skill": "land-changeset",
+        "wi": "WI-486"
+      },
+      "blocked_by": [
+        15
+      ]
+    },
+    {
+      "id": 17,
+      "skill": "verify-promotion",
+      "status": "pending",
+      "subject": "Verify WI-486 behavior from promoted origin/main before WI-487 begins",
+      "metadata": {
+        "skill": "verify-promotion",
+        "wi": "WI-486"
+      },
+      "blocked_by": [
+        16
+      ]
+    }
+  ]
+}

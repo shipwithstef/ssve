@@ -1,0 +1,10 @@
+Skill: design-ux
+
+Q: What are the required inputs for design-ux, and what state does the feature spec need to be in?
+A: Expected pattern: Required inputs are a DRAFT feature spec, personas, and journey-docs. The spec must be in DRAFT state, and the skill transitions it to UX-REVIEWED.
+
+Q: What is the pass threshold for the 7 review dimensions in design-ux, and what happens if any dimension scores below 5?
+A: Expected pattern: Pass threshold is >=49 out of 70 total. If any single dimension scores below 5, the review fails regardless of total score.
+
+Q: How many interaction states must every screen have in the UX design output?
+A: Expected pattern: Every screen must have 5 interaction states defined: loading, empty, error, success, and partial.

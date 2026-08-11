@@ -1,0 +1,88 @@
+{
+  "wi": "WI-476",
+  "lane": "framework",
+  "created": "2026-07-13T14:32:09.657Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "blend-external",
+      "status": "completed",
+      "description": "Invoke: /blend-external — mode 2 re-blend: delta analysis v1.9.0..v2.6.0, knowledge layer refresh, dual assessment, blend plan proposal, registry+NOTICES+comparison updates",
+      "metadata": {
+        "skill": "blend-external",
+        "wi": "WI-476"
+      },
+      "subject": "Re-blend coreyhaines marketingskills v1.9.0->v2.6.0 (blend-external mode 2)",
+      "skill_receipt": {
+        "skill": "blend-external",
+        "loaded_at": "2026-07-13T14:47:56.744Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SvcCapabilityBaseline",
+            "ts": "2026-07-13T14:47:56.785Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/blend-external-svc-baseline.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalSourceAcquisition",
+            "ts": "2026-07-13T14:47:56.825Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/blend-external-source.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-DualAssessmentComparison",
+            "ts": "2026-07-13T14:47:56.861Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "proposals/2026-07-13-blend-coreyhaines-v2.6.0.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-HybridBlendPlan",
+            "ts": "2026-07-13T14:47:56.899Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "proposals/2026-07-13-blend-coreyhaines-v2.6.0.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-RegistryNoticesKnowledgeUpdate",
+            "ts": "2026-07-13T14:47:56.939Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "references/blend-registry.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-07-13T14:47:56.980Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/blend-external-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-13T14:47:57.024Z"
+    }
+  ],
+  "title": "Re-blend coreyhaines31/marketingskills v1.9.0 -> v2.6.0 (knowledge refresh + blend plan + addon update path)"
+}

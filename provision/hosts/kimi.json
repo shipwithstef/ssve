@@ -1,0 +1,107 @@
+{
+  "host": "kimi",
+  "name": "Kimi Code CLI",
+  "skills_path": "~/.kimi/skills",
+  "rules_path": "~/.kimi/rules",
+  "builder_profile_path": "~/.svc/builder-profile.md",
+  "capabilities": {
+    "skills": true,
+    "hooks": true,
+    "plugins": true,
+    "mcp": true,
+    "commands": true,
+    "agents": true
+  },
+  "runtime_ingress_v2": { "transport": "hook-adapter", "fallback": "cli-adapter", "canonical_journal": true, "projection_only": true },
+  "authority_capabilities": {
+    "stable_session_identity": true,
+    "stable_child_identity": true,
+    "identity_source": "session hook identity plus persisted dispatch child principal",
+    "filesystem_containment": "wrapper",
+    "containment_backend": "landlock",
+    "containment_launcher": "scripts/svc-contained-exec.mjs",
+    "containment_probe_required": true,
+    "mutating_child_execution": true
+  },
+  "hook_events": [
+    "PreToolUse",
+    "PostToolUse",
+    "PostToolUseFailure",
+    "UserPromptSubmit",
+    "Stop",
+    "StopFailure",
+    "SessionStart",
+    "SessionEnd",
+    "SubagentStart",
+    "SubagentStop",
+    "PreCompact",
+    "PostCompact",
+    "Notification"
+  ],
+  "hook_quirks": {
+    "config_file": "~/.kimi/config.toml",
+    "config_format": "toml",
+    "parallel_execution": true,
+    "deduplication_by_command": true,
+    "fail_open": true,
+    "tool_matcher_regex": true,
+    "timeout_unit": "s",
+    "timeout_default": 30,
+    "decision_format": "hookSpecificOutput.permissionDecision",
+    "stop_hook_anti_loop": "stop_hook_active flag re-trigger limit=1"
+  },
+  "task_graph": {
+    "task_ui": "/task + TaskList/TaskOutput (observational); file remains source of truth",
+    "background_tasks": true,
+    "skill_load_mode": "slash_skill_or_direct_skill_file",
+    "native_task_read_tools": ["TaskList", "TaskOutput"]
+  },
+  "infra_files": [
+    "DOCTRINE.md",
+    "REPO_MODES.md",
+    "WORKTREES.md",
+    "EXTERNAL_ADDONS.md",
+    "FRAMEWORK-STATE.md",
+    "skills-manifest.json",
+    "CONTRIBUTING.md",
+    "KIMI.md"
+  ],
+  "infra_dirs": [
+    "scripts",
+    "references",
+    "proposals",
+    "examples",
+    "hooks",
+    "provision",
+    "agents",
+    "templates",
+    "_shared",
+    "concerns"
+  ],
+  "skip": [],
+  "post_install_commands": [
+    "node {skills_path}/scripts/wire-kimi-hooks.mjs --skills-path {skills_path}"
+  ],
+  "verify_commands": [
+    "test -f {skills_path}/route-workflow/SKILL.md",
+    "test -f {skills_path}/DOCTRINE.md",
+    "test -f {skills_path}/skills-manifest.json",
+    "test -f {skills_path}/scripts/worktree.sh",
+    "test -f {skills_path}/scripts/install-browse.sh",
+    "test -f {skills_path}/scripts/init-project-state.mjs",
+    "test -d {skills_path}/templates/.svc",
+    "kimi --version 2>&1 | grep -q 'kimi, version'"
+  ],
+  "wiring": {
+    "hook_capable": true,
+    "wirer": "scripts/wire-kimi-hooks.mjs",
+    "wirer_via": "post_install",
+    "governed": true,
+    "governed_token": [
+      "svc-enforce",
+      "svc-kimi-task-completion-guard"
+    ],
+    "config_file": "~/.kimi/config.toml",
+    "enforcement": "launcher"
+  }
+}

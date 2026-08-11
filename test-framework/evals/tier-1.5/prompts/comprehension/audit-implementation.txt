@@ -1,0 +1,10 @@
+Skill: audit-implementation
+
+Q: What file does audit-implementation produce, and what are its required inputs?
+A: Expected pattern: It produces docs/specs/audit/<name>-analysis.md. Required inputs are docs/specs/features/<name>.md (feature spec) and docs/plans/<date>-<name>/manifest.md (implementation manifest).
+
+Q: What are the six specialist types that can be dispatched in Phase 1, and which two are marked NEVER_GATE?
+A: Expected pattern: The six specialists are testing, security, performance, data-migration, api-contract, and maintainability. Security and data-migration are marked NEVER_GATE — they always run regardless of finding history.
+
+Q: What are the three confidence levels for findings in audit-implementation?
+A: Expected pattern: The three confidence levels are Confirmed (directly demonstrated), Likely (strong reasoning but not directly reproduced), and Needs follow-up (suspicious but evidence incomplete).

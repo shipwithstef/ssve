@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# svc pre-commit slot: quick-fix structural-diff eligibility check.
+#
+# Phase A behavior (warn-only): always exits 0, logs verdict.
+# Phase E flip: refuses commit when staged diff is not eligible AND no
+# plan-manifest receipt exists in the branch's lineage.
+
+set -u
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+# Detect mode
+MODE="warn"
+if [[ -f .svc/chain-policy.json ]] && grep -q '"mode": *"refuse"' .svc/chain-policy.json 2>/dev/null; then
+  MODE="refuse"
+fi
+
+# Run eligibility script
+ELIGIBILITY_JSON="$(node scripts/quick-fix-eligibility.mjs 2>/dev/null || echo '{"eligible":false}')"
+ELIGIBLE="$(echo "$ELIGIBILITY_JSON" | grep -o '"eligible":[^,}]*' | head -1 | cut -d: -f2 | tr -d ' ')"
+
+if [[ "$ELIGIBLE" == "true" ]]; then
+  exit 0
+fi
+
+# Not eligible: check if branch has a plan-manifest receipt in any ancestor
+HEAD_SHA="$(git rev-parse HEAD 2>/dev/null || echo "")"
+HAS_PLAN_LINEAGE="false"
+if [[ -n "$HEAD_SHA" ]]; then
+  # Walk back through last 20 commits looking for a plan-manifest note
+  for sha in $(git log --format=%H -n 20 2>/dev/null); do
+    if git notes --ref=svc-receipts show "$sha" 2>/dev/null | grep -q '"plan-manifest"'; then
+      HAS_PLAN_LINEAGE="true"
+      break
+    fi
+  done
+fi
+
+if [[ "$HAS_PLAN_LINEAGE" == "true" ]]; then
+  exit 0
+fi
+
+# Neither eligible nor extending a plan
+REASONS="$(echo "$ELIGIBILITY_JSON" | grep -o '"reasons":\[[^]]*\]' || echo '')"
+echo "svc chain: commit not eligible for quick-fix and no plan-manifest in lineage." >&2
+echo "  Diff verdict: $REASONS" >&2
+echo "  Required: run 'claude /plan-changeset' to produce a plan first." >&2
+echo "  Override: add 'EMERGENCY_OVERRIDE: <github-issue-url>' to commit message + PR body (capped 4/90d)." >&2
+
+if [[ "$MODE" == "refuse" ]]; then
+  exit 1
+fi
+echo "svc chain: WARN-ONLY mode (Phase A-D). Commit proceeds." >&2
+exit 0

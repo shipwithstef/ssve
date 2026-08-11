@@ -1,0 +1,17 @@
+responses:
+  - finding_id: F-101
+    decision: ACCEPT
+    justification: Continuation authority must follow the latest prompt, so route binding is intentionally stricter than skill-receipt reuse.
+    action: Made WI-485 canonical, aligned AC-485-2 to current session and current turn, retained same-turn route creation, and declared the WI table supersedes proposal wording drift.
+  - finding_id: F-102
+    decision: ACCEPT
+    justification: A future non-Codex-capable environment needs one honest terminal state rather than contradictory required/N-A language.
+    action: Required proof on capable hosts and explicit runtime-observed=N/A otherwise; codex exec skips only after that receipt.
+  - finding_id: F-103
+    decision: ACCEPT
+    justification: Existing worktree initialization uses a case-sensitive uppercase WI matcher.
+    action: Changed all five planned execution branch names to uppercase WI-N prefixes.
+  - finding_id: F-104
+    decision: ACCEPT
+    justification: Comparable before/after hashes require identical arguments.
+    action: Required the WI-485 leaf to pin literal snapshot commands, fixed paths/settings, before hashes, and identical post-land replay.

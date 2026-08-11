@@ -1,0 +1,154 @@
+review_log:
+  plan: docs/plans/2026-07-23-candidate-reservoir/manifest.md
+  tier1:
+    script: scripts/verify-plan-mechanical.sh
+    exit_code: 0
+    issues: 0
+  external_state:
+    exit_code: 0
+    result: populated taxonomy, coupling, and recovery paths verified
+  round_1:
+    status: completed
+    source: tier2
+  round_2:
+    status: completed
+    source: tier3
+  tier2:
+    reviewer: claude
+    reviewer_family: anthropic
+    model: claude-opus-4-8
+    effort: high
+    rubric_score: 6
+    verdict: pass-with-findings
+    receipt: .svc/external-review-artifacts/plan/1892dd973265a62d2fb6a1bb5d92a9cba92b56e7700285ed822b67f7eb48c184/20260723T031847Z-1802790/receipt.json
+    findings:
+      - { id: F-001, severity: high, claim: total tie order not explicit }
+      - { id: F-002, severity: high, claim: blanket staging and residue cleanup not wired }
+      - { id: F-003, severity: high, claim: task-3 ledger appends are not idempotent }
+      - { id: F-004, severity: medium, claim: failing-first proof not executed }
+      - { id: F-005, severity: medium, claim: simulation lacks commands and outputs }
+      - { id: F-006, severity: medium, claim: aggregate Tier-1 baseline absent }
+      - { id: F-007, severity: medium, claim: proposal move and landing boundary unwired }
+      - { id: F-008, severity: medium, claim: lane compliance lacks citations }
+      - { id: F-009, severity: medium, claim: harness checkpoint too monolithic }
+      - { id: F-010, severity: low, claim: seed check omits root shape and sequential uniqueness }
+      - { id: F-011, severity: low, claim: lane graph lifecycle mislabeled }
+  responses:
+    - finding_id: F-001
+      decision: PARTIAL
+      justification: The gap is valid, but the governing AC is CAND-05 rather than CAND-04 and a separate expected-output file is unnecessary.
+      accepted_part: Explicit total ordering and byte-exact tied-candidate proof.
+      rejected_part: Misidentified AC and extra fixture file.
+      counter_proposal: Manifest now requires unrounded composite DESC then candidate id ASC, with the exact tied output embedded in the focused validator.
+    - finding_id: F-002
+      decision: ACCEPT
+      justification: Whole-directory staging could absorb unrelated state and contradicted the manifest file-set gate.
+      action: Replace it with explicit paths, a generated exact staged-set diff, and a land-owned recoverable stash of the two pre-existing default-checkout rows.
+    - finding_id: F-003
+      decision: REJECT
+      justification: task-3 never writes either framework JSONL ledger; route/design/review skills already emitted their canonical rows before execution. The finding inferred an append action from an inaccurate Files Planned purpose.
+      counter_analysis: The plan now states that task-3 only validates and commits existing skill-owned rows, performs no manual append, parses both ledgers, and asserts uniqueness only for candidate-harness events that carry deterministic event_id.
+      counter_evidence:
+        - { type: cross_reference, path: docs/plans/2026-07-23-candidate-reservoir/manifest.md, output: task-3 performs no manual append }
+        - { type: command_output, path: .svc/pipeline-decisions.jsonl, output: WI-508 rows were emitted by route-workflow/write-spec/design-tech/plan-changeset before task-3 }
+    - finding_id: F-004
+      decision: ACCEPT
+      justification: Syntax-only execution could allow a vacuous validator.
+      action: Run the validator red, require nonzero, and require the failure to name candidate-harness.mjs.
+    - finding_id: F-005
+      decision: ACCEPT
+      justification: Simulation claims need reproducible commands and exact local module paths.
+      action: Add commands/outputs, pin scripts/state-io.mjs with withStateLock, record SQLite stderr warning behavior, and enumerate prototype files.
+    - finding_id: F-006
+      decision: ACCEPT
+      justification: Aggregate baseline classification must be evidence, not recollection.
+      action: Capture tier1-baseline.log before implementation, tier1-after.log afterward, and mechanically reject newly added failure lines.
+    - finding_id: F-007
+      decision: ACCEPT
+      justification: The proposal lifecycle and the plan-to-land boundary must be explicit.
+      action: Add git mv and endpoint assertions; state that land-changeset owns push/PR/squash after default-checkout residue is stashed.
+    - finding_id: F-008
+      decision: ACCEPT
+      justification: Lane compliance should be citable before execution.
+      action: Add completed/pending/skipped rows and emit the WI-508 skip decision before rereview.
+    - finding_id: F-009
+      decision: ACCEPT
+      justification: Independent core/rank/triage checkpoints give real commit-scoped rollback anchors.
+      action: Split task-2 into 2a core, 2b rank, and 2c triage with grouped validator runs and sequential commits.
+    - finding_id: F-010
+      decision: ACCEPT
+      justification: Count alone does not prove the seed contract.
+      action: Validate the chosen object root, candidate id field, exact count, uniqueness, and CAND-001..050 sequence.
+    - finding_id: F-011
+      decision: PARTIAL
+      justification: The file is a Git CREATE but a logical cross-host graph that already exists and mutates throughout the lane.
+      accepted_part: Correct lifecycle ownership and reconcile the 18 lane gates versus five implementation checkpoints.
+      rejected_part: Treating the file as if it were absent before task-1.
+      counter_proposal: Label it MODIFY for all lane tasks and explain its existing untracked-to-committed lifecycle.
+  tier3:
+    trigger_reason: infra_path_and_disputed_reject
+    reviewer: claude
+    reviewer_family: anthropic
+    model: claude-opus-4-8
+    effort: high
+    rubric_score: null
+    verdict: fail
+    receipt: .svc/external-review-artifacts/plan/68fd593c8e728473c5172db971dba421f7f6fd3b8bc203bd144d1d813279a477/20260723T033441Z-1988598/receipt.json
+    findings:
+      - { id: F-001, severity: high, claim: proposal rename staging set cannot execute }
+      - { id: F-002, severity: high, claim: declared planning artifacts are absent from staging set }
+      - { id: F-003, severity: high, claim: intermediate non-exempt commits cannot satisfy range receipts }
+      - { id: F-004, severity: medium, claim: aggregate failure parser can pass vacuously }
+      - { id: F-005, severity: medium, claim: failing-first sequence is not re-entry safe }
+      - { id: F-006, severity: medium, claim: sibling-checkout stash leaks into execute boundary }
+      - { id: F-007, severity: medium, claim: future aggregate runs do not prove default DB isolation }
+      - { id: F-008, severity: low, claim: external-state row has malformed columns }
+      - { id: F-009, severity: low, claim: seed shape omits candidates key }
+    responses:
+      - { finding_id: F-001, decision: ACCEPT, action: Move untracked proposal through the closeout patch and stage only the destination. }
+      - { finding_id: F-002, decision: ACCEPT, action: Explicitly stage and exact-set check every declared planning and implementation artifact. }
+      - { finding_id: F-003, decision: ACCEPT, action: Use validated worktree checkpoints and one non-exempt receipt-bearing implementation commit. }
+      - { finding_id: F-004, decision: ACCEPT, action: Parse exactly one canonical Tier-1 summary and reconcile its failure count with named failing scripts before comparing sets. }
+      - { finding_id: F-005, decision: ACCEPT, action: Guard the red-first run on harness absence so sequence re-entry proceeds to current-state validation. }
+      - { finding_id: F-006, decision: ACCEPT, action: Remove sibling-checkout mutation from execute commands and assign the named path-limited stash to land-changeset. }
+      - { finding_id: F-007, decision: ACCEPT, action: Require validator-owned overrides for every invocation plus pre/post default-store presence and hash assertions. }
+      - { finding_id: F-008, decision: ACCEPT, action: Restore all five External State table columns. }
+      - { finding_id: F-009, decision: ACCEPT, action: Declare the top-level candidates array explicitly. }
+    status: revised_for_round_3
+  round_3:
+    trigger_reason: round_2_high_findings_at_infra_gate
+    reviewer: claude
+    reviewer_family: anthropic
+    model: claude-opus-4-8
+    effort: high
+    rubric_score: 6
+    verdict: pass-with-findings
+    receipt: .svc/external-review-artifacts/plan/598398474e5f658eaefb88e779c5fc3492f11ac0367418b59779db6b0aad4f03/20260723T034546Z-2158640/receipt.json
+    findings:
+      - { id: F-001, severity: high, claim: worktree checkpoints contradict commit-based recovery command }
+      - { id: F-002, severity: high, claim: final non-exempt commit lacks an explicit receipt gate }
+      - { id: F-003, severity: high, claim: seed target paths do not make the deterministic ranking fixture reproducible }
+      - { id: F-004, severity: high, claim: default decision ledger destination is unspecified }
+      - { id: F-005, severity: medium, claim: proposal move procedures contradict }
+      - { id: F-006, severity: medium, claim: checklist refers to obsolete comm delta }
+      - { id: F-007, severity: medium, claim: land-time Gemini residue preservation lacks commands and verification }
+      - { id: F-008, severity: medium, claim: FRAMEWORK-STATE policy protection is unwired }
+      - { id: F-009, severity: low, claim: base-absent artifacts are mislabeled MODIFY }
+      - { id: F-010, severity: low, claim: review-security and review-cross-model are absent from lane compliance }
+    responses:
+      - { finding_id: F-001, decision: ACCEPT, action: Make recovery retain and repair the uncommitted checkpoint state; only the final commit can be reverted. }
+      - { finding_id: F-002, decision: ACCEPT, action: Emit exec-record on the exact implementation SHA and require land-changeset to pass check-chain-receipts after every downstream review and audit receipt exists. }
+      - { finding_id: F-003, decision: ACCEPT, action: Pin CAND-001..010 to README.md at 1/1 and CAND-011..050 to distinct absent src candidate paths at 0/1. }
+      - { finding_id: F-004, decision: ACCEPT, action: Resolve the default ledger to current repository .svc/pipeline-decisions.jsonl and distinguish harness outbox appends from task-3 manual appends. }
+      - { finding_id: F-005, decision: ACCEPT, action: Use only the closeout patch relocation for the pre-commit untracked proposal. }
+      - { finding_id: F-006, decision: ACCEPT, action: Name the fail-closed Node summary and failure-set parser consistently. }
+      - { finding_id: F-007, decision: ACCEPT, action: Add exact pre-scope, path-limited stash, stash-content, and clean-default-checkout gates to land-changeset. }
+      - { finding_id: F-008, decision: ACCEPT, action: Bind the protected state mutation to improve-framework and stop on any guard refusal. }
+      - { finding_id: F-009, decision: ACCEPT, action: Relabel base-absent spec and task-graph paths CREATE. }
+      - { finding_id: F-010, decision: ACCEPT, action: Add both mandatory review gates and their graph task ownership to Lane Compliance. }
+    ruling: revised_at_round_cap
+  terminal_state: REVISED_AND_REVIEWED
+  rounds_run: 3
+  unresolved_critical: 0
+  remaining_high: 0
+  commit_sha: 4a586240ad3b52946627565d1ee5c6af4a295e52

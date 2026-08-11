@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "review-plan receipt",
+  "type": "object",
+  "required": ["receipt_type", "schema_version", "wi", "self_review", "adversarial_review", "verdict", "timestamp"],
+  "properties": {
+    "receipt_type": { "const": "review-plan" },
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "wi": { "type": "string" },
+    "self_review": {
+      "type": "object",
+      "required": ["orchestrator", "findings_count", "notes"],
+      "properties": {
+        "orchestrator": { "type": "string", "enum": ["claude", "codex"] },
+        "findings_count": { "type": "integer", "minimum": 0 },
+        "notes": { "type": "string" }
+      }
+    },
+    "adversarial_review": {
+      "type": "object",
+      "required": ["primary_reviewer_host", "primary_used", "fallback_host", "fallback_used", "findings", "iteration_count"],
+      "properties": {
+        "primary_reviewer_host": { "type": "string", "enum": ["codex", "claude", "gemini", "agy"] },
+        "primary_used": { "type": "boolean" },
+        "fallback_host": { "type": "string", "enum": ["codex", "claude", "gemini", "agy"] },
+        "fallback_used": { "type": "boolean" },
+        "availability_log": { "type": "object" },
+        "findings": { "type": "array" },
+        "iteration_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "verdict": { "type": "string", "enum": ["pass", "fail", "pass-with-acks"] },
+    "timestamp": { "type": "string", "format": "date-time" }
+  }
+}

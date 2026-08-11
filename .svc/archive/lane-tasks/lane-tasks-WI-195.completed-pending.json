@@ -1,0 +1,519 @@
+{
+  "wi": "WI-195",
+  "lane": "framework",
+  "created": "2026-05-11T04:15:56.579Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Load framework improvement and inspect state-write blast radius",
+      "status": "completed",
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-11T04:16:02.070Z",
+        "loaded_via": "skill-read",
+        "phases_executed": [
+          {
+            "id": "P1-FrameworkRepoAndMemoryLoad",
+            "ts": "2026-05-11T04:29:19.046Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-PendingProposalAndEvidenceSelection",
+            "ts": "2026-05-11T04:29:19.114Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-DiagnosisAndDuplicateFilter",
+            "ts": "2026-05-11T04:29:19.185Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ImplementationRouteDecision",
+            "ts": "2026-05-11T04:29:19.252Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-ImplementationAndReplayVerification",
+            "ts": "2026-05-11T04:29:19.326Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-ImprovementRecordAndStateMutation",
+            "ts": "2026-05-11T04:29:19.386Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "FRAMEWORK-STATE.md"
+              }
+            ]
+          },
+          {
+            "id": "P7-ProposalDoneAndRemoteSync",
+            "ts": "2026-05-11T04:29:19.486Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P8-SelfVerifyContinuation",
+            "ts": "2026-05-11T04:29:19.606Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-11T04:29:19.681Z"
+    },
+    {
+      "id": 2,
+      "subject": "Implement state-io locking and JSONL append helper",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-11T04:29:19.751Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-FrameworkRepoAndMemoryLoad",
+            "ts": "2026-05-11T04:29:19.808Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-PendingProposalAndEvidenceSelection",
+            "ts": "2026-05-11T04:29:19.865Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-DiagnosisAndDuplicateFilter",
+            "ts": "2026-05-11T04:29:19.934Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ImplementationRouteDecision",
+            "ts": "2026-05-11T04:29:20.001Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-ImplementationAndReplayVerification",
+            "ts": "2026-05-11T04:29:20.058Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-ImprovementRecordAndStateMutation",
+            "ts": "2026-05-11T04:29:20.111Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "FRAMEWORK-STATE.md"
+              }
+            ]
+          },
+          {
+            "id": "P7-ProposalDoneAndRemoteSync",
+            "ts": "2026-05-11T04:29:20.185Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P8-SelfVerifyContinuation",
+            "ts": "2026-05-11T04:29:20.276Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-11T04:29:20.358Z"
+    },
+    {
+      "id": 3,
+      "subject": "Migrate .svc JSON and JSONL state writers to state-io",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-11T04:29:20.446Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-FrameworkRepoAndMemoryLoad",
+            "ts": "2026-05-11T04:29:20.529Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-PendingProposalAndEvidenceSelection",
+            "ts": "2026-05-11T04:29:20.620Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-DiagnosisAndDuplicateFilter",
+            "ts": "2026-05-11T04:29:20.719Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ImplementationRouteDecision",
+            "ts": "2026-05-11T04:29:20.793Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-ImplementationAndReplayVerification",
+            "ts": "2026-05-11T04:29:20.858Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-ImprovementRecordAndStateMutation",
+            "ts": "2026-05-11T04:29:20.916Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "FRAMEWORK-STATE.md"
+              }
+            ]
+          },
+          {
+            "id": "P7-ProposalDoneAndRemoteSync",
+            "ts": "2026-05-11T04:29:20.972Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P8-SelfVerifyContinuation",
+            "ts": "2026-05-11T04:29:21.047Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-11T04:29:21.110Z"
+    },
+    {
+      "id": 4,
+      "subject": "Add state-io discipline and concurrency validators",
+      "status": "completed",
+      "blocked_by": [
+        3
+      ],
+      "metadata": {
+        "skill": "test-framework"
+      },
+      "skill_receipt": {
+        "skill": "test-framework",
+        "loaded_at": "2026-05-11T04:29:21.169Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-TestModeSelection",
+            "ts": "2026-05-11T04:29:21.236Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-StaticOrScenarioRunnerExecution",
+            "ts": "2026-05-11T04:29:21.308Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-LiveAutopilotOrComparisonExecution",
+            "ts": "2026-05-11T04:29:21.373Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-MethodologyUsageAudit",
+            "ts": "2026-05-11T04:29:21.432Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-ResultsPersistenceGapRouting",
+            "ts": "2026-05-11T04:29:21.493Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "FRAMEWORK-STATE.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-05-11T04:29:21.561Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-11T04:29:21.632Z"
+    },
+    {
+      "id": 5,
+      "subject": "Run review-gate risk check for state mutation enforcement",
+      "status": "completed",
+      "blocked_by": [
+        4
+      ],
+      "metadata": {
+        "skill": "review-gate"
+      },
+      "skill_receipt": {
+        "skill": "review-gate",
+        "loaded_at": "2026-05-11T04:29:21.686Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-GateContextChecklistConcernScan",
+            "ts": "2026-05-11T04:29:21.756Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SelfReviewFindings",
+            "ts": "2026-05-11T04:29:21.821Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-SelfJudgment",
+            "ts": "2026-05-11T04:29:21.884Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-CrossReviewConvergence",
+            "ts": "2026-05-11T04:29:21.950Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-GateDecisionBacklog",
+            "ts": "2026-05-11T04:29:22.009Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-05-11T04:29:22.065Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-11T04:29:22.143Z"
+    },
+    {
+      "id": 6,
+      "subject": "Validate, archive evidence, and close WI-195",
+      "status": "completed",
+      "blocked_by": [
+        5
+      ],
+      "metadata": {
+        "skill": "verify-promotion"
+      },
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-05-11T04:29:22.208Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-05-11T04:29:22.277Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-05-11T04:29:22.341Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-195.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-05-11T04:29:22.408Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-195-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-05-11T04:29:22.478Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-195.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-11T04:29:22.544Z"
+    }
+  ]
+}

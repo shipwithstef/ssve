@@ -1,0 +1,122 @@
+{
+  "scenario": "S3",
+  "mode": "convert",
+  "date": "2026-04-03",
+  "description": "Glue boundary checks for convert mode -- testing how skills behave when adding to an existing project",
+  "boundaries": [
+    {
+      "id": "GB-S3-01",
+      "boundary": "write-vision REFINE -> build-personas Add",
+      "from_skill": "write-vision",
+      "to_skill": "build-personas",
+      "from_mode": "REFINE",
+      "to_mode": "Mode 3 (Add New)",
+      "check": "Vision refinement approval triggers persona addition for the new capability",
+      "s1_equivalent": "Vision create -> persona auto-discovery (Mode 7)",
+      "convert_difference": "In S1, vision creation automatically triggers full persona discovery. In S3, approved vision changes trigger targeted persona addition. The output is incremental (1 persona) rather than exhaustive (all personas).",
+      "status": "PASS",
+      "evidence": "vision-refine-proposal.md approved -> P2-team-collaborator.md created referencing approval"
+    },
+    {
+      "id": "GB-S3-02",
+      "boundary": "build-personas Add -> validate-feature Validate",
+      "from_skill": "build-personas",
+      "to_skill": "validate-feature",
+      "from_mode": "Mode 3 (Add New)",
+      "to_mode": "Validate against existing",
+      "check": "New persona (P2) is correctly identified as the consumer of the new feature in the feature ship brief",
+      "s1_equivalent": "persona auto-discovery -> feature inventory creation",
+      "convert_difference": "In S1, personas inform the initial feature inventory. In S3, the new persona validates that the new feature has a real consumer. The persona-feature link is checked rather than created.",
+      "status": "PASS",
+      "evidence": "feature-ship-brief-realtime-collab.md cross-references P2 as consumer"
+    },
+    {
+      "id": "GB-S3-03",
+      "boundary": "validate-feature Validate -> write-spec (referencing existing)",
+      "from_skill": "validate-feature",
+      "to_skill": "write-spec",
+      "from_mode": "Validate",
+      "to_mode": "New (referencing existing)",
+      "check": "Feature ship brief's cross-reference table is consumed by write-spec to produce correct dependency declarations",
+      "s1_equivalent": "Feature inventory -> clean-slate spec writing",
+      "convert_difference": "In S1, write-spec has no existing ACs to reference. In S3, the ship brief's impact table (6 existing ACs checked) feeds directly into the spec's System Dependencies section, which splits into Existing and New tables.",
+      "status": "PASS",
+      "evidence": "feature-realtime-collab.md System Dependencies has 2 existing + 2 new dependencies matching ship brief"
+    },
+    {
+      "id": "GB-S3-04",
+      "boundary": "write-spec -> sync-spec-code (cross-spec consistency)",
+      "from_skill": "write-spec",
+      "to_skill": "sync-spec-code",
+      "from_mode": "New (referencing existing)",
+      "to_mode": "Convert (cross-spec)",
+      "check": "New spec's cross-AC references (COL-1.4 -> AC-1.3, COL-4.3 -> AC-1.2) are validated by sync-spec-code",
+      "s1_equivalent": "Simulated sync (no code to check against)",
+      "convert_difference": "In S1, sync-spec-code could only check self-consistency. In S3, it validates cross-feature AC references and detects DRIFT-001 (overdue-checker needs update). This is the most significant convert-mode difference.",
+      "status": "PASS",
+      "evidence": "sync-spec-code-report.md validates COL -> AC references and finds DRIFT-001"
+    },
+    {
+      "id": "GB-S3-05",
+      "boundary": "sync-spec-code -> write-journeys Expand",
+      "from_skill": "sync-spec-code",
+      "to_skill": "write-journeys",
+      "from_mode": "Convert (cross-spec)",
+      "to_mode": "Expand (Mode 2)",
+      "check": "Sync report's drift findings inform journey design -- J02 accounts for the overdue-checker WS extension",
+      "s1_equivalent": "Sync output -> bootstrap journey creation",
+      "convert_difference": "In S1, journeys are created from specs alone. In S3, the sync report's drift findings (overdue-checker extension) are reflected in J02's Scenario 2 (system-initiated overdue broadcast). The journey design is drift-aware.",
+      "status": "PASS",
+      "evidence": "J02 Scenario 2 exercises COL-3.1/3.2 which address DRIFT-001"
+    },
+    {
+      "id": "GB-S3-06",
+      "boundary": "write-journeys Expand -> existing J01 (prerequisite chain)",
+      "from_skill": "write-journeys",
+      "to_skill": "(existing artifact)",
+      "from_mode": "Expand (Mode 2)",
+      "to_mode": "N/A (existing)",
+      "check": "New journey J02 correctly declares J01 as prerequisite and does not contradict J01's assumptions",
+      "s1_equivalent": "No equivalent -- bootstrap creates all journeys simultaneously with no ordering",
+      "convert_difference": "This is a convert-mode-only boundary. J02 must be aware of J01's single-user assumptions and validate that multi-user scenarios do not break them. The conflict analysis table (5 assumptions checked, 0 conflicts) is convert-mode-only output.",
+      "status": "PASS",
+      "evidence": "J02 Preconditions list J01 as prerequisite; Conflict Analysis table shows 5 checks, 0 conflicts"
+    },
+    {
+      "id": "GB-S3-07",
+      "boundary": "Approval Gate (write-vision REFINE exclusive)",
+      "from_skill": "write-vision",
+      "to_skill": "(all downstream skills)",
+      "from_mode": "REFINE",
+      "to_mode": "N/A",
+      "check": "No downstream artifact is produced before the vision refinement is approved",
+      "s1_equivalent": "No equivalent -- bootstrap mode has no approval gates",
+      "convert_difference": "The Approval Gate is a convert-mode-only checkpoint that blocks the pipeline until the user confirms proposed vision changes. In autopilot mode, the approval is simulated. This is a critical safeguard when modifying established project direction.",
+      "status": "PASS",
+      "evidence": "vision-refine-proposal.md shows PENDING -> APPROVED transition before downstream artifacts proceed"
+    },
+    {
+      "id": "GB-S3-08",
+      "boundary": "DRIFT remediation feedback loop",
+      "from_skill": "sync-spec-code",
+      "to_skill": "write-spec (remediation)",
+      "from_mode": "Convert",
+      "to_mode": "Update existing",
+      "check": "DRIFT-001 identifies that enabler-overdue-checker needs an Implementation Notes update",
+      "s1_equivalent": "No equivalent -- no drift possible in bootstrap",
+      "convert_difference": "This is a convert-mode-only boundary. When sync-spec-code detects drift, it creates a remediation action that feeds back into the spec-writing phase. The existing enabler-overdue-checker spec would need to be updated to reflect the new WS dependency.",
+      "status": "FLAGGED",
+      "evidence": "sync-spec-code-report.md DRIFT-001 identifies required update to enabler-overdue-checker",
+      "note": "Remediation not yet applied -- enabler-overdue-checker.md in the source project is unchanged. This is expected in a read-only analysis scenario."
+    }
+  ],
+  "summary": {
+    "total_boundaries_checked": 8,
+    "passed": 7,
+    "flagged": 1,
+    "failed": 0,
+    "convert_mode_only_boundaries": 3,
+    "boundaries_retested_from_s1": 5,
+    "key_finding": "Convert mode introduces 3 boundaries that do not exist in bootstrap mode: Approval Gate, DRIFT remediation feedback loop, and journey prerequisite chaining. All convert-mode-retested boundaries (5/5) show measurably different behavior from their S1 equivalents."
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "wi": "WI-537",
+  "lane": "framework",
+  "status": "in_progress",
+  "created": "2026-08-11T16:33:12.270Z",
+  "tasks": [
+    {
+      "id": 1,
+      "status": "in_progress",
+      "skill": "execute-changeset",
+      "subject": "Sanitize private product codenames and legal entity residue",
+      "affected_files": [
+        "skills/launch-knowledge/references/knowledge/launch/jurisdictions/bg/details/eood-incorporation-playbook.md",
+        "docs/specs/work-items/WI-408.md",
+        "proposals/2026-06-20-company-operating-fleet.md",
+        "skills/base44-environment/SKILL.md",
+        "skills/write-journeys/SKILL.md",
+        "skills/write-e2e/references/anti-patterns.md",
+        "skills/write-e2e/references/examples.md",
+        "proposals/done/2026-04-28-rls-derived-ownership-pattern.md",
+        "docs/specs/audit/wi-472-reconcile-backlog-bundle.json",
+        "docs/specs/reviews/wi-472-backlog-review.json",
+        "docs/specs/reviews/WI-472-g6-round3-artifacts/launcher-findings.json"
+      ],
+      "blocked_by": []
+    },
+    {
+      "id": 2,
+      "status": "pending",
+      "skill": "review-exec",
+      "subject": "Review privacy sanitation changeset",
+      "blocked_by": [1]
+    }
+  ]
+}

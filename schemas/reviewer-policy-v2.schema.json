@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seriousvibecoding.dev/schemas/reviewer-policy-v2.schema.json",
+  "title": "Owner reviewer policy v2",
+  "type": "object",
+  "required": ["schema_version", "authority", "default_mode", "modes"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": 2 },
+    "authority": { "const": "repository-owner" },
+    "default_mode": { "type": "string", "minLength": 1 },
+    "modes": { "type": "object", "minProperties": 1 }
+  }
+}

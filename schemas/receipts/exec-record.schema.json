@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "exec-record receipt",
+  "type": "object",
+  "required": ["receipt_type", "schema_version", "wi", "diff_hash", "files_touched", "dispatch_model", "timestamp"],
+  "properties": {
+    "receipt_type": { "const": "exec-record" },
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "wi": { "type": "string" },
+    "diff_hash": { "type": "string" },
+    "files_touched": { "type": "array", "items": { "type": "string" } },
+    "dispatch_model": { "type": "string" },
+    "test_results": {
+      "type": "object",
+      "properties": {
+        "ran": { "type": "boolean" },
+        "passed": { "type": "boolean" },
+        "summary": { "type": "string" }
+      }
+    },
+    "timestamp": { "type": "string", "format": "date-time" }
+  }
+}

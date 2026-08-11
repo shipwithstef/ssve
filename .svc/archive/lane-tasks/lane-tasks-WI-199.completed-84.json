@@ -1,0 +1,143 @@
+{
+  "wi": "WI-199",
+  "lane": "framework",
+  "created": "2026-05-10T11:00:00Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Route WI-199 Phase A and bind session contract",
+      "status": "completed",
+      "metadata": {
+        "skill": "route-workflow"
+      },
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-05-10T11:00:00Z",
+        "loaded_via": "session"
+      },
+      "completed_at": "2026-05-10T11:00:00Z"
+    },
+    {
+      "id": 2,
+      "subject": "Produce plan-changeset manifest at .svc/plan-changeset-WI-199-phase-a.md",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "plan-changeset"
+      },
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-05-10T06:38:10.086Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-10T06:38:10.114Z"
+    },
+    {
+      "id": 3,
+      "subject": "Author references/bundle-grep-substitution-patterns.json — same shape as WI-197 patterns, different signal class",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-05-10T06:38:10.145Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-10T06:39:31.782Z"
+    },
+    {
+      "id": 4,
+      "subject": "Add tier-1 validator validate-bundle-grep-substitution.sh — reuses WI-197 engine via --config",
+      "status": "completed",
+      "blocked_by": [
+        3
+      ],
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-05-10T06:39:31.814Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-10T06:41:57.766Z"
+    },
+    {
+      "id": 5,
+      "subject": "Add fixtures: good (V1+ evidence cited) / bad (bundle-grep-only verified claims)",
+      "status": "completed",
+      "blocked_by": [
+        4
+      ],
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-05-10T06:41:57.798Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-10T06:41:57.829Z"
+    },
+    {
+      "id": 6,
+      "subject": "Update FRAMEWORK-STATE.md and WI-199.md to record Phase A landed",
+      "status": "completed",
+      "blocked_by": [
+        3,
+        4,
+        5
+      ],
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-05-10T06:41:57.865Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-10T06:42:52.638Z"
+    },
+    {
+      "id": 7,
+      "subject": "Run tier-1 evals; confirm new validator passes and no regression vs WI-197 baseline",
+      "status": "completed",
+      "blocked_by": [
+        6
+      ],
+      "metadata": {
+        "skill": "verify-promotion"
+      },
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-05-10T06:42:52.663Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-10T06:45:34.624Z"
+    },
+    {
+      "id": 8,
+      "subject": "Commit Phase A and open PR (stacked on PR #83)",
+      "status": "completed",
+      "blocked_by": [
+        7
+      ],
+      "metadata": {
+        "skill": "land-changeset"
+      },
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-05-10T06:45:34.653Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-10T09:07:55Z"
+    }
+  ]
+}

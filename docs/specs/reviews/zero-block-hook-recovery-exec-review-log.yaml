@@ -1,0 +1,46 @@
+review: WI-531-exec
+self_review_passes: 1
+rounds_run: 2
+hard_round_cap: 3
+unresolved_critical: 0
+remaining_high: 0
+terminal_state: PASS
+candidate_sha: e10aada8ccccab3a6c861d5b5ae420cca65bacbd
+candidate_digest: c7d131f4ab30d2f3f78e8b6f407b3b6cdac075b63ee5ca5fcf45edd9eba9d924
+independent_review:
+  reviewer_host: agy
+  reviewer_family: google
+  model: Gemini 3.6 Flash (High)
+  effort: high
+  fallback_used: false
+  override_used: false
+  verdict: pass
+  rubric_score: 10
+  request_id: 09200855-0df0-435b-af6c-84081ff8f4c5
+advisory_review:
+  reviewer_host: codex
+  reviewer_family: openai
+  model: gpt-5.6-sol
+  effort: high
+  verdict: pass
+  critical_count: 0
+  high_count: 0
+round_1:
+    round: 1
+    result: remediation_required
+    independent_critical: 0
+    independent_high: 0
+    advisory_critical: 1
+    advisory_high: 2
+    disposition: all accepted findings fixed with executable regressions
+round_2:
+    round: 2
+    result: pass
+    independent_critical: 0
+    independent_high: 0
+    advisory_critical: 0
+    advisory_high: 0
+    disposition: exact-candidate convergence
+installed_state_boundary:
+  status: pending_g7
+  reason: canonical-main all-host setup and real-session canaries are post-merge proof

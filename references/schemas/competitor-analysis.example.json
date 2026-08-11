@@ -1,0 +1,44 @@
+{
+  "generated": "2026-05-02",
+  "landscape_state": "populated",
+  "landscape_state_justification": "7 direct competitors found via WebSearch; loyalty/POS-integration space is mature.",
+  "category": "SMB loyalty programs (POS-integrated)",
+  "competitors": [
+    {
+      "name": "Toast Loyalty",
+      "tier": "direct",
+      "url": "https://pos.toasttab.com/products/loyalty",
+      "last_verified": "2026-05-02",
+      "earn_mechanism": "POS auto-accrue at checkout; customer enrolls via phone or email at register",
+      "enrollment_path": "POS-auto",
+      "merchant_cost": "$25-50/location/month bundled with Toast POS",
+      "pos_integrations": ["Toast POS (native)"],
+      "fraud_prevention": ["POS-attached, no manual entry; per-customer rate limits"],
+      "customer_complaints": ["Locked to Toast POS", "No standalone option"]
+    },
+    {
+      "name": "Square Loyalty",
+      "tier": "direct",
+      "url": "https://squareup.com/us/en/loyalty",
+      "last_verified": "2026-05-02",
+      "earn_mechanism": "POS auto-accrue at checkout; SMS opt-in at register",
+      "enrollment_path": "POS-auto + SMS",
+      "merchant_cost": "$45-105/location/month",
+      "pos_integrations": ["Square POS (native)"],
+      "fraud_prevention": ["POS-attached", "Square account verification"],
+      "customer_complaints": ["Tier costs scale with active customers"]
+    },
+    {
+      "name": "Fivestars",
+      "tier": "direct",
+      "url": "https://fivestars.com",
+      "last_verified": "2026-05-02",
+      "earn_mechanism": "Customer enters phone at in-store tablet OR card-link auto-accrue",
+      "enrollment_path": "in-store tablet + card-link",
+      "merchant_cost": "$199-399/month per location",
+      "pos_integrations": ["Clover", "Lightspeed", "Square (limited)"],
+      "fraud_prevention": ["Tablet PIN", "card-link verification"],
+      "customer_complaints": ["Hardware tablet required at register"]
+    }
+  ]
+}

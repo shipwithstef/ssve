@@ -1,0 +1,688 @@
+# Test Patterns
+
+- **test/agent-cli.test.ts**: Contains unit/E2E tests.
+- **test/agent-cli.test.ts**: Uses PGLite for testing.
+- **test/agent-runner.test.ts**: Contains unit/E2E tests.
+- **test/ai/adaptive-embed-batch.test.ts**: Contains unit/E2E tests.
+- **test/ai/config-no-env-mutation.test.ts**: Contains unit/E2E tests.
+- **test/ai/gateway-chat.test.ts**: Contains unit/E2E tests.
+- **test/ai/gateway.test.ts**: Contains unit/E2E tests.
+- **test/ai/no-batch-cap-suppression.serial.test.ts**: Contains unit/E2E tests.
+- **test/ai/recipe-azure-openai.test.ts**: Contains unit/E2E tests.
+- **test/ai/recipe-dashscope.test.ts**: Contains unit/E2E tests.
+- **test/ai/recipe-llama-server.test.ts**: Contains unit/E2E tests.
+- **test/ai/recipe-minimax.test.ts**: Contains unit/E2E tests.
+- **test/ai/recipe-zhipu.test.ts**: Contains unit/E2E tests.
+- **test/ai/recipes-existing-regression.test.ts**: Contains unit/E2E tests.
+- **test/ai/schema-templating.test.ts**: Contains unit/E2E tests.
+- **test/ai/schema-templating.test.ts**: Uses PGLite for testing.
+- **test/ai/silent-drop-regression.test.ts**: Contains unit/E2E tests.
+- **test/anomalies.test.ts**: Contains unit/E2E tests.
+- **test/anthropic-model-ids.test.ts**: Contains unit/E2E tests.
+- **test/apply-migrations.test.ts**: Contains unit/E2E tests.
+- **test/archive-crawler-config.test.ts**: Contains unit/E2E tests.
+- **test/audit-slug-fallback.serial.test.ts**: Contains unit/E2E tests.
+- **test/auto-think-phase.test.ts**: Contains unit/E2E tests.
+- **test/auto-think-phase.test.ts**: Uses PGLite for testing.
+- **test/autopilot-install.test.ts**: Contains unit/E2E tests.
+- **test/autopilot-resolve-cli.test.ts**: Contains unit/E2E tests.
+- **test/backfill-base.test.ts**: Contains unit/E2E tests.
+- **test/backfill-base.test.ts**: Uses PGLite for testing.
+- **test/backfill-concurrency-clamp.serial.test.ts**: Contains unit/E2E tests.
+- **test/backlinks.test.ts**: Contains unit/E2E tests.
+- **test/backoff.test.ts**: Contains unit/E2E tests.
+- **test/benchmark-graph-quality.ts**: Contains unit/E2E tests.
+- **test/benchmark-graph-quality.ts**: Uses PGLite for testing.
+- **test/benchmark-knowledge-runtime.ts**: Contains unit/E2E tests.
+- **test/benchmark-knowledge-runtime.ts**: Uses PGLite for testing.
+- **test/benchmark-put-page-latency.ts**: Contains unit/E2E tests.
+- **test/benchmark-put-page-latency.ts**: Uses PGLite for testing.
+- **test/benchmark-search-quality.ts**: Contains unit/E2E tests.
+- **test/benchmark-search-quality.ts**: Uses PGLite for testing.
+- **test/book-mirror.test.ts**: Contains unit/E2E tests.
+- **test/bootstrap.test.ts**: Contains unit/E2E tests.
+- **test/bootstrap.test.ts**: Uses PGLite for testing.
+- **test/brain-allowlist.test.ts**: Contains unit/E2E tests.
+- **test/brain-allowlist.test.ts**: Uses PGLite for testing.
+- **test/brain-registry.serial.test.ts**: Contains unit/E2E tests.
+- **test/brain-registry.serial.test.ts**: Uses PGLite for testing.
+- **test/brain-resolver.test.ts**: Contains unit/E2E tests.
+- **test/brain-resolver.test.ts**: Uses PGLite for testing.
+- **test/brain-score-breakdown.test.ts**: Contains unit/E2E tests.
+- **test/brain-score-breakdown.test.ts**: Uses PGLite for testing.
+- **test/brain-writer.test.ts**: Contains unit/E2E tests.
+- **test/brain-writer.test.ts**: Uses PGLite for testing.
+- **test/budget-meter.test.ts**: Contains unit/E2E tests.
+- **test/build-llms.test.ts**: Contains unit/E2E tests.
+- **test/cathedral-ii-brainbench.test.ts**: Contains unit/E2E tests.
+- **test/cathedral-ii-brainbench.test.ts**: Uses PGLite for testing.
+- **test/check-resolvable-cli.test.ts**: Contains unit/E2E tests.
+- **test/check-resolvable.test.ts**: Contains unit/E2E tests.
+- **test/check-system-of-record.test.ts**: Contains unit/E2E tests.
+- **test/check-update.test.ts**: Contains unit/E2E tests.
+- **test/chunk-grain-fts.test.ts**: Contains unit/E2E tests.
+- **test/chunk-grain-fts.test.ts**: Uses PGLite for testing.
+- **test/chunker-timeout.test.ts**: Contains unit/E2E tests.
+- **test/chunker-version-gate.test.ts**: Contains unit/E2E tests.
+- **test/chunkers/code.test.ts**: Contains unit/E2E tests.
+- **test/chunkers/recursive.test.ts**: Contains unit/E2E tests.
+- **test/cjk.test.ts**: Contains unit/E2E tests.
+- **test/claw-test-cli.test.ts**: Contains unit/E2E tests.
+- **test/cli-dispatch-thin-client.test.ts**: Contains unit/E2E tests.
+- **test/cli-dispatch-thin-client.test.ts**: Uses PGLite for testing.
+- **test/cli-multimodal-integration.test.ts**: Contains unit/E2E tests.
+- **test/cli-multimodal-integration.test.ts**: Uses PGLite for testing.
+- **test/cli-options.test.ts**: Contains unit/E2E tests.
+- **test/cli-pty-runner.test.ts**: Contains unit/E2E tests.
+- **test/cli-query-image.test.ts**: Contains unit/E2E tests.
+- **test/cli.test.ts**: Contains unit/E2E tests.
+- **test/code-callers-cli.test.ts**: Contains unit/E2E tests.
+- **test/code-def-refs.test.ts**: Contains unit/E2E tests.
+- **test/code-def-refs.test.ts**: Uses PGLite for testing.
+- **test/code-edges.test.ts**: Contains unit/E2E tests.
+- **test/code-edges.test.ts**: Uses PGLite for testing.
+- **test/config-env.test.ts**: Contains unit/E2E tests.
+- **test/config-env.test.ts**: Uses PGLite for testing.
+- **test/config.test.ts**: Contains unit/E2E tests.
+- **test/connection-manager.serial.test.ts**: Contains unit/E2E tests.
+- **test/connection-resilience.test.ts**: Contains unit/E2E tests.
+- **test/context-engine.test.ts**: Contains unit/E2E tests.
+- **test/core/cycle.serial.test.ts**: Contains unit/E2E tests.
+- **test/core/cycle.serial.test.ts**: Uses PGLite for testing.
+- **test/cross-modal-eval-aggregate.test.ts**: Contains unit/E2E tests.
+- **test/cross-modal-eval-cli.test.ts**: Contains unit/E2E tests.
+- **test/cross-modal-eval-json-repair.test.ts**: Contains unit/E2E tests.
+- **test/cycle-abort.test.ts**: Contains unit/E2E tests.
+- **test/cycle-consolidate.test.ts**: Contains unit/E2E tests.
+- **test/cycle-consolidate.test.ts**: Uses PGLite for testing.
+- **test/cycle-patterns.test.ts**: Contains unit/E2E tests.
+- **test/cycle-synthesize-chunker.test.ts**: Contains unit/E2E tests.
+- **test/cycle-synthesize-md-discovery.test.ts**: Contains unit/E2E tests.
+- **test/cycle-synthesize-slug-collection.test.ts**: Contains unit/E2E tests.
+- **test/cycle-synthesize-slug-collection.test.ts**: Uses PGLite for testing.
+- **test/cycle-synthesize.test.ts**: Contains unit/E2E tests.
+- **test/data-research.test.ts**: Contains unit/E2E tests.
+- **test/db-lock-refresh.test.ts**: Contains unit/E2E tests.
+- **test/db-lock-refresh.test.ts**: Uses PGLite for testing.
+- **test/dedup.test.ts**: Contains unit/E2E tests.
+- **test/destructive-guard.test.ts**: Contains unit/E2E tests.
+- **test/destructive-guard.test.ts**: Uses PGLite for testing.
+- **test/disk-walk.test.ts**: Contains unit/E2E tests.
+- **test/doctor-fix.test.ts**: Contains unit/E2E tests.
+- **test/doctor-minions-check.test.ts**: Contains unit/E2E tests.
+- **test/doctor-remote.test.ts**: Contains unit/E2E tests.
+- **test/doctor-report-remote.test.ts**: Contains unit/E2E tests.
+- **test/doctor-report-remote.test.ts**: Uses PGLite for testing.
+- **test/doctor.test.ts**: Contains unit/E2E tests.
+- **test/doctor.test.ts**: Uses PGLite for testing.
+- **test/dream-cli-flags.test.ts**: Contains unit/E2E tests.
+- **test/dream.test.ts**: Contains unit/E2E tests.
+- **test/dream.test.ts**: Uses PGLite for testing.
+- **test/dry-fix.test.ts**: Contains unit/E2E tests.
+- **test/e2e/anomalies-pglite.test.ts**: Contains unit/E2E tests.
+- **test/e2e/anomalies-pglite.test.ts**: Uses PGLite for testing.
+- **test/e2e/auth-permissions.test.ts**: Contains unit/E2E tests.
+- **test/e2e/auth-takes-holders-pglite.test.ts**: Contains unit/E2E tests.
+- **test/e2e/auth-takes-holders-pglite.test.ts**: Uses PGLite for testing.
+- **test/e2e/backfill-perf-pglite.test.ts**: Contains unit/E2E tests.
+- **test/e2e/backfill-perf-pglite.test.ts**: Uses PGLite for testing.
+- **test/e2e/bench-vs-openclaw/durability.bench.ts**: Contains unit/E2E tests.
+- **test/e2e/bench-vs-openclaw/fanout.bench.ts**: Contains unit/E2E tests.
+- **test/e2e/bench-vs-openclaw/harness.ts**: Contains unit/E2E tests.
+- **test/e2e/bench-vs-openclaw/memory.bench.ts**: Contains unit/E2E tests.
+- **test/e2e/bench-vs-openclaw/throughput.bench.ts**: Contains unit/E2E tests.
+- **test/e2e/bench-vs-openclaw/tweet-ingest.bench.ts**: Contains unit/E2E tests.
+- **test/e2e/chunker-takes-strip.test.ts**: Contains unit/E2E tests.
+- **test/e2e/cjk-roundtrip.test.ts**: Contains unit/E2E tests.
+- **test/e2e/cjk-roundtrip.test.ts**: Uses PGLite for testing.
+- **test/e2e/claw-test.test.ts**: Contains unit/E2E tests.
+- **test/e2e/claw-test.test.ts**: Uses PGLite for testing.
+- **test/e2e/code-indexing.test.ts**: Contains unit/E2E tests.
+- **test/e2e/code-indexing.test.ts**: Uses PGLite for testing.
+- **test/e2e/cross-modal-eval.test.ts**: Contains unit/E2E tests.
+- **test/e2e/cycle-consolidate-postgres.test.ts**: Contains unit/E2E tests.
+- **test/e2e/cycle-recompute-emotional-weight-pglite.test.ts**: Contains unit/E2E tests.
+- **test/e2e/cycle-recompute-emotional-weight-pglite.test.ts**: Uses PGLite for testing.
+- **test/e2e/cycle.test.ts**: Contains unit/E2E tests.
+- **test/e2e/doctor-progress.test.ts**: Contains unit/E2E tests.
+- **test/e2e/dream-allow-list-pglite.test.ts**: Contains unit/E2E tests.
+- **test/e2e/dream-allow-list-pglite.test.ts**: Uses PGLite for testing.
+- **test/e2e/dream-cycle-phase-order-pglite.test.ts**: Contains unit/E2E tests.
+- **test/e2e/dream-cycle-phase-order-pglite.test.ts**: Uses PGLite for testing.
+- **test/e2e/dream-patterns-pglite.test.ts**: Contains unit/E2E tests.
+- **test/e2e/dream-patterns-pglite.test.ts**: Uses PGLite for testing.
+- **test/e2e/dream-synthesize-chunking.test.ts**: Contains unit/E2E tests.
+- **test/e2e/dream-synthesize-chunking.test.ts**: Uses PGLite for testing.
+- **test/e2e/dream-synthesize-pglite.test.ts**: Contains unit/E2E tests.
+- **test/e2e/dream-synthesize-pglite.test.ts**: Uses PGLite for testing.
+- **test/e2e/dream.test.ts**: Contains unit/E2E tests.
+- **test/e2e/engine-parity-salience.test.ts**: Contains unit/E2E tests.
+- **test/e2e/engine-parity-salience.test.ts**: Uses PGLite for testing.
+- **test/e2e/engine-parity.test.ts**: Contains unit/E2E tests.
+- **test/e2e/engine-parity.test.ts**: Uses PGLite for testing.
+- **test/e2e/eval-contradictions-postgres.test.ts**: Contains unit/E2E tests.
+- **test/e2e/eval-takes-quality.test.ts**: Contains unit/E2E tests.
+- **test/e2e/facts-context-injection-postgres.test.ts**: Contains unit/E2E tests.
+- **test/e2e/facts-cross-source-isolation.test.ts**: Contains unit/E2E tests.
+- **test/e2e/facts-forget.test.ts**: Contains unit/E2E tests.
+- **test/e2e/facts-notability-roundtrip.test.ts**: Contains unit/E2E tests.
+- **test/e2e/facts-notability-roundtrip.test.ts**: Uses PGLite for testing.
+- **test/e2e/facts-recall-render.test.ts**: Contains unit/E2E tests.
+- **test/e2e/facts-separation-postgres.test.ts**: Contains unit/E2E tests.
+- **test/e2e/facts-separation-postgres.test.ts**: Uses PGLite for testing.
+- **test/e2e/frontmatter-migration.test.ts**: Contains unit/E2E tests.
+- **test/e2e/frontmatter-migration.test.ts**: Uses PGLite for testing.
+- **test/e2e/graph-quality.test.ts**: Contains unit/E2E tests.
+- **test/e2e/graph-quality.test.ts**: Uses PGLite for testing.
+- **test/e2e/helpers.ts**: Contains unit/E2E tests.
+- **test/e2e/http-transport.test.ts**: Contains unit/E2E tests.
+- **test/e2e/integrity-batch.test.ts**: Contains unit/E2E tests.
+- **test/e2e/jsonb-roundtrip.test.ts**: Contains unit/E2E tests.
+- **test/e2e/list-pages-regression.test.ts**: Contains unit/E2E tests.
+- **test/e2e/list-pages-regression.test.ts**: Uses PGLite for testing.
+- **test/e2e/mcp.test.ts**: Contains unit/E2E tests.
+- **test/e2e/mechanical.test.ts**: Contains unit/E2E tests.
+- **test/e2e/mechanical.test.ts**: Uses PGLite for testing.
+- **test/e2e/migrate-chain.test.ts**: Contains unit/E2E tests.
+- **test/e2e/migration-flow.test.ts**: Contains unit/E2E tests.
+- **test/e2e/migration-v35-auto-rls.test.ts**: Contains unit/E2E tests.
+- **test/e2e/migration-v47-notability.test.ts**: Contains unit/E2E tests.
+- **test/e2e/migration-v50-ingest-log-source-id.test.ts**: Contains unit/E2E tests.
+- **test/e2e/minions-concurrency.test.ts**: Contains unit/E2E tests.
+- **test/e2e/minions-resilience.test.ts**: Contains unit/E2E tests.
+- **test/e2e/minions-shell-pglite.test.ts**: Contains unit/E2E tests.
+- **test/e2e/minions-shell-pglite.test.ts**: Uses PGLite for testing.
+- **test/e2e/minions-shell.test.ts**: Contains unit/E2E tests.
+- **test/e2e/multi-source-bug-class.test.ts**: Contains unit/E2E tests.
+- **test/e2e/multi-source-bug-class.test.ts**: Uses PGLite for testing.
+- **test/e2e/multi-source-emotional-weight-pglite.test.ts**: Contains unit/E2E tests.
+- **test/e2e/multi-source-emotional-weight-pglite.test.ts**: Uses PGLite for testing.
+- **test/e2e/multi-source.test.ts**: Contains unit/E2E tests.
+- **test/e2e/multi-source.test.ts**: Uses PGLite for testing.
+- **test/e2e/multimodal-postgres.test.ts**: Contains unit/E2E tests.
+- **test/e2e/multimodal-postgres.test.ts**: Uses PGLite for testing.
+- **test/e2e/openclaw-context-engine-plugin.test.ts**: Contains unit/E2E tests.
+- **test/e2e/openclaw-plugin-load-real.test.ts**: Contains unit/E2E tests.
+- **test/e2e/openclaw-reference-compat.test.ts**: Contains unit/E2E tests.
+- **test/e2e/postgres-bootstrap.test.ts**: Contains unit/E2E tests.
+- **test/e2e/postgres-engine-disconnect-idempotency.test.ts**: Contains unit/E2E tests.
+- **test/e2e/postgres-jsonb.test.ts**: Contains unit/E2E tests.
+- **test/e2e/salience-llm-routing.test.ts**: Contains unit/E2E tests.
+- **test/e2e/salience-pglite.test.ts**: Contains unit/E2E tests.
+- **test/e2e/salience-pglite.test.ts**: Uses PGLite for testing.
+- **test/e2e/schema-drift.test.ts**: Contains unit/E2E tests.
+- **test/e2e/schema-drift.test.ts**: Uses PGLite for testing.
+- **test/e2e/search-exclude.test.ts**: Contains unit/E2E tests.
+- **test/e2e/search-exclude.test.ts**: Uses PGLite for testing.
+- **test/e2e/search-quality.test.ts**: Contains unit/E2E tests.
+- **test/e2e/search-quality.test.ts**: Uses PGLite for testing.
+- **test/e2e/search-swamp.test.ts**: Contains unit/E2E tests.
+- **test/e2e/search-swamp.test.ts**: Uses PGLite for testing.
+- **test/e2e/serve-http-meta.test.ts**: Contains unit/E2E tests.
+- **test/e2e/serve-http-oauth.test.ts**: Contains unit/E2E tests.
+- **test/e2e/skills.test.ts**: Contains unit/E2E tests.
+- **test/e2e/sources-remote-mcp.test.ts**: Contains unit/E2E tests.
+- **test/e2e/storage-tiering.test.ts**: Contains unit/E2E tests.
+- **test/e2e/sync-cjk-git.test.ts**: Contains unit/E2E tests.
+- **test/e2e/sync-parallel.test.ts**: Contains unit/E2E tests.
+- **test/e2e/sync.test.ts**: Contains unit/E2E tests.
+- **test/e2e/system-of-record-invariant.test.ts**: Contains unit/E2E tests.
+- **test/e2e/system-of-record-invariant.test.ts**: Uses PGLite for testing.
+- **test/e2e/takes-postgres.test.ts**: Contains unit/E2E tests.
+- **test/e2e/takes-scorecard-parity.test.ts**: Contains unit/E2E tests.
+- **test/e2e/takes-scorecard-parity.test.ts**: Uses PGLite for testing.
+- **test/e2e/takes-weight-rounding-postgres.test.ts**: Contains unit/E2E tests.
+- **test/e2e/thin-client.test.ts**: Contains unit/E2E tests.
+- **test/e2e/thin-client.test.ts**: Uses PGLite for testing.
+- **test/e2e/upgrade.test.ts**: Contains unit/E2E tests.
+- **test/e2e/v030_1-integration-pglite.test.ts**: Contains unit/E2E tests.
+- **test/e2e/v030_1-integration-pglite.test.ts**: Uses PGLite for testing.
+- **test/e2e/v0_28_5-fix-wave.test.ts**: Contains unit/E2E tests.
+- **test/e2e/v0_28_5-fix-wave.test.ts**: Uses PGLite for testing.
+- **test/e2e/v0_29-mcp-dispatch-pglite.test.ts**: Contains unit/E2E tests.
+- **test/e2e/v0_29-mcp-dispatch-pglite.test.ts**: Uses PGLite for testing.
+- **test/e2e/v0_30_3-fix-wave.test.ts**: Contains unit/E2E tests.
+- **test/e2e/v0_30_3-fix-wave.test.ts**: Uses PGLite for testing.
+- **test/e2e/voyage-multimodal.test.ts**: Contains unit/E2E tests.
+- **test/e2e/worker-abort-recovery.test.ts**: Contains unit/E2E tests.
+- **test/e2e/worker-abort-recovery.test.ts**: Uses PGLite for testing.
+- **test/e2e/zombie-reaping.test.ts**: Contains unit/E2E tests.
+- **test/edge-extractor.test.ts**: Contains unit/E2E tests.
+- **test/effective-date.test.ts**: Contains unit/E2E tests.
+- **test/embed.serial.test.ts**: Contains unit/E2E tests.
+- **test/embedding-dim-check.test.ts**: Contains unit/E2E tests.
+- **test/embedding-dim-check.test.ts**: Uses PGLite for testing.
+- **test/emotional-weight.test.ts**: Contains unit/E2E tests.
+- **test/engine-factory.test.ts**: Contains unit/E2E tests.
+- **test/engine-factory.test.ts**: Uses PGLite for testing.
+- **test/engine-upsertFile.test.ts**: Contains unit/E2E tests.
+- **test/engine-upsertFile.test.ts**: Uses PGLite for testing.
+- **test/engine-weight-rounding-integration.test.ts**: Contains unit/E2E tests.
+- **test/engine-weight-rounding-integration.test.ts**: Uses PGLite for testing.
+- **test/enrichment-service.test.ts**: Contains unit/E2E tests.
+- **test/enrichment.test.ts**: Contains unit/E2E tests.
+- **test/enrichment.test.ts**: Uses PGLite for testing.
+- **test/errors.test.ts**: Contains unit/E2E tests.
+- **test/eval-candidates.test.ts**: Contains unit/E2E tests.
+- **test/eval-candidates.test.ts**: Uses PGLite for testing.
+- **test/eval-capture-scrub.test.ts**: Contains unit/E2E tests.
+- **test/eval-capture.test.ts**: Contains unit/E2E tests.
+- **test/eval-capture.test.ts**: Uses PGLite for testing.
+- **test/eval-contradictions-auto-supersession.test.ts**: Contains unit/E2E tests.
+- **test/eval-contradictions-cache.test.ts**: Contains unit/E2E tests.
+- **test/eval-contradictions-cache.test.ts**: Uses PGLite for testing.
+- **test/eval-contradictions-calibration.test.ts**: Contains unit/E2E tests.
+- **test/eval-contradictions-cost.test.ts**: Contains unit/E2E tests.
+- **test/eval-contradictions-cross-source.test.ts**: Contains unit/E2E tests.
+- **test/eval-contradictions-date-filter.test.ts**: Contains unit/E2E tests.
+- **test/eval-contradictions-engine.test.ts**: Contains unit/E2E tests.
+- **test/eval-contradictions-engine.test.ts**: Uses PGLite for testing.
+- **test/eval-contradictions-fixture-redact.test.ts**: Contains unit/E2E tests.
+- **test/eval-contradictions-integrations.test.ts**: Contains unit/E2E tests.
+- **test/eval-contradictions-integrations.test.ts**: Uses PGLite for testing.
+- **test/eval-contradictions-judge-errors.test.ts**: Contains unit/E2E tests.
+- **test/eval-contradictions-judge.test.ts**: Contains unit/E2E tests.
+- **test/eval-contradictions-runner.test.ts**: Contains unit/E2E tests.
+- **test/eval-contradictions-runner.test.ts**: Uses PGLite for testing.
+- **test/eval-contradictions-severity.test.ts**: Contains unit/E2E tests.
+- **test/eval-contradictions-trends.test.ts**: Contains unit/E2E tests.
+- **test/eval-contradictions-trends.test.ts**: Uses PGLite for testing.
+- **test/eval-export.test.ts**: Contains unit/E2E tests.
+- **test/eval-export.test.ts**: Uses PGLite for testing.
+- **test/eval-longmemeval.test.ts**: Contains unit/E2E tests.
+- **test/eval-longmemeval.test.ts**: Uses PGLite for testing.
+- **test/eval-prune.test.ts**: Contains unit/E2E tests.
+- **test/eval-prune.test.ts**: Uses PGLite for testing.
+- **test/eval-replay.test.ts**: Contains unit/E2E tests.
+- **test/eval-replay.test.ts**: Uses PGLite for testing.
+- **test/eval-shared-json-repair-shim.test.ts**: Contains unit/E2E tests.
+- **test/eval-takes-quality-aggregate.test.ts**: Contains unit/E2E tests.
+- **test/eval-takes-quality-boundaries.test.ts**: Contains unit/E2E tests.
+- **test/eval-takes-quality-boundaries.test.ts**: Uses PGLite for testing.
+- **test/eval-takes-quality-cli.test.ts**: Contains unit/E2E tests.
+- **test/eval-takes-quality-pricing.test.ts**: Contains unit/E2E tests.
+- **test/eval-takes-quality-receipt-name.test.ts**: Contains unit/E2E tests.
+- **test/eval-takes-quality-receipt-write.test.ts**: Contains unit/E2E tests.
+- **test/eval-takes-quality-receipt-write.test.ts**: Uses PGLite for testing.
+- **test/eval-takes-quality-regress.test.ts**: Contains unit/E2E tests.
+- **test/eval-takes-quality-replay.test.ts**: Contains unit/E2E tests.
+- **test/eval-takes-quality-replay.test.ts**: Uses PGLite for testing.
+- **test/eval-takes-quality-rubric.test.ts**: Contains unit/E2E tests.
+- **test/eval-takes-quality-runner.serial.test.ts**: Contains unit/E2E tests.
+- **test/eval-takes-quality-runner.serial.test.ts**: Uses PGLite for testing.
+- **test/eval-takes-quality-trend.test.ts**: Contains unit/E2E tests.
+- **test/eval-takes-quality-trend.test.ts**: Uses PGLite for testing.
+- **test/eval.test.ts**: Contains unit/E2E tests.
+- **test/extract-db.test.ts**: Contains unit/E2E tests.
+- **test/extract-db.test.ts**: Uses PGLite for testing.
+- **test/extract-facts-phase.test.ts**: Contains unit/E2E tests.
+- **test/extract-facts-phase.test.ts**: Uses PGLite for testing.
+- **test/extract-from-fence.test.ts**: Contains unit/E2E tests.
+- **test/extract-fs.test.ts**: Contains unit/E2E tests.
+- **test/extract-fs.test.ts**: Uses PGLite for testing.
+- **test/extract-incremental.test.ts**: Contains unit/E2E tests.
+- **test/extract-incremental.test.ts**: Uses PGLite for testing.
+- **test/extract-takes-holder-producer-seam.test.ts**: Contains unit/E2E tests.
+- **test/extract-takes-holder-producer-seam.test.ts**: Uses PGLite for testing.
+- **test/extract-takes.test.ts**: Contains unit/E2E tests.
+- **test/extract-takes.test.ts**: Uses PGLite for testing.
+- **test/extract.test.ts**: Contains unit/E2E tests.
+- **test/facts-absorb-log.test.ts**: Contains unit/E2E tests.
+- **test/facts-absorb-log.test.ts**: Uses PGLite for testing.
+- **test/facts-anti-loop.test.ts**: Contains unit/E2E tests.
+- **test/facts-anti-loop.test.ts**: Uses PGLite for testing.
+- **test/facts-backstop-gating.test.ts**: Contains unit/E2E tests.
+- **test/facts-backstop-gating.test.ts**: Uses PGLite for testing.
+- **test/facts-backstop-integration.test.ts**: Contains unit/E2E tests.
+- **test/facts-backstop-integration.test.ts**: Uses PGLite for testing.
+- **test/facts-backstop.test.ts**: Contains unit/E2E tests.
+- **test/facts-backstop.test.ts**: Uses PGLite for testing.
+- **test/facts-canonicality.test.ts**: Contains unit/E2E tests.
+- **test/facts-canonicality.test.ts**: Uses PGLite for testing.
+- **test/facts-classify.test.ts**: Contains unit/E2E tests.
+- **test/facts-context-injection.serial.test.ts**: Contains unit/E2E tests.
+- **test/facts-context-injection.serial.test.ts**: Uses PGLite for testing.
+- **test/facts-decay.test.ts**: Contains unit/E2E tests.
+- **test/facts-doctor-shape.test.ts**: Contains unit/E2E tests.
+- **test/facts-doctor-shape.test.ts**: Uses PGLite for testing.
+- **test/facts-eligibility.test.ts**: Contains unit/E2E tests.
+- **test/facts-engine.test.ts**: Contains unit/E2E tests.
+- **test/facts-engine.test.ts**: Uses PGLite for testing.
+- **test/facts-extract-silent-no-op.test.ts**: Contains unit/E2E tests.
+- **test/facts-extract-smoke.test.ts**: Contains unit/E2E tests.
+- **test/facts-extract.test.ts**: Contains unit/E2E tests.
+- **test/facts-fence.test.ts**: Contains unit/E2E tests.
+- **test/facts-mcp-allowlist.serial.test.ts**: Contains unit/E2E tests.
+- **test/facts-mcp-allowlist.serial.test.ts**: Uses PGLite for testing.
+- **test/facts-meta-cache.test.ts**: Contains unit/E2E tests.
+- **test/facts-meta-cache.test.ts**: Uses PGLite for testing.
+- **test/facts-migration-dim.test.ts**: Contains unit/E2E tests.
+- **test/facts-migration-dim.test.ts**: Uses PGLite for testing.
+- **test/facts-multi-tenant.test.ts**: Contains unit/E2E tests.
+- **test/facts-multi-tenant.test.ts**: Uses PGLite for testing.
+- **test/facts-queue.test.ts**: Contains unit/E2E tests.
+- **test/facts-recall-render.test.ts**: Contains unit/E2E tests.
+- **test/facts-recall-render.test.ts**: Uses PGLite for testing.
+- **test/facts-separation-pglite.test.ts**: Contains unit/E2E tests.
+- **test/facts-separation-pglite.test.ts**: Uses PGLite for testing.
+- **test/facts-visibility.test.ts**: Contains unit/E2E tests.
+- **test/facts-visibility.test.ts**: Uses PGLite for testing.
+- **test/fail-improve.test.ts**: Contains unit/E2E tests.
+- **test/features.test.ts**: Contains unit/E2E tests.
+- **test/fence-extraction.test.ts**: Contains unit/E2E tests.
+- **test/fence-extraction.test.ts**: Uses PGLite for testing.
+- **test/fence-write.test.ts**: Contains unit/E2E tests.
+- **test/fence-write.test.ts**: Uses PGLite for testing.
+- **test/file-migration.test.ts**: Contains unit/E2E tests.
+- **test/file-resolver.test.ts**: Contains unit/E2E tests.
+- **test/file-upload-security.test.ts**: Contains unit/E2E tests.
+- **test/files.test.ts**: Contains unit/E2E tests.
+- **test/filing-audit.test.ts**: Contains unit/E2E tests.
+- **test/fixtures/claw-test-scenarios/upgrade-from-v0.18/BRIEF.md**: Uses PGLite for testing.
+- **test/fixtures/claw-test-scenarios/upgrade-from-v0.18/seed/README.md**: Uses PGLite for testing.
+- **test/fixtures/supervisor-runner.ts**: Contains unit/E2E tests.
+- **test/friction-cli.test.ts**: Contains unit/E2E tests.
+- **test/friction.test.ts**: Contains unit/E2E tests.
+- **test/frontmatter-cli.test.ts**: Contains unit/E2E tests.
+- **test/frontmatter-inference.test.ts**: Contains unit/E2E tests.
+- **test/frontmatter-install-hook.test.ts**: Contains unit/E2E tests.
+- **test/gbrain-home-isolation.test.ts**: Contains unit/E2E tests.
+- **test/gbrain-home-isolation.test.ts**: Uses PGLite for testing.
+- **test/get-brain-identity.test.ts**: Contains unit/E2E tests.
+- **test/get-brain-identity.test.ts**: Uses PGLite for testing.
+- **test/git-remote.test.ts**: Contains unit/E2E tests.
+- **test/graph-query.test.ts**: Contains unit/E2E tests.
+- **test/graph-query.test.ts**: Uses PGLite for testing.
+- **test/handlers.test.ts**: Contains unit/E2E tests.
+- **test/handlers.test.ts**: Uses PGLite for testing.
+- **test/helpers/cli-pty-runner.ts**: Contains unit/E2E tests.
+- **test/helpers/reset-pglite.ts**: Uses PGLite for testing.
+- **test/helpers/schema-diff.test.ts**: Contains unit/E2E tests.
+- **test/helpers/schema-diff.test.ts**: Uses PGLite for testing.
+- **test/helpers/schema-diff.ts**: Uses PGLite for testing.
+- **test/helpers/with-env.test.ts**: Contains unit/E2E tests.
+- **test/helpers/with-env.ts**: Contains unit/E2E tests.
+- **test/http-transport.test.ts**: Contains unit/E2E tests.
+- **test/hybrid-meta.test.ts**: Contains unit/E2E tests.
+- **test/hybrid-meta.test.ts**: Uses PGLite for testing.
+- **test/import-file.test.ts**: Contains unit/E2E tests.
+- **test/import-image-file.test.ts**: Contains unit/E2E tests.
+- **test/import-image-file.test.ts**: Uses PGLite for testing.
+- **test/import-resume.test.ts**: Contains unit/E2E tests.
+- **test/import-walker.test.ts**: Contains unit/E2E tests.
+- **test/incremental-chunking.test.ts**: Contains unit/E2E tests.
+- **test/incremental-chunking.test.ts**: Uses PGLite for testing.
+- **test/init-mcp-only.test.ts**: Contains unit/E2E tests.
+- **test/init-mcp-only.test.ts**: Uses PGLite for testing.
+- **test/init-migrate-only.test.ts**: Contains unit/E2E tests.
+- **test/init-migrate-only.test.ts**: Uses PGLite for testing.
+- **test/insert-facts-batch.test.ts**: Contains unit/E2E tests.
+- **test/insert-facts-batch.test.ts**: Uses PGLite for testing.
+- **test/integrations.test.ts**: Contains unit/E2E tests.
+- **test/integrity.test.ts**: Contains unit/E2E tests.
+- **test/integrity.test.ts**: Uses PGLite for testing.
+- **test/language-manifest.test.ts**: Contains unit/E2E tests.
+- **test/link-extraction-code-refs.test.ts**: Contains unit/E2E tests.
+- **test/link-extraction.test.ts**: Contains unit/E2E tests.
+- **test/lint-frontmatter.test.ts**: Contains unit/E2E tests.
+- **test/lint.test.ts**: Contains unit/E2E tests.
+- **test/loadConfig-merge.test.ts**: Contains unit/E2E tests.
+- **test/loadConfig-merge.test.ts**: Uses PGLite for testing.
+- **test/longmemeval-sanitize.test.ts**: Contains unit/E2E tests.
+- **test/markdown-validation.test.ts**: Contains unit/E2E tests.
+- **test/markdown.test.ts**: Contains unit/E2E tests.
+- **test/mcp-client-hardening.test.ts**: Contains unit/E2E tests.
+- **test/mcp-client.test.ts**: Contains unit/E2E tests.
+- **test/mcp-dispatch-summarize.test.ts**: Contains unit/E2E tests.
+- **test/mcp-eval-capture.test.ts**: Contains unit/E2E tests.
+- **test/mcp-eval-capture.test.ts**: Uses PGLite for testing.
+- **test/mcp-tool-defs.test.ts**: Contains unit/E2E tests.
+- **test/migrate-extensions.test.ts**: Contains unit/E2E tests.
+- **test/migrate.test.ts**: Contains unit/E2E tests.
+- **test/migrate.test.ts**: Uses PGLite for testing.
+- **test/migration-orchestrator-v0_21_0.test.ts**: Contains unit/E2E tests.
+- **test/migration-orchestrator-v0_31_0.test.ts**: Contains unit/E2E tests.
+- **test/migration-orchestrator-v0_31_0.test.ts**: Uses PGLite for testing.
+- **test/migration-resume.test.ts**: Contains unit/E2E tests.
+- **test/migration-v0-29-1.serial.test.ts**: Contains unit/E2E tests.
+- **test/migration-v0-29-1.serial.test.ts**: Uses PGLite for testing.
+- **test/migrations-cjk-wave.test.ts**: Contains unit/E2E tests.
+- **test/migrations-cjk-wave.test.ts**: Uses PGLite for testing.
+- **test/migrations-registry.test.ts**: Contains unit/E2E tests.
+- **test/migrations-v0_11_0.test.ts**: Contains unit/E2E tests.
+- **test/migrations-v0_12_0.test.ts**: Contains unit/E2E tests.
+- **test/migrations-v0_12_2.test.ts**: Contains unit/E2E tests.
+- **test/migrations-v0_13_0.test.ts**: Contains unit/E2E tests.
+- **test/migrations-v0_13_1.test.ts**: Contains unit/E2E tests.
+- **test/migrations-v0_14_0.test.ts**: Contains unit/E2E tests.
+- **test/migrations-v0_14_0.test.ts**: Uses PGLite for testing.
+- **test/migrations-v0_16_0.test.ts**: Contains unit/E2E tests.
+- **test/migrations-v0_16_0.test.ts**: Uses PGLite for testing.
+- **test/migrations-v0_19_0.test.ts**: Contains unit/E2E tests.
+- **test/migrations-v0_19_0.test.ts**: Uses PGLite for testing.
+- **test/migrations-v0_21_0.test.ts**: Contains unit/E2E tests.
+- **test/migrations-v0_22_4.test.ts**: Contains unit/E2E tests.
+- **test/migrations-v0_27_1.test.ts**: Contains unit/E2E tests.
+- **test/migrations-v0_27_1.test.ts**: Uses PGLite for testing.
+- **test/migrations-v0_32_2.test.ts**: Contains unit/E2E tests.
+- **test/migrations-v0_32_2.test.ts**: Uses PGLite for testing.
+- **test/migrations-v48-takes-weight-backfill.test.ts**: Contains unit/E2E tests.
+- **test/migrations-v48-takes-weight-backfill.test.ts**: Uses PGLite for testing.
+- **test/minions-quiet-hours.test.ts**: Contains unit/E2E tests.
+- **test/minions-quiet-hours.test.ts**: Uses PGLite for testing.
+- **test/minions-shell.test.ts**: Contains unit/E2E tests.
+- **test/minions-shell.test.ts**: Uses PGLite for testing.
+- **test/minions.test.ts**: Contains unit/E2E tests.
+- **test/minions.test.ts**: Uses PGLite for testing.
+- **test/model-config.serial.test.ts**: Contains unit/E2E tests.
+- **test/model-config.serial.test.ts**: Uses PGLite for testing.
+- **test/mounts-cache.test.ts**: Contains unit/E2E tests.
+- **test/mounts-cache.test.ts**: Uses PGLite for testing.
+- **test/mounts-cli.test.ts**: Contains unit/E2E tests.
+- **test/mounts-cli.test.ts**: Uses PGLite for testing.
+- **test/multi-source-drift.test.ts**: Contains unit/E2E tests.
+- **test/multi-source-drift.test.ts**: Uses PGLite for testing.
+- **test/multi-source-integration.test.ts**: Contains unit/E2E tests.
+- **test/multi-source-integration.test.ts**: Uses PGLite for testing.
+- **test/notability-eval.test.ts**: Contains unit/E2E tests.
+- **test/oauth-scope-probe.test.ts**: Contains unit/E2E tests.
+- **test/oauth.test.ts**: Contains unit/E2E tests.
+- **test/oauth.test.ts**: Uses PGLite for testing.
+- **test/operations-allow-list.test.ts**: Contains unit/E2E tests.
+- **test/operations-descriptions.test.ts**: Contains unit/E2E tests.
+- **test/orphans.test.ts**: Contains unit/E2E tests.
+- **test/orphans.test.ts**: Uses PGLite for testing.
+- **test/page-lock.test.ts**: Contains unit/E2E tests.
+- **test/page-type-exhaustive.test.ts**: Contains unit/E2E tests.
+- **test/pages-soft-delete.test.ts**: Contains unit/E2E tests.
+- **test/pages-soft-delete.test.ts**: Uses PGLite for testing.
+- **test/parent-scope.test.ts**: Contains unit/E2E tests.
+- **test/parent-scope.test.ts**: Uses PGLite for testing.
+- **test/parity.test.ts**: Contains unit/E2E tests.
+- **test/performfullsync-source-id.test.ts**: Contains unit/E2E tests.
+- **test/performfullsync-source-id.test.ts**: Uses PGLite for testing.
+- **test/pglite-engine.test.ts**: Contains unit/E2E tests.
+- **test/pglite-engine.test.ts**: Uses PGLite for testing.
+- **test/pglite-lock.test.ts**: Contains unit/E2E tests.
+- **test/pglite-lock.test.ts**: Uses PGLite for testing.
+- **test/plugin-loader.test.ts**: Contains unit/E2E tests.
+- **test/post-install-advisory.test.ts**: Contains unit/E2E tests.
+- **test/post-write-lint.test.ts**: Contains unit/E2E tests.
+- **test/post-write-lint.test.ts**: Uses PGLite for testing.
+- **test/postgres-engine.test.ts**: Contains unit/E2E tests.
+- **test/preferences.test.ts**: Contains unit/E2E tests.
+- **test/privacy-script-wired.test.ts**: Contains unit/E2E tests.
+- **test/privacy-strip-and-forget.test.ts**: Contains unit/E2E tests.
+- **test/privacy-strip-and-forget.test.ts**: Uses PGLite for testing.
+- **test/progress-tail.test.ts**: Contains unit/E2E tests.
+- **test/progress.test.ts**: Contains unit/E2E tests.
+- **test/public-exports.test.ts**: Contains unit/E2E tests.
+- **test/public-exports.test.ts**: Uses PGLite for testing.
+- **test/publish.test.ts**: Contains unit/E2E tests.
+- **test/put-page-namespace.test.ts**: Contains unit/E2E tests.
+- **test/qualified-names.test.ts**: Contains unit/E2E tests.
+- **test/query-image-flag.serial.test.ts**: Contains unit/E2E tests.
+- **test/query-image-flag.serial.test.ts**: Uses PGLite for testing.
+- **test/query-intent-legacy.test.ts**: Contains unit/E2E tests.
+- **test/query-intent.test.ts**: Contains unit/E2E tests.
+- **test/query-sanitization.test.ts**: Contains unit/E2E tests.
+- **test/queue-child-done.test.ts**: Contains unit/E2E tests.
+- **test/queue-child-done.test.ts**: Uses PGLite for testing.
+- **test/rate-leases.test.ts**: Contains unit/E2E tests.
+- **test/rate-leases.test.ts**: Uses PGLite for testing.
+- **test/recall-extensions.test.ts**: Contains unit/E2E tests.
+- **test/recall-extensions.test.ts**: Uses PGLite for testing.
+- **test/recall-rollup.test.ts**: Contains unit/E2E tests.
+- **test/recency-decay.test.ts**: Contains unit/E2E tests.
+- **test/recompute-emotional-weight.test.ts**: Contains unit/E2E tests.
+- **test/recompute-emotional-weight.test.ts**: Uses PGLite for testing.
+- **test/reconcile-links.serial.test.ts**: Contains unit/E2E tests.
+- **test/reconcile-links.serial.test.ts**: Uses PGLite for testing.
+- **test/regression-v0_16_4.test.ts**: Contains unit/E2E tests.
+- **test/reindex-code.test.ts**: Contains unit/E2E tests.
+- **test/reindex-code.test.ts**: Uses PGLite for testing.
+- **test/reindex.test.ts**: Contains unit/E2E tests.
+- **test/reindex.test.ts**: Uses PGLite for testing.
+- **test/repair-jsonb.test.ts**: Contains unit/E2E tests.
+- **test/repair-jsonb.test.ts**: Uses PGLite for testing.
+- **test/repo-root.test.ts**: Contains unit/E2E tests.
+- **test/report.test.ts**: Contains unit/E2E tests.
+- **test/repos-alias.test.ts**: Contains unit/E2E tests.
+- **test/repos-alias.test.ts**: Uses PGLite for testing.
+- **test/resolve-prepare.test.ts**: Contains unit/E2E tests.
+- **test/resolver-merge.test.ts**: Contains unit/E2E tests.
+- **test/resolver.test.ts**: Contains unit/E2E tests.
+- **test/resolvers.test.ts**: Contains unit/E2E tests.
+- **test/restart-sweep.test.ts**: Contains unit/E2E tests.
+- **test/retry-matcher.test.ts**: Contains unit/E2E tests.
+- **test/routing-eval-cli.test.ts**: Contains unit/E2E tests.
+- **test/routing-eval.test.ts**: Contains unit/E2E tests.
+- **test/salience.test.ts**: Contains unit/E2E tests.
+- **test/salience.test.ts**: Uses PGLite for testing.
+- **test/scenarios.test.ts**: Contains unit/E2E tests.
+- **test/schema-bootstrap-coverage.test.ts**: Contains unit/E2E tests.
+- **test/schema-bootstrap-coverage.test.ts**: Uses PGLite for testing.
+- **test/schema-verify.test.ts**: Contains unit/E2E tests.
+- **test/scope.test.ts**: Contains unit/E2E tests.
+- **test/scripts/check-test-isolation.test.ts**: Contains unit/E2E tests.
+- **test/scripts/check-test-isolation.test.ts**: Uses PGLite for testing.
+- **test/scripts/run-unit-parallel.test.ts**: Contains unit/E2E tests.
+- **test/scripts/run-unit-shard.test.ts**: Contains unit/E2E tests.
+- **test/scripts/serial-files.test.ts**: Contains unit/E2E tests.
+- **test/scripts/test-shard.slow.test.ts**: Contains unit/E2E tests.
+- **test/search-image-column.test.ts**: Contains unit/E2E tests.
+- **test/search-image-column.test.ts**: Uses PGLite for testing.
+- **test/search-lang-symbol-kind.test.ts**: Contains unit/E2E tests.
+- **test/search-lang-symbol-kind.test.ts**: Uses PGLite for testing.
+- **test/search-limit.test.ts**: Contains unit/E2E tests.
+- **test/search-limit.test.ts**: Uses PGLite for testing.
+- **test/search.test.ts**: Contains unit/E2E tests.
+- **test/seed-pglite.test.ts**: Contains unit/E2E tests.
+- **test/seed-pglite.test.ts**: Uses PGLite for testing.
+- **test/select-e2e.test.ts**: Contains unit/E2E tests.
+- **test/select-e2e.test.ts**: Uses PGLite for testing.
+- **test/serve-http-health.test.ts**: Contains unit/E2E tests.
+- **test/serve-http-health.test.ts**: Uses PGLite for testing.
+- **test/serve-stdio-lifecycle.test.ts**: Contains unit/E2E tests.
+- **test/setup-branching.test.ts**: Contains unit/E2E tests.
+- **test/skill-manifest.test.ts**: Contains unit/E2E tests.
+- **test/skillify-check.test.ts**: Contains unit/E2E tests.
+- **test/skillify-scaffold.test.ts**: Contains unit/E2E tests.
+- **test/skillpack-check.test.ts**: Contains unit/E2E tests.
+- **test/skillpack-install.test.ts**: Contains unit/E2E tests.
+- **test/skillpack-sync-guard.test.ts**: Contains unit/E2E tests.
+- **test/skillpack-uninstall.test.ts**: Contains unit/E2E tests.
+- **test/skills-conformance.test.ts**: Contains unit/E2E tests.
+- **test/slug-validation.test.ts**: Contains unit/E2E tests.
+- **test/source-id-tx-regression.test.ts**: Contains unit/E2E tests.
+- **test/source-id-tx-regression.test.ts**: Uses PGLite for testing.
+- **test/source-resolver.test.ts**: Contains unit/E2E tests.
+- **test/source-resolver.test.ts**: Uses PGLite for testing.
+- **test/sources-mcp.test.ts**: Contains unit/E2E tests.
+- **test/sources-mcp.test.ts**: Uses PGLite for testing.
+- **test/sources-ops.test.ts**: Contains unit/E2E tests.
+- **test/sources-ops.test.ts**: Uses PGLite for testing.
+- **test/sources-resync-recovery.test.ts**: Contains unit/E2E tests.
+- **test/sources-resync-recovery.test.ts**: Uses PGLite for testing.
+- **test/sources.test.ts**: Contains unit/E2E tests.
+- **test/sources.test.ts**: Uses PGLite for testing.
+- **test/spawn-helpers.test.ts**: Contains unit/E2E tests.
+- **test/sql-query.test.ts**: Contains unit/E2E tests.
+- **test/sql-query.test.ts**: Uses PGLite for testing.
+- **test/sql-ranking.test.ts**: Contains unit/E2E tests.
+- **test/storage-backfill.test.ts**: Contains unit/E2E tests.
+- **test/storage-config.test.ts**: Contains unit/E2E tests.
+- **test/storage-export.test.ts**: Contains unit/E2E tests.
+- **test/storage-export.test.ts**: Uses PGLite for testing.
+- **test/storage-pglite.test.ts**: Contains unit/E2E tests.
+- **test/storage-pglite.test.ts**: Uses PGLite for testing.
+- **test/storage-status.test.ts**: Contains unit/E2E tests.
+- **test/storage-sync.test.ts**: Contains unit/E2E tests.
+- **test/storage.test.ts**: Contains unit/E2E tests.
+- **test/subagent-aggregator.test.ts**: Contains unit/E2E tests.
+- **test/subagent-audit.test.ts**: Contains unit/E2E tests.
+- **test/subagent-handler.test.ts**: Contains unit/E2E tests.
+- **test/subagent-handler.test.ts**: Uses PGLite for testing.
+- **test/subagent-prompt-too-long.test.ts**: Contains unit/E2E tests.
+- **test/subagent-transcript.test.ts**: Contains unit/E2E tests.
+- **test/subagent-transcript.test.ts**: Uses PGLite for testing.
+- **test/supabase-admin.test.ts**: Contains unit/E2E tests.
+- **test/supervisor-tini.test.ts**: Contains unit/E2E tests.
+- **test/supervisor.test.ts**: Contains unit/E2E tests.
+- **test/sync-classifier-widening.test.ts**: Contains unit/E2E tests.
+- **test/sync-concurrency.test.ts**: Contains unit/E2E tests.
+- **test/sync-concurrency.test.ts**: Uses PGLite for testing.
+- **test/sync-cost-preview.test.ts**: Contains unit/E2E tests.
+- **test/sync-failures.test.ts**: Contains unit/E2E tests.
+- **test/sync-parallel.test.ts**: Contains unit/E2E tests.
+- **test/sync-parallel.test.ts**: Uses PGLite for testing.
+- **test/sync-strategy.test.ts**: Contains unit/E2E tests.
+- **test/sync-walker-symlink.test.ts**: Contains unit/E2E tests.
+- **test/sync.test.ts**: Contains unit/E2E tests.
+- **test/sync.test.ts**: Uses PGLite for testing.
+- **test/synth-enabled-default.test.ts**: Contains unit/E2E tests.
+- **test/takes-engine.test.ts**: Contains unit/E2E tests.
+- **test/takes-engine.test.ts**: Uses PGLite for testing.
+- **test/takes-fence-read-ops.serial.test.ts**: Contains unit/E2E tests.
+- **test/takes-fence-read-ops.serial.test.ts**: Uses PGLite for testing.
+- **test/takes-fence.test.ts**: Contains unit/E2E tests.
+- **test/takes-holder-semantics.test.ts**: Contains unit/E2E tests.
+- **test/takes-holder-validation.test.ts**: Contains unit/E2E tests.
+- **test/takes-mcp-allowlist.serial.test.ts**: Contains unit/E2E tests.
+- **test/takes-mcp-allowlist.serial.test.ts**: Uses PGLite for testing.
+- **test/takes-resolution.test.ts**: Contains unit/E2E tests.
+- **test/takes-weight-rounding.test.ts**: Contains unit/E2E tests.
+- **test/thin-client-routing-audit.test.ts**: Contains unit/E2E tests.
+- **test/thin-client-upgrade-prompt.test.ts**: Contains unit/E2E tests.
+- **test/think-pipeline.serial.test.ts**: Contains unit/E2E tests.
+- **test/think-pipeline.serial.test.ts**: Uses PGLite for testing.
+- **test/transcript-capture.test.ts**: Contains unit/E2E tests.
+- **test/transcription.test.ts**: Contains unit/E2E tests.
+- **test/transcripts.test.ts**: Contains unit/E2E tests.
+- **test/traverse-graph-dedup.test.ts**: Contains unit/E2E tests.
+- **test/traverse-graph-dedup.test.ts**: Uses PGLite for testing.
+- **test/trust-boundary-contract.test.ts**: Contains unit/E2E tests.
+- **test/trust-boundary-contract.test.ts**: Uses PGLite for testing.
+- **test/two-pass.test.ts**: Contains unit/E2E tests.
+- **test/two-pass.test.ts**: Uses PGLite for testing.
+- **test/upgrade-checkpoint.serial.test.ts**: Contains unit/E2E tests.
+- **test/upgrade-reembed-prompt.test.ts**: Contains unit/E2E tests.
+- **test/upgrade-reembed-prompt.test.ts**: Uses PGLite for testing.
+- **test/upgrade.test.ts**: Contains unit/E2E tests.
+- **test/url-redact.test.ts**: Contains unit/E2E tests.
+- **test/utils.test.ts**: Contains unit/E2E tests.
+- **test/v0_29-tool-surfaces.test.ts**: Contains unit/E2E tests.
+- **test/v0_29-tool-surfaces.test.ts**: Uses PGLite for testing.
+- **test/vector-index-lifecycle.test.ts**: Contains unit/E2E tests.
+- **test/vector-index-lifecycle.test.ts**: Uses PGLite for testing.
+- **test/voyage-multimodal.test.ts**: Contains unit/E2E tests.
+- **test/voyage-response-cap.test.ts**: Contains unit/E2E tests.
+- **test/wait-for-completion.test.ts**: Contains unit/E2E tests.
+- **test/wait-for-completion.test.ts**: Uses PGLite for testing.
+- **test/whoami.test.ts**: Contains unit/E2E tests.
+- **test/worker-shutdown-disconnect.test.ts**: Contains unit/E2E tests.
+- **test/worker-shutdown-disconnect.test.ts**: Uses PGLite for testing.
+- **test/writer.test.ts**: Contains unit/E2E tests.
+- **test/writer.test.ts**: Uses PGLite for testing.
+- **test/yaml-lite.test.ts**: Contains unit/E2E tests.
+- **test/zombie-reap.test.ts**: Contains unit/E2E tests.

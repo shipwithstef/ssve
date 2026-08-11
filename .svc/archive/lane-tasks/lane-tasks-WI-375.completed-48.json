@@ -1,0 +1,203 @@
+{
+  "wi": "WI-375",
+  "lane": "framework",
+  "delivery_tier": "compressed",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "route+plan+exec \u2014 git-isolation sweep + meta-validator",
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-06-07T22:48:56.419Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-06-07T22:48:56.659Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi375-evidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-06-07T22:48:56.733Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi375-evidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-06-07T22:48:56.800Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi375-evidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-06-07T22:48:56.870Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi375-evidence.log"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "subject": "review-exec G6",
+      "metadata": {
+        "skill": "review-exec"
+      },
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-06-07T22:49:47.014Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-06-07T22:49:47.129Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi375-evidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-06-07T22:49:47.226Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi375-evidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-06-07T22:49:47.296Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi375-evidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-IterationLoop",
+            "ts": "2026-06-07T22:49:47.388Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi375-evidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerdictAndReceiptFinalize",
+            "ts": "2026-06-07T22:49:47.463Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi375-evidence.log"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "subject": "land+verify",
+      "metadata": {
+        "skill": "land-changeset"
+      },
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-06-07T22:49:47.541Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-06-07T22:49:47.625Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi375-evidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-06-07T22:49:47.720Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi375-evidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-06-07T22:49:47.831Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi375-evidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-PushPrCreation",
+            "ts": "2026-06-07T22:49:47.897Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi375-evidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-MergeDecisionCleanup",
+            "ts": "2026-06-07T22:49:47.981Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi375-evidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SpecStatusSelfVerify",
+            "ts": "2026-06-07T22:49:48.064Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi375-evidence.log"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

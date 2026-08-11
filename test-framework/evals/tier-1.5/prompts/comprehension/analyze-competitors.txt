@@ -1,0 +1,10 @@
+Skill: analyze-competitors
+
+Q: What is the maximum number of competitors analyze-competitors should find, and how are they organized?
+A: Expected pattern: Maximum 20 competitors across 4 tiers: direct (up to 6), adjacent (up to 5), emerging (up to 5), and macro (up to 4). Minimum requirement is 3 direct + at least 1 other tier.
+
+Q: What are the required inputs and lane position for analyze-competitors in the greenfield pipeline?
+A: Expected pattern: Required input is docs/specs/vision.md. In the greenfield lane it is position 3, previous skill is analyze-domain, next skill is build-personas. Progressive is true.
+
+Q: What sections are mandatory in the analyze-competitors output file?
+A: Expected pattern: The output docs/specs/analyze-competitors.md must contain whitespace analysis, moat assessment (scored 1-5), and differentiation opportunity sections.

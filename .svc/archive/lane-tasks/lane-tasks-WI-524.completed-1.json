@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "wi": "WI-524",
+  "lane": "framework",
+  "status": "completed",
+  "created": "2026-08-06T20:39:52.434Z",
+  "tasks": [
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "route-workflow",
+      "subject": "route workflow",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-08-06T20:41:51.547Z",
+        "loaded_via": "codex-autorun"
+      },
+      "completed_at": "2026-08-06T21:14:02.366Z"
+    }
+  ]
+}

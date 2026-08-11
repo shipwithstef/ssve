@@ -1,0 +1,23 @@
+review_log:
+  plan: docs/plans/2026-07-14-wi480-staleness-probe/manifest.md
+  tier1: {script: scripts/verify-plan-mechanical.sh, exit_code: 0, issues: 0, log: docs/plans/2026-07-14-wi480-staleness-probe/mechanical-gate.log}
+  tier2:
+    reviewer: agy
+    reviewer_family: google
+    note: "codex (openai) primary UNAVAILABLE this session — 5 consecutive silent hangs (39-byte stalls, no verdict); documented mid-run failure -> reviewer-family fallback to AGY per resolve-adversarial-reviewer + review-plan protocol. AGY provides opposite-family adversarial distance from the Claude orchestrator."
+    rounds: 1
+    raw_captures: [review-round1-agy-raw.txt]
+    round1:
+      verdict: PASS-WITH-CHANGES
+      findings:
+        - {id: A-1, sev: HIGH, finding: "12 SHA/HEAD-pinned sources blindly assigned gh release list; release-less repos return empty -> false staleness. Only tag-pinned (get-shit-done, coreyhaines) should use gh release list; SHA-pinned need git ls-remote HEAD"}
+        - {id: A-2, sev: MEDIUM, finding: "audit-mode comparison needs explicit parsing rules (first-token extract, git ls-remote tab-trim, short-vs-full SHA prefix match, tag v-normalize)"}
+      responses:
+        - {id: A-1, response: ACCEPT, action: "manifest scope#1 split per pin-type: get-shit-done -> gh release list; 12 SHA-pinned -> git ls-remote HEAD; lucaspatiri -> null. Exec assertion checks both forms."}
+        - {id: A-2, response: ACCEPT, action: "blueprint #2 requires the parsing rules in the audit-mode step: (a) first-token, (b) tag v-normalize, (c) sha prefix-match, (d) null=MANUAL"}
+  tier3:
+    triggered: infra_path
+    status: "codex (2nd family) UNAVAILABLE — 5 hangs this session; per review-plan protocol 'if only one model family is functional, Tier 3 skips and the single-family review stands', proceeding on AGY PASS-WITH-CHANGES with both findings applied. Logged deviation; proportionate for an M-class data-backfill (registry field + skill doc, no code)."
+    ruling: single_family_agy
+  terminal_state: REVISED_AND_REVIEWED
+  commit_sha: TBD-at-promotion

@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "review-exec receipt",
+  "type": "object",
+  "required": ["receipt_type", "schema_version", "wi", "diff_hash", "self_review", "adversarial_review", "verdict", "timestamp"],
+  "properties": {
+    "receipt_type": { "const": "review-exec" },
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "wi": { "type": "string" },
+    "diff_hash": { "type": "string" },
+    "fast_mode": { "type": "boolean" },
+    "self_review": {
+      "type": "object",
+      "required": ["orchestrator", "findings_count", "notes"],
+      "properties": {
+        "orchestrator": { "type": "string", "enum": ["claude", "codex", "gemini", "antigravity"] },
+        "findings_count": { "type": "integer", "minimum": 0 },
+        "notes": { "type": "string" }
+      }
+    },
+    "adversarial_review": {
+      "type": "object",
+      "required": ["primary_reviewer_host", "primary_used", "fallback_host", "fallback_used", "findings", "iteration_count"],
+      "properties": {
+        "primary_reviewer_host": { "type": "string", "enum": ["codex", "claude", "gemini", "agy"] },
+        "primary_used": { "type": "boolean" },
+        "fallback_host": { "type": "string", "enum": ["codex", "claude", "gemini", "agy"] },
+        "fallback_used": { "type": "boolean" },
+        "availability_log": { "type": "object" },
+        "findings": { "type": "array" },
+        "iteration_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "rejection_action": { "type": "string", "enum": ["none", "patch", "re-execute", "re-plan"] },
+    "verdict": { "type": "string", "enum": ["pass", "fail", "pass-with-acks"] },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "author_family": { "type": "string", "description": "WI-385: cognitive family of the diff's author/orchestrator (anthropic|openai|google). Mechanically resolved via scripts/lib/cognitive-family.mjs. REQUIRED for the low risk-tier; check-chain rejects author_family==reviewer_family wherever both are present (mechanical never-self-review fence)." },
+    "reviewer_family": { "type": "string", "description": "WI-385: cognitive family of the adversarial reviewer (anthropic|openai|google). Must DIFFER from author_family." }
+  }
+}

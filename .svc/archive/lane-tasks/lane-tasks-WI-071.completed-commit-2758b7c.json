@@ -1,0 +1,206 @@
+{
+  "wi": "WI-071",
+  "lane": "bugfix",
+  "created": "2026-04-19T00:54:00Z",
+  "flags": [
+    "abandoned"
+  ],
+  "abandoned_at": "2026-04-22T20:48:11Z",
+  "abandon_reason": "Stale WI from 2026-04-19. Original scope (Gemini CLI behavioral rules) was superseded by subsequent framework work. Hook infrastructure fixes committed in b23516f address the actual live issues. All pending tasks closed as abandoned.",
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "diagnose-bug",
+      "subject": "diagnose-bug: root cause + pillar revisit + pattern scan for WI-071",
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "diagnose-bug",
+        "loaded_at": "2026-04-19T00:54:09.712Z",
+        "loaded_via": "manual"
+      },
+      "blocked_by": [],
+      "process_tasks": [
+        {
+          "id": "1.1",
+          "name": "diagnose-bug|spec-anchor",
+          "status": "completed",
+          "blocked_by": [],
+          "subject": "Read Gemini CLI behavioral rules and tool-output limits"
+        },
+        {
+          "id": "1.2",
+          "name": "diagnose-bug|repro-classify",
+          "status": "completed",
+          "blocked_by": [
+            "1.1"
+          ],
+          "subject": "Trigger/Expected/Actual + causal class"
+        },
+        {
+          "id": "1.3",
+          "name": "diagnose-bug|reading-list",
+          "status": "completed",
+          "blocked_by": [
+            "1.2"
+          ],
+          "subject": "Derive files to read from casual class"
+        },
+        {
+          "id": "1.4",
+          "name": "diagnose-bug|code-read",
+          "status": "completed",
+          "blocked_by": [
+            "1.3"
+          ],
+          "subject": "Read/Grep the listed files"
+        },
+        {
+          "id": "1.5",
+          "name": "diagnose-bug|fault-isolate",
+          "status": "completed",
+          "blocked_by": [
+            "1.4"
+          ],
+          "subject": "[DYNAMIC] Isolation trace"
+        },
+        {
+          "id": "1.6",
+          "name": "diagnose-bug|root-cause",
+          "status": "completed",
+          "blocked_by": [
+            "1.5"
+          ],
+          "subject": "State: immediate cause, enabling condition"
+        },
+        {
+          "id": "1.7",
+          "name": "diagnose-bug|pillar-audit",
+          "status": "completed",
+          "blocked_by": [
+            "1.6"
+          ],
+          "subject": "8 pillars revisit"
+        },
+        {
+          "id": "1.8",
+          "name": "diagnose-bug|pattern-scan",
+          "status": "completed",
+          "blocked_by": [
+            "1.7"
+          ],
+          "subject": "Grep for same defect class"
+        },
+        {
+          "id": "1.9",
+          "name": "diagnose-bug|register-disc",
+          "status": "completed",
+          "blocked_by": [
+            "1.8"
+          ],
+          "subject": "Register discoveries"
+        },
+        {
+          "id": "1.10",
+          "name": "diagnose-bug|brief",
+          "status": "completed",
+          "blocked_by": [
+            "1.9"
+          ],
+          "subject": "Changeset brief + learnings"
+        }
+      ],
+      "completed_at": "2026-04-19T00:54:09.712Z"
+    },
+    {
+      "id": 2,
+      "skill": "plan-changeset",
+      "subject": "plan-changeset: SKIP if committed fix is complete",
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-04-22T20:48:11Z",
+        "loaded_via": "manual"
+      },
+      "blocked_by": [
+        1
+      ],
+      "completed_at": "2026-04-22T20:48:11Z"
+    },
+    {
+      "id": 3,
+      "skill": "execute-changeset",
+      "subject": "execute-changeset: apply fix",
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-04-22T20:48:11Z",
+        "loaded_via": "manual"
+      },
+      "blocked_by": [
+        2
+      ],
+      "completed_at": "2026-04-22T20:48:11Z"
+    },
+    {
+      "id": 4,
+      "skill": "review-gate",
+      "subject": "review-gate: validate fix against brief",
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "review-gate",
+        "loaded_at": "2026-04-22T20:48:11Z",
+        "loaded_via": "manual"
+      },
+      "blocked_by": [
+        3
+      ],
+      "completed_at": "2026-04-22T20:48:11Z"
+    },
+    {
+      "id": 5,
+      "skill": "write-e2e",
+      "subject": "write-e2e: MANDATORY if user-facing surface",
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "write-e2e",
+        "loaded_at": "2026-04-22T20:48:11Z",
+        "loaded_via": "manual"
+      },
+      "blocked_by": [
+        4
+      ],
+      "completed_at": "2026-04-22T20:48:11Z"
+    },
+    {
+      "id": 6,
+      "skill": "land-changeset",
+      "subject": "land-changeset: verify landing complete",
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-04-22T20:48:11Z",
+        "loaded_via": "manual"
+      },
+      "blocked_by": [
+        5
+      ],
+      "completed_at": "2026-04-22T20:48:11Z"
+    },
+    {
+      "id": 7,
+      "skill": "verify-promotion",
+      "subject": "verify-promotion: production smoke",
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-04-22T20:48:11Z",
+        "loaded_via": "manual"
+      },
+      "blocked_by": [
+        6
+      ],
+      "completed_at": "2026-04-22T20:48:11Z"
+    }
+  ],
+  "status": "completed"
+}

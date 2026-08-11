@@ -1,0 +1,1 @@
+I am starting a brand new project from scratch. It is a personal finance tracker that helps people understand their spending habits. I need to create the product vision document first. It should be mobile-first, work offline, and connect to bank accounts via Plaid.

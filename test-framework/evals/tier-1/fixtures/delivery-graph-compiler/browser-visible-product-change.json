@@ -1,0 +1,10 @@
+{
+  "wi": "WI-FIXTURE-BROWSER",
+  "user_intent": "Add a visible dashboard filter to an existing app",
+  "repo_mode": "convert",
+  "change_type": "feature",
+  "lane": "brownfield-feature",
+  "delivery_mode": "end_to_end",
+  "risk_flags": ["browser-visible", "user-facing"],
+  "platform_contracts": []
+}

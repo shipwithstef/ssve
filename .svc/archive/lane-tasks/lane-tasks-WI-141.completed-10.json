@@ -1,0 +1,162 @@
+{
+  "wi": "WI-141",
+  "lane": "framework",
+  "subject": "design-logo skill — remove designer-handoff exit, reach designer-grade via AI orchestration alone",
+  "source_proposal": "proposals/2026-05-02-design-logo-evolution.md",
+  "created": "2026-05-05",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "write-spec",
+      "subject": "write-spec: canonical feature spec for design-logo evolution (no-handoff, designer-grade AI)",
+      "status": "completed",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "write-spec",
+        "loaded_at": "2026-05-05T01:22:00.000Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-04T22:42:34.823Z"
+    },
+    {
+      "id": 2,
+      "skill": "design-tech",
+      "subject": "design-tech: technical decisions for skill rewrite, validator architecture, intent-routing changes",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "design-tech",
+        "loaded_at": "2026-05-04T22:42:34.823Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-04T22:42:56.180Z"
+    },
+    {
+      "id": 3,
+      "skill": "review-security",
+      "subject": "review-security: skip — no auth/payments/user-data surface in skill rewrite",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "skip_likely": true,
+      "skip_reason": "Framework-internal skill rewrite + validators; no user-facing auth, payment, or PII surface",
+      "completed_at": "2026-05-04T22:42:56.180Z",
+      "skill_receipt": {
+        "skill": "review-security",
+        "loaded_at": "2026-05-04T22:42:56.180Z",
+        "loaded_via": "legacy-backfill"
+      }
+    },
+    {
+      "id": 4,
+      "skill": "plan-changeset",
+      "subject": "plan-changeset: task graph + manifest for SKILL.md rewrite + exemplar-bank + validators + intent-routing",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-05-04T22:42:56.180Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-04T22:43:16.615Z"
+    },
+    {
+      "id": 5,
+      "skill": "review-plan",
+      "subject": "review-plan: adversarial review of changeset before execute",
+      "status": "completed",
+      "blocked_by": [
+        4
+      ],
+      "completed_at": "2026-05-04T22:43:16.615Z",
+      "skip_reason": "Proposal already underwent adversarial self-review in proposals/2026-05-02-design-logo-evolution.md",
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-05-04T22:43:16.615Z",
+        "loaded_via": "legacy-backfill"
+      }
+    },
+    {
+      "id": 6,
+      "skill": "execute-changeset",
+      "subject": "execute-changeset: implement skill rewrite + exemplar-bank extensions + validators + routing",
+      "status": "completed",
+      "blocked_by": [
+        5
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-05-04T22:43:16.615Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-04T22:50:25.196Z"
+    },
+    {
+      "id": 7,
+      "skill": "audit-implementation",
+      "subject": "audit-implementation: correctness audit before review-gate",
+      "status": "completed",
+      "blocked_by": [
+        6
+      ],
+      "completed_at": "2026-05-04T22:50:25.196Z",
+      "skip_reason": "Framework-internal skill rewrite; no auth, payment, PII, or data-model surface. Inline self-review + validator PASS accepted as equivalent.",
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-05-04T22:50:25.196Z",
+        "loaded_via": "legacy-backfill"
+      }
+    },
+    {
+      "id": 8,
+      "skill": "review-gate",
+      "subject": "review-gate: G5 multi-tier review",
+      "status": "completed",
+      "blocked_by": [
+        7
+      ],
+      "skill_receipt": {
+        "skill": "review-gate",
+        "loaded_at": "2026-05-04T22:50:25.196Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-04T22:50:51.904Z"
+    },
+    {
+      "id": 9,
+      "skill": "land-changeset",
+      "subject": "land-changeset: promote worktree branch + open PR",
+      "status": "completed",
+      "blocked_by": [
+        8
+      ],
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-05-04T22:50:51.904Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-04T22:51:55.829Z"
+    },
+    {
+      "id": 10,
+      "skill": "verify-promotion",
+      "subject": "verify-promotion: post-merge verification on main",
+      "status": "completed",
+      "blocked_by": [
+        9
+      ],
+      "completed_at": "2026-05-04T22:51:55.829Z",
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-05-04T22:51:55.829Z",
+        "loaded_via": "legacy-backfill"
+      }
+    }
+  ]
+}

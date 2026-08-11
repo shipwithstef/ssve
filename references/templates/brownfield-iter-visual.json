@@ -1,0 +1,61 @@
+{
+  "wi": "WI-NNN",
+  "lane": "brownfield-iter-visual",
+  "status": "in_progress",
+  "tasks": [
+    {
+      "id": 1,
+      "status": "pending",
+      "description": "Score deployed landing at all shipping viewports. Target benchmark ≥7.5 weighted.",
+      "metadata": { "skill": "benchmark-landing" }
+    },
+    {
+      "id": 2,
+      "status": "pending",
+      "description": "Capture baseline screenshots (light+dark) at all shipping viewports for visual regression.",
+      "metadata": { "skill": "track-visuals" }
+    },
+    {
+      "id": 3,
+      "status": "pending",
+      "description": "Manual QA pass: broken links, empty hrefs, mobile layout, CTA repeatability.",
+      "metadata": { "skill": null }
+    },
+    {
+      "id": 4,
+      "status": "pending",
+      "description": "Synthesize audit findings into prioritized fix list (P0/P1/P2).",
+      "metadata": { "skill": null }
+    },
+    {
+      "id": 5,
+      "status": "pending",
+      "description": "If P0 bugs found: root-cause each, produce bugfix briefs.",
+      "metadata": { "skill": "diagnose-bug" }
+    },
+    {
+      "id": 6,
+      "status": "pending",
+      "description": "Plan P0 fix implementation. If no P0 bugs, skip with justification.",
+      "metadata": { "skill": "plan-changeset" }
+    },
+    {
+      "id": 7,
+      "status": "pending",
+      "description": "Implement P0 fixes. Skip if audit found none.",
+      "metadata": { "skill": "execute-changeset" }
+    },
+    {
+      "id": 8,
+      "status": "pending",
+      "description": "Run G5 review-gate on executed change set. 5-step protocol: self-review → self-judgment → cross-review → convergence → gate decision.",
+      "metadata": { "skill": "review-gate" }
+    },
+    {
+      "id": 9,
+      "status": "pending",
+      "description": "Land P0 fixes. Re-run benchmark to prove delta improvement.",
+      "metadata": { "skill": "land-changeset" }
+    }
+  ]
+}

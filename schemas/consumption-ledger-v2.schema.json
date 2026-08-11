@@ -1,0 +1,267 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seriousvibecoding.dev/schemas/consumption-ledger-v2.schema.json",
+  "title": "SVC Evidence Consumption Ledger v2",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "run_id",
+    "generation_bindings",
+    "protocol_digest",
+    "product_graph_digest",
+    "artifacts",
+    "progress_attempts",
+    "ledger_digest"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "integer", "enum": [2] },
+    "run_id": { "type": "string", "minLength": 1 },
+    "generation_bindings": {
+      "type": "object",
+      "required": [
+        "protocol_generation_digest",
+        "product_generation_digest",
+        "context_generation_digest",
+        "concern_generation_digest",
+        "control_generation_digest",
+        "authority_generation_digest",
+        "layer_inventory_digest"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "protocol_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "product_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "context_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "concern_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "control_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "authority_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "layer_inventory_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "protocol_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "product_graph_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "artifact_id",
+          "artifact_kind",
+          "source_digest",
+          "object_digest",
+          "producer_id",
+          "producer_task_id",
+          "outcome_ids",
+          "required_consumers",
+          "invalidation_inputs",
+          "minimum_trust_level",
+          "freshness",
+          "production_idempotency_key",
+          "invalidation_idempotency_key",
+          "retention",
+          "state",
+          "produced_at",
+          "invalidated_at",
+          "invalidation_reason"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "artifact_id": { "type": "string", "minLength": 1 },
+          "artifact_kind": { "type": "string", "minLength": 1 },
+          "source_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "object_digest": { "type": ["string", "null"] },
+          "producer_id": { "type": "string", "minLength": 1 },
+          "producer_task_id": { "type": ["string", "null"] },
+          "outcome_ids": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+          "required_consumers": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "consumer_id",
+                "consumer_kind",
+                "graph_node_id",
+                "condition",
+                "acknowledgement_state",
+                "acknowledged_object_digest",
+                "acknowledged_at",
+                "acknowledgement_digest",
+                "idempotency_key"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "consumer_id": { "type": "string", "minLength": 1 },
+                "consumer_kind": {
+                  "type": "string",
+                  "enum": ["LAYER", "CUSTOMER", "OWNER", "OPERATIONS", "RELEASE", "METRIC", "RUNTIME", "LEARNING"]
+                },
+                "graph_node_id": { "type": ["string", "null"] },
+                "condition": {
+                  "type": "string",
+                  "enum": [
+                    "BEFORE_DISPATCH",
+                    "BEFORE_TASK_ACCEPTANCE",
+                    "BEFORE_REVIEW",
+                    "BEFORE_DELIVERY_CLOSE",
+                    "BEFORE_OUTCOME_CLOSE"
+                  ]
+                },
+                "acknowledgement_state": { "type": "string", "enum": ["PENDING", "ACKNOWLEDGED", "INVALIDATED"] },
+                "acknowledged_object_digest": { "type": ["string", "null"] },
+                "acknowledged_at": { "type": ["string", "null"] },
+                "acknowledgement_digest": { "type": ["string", "null"] },
+                "idempotency_key": { "type": ["string", "null"] }
+              }
+            }
+          },
+          "invalidation_inputs": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["name", "digest"],
+              "additionalProperties": false,
+              "properties": {
+                "name": { "type": "string", "minLength": 1 },
+                "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+              }
+            }
+          },
+          "minimum_trust_level": {
+            "type": "string",
+            "enum": ["static", "hermetic", "sandbox", "device", "staging", "production"]
+          },
+          "freshness": {
+            "type": "object",
+            "required": ["mode", "max_age_seconds"],
+            "additionalProperties": false,
+            "properties": {
+              "mode": { "type": "string", "enum": ["IMMUTABLE", "MAX_AGE_SECONDS", "OBSERVATION_WINDOW"] },
+              "max_age_seconds": { "type": ["integer", "null"] }
+            }
+          },
+          "production_idempotency_key": { "type": "string", "minLength": 1 },
+          "invalidation_idempotency_key": { "type": ["string", "null"] },
+          "retention": {
+            "type": "object",
+            "required": ["class", "pinned_by", "legal_hold", "incident_hold", "retain_until"],
+            "additionalProperties": false,
+            "properties": {
+              "class": { "type": "string", "enum": ["RUN", "RELEASE", "AUDIT", "PRODUCT_LIFETIME"] },
+              "pinned_by": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["kind", "id", "digest"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": { "type": "string", "enum": ["RUN", "RELEASE", "PRODUCT_GRAPH", "DECISION", "INCIDENT", "LEGAL_HOLD"] },
+                    "id": { "type": "string", "minLength": 1 },
+                    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+                  }
+                }
+              },
+              "legal_hold": { "type": "boolean" },
+              "incident_hold": { "type": "boolean" },
+              "retain_until": { "type": ["string", "null"] }
+            }
+          },
+          "state": { "type": "string", "enum": ["DECLARED", "PRODUCED", "PARTIALLY_CONSUMED", "CONSUMED", "INVALIDATED"] },
+          "produced_at": { "type": ["string", "null"] },
+          "invalidated_at": { "type": ["string", "null"] },
+          "invalidation_reason": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "progress_attempts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "idempotency_key",
+          "prior_state_digest",
+          "next_state_digest",
+          "causal_fingerprint",
+          "evidence_refs",
+          "resolved_obligations",
+          "authorized_decisions",
+          "uncertainty_reductions",
+          "accepted",
+          "reason_codes",
+          "recorded_at",
+          "attempt_digest"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "idempotency_key": { "type": "string", "minLength": 1 },
+          "prior_state_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "next_state_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "causal_fingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["object_digest", "artifact_id", "graph_node_id", "consumer_id", "role"],
+              "additionalProperties": false,
+              "properties": {
+                "object_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+                "artifact_id": { "type": "string", "minLength": 1 },
+                "graph_node_id": { "type": "string", "minLength": 1 },
+                "consumer_id": { "type": "string", "minLength": 1 },
+                "role": { "type": "string", "enum": ["NEW_EVIDENCE", "STATE_CHANGE"] }
+              }
+            }
+          },
+          "resolved_obligations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["graph_node_id", "prior_status", "resolution_evidence_digest", "consumer_id"],
+              "additionalProperties": false,
+              "properties": {
+                "graph_node_id": { "type": "string", "minLength": 1 },
+                "prior_status": { "type": "string", "enum": ["OPEN"] },
+                "resolution_evidence_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+                "consumer_id": { "type": "string", "minLength": 1 }
+              }
+            }
+          },
+          "authorized_decisions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["decision_node_id", "authority_digest"],
+              "additionalProperties": false,
+              "properties": {
+                "decision_node_id": { "type": "string", "minLength": 1 },
+                "authority_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+              }
+            }
+          },
+          "uncertainty_reductions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["graph_node_id", "before", "after", "evidence_object_digest", "consumer_id"],
+              "additionalProperties": false,
+              "properties": {
+                "graph_node_id": { "type": "string", "minLength": 1 },
+                "before": { "type": "number" },
+                "after": { "type": "number" },
+                "evidence_object_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+                "consumer_id": { "type": "string", "minLength": 1 }
+              }
+            }
+          },
+          "accepted": { "type": "boolean" },
+          "reason_codes": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "recorded_at": { "type": "string" },
+          "attempt_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+        }
+      }
+    },
+    "ledger_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}

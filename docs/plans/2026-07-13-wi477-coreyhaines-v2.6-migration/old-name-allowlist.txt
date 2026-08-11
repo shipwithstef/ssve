@@ -1,0 +1,37 @@
+# WI-477 old-name allowlist — LINE-CONTEXT (tab-separated: path-prefix<TAB>line-regex<TAB>reason)
+# Scan contract (manifest Exec step 5): every grep -rn hit (path:line:content) must match a row
+# where the path starts with path-prefix AND the LINE CONTENT matches line-regex. Anything else = FAIL.
+# Class A — historical record (immutable history; any old token allowed)
+proposals/	.*	proposal history incl. blend plans quoting old names
+docs/specs/work-items/	.*	WI history (WI-476/477/478 deliberately document the rename map)
+docs/specs/features/	.*	dated feature specs (v1.9.0 blend record)
+docs/specs/research-prescope-	.*	dated research prescopes
+docs/specs/framework-parity/gstack-scorecard.md	.*	dated parity snapshot
+docs/specs/reviews/	.*	review records quote diffs verbatim
+docs/analysis/	.*	dated analyses
+docs/plans/	.*	plan manifests incl. THIS plan and its allowlist/review artifacts
+plans/2026-06-11-repo-review-cleanup-changeset.md	.*	dated cleanup plan
+FRAMEWORK-STATE-ARCHIVE/	.*	archive
+FRAMEWORK-STATE.md	.*	blend-history rows quote the rename set
+references/research-notes/	.*	dated notes
+docs/status/	.*	generated run summaries
+test-framework/results/	.*	historical autopilot run outputs (verified: autopilot-S1 coreyhaines-interop.md is a dated run artifact)
+docs/learnings/	.*	append-only ledger
+references/framework-learnings.jsonl	.*	append-only ledger
+.svc/	.*	local state / append-only ledgers / receipts mirrors
+NOTICES	.*	attribution quotes pattern names as taken
+NOTICES.md	.*	attribution mirror
+# Class B — deliberately documents the renames / old versions
+references/knowledge/competitors/coreyhaines-martech/	.*	knowledge about the source; rename map lives here
+# Class C — false positives (token is not the addon skill)
+manage-finops/	referral-programs-guide	local doc referral-programs-guide.md (substring hit, not the skill)
+references/kimi-detached-pattern.md	social-content extraction	prose = content type, not the skill
+references/model-routing.md	social-content extraction	prose = content type, not the skill
+references/knowledge/domains/base44/details/performance-growth.md	promoting-your-app/social-content	external URL slug
+references/knowledge/skill-marketplaces/	[@/]pricing-strategy	third-party product identifiers ONLY (claude-gtm-plugin@pricing-strategy, .../gtm-pricing paths); installed-pack mentions carry no @/ prefix and are MIGRATED by blueprint 26 (R4-3)
+# Class D — legacy context ARTIFACT filename kept by design (upstream reads it as fallback); ONLY the filename token
+analyze-marketing/SKILL.md	product-marketing-context\.md	artifact filename .agents/product-marketing-context.md (writer path unchanged); the bare skill-name ref at L124 is MIGRATED (blueprint 27)
+analyze-marketing/references/output-schema.md	product-marketing-context\.md	artifact filename
+audit-coverage/SKILL.md	product-marketing-context\.md	artifact filename only (both L115 and L234 carry the .md form); a bare live skill ref would now FAIL the scan
+references/skill-pack-comparison.md	product-marketing-context\.md	artifact filename in capability row
+EXTERNAL_ADDONS.md	product-marketing-context\.md	legacy artifact filename in the rewritten interop note (fallback documentation)

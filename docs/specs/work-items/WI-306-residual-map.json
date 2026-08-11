@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "wi": "WI-306",
+  "source_proposals": [
+    "proposals/done/2026-05-11-framework-improvement-provider-fidelity-for-ai-visuals.md"
+  ],
+  "status": "implemented",
+  "coverage": [
+    {
+      "source_proposal": "proposals/done/2026-05-11-framework-improvement-provider-fidelity-for-ai-visuals.md",
+      "proposal_item": "provider/source fidelity is extracted when a user or spec names a primary integration",
+      "status": "covered",
+      "owner_wi": "WI-306",
+      "evidence": [
+        "docs/specs/work-items/WI-306.md",
+        "route-workflow/SKILL.md",
+        "validate-feature/SKILL.md",
+        "write-spec/SKILL.md"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-11-framework-improvement-provider-fidelity-for-ai-visuals.md",
+      "proposal_item": "fallback/mock/placeholder output cannot satisfy primary-provider ACs without explicit approval",
+      "status": "covered",
+      "owner_wi": "WI-306",
+      "evidence": [
+        "scripts/validate-provider-fidelity-evidence.mjs",
+        "references/provider-fidelity.md",
+        "test-framework/evals/tier-1/validate-provider-fidelity-evidence.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-11-framework-improvement-provider-fidelity-for-ai-visuals.md",
+      "proposal_item": "AI image deliverables require source fidelity, semantic relevance, saved-state visibility, and product-quality evidence",
+      "status": "covered",
+      "owner_wi": "WI-306",
+      "evidence": [
+        "track-visuals/SKILL.md",
+        "test-journeys/SKILL.md",
+        "references/provider-fidelity.md",
+        "test-framework/evals/tier-1/validate-provider-fidelity-evidence.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-11-framework-improvement-provider-fidelity-for-ai-visuals.md",
+      "proposal_item": "generation flows require saved persisted outcome, not dialog-only draft evidence",
+      "status": "covered",
+      "owner_wi": "WI-306",
+      "evidence": [
+        "test-journeys/SKILL.md",
+        "docs/specs/features/test-evidence/PROVIDER_FIDELITY_EVIDENCE.template.md",
+        "scripts/validate-provider-fidelity-evidence.mjs"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-11-framework-improvement-provider-fidelity-for-ai-visuals.md",
+      "proposal_item": "regression fixture based on the Example Marketplace WI-233 fallback failure fails unapproved fallback evidence",
+      "status": "covered",
+      "owner_wi": "WI-306",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-provider-fidelity-evidence.sh",
+        "test-framework/evals/tier-1/fixtures/delivery-graph-compiler"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+source: coreyhaines31/marketingskills
+version: v2.6.0
+tag_commit: 2815104d5459357d44c5f9031fcca0525b00c991
+main_head_at_extraction: 0ba2a7fafc7b0827a261bd518e87cbda18e6675f
+extracted: 2026-07-13
+previous: v1.9.0 (2026-04-28)
+skills: 46
+tools_cli: 65
+tools_integrations: 93

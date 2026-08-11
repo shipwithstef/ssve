@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "acceptance_critical": true,
+  "comparison": "fixed-by-change",
+  "selected_proof": {
+    "id": "WI509-exact-checkpoint-receipt-range",
+    "command": "SVC_RECEIPT_RANGE_CONCURRENCY=8 node scripts/check-chain-receipts.mjs --range 985a8d5de2255288daaacda91c739e294b8a67d5..7dfe2c6292cd2bbde9330e0f74f126478c8252f1",
+    "target": "166-commit receipt interval used by canonical svc-reconcile",
+    "environment": "local WI-509 worktree on the same Linux/WSL host and Git notes ref"
+  },
+  "pre": {
+    "status": "fail",
+    "evidence": "docs/specs/work-items/WI-509.md: sequential range required approximately 90 seconds and exceeded the 20-second reconcile child bound"
+  },
+  "post": {
+    "status": "pass",
+    "evidence": "promoted-main G7 exact-range replay: 166 results, 0 failures, 0 infrastructure failures, 3.84 seconds; canonical reconcile exited 0 in 6.333 seconds and advanced the checkpoint to 188ce5578131412170e59f28bca9fa50f5983768"
+  },
+  "iterations": [
+    {
+      "iteration": 1,
+      "fix_batch": "bounded ordered self-invoked direct-SHA worker pool and focused real-repository fixture",
+      "classification": "fixed-by-change",
+      "evidence": "test-framework/evals/tier-1/validate-chain-receipts-range-workers.sh plus promoted-main exact-range 3.84-second replay and canonical reconcile 6.333-second replay"
+    }
+  ],
+  "changed_signals": [
+    {
+      "signal": "exact 166-SHA validation wall time fell from approximately 90 seconds to 3.84 seconds in the promoted-main G7 replay",
+      "classification": "fixed-by-change",
+      "acceptance_critical": true
+    },
+    {
+      "signal": "all 166 receipt results remain valid and in input order",
+      "classification": "unchanged",
+      "acceptance_critical": true
+    },
+    {
+      "signal": "full Tier-1 reports registered receipt-cache and WI-498/WI-510 skip-integrity evidence debt, while focused WI-509 validators pass",
+      "classification": "pre-existing",
+      "acceptance_critical": false
+    }
+  ]
+}

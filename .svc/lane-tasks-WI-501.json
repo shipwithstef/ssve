@@ -1,0 +1,13 @@
+{
+  "wi": "WI-501",
+  "lane": "framework",
+  "owner_session": "claude-wi501",
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "execute-changeset",
+      "name": "enforcement escape hatch + read-only classification",
+      "status": "in_progress"
+    }
+  ]
+}

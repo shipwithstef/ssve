@@ -1,0 +1,73 @@
+review_log:
+  plan: docs/plans/2026-07-13-wi478-andromeda-doctrine/manifest.md
+  tier1:
+    script: scripts/verify-plan-mechanical.sh
+    exit_code: 0
+    issues: 0
+    log: docs/plans/2026-07-13-wi478-andromeda-doctrine/mechanical-gate.log
+  tier2:
+    reviewer: codex
+    reviewer_family: openai
+    rounds: 3
+    rubric_score: not-emitted-by-reviewer (codex exec free-form; findings-based)
+    raw_captures:
+      - review-round1-codex-raw.txt
+      - review-round2-codex-raw.txt
+      - review-round3-codex-raw.txt
+    findings:
+      - {id: R1-1, sev: HIGH, finding: External State section missing; addon runtime dep + generated-mirror coupling undeclared}
+      - {id: R1-2, sev: HIGH, finding: 'no-fabrication fails — TikTok broad/static default, YouTube "video wins", "N variants" vs source''s five, 2025 vs source''s 2026+, static-first not 1:1'}
+      - {id: R1-3, sev: HIGH, finding: 'existing "Most failures are targeting failures" line contradicts the new creative-led doctrine in both agent + skill'}
+      - {id: R1-4, sev: HIGH, finding: static-first has no executable branch — agent always emits beat_sheets + video handoff}
+      - {id: R1-5, sev: MEDIUM, finding: .claude mirror is GENERATED (sync-native-agents.mjs), must not be hand-edited}
+      - {id: R1-6, sev: MEDIUM, finding: creative_format/targeting_mode alone cannot verify a platform-conditional prior; need platform/placement/campaign_id/event semantics}
+      - {id: R1-7, sev: HIGH, finding: 'worktree branches from a ref; untracked manifest won''t be in the worktree; receipt/land sequence incomplete'}
+      - {id: R1-8, sev: MEDIUM, finding: recency flag is passive; needs source-version/extraction/review-due/stale-behavior}
+  responses:
+    - {id: R1-1, response: ACCEPT, action: "§ External State Lifecycle added (taxonomy walk; entry-12 generated-mirror coupling + addon runtime dependency declared)"}
+    - {id: R1-2, response: ACCEPT, action: "doctrine rewritten Meta-scoped; TikTok/Search ratio-only; 'five variants per segment'; '2026+'; static-first labeled svc inference; YouTube/top-of-funnel claim removed; WI-478 AC1 amended to match"}
+    - {id: R1-3, response: ACCEPT, action: "blanket 'targeting failures' sentence REPLACED with a platform-conditional rule in both agents/ad-strategist.md and ad-video-script/SKILL.md; contradiction-gone negative assertions added"}
+    - {id: R1-4, response: ACCEPT, action: "fleet stays video-only; doctrine surfaces a static_comparator_recommended flag + rationale in the return contract — NOT a static production path (chose smaller-scope option over format-selection + non-video handoff)"}
+    - {id: R1-5, response: ACCEPT, action: "edit agents/ad-strategist.md ONLY; regenerate .claude mirror via node scripts/sync-native-agents.mjs; --check must pass"}
+    - {id: R1-6, response: ACCEPT, action: "ledger contract expanded: platform, placement, creative_format, targeting_mode (Meta-scoped), campaign_id, shipped/outcome event semantics"}
+    - {id: R1-7, response: ACCEPT, action: "two-commit strategy — commit P (planning incl. amended WI-478.md + this log) lands on main before worktree; commit M is implementation; full receipt/land/verify sequence in Exec"}
+    - {id: R1-8, response: ACCEPT, action: "block records source version + extraction date + review-due 2027-01 + stale behavior (do not apply after review-due until re-extracted or account evidence reconfirms)"}
+  round2:
+    verdict: FAIL
+    note: "genuine re-review (round-1 raw parked so no echo). R3/R4/R5/R7/R8 RESOLVED; R1/R2/R6 PARTIAL; 5 new findings F-201..F-205"
+    findings:
+      - {id: F-201, sev: HIGH, finding: "External-state entry 3 (branch/worktree) marked untouched though a worktree branch is created; addon row decoupled-justified without the mandatory monitoring/recovery paragraph"}
+      - {id: F-202, sev: HIGH, finding: "committed mechanical-gate.log said FAIL exit=1 (stale first run) contradicting review-log exit 0"}
+      - {id: F-203, sev: HIGH, finding: "design-tech/explore-solutions completed-inline in manifest but skipped in task graph + decision ledger"}
+      - {id: F-204, sev: MEDIUM, finding: "AC1 said whole block sourced 1:1 though the static comparator is an svc inference; blend proposal should be labeled provenance-only"}
+      - {id: F-205, sev: MEDIUM, finding: "assertions checked only creative_format+campaign_id; missed 4 ledger fields, event semantics, both-files-replacement, stale-behavior, rationale field"}
+    responses:
+      - {id: F-201, response: ACCEPT, action: "entry 3 declared TOUCHED with create/land/remove coupling + abort cleanup; addon decoupled-justification paragraph added (monitoring: symlink guard + .version + review-due flag; recovery: fallback to existing behavior + WI-477 reinstall path)"}
+      - {id: F-202, response: ACCEPT, action: "mechanical gate re-run on rev-3 manifest; log replaced with exit=0 (also fixed a C4 --force-literal the re-run surfaced)"}
+      - {id: F-203, response: ACCEPT, action: "design-tech + explore-solutions reclassified to completed-inline in task graph (receipts on tasks 4/5) + decision ledger entry; manifest matrix updated to say reconciled"}
+      - {id: F-204, response: ACCEPT, action: "AC1 reworded: ratios+Meta observations sourced 1:1, static_comparator_recommended labeled svc inference; blend proposal marked provenance/scope-only (contains superseded over-claims)"}
+      - {id: F-205, response: ACCEPT, action: "assertions expanded: all 6 ledger fields + shipped/outcome event semantics + both-files replacement rule ('targeting-led on Search/LinkedIn') + stale-behavior ('do not apply') + static_comparator_rationale field + 2026+ + sync --check"}
+  round3:
+    verdict: PASS-WITH-CHANGES
+    note: "clean re-review (prior raws parked). ALL 5 round-2 findings RESOLVED; 4 new cosmetic-consistency findings N-301..N-304 (2 medium, 2 low), all applied"
+    findings:
+      - {id: N-301, sev: MEDIUM, finding: "Commit M scope said blueprints #1-5 but #5 (WI-478.md amend) belongs to Commit P"}
+      - {id: N-302, sev: MEDIUM, finding: "rollback said bare git revert, not commit-scoped to the impl merge SHA"}
+      - {id: N-303, sev: LOW, finding: "manifest header still said rev 2 / post round 1"}
+      - {id: N-304, sev: LOW, finding: "task 4/5 subject still labeled (skipped) though authoritatively completed-inline"}
+    responses:
+      - {id: N-301, response: ACCEPT, action: "Commit M declared blueprints #1-4; #5 clarified as landing in Commit P before worktree creation"}
+      - {id: N-302, response: ACCEPT, action: "rollback made commit-scoped: revert commit-M merge SHA for behavioral rollback; retain P as audit history unless WI cancelled"}
+      - {id: N-303, response: ACCEPT, action: "header updated to rev 3 / post round 2"}
+      - {id: N-304, response: ACCEPT, action: "task 4/5 subjects renamed (skipped) -> (completed-inline)"}
+  tier3:
+    triggered: true
+    trigger_reason: infra_path
+    reviewer: agy
+    reviewer_family: google
+    status: COMPLETED 2026-07-13
+    raw_capture: review-tier3-agy-raw.txt
+    ruling: agrees_with_orchestrator
+    verdict: SOUND-TO-EXECUTE (zero findings; all 17 Tier-2 findings verified incorporated)
+  terminal_state: REVISED_AND_REVIEWED
+  commit_sha: TBD-at-promotion

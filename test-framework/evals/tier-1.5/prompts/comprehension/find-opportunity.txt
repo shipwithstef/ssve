@@ -1,0 +1,10 @@
+Skill: find-opportunity
+
+Q: What is the scope mandate for find-opportunity, and what types of businesses are hard excluded?
+A: Expected pattern: Online/digital products ONLY — shippable from a laptop, global market, digital delivery. Hard exclusions are local services, brick-and-mortar, consulting, physical products, real estate, and local delivery.
+
+Q: What are the three dimensions for scoring opportunities, and what is the evidence strength cap formula?
+A: Expected pattern: The six dimensions with weights are: Guaranteed revenue (30%), Builder fit (25%), Distribution fit (20%), Speed to first $ (15%), Self-sustaining (5%), Ecosystem value (5%). The cap formula is max_score = min(calculated_score, 60 + evidence_strength * 2).
+
+Q: What are the four conditions that must ALL be met for auto-select to trigger?
+A: Expected pattern: Confidence gap > 20 points, top score > 80, evidence strength >= 7, and ALL quality gates pass.

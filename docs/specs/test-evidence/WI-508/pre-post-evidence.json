@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "acceptance_critical": true,
+  "selected_proof": {
+    "id": "wi-508-candidate-harness-focused",
+    "command": "bash test-framework/evals/tier-1/validate-candidate-harness.sh",
+    "target": "framework-WI-508-candidate-reservoir-triage worktree",
+    "environment": "hermetic temporary Git repositories with SVC_CANDIDATE_DB and SVC_CANDIDATE_DECISIONS overrides"
+  },
+  "pre": {
+    "status": "fail",
+    "evidence": "/tmp/wi508-red.log: candidate-harness.mjs is missing"
+  },
+  "post": {
+    "status": "pass",
+    "evidence": "/tmp/wi508-focused.log: Candidate Harness validation PASS all"
+  },
+  "comparison": "fixed-by-change",
+  "iterations": [
+    {
+      "iteration": 1,
+      "fix_batch": "Implement strict CLI, dynamic project identity, native SQLite schema, and scoped import core.",
+      "classification": "fixed-by-change",
+      "evidence": "CANDIDATE_TEST_GROUP=core focused validator PASS"
+    },
+    {
+      "iteration": 2,
+      "fix_batch": "Implement contained filesystem grounding, exact composite scoring, deterministic ordering, and Git mirror export.",
+      "classification": "fixed-by-change",
+      "evidence": "CANDIDATE_TEST_GROUP=rank focused validator PASS"
+    },
+    {
+      "iteration": 3,
+      "fix_batch": "Implement monotonic terminal transitions, durable outbox projection, replay recovery, and isolation seams.",
+      "classification": "fixed-by-change",
+      "evidence": "CANDIDATE_TEST_GROUP=triage focused validator PASS"
+    }
+  ],
+  "changed_signals": [
+    {
+      "signal": "The exact public Candidate Harness validator changed from missing-module failure to all-group pass.",
+      "classification": "fixed-by-change",
+      "acceptance_critical": true
+    },
+    {
+      "signal": "Aggregate Tier-1 improved from 266 passed / 3 failed to 268 passed / 2 failed: the Candidate Harness validator passes, validate-no-svc-residue.sh is resolved, and the two remaining named failures are unchanged baseline debt.",
+      "classification": "fixed-by-change",
+      "acceptance_critical": true
+    }
+  ],
+  "probes": [
+    {
+      "id": "wi508-outbox-ledger-recovery",
+      "hypothesis": "A committed terminal decision survives a failed JSONL projection and replays to exactly one complete ledger event.",
+      "confirmation_check": {
+        "predicate": "force the ledger override to a directory, observe command failure after the SQLite commit, retry with a valid ledger, and require one event",
+        "result": "PASS"
+      },
+      "falsification_check": {
+        "predicate": "query the outbox after the forced failure and reject any result where the terminal row or pending event disappeared, or replay appended zero or multiple ledger rows",
+        "result": "PASS"
+      },
+      "verdict": "hypothesis-holds",
+      "evidence": "validate-candidate-harness.sh triage group: projection recovery fixture"
+    },
+    {
+      "id": "wi508-ledger-dedupe-recovery",
+      "hypothesis": "A replay after ledger append but before outbox acknowledgement does not duplicate the audit event.",
+      "confirmation_check": {
+        "predicate": "clear logged_at for the already-appended CAND-005 event, replay the identical rejection, and require the ledger line count to remain unchanged",
+        "result": "PASS"
+      },
+      "falsification_check": {
+        "predicate": "scan event_id values after replay and reject any duplicate or additional CAND-005 event",
+        "result": "PASS"
+      },
+      "verdict": "hypothesis-holds",
+      "evidence": "validate-candidate-harness.sh triage group: append-before-mark replay fixture"
+    },
+    {
+      "id": "wi508-atomic-mirror-recovery",
+      "hypothesis": "A failed Git mirror projection preserves the prior bytes and an identical retry heals the projection.",
+      "confirmation_check": {
+        "predicate": "make the mirror directory read-only, reject CAND-006, compare the pre-failure hash, restore writes, retry, and require the rejection in the mirror",
+        "result": "PASS"
+      },
+      "falsification_check": {
+        "predicate": "reject any changed, truncated, or invalid mirror after the failed export and any missing terminal state after retry",
+        "result": "PASS"
+      },
+      "verdict": "hypothesis-holds",
+      "evidence": "validate-candidate-harness.sh triage group: mirror recovery fixture"
+    },
+    {
+      "id": "wi508-current-root-containment",
+      "hypothesis": "A repository move causes later terminal projection to resolve the stored relative mirror under the current real repository root.",
+      "confirmation_check": {
+        "predicate": "import in a temporary repository, move the repository directory, reject CAND-004 from the moved root, and require the moved mirror to contain the decision",
+        "result": "PASS"
+      },
+      "falsification_check": {
+        "predicate": "require the old repository path to remain absent after the transition and reject any export failure from the moved root",
+        "result": "PASS"
+      },
+      "verdict": "hypothesis-holds",
+      "evidence": "validate-candidate-harness.sh triage group: moved repository fixture"
+    }
+  ]
+}

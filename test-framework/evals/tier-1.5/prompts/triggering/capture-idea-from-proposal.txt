@@ -1,0 +1,3 @@
+Promote proposals/done/2026-04-24-framework-cohesion-evolution.md into work items using --from-proposal.
+I've reviewed the proposal — use capture-idea --from-proposal to create WIs for each phase leaf.
+Convert this approved proposal into work items via the from-proposal flag of capture-idea.

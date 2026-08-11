@@ -1,0 +1,247 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seriousvibecoding.dev/schemas/execution-task-capsule-v2.schema.json",
+  "title": "SVC Execution Task Capsule v2",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "wi",
+    "task_id",
+    "product_outcome",
+    "generation_bindings",
+    "dependencies",
+    "merge_dependencies",
+    "interfaces",
+    "revision",
+    "plan_digest",
+    "accepted_parent_sha",
+    "allowed_files",
+    "forbidden_writes",
+    "decisions",
+    "authorities",
+    "effect_capabilities",
+    "resource_claims",
+    "parallel_policy",
+    "active_budget_seconds",
+    "validations",
+    "failure_policy"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "enum": [2] },
+    "wi": { "type": "string" },
+    "task_id": { "type": "string" },
+    "product_outcome": { "type": "string" },
+    "generation_bindings": {
+      "type": "object",
+      "required": [
+        "protocol_generation_digest", "product_generation_digest", "context_generation_digest",
+        "concern_generation_digest", "control_generation_digest", "authority_generation_digest",
+        "layer_inventory_digest"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "protocol_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "product_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "context_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "concern_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "control_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "authority_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "layer_inventory_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "dependencies": { "type": "array", "items": { "type": "string" } },
+    "merge_dependencies": { "type": "array", "items": { "type": "string" } },
+    "interfaces": {
+      "type": "object",
+      "required": ["provides", "consumes"],
+      "properties": {
+        "provides": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "digest"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+            }
+          }
+        },
+        "consumes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "digest"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+              "producer_task_id": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    },
+    "revision": { "type": "integer" },
+    "plan_digest": { "type": "string" },
+    "accepted_parent_sha": { "type": "string" },
+    "allowed_files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "action"],
+        "properties": {
+          "path": { "type": "string" },
+          "action": { "type": "string", "enum": ["CREATE", "MODIFY", "DELETE"] }
+        }
+      }
+    },
+    "forbidden_writes": { "type": "array", "items": { "type": "string" } },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "status", "source_digest"],
+        "properties": {
+          "id": { "type": "string" },
+          "status": { "type": "string", "enum": ["RESOLVED", "NOT_APPLICABLE"] },
+          "source_digest": { "type": "string" }
+        }
+      }
+    },
+    "authorities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "status", "source_digest"],
+        "properties": {
+          "id": { "type": "string" },
+          "status": { "type": "string", "enum": ["RESOLVED", "NOT_APPLICABLE"] },
+          "source_digest": { "type": "string" }
+        }
+      }
+    },
+    "effect_capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "principal",
+          "kind",
+          "targets",
+          "max_cost_usd",
+          "root_only",
+          "requires_idempotency",
+          "reversible"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "principal": { "type": "string", "enum": ["executor", "root"] },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "filesystem_read",
+              "filesystem_write",
+              "git_checkpoint",
+              "network_read",
+              "provider_write",
+              "paid_write",
+              "device",
+              "deploy"
+            ]
+          },
+          "targets": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+          "max_cost_usd": { "type": "number", "minimum": 0 },
+          "root_only": { "type": "boolean" },
+          "requires_idempotency": { "type": "boolean" },
+          "reversible": { "type": "boolean" }
+        }
+      }
+    },
+    "resource_claims": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["key", "mode"],
+        "properties": {
+          "key": { "type": "string", "minLength": 1 },
+          "mode": { "type": "string", "enum": ["shared", "exclusive"] }
+        }
+      }
+    },
+    "parallel_policy": {
+      "type": "object",
+      "required": ["eligible", "merge_order_key"],
+      "properties": {
+        "eligible": { "type": "boolean" },
+        "merge_order_key": { "type": "string", "minLength": 1 },
+        "serialization_reason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "active_budget_seconds": { "type": "integer", "minimum": 1 },
+    "collections": { "type": "object" },
+    "collection_contracts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["collection", "exact_count"],
+        "properties": {
+          "collection": { "type": "string" },
+          "exact_count": { "type": "integer" },
+          "exact_fields": { "type": "array", "items": { "type": "string" } },
+          "unique_by": { "type": "array", "items": { "type": "string" } },
+          "formats": { "type": "object" }
+        }
+      }
+    },
+    "relationships": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "sum", "equals"],
+        "properties": {
+          "id": { "type": "string" },
+          "sum": { "type": "array", "items": { "type": "string" } },
+          "equals": { "type": "integer" }
+        }
+      }
+    },
+    "validations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "argv",
+          "inputs",
+          "validator_digest",
+          "environment_class",
+          "cost_class",
+          "required_at_freeze"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "argv": { "type": "array", "items": { "type": "string" } },
+          "inputs": { "type": "array", "items": { "type": "string" } },
+          "validator_digest": { "type": "string" },
+          "environment_class": {
+            "type": "string",
+            "enum": ["hermetic", "repository", "host", "external"]
+          },
+          "cost_class": { "type": "string", "enum": ["micro", "focused", "full", "external"] },
+          "required_at_freeze": { "type": "boolean" }
+        }
+      }
+    },
+    "failure_policy": {
+      "type": "object",
+      "required": ["local_attempts", "assist_attempts", "plan_freeze_categories"],
+      "properties": {
+        "local_attempts": { "type": "integer" },
+        "assist_attempts": { "type": "integer" },
+        "plan_freeze_categories": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

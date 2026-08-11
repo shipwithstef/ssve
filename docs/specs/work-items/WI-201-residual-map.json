@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "wi": "WI-201",
+  "source_proposals": [
+    "proposals/done/2026-05-09-intelligent-intent-parsing.md"
+  ],
+  "status": "implemented-with-residuals",
+  "coverage": [
+    {
+      "source_proposal": "proposals/done/2026-05-09-intelligent-intent-parsing.md",
+      "proposal_item": "route-workflow classifies method-correction vs scope-correction vs goal-change vs status-question before rerouting",
+      "status": "covered",
+      "owner_wi": "WI-201",
+      "evidence": [
+        "docs/specs/work-items/WI-201.md",
+        "route-workflow/SKILL.md",
+        "route-workflow/references/intent-classification.md",
+        "test-framework/evals/tier-1/validate-mid-task-correction-routing.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-09-intelligent-intent-parsing.md",
+      "proposal_item": "method corrections use the minimum viable method swap instead of creating new artifacts",
+      "status": "covered",
+      "owner_wi": "WI-201",
+      "evidence": [
+        "route-workflow/references/intent-classification.md",
+        "test-framework/evals/tier-1/validate-mid-task-correction-routing.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-09-intelligent-intent-parsing.md",
+      "proposal_item": "casual, typo-heavy user messages are normalized before routing",
+      "status": "covered",
+      "owner_wi": "WI-201",
+      "evidence": [
+        "route-workflow/SKILL.md",
+        "route-workflow/references/intent-normalization.md",
+        "test-framework/evals/tier-1/validate-intent-normalization-routing.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-09-intelligent-intent-parsing.md",
+      "proposal_item": "durably persist mid-task hints, resolve mentioned skills, and audit artifact-count overreaction",
+      "status": "child-wi",
+      "owner_wi": "WI-338",
+      "evidence": [
+        "docs/specs/work-items/WI-338.md",
+        "proposals/done/2026-05-09-intelligent-intent-parsing.md"
+      ]
+    }
+  ],
+  "residuals": [
+    {
+      "wi": "WI-338",
+      "title": "Mid-task hint persistence and skill resolver"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+review_log:
+  plan: docs/plans/2026-07-14-wi481-change-impact-triad/PLAN.md
+  plan_sha256: 7fac593d2e95ceba6b0cd8f6cb9971ae45290688a7a90010ddefe35cbfa92a2c
+  orchestrator_family: openai
+  terminal_state: PROMOTED_TO_LEAF_PLANNING
+  implementation_state: NOT_STARTED
+  tier_1:
+    command: bash scripts/verify-plan-mechanical.sh docs/plans/2026-07-14-wi481-change-impact-triad/PLAN.md
+    exit_code: 0
+    result: PASS
+  external_state_check:
+    result: PASS
+    note: All 15 taxonomy entries walked; Codex user/repo config layers, trust, runtime state, worktrees, downstream adapter, and rollback are explicit.
+  rounds:
+    - round: 1
+      reviewer: claude-fable-5
+      reviewer_family: anthropic
+      rubric_score: 4
+      findings: [F-001, F-002, F-003, F-004, F-005, F-006, F-007, F-008, F-009]
+      response: all accepted; one proposed merge-revert syntax adjusted to ordinary revert because promotions are squash commits
+      artifacts:
+        - fable-review-round-1.yaml
+        - fable-review-round-1-responses.yaml
+    - round: 2
+      reviewer: claude-fable-5
+      reviewer_family: anthropic
+      rubric_score: 9
+      findings: [F-101, F-102, F-103, F-104]
+      response: all accepted; same-turn route authority retained as stricter than later-turn skill receipt reuse
+      artifacts:
+        - fable-review-round-2.yaml
+        - fable-review-round-2-responses.yaml
+    - round: 3
+      reviewer: claude-fable-5
+      reviewer_family: anthropic
+      rubric_score: 10
+      findings: []
+      verdict: PASS_CONVERGED
+      artifact: fable-review-round-3.yaml
+  accepted_design_corrections:
+    - Managed Codex hook keys and absent-key pruning; exactly one effective composite svc Stop across additive layers.
+    - Lazy per-pillar worktrees pinned to current origin/main after prior verify-promotion.
+    - Codex exact skill gate subsumes shared authenticity; non-Codex shared hook behavior remains unchanged.
+    - Skill receipts persist across later turns only for unchanged same-session task/worktree/hash; route continuation remains current-turn scoped.
+    - Per-host non-Codex snapshot methods and literal-command obligation.
+    - Canonical indexed WI-481 through WI-485 source specs.
+    - Deterministic pre-land and post-land rollback.
+    - Anchored commands, expected predicates, golden Codex trace, and honest runtime N/A state.
+  promotion_boundary: Program plan is reviewed. Each pillar still requires its own leaf plan, review-plan, execute, review-exec, audit, land, and verify chain. No implementation or host-config mutation is claimed.

@@ -1,0 +1,327 @@
+{
+  "schema": 1,
+  "max_open_days": 1,
+  "max_defer_days": 14,
+  "description": "Direct proposals start in proposals/ and must receive accepted_wi, rejected_reason, or deferred_until metadata by the SLA. Once accepted_wi exists, the proposal source is archived under proposals/done/ and this registry keeps the WI/residual-map ownership pointer.",
+  "entries": {
+    "2026-06-29-evolution.md": {
+      "deferred_until": "2026-08-25",
+      "reason": "Findings already promoted to tracked epic WI-461 (children WI-462..469); proposal retained as the evolve-framework survey.",
+      "blocked_reason": "Formal accept+archive deferred to avoid the promotion-closeout cascade during this anti-friction batch; the epic + child WIs already carry the actionable work."
+    },
+    "2026-04-14-blocking-discovery-halt-protocol.md": {
+      "accepted_wi": "WI-318",
+      "residual_map": "docs/specs/work-items/WI-318-residual-map.json"
+    },
+    "2026-04-14-parallel-wi-dispatch.md": {
+      "accepted_wi": "WI-310",
+      "residual_map": "docs/specs/work-items/WI-310-residual-map.json"
+    },
+    "2026-04-19-evolution.md": {
+      "accepted_wi": "WI-311",
+      "residual_map": "docs/specs/work-items/WI-311-residual-map.json"
+    },
+    "2026-04-20-session-audit-capture-idea-wrong-repo.md": {
+      "accepted_wi": "WI-311",
+      "residual_map": "docs/specs/work-items/WI-311-residual-map.json"
+    },
+    "2026-04-21-evolution.md": {
+      "accepted_wi": "WI-311",
+      "residual_map": "docs/specs/work-items/WI-311-residual-map.json"
+    },
+    "2026-04-22-strategic-decision-research-discipline.md": {
+      "accepted_wi": "WI-313",
+      "residual_map": "docs/specs/work-items/WI-313-residual-map.json"
+    },
+    "2026-04-24-framework-cohesion-evolution.md": {
+      "accepted_wi": "WI-311",
+      "residual_map": "docs/specs/work-items/WI-311-residual-map.json"
+    },
+    "2026-04-25-capability-blocker-auto-diagnosis.md": {
+      "accepted_wi": "WI-314",
+      "residual_map": "docs/specs/work-items/WI-314-residual-map.json"
+    },
+    "2026-04-25-comprehensive-session-audit.md": {
+      "accepted_wi": "WI-311",
+      "residual_map": "docs/specs/work-items/WI-311-residual-map.json"
+    },
+    "2026-04-25-deterministic-quality-hooks.md": {
+      "accepted_wi": "WI-312",
+      "residual_map": "docs/specs/work-items/WI-312-residual-map.json"
+    },
+    "2026-04-25-dynamic-deterministic-reliability-review.md": {
+      "accepted_wi": "WI-312",
+      "residual_map": "docs/specs/work-items/WI-312-residual-map.json"
+    },
+    "2026-04-25-inertia-detection-deprecated-api-check.md": {
+      "accepted_wi": "WI-314",
+      "residual_map": "docs/specs/work-items/WI-314-residual-map.json"
+    },
+    "2026-04-25-prevent-deployed-unverified-shipping.md": {
+      "accepted_wi": "WI-305",
+      "residual_map": "docs/specs/work-items/WI-305-residual-map.json"
+    },
+    "2026-04-26-audit-entity-rls-skill.md": {
+      "accepted_wi": "WI-308",
+      "residual_map": "docs/specs/work-items/WI-308-residual-map.json"
+    },
+    "2026-04-27-debug-e2e-skill-meta-gap.md": {
+      "accepted_wi": "WI-307",
+      "residual_map": "docs/specs/work-items/WI-307-residual-map.json"
+    },
+    "2026-04-27-diagnose-bug-persistence-bisect-phase-0.md": {
+      "accepted_wi": "WI-308",
+      "residual_map": "docs/specs/work-items/WI-308-residual-map.json"
+    },
+    "2026-04-27-global-improvements-from-opencode-review.md": {
+      "accepted_wi": "WI-319",
+      "residual_map": "docs/specs/work-items/WI-319-residual-map.json"
+    },
+    "2026-04-27-no-positional-role-selectors.md": {
+      "accepted_wi": "WI-307",
+      "residual_map": "docs/specs/work-items/WI-307-residual-map.json"
+    },
+    "2026-04-27-prove-old-path-fails-before-migrating.md": {
+      "accepted_wi": "WI-309",
+      "residual_map": "docs/specs/work-items/WI-309-residual-map.json"
+    },
+    "2026-04-28-blend-coreyhaines-marketing.md": {
+      "accepted_wi": "WI-315",
+      "residual_map": "docs/specs/work-items/WI-315-residual-map.json"
+    },
+    "2026-04-28-launch-knowledge-update.md": {
+      "accepted_wi": "WI-313",
+      "residual_map": "docs/specs/work-items/WI-313-residual-map.json"
+    },
+    "2026-04-28-prove-gap-exploitable-before-deploying-security-rule.md": {
+      "accepted_wi": "WI-308",
+      "residual_map": "docs/specs/work-items/WI-308-residual-map.json"
+    },
+    "2026-04-28-rls-deployment-order-by-caller-surface.md": {
+      "accepted_wi": "WI-308",
+      "residual_map": "docs/specs/work-items/WI-308-residual-map.json"
+    },
+    "2026-04-28-rls-derived-ownership-pattern.md": {
+      "accepted_wi": "WI-308",
+      "residual_map": "docs/specs/work-items/WI-308-residual-map.json"
+    },
+    "2026-04-29-blend-capacitor-skills.md": {
+      "accepted_wi": "WI-315",
+      "residual_map": "docs/specs/work-items/WI-315-residual-map.json"
+    },
+    "2026-04-29-completion-guard-historical-skip.md": {
+      "accepted_wi": "WI-312",
+      "residual_map": "docs/specs/work-items/WI-312-residual-map.json"
+    },
+    "2026-04-29-cross-system-flow-paradigm.md": {
+      "accepted_wi": "WI-309",
+      "residual_map": "docs/specs/work-items/WI-309-residual-map.json"
+    },
+    "2026-04-30-blend-gsd-2.md": {
+      "accepted_wi": "WI-315",
+      "residual_map": "docs/specs/work-items/WI-315-residual-map.json"
+    },
+    "2026-04-30-infra-project-support.md": {
+      "accepted_wi": "WI-316",
+      "residual_map": "docs/specs/work-items/WI-316-residual-map.json"
+    },
+    "2026-04-30-journey-execution-trace-validation.md": {
+      "accepted_wi": "WI-307",
+      "residual_map": "docs/specs/work-items/WI-307-residual-map.json"
+    },
+    "2026-04-30-journey-proposals-self-review.md": {
+      "accepted_wi": "WI-307",
+      "residual_map": "docs/specs/work-items/WI-307-residual-map.json"
+    },
+    "2026-04-30-journey-skills-contract-hardening.md": {
+      "accepted_wi": "WI-307",
+      "residual_map": "docs/specs/work-items/WI-307-residual-map.json"
+    },
+    "2026-05-01-competitive-awareness-gap.md": {
+      "accepted_wi": "WI-142",
+      "residual_map": "docs/specs/work-items/WI-142-residual-map.json"
+    },
+    "2026-05-04-session-audit-opencode-go-research.md": {
+      "accepted_wi": "WI-311",
+      "residual_map": "docs/specs/work-items/WI-311-residual-map.json"
+    },
+    "2026-05-05-evolution.md": {
+      "accepted_wi": "WI-305",
+      "residual_map": "docs/specs/work-items/WI-305-residual-map.json"
+    },
+    "2026-05-06-session-audit-catalog-skill.md": {
+      "accepted_wi": "WI-311",
+      "residual_map": "docs/specs/work-items/WI-311-residual-map.json"
+    },
+    "2026-05-06-session-audit-fix-phase.md": {
+      "accepted_wi": "WI-311",
+      "residual_map": "docs/specs/work-items/WI-311-residual-map.json"
+    },
+    "2026-05-08-end-to-end-execution-without-permission-checkpoints.md": {
+      "accepted_wi": "WI-198",
+      "residual_map": "docs/specs/work-items/WI-198-residual-map.json"
+    },
+    "2026-05-08-runtime-verification-must-not-delegate-to-user.md": {
+      "accepted_wi": "WI-197",
+      "residual_map": "docs/specs/work-items/WI-197-residual-map.json"
+    },
+    "2026-05-08-svc-doctor-consolidated-healthcheck.md": {
+      "accepted_wi": "WI-317",
+      "residual_map": "docs/specs/work-items/WI-317-residual-map.json"
+    },
+    "2026-05-09-bundle-grep-is-not-validation.md": {
+      "accepted_wi": "WI-199",
+      "residual_map": "docs/specs/work-items/WI-199-residual-map.json"
+    },
+    "2026-05-09-intelligent-intent-parsing.md": {
+      "accepted_wi": "WI-201",
+      "residual_map": "docs/specs/work-items/WI-201-residual-map.json"
+    },
+    "2026-05-09-journey-generator-must-detect-i18n-and-chrome-controls.md": {
+      "accepted_wi": "WI-307",
+      "residual_map": "docs/specs/work-items/WI-307-residual-map.json"
+    },
+    "2026-05-11-framework-improvement-feature-validation-closeout-ledger.md": {
+      "accepted_wi": "WI-305",
+      "residual_map": "docs/specs/work-items/WI-305-residual-map.json"
+    },
+    "2026-05-11-framework-improvement-provider-fidelity-for-ai-visuals.md": {
+      "accepted_wi": "WI-306",
+      "residual_map": "docs/specs/work-items/WI-306-residual-map.json"
+    },
+    "2026-05-17-framework-improvement-wave-closeout-validator.md": {
+      "accepted_wi": "WI-348",
+      "residual_map": "docs/specs/work-items/WI-348-residual-map.json"
+    },
+    "2026-05-02-lane-7-infra-mode-deepening.md": {
+      "deferred_until": "2026-08-25",
+      "reason": "Imported from s7an salvage; needs dedicated Lane 7 proposal review before WI promotion. | re-triaged 2026-06-29: backlog-sequenced, flagged for individual triage by 2026-07-29",
+      "blocked_reason": "Beyond the 14-day defer window: imported/backlog evolution proposal awaiting a dedicated triage pass (re-deferred 2026-06-29, not abandoned)."
+    },
+    "2026-05-07-runtime-parity-gate-and-precheck-discipline.md": {
+      "deferred_until": "2026-08-25",
+      "reason": "Imported from s7an salvage; needs dedicated framework-hardening triage before WI promotion. | re-triaged 2026-06-29: backlog-sequenced, flagged for individual triage by 2026-07-29",
+      "blocked_reason": "Beyond the 14-day defer window: imported/backlog evolution proposal awaiting a dedicated triage pass (re-deferred 2026-06-29, not abandoned)."
+    },
+    "2026-05-08-end-of-turn-summary-leads-with-shipped.md": {
+      "deferred_until": "2026-08-25",
+      "reason": "Imported from s7an salvage; needs output-protocol review before WI promotion. | re-triaged 2026-06-29: backlog-sequenced, flagged for individual triage by 2026-07-29",
+      "blocked_reason": "Beyond the 14-day defer window: imported/backlog evolution proposal awaiting a dedicated triage pass (re-deferred 2026-06-29, not abandoned)."
+    },
+    "2026-05-10-otel-cross-cluster-existing-nlb-extension.md": {
+      "deferred_until": "2026-08-25",
+      "reason": "Imported from s7an salvage; needs OTel knowledge update triage before WI promotion. | re-triaged 2026-06-29: backlog-sequenced, flagged for individual triage by 2026-07-29",
+      "blocked_reason": "Beyond the 14-day defer window: imported/backlog evolution proposal awaiting a dedicated triage pass (re-deferred 2026-06-29, not abandoned)."
+    },
+    "2026-05-13-claude-legal-skills-addon.md": {
+      "deferred_until": "2026-08-25",
+      "reason": "Needs launch/legal-addon triage before WI promotion. | re-triaged 2026-06-29: backlog-sequenced, flagged for individual triage by 2026-07-29",
+      "blocked_reason": "Beyond the 14-day defer window: imported/backlog evolution proposal awaiting a dedicated triage pass (re-deferred 2026-06-29, not abandoned)."
+    },
+    "2026-05-13-concurrent-session-collision-on-main.md": {
+      "accepted_wi": "WI-349",
+      "residual_map": "docs/specs/work-items/WI-349-residual-map.json"
+    },
+    "2026-05-13-mandatory-cross-model-review-loop.md": {
+      "deferred_until": "2026-08-25",
+      "reason": "Needs review-loop architecture triage before WI promotion. | re-triaged 2026-06-29: backlog-sequenced, flagged for individual triage by 2026-07-29",
+      "blocked_reason": "Beyond the 14-day defer window: imported/backlog evolution proposal awaiting a dedicated triage pass (re-deferred 2026-06-29, not abandoned)."
+    },
+    "2026-05-13-multi-dev-multi-agent-operating-model.md": {
+      "deferred_until": "2026-08-25",
+      "reason": "Needs multi-agent operating-model triage before WI promotion. | re-triaged 2026-06-29: backlog-sequenced, flagged for individual triage by 2026-07-29",
+      "blocked_reason": "Beyond the 14-day defer window: imported/backlog evolution proposal awaiting a dedicated triage pass (re-deferred 2026-06-29, not abandoned)."
+    },
+    "2026-05-16-route-workflow-research-trigger-gate.md": {
+      "deferred_until": "2026-08-25",
+      "reason": "Needs route-workflow research gate architectural review. | re-triaged 2026-06-29: backlog-sequenced, flagged for individual triage by 2026-07-29",
+      "blocked_reason": "Beyond the 14-day defer window: imported/backlog evolution proposal awaiting a dedicated triage pass (re-deferred 2026-06-29, not abandoned)."
+    },
+    "2026-05-17-generic-data-access-control-delivery-guard.md": {
+      "deferred_until": "2026-08-25",
+      "reason": "Needs generic data access control delivery guard architectural review. | re-triaged 2026-06-29: backlog-sequenced, flagged for individual triage by 2026-07-29",
+      "blocked_reason": "Beyond the 14-day defer window: imported/backlog evolution proposal awaiting a dedicated triage pass (re-deferred 2026-06-29, not abandoned)."
+    },
+    "2026-05-25-evolution.md": {
+      "deferred_until": "2026-08-25",
+      "reason": "Imported evolution survey; its gitignore-hygiene slice (WI-FRAMEWORK-EVOLVE-GITIGNORE-HYGIENE) has landed/archived, the remainder is un-triaged. Re-triaged 2026-06-29 — needs per-item closure/triage by 2026-07-29.",
+      "blocked_reason": "Beyond the 14-day defer window: imported/backlog evolution proposal awaiting a dedicated triage pass (re-deferred 2026-06-29, not abandoned)."
+    },
+    "2026-05-29-framework-improvement-parallel-session-isolation.md": {
+      "rejected_reason": "Superseded by verified WI-351 and WI-352 session-isolation work; proposal remains as historical evidence until archived."
+    },
+    "2026-06-01-framework-improvement-feature-like-bugfix-product-questions.md": {
+      "deferred_until": "2026-08-25",
+      "reason": "Backlog: needs a dedicated framework-lane triage pass. Re-triaged 2026-06-29 — revisit by 2026-07-29.",
+      "blocked_reason": "Beyond the 14-day defer window: imported/backlog evolution proposal awaiting a dedicated triage pass (re-deferred 2026-06-29, not abandoned)."
+    },
+    "2026-06-04-framework-improvement-interactive-control-contract-gate.md": {
+      "accepted_wi": "WI-332",
+      "residual_map": "docs/specs/work-items/WI-332-residual-map.json"
+    },
+    "2026-06-04-session-audit-active-intent-guard.md": {
+      "accepted_wi": "WI-354",
+      "residual_map": "docs/specs/work-items/WI-354-residual-map.json",
+      "note": "Implemented + VERIFIED as WI-354; formal closeout filed 2026-06-29."
+    },
+    "2026-06-05-blend-lucaspatiri-ugc-viral.md": {
+      "deferred_until": "2026-08-25",
+      "reason": "Awaiting blend review and implementation planning. | re-triaged 2026-06-29: backlog-sequenced, flagged for individual triage by 2026-07-29",
+      "blocked_reason": "Beyond the 14-day defer window: imported/backlog evolution proposal awaiting a dedicated triage pass (re-deferred 2026-06-29, not abandoned)."
+    },
+    "2026-06-07-port-headless-claude-p-to-subagent-transport.md": {
+      "deferred_until": "2026-08-25",
+      "reason": "Filed as WI-374 (frozen — do-not-auto-dispatch by user directive); deferred 2026-06-29, tracked by that WI pending its unfreeze or a reject decision — NOT loose/un-triaged backlog.",
+      "blocked_reason": "Beyond the 14-day defer window: tracked by a WI, pending formal proposal closeout — re-deferred 2026-06-29."
+    },
+    "2026-07-14-change-impact-triad-universal-gate.md": {
+      "deferred_until": "2026-08-25",
+      "reason": "Tracked by WI-481; defer proposal archive and residual-map closeout until the five-leaf implementation program is fully verified."
+    },
+    "2026-07-14-codex-execution-integrity.md": {
+      "deferred_until": "2026-08-25",
+      "reason": "Implemented by WI-485, but formal proposal archive, residual map, and program promotion closeout remain coupled to the WI-481 program."
+    },
+    "2026-07-14-session-audit-codex-foreign-stop-and-ghost-skill.md": {
+      "deferred_until": "2026-08-25",
+      "reason": "Evidence feeds WI-484 and WI-485; defer formal archive and residual mapping until the dependent WI-481 program closes."
+    },
+    "2026-08-02-one-lane-framework.md": {
+      "deferred_until": "2026-08-18",
+      "reason": "ACCEPTED and in flight: implemented as WI-512 (batches B1-B4) on branch wi512-one-lane-batch. Sections 3e, 4c hook enforcement and physical quick-fix deletion are explicitly NOT built with reasons recorded in WI-512.",
+      "blocked_reason": "Formal archive deferred until WI-512 merges and its promotion is verified."
+    },
+    "2026-07-24-session-019f8cd3-audit-and-svc-framework-fixes.md": {
+      "deferred_until": "2026-08-18",
+      "reason": "Source of docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md (PR #182). The 11 genuinely-unimplemented OPT items are being executed as WI-512 batch B3; OPT-06/09/10/15 already landed or carry stale premises and OPT-14 has a false premise (target script does not exist under that name).",
+      "blocked_reason": "Archive deferred until WI-512 B3 lands and each OPT item has a recorded done/stale-premise disposition."
+    },
+    "2026-08-10-framework-improvement-agy-chain-receipts.md": {
+      "accepted_wi": "WI-529",
+      "residual_map": "docs/specs/work-items/WI-529-residual-map.json"
+    },
+    "2026-08-10-framework-improvement-codex-launcher-wiring.md": {
+      "accepted_wi": "WI-529",
+      "residual_map": "docs/specs/work-items/WI-529-residual-map.json"
+    },
+    "2026-08-10-framework-improvement-skills-package-layout.md": {
+      "accepted_wi": "WI-530",
+      "residual_map": "docs/specs/work-items/WI-530-residual-map.json"
+    },
+    "2026-08-10-wi368-execution-controller-v2-implementation-prompt.md": {
+      "deferred_until": "2026-08-25",
+      "reason": "Implementation is locally verified on the proposal branch; formal parent-WI and governed landing provenance must be reconciled before acceptance."
+    },
+    "2026-08-10-wi368-execution-controller-v2.md": {
+      "deferred_until": "2026-08-25",
+      "reason": "Implementation is locally verified on the proposal branch; formal parent-WI and governed landing provenance must be reconciled before acceptance."
+    },
+    "2026-07-21-session-audit-wi-472-reconcile-backlog.md": {
+      "status": "archived",
+      "archived_at": "2026-08-04",
+      "archived_to": "proposals/done/",
+      "reason": "Closed by WI-472, status VERIFIED-L3 in docs/specs/work-items/INDEX.md. Nothing actionable remained.",
+      "closed_by": "WI-512 landing hygiene"
+    }
+  }
+}

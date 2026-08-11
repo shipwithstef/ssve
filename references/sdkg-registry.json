@@ -1,0 +1,17 @@
+{
+  "$comment": "SDKG (Structured Domain Knowledge Gate) registry. Each entry registers one gate instance: schema, data path pattern, freshness window, trigger keywords, and per-instance gate config module. Primitives in scripts/lib/ read this file at runtime — adding a new SDKG instance does NOT require engine code changes.",
+  "version": 1,
+  "instances": {
+    "competitor-analysis": {
+      "schema": "references/schemas/competitor-analysis.schema.json",
+      "data_path_pattern": "docs/specs/analyze-competitors.data.json",
+      "freshness_days": 90,
+      "trigger_keywords": ["earn", "redeem", "verify", "enroll", "loyalty", "points", "reward"],
+      "gate_config": "scripts/gates/competitive.mjs",
+      "branch_field": "landscape_state",
+      "compensating_control_template": "references/templates/compensating-control.md",
+      "section_template": "references/templates/competitive-risk-assessment.md",
+      "monitor_triggers_path": ".svc/competitive-monitor-triggers.jsonl"
+    }
+  }
+}

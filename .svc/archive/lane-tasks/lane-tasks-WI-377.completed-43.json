@@ -1,0 +1,33 @@
+{
+ "wi": "WI-377",
+ "lane": "framework",
+ "delivery_tier": "compressed",
+ "status": "completed",
+ "tasks": [
+  {
+   "id": 1,
+   "subject": "probe marketplace/plugin schema (CLI authority)",
+   "metadata": {
+    "skill": "research"
+   },
+   "status": "in_progress"
+  },
+  {
+   "id": 2,
+   "subject": "plan+exec L2 pack plugins + per-project enabledPlugins + L3 paths",
+   "metadata": {
+    "skill": "execute-changeset"
+   },
+   "status": "pending"
+  },
+  {
+   "id": 3,
+   "subject": "G6+land+G7",
+   "metadata": {
+    "skill": "review-exec"
+   },
+   "status": "pending"
+  }
+ ],
+ "closure_evidence": "WI-377 merged via PR #43 (3fb77eb2) + closeout e0510416 VERIFIED; task statuses left unstamped by archiving session \u2014 see commit trail"
+}

@@ -1,0 +1,78 @@
+review_kind: plan
+wi: WI-507
+plan: docs/plans/2026-07-22-company-operating-fleet/manifest.md
+rounds_run: 3
+unresolved_critical: 0
+remaining_high: 0
+terminal_state: CONVERGED_WITH_BOUNDED_DISPOSITIONS
+
+round_1:
+  status: COMPLETED
+  reviewer_family: anthropic
+  reviewer_model: claude-opus-4-8
+  effort: high
+  rubric_score: 5
+  verdict: fail
+  receipt_path: .svc/external-review-artifacts/plan/5f6904cb71bfd1e12a7b10c9fb808b6e427d453754aa3b2d1e18c5b683844995/20260722T172610Z-3272470/receipt.json
+  findings:
+    - { id: F-001, severity: high, decision: ACCEPT, action: "Pin pre-merge proof to the WI worktree and post-merge proof to installed primary-main hooks." }
+    - { id: F-002, severity: high, decision: ACCEPT, action: "Persist exact external preconditions; absent creates exclusively, exact content no-ops, divergent content blocks." }
+    - { id: F-003, severity: high, decision: ACCEPT_WITH_SAFER_MECHANISM, action: "Create task-specific commit-tree checkpoint refs without moving the branch or using reset/stash; recover by diff and apply_patch." }
+    - { id: F-004, severity: high, decision: ACCEPT, action: "Separate Claude/Gemini hook wiring from all-eight-host skill installation and require all hosts after promotion." }
+    - { id: F-005, severity: high, decision: ACCEPT, action: "Emit verify-promotion receipt first, then index through a post-receipt continuation reading the consolidated note envelope." }
+    - { id: F-006, severity: high, decision: ACCEPT, action: "Make EVALS=1 and all 15 Tier-2 routing scenarios mandatory AC-2 proof." }
+    - { id: F-007, severity: medium, decision: ACCEPT, action: "Use setup validate-only in the worktree; mutate global installs only from promoted primary main." }
+    - { id: F-008, severity: medium, decision: PARTIAL, action: "Add a literal frontmatter template with empty lanes. Retain chain.terminal because create-skill and validate-terminal-skill-frontmatter explicitly require it." }
+    - { id: F-009, severity: medium, decision: ACCEPT, action: "Define an added-line-only genericity scan over shipped runtime surfaces and explicitly exclude instance pipeline artifacts." }
+    - { id: F-010, severity: medium, decision: PARTIAL, action: "Keep future CREATE paths plain because the current checker rejects absent future paths; add exact present/absent path-state preflight and confirm scenario conventions." }
+    - { id: F-011, severity: medium, decision: ACCEPT, action: "Use base ancestry and require rebase plus plan/receipt refresh if origin/main advances before execution." }
+    - { id: F-012, severity: low, decision: ACCEPT, action: "Declare REPO_MODES unchanged and add CLAUDE.md skill-count synchronization." }
+
+round_2_required: true
+round_2_reason: Six high findings were accepted and materially revised; the canonical independent reviewer must judge the new package before execution.
+
+round_2:
+  status: COMPLETED
+  reviewer_family: anthropic
+  reviewer_model: claude-opus-4-8
+  effort: high
+  rubric_score: 5
+  verdict: fail
+  receipt_path: .svc/external-review-artifacts/plan/db2ae531270698ca01f74d5ed4746234be1ff8634f44c553b4d28b69abb01f3b/20260722T173841Z-3299669/receipt.json
+  findings:
+    - { id: F-001, severity: high, decision: ACCEPT, action: "Invoke design-tech, baseline four persistent schemas/cache/operations, complete G4, add graph task 0, and cite explicit UX/UI skip decisions." }
+    - { id: F-002, severity: high, decision: ACCEPT, action: "Use one refs/svc/checkpoints namespace, re-derive every parent ref after resume, and validate cumulative staged paths against a durable allowlist." }
+    - { id: F-003, severity: high, decision: ACCEPT_WITH_CODE_EVIDENCE, action: "Pin setup validate-only precondition, cite inspected canonical-main repoint behavior, and add post-commit all-host symlink scan." }
+    - { id: F-004, severity: high, decision: ACCEPT, action: "Modify the Tier-2 runner for exact scenario argv/results, cap at 75 minutes and USD 15, define one retry and exact 15/zero-fail/zero-skip proof." }
+    - { id: F-005, severity: medium, decision: ACCEPT, action: "Declare the external precheck and checkpoint allowlist artifacts and define the precheck schema/lifecycle." }
+    - { id: F-006, severity: medium, decision: ACCEPT_WITH_REPO_EVIDENCE, action: "Retain create-skill-required chain.terminal and add its checked-in validator to preflight, focused validation, and execution." }
+    - { id: F-007, severity: medium, decision: ACCEPT, action: "Require explicit owned-hook removal/pruning modes and a pre-revert unwire procedure." }
+    - { id: F-008, severity: medium, decision: ACCEPT, action: "Pin cache path; make unzip optional with structured nonzero degradation; replace rg gate with fail-closed grep." }
+    - { id: F-009, severity: medium, decision: ACCEPT, action: "Pin and assert primary-main cwd/SHA before install, receipt verification, live hooks, and indexing." }
+    - { id: F-010, severity: low, decision: ACCEPT_COMPATIBLY, action: "Add stable Section 6/11 labels while retaining exact headings required by verify-plan-mechanical.sh." }
+
+round_3_required: true
+round_3_reason: The hard cap permits one final canonical convergence review after the accepted G4 and determinism corrections; no fourth round will be attempted.
+
+round_3:
+  status: COMPLETED
+  reviewer_family: anthropic
+  reviewer_model: claude-opus-4-8
+  effort: high
+  rubric_score: 6
+  verdict: fail
+  bounded_exit: true
+  receipt_path: .svc/external-review-artifacts/plan/d004946356caff37cd765093ed07e59278079cdaf11af4ee1e6be78a8d8552c8/20260722T175441Z-3335444/receipt.json
+  findings:
+    - { id: F-001, severity: high, decision: ACCEPT, action: "Add a real planning commit and cumulative implementation commit; planning/design/review/allowlist artifacts are explicitly staged." }
+    - { id: F-002, severity: high, decision: ACCEPT, action: "Start every executable Bash block with set -euo pipefail and retain explicit assertions." }
+    - { id: F-003, severity: high, decision: ACCEPT, action: "Define the checkpoint helper inside the execution block; reject empty sets, undeclared paths, and missing required staged paths." }
+    - { id: F-004, severity: high, decision: ACCEPT_WITH_CODE_EVIDENCE, action: "Remove impossible pre-merge all-host drift checks; document canonical-main pre-commit refresh behavior and require post-commit symlink proof." }
+    - { id: F-005, severity: high, decision: ACCEPT, action: "Declare the authoritative framework lane and disposition all nine lane members at pipeline decision lines 807-815." }
+    - { id: F-006, severity: medium, decision: ACCEPT, action: "Specify the exact Tier-2 argv, selection-only, result-file, verdict, and failure contracts plus focused runner tests." }
+    - { id: F-007, severity: medium, decision: ACCEPT, action: "Add exact-name orphan skill-symlink pruning and resolving-target assertions for all eight hosts after a revert." }
+    - { id: F-008, severity: medium, decision: ACCEPT_WITH_REPO_EVIDENCE, action: "Commit the checkpoint allowlist; persist the external precheck under the already ignored .svc/receipts path and assert ignore coverage." }
+    - { id: F-009, severity: medium, decision: ACCEPT, action: "Rename Task 5a to external links and worktree resolution; keep actual host install in verify-promotion." }
+    - { id: F-010, severity: low, decision: ACCEPT, action: "Verify each exact scenario result by first-line verdict=pass and exact count; remove broad transcript grep." }
+
+terminal_basis: The review protocol hard cap is reached. All round-3 high findings are accepted and mechanically revised; no fourth reviewer run is permitted. Execution may begin only after the final deterministic gates pass.

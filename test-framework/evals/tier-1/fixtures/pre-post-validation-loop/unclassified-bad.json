@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "acceptance_critical": true,
+  "selected_proof": {
+    "id": "J-AI-SAVE-001",
+    "command": "npx playwright test e2e/ai-save.spec.ts --project=chromium",
+    "target": "https://example-marketplace.app",
+    "environment": "production"
+  },
+  "pre": {
+    "status": "fail",
+    "evidence": "docs/specs/features/test-evidence/pre/scenarios.json"
+  },
+  "post": {
+    "status": "fail",
+    "evidence": "docs/specs/features/test-evidence/post/scenarios.json"
+  },
+  "comparison": "unchanged",
+  "iterations": [
+    {
+      "iteration": 1,
+      "fix_batch": "batch-1",
+      "classification": "unchanged",
+      "evidence": "docs/specs/features/test-evidence/post/SUMMARY.md"
+    }
+  ],
+  "changed_signals": [
+    {
+      "signal": "AI generated item still does not persist",
+      "acceptance_critical": true
+    }
+  ]
+}

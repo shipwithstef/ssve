@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "review_kind": "plan",
+  "rubric_score": 3,
+  "rubric_failures": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "dependencies_needing_read": [
+    "docs/specs/features/wi-486-session-isolated-bootstrap.md",
+    ".svc/lane-tasks-WI-486.json",
+    "docs/specs/bugfix/wi-486-session-bootstrap-brief.md",
+    "docs/specs/decisions/wi-486-session-isolated-bootstrap.md",
+    "docs/specs/journeys/J-FW-05-multi-session-contention.feature.md"
+  ],
+  "reviewer": {
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5",
+    "effort": "xhigh"
+  },
+  "verdict": "fail",
+  "summary": "The plan has strong AC mapping and recovery intent, but its execution sequence is not currently executable or promotion-safe. The most serious defect is that promoted verification and receipt emission occur from different working directories, so verify-promotion targets the feature commit rather than the squash-merge commit. The plan also omits the promised post-squash receipt-envelope transfer, permits undeclared staged files into the aggregate commit, contains unresolved command placeholders, and defines inconsistent liveness/reclaim behavior for bootstrap-intent markers.",
+  "findings": [
+    {
+      "id": "F-001",
+      "severity": "critical",
+      "claim": "Post-promotion receipt emission targets the feature-worktree commit, not the promoted squash-merge commit, and the promised five-receipt envelope is never re-emitted onto the merge commit.",
+      "analysis": "The command sequence updates and tests the primary checkout inside a subshell, then returns to the feature worktree before invoking emit-receipt. Because the receipt command has neither `git -C \"$PRIMARY\"` nor an explicit promoted SHA, its implicit HEAD is the feature branch's aggregate commit. The plan also explicitly recognizes that squash merging orphans tree-bound notes, yet provides no commands that transfer or re-emit plan-manifest, review-plan, exec-record, review-exec, and audit-implementation against the squash-merge SHA. This makes G7 evidence attach to the wrong object and leaves the promoted commit without the required chain envelope.",
+      "evidence": [
+        "The plan says: `PRIMARY=$(cd \"$(git rev-parse --git-common-dir)/..\" && pwd -P)` followed by `( cd \"$PRIMARY\" && bash test-framework/evals/run-all-evals.sh --tier1 )` and then, outside that subshell, `node scripts/emit-receipt.mjs --type verify-promotion ...`.",
+        "The plan says: `then re-emit the envelope onto the squash-merge commit (squash orphans tree-bound notes)`, but no subsequent command re-emits the five pre-promotion receipt types.",
+        "The feature worktree remains on `framework-WI-486-isolated-bootstrap`; only the primary checkout is fast-forwarded to `main`."
+      ],
+      "proposed_fix": "Capture `PROMOTED_SHA=$(git -C \"$PRIMARY\" rev-parse HEAD)` after the fast-forward, verify it equals the PR merge SHA, transfer or re-emit all five mandatory receipts with `--sha \"$PROMOTED_SHA\"`, validate them with `check-chain-receipts --sha \"$PROMOTED_SHA\"`, and emit verify-promotion with the same explicit SHA. Specify the exact receipt-transfer source and commands rather than relying on cwd defaults."
+    },
+    {
+      "id": "F-002",
+      "severity": "high",
+      "claim": "The declared execution and rollback sequences contain unresolved placeholders and therefore are not copy-pasteable or deterministic.",
+      "analysis": "Several commands depend on variables or pseudo-arguments that the plan never constructs. Shell tokens such as `<exec-record.json>` and `<n>` are not descriptive no-ops: they are parsed as redirections and will fail or invoke commands with missing arguments. `COMMIT_MSG_FILE` and `VERIFY_PROMOTION_JSON` are never assigned. The migration rollback uses `<owner>` without defining how the fresh authorization artifact is obtained. These gaps occur on the commit, receipt, merge, promotion, and rollback paths, so an executor must invent critical inputs.",
+      "evidence": [
+        "`git commit -F \"$COMMIT_MSG_FILE\"` appears without a preceding command that creates or assigns `COMMIT_MSG_FILE`.",
+        "Receipt commands contain `--body <exec-record.json>`, `--body <review-exec.json>`, and `--body <audit.json>`.",
+        "Merge commands contain `--pr <n>`.",
+        "Promotion uses `--body \"$VERIFY_PROMOTION_JSON\"` without constructing that variable.",
+        "Rollback uses `--authorization <owner>` despite the plan's own 24-hour, digest-bound owner-authorization contract."
+      ],
+      "proposed_fix": "Add exact non-interactive commands that create each body file and commit-message file, capture the PR number and promoted SHA from a named machine-readable command, validate every JSON body before emission, and resolve a concrete authorization-file path plus its required SHA environment value. Replace every angle-bracket placeholder in executable blocks."
+    },
+    {
+      "id": "F-003",
+      "severity": "high",
+      "claim": "The aggregate commit step does not prove that the index contains exactly the declared file set, so unrelated staged residue can be committed.",
+      "analysis": "`git add` names the intended paths, but it does not clear or reject files that were already staged. The following status check permits any staged Added or Modified path under hooks, scripts, and schemas, including undeclared paths, and does not establish an exact index manifest across tests, docs, and `.svc`. A plain `git commit` then commits the entire index. This violates the scope-boundary and residue-preservation invariants.",
+      "evidence": [
+        "The command is `git add -- $CODE_PATHS ...` followed by `test -z \"$(git status --porcelain -- hooks scripts schemas | grep -v '^[AM]')\"`.",
+        "Filtering out lines beginning with `A` or `M` explicitly allows staged additions/modifications without checking whether their paths are declared.",
+        "`git commit -F \"$COMMIT_MSG_FILE\"` has no path restriction and commits all staged content.",
+        "The base preflight checks commits ahead of BASE but never asserts that the index is initially empty or contains only preserved WI-486 planning artifacts."
+      ],
+      "proposed_fix": "Generate a canonical sorted file list from the declared commit paths, compare it byte-for-byte with `git diff --cached --name-only --diff-filter=ACMR`, fail on every extra or missing path, and separately require no unstaged/untracked implementation residue. Record the exact staged-tree hash before committing and verify the commit tree afterward."
+    },
+    {
+      "id": "F-004",
+      "severity": "high",
+      "claim": "Bootstrap-intent liveness and stale-owner reclaim are internally inconsistent and leave some crash states without a deterministic recovery path.",
+      "analysis": "The intent marker is declared authoritative for partial state and is created before claim or binding, but its schema contains no heartbeat, hostname, PID, or process-start token. Later, foreign-session liveness is defined using those missing fields. The plan further says stale foreign tuples are reclaimable only through `transferClaim`; a crash after writing the marker or worktree/graph but before creating a claim leaves no claim to transfer. That state is neither safely classifiable by the stated liveness rule nor reclaimable through the only permitted mechanism.",
+      "evidence": [
+        "The marker schema is stated as `{ session_id, wi, branch, target_worktree, base_sha, started_at }`.",
+        "The liveness section says an `intent-marker/claim/binding` is LIVE based on `renewed_at`/`heartbeat_at`, `hostname`, `pid`, and `process_start_token`.",
+        "The marker is the first artifact, explicitly before worktree, graph, claim, and binding.",
+        "The plan says a stale foreign tuple is reclaimable `ONLY through the existing generation-bound claim transfer (transferClaim)`."
+      ],
+      "proposed_fix": "Define one complete marker schema containing the process identity and expiry fields needed for liveness, or explicitly define marker expiry from `started_at`. Add a locked reclaim transition for marker-only and pre-claim states that preserves generation semantics and records the prior owner. Specify tests for crashes after each stage, including marker-only, marker+worktree, and marker+worktree+graph with a dead foreign process."
+    },
+    {
+      "id": "F-005",
+      "severity": "medium",
+      "claim": "The immutable Tier-1 baseline is contradictory at the same declared base SHA.",
+      "analysis": "The plan alternately requires 244 and 245 passing tests at base `99da8bcf`. Because baseline identity is used as task-1 evidence and as the attribution rule for a changed final total, both values cannot be authoritative. An executor cannot know which frozen evidence is correct or whether a one-test discrepancy is a regression.",
+      "evidence": [
+        "Task 1 validation says: `baseline file states 244/0/0`.",
+        "The Simulation Report says: `promoted baseline is 244/0/0 at exact base SHA`.",
+        "Full branch policy says: `The immutable pre-edit comparison point is 245 passed, 0 failed, 0 timed out on promoted base 99da8bcf`.",
+        "The planned evidence file is described as preserving the promoted-base `244/0/0` identity."
+      ],
+      "proposed_fix": "Run the baseline once at the pinned SHA in an isolated temporary worktree, record the exact command, harness revision, pass/fail/timeout totals, and output digest, then use that single value everywhere in the manifest and evidence descriptions."
+    },
+    {
+      "id": "F-006",
+      "severity": "medium",
+      "claim": "The red-phase and syntax checks can report success without proving the properties claimed by their checkpoints.",
+      "analysis": "The red validators are piped through `tee` without enabling pipefail or explicitly capturing `PIPESTATUS[0]`; only the presence of a marker is asserted. A validator could exit successfully while printing the marker and still satisfy the sequence. Separately, task 2 passes multiple paths to one `node --check` invocation even though the plan acknowledges that Node checks only its first argument. These weaknesses make the task checkpoints less deterministic than their descriptions.",
+      "evidence": [
+        "Red commands use `bash <validator> 2>&1 | tee <log>; grep -q 'EXPECTED-RED: ...' <log>` with no assertion on the validator's exit status.",
+        "Task 2 uses `node --check hooks/lib/resolve-wi.mjs hooks/codex/lib/codex-hook-context.mjs hooks/codex/svc-codex-skill-load-enforcer.mjs`.",
+        "The plan elsewhere states: `node --check only checks one arg` and provides a per-file loop as the required resolution."
+      ],
+      "proposed_fix": "Run each red validator under `set -o pipefail`, capture and assert its expected nonzero exit code, and separately assert the exact expected marker. Replace every multi-path `node --check` command with the same per-file loop covering all six planned Node entry points."
+    },
+    {
+      "id": "F-007",
+      "severity": "medium",
+      "claim": "The frozen graph-reader inventory is generated only during task 1 and is not deterministically revalidated at freeze.",
+      "analysis": "The plan says the reader count is revalidated and that a mismatch fails task 6, but the execution sequence invokes the inventory script only before runtime changes. Later changes can add or remove matching reads, and the final full-suite command is not shown to enforce the count. The asserted total can therefore become stale while task 6 still passes.",
+      "evidence": [
+        "Task 1 runs `bash scripts/inventory-graph-readers.sh` and writes the frozen artifact.",
+        "The task-6 command block does not rerun `scripts/inventory-graph-readers.sh` or compare its output/count to the frozen artifact.",
+        "The prose says: `The frozen count must equal the inventory artifact; a mismatch fails task-6`, without giving the enforcing command or validator."
+      ],
+      "proposed_fix": "Add a read-only `--check <artifact>` mode to the inventory script, invoke it during task 6 after the final code edits and before hashing/review, and include it in Tier 1 so the frozen inventory fails on any later drift."
+    },
+    {
+      "id": "F-008",
+      "severity": "medium",
+      "claim": "AC coverage and framework-lane completion cannot be independently verified from the supplied review package.",
+      "analysis": "The manifest provides AC identifiers and claims that upstream tasks are completed, but the actual acceptance-criterion text and authoritative lane-task statuses/phase receipts are not present in the supplied context. This prevents checking whether SIB-01–42 are mapped semantically rather than merely by range, and whether every mandatory upstream skill is genuinely completed. The protocol requires artifact-backed lane compliance, not prose assertions in the plan being reviewed.",
+      "evidence": [
+        "The AC mapping contains only ranges such as `SIB-01–03`; the referenced feature specification content was not included.",
+        "Framework-lane compliance cites `.svc/lane-tasks-WI-486.json`, but that file's content and phase receipts were not supplied.",
+        "The plan says `review-plan | in_progress`, so its terminal status and receipt necessarily remain unverified during this review pass."
+      ],
+      "proposed_fix": "Include the baselined feature spec, lane-task graph, and cited upstream diagnosis/design/journey artifacts in the next review package. Require the convergence package to show review-plan completed with its receipt before execution authorization is granted."
+    }
+  ],
+  "certifications": []
+}

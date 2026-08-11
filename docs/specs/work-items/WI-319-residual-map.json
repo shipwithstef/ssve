@@ -1,0 +1,120 @@
+{
+  "schema": 1,
+  "wi": "WI-319",
+  "source_proposals": [
+    "proposals/done/2026-04-27-global-improvements-from-opencode-review.md"
+  ],
+  "status": "mixed-covered-and-backlog-owned",
+  "coverage": [
+    {
+      "source_proposal": "proposals/done/2026-04-27-global-improvements-from-opencode-review.md",
+      "proposal_item": "detect-host double-invokes detection functions",
+      "status": "partial",
+      "owner_wi": "WI-319",
+      "evidence": [
+        "docs/specs/work-items/WI-319.md",
+        "scripts/detect-host.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-27-global-improvements-from-opencode-review.md",
+      "proposal_item": "setup should read rulesRegistry from skills-manifest instead of scanning rule file text",
+      "status": "covered",
+      "owner_wi": "WI-319",
+      "evidence": [
+        "setup",
+        "scripts/wire-opencode-hooks.mjs",
+        "skills-manifest.json",
+        "test-framework/evals/tier-1/validate-rules-registry-completeness.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-27-global-improvements-from-opencode-review.md",
+      "proposal_item": "host config wirers should back up or validate existing config before overwrite",
+      "status": "partial",
+      "owner_wi": "WI-319",
+      "evidence": [
+        "docs/specs/work-items/WI-319.md",
+        "scripts/wire-opencode-hooks.mjs",
+        "scripts/wire-kimi-hooks.mjs",
+        "scripts/wire-codex-hooks.mjs"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-27-global-improvements-from-opencode-review.md",
+      "proposal_item": "svc-safety.toml policy installation is Gemini-specific unless documented or extended",
+      "status": "partial",
+      "owner_wi": "WI-319",
+      "evidence": [
+        "docs/specs/work-items/WI-319.md",
+        "setup",
+        "provision/hosts/gemini.json"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-27-global-improvements-from-opencode-review.md",
+      "proposal_item": "agents directory availability for host manifests is partially covered by current host capability metadata",
+      "status": "covered",
+      "owner_wi": "WI-319",
+      "evidence": [
+        "provision/hosts/codex.json",
+        "provision/hosts/gemini.json",
+        "provision/hosts/opencode.json",
+        "test-framework/evals/tier-1/validate-framework-self-management.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-27-global-improvements-from-opencode-review.md",
+      "proposal_item": "route-workflow host path table includes OpenCode skills path",
+      "status": "covered",
+      "owner_wi": "WI-319",
+      "evidence": [
+        "route-workflow/references/hot-path-operational-details.md",
+        "route-workflow/references/task-graph-protocol.md"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-27-global-improvements-from-opencode-review.md",
+      "proposal_item": "onboard-repo host tables include OpenCode init-project-state and AGENTS.md paths",
+      "status": "covered",
+      "owner_wi": "WI-319",
+      "evidence": [
+        "onboard-repo/SKILL.md"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-27-global-improvements-from-opencode-review.md",
+      "proposal_item": "dispatch-worker skill lookup includes OpenCode skills path",
+      "status": "covered",
+      "owner_wi": "WI-319",
+      "evidence": [
+        "scripts/dispatch-worker.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-27-global-improvements-from-opencode-review.md",
+      "proposal_item": "audit-session-execution OpenCode session artifact path remains audit-first backlog",
+      "status": "partial",
+      "owner_wi": "WI-319",
+      "evidence": [
+        "docs/specs/work-items/WI-319.md",
+        "audit-session-execution/SKILL.md"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-27-global-improvements-from-opencode-review.md",
+      "proposal_item": "README host setup list includes OpenCode",
+      "status": "covered",
+      "owner_wi": "WI-319",
+      "evidence": [
+        "README.md"
+      ]
+    }
+  ],
+  "residuals": [
+    {
+      "wi": "WI-319",
+      "title": "OpenCode host integration residuals"
+    }
+  ]
+}

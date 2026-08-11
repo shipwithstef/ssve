@@ -1,0 +1,84 @@
+{
+ "schema": 1,
+ "description": "Capability blocker classes used by route-workflow and planning skills before implementation dispatch.",
+ "classes": [
+  {
+   "id": "provider-auth-or-token",
+   "route_to": "provider-environment-skill",
+   "signals": [
+    "401",
+    "403",
+    "expired token",
+    "auth token",
+    "refresh token",
+    "login loop",
+    "Base44 auth"
+   ],
+   "diagnosis": "Verify local/provider auth before treating the failure as an application bug."
+  },
+  {
+   "id": "unknown-provider-api",
+   "route_to": "research",
+   "signals": [
+    "unknown api",
+    "new sdk",
+    "provider behavior",
+    "webhook contract",
+    "callback contract",
+    "rate limit"
+   ],
+   "diagnosis": "Research provider behavior or current API shape before architecture or implementation."
+  },
+  {
+   "id": "missing-product-capability",
+   "route_to": "validate-feature",
+   "signals": [
+    "missing capability",
+    "not supported",
+    "no api",
+    "cannot build because",
+    "blocked by capability"
+   ],
+   "diagnosis": "Validate or rescope the feature dependency before writing implementation tasks."
+  },
+  {
+   "id": "capability-inventory-gap",
+   "route_to": "capability-registry",
+   "signals": [
+    "capability registry",
+    "what can this project do",
+    "project capability",
+    "available capability"
+   ],
+   "diagnosis": "Update or query the capability registry before recommendation or planning."
+  },
+  {
+   "id": "deprecated-foundation",
+   "route_to": "design-tech",
+   "signals": [
+    "deprecated api",
+    "legacy api",
+    "old sdk",
+    "inertia",
+    "extend legacy"
+   ],
+   "diagnosis": "Scan deprecated foundations and force a migrate-vs-extend decision before planning."
+  },
+  {
+   "id": "product-owns-task",
+   "route_to": "capability-registry",
+   "signals": [
+    "the app is supposed to do this",
+    "app should do this",
+    "this app is supposed to",
+    "use the app for this",
+    "the product does this",
+    "route through the app",
+    "novisenti",
+    "why are you doing it manually",
+    "app owns this"
+   ],
+   "diagnosis": "The task belongs to a product/app the builder owns \u2014 route execution THROUGH the product (capability-registry/capability-concierge resolve which one) instead of doing the work manually in-session. Origin: 2026-06-07 insights report \u2014 manual opportunity-discovery bypassed the Novisenti app ('THIS APP IS SUPPOSED TO DO THIS NOT YOU')."
+  }
+ ]
+}

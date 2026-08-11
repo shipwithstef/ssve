@@ -1,0 +1,40 @@
+{
+  "rule_path": null,
+  "source_repo": "affaan-m/everything-claude-code",
+  "source_path": "rules/common/code-review.md",
+  "scope": "global",
+  "stack": "universal",
+  "verdict": "adopt-with-edits",
+  "scores": {
+    "determinism_gain": 2,
+    "correctness_delta": 2,
+    "friction_cost": 1,
+    "convention_conflict": 1
+  },
+  "scenarios_evaluated": 4,
+  "tier2_ran": true,
+  "tier2_verdict": "confirmed",
+  "edits_required": [
+    "Strip ECC agent routing table — replace with svc skill references (review-security, review-gate)",
+    "Replace 'code-reviewer agent' references with 'audit-implementation skill'",
+    "Replace 'security-reviewer agent' with 'review-security skill'",
+    "Replace 'typescript-reviewer agent' with language-generic equivalent"
+  ],
+  "adopt_core": "Severity taxonomy (CRITICAL/HIGH/MEDIUM/LOW → BLOCK/WARN/INFO/NOTE), mandatory review triggers, structured checklist, 80% coverage hard minimum, Approve/Warning/Block outcome framework",
+  "note": "The severity taxonomy is the load-bearing behavior change — Claude uses natural language for review issues without this, leading to inconsistent prioritization signaling.",
+  "evidence": {
+    "default_transcript": "docs/specs/rules-evaluation/common-code-review/default-transcript.md",
+    "diff_and_verdict": "docs/specs/rules-evaluation/common-code-review/diff-and-verdict.md"
+  },
+  "suggested_registry_entry": {
+    "path": "rules/code-review.md",
+    "scope": "global",
+    "stack": "universal",
+    "source": "blended:ecc",
+    "last_evaluated": "2026-04-13",
+    "source_sha": "125d5e619905d97b519a887d5bc7332dcc448a52",
+    "notes": "ECC common/code-review.md stripped of agent references. Core: severity taxonomy, triggers, checklist, 80% minimum."
+  },
+  "evaluated_at": "2026-04-13",
+  "contamination_caveat": "Rules fetched into context before skill invocation"
+}

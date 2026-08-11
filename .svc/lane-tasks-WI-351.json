@@ -1,0 +1,519 @@
+{
+  "wi": "WI-351",
+  "lane": "framework",
+  "created": "2026-05-29T15:29:17.412Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "route-workflow: route concurrent session hook crosstalk to framework lane",
+      "status": "completed",
+      "metadata": {
+        "skill": "route-workflow",
+        "normalized_intent": "Route parallel session collision and hook crosstalk to the framework lane for diagnosis and resolution."
+      },
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-05-29T15:29:40.745Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-05-29T15:30:06.915Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-session-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-05-29T15:30:06.951Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-intent.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-05-29T15:30:06.989Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-351.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-05-29T15:30:07.029Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-concern-gate.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-05-29T15:30:07.066Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-351.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-05-29T15:30:07.100Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-29T15:30:10.154Z"
+    },
+    {
+      "id": 2,
+      "subject": "improve-framework: diagnose stop hook crosstalk, prepare proposal, and design resolution",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-29T15:42:15.298Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-FrameworkRepoAndMemoryLoad",
+            "ts": "2026-05-29T15:52:05.198Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-repo-memory.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-PendingProposalAndEvidenceSelection",
+            "ts": "2026-05-29T15:52:15.108Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-evidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-DiagnosisAndDuplicateFilter",
+            "ts": "2026-05-29T15:52:59.421Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "proposals/2026-05-29-framework-improvement-parallel-session-isolation.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ImplementationRouteDecision",
+            "ts": "2026-05-29T15:53:06.080Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-route.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-ImplementationAndReplayVerification",
+            "ts": "2026-05-29T15:53:10.892Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-replay.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-ImprovementRecordAndStateMutation",
+            "ts": "2026-05-29T15:53:16.071Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/improve-framework-state-mutation.log"
+              }
+            ]
+          },
+          {
+            "id": "P7-ProposalDoneAndRemoteSync",
+            "ts": "2026-05-29T15:53:20.867Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-remote-sync.log"
+              }
+            ]
+          },
+          {
+            "id": "P8-SelfVerifyContinuation",
+            "ts": "2026-05-29T15:53:25.577Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-29T15:53:27.831Z"
+    },
+    {
+      "id": 3,
+      "subject": "plan-changeset: build changeset blueprint for hook session-isolation",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "metadata": {
+        "skill": "plan-changeset"
+      },
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-05-29T15:53:39.104Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-05-29T15:59:02.542Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-archetype.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-05-29T15:59:09.484Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-scope.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-05-29T15:59:24.828Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-05-29-parallel-session-isolation/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-05-29T15:59:28.687Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-05-29-parallel-session-isolation/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-05-29T15:59:39.090Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-05-29T15:59:45.068Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-29T16:00:20.885Z"
+    },
+    {
+      "id": 4,
+      "subject": "execute-changeset: implement session isolation in hooks and validators",
+      "status": "completed",
+      "blocked_by": [
+        3
+      ],
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-05-29T16:00:29.113Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-05-29T16:06:13.770Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-preflight.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-05-29T16:06:13.829Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-05-29-parallel-session-isolation/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-05-29T16:06:13.883Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-verification.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-05-29T16:06:13.927Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-checkpoint.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-29T16:06:15.740Z"
+    },
+    {
+      "id": 5,
+      "subject": "review-exec: adversarial review of changes",
+      "status": "completed",
+      "blocked_by": [
+        4
+      ],
+      "metadata": {
+        "skill": "review-exec"
+      },
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-05-29T16:07:20.169Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-05-29T16:07:38.497Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-exec-self-verify.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-05-29T16:07:38.673Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-exec-pair-resolver.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-05-29T16:07:38.730Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-exec-adversarial-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerdictAndReceiptFinalize",
+            "ts": "2026-05-29T16:07:38.797Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipts/90beefa/review-exec.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-29T16:07:35.673Z"
+    },
+    {
+      "id": 6,
+      "subject": "land-changeset: merge the session isolation changes to main",
+      "status": "completed",
+      "blocked_by": [
+        5
+      ],
+      "metadata": {
+        "skill": "land-changeset"
+      },
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-05-29T16:07:50.971Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-05-29T16:07:53.792Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-05-29T16:07:53.857Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-diff-audit.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-05-29T16:07:53.917Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-validation.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-PushPrCreation",
+            "ts": "2026-05-29T16:07:53.987Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-pr.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-MergeDecisionCleanup",
+            "ts": "2026-05-29T16:07:54.048Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-merge.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SpecStatusSelfVerify",
+            "ts": "2026-05-29T16:07:54.110Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-29T16:07:56.181Z"
+    },
+    {
+      "id": 7,
+      "subject": "verify-promotion: post-merge sanity checks and verification",
+      "status": "completed",
+      "blocked_by": [
+        6
+      ],
+      "metadata": {
+        "skill": "verify-promotion"
+      },
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-05-29T16:08:03.491Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-05-29T16:08:30.823Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-evidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-05-29T16:08:30.882Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-351.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-05-29T16:08:30.935Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-runtime.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-05-29T16:08:30.985Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "FRAMEWORK-STATE.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-29T16:08:33.393Z"
+    }
+  ]
+}

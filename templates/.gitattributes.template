@@ -1,0 +1,12 @@
+# === BEGIN SERIOUS VIBE CODING ATTRIBUTES ===
+# Mutable .svc state merge protocol (WI-398). Parallel orchestrator sessions
+# commit divergent .svc state; these attributes pick a NON-corrupting merge.
+# Append-only event logs: union (concatenate both sides' lines) is correct.
+.svc/*.jsonl merge=union
+# Mutable JSON state: union would CORRUPT JSON. Use the deterministic 3-way
+# driver. The driver COMMAND is registered per-clone by
+# `node <framework>/scripts/init-project-state.mjs` (or install-svc-merge-driver.sh);
+# absent registration, git's safe default conflict applies — never corruption.
+.svc/*.json merge=svc-json
+.svc/**/*.json merge=svc-json
+# === END SERIOUS VIBE CODING ATTRIBUTES ===

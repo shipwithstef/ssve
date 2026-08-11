@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "wi_id": "WI-341",
+  "promoted_at": "2026-05-12T00:00:00Z",
+  "enforced_after": "2026-05-13",
+  "grandfathered": false,
+  "bootstrap": true,
+  "source_proposal": "proposals/2026-05-12-pre-wi-promotion-compression-gate.md",
+  "checks": {
+    "concrete_contract": "pass",
+    "severity_taxonomy": {
+      "rated": "high",
+      "justification": "Closes a structural gap that caused 14 findings in one Codex burst review. Severity per rules/github-projects.md taxonomy + WI-341 Route section rationale."
+    },
+    "host_agnostic": {
+      "result": "pass",
+      "config": ".svc/forbidden-tokens.json",
+      "tokens": []
+    },
+    "concerns_wired": [],
+    "tier1_promotion_note": "filled",
+    "capability_freshness": {
+      "result": "pass",
+      "oracles": [
+        "scripts/resolve-model.sh",
+        "references/model-registry.json",
+        "references/model-routing.md",
+        "references/knowledge/svc/CAPABILITIES.md"
+      ]
+    },
+    "plan_changeset_class": "contract-change",
+    "lane": "framework"
+  },
+  "decision": "accepted",
+  "reviewer": "bootstrap@svc"
+}

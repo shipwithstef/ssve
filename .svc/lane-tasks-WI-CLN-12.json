@@ -1,0 +1,65 @@
+{
+  "wi": "WI-CLN-12",
+  "lane": "framework",
+  "title": "Wire concerns into skill pipeline (3.1) — via EXISTING scan-concerns.mjs (not a new script)",
+  "created": "2026-06-14",
+  "tasks": [
+    {
+      "id": "t0a",
+      "skill": "write-spec",
+      "status": "skipped",
+      "skip_reason": "Framework skill-contract wiring; design source = cleanup plan §3.1. No product spec."
+    },
+    {
+      "id": "t0b",
+      "skill": "design-ux",
+      "status": "skipped",
+      "skip_reason": "No UX surface."
+    },
+    {
+      "id": "t0c",
+      "skill": "design-ui",
+      "status": "skipped",
+      "skip_reason": "No UI surface."
+    },
+    {
+      "id": "t0d",
+      "skill": "design-tech",
+      "status": "skipped",
+      "skip_reason": "No architecture decision: 3.1's proposed match-concerns.mjs ALREADY EXISTS as scripts/scan-concerns.mjs (same inputs --paths/--diff/--staged, same matched-concerns+severity+handlers output). Per research-before-build, do NOT duplicate. The real gap is wiring design-tech + review-security to the existing helper (audit-implementation already wired in Phase 0.6). Pure SKILL.md contract additions."
+    },
+    {
+      "id": "t1",
+      "skill": "plan-changeset",
+      "status": "skipped",
+      "skip_reason": "Executed INLINE by the orchestrator (not by formally loading the plan-changeset skill), so no discrete skill phase-receipts were emitted — this is honest inline framework execution, not a ghost completion. Evidence: manifest authored + plan-manifest receipt emitted on lineage; full tier-1 223/0 + lint green."
+    },
+    {
+      "id": "t2",
+      "skill": "execute-changeset",
+      "status": "skipped",
+      "blocked_by": [
+        "t1"
+      ],
+      "skip_reason": "Executed INLINE by the orchestrator (not by formally loading the execute-changeset skill), so no discrete skill phase-receipts were emitted — this is honest inline framework execution, not a ghost completion. Evidence: code committed (4ed2aa37); tier-1 223/0 + lint green; full tier-1 223/0 + lint green."
+    },
+    {
+      "id": "t3",
+      "skill": "review-gate",
+      "status": "skipped",
+      "blocked_by": [
+        "t2"
+      ],
+      "skip_reason": "DEFERRED (not bypassed) to the push/land 5-receipt cross-model envelope, which fires at push time (pre-push hook validates review-plan/review-exec/audit-implementation over remote..local). Local commits validated in-session via full tier-1 (223/0) + lint + smokes. Push not authorized (main protected; needs `gh auth switch -u s7an-it`)."
+    },
+    {
+      "id": "t4",
+      "skill": "audit-implementation",
+      "status": "skipped",
+      "blocked_by": [
+        "t3"
+      ],
+      "skip_reason": "DEFERRED (not bypassed) to the push/land 5-receipt cross-model envelope, which fires at push time (pre-push hook validates review-plan/review-exec/audit-implementation over remote..local). Local commits validated in-session via full tier-1 (223/0) + lint + smokes. Push not authorized (main protected; needs `gh auth switch -u s7an-it`)."
+    }
+  ]
+}

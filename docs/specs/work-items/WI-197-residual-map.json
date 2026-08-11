@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "wi": "WI-197",
+  "source_proposals": [
+    "proposals/done/2026-05-08-runtime-verification-must-not-delegate-to-user.md"
+  ],
+  "status": "implemented",
+  "coverage": [
+    {
+      "source_proposal": "proposals/done/2026-05-08-runtime-verification-must-not-delegate-to-user.md",
+      "proposal_item": "behavioral runtime verification cannot be delegated to the user when automation is available",
+      "status": "covered",
+      "owner_wi": "WI-197",
+      "evidence": [
+        "docs/specs/work-items/WI-197.md",
+        "references/anti-patterns.md",
+        "verify-promotion/SKILL.md"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-08-runtime-verification-must-not-delegate-to-user.md",
+      "proposal_item": "Stop hook blocks closeout text that asks the user to manually verify behavioral ACs",
+      "status": "covered",
+      "owner_wi": "WI-197",
+      "evidence": [
+        "hooks/svc-verification-delegation-guard.sh",
+        "scripts/verification-stop-guard.mjs",
+        "references/verification-delegation-patterns.json",
+        "test-framework/evals/tier-1/validate-verification-delegation-guard.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-08-runtime-verification-must-not-delegate-to-user.md",
+      "proposal_item": "review-gate and verify-promotion require structured runtime evidence rather than free-text user-eyeball proof",
+      "status": "covered",
+      "owner_wi": "WI-197",
+      "evidence": [
+        "review-gate/SKILL.md",
+        "verify-promotion/SKILL.md",
+        "test-framework/evals/tier-1/validate-verification-delegation-detection.sh",
+        "test-framework/evals/tier-1/validate-skill-receipt-shape.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-08-runtime-verification-must-not-delegate-to-user.md",
+      "proposal_item": "historical delegation phrases are replayed so recurrence is mechanically blocked",
+      "status": "covered",
+      "owner_wi": "WI-197",
+      "evidence": [
+        "test-framework/evals/tier-1/fixtures/verification-delegation/bad",
+        "test-framework/evals/tier-1/validate-verification-delegation-guard.sh"
+      ]
+    }
+  ]
+}

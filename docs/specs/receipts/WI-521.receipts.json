@@ -1,0 +1,117 @@
+{
+  "wi": "WI-521",
+  "story_type": "framework",
+  "scope": "stage-receipt spine + branch-index effectiveness (Batches A/B/C)",
+  "stages": [
+    {
+      "stage": "spec",
+      "status": "done",
+      "evidence": [
+        "commit:c76b626b"
+      ],
+      "grounded_on": [
+        "ruling:hey-i-need-you-modular-kazoo.md (owner plan, G1-G10 audit table, lines 16-29)",
+        "artifact:docs/specs/work-items/INDEX.md"
+      ],
+      "note": ""
+    },
+    {
+      "stage": "plan",
+      "status": "done",
+      "evidence": [
+        "commit:c76b626b",
+        "commit:cf3ebd12"
+      ],
+      "grounded_on": [
+        "ruling:hey-i-need-you-modular-kazoo.md Batches A/B/C sections (lines 55-102)"
+      ],
+      "note": ""
+    },
+    {
+      "stage": "review-plan",
+      "status": "done",
+      "evidence": [
+        "commit:c76b626b",
+        "commit:cf3ebd12"
+      ],
+      "grounded_on": [
+        "artifact:c76b626b commit message narrates its own Opus review pass (0 CRITICAL, situational-profile-required bug found and closed)",
+        "artifact:cf3ebd12 commit message narrates its own Opus review pass (1 CRITICAL — symlink main()-guard silently exiting 0 — plus a fail-open git() sibling sweep, both closed and re-verified)"
+      ],
+      "note": ""
+    },
+    {
+      "stage": "implement",
+      "status": "done",
+      "evidence": [
+        "commit:c76b626b",
+        "commit:cf3ebd12",
+        "scripts/task-graph.mjs",
+        "scripts/stage-activation.mjs",
+        "land-changeset/SKILL.md",
+        "route-workflow/SKILL.md"
+      ],
+      "grounded_on": [
+        "code:scripts/stage-activation.mjs re-based on references/stage-registry.json (ESSENTIAL_STAGES derived, --registry flag added, essential-fence exit 2 re-proven — C1)",
+        "code:scripts/task-graph.mjs generate command reusing writeGraph/validateGraph/syncGraphStatus (C2)",
+        "code:land-changeset/SKILL.md Step 1f (G10 land-gate rows) + C4 story_receipt_sha256 cross-link (C3/C4)",
+        "code:route-workflow/SKILL.md P3 stage-activation invocation block + Self-Verify row 2b re-point (C1)"
+      ],
+      "note": ""
+    },
+    {
+      "stage": "review-exec",
+      "status": "done",
+      "evidence": [
+        "docs/specs/reviews/wi-521-batch-c-review.md"
+      ],
+      "grounded_on": [
+        "Batch C adversarial review completed: 2 Opus invocations (the protocol ceiling, triggered by CRITICAL findings). Round 1 returned BLOCK with 3 CRITICAL + 2 HIGH; the confirmation round returned all CLOSED and additionally found 2 sibling asymmetries, both since fixed.",
+        "Batches A and B carry their own review-exec rounds: A LAND-WITH-FIXES (1 HIGH fail-open closed, verified exit 2 at registry load); B BLOCK->CLOSED (1 CRITICAL symlink no-op, 3 HIGH, plus a git() fail-open found by sibling sweep and proven fail-closed with a PATH shim).",
+        "Pinned only AFTER the review landed, not before: the round-1 defect this receipt was corrected for was claiming review-exec done while the review had not run."
+      ]
+    },
+    {
+      "stage": "test-run",
+      "status": "done",
+      "evidence": [
+        "commit:c76b626b"
+      ],
+      "grounded_on": [
+        "measurement:node --test scripts/audit-story-receipts.test.mjs — 18/18 (re-run this batch, see closing smokes)",
+        "measurement:node --check on every .mjs touched by this batch (see smokes)"
+      ],
+      "note": ""
+    },
+    {
+      "stage": "spec-sync",
+      "status": "done",
+      "evidence": [
+        "docs/specs/work-items/INDEX.md"
+      ],
+      "grounded_on": [
+        "artifact:docs/specs/work-items/INDEX.md (tracked, current WI-521 row)",
+        "ruling:review round FIX 3 — spec-sync is class:essential in the registry and stage-activation.mjs itself refuses to even CONDITION an essential stage (result:\"active\" on this run's real diff), so `na` was self-contradictory; docs/specs/work-items/WI-521.md documents the same scope but is untracked pending its own commit, so it is not cited as evidence here"
+      ],
+      "note": ""
+    },
+    {
+      "stage": "ledger",
+      "status": "na",
+      "evidence": [],
+      "grounded_on": [],
+      "note": "no product-feature relation ledger applies to this framework/infra WI; docs/specs/work-items/INDEX.md is the equivalent audit-trail artifact for framework WIs"
+    },
+    {
+      "stage": "index-restamp",
+      "status": "done",
+      "evidence": [
+        "commit:cf3ebd12"
+      ],
+      "grounded_on": [
+        "measurement:node scripts/check-branch-index.mjs --all -> [FRESH] docs/specs/relations/branch-index-freshness.branches.md (re-run this batch, see closing smokes)"
+      ],
+      "note": ""
+    }
+  ]
+}

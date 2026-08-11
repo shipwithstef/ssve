@@ -1,0 +1,331 @@
+{
+  "wi": "WI-479",
+  "lane": "framework",
+  "created": "2026-07-14T03:17:21.985Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "write-spec",
+      "subject": "upstream write-spec (skipped)",
+      "status": "skipped",
+      "skip_reason": "WI-479 doc ACs + blend plan item 1 are the spec; contract content sourced from upstream marketing-loops guardrails via knowledge file"
+    },
+    {
+      "id": 2,
+      "skill": "design-ux",
+      "subject": "upstream design-ux (skipped)",
+      "status": "skipped",
+      "skip_reason": "no UX surface"
+    },
+    {
+      "id": 3,
+      "skill": "design-ui",
+      "subject": "upstream design-ui (skipped)",
+      "status": "skipped",
+      "skip_reason": "no UI surface"
+    },
+    {
+      "id": 4,
+      "skill": "define-code-style",
+      "subject": "upstream define-code-style (skipped)",
+      "status": "skipped",
+      "skip_reason": "no code authored; markdown reference doc + agent-pointer lines + one .claude mirror regen"
+    },
+    {
+      "id": 5,
+      "skill": "design-tech",
+      "subject": "inline: loop-state schema + Tier model + hybrid-receipts design",
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "design-tech",
+        "loaded_at": "2026-07-14T03:19:56.078Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-CompletedInline",
+            "ts": "2026-07-14T03:19:56.143Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-479.md"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-07-14-wi479-autonomous-loop-contract/manifest.md"
+      },
+      "completed_at": "2026-07-14T03:19:56.207Z"
+    },
+    {
+      "id": 6,
+      "skill": "explore-solutions",
+      "subject": "inline: svc-native .svc/loops vs .agents; receipts-hybrid vs plain run-log",
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "explore-solutions",
+        "loaded_at": "2026-07-14T03:19:56.266Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-CompletedInline",
+            "ts": "2026-07-14T03:19:56.330Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-479.md"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-07-14-wi479-autonomous-loop-contract/manifest.md"
+      },
+      "completed_at": "2026-07-14T03:19:56.380Z"
+    },
+    {
+      "id": 7,
+      "skill": "plan-changeset",
+      "subject": "manifest",
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-07-14T03:19:56.477Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-07-14T03:19:56.643Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/pipeline-decisions.jsonl"
+              }
+            ]
+          },
+          {
+            "id": "P1-PlanAuthored",
+            "ts": "2026-07-14T03:20:52.007Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi479-autonomous-loop-contract/manifest.md"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-07-14-wi479-autonomous-loop-contract/manifest.md"
+      },
+      "completed_at": "2026-07-14T03:20:52.050Z"
+    },
+    {
+      "id": 8,
+      "skill": "review-plan",
+      "subject": "adversarial (Codex + Tier-3)",
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-07-14T03:20:52.144Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-14T03:20:52.272Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/lane-tasks-WI-479.json"
+              }
+            ]
+          },
+          {
+            "id": "P1-ReviewComplete",
+            "ts": "2026-07-14T12:29:05.788Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi479-autonomous-loop-contract/review-log.yaml"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-07-14-wi479-autonomous-loop-contract/review-log.yaml"
+      },
+      "completed_at": "2026-07-14T12:29:05.879Z"
+    },
+    {
+      "id": 9,
+      "skill": "execute-changeset",
+      "subject": "write contract + wire agents",
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-07-14T12:42:25.821Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-07-14T12:42:25.949Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi479-autonomous-loop-contract/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-07-14T12:42:26.104Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi479-autonomous-loop-contract/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-07-14T12:42:26.239Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi479-autonomous-loop-contract/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-07-14T12:42:26.454Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi479-autonomous-loop-contract/manifest.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T12:42:26.629Z"
+    },
+    {
+      "id": 10,
+      "skill": "review-exec",
+      "subject": "G6 frozen-diff",
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-07-14T12:41:35.895Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-07-14T13:00:00.457Z"
+    },
+    {
+      "id": 11,
+      "skill": "audit-implementation",
+      "subject": "AC coverage",
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-07-14T13:00:00.535Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P5-FindingsConvergenceReport",
+            "ts": "2026-07-14T13:00:00.574Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/WI-479-analysis.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T13:00:00.610Z"
+    },
+    {
+      "id": 12,
+      "skill": "land-changeset",
+      "subject": "PR + merge + receipts",
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-07-14T13:08:53.144Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-Landed",
+            "ts": "2026-07-14T13:08:53.208Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/WI-479-analysis.md"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/specs/audit/WI-479-analysis.md"
+      },
+      "completed_at": "2026-07-14T13:08:53.263Z"
+    },
+    {
+      "id": 13,
+      "skill": "verify-promotion",
+      "subject": "post-merge lint+tier1",
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-07-14T13:08:53.371Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-07-14T13:08:53.421Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/WI-479-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-07-14T13:08:53.485Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/WI-479-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-07-14T13:08:53.540Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/WI-479-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-07-14T13:08:53.594Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/WI-479-analysis.md"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/specs/audit/WI-479-analysis.md"
+      },
+      "completed_at": "2026-07-14T13:08:53.641Z"
+    }
+  ],
+  "title": "WI-479: autonomous-loop contract (loop-state + two-tier guardrails)",
+  "persona_coverage": {
+    "status": "not_required",
+    "reason": "framework governance reference doc + agent pointers; no user-facing feature surface"
+  }
+}

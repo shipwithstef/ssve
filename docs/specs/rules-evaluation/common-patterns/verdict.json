@@ -1,0 +1,25 @@
+{
+  "rule_path": null,
+  "source_repo": "affaan-m/everything-claude-code",
+  "source_path": "rules/common/patterns.md",
+  "scope": "global",
+  "stack": "universal",
+  "verdict": "defer-to-default",
+  "scores": {
+    "determinism_gain": 1,
+    "correctness_delta": 1,
+    "friction_cost": 1,
+    "convention_conflict": 1
+  },
+  "scenarios_evaluated": 3,
+  "tier2_ran": false,
+  "tier2_verdict": null,
+  "note": "Skeleton project pipeline is ECC-specific. Repository and API patterns are defaults. DG=1, CD=1 don't reach adopt threshold.",
+  "evidence": {
+    "default_transcript": "docs/specs/rules-evaluation/common-patterns/default-transcript.md",
+    "diff_and_verdict": "docs/specs/rules-evaluation/common-patterns/diff-and-verdict.md"
+  },
+  "suggested_registry_entry": null,
+  "evaluated_at": "2026-04-13",
+  "contamination_caveat": "Rules fetched into context before skill invocation"
+}

@@ -1,0 +1,101 @@
+{
+  "host": "codex",
+  "name": "OpenAI Codex CLI",
+  "skills_path": "~/.codex/skills",
+  "builder_profile_path": "~/.svc/builder-profile.md",
+  "capabilities": {
+    "skills": true,
+    "hooks": true,
+    "plugins": true,
+    "mcp": true,
+    "commands": true,
+    "agents": true
+  },
+  "runtime_ingress_v2": { "transport": "hook-adapter", "fallback": "cli-adapter", "canonical_journal": true, "projection_only": true },
+  "authority_capabilities": {
+    "stable_session_identity": true,
+    "stable_child_identity": true,
+    "identity_source": "session_id plus persisted dispatch child principal",
+    "filesystem_containment": "wrapper",
+    "containment_backend": "landlock",
+    "containment_launcher": "scripts/svc-contained-exec.mjs",
+    "containment_probe_required": true,
+    "mutating_child_execution": true
+  },
+  "hook_events": [
+    "SessionStart",
+    "PreToolUse",
+    "PermissionRequest",
+    "PostToolUse",
+    "UserPromptSubmit",
+    "Stop"
+  ],
+  "hook_quirks": {
+    "feature_flag_required": "hooks",
+    "feature_flag_file": "~/.codex/config.toml",
+    "timeout_unit": "s",
+    "tool_matchers": [
+      "Bash",
+      "apply_patch",
+      "Edit",
+      "Write",
+      "MCP tools"
+    ],
+    "config_file": ".codex/hooks.json",
+    "windows_native_supported": true,
+    "wsl2_supported": true,
+    "wsl2_requires_linux_node": true
+  },
+  "task_graph": {
+    "task_ui": "update_plan",
+    "background_tasks": false,
+    "skill_load_mode": "direct_skill_file",
+    "native_task_read_tools": []
+  },
+  "infra_files": [
+    "DOCTRINE.md",
+    "REPO_MODES.md",
+    "WORKTREES.md",
+    "EXTERNAL_ADDONS.md",
+    "FRAMEWORK-STATE.md",
+    "skills-manifest.json",
+    "CONTRIBUTING.md"
+  ],
+  "infra_dirs": [
+    "scripts",
+    "references",
+    "proposals",
+    "examples",
+    "hooks",
+    "provision",
+    "templates",
+    "_shared",
+    "concerns"
+  ],
+  "skip": [],
+  "post_install_commands": [
+    "bash {skills_path}/scripts/install-browse.sh"
+  ],
+  "verify_commands": [
+    "test -f {skills_path}/route-workflow/SKILL.md",
+    "test -f {skills_path}/DOCTRINE.md",
+    "test -f {skills_path}/skills-manifest.json",
+    "test -f {skills_path}/scripts/install-browse.sh"
+  ],
+  "wiring": {
+    "hook_capable": true,
+    "wirer": "scripts/wire-codex-hooks.mjs",
+    "wirer_via": "case",
+    "governed": true,
+    "governed_token": [
+      "svc-enforce",
+      "svc-codex-pretool-dispatcher"
+    ],
+    "config_file": "~/.codex/hooks.json",
+    "effective_state": {
+      "type": "codex-hooks-state",
+      "config_file": "~/.codex/config.toml"
+    },
+    "enforcement": "launcher"
+  }
+}

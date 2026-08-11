@@ -1,0 +1,268 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://svc.local/schemas/capability-catalog.json",
+  "title": "Domain Capability Catalog",
+  "description": "Machine-readable capability matrix for gap analysis and downstream skill querying.",
+  "type": "object",
+  "required": ["meta", "capabilities", "build_priority_ranking"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["generated", "domain", "source_skills", "total_capabilities"],
+      "properties": {
+        "generated": { "type": "string", "format": "date" },
+        "domain": { "type": "string" },
+        "source_skills": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "prior_catalog": { "type": ["string", "null"] },
+        "total_capabilities": { "type": "integer", "minimum": 0 },
+        "weight_preset": { "type": "string" }
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/capability" }
+    },
+    "journey_scaffolding": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/journey_scaffold" }
+    },
+    "gap_report": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/gap_item" }
+    },
+    "convergence_alerts": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/convergence_alert" }
+    },
+    "build_priority_ranking": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/priority_item" }
+    },
+    "zombie_capabilities": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/zombie_item" },
+      "description": "Capabilities present in codebase but not in industry catalog"
+    }
+  },
+  "definitions": {
+    "capability": {
+      "type": "object",
+      "required": [
+        "capability_id",
+        "name",
+        "category",
+        "frequency",
+        "maturity",
+        "visibility",
+        "kano",
+        "convergence_velocity",
+        "mechanic_count",
+        "bps",
+        "depth",
+        "coverage_quality",
+        "mechanics",
+        "journey_mappings"
+      ],
+      "properties": {
+        "capability_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "frequency": {
+          "type": "string",
+          "enum": ["universal", "common", "occasional", "rare"]
+        },
+        "maturity": {
+          "type": "string",
+          "enum": ["MVP-required", "growth-stage", "enterprise", "edge-case"]
+        },
+        "visibility": {
+          "type": "string",
+          "enum": ["user-facing", "admin-facing", "backend-only", "regulatory"]
+        },
+        "kano": {
+          "type": "string",
+          "enum": ["must-be", "one-dimensional", "attractive", "indifferent"]
+        },
+        "convergence_velocity": {
+          "type": "string",
+          "enum": ["stable", "accelerating", "explosive"]
+        },
+        "mechanic_count": {
+          "type": "integer",
+          "enum": [1, 2, 3, 4]
+        },
+        "bps": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 40
+        },
+        "moat_score": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "depth": {
+          "type": "integer",
+          "enum": [1, 2, 3, 4],
+          "description": "Capability depth tier: 1=industry table stakes, 2=domain-specific, 3=niche/mechanic, 4=implementation pattern"
+        },
+        "parent_capability_id": {
+          "type": ["string", "null"],
+          "pattern": "^[a-z0-9-]+$",
+          "description": "Parent capability that this one depends on or specializes"
+        },
+        "dependencies": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "description": "Capability IDs that must exist before this capability can be built"
+        },
+        "dependent_capabilities": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "description": "Capabilities that depend on this one"
+        },
+        "mechanics": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/mechanic" }
+        },
+        "journey_mappings": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/journey_mapping" }
+        },
+        "coverage_quality": {
+          "type": "string",
+          "enum": ["V0", "V1", "V2", "V3"],
+          "description": "Quality depth of coverage: V0=not mentioned, V1=mentioned in spec/journey, V2=partially traced with AC/mechanic, V3=fully traced through implementation"
+        },
+        "competitor_sources": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "mechanic": {
+      "type": "object",
+      "required": ["pattern", "prevalence", "tier"],
+      "properties": {
+        "pattern": { "type": "string" },
+        "prevalence": {
+          "type": "string",
+          "enum": ["universal", "common", "occasional", "rare"]
+        },
+        "tier": {
+          "type": "string",
+          "enum": ["MVP", "growth", "enterprise", "edge-case"]
+        },
+        "converging": { "type": "boolean" }
+      }
+    },
+    "journey_mapping": {
+      "type": "object",
+      "required": ["journey", "step", "required"],
+      "properties": {
+        "journey": { "type": "string" },
+        "step": { "type": "string" },
+        "required": { "type": "boolean" }
+      }
+    },
+    "journey_scaffold": {
+      "type": "object",
+      "required": ["journey", "universal_capabilities", "common_capabilities"],
+      "properties": {
+        "journey": { "type": "string" },
+        "universal_capabilities": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "common_capabilities": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "gap_item": {
+      "type": "object",
+      "required": [
+        "capability_id",
+        "priority",
+        "kano",
+        "frequency",
+        "gap_type",
+        "effort"
+      ],
+      "properties": {
+        "capability_id": { "type": "string" },
+        "priority": {
+          "type": "string",
+          "enum": ["P0", "P1", "P2", "P3", "P4"]
+        },
+        "kano": {
+          "type": "string",
+          "enum": ["must-be", "one-dimensional", "attractive", "indifferent"]
+        },
+        "frequency": {
+          "type": "string",
+          "enum": ["universal", "common", "occasional", "rare"]
+        },
+        "gap_type": {
+          "type": "string",
+          "enum": ["MISSING", "PARTIAL", "COVERED"]
+        },
+        "coverage_quality": {
+          "type": "string",
+          "enum": ["V0", "V1", "V2", "V3"],
+          "description": "Quality depth of coverage: V0=not mentioned, V1=mentioned in spec/journey, V2=partially traced with AC/mechanic, V3=fully traced through implementation"
+        },
+        "effort": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        },
+        "rationale": { "type": "string" }
+      }
+    },
+    "convergence_alert": {
+      "type": "object",
+      "required": ["capability_id", "was", "now", "trigger"],
+      "properties": {
+        "capability_id": { "type": "string" },
+        "was": {
+          "type": "string",
+          "enum": ["universal", "common", "occasional", "rare"]
+        },
+        "now": {
+          "type": "string",
+          "enum": ["universal", "common", "occasional", "rare"]
+        },
+        "trigger": { "type": "string" }
+      }
+    },
+    "priority_item": {
+      "type": "object",
+      "required": ["capability_id", "bps", "priority"],
+      "properties": {
+        "capability_id": { "type": "string" },
+        "bps": { "type": "number" },
+        "priority": {
+          "type": "string",
+          "enum": ["P0", "P1", "P2", "P3", "P4"]
+        }
+      }
+    },
+    "zombie_item": {
+      "type": "object",
+      "required": ["capability_id", "name", "location", "rationale"],
+      "properties": {
+        "capability_id": { "type": "string" },
+        "name": { "type": "string" },
+        "location": { "type": "string", "description": "File path or module where found" },
+        "rationale": { "type": "string", "description": "Why this is considered a zombie capability" }
+      }
+    }
+  }
+}

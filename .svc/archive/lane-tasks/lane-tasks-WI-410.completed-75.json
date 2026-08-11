@@ -1,0 +1,544 @@
+{
+  "wi": "WI-410",
+  "lane": "framework",
+  "created": "2026-06-22T10:56:24Z",
+  "status": "pending",
+  "delivery_tier": "end_to_end",
+  "solution_confidence": "design_auto (dossier wf_f24ea3a8)",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "route-workflow: route WI-410 to framework lane, end_to_end tier",
+      "status": "completed",
+      "metadata": {
+        "skill": "route-workflow",
+        "normalized_intent": "Deliver blind-control-plan floor (never-worse-than-blind) as a new framework gate, end to end via framework routing, in worktree."
+      },
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-06-22T10:59:21.774Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-06-22T10:59:21.774Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-session-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-06-22T10:59:21.774Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-intent.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-06-22T10:59:21.774Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-410.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-06-22T10:59:21.774Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-concern-gate.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-06-22T10:59:21.774Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-410.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-06-22T10:59:21.774Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-self-verify.log"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "subject": "write-spec: WI-410 spec + honest invariant + ACs + resolved open questions",
+      "status": "completed",
+      "metadata": {
+        "skill": "write-spec",
+        "artifact": "docs/specs/work-items/WI-410.md"
+      },
+      "skill_receipt": {
+        "skill": "write-spec",
+        "loaded_at": "2026-06-22T10:59:21.774Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ContextAndModeSelection",
+            "ts": "2026-06-22T12:12:19.479Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-410.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiscussionPreflightAndAlternatives",
+            "ts": "2026-06-22T12:12:19.479Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-410.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-StoryAcceptanceCriteriaDraft",
+            "ts": "2026-06-22T12:12:19.479Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-410.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ScopeReviewDecisionLog",
+            "ts": "2026-06-22T12:12:19.479Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-410.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-JourneySyncDependencyQueue",
+            "ts": "2026-06-22T12:12:19.479Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-410.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyHandoff",
+            "ts": "2026-06-22T12:12:19.479Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-410.md"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "subject": "plan-changeset: implementation manifest (gate skill + blind-floor-check.mjs + blind-floor-judge.sh + control-plan.schema.json + validate-blind-floor.sh + fixtures)",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "metadata": {
+        "skill": "plan-changeset"
+      },
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-06-22T11:41:13.063Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-06-22T11:41:13.106Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-archetype.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-06-22T11:41:13.148Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-06-22T11:41:13.192Z"
+    },
+    {
+      "id": 4,
+      "subject": "review-plan: adversarial plan review (codex, piped context)",
+      "status": "completed",
+      "blocked_by": [
+        3
+      ],
+      "metadata": {
+        "skill": "review-plan"
+      },
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-06-22T12:33:30.917Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-06-22T12:33:30.955Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/review-tier2.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-06-22T12:33:30.994Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "/tmp/review-tier2.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-06-22T12:33:31.033Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-22-wi410-blind-control-plan/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-06-22T12:33:31.070Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-plan-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-06-22T12:33:31.108Z"
+    },
+    {
+      "id": 5,
+      "subject": "execute-changeset: build v1 (WARN/shadow, default OFF)",
+      "status": "completed",
+      "blocked_by": [
+        4
+      ],
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-06-22T12:45:18.288Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-06-22T13:04:45.134Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-22-wi410-blind-control-plan/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-06-22T13:04:45.134Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-22-wi410-blind-control-plan/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-06-22T13:04:45.134Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-22-wi410-blind-control-plan/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-06-22T13:04:45.134Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-22-wi410-blind-control-plan/manifest.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-06-22T12:45:18.467Z"
+    },
+    {
+      "id": 6,
+      "subject": "review-exec: G6 cross-family review of frozen diff",
+      "status": "completed",
+      "blocked_by": [
+        5
+      ],
+      "metadata": {
+        "skill": "review-exec"
+      },
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-06-22T13:16:13.098Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-06-22T13:16:13.134Z"
+    },
+    {
+      "id": 7,
+      "subject": "audit-implementation: verify against AC1/AC2/AC3 negative fixtures",
+      "status": "completed",
+      "blocked_by": [
+        6
+      ],
+      "metadata": {
+        "skill": "audit-implementation"
+      },
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-06-22T13:16:13.166Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-06-22T13:16:13.197Z"
+    },
+    {
+      "id": 8,
+      "subject": "land-changeset: PR + squash; control-plan stays out of REQUIRED_TYPES_FULL",
+      "status": "completed",
+      "blocked_by": [
+        7
+      ],
+      "metadata": {
+        "skill": "land-changeset"
+      },
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-06-22T13:55:32.258Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-06-22T13:55:32.258Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-22-wi410-blind-control-plan/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-06-22T13:55:32.258Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-22-wi410-blind-control-plan/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-06-22T13:55:32.258Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-22-wi410-blind-control-plan/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-PushPrCreation",
+            "ts": "2026-06-22T13:55:32.258Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-22-wi410-blind-control-plan/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-MergeDecisionCleanup",
+            "ts": "2026-06-22T13:55:32.258Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-22-wi410-blind-control-plan/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SpecStatusSelfVerify",
+            "ts": "2026-06-22T13:55:32.258Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-22-wi410-blind-control-plan/manifest.md"
+              }
+            ]
+          }
+        ]
+      },
+      "note": "LOCAL land complete (ae91dd1a, envelope valid); remote push deferred per local-until-ready pattern"
+    },
+    {
+      "id": 9,
+      "subject": "verify-promotion: G7 + run-all-evals.sh --tier1 green + proof-session invariant held",
+      "status": "completed",
+      "blocked_by": [
+        8
+      ],
+      "metadata": {
+        "skill": "verify-promotion"
+      },
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-06-22T13:55:32.258Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-06-22T13:55:32.258Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-410.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-06-22T13:55:32.258Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-410.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-06-22T13:55:32.258Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-410.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-06-22T13:55:32.258Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-410.md"
+              }
+            ]
+          }
+        ]
+      },
+      "note": "G7 PASS: envelope complete+valid, tier-1 225/0, invariant held (validate-blind-floor 7 fixtures)"
+    },
+    {
+      "id": 10,
+      "subject": "design-ux: N/A for framework-internal gate (skipped)",
+      "skill": "design-ux",
+      "status": "skipped",
+      "skip_reason": "framework-internal plan-stage gate; no end-user UX/UI/product-architecture surface. Design completed via research dossier docs/analysis/wi410-control-plan-research.md (wf_f24ea3a8) + WI-410 spec.",
+      "metadata": {
+        "skill": "design-ux"
+      }
+    },
+    {
+      "id": 11,
+      "subject": "design-ui: N/A for framework-internal gate (skipped)",
+      "skill": "design-ui",
+      "status": "skipped",
+      "skip_reason": "framework-internal plan-stage gate; no end-user UX/UI/product-architecture surface. Design completed via research dossier docs/analysis/wi410-control-plan-research.md (wf_f24ea3a8) + WI-410 spec.",
+      "metadata": {
+        "skill": "design-ui"
+      }
+    },
+    {
+      "id": 12,
+      "subject": "design-tech: N/A for framework-internal gate (skipped)",
+      "skill": "design-tech",
+      "status": "skipped",
+      "skip_reason": "framework-internal plan-stage gate; no end-user UX/UI/product-architecture surface. Design completed via research dossier docs/analysis/wi410-control-plan-research.md (wf_f24ea3a8) + WI-410 spec.",
+      "metadata": {
+        "skill": "design-tech"
+      }
+    },
+    {
+      "id": 13,
+      "subject": "explore-solutions: N/A for framework-internal gate (skipped)",
+      "skill": "explore-solutions",
+      "status": "skipped",
+      "skip_reason": "framework-internal plan-stage gate; no end-user UX/UI/product-architecture surface. Design completed via research dossier docs/analysis/wi410-control-plan-research.md (wf_f24ea3a8) + WI-410 spec.",
+      "metadata": {
+        "skill": "explore-solutions"
+      }
+    }
+  ],
+  "upstream_completed": [
+    "evolve-framework (gap identified via despair-diagnosis wf wu03mmodr + research wf_f24ea3a8)"
+  ],
+  "upstream_skipped_with_justification": [
+    {
+      "skill": "improve-framework",
+      "reason": "gap discovery + design already done by the two ultracode research workflows; this is a single scoped new-gate WI, not a framework-wide audit. Logged in pipeline-decisions."
+    }
+  ],
+  "persona_coverage": {
+    "status": "not_required",
+    "reason": "framework-lane self-improvement WI: a new internal plan-stage gate (blind-control-plan floor). No end-user-facing surface or persona; the consumer is the framework orchestrator/chain itself."
+  }
+}

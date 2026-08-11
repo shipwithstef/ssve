@@ -1,0 +1,161 @@
+{
+  "wi": "WI-197",
+  "lane": "framework",
+  "created": "2026-05-10T10:00:00Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Route WI-197 Phase A and bind session contract",
+      "status": "completed",
+      "metadata": {
+        "skill": "route-workflow"
+      },
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-05-10T10:00:00Z",
+        "loaded_via": "session"
+      },
+      "completed_at": "2026-05-10T10:00:00Z"
+    },
+    {
+      "id": 2,
+      "subject": "Produce plan-changeset manifest at .svc/plan-changeset-WI-197-phase-a.md",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "plan-changeset"
+      },
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-05-10T06:12:21.796Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-10T06:12:21.821Z"
+    },
+    {
+      "id": 3,
+      "subject": "Author references/verification-delegation-patterns.json (canonical phrase list with carve-outs)",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-05-10T06:12:21.846Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-10T06:13:09.252Z"
+    },
+    {
+      "id": 4,
+      "subject": "Build scripts/scan-verification-delegation.mjs (reusable detection engine)",
+      "status": "completed",
+      "blocked_by": [
+        3
+      ],
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-05-10T06:13:09.277Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-10T06:14:39.782Z"
+    },
+    {
+      "id": 5,
+      "subject": "Add tier-1 validator validate-verification-delegation-detection.sh (advisory in Phase A)",
+      "status": "completed",
+      "blocked_by": [
+        4
+      ],
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-05-10T06:14:39.830Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-10T06:15:50.741Z"
+    },
+    {
+      "id": 6,
+      "subject": "Add fixtures: good/bad transcript inputs exercising the engine",
+      "status": "completed",
+      "blocked_by": [
+        5
+      ],
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-05-10T06:15:50.787Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-10T06:15:50.876Z"
+    },
+    {
+      "id": 7,
+      "subject": "Update FRAMEWORK-STATE.md and WI-197.md to record Phase A landed",
+      "status": "completed",
+      "blocked_by": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-05-10T06:15:50.924Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-10T06:17:07.115Z"
+    },
+    {
+      "id": 8,
+      "subject": "Run tier-1 evals; confirm new validator passes and no regression",
+      "status": "completed",
+      "blocked_by": [
+        7
+      ],
+      "metadata": {
+        "skill": "verify-promotion"
+      },
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-05-10T06:17:07.168Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-10T06:21:35.495Z"
+    },
+    {
+      "id": 9,
+      "subject": "Commit Phase A and open PR (stacked on PR #82)",
+      "status": "completed",
+      "blocked_by": [
+        8
+      ],
+      "metadata": {
+        "skill": "land-changeset"
+      },
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-05-10T06:21:35.540Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-10T09:05:44Z"
+    }
+  ]
+}

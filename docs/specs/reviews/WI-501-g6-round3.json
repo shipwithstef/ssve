@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "review_kind": "exec",
+  "rubric_score": null,
+  "rubric_failures": null,
+  "dependencies_needing_read": null,
+  "reviewer": {
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5",
+    "effort": "xhigh"
+  },
+  "verdict": "fail",
+  "summary": "NO-SHIP. R2-F001 and R2-F003 are fixed, and the pure classifier corpus plus syntax checks pass. However, one HIGH classifier bypass remains, and R2-F002 only partially hardens the audit path. I could not run the complete break-glass validator because this sandbox prohibits the temporary filesystem writes it requires; that limitation was not itself scored as a failure.",
+  "findings": [
+    {
+      "id": "R3-F001",
+      "severity": "high",
+      "claim": "Clustered ripgrep short options bypass the read-only classifier's subprocess restriction.",
+      "analysis": "isSafeRg rejects only the exact token `-z`. Ripgrep permits clustered short options, so `rg -iz needle archive.gz` enables `-z/--search-zip` while isReadOnlyTool returns true. Ripgrep implements this mode by launching decompressor processes, defeating the classifier's explicit attempt to prevent subprocess-capable flags. The same boundary also trusts ambient RIPGREP_CONFIG_PATH configuration, which can inject `--pre` unless `--no-config` is enforced.",
+      "evidence": [
+        "hooks/codex/lib/codex-hook-context.mjs:216-223 rejects `token === \"-z\"` but does not inspect short-option clusters.",
+        "Direct pure-classifier probe: `isReadOnlyTool(\"rg -iz needle archive.gz\")` returned true.",
+        "Local ripgrep probe accepted `-iz` as valid clustered options: exit 1 for no match versus exit 2 for an invalid option.",
+        "The official [ripgrep FAQ](https://github.com/BurntSushi/ripgrep/blob/master/FAQ.md) states that `-z/--search-zip` shells out to decompressor binaries.",
+        "The official [ripgrep guide](https://github.com/BurntSushi/ripgrep/blob/master/GUIDE.md) states that configuration arguments are prepended from RIPGREP_CONFIG_PATH and recommends `--no-config` to prevent them."
+      ],
+      "proposed_fix": "Parse ripgrep short-option clusters and reject any cluster containing `z`; add `rg -iz` and `rg -nz` denial vectors. Also refuse read-only classification when RIPGREP_CONFIG_PATH is active unless the invocation contains `--no-config`."
+    },
+    {
+      "id": "R3-F002",
+      "severity": "medium",
+      "claim": "The audit trail can still retain insecure permissions or be redirected through a symlinked parent directory.",
+      "analysis": "O_NOFOLLOW protects only the final audit filename. The env-form break-glass returns before validating `~/.svc`, and breakGlassAllow then uses recursive mkdir plus a pathname open, so an existing `~/.svc` directory symlink can redirect the audit silently. Additionally, the 0600 mode passed to openSync applies only when creating a file; an existing same-owner 0666 or legacy 0644 audit file is accepted without rejection or correction. This leaves integrity or confidentiality dependent on pre-existing mode.",
+      "evidence": [
+        "bin/svc-enforce.mjs:73-74 arms the env form before any state-directory validation.",
+        "bin/svc-enforce.mjs:101-112 does not lstat or securely validate the audit directory before opening its child path.",
+        "bin/svc-enforce.mjs:108-110 validates audit type and owner but not mode.",
+        "The validator tests a symlinked final audit filename, but not a symlinked `.svc` parent or a permissive pre-existing audit file."
+      ],
+      "proposed_fix": "Validate `~/.svc` as a real same-UID, non-group/other-writable directory for both break-glass forms. After opening, fstat the descriptor and require a regular same-UID file; reject or fchmod pre-existing files to 0600. Add parent-symlink and pre-existing-0666 regression cases."
+    }
+  ],
+  "certifications": [
+    {
+      "key": "r2_f001_authoritative_corpus_exit_status",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "5a51f9e0874a531c5caa5e22a800f24eacc15775"
+    },
+    {
+      "key": "r2_f002_audit_path_hardening_complete",
+      "certified": false,
+      "reviewer_family": "openai",
+      "for_content_sha": "5a51f9e0874a531c5caa5e22a800f24eacc15775"
+    },
+    {
+      "key": "r2_f003_behavioral_eg01a_test_restored",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "5a51f9e0874a531c5caa5e22a800f24eacc15775"
+    },
+    {
+      "key": "classifier_corpus_passed",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "5a51f9e0874a531c5caa5e22a800f24eacc15775"
+    },
+    {
+      "key": "full_break_glass_runtime_suite_independently_executed",
+      "certified": false,
+      "reviewer_family": "openai",
+      "for_content_sha": "5a51f9e0874a531c5caa5e22a800f24eacc15775"
+    }
+  ]
+}

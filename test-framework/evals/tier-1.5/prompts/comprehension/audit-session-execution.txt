@@ -1,0 +1,10 @@
+Skill: audit-session-execution
+
+Q: What is the unit under audit for audit-session-execution, and what three things must it separate cleanly?
+A: Expected pattern: One concrete run (one WI, one task graph, one session, or one narrow bundle). Must separate project-specific mistakes, agent execution mistakes, and framework contract gaps.
+
+Q: What is the mandatory minimum host-side trace search contract before declaring transcript unavailable?
+A: Expected pattern: Codex: `~/.codex/history.jsonl`, `~/.codex/session_index.jsonl`; Claude: `~/.claude/sessions/*.json`, `~/.claude/projects/**`; Gemini: `~/.gemini/tmp/<project_hash>/chats/`, `~/.gemini/tmp/<project_hash>/shell_history`.
+
+Q: What is the Translation Fidelity Score, and what does it measure?
+A: Expected pattern: A 0-100% score measuring transition fidelity between artifacts (e.g., Tech Design → Plan → Code). It records when constraints defined in source artifacts are omitted in target execution plans.

@@ -1,0 +1,39 @@
+{
+  "wi": "WI-223",
+  "lane": "framework",
+  "created": "2026-05-10T16:12:49.836Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Migrate write-vision skill contract and tier-2 scenario",
+      "status": "completed",
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T16:13:07.783Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T16:14:23.907Z"
+    },
+    {
+      "id": 2,
+      "subject": "Validate and close WI-223",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T16:14:23.984Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T16:16:08.809Z"
+    }
+  ]
+}

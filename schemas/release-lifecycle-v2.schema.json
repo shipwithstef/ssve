@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seriousvibecoding.dev/schemas/release-lifecycle-v2.schema.json",
+  "title": "SVC release and outcome lifecycle v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "state", "final_review_evidence_id", "final_sha", "release", "rollback", "live", "observation", "generation_bindings"],
+  "properties": {
+    "schema_version": { "const": "release-lifecycle-v2" },
+    "run_id": { "type": "string", "minLength": 1 },
+    "state": { "enum": ["FINAL_REVIEW_PASSED", "FINAL_SHA_BOUND", "ROLLBACK_READY", "PRODUCTION_RELEASED", "CANARY_RUNNING", "LIVE_VERIFIED", "DELIVERY_VERIFIED", "OUTCOME_OBSERVING", "OUTCOME_OBSERVED", "NEXT_DECISION_RECORDED", "OUTCOME_DECIDED", "ROLLED_BACK"] },
+    "final_review_evidence_id": { "type": "string", "minLength": 1 },
+    "final_sha": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" },
+    "release": {
+      "type": "object",
+      "required": ["environment", "artifact_digest", "effect_id", "status", "simulation_only", "production_proof"],
+      "properties": {
+        "environment": { "type": "string", "minLength": 1 },
+        "artifact_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "effect_id": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["planned", "released", "rolled-back"] },
+        "simulation_only": { "type": "boolean" },
+        "production_proof": { "type": "boolean" },
+        "evidence_id": { "type": "string", "minLength": 1 }
+      }
+    },
+    "rollback": {
+      "type": "object",
+      "required": ["effect_id", "tested", "target_digest"],
+      "properties": {
+        "effect_id": { "type": "string", "minLength": 1 },
+        "tested": { "type": "boolean" },
+        "target_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "evidence_id": { "type": "string", "minLength": 1 }
+      }
+    },
+    "live": {
+      "type": "object",
+      "required": ["probe_ids", "verified"],
+      "properties": {
+        "probe_ids": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "verified": { "type": "boolean" },
+        "evidence_ids": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "observation": {
+      "type": "object",
+      "required": ["metric_id", "window_starts_at", "window_ends_at", "consumer_id", "status"],
+      "properties": {
+        "metric_id": { "type": "string", "minLength": 1 },
+        "window_starts_at": { "type": "string", "format": "date-time" },
+        "window_ends_at": { "type": "string", "format": "date-time" },
+        "consumer_id": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["scheduled", "observing", "observed", "invalid"] },
+        "baseline": { "type": "number" },
+        "observed": { "type": "number" },
+        "delta": { "type": "number" },
+        "evidence_id": { "type": "string", "minLength": 1 },
+        "next_decision_id": { "type": "string", "minLength": 1 }
+      }
+    },
+    "active_minutes": { "type": "number", "minimum": 0 },
+    "slo_status": { "enum": ["TARGET", "CANARY_PASS", "CANARY_FAIL"] },
+    "generation_bindings": { "$ref": "execution-task-capsule-v2.schema.json#/$defs/generationBindings" }
+  }
+}

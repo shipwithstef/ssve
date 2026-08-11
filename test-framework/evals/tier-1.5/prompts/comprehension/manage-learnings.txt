@@ -1,0 +1,10 @@
+Skill: manage-learnings
+
+Q: What is the canonical path for project learnings, and what is the 5-minute threshold rule?
+A: Expected pattern: `docs/learnings/learnings.jsonl` (append-only). Only log a learning if it would save 5+ minutes in a future session.
+
+Q: What are the required fields in the JSONL schema for a learning entry?
+A: Expected pattern: date, skill, type, key, insight, confidence, source, and saves_minutes. files is optional.
+
+Q: What is the deduplication rule for manage-learnings, and what confidence threshold is used for export?
+A: Expected pattern: Latest entry with the same key+type wins. Export only includes learnings with confidence >= 5.

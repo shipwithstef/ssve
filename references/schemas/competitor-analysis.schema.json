@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://svc/schemas/competitor-analysis.schema.json",
+  "title": "Competitor Analysis (SDKG instance: competitor-analysis)",
+  "type": "object",
+  "required": ["generated", "landscape_state", "category", "competitors"],
+  "properties": {
+    "generated": { "type": "string", "format": "date" },
+    "landscape_state": {
+      "type": "string",
+      "enum": ["populated", "nascent", "none-found", "inapplicable"]
+    },
+    "landscape_state_justification": { "type": "string" },
+    "category": { "type": "string" },
+    "competitors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "tier", "last_verified", "earn_mechanism", "enrollment_path", "merchant_cost", "pos_integrations", "fraud_prevention", "customer_complaints"],
+        "properties": {
+          "name": { "type": "string" },
+          "tier": { "type": "string", "enum": ["direct", "adjacent", "emerging", "macro"] },
+          "url": { "type": "string", "format": "uri" },
+          "last_verified": { "type": "string", "format": "date" },
+          "earn_mechanism": { "type": "string" },
+          "enrollment_path": { "type": "string" },
+          "merchant_cost": { "type": "string" },
+          "pos_integrations": { "type": "array", "items": { "type": "string" } },
+          "fraud_prevention": { "type": "array", "items": { "type": "string" } },
+          "customer_complaints": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

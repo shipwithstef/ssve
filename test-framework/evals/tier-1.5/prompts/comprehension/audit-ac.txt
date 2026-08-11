@@ -1,0 +1,10 @@
+Skill: audit-ac
+
+Q: What is the shared AC table format used across all svc skills, and what are its five columns?
+A: Expected pattern: The format is | AC | Description | QA | E2E | Test |. AC is a unique ID like {SECTION-PREFIX}-{NN}. QA shows manual test status, E2E shows automated coverage, Test shows the spec file reference.
+
+Q: What is the SPLIT vs REWRITE vs ADD decision tree used in audit-ac?
+A: Expected pattern: If no AC exists -> ADD. If AC references outdated schema/fields -> REWRITE. If AC uses undefined terms like "correctly" -> REWRITE. If AC contains 2+ independently-verifiable assertions joined by "and"/"or" -> SPLIT. If happy path only with no edge cases -> ADD edge-case ACs.
+
+Q: What are the minimum edge-case coverage requirements per AC section?
+A: Expected pattern: Every section must have at least one error state AC, at least one empty/initial state AC, and at least one boundary condition AC.

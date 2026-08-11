@@ -1,0 +1,1 @@
+{"_comment":"scalability-baseline — append-only log of scalability measurements per WI/apply. Schema: {ts, wi, lane, dimension, metric, value, envelope, delta_pct, verdict}. Source: proposals/done/2026-04-30-infra-project-support.md §17.3. Initialized empty by WI-SPINE-004."}

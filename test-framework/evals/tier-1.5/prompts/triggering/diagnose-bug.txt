@@ -1,0 +1,1 @@
+I have a bug in my REST API — the PUT endpoint for updating user profiles returns a 500 error when the email field is missing from the request body. It should return a 400 with a validation error instead. The endpoint is in src/routes/users.ts. Can you help me fix this?

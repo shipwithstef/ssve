@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "description": "Project-local registry of deprecated APIs, SDK patterns, and legacy foundations that require an explicit migrate-vs-extend decision before new work builds on them.",
+  "freshness": {
+    "reviewed_at": "2026-08-11",
+    "max_age_days": 90,
+    "owner_skill": "research",
+    "stale_action": "Refresh vendor/source evidence before adding new foundations or accepting a migrate-vs-extend decision.",
+    "first_hit_scan": "Run a whole-codebase scan on the first project hit before planning implementation tasks.",
+    "promotion_ledger": ".svc/deprecated-foundation-findings.jsonl",
+    "policy": "references/deprecated-foundations-lifecycle.md"
+  },
+  "foundations": [
+    {
+      "id": "google-places-legacy-web-service",
+      "title": "Google Places API legacy web service endpoints",
+      "kind": "external-api",
+      "sunset_status": "legacy",
+      "match_patterns": [
+        "maps\\.googleapis\\.com/maps/api/place",
+        "maps\\.googleapis\\.com/maps/api/place/(nearbysearch|textsearch|details|findplacefromtext|autocomplete)/json"
+      ],
+      "successor": "Google Places API (New) v1 endpoints",
+      "decision_required": "Do not add new code against legacy Places endpoints until design-tech records whether the work migrates to Places v1 or deliberately extends the legacy surface with a bounded follow-up WI.",
+      "migration_size_hint": "medium",
+      "evidence": [
+        "https://developers.google.com/maps/documentation/places/web-service/legacy"
+      ]
+    },
+    {
+      "id": "react-legacy-unsafe-lifecycle",
+      "title": "React unsafe class-component lifecycle methods",
+      "kind": "framework-pattern",
+      "sunset_status": "legacy",
+      "match_patterns": [
+        "UNSAFE_componentWill(Mount|ReceiveProps|Update)\\s*\\(",
+        "\\bcomponentWill(Mount|ReceiveProps|Update)\\s*\\("
+      ],
+      "successor": "React function components, hooks, or safe lifecycle alternatives",
+      "decision_required": "Do not add new lifecycle behavior to unsafe class lifecycles without documenting a migrate-vs-extend decision.",
+      "migration_size_hint": "small",
+      "evidence": [
+        "https://react.dev/reference/react/Component#unsafe_componentwillmount"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+Skill: wsl2-audio
+
+Q: What is the WSL2 audio chain, and what are the three packages installed in Phase 2?
+A: Expected pattern: Application → ALSA → PulseAudio plugin → WSLg PulseAudio server → Windows RDP audio → Windows speakers/mic. Packages: pulseaudio-utils, libasound2-plugins, alsa-utils.
+
+Q: What does `aplay -l` showing "no soundcards found" mean in WSL2, and why is it normal?
+A: Expected pattern: It is normal because there's no real hardware in WSL2. Audio works through the ALSA-PulseAudio plugin bridge instead.
+
+Q: What is the purpose of `libasound2-plugins`, and what two config files are created to route ALSA through PulseAudio?
+A: Expected pattern: libasound2-plugins is the ALSA-to-PulseAudio bridge plugin. Config files: `~/.asoundrc` (user-level) and `/etc/asound.conf` (system-level).

@@ -1,0 +1,66 @@
+review: WI-507-company-operating-fleet-exec
+rounds_run: 3
+hard_round_cap: 3
+unresolved_critical: 0
+remaining_high: 0
+remaining_medium: 0
+remaining_low: 7
+remaining_info: 2
+terminal_state: PASS_WITH_FINDINGS
+round_1:
+  status: completed
+  diff_sha256: 985aed969fd24089fb004fc7b8c6c58284a6eead988fe209031ebad055fa509a
+  result: remediation_required
+  critical: 0
+  high: 3
+  artifact: .svc/external-review-artifacts/exec/985aed969fd24089fb004fc7b8c6c58284a6eead988fe209031ebad055fa509a/round-1/findings.json
+round_2:
+  status: completed
+  diff_sha256: d17cf3205064fd44b1ddd3003ce659cab95e2e8e2ded91fee1ea6e783cb1cfc8
+  result: remediation_required
+  critical: 0
+  high: 0
+  medium: 3
+  artifact: .svc/external-review-artifacts/exec/d17cf3205064fd44b1ddd3003ce659cab95e2e8e2ded91fee1ea6e783cb1cfc8/round-2/findings.json
+round_3:
+  status: completed
+  diff_sha256: 3c7008abc5f2d762c60046f3f56e089014f8d3b7d561f1d3df2ea639407d1bac
+  result: certified_pass_with_findings
+  critical: 0
+  high: 0
+  medium: 0
+  low: 7
+  info: 2
+  artifact: .svc/external-review-artifacts/exec/3c7008abc5f2d762c60046f3f56e089014f8d3b7d561f1d3df2ea639407d1bac/round-3/findings.json
+bounded_exit:
+  disposition: accept-with-justification
+  reason: No Critical, High, or Medium remains at the hard cap; residual items do not violate WI-507 acceptance criteria or authorize unsafe outward action.
+  residual_lows:
+    - id: WI507-R3-F001
+      decision: accept-with-justification
+      justification: Genericity is directly exercised across parent and product fixtures; extending the scan list is maintainability follow-up.
+    - id: WI507-R3-F002
+      decision: accept-with-justification
+      justification: The overloaded resolve form is documented and all canonical decision-resolve callers provide an id; no data mutation occurs on the shorthand path.
+    - id: WI507-R3-F003
+      decision: reject-with-justification
+      justification: Explicit --repo is contractually a Git repository selector and must reject non-Git directories; directory-local compatibility is preserved for implicit cwd.
+    - id: WI507-R3-F004
+      decision: accept-with-justification
+      justification: Skip-as-failure predates WI-507 and the 15 requested routing scenarios intentionally join the full opt-in paid suite; bounded exact selection remains available.
+    - id: WI507-R3-F005
+      decision: accept-with-justification
+      justification: Branch-local skill copying is required to test the implementation under review instead of stale global installs; extracted names can only select an existing contained source directory.
+    - id: WI507-R3-F006
+      decision: accept-with-justification
+      justification: Current-path absent-target pruning and explicit removal are proven; unknown historic install roots cannot be safely classified as svc-owned without metadata.
+    - id: WI507-R3-F007
+      decision: accept-with-justification
+      justification: Production setup gitignores .svc receipt mirrors; the clean-tree gate intentionally rejects repositories whose local receipt cache is version-visible.
+  residual_info:
+    - id: WI507-R3-F008
+      decision: accept-with-justification
+      justification: Acceptance-critical branches have direct fixtures; remaining reverse-order and unborn-HEAD cases are non-blocking test-depth follow-up.
+    - id: WI507-R3-F009
+      decision: reject-with-justification
+      justification: README tail corruption predates and is outside WI-507; this diff changes only the generated skill block.

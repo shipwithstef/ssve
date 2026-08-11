@@ -1,0 +1,22 @@
+review_log:
+  plan: docs/plans/2026-07-17-wi487-durable-install-enforcement/manifest.md
+  wi: WI-487
+  lane: framework
+  reviewer: gpt-5.6-sol/high (openai) — independent different-family plan review via scripts/run-external-review.mjs
+  rounds_run: 2
+  unresolved_critical: 0
+  remaining_high: 0
+  round_1:
+    verdict: fail
+    outcome: 12 findings (1 critical F-001 self-referential guard, 9 high, 2 medium) — ALL resolved. Reviewer adjudicated the 6 open design questions (extend-2+add-2, keep modules separate, suppress-but-keep-DENY, ~/.svc under one resolver, N=3 retry key).
+    key_fix: "F-001: durable non-symlinked enforcement launcher (~/.svc/enforcement/<version>/bin) so the fail-closed guard cannot vanish with the ephemeral source; F-008: plan review gate switched to WI-491 bounded protocol."
+  round_2:
+    verdict: fail
+    outcome: 8 findings (0 critical, 8 high) — ALL resolved. Reviewer confirmed round-1 architecture fixes hold, no prior finding re-litigated, no unresolved Critical.
+    key_fix: "F-016: single canonical hooks/lib/enforcement-core.mjs materialized alongside the launcher (self-contained after checkout deletion AND single-implementation); F-013/14/15/18/20 land/6b/rollback sequence made executable from a clean workspace."
+  terminal_state: PROMOTED
+  bounded_exit_note: >
+    Plan promoted at 2 rounds by RESOLUTION (all 20 findings across both rounds fixed;
+    0 unresolved critical; plan-mechanical + industry-grounding + lane-tasks all pass).
+    Terminated within the WI-491 3-round cap by resolution, not by exhausting the reviewer.
+    Implementation defects will be caught at review-exec (3 bounded rounds on the frozen code).

@@ -1,0 +1,12 @@
+{
+  "skill": "validate-feature",
+  "scenario": "validate-feature should detect duplicate intent and route to existing spec",
+  "conversation": [
+    { "role": "user", "content": "Idea: add a way for users to filter their match list by timezone." }
+  ],
+  "assertions": [
+    { "type": "contains", "value": "duplicate" },
+    { "type": "regex", "value": "(existing spec|existing feature|already)" },
+    { "type": "not_contains", "value": "Question 1 of 8" }
+  ]
+}

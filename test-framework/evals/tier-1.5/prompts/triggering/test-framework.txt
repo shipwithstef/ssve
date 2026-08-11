@@ -1,0 +1,1 @@
+run the framework tests and prove the pipeline works end to end

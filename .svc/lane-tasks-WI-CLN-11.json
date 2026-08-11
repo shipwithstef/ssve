@@ -1,0 +1,65 @@
+{
+  "wi": "WI-CLN-11",
+  "lane": "framework",
+  "title": "Remove route-workflow + execute-changeset from corePackForRouting (4.5)",
+  "created": "2026-06-15",
+  "tasks": [
+    {
+      "id": "t0a",
+      "skill": "write-spec",
+      "status": "skipped",
+      "skip_reason": "Framework manifest config change; design source = cleanup plan §4.5. No product spec."
+    },
+    {
+      "id": "t0b",
+      "skill": "design-ux",
+      "status": "skipped",
+      "skip_reason": "No UX surface."
+    },
+    {
+      "id": "t0c",
+      "skill": "design-ui",
+      "status": "skipped",
+      "skip_reason": "No UI surface."
+    },
+    {
+      "id": "t0d",
+      "skill": "design-tech",
+      "status": "skipped",
+      "skip_reason": "No architecture decision: remove 2 entries from a soft routing-suggestion list (corePackForRouting). End-to-end delivery proven to flow via laneDefinitions (unaffected). User gave informed authorization after reviewing end-to-end impact."
+    },
+    {
+      "id": "t1",
+      "skill": "plan-changeset",
+      "status": "skipped",
+      "skip_reason": "Executed INLINE (manifest intent + plan-changeset decision logged in pipeline-decisions.jsonl); no discrete skill phase-receipts. User gave explicit action-specific consent."
+    },
+    {
+      "id": "t2",
+      "skill": "execute-changeset",
+      "status": "skipped",
+      "blocked_by": [
+        "t1"
+      ],
+      "skip_reason": "Executed INLINE: removed route-workflow + execute-changeset from corePackForRouting (skills-manifest.json 46->44), regenerated mirrors, lint PASS, tier-1 green. User consent verbatim."
+    },
+    {
+      "id": "t3",
+      "skill": "review-gate",
+      "status": "skipped",
+      "blocked_by": [
+        "t2"
+      ],
+      "skip_reason": "DEFERRED to push/land 5-receipt cross-model envelope (fires at push). Local edit validated via lint + full tier-1. Push not authorized (main protected)."
+    },
+    {
+      "id": "t4",
+      "skill": "audit-implementation",
+      "status": "skipped",
+      "blocked_by": [
+        "t3"
+      ],
+      "skip_reason": "DEFERRED to push/land 5-receipt cross-model envelope (fires at push). Local edit validated via lint + full tier-1. Push not authorized (main protected)."
+    }
+  ]
+}

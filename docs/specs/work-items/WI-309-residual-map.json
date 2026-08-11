@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "wi": "WI-309",
+  "source_proposals": [
+    "proposals/done/2026-04-27-prove-old-path-fails-before-migrating.md",
+    "proposals/done/2026-04-29-cross-system-flow-paradigm.md"
+  ],
+  "status": "implemented",
+  "coverage": [
+    {
+      "source_proposal": "proposals/done/2026-04-27-prove-old-path-fails-before-migrating.md",
+      "proposal_item": "path-swap and migration fixes require old-path-fails/new-path-passes proof against the same input",
+      "status": "covered",
+      "owner_wi": "WI-309",
+      "evidence": [
+        "execute-changeset/SKILL.md",
+        "scripts/validate-cross-system-probe-evidence.mjs",
+        "test-framework/evals/tier-1/validate-cross-system-contract-map.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-29-cross-system-flow-paradigm.md",
+      "proposal_item": "cross-system flows require a System Contract Map with handoff table, origin/storage matrix, invariants, and failure modes",
+      "status": "covered",
+      "owner_wi": "WI-309",
+      "evidence": [
+        "_shared/system-contract-map.md",
+        "route-workflow/SKILL.md",
+        "scripts/validate-system-contract-map.mjs",
+        "test-framework/evals/tier-1/validate-cross-system-contract-map.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-29-cross-system-flow-paradigm.md",
+      "proposal_item": "runtime probes must include both confirmation and falsification checks",
+      "status": "covered",
+      "owner_wi": "WI-309",
+      "evidence": [
+        "diagnose-bug/SKILL.md",
+        "design-tech/SKILL.md",
+        "test-journeys/SKILL.md",
+        "scripts/validate-cross-system-probe-evidence.mjs"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-29-cross-system-flow-paradigm.md",
+      "proposal_item": "third diagnose-bug invocation on the same WI escalates to cross-system suspected plus review-cross-model before another fix",
+      "status": "covered",
+      "owner_wi": "WI-309",
+      "evidence": [
+        "scripts/check-cross-system-iteration-cap.mjs",
+        "review-gate/SKILL.md",
+        "test-framework/evals/tier-1/validate-cross-system-contract-map.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-29-cross-system-flow-paradigm.md",
+      "proposal_item": "cross-system signals are wired into route-workflow so the map/probe proof is not optional",
+      "status": "covered",
+      "owner_wi": "WI-309",
+      "evidence": [
+        "route-workflow/SKILL.md",
+        "route-workflow/references/intent-routing.md",
+        "test-framework/evals/tier-1/validate-cross-system-contract-map.sh"
+      ]
+    }
+  ]
+}

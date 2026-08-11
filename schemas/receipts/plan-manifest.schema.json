@@ -1,0 +1,120 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "plan-manifest receipt",
+  "type": "object",
+  "required": ["receipt_type", "schema_version", "wi", "scope", "dependencies", "decision_trace", "task_graph", "validation_plan", "risk_rollback", "timestamp", "execution_command_sequence", "ac_digests"],
+  "allOf": [
+    {
+      "description": "WI-386: conditional blueprints. changeset_blueprints is the EXECUTOR contract — full CREATE payloads + MODIFY diffs a zero-context subagent (DISPATCH=mimo-pro|sonnet) reads instead of the spec. When the orchestrator executes INLINE with full context already loaded (the only mode used in practice per .svc/dispatch-log.jsonl), authoring blueprints is Opus-priced double-spend (WI-347 authored code at PLAN prices, execute-changeset re-applied it at EXEC). The if/then/else below keeps blueprints HARD-REQUIRED for the dispatch path and FAIL-CLOSED for any receipt that does not explicitly self-declare mode:inline — preserving WI-347's zero-context isolation guarantee. The `if` requires mode PRESENT and == inline (a bare `properties` constraint is vacuously true when the key is absent, which would fail OPEN — the classic draft-07 trap); only then does the exemption apply, otherwise `else` re-imposes the requirement. The chain's enforcement engine (scripts/check-chain-receipts.mjs) mirrors this gate because that custom validator, not a generic JSON-Schema library, is what runs on every commit/push.",
+      "if": { "required": ["mode"], "properties": { "mode": { "const": "inline" } } },
+      "then": true,
+      "else": { "required": ["changeset_blueprints"] }
+    }
+  ],
+  "properties": {
+    "receipt_type": { "const": "plan-manifest" },
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "wi": { "type": "string", "description": "Work item identifier" },
+    "mode": { "type": "string", "enum": ["dispatch", "inline"], "description": "WI-386: the execution mode resolved BEFORE planning. 'dispatch' = a zero-context executor (DISPATCH=mimo-pro|sonnet) will build from the contract → changeset_blueprints REQUIRED (full payloads, the executor's only source of truth). 'inline' = the orchestrator executes with full context already loaded → blueprints may be omitted (the redundant transcription WI-386 removes). ABSENT defaults to dispatch semantics (fail-closed): an unmarked receipt must still carry blueprints, so legacy v1/v2 manifests and any forgery that omits the field keep WI-347's hard requirement. Mirrors .svc/dispatch-log.jsonl's new `mode` field." },
+    "lane": { "type": "string", "description": "WI-383: the delivery lane (greenfield|brownfield-*|bugfix|drift|refactor|framework) so mine-receipts can bucket gate telemetry per-lane. Optional; untagged receipts bucket as 'unknown' (which never earns compression — safe)." },
+    "scope": {
+      "type": "object",
+      "required": ["included", "excluded"],
+      "properties": {
+        "included": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "excluded": { "type": "array", "items": { "type": "string" } },
+        "excluded_reason_per_path": { "type": "object" }
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "type": "object",
+        "required": ["artifact", "citation"],
+        "properties": {
+          "artifact": { "type": "string" },
+          "citation": { "type": "string", "pattern": ".+:[0-9]+" }
+        }
+      }
+    },
+    "decision_trace": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "type": "object",
+        "required": ["question", "alternatives", "chosen", "rationale"],
+        "properties": {
+          "question": { "type": "string" },
+          "alternatives": { "type": "array", "minItems": 2, "items": { "type": "string" } },
+          "chosen": { "type": "string" },
+          "rationale": { "type": "string" },
+          "reversal_conditions": { "type": "string" }
+        }
+      }
+    },
+    "task_graph": { "type": "array" },
+    "validation_plan": { "type": "array" },
+    "risk_rollback": { "type": "object" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "changeset_blueprints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["file", "action", "blueprint"],
+        "properties": {
+          "file": { "type": "string" },
+          "action": { "type": "string", "enum": ["CREATE", "MODIFY", "DELETE"] },
+          "blueprint": { "type": "string" }
+        }
+      }
+    },
+    "execution_command_sequence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["step", "command", "expected_outcome"],
+        "properties": {
+          "step": { "type": "integer" },
+          "command": { "type": "string" },
+          "expected_outcome": { "type": "string" }
+        }
+      }
+    },
+    "ac_digests": {
+      "type": "object",
+      "description": "WI-381 pipeline baton: a NAVIGATION index of the spec's acceptance criteria so downstream chain skills read the baton FIRST instead of re-reading the full spec. NOT authoritative — the live spec at spec_path remains the sole AC source. spec_ac_table_sha256 hash-binds the digests to the spec's normalized AC signatures (scripts/lib/normalize-ac-table.mjs) so a mid-pipeline AC REVISION fails the binding and forces a re-distill; it is insensitive to checkbox/progress flips and verification annotations. Listed in `required` per WI-381 AC4 but ENFORCED only for schema_version>=3 by the chain's custom validators (check-chain-receipts.mjs / emit-receipt.mjs) — legacy v1/v2 plan-manifests are grandfathered, mirroring the WI-396 diff_hash version gate. The chain does not run a standard JSON-Schema validator over these receipts.",
+      "required": ["spec_path", "spec_ac_table_sha256", "entries"],
+      "properties": {
+        "spec_path": { "type": "string", "description": "Repo-relative path of the authoritative spec the digests index." },
+        "spec_ac_table_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$", "description": "sha256 over the normalized AC signatures of spec_path (acTableSha256). Recomputed by validators." },
+        "entries": {
+          "type": "array",
+          "description": "Per-AC navigation digests. May be empty when a spec has no parseable AC rows; the hash still binds.",
+          "items": {
+            "type": "object",
+            "required": ["ac_id", "digest"],
+            "properties": {
+              "ac_id": { "type": "string", "description": "AC identifier (e.g. PF-01) or ordinal for checklist ACs." },
+              "digest": { "type": "string", "description": "One-line distilled requirement — attention router, not the authoritative text." },
+              "anchor": { "type": "string", "description": "Optional file:line pointer into the live spec." }
+            }
+          }
+        }
+      }
+    },
+    "mocked_deps": {
+      "type": "array",
+      "description": "WI-381 baton: dependencies the plan mocks/stubs, so downstream skills know what is faked without re-reading the manifest blueprints. Optional (omit or [] when nothing is mocked).",
+      "items": {
+        "type": "object",
+        "required": ["dep", "reason"],
+        "properties": {
+          "dep": { "type": "string", "description": "The dependency being mocked (module, provider, endpoint, fixture)." },
+          "reason": { "type": "string", "description": "Why it is mocked for this changeset." },
+          "mock_location": { "type": "string", "description": "Optional path where the mock/stub lives." }
+        }
+      }
+    }
+  }
+}

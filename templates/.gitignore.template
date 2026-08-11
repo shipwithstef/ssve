@@ -1,0 +1,37 @@
+# === BEGIN SERIOUS VIBE CODING IGNORES ===
+# Git worktrees for branch-isolated execution
+.worktrees/
+
+# Ephemeral pipeline log files
+.svc/*.log
+
+# Local session context and hook states
+.svc/sessions/
+.svc/hooks.json
+
+# Local review and push coordination state
+.svc/review-exec-pair.json
+.svc/pending-push.json
+
+# Session loops and task-handling guard states
+.svc/loop-guard-state.json
+.svc/reconcile-checkpoint.json
+.svc/chain-policy.json
+.svc/leftover-dispositions/
+
+# Local task/commit verification receipts (authoritative in git notes)
+.svc/receipts/*
+
+# Ephemeral learning & review lints
+.svc/auto-learnings.jsonl
+.svc/auto-learnings.draft.jsonl
+.svc/proposal-lints/
+
+# Execution lockfiles
+.svc/coverage.lock
+.svc/coverage-locks/
+
+# Local framework evaluation results
+test-framework/evals/results/
+test-framework/results/
+# === END SERIOUS VIBE CODING IGNORES ===

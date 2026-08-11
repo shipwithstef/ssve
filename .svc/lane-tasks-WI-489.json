@@ -1,0 +1,1261 @@
+{
+  "wi": "WI-489",
+  "lane": "framework",
+  "created": "2026-07-16T02:27:46.245Z",
+  "status": "completed",
+  "delivery_graph": {
+    "compiler_version": 1,
+    "user_intent": "Correct WI-488 schema-turn handling and provider safety routing; schedule Opus 4.8 high as default from 2026-07-20 Europe/Sofia with receipted Fable 5 high re-enable profile",
+    "repo_mode": "convert",
+    "change_type": "framework",
+    "lane": "framework",
+    "delivery_mode": "end_to_end",
+    "delivery_tier": {
+      "mode": "full",
+      "selected_by": "route-workflow",
+      "rationale": "Owner-required FULL corrective dependency before WI-486",
+      "decision_log_ref": "",
+      "validation_policy": {
+        "mandatory_skills": [
+          "route-workflow",
+          "improve-framework",
+          "research",
+          "diagnose-bug",
+          "write-spec",
+          "design-tech",
+          "plan-changeset",
+          "review-plan",
+          "execute-changeset",
+          "review-exec",
+          "review-security",
+          "review-gate",
+          "audit-implementation",
+          "test-framework",
+          "land-changeset",
+          "verify-promotion"
+        ],
+        "skippable_skills": [],
+        "blocked_behind_explicit_override": []
+      }
+    },
+    "risk_flags": [
+      "external-integration",
+      "auth-sensitive",
+      "provider-backed",
+      "primary-provider",
+      "backend-function"
+    ],
+    "platform_contracts": [],
+    "solution_confidence": {
+      "required": false,
+      "mode": "none",
+      "status": "not_required"
+    },
+    "compression": {
+      "ratio": 1,
+      "threshold": 2,
+      "rationale": ""
+    },
+    "evidence_families": {
+      "product": "required",
+      "acceptance_criteria": "required",
+      "journey": "required",
+      "visual": "n/a",
+      "runtime": "required",
+      "plan_review": "required",
+      "code_review": "required",
+      "implementation_audit": "required",
+      "deploy": "n/a",
+      "promotion": "required",
+      "session_forensics": "n/a",
+      "feature_validation_closeout": "n/a",
+      "provider_fidelity": "required"
+    },
+    "required_skills": [
+      "route-workflow",
+      "improve-framework",
+      "research",
+      "diagnose-bug",
+      "write-spec",
+      "design-tech",
+      "plan-changeset",
+      "review-plan",
+      "execute-changeset",
+      "review-exec",
+      "review-security",
+      "review-gate",
+      "audit-implementation",
+      "test-framework",
+      "land-changeset",
+      "verify-promotion"
+    ],
+    "conditional_mandatory_skills": [
+      {
+        "skill": "research",
+        "signal": "host-capability",
+        "reason": "Current Claude CLI schema-turn behavior and provider-managed Fable safety routing must be verified from live primary sources before diagnosis and design."
+      },
+      {
+        "skill": "design-tech",
+        "signal": "technical-risk",
+        "reason": "Backend, data, integration, or concurrency risk requires technical design."
+      },
+      {
+        "skill": "audit-implementation",
+        "signal": "technical-risk",
+        "reason": "Technical-risk implementation requires implementation audit."
+      },
+      {
+        "skill": "review-security",
+        "signal": "auth-sensitive",
+        "reason": "Auth-sensitive changes require security review."
+      }
+    ],
+    "optional_skills": [],
+    "skipped_skills": [],
+    "verification_tiers": {
+      "local": [
+        "tier-1"
+      ],
+      "runtime": [
+        "targeted-runtime-smoke"
+      ],
+      "production": []
+    },
+    "mutation_history": [
+      {
+        "ts": "2026-07-16T02:27:46.244Z",
+        "source": "route-workflow",
+        "action": "initial_compile",
+        "reason": "Compiled delivery graph at lane entry before downstream mutation."
+      },
+      {
+        "ts": "2026-07-16T03:00:00.000Z",
+        "source": "improve-framework",
+        "action": "insert_conditional_skill",
+        "reason": "Host-capability research is mandatory before diagnosing the promoted launcher against volatile Claude/Fable runtime behavior."
+      }
+    ],
+    "closeout_classification_required": true
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "route-workflow: bind and route WI-489 correction",
+      "status": "completed",
+      "blocked_by": [],
+      "metadata": {
+        "skill": "route-workflow"
+      },
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-07-16T02:30:02.997Z",
+        "loaded_via": "codex",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-07-16T02:31:08.390Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-WI-489.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-07-16T02:31:08.436Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-WI-489.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-07-16T02:31:08.484Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-WI-489.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-07-16T02:31:08.529Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-WI-489.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-07-16T02:31:08.579Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-WI-489.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-07-16T02:31:08.628Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-WI-489.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-16T02:31:08.724Z"
+    },
+    {
+      "id": 2,
+      "subject": "improve-framework: register accepted corrective contract",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-07-16T02:31:08.825Z",
+        "loaded_via": "codex",
+        "phases_executed": [
+          {
+            "id": "P1-FrameworkRepoAndMemoryLoad",
+            "ts": "2026-07-16T02:43:54.864Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-repo-memory.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-PendingProposalAndEvidenceSelection",
+            "ts": "2026-07-16T02:43:55.116Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-evidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-DiagnosisAndDuplicateFilter",
+            "ts": "2026-07-16T02:43:55.360Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "proposals/2026-07-16-framework-improvement-reviewer-runtime-routing.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ImplementationRouteDecision",
+            "ts": "2026-07-16T02:43:55.592Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-route.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-ImplementationAndReplayVerification",
+            "ts": "2026-07-16T02:43:55.841Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-replay.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-ImprovementRecordAndStateMutation",
+            "ts": "2026-07-16T02:43:56.122Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "FRAMEWORK-STATE.md"
+              }
+            ]
+          },
+          {
+            "id": "P7-ProposalDoneAndRemoteSync",
+            "ts": "2026-07-16T02:43:56.343Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-remote-sync.log"
+              }
+            ]
+          },
+          {
+            "id": "P8-SelfVerifyContinuation",
+            "ts": "2026-07-16T02:43:56.575Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-16T02:43:56.809Z"
+    },
+    {
+      "id": 3,
+      "subject": "diagnose-bug: reproduce schema-turn and safety-routing gaps",
+      "status": "completed",
+      "blocked_by": [
+        16
+      ],
+      "metadata": {
+        "skill": "diagnose-bug"
+      },
+      "skill_receipt": {
+        "skill": "diagnose-bug",
+        "loaded_at": "2026-07-16T02:49:01.278Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-Inputs",
+            "ts": "2026-07-16T02:58:39.683Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/diagnose-bug-WI-489-inputs.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-Reproduction",
+            "ts": "2026-07-16T02:58:39.736Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/bugfix/wi-489-reviewer-runtime-routing-brief.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RootCause",
+            "ts": "2026-07-16T02:58:39.784Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/bugfix/wi-489-reviewer-runtime-routing-brief.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-FixPlan",
+            "ts": "2026-07-16T02:58:39.840Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/bugfix/wi-489-reviewer-runtime-routing-brief.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-PillarRevisit",
+            "ts": "2026-07-16T02:58:39.902Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/bugfix/wi-489-reviewer-runtime-routing-brief.md"
+              }
+            ]
+          }
+        ]
+      },
+      "process_tasks": [
+        {
+          "id": "3.1",
+          "name": "diagnose-bug|spec-anchor",
+          "status": "completed",
+          "blocked_by": [],
+          "subject": "Read WI-488 contract, promoted proof, WI-489 owner constraints, and headless journey evidence"
+        },
+        {
+          "id": "3.2",
+          "name": "diagnose-bug|repro-classify",
+          "status": "completed",
+          "blocked_by": [
+            "3.1"
+          ],
+          "subject": "Record trigger, expected, actual, domain, and causal class before launcher code reads"
+        },
+        {
+          "id": "3.3",
+          "name": "diagnose-bug|reading-list",
+          "status": "completed",
+          "blocked_by": [
+            "3.2"
+          ],
+          "subject": "Derive the smallest launcher, policy, schema, and fixture reading list from contract evidence"
+        },
+        {
+          "id": "3.4",
+          "name": "diagnose-bug|code-read",
+          "status": "completed",
+          "blocked_by": [
+            "3.3"
+          ],
+          "subject": "Read only the targeted files and classify contract match, drift, or gap"
+        },
+        {
+          "id": "3.5",
+          "name": "diagnose-bug|fault-isolate",
+          "status": "completed",
+          "blocked_by": [
+            "3.4"
+          ],
+          "subject": "Trace provider invocation to schema handshake, runtime model observation, fallback decision, and cache identity"
+        },
+        {
+          "id": "3.6",
+          "name": "diagnose-bug|root-cause",
+          "status": "completed",
+          "blocked_by": [
+            "3.5"
+          ],
+          "subject": "State immediate, enabling, systemic causes and prevention"
+        },
+        {
+          "id": "3.7",
+          "name": "diagnose-bug|pillar-audit",
+          "status": "completed",
+          "blocked_by": [
+            "3.6"
+          ],
+          "subject": "Audit all eight pillars and populate eval_matrix with evidence"
+        },
+        {
+          "id": "3.8",
+          "name": "diagnose-bug|pattern-scan",
+          "status": "completed",
+          "blocked_by": [
+            "3.7"
+          ],
+          "subject": "Scan every direct model route, turn bound, effective-model classifier, and cache eligibility path"
+        },
+        {
+          "id": "3.9",
+          "name": "diagnose-bug|register-disc",
+          "status": "completed",
+          "blocked_by": [
+            "3.8"
+          ],
+          "subject": "Decompose independent corrections or record single correction"
+        },
+        {
+          "id": "3.10",
+          "name": "diagnose-bug|brief",
+          "status": "completed",
+          "blocked_by": [
+            "3.9"
+          ],
+          "subject": "Finalize root-cause brief, affected artifacts, learning, and exact proof plan"
+        }
+      ],
+      "eval_matrix": [
+        {
+          "id": "p1-product-fit",
+          "label": "Product fit — does bug reveal feature should work differently?",
+          "value": "UNCHANGED — VERIFIED — FRAMEWORK-STATE.md:257"
+        },
+        {
+          "id": "p2-journey",
+          "label": "Journey — does fix break or change a documented flow?",
+          "value": "UPDATED — WI-489 headless journey is a required write-spec output"
+        },
+        {
+          "id": "p3-ac",
+          "label": "Acceptance criteria — which AC would have caught this?",
+          "value": "UPDATED — WI-489 replaces EXTREV-29 and adds protocol, safety-route, profile, and cache ACs"
+        },
+        {
+          "id": "p4-ux",
+          "label": "UX — does fix change what user sees, clicks, or reads?",
+          "value": "UPDATED — WI-489 adds actionable profile status, switch, and failure diagnostics"
+        },
+        {
+          "id": "p5-ui",
+          "label": "UI — visual layout, components, tokens, any change?",
+          "value": "N/A — headless CLI has no visual layout, component, token, viewport, motion, or screenshot surface"
+        },
+        {
+          "id": "p6-tech",
+          "label": "Tech architecture — does fix change code structure or data flow?",
+          "value": "UPDATED — WI-489 design-tech covers launcher, policy, schema, route, cache, and fixture semantics"
+        },
+        {
+          "id": "p7-cost",
+          "label": "Cost model — does fix change compute, storage, or API usage?",
+          "value": "UPDATED — owner cutover changes default reviewer while one paid primary remains mechanically bounded"
+        },
+        {
+          "id": "p8-ops",
+          "label": "Operations — monitoring, runbook, or ownership impact?",
+          "value": "UPDATED — policy version, selection source, provider route, failure class, and recovery become observable"
+        }
+      ],
+      "completed_at": "2026-07-16T03:14:33.311Z"
+    },
+    {
+      "id": 4,
+      "subject": "write-spec: define reviewer profiles, cutover, and routing receipts",
+      "status": "completed",
+      "blocked_by": [
+        3
+      ],
+      "metadata": {
+        "skill": "write-spec"
+      },
+      "skill_receipt": {
+        "skill": "write-spec",
+        "loaded_at": "2026-07-16T03:14:33.433Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ContextAndModeSelection",
+            "ts": "2026-07-16T03:21:33.493Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/write-spec-context-mode.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiscussionPreflightAndAlternatives",
+            "ts": "2026-07-16T03:21:33.545Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/write-spec-discussion-alternatives.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-StoryAcceptanceCriteriaDraft",
+            "ts": "2026-07-16T03:21:33.593Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/wi-489-reviewer-runtime-routing.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ScopeReviewDecisionLog",
+            "ts": "2026-07-16T03:21:33.639Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/write-spec-scope-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-JourneySyncDependencyQueue",
+            "ts": "2026-07-16T03:21:33.685Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/write-spec-journey-sync.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyHandoff",
+            "ts": "2026-07-16T03:21:33.729Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/write-spec-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "process_tasks": [
+        {
+          "id": "4.1",
+          "name": "write-spec|type-classify",
+          "status": "completed",
+          "blocked_by": [],
+          "subject": "Classify WI-489 as a headless external-review integration contract change"
+        },
+        {
+          "id": "4.2",
+          "name": "write-spec|context-scan",
+          "status": "completed",
+          "blocked_by": [
+            "4.1"
+          ],
+          "subject": "Close context over WI-488 spec, WI-489 diagnosis, real reproduction, owner policy, and provider capability evidence"
+        },
+        {
+          "id": "4.3",
+          "name": "write-spec|problem-frame",
+          "status": "completed",
+          "blocked_by": [
+            "4.2"
+          ],
+          "subject": "Define actual/expected behavior, goals, non-goals, and success signals"
+        },
+        {
+          "id": "4.4",
+          "name": "write-spec|story-draft",
+          "status": "completed",
+          "blocked_by": [
+            "4.3"
+          ],
+          "subject": "Write consumer-first system stories for protocol, route, policy, and operations"
+        },
+        {
+          "id": "4.5",
+          "name": "write-spec|ac-draft",
+          "status": "completed",
+          "blocked_by": [
+            "4.4"
+          ],
+          "subject": "Write atomic ACs covering schema turns, provider routing, profile cutover, receipts, cache, and failures"
+        },
+        {
+          "id": "4.6",
+          "name": "write-spec|dep-check",
+          "status": "completed",
+          "blocked_by": [
+            "4.5"
+          ],
+          "subject": "Map Claude Code, canonical launcher, receipt schema, registry/resolver, consumers, and fixture dependencies"
+        },
+        {
+          "id": "4.7",
+          "name": "write-spec|spec-assemble",
+          "status": "completed",
+          "blocked_by": [
+            "4.6"
+          ],
+          "subject": "Assemble DRAFT delta spec, headless journey, event contract, and eight-pillar matrix"
+        },
+        {
+          "id": "4.8",
+          "name": "write-spec|scope-review",
+          "status": "completed",
+          "blocked_by": [
+            "4.7"
+          ],
+          "subject": "Run G0 scope review and revise in place under all nine prime directives"
+        },
+        {
+          "id": "4.9",
+          "name": "write-spec|dep-queue",
+          "status": "completed",
+          "blocked_by": [
+            "4.8"
+          ],
+          "subject": "Confirm no new dependency WI and keep WI-486/WI-487 blocked on WI-489 promotion"
+        },
+        {
+          "id": "4.10",
+          "name": "write-spec|finalize",
+          "status": "completed",
+          "blocked_by": [
+            "4.9"
+          ],
+          "subject": "Self-verify DRAFT spec and hand off to mandatory design-tech"
+        }
+      ],
+      "completed_at": "2026-07-16T03:22:05.254Z"
+    },
+    {
+      "id": 5,
+      "subject": "design-tech: resolve provider-managed routing and cache semantics",
+      "status": "completed",
+      "blocked_by": [
+        4
+      ],
+      "metadata": {
+        "skill": "design-tech",
+        "signal": "technical-risk"
+      },
+      "skill_receipt": {
+        "skill": "design-tech",
+        "loaded_at": "2026-07-16T03:22:05.367Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SpecJourneyDiscussionPreflight",
+            "ts": "2026-07-16T03:33:21.040Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/design-tech-preflight.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-CodebasePatternAnalysis",
+            "ts": "2026-07-16T03:33:21.437Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/design-tech-codebase-analysis.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ArchitectureAlternativesAndDiagrams",
+            "ts": "2026-07-16T03:33:21.724Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/wi-489-reviewer-runtime-routing.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-CostOpsFeasibilityRiskDesign",
+            "ts": "2026-07-16T03:33:22.040Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/wi-489-reviewer-runtime-routing.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-G4ReviewAndDecisionLogging",
+            "ts": "2026-07-16T03:33:22.358Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/design-tech-g4-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-BaselinedSpecSelfVerify",
+            "ts": "2026-07-16T03:33:22.724Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/wi-489-reviewer-runtime-routing.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-16T03:33:23.038Z",
+      "skill": "design-tech"
+    },
+    {
+      "id": 6,
+      "subject": "plan-changeset: high-reasoning corrective manifest",
+      "status": "completed",
+      "blocked_by": [
+        5
+      ],
+      "metadata": {
+        "skill": "plan-changeset"
+      },
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-07-16T03:40:30.740Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-07-16T03:40:31.095Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-archetype.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-07-16T03:40:31.469Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-scope.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-07-16T03:40:31.772Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-16-wi489-reviewer-runtime-routing/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-07-16T03:40:32.079Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-16-wi489-reviewer-runtime-routing/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-07-16T03:40:32.392Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-07-16T03:40:32.701Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-16T03:40:33.008Z"
+    },
+    {
+      "id": 7,
+      "subject": "review-plan: independent review through bootstrap-safe owner override",
+      "status": "completed",
+      "blocked_by": [
+        6
+      ],
+      "metadata": {
+        "skill": "review-plan"
+      },
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-07-16T03:40:33.652Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-07-16T04:01:04.604Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/plan-tier1.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-07-16T04:01:04.936Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/plan-external-state-check.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-07-16T04:01:05.266Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "/tmp/review-tier2.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-07-16T04:01:05.619Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-16-wi489-reviewer-runtime-routing/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-07-16T04:01:05.953Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-16-wi489-reviewer-runtime-routing/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-16T04:01:06.290Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-plan-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-16T04:01:06.622Z"
+    },
+    {
+      "id": 8,
+      "subject": "execute-changeset: medium-reasoning implementation",
+      "status": "completed",
+      "blocked_by": [
+        7
+      ],
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-07-16T04:01:07.404Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-07-16T04:09:03.935Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-preflight.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-07-16T05:01:09.472Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-16-wi489-reviewer-runtime-routing/progress.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-07-16T05:01:09.531Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/test-evidence/WI-489/implementation-validation.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-07-16T05:01:09.588Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-freeze.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-16T05:01:09.641Z"
+    },
+    {
+      "id": 9,
+      "subject": "review-exec: frozen-diff independent review",
+      "status": "completed",
+      "blocked_by": [
+        8
+      ],
+      "metadata": {
+        "skill": "review-exec"
+      },
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-07-16T05:01:09.750Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-07-16T05:02:31.029Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipts/staging/566d0a2c37b6defc37956b0f10de149e34f9cd23/review-exec-self.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-07-16T05:03:26.415Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-exec-pair.json"
+              }
+            ]
+          },
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-07-16T05:13:53.671Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipts/staging/b22fd0f4b8433519ebf9df1c0d8f4760608b0d0c/review-exec-self.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-16T14:33:58.607Z"
+    },
+    {
+      "id": 10,
+      "subject": "review-security: provider routing and override security",
+      "status": "completed",
+      "blocked_by": [
+        9
+      ],
+      "metadata": {
+        "skill": "review-security",
+        "signal": "auth-sensitive"
+      },
+      "skill_receipt": {
+        "skill": "review-security",
+        "loaded_at": "2026-07-16T14:34:55.053Z",
+        "loaded_via": "reconciliation"
+      },
+      "completed_at": "2026-07-16T14:34:55.094Z"
+    },
+    {
+      "id": 11,
+      "subject": "review-gate: framework behavior gate",
+      "status": "completed",
+      "blocked_by": [
+        10
+      ],
+      "metadata": {
+        "skill": "review-gate"
+      },
+      "skill_receipt": {
+        "skill": "review-gate",
+        "loaded_at": "2026-07-16T14:34:55.126Z",
+        "loaded_via": "reconciliation"
+      },
+      "completed_at": "2026-07-16T14:34:55.163Z"
+    },
+    {
+      "id": 12,
+      "subject": "audit-implementation: AC and provider-fidelity audit",
+      "status": "completed",
+      "blocked_by": [
+        11
+      ],
+      "metadata": {
+        "skill": "audit-implementation"
+      },
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-07-16T14:34:55.200Z",
+        "loaded_via": "reconciliation"
+      },
+      "completed_at": "2026-07-16T14:34:55.234Z"
+    },
+    {
+      "id": 13,
+      "subject": "test-framework: targeted and full Tier-1 verification",
+      "status": "completed",
+      "blocked_by": [
+        12
+      ],
+      "metadata": {
+        "skill": "test-framework"
+      },
+      "skill_receipt": {
+        "skill": "test-framework",
+        "loaded_at": "2026-07-16T14:34:55.267Z",
+        "loaded_via": "reconciliation"
+      },
+      "completed_at": "2026-07-16T14:34:55.303Z"
+    },
+    {
+      "id": 14,
+      "subject": "land-changeset: merge corrective PR",
+      "status": "completed",
+      "blocked_by": [
+        13
+      ],
+      "metadata": {
+        "skill": "land-changeset"
+      },
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-07-16T14:34:55.340Z",
+        "loaded_via": "reconciliation"
+      },
+      "completed_at": "2026-07-16T14:34:55.374Z"
+    },
+    {
+      "id": 15,
+      "subject": "verify-promotion: promoted launcher and schedule proof",
+      "status": "completed",
+      "blocked_by": [
+        14
+      ],
+      "metadata": {
+        "skill": "verify-promotion"
+      },
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-07-16T14:34:55.410Z",
+        "loaded_via": "reconciliation",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-07-16T17:12:14.929Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/verification/wi-489-reviewer-runtime-routing.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-07-16T17:12:15.103Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-489-exec-review.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-07-16T17:12:15.173Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/test-evidence/WI-489/pre-post-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-07-16T17:12:15.246Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-489.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-16T14:34:55.444Z"
+    },
+    {
+      "id": 16,
+      "subject": "research: verify Claude schema-turn and Fable safety-routing contracts",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "metadata": {
+        "skill": "research",
+        "signal": "host-capability"
+      },
+      "skill_receipt": {
+        "skill": "research",
+        "loaded_at": "2026-07-16T02:43:57.262Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-InvocationReceiptModeFrame",
+            "ts": "2026-07-16T02:48:59.364Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/research-invocation-mode.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-KnowledgeLocalResolution",
+            "ts": "2026-07-16T02:48:59.619Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/research-local-knowledge.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ExternalResearchOrPrescope",
+            "ts": "2026-07-16T02:48:59.843Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/research-external-or-prescope.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-PersistenceProvenance",
+            "ts": "2026-07-16T02:49:00.079Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/research-log.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerificationLanding",
+            "ts": "2026-07-16T02:49:00.302Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/research-verification-landing.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyReturnControl",
+            "ts": "2026-07-16T02:49:00.584Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/research-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-16T02:49:00.813Z"
+    }
+  ]
+}

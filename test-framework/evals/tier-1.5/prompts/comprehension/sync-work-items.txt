@@ -1,0 +1,10 @@
+Skill: sync-work-items
+
+Q: What is the source of truth relationship between repo files and GitHub Issues in sync-work-items?
+A: Expected pattern: Repo files under docs/specs/work-items/ are canonical. GitHub Issues are projections for execution, assignment, and visibility. GitHub is NOT canonical.
+
+Q: What are the four label categories applied to GitHub Issues by sync-work-items?
+A: Expected pattern: type:* (feature, bugfix, regression, refactor, drift, conversion, chore), status:*, lane:*, and severity:*.
+
+Q: What lanes does sync-work-items participate in, and what is its position?
+A: Expected pattern: It participates in brownfield-conversion lane at position 3 (previous: audit-coverage) and drift lane at position 3 (previous: write-journeys). Next is null in both lanes.

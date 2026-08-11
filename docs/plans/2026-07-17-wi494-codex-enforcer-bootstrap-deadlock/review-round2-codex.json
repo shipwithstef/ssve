@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "review_kind": "plan",
+  "rubric_score": 4,
+  "rubric_failures": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9
+  ],
+  "dependencies_needing_read": null,
+  "reviewer": {
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5",
+    "effort": "high"
+  },
+  "verdict": "fail",
+  "summary": "The plan is unusually detailed, but it is not dispatch-safe. The bootstrap exception remains fail-open around session identity and marker validity, authorization is non-atomic, the read allowlist contains a filesystem-writing kubectl path, and the declared file scope omits required implementation changes. Test, lane, and rollback instructions also contain deterministic gaps.",
+  "findings": [
+    {
+      "id": "F-001",
+      "severity": "high",
+      "claim": "The bootstrap predicate can authorize without a valid session identity and conflates an invalid marker with an absent marker.",
+      "analysis": "The proposed ownership check compares defaulted empty strings, so a marker and context both lacking session_id compare equal. More importantly, the true zero-state path permits execution without first requiring a non-empty ctx.session_id. The plan also treats any falsy result from readMarker as marker absence. A secure reader commonly returns null for malformed JSON, wrong ownership, symlinks, non-regular files, and read failures; those states must not receive the same authorization as ENOENT. This contradicts the binding fail-closed constraint and can authorize the canonical graph-creation command when ownership evidence is missing or invalid.",
+      "evidence": [
+        "§4 constraint 2: “Both new predicates return false on ANY unrecognized input, parse failure, or thrown exception.”",
+        "§6.3: `if (marker) { ... } return true;` makes every falsy marker result an allowed zero-state path.",
+        "§6.3: `String(marker.session_id || \"\") !== String(ctx.session_id || \"\")` accepts equality when both values are empty.",
+        "The absent-marker branch contains no check that `ctx.session_id` is present and valid."
+      ],
+      "proposed_fix": "Require a non-empty, format-valid session identity before any bootstrap authorization. Give the shared marker reader a tri-state result such as `absent | valid | invalid`; permit only `absent` or a valid same-session marker, and deny `invalid`. Wrap the entire predicate boundary so filesystem, graph, path, and marker exceptions return false. Add fixtures for missing session IDs, malformed JSON, unsafe file type, wrong ownership, unreadable marker, and reader exceptions."
+    },
+    {
+      "id": "F-002",
+      "severity": "high",
+      "claim": "The zero-state authorization is a non-atomic check-then-act sequence and does not prove that exactly one concurrent bootstrap can win.",
+      "analysis": "The hook checks lane graphs and the marker before returning allow, but the command executes later. Two sessions or two WIs can both be authorized while the repository is still in zero-state. The plan says marker creation is protected by a per-(repo,WI) lock, which does not serialize different WI values. No executed-script invariant or concurrency fixture proves that the second command rechecks repository/session zero-state atomically. This leaves the plan's central “exactly one authorized exit” invariant unproven.",
+      "evidence": [
+        "§6.3 performs `laneGraphs(...).length !== 0` and `readMarker(...)` inside the PreToolUse decision, before command execution.",
+        "§6.3 says the script later creates the marker under “its own per-(repo,WI) lock.”",
+        "§6.4 tests only sequential allow → execute → deny behavior; no overlapping bootstrap requests are tested.",
+        "§10 explicitly asks whether the marker check is TOCTOU-exposed, but the plan supplies no binding mitigation."
+      ],
+      "proposed_fix": "Make the executed `svc-ensure-worktree.mjs` command enforce the zero-state transition under a repository/session-wide atomic lock, rechecking graph and marker state after acquiring it. Specify the lock scope and stale-lock behavior. Add a concurrent fixture using different sessions and different WI values, asserting exactly one graph-creation transition succeeds and the loser fails without artifacts."
+    },
+    {
+      "id": "F-003",
+      "severity": "high",
+      "claim": "The declared file scope omits the shared-marker extraction required by the blueprint.",
+      "analysis": "The four-file table cannot implement F-003. Extracting markerPathFor and readMarker into one shared module requires a new module plus an edit to `scripts/svc-ensure-worktree.mjs`, neither of which appears in the planned file list. The module path, exports, reader result contract, imports, and regression coverage are also absent. In dispatch mode this is both a scope-boundary leak and an incomplete blueprint.",
+      "evidence": [
+        "§5 declares exactly four files and does not include a bootstrap-marker module or `scripts/svc-ensure-worktree.mjs`.",
+        "§6.3 requires: “Extract both into a small shared module ... and import from BOTH the enforcer and ensure-worktree.”",
+        "§3 describes “two existing files edited + one new lib,” while §5 already introduces `argv-lex.mjs`; the marker extraction adds another new module and another edited file."
+      ],
+      "proposed_fix": "Choose the exact shared-module path and add it plus `scripts/svc-ensure-worktree.mjs` to §5, the task graph, AC mapping, blast radius, rollback, and tests. Provide copy-ready exports and import changes, including a tri-state secure-read contract and parity tests proving the writer and enforcer use the same path and validation implementation."
+    },
+    {
+      "id": "F-004",
+      "severity": "high",
+      "claim": "The proposed kubectl allowlist silently authorizes commands that write files and misses value-bearing watch forms.",
+      "analysis": "`kubectl cluster-info` has no second-level restriction, so the generic `second === undefined` branch permits every tail, including `cluster-info dump --output-directory ...`, which writes files. The watch hazard check only matches exact tokens and therefore does not catch equals or fused forms such as `--watch=true`, `--watch-only=true`, or applicable short attached forms. This is the silent over-allow failure class the plan identifies as its primary risk.",
+      "evidence": [
+        "§6.2 includes `cluster-info` in `READ_SUBCOMMANDS.kubectl`.",
+        "`READ_SUBSUB.kubectl` defines only `auth`; `isReadCommand` returns true when the second-level entry is undefined.",
+        "`HAZARD_FLAGS.kubectl` checks only exact `-w`, `--watch`, and `--watch-only` tokens.",
+        "The test matrix contains no `cluster-info dump --output-directory`, `--watch=true`, or `--watch-only=true` denial vectors."
+      ],
+      "proposed_fix": "Add explicit second-level handling for `cluster-info`, denying `dump` or at minimum every output-directory form. Normalize and validate kubectl flags in separate, equals, and attached spellings. Capture the relevant installed CLI help during execution and add negative fixtures for every accepted spelling, including filesystem-write and long-lived-stream forms."
+    },
+    {
+      "id": "F-005",
+      "severity": "high",
+      "claim": "The prescribed zero-state end-to-end fixture cannot execute from the repository it creates.",
+      "analysis": "The runner initializes an empty temporary Git repository and then invokes relative paths under `scripts/`. Nothing in the sequence copies, symlinks, or checks out those scripts into the temporary repository. The enforcer additionally requires the invoked bootstrap script to realpath to the canonical script inside `ctx.repo_root`, so simply calling the framework script by an external absolute path would not satisfy the proposed predicate. The fixture also asserts graph placement directly under `REPO/.svc` without establishing that this matches the bootstrap script's actual target-worktree behavior.",
+      "evidence": [
+        "§6.4 step 1 only initializes Git, creates `.svc`, and commits an empty tree.",
+        "§6.4 steps 2–4 invoke `scripts/svc-ensure-worktree.mjs` and `scripts/codex-load-skill.mjs` relative to that empty repository.",
+        "§6.3 requires the script realpath to equal `ctx.repo_root/scripts/svc-ensure-worktree.mjs`.",
+        "§6.4 assumes `REPO/.svc/lane-tasks-WI-999.json` is created, while the command is specifically a worktree bootstrap."
+      ],
+      "proposed_fix": "Define a concrete fixture construction that places the exact hook and script tree inside the temporary Git repository while preserving canonical realpaths, or use an isolated checkout fixture of the current repository. Specify the exact graph and marker locations from the bootstrap contract, configure deterministic Git identity, and provide copy-pasteable setup, execution, assertion, and cleanup commands."
+    },
+    {
+      "id": "F-006",
+      "severity": "medium",
+      "claim": "The negative-fixture falsification procedure is unsafe, contradictory, and not implementation-ready.",
+      "analysis": "The plan first requires every group to be RED against the current hook, although existing injection-negative and still-denies cases should already pass by denying. It then proposes temporarily replacing production lexer or classifier logic, but does not define an isolated mutant, dependency-injection seam, restoration trap, or per-vector evidence format. In-place source mutation inside a tier-1 validator is race-prone and can leave the worktree altered after interruption.",
+      "evidence": [
+        "§6.4 says: “All groups authored and observed RED against the current hook before any hooks edit.”",
+        "The same section expects existing injection-negative and still-denies vectors to remain denied.",
+        "The lexer falsification proposes temporarily making `lexSimpleCommand` return `src.split(/\\s+/)` and then restoring it.",
+        "No exact mutation harness, isolation mechanism, cleanup trap, or evidence schema is supplied."
+      ],
+      "proposed_fix": "Separate ordinary TDD from mutation adequacy. Record RED only for genuinely new positive behavior. For negative detectors, run isolated mutant module copies or inject classifier/lexer dependencies into a test-only harness; never patch tracked production files in place. Specify deterministic per-vector mutant-killed evidence and guarantee cleanup with a trap."
+    },
+    {
+      "id": "F-007",
+      "severity": "medium",
+      "claim": "The lane-compliance ledger is internally inconsistent and therefore not mechanically auditable as claimed.",
+      "analysis": "The table enumerates ten mandatory framework-lane skills—one completed and nine skipped—but labels the result 9/9. That arithmetic mismatch prevents the stated mechanical comparison from proving completeness. The plan also relies on external ledger contents without embedding the exact graph fields or decision citations needed to distinguish a valid skip from prose asserted in the manifest.",
+      "evidence": [
+        "§2 says `upstream_completed` plus `upstream_skipped_with_justification` is “9/9.”",
+        "The table lists `diagnose-bug` plus nine skipped skills, totaling ten entries.",
+        "The section says skip reasons live in `.svc/lane-tasks-WI-494.json`, but provides no exact task IDs or decision-record identifiers for most skips."
+      ],
+      "proposed_fix": "Correct the denominator to the actual lane-definition count and add an explicit machine-generated comparison showing every lane skill, graph task ID, status, artifact or exact skip_reason, and any required `.svc/pipeline-decisions.jsonl` record identifier. Make the mechanical check fail on count or name drift."
+    },
+    {
+      "id": "F-008",
+      "severity": "medium",
+      "claim": "The rollback runbook incorrectly treats a drift check as an alternative to refreshing the installed Codex hook.",
+      "analysis": "A drift checker can detect stale or mismatched installation state but does not necessarily update it. The runbook uses `./setup --host codex` OR the drift check before verifying the installed launcher. If the installed surface is a copied artifact or otherwise stale, selecting the check-only branch leaves the pre-revert hook active. This is especially unsafe because the plan identifies over-allow as silent.",
+      "evidence": [
+        "§8 step 3 says: “Re-run `./setup --host codex` ... OR the repo's drift check.”",
+        "The same step requires the installed enforcer to resolve to reverted source, which a check-only command does not establish by itself.",
+        "§3 states that over-allow is silent and requires installed-path verification."
+      ],
+      "proposed_fix": "Make installation refresh mandatory unless a preceding command proves the installed target is already a live symlink to the reverted source. Define exact drift-check exit semantics, exact installed paths, and fail-closed commands. Then run behavioral smoke tests through that verified installed path."
+    }
+  ],
+  "certifications": [
+    {
+      "key": "scope_lock_observed",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "97fabc1023a1fcb051b99adc7aa9e265025e032bf365c9913e9ebc14d3530148"
+    },
+    {
+      "key": "independent_adversarial_review",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "97fabc1023a1fcb051b99adc7aa9e265025e032bf365c9913e9ebc14d3530148"
+    }
+  ]
+}

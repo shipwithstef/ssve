@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "review_kind": "plan",
+  "rubric_score": 6,
+  "rubric_failures": null,
+  "dependencies_needing_read": [
+    "docs/specs/work-items/WI-502.md — the plan maps AC families (OS-01..10, SB-01..04, AU-01..07, DG-01..10) to tasks, but the individual AC texts are not in the review package, so per-AC coverage (dimension a) can only be verified at family granularity",
+    "docs/specs/features/wi-502-durable-authority.md — needed to confirm the BASELINED architecture actually specifies the lease state machine, capability lifecycle, and containment contract the tasks claim to implement",
+    ".svc/pipeline-decisions.jsonl — needed to verify skipped upstream lane skills are recorded per dimension g, since the plan justifies skips only inline",
+    "docs/specs/test-evidence/WI-502/framework-surface-inventory.md — cited as the frozen entry-point universe backing the counts in the Architectural preflight; counts cannot be validated without it"
+  ],
+  "reviewer": {
+    "host": "claude",
+    "family": "anthropic",
+    "model": "claude-fable-5",
+    "effort": "high"
+  },
+  "verdict": "pass-with-findings",
+  "summary": "The WI-502 plan is unusually thorough: complete file universe with per-task ownership, walked 15-entry external-state taxonomy, explicit reversibility anchors per checkpoint, single-controller discipline until delegation is proven, and inline-mode compliance (so no blueprint finding per dimension i). However, it has two high-severity execute-risk gaps: (1) task 1 commits four intentionally-failing tier-1 validators into a suite the plan itself says auto-discovers new .sh files, creating a 5-commit window where the canonical tier-1 gate fails with no expected-fail mechanism specified; (2) the machine-local chain policy is in refuse mode requiring the 5-receipt envelope on every pushed non-quick-fix commit with the pre-push hook validating the entire range, yet the execution sequence contains six implementation commits and zero emit-receipt.mjs invocations. Additional medium findings: the ERR recovery trap is installed after all commands (never active), the HEAD-pin makes the sequence non-rerunnable with no resume procedure, the claimed file-universe diff check has no mechanical command (git diff --check only checks whitespace), and lane-skill skips lack the pipeline-decisions citation dimension g requires. AC coverage verified at family granularity only; spec files declared in dependencies_needing_read.",
+  "findings": [
+    {
+      "id": "F-001",
+      "severity": "high",
+      "claim": "Task 1 commits four intentionally-failing tier-1 validators into an auto-discovering suite, breaking the canonical tier-1 gate for the entire task-1-through-task-5 window with no expected-fail mechanism specified.",
+      "analysis": "The plan's own Simulation Report row for task 1 states 'tier-1 auto-discovers new .sh files' and marks it PASS CREATE. The red/green design means validate-controller-lease-handover.sh stays red until task 3, validate-delegated-execution-authority.sh until task 4, and validate-shell-containment-contract.sh until task 5 — yet all four are committed at task 1. AGENTS.md mandates 'run bash test-framework/evals/run-all-evals.sh before committing skill changes' and post-commit re-runs of relevant tier-1 validators; the repo also ships pre-commit hooks that fire when framework files are staged. Every intermediate commit (tasks 1–5 all stage test-framework/evals/tier-1) therefore either fails these gates or requires silently skipping them, and any concurrent session running tier-1 during this window sees a red suite for reasons unrelated to its own work. The plan never names the mechanism that reconciles committed-red validators with an auto-discovering always-green suite.",
+      "evidence": [
+        "Simulation Report task 1: 'Four validator paths do not exist; tier-1 auto-discovers new `.sh` files | PASS CREATE'",
+        "Execution sequence task 1 commits the validators before any implementation: 'git add docs .svc/lane-tasks-WI-502.json test-framework/evals/tier-1' followed by 'git commit -m \"test(WI-502): pin authority regression contracts\"'",
+        "Task 2 validation runs only validate-operation-scope-authority.sh green; the lease/delegation/containment validators are not run again until tasks 3, 4, and 5 respectively — confirming they are red at the task-2 and task-3 commits",
+        "AGENTS.md Agent Notes: 'Run bash test-framework/evals/run-all-evals.sh before committing skill changes' and 'Post-commit verification: After any commit, re-run at least the relevant tier-1 validators'"
+      ],
+      "proposed_fix": "Specify the red-state mechanism explicitly in task 1: either (a) have each new validator exit 0 with a SKIP marker until a sentinel (e.g., the module it validates exists on disk) flips it to enforcing — the red proof is then captured in progress.md as command output rather than committed as a permanently-failing gate; or (b) commit the validators with an expected-fail manifest that run-all-evals.sh understands, and add that mechanism to the file universe. State in the manifest which intermediate commits are expected to pass the full tier-1 suite and prove it per checkpoint."
+    },
+    {
+      "id": "F-002",
+      "severity": "high",
+      "claim": "Chain refuse mode requires the 5-receipt envelope on every pushed non-quick-fix commit and the pre-push hook validates the entire remote..local range, but the execution sequence contains six implementation commits and zero receipt-emission commands.",
+      "analysis": "CLAUDE.md states the machine is in refuse mode since 2026-05-13: 'every other pushed non-quick-fix commit needs the 5-receipt envelope (plan-manifest, review-plan, exec-record, review-exec, audit-implementation), and the pre-push hook validates the ENTIRE remote..local range, not just the tip.' This branch will carry six non-quick-fix commits (tasks 1–6). The plan's task 7 says 'receipt chain ready for land' and the Validation Plan mentions review-exec, but no command in the sequence invokes scripts/emit-receipt.mjs, no per-commit receipt strategy is stated (staging-tree promotion vs per-SHA notes), and nothing addresses how six range commits each satisfy the envelope. As written, the push at land time is deterministically blocked by the pre-push hook, converting a planning omission into an execute/land failure discovered at the most expensive moment.",
+      "evidence": [
+        "CLAUDE.md Mandatory Plan-Exec-Review Chain: 'the pre-push hook validates the ENTIRE `remote..local` range, not just the tip'; refuse mode declared active on this machine",
+        "Execution Command Sequence: contains six git commit invocations and no occurrence of emit-receipt.mjs or check-chain-receipts.mjs",
+        "Task 7 row claims 'receipt chain ready for land' with no command backing the claim"
+      ],
+      "proposed_fix": "Add explicit receipt emission to the sequence: after each task commit, emit the exec-record receipt for that SHA via 'node scripts/emit-receipt.mjs --type exec-record --wi WI-502 --sha \"$(git rev-parse HEAD)\"' (or document the staging-tree/post-commit-promotion path if that hook handles it automatically — name the hook), and add 'node scripts/check-chain-receipts.mjs --sha <each>' to task 7 so the range-validation outcome is proven before land-changeset, not discovered by the pre-push hook."
+    },
+    {
+      "id": "F-003",
+      "severity": "medium",
+      "claim": "The ERR recovery trap is installed after the final task-7 command, so RECOVERY_IF_FAIL is never active during any task; under set -e every failure aborts with no recovery guidance.",
+      "analysis": "The sequence opens with 'set -euo pipefail' and defines RECOVERY_IF_FAIL plus 'trap RECOVERY_IF_FAIL ERR' as the last lines, after all validation and commit commands. Bash installs traps at execution time, so if any earlier command fails — a red validator, a node --check error, a failed commit — the script exits immediately and the recovery function has never been registered. The recovery/checkpoint guidance the plan relies on ('Stop at the last named checkpoint...') is therefore unreachable exactly when it is needed. This fails dimension h (copy-pasteable, correct, complete commands).",
+      "evidence": [
+        "Execution Command Sequence: 'RECOVERY_IF_FAIL() { ... }' and 'trap RECOVERY_IF_FAIL ERR' appear as the final two statements, after the task-7 commands",
+        "Sequence header: 'set -euo pipefail' — any earlier failure exits before the trap exists"
+      ],
+      "proposed_fix": "Move the function definition and 'trap RECOVERY_IF_FAIL ERR' to immediately after 'set -euo pipefail' and before the first assertion, so every task command runs under the trap."
+    },
+    {
+      "id": "F-004",
+      "severity": "medium",
+      "claim": "The sequence is not rerun-safe: the opening HEAD assertion pins the base SHA, so any resume after the first commit fails at line 4, and no per-checkpoint resume procedure is given.",
+      "analysis": "'test \"$(git rev-parse HEAD)\" = \"0f3bc54d...\"' is correct as a one-time preflight but makes the script fail closed on every re-entry once task 1 has committed. The Checkpoint Plan names rollback anchors but not forward-resume steps, and re-running a completed task's commit block fails under set -e when nothing is staged ('git commit' with an empty index exits non-zero). Dimension e asks exactly this question — what happens when a task is re-run after partial completion — and the plan's answer ('Every task is a checkpoint') is contradicted by its own entry gate. An interrupted execution (context compaction, host restart) has no deterministic path back in.",
+      "evidence": [
+        "Execution Command Sequence line: 'test \"$(git rev-parse HEAD)\" = \"0f3bc54d5404b361259469081cf55822b01aae6c\"' with no branch for resumed runs",
+        "Reversibility section: 'Every task is a checkpoint' — no corresponding resume command per checkpoint",
+        "Each task block ends in an unconditional 'git commit', which fails on rerun with an empty index under set -euo pipefail"
+      ],
+      "proposed_fix": "Replace the bare HEAD pin with a resume-aware gate: assert the branch and that HEAD is either the base SHA or a commit whose subject matches the last completed checkpoint (e.g., grep the wi502-* checkpoint name from progress.md), and document per-task resume as 'skip completed task blocks whose checkpoint commit exists (git log --oneline --grep \"WI-502\" verification), continue from the first absent checkpoint.'"
+    },
+    {
+      "id": "F-005",
+      "severity": "medium",
+      "claim": "The promotion checklist claims 'Final diff contains only this manifest's file universe' but the only diff command in task 7 is 'git diff --check', which detects whitespace errors, not file-universe conformance.",
+      "analysis": "Task 7's deterministic work lists 'clean-diff/file-universe checks', and the checklist makes file-universe containment a promotion criterion. The sole supporting command, 'git diff --check origin/main...HEAD', validates whitespace/conflict-marker hygiene only. No command enumerates 'git diff --name-only origin/main...HEAD' against the Files Planned table. Since inline mode gives the orchestrator freedom in how edits are applied, an out-of-universe write (e.g., a helper touched during task 4) would pass every listed gate. The claimed check is therefore non-mechanical — a determinism-rubric gap on the plan's own terms.",
+      "evidence": [
+        "Promotion Readiness Checklist: '[ ] Final diff contains only this manifest's file universe.'",
+        "Execution sequence task 7: 'git diff --check origin/main...HEAD' — the only diff-related command in the final gates",
+        "Task 7 row: 'clean-diff/file-universe checks' with no corresponding name-only enumeration command"
+      ],
+      "proposed_fix": "Add a mechanical universe check to task 7: 'git diff --name-only origin/main...HEAD | sort' compared (comm -23) against a sorted allowlist file generated from the Files Planned table (committed alongside the manifest); any residual line fails the gate."
+    },
+    {
+      "id": "F-006",
+      "severity": "medium",
+      "claim": "Lane-compliance skips are justified inline but not cited to .svc/pipeline-decisions.jsonl, and the framework lane's mandatory upstream skill list is not enumerated against completed artifacts.",
+      "analysis": "Dimension g requires that for the declared lane every mandatory upstream skill be either completed with a cited artifact or skipped with a citation into .svc/pipeline-decisions.jsonl. The plan cites strong artifacts for spec, exploration, journey, and solution-confidence, and justifies skipping plan-blast-radius inline ('its contract is Terraform/Helm/Kubernetes IaC-only'), but no pipeline-decisions entry is cited for that skip, and the plan never lists the framework lane's full mandatory sequence (e.g., whether design-tech and its G4 gate are satisfied by the BASELINED feature doc or formally skipped). The Prerequisite Alignment Matrix covers UX/UI/persona as N/A but that is prose alignment, not the lane-skill enumeration the protocol demands — the exact omission pattern (WI-073) that caused dimension g to be added.",
+      "evidence": [
+        "Implementation Summary: 'The `plan-blast-radius` skill is not used because its contract is Terraform/Helm/Kubernetes IaC-only.' — no .svc/pipeline-decisions.jsonl citation",
+        "Protocol dimension g: 'skipped-with-justification (cite `.svc/pipeline-decisions.jsonl`)? An unnamed lane skill = REJECT finding.'",
+        "The plan nowhere lists the framework lane's mandatory skill sequence with per-skill completed/skipped status"
+      ],
+      "proposed_fix": "Add a lane-compliance table to the manifest: one row per framework-lane mandatory skill, status completed (artifact path) or skipped (pipeline-decisions.jsonl entry id). Record the plan-blast-radius skip in .svc/pipeline-decisions.jsonl and cite the entry."
+    },
+    {
+      "id": "F-007",
+      "severity": "low",
+      "claim": "mimo-code.json is modified in task 5 as one of 'eight host manifests', but task 6 runs check-install-drift for only seven hosts — mimo-code is absent from the drift gate.",
+      "analysis": "Task 5 modifies provision/hosts/mimo-code.json and the entry-point universe declares 8 provisioned hosts, yet the task-6 command block runs check-install-drift.sh for codex, claude, kimi, gemini, opencode, antigravity, and cursor only. If the drift script does not support a mimo host, the plan should say so and name the alternative verification for that manifest's capability declaration; if it does, the command is missing. Either way one of the eight declared rollout surfaces has no install-side validation, weakening the 'installed enforcement reads durable source' coupling row in External State entry 2.",
+      "evidence": [
+        "Files Planned: 'provision/hosts/mimo-code.json | MODIFY | 5'",
+        "Entry-point universe: 'Provisioned hosts | 8 | Every manifest declares identity, containment, and delegated-mutation support state.'",
+        "Task 6 sequence: seven check-install-drift.sh invocations, none for mimo-code"
+      ],
+      "proposed_fix": "Either add 'bash scripts/check-install-drift.sh --host mimo-code --quiet' (extending the script's host list if needed, and adding that extension to the file universe), or state explicitly that mimo-code has no installed surface and that scripts/validate-host-authority-capabilities.mjs is its sole gate."
+    },
+    {
+      "id": "F-008",
+      "severity": "low",
+      "claim": "Task-graph 'touches' entries are prose labels rather than paths, so scope-boundary conformance (dimension b) cannot be checked mechanically from the graph itself.",
+      "analysis": "Entries like '\"four focused Tier-1 validators\",\"progress ledger\"' are human-readable but not machine-resolvable to the file universe, so a hook or validator cannot detect a task writing outside its declared scope from the task graph alone. The Files Planned table does carry the authoritative file-to-task mapping, which substantially mitigates this, but the two representations are not mechanically linked — drift between them would go undetected. Low severity because the compensating table exists and execution is single-controller.",
+      "evidence": [
+        "Task Graph JSON: '\"touches\":[\"four focused Tier-1 validators\",\"progress ledger\"]' and similar prose entries for tasks 2–7",
+        "Files Planned table carries the actual per-task path assignments with no stated cross-check between table and graph"
+      ],
+      "proposed_fix": "Populate each task's touches with the exact paths from the Files Planned table (or a glob resolving only to them), and add a one-line check to task 7 asserting every committed path per checkpoint commit is within its task's touches set."
+    },
+    {
+      "id": "F-009",
+      "severity": "low",
+      "claim": "'git add docs' in task 1 stages the entire docs tree, sweeping the review-log and any unrelated docs edits into the 'test(WI-502): pin authority regression contracts' commit.",
+      "analysis": "review-log.yaml is created at review time, before task 1 executes, so the broad 'git add docs' places the plan-review artifact — and any other stray docs modification present in the worktree — into a commit whose message describes test fixtures. This blurs the audit trail the checkpoint plan depends on (each rollback anchor assumes commits contain only their task's content) and marginally undermines the clean-universe claim. Directory-level adds are also how out-of-universe files leak in unnoticed (compare F-005).",
+      "evidence": [
+        "Files Planned: 'docs/plans/2026-07-20-wi502-durable-authority/review-log.yaml | CREATE | review' — exists on disk before task 1",
+        "Task 1 sequence: 'git add docs .svc/lane-tasks-WI-502.json test-framework/evals/tier-1'"
+      ],
+      "proposed_fix": "Stage explicit paths: the upstream spec/plan artifacts and review-log in a dedicated 'docs(WI-502): record plan and review artifacts' commit (or fold them into the plan-promotion commit), and restrict task 1's add to the four validator paths plus progress.md and the lane-tasks file."
+    }
+  ],
+  "certifications": []
+}

@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "acceptance_critical": true,
+  "selected_proof": {
+    "id": "API-PROBE-001",
+    "command": "node scripts/probe-provider.js --case save",
+    "target": "provider-sandbox",
+    "environment": "sandbox"
+  },
+  "pre": {
+    "status": "not-run",
+    "evidence": "provider token expired before branch creation"
+  },
+  "post": {
+    "status": "pass",
+    "evidence": "docs/specs/features/test-evidence/provider-probe.json"
+  },
+  "no_pre_baseline_reason": "Provider token was expired before a reachable baseline could be captured.",
+  "baseline_replacement": "old-path-new-path",
+  "comparison": "fixed-by-change",
+  "iterations": [
+    {
+      "iteration": 1,
+      "fix_batch": "batch-1",
+      "classification": "fixed-by-change",
+      "evidence": "docs/specs/features/test-evidence/provider-probe.json"
+    }
+  ],
+  "changed_signals": [
+    {
+      "signal": "new path returns persisted result for same input",
+      "acceptance_critical": true,
+      "classification": "fixed-by-change"
+    }
+  ]
+}

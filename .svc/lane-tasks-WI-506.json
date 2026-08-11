@@ -1,0 +1,1680 @@
+{
+  "schema_version": 1,
+  "wi": "WI-506",
+  "lane": "framework",
+  "status": "completed",
+  "created": "2026-07-22T11:10:51.767Z",
+  "authority_baton": {
+    "wi": "WI-506",
+    "branch": "framework-WI-506-runtime-root-portability",
+    "base_sha": "7a700259aa0a4c6debb900728cee8a35aefc61ca",
+    "worktree": "/workspace/seriousvibecoding/.worktrees/framework-WI-506-runtime-root-portability",
+    "owner_session": "019f8840-f8bf-7a21-a50c-48d52ed0d526",
+    "claim_generation": 1
+  },
+  "delivery_graph": {
+    "compiler_version": 1,
+    "user_intent": "Permanently repair SVC runtime-root portability and skill activation ordering, deliver the reviewed framework change, refresh the installation, and prove the original WI-496 path without an environment workaround.",
+    "repo_mode": "convert",
+    "change_type": "framework",
+    "lane": "framework",
+    "delivery_mode": "end_to_end",
+    "delivery_tier": {
+      "mode": "full",
+      "selected_by": "route-workflow",
+      "rationale": "The change touches hooks, state writers, host integration, and fail-closed authority; measured compression and quick-fix exemptions are inapplicable.",
+      "decision_log_ref": ".svc/pipeline-decisions.jsonl",
+      "validation_policy": {
+        "mandatory_skills": [
+          "improve-framework",
+          "research",
+          "blend-external",
+          "design-tech",
+          "explore-solutions",
+          "plan-changeset",
+          "review-plan",
+          "execute-changeset",
+          "review-gate",
+          "review-exec",
+          "review-security",
+          "audit-implementation",
+          "test-framework",
+          "land-changeset",
+          "verify-promotion"
+        ],
+        "skippable_skills": [
+          "design-ux",
+          "design-ui",
+          "track-visuals",
+          "write-e2e",
+          "test-journeys",
+          "base44-environment",
+          "audit-session-execution"
+        ],
+        "blocked_behind_explicit_override": []
+      }
+    },
+    "risk_flags": [
+      "framework-hot-path",
+      "host-integration",
+      "fail-closed-authority",
+      "runtime-state",
+      "partial-activation",
+      "cross-host-compatibility",
+      "security-sensitive"
+    ],
+    "platform_contracts": [
+      "XDG Base Directory runtime contract",
+      "Codex skill-loader and hook contract",
+      "SVC installed-source authority contract"
+    ],
+    "solution_confidence": {
+      "required": true,
+      "mode": "design_auto",
+      "status": "satisfied",
+      "artifact": "docs/specs/decisions/2026-07-22-runtime-root-portability/SOLUTION-CONFIDENCE.md"
+    },
+    "system_contract_map": {
+      "required": true,
+      "status": "validated",
+      "path": "docs/specs/contract-maps/svc-runtime-root-resolution.md"
+    },
+    "evidence_families": {
+      "product": "n/a",
+      "acceptance_criteria": "satisfied",
+      "journey": "n/a",
+      "visual": "n/a",
+      "runtime": "satisfied",
+      "plan_review": "satisfied",
+      "code_review": "satisfied",
+      "security_review": "satisfied",
+      "implementation_audit": "satisfied",
+      "deploy": "n/a",
+      "promotion": "satisfied",
+      "session_forensics": "satisfied",
+      "feature_validation_closeout": "n/a",
+      "provider_fidelity": "n/a"
+    },
+    "required_skills": [
+      "improve-framework",
+      "research",
+      "blend-external",
+      "design-tech",
+      "explore-solutions",
+      "plan-changeset",
+      "review-plan",
+      "execute-changeset",
+      "review-gate",
+      "review-exec",
+      "review-security",
+      "audit-implementation",
+      "test-framework",
+      "land-changeset",
+      "verify-promotion"
+    ],
+    "conditional_mandatory_skills": [
+      {
+        "skill": "research",
+        "signal": "host-integration",
+        "reason": "Current official XDG, systemd, WSL, and non-systemd runtime-directory semantics must be verified before changing a host contract."
+      },
+      {
+        "skill": "blend-external",
+        "signal": "solution-confidence-required",
+        "reason": "Current peer-framework implementations require targeted multi-source comparison outside the lightweight research lane."
+      },
+      {
+        "skill": "design-tech",
+        "signal": "runtime-state",
+        "reason": "One resolver must define explicit override, valid XDG, missing XDG fallback, unsafe XDG denial, permissions, namespaces, and cleanup."
+      },
+      {
+        "skill": "explore-solutions",
+        "signal": "solution-confidence-required",
+        "reason": "The user explicitly requested comparison with current gstack/GSD designs and confidence in the permanent solution."
+      },
+      {
+        "skill": "review-security",
+        "signal": "security-sensitive",
+        "reason": "Runtime receipts and authority state participate in fail-closed execution authorization."
+      },
+      {
+        "skill": "audit-implementation",
+        "signal": "framework-hot-path",
+        "reason": "The implementation spans multiple state writers and must prove consistent fallback and no partial activation."
+      }
+    ],
+    "optional_skills": [],
+    "skipped_skills": [
+      {
+        "skill": "design-ux",
+        "skip_condition_id": "framework-internal-no-product-ux",
+        "reason": "The operator-visible CLI behavior is fully specified by diagnostics and exit semantics; no product interaction design changes.",
+        "evidence": "Only framework hooks/scripts/state writers and command fixtures are in scope."
+      },
+      {
+        "skill": "design-ui",
+        "skip_condition_id": "design-ui:no-visual-surface",
+        "reason": "No browser-rendered UI, CSS, layout, asset, or component changes.",
+        "evidence": "Framework runtime and CLI paths only."
+      },
+      {
+        "skill": "track-visuals",
+        "skip_condition_id": "track-visuals:no-browser-visible-change",
+        "reason": "No browser-visible surface exists.",
+        "evidence": "Framework runtime and CLI paths only."
+      },
+      {
+        "skill": "write-e2e",
+        "skip_condition_id": "write-e2e:no-runtime-behavior-change",
+        "reason": "Browser E2E is inapplicable; hermetic command fixtures and installed real-worktree replays are the behavioral E2E proof.",
+        "evidence": "The acceptance surface is svc-ensure-worktree/codex-load-skill on a WSL-like missing-XDG host."
+      },
+      {
+        "skill": "test-journeys",
+        "skip_condition_id": "test-journeys:no-runtime-behavior-change",
+        "reason": "No customer/admin browser journey; installed CLI replay is mandatory instead.",
+        "evidence": "Original Example Marketplace WI-496 route-workflow loader and idempotent retry."
+      },
+      {
+        "skill": "base44-environment",
+        "skip_condition_id": "base44-environment:not-base44-deploy",
+        "reason": "No Base44 application or deployment surface changes.",
+        "evidence": "SVC framework repository only."
+      },
+      {
+        "skill": "audit-session-execution",
+        "skip_condition_id": "audit-session-execution:not-retroactive",
+        "reason": "This is a forward corrective WI with direct reproduced command evidence, not retroactive closeout.",
+        "evidence": "Pre-change EACCES and ENOENT reproductions captured in the current session."
+      }
+    ],
+    "verification_tiers": {
+      "local": [
+        "focused runtime-root resolver matrix",
+        "first-task activation and execution-integrity fixtures",
+        "all direct-consumer parity checks",
+        "full Tier-1"
+      ],
+      "runtime": [
+        "installed framework with missing /run/user/1000",
+        "original Example Marketplace WI-496 loader replay",
+        "idempotent second replay"
+      ],
+      "production": []
+    },
+    "mutation_history": [
+      {
+        "ts": "2026-07-22T11:12:00.000Z",
+        "source": "route-workflow",
+        "action": "initial_compile",
+        "reason": "Compiled a full sequential framework delivery after authoritative receipt-range verification; one-time secure XDG bootstrap is excluded from final proof."
+      },
+      {
+        "ts": "2026-07-22T16:25:37.769Z",
+        "source": "classify-delivery-graph-closeout",
+        "action": "close_as_runtime_accepted",
+        "reason": "delivery_tier=full; all evidence families and required tasks are closed; WI-395 closeout gate: no main-green verdict — run scripts/validate-main-green.sh before recording closeout",
+        "affected_tasks": [],
+        "affected_evidence_families": [],
+        "validator_proof": "scripts/classify-delivery-graph-closeout.mjs --write"
+      }
+    ],
+    "closeout_classification_required": true,
+    "closeout_classification": "runtime-accepted",
+    "closeout_classification_reasons": [
+      "delivery_tier=full",
+      "all evidence families and required tasks are closed",
+      "WI-395 closeout gate: no main-green verdict — run scripts/validate-main-green.sh before recording closeout"
+    ],
+    "closeout_delivery_tier": "full"
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "route-workflow",
+      "subject": "route-workflow: compile the full WI-506 runtime portability correction",
+      "description": "Invoke: /route-workflow. Preserve the exact WI/worktree/branch/session baton; record the one-time self-hosting bootstrap and require final no-override replay.",
+      "metadata": {
+        "skill": "route-workflow"
+      },
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-07-22T11:11:17.847Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-07-22T11:15:13.554Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-session-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-07-22T11:15:13.725Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-intent.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-07-22T11:15:13.834Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-506.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-07-22T11:15:13.889Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-concern-gate.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-07-22T11:15:13.950Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-506.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-07-22T11:15:14.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-22T11:15:14.049Z"
+    },
+    {
+      "id": 2,
+      "status": "completed",
+      "skill": "improve-framework",
+      "subject": "improve-framework: own the runtime-root portability correction loop",
+      "description": "Invoke: /improve-framework. Register one gap, duplicate-filter prior authority WIs, orchestrate the full correction, update framework memory, and move the proposal to done only after promoted replay.",
+      "metadata": {
+        "skill": "improve-framework",
+        "orchestrates_tasks": [
+          3,
+          16,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        "completion_gate": "Remain pending until task 15; then load/complete all phases after proposal move, state update, installed replay, and remote sync."
+      },
+      "blocked_by": [
+        15
+      ],
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-07-22T11:15:34.412Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-FrameworkRepoAndMemoryLoad",
+            "ts": "2026-07-22T11:17:33.193Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-repo-memory.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-PendingProposalAndEvidenceSelection",
+            "ts": "2026-07-22T11:17:33.352Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-evidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-DiagnosisAndDuplicateFilter",
+            "ts": "2026-07-22T11:17:33.416Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "proposals/2026-07-22-framework-improvement-runtime-root-portability.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ImplementationRouteDecision",
+            "ts": "2026-07-22T11:17:33.484Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-route.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-ImplementationAndReplayVerification",
+            "ts": "2026-07-22T16:10:54.008Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/verification/wi-506-runtime-root-portability.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-ImprovementRecordAndStateMutation",
+            "ts": "2026-07-22T16:10:54.055Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "FRAMEWORK-STATE.md"
+              }
+            ]
+          },
+          {
+            "id": "P7-ProposalDoneAndRemoteSync",
+            "ts": "2026-07-22T16:23:05.477Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-remote-sync.log"
+              }
+            ]
+          },
+          {
+            "id": "P8-SelfVerifyContinuation",
+            "ts": "2026-07-22T16:23:05.581Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-self-verify-WI-506.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "proposals/done/2026-07-22-framework-improvement-runtime-root-portability.md",
+        "validation_output": "docs/specs/verification/wi-506-runtime-root-portability.md"
+      },
+      "completed_at": "2026-07-22T16:23:05.688Z"
+    },
+    {
+      "id": 3,
+      "status": "completed",
+      "skill": "research",
+      "subject": "research: verify the official XDG and host runtime-directory contract",
+      "description": "Invoke: /research. Resolve the tight official question: how must an application distinguish missing or unavailable XDG runtime state from existing insecure state, including systemd and non-systemd hosts? Persist the sourced answer for solution confidence.",
+      "metadata": {
+        "skill": "research"
+      },
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "research",
+        "loaded_at": "2026-07-22T11:18:52.446Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-InvocationReceiptModeFrame",
+            "ts": "2026-07-22T11:21:12.782Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/research-invocation-mode.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-KnowledgeLocalResolution",
+            "ts": "2026-07-22T11:21:13.023Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/research-local-knowledge.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ExternalResearchOrPrescope",
+            "ts": "2026-07-22T11:21:13.095Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/research-external-or-prescope.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-PersistenceProvenance",
+            "ts": "2026-07-22T11:21:13.169Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/research-log.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerificationLanding",
+            "ts": "2026-07-22T11:21:13.232Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/research-verification-landing.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyReturnControl",
+            "ts": "2026-07-22T11:21:13.286Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/research-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-22T11:21:13.353Z"
+    },
+    {
+      "id": 16,
+      "status": "completed",
+      "skill": "blend-external",
+      "subject": "blend-external: compare current peer-framework runtime-state patterns",
+      "description": "Invoke: /blend-external. Target only runtime path resolution, advisory-vs-authority state, locking, recovery, and host portability in current gstack, Open GSD, GSD 2, and Superpowers; produce an ADOPT/MODIFY/SKIP proposal without importing code.",
+      "metadata": {
+        "skill": "blend-external"
+      },
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "blend-external",
+        "loaded_at": "2026-07-22T11:21:30.681Z",
+        "loaded_via": "codex-load-skill",
+        "validation_output": "proposals/2026-07-22-blend-runtime-state-portability.md",
+        "phases_executed": [
+          {
+            "id": "P1-SvcCapabilityBaseline",
+            "ts": "2026-07-22T11:28:14.839Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/blend-external-svc-baseline.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalSourceAcquisition",
+            "ts": "2026-07-22T11:28:14.907Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/blend-external-source.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-DualAssessmentComparison",
+            "ts": "2026-07-22T11:28:14.966Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "proposals/2026-07-22-blend-runtime-state-portability.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-HybridBlendPlan",
+            "ts": "2026-07-22T11:28:15.026Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "proposals/2026-07-22-blend-runtime-state-portability.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-RegistryNoticesKnowledgeUpdate",
+            "ts": "2026-07-22T11:28:15.087Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "references/blend-registry.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-22T11:28:15.151Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/blend-external-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-22T11:28:15.219Z"
+    },
+    {
+      "id": 4,
+      "status": "completed",
+      "skill": "design-tech",
+      "subject": "design-tech: define the shared secure runtime-root and activation transaction",
+      "description": "Invoke: /design-tech. Produce the system contract map, acceptance criteria, fallback security invariants, migration surface, and solution-confidence packet.",
+      "metadata": {
+        "skill": "design-tech",
+        "reasoning": "high"
+      },
+      "blocked_by": [
+        16
+      ],
+      "skill_receipt": {
+        "skill": "design-tech",
+        "loaded_at": "2026-07-22T11:28:48.030Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-SpecJourneyDiscussionPreflight",
+            "ts": "2026-07-22T11:34:21.640Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/design-tech-preflight.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-CodebasePatternAnalysis",
+            "ts": "2026-07-22T11:34:21.831Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/design-tech-codebase-analysis.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ArchitectureAlternativesAndDiagrams",
+            "ts": "2026-07-22T11:34:21.895Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/tech/runtime-root-portability.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-CostOpsFeasibilityRiskDesign",
+            "ts": "2026-07-22T11:34:21.951Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/tech/runtime-root-portability.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-G4ReviewAndDecisionLogging",
+            "ts": "2026-07-22T11:34:22.003Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/design-tech-g4-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-BaselinedSpecSelfVerify",
+            "ts": "2026-07-22T11:34:22.062Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/tech/runtime-root-portability.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-22T11:34:22.114Z"
+    },
+    {
+      "id": 5,
+      "status": "completed",
+      "skill": "explore-solutions",
+      "subject": "explore-solutions: challenge the permanent runtime portability design",
+      "description": "Invoke: /explore-solutions. Compare incident-only, centralized resolver, and authority-store redesign options; select the smallest reversible design that preserves fail-closed security.",
+      "metadata": {
+        "skill": "explore-solutions",
+        "reasoning": "high"
+      },
+      "blocked_by": [
+        4
+      ],
+      "skill_receipt": {
+        "skill": "explore-solutions",
+        "loaded_at": "2026-07-22T11:34:42.616Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextProblemBrief",
+            "ts": "2026-07-22T11:36:35.923Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/explorations/runtime-root-portability/PROBLEM_BRIEF.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ParadigmResearchSolutionMap",
+            "ts": "2026-07-22T11:36:36.080Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/explorations/runtime-root-portability/SOLUTION_MAP.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-ACTradeoffAnalysis",
+            "ts": "2026-07-22T11:36:36.125Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/explorations/runtime-root-portability/ANALYSIS.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-FinalistPrototypeComparison",
+            "ts": "2026-07-22T11:36:36.183Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/explorations/runtime-root-portability/COMPARISON.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-DecisionAndTechDesignImpact",
+            "ts": "2026-07-22T11:36:36.246Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/explorations/runtime-root-portability/DECISION.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyAndContinuation",
+            "ts": "2026-07-22T11:36:36.300Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/explore-solutions-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-22T11:36:36.347Z"
+    },
+    {
+      "id": 6,
+      "status": "completed",
+      "skill": "plan-changeset",
+      "subject": "plan-changeset: freeze the WI-506 implementation manifest",
+      "description": "Invoke: /plan-changeset. Bind every file, test, rollback, install step, and live replay to WI-506 acceptance criteria and the selected confidence decision.",
+      "metadata": {
+        "skill": "plan-changeset",
+        "reasoning": "high"
+      },
+      "blocked_by": [
+        5
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-07-22T11:36:52.847Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-07-22T11:44:21.540Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-archetype.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-07-22T11:44:21.714Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-scope.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-07-22T11:44:21.787Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-22-wi506-runtime-root-portability/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-07-22T11:44:21.874Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-22-wi506-runtime-root-portability/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-07-22T11:44:21.940Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-07-22T11:44:22.012Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-22T11:44:22.080Z"
+    },
+    {
+      "id": 7,
+      "status": "completed",
+      "skill": "review-plan",
+      "subject": "review-plan: adversarial host-portability and authority review",
+      "description": "Invoke: /review-plan. Attack fallback trust boundaries, consumer completeness, activation ordering, rollback, and live-proof sufficiency before execution.",
+      "metadata": {
+        "skill": "review-plan",
+        "reasoning": "high"
+      },
+      "blocked_by": [
+        6
+      ],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-07-22T11:44:40.472Z",
+        "loaded_via": "codex-load-skill",
+        "validation_output": "docs/plans/2026-07-22-wi506-runtime-root-portability/review-log.yaml",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-07-22T12:14:09.093Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/plan-tier1.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-07-22T12:14:09.264Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/plan-external-state-check.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-07-22T12:14:09.347Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "/tmp/review-tier2.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-07-22T12:14:09.401Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-22-wi506-runtime-root-portability/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-07-22T12:14:09.466Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-22-wi506-runtime-root-portability/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-22T12:14:09.525Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-plan-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-22T12:14:09.592Z"
+    },
+    {
+      "id": 8,
+      "status": "completed",
+      "skill": "execute-changeset",
+      "subject": "execute-changeset: implement WI-506 with red-green fixtures",
+      "description": "Invoke: /execute-changeset. Implement only the reviewed manifest using focused failing baselines, atomic state writes, and exact consumer migration.",
+      "metadata": {
+        "skill": "execute-changeset",
+        "reasoning": "high"
+      },
+      "blocked_by": [
+        7
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-07-22T12:14:18.904Z",
+        "loaded_via": "codex-load-skill",
+        "validation_output": ".svc/wi506-final-exec-self-verify.log",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-07-22T12:35:44.056Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/pipeline-decisions.jsonl"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-07-22T12:35:44.248Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "hooks/lib/svc-runtime-root.mjs"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-07-22T12:35:44.344Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi506-external-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-07-22T12:35:44.459Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-22-wi506-runtime-root-portability/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-07-22T13:43:19.318Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi506-amended-plan-mechanical.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-07-22T13:43:19.362Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "hooks/lib/wi-claim.mjs"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-07-22T13:43:19.409Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi506-execute-remediation-green.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-07-22T13:43:19.463Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-self-verify.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-07-22T14:05:49.663Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "hooks/lib/wi-claim.mjs"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-07-22T14:05:49.712Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi506-execute-git-cas-green.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-07-22T14:05:49.748Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/retest-git-cas-runtime.log"
+              }
+            ]
+          },
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-07-22T15:03:27.194Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi506-final-exec-preflight.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-07-22T15:03:27.272Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "hooks/lib/wi-claim.mjs"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-07-22T15:03:27.333Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi506-final-focused-launcher.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-07-22T15:03:27.415Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi506-final-exec-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-22T15:03:27.497Z"
+    },
+    {
+      "id": 9,
+      "status": "completed",
+      "skill": "review-gate",
+      "subject": "review-gate: framework hot-path correctness review",
+      "description": "Invoke: /review-gate. Review the frozen diff for contract fidelity, scope, regression risk, test quality, and host compatibility; block landing on unresolved findings.",
+      "metadata": {
+        "skill": "review-gate"
+      },
+      "blocked_by": [
+        8
+      ],
+      "skill_receipt": {
+        "skill": "review-gate",
+        "loaded_at": "2026-07-22T14:05:49.948Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-GateContextChecklistConcernScan",
+            "ts": "2026-07-22T14:13:05.284Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SelfReviewFindings",
+            "ts": "2026-07-22T14:13:05.328Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-self-review-iteration2.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-SelfJudgment",
+            "ts": "2026-07-22T14:13:05.372Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-self-judgment-iteration2.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-CrossReviewConvergence",
+            "ts": "2026-07-22T14:13:05.436Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-cross-review-iteration2.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-GateDecisionBacklog",
+            "ts": "2026-07-22T14:13:05.492Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-decision.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-22T14:13:05.539Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-22T14:13:05.594Z"
+    },
+    {
+      "id": 10,
+      "status": "completed",
+      "skill": "review-exec",
+      "subject": "review-exec: independent execution review of the frozen diff",
+      "description": "Invoke: /review-exec. Independently attack missing-XDG, unsafe-XDG, symlink, permissions, partial activation, concurrent retry, and install-drift cases.",
+      "metadata": {
+        "skill": "review-exec"
+      },
+      "blocked_by": [
+        9
+      ],
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-07-22T14:13:05.844Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-07-22T14:41:00.414Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/wi506-review-exec-self.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-07-22T14:41:00.452Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-exec-pair.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-07-22T14:41:00.500Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi506-runtime-root-portability-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-IterationLoop",
+            "ts": "2026-07-22T14:41:00.541Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/impact-triad/WI-506/review-git-cas-round2/findings.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerdictAndReceiptFinalize",
+            "ts": "2026-07-22T14:41:00.585Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/reviews/wi506-runtime-root-portability-exec-review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-07-22T15:13:30.603Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/wi506-review-exec-self.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-07-22T15:13:30.641Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-exec-pair.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-07-22T15:13:30.691Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi506-runtime-root-portability-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-IterationLoop",
+            "ts": "2026-07-22T15:13:30.729Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi506-review-exec-cap-round3.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerdictAndReceiptFinalize",
+            "ts": "2026-07-22T15:13:30.778Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi506-runtime-root-portability-exec-review-log.yaml"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-22T15:13:30.830Z"
+    },
+    {
+      "id": 11,
+      "status": "completed",
+      "skill": "review-security",
+      "subject": "review-security: threat-model runtime receipt and fallback authority",
+      "description": "Invoke: /review-security. Prove fallback never converts insecure existing state into trusted authority and that all receipt paths remain user-private and canonical.",
+      "metadata": {
+        "skill": "review-security"
+      },
+      "blocked_by": [
+        10
+      ],
+      "skill_receipt": {
+        "skill": "review-security",
+        "loaded_at": "2026-07-22T14:41:12.835Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-SecurityScopeModeGate",
+            "ts": "2026-07-22T14:45:46.232Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-security-scope.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-OWASPTop10Review",
+            "ts": "2026-07-22T14:46:04.179Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/security/wi506-runtime-root-portability-review.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-STRIDEThreatModel",
+            "ts": "2026-07-22T14:46:04.214Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/security/wi506-runtime-root-portability-review.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-SupplyChainAudit",
+            "ts": "2026-07-22T14:46:04.244Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-security-supply-chain.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-SecretsArchaeology",
+            "ts": "2026-07-22T14:46:04.280Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-security-secrets.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-FindingVerificationReport",
+            "ts": "2026-07-22T14:46:04.316Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/security/wi506-runtime-root-portability-review.md"
+              }
+            ]
+          },
+          {
+            "id": "P7-SelfVerifyContinuation",
+            "ts": "2026-07-22T14:46:04.347Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-security-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-22T14:46:04.389Z"
+    },
+    {
+      "id": 12,
+      "status": "completed",
+      "skill": "audit-implementation",
+      "subject": "audit-implementation: verify every consumer and acceptance invariant",
+      "description": "Invoke: /audit-implementation. Reconcile the implementation, tests, map, plan, and ACs; pattern-scan for residual independent runtime-root policies.",
+      "metadata": {
+        "skill": "audit-implementation"
+      },
+      "blocked_by": [
+        11
+      ],
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-07-22T14:46:14.820Z",
+        "loaded_via": "codex-load-skill",
+        "validation_output": "docs/specs/audit/wi506-runtime-root-portability-analysis.md",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextScopeConcern",
+            "ts": "2026-07-22T15:14:07.010Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-implementation-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecialistDispatchCoverageLedger",
+            "ts": "2026-07-22T15:14:07.045Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi506-runtime-root-portability-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-HypothesisGeneration",
+            "ts": "2026-07-22T15:14:07.083Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi506-runtime-root-portability-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-SubsystemBehaviorAudit",
+            "ts": "2026-07-22T15:14:07.117Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-implementation-subsystems.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-FindingsConvergenceReport",
+            "ts": "2026-07-22T15:14:07.152Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi506-runtime-root-portability-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-22T15:14:07.193Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-implementation-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-22T15:14:07.227Z"
+    },
+    {
+      "id": 13,
+      "status": "completed",
+      "skill": "test-framework",
+      "subject": "test-framework: focused runtime fixtures then full Tier-1",
+      "description": "Invoke: /test-framework. Run the focused pre/post matrix, all affected validators, full Tier-1, and classify any untouched baseline failures without re-entering improve-framework.",
+      "metadata": {
+        "skill": "test-framework",
+        "no_self_improve": true
+      },
+      "blocked_by": [
+        12
+      ],
+      "skill_receipt": {
+        "skill": "test-framework",
+        "loaded_at": "2026-07-22T15:14:15.516Z",
+        "loaded_via": "codex-load-skill",
+        "validation_output": "test-framework/results/2026-07-22-WI-506-static.md",
+        "phases_executed": [
+          {
+            "id": "P1-TestModeSelection",
+            "ts": "2026-07-22T15:36:32.556Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/test-framework-mode.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-StaticOrScenarioRunnerExecution",
+            "ts": "2026-07-22T15:36:32.625Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/test-framework-runner-final.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-ResultsPersistenceGapRouting",
+            "ts": "2026-07-22T15:36:32.714Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "test-framework/results/2026-07-22-WI-506-static.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-22T15:36:32.798Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/test-framework-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-22T15:36:32.857Z"
+    },
+    {
+      "id": 14,
+      "status": "completed",
+      "skill": "land-changeset",
+      "subject": "land-changeset: publish the reviewed WI-506 correction and receipts",
+      "description": "Invoke: /land-changeset. Commit, push, open/review/merge the sanctioned PR, publish final-SHA receipts, and preserve unrelated worktrees and residue.",
+      "metadata": {
+        "skill": "land-changeset"
+      },
+      "blocked_by": [
+        13
+      ],
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-07-22T15:37:07.527Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-07-22T15:52:11.564Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-07-22T15:52:11.668Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-diff-audit.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-07-22T15:52:11.770Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-validation.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-PushPrCreation",
+            "ts": "2026-07-22T15:52:11.872Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-pr.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-MergeDecisionCleanup",
+            "ts": "2026-07-22T15:52:11.954Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-merge.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SpecStatusSelfVerify",
+            "ts": "2026-07-22T15:52:12.041Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-22T15:52:12.139Z"
+    },
+    {
+      "id": 15,
+      "status": "completed",
+      "skill": "verify-promotion",
+      "subject": "verify-promotion: refresh installs and replay WI-496 without overrides",
+      "description": "Invoke: /verify-promotion. Refresh all supported installations, prove zero drift, rerun missing-XDG ensure and loader commands with the original host environment, verify idempotence, and close WI-506 only on promoted evidence.",
+      "metadata": {
+        "skill": "verify-promotion"
+      },
+      "blocked_by": [
+        14
+      ],
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-07-22T15:52:12.755Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-07-22T16:06:59.448Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/verification/wi-506-runtime-root-portability.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-07-22T16:06:59.525Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-506.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-07-22T16:06:59.590Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/verification/wi-506-runtime-root-portability.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-07-22T16:06:59.741Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/verification/wi-506-runtime-root-portability.md"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/specs/verification/wi-506-runtime-root-portability.md",
+        "validation_output": "docs/specs/verification/wi-506-runtime-root-portability.md"
+      },
+      "completed_at": "2026-07-22T16:06:59.814Z"
+    }
+  ]
+}

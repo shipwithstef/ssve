@@ -1,0 +1,247 @@
+{
+  "wi": "WI-365",
+  "lane": "framework",
+  "delivery_tier": "compressed",
+  "status": "completed",
+  "created_at": "2026-06-07T13:55:00Z",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "route-workflow — lane+tier+scope (L0/L1/L4/L5 this run; L2/L3 follow-up WI)",
+      "metadata": {
+        "skill": "route-workflow"
+      },
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-06-07T17:09:38.170Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-06-07T17:09:38.357Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-session-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-06-07T17:09:38.391Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-intent.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-06-07T17:09:38.422Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-365.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-06-07T17:09:38.455Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-concern-gate.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-06-07T17:09:38.486Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-365.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-06-07T17:09:38.532Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-self-verify.log"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "subject": "plan-changeset — compressed manifest w/ blueprints",
+      "metadata": {
+        "skill": "plan-changeset"
+      },
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-06-07T17:09:38.250Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-06-07T17:09:38.616Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".worktrees/feature-wi-365-skill-budget/docs/plans/2026-06-07-wi-365-skill-budget/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-06-07T17:09:38.676Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".worktrees/feature-wi-365-skill-budget/docs/plans/2026-06-07-wi-365-skill-budget/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-06-07T17:09:38.737Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".worktrees/feature-wi-365-skill-budget/docs/plans/2026-06-07-wi-365-skill-budget/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-06-07T17:09:38.798Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".worktrees/feature-wi-365-skill-budget/docs/plans/2026-06-07-wi-365-skill-budget/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-06-07T17:09:38.857Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".worktrees/feature-wi-365-skill-budget/docs/plans/2026-06-07-wi-365-skill-budget/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-06-07T17:09:38.922Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".worktrees/feature-wi-365-skill-budget/docs/plans/2026-06-07-wi-365-skill-budget/manifest.md"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "subject": "execute-changeset — L0 tool+report, L1 dmi x3, L4 diet+knob, L5 note",
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-06-07T17:09:38.322Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-06-07T17:09:38.954Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-session-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-06-07T17:09:38.985Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".worktrees/feature-wi-365-skill-budget/docs/plans/2026-06-07-wi-365-skill-budget/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-06-07T17:09:39.020Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".worktrees/feature-wi-365-skill-budget/docs/analysis/skill-budget-baseline-2026-06-07.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-06-07T17:09:39.056Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".worktrees/feature-wi-365-skill-budget/docs/plans/2026-06-07-wi-365-skill-budget/manifest.md"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "subject": "review-exec — G6 single package (plan+diff, compressed)",
+      "metadata": {
+        "skill": "review-exec"
+      },
+      "status": "completed"
+    },
+    {
+      "id": 5,
+      "subject": "audit-implementation — parallel light",
+      "metadata": {
+        "skill": "audit-implementation"
+      },
+      "status": "completed"
+    },
+    {
+      "id": 6,
+      "subject": "land-changeset — PR, merge, envelope squash",
+      "metadata": {
+        "skill": "land-changeset"
+      },
+      "status": "completed"
+    },
+    {
+      "id": 7,
+      "subject": "verify-promotion — G7 occupancy re-measure + trigger probe",
+      "metadata": {
+        "skill": "verify-promotion"
+      },
+      "status": "completed"
+    }
+  ],
+  "archived_reason": "WI-365 VERIFIED via PR #38 (closeout e6514058); status reconciled to completed on archival (WI-389 follow-up to PR #53)"
+}

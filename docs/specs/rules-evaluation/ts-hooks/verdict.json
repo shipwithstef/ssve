@@ -1,0 +1,25 @@
+{
+  "rule_path": null,
+  "source_repo": "affaan-m/everything-claude-code",
+  "source_path": "rules/typescript/hooks.md",
+  "scope": "global",
+  "stack": "typescript",
+  "verdict": "reject",
+  "scores": {
+    "determinism_gain": 2,
+    "correctness_delta": 1,
+    "friction_cost": 2,
+    "convention_conflict": 0
+  },
+  "scenarios_evaluated": 3,
+  "tier2_ran": false,
+  "tier2_verdict": null,
+  "note": "Wrong primitive — setup documentation injected per-turn. friction_cost=2 disqualifies.",
+  "evidence": {
+    "default_transcript": "docs/specs/rules-evaluation/ts-hooks/default-transcript.md",
+    "diff_and_verdict": "docs/specs/rules-evaluation/ts-hooks/diff-and-verdict.md"
+  },
+  "suggested_registry_entry": null,
+  "evaluated_at": "2026-04-13",
+  "contamination_caveat": "Rules fetched into context before skill invocation"
+}

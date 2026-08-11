@@ -1,0 +1,10 @@
+Skill: explore-solutions
+
+Q: What is the minimum gate for explore-solutions, and what happens if the baseline approach wins?
+A: Expected pattern: Minimum gate is 3 paradigms, 5 approaches, and research conducted. If the baseline wins, no spec changes are needed. If an alternative wins, revise Implementation Notes and re-trigger G4.
+
+Q: What are the three modes of explore-solutions and how many phases does each have?
+A: Expected pattern: Full mode has 5 phases, Abbreviated mode has 3 phases, and Quick mode has 2 phases.
+
+Q: What file does explore-solutions produce, and where is it located?
+A: Expected pattern: It produces docs/specs/explorations/<name>/DECISION.md, and may also produce PROBLEM_BRIEF.md, SOLUTION_MAP.md, ANALYSIS.md, and optional COMPARISON.md.

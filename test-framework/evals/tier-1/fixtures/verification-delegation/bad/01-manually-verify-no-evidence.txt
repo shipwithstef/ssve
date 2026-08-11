@@ -1,0 +1,5 @@
+Marked WI-197 as VERIFIED.
+
+Please open the page after deploy and manually verify the toast appears. Let me know if it works on your machine.
+
+You should see a green checkmark in the corner. I could not test this without a real device, so user to validate keyboard navigation as well.

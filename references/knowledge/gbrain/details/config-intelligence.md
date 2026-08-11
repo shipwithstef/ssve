@@ -1,0 +1,23 @@
+# Configuration Intelligence
+
+- **.github/workflows/e2e.yml**: Configuration file.
+- **.github/workflows/release.yml**: Configuration file.
+- **.github/workflows/test.yml**: Configuration file.
+- **.gitleaks.toml**: Configuration file.
+- **admin/package.json**: Configuration file.
+- **admin/tsconfig.json**: Configuration file.
+- **bunfig.toml**: Configuration file.
+- **docker-compose.ci.yml**: Configuration file.
+- **docker-compose.test.yml**: Configuration file.
+- **evals/embedding-provider-eval.json**: Configuration file.
+- **gbrain.yml**: Configuration file.
+- **openclaw.plugin.json**: Configuration file.
+- **package.json**: Configuration file.
+- **skills/_brain-filing-rules.json**: Configuration file.
+- **skills/conventions/cross-modal.yaml**: Configuration file.
+- **skills/manifest.json**: Configuration file.
+- **test/fixtures/claw-test-scenarios/fresh-install/expected.json**: Configuration file.
+- **test/fixtures/claw-test-scenarios/fresh-install/scenario.json**: Configuration file.
+- **test/fixtures/claw-test-scenarios/upgrade-from-v0.18/expected.json**: Configuration file.
+- **test/fixtures/claw-test-scenarios/upgrade-from-v0.18/scenario.json**: Configuration file.
+- **tsconfig.json**: Configuration file.

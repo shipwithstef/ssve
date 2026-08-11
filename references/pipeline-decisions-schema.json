@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://serious-vibe-coding/pipeline-decisions-schema.json",
+  "title": "svc pipeline decision or waiver entry",
+  "description": "One JSON object per line in .svc/pipeline-decisions.jsonl. Used by audit-session-execution, svc-skill-artifact-authenticity, G-2 verification, and other downstream readers.",
+  "type": "object",
+  "oneOf": [
+    {
+      "title": "Pipeline Decision Entry",
+      "required": ["skill"],
+      "allOf": [
+        {"anyOf": [{"required": ["ts"]}, {"required": ["timestamp"]}]},
+        {"anyOf": [{"required": ["decision"]}, {"required": ["decision_type"]}]}
+      ],
+      "properties": {
+        "ts": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp (canonical field)"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp (legacy field — pre-WI-117 writers; new writers should use ts)"
+        },
+        "skill": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of the responsible skill"
+        },
+        "decision": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable decision summary (canonical field)"
+        },
+        "decision_type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Legacy field used by capture-idea writer; new writers should use decision"
+        },
+        "wi": {
+          "type": "string",
+          "pattern": "^WI-(SPINE-)?\\d+$",
+          "description": "Optional WI reference"
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["mechanical", "taste", "user"],
+          "description": "Decision classification"
+        },
+        "run_id": {
+          "type": "string",
+          "description": "Optional grouping id for a single skill invocation"
+        }
+      }
+    },
+    {
+      "title": "Pipeline Waiver Entry",
+      "required": ["kind", "waiver_type", "subject", "author"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "waiver"
+        },
+        "waiver_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "type": "string"
+        },
+        "author": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "cap_window_count": {
+          "type": ["integer", "null"]
+        }
+      }
+    }
+  ],
+  "additionalProperties": true
+}
+

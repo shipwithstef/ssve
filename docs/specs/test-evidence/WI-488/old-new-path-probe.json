@@ -1,0 +1,29 @@
+{
+  "probes": [
+    {
+      "id": "wi488-direct-consumer-migration",
+      "hypothesis": "Active Claude/Codex review consumers route through one canonical launcher instead of constructing direct provider commands.",
+      "change_reason": "Migrate direct paid review paths to deterministic schema, tuple, cache, fallback, and receipt enforcement.",
+      "migration": true,
+      "requires_old_new_path_proof": true,
+      "same_input": "the three active consumer scripts: review-plan-codex, blind-floor-judge, and prompt-floor-judge",
+      "confirmation_check": {
+        "predicate": "current active consumers contain no direct paid Claude/Codex command and all name run-external-review.mjs",
+        "result": "PASS"
+      },
+      "falsification_check": {
+        "predicate": "origin/main base 67e325fd active consumers contain direct provider command construction",
+        "result": "PASS"
+      },
+      "old_path": {
+        "command": "git show 67e325fd:scripts/review-plan-codex.sh | rg 'codex exec'",
+        "result": "failing-state"
+      },
+      "new_path": {
+        "command": "bash test-framework/evals/tier-1/validate-external-review-launcher.sh",
+        "result": "PASS"
+      },
+      "verdict": "hypothesis-holds"
+    }
+  ]
+}

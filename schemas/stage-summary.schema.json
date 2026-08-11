@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "stage-summary",
+  "title": "Mandatory-chain stage segment summary (WI-380)",
+  "description": "The schema-forced return a fresh per-stage subagent hands back to the orchestrator. The orchestrator holds ONLY these summaries + the receipts index — never the stage's full working context. Capped small (~1K tokens) so the orchestrator context stays flat across a full delivery.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["segment", "stages_run", "receipt_sha", "receipts_emitted", "summary", "next_action"],
+  "properties": {
+    "segment": { "type": "string", "enum": ["seg-1-plan", "seg-2-exec", "seg-3-land"] },
+    "stages_run": { "type": "array", "items": { "type": "string" } },
+    "receipt_sha": { "type": "string", "description": "the commit SHA whose receipts THIS stage's own shell emitted (orchestration verifies, never re-emits — AC3)" },
+    "receipts_emitted": { "type": "array", "items": { "type": "string" }, "description": "receipt types this stage emitted (e.g. plan-manifest, review-plan)" },
+    "baton_read": { "type": "string", "description": "the hash-bound baton (plan-manifest.ac_digests) this stage read — NEVER a prose summary of the prior stage (AC4)" },
+    "summary": { "type": "string", "maxLength": 4000, "description": "≤~1K tokens: what the stage did + what the next stage needs. Prose for humans; the orchestrator routes on next_action + receipts, not this." },
+    "next_action": { "type": "string", "enum": ["pass", "patch", "re-execute", "re-plan", "halt"], "description": "the kickback-ladder outcome (scripts/stage-segment.mjs nextStageAction) — explicit backward control flow (AC2)" },
+    "iteration_count": { "type": "integer", "minimum": 0 }
+  }
+}

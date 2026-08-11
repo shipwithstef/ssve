@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "wi": "WI-318",
+  "source_proposal": "proposals/done/2026-04-14-blocking-discovery-halt-protocol.md",
+  "status": "implemented",
+  "coverage": [
+    {
+      "proposal_item": "New artifact format for blocking discoveries",
+      "status": "covered",
+      "evidence": [
+        "references/blocking-discovery-format.md",
+        "scripts/validate-blocking-discovery.mjs"
+      ],
+      "note": "Implemented as validator-backed JSON rather than markdown so graph mutations can consume it deterministically."
+    },
+    {
+      "proposal_item": "New WI state lexicon entry BLOCKED_ON_DISCOVERY",
+      "status": "covered",
+      "evidence": [
+        "references/wi-state-lexicon.md"
+      ]
+    },
+    {
+      "proposal_item": "Shared halt contract across write-e2e, verify-promotion, audit-implementation, and review-security",
+      "status": "covered",
+      "evidence": [
+        "write-e2e/SKILL.md",
+        "verify-promotion/SKILL.md",
+        "audit-implementation/SKILL.md",
+        "review-security/SKILL.md",
+        "test-journeys/SKILL.md"
+      ],
+      "note": "test-journeys was included because it is also a runtime verifying skill."
+    },
+    {
+      "proposal_item": "route-workflow recognizes blocking discovery and blocks parent verification",
+      "status": "covered",
+      "evidence": [
+        "route-workflow/SKILL.md",
+        "references/skill-outcome-contract.md",
+        "scripts/apply-skill-outcome.mjs"
+      ]
+    },
+    {
+      "proposal_item": "Audit-implementation scope decision",
+      "status": "covered",
+      "evidence": [
+        "references/blocking-discovery-format.md",
+        "audit-implementation/SKILL.md"
+      ],
+      "note": "Audit findings emit BLOCKING_DISCOVERY only when they block the parent WI from being correctly VERIFIED."
+    },
+    {
+      "proposal_item": "Replay verification for write-e2e discovering a runtime blocker",
+      "status": "covered",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-blocking-discovery-halt.sh"
+      ]
+    }
+  ],
+  "residuals": []
+}

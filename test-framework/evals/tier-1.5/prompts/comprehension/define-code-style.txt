@@ -1,0 +1,10 @@
+Skill: define-code-style
+
+Q: What file does define-code-style produce, and what are the five required sections?
+A: Expected pattern: It produces docs/specs/style-contract.md. Required sections are Naming Conventions, File Structure Patterns, Import Style, Test Patterns, and Error Handling.
+
+Q: How does the create mode behave differently for brownfield vs greenfield projects?
+A: Expected pattern: In brownfield create mode, it reads 5-10 representative files from the codebase. In greenfield create mode, it reads package.json/tsconfig.json and the design-system.
+
+Q: What is the lane position of define-code-style in the greenfield pipeline?
+A: Expected pattern: In the greenfield lane it is position 14. Previous skill is explore-solutions, next skill is plan-changeset.

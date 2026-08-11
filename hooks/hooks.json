@@ -1,0 +1,305 @@
+{
+  "$schema": "https://docs.anthropic.com/claude-code/hooks-schema.json",
+  "description": "svc workflow hooks — opt-in guards for execution discipline. PreToolUse hooks are soft warnings or hard gates. Profile control: SVC_HOOK_PROFILE=minimal|full (default: full). Selective disable: SVC_DISABLED_HOOKS=<comma-separated-ids>. The optional Stop completion guard may hard-block stop when an active task graph still has actionable work.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "id": "svc-workflow-guard",
+        "description": "HARD BLOCK (full profile): Blocks Write/Edit to linter, formatter, type-checker, test runner configs, and lock files — agent must fix the code, not the config. HARD BLOCK: dynamic phase gate (prerequisite skills incomplete). SOFT WARNING: out-of-scope writes + planning-file edits during execution. WI-399 A1: the former svc-phase-boundary-detector entry is merged into this single spawn (one process per Edit/Write instead of two; --phase-boundary stays valid for old wirings). Disable config-protection only: SVC_DISABLED_HOOKS=svc-config-protection.",
+        "matcher": "Edit|Write",
+        "command": "node hooks/svc-workflow-guard.mjs"
+      },
+      {
+        "id": "svc-bash-guard",
+        "description": "HARD BLOCK (all profiles): blocks --no-verify / --no-gpg-sign git bypass. HARD BLOCK (full profile): blocks git commit missing Co-Authored-By trailer. SOFT WARN (full profile): warns on vague commit messages. Disable individually: SVC_DISABLED_HOOKS=svc-block-no-verify or svc-commit-quality.",
+        "matcher": "Bash",
+        "command": "node hooks/svc-workflow-guard.mjs --bash-guard"
+      },
+      {
+        "id": "svc-eval-gate-pre",
+        "description": "Blocks TaskUpdate(completed) when the active task's eval_matrix still has unfilled pillar entries. Structural mode (default): enforces prefix format + evidence refs. AI mode (SVC_EVAL_MODE=ai): also runs a claude -p quality check to verify evidence is substantive, not generic. Scoped to TaskUpdate only — no overhead on other tools.",
+        "matcher": "TaskUpdate",
+        "command": "node scripts/eval-gate.mjs pre"
+      },
+      {
+        "id": "svc-preflight-skill",
+        "description": "HARD BLOCK for declared contracts (WI-185): PreToolUse hook for Skill invocations. If a co-located .svc/preflight-<skill>.json config exists, runs preflight checks (inputs readable, outputs writable) and blocks declared failures. Missing contracts still fail open. WI-399 A1: matcher narrowed * -> Skill — the hook is a guaranteed no-op for every other tool (its own logic exits 0 unless tool_name==Skill), so the universal matcher was a pure spawn tax on every tool call.",
+        "matcher": "Skill",
+        "command": "node scripts/preflight.mjs --hook --fail-closed"
+      },
+      {
+        "id": "svc-skill-artifact-authenticity",
+        "description": "HARD BLOCK (G-4 / WI-114): blocks Edit/Write to canonical skill-output paths (docs/specs/features/, design-tech/, plans/, decisions/, capability-plan.md, etc.) when no recent invocation of the responsible skill exists in .svc/pipeline-decisions.jsonl. Recency window: SVC_SKILL_RECEIPT_WINDOW_MIN (default 90 min). Bypass: SVC_SKILL_ARTIFACT_ALLOW=1.",
+        "matcher": "Edit|Write",
+        "command": "node hooks/svc-skill-artifact-authenticity.mjs"
+      },
+      {
+        "id": "svc-session-contract-freshness",
+        "description": "HARD BLOCK: blocks Edit/Write when the session contract (.svc/session-contract.jsonl) is >1h old or when contract.skill mismatches SVC_CURRENT_SKILL. Prevents drift and ghost-completions from stale routing context. Origin: audit-session-execution F2 (May 6 2026). Bypass age: SVC_CONTRACT_MAX_AGE_HOURS=<n>. Disable: SVC_DISABLED_HOOKS=svc-session-contract-freshness.",
+        "matcher": "Edit|Write",
+        "command": "node hooks/svc-session-contract-freshness.mjs"
+      },
+      {
+        "id": "svc-inertia-check",
+        "description": "HARD BLOCK: blocks Edit/Write content that adds APIs or framework patterns listed in references/deprecated-foundations.json unless SVC_INERTIA_ACK records an explicit migrate-vs-extend decision.",
+        "matcher": "Edit|Write",
+        "command": "node hooks/svc-inertia-check.mjs"
+      },
+      {
+        "id": "svc-rule-injector-edit",
+        "description": "WI-361 context diet: injects subject-matter rules BEFORE the first Edit/Write to a signal-matching path (additionalContext + allow; 10K cap; per-session memo). Signal sets live in skills-manifest.json rulesRegistry.",
+        "matcher": "Edit|Write",
+        "command": "node hooks/svc-rule-injector.mjs"
+      },
+      {
+        "id": "svc-rule-injector-bash",
+        "description": "WI-361: command-keyword rule injection (git/gh/docker subject classes) on Bash calls.",
+        "matcher": "Bash",
+        "command": "node hooks/svc-rule-injector.mjs"
+      },
+      {
+        "id": "svc-learning-inject",
+        "description": "WI-384: action-time learning injection — injects the 1-3 learnings keyed (by their files[] arrays + Bash-error-class) to the path/command about to be touched (additionalContext + allow; never blocks; per-session memo; fires → .svc/learning-fires.jsonl).",
+        "matcher": "Edit|Write|Bash",
+        "command": "node hooks/svc-learning-inject.mjs"
+      },
+      {
+        "id": "svc-owner-inject",
+        "description": "WI-392: action-time intended-owner routing — when a command/path belongs to a task-class with a registered owner (deploy→base44-environment, browser-verify→Playwright browse mode, per-project app owners via .svc/task-owners.json), injects \"route through the owner\" (additionalContext + allow; never blocks; per-session memo). Registry: skills-manifest.json ownersRegistry.",
+        "matcher": "Edit|Write|Bash",
+        "command": "node hooks/svc-owner-inject.mjs"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "id": "svc-eval-gate-post",
+        "description": "Injects eval matrix reminder after TaskUpdate(in_progress). For diagnose-bug tasks: auto-initializes the 8-pillar matrix in lane-tasks.json if not already present, then prints the checklist so the agent sees exactly which pillars need assessment. Scoped to TaskUpdate only — zero overhead on other tools.",
+        "matcher": "TaskUpdate",
+        "command": "node scripts/eval-gate.mjs post"
+      },
+      {
+        "id": "svc-edit-accumulator",
+        "description": "Records edited source file paths for batch format+typecheck at Stop time. Full profile only. Appends to .claude/svc-edited-files.json. Never blocks.",
+        "matcher": "Edit|Write",
+        "command": "node hooks/svc-stop-quality.js --accumulate"
+      },
+      {
+        "id": "svc-vibe-auditor",
+        "description": "Automatically triggers visual verification after UI edits (Edit|Write to .tsx/.jsx/.vue/.css) to ensure Masterclass soul parity. Non-blocking.",
+        "matcher": "Edit|Write",
+        "command": "node hooks/svc-vibe-auditor.js",
+        "async": true
+      },
+      {
+        "id": "svc-lane-tasks-validator",
+        "description": "HARD BLOCK: validates .svc/lane-tasks-*.json after any Edit|Write. Catches JSON syntax errors and task-graph schema violations immediately at write time. Enforces framework gap G3 from 2026-04-19 Gemini slim-refactor audit. Silent when the edited file is not a lane-tasks JSON.",
+        "matcher": "Edit|Write",
+        "command": "node hooks/svc-lane-tasks-validator.mjs"
+      },
+      {
+        "id": "svc-wi-pillars-check",
+        "description": "HARD BLOCK: when a WI file (docs/specs/work-items/WI-*.md) is marked Status: VERIFIED via Edit|Write, verifies the Pillar Revisit Audit table contains all 8 pillars. Draft/in-progress WIs exit 0; malformed VERIFIED WIs block.",
+        "matcher": "Edit|Write",
+        "command": "bash hooks/svc-wi-pillars-check.sh"
+      },
+      {
+        "id": "svc-auto-capture-learnings",
+        "description": "OBSERVE: detects high-signal learning candidates after edits and appends only to gitignored .svc/auto-learnings.jsonl. Never writes tracked learning files and never blocks.",
+        "matcher": "Edit|Write",
+        "command": "node hooks/svc-auto-capture-learnings.mjs --trigger post-tool-use",
+        "async": true
+      },
+      {
+        "id": "svc-spec-index-update",
+        "description": "Knowledge Spine: incrementally rebuild .svc/spec-index.json when an Edit/Write touches docs/specs/*.md. Best-effort, never blocks. Implements WI-SPINE-001 deliverable 3 from proposals/done/2026-04-30-infra-project-support.md §3.2.",
+        "matcher": "Edit|Write",
+        "command": "node hooks/svc-spec-index-update.mjs"
+      },
+      {
+        "id": "svc-rule-injector-explore",
+        "description": "WI-361: earlier-arrival rule injection while exploring (Read/Grep/Glob).",
+        "matcher": "Read|Grep|Glob",
+        "command": "node hooks/svc-rule-injector.mjs"
+      },
+      {
+        "id": "svc-phase-receipt-autoemit-edit",
+        "description": "WI-363: auto-records phase receipts when a successful Edit/Write touches a declared phase writes-path (one phase/event; judgment phases manual).",
+        "matcher": "Edit|Write",
+        "command": "node hooks/svc-phase-receipt-autoemit.mjs"
+      },
+      {
+        "id": "svc-phase-receipt-autoemit-bash",
+        "description": "WI-363: auto-records phase receipts on mutating Bash (>>, tee, sed -i, canonical appenders) touching declared writes-paths.",
+        "matcher": "Bash",
+        "command": "node hooks/svc-phase-receipt-autoemit.mjs"
+      }
+    ],
+    "SessionStart": [
+      {
+        "id": "svc-session-start-healthcheck",
+        "description": "SOFT WARN: on session start, resolves the active host via provision/hosts/<host>.json, scans that host's skills path for dangling symlinks and hook command paths, then self-heals with ./setup --host <host> when possible. Never blocks.",
+        "matcher": "*",
+        "command": "node hooks/svc-session-start-healthcheck.mjs"
+      }
+    ],
+    "SessionEnd": [
+      {
+        "id": "svc-session-end-log",
+        "description": "OBSERVE: appends a session record (ts + branch) to .svc/sessions/sessions.jsonl for audit-session-execution. Never blocks.",
+        "matcher": "*",
+        "command": "node hooks/svc-session-end-log.mjs"
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "id": "svc-prompt-stale-state",
+        "description": "SOFT WARN: per-prompt scan of .svc/orchestrator-state.json for active WIs without a matching lane-tasks file. Never blocks.",
+        "matcher": "*",
+        "command": "node hooks/svc-prompt-stale-state.mjs"
+      }
+    ],
+    "PreCompact": [
+      {
+        "id": "svc-pre-compact-snapshot",
+        "description": "OBSERVE: writes a snapshot of {ts, branch, lane_tasks_files, last_decisions} to .svc/sessions/<ISO>.snapshot.json before compaction so post-compact recovery is deterministic. Never blocks.",
+        "matcher": "*",
+        "command": "node hooks/svc-pre-compact-snapshot.mjs"
+      },
+      {
+        "id": "svc-auto-capture-learnings",
+        "description": "OBSERVE: captures high-signal learning candidates before context compaction into gitignored .svc/auto-learnings.jsonl. Never writes tracked learning files.",
+        "matcher": "*",
+        "command": "node hooks/svc-auto-capture-learnings.mjs --trigger pre-compact"
+      }
+    ],
+    "Notification": [
+      {
+        "id": "svc-notification-surface",
+        "description": "OBSERVE: appends notification payloads to .svc/sessions/notifications.jsonl so guard violations and host messages are auditable post-hoc. Never blocks.",
+        "matcher": "*",
+        "command": "node hooks/svc-notification-surface.mjs"
+      }
+    ],
+    "Stop": [
+      {
+        "id": "svc-stop-quality",
+        "description": "Batch format+typecheck all source files edited this session — once per Stop instead of per Edit. Detects stack (TS, Python, Go, Rust) and runs the appropriate checker. Exits non-zero on type errors (hard block). Format-only issues are warnings. Full profile only.",
+        "matcher": "*",
+        "command": "node hooks/svc-stop-quality.js --check"
+      },
+      {
+        "id": "svc-verification-delegation-guard",
+        "description": "HARD BLOCK: scans the latest assistant closeout text on Stop and blocks AP-31 verification delegation or WI-199 V0 bundle-grep substitution when no nearby V1/V2/V3 runtime evidence anchor exists.",
+        "matcher": "*",
+        "command": "bash hooks/svc-verification-delegation-guard.sh"
+      },
+      {
+        "id": "svc-task-completion-guard",
+        "description": "Optional completion guard. Blocks stop when active .svc/lane-tasks-<WI>.json task graphs still have actionable work (`pending` or `in_progress`). `blocked` tasks are reported but do not deadlock the stop path. The singular .svc/lane-tasks.json path is legacy compatibility only. Host Stop JSON must be passed through stdin. Requires Bash + Node. Corrupt task state fails closed unless `SVC_COMPLETION_FAIL_OPEN=true` is set.",
+        "matcher": "*",
+        "command": "bash hooks/svc-task-completion-guard.sh"
+      },
+      {
+        "id": "svc-auto-capture-learnings",
+        "description": "OBSERVE: captures high-signal learning candidates at session stop into gitignored .svc/auto-learnings.jsonl. Default silent; summary mode is opt-in.",
+        "matcher": "*",
+        "command": "node hooks/svc-auto-capture-learnings.mjs --trigger stop",
+        "async": true
+      }
+    ],
+    "SubagentStart": [
+      {
+        "id": "svc-subagent-start-log",
+        "description": "OBSERVE (WI-CLN-13 / plan §4.15): appends a subagent_start record (ts, session_id, agent, prompt_chars) to .svc/dispatch-log.jsonl for parallel-dispatch telemetry. Never blocks.",
+        "matcher": "*",
+        "command": "node hooks/svc-subagent-start.mjs"
+      }
+    ],
+    "SubagentStop": [
+      {
+        "id": "svc-subagent-stop-log",
+        "description": "OBSERVE (WI-CLN-13 / plan §4.15): appends a subagent_stop record (ts, session_id, agent, outcome, exit_code) to .svc/dispatch-log.jsonl for parallel-dispatch telemetry. Never blocks.",
+        "matcher": "*",
+        "command": "node hooks/svc-subagent-stop.mjs"
+      }
+    ]
+  },
+  "installation": {
+    "prerequisites": [
+      "Node.js",
+      "Bash"
+    ],
+    "steps": [
+      "1. Ensure Node.js and Bash are available in your PATH.",
+      "2. Copy the hooks you want into .claude/settings.json.",
+      "",
+      "   Minimal (workflow guard + eval gate):",
+      "   {",
+      "     \"hooks\": {",
+      "       \"PreToolUse\": [",
+      "         {",
+      "           \"matcher\": \"Edit|Write\",",
+      "           \"hooks\": [{",
+      "             \"type\": \"command\",",
+      "             \"command\": \"node hooks/svc-workflow-guard.mjs\"",
+      "           }]",
+      "         },",
+      "         {",
+      "           \"matcher\": \"TaskUpdate\",",
+      "           \"hooks\": [{",
+      "             \"type\": \"command\",",
+      "             \"command\": \"node scripts/eval-gate.mjs pre\"",
+      "           }]",
+      "         }",
+      "       ],",
+      "       \"PostToolUse\": [",
+      "         {",
+      "           \"matcher\": \"TaskUpdate\",",
+      "           \"hooks\": [{",
+      "             \"type\": \"command\",",
+      "             \"command\": \"node scripts/eval-gate.mjs post\"",
+      "           }]",
+      "         }",
+      "       ]",
+      "     }",
+      "   }",
+      "",
+      "3. To also add the optional completion guard (Stop hook):",
+      "   {",
+      "     \"hooks\": {",
+      "       \"Stop\": [",
+      "         {",
+      "           \"matcher\": \"*\",",
+      "           \"hooks\": [{",
+      "             \"type\": \"command\",",
+      "             \"command\": \"bash hooks/svc-task-completion-guard.sh\"",
+      "           }]",
+      "         }",
+      "       ]",
+      "     }",
+      "   }",
+      "",
+      "4. To add the Bash guard (block --no-verify + commit quality):",
+      "   Add to 'PreToolUse' alongside the Edit|Write hooks:",
+      "   {",
+      "     \"matcher\": \"Bash\",",
+      "     \"hooks\": [{",
+      "       \"type\": \"command\",",
+      "       \"command\": \"node hooks/svc-workflow-guard.mjs --bash-guard\"",
+      "     }]",
+      "   }",
+      "",
+      "5. To enable AI quality checks (claude -p judge):",
+      "   Set SVC_EVAL_MODE=ai in your shell environment or .env.",
+      "   Requires `claude` CLI on PATH. Uses ~$0.001 per pillar check (Haiku-class).",
+      "",
+      "6. Profile control:",
+      "   export SVC_HOOK_PROFILE=minimal   # workflow scope + block-no-verify only",
+      "   export SVC_HOOK_PROFILE=full      # all checks (default)",
+      "   export SVC_DISABLED_HOOKS=svc-config-protection,svc-commit-quality",
+      "",
+      "7. Hooks are now active for the project.",
+      "8. To disable a specific hook by ID, use SVC_DISABLED_HOOKS (preferred) or remove from settings.json."
+    ]
+  }
+}

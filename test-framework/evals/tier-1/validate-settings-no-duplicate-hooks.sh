@@ -1,0 +1,93 @@
+#!/bin/bash
+# validate-settings-no-duplicate-hooks.sh — WI-076 tier-1 validator.
+#
+# Asserts scripts/wire-hooks.mjs is idempotent: running it twice from scratch
+# must produce a settings.json with zero duplicate hooks per matcher/command.
+#
+# Method: run dry-run on a scratch settings.json (empty), then run again,
+# then compare. If results differ, dedup broke. Additionally, a direct scan
+# of any settings.json pointed to must show zero duplicates per
+# (event, matcher, command) tuple.
+
+set -u
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+
+PASS=0
+FAIL=0
+
+pass() { PASS=$((PASS+1)); echo "  ✓ $1"; }
+fail() { FAIL=$((FAIL+1)); echo "  ✗ $1"; }
+
+echo "=== Tier 1: settings no-duplicate-hooks (WI-076) ==="
+
+WIRE="$REPO_ROOT/scripts/wire-hooks.mjs"
+RENAMES="$REPO_ROOT/hooks/.renames.json"
+
+[ -r "$WIRE" ] && pass "wire-hooks.mjs present" || { fail "wire-hooks.mjs missing"; exit 1; }
+[ -r "$RENAMES" ] && pass ".renames.json registry present" || fail ".renames.json registry missing"
+
+# Registry is valid JSON
+if [ -r "$RENAMES" ]; then
+  python3 -c "import json; json.load(open('$RENAMES'))" 2>/dev/null && pass ".renames.json is valid JSON" || fail ".renames.json is invalid JSON"
+fi
+
+# Syntax check on the wire script
+node --check "$WIRE" 2>/dev/null && pass "wire-hooks.mjs syntax OK" || fail "wire-hooks.mjs syntax error"
+
+# Fresh-install idempotency: run twice on a scratch settings, compare
+SCRATCH=$(mktemp -d)
+echo '{}' > "$SCRATCH/settings1.json"
+cp "$SCRATCH/settings1.json" "$SCRATCH/settings2.json"
+# Fresh settings after 1 run
+node "$WIRE" --skills-path "$SCRATCH" --settings "$SCRATCH/settings1.json" >/dev/null 2>&1 || true
+# Same settings after 2 runs
+cp "$SCRATCH/settings1.json" "$SCRATCH/settings2.json"
+node "$WIRE" --skills-path "$SCRATCH" --settings "$SCRATCH/settings2.json" >/dev/null 2>&1 || true
+if diff -q "$SCRATCH/settings1.json" "$SCRATCH/settings2.json" >/dev/null 2>&1; then
+  pass "idempotent: 2 runs produce identical settings.json"
+else
+  fail "NOT idempotent: 2nd run differs from 1st"
+fi
+rm -rf "$SCRATCH"
+
+# Duplicate-hook check on real settings (if present)
+SETTINGS="$HOME/.claude/settings.json"
+if [ -r "$SETTINGS" ]; then
+  DUPES=$(python3 - <<EOF
+import json, sys
+with open("$SETTINGS") as f: s = json.load(f)
+hooks = s.get("hooks", {})
+dupes = 0
+for event, entries in hooks.items():
+    if not isinstance(entries, list): continue
+    seen = set()
+    for entry in entries:
+        m = entry.get("matcher", "")
+        cmds = tuple(sorted((h.get("type",""), h.get("command","")) for h in entry.get("hooks", [])))
+        key = (m, cmds)
+        if key in seen:
+            dupes += 1
+        else:
+            seen.add(key)
+print(dupes)
+EOF
+)
+  if [ "$DUPES" = "0" ]; then
+    pass "~/.claude/settings.json has zero duplicate hooks"
+  else
+    fail "~/.claude/settings.json has $DUPES duplicate hook entries — run ./setup --host claude to dedup"
+  fi
+else
+  pass "~/.claude/settings.json not present — dedup check N/A"
+fi
+
+echo ""
+if [ "$FAIL" = 0 ]; then
+  echo "  PASS — all $PASS assertions passed"
+  exit 0
+else
+  echo "  $FAIL failed, $PASS passed"
+  exit 1
+fi

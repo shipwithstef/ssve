@@ -1,0 +1,14 @@
+<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%}#scroller{height:100vh;overflow:auto}#view{height:2000px;padding:16px}
+  #nav{position:fixed;bottom:16px;right:16px;z-index:10;padding:10px}</style></head>
+<body><div id="scroller"><div id="view"><h1 id="title">Discovery (long list)</h1><p>scroll me…</p></div></div>
+<button id="nav">Go to Profile</button>
+<script>
+  // FIXED nav trigger (like the real bottom tab bar) stays visible when scrolled,
+  // so clicking it does not itself scroll the container. GOOD.
+  document.getElementById('nav').addEventListener('click', ()=>{
+    history.pushState({}, '', '#profile');
+    document.getElementById('title').textContent = 'Profile';
+    document.getElementById('scroller').scrollTop = 0;
+  });
+</script></body></html>

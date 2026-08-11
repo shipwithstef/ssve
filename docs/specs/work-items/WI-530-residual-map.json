@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "wi": "WI-530",
+  "sources": [
+    "proposals/done/2026-08-10-framework-improvement-skills-package-layout.md"
+  ],
+  "findings": [
+    {
+      "source": "proposals/done/2026-08-10-framework-improvement-skills-package-layout.md",
+      "id": "first-party-skills-package-layout",
+      "status": "covered",
+      "owner_wi": "WI-530",
+      "evidence": ["skills-manifest.json", "setup", "test-framework/evals/tier-1/validate-skills-source-layout.sh"]
+    },
+    {
+      "source": "proposals/done/2026-08-10-framework-improvement-skills-package-layout.md",
+      "id": "preserved-worktree-controller-recovery",
+      "status": "covered",
+      "owner_wi": "WI-530",
+      "evidence": ["scripts/svc-ensure-worktree.mjs", "test-framework/evals/tier-1/validate-existing-worktree-self-heal.sh"]
+    }
+  ]
+}

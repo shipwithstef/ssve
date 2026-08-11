@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "review_kind": "exec",
+  "rubric_score": 1,
+  "rubric_failures": [
+    1,
+    2,
+    3
+  ],
+  "dependencies_needing_read": [
+    ".svc/receipts/4287c2c/plan-manifest.json",
+    ".svc/receipts/4287c2c/review-plan.json",
+    ".svc/receipts/4287c2c/exec-record.json"
+  ],
+  "reviewer": {
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5",
+    "effort": "high"
+  },
+  "verdict": "fail",
+  "summary": "Release-blocking security bypasses remain. Shell dequoting and expansion can turn allowed-looking arguments into mutating `rg`, `git`, and `find` options after classification. The file break-glass is trusted before bootstrap validation and can evade its TTL. The promoted validator also exits 2 immediately and does not behaviorally prove expiry or auditing. The environment hatch itself is a reasonable explicit owner override for a single-user tool, but it cannot be treated as a security boundary against a same-UID agent.",
+  "findings": [
+    {
+      "id": "WI501-R1-F001",
+      "severity": "critical",
+      "claim": "Quote concatenation and bare shell expansion bypass the read-only classifier, allowing arbitrary governed mutations without a receipt.",
+      "analysis": "`splitUnquoted()` preserves shell quotes, while `words()` and the safe-command checks inspect the pre-shell spelling. Bash later removes and concatenates those quotes or expands `$IFS`, producing forbidden options that the classifier never saw. Confirmed examples classified read-only include `rg --pr''e=./x.sh needle .`, `git diff --out''put=/tmp/svc-out`, `find . -ex''ec touch /tmp/pwn +`, and `find . -fpr''int /tmp/out`. Bash resolves these respectively to `--pre`, `--output`, `-exec`, and `-fprint`. This defeats the core enforcement boundary.",
+      "evidence": [
+        "hooks/codex/lib/codex-hook-context.mjs:196 performs whitespace-only tokenization without shell dequoting.",
+        "hooks/codex/lib/codex-hook-context.mjs:273 permits bare `$` expansion except `$(` and `${`.",
+        "hooks/codex/lib/codex-hook-context.mjs:287-291 validates raw segments rather than the argv the shell will execute.",
+        "Direct invocation of `isReadOnlyTool()` returned true for quote-concatenated `rg --pre`, `git --output`, `find -exec`, and `find -fprint` vectors.",
+        "Bash evaluation confirmed `--pr''e=./x.sh`, `$IFS--pre=./x.sh`, and `$'--pre=./x.sh'` all become `--pre=./x.sh`."
+      ],
+      "proposed_fix": "Parse each compound segment into canonical argv before applying the allowlist. Reuse and extend `hooks/codex/lib/argv-lex.mjs`: split only supported unquoted operators, pass every segment through `lexSimpleCommand()`, and make `isSafeGit`, `isSafeRg`, `isSafeFind`, and SAFE_BASH consume decoded argv. Reject bare expansion, ANSI-C quoting, invalid operators, and any accepted syntax whose runtime argv cannot be proven identical. Add all demonstrated vectors as mandatory DENY tests."
+    },
+    {
+      "id": "WI501-R1-F002",
+      "severity": "high",
+      "claim": "The file break-glass bypasses bootstrap integrity using an untrusted marker and can become self-renewing rather than expiring.",
+      "analysis": "The marker is checked before `launcherBootstrapSecure()`, but `fs.statSync()` follows symlinks and no ownership, type, permissions, ancestry, future-mtime, or bounded-TTL validation occurs. If `BREAK-GLASS` is a symlink to `break-glass-audit.jsonl`, every bypass appends to that target and refreshes the marker's observed mtime, keeping it armed indefinitely. An insecure or foreign-writable `~/.svc` can likewise plant the marker and bypass the very bootstrap check intended to reject that state. Audit failures are swallowed while the banner still claims an audit path, so the stated compensating control is not guaranteed.",
+      "evidence": [
+        "bin/svc-enforce.mjs:69-72 accepts an unconstrained TTL and follows the marker with `statSync`.",
+        "bin/svc-enforce.mjs:78-86 appends to the audit file but ignores every append failure.",
+        "bin/svc-enforce.mjs:286-293 allows the marker before calling `launcherBootstrapSecure()`.",
+        "The implementation contradicts the specification's claims that the file cannot silently become permanent and that every bypass appends an audit row."
+      ],
+      "proposed_fix": "Keep the explicit environment override available before bootstrap, but independently authenticate the file form: use `lstatSync`, require a regular non-symlink file owned by the current UID with restrictive mode under a securely owned non-writable real directory, reject future mtimes, and clamp TTL to a fixed finite maximum. Do not derive freshness from a file that bypass activity itself can update. Report audit-write failure prominently and test insecure-parent, symlink, future-mtime, expired, and unwritable-audit cases."
+    },
+    {
+      "id": "WI501-R1-F003",
+      "severity": "high",
+      "claim": "The promoted tier-1 validator is red and does not test the break-glass guarantees claimed by EG-01.",
+      "analysis": "Running `bash test-framework/evals/tier-1/validate-enforcement-escape-and-readonly.sh` exits 2 immediately after its first heading. Its launcher invocation is denied with `SVC-ENFORCE-SOURCE-WORKTREE`; `set -euo pipefail` then aborts before assertions. Independently, TTL and audit coverage are only source-text greps. The environment test checks the banner but never verifies an audit row, and no behavioral file-expiry case exists. Its JSON parser also maps malformed output to ALLOW, permitting false-positive read cases.",
+      "evidence": [
+        "Observed validator output: only `== EG-02: read-only compound/quoted commands MUST be allowed ==`, followed by exit code 2.",
+        "The launcher returned `SVC-ENFORCE-SOURCE-WORKTREE` for the first supposedly allowed command.",
+        "test-framework/evals/tier-1/validate-enforcement-escape-and-readonly.sh:18-24 propagates launcher failure under `pipefail`.",
+        "test-framework/evals/tier-1/validate-enforcement-escape-and-readonly.sh:20 treats JSON parse failure as ALLOW.",
+        "test-framework/evals/tier-1/validate-enforcement-escape-and-readonly.sh:43-48 uses grep instead of behavioral TTL/audit assertions."
+      ],
+      "proposed_fix": "Test classification directly through an imported pure function or construct a hermetic installed-launcher fixture with a trusted canonical source. Require exact decision JSON and exit codes; never map malformed output to ALLOW. Use an isolated HOME, create and backdate the marker, verify fresh ALLOW and expired DENY, parse the appended audit row, and add the security-bypass corpus from F001/F002."
+    },
+    {
+      "id": "WI501-R1-F004",
+      "severity": "high",
+      "claim": "The committed HIGH-risk change lacks the mandatory upstream chain receipts, so G6 cannot certify it.",
+      "analysis": "HEAD has only an ineligible quick-fix receipt. The lane task still marks `execute-changeset` in progress, while the required plan-manifest, review-plan, and exec-record artifacts are absent. This violates the mandatory review-exec prerequisite contract independently of the implementation findings.",
+      "evidence": [
+        "Git note `refs/notes/svc-receipts` for HEAD contains only `quick-fix`.",
+        "`.svc/receipts/4287c2c/quick-fix.json` records `eligible: false` and impact tier `high`.",
+        "`.svc/lane-tasks-WI-501.json:8-10` marks `execute-changeset` as `in_progress`.",
+        "No `.svc/receipts/4287c2c/{plan-manifest,review-plan,exec-record}.json` exists."
+      ],
+      "proposed_fix": "Restore the authoritative task graph and run the mandatory plan-changeset → review-plan → execute-changeset sequence, emitting schema-valid receipts before rerunning review-exec. Do not promote this commit using the ineligible quick-fix envelope."
+    }
+  ],
+  "certifications": [
+    {
+      "key": "context_manifest_integrity",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "ac1e0e14c2b5a508bf75bd1d093d9548ad63bdba3be3f8a112e3897bddef9892"
+    },
+    {
+      "key": "cross_family_independent_review",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "61b043e3c1996761aa783721f089c3db2c8968a5"
+    },
+    {
+      "key": "no_unresolved_critical",
+      "certified": false,
+      "reviewer_family": "openai",
+      "for_content_sha": "61b043e3c1996761aa783721f089c3db2c8968a5"
+    },
+    {
+      "key": "tier1_green",
+      "certified": false,
+      "reviewer_family": "openai",
+      "for_content_sha": "61b043e3c1996761aa783721f089c3db2c8968a5"
+    },
+    {
+      "key": "mandatory_chain_complete",
+      "certified": false,
+      "reviewer_family": "openai",
+      "for_content_sha": "4287c2c3a66ba5d85715a6ffe893cb810897df65"
+    }
+  ]
+}

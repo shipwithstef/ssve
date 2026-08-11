@@ -1,0 +1,411 @@
+{
+  "schema_version": 1,
+  "wi": "WI-498",
+  "lane": "framework",
+  "status": "in_progress",
+  "created": "2026-07-18T11:30:32.702Z",
+  "upstream_completed": [
+    "route-workflow",
+    "diagnose-bug"
+  ],
+  "upstream_skipped_with_justification": [
+    {
+      "skill": "design-tech",
+      "skip_reason": "bugfix lane (prev=diagnose-bug) does not include design-tech; the technical design (root cause, fix locus A' in codex-load-skill.mjs, invariants I1-I4, rejected loci A/B) is captured in docs/specs/work-items/WI-498.md and docs/plans/2026-07-18-codex-first-task-activation/manifest.md"
+    }
+  ],
+  "tasks": [
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "route-workflow",
+      "subject": "route workflow",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-07-18T11:30:40.000Z",
+        "loaded_via": "orchestrator-inline",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-07-18T14:55:24.368Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/rw.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-07-18T14:55:24.400Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/rw.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-07-18T14:55:24.433Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/rw.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-07-18T14:55:24.465Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/rw.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-07-18T14:55:24.530Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/rw.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-07-18T14:55:24.564Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/rw.log"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "status": "completed",
+      "skill": "diagnose-bug",
+      "subject": "diagnose Codex second-stage deadlock",
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "diagnose-bug",
+        "loaded_at": "2026-07-18T11:31:00.000Z",
+        "loaded_via": "orchestrator-inline",
+        "phases_executed": [
+          {
+            "id": "P1-Inputs",
+            "ts": "2026-07-18T14:55:24.597Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/db.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-Reproduction",
+            "ts": "2026-07-18T14:55:24.632Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/db.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-RootCause",
+            "ts": "2026-07-18T14:55:24.667Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/db.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-FixPlan",
+            "ts": "2026-07-18T14:55:24.697Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/db.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-PillarRevisit",
+            "ts": "2026-07-18T14:55:24.729Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/db.log"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "status": "skipped",
+      "skill": "design-tech",
+      "subject": "technical design",
+      "skip_reason": "bugfix lane does not include design-tech; tech design captured in WI-498.md + plan manifest",
+      "blocked_by": [
+        2
+      ]
+    },
+    {
+      "id": 4,
+      "status": "completed",
+      "skill": "plan-changeset",
+      "subject": "plan first-task activation fix",
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-07-18T11:40:05.018Z",
+        "loaded_via": "orchestrator-inline",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-07-18T11:40:05.058Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-archetype.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-07-18T11:40:05.094Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-scope.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-07-18T11:40:05.128Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-18-codex-first-task-activation/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-07-18T11:40:05.173Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-18-codex-first-task-activation/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-07-18T11:40:05.208Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-498.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-18T16:25:25.239Z"
+    },
+    {
+      "id": 5,
+      "status": "completed",
+      "skill": "review-plan",
+      "subject": "adversarial plan review",
+      "blocked_by": [
+        4
+      ],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-07-18T16:25:25.406Z",
+        "loaded_via": "orchestrator-inline",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-07-18T16:25:25.468Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/rp-mech.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-07-18T16:25:25.526Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/rp-ext.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-07-18T16:25:25.593Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/rp-adv.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-07-18T16:25:25.668Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/rp-tier.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-07-18T16:25:25.747Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/rp-log.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-18T16:25:25.812Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/rp-sv.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-18T16:25:25.867Z"
+    },
+    {
+      "id": 6,
+      "status": "completed",
+      "skill": "execute-changeset",
+      "subject": "implement activation + fixture",
+      "blocked_by": [
+        5
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-07-18T16:25:25.918Z",
+        "loaded_via": "orchestrator-inline",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-07-18T16:25:25.981Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/ex-pre.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-07-18T16:25:26.040Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/ex-apply.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-07-18T16:25:26.101Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/ex-verify.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-07-18T16:25:26.159Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/ex-cp.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-18T16:25:26.225Z"
+    },
+    {
+      "id": 7,
+      "status": "in_progress",
+      "skill": "review-exec",
+      "subject": "G6 adversarial exec review",
+      "blocked_by": [
+        6
+      ],
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-07-18T16:25:26.280Z",
+        "loaded_via": "orchestrator-inline"
+      }
+    },
+    {
+      "id": 8,
+      "status": "pending",
+      "skill": "audit-implementation",
+      "subject": "G5 audit",
+      "blocked_by": [
+        7
+      ]
+    },
+    {
+      "id": 9,
+      "status": "pending",
+      "skill": "land-changeset",
+      "subject": "land PR",
+      "blocked_by": [
+        8
+      ]
+    },
+    {
+      "id": 10,
+      "status": "pending",
+      "skill": "verify-promotion",
+      "subject": "verify on main + live re-proof",
+      "blocked_by": [
+        9
+      ]
+    }
+  ]
+}

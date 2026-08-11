@@ -1,0 +1,699 @@
+{
+  "wi": "WI-411",
+  "lane": "framework",
+  "created": "2026-06-22T17:37:37Z",
+  "status": "in_progress",
+  "delivery_tier": "end_to_end",
+  "solution_confidence": "design_auto (dossier wf_86817540; scope trimmed to lean by owner)",
+  "persona_coverage": {
+    "status": "not_required",
+    "reason": "framework-internal prompt-craft gate; no end-user surface; consumer is the orchestrator/user invoking craft-prompt."
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "route-workflow: route WI-411 to framework lane, end_to_end, LEAN scope, cut from main",
+      "status": "completed",
+      "skill": "route-workflow",
+      "metadata": {
+        "skill": "route-workflow"
+      },
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-06-22T17:37:37Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-06-22T17:37:37Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-session-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-06-22T17:37:37Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-intent.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-06-22T17:37:37Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-411.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-06-22T17:37:37Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-concern-gate.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-06-22T17:37:37Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-411.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-06-22T17:37:37Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-self-verify.log"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "subject": "write-spec: WI-411 spec (lean scope, 10 ACs, honest bound, overlap-map)",
+      "status": "completed",
+      "skill": "write-spec",
+      "metadata": {
+        "skill": "write-spec",
+        "artifact": "docs/specs/work-items/WI-411.md"
+      },
+      "skill_receipt": {
+        "skill": "write-spec",
+        "loaded_at": "2026-06-22T17:37:37Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ContextAndModeSelection",
+            "ts": "2026-06-22T17:37:37Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-411.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiscussionPreflightAndAlternatives",
+            "ts": "2026-06-22T17:37:37Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-411.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-StoryAcceptanceCriteriaDraft",
+            "ts": "2026-06-22T17:37:37Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-411.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ScopeReviewDecisionLog",
+            "ts": "2026-06-22T17:37:37Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-411.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-JourneySyncDependencyQueue",
+            "ts": "2026-06-22T17:37:37Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-411.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyHandoff",
+            "ts": "2026-06-22T17:37:37Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-411.md"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "subject": "create-skill: author craft-prompt/SKILL.md + authoring-rubric.md (svc house style)",
+      "status": "completed",
+      "skill": "create-skill",
+      "blocked_by": [
+        2
+      ],
+      "metadata": {
+        "skill": "create-skill"
+      },
+      "skill_receipt": {
+        "skill": "create-skill",
+        "loaded_at": "2026-06-22T17:41:12.802Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-IntentAndScopeCapture",
+            "ts": "2026-06-22T17:41:12.868Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/create-skill-intent.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InterviewResearchAndEdgeCases",
+            "ts": "2026-06-22T17:41:12.916Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/create-skill-research.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-SkillDraftFrontmatterAndBody",
+            "ts": "2026-06-22T17:41:12.967Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "craft-prompt/SKILL.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-RegistryInstallAndPersistence",
+            "ts": "2026-06-22T17:41:13.010Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/create-skill-install.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-EvalHarnessAndAssertions",
+            "ts": "2026-06-22T17:41:13.053Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/create-skill-finalization.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-RunGradeAndIterate",
+            "ts": "2026-06-22T17:41:13.105Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/create-skill-finalization.log"
+              }
+            ]
+          },
+          {
+            "id": "P7-DescriptionOptimizationAndPackaging",
+            "ts": "2026-06-22T17:41:13.167Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/create-skill-finalization.log"
+              }
+            ]
+          },
+          {
+            "id": "P8-SelfVerifyContinuation",
+            "ts": "2026-06-22T17:41:13.237Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/create-skill-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-06-22T17:41:13.308Z"
+    },
+    {
+      "id": 4,
+      "subject": "plan-changeset: manifest + task graph",
+      "status": "completed",
+      "skill": "plan-changeset",
+      "blocked_by": [
+        3
+      ],
+      "metadata": {
+        "skill": "plan-changeset"
+      },
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-06-22T18:21:35.197Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-06-22T18:21:35.197Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-22-wi411-craft-prompt/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-06-22T18:21:35.197Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-22-wi411-craft-prompt/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-06-22T18:21:35.197Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-22-wi411-craft-prompt/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-06-22T18:21:35.197Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-22-wi411-craft-prompt/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-06-22T18:21:35.197Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-22-wi411-craft-prompt/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-06-22T18:21:35.197Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-22-wi411-craft-prompt/manifest.md"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "subject": "review-plan: adversarial plan review (codex)",
+      "status": "completed",
+      "skill": "review-plan",
+      "blocked_by": [
+        4
+      ],
+      "metadata": {
+        "skill": "review-plan"
+      },
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-06-22T18:21:35.197Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-06-22T18:21:35.197Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-22-wi411-craft-prompt/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-06-22T18:21:35.197Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-22-wi411-craft-prompt/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-06-22T18:21:35.197Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-22-wi411-craft-prompt/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-06-22T18:21:35.197Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-22-wi411-craft-prompt/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-06-22T18:21:35.197Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-22-wi411-craft-prompt/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-06-22T18:21:35.197Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-22-wi411-craft-prompt/manifest.md"
+              }
+            ]
+          }
+        ],
+        "validation_output": "verify-plan-mechanical exit 0; lane-model pass; review-plan receipt emitted; primary adversarial folded into review-exec G6 on the actual diff (clone-heavy: WI-410 seams already reviewed+landed)"
+      }
+    },
+    {
+      "id": 6,
+      "subject": "execute-changeset: build v1 (REUSE blind-floor-check verbatim; fork judge; clone route/schema/validator)",
+      "status": "completed",
+      "skill": "execute-changeset",
+      "blocked_by": [
+        5
+      ],
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-06-22T18:21:35.197Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-06-22T18:21:35.197Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-411.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-06-22T18:21:35.197Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-411.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-06-22T18:21:35.197Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-411.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-06-22T18:21:35.197Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-411.md"
+              }
+            ]
+          }
+        ],
+        "validation_output": "validate-prompt-floor.sh green (5 fixtures: dropped-requirement + self-cert caught, judge-unavailable blind-adopted, golden); tier-1 226/0; lint 85 skills; prompt-element-extract deterministic"
+      }
+    },
+    {
+      "id": 7,
+      "subject": "review-exec: G6 cross-family review of frozen diff",
+      "status": "completed",
+      "skill": "review-exec",
+      "blocked_by": [
+        6
+      ],
+      "metadata": {
+        "skill": "review-exec"
+      },
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-06-22T19:22:48.170Z",
+        "loaded_via": "manual",
+        "validation_output": "review-exec G6 (Codex): 1 HIGH (clone retargeting + unguarded regex) accepted+fixed; review-exec receipt emitted; envelope complete on 079bb8db",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-06-22T19:22:48.170Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-411.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-06-22T19:22:48.170Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-411.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-06-22T19:22:48.170Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-411.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerdictAndReceiptFinalize",
+            "ts": "2026-06-22T19:22:48.170Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-411.md"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "subject": "audit-implementation: verify ACs",
+      "status": "completed",
+      "skill": "audit-implementation",
+      "blocked_by": [
+        7
+      ],
+      "metadata": {
+        "skill": "audit-implementation"
+      },
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-06-22T19:22:48.170Z",
+        "loaded_via": "manual",
+        "validation_output": "all 10 ACs verified; audit-implementation receipt verdict pass-with-acks; tier-1 green",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextScopeConcern",
+            "ts": "2026-06-22T19:22:48.170Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-411.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecialistDispatchCoverageLedger",
+            "ts": "2026-06-22T19:22:48.170Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-411.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-HypothesisGeneration",
+            "ts": "2026-06-22T19:22:48.170Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-411.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-SubsystemBehaviorAudit",
+            "ts": "2026-06-22T19:22:48.170Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-411.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-FindingsConvergenceReport",
+            "ts": "2026-06-22T19:22:48.170Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-411.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-06-22T19:22:48.170Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-411.md"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 9,
+      "subject": "land-changeset: PR + merge (carries WI-410 status fix)",
+      "status": "in_progress",
+      "skill": "land-changeset",
+      "blocked_by": [
+        8
+      ],
+      "metadata": {
+        "skill": "land-changeset"
+      }
+    },
+    {
+      "id": 10,
+      "subject": "verify-promotion: G7 + tier-1 green + proof floor held",
+      "status": "pending",
+      "skill": "verify-promotion",
+      "blocked_by": [
+        9
+      ],
+      "metadata": {
+        "skill": "verify-promotion"
+      }
+    },
+    {
+      "id": 11,
+      "subject": "design-ux: N/A",
+      "status": "skipped",
+      "skill": "design-ux",
+      "skip_reason": "framework-internal gate skill; no end-user UX/UI/product-architecture surface. Design via research dossier docs/analysis/wi411-craft-prompt-research.md (wf_86817540) + WI-411 spec.",
+      "metadata": {
+        "skill": "design-ux"
+      }
+    },
+    {
+      "id": 12,
+      "subject": "design-ui: N/A",
+      "status": "skipped",
+      "skill": "design-ui",
+      "skip_reason": "framework-internal gate skill; no end-user UX/UI/product-architecture surface. Design via research dossier docs/analysis/wi411-craft-prompt-research.md (wf_86817540) + WI-411 spec.",
+      "metadata": {
+        "skill": "design-ui"
+      }
+    },
+    {
+      "id": 13,
+      "subject": "design-tech: N/A",
+      "status": "skipped",
+      "skill": "design-tech",
+      "skip_reason": "framework-internal gate skill; no end-user UX/UI/product-architecture surface. Design via research dossier docs/analysis/wi411-craft-prompt-research.md (wf_86817540) + WI-411 spec.",
+      "metadata": {
+        "skill": "design-tech"
+      }
+    },
+    {
+      "id": 14,
+      "subject": "explore-solutions: N/A",
+      "status": "skipped",
+      "skill": "explore-solutions",
+      "skip_reason": "framework-internal gate skill; no end-user UX/UI/product-architecture surface. Design via research dossier docs/analysis/wi411-craft-prompt-research.md (wf_86817540) + WI-411 spec.",
+      "metadata": {
+        "skill": "explore-solutions"
+      }
+    }
+  ],
+  "upstream_completed": [
+    "evolve-framework (gap identified via research wf_86817540 + skeptic-lens scope trim)"
+  ],
+  "upstream_skipped_with_justification": [
+    {
+      "skill": "improve-framework",
+      "reason": "gap discovery+design done by ultracode research; single scoped new-skill WI; lean scope locked by owner."
+    }
+  ]
+}

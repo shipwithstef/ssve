@@ -1,0 +1,10 @@
+Skill: roadmap-evaluation
+
+Q: What three questions does roadmap-evaluation answer, and what is the composite scoring formula?
+A: Expected pattern: It answers: what to build in what order, what will it cost, and when does money come in. The composite score formula is (revenue_impact * 0.4) + (feasibility * 0.35) + (dependency_satisfaction * 0.25), each scored 1-10.
+
+Q: What happens when first-revenue is projected beyond 8 weeks?
+A: Expected pattern: A timeline warning is emitted recommending stage-revenue to find a fast Stage 1 project that earns money within 2-4 weeks while the main project continues.
+
+Q: What are the four risk categories scanned in Step 5 of roadmap-evaluation?
+A: Expected pattern: The four categories are skill gaps, external blockers, vision-backlog gaps (unplanned vision goals and orphan work items), and abandonment patterns.

@@ -1,0 +1,10 @@
+Skill: stage-revenue
+
+Q: What are the three stages in the stage-revenue skill, and what is the core principle?
+A: Expected pattern: Stage 1 is a revenue project that ships in 1-2 weeks, Stage 2 is reinvestment of revenue into infrastructure/tools, Stage 3 is the big idea built with funding and audience from Stages 1-2. Core principle: Ship something that makes money this month.
+
+Q: What are the 9 first-project rules that every Stage 1 project must pass?
+A: Expected pattern: (1) ships in 1-2 weeks, (2) no failed-skill dependency, (3) built-in distribution, (4) no entity required, (5) dead simple revenue model, (6) boring/proven demand, (7) self-sustaining free tiers, (8) evidence of $1K+/mo, (9) builder would use it themselves.
+
+Q: What is the "build my idea anyway" escape hatch, and what are its rules?
+A: Expected pattern: The builder can say "build my idea anyway" at any point. Rules: no guilt, no gatekeeping, no passive-aggressive warnings, best-effort execution, P0 taste decisions allowed but respect the override.

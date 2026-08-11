@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "review_kind": "plan",
+  "rubric_score": 3,
+  "rubric_failures": null,
+  "dependencies_needing_read": [
+    "hooks/codex/lib/codex-hook-context.mjs",
+    "hooks/codex/svc-codex-skill-load-enforcer.mjs",
+    "scripts/svc-ensure-worktree.mjs",
+    ".svc/lane-tasks-WI-494.json",
+    "docs/specs/work-items/WI-494.md"
+  ],
+  "reviewer": {
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5",
+    "effort": "high"
+  },
+  "verdict": "fail",
+  "summary": "The plan is not safe to execute as written. The proposed lexer accepts several shell-active constructs while returning different argv, which is a mandatory Critical under the review request. The read allowlist also leaves likely gh mutation forms unguarded, the bootstrap ownership checks contradict the stated marker schema, and dispatch-mode blueprints omit required predicate implementations.",
+  "findings": [
+    {
+      "id": "F-001",
+      "severity": "critical",
+      "claim": "The tokenizer accepts shell expansions and comments that a real shell interprets differently from its returned argv.",
+      "analysis": "The rejection set covers control operators, redirects, command/parameter substitution, and backslashes, but it does not cover pathname expansion, tilde expansion, or shell comments. The default branch appends `*`, `?`, `[`, `]`, `~`, and `#` as literal characters. A real shell can expand or remove these tokens before invoking the command. Therefore accepted inputs such as `cat *.md`, `cat ~`, and `cat file # note` do not execute with the argv returned by `lexSimpleCommand`. The review request explicitly classifies any such accepted command as Critical. Because `cat` is unconditionally considered read-only for any argv, these mismatches reach the allow decision.",
+      "evidence": [
+        "Blueprint §6.1 rejects only `| & ; < > ( ) backtick backslash`, `$`, control characters, and expansion characters inside double quotes.",
+        "The lexer fallback is `cur += c`, so unquoted glob, tilde, and comment characters are accepted.",
+        "For `cat *.md`, the lexer returns `[\"cat\",\"*.md\"]`, while a shell expands matching paths.",
+        "For `cat file # note`, the lexer returns `[\"cat\",\"file\",\"#\",\"note\"]`, while a shell invokes `cat` with only `file`.",
+        "The test matrix contains no glob, tilde, or comment vectors."
+      ],
+      "proposed_fix": "Define the accepted grammar against the actual Bash invocation semantics and reject every unquoted shell-active construct not implemented literally. At minimum reject unquoted `*`, `?`, `[`, `]`, `~` where expansion applies, and `#` when it begins a shell comment; account for brace expansion if the Bash tool uses Bash. Add differential tests that compare accepted lexer argv with argv captured from the real shell, and make any mismatch fail CED-05."
+    },
+    {
+      "id": "F-002",
+      "severity": "high",
+      "claim": "The `gh api` hazard predicate does not cover all value-bearing mutation flag forms that the plan itself requires the executor to verify.",
+      "analysis": "The blueprint detects fused `-XDELETE`, but `-f` and `-F` are checked only as exact tokens, and `--input` only as an exact token. If the installed CLI accepts attached shorthand values such as `-fkey=value` or an equals form such as `--input=file`, those commands pass the lexer, select the allowlisted `gh api` route, evade `HAZARD_FLAGS`, and can issue a mutating request. Deferring verification until execution means the dispatch blueprint is not presently deterministic for the sharpest allowlist edge.",
+      "evidence": [
+        "`HAZARD_FLAGS.gh` uses exact checks for `-f`, `-F`, and `--input`.",
+        "The same predicate deliberately uses `startsWith(\"-X\")` and equals-form checks for other flags, showing that alternate flag spellings are material.",
+        "The executor duty says to confirm the exact write-implying flag set, so the plan does not yet establish that its proposed set is complete.",
+        "A missed field/input form can make `gh api` switch from GET to a request with a body while the hook classifies it as read-only."
+      ],
+      "proposed_fix": "Before freezing the blueprint, capture `gh api --help` and parser behavior for every write-implying option and spelling. Normalize CLI options before classification or explicitly reject exact, `--name=value`, and supported attached-short forms for method, field, raw-field, input, and any preview/upload/body options. Add one deny fixture for every accepted spelling."
+    },
+    {
+      "id": "F-003",
+      "severity": "high",
+      "claim": "The bootstrap marker validation contradicts the marker fields stated by the plan and does not reuse the existing ownership tuple as claimed.",
+      "analysis": "The design constraint says the existing marker carries `session_id`, `owner_token`, `pid`, and `target_worktree`. The proposed predicate instead requires `marker.wi` and `marker.branch`, while it does not check `owner_token` or `pid`. If the existing artifact really has only the listed ownership fields, a valid marker will always fail the new `wi`/`branch` checks and can recreate the deadlock during reruns. If it does contain all fields, ignoring owner token and PID still falls short of the claimed same ownership discipline. Re-deriving a partial validator also creates drift from WI-486.",
+      "evidence": [
+        "§4 constraint 3 lists the existing marker fields as `session_id`/`owner_token`/`pid`/`target_worktree`.",
+        "§6.3 checks `marker.session_id`, `marker.wi`, `marker.branch`, and `marker.target_worktree`.",
+        "The blueprint never validates `owner_token` or `pid`.",
+        "The prose claims this is the same ownership discipline used by `isSkillLoaderShape`, but no shared validator or exact tuple comparison is specified."
+      ],
+      "proposed_fix": "Read the authoritative marker schema and existing ownership validator before implementation. Reuse or extract one shared validation function that checks the complete tuple and derives WI/branch consistently from the real artifact. Add fixtures for missing fields, stale PID, wrong owner token, wrong session, wrong target worktree, and a valid same-owner rerun."
+    },
+    {
+      "id": "F-004",
+      "severity": "high",
+      "claim": "The dispatch-mode blueprint omits the implementations of three security-relevant argv predicates.",
+      "analysis": "The plan says `isSafeGitArgv`, `isSafeRgArgv`, and `isSafeFindArgv` will port existing predicates “verbatim,” but provides neither their code nor an exact transformation procedure and expected vectors. These functions are part of the governed-mutation decision boundary. In dispatch mode, the protocol requires blueprints complete enough to copy into a lint-clean implementation. An executor must make security decisions while translating regex logic to argv semantics, including option/value handling and terminators, so the blueprint is incomplete.",
+      "evidence": [
+        "Manifest mode is `dispatch`.",
+        "§6.2 supplies calls to `isSafeGitArgv`, `isSafeRgArgv`, and `isSafeFindArgv` without defining them.",
+        "The only instruction is to port existing L197-225 predicates “verbatim onto argv,” although regex-to-argv conversion is not a verbatim mechanical copy.",
+        "No detailed positive/negative fixture table is given for the converted git, rg, and find predicates."
+      ],
+      "proposed_fix": "Include complete implementations for all three predicates in the blueprint, including `--` handling, option values, fused/equal forms, and denied operations. Add parity fixtures proving every currently allowed and denied form preserves behavior except for the explicitly intended quoting change."
+    },
+    {
+      "id": "F-005",
+      "severity": "high",
+      "claim": "The proposed falsification step cannot falsify the lexer-focused injection-negative fixtures.",
+      "analysis": "The plan instructs the executor to stub `isReadCommand` to return true and expects each negative fixture to turn red. But inputs containing `$()`, backticks, pipes, redirects, lists, and double-quoted expansion are rejected by `lexSimpleCommand` before `isReadCommand` is called. Stubbing the later predicate leaves those fixtures green, so the stated mandatory falsification proof is unreachable. This undermines the primary detector for silent over-allow regressions.",
+      "evidence": [
+        "`isReadOnlyTool` returns false immediately when `lexSimpleCommand` returns `ok:false`.",
+        "The injection vectors for substitution, pipes, redirects, lists, and quoted expansion are all intended to fail in the lexer.",
+        "§6.4 nevertheless says to verify each negative by temporarily stubbing `isReadCommand → true`.",
+        "Only verb/flag negatives such as `gh api -X DELETE` would be falsified by that stub."
+      ],
+      "proposed_fix": "Split falsification by enforcement layer. For lexer-negative vectors, temporarily replace or mutate the relevant lexer rejection so the vector reaches the allow path; for verb/flag negatives, stub `isReadCommand` or the hazard predicate. Record an expected RED for every vector and fail the test workflow if a negative was never independently falsified."
+    },
+    {
+      "id": "F-006",
+      "severity": "medium",
+      "claim": "The zero-state end-to-end test does not specify how the allowed bootstrap command is actually executed to create the graph.",
+      "analysis": "A PreToolUse hook returns an allow decision; it does not execute the requested command. The test table says to send the bootstrap command and then run the loader “on the created graph,” but does not specify a runner step that executes `svc-ensure-worktree.mjs`, captures its output, or locates the graph. If the existing harness only drives the hook as stated, no graph will be created and the second assertion is nondeterministic or impossible.",
+      "evidence": [
+        "§6.4 says the existing harness “drives the hook.”",
+        "The zero-state sequence expects “same, then loader on the created graph.”",
+        "No command is specified to execute the allowed bootstrap after the hook response, assert its exit status, or determine the created graph path.",
+        "The dry run assumes the script creates graph and marker, but this transition is not wired into the test procedure."
+      ],
+      "proposed_fix": "Specify the complete fixture sequence: invoke the hook and assert allow; execute the exact bootstrap command inside the temp repo; assert exit 0 plus marker and graph paths; invoke the hook for the canonical loader; then assert that a second bootstrap is denied. Include deterministic cleanup and rerun the sequence twice to prove idempotency."
+    },
+    {
+      "id": "F-007",
+      "severity": "high",
+      "claim": "Lane compliance is asserted by summary rather than proven with the mandatory skill-by-skill artifact and skip ledger.",
+      "analysis": "The protocol requires every mandatory upstream framework-lane skill to be listed and tied either to a completed artifact or a cited skip decision. The plan says nine skills are justified in a lane-task file, but it does not enumerate them, give task IDs/statuses, cite their artifacts, or cite individual decision-log entries. The visible table starts at diagnose-bug and design-tech and does not establish the full mandatory upstream set. This prevents the external reviewer from detecting an unnamed mandatory skill, which the protocol defines as a failing finding.",
+      "evidence": [
+        "§2 states that nine skills are justified in `.svc/lane-tasks-WI-494.json` without listing the nine skills or their evidence.",
+        "§7 lists tasks 2-10 but does not identify every mandatory upstream framework-lane skill and artifact.",
+        "The protocol requires each mandatory skill to be completed with a cited artifact or skipped with a cited `.svc/pipeline-decisions.jsonl` decision."
+      ],
+      "proposed_fix": "Add a lane-compliance table naming every mandatory upstream framework-lane skill, its task ID, status, artifact path, and—when skipped—the exact decision-log entry or stable identifier. Include the manifest lane definition used to derive the list so an unnamed skill can be checked mechanically."
+    },
+    {
+      "id": "F-008",
+      "severity": "medium",
+      "claim": "Rollback is described generically and lacks a commit-scoped procedure and post-revert proof for a host-wide enforcement hook.",
+      "analysis": "The plan says rollback is `git revert` and informally describes restoring predicates. It does not identify the commit selection rule, commands to validate the reverted hook, or how installed Codex symlinks/launchers are refreshed and checked after rollback. Because this hook affects every Codex tool call and over-allow failures are silent, a source-only revert without installation verification may leave the bad behavior active.",
+      "evidence": [
+        "§3 says revert means dropping functions and restoring predicates.",
+        "§8 states only `Rollback: git revert`.",
+        "The plan acknowledges installed `~/.codex` state and says setup re-symlinks unchanged, but does not include rollback-time setup or drift verification.",
+        "No post-revert negative fixture or installed-hook smoke check is specified."
+      ],
+      "proposed_fix": "Add a concrete rollback runbook: revert the WI commit, run the targeted tier-1 integrity validator, refresh or verify the Codex installation using the repository’s setup/drift mechanism, and exercise one deny and one read-only vector through the installed launcher. State how the target commit is selected at land time."
+    }
+  ],
+  "certifications": [
+    {
+      "key": "scope_lock_honored",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "e7ebddccf7a80fcbc0d93c891385d0c39e8c815acf635ac8431be9bd7a70876d"
+    }
+  ]
+}

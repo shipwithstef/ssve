@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "review_kind": "exec",
+  "rubric_score": 8,
+  "rubric_failures": null,
+  "dependencies_needing_read": [],
+  "reviewer": {
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5",
+    "effort": "high"
+  },
+  "verdict": "pass-with-findings",
+  "summary": "F001’s disposition is sound for the demonstrated Codex contract: the bridge runs before ownership resolution, exact-session binding remains enforced, and the command environment supplied the session to the CLIs in the successful live flow. F002 is fixed. F003 is only partially resolved because the new validator does not behaviorally test several claims it says it covers.",
+  "findings": [
+    {
+      "id": "WI499-R2-F001",
+      "severity": "medium",
+      "claim": "The new tier-1 validator can pass without proving the payload-to-environment bridge, environment precedence, Windows production path detection, or byte-identical Claude output.",
+      "analysis": "The SB-01/SB-02 checks merely grep for source strings. Existing payload-based tests run with SVC_CODEX_TEST_MODE=1, whose laneGraphs branch selects the explicit graph before resolveWI, so they do not exercise the production ownership path repaired by WI-499. The Windows check reimplements the normalization expression instead of invoking production code, while the Claude assertion checks only a prefix rather than byte identity. Consequently, a misplaced or behaviorally broken bridge could still leave tier 1 green—the exact regression F003 was meant to prevent.",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-codex-sessionstart-json.sh:35-45 tests a copied path expression rather than either hook.",
+        "test-framework/evals/tier-1/validate-codex-sessionstart-json.sh:47-53 uses grep-only assertions for SB-01/SB-02.",
+        "test-framework/evals/tier-1/validate-codex-sessionstart-json.sh:31-33 checks only that Claude output begins with FRAMEWORK LEARNINGS.",
+        "hooks/codex/lib/codex-hook-context.mjs:249-251 bypasses resolveWI when SVC_CODEX_TEST_MODE and SVC_CODEX_TASK_GRAPH are set.",
+        "test-framework/evals/tier-1/validate-codex-execution-integrity.sh:22-27 globally enables that test-mode bypass."
+      ],
+      "proposed_fix": "Add a production-mode fixture with a real claim, session binding, graph, and receipt. Prove payload-only owner ALLOW, environment owner ALLOW, foreign payload DENY, and conflicting environment identity is not overwritten. Exercise the production host-detection helper for slash and backslash paths, and compare Claude output against an exact golden byte sequence."
+    }
+  ],
+  "certifications": [
+    {
+      "key": "f001_non_manifesting_disposition_sound_for_demonstrated_codex_contract",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "17f104abbaa64040812960c47fe7992500a16564d903efb598fe5daf4e9ac510"
+    },
+    {
+      "key": "f002_backslash_normalization_fixed",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "17f104abbaa64040812960c47fe7992500a16564d903efb598fe5daf4e9ac510"
+    },
+    {
+      "key": "f003_behavioral_regression_coverage_complete",
+      "certified": false,
+      "reviewer_family": "openai",
+      "for_content_sha": "17f104abbaa64040812960c47fe7992500a16564d903efb598fe5daf4e9ac510"
+    },
+    {
+      "key": "payload_session_cannot_claim_foreign_graph",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "17f104abbaa64040812960c47fe7992500a16564d903efb598fe5daf4e9ac510"
+    }
+  ]
+}

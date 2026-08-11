@@ -1,0 +1,6 @@
+review_log:
+  wi: WI-363
+  tier1: { exit: 0 }
+  tier2: { reviewer: gemini (codex skipped — 6x corruption protocol), round1: "REJECT: 2 CRITICAL (line-local YAML parse; read-only-Bash hollowing) + HIGH (shared-ledger misattribution) + MEDIUM (path brittleness)", fixes: "state-accumulating parser; mutation-operator precedence rule; exclusive-path tier-first; plain cwd join", round2: "{C1..M1: confirmed-fixed, verdict: approve}" }
+  terminal_state: APPROVED
+  g6: { reviewer: gemini, rubric: 10/10, verdict: approve, notes: 5 LOW (activeGraph heuristic sound; spawn-cost guarded; matcher breadth acceptable; validator comprehensive; sed -i regex edge -> RELAXED in amended checkpoint-2) }

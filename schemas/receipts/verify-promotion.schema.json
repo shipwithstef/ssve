@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "verify-promotion receipt (with extended P3)",
+  "type": "object",
+  "required": ["receipt_type", "schema_version", "wi", "passes", "p3_target_type", "verdict", "timestamp"],
+  "properties": {
+    "receipt_type": { "const": "verify-promotion" },
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "wi": { "type": "string" },
+    "passes": {
+      "type": "object",
+      "properties": {
+        "p1_promotion_evidence": { "type": "string" },
+        "p2_spec_ac_verification": { "type": "string" },
+        "p3_runtime_validation": { "type": "string" },
+        "p4_state_closeout": { "type": "string" }
+      }
+    },
+    "p3_target_type": { "type": "string", "enum": ["smoke-http", "e2e-against-main", "install-validation"] },
+    "p3_budget_seconds": { "type": "number" },
+    "p3_budget_consumed_seconds": { "type": "number" },
+    "p3_outcome": { "type": "string", "enum": ["pass", "fail", "timeout", "skipped"] },
+    "verdict": { "type": "string", "enum": ["pass", "fail"] },
+    "timestamp": { "type": "string", "format": "date-time" }
+  }
+}

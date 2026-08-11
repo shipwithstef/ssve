@@ -1,0 +1,10 @@
+Skill: mine-builder
+
+Q: What is the output file for mine-builder, and what is its primary purpose?
+A: Expected pattern: `~/.svc/builder-profile.md`. Purpose: capture the builder's real-world context (finances, time, skills, team, social presence, tools, entity, goals) so the pipeline calibrates recommendations to the actual builder.
+
+Q: What are the four modes of mine-builder, and which is triggered when the profile does not exist?
+A: Expected pattern: Mode 1: First-Time Interview (triggered when profile missing), Mode 2: Change-Check, Mode 3: Post-Project Update, Mode 4: Proactive Update.
+
+Q: What is the #1 predictor of product success that mine-builder captures, and why is engagement more important than follower count?
+A: Expected pattern: Distribution (social presence) is the #1 predictor. Engagement > follower count because 500 engaged niche followers who reply and DM beats 50K passive followers.

@@ -1,0 +1,14 @@
+review_log:
+  plan: docs/plans/2026-05-29-receipt-sha-pinning/manifest.md
+  tier1:
+    script: scripts/verify-plan-mechanical.sh
+    exit_code: 0
+    issues: 0
+  tier2:
+    reviewer: claude
+    reviewer_family: anthropic
+    rubric_score: 10
+    findings: []
+  responses: []
+  terminal_state: PROMOTED
+  commit_sha: 53d98d5330e7041a021ff7c97fb87b901a1b411d

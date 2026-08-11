@@ -1,0 +1,10 @@
+Skill: teach-project
+
+Q: What are the two modes of teach-project, and which is the default?
+A: Expected pattern: Socratic (default) and Auto. Socratic is interactive diagnostic; Auto generates a one-shot OWNER-GUIDE.md.
+
+Q: What is the output file in Auto mode, and what file does Socratic mode update?
+A: Expected pattern: Auto mode produces `docs/OWNER-GUIDE.md`. Socratic mode updates `~/.svc/builder-profile.md`.
+
+Q: What is the scope of socratic learning in teach-project — current active work items or repo state as a whole?
+A: Expected pattern: Repo state as a whole — stack, architecture, product model. Not current active work items.

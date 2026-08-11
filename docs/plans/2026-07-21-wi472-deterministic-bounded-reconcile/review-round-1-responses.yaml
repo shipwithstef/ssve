@@ -1,0 +1,33 @@
+responses:
+  - finding_id: F-001
+    decision: ACCEPT
+    justification: The 78-row denominator is historical and must not move with origin/main.
+    action: Pin all historical checks to checkpoint..6b026ea9 and check the WI-472 merge commit separately.
+  - finding_id: F-002
+    decision: ACCEPT
+    justification: A mutable backup ref would destroy the only rollback anchor after partial apply.
+    action: Make backup creation write-once; verify object id on resume; require rollback on mismatch.
+  - finding_id: F-003
+    decision: ACCEPT
+    justification: Watcher strictness needs a deterministic pre-merge hang proof in addition to promoted timing.
+    action: Add the hung-GitHub fixture to task-5 and map RC-07 to pre-merge plus promoted proof.
+  - finding_id: F-004
+    decision: ACCEPT
+    justification: Independent verdicts cannot be authored by the bundle-producing task.
+    action: Assign review JSON exclusively to task-8 and require a separate canonical review invocation.
+  - finding_id: F-005
+    decision: ACCEPT
+    justification: Tree equality alone proves final content, not reviewed change or intent equivalence.
+    action: Require first-parent normalized patch plus per-row intent transfer; otherwise escalate the row to full retroactive review.
+  - finding_id: F-006
+    decision: ACCEPT
+    justification: The spec and ledger were produced by completed pre-plan tasks and must be frozen, not recreated.
+    action: Mark them PRESENT/FREEZE and add execution hash preconditions.
+  - finding_id: F-007
+    decision: ACCEPT
+    justification: Lane evidence must be mechanically navigable rather than implied by the parent packet.
+    action: Add an exact Lane Compliance table with artifact and decision-log citations.
+  - finding_id: F-008
+    decision: ACCEPT
+    justification: Historical quick-fix status is valid only when derived from the target commit's own parent diff.
+    action: Record parent SHA and per-file classification and require G6 re-derivation.

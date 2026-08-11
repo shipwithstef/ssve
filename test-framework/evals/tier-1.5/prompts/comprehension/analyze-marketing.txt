@@ -1,0 +1,10 @@
+Skill: analyze-marketing
+
+Q: What is the canonical output path for the marketing context document, and what are its three layers?
+A: Expected pattern: `.agents/product-marketing-context.md` with Foundation (sections 1-12), Layer 1 (atomic insights), and Layer 2 (narratives).
+
+Q: How many features does analyze-marketing process per conversation in Full Scan mode, and what is the persistent state file?
+A: Expected pattern: 3-4 features per conversation. Persistent state is `docs/marketing/feature-mining-tracker.json`.
+
+Q: What is the weight threshold for compaction candidates, and what must never be compacted?
+A: Expected pattern: Compaction candidates have weight < 55. Never compact weight >= 55 insights, foundational sections (1-12), narratives, or content added in the last 7 days.

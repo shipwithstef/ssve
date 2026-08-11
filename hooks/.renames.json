@@ -1,0 +1,12 @@
+{
+  "_schema": "WI-076 rename registry — single source of truth for `.js → .mjs` and other filename migrations in the hooks directory. scripts/wire-hooks.mjs reads this on every invocation and rewrites stale paths in settings.json.",
+  "_version": 1,
+  "renames": [
+    {
+      "from": "svc-workflow-guard.js",
+      "to": "svc-workflow-guard.mjs",
+      "wi": "WI-072",
+      "date": "2026-04-24"
+    }
+  ]
+}

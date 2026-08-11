@@ -1,0 +1,10 @@
+Skill: land-changeset
+
+Q: What is the 4-digit version format used by land-changeset, and what are the bump level rules?
+A: Expected pattern: The format is MAJOR.MINOR.PATCH.MICRO. MICRO (+0.0.0.1) for <50 lines, PATCH (+0.0.1.0) for 50+ lines no feature signals, MINOR (+0.1.0.0) for feature signals (ask user), MAJOR (+1.0.0.0) for milestones only (always ask user).
+
+Q: What are the coverage gate thresholds in land-changeset, and what happens below 30%?
+A: Expected pattern: Default minimum is 60% of changed code paths at >=1-star coverage. Target is 80% at >=2-star. Below 30% is a HARD STOP — route back to write-e2e, do not proceed.
+
+Q: Why must gh pr merge run from the repo root and not from inside the worktree?
+A: Expected pattern: Because git errors with "main is already used by worktree" otherwise. The skill explicitly cd's to repo root before opening the PR and merging.

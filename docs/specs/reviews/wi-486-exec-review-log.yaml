@@ -1,0 +1,82 @@
+review_log:
+  wi: WI-486
+  lane: framework
+  change_class: framework concurrency regression (infra-path — hooks/, scripts/, schemas/)
+  reviewer: gpt-5.6-sol/high (openai) — independent different-family exec review via scripts/run-external-review.mjs
+
+  # ---- Machine-readable round record (parsed by scripts/check-review-round-cap.mjs, fail-closed).
+  #      HARD-capped at 3 adversarial rounds per WI-491. Severity converged 5-crit -> 1-crit -> 0-crit.
+  rounds_run: 3
+  unresolved_critical: 0
+  remaining_high: 1
+
+  round_1:
+    reviewer: gpt-5.6-sol
+    reviewer_family: openai
+    target: frozen code diff (rev 1)
+    verdict: fail
+    outcome: 8 findings (5 critical, 3 high) — ALL accepted and fixed, each with a strengthened tier-1 fixture.
+    findings_summary:
+      - "EXEC-001 [crit]: authority granted with missing/malformed graph -> resolver requires secure well-formed graph + active task; enforcer denies otherwise."
+      - "EXEC-002 [crit]: crash-replay created artifacts outside created_paths -> exact same-session marker routes to forwardComplete (recordIntent before each)."
+      - "EXEC-003 [crit]: stale recovery deleted arbitrary paths -> containment-bound removeCreatedPaths + reclaimStaleMarker identity/subset checks."
+      - "EXEC-004 [crit]: TTL preempted live same-host claim -> process-identity-first liveness; TTL only cross-host."
+      - "EXEC-007 [crit]: non-transactional migration -> one per-graph lock spanning reinspect->backup->write->verify->receipt."
+      - "EXEC-005/006/008 [high]: lock wedge, any-file auth, malformed-graph+Stop-hardblock -> per-WI lock w/ liveness reclaim, structured auth, shape validation + non-blocking disposition."
+
+  round_2:
+    reviewer: gpt-5.6-sol
+    reviewer_family: openai
+    target: frozen code diff (rev 2 — post round-1 fixes)
+    verdict: fail
+    outcome: 7 findings (1 critical, 6 high) — ALL accepted and fixed, each with a strengthened tier-1 fixture.
+    findings_summary:
+      - "R2-001 [crit]: reclaim deleted worktree before completing checks -> strictly two-phase (validate-all-then-delete); refuses on tracked-mods/untracked."
+      - "R2-002 [high]: loader could mutate a foreign worktree graph -> require --graph == owned tuple graph_path + canonical validity + exact first-runnable task + turn."
+      - "R2-003 [high]: no canonical graph validator -> shared hooks/lib/validate-task-graph-shape.mjs wired into classification + graphDecision + activeTask."
+      - "R2-004 [high]: forwardComplete dropped marker without re-resolve -> verifyCompleteTuple compares every tuple field via authorityJson before marker removal."
+      - "R2-005 [high]: same-host pid-less claim permanently unreclaimable -> bounded-TTL heartbeat fallback (live never preempted; dead reclaimable)."
+      - "R2-006 [high]: non-atomic restore/rollback + mutable backup -> atomic byte writer, digest-verify, distinct 'corrupt' terminal, immutable content-addressed backups."
+      - "R2-007 [high]: dry-run emitted terminal receipts -> non-terminal eligible-dry-run/restore-dry-run, no backup/write in dry-run."
+
+  round_3:
+    reviewer: gpt-5.6-sol
+    reviewer_family: openai
+    target: frozen code diff (rev 3 — post round-2 fixes) — THE HARD 3-ROUND CAP
+    verdict: pass-with-findings
+    certifications: "hard_round_cap_observed=true, no_unresolved_critical=true"
+    outcome: 4 findings (0 critical, 4 high). 3 FIXED at the cap (mechanically verified, no 4th round); 1 dispositioned.
+    findings:
+      - id: R3-001
+        severity: high
+        response: ACCEPT-FIXED
+        action: "Fresh bootstrap could not load its first skill (string id + status/derived mismatch vs task-graph.mjs). Unified recoverableId comparison across enforcer/loader/receipt AND made ensureGraph's placeholder graph fully task-graph-valid (numeric id 1, status pending). End-to-end fixture proves first load-skill succeeds."
+        verification: mechanical (validate-codex-execution-integrity 101/0, incl. end-to-end load).
+      - id: R3-002
+        severity: high
+        response: ACCEPT-FIXED
+        action: "Stale reclaim could delete non-ledger IGNORED files (git status omitted ignored). Cleanliness scan now uses --ignored; any non-ledger ignored path is a CONFLICT that refuses reclaim. Fixture places a non-ledger ignored file and proves reclaim refuses + file survives."
+        verification: mechanical (validate-default-checkout-isolation 13/0).
+      - id: R3-003
+        severity: high
+        response: ACCEPT-FIXED
+        action: "Same-session resume returned a complete tuple without authority validation. Both resume exits now route through verifyCompleteTuple (claim+generation+well-formed-graph via authorityJson); mismatch fails retaining ownership. Fixture: corrupted-graph resume fails; clean resume succeeds (no self-lock)."
+        verification: mechanical (validate-default-checkout-isolation NODE_R3; live-session self-test resumes exit 0).
+
+  bounded_exit:
+    disposition: accept-with-justification
+    residual_highs:
+      - "R3-004 [high]: migration authorization is structured self-asserted JSON (repo+WI+principal+issued/expires+nonce), not a cryptographically authenticated owner capability issued outside agent-writable scope. ACCEPTED AS LOGGED RISK + follow-up WI: scripts/svc-migrate-task-state.mjs is an explicit OPERATOR/setup tool (SIB-30), never invoked in the normal agent mutation path; it already requires structured, attributable, repo+WI-scoped, expiring authorization and runs under the per-graph migration lock. A true authenticated-capability channel (owner-controlled, outside agent scope) is a larger capability-system design beyond WI-486's atomic-bootstrap scope; filed as a follow-up WI (see WI-486.md Deferred). Consistent with the private-tool-security-pragmatism posture: ship the working, attributable floor now; defer the heavy authenticated-capability hardening to a scoped WI."
+
+  bounded_exit_note: >
+    The loop TERMINATED at the 3-round cap by disposition, exactly as WI-491
+    installed. Severity converged 5-critical -> 1-critical -> 0-critical; the
+    reviewer itself certified hard_round_cap_observed=true and no_unresolved_critical.
+    3 of the round-3 highs were fixed (mechanically verified by tier-1, no 4th
+    adversarial round); the 1 residual high (R3-004) is dispositioned as an
+    accepted, logged risk with a follow-up WI. rounds_run=3, unresolved_critical=0,
+    remaining_high=1 (enumerated + dispositioned in bounded_exit).
+
+  terminal_state: PROMOTED
+  full_suite: "tier-1 248 passed, 0 failed (WI-486-touching validators all green; bootstrap self-test resumes without self-lockout)"
+  commit_sha: <filled at promotion time>

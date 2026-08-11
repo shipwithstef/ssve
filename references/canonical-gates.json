@@ -1,0 +1,161 @@
+{
+  "$comment": "Canonical svc enforcement gates. Each gate has a host-agnostic id and per-host MUST/MAY/SKIP requirements. The validator validate-cross-host-hook-conformance.sh greps each hook-capable host's wire script for the host-specific id pattern, and requires every skills-only host to remain outside MUST/MAY hook coverage.",
+  "hook_enforcement_hosts": ["claude", "kimi", "codex", "gemini", "opencode"],
+  "skills_only_hosts": {
+    "antigravity": "Skills install host only. capabilities.hooks=false until svc has a verified Antigravity-specific hook wirer.",
+    "cursor": "Skills install host only. capabilities.hooks=false until svc has a verified Cursor-specific hook wirer."
+  },
+  "gates": [
+    {
+      "id": "block-no-verify",
+      "description": "Block git --no-verify and --no-gpg-sign bypasses (HARD).",
+      "must_hosts": ["claude", "kimi", "codex", "gemini", "opencode"],
+      "may_hosts": [],
+      "host_id_patterns": {
+        "claude": "svc-bash-guard",
+        "kimi": "svc-kimi-workflow-guard",
+        "codex": "svc-bash-guard",
+        "gemini": "svc-bash-guard",
+        "opencode": "svc-opencode-plugin"
+      }
+    },
+    {
+      "id": "eval-gate-pre",
+      "description": "Block TaskUpdate(completed) when eval matrix unfilled (PreToolUse on TaskUpdate).",
+      "must_hosts": ["claude"],
+      "may_hosts": ["kimi", "codex", "gemini"],
+      "host_id_patterns": {
+        "claude": "svc-eval-gate-pre",
+        "kimi": "",
+        "codex": "",
+        "gemini": ""
+      }
+    },
+    {
+      "id": "skill-artifact-authenticity",
+      "description": "Block writes to canonical skill-output paths without recent skill receipt (G-4). Hook implementation lives in hooks/svc-skill-artifact-authenticity.mjs and is enumerated in scripts/wire-hooks.mjs as of WI-123. Other hosts MAY adopt when an equivalent hook port is written.",
+      "must_hosts": ["claude"],
+      "may_hosts": ["kimi", "codex", "gemini"],
+      "host_id_patterns": {
+        "claude": "svc-skill-artifact-authenticity",
+        "kimi": "svc-kimi-skill-artifact-authenticity",
+        "codex": "svc-skill-artifact-authenticity",
+        "gemini": "svc-skill-artifact-authenticity"
+      }
+    },
+    {
+      "id": "session-start-healthcheck",
+      "description": "R-1 (WI-116): on SessionStart, scan installed skills for dangling symlinks and warn. Soft-warn only — never blocks. Wired host-agnostically via WI-123.",
+      "must_hosts": ["claude", "opencode"],
+      "may_hosts": ["kimi", "codex", "gemini"],
+      "host_id_patterns": {
+        "claude": "svc-session-start-healthcheck",
+        "kimi": "svc-session-start-healthcheck",
+        "codex": "svc-session-start-healthcheck",
+        "gemini": "svc-session-start-healthcheck",
+        "opencode": "svc-opencode-plugin"
+      }
+    },
+    {
+      "id": "prompt-stale-state",
+      "description": "R-1 (WI-116): on UserPromptSubmit, warn when orchestrator-state.json references active WIs without matching lane-tasks files. Soft-warn only. Gemini does not list a UserPromptSubmit event.",
+      "must_hosts": ["claude"],
+      "may_hosts": ["kimi", "codex"],
+      "host_id_patterns": {
+        "claude": "svc-prompt-stale-state",
+        "kimi": "svc-prompt-stale-state",
+        "codex": "svc-prompt-stale-state",
+        "gemini": ""
+      }
+    },
+    {
+      "id": "pre-compact-snapshot",
+      "description": "R-1 (WI-116): on PreCompact (Claude/Kimi) or PreCompress (Gemini), write a session snapshot to .svc/sessions/. Observe-only. Codex CLI does not support PreCompact. OpenCode handles via session.compacted plugin event.",
+      "must_hosts": ["claude", "opencode"],
+      "may_hosts": ["kimi", "gemini"],
+      "host_id_patterns": {
+        "claude": "svc-pre-compact-snapshot",
+        "kimi": "svc-pre-compact-snapshot",
+        "codex": "",
+        "gemini": "svc-pre-compact-snapshot",
+        "opencode": "svc-opencode-plugin"
+      }
+    },
+    {
+      "id": "session-end-log",
+      "description": "R-1 (WI-116): on SessionEnd, append a session record to .svc/sessions/sessions.jsonl. Observe-only. Codex CLI does not support SessionEnd.",
+      "must_hosts": ["claude"],
+      "may_hosts": ["kimi", "gemini"],
+      "host_id_patterns": {
+        "claude": "svc-session-end-log",
+        "kimi": "svc-session-end-log",
+        "codex": "",
+        "gemini": "svc-session-end-log"
+      }
+    },
+    {
+      "id": "notification-surface",
+      "description": "R-1 (WI-116): on Notification, append payloads to .svc/sessions/notifications.jsonl. Observe-only. Codex CLI does not support Notification.",
+      "must_hosts": ["claude"],
+      "may_hosts": ["kimi", "gemini"],
+      "host_id_patterns": {
+        "claude": "svc-notification-surface",
+        "kimi": "svc-notification-surface",
+        "codex": "",
+        "gemini": "svc-notification-surface"
+      }
+    },
+    {
+      "id": "lane-tasks-validator",
+      "description": "Validate .svc/lane-tasks-*.json structure on Edit|Write (PostToolUse).",
+      "must_hosts": ["claude", "kimi", "gemini", "opencode"],
+      "may_hosts": ["codex"],
+      "host_id_patterns": {
+        "claude": "svc-lane-tasks-validator",
+        "kimi": "svc-kimi-lane-tasks-validator",
+        "codex": "",
+        "gemini": "svc-lane-tasks-validator",
+        "opencode": "svc-opencode-plugin"
+      }
+    },
+    {
+      "id": "config-protection",
+      "description": "Block Edit|Write to linter/formatter/test-runner config files (workflow-guard default mode).",
+      "must_hosts": ["claude", "kimi", "codex", "gemini", "opencode"],
+      "may_hosts": [],
+      "host_id_patterns": {
+        "claude": "svc-workflow-guard",
+        "kimi": "svc-kimi-workflow-guard",
+        "codex": "svc-workflow-guard",
+        "gemini": "svc-workflow-guard",
+        "opencode": "svc-opencode-plugin"
+      }
+    },
+    {
+      "id": "session-contract-freshness",
+      "description": "Block Edit/Write when session contract (.svc/session-contract.jsonl) is >1h old or contract.skill mismatches SVC_CURRENT_SKILL. Hard block preventing drift/ghost-completions. Origin: audit-session-execution F2 (May 6 2026).",
+      "must_hosts": ["claude", "kimi"],
+      "may_hosts": ["codex", "gemini", "opencode"],
+      "host_id_patterns": {
+        "claude": "svc-session-contract-freshness",
+        "kimi": "svc-session-contract-freshness",
+        "codex": "svc-session-contract-freshness",
+        "gemini": "svc-session-contract-freshness",
+        "opencode": "svc-opencode-plugin"
+      }
+    },
+    {
+      "id": "inertia-check",
+      "description": "Block Edit/Write content that extends APIs or framework patterns listed in references/deprecated-foundations.json without an explicit migrate-vs-extend acknowledgement.",
+      "must_hosts": ["claude"],
+      "may_hosts": ["kimi", "codex", "gemini", "opencode"],
+      "host_id_patterns": {
+        "claude": "svc-inertia-check",
+        "kimi": "svc-inertia-check",
+        "codex": "svc-inertia-check",
+        "gemini": "svc-inertia-check",
+        "opencode": "svc-opencode-plugin"
+      }
+    }
+  ]
+}

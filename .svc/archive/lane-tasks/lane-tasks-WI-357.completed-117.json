@@ -1,0 +1,499 @@
+{
+ "wi": "WI-357",
+ "lane": "framework",
+ "status": "completed",
+ "created": "2026-06-06T15:28:01.494Z",
+ "tasks": [
+  {
+   "id": 1,
+   "subject": "route-workflow: route WI-357 model-registry refresh to framework lane full chain",
+   "status": "completed",
+   "metadata": {
+    "skill": "route-workflow",
+    "normalized_intent": "Execute WI-357 (model-registry refresh + single-sourced model tables + EXEC economics decision) through the mandatory chain in a worktree, first WI of the evaluation fix cluster, sequential mode."
+   },
+   "skill_receipt": {
+    "skill": "route-workflow",
+    "loaded_at": "2026-06-06T15:28:01.582Z",
+    "loaded_via": "manual",
+    "phases_executed": [
+     {
+      "id": "P1-SessionContextLoad",
+      "ts": "2026-06-06T15:28:47.080Z",
+      "evidence_artifacts": [
+       {
+        "type": "command_output",
+        "path": ".svc/route-workflow-session-context.log"
+       }
+      ]
+     },
+     {
+      "id": "P2-IntentNormalizationAndCorrection",
+      "ts": "2026-06-06T15:28:47.126Z",
+      "evidence_artifacts": [
+       {
+        "type": "command_output",
+        "path": ".svc/route-workflow-intent.log"
+       }
+      ]
+     },
+     {
+      "id": "P3-StateInitializationAndLaneRouting",
+      "ts": "2026-06-06T15:28:47.185Z",
+      "evidence_artifacts": [
+       {
+        "type": "file",
+        "path": ".svc/lane-tasks-WI-357.json"
+       }
+      ]
+     },
+     {
+      "id": "P4-ConcernAndPreDispatchGate",
+      "ts": "2026-06-06T15:28:47.237Z",
+      "evidence_artifacts": [
+       {
+        "type": "command_output",
+        "path": ".svc/route-workflow-concern-gate.log"
+       }
+      ]
+     },
+     {
+      "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+      "ts": "2026-06-06T15:28:47.288Z",
+      "evidence_artifacts": [
+       {
+        "type": "file",
+        "path": ".svc/lane-tasks-WI-357.json"
+       }
+      ]
+     },
+     {
+      "id": "P6-SelfVerifyDecisionLogContinuation",
+      "ts": "2026-06-06T15:28:47.343Z",
+      "evidence_artifacts": [
+       {
+        "type": "command_output",
+        "path": ".svc/route-workflow-self-verify.log"
+       }
+      ]
+     }
+    ],
+    "output_artifact": "docs/plans/2026-06-06-wi-357-model-registry-refresh/manifest.md",
+    "validation_output": "routing: framework lane, full chain; concern scan 0; capability diagnosis clean"
+   },
+   "completed_at": "2026-06-06T15:28:47.389Z",
+   "skill": "route-workflow"
+  },
+  {
+   "id": 2,
+   "subject": "plan-changeset: manifest + task graph for registry refresh (hot path: resolve-model.sh, registry, 3 model tables)",
+   "status": "completed",
+   "metadata": {
+    "skill": "plan-changeset"
+   },
+   "skill": "plan-changeset",
+   "skill_receipt": {
+    "skill": "plan-changeset",
+    "loaded_at": "2026-06-06T15:46:13.072Z",
+    "loaded_via": "manual",
+    "phases_executed": [
+     {
+      "id": "P1-ArchetypeClassification",
+      "ts": "2026-06-06T15:46:13.106Z",
+      "evidence_artifacts": [
+       {
+        "type": "command_output",
+        "path": ".svc/plan-changeset-archetype.log"
+       }
+      ]
+     },
+     {
+      "id": "P2-InputCompressionAndScopeExtraction",
+      "ts": "2026-06-06T15:46:13.136Z",
+      "evidence_artifacts": [
+       {
+        "type": "command_output",
+        "path": ".svc/plan-changeset-scope.log"
+       }
+      ]
+     },
+     {
+      "id": "P3-ManifestTaskGraphMapping",
+      "ts": "2026-06-06T15:46:13.170Z",
+      "evidence_artifacts": [
+       {
+        "type": "file",
+        "path": "docs/plans/2026-06-06-wi-357-model-registry-refresh/manifest.md"
+       }
+      ]
+     },
+     {
+      "id": "P4-ExternalStateAndSimulationReport",
+      "ts": "2026-06-06T15:46:13.204Z",
+      "evidence_artifacts": [
+       {
+        "type": "file",
+        "path": "docs/plans/2026-06-06-wi-357-model-registry-refresh/manifest.md"
+       }
+      ]
+     },
+     {
+      "id": "P5-AdversarialReviewAndLaneValidation",
+      "ts": "2026-06-06T15:46:13.237Z",
+      "evidence_artifacts": [
+       {
+        "type": "command_output",
+        "path": ".svc/plan-changeset-review.log"
+       }
+      ]
+     },
+     {
+      "id": "P6-HandoffSelfVerify",
+      "ts": "2026-06-06T15:46:13.279Z",
+      "evidence_artifacts": [
+       {
+        "type": "command_output",
+        "path": ".svc/plan-changeset-self-verify.log"
+       }
+      ]
+     }
+    ],
+    "output_artifact": "docs/plans/2026-06-06-wi-357-model-registry-refresh/manifest.md",
+    "validation_output": "SIMULATED 22/22; adversarial 10/10; lane validation missing=[]"
+   },
+   "completed_at": "2026-06-06T15:46:13.312Z"
+  },
+  {
+   "id": 3,
+   "subject": "review-plan: adversarial plan review (codex primary per resolver)",
+   "status": "completed",
+   "metadata": {
+    "skill": "review-plan"
+   },
+   "skill": "review-plan",
+   "skill_receipt": {
+    "skill": "review-plan",
+    "loaded_at": "2026-06-06T15:46:53.513Z",
+    "loaded_via": "manual",
+    "phases_executed": [
+     {
+      "id": "P1-MechanicalPlanValidation",
+      "ts": "2026-06-06T19:34:20.117Z",
+      "evidence_artifacts": [
+       {
+        "type": "command_output",
+        "path": "/tmp/plan-tier1.log"
+       }
+      ]
+     },
+     {
+      "id": "P2-ExternalStateCouplingCheck",
+      "ts": "2026-06-06T19:34:20.146Z",
+      "evidence_artifacts": [
+       {
+        "type": "command_output",
+        "path": "/tmp/plan-external-state-check.log"
+       }
+      ]
+     },
+     {
+      "id": "P3-PrimaryAdversarialReview",
+      "ts": "2026-06-06T19:34:20.178Z",
+      "evidence_artifacts": [
+       {
+        "type": "file",
+        "path": "/tmp/review-tier2.yaml"
+       }
+      ]
+     },
+     {
+      "id": "P4-ResponseTier3Decision",
+      "ts": "2026-06-06T19:34:20.207Z",
+      "evidence_artifacts": [
+       {
+        "type": "file",
+        "path": "docs/plans/2026-06-06-wi-357-model-registry-refresh/review-log.yaml"
+       }
+      ]
+     },
+     {
+      "id": "P5-ReviewLogPersistence",
+      "ts": "2026-06-06T19:34:20.236Z",
+      "evidence_artifacts": [
+       {
+        "type": "file",
+        "path": "docs/plans/2026-06-06-wi-357-model-registry-refresh/review-log.yaml"
+       }
+      ]
+     },
+     {
+      "id": "P6-SelfVerifyContinuation",
+      "ts": "2026-06-06T19:34:20.268Z",
+      "evidence_artifacts": [
+       {
+        "type": "command_output",
+        "path": ".svc/review-plan-self-verify.log"
+       }
+      ]
+     }
+    ],
+    "output_artifact": "docs/plans/2026-06-06-wi-357-model-registry-refresh/review-log.yaml",
+    "validation_output": "REVISED_AND_REVIEWED: tier1 4 iters to green; tier2 codex 6 findings (5 accept/1 reject); tier3 gemini agrees_with_orchestrator + 2 new verified findings dispositioned"
+   },
+   "completed_at": "2026-06-06T19:34:20.328Z"
+  },
+  {
+   "id": 4,
+   "subject": "execute-changeset: implement in worktree per manifest",
+   "status": "completed",
+   "metadata": {
+    "skill": "execute-changeset"
+   },
+   "skill": "execute-changeset",
+   "skill_receipt": {
+    "skill": "execute-changeset",
+    "loaded_at": "2026-06-06T19:35:03.258Z",
+    "loaded_via": "manual",
+    "phases_executed": [
+     {
+      "id": "P1-DispatchPreflight",
+      "ts": "2026-06-06T19:50:54.735Z",
+      "evidence_artifacts": [
+       {
+        "type": "command_output",
+        "path": ".svc/wi-357-dispatch-preflight.log"
+       }
+      ]
+     },
+     {
+      "id": "P2-ApplyPlan",
+      "ts": "2026-06-06T19:50:54.779Z",
+      "evidence_artifacts": [
+       {
+        "type": "file",
+        "path": "docs/plans/2026-06-06-wi-357-model-registry-refresh/manifest.md"
+       }
+      ]
+     },
+     {
+      "id": "P3-Verification",
+      "ts": "2026-06-06T19:50:54.815Z",
+      "evidence_artifacts": [
+       {
+        "type": "command_output",
+        "path": ".svc/wi-357-tier1.log"
+       }
+      ]
+     },
+     {
+      "id": "P4-Checkpoint",
+      "ts": "2026-06-06T19:50:54.847Z",
+      "evidence_artifacts": [
+       {
+        "type": "command_output",
+        "path": ".svc/wi-357-checkpoints.log"
+       }
+      ]
+     }
+    ],
+    "output_artifact": "docs/plans/2026-06-06-wi-357-model-registry-refresh/manifest.md",
+    "validation_output": "executed: 12-file diff EXACT; 7/7 resolver labels; AC-04 cross-check + sweeps; tier-1 PASS in worktree; opus-override dispatch logged"
+   },
+   "completed_at": "2026-06-06T19:50:55.084Z"
+  },
+  {
+   "id": 5,
+   "subject": "review-exec: G6 self+adversarial diff review",
+   "status": "completed",
+   "metadata": {
+    "skill": "review-exec"
+   },
+   "skill": "review-exec",
+   "skill_receipt": {
+    "skill": "review-exec",
+    "loaded_at": "2026-06-06T19:51:35.727Z",
+    "loaded_via": "manual",
+    "phases_executed": [
+     {
+      "id": "P1-SelfReview",
+      "ts": "2026-06-06T20:24:37.137Z",
+      "evidence_artifacts": [
+       {
+        "type": "file",
+        "path": ".svc/review-exec-pair.json"
+       }
+      ]
+     }
+    ],
+    "output_artifact": "docs/specs/reviews/wi-357-model-registry-exec-cross-model.md",
+    "validation_output": "PASS converged: 4 codex rounds, 6 findings fixed, 1 rejected-with-receipts (reviewer-accepted)"
+   },
+   "completed_at": "2026-06-06T20:24:37.242Z"
+  },
+  {
+   "id": 6,
+   "subject": "audit-implementation: correctness audit vs WI-357 goal + guardrails",
+   "status": "completed",
+   "metadata": {
+    "skill": "audit-implementation"
+   },
+   "skill": "audit-implementation",
+   "skill_receipt": {
+    "skill": "audit-implementation",
+    "loaded_at": "2026-06-06T20:26:07.213Z",
+    "loaded_via": "manual",
+    "output_artifact": ".svc/receipts (audit-implementation receipt on 796cd108 + pipeline-decisions entry)",
+    "validation_output": "mode=light: scope EXACT-12, AC spot-checks live, residue 0, tier-1 PASS \u2014 READY TO LAND"
+   },
+   "completed_at": "2026-06-06T20:26:07.311Z"
+  },
+  {
+   "id": 7,
+   "subject": "land-changeset: PR + merge + worktree cleanup",
+   "status": "completed",
+   "metadata": {
+    "skill": "land-changeset"
+   },
+   "skill": "land-changeset",
+   "skill_receipt": {
+    "skill": "land-changeset",
+    "loaded_at": "2026-06-06T20:27:35.847Z",
+    "loaded_via": "manual",
+    "phases_executed": [
+     {
+      "id": "P1-WorktreeManifestContext",
+      "ts": "2026-06-06T20:41:49.325Z",
+      "evidence_artifacts": [
+       {
+        "type": "command_output",
+        "path": ".svc/land-changeset-context.log"
+       }
+      ]
+     },
+     {
+      "id": "P2-DiffTaskCompletionAudit",
+      "ts": "2026-06-06T20:41:49.361Z",
+      "evidence_artifacts": [
+       {
+        "type": "command_output",
+        "path": ".svc/land-changeset-diff-audit.log"
+       }
+      ]
+     },
+     {
+      "id": "P3-FinalValidationCoverageAudit",
+      "ts": "2026-06-06T20:41:49.396Z",
+      "evidence_artifacts": [
+       {
+        "type": "command_output",
+        "path": ".svc/land-changeset-validation.log"
+       }
+      ]
+     },
+     {
+      "id": "P4-PushPrCreation",
+      "ts": "2026-06-06T20:41:49.436Z",
+      "evidence_artifacts": [
+       {
+        "type": "command_output",
+        "path": ".svc/land-changeset-pr.log"
+       }
+      ]
+     },
+     {
+      "id": "P5-MergeDecisionCleanup",
+      "ts": "2026-06-06T20:41:49.469Z",
+      "evidence_artifacts": [
+       {
+        "type": "command_output",
+        "path": ".svc/land-changeset-merge.log"
+       }
+      ]
+     },
+     {
+      "id": "P6-SpecStatusSelfVerify",
+      "ts": "2026-06-06T20:41:49.502Z",
+      "evidence_artifacts": [
+       {
+        "type": "command_output",
+        "path": ".svc/land-changeset-self-verify.log"
+       }
+      ]
+     }
+    ],
+    "output_artifact": "docs/plans/2026-06-06-wi-357-model-registry-refresh/manifest.md",
+    "validation_output": "PR #29 squash-merged 796cd108 via review-receipt wrapper; envelope on squash; worktree removed; reconcile ok"
+   },
+   "completed_at": "2026-06-06T20:41:49.533Z"
+  },
+  {
+   "id": 8,
+   "subject": "verify-promotion: G7 post-land verification + WI closeout",
+   "status": "completed",
+   "metadata": {
+    "skill": "verify-promotion"
+   },
+   "skill": "verify-promotion",
+   "skill_receipt": {
+    "skill": "verify-promotion",
+    "loaded_at": "2026-06-06T20:42:56.175Z",
+    "loaded_via": "manual",
+    "output_artifact": ".svc/verify-promotion-ac.log",
+    "validation_output": "G7: AC values verified on promoted main; tier-1 main 193/194 (1 = this integrity check, fixed by this field population); lint PASS",
+    "phases_executed": [
+     {
+      "id": "P1-PromotionEvidence",
+      "ts": "2026-06-06T20:51:49.903Z",
+      "evidence_artifacts": [
+       {
+        "type": "command_output",
+        "path": ".svc/verify-promotion-evidence.log"
+       }
+      ]
+     },
+     {
+      "id": "P2-SpecACVerification",
+      "ts": "2026-06-06T20:51:49.936Z",
+      "evidence_artifacts": [
+       {
+        "type": "command_output",
+        "path": ".svc/verify-promotion-ac.log"
+       }
+      ]
+     },
+     {
+      "id": "P3-RuntimeRegression",
+      "ts": "2026-06-06T20:51:49.969Z",
+      "evidence_artifacts": [
+       {
+        "type": "command_output",
+        "path": ".svc/verify-promotion-tier1.log"
+       }
+      ]
+     },
+     {
+      "id": "P4-StateCloseout",
+      "ts": "2026-06-06T20:51:50.002Z",
+      "evidence_artifacts": [
+       {
+        "type": "file",
+        "path": "docs/specs/work-items/WI-357.md"
+       }
+      ]
+     }
+    ]
+   },
+   "completed_at": "2026-06-06T20:51:50.072Z"
+  },
+  {
+   "id": 9,
+   "subject": "design-tech: SKIPPED \u2014 no architecture/tech-choice surface in registry/docs migration",
+   "status": "skipped",
+   "skip_reason": "Framework config/docs migration (markdown+JSON value refresh). No new components, data models, integrations, or tech choices; resolver contract held invariant and documented in manifest \u00a7Invariants. Skip per framework-lane skip conditions.",
+   "metadata": {
+    "skill": "design-tech"
+   },
+   "skill": "design-tech"
+  }
+ ]
+}

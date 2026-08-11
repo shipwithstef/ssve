@@ -1,0 +1,131 @@
+{
+  "host": "mimo-code",
+  "name": "MiMo Code",
+  "_note": "MiMoCode is a fork of OpenCode (XiaomiMiMo/MiMo-Code) that keeps all core OpenCode capabilities (providers, TUI, LSP, MCP, plugins) and adds persistent memory (MEMORY.md+FTS5), /goal, /dream, /distill, compose mode, Max Mode, on-demand subagents. Config is mimocode.json (NOT opencode.json). Verified against live v0.1.4 install 2026-07-02.",
+  "skills_path": "~/.mimocode/skills",
+  "rules_path": "~/.mimocode/AGENTS.md",
+  "builder_profile_path": "~/.svc/builder-profile.md",
+  "capabilities": {
+    "skills": true,
+    "hooks": true,
+    "plugins": true,
+    "mcp": true,
+    "commands": true,
+    "agents": true
+  },
+  "runtime_ingress_v2": { "transport": "hook-adapter", "fallback": "cli-adapter", "canonical_journal": true, "projection_only": true },
+  "authority_capabilities": {
+    "stable_session_identity": true,
+    "stable_child_identity": true,
+    "identity_source": "session identity plus persisted dispatch child principal",
+    "filesystem_containment": "wrapper",
+    "containment_backend": "landlock",
+    "containment_launcher": "scripts/svc-contained-exec.mjs",
+    "containment_probe_required": true,
+    "mutating_child_execution": false,
+    "reason": "Current plugin is observational and cannot enforce delegated path scope before mutation."
+  },
+  "hook_events": [
+    "session.created",
+    "session.idle",
+    "session.compacted",
+    "tool.execute.before",
+    "tool.execute.after",
+    "shell.env"
+  ],
+  "hook_quirks": {
+    "config_file": "~/.config/mimocode/mimocode.json",
+    "config_format": "json",
+    "plugin_dir_global": "~/.mimocode/plugins/",
+    "plugin_dir_project": ".mimocode/plugins/",
+    "timeout_unit": "ms",
+    "skill_load_mode": "skill_tool",
+    "claude_compat": false,
+    "claude_skills_path": "~/.mimocode/skills/",
+    "rules_mechanism": "instructions_array_and_agents_md",
+    "builtin_tools": [
+      "bash",
+      "edit",
+      "write",
+      "read",
+      "grep",
+      "glob",
+      "lsp",
+      "apply_patch",
+      "skill",
+      "task",
+      "webfetch",
+      "websearch",
+      "memory"
+    ],
+    "builtin_agents": [
+      "build",
+      "plan",
+      "compose",
+      "general",
+      "explore"
+    ],
+    "agent_modes": [
+      "primary",
+      "subagent"
+    ],
+    "plan_agent_restricts_edits": true,
+    "multi_session": true,
+    "undo_redo": true,
+    "image_input": true,
+    "native_features": [
+      "persistent_memory",
+      "goal_stop_condition",
+      "dream_distill",
+      "compose_mode",
+      "max_mode"
+    ]
+  },
+  "task_graph": {
+    "task_ui": "task tool (tree-shaped T1/T1.1)",
+    "background_tasks": true,
+    "skill_load_mode": "skill_tool",
+    "native_task_read_tools": [
+      "task"
+    ]
+  },
+  "infra_files": [
+    "DOCTRINE.md",
+    "REPO_MODES.md",
+    "WORKTREES.md",
+    "EXTERNAL_ADDONS.md",
+    "FRAMEWORK-STATE.md",
+    "skills-manifest.json",
+    "CONTRIBUTING.md"
+  ],
+  "infra_dirs": [
+    "scripts",
+    "references",
+    "proposals",
+    "examples",
+    "hooks",
+    "provision",
+    "agents",
+    "templates",
+    "_shared",
+    "concerns"
+  ],
+  "skip": [],
+  "post_install_commands": [
+    "node {skills_path}/scripts/wire-opencode-hooks.mjs --skills-path {skills_path}"
+  ],
+  "verify_commands": [
+    "test -f {skills_path}/route-workflow/SKILL.md",
+    "test -f {skills_path}/DOCTRINE.md"
+  ],
+  "wiring": {
+    "hook_capable": true,
+    "wirer": "scripts/wire-opencode-hooks.mjs",
+    "wirer_via": "post_install",
+    "governed": false,
+    "governed_token": null,
+    "config_file": "~/.config/mimocode/mimocode.json",
+    "enforcement": "git-pre-commit",
+    "reason": "MiMo-Code is an OpenCode fork with the same plugin model and no command-hook registry; pre-mutation enforcement is via git pre-commit and the plugin is observational — no launcher-routable governed command exists. Declared explicitly (not silently skipped)."
+  }
+}

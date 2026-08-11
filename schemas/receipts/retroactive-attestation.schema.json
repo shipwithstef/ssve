@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "retroactive evidence attestation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["receipt_type", "schema_version", "wi", "target_sha", "tree_hash", "historical_range", "ledger_sha256", "bundle_sha256", "basis_sha256", "basis", "disposition", "evidence", "producer", "reviewer", "review", "verdict", "zero_waivers", "timestamp"],
+  "properties": {
+    "receipt_type": {"const": "retroactive-attestation"},
+    "schema_version": {"const": 1},
+    "wi": {"const": "WI-472"},
+    "target_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "tree_hash": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "historical_range": {"type": "string"},
+    "ledger_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "bundle_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "basis_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "basis": {"type": "object"},
+    "disposition": {"type": "string"},
+    "evidence": {"type": "object", "required": ["subject", "changed_files", "evidence_artifacts", "commit_object_sha256", "patch_sha256"]},
+    "producer": {"type": "object", "required": ["host", "family", "run_id"]},
+    "reviewer": {"type": "object", "required": ["host", "family", "model", "run_id"]},
+    "review": {"type": "object", "required": ["request_id", "package_sha256", "receipt_sha256", "findings_sha256", "row_certification"]},
+    "verdict": {"const": "approved"},
+    "zero_waivers": {"const": true},
+    "timestamp": {"type": "string", "format": "date-time"}
+  }
+}

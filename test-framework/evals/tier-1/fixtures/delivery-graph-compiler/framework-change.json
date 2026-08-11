@@ -1,0 +1,10 @@
+{
+  "wi": "WI-FIXTURE-FRAMEWORK",
+  "user_intent": "Add a framework validator for task graph integrity",
+  "repo_mode": "convert",
+  "change_type": "framework",
+  "lane": "framework",
+  "delivery_mode": "end_to_end",
+  "risk_flags": ["concurrency"],
+  "platform_contracts": []
+}

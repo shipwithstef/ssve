@@ -1,0 +1,5 @@
+{
+  "name": "Acme Corp",
+  "last_verified": "2026-04-01",
+  "features": ["points", "qr-enrollment", "shopify-integration"]
+}

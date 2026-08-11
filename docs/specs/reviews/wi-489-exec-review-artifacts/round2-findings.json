@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "review_kind": "exec",
+  "rubric_score": null,
+  "rubric_failures": null,
+  "dependencies_needing_read": [],
+  "reviewer": {
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5",
+    "effort": "xhigh"
+  },
+  "verdict": "fail",
+  "summary": "The freshness correction is correct, the adapter now fails closed on absent/ambiguous WI discovery, and reachable ancestor notes are checked. Relaxing model/effort self-reports to advisory does not weaken cross-family enforcement because host/family still hard-fail and process-level routing evidence remains authoritative. However, the phase binding is still self-asserted rather than verified, and the durable-note scan remains bypassable after history rewrites. The claimed follow-up hardening WI was not found in the supplied repository state.",
+  "findings": [
+    {
+      "id": "EXEC-005",
+      "severity": "high",
+      "claim": "A caller can still authorize a post-execution plan review by supplying a syntactically valid binding with HEAD as the pre-execution base and an arbitrary WI/hash.",
+      "analysis": "parsePhaseBinding validates only field shape. It never verifies plan_manifest_sha256 against the reviewed plan or a durable plan-manifest receipt, never establishes the WI from authoritative plan state, and never verifies that pre_execution_base is the recorded pre-execution boundary. evaluatePhaseGuard then trusts those values directly. With pre_execution_base=HEAD, the implementation diff is empty; selecting a WI without a matching exec-record makes the guard allow the paid plan review. The sanctioned adapter reduces accidental exposure but the canonical launcher publicly accepts caller-created bindings, and missing bindings remain allowed unless an environment switch is set. Consequently EXEC-004 is only syntactically closed, not semantically closed, and EXTREV-136 through EXTREV-139 are not fully enforced by the launcher.",
+      "evidence": [
+        "scripts/run-external-review.mjs:696-711 validates WI syntax, non-empty base, and a 64-hex hash but performs no content or receipt comparison.",
+        "scripts/run-external-review.mjs:738-771 uses the supplied WI and base directly to decide whether execution began.",
+        "scripts/run-external-review.mjs:1297-1305 permits plan review without any binding unless SVC_EXTERNAL_REVIEW_REQUIRE_PHASE_BINDING=1 is externally set.",
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh defines PLANSHA as an arbitrary SHA-shaped value, so the fixtures prove presence rather than plan-content binding.",
+        "No separately filed hardening WI for independent owner authorization or plan-content recomputation was found under docs/specs/work-items, the WI-489 plan, or pipeline decisions."
+      ],
+      "proposed_fix": "Make phase binding mandatory for every plan review in the canonical launcher. Bind it to durable plan state: recompute the plan hash from an explicitly supplied plan file or canonical package component, derive/verify WI against the plan-manifest receipt, and verify the base against the recorded pre-execution base or a launcher-derived trusted merge base. Treat any mismatch as phase_violation before cache or provider work. If full hardening is intentionally deferred, file and link the concrete follow-up WI and narrow the current ACs to the sanctioned-adapter threat model."
+    },
+    {
+      "id": "EXEC-006",
+      "severity": "high",
+      "claim": "A durable exec-record becomes invisible after its commit is reset, rebased, or otherwise removed from the current base..HEAD ancestry.",
+      "analysis": "The note scan examines only commits returned by base..HEAD and HEAD. Git notes remain present on refs/notes/svc-receipts when a noted execution commit becomes unreachable from the current branch. After resetting HEAD to the pre-execution base, the range is empty, the implementation diff is empty, and only HEAD is inspected; the durable exec-record on the displaced commit is missed and the plan review is allowed. This contradicts the irreversible 'once execute-changeset has begun' rule and EXTREV-137/138's durable-receipt criterion.",
+      "evidence": [
+        "scripts/run-external-review.mjs:661-674 limits note inspection to git log <base>..HEAD plus HEAD.",
+        "The range excludes the base itself and all noted commits no longer reachable from HEAD.",
+        "The added F11 fixture covers a reachable ancestor after a revert, but does not cover reset/rebase where the execution commit leaves current ancestry."
+      ],
+      "proposed_fix": "Enumerate the authoritative notes ref independently of current branch reachability, inspect every consolidated note for a schema-valid exec-record matching the WI, and fail closed on malformed matching evidence. Alternatively maintain a durable WI-to-exec-record index. Add reset and rebase fixtures with no mirror and no remaining implementation divergence."
+    },
+    {
+      "id": "EXEC-007",
+      "severity": "medium",
+      "claim": "The sanctioned adapter can bind the wrong WI when the branch contains exactly one WI different from the plan's primary WI.",
+      "analysis": "Branch-first selection suppresses all plan inspection whenever the branch contains one WI. A stale or reused WI branch can therefore cause the guard to search receipts for the branch WI while reviewing a different plan. The new ambiguity tests cover only branches without a WI; they do not prove branch/plan identity agreement.",
+      "evidence": [
+        "scripts/review-plan-codex.sh:38-49 treats one branch-name WI as authoritative and reads plan candidates only when the branch yields none.",
+        "The adapter happy-path fixture uses a matching WI branch but the plan contains no independently checked primary WI.",
+        "The multi-WI fixture has no WI in its branch, so it does not exercise branch-versus-plan mismatch."
+      ],
+      "proposed_fix": "Parse the plan's explicit primary WI metadata and require it to equal the single branch WI. Ignore dependency references when determining the primary WI. Fail with exit 4 before artifact creation or launcher invocation on mismatch, and add branch-WI-X/plan-primary-WI-Y and branch-WI-X/plan-dependency-WI-Y fixtures."
+    }
+  ],
+  "certifications": [
+    {
+      "key": "phase-override-freshness-window-fixed",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "c17cf00302a66ac7196a0de9e57b251e000dbb0c29a2750b3cbca08fd3cd9fe8"
+    },
+    {
+      "key": "model-effort-advisory-preserves-cross-family-routing",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "c17cf00302a66ac7196a0de9e57b251e000dbb0c29a2750b3cbca08fd3cd9fe8"
+    },
+    {
+      "key": "round-one-phase-guard-findings-fully-closed",
+      "certified": false,
+      "reviewer_family": "openai",
+      "for_content_sha": "c17cf00302a66ac7196a0de9e57b251e000dbb0c29a2750b3cbca08fd3cd9fe8"
+    }
+  ]
+}

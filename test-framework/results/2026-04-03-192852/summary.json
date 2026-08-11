@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-04-03T16:28:52Z",
+  "mode": "full",
+  "passed": 13,
+  "failed": 0,
+  "total": 13,
+  "project": "/home/exploreai/work/svc/examples/todo-api",
+  "runs": 1
+}

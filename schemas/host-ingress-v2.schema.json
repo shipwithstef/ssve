@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seriousvibecoding.dev/schemas/host-ingress-v2.schema.json",
+  "title": "SVC normalized host ingress v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "host", "transport", "run_id", "host_event_id", "canonical_type", "task_id", "observed_at", "principal", "payload", "generation_bindings"],
+  "properties": {
+    "schema_version": { "const": "host-ingress-v2" },
+    "host": { "type": "string", "minLength": 1 },
+    "transport": { "enum": ["hook-adapter", "cli-adapter"] },
+    "run_id": { "type": "string", "minLength": 1 },
+    "host_event_id": { "type": "string", "minLength": 1 },
+    "canonical_type": { "$ref": "runtime-journal-event-v2.schema.json#/properties/type" },
+    "task_id": { "type": ["string", "null"] },
+    "observed_at": { "type": "string", "format": "date-time" },
+    "principal": { "type": "string", "minLength": 1 },
+    "payload": { "type": "object" },
+    "generation_bindings": { "$ref": "execution-task-capsule-v2.schema.json#/$defs/generationBindings" }
+  }
+}

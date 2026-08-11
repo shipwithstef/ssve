@@ -1,0 +1,1278 @@
+{
+  "wi": "WI-481",
+  "lane": "framework",
+  "title": "Dispatch-grade planning package for the Change Impact Triad program",
+  "created": "2026-07-14T10:48:02.000Z",
+  "status": "completed",
+  "execution_boundary": "full_implementation",
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "route-workflow",
+      "status": "completed",
+      "subject": "Normalize and route the five-leaf framework planning package",
+      "metadata": {
+        "skill": "route-workflow",
+        "wi": "WI-481"
+      },
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-07-14T10:48:02.000Z",
+        "loaded_via": "user-invoked",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-07-14T10:50:42.159Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/session-contract.jsonl"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-07-14T10:50:42.323Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-481.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-07-14T10:51:36.606Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/pipeline-decisions.jsonl"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-07-14T10:51:36.607Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/pipeline-decisions.jsonl"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-07-14T10:51:36.608Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-481.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-07-14T10:51:36.609Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/pipeline-decisions.jsonl"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T10:51:36.760Z"
+    },
+    {
+      "id": 2,
+      "skill": "plan-changeset",
+      "status": "completed",
+      "subject": "Author dispatch manifest for WI-485 Codex execution integrity",
+      "metadata": {
+        "skill": "plan-changeset",
+        "wi": "WI-485"
+      },
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-07-14T10:51:36.882Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-07-14T10:59:01.631Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi485-codex-execution-integrity/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-07-14T10:59:01.682Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi485-codex-execution-integrity/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-07-14T10:59:01.732Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi485-codex-execution-integrity/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-07-14T10:59:01.789Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi485-codex-execution-integrity/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-07-14T10:59:01.848Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi485-codex-execution-integrity/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-07-14T10:59:01.911Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi485-codex-execution-integrity/manifest.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T10:59:01.961Z"
+    },
+    {
+      "id": 3,
+      "skill": "plan-changeset",
+      "status": "completed",
+      "subject": "Author dispatch manifest for WI-484 session-worktree binding",
+      "metadata": {
+        "skill": "plan-changeset",
+        "wi": "WI-484"
+      },
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-07-14T10:59:02.078Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-07-14T10:59:02.134Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi484-session-worktree-binding/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-07-14T10:59:02.207Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi484-session-worktree-binding/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-07-14T10:59:02.263Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi484-session-worktree-binding/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-07-14T10:59:02.315Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi484-session-worktree-binding/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-07-14T10:59:02.366Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi484-session-worktree-binding/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-07-14T10:59:02.424Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi484-session-worktree-binding/manifest.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T10:59:02.498Z"
+    },
+    {
+      "id": 4,
+      "skill": "plan-changeset",
+      "status": "completed",
+      "subject": "Author dispatch manifest for WI-482 default-checkout isolation",
+      "metadata": {
+        "skill": "plan-changeset",
+        "wi": "WI-482"
+      },
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-07-14T10:59:02.613Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-07-14T10:59:02.676Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi482-default-checkout-isolation/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-07-14T10:59:02.734Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi482-default-checkout-isolation/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-07-14T10:59:02.796Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi482-default-checkout-isolation/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-07-14T10:59:02.851Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi482-default-checkout-isolation/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-07-14T10:59:02.899Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi482-default-checkout-isolation/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-07-14T10:59:02.955Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi482-default-checkout-isolation/manifest.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T10:59:03.020Z"
+    },
+    {
+      "id": 5,
+      "skill": "plan-changeset",
+      "status": "completed",
+      "subject": "Author dispatch manifest for WI-483 mobile worktree builds",
+      "metadata": {
+        "skill": "plan-changeset",
+        "wi": "WI-483"
+      },
+      "blocked_by": [
+        4
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-07-14T10:59:03.152Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-07-14T10:59:03.206Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi483-mobile-worktree-builds/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-07-14T10:59:03.258Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi483-mobile-worktree-builds/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-07-14T10:59:03.305Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi483-mobile-worktree-builds/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-07-14T10:59:03.354Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi483-mobile-worktree-builds/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-07-14T10:59:03.419Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi483-mobile-worktree-builds/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-07-14T10:59:03.483Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi483-mobile-worktree-builds/manifest.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T10:59:03.542Z"
+    },
+    {
+      "id": 6,
+      "skill": "plan-changeset",
+      "status": "completed",
+      "subject": "Author dispatch manifest for WI-481 Change Impact Triad",
+      "metadata": {
+        "skill": "plan-changeset",
+        "wi": "WI-481"
+      },
+      "blocked_by": [
+        5
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-07-14T10:59:03.681Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-07-14T10:59:03.733Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad-leaf/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-07-14T10:59:03.793Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad-leaf/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-07-14T10:59:03.848Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad-leaf/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-07-14T10:59:03.964Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad-leaf/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-07-14T10:59:04.035Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad-leaf/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-07-14T10:59:04.084Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad-leaf/manifest.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T10:59:04.147Z"
+    },
+    {
+      "id": 7,
+      "skill": "review-plan",
+      "status": "completed",
+      "subject": "Mechanically and adversarially review the complete five-manifest package",
+      "metadata": {
+        "skill": "review-plan",
+        "wi": "WI-481"
+      },
+      "blocked_by": [
+        6
+      ],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-07-14T10:59:04.259Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "output_artifact": "docs/plans/2026-07-14-wi481-change-impact-triad/leaf-package-review-log.yaml",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-07-14T11:01:11.399Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad/leaf-package-review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-07-14T11:01:11.478Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad/leaf-package-review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-07-14T11:01:11.549Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad/leaf-package-review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-07-14T11:01:11.641Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad/leaf-package-review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-07-14T11:01:11.719Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad/leaf-package-review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-14T11:01:11.793Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad/leaf-package-review-log.yaml"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T11:01:11.853Z"
+    },
+    {
+      "id": 8,
+      "skill": "review-cross-model",
+      "status": "completed",
+      "subject": "Obtain fresh Claude Fable package review and converge accepted findings",
+      "metadata": {
+        "skill": "review-cross-model",
+        "wi": "WI-481"
+      },
+      "blocked_by": [
+        7
+      ],
+      "skill_receipt": {
+        "skill": "review-cross-model",
+        "loaded_at": "2026-07-14T11:01:11.985Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "phases_executed": [
+          {
+            "id": "P1-ReviewPackagePreparation",
+            "ts": "2026-07-14T11:32:14.965Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad/fable-leaf-review-round-2.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P2-SecondModelDispatch",
+            "ts": "2026-07-14T11:32:15.013Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad/fable-leaf-review-round-2.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P3-FindingEvaluation",
+            "ts": "2026-07-14T11:32:15.059Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad/fable-leaf-review-round-2.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConvergenceLoop",
+            "ts": "2026-07-14T11:32:15.116Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad/fable-leaf-review-round-2.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewDocumentation",
+            "ts": "2026-07-14T11:32:15.222Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad/fable-leaf-review-round-2.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-14T11:32:15.289Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad/fable-leaf-review-round-2.yaml"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T11:32:15.356Z"
+    },
+    {
+      "id": 9,
+      "skill": "route-workflow",
+      "status": "completed",
+      "subject": "Freeze reviewed planning package and stop before execute-changeset",
+      "metadata": {
+        "skill": "route-workflow",
+        "wi": "WI-481"
+      },
+      "blocked_by": [
+        8
+      ],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-07-14T11:32:15.486Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-07-14T11:32:15.555Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad/PLANNING-FREEZE.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-07-14T11:32:15.622Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad/PLANNING-FREEZE.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-07-14T11:32:15.685Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad/PLANNING-FREEZE.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-07-14T11:32:15.739Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad/PLANNING-FREEZE.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-07-14T11:32:15.796Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad/PLANNING-FREEZE.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-07-14T11:32:15.856Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad/PLANNING-FREEZE.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T11:32:15.912Z"
+    },
+    {
+      "id": 10,
+      "skill": "route-workflow",
+      "status": "completed",
+      "subject": "Route explicit full implementation authorization",
+      "metadata": {
+        "skill": "route-workflow",
+        "wi": "WI-481"
+      },
+      "blocked_by": [
+        9
+      ],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-07-14T11:25:00.000Z",
+        "loaded_via": "user-invoked",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-07-14T11:25:01.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/session-contract.jsonl"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-07-14T11:25:02.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/pipeline-decisions.jsonl"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-07-14T11:25:03.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-481.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-07-14T11:25:04.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "node scripts/scan-concerns.mjs --project . --diff"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-07-14T11:25:05.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad/PLANNING-FREEZE.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-07-14T11:25:06.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/pipeline-decisions.jsonl"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T11:25:07.000Z"
+    },
+    {
+      "id": 11,
+      "skill": "land-changeset",
+      "status": "completed",
+      "subject": "Land frozen docs-only TPLAN planning bundle",
+      "metadata": {
+        "skill": "land-changeset",
+        "wi": "WI-481-TPLAN"
+      },
+      "blocked_by": [
+        10
+      ],
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-07-15T03:16:00.328Z",
+        "loaded_via": "cross-program-reconciliation",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-07-15T03:16:00.966Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad/PLANNING-FREEZE.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-07-15T03:16:01.628Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "planning-bundle-commit-0e6711d2"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-07-15T03:16:02.329Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad/fable-leaf-review-round-2.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P4-PushPrCreation",
+            "ts": "2026-07-15T03:16:03.022Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "https://github.com/s7an-it/seriousvibecoding/pull/128"
+              }
+            ]
+          },
+          {
+            "id": "P5-MergeDecisionCleanup",
+            "ts": "2026-07-15T03:16:03.717Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "merge-commit-9a098a84"
+              }
+            ]
+          },
+          {
+            "id": "P6-SpecStatusSelfVerify",
+            "ts": "2026-07-15T03:16:04.427Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "planning-package-landed-before-leaf-execution"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-15T03:16:05.136Z"
+    },
+    {
+      "id": 12,
+      "skill": "execute-changeset",
+      "status": "completed",
+      "subject": "Execute and promote WI-485 Codex execution integrity",
+      "metadata": {
+        "skill": "execute-changeset",
+        "wi": "WI-485"
+      },
+      "blocked_by": [
+        11
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-07-15T03:16:20.662Z",
+        "loaded_via": "leaf-graph-closeout",
+        "output_artifact": "docs/specs/verification/wi-485-codex-execution-integrity.md",
+        "validation_output": "WI-485 implementation and verification merged in PR 131",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-07-15T03:16:21.291Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "WI-485-frozen-manifest-and-bound-worktree"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-07-15T03:16:22.006Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/verification/wi-485-codex-execution-integrity.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-07-15T03:16:22.651Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/verification/wi-485-codex-execution-integrity.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-07-15T03:16:23.317Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "PR-131-merge-and-runtime-verified"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-15T03:16:24.012Z"
+    },
+    {
+      "id": 13,
+      "skill": "execute-changeset",
+      "status": "completed",
+      "subject": "Execute and promote WI-484 session-worktree binding",
+      "metadata": {
+        "skill": "execute-changeset",
+        "wi": "WI-484"
+      },
+      "blocked_by": [
+        12
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-07-15T03:16:24.889Z",
+        "loaded_via": "leaf-graph-closeout",
+        "output_artifact": "docs/specs/verification/wi-484-session-worktree-binding.md",
+        "validation_output": "WI-484 implementation and verification merged in PRs 133 and 134",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-07-15T03:16:25.601Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "WI-484-frozen-manifest-and-bound-worktree"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-07-15T03:16:26.321Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/verification/wi-484-session-worktree-binding.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-07-15T03:16:27.074Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/verification/wi-484-session-worktree-binding.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-07-15T03:16:27.917Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "PR-133-and-134-implementation-and-verification-merged"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-15T03:16:28.576Z"
+    },
+    {
+      "id": 14,
+      "skill": "execute-changeset",
+      "status": "completed",
+      "subject": "Execute and promote WI-482 default-checkout isolation",
+      "metadata": {
+        "skill": "execute-changeset",
+        "wi": "WI-482"
+      },
+      "blocked_by": [
+        13
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-07-15T03:16:29.190Z",
+        "loaded_via": "leaf-graph-closeout",
+        "output_artifact": "docs/specs/verification/wi-482-default-checkout-isolation.md",
+        "validation_output": "WI-482 implementation and verification merged in PRs 135 and 136",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-07-15T03:16:30.034Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "WI-482-frozen-manifest-and-bound-worktree"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-07-15T03:16:30.946Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/verification/wi-482-default-checkout-isolation.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-07-15T03:16:31.600Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/verification/wi-482-default-checkout-isolation.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-07-15T03:16:32.242Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "PR-135-and-136-implementation-and-verification-merged"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-15T03:16:32.933Z"
+    },
+    {
+      "id": 15,
+      "skill": "execute-changeset",
+      "status": "completed",
+      "subject": "Execute and promote WI-483 mobile worktree builds",
+      "metadata": {
+        "skill": "execute-changeset",
+        "wi": "WI-483"
+      },
+      "blocked_by": [
+        14
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-07-15T03:16:33.689Z",
+        "loaded_via": "leaf-graph-closeout",
+        "output_artifact": "docs/specs/verification/wi-483-mobile-worktree-builds.md",
+        "validation_output": "WI-483 implementation and verification merged in PRs 137 and 138",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-07-15T03:16:34.404Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "WI-483-frozen-manifest-and-bound-worktree"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-07-15T03:16:35.150Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/verification/wi-483-mobile-worktree-builds.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-07-15T03:16:35.842Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/verification/wi-483-mobile-worktree-builds.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-07-15T03:16:36.524Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "PR-137-and-138-implementation-and-verification-merged"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-15T03:16:37.136Z"
+    },
+    {
+      "id": 16,
+      "skill": "execute-changeset",
+      "status": "completed",
+      "subject": "Execute and promote WI-481 change-impact triad",
+      "metadata": {
+        "skill": "execute-changeset",
+        "wi": "WI-481"
+      },
+      "blocked_by": [
+        15
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-07-15T03:16:37.739Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "output_artifact": "docs/specs/audit/wi-481-change-impact-triad-analysis.md",
+        "validation_output": "Fable round 2 APPROVE; Tier 1 243/243; impact 51/51; quick-fix 29/29; envelope 8/8",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-07-15T04:08:06.219Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi481-change-impact-triad-leaf/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-07-15T04:08:06.269Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "references/change-impact-triad.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-07-15T04:08:06.308Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi481-tier1-round3.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-07-15T04:08:06.346Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-481-change-impact-triad-analysis.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-15T04:08:06.396Z"
+    },
+    {
+      "id": 17,
+      "skill": "verify-promotion",
+      "status": "completed",
+      "subject": "Run program-wide verification and closeout",
+      "metadata": {
+        "skill": "verify-promotion",
+        "wi": "WI-481"
+      },
+      "blocked_by": [
+        16
+      ],
+      "skill_receipt": {
+      "skill": "verify-promotion",
+      "loaded_at": "2026-07-15T05:07:28.497Z",
+      "loaded_via": "direct-SKILL.md-read",
+      "output_artifact": "docs/specs/verification/wi-481-change-impact-triad.md",
+      "validation_output": "canonical main Tier 1 243/243 sequential; impact 52/52; quick-fix 29/29; envelope 8/8; all eight hosts drift clean",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-07-15T05:07:28.641Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "origin/main@2c1b1b7a"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-07-15T05:07:28.737Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/verification/wi-481-change-impact-triad.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-07-15T05:07:29.447Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi481-postmerge-tier1-sequential.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-07-15T05:07:30.788Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-481.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-15T05:07:31.124Z"
+    }
+  ]
+}

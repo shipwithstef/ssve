@@ -1,0 +1,72 @@
+{
+  "default_min_score": 7,
+  "estimated_tokens_per_judgment": 20000,
+  "max_judgments": 120,
+  "dimensions": [
+    "completeness",
+    "actionability",
+    "consistency"
+  ],
+  "skills": {
+    "route-workflow": {
+      "completeness": 8,
+      "actionability": 8,
+      "consistency": 7,
+      "artifact_source": "tier-2 scenario route-* output or live .svc/lane-tasks-<WI>.json + routing decision"
+    },
+    "write-spec": {
+      "completeness": 8,
+      "actionability": 8,
+      "consistency": 7,
+      "artifact_source": "docs/specs/features/<name>.md from tier-2 write-spec scenario"
+    },
+    "plan-changeset": {
+      "completeness": 8,
+      "actionability": 9,
+      "consistency": 8,
+      "artifact_source": "docs/plans/<date>-<name>/manifest.md (blueprint precision is the point)"
+    },
+    "execute-changeset": {
+      "completeness": 8,
+      "actionability": 8,
+      "consistency": 8,
+      "artifact_source": "exec-record receipt + checkpoint trail"
+    },
+    "review-gate": {
+      "completeness": 8,
+      "actionability": 8,
+      "consistency": 7,
+      "artifact_source": "review findings artifact from tier-2 review scenario"
+    },
+    "diagnose-bug": {
+      "completeness": 8,
+      "actionability": 8,
+      "consistency": 7
+    },
+    "validate-feature": {
+      "completeness": 8,
+      "actionability": 8,
+      "consistency": 7,
+      "artifact_source": "validation report from tier-2 scenario"
+    },
+    "write-e2e": {
+      "completeness": 8,
+      "actionability": 8,
+      "consistency": 7,
+      "artifact_source": "e2e spec + assertion-strategy section"
+    },
+    "verify-promotion": {
+      "completeness": 8,
+      "actionability": 8,
+      "consistency": 7
+    },
+    "capture-idea": {
+      "completeness": 7,
+      "actionability": 8,
+      "consistency": 7,
+      "artifact_source": "WI doc emitted from proposal fixture"
+    }
+  },
+  "judge_prompt_version": "2026-06-07-pinned",
+  "token_budget_note": "~15K in + 3K out per judgment (~$0.25-0.40); full top-10 x 3 dims ~= 30 judgments ~$8-12 \u2014 run under EVALS=1 only"
+}

@@ -1,0 +1,150 @@
+{
+  "wi": "WI-143",
+  "lane": "framework",
+  "subject": "refresh-competitors skill + raise competitor floor to 30 + analyze-competitors split",
+  "source_proposal": "docs/specs/work-items/WI-143.md",
+  "created": "2026-05-04",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "write-spec",
+      "subject": "write-spec: formal feature spec for WI-143",
+      "status": "completed",
+      "blocked_by": [],
+      "completed_at": "2026-05-04T15:15:00Z",
+      "skill_receipt": {
+        "skill": "write-spec",
+        "loaded_at": "2026-05-04T15:10:00Z",
+        "loaded_via": "manual",
+        "output_artifact": "docs/specs/features/refresh-competitors.md"
+      }
+    },
+    {
+      "id": 2,
+      "skill": "design-tech",
+      "subject": "design-tech: architecture for refresh-competitors skill + scheduled routine + floor raise",
+      "status": "completed",
+      "blocked_by": [1],
+      "completed_at": "2026-05-04T15:20:00Z",
+      "skill_receipt": {
+        "skill": "design-tech",
+        "loaded_at": "2026-05-04T15:15:00Z",
+        "loaded_via": "manual",
+        "output_artifact": "docs/specs/features/refresh-competitors.md § Technical Design"
+      }
+    },
+    {
+      "id": 3,
+      "skill": "plan-changeset",
+      "subject": "plan-changeset: task graph + manifest for refresh skill + routine + floor validator + SKILL.md edits",
+      "status": "completed",
+      "blocked_by": [2],
+      "completed_at": "2026-05-04T15:25:00Z",
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-05-04T15:20:00Z",
+        "loaded_via": "manual",
+        "output_artifact": "docs/specs/plans/WI-143-refresh-competitors.md"
+      }
+    },
+    {
+      "id": 4,
+      "skill": "review-security",
+      "subject": "review-security: skip — no auth/payments/PII surface; external integration is read-only WebSearch",
+      "status": "completed",
+      "blocked_by": [3],
+      "skip_reason": "Read-only WebSearch queries to public competitor homepages/pricing pages. No user data, no auth, no payment flow, no secrets.",
+      "completed_at": "2026-05-04T15:25:00Z",
+      "skill_receipt": {
+        "skill": "review-security",
+        "loaded_at": "2026-05-04T15:25:00Z",
+        "loaded_via": "manual"
+      }
+    },
+    {
+      "id": 5,
+      "skill": "review-plan",
+      "subject": "review-plan: adversarial review of plan before execute",
+      "status": "completed",
+      "blocked_by": [3],
+      "completed_at": "2026-05-04T15:25:00Z",
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-05-04T15:25:00Z",
+        "loaded_via": "manual",
+        "validation_output": "Plan reviewed: bounded surface (7 tasks, ~440 LOC), clear AC mapping, five-file sync checkpoint, floor validator self-test. No blocking concerns."
+      }
+    },
+    {
+      "id": 6,
+      "skill": "execute-changeset",
+      "subject": "execute-changeset: implement refresh-competitors + scheduled routine + floor validator",
+      "status": "completed",
+      "blocked_by": [5],
+      "completed_at": "2026-05-04T15:40:00Z",
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-05-04T15:25:00Z",
+        "loaded_via": "manual",
+        "output_artifact": "worktree wi-143-refresh-competitors: 9 files, +379/-12 lines, commit 6dfc7ee"
+      }
+    },
+    {
+      "id": 7,
+      "skill": "audit-implementation",
+      "subject": "audit-implementation: data model changes (changelog.jsonl schema) + external integration (WebSearch) — must run",
+      "status": "completed",
+      "blocked_by": [6],
+      "completed_at": "2026-05-04T15:42:00Z",
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-05-04T15:40:00Z",
+        "loaded_via": "manual",
+        "validation_output": "Lightweight audit (5 min): Scope matches manifest (9 files, 7 tasks). AC coverage: 15/15 ACs traced to files. No web-fetch in gate code. changelog.jsonl schema documented. Tier-1 validators all pass. No blocking issues."
+      }
+    },
+    {
+      "id": 8,
+      "skill": "review-gate",
+      "subject": "review-gate: G5 multi-tier review",
+      "status": "completed",
+      "blocked_by": [7],
+      "completed_at": "2026-05-04T15:42:00Z",
+      "skill_receipt": {
+        "skill": "review-gate",
+        "loaded_at": "2026-05-04T15:42:00Z",
+        "loaded_via": "manual",
+        "validation_output": "G5 review: 0 critical/high findings. 2 LOW: (1) migration advisory should mention how to re-run after adding competitors, (2) scheduled-routines.md could include cron syntax example. Both non-blocking. APPROVE."
+      }
+    },
+    {
+      "id": 9,
+      "skill": "land-changeset",
+      "subject": "land-changeset: promote worktree branch + squash-merge",
+      "status": "completed",
+      "blocked_by": [8],
+      "completed_at": "2026-05-04T15:45:00Z",
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-05-04T15:42:00Z",
+        "loaded_via": "manual",
+        "output_artifact": "PR #60 squash-merged to main (2881fa7)"
+      }
+    },
+    {
+      "id": 10,
+      "skill": "verify-promotion",
+      "subject": "verify-promotion: post-merge verification on main",
+      "status": "completed",
+      "blocked_by": [9],
+      "completed_at": "2026-05-04T15:50:00Z",
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-05-04T15:45:00Z",
+        "loaded_via": "manual",
+        "validation_output": "Post-merge verification: all 4 tier-1 validators PASS (skill-structure 829/829, chain-references 249/249, skip-conditions 19/19, competitor-floor 1/1). PR #60 merged as 2881fa7. 9 files on main."
+      }
+    }
+  ]
+}

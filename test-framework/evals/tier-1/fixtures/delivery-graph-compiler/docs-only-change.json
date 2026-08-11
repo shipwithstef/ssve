@@ -1,0 +1,10 @@
+{
+  "wi": "WI-FIXTURE-DOCS",
+  "user_intent": "Clarify README wording without changing runtime behavior",
+  "repo_mode": "convert",
+  "change_type": "docs",
+  "lane": "refactor",
+  "delivery_mode": "interactive",
+  "risk_flags": ["docs-only"],
+  "platform_contracts": []
+}

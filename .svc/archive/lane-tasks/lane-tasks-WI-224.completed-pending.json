@@ -1,0 +1,39 @@
+{
+  "wi": "WI-224",
+  "lane": "framework",
+  "created": "2026-05-10T16:21:38.590Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Migrate analyze-domain skill contract",
+      "status": "completed",
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T16:21:52.205Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T16:25:36.203Z"
+    },
+    {
+      "id": 2,
+      "subject": "Validate and close WI-224",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T16:25:36.274Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T16:25:36.309Z"
+    }
+  ]
+}

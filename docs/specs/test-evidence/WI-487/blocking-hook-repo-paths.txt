@@ -1,0 +1,14 @@
+hooks/codex/svc-codex-prompt-authority.mjs
+hooks/codex/svc-codex-skill-load-enforcer.mjs
+hooks/codex/svc-codex-stop-firewall.mjs
+hooks/svc-inertia-check.mjs
+hooks/svc-lane-tasks-validator.mjs
+hooks/svc-session-contract-freshness.mjs
+hooks/svc-skill-artifact-authenticity.mjs
+hooks/svc-stop-quality.js
+hooks/svc-task-completion-guard.sh
+hooks/svc-verification-delegation-guard.sh
+hooks/svc-wi-pillars-check.sh
+hooks/svc-workflow-guard.mjs
+scripts/eval-gate.mjs
+scripts/preflight.mjs

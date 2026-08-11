@@ -1,0 +1,1 @@
+I want to add a tagging system to my todo app so users can categorize their tasks. Users should be able to create tags, assign them to todos, and filter by tag. Before we build it, can you help me figure out if this is the right feature to prioritize and what the scope should be?

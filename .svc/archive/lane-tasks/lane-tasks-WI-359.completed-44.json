@@ -1,0 +1,530 @@
+{
+  "wi": "WI-359",
+  "lane": "framework",
+  "status": "completed",
+  "created": "2026-06-07T03:11:17Z",
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "route-workflow",
+      "status": "completed",
+      "subject": "Route WI-359 (framework lane, full chain)",
+      "metadata": {
+        "skill": "route-workflow",
+        "description": "Invoke: /route-workflow — lane selection, graph init, concern gate, dispatch"
+      },
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-06-07T03:12:16.020Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-06-07T03:12:16.083Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-session-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-06-07T03:12:16.160Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-intent.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-06-07T03:12:16.218Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-concern-gate.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-06-07T03:12:16.275Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-self-verify.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-06-07T03:12:16.343Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-359.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-06-07T03:12:16.404Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-359.json"
+              }
+            ]
+          }
+        ],
+        "output_artifact": ".svc/lane-tasks-WI-359.json",
+        "validation_output": "routed: framework lane, 9-task graph, claim written, concerns none, design-tech skip logged, dispatch -> plan-changeset (task 2)"
+      },
+      "completed_at": "2026-06-07T03:12:16.514Z"
+    },
+    {
+      "id": 2,
+      "skill": "plan-changeset",
+      "status": "completed",
+      "subject": "Plan: wire-hooks dedup key (basename+sorted-flags) + live settings cleanup + async observational hooks + latency validator",
+      "metadata": {
+        "skill": "plan-changeset",
+        "description": "Invoke: /plan-changeset — Incremental extension; GROUND FIRST per reinvention-detection: read current wire-hooks.mjs dedup state + existing validate-settings-no-duplicate-hooks.sh; fixture-first guardrail (capture live duplicated settings.json BEFORE cleanup); host-capability-research gate: verify async/asyncRewake per-event against live docs + empirical probe (PostToolUse/Stop only, NEVER PreToolUse); timestamped backup + restore one-liner; 3 svc-workflow-guard variants MUST survive, svc-loop-guard pair MUST collapse; idempotency = second run no-op; counts asserted vs hooks/hooks.json; latency validator w/ 5-field promotion note, hermetic <5s"
+      },
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-06-07T03:12:16.643Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-06-07T03:27:43.811Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-archetype.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-06-07T03:27:43.849Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-scope.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-06-07T03:27:43.887Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-07-wi-359-wire-hooks-dedup/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-06-07T03:27:43.921Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-simulation.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-06-07T03:27:43.959Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-adversarial.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-06-07T03:27:43.995Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-self-verify.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-06-07-wi-359-wire-hooks-dedup/manifest.md",
+        "validation_output": "SIMULATED 11/11; adversarial 10/10; mechanical exit 0; 14-assertion validator blueprint; async docs-verified via claude-code-guide; live-rewire procedure with backup+restore"
+      },
+      "completed_at": "2026-06-07T03:27:44.103Z"
+    },
+    {
+      "id": 3,
+      "skill": "review-plan",
+      "status": "completed",
+      "subject": "G2 adversarial plan review (codex primary, gemini tier-3 — infra path)",
+      "metadata": {
+        "skill": "review-plan",
+        "description": "Invoke: /review-plan — 3-tier; machine-state mutation focus (global settings.json)"
+      },
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-06-07T03:27:44.179Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-06-07T03:44:19.767Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/plan-tier1.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-06-07T03:44:19.802Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/plan-external-state-check.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-06-07T03:44:19.834Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "/tmp/wi359-tier2.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-06-07T03:44:19.866Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "/tmp/wi359-tier3-out.txt"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-06-07T03:44:19.899Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-07-wi-359-wire-hooks-dedup/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-06-07T03:44:19.933Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-plan-self-verify.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-06-07-wi-359-wire-hooks-dedup/review-log.yaml",
+        "validation_output": "APPROVED_ALL_TIERS: codex 8 findings processed (7 fixed, 1 rejected-cited); codex r2 output corrupted -> gemini tie-break confirmed-fixed x2; gemini T3 caught CRITICAL user-hook basename collision + assertion scope — fixed; 16-assertion validator"
+      },
+      "completed_at": "2026-06-07T03:44:20.010Z"
+    },
+    {
+      "id": 4,
+      "skill": "execute-changeset",
+      "status": "completed",
+      "subject": "Execute in worktree (TDD: fixture RED first)",
+      "metadata": {
+        "skill": "execute-changeset",
+        "description": "Invoke: /execute-changeset — worktree feature-wi-359-wire-hooks-dedup; fixture+validator RED before script changes; backup before live rewire"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-06-07T03:44:20.074Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-06-07T03:56:23.051Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-preflight.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-06-07T03:56:23.085Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-apply.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-06-07T03:56:23.119Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-verification.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-06-07T03:56:23.152Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-checkpoint.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": ".worktrees/feature-wi-359-wire-hooks-dedup (4 files @ 0efea643) + live ~/.claude/settings.json rewired",
+        "validation_output": "RED c3399774 (9-fail) -> GREEN 0efea643 (16/16); 3e async-adoption gap found+fixed at GREEN; live rewire: loop-guard 2->1, tokens 6->0, async 0->3, trio intact, backup+restore proven; suite 196/196; lint 0; diff EXACT-4"
+      },
+      "completed_at": "2026-06-07T03:56:23.227Z"
+    },
+    {
+      "id": 5,
+      "skill": "review-exec",
+      "status": "completed",
+      "subject": "G6 cross-model exec review (codex)",
+      "metadata": {
+        "skill": "review-exec",
+        "description": "Invoke: /review-exec — diff + live-settings before/after evidence"
+      },
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-06-07T03:56:23.290Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-06-07T04:08:48.465Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-exec-selfreview.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "/tmp/wi359-g6-out.txt + r2 + r3 (codex G6 rounds 1-3)",
+        "validation_output": "G6 codex 3 rounds: EXEC-001 v2-accounting (incl. round-2 early-exit catch, verified+fixed), EXEC-002 token-level canonicalizer; round-3 approve. 18/18 validator; checkpoints c3399774 -> 0efea643 -> 3f4d0b13"
+      },
+      "completed_at": "2026-06-07T04:08:48.534Z"
+    },
+    {
+      "id": 6,
+      "skill": "audit-implementation",
+      "status": "completed",
+      "subject": "Audit implementation",
+      "metadata": {
+        "skill": "audit-implementation",
+        "description": "Invoke: /audit-implementation — mode per orchestrator (machine-state WI: check rollback evidence)"
+      },
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-06-07T04:08:48.602Z",
+        "loaded_via": "manual",
+        "output_artifact": ".svc/receipts (audit receipt at landing) + pipeline-decisions entry",
+        "validation_output": "mode=light: scope EXACT-4; residue 0; concerns none; suite 196/196 post-amend; live rewire assertions green (loop-guard 1, trio 3, async 3, tokens 0) — READY TO LAND"
+      },
+      "completed_at": "2026-06-07T04:12:53.327Z"
+    },
+    {
+      "id": 7,
+      "skill": "land-changeset",
+      "status": "completed",
+      "subject": "Land via PR (single enveloped landing commit)",
+      "metadata": {
+        "skill": "land-changeset",
+        "description": "Invoke: /land-changeset — gate will live-fire on hot range (scripts/ + hooks/ + tier-1)"
+      },
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-06-07T04:12:53.404Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-06-07T04:22:03.383Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-P1-WorktreeManifestContext.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-06-07T04:22:03.422Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-P2-DiffTaskCompletionAudit.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-06-07T04:22:03.456Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-P3-FinalValidationCoverageAudit.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-PushPrCreation",
+            "ts": "2026-06-07T04:22:03.492Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-P4-PushPrCreation.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-MergeDecisionCleanup",
+            "ts": "2026-06-07T04:22:03.524Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-P5-MergeDecisionCleanup.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SpecStatusSelfVerify",
+            "ts": "2026-06-07T04:22:03.560Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-P6-SpecStatusSelfVerify.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "PR #31 -> squash 1ea052e3 on main",
+        "validation_output": "gated push PASS (WI-358 gate fire #2, sanitized env, refs intact); merged via wrapper; envelope on landing+squash; notes synced; cleanup complete"
+      },
+      "completed_at": "2026-06-07T04:22:03.653Z"
+    },
+    {
+      "id": 8,
+      "skill": "verify-promotion",
+      "status": "completed",
+      "subject": "Verify promotion (G7) + live post-wire session evidence",
+      "metadata": {
+        "skill": "verify-promotion",
+        "description": "Invoke: /verify-promotion — post-wire guard-fire proof (rollback criterion: any guard that should fire doesn't -> restore backup)"
+      },
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-06-07T04:22:03.720Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-06-07T04:27:35.421Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-P1-PromotionEvidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-06-07T04:27:35.455Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-P2-SpecACVerification.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-06-07T04:27:35.487Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-P3-RuntimeRegression.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-06-07T04:27:35.521Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-P4-StateCloseout.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/specs/work-items/WI-359.md (VERIFIED) + docs/specs/reviews/wi-359-wire-hooks-cross-model.md",
+        "validation_output": "G7 PASS: 7/7 ACs; post-merge 196/196; live machine-state assertions green; async activation = documented next-session V2-limit w/ proven restore path; VERIFIED"
+      },
+      "completed_at": "2026-06-07T04:27:35.582Z"
+    },
+    {
+      "id": 9,
+      "skill": "design-tech",
+      "status": "skipped",
+      "subject": "design-tech",
+      "metadata": {
+        "skill": "design-tech",
+        "description": "Skipped: design pre-baked in WI-359 guardrails (7 mandatory items from pressure-test §3) + dedup-key spec given; no new architecture surface",
+        "skip_reason": "design decisions pre-specified in WI guardrails + docs/analysis/plan-pressure-test-2026-06-06.md §3; same registry-backed class as WI-357/358"
+      },
+      "skip_reason": "design decisions pre-specified in WI guardrails + docs/analysis/plan-pressure-test-2026-06-06.md §3; same registry-backed class as WI-357/358"
+    }
+  ],
+  "delivery_graph": {
+    "tier": "end_to_end",
+    "autorun": true,
+    "source": "route-workflow WI-359",
+    "closeout_classification": "framework-complete",
+    "closeout_classification_reasons": [
+      "delivery_tier=undeclared",
+      "all evidence families and required tasks are closed"
+    ],
+    "closeout_delivery_tier": "undeclared",
+    "mutation_history": [
+      {
+        "ts": "2026-06-07T04:27:35.644Z",
+        "source": "classify-delivery-graph-closeout",
+        "action": "close_as_framework_complete",
+        "reason": "delivery_tier=undeclared; all evidence families and required tasks are closed",
+        "affected_tasks": [],
+        "affected_evidence_families": [],
+        "validator_proof": "scripts/classify-delivery-graph-closeout.mjs --write"
+      }
+    ]
+  }
+}

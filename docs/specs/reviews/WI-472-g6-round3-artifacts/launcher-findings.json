@@ -1,0 +1,564 @@
+{
+  "schema_version": 1,
+  "review_kind": "exec",
+  "rubric_score": 7,
+  "rubric_failures": null,
+  "dependencies_needing_read": [
+    "scripts/lib/cognitive-family.mjs (familyOf used by validateRetroactiveAttestation \u2014 cross-family derivation not re-verifiable from the diff)",
+    "scripts/state-io.mjs (writeJsonAtomic \u2014 atomic-write + fsync guarantees relied on by drive-outcome and checkpoint writes)",
+    "scripts/run-external-review.mjs launcher receipt schema (package_context.base_package_sha256, effective_tuple, artifacts.findings \u2014 bound by --record-review but not shown)",
+    ".svc/external-review-artifacts/wi472-exec-round2/receipt.json and findings.json (untracked artifacts the review file's provenance depends on)"
+  ],
+  "reviewer": {
+    "host": "claude",
+    "family": "anthropic",
+    "model": "claude-opus-4-8",
+    "effort": "high"
+  },
+  "verdict": "pass-with-findings",
+  "summary": "G6 round 3 (FINAL) exec-review of WI-472 deterministic bounded reconcile. All ten audit-blocker fixes verified against the staged diff: the round-1 CRITICAL forged-attestation path is genuinely closed (checker re-derives commit-object/normalized-patch/tree/basis hashes from git, enforces the frozen 78-SHA allowlist and historical range, checks the exact row-certification key, and re-derives cross-family identity); shell-injection is closed via execFileSync argument arrays with a negative injection test; git-log timeout returns structured discovery-failed evidence and blocks checkpoint advance; watcher advancement fails closed across gh-unavailable/running/missing/timeout/error states; detached-drive generation race and terminal-success reuse are covered by deterministic tests; rollback uses CAS update-ref against a write-once backup ref. No unresolved Critical and no High. Residual findings are MEDIUM/LOW trust-boundary and portability notes. Because launcher artifacts are untracked, hash re-derivation could not be executed here; certification of the 78 rows rests on internal consistency of the provided basis package and is re-bound mechanically at apply. Emitting 78 positive backlog certifications (reviewer_family anthropic, for_content_sha = basis_sha256). Verdict: pass-with-findings; the change may proceed to apply/audit/land.",
+  "findings": [
+    {
+      "id": "WI472-R3-01",
+      "severity": "medium",
+      "claim": "The 'independent review occurred' property is anchored only to the tracked wi-472-backlog-review.json, not to any artifact the checker can independently re-verify after landing.",
+      "analysis": "validateRetroactiveAttestation reads docs/specs/reviews/wi-472-backlog-review.json from the checker's own repo root and compares embedded identity strings (request_id, package_sha256, receipt_sha256, findings_sha256) against the review file's reviewer block. It never reads the launcher receipt/findings themselves \u2014 those live under .svc/external-review-artifacts/ which is gitignored and absent on a fresh clone. Therefore the checker cannot distinguish a genuinely record-review-produced review file from a hand-authored one with self-consistent hash strings. Blast radius is bounded to the 78 frozen historical SHAs (target_sha allowlist), and the review file lands inside the chain-reviewed diff with G6 as the gate, so this is a documented trust boundary rather than an open forge. But the 'cross-family independent review' guarantee is only as strong as trust in whoever committed the review file.",
+      "evidence": [
+        "scripts/check-chain-receipts.mjs validateRetroactiveAttestation reads review from join(root, 'docs/specs/reviews/wi-472-backlog-review.json') and only string-compares receipt.review.* to review.reviewer.*",
+        "review.reviewer.receipt path '.svc/external-review-artifacts/wi472-exec-round2/receipt.json' is untracked and unreachable on fresh checkout",
+        "RC-10 fresh-worktree parity passes precisely because the checker trusts tracked files only"
+      ],
+      "proposed_fix": "Commit a tracked, minimal provenance anchor for the backlog review (e.g., the launcher receipt+findings hashes already present PLUS a copy of the receipt/findings under a tracked path), and have validateRetroactiveAttestation hash-verify that tracked artifact so the independent-review claim is re-verifiable post-landing. Alternatively, explicitly document in references/chain-receipt-contract.md that retroactive-attestation authority terminates at the landed review file."
+    },
+    {
+      "id": "WI472-R3-02",
+      "severity": "medium",
+      "claim": "--apply's validateReview does not re-bind the 78 review rows to launcher findings; the certification->basis binding is enforced only at --record-review time.",
+      "analysis": "validateReview in reconcile-receipt-backlog.mjs checks each row is approve, disposition matches the bundle, evidence_checked includes basis_sha256, and that review.reviewer.receipt/findings files hash to the recorded values. It does NOT re-parse the launcher findings to confirm a positive certification with for_content_sha === basis_sha256 exists per row \u2014 that check lives only in the --record-review generator. So apply trusts the review rows as authored. Combined with WI472-R3-01, the launcher-certification -> review-row transformation is validated once at generation and never again. If a review.json is produced by any path other than --record-review, apply still accepts it as long as the row shape and recorded file hashes are self-consistent.",
+      "evidence": [
+        "reconcile-receipt-backlog.mjs validateReview verifies sha256(readFileSync(review.reviewer.receipt)) === review.reviewer.receipt_sha256 but does not iterate certifications",
+        "the 78-certification / for_content_sha === basis_sha256 binding appears only in the --record-review branch",
+        "checker WI472-R3-01 also does not read the launcher findings"
+      ],
+      "proposed_fix": "Have --apply re-run the same certification-binding validation as --record-review (re-open the launcher findings and assert 78 certified rows bound to the current bundle bases), or persist a signed provenance marker that --apply verifies, so the independent-certification invariant is enforced at mutation time, not only at review generation."
+    },
+    {
+      "id": "WI472-R3-03",
+      "severity": "low",
+      "claim": "finalizeDriveOutcome has a TOCTOU window where a stale child that outlives STALE_DRIVE_LOCK_MS could unlink a freshly reclaimed lock.",
+      "analysis": "finalizeDriveOutcome calls ownsDriveLock (reads lock file, compares generation) then writeJsonAtomic(outcome) then unlinkSync(lock). If a stale child reads the lock and passes ownsDriveLock, and reclamation (which deletes the lock and creates a new O_EXCL lock for a new generation) races in between the read and the unlink, the stale child can write its outcome and unlink the NEW owner's lock. The deterministic golden test proves the common case (stale generation cannot clobber after reclamation) but requires the stale child to be dead; the survive-past-30min-and-write race is not covered. Impact is low: it requires a child alive beyond STALE_DRIVE_LOCK_MS (30 min) and a precise interleave, and worst case is a spurious re-schedule, not a false watcher advance (watcher still requires a valid terminal-success outcome for the current generation).",
+      "evidence": [
+        "scripts/lib/reconcile-core.mjs finalizeDriveOutcome: ownsDriveLock -> writeJsonAtomic -> unlinkSync sequence is not atomic",
+        "scheduleDetachedDrive reclamation path unlinks then re-opens O_EXCL with a new generation",
+        "golden test covers stale-generation-cannot-clobber but not survive-and-write interleave"
+      ],
+      "proposed_fix": "Make the unlink conditional on re-reading the lock's generation immediately before unlinkSync (re-check ownsDriveLock inside the same guarded step), or unlink only the specific lock content the caller owns via an atomic rename-then-check; add a test that reclaims the lock between ownsDriveLock and the unlink."
+    },
+    {
+      "id": "WI472-R3-04",
+      "severity": "low",
+      "claim": "Commit/patch evidence hashing normalizes only the git diff index line; git version/config differences could break RC-10 fresh-worktree parity across environments.",
+      "analysis": "Both the checker and reconcile-receipt-backlog.mjs compute patch_sha256 as sha256 of `git diff --binary --no-ext-diff parent sha` with only `/^index [0-9a-f]+\\.\\.[0-9a-f]+.*$/` rewritten. git diff rendering can vary with git version, diff.noprefix, core.autocrlf, rename detection defaults, and binary hunk encoding. On the current machine all five golden states and the legacy-binary comparison pass, but a checkout on a materially different git configuration could recompute a different patch_sha256 and turn a valid attestation into 'commit/patch evidence hash mismatch', reopening the backlog. This is a portability risk to the RC-10 durability claim, not a correctness hole today.",
+      "evidence": [
+        "scripts/check-chain-receipts.mjs validateRetroactiveAttestation patch normalization only rewrites the index line",
+        "reconcile-receipt-backlog.mjs normalizedPatch uses the identical single-line normalization",
+        "RC-10 asserts default-checkout and fresh-worktree return identical zero sets"
+      ],
+      "proposed_fix": "Pin the diff-generation environment (explicit -c core.autocrlf=false -c diff.noprefix=false -c diff.renames=false and a documented minimum git version) when computing and validating patch hashes, or hash the commit tree/object identities (already stable git object IDs) rather than rendered diff text."
+    },
+    {
+      "id": "WI472-R3-05",
+      "severity": "info",
+      "claim": "The staged wi-472-backlog-review.json is a round-2 artifact (request_id 8f606d84) and must be regenerated from THIS round-3 certifications before apply.",
+      "analysis": "The request states round-2 apply was rolled back and final apply is blocked until this round's success receipt and findings are package-bound and materialized. The committed review file and WI-472-g6-round2.json both carry request_id 8f606d84 (round 2). Because every retroactive-attestation embeds review.reviewer.request_id/package_sha256/receipt_sha256/findings_sha256 and the checker asserts equality, the review file and all 78 attestations must be re-derived from the round-3 launcher receipt+findings (via --record-review then --apply) so the landed review identity matches the round-3 invocation. The --apply path does regenerate attestations from the current review via attestationFor, so this is self-consistent IF record-review is re-run with the round-3 artifacts first. Flagging to ensure the round-2 review file is not applied as-is.",
+      "evidence": [
+        "docs/specs/reviews/WI-472-g6-round2.json request_id 8f606d84-83b7-40f4-ad7b-bb2d83f5cd6e",
+        "docs/specs/reviews/wi-472-backlog-review.json reviewer.request_id 8f606d84-...",
+        "request text: 'Final apply is mechanically blocked until this round's success receipt and findings are package-bound and materialized'"
+      ],
+      "proposed_fix": "Before --apply, run --record-review against the round-3 launcher receipt and findings to regenerate wi-472-backlog-review.json (new request_id/reviewed_at/hashes), then --apply which re-derives all 78 attestations from it; confirm the committed review file's request_id matches the round-3 review, not 8f606d84."
+    },
+    {
+      "id": "WI472-R3-06",
+      "severity": "info",
+      "claim": "The independent backlog review is the same launcher invocation as the G6 exec review, so one reviewer invocation both certifies the diff and all 78 rows.",
+      "analysis": "review.reviewer.run_id/request_id equals the G6 exec-review request_id. This satisfies the mechanical independence rule (producer codex/openai run 019f8237 differs from reviewer claude/anthropic run 8f606d84 in both family and run_id), which the validator enforces. It is nonetheless a coupling: a single adversarial invocation is the authority for both the code change and the 78 historical accountings. The plan explicitly assigns the review artifact to task-8's canonical review and the coupling is disclosed, so this is acceptable-with-note, not a defect.",
+      "evidence": [
+        "reconcile-receipt-backlog.mjs validateReview enforces producer.run_id !== reviewer.run_id and producer.family !== reviewer.family",
+        "wi-472-backlog-review.json reviewer run_id 8f606d84 == G6 exec-review request_id",
+        "manifest 4.3 requires reviewer principal and review-exec run to differ from producer"
+      ],
+      "proposed_fix": "No change required for this WI. Optionally, for future retroactive-recovery WIs, source the backlog-row certification from a review invocation distinct from the diff exec-review to decouple the two authorities."
+    }
+  ],
+  "certifications": [
+    {
+      "key": "wi472-backlog-85b5b965b28667e0b8f16501c50446cb9f3ca73b",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "263bf86323ba4c321e4cb29c57ecc517908f7f0471487c2e91e109eb2f83789a"
+    },
+    {
+      "key": "wi472-backlog-f6804b78dc9cedb2e744961033d000a746754438",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "0084819df3d5f80c15da25058a39a4f36f66d095b0e1b8cba8c0406a523ce34b"
+    },
+    {
+      "key": "wi472-backlog-a72813415bd7aff0578d10da33aff866b9c500ec",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "1a2128d9d77ff1b69a91b06b315b3dfe974cb707aa69b105b17d2b1b971e3002"
+    },
+    {
+      "key": "wi472-backlog-835e365a1ee2b408bcfbb8eae49500d8f0270f4b",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "2d0c60ad579b2c4df7a1720f686f11d66080e6bddf17213261cdd1c990257fdb"
+    },
+    {
+      "key": "wi472-backlog-0a64c07fa20e8ea571521c9d20fd57278c8f9fcc",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "f4e4f2be6eea09aee07ccad786f808e4c0795ec998e162524ce0512c306254d8"
+    },
+    {
+      "key": "wi472-backlog-e8285fe7980ea73e67be0711b1aae88853ec519e",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "080d24176d3269f4acd9607603698847d2fec590bbd1f1428ddbce84ca4c458d"
+    },
+    {
+      "key": "wi472-backlog-4d230174c0e1bda200c6bb820f18fbe88cc97aac",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "817af742c4c0c2a1781db048f32b83c23cf20b4d7363256a143d1757a99403e7"
+    },
+    {
+      "key": "wi472-backlog-67e325fd3ee0bddb4504a783fe0b8d227a46deff",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "ea0896fbb89549603fbd415e7f37987ca765c011e4d9d275f9d60dc68f80caba"
+    },
+    {
+      "key": "wi472-backlog-4ae39183bb62b3222faafcf43df2a162d182db3c",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "804f2916903ceb5cff29b44efe8f2eab150aa41995dac463a4116f5b5dd67c0b"
+    },
+    {
+      "key": "wi472-backlog-15cf1bd3ae505847d9b2241be94ab504798011c2",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "39abec1c587eedae8247fdd06f90c355a55e34b9fab378d62fc5c8b1fec90d64"
+    },
+    {
+      "key": "wi472-backlog-2c1b1b7a53ea22ef45b3ac9c0cb694eb74ea88a9",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "949b8301a5350c7b839beef1e9f032d1fb04b0415284cad2faf623143bb4bb0d"
+    },
+    {
+      "key": "wi472-backlog-1a552b8c815a17675f8073af74058dc5de9917bc",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "10731d674a440a35218cb466a4739b9231a6e1e1234770906726c069a068b7d0"
+    },
+    {
+      "key": "wi472-backlog-6755c8afa2df6a61d9263df073ce4bd458e63ef3",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "51e885f4189353fc5b7a5dfa0924ba073846c5366be1172de11e3dad51dcba61"
+    },
+    {
+      "key": "wi472-backlog-9c2c7b66ac4544a07193c73d71e8d728552f5300",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "6c603d3e24b877bd0648e076d6900fdee157d2d77b48ddc558a6035dc70fea41"
+    },
+    {
+      "key": "wi472-backlog-0ebe2efd7d0b13131e1fab2d01ff639caec54427",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "2b69cf18e6d407db2a358e899cb475b8bb5d94349a9304013b8f6d18e3d4314d"
+    },
+    {
+      "key": "wi472-backlog-b095ca4b988064559cc7a201577ea896ce5e7f7b",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "2b45cfbb08b503d11f60aedf6ffc6de45277d9f1f307764c8732b9bc2a70e0fe"
+    },
+    {
+      "key": "wi472-backlog-af4e43a4b6d63d64fa81ab81b3e27558a6c8dde7",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "92665f1189ae4f9ba871048d9bc8db49a0b04f044c0dcf261384c9cace48924f"
+    },
+    {
+      "key": "wi472-backlog-16afeb50acd7ebef38bd823e254ba3b27d2c1239",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "7f365613eb11ee1059e1cc6e2f5c46dc5a22de2dc3a1e9164177794cbdbe5725"
+    },
+    {
+      "key": "wi472-backlog-7734a4533685745412fb766899b87fa778cb5ca2",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "a661bada4546e054f64808ab9beaae0fa89d949954caadfd0574713aad23fd41"
+    },
+    {
+      "key": "wi472-backlog-5b4cb61ed842890e5077b0dfe005dd07db16b83a",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "2baa52450a5327d37adfba5c11fc88dec0c7b0da6402f36dfe6ac55035e0288d"
+    },
+    {
+      "key": "wi472-backlog-6f4fee1d1fa6ea09336e68100af6ea716bae4390",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "df5057f3adf56db112a916b1da0d675c06164cb4c3f25e90adad6eab6e3bfb53"
+    },
+    {
+      "key": "wi472-backlog-9d5f8bb0a6874e0e232728480899075cf5a9a961",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "5955455a1acc90a2e896ff7b9c76f0688e54e11bcf785feaab96cec9043420ab"
+    },
+    {
+      "key": "wi472-backlog-06ee77036dea76c66f3c3c0acd8ff62e1750dad7",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "4c77f9ea931a14c28db6a82d8ce79c2a52c944e055cd53f90e9f8e9cbe920aad"
+    },
+    {
+      "key": "wi472-backlog-9a098a84265da9df3c71f7a2553089139d7308f4",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "286409faef9a4a3e14a596a196db5c31b7162794f74e25543760909ed6c84403"
+    },
+    {
+      "key": "wi472-backlog-ca2a2f94074549574ed793207737513d4fbcf5e7",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "98797abaf096d4c529e7744e4fdd56b0199bbb79a37f597c4efb82f6fcb0c236"
+    },
+    {
+      "key": "wi472-backlog-e985d373d2ed44a0f9cc8537aeedec9b399833ef",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "e2fa7cea850d90aff04eaacd437d5ef5ca0f13227b840ad3d093eb78ab76a6b1"
+    },
+    {
+      "key": "wi472-backlog-70d50332cc435d956b6b42e5286710dab9e0e6b7",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "0376843c2e749c3d1bac0385c1c4f19842d051db503e01d4f579c16a9101b6c2"
+    },
+    {
+      "key": "wi472-backlog-4b0b095818432412987197610e3d4d19267c056d",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "54162644430e2b56d8e801f1d710ee527e504f37b7373bc302909feba6d4f9da"
+    },
+    {
+      "key": "wi472-backlog-52f73ebe0282846eb5589e01959defd6f569d3fe",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "45507512c8111fd961da3ec4de93fd5ddfde6351976efd4487530154f4f909c2"
+    },
+    {
+      "key": "wi472-backlog-d6e0a64f74a4dfae307b67dc215f0313312f6d65",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "aa63d4f0a38141701e6604fd5fc2d8481f3bd7c0beec34f15b10375eeaa577f5"
+    },
+    {
+      "key": "wi472-backlog-7c56f415a8674f8a651b4b55c46e0f65c3f576b0",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "f946e2be1c038358cc12215b80525d8d9e8c7bcbc69863e650ca9c652add620f"
+    },
+    {
+      "key": "wi472-backlog-e6893b39f58668abe691adfb69a3f080f251f116",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "4048f4de7c8bfe49e057b40fbfcded17a60bb481ea855fa77ff431dd3f31d822"
+    },
+    {
+      "key": "wi472-backlog-26ad7a0f2c5d3c2613e362076fa8ffebe9373a8d",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "f3b148c149ed3cb46904af9641e390755519d4f061385ee58fea141f305f3bf2"
+    },
+    {
+      "key": "wi472-backlog-903edcf8ea107120d6f908ebecf8767633802f8e",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "1136e11c1fb35ad99c21035be6d4d16dce911b5a6fd9f0ec5d96dfeffaa2cf0c"
+    },
+    {
+      "key": "wi472-backlog-d42c4b448939b29d47ce5a2e84aa98c13b23cdc2",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "c6ef0507f0cad27a49c9d9e33253f82f36f9f72c7468798f73bd7b56f1fc7a9e"
+    },
+    {
+      "key": "wi472-backlog-197ff19a02f50a5b08e52dbfd23a167a09f8e819",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "a9c918bd7fe4b27b822320954946bf0bc69d97403c2c92c8a4e75d804612c76e"
+    },
+    {
+      "key": "wi472-backlog-b02e5409194822aadad053dfa56a65a8cfe056a0",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "8a62f5f6f829c597eeb60d145962f4f6b367d984ff74ac41d72a33f8459deed2"
+    },
+    {
+      "key": "wi472-backlog-218f4ffa60b80fb8dee425d1329c3b4c21ba5b45",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "c8b15e69a5c686c459839a28db4249e8993e7a297578257b13fcc842f96a0e55"
+    },
+    {
+      "key": "wi472-backlog-4cda72903850fc00d7e50273ec56e6d27e0c07e5",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "0f1f6501b3cf55470bc32ffbf625d27b1470deeb98ab2c15acdc978347dd1c17"
+    },
+    {
+      "key": "wi472-backlog-b98abb44c3fd1fc3b43624eec38e7b92bd0928f7",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "741bc1fb0597e4be84b37d04b8913b1a50ccb4dec2fa66badbff7817ca1f1a4e"
+    },
+    {
+      "key": "wi472-backlog-26d8655e55c96ab696ed41bb149150ffd13d28d6",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "e67a1d1a46906196c9468c819a66d9de9ae7a2e8adee438a9e96b0a1d6a8938c"
+    },
+    {
+      "key": "wi472-backlog-76ea121b4a1c5f2bed68b578bde9e4df70b9782c",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "71c8c1545ecfb0eadb2d4b7d3f87408811f3631299852e30b600c0501167acea"
+    },
+    {
+      "key": "wi472-backlog-d46e945ebd8e39b545533271628963adf745fa69",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "d9f27981c0b3b112e7369c945c2eb890166812da053020322f0c52ec5a377448"
+    },
+    {
+      "key": "wi472-backlog-2394e890ffdb6cc17bedef92cda8f204f5b8e139",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "583ae7c181e94bb904dd0ca25386b812e2690d9f05ff1185f076ea936e297340"
+    },
+    {
+      "key": "wi472-backlog-8ab3baa5676a3feafe3bedd4a8a36638c4f50e2b",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "7ecc05381ca7435b7601f653b07e95befb63d7da514f4696e790dd802f6b0fcf"
+    },
+    {
+      "key": "wi472-backlog-fbd3bf28c6aede7dc52075f8c23bd04033e123f2",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "19ea7cf1b1c940fc51957cea0343c5781c173d042f2b3264bbbbfdc4777da4b3"
+    },
+    {
+      "key": "wi472-backlog-bb1da9718b3907839b5f7092b2b0ba5b66828fc7",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "af2ffe0894640950448c5ca5b6f437dbfe36df2cbbb22774cce73e1b2b778e9d"
+    },
+    {
+      "key": "wi472-backlog-02f25abf8fb97507a04db765c7e061978f6a39cd",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "a4adfd94a5585e0ab9756b354240998d6a2773780ed2e375d389e10ff84db947"
+    },
+    {
+      "key": "wi472-backlog-633d2a98c08bf05a2b2c1461876654073092b027",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "d4cec43b31c06eb0a9aa593aa50a78443dc12bef56fe00f9b4e0b400b26d4232"
+    },
+    {
+      "key": "wi472-backlog-06e31fc01758aa4a94bcbcc06116167abc63c440",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "0b85ba0bb50c66ca1c9952030ee2badd89d49d2605deeb85fae11534b1aa098d"
+    },
+    {
+      "key": "wi472-backlog-77cad2949883fb3fbb30357ab94f61d455fe16ff",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "68a25bdd82245e8319936ff2a7d8e8aadb32adc4b07ad9fff470f5a908a9ee56"
+    },
+    {
+      "key": "wi472-backlog-35e2b38c046f3dac64e7fcb8d4971fb7cc230948",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "b2869ebbdcf0511da512ea8e2345c52aa38810f0a79a69842f54ce4a3423fcf6"
+    },
+    {
+      "key": "wi472-backlog-faff67fe2128b082a3f532d99815c553f6b303b9",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "4c0091f9ee85d2e2d9961b0bc7fa1252489dd01ffb34c926c24715c4f531f4ff"
+    },
+    {
+      "key": "wi472-backlog-12d583026266417669547d26321ca3209b11688a",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "e0ef8b30a9d0d0b3d33909dc722b2bf016eac088b935fa2fa46f36af92ea41f2"
+    },
+    {
+      "key": "wi472-backlog-989b9cc278f2df3e6a35ce0a06d368eb1613fd2e",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "b2baef31c01627e261d0d833c66ed1bf93b7f2a81085c9e1bf007ae1854b7d04"
+    },
+    {
+      "key": "wi472-backlog-59d6bd9e898c167edb4671ebb4757d06653b392e",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "b2bda4094e1fcbf2878031d1c148e9ddd0ee637dd816f16fde1e1328b6b04232"
+    },
+    {
+      "key": "wi472-backlog-06c8c5805cfdfd982c830885625d2c3c380f455b",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "8f010e48e690f83c76430613737b83403d3f57b4bd6fe43c9eaefc94e87fdfd0"
+    },
+    {
+      "key": "wi472-backlog-7b2b7b7d601aa7514c758872e13e1ea49e810827",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "ba10a69b9e784de435841c59d6461528da02163d304ad5ee8e30ed1048ec8361"
+    },
+    {
+      "key": "wi472-backlog-38aebfccb9a0d9bf22b01757c4f56eb6028f7e1d",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "60e3f4be43a76b58fa3b33b200e2c3c573f214ada000d088907fa367da291ddc"
+    },
+    {
+      "key": "wi472-backlog-6763ebb123747581d495169b045e125706b54001",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "df04a62104dc46da59268fcc0d7cc6c27db3e596b19953b200aa71a07a24503c"
+    },
+    {
+      "key": "wi472-backlog-f272e9d2d6a7c162bf444d812057788adebbdca9",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "d2ea8ed8dc3482d7b2c91c504152a7e2c10d407a2c978a315ffa67ead8917303"
+    },
+    {
+      "key": "wi472-backlog-a908f9973fa7ca6b30d1b1f5c0a8b9df71713c64",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "ed8ff8396932b7731e7d1b1dceba8a33a3ec18d8d2ed7637d4f188b64092aa40"
+    },
+    {
+      "key": "wi472-backlog-6859193705cb04d05b509ef775b5fd797d81b21b",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "b53850f9cb29e38051ca4c57a681137d91bfab65cd47af16facfaacc5c129937"
+    },
+    {
+      "key": "wi472-backlog-5b16c0a5de6752b303d838be2ea5bb653543f05a",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "9eeab829377bde7c26f1210b4e6d3e7fa3a0ee182a2e77a2686ddf7a5cbe0e2a"
+    },
+    {
+      "key": "wi472-backlog-6dd54de030eaf6c15ad0f7e0c6bc37c48030831d",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "b5c8eb1788410967187e2b0a5176c95a32e8fd587f42e8e4fbaada926fe7c542"
+    },
+    {
+      "key": "wi472-backlog-3b3938e582ce69f93ba4dd7059b8199c7043e666",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "f929550a6aa4b7409b679ff215daa7f355bc8270d4200b443cd71be8c2b79440"
+    },
+    {
+      "key": "wi472-backlog-0f14e1d3304c1b45f8e301d00049b2ce2a40b47c",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "46bec30d8ea6697782a80974f96799833bb2dd6644a3761ae60933c11adb44bd"
+    },
+    {
+      "key": "wi472-backlog-051c5667b45a033668f650b2db5c7a3d212cc428",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "e5cb746bde3a0aaca75bf0ce41b4f237e97453142fd476f002e2cc3319f3d743"
+    },
+    {
+      "key": "wi472-backlog-af9302b6427063eab8fee700e0497fbdb7616220",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "528a62a6fb8c1b6ff34cd8d9912db84dd0fc924635653ab20d340f8349a358fc"
+    },
+    {
+      "key": "wi472-backlog-ceb1596b515e41f8e86b52892d5c81fbca94d394",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "b77c286d509dbc121df31d3c52194e80273565eb2916ce6aaeb1c9293afd9593"
+    },
+    {
+      "key": "wi472-backlog-1f6feb5551586f7d11a752905e2517f892635b63",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "e34cbfb75e7c9ddbf2531c3caca01cdc091a65f33ce1b40c97fa09aa01f41908"
+    },
+    {
+      "key": "wi472-backlog-e2fdffdd8d6e1eafa9c7dc28c01482fd9f5c1a23",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "0c038c3767f79f6f9abfbaff8e90c7c3136ea5697e4f42bd03db7cebb9857e5e"
+    },
+    {
+      "key": "wi472-backlog-3336fd93afb3ad1f69827142566cd087825c6bd8",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "2a1c0b049ba34279a13c3d4560f4d3a3449590bcd9616d90128b066afa7d634c"
+    },
+    {
+      "key": "wi472-backlog-3fb77eb2a0e71d8445849fb694aa212a55f319dc",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "ed2dafd5fc56535d10924b9e13ae3040c0f3762cc516cfa8f04e67f1445faf9b"
+    },
+    {
+      "key": "wi472-backlog-aecb69cef22ef1a03e2d9c71eaf023f4053f6e33",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "c24fe9adc691cec2787999096c671ca24b4c797a215fd1e79cafdb8c3db697bc"
+    },
+    {
+      "key": "wi472-backlog-d6ec114cc073162adc8ab808986300c5beab0fb1",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "994ee3ceb10d1666d1c214aa0528f56b773c231080e281696707df873ffc466a"
+    },
+    {
+      "key": "wi472-backlog-741e660db65b24c7c4a565bf2eef5135954198e9",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "da6cb6204d7f6d5914f367fad3508b1ee87842b5579e470fa1105f61800f9df0"
+    },
+    {
+      "key": "wi472-backlog-5130644884130c1c414da6674dc4ccc7d8779bde",
+      "certified": true,
+      "reviewer_family": "anthropic",
+      "for_content_sha": "9080d3f3375d8e6038bb8c4809158131debedd3f10a1c3567ba096e66a6904db"
+    }
+  ]
+}

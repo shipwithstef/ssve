@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "audit-implementation receipt",
+  "type": "object",
+  "required": ["receipt_type", "schema_version", "wi", "verdict", "findings", "timestamp"],
+  "properties": {
+    "receipt_type": { "const": "audit-implementation" },
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "wi": { "type": "string" },
+    "verdict": { "type": "string", "enum": ["pass", "fail", "pass-with-acks"] },
+    "findings": { "type": "array" },
+    "ac_coverage": { "type": "object" },
+    "timestamp": { "type": "string", "format": "date-time" }
+  }
+}

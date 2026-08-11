@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "wi_id": "WI-343",
+  "promoted_at": "2026-05-12T00:00:00Z",
+  "enforced_after": "2026-05-13",
+  "grandfathered": true,
+  "bootstrap": false,
+  "source_proposal": "proposals/2026-05-12-auto-learning-capture-hook.md",
+  "checks": {
+    "concrete_contract": "n/a",
+    "severity_taxonomy": {
+      "rated": "n/a",
+      "justification": "Retroactively grandfathered per WI-341 tranche 2a. Original promotion predates the enforced_after cutoff (2026-05-13). WI-343.md 'Promotion receipt' section explicitly cites this exemption: 'WI-341 tranche 2 will retroactively emit a grandfathered: true receipt with enforced_after set to the tranche-2 deploy date.'"
+    },
+    "host_agnostic": {
+      "result": "n/a"
+    },
+    "concerns_wired": [
+      "concerns/auto-learning-capture.md"
+    ],
+    "tier1_promotion_note": "filled",
+    "capability_freshness": {
+      "result": "n/a"
+    },
+    "plan_changeset_class": "contract-change",
+    "lane": "framework"
+  },
+  "decision": "grandfathered",
+  "reviewer": "wi-341-tranche-2a@svc"
+}

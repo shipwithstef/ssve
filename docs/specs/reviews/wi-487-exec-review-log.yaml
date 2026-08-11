@@ -1,0 +1,76 @@
+review_log:
+  wi: WI-487
+  lane: framework
+  change_class: framework installation regression (CRITICAL hot-path — setup, install-drift, session-start healthcheck, host wiring, safety hooks)
+  reviewer: gpt-5.6-sol/high (openai) — independent different-family exec + security review via scripts/run-external-review.mjs
+
+  # ---- Machine-readable round record (parsed by scripts/check-review-round-cap.mjs, fail-closed).
+  #      HARD-capped at 3 adversarial rounds per WI-491. Severity converged 2-crit -> 1-crit -> 0-unresolved-crit.
+  rounds_run: 3
+  unresolved_critical: 0
+  remaining_high: 2
+
+  round_1:
+    reviewer: gpt-5.6-sol
+    reviewer_family: openai
+    target: frozen code diff (rev 1)
+    verdict: fail
+    outcome: 9 findings (2 critical, 6 high, 1 medium) — ALL fixed with strengthened fixtures. Reviewer RULED both disclosed gaps blocking.
+    key_findings:
+      - "F001 [crit]: GAP-2 host invocation path did not use the durable launcher -> the F-001 fail-open persisted after checkout deletion. FIXED: setup materializes+verifies the launcher before host mutation; wire-hooks/codex/gemini route governed commands through node <launcher> <hook-id>."
+      - "F002 [crit]: launcher SVC_ENFORCE_SOURCE authority-substitution seam. FIXED: removed; source bound to the validated sibling manifest."
+      - "F003..F009 [high/med]: AC-487-7 breadth, migration doesn't migrate the surface, WI-486 terminal swallowed, shared-bundle cross-host rollback destruction, forgeable receipts, unbounded healthcheck, dedup-repeats-full-diagnostic — all fixed."
+
+  round_2:
+    reviewer: gpt-5.6-sol
+    reviewer_family: openai
+    target: frozen code diff (rev 2)
+    verdict: fail
+    outcome: 7 findings (1 critical, 6 high) — ALL fixed. Coverage was incomplete in round 1.
+    key_findings:
+      - "R2-F010 [crit]: launcher-routing wired only claude/codex/gemini -> Kimi + materialization-failure paths still checkout-bound. FIXED: routing now DRIVEN by each provision/hosts/*.json 'wiring' block across all 8 hosts; kimi routes through the launcher; opencode/mimo declared explicit governed:false git-pre-commit; antigravity/cursor hook_capable:false; materialization a hard prerequisite."
+      - "R2-F011..F015 + F003-RESIDUAL [high]: all-host migration adapters, convergence-checks-actual-routing, WI-486 terminal persistence + no-auto-retry, snapshot-before-wire + rollback correctness, state-root ancestry no-follow, and 10/11 emitDenial runtime adoption — all fixed."
+
+  round_3:
+    reviewer: gpt-5.6-sol
+    reviewer_family: openai
+    target: frozen code diff (rev 3) — THE HARD 3-ROUND CAP
+    verdict: fail (pass-with-cap-disposition)
+    certifications: "round_3_final_bounded_review=true, no_fourth_round_per_wi_491=true, residual_1_cap_dispositionable_not_critical=true, residual_2_explicit_non_governed_disposition_acceptable=true"
+    outcome: 3 findings (1 critical, 2 high). ALL FIXED at the cap (mechanically verified by regression fixtures, no 4th adversarial round). Severity converged to 0 unresolved critical.
+    findings:
+      - id: R3-F001
+        severity: critical
+        response: ACCEPT-FIXED
+        action: "Setup ran Kimi's governed wirer in a best-effort loop (failure tolerated -> silent fail-open). FIXED: governed wirers (wiring.governed=true) invoke FAIL-FAST; a wirer failure OR a governed_token-marker drift ABORTS the host install without leaving an unenforced governed hook. Non-governed wiring stays best-effort."
+        verification: "mechanical — validate-governed-wirer-fail-fast.sh 8/8 with a POSITIVE CONTROL (fixhost-ok completes) so a blanket-abort cannot masquerade as a pass. A CRITICAL RESOLVED by fix (not auto-accepted, not escalated) per BRL-03."
+      - id: R3-F002
+        severity: high
+        response: ACCEPT-FIXED
+        action: "Launcher imported its core before validating bundle ancestry, and the ancestry check missed group/other-writable. FIXED: dependency-free launcherBootstrapSecure() lstat-walks every component (reject symlink / mode&0o022 / foreign-owner) BEFORE the dynamic import; core assertSecureAncestry hardened."
+        verification: "mechanical — validate-all-host-install-migration Cases L+M prove the check runs BEFORE import (internal signature absent on insecure ancestor) + symlink variant + unit assertion."
+      - id: R3-F003
+        severity: high
+        response: ACCEPT-FIXED
+        action: "Materialization ran after setup changed the skills surface. FIXED: split into an early bundle preflight that materializes+verifies BEFORE any host-surface/config mutation; a best-effort receipt-finalize runs after wiring."
+        verification: "mechanical — validate-setup-worktree-canonical-resolution static ordering assertion (materialize line precedes first host-surface mutation); also exercised live by the R3-F001 fixture."
+
+  bounded_exit:
+    disposition: accept-with-justification
+    residual_highs:
+      - "RESIDUAL-1 [high]: svc-stop-quality is 1-of-11 adopt-emitDenial hooks asserted at SOURCE level (its block path routes through emitDenial) but NOT hermetically runtime-driven — driving it needs a detected tsconfig + npx tsc producing NEW type errors vs a session baseline + a populated edited-files accumulator, not reproducible in a network-free <5s tier-1 fixture. ACCEPTED per the reviewer's explicit ruling (certification residual_1_cap_dispositionable_not_critical=true): a dispositionable High EVIDENCE risk, not a Critical. Follow-up WI-493."
+      - "RESIDUAL-2 [high]: opencode + mimo-code enforcement remains checkout-bound git-pre-commit (declared governed:false) because OpenCode's model has no launcher-routable command-hook to route through. ACCEPTED per the reviewer's explicit ruling (certification residual_2_explicit_non_governed_disposition_acceptable=true): explicit governed:false is truthful for hosts lacking a launcher-routable command-hook, PROVIDED git-pre-commit is not represented as pre-mutation enforcement (it is declared enforcement:git-pre-commit, not pre-mutation). Durable pre-mutation enforcement for these hosts needs a host-native hook that does not currently exist. Follow-up WI-493."
+
+  bounded_exit_note: >
+    The loop TERMINATED at the 3-round cap. Severity converged 2-critical ->
+    1-critical -> 0-UNRESOLVED-critical: the round-3 critical (R3-F001) was RESOLVED
+    by a mechanically-verified fix with a positive-control fixture, not escalated
+    (BRL-03 permits resolve-or-escalate; a fixable critical is resolved). The two
+    residual highs are the reviewer's own explicitly-certified dispositionable items,
+    accepted as logged risks with follow-up WI-493. No 4th adversarial round
+    (reviewer certified no_fourth_round_per_wi_491=true). rounds_run=3,
+    unresolved_critical=0, remaining_high=2 (enumerated + dispositioned).
+
+  terminal_state: PROMOTED
+  full_suite: "tier-1 251 passed, 0 failed (all WI-487 validators green; bootstrap self-test resumes without self-lockout; no-second-migrator invariant holds)"
+  commit_sha: <filled at promotion time>

@@ -1,0 +1,54 @@
+schema_version: 1
+wi: WI-510
+review_kind: exec
+rounds_run: 3
+unresolved_critical: 0
+remaining_high: 0
+terminal_state: CONVERGED
+round_1:
+  status: completed
+  classification: non-substantive
+  disposition: packaging-fixed
+  findings: .svc/external-review-artifacts/wi510-cross-model-round1/findings.json
+  receipt: .svc/external-review-artifacts/wi510-cross-model-round1/receipt.json
+round_2:
+  status: completed
+  classification: substantive
+  verdict: pass-with-findings
+  reviewer_family: anthropic
+  reviewer_model: claude-opus-4-8
+  critical: 0
+  high: 0
+  medium: 0
+  low: 3
+  info: 2
+  findings: .svc/external-review-artifacts/wi510-cross-model-round2/findings.json
+  receipt: .svc/external-review-artifacts/wi510-cross-model-round2/receipt.json
+round_3:
+  status: completed
+  classification: substantive
+  initial_schema_failure: .svc/external-review-artifacts/wi510-cross-model-round3/receipt.json
+  repair_action: embedded exact correction delta and reused same tuple
+  verdict: pass-with-findings
+  reviewer_family: anthropic
+  reviewer_model: claude-opus-4-8
+  critical: 0
+  high: 0
+  medium: 0
+  low: 3
+  info: 1
+  findings: .svc/external-review-artifacts/wi510-cross-model-round3-repair/findings.json
+  receipt: .svc/external-review-artifacts/wi510-cross-model-round3-repair/receipt.json
+bounded_exit:
+  disposition: accept-with-justification
+  residual_highs: []
+remaining:
+  - id: WI510-EX-03
+    severity: low
+    disposition: accept-with-justification
+    justification: Leading colon tokens are intentionally rejected for portable, unambiguous evidence references.
+rejected:
+  - id: WI510-EX-01
+    severity: info
+    disposition: reject-with-evidence
+    evidence: Strict typed ID, completed state, canonical skill, and deep receipt equality plus mutation-red fixtures.

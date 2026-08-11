@@ -1,0 +1,577 @@
+{
+  "wi": "WI-FRAMEWORK-EVOLVE-GITIGNORE-HYGIENE",
+  "lane": "framework",
+  "created": "2026-05-25T17:46:46.186Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Evolve the framework to address the .gitignore provisioning gap for downstream/onboarded project repositories",
+      "status": "completed",
+      "metadata": {
+        "skill": "route-workflow"
+      },
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-05-25T17:46:58.243Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-05-25T17:47:12.423Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-session-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-05-25T17:47:12.567Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-intent.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-05-25T17:47:12.610Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-FRAMEWORK-EVOLVE-GITIGNORE-HYGIENE.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-05-25T17:47:12.649Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-concern-gate.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-05-25T17:47:12.694Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-FRAMEWORK-EVOLVE-GITIGNORE-HYGIENE.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-05-25T17:47:12.736Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-25T17:47:21.440Z"
+    },
+    {
+      "id": 2,
+      "subject": "Survey and propose framework-level fixes for .gitignore provisioning across onboard-repo, setup, and init-project-state",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "evolve-framework"
+      },
+      "skill_receipt": {
+        "skill": "evolve-framework",
+        "loaded_at": "2026-05-25T17:47:40.519Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-FrameworkStatePreload",
+            "ts": "2026-05-25T17:47:52.883Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/evolve-framework-state.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-EvidenceSourceSurvey",
+            "ts": "2026-05-25T17:47:52.921Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/evolve-framework-evidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-FindingClassification",
+            "ts": "2026-05-25T17:47:52.968Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "proposals/2026-05-25-evolution.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-EvolutionProposalDraft",
+            "ts": "2026-05-25T17:47:53.003Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "proposals/2026-05-25-evolution.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-ProposalLifecycleDecision",
+            "ts": "2026-05-25T17:47:53.041Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "FRAMEWORK-STATE.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-05-25T17:47:53.075Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/evolve-framework-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-25T17:47:55.800Z"
+    },
+    {
+      "id": 3,
+      "subject": "Create technical design for idempotent .gitignore updating and expanded safety validation",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "metadata": {
+        "skill": "design-tech"
+      },
+      "skill_receipt": {
+        "skill": "design-tech",
+        "loaded_at": "2026-05-26T04:43:01.343Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SpecJourneyDiscussionPreflight",
+            "ts": "2026-05-26T04:44:30.984Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/design-tech-preflight.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-CodebasePatternAnalysis",
+            "ts": "2026-05-26T04:44:34.025Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/design-tech-codebase-analysis.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ArchitectureAlternativesAndDiagrams",
+            "ts": "2026-05-26T04:44:34.218Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "proposals/2026-05-25-evolution.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-CostOpsFeasibilityRiskDesign",
+            "ts": "2026-05-26T04:44:34.311Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "proposals/2026-05-25-evolution.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-G4ReviewAndDecisionLogging",
+            "ts": "2026-05-26T04:44:34.407Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/design-tech-g4-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-BaselinedSpecSelfVerify",
+            "ts": "2026-05-26T04:44:34.493Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "proposals/2026-05-25-evolution.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-26T04:44:37.226Z"
+    },
+    {
+      "id": 4,
+      "subject": "Create implementation plan for the changeset",
+      "status": "completed",
+      "blocked_by": [
+        3
+      ],
+      "metadata": {
+        "skill": "plan-changeset"
+      },
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-05-26T04:44:39.224Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-05-26T04:45:09.146Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-archetype.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-05-26T04:45:09.204Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-scope.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-05-26T04:45:09.271Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-05-26-gitignore-hygiene/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-05-26T04:45:09.326Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-05-26-gitignore-hygiene/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-05-26T04:45:09.381Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-05-26T04:45:09.437Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-26T04:45:17.818Z"
+    },
+    {
+      "id": 5,
+      "subject": "Implement .gitignore template, script updates, and validator checks in a git worktree",
+      "status": "completed",
+      "blocked_by": [
+        4
+      ],
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-05-26T04:45:21.113Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-05-26T05:11:02.200Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-preflight.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-05-26T05:11:02.258Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-05-26-gitignore-hygiene/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-05-26T05:11:02.320Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-verification.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-05-26T05:11:02.380Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-checkpoint.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-26T05:11:04.640Z"
+    },
+    {
+      "id": 6,
+      "subject": "Mandatory cross-model and self-review of the changes (G6 Gate)",
+      "status": "completed",
+      "blocked_by": [
+        5
+      ],
+      "metadata": {
+        "skill": "review-exec"
+      },
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-05-26T05:11:09.732Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-05-26T05:11:50.586Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipts/e6e8ce6/review-exec.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-05-26T05:11:50.634Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-exec-pair.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-05-26T05:11:50.678Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/gitignore-hygiene-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerdictAndReceiptFinalize",
+            "ts": "2026-05-26T05:11:50.727Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipts/e6e8ce6/review-exec.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-26T05:11:53.258Z"
+    },
+    {
+      "id": 7,
+      "subject": "Merge the clean changeset back to main",
+      "status": "completed",
+      "blocked_by": [
+        6
+      ],
+      "metadata": {
+        "skill": "land-changeset"
+      },
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-05-26T05:14:42.886Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-05-26T05:14:45.680Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-05-26T05:14:45.763Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-diff-audit.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-05-26T05:14:45.853Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-validation.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-PushPrCreation",
+            "ts": "2026-05-26T05:14:45.928Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-pr.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-MergeDecisionCleanup",
+            "ts": "2026-05-26T05:14:46.019Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-merge.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SpecStatusSelfVerify",
+            "ts": "2026-05-26T05:14:46.081Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-FRAMEWORK-EVOLVE-GITIGNORE-HYGIENE.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-26T05:14:49.456Z"
+    },
+    {
+      "id": 8,
+      "subject": "Run tier-1 validation post-merge to verify success",
+      "status": "completed",
+      "blocked_by": [
+        7
+      ],
+      "metadata": {
+        "skill": "verify-promotion"
+      },
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-05-26T05:14:56.580Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-05-26T05:15:14.697Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-evidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-05-26T05:15:14.794Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-05-26-gitignore-hygiene/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-05-26T05:15:14.924Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-regression.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-05-26T05:15:15.025Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-FRAMEWORK-EVOLVE-GITIGNORE-HYGIENE.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-26T05:15:17.560Z"
+    }
+  ]
+}

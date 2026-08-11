@@ -1,0 +1,31 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "TaskUpdate",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node scripts/eval-gate.mjs pre \"$TOOL_INPUT\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "TaskUpdate",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node scripts/eval-gate.mjs post \"$TOOL_INPUT\""
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "svc-agents-skills-pack@svc-pack-marketplace": false,
+    "svc-marketing-pack@svc-pack-marketplace": false,
+    "base44@base44-skills": false
+  }
+}

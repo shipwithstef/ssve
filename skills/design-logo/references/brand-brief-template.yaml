@@ -1,0 +1,48 @@
+name: <product name>
+one_liner: <single-sentence positioning>
+audience: <who buys / who uses>
+voice: <3 adjectives — e.g., trustworthy-modern-confident>
+
+palette:
+  primary: "#______"
+  accent: "#______"
+  neutral_dark: "#______"
+  neutral_light: "#______"
+
+anti_references:
+  - <visual styles to avoid — e.g., 3D-balloon, gradient-clipart, rainbow-letters>
+
+# Pick ≥3 entries from references/exemplar-bank-2026.md whose
+# *transferable principle* (NOT visual) maps to this brief.
+exemplar_inspiration:
+  - id: <bank id, e.g. A2>
+    principle: "<copy entry's transferable principle verbatim>"
+    why_relevant: "<one line — why it maps to THIS brief>"
+  - id:
+    principle: ""
+    why_relevant: ""
+  - id:
+    principle: ""
+    why_relevant: ""
+
+# Cross-domain inspiration sources (≥3 outside the product's category)
+cross_domain_sources:
+  - <e.g., Bauhaus poster geometry>
+  - <e.g., circadian rhythm diagrams>
+  - <e.g., mid-century industrial signage>
+
+sector_references:
+  - <competitor 1 logo URL or name>
+  - <competitor 2>
+  - <competitor 3>
+  - <competitor 4>
+  - <competitor 5>
+
+preferred_types:
+  - wordmark
+  - combination
+
+constraints:
+  must_work_in_monochrome: true
+  must_work_at_16px: true
+  must_have_dark_mode: true

@@ -1,0 +1,10 @@
+{
+  "_comment": "Allow-list registry of top-level shared-content dirs that must appear in infra_dirs of every host manifest in provision/hosts/. Enforced by scripts/lint-skills-manifest.mjs meta-rule (WI-137). Adding a new entry requires adding the dir to every provision/hosts/<host>.json's infra_dirs in the same change.",
+  "exception_dirs": [
+    "rules"
+  ],
+  "_exception_note": "rules/ is excluded from infra_dirs by design — it has its own dedicated install path in setup (handled separately from the infra_dirs symlink loop).",
+  "shared_dirs": [
+    "_shared"
+  ]
+}

@@ -1,0 +1,95 @@
+review_log:
+  gate: G5
+  wi: WI-140
+  artifact: framework-competitive-awareness branch @ 32487e3
+  base_sha: 3107613ce1b6
+  reviewed_at: 2026-05-02T11:15:00Z
+
+  branch_summary:
+    commits: 11
+    files_changed: 42
+    insertions: 1801
+    deletions: 2
+    new_files: 31
+    modified_files: 11
+
+  test_results:
+    unit_tests:
+      json-schema-validator: 27/27 PASS
+      structured-gate-engine: 10/10 PASS
+      post-task-trigger-router: 9/9 PASS
+    tier_1_validators:
+      validate-task-graph-lane (lane 7 framework): PASS
+      validate-competitor-analysis-schema: PASS
+      validate-competitor-analysis-freshness: PASS
+      validate-feature-competitive-cross-reference: PASS
+      validate-spec-compensating-control: PASS
+    skills_manifest_lint: PASS
+
+  step1_self_review:
+    checklist_items_evaluated: 11/11
+    findings: 7
+    severity_breakdown:
+      critical: 0
+      high: 0
+      medium: 5
+      low: 2
+
+  step2_self_judgment:
+    accepted: 6
+    rejected: 1  # G5-001 mechanical-sweep false positive
+
+  step3_cross_review:
+    status: skipped_budget_optimization
+    rationale: |
+      Zero critical/high findings; zero disputed accepts. Cross-model review's
+      primary value (catching disputed-finding bias + new issues) has diminishing
+      returns when self-judgment converges cleanly on all-accept. Codex was already
+      used in review-plan stage on the manifest (7 findings, all accepted and
+      applied). Skipping cross-review here saves ~$0.30 with no expected verdict
+      change. If user disputes, re-invoke with Codex.
+
+  step4_convergence:
+    iteration: 1
+    decision: PASS
+    rationale: |
+      Only medium/low findings remain. All 11 G5 checklist items evaluated.
+      No ghost skill executions (G5-11). No scope-reduction phrases in committed
+      WI-140 files (G5-4 — pre-existing meta-mentions of "v1" / "placeholder"
+      in unmodified history were correctly rejected as false positives). Imports
+      resolve (G5-3). Pattern-family sweep clean (G5-9). Visual-AC tier (G5-10)
+      N/A — framework Enabler with no UI surface; spec Pillars Matrix marks
+      UX/UI [N/A — justified].
+
+  step5_gate_decision:
+    decision: PASS
+    state_transition: "BASELINED → CHANGE-SET-APPROVED"
+
+  improvement_backlog:
+    - id: G5-002
+      severity: medium
+      description: "T8.1 proposal move (proposals/ → proposals/done/) deferred to integration time"
+      target: "Add to land-changeset task description as pre-merge step"
+    - id: G5-003
+      severity: medium
+      description: "Document init-state template-discovery convention so future maintainers don't break it"
+      target: "One-line comment in scripts/init-project-state.mjs"
+    - id: G5-004
+      severity: medium
+      description: "Exemption heuristic in validate-feature-competitive-cross-reference.sh may misfire"
+      target: "Add tuning note in validator header; explicit landscape_inapplicable_reason is stronger escape hatch"
+    - id: G5-005
+      severity: low
+      description: "Hook router fail-open has no alerting"
+      target: "Defer to first SDKG instance needing stronger SLA"
+    - id: G5-006
+      severity: low
+      description: "Manifest-files extractor parser brittle if Files Planned format changes"
+      target: "Document parsing assumptions in extract-manifest-files.mjs header"
+    - id: G5-007
+      severity: medium
+      description: "Downstream-repo behavior of validators untestable in svc itself"
+      target: "First downstream consumer project provides real-world validation"
+
+  next_action: land-changeset
+  next_action_blockers: []

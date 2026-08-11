@@ -1,0 +1,10 @@
+{
+  "wi": "WI-FIXTURE-BASE44",
+  "user_intent": "Update a Base44 backend function and verify deployment behavior",
+  "repo_mode": "convert",
+  "change_type": "feature",
+  "lane": "brownfield-feature",
+  "delivery_mode": "end_to_end",
+  "risk_flags": ["backend-function", "external-integration", "deploy-affecting", "base44-platform"],
+  "platform_contracts": ["base44-environment"]
+}

@@ -1,0 +1,10 @@
+Skill: extract-bootstrap
+
+Q: What are the two output files produced by extract-bootstrap, and where are they stored?
+A: Expected pattern: `manifest.md` and `decisions.md` under `references/bootstraps/<name>/`.
+
+Q: What information must the manifest.md contain under the "Verified By" section?
+A: Expected pattern: Source repo (URL or "internal"), users/scale, last verified date, commit count, and contributor count.
+
+Q: What types of decisions should extract-bootstrap focus on in Step 5?
+A: Expected pattern: Decisions that explore-solutions would normally investigate: why this database, why this API pattern, why this component structure, why this deployment model.

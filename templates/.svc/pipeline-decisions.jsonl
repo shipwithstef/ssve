@@ -1,0 +1,1 @@
+{"timestamp":"<ISO-8601>","run_id":"<WI-ID>","skill":"<skill-name>","phase":0,"type":"mechanical|gate-result|taste|user-override|verification","decision":"<short decision>","reasoning":"<rationale>","decided_by":"P0|user|orchestrator|review-gate","evidence":"<optional>","overrideable":false}

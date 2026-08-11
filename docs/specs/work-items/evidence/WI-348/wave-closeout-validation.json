@@ -1,0 +1,20 @@
+{
+  "validator": "test-framework/evals/tier-1/validate-wave-closeout.sh",
+  "stats": {
+    "passed": 11,
+    "failed": 0
+  },
+  "checked": [
+    "validator syntax",
+    "route-workflow contract",
+    "dispatch-waves contract",
+    "latest zero-fail runtime evidence contract",
+    "complete wave positive fixture",
+    "expected count mismatch negative fixture",
+    "missing index row negative fixture",
+    "missing lane graph negative fixture",
+    "missing evidence negative fixture",
+    "latest failing evidence negative fixture",
+    "scoped residual worktree negative fixture"
+  ]
+}

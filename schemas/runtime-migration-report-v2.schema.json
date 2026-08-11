@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seriousvibecoding.dev/schemas/runtime-migration-report-v2.schema.json",
+  "title": "SVC runtime migration report v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "source_version", "target_version", "run_id", "source_digest",
+    "source_immutable", "imported_prefix", "differential", "compatibility",
+    "rollback_projection", "rollback_projection_digest", "product_writes",
+    "generation_bindings", "report_digest", "journal_import_events"
+  ],
+  "properties": {
+    "schema_version": { "const": "runtime-migration-report-v2" },
+    "source_version": { "enum": [1, 2] },
+    "target_version": { "const": 2 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "source_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "source_immutable": { "const": true },
+    "imported_prefix": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["task_id", "state", "consumed", "evidence_ids", "evidence_references", "source_task_digest", "import_reason", "generation_bindings"],
+        "properties": {
+          "task_id": { "type": "string", "minLength": 1 },
+          "state": { "const": "ACCEPTED" },
+          "consumed": { "const": false },
+          "evidence_ids": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "evidence_references": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "resolution", "source_reference_digest"],
+              "properties": {
+                "id": { "type": "string", "minLength": 1 },
+                "resolution": { "const": "REFERENCE_ONLY" },
+                "source_reference_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+              }
+            }
+          },
+          "source_task_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "import_reason": { "type": "string", "minLength": 1 },
+          "generation_bindings": { "$ref": "execution-task-capsule-v2.schema.json#/$defs/generationBindings" }
+        }
+      }
+    },
+    "differential": {
+      "type": "object", "additionalProperties": false,
+      "required": ["graph_equivalent", "receipts_preserved", "false_closeout_prevented"],
+      "properties": {
+        "graph_equivalent": { "type": "boolean" }, "receipts_preserved": { "type": "boolean" },
+        "false_closeout_prevented": { "type": "boolean" }, "differences": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["readable_versions", "rollback_reader_version", "accepted_prefix_nonterminal", "canonical_truth"],
+      "properties": {
+        "readable_versions": { "type": "array", "items": { "enum": [1, 2] } },
+        "rollback_reader_version": { "const": 1 },
+        "accepted_prefix_nonterminal": { "const": true },
+        "canonical_truth": { "const": "V2_JOURNAL" }
+      }
+    },
+    "rollback_projection": { "type": "object" },
+    "rollback_projection_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "product_writes": { "const": false },
+    "generation_bindings": { "$ref": "execution-task-capsule-v2.schema.json#/$defs/generationBindings" },
+    "report_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "journal_import_events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "task_id", "idempotency_key", "payload"],
+        "properties": {
+          "type": { "const": "TASK_LEGACY_ACCEPTED_IMPORTED" },
+          "task_id": { "type": "string", "minLength": 1 },
+          "idempotency_key": { "type": "string", "minLength": 1 },
+          "payload": { "type": "object" }
+        }
+      }
+    }
+  }
+}

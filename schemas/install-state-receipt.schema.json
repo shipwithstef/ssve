@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://seriousvibecoding/schemas/install-state-receipt.schema.json",
+  "title": "svc per-host install-state receipt (WI-487)",
+  "description": "Home-local, evidence-only per-host install receipt written under ~/.svc/install-state/<host>.json (0600). Records the ONE effective resolved source shared by hooks and skills, the materialized durable launcher, and per-host migration before/after state. NEVER read as authorization: consumers re-realpath and re-classify the live install before accepting a converged state.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "migration_version",
+    "host",
+    "skills_path",
+    "effective_source",
+    "source_classification",
+    "launcher_path",
+    "launcher_version",
+    "installed_at"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "migration_version": { "type": "string" },
+    "host": { "type": "string" },
+    "skills_path": { "type": "string" },
+    "effective_source": { "type": "string" },
+    "source_classification": {
+      "type": "string",
+      "enum": ["durable-canonical", "ephemeral", "worktree-bound", "dangling"]
+    },
+    "launcher_path": { "type": "string" },
+    "launcher_version": { "type": "string" },
+    "framework_commit": { "type": ["string", "null"] },
+    "hooks_installed": { "type": "boolean" },
+    "skills_installed": { "type": "boolean" },
+    "installed_at": { "type": "string" },
+    "before": {
+      "type": ["object", "null"],
+      "description": "Per-host pre-migration state snapshot (AC-487-10).",
+      "additionalProperties": true
+    },
+    "after": {
+      "type": ["object", "null"],
+      "description": "Per-host post-migration state snapshot (AC-487-10).",
+      "additionalProperties": true
+    }
+  }
+}

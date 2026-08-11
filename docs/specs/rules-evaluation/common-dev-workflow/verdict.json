@@ -1,0 +1,40 @@
+{
+  "rule_path": null,
+  "source_repo": "affaan-m/everything-claude-code",
+  "source_path": "rules/common/development-workflow.md",
+  "scope": "global",
+  "stack": "universal",
+  "verdict": "adopt-with-edits",
+  "scores": {
+    "determinism_gain": 2,
+    "correctness_delta": 1,
+    "friction_cost": 1,
+    "convention_conflict": 1
+  },
+  "scenarios_evaluated": 3,
+  "tier2_ran": true,
+  "tier2_verdict": "confirmed",
+  "edits_required": [
+    "Keep Step 0 (Research & Reuse) verbatim — this is the sole behavior change worth adopting",
+    "Strip Steps 1-5 entirely (planner agent, tdd-guide agent, code-reviewer agent, commit workflow) — svc pipeline handles these",
+    "Resulting rule is ~10 lines: research-first mandate with tool priority sequence",
+    "Make Context7 and Exa optional/conditional — not universally available"
+  ],
+  "adopt_core": "Before any new implementation: (1) gh search repos/code for existing patterns first, (2) vendor docs second, (3) broader web search only if first two insufficient, (4) check package registries before writing utility code",
+  "note": "The research sequence (gh search first) is a genuine behavior change — Claude doesn't consistently mandate GitHub search before implementation without this instruction. Steps 1-5 duplicate svc's own pipeline.",
+  "evidence": {
+    "default_transcript": "docs/specs/rules-evaluation/common-dev-workflow/default-transcript.md",
+    "diff_and_verdict": "docs/specs/rules-evaluation/common-dev-workflow/diff-and-verdict.md"
+  },
+  "suggested_registry_entry": {
+    "path": "rules/research-before-build.md",
+    "scope": "global",
+    "stack": "universal",
+    "source": "blended:ecc",
+    "last_evaluated": "2026-04-13",
+    "source_sha": "125d5e619905d97b519a887d5bc7332dcc448a52",
+    "notes": "ECC common/development-workflow.md Step 0 only. Distilled to: research sequence before implementation."
+  },
+  "evaluated_at": "2026-04-13",
+  "contamination_caveat": "Rules fetched into context before skill invocation"
+}

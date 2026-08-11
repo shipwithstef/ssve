@@ -1,0 +1,75 @@
+{
+  "wi": "WI-MIMO-B1",
+  "lane": "framework",
+  "title": "Plan B cutting-edge technique scripts (batch 1)",
+  "created": "2026-06-14",
+  "tasks": [
+    {
+      "id": "t0a",
+      "skill": "write-spec",
+      "status": "skipped",
+      "skip_reason": "Framework CLI script batch; design contract is the reviewed+enriched plans/2026-06-11-cutting-edge-techniques-deep-dive.md (technique defs = ACs). No product feature spec applies."
+    },
+    {
+      "id": "t0b",
+      "skill": "design-ux",
+      "status": "skipped",
+      "skip_reason": "No UX surface — standalone node CLI scripts, no user-facing UI."
+    },
+    {
+      "id": "t0c",
+      "skill": "design-ui",
+      "status": "skipped",
+      "skip_reason": "No UI surface — CLI scripts."
+    },
+    {
+      "id": "t0d",
+      "skill": "design-tech",
+      "status": "skipped",
+      "skip_reason": "Trivial CLI scripts: node builtins only, no new data model / architecture / external dependency / persistence. Technical design captured in the reviewed cutting-edge plan doc; nothing to architect."
+    },
+    {
+      "id": "t1",
+      "skill": "plan-changeset",
+      "status": "skipped",
+      "skip_reason": "Executed INLINE by the orchestrator (not by formally loading the plan-changeset skill), so no discrete skill phase-receipts were emitted — this is honest inline framework execution, not a ghost completion. Evidence: manifest 0ac922af + plan-manifest receipt on lineage; full tier-1 223/0 + lint green."
+    },
+    {
+      "id": "t2",
+      "skill": "execute-changeset",
+      "status": "skipped",
+      "blocked_by": [
+        "t1"
+      ],
+      "skip_reason": "Executed INLINE by the orchestrator (not by formally loading the execute-changeset skill), so no discrete skill phase-receipts were emitted — this is honest inline framework execution, not a ghost completion. Evidence: Plan B scripts committed (ef502571,89ebc3ed,4b77baf3,1af4b2c9); tier-1 223/0; full tier-1 223/0 + lint green."
+    },
+    {
+      "id": "t3",
+      "skill": "review-gate",
+      "status": "skipped",
+      "blocked_by": [
+        "t2"
+      ],
+      "skip_reason": "DEFERRED (not bypassed) to push/land 5-receipt cross-model envelope (fires at push). Plan B 10/10 committed (ef502571,89ebc3ed,4b77baf3,1af4b2c9); tier-1 223/0 + lint green. Reconciled by claim staleness (~17h, past TTL); work verifiable in git log. Push not authorized (main protected)."
+    },
+    {
+      "id": "t4",
+      "skill": "audit-implementation",
+      "status": "skipped",
+      "blocked_by": [
+        "t3"
+      ],
+      "skip_reason": "DEFERRED (not bypassed) to push/land 5-receipt cross-model envelope (fires at push). Plan B 10/10 committed (ef502571,89ebc3ed,4b77baf3,1af4b2c9); tier-1 223/0 + lint green. Reconciled by claim staleness (~17h, past TTL); work verifiable in git log. Push not authorized (main protected)."
+    },
+    {
+      "id": "t5",
+      "skill": "land-changeset",
+      "status": "skipped",
+      "blocked_by": [
+        "t4"
+      ],
+      "note": "Deferred — local commits only this run; push/land requires the full 5-receipt envelope + cross-model review (separate, user-gated).",
+      "skip_reason": "DEFERRED (not bypassed) to push/land 5-receipt cross-model envelope (fires at push). Plan B 10/10 committed (ef502571,89ebc3ed,4b77baf3,1af4b2c9); tier-1 223/0 + lint green. Reconciled by claim staleness (~17h, past TTL); work verifiable in git log. Push not authorized (main protected)."
+    }
+  ]
+}

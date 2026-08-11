@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "svc promotion-receipt",
+  "description": "Receipt emitted by the pre-WI promotion compression gate (WI-341). One file per WI under .svc/promotion-receipts/WI-<n>.json. Schema baselined 2026-05-12 by WI-341 bootstrap.",
+  "type": "object",
+  "required": ["schema_version", "wi_id", "promoted_at", "enforced_after", "grandfathered", "bootstrap", "source_proposal", "checks", "decision", "reviewer"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "description": "Integer schema version. Bump on any breaking change to required fields."
+    },
+    "wi_id": {
+      "type": "string",
+      "pattern": "^WI-[0-9]+$",
+      "description": "Canonical WI identifier, e.g. WI-341."
+    },
+    "promoted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC timestamp when the receipt was emitted."
+    },
+    "enforced_after": {
+      "type": "string",
+      "format": "date",
+      "description": "Cutoff date (YYYY-MM-DD). WIs promoted before this date may be grandfathered. Required on every receipt; the date is set at gate-deploy time and frozen."
+    },
+    "grandfathered": {
+      "type": "boolean",
+      "description": "True only for receipts retroactively attached to WIs promoted before enforced_after. Grandfathered receipts must use decision = grandfathered and may set checks to n/a (see conditional below)."
+    },
+    "bootstrap": {
+      "type": "boolean",
+      "description": "True only for WIs whose ACs implement the gate itself (chicken-and-egg). Follows WI-073 precedent. Cited inline by the source WI's Bootstrap Receipt section."
+    },
+    "source_proposal": {
+      "type": "string",
+      "pattern": "^proposals/.+\\.md$",
+      "description": "Relative path to the proposal this WI was promoted from."
+    },
+    "checks": {
+      "type": "object",
+      "required": [
+        "concrete_contract",
+        "severity_taxonomy",
+        "host_agnostic",
+        "concerns_wired",
+        "tier1_promotion_note",
+        "capability_freshness",
+        "plan_changeset_class",
+        "lane"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "concrete_contract": {
+          "enum": ["pass", "warn", "fail", "n/a"],
+          "description": "T2 check 1: every implementation AC names >=1 concrete artifact. n/a allowed only when decision=grandfathered."
+        },
+        "severity_taxonomy": {
+          "type": "object",
+          "required": ["rated", "justification"],
+          "additionalProperties": false,
+          "properties": {
+            "rated": { "enum": ["critical", "high", "medium", "low", "n/a"] },
+            "justification": { "type": "string", "minLength": 5 }
+          }
+        },
+        "host_agnostic": {
+          "type": "object",
+          "required": ["result"],
+          "additionalProperties": false,
+          "properties": {
+            "result": { "enum": ["pass", "flagged", "n/a"] },
+            "config": { "type": "string", "description": "Project-owned forbidden-token config path, e.g. .svc/forbidden-tokens.json." },
+            "tokens": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Tokens flagged as appearing in framework-path files. Empty when result=pass."
+            }
+          }
+        },
+        "concerns_wired": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^concerns/.+\\.md$" }
+        },
+        "tier1_promotion_note": {
+          "enum": ["n/a", "filled"]
+        },
+        "capability_freshness": {
+          "type": "object",
+          "required": ["result"],
+          "additionalProperties": false,
+          "properties": {
+            "result": { "enum": ["pass", "stale", "n/a"] },
+            "oracles": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "plan_changeset_class": {
+          "enum": ["contract-change", "hot-path", "refactor", "additive", "docs", "n/a"]
+        },
+        "lane": {
+          "enum": ["greenfield", "brownfield-conversion", "brownfield-feature", "bugfix", "drift", "refactor", "framework"]
+        }
+      }
+    },
+    "decision": {
+      "enum": ["accepted", "refused", "bound-to-proposal", "grandfathered"],
+      "description": "Promotion outcome. `accepted` = WI lands actionable. `refused` = WI does not land. `bound-to-proposal` = WI lands with Status: proposal-bound (not actionable). `grandfathered` = pre-cutoff WI."
+    },
+    "reviewer": {
+      "type": "string",
+      "minLength": 3,
+      "description": "Identifier for the gate that emitted the receipt, e.g. 'validate-wi-promotion@svc' or 'capture-idea@svc'."
+    },
+    "refusal_reason": {
+      "type": "string",
+      "minLength": 10,
+      "description": "Required when decision=refused. Explains which check failed and why."
+    }
+  },
+  "allOf": [
+    {
+      "comment": "Refusal requires a reason.",
+      "if":   { "properties": { "decision": { "const": "refused" } }, "required": ["decision"] },
+      "then": { "required": ["refusal_reason"] }
+    },
+    {
+      "comment": "Grandfathered receipts must set grandfathered=true and may use n/a check values.",
+      "if":   { "properties": { "decision": { "const": "grandfathered" } }, "required": ["decision"] },
+      "then": { "properties": { "grandfathered": { "const": true } } }
+    },
+    {
+      "comment": "Non-grandfathered receipts must NOT carry grandfathered=true (only grandfathered decisions can claim the exemption).",
+      "if":   { "not": { "properties": { "decision": { "const": "grandfathered" } } } },
+      "then": { "properties": { "grandfathered": { "const": false } } }
+    },
+    {
+      "comment": "Non-grandfathered checks must be pass/warn/fail (no n/a).",
+      "if":   { "not": { "properties": { "decision": { "const": "grandfathered" } } } },
+      "then": {
+        "properties": {
+          "checks": {
+            "properties": {
+              "concrete_contract": { "enum": ["pass", "warn", "fail"] },
+              "severity_taxonomy": { "properties": { "rated": { "enum": ["critical", "high", "medium", "low"] } } },
+              "host_agnostic":     { "properties": { "result": { "enum": ["pass", "flagged"] } } },
+              "capability_freshness": { "properties": { "result": { "enum": ["pass", "stale"] } } },
+              "plan_changeset_class": { "enum": ["contract-change", "hot-path", "refactor", "additive", "docs"] }
+            }
+          }
+        }
+      }
+    },
+    {
+      "comment": "Bootstrap receipts must declare bootstrap=true; only legitimate per WI-073 precedent.",
+      "if":   { "properties": { "bootstrap": { "const": true } } },
+      "then": { "properties": { "decision": { "enum": ["accepted", "bound-to-proposal"] } } }
+    }
+  ]
+}

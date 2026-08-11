@@ -1,0 +1,67 @@
+{
+  "wi": "WI-FIXTURE-GOOD",
+  "lane": "framework",
+  "created": "2026-05-10T09:00:00Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Baseline receipt — required fields only (legitimate Phase A pattern)",
+      "status": "completed",
+      "metadata": { "skill": "route-workflow" },
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-05-10T09:00:00Z",
+        "loaded_via": "session"
+      },
+      "completed_at": "2026-05-10T09:00:00Z"
+    },
+    {
+      "id": 2,
+      "subject": "Receipt with all extension fields well-formed",
+      "status": "completed",
+      "blocked_by": [1],
+      "metadata": { "skill": "diagnose-bug" },
+      "skill_receipt": {
+        "skill": "diagnose-bug",
+        "loaded_at": "2026-05-10T09:01:00Z",
+        "loaded_via": "skill_tool",
+        "evidence_level": "V2",
+        "target_class": "browser-visible",
+        "phases_executed": [
+          {
+            "id": "P1-PreFlight",
+            "ts": "2026-05-10T09:01:30Z",
+            "evidence_artifacts": [
+              { "type": "command_output", "path": ".svc/preflight-fixture.log" }
+            ]
+          },
+          {
+            "id": "P3-RootCause",
+            "ts": "2026-05-10T09:15:00Z",
+            "evidence_artifacts": [
+              { "type": "file", "path": "docs/specs/work-items/WI-FIXTURE-GOOD-root-cause.md" },
+              { "type": "screenshot", "path": "docs/evidence/wi-fixture-good/dom.png" }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-10T09:15:00Z"
+    },
+    {
+      "id": 3,
+      "subject": "Receipt with V0 evidence on api target — legitimate per the cross-check table",
+      "status": "completed",
+      "blocked_by": [2],
+      "metadata": { "skill": "verify-promotion" },
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-05-10T09:20:00Z",
+        "loaded_via": "skill_tool",
+        "evidence_level": "V0",
+        "target_class": "api"
+      },
+      "completed_at": "2026-05-10T09:21:00Z"
+    }
+  ]
+}

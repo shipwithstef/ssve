@@ -1,0 +1,40 @@
+{
+  "wi": "WI-245",
+  "lane": "framework",
+  "created": "2026-05-10T18:14:10.553Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Migrate ingest-guide-batch skill contract",
+      "status": "completed",
+      "blocked_by": [],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T18:14:22.980Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T18:15:32.306Z"
+    },
+    {
+      "id": 2,
+      "subject": "Validate and close WI-245",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T18:15:32.346Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T18:16:19.425Z"
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "host": "antigravity",
+  "name": "Antigravity (Google DeepMind)",
+  "skills_path": "~/.gemini/antigravity/skills",
+  "rules_path": "",
+  "builder_profile_path": "~/.svc/builder-profile.md",
+  "capabilities": {
+    "skills": true,
+    "hooks": false,
+    "plugins": false,
+    "mcp": true,
+    "commands": false,
+    "agents": false
+  },
+  "runtime_ingress_v2": { "transport": "cli-adapter", "fallback": "cli-adapter", "canonical_journal": true, "projection_only": true },
+  "authority_capabilities": {
+    "stable_session_identity": false,
+    "stable_child_identity": false,
+    "filesystem_containment": "none",
+    "mutating_child_execution": false,
+    "reason": "Skills-only host with no verified lifecycle hook identity or containment adapter."
+  },
+  "infra_files": [
+    "DOCTRINE.md",
+    "REPO_MODES.md",
+    "WORKTREES.md",
+    "EXTERNAL_ADDONS.md",
+    "FRAMEWORK-STATE.md",
+    "skills-manifest.json",
+    "CONTRIBUTING.md",
+    "ANTIGRAVITY.md"
+  ],
+  "infra_dirs": [
+    "scripts",
+    "references",
+    "proposals",
+    "examples",
+    "provision",
+    "templates",
+    "_shared",
+    "concerns"
+  ],
+  "skip": [
+    "hooks"
+  ],
+  "post_install_commands": [],
+  "verify_commands": [
+    "test -f {skills_path}/route-workflow/SKILL.md",
+    "test -f {skills_path}/DOCTRINE.md",
+    "test -f {skills_path}/skills-manifest.json",
+    "test -f {skills_path}/scripts/worktree.sh"
+  ],
+  "wiring": {
+    "hook_capable": false,
+    "wirer": null,
+    "wirer_via": null,
+    "governed": false,
+    "governed_token": null,
+    "config_file": null,
+    "enforcement": "none",
+    "reason": "No hook runtime; skills-only host (capabilities.hooks=false). Explicitly non-hook-capable."
+  }
+}

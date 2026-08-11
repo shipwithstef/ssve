@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seriousvibecoding.dev/schemas/session-worktree-binding.schema.json",
+  "title": "Session, worktree, and WI binding",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "session_id",
+    "role",
+    "wi",
+    "repo_root",
+    "worktree_root",
+    "branch",
+    "claim_path",
+    "created_at",
+    "updated_at",
+    "generation"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "session_id": {
+      "type": "string",
+      "minLength": 9,
+      "maxLength": 160,
+      "pattern": "^(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|(?:thread|session|sess|codex|claude|kimi|gemini|agy|svc)[-_][A-Za-z0-9][A-Za-z0-9._:-]{7,127})$"
+    },
+    "role": {
+      "enum": ["mutating", "reviewer", "research", "audit"]
+    },
+    "wi": {
+      "type": "string",
+      "pattern": "^(?:WI-[A-Z0-9]+(-[A-Z0-9]+)*)?$"
+    },
+    "repo_root": {
+      "type": "string",
+      "pattern": "^/"
+    },
+    "worktree_root": {
+      "type": "string",
+      "pattern": "^/"
+    },
+    "branch": {
+      "type": "string",
+      "minLength": 1
+    },
+    "claim_path": {
+      "type": "string",
+      "pattern": "^(?:/.*)?$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "generation": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "released_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "transfer_from_generation": {
+      "type": "integer",
+      "minimum": 1
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "role": { "const": "mutating" } },
+        "required": ["role"]
+      },
+      "then": {
+        "properties": {
+          "wi": { "pattern": "^WI-[A-Z0-9]+(-[A-Z0-9]+)*$" },
+          "claim_path": { "pattern": "^/" }
+        }
+      },
+      "else": {
+        "properties": {
+          "wi": { "const": "" },
+          "claim_path": { "const": "" }
+        }
+      }
+    }
+  ]
+}

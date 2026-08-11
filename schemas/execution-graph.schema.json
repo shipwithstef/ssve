@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://serious-vibe-coding.local/schemas/execution-graph.schema.json",
+  "title": "Nested WI execution graph",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "wi", "base_sha", "state", "tasks", "waves", "created_at"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "wi": { "type": "string" },
+    "base_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "state": { "enum": ["pending", "running", "completed", "failed"] },
+    "tasks": { "type": "object", "additionalProperties": { "type": "object" } },
+    "waves": { "type": "array", "items": { "type": "object" } },
+    "created_at": { "type": "string", "format": "date-time" }
+  }
+}

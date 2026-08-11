@@ -1,0 +1,69 @@
+{
+  "schema": 1,
+  "wi": "WI-199",
+  "source_proposals": [
+    "proposals/done/2026-05-09-bundle-grep-is-not-validation.md"
+  ],
+  "status": "implemented-with-residuals",
+  "coverage": [
+    {
+      "source_proposal": "proposals/done/2026-05-09-bundle-grep-is-not-validation.md",
+      "proposal_item": "bundle-grep substitution is named as a blocking verification anti-pattern",
+      "status": "covered",
+      "owner_wi": "WI-199",
+      "evidence": [
+        "docs/specs/work-items/WI-199.md",
+        "references/bundle-grep-substitution-patterns.json",
+        "test-framework/evals/tier-1/validate-bundle-grep-substitution.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-09-bundle-grep-is-not-validation.md",
+      "proposal_item": "browser-visible closeouts cannot stop at V0 bundle/static proof",
+      "status": "covered",
+      "owner_wi": "WI-199",
+      "evidence": [
+        "hooks/svc-verification-delegation-guard.sh",
+        "scripts/verification-stop-guard.mjs",
+        "verify-promotion/SKILL.md",
+        "execute-changeset/SKILL.md"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-09-bundle-grep-is-not-validation.md",
+      "proposal_item": "multi-PR campaigns require deterministic N/3 live-evidence sampling",
+      "status": "covered",
+      "owner_wi": "WI-200",
+      "evidence": [
+        "docs/specs/work-items/WI-200.md",
+        "scripts/verification-sampling.mjs",
+        "test-framework/evals/tier-1/validate-verify-promotion-multi-pr-sampling.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-09-bundle-grep-is-not-validation.md",
+      "proposal_item": "bundle-grep outputs should self-label as V0-only and cumulative summaries should refuse unqualified VERIFIED wording with V0-only rows",
+      "status": "child-wi",
+      "owner_wi": "WI-339",
+      "evidence": [
+        "docs/specs/work-items/WI-339.md",
+        "proposals/done/2026-05-09-bundle-grep-is-not-validation.md"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-09-bundle-grep-is-not-validation.md",
+      "proposal_item": "save an Example Marketplace memory entry for verification depth on parallel-agent waves",
+      "status": "invalid",
+      "evidence": [
+        "proposals/done/2026-05-09-bundle-grep-is-not-validation.md"
+      ],
+      "note": "Memory updates require an explicit user memory-update request and are outside this framework-repo residual sweep."
+    }
+  ],
+  "residuals": [
+    {
+      "wi": "WI-339",
+      "title": "Verification tier labeling and cumulative closeout prerequisites"
+    }
+  ]
+}

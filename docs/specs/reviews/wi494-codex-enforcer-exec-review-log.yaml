@@ -1,0 +1,60 @@
+wi: WI-494
+gate: G6 review-exec (adversarial review of the FROZEN exec diff)
+frozen_commit: 1411f4eb73d1ea41e9b22ea7be9537ae5286f268
+reviewer:
+  launcher: scripts/run-external-review.mjs
+  requested_primary_tuple: {orchestrator: claude, host: codex, family: openai, model: gpt-5.6-sol, effort: high}
+  profile: codex-high (fixed-policy, policy_version 3)
+  receipt_route: exact_primary (status success; host=codex family=openai authoritative — model self-report field unreliable per known strict-schema quirk)
+  artifacts_dir: .svc/external-review-artifacts/exec/WI-494/20260717T174148Z-1569132
+cap: 3-round HARD cap (WI-491); a CONFIRMED Critical escalates immediately — no drain rounds
+rounds_run: 1
+unresolved_critical: 2
+remaining_high: 0
+outcome: ESCALATED
+terminal_state: ESCALATED_TO_USER
+verdict: escalated
+rounds:
+  - round: 1
+    verdict: fail
+    rubric_score: 3
+    findings: 5
+    artifact: .svc/external-review-artifacts/exec/WI-494/20260717T174148Z-1569132/findings.json
+    dispositions:
+      - id: WI494-F001
+        reviewer_severity: critical
+        adjudicated_severity: critical
+        disposition: ACCEPT (empirically confirmed)
+        claim: zero-state bootstrap exit can authorize a SHADOWED non-canonical svc-ensure-worktree.mjs when Bash cwd is a repo subdirectory
+        confirmation: drove the REAL enforcer with cwd=<repo>/nested containing a hostile nested/scripts/svc-ensure-worktree.mjs; hook returned allow. isBootstrapShape resolves argv[1] against ctx.repo_root but node resolves the relative script against the shell effective cwd (payload cwd), so the hostile nested copy would execute. Arbitrary code execution with no owned task. Breaks CED-02.
+        fix: resolve argv[1] against the effective Bash cwd and require realpath(cwd)==realpath(repo_root) for the bootstrap exception (or use an absolute canonical script path); add a nested-cwd shadow negative fixture
+      - id: WI494-F002
+        reviewer_severity: critical
+        adjudicated_severity: critical
+        disposition: ACCEPT (empirically confirmed)
+        claim: gh read allowlist admits side-effecting flags (--web launches an external browser/GH_BROWSER program; --cache writes disk) on otherwise-read verbs
+        confirmation: isReadOnlyTool returns allow(read) for 'gh pr view 1 --web', 'gh issue view 1 --web', 'gh repo view --web', 'gh run view 1 --web', and 'gh api --cache 1h /user'. --web executes a configured external program; --cache writes a local cache file. External-program execution plus disk write classified read-only. Breaks CED-05 fail-closed property.
+        fix: per-subcommand gh flag allowlist, or at minimum reject --web/-w(where applicable)/--cache (all spellings) on gh read verbs; audit each admitted gh subcommand for browser/pager/download/file-output; add negative fixtures
+      - id: WI494-F003
+        reviewer_severity: critical
+        adjudicated_severity: high
+        disposition: ACCEPT (empirically confirmed; severity tempered — refresh mutates server controller/cache state but is non-destructive)
+        claim: argocd 'app get --refresh' / '--hard-refresh' mutate Argo server reconciliation/cache state yet classify read-only (HAZARD_FLAGS.argocd always returns false)
+        confirmation: isReadOnlyTool returns allow(read) for 'argocd app get myapp --refresh' and '--hard-refresh'
+        fix: reject --refresh/--hard-refresh (all spellings) on argocd read verbs; inspect cluster/repo refresh flags; add negative fixtures
+      - id: WI494-F004
+        reviewer_severity: critical
+        adjudicated_severity: high
+        disposition: ACCEPT (confirmed by code; requires a pre-planted symlink directory — defense-in-depth gap)
+        claim: symlinked .svc/bootstrap-intent or .worktrees parent directories redirect the authorized bootstrap creation outside the repo
+        confirmation: readMarker lstat()s only the LEAF marker path (intermediate symlink components followed); svc-ensure-worktree worktree-safety is a LEXICAL path.dirname comparison. A symlinked parent escapes both. Breaks CED-02 arbitrary-path fence under a pre-existing hostile symlink.
+        fix: lstat/canonicalize every security-sensitive parent component (.svc/bootstrap-intent, .worktrees) before authorization AND before writing; reject symlinks/non-dirs/wrong-uid; add parent-symlink negative fixtures
+      - id: WI494-F005
+        reviewer_severity: medium
+        adjudicated_severity: medium
+        disposition: ACCEPT (confirmed by code)
+        claim: tier-1 bootstrap proof executes the graph-creating command with --json (OUTSIDE isBootstrapShape allowlist) so the one-hop end-to-end proof does not exercise the exact authorized shape; and the owned-graph mutant assertion masks a crash by translating any failure to allow
+        fix: execute exactly the authorized shape (or add an authorized output mode); keep the fixture repo alive until the owned-graph mutant test runs; capture and assert exit status separately, never translate a crash into an allow response
+residual_followups:
+  - tier-1 is 250/1 (NOT the commit-message claimed 251/251). validate-skip-conditions-registry.sh flags lane-tasks-WI-494.json task 5 (execute-changeset) — its skill_receipt lacks output_artifact and validation_output. Introduced by the post-commit task-5 completion (at commit time task-5 was in_progress, so it passed then). Bookkeeping omission, not a shipped-code defect; fix by adding the evidence field to task-5 receipt.
+next: BLOCKED -> execute-changeset (fix F001/F002/F003/F004/F005 + task-5 receipt), then re-freeze and re-run review-exec

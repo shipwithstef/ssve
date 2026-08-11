@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "wi": "WI-348",
+  "source_proposal": "proposals/done/2026-05-17-framework-improvement-wave-closeout-validator.md",
+  "status": "implemented",
+  "coverage": [
+    {
+      "proposal_item": "Validator supports contiguous ranges and explicit WI lists",
+      "status": "covered",
+      "evidence": [
+        "scripts/validate-wave-closeout.mjs"
+      ]
+    },
+    {
+      "proposal_item": "Validator checks WI docs, INDEX rows, lane task graphs, runtime evidence, and scoped worktrees",
+      "status": "covered",
+      "evidence": [
+        "scripts/validate-wave-closeout.mjs"
+      ]
+    },
+    {
+      "proposal_item": "Route-workflow documents the wave closeout obligation",
+      "status": "covered",
+      "evidence": [
+        "route-workflow/SKILL.md"
+      ]
+    },
+    {
+      "proposal_item": "Dispatch-waves uses the same gate before all-WI closed claims",
+      "status": "covered",
+      "evidence": [
+        "dispatch-waves/SKILL.md"
+      ]
+    },
+    {
+      "proposal_item": "Tier-1 fixtures prove pass/fail behavior",
+      "status": "covered",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-wave-closeout.sh"
+      ]
+    }
+  ],
+  "residuals": []
+}

@@ -1,0 +1,415 @@
+# Work Items Index
+
+- [WI-537](WI-537.md) — Privacy-safe single-root history reset with verified private recovery archive (severity:critical) — status:IN_PROGRESS
+
+- [WI-531](WI-531.md) — Zero-block hooks and instant governed provisioning; parent for Phase A recovery UX plus WI-532..WI-536 Tier-1 closure (severity:critical) — status:VERIFIED-L3
+- [WI-532](WI-532.md) — Tier-1 routing, prompt-composer, and read-only classification closure (severity:high) — status:VERIFIED-L3; parent WI-531
+- [WI-533](WI-533.md) — Tier-1 receipt and task-state closure (severity:high) — status:VERIFIED-L3; parent WI-531
+- [WI-534](WI-534.md) — Tier-1 proposal and preflight policy closure (severity:high) — status:VERIFIED-L3; parent WI-531
+- [WI-535](WI-535.md) — Tier-1 WI/session authority metadata closure (severity:critical) — status:VERIFIED-L3; parent WI-531
+- [WI-536](WI-536.md) — Tier-1 timeout, concurrency, and performance closure (severity:high) — status:VERIFIED-L3; parent WI-531
+
+- [WI-524](WI-524.md) — Urgent Codex session rebinding repair: serialized dispatcher, secure bootstrap handoff, persistent worktree baton, explicit live-owner takeover, and temporary owner recovery (severity:critical) — status:implemented
+
+- [WI-071](WI-071.md) — Gemini CLI hangs after activating large skills — status:verified
+- [WI-072](WI-072.md) — Port svc-workflow-guard.js to .mjs and unify on shared hook libs — status:verified
+- [WI-073](WI-073.md) — Extend `capture-idea` with `--from-proposal` mode — status:verified
+- [WI-074](WI-074.md) — Framework Improvement — 2026-04-24 — Skip-Conditions Registry — status:verified
+- [WI-075](WI-075.md) — Framework Improvement — 2026-04-24 — Reviewer Safety — status:verified
+- [WI-076](WI-076.md) — Wire-hooks hygiene — dedup + rename registry — status:verified
+- [WI-077](WI-077.md) — evolve/improve artifact boundary — status:verified
+- [WI-078](WI-078.md) — rules registry completeness validator — status:verified
+- [WI-079](WI-079.md) — dead-symlink validator — status:verified
+- [WI-080](WI-080.md) — setup orphan symlink cleanup — status:verified
+- [WI-081](WI-081.md) — Framework Improvement — 2026-04-24 — Symlink Refresh After Worktree Removal — status:verified (closed-duplicate-of-WI-079)
+- [WI-090](WI-090.md) — Research Skill Refactor — Gemini Pre-Scope, Single-Pass Extraction, Domain Gate — status:verified
+- [WI-091](WI-091.md) — ingest-guide Skill — Paste Social Content → Validate → Promote — status:verified
+- [WI-092](WI-092.md) — Parallel Candidate Expansion Orchestrator for ingest-guide — status:verified
+- [WI-093](WI-093.md) — Router Miss — capture-idea Did Not Auto-Trigger on "I have idea I want to realise" — status:verified
+- [WI-094](WI-094.md) — Capability & Cash Meta-Orchestrator — Cross-Project Resource Concierge — status:verified
+- [WI-095](WI-095.md) — Hard Close-Out Gate — Runtime Verification Required Before WI Done — status:verified
+- [WI-096](WI-096.md) — Skill Pre-Flight Prerequisite Check — status:verified
+- [WI-097](WI-097.md) — "Use Playwright, Don't Ask the User to Browser-Verify" Rule — status:verified
+- [WI-102](WI-102.md) — Build compact browser-verify wrapper (blocks WI-097 full enforcement + WI-095 product-lane) — status:verified
+- [WI-098](WI-098.md) — Atomic WI Number Allocation in capture-idea — status:verified
+- [WI-099](WI-099.md) — Deferred Framework Improvements (T2/T3) — Ranked Backlog from /insights 2026-04-24 — status:partial-promoted (T2-B→WI-109)
+- [WI-100](WI-100.md) — capture-idea --from-proposal parser — Goal TBD + AC dropped under nested headings — status:verified
+- [WI-101](WI-101.md) — capture-idea self-exclusion — basename fallback for post-merge proposal moves — status:verified
+- [WI-103](WI-103.md) — Destructive git ops must prove no-loss before running — status:verified
+- [WI-104](WI-104.md) — Capability Registry (foundation) — status:verified
+- [WI-105](WI-105.md) — Cross-Project State Reader (visibility) — status:verified
+- [WI-106](WI-106.md) — Recommendation Lenses (the brain) — status:verified
+- [WI-107](WI-107.md) — Capability Rediscovery (keep registry fresh) — status:verified
+- [WI-108](WI-108.md) — Honest Diagnosis (the "why haven't I shipped" answer) — status:verified
+- [WI-109](WI-109.md) — validate-feature cannot be skipped without explicit override (promoted from WI-099 T2-B) — status:verified
+- [WI-110](WI-110.md) — Tier-1 aggregate harness stalls mid-run on a downstream validator — status:verified
+- [WI-111](WI-111.md) — ingest-guide deep cross-evaluation stages — status:verified
+- [WI-112](WI-112.md) — external-state lifecycle thinking gate — status:verified
+- [WI-113](WI-113.md) — G-1 svc-lane-tasks-validator Edit-path eval-gate — status:verified
+- [WI-114](WI-114.md) — G-4 skill-artifact authenticity hook — status:verified
+- [WI-115](WI-115.md) — ingest-guide matrix tie-break (selective-blend) — status:verified
+- [WI-116](WI-116.md) — Hook coverage spec + 5 lifecycle wirings (R-1) — status:verified
+- [WI-117](WI-117.md) — pipeline-decisions schema validator + canonical writer (R-2) — status:verified
+- [WI-118](WI-118.md) — cross-host hook conformance gate registry + validator (R-3) — status:verified
+- [WI-119](WI-119.md) — autorun skeleton tier-1 static check + autorun-contract (R-4) — status:verified
+- [WI-120](WI-120.md) — atomic state-io + cooperative state-lock (R-5) — status:verified
+- [WI-121](WI-121.md) — extend external-state gate to plan/exec/review/audit (R-6) — status:verified
+- [WI-122](WI-122.md) — wire preflight into PreToolUse soft-warn hook (R-7) — status:verified
+- [WI-123](WI-123.md) — host-agnostic hook wiring + loadability validator — status:verified
+- [WI-124](WI-124.md) — SessionStart self-heal for stale host-install symlinks + hook paths — status:verified
+- [WI-125](WI-125.md) — Generic detached-Kimi runner so any svc skill can offload long Kimi jobs without burning parent (Claude) tokens — status:verified
+- [WI-126](WI-126.md) — New skill `launch-knowledge` — universal launch knowledge base + thin per-user overlay — status:verified
+- [WI-127](WI-127.md) — Kimi-only hooks fire on non-Kimi hosts and emit `/flow:*` instructions Claude/Codex/Gemini don't understand — status:verified
+- [WI-128](WI-128.md) — Long-output-to-file pattern (promotion of WI-099 T2-A) — status:verified
+- [WI-129](WI-129.md) — bring `landing-page` + `generate-visuals` skills into framework compliance — status:verified
+- [WI-130](WI-130.md) — landing-page maturity push — reference bank + lane re-insertion + freshness validator — status:verified
+- [WI-131](WI-131.md) — landing-page maturity v2 — 10 anchors, high-performer bank, component variants, market-gap analysis — status:verified
+- [WI-132](WI-132.md) — skill-output-visibility rule + list-work-items reproduce-table contract — status:verified
+- [WI-133](WI-133.md) — validate-skill-structure.sh flakes — different random skill failure each run with no source change — status:verified
+- [WI-134](WI-134.md) — SessionStart self-heal misses dead host-install symlinks when worktree was the source — status:VERIFIED
+- [WI-136](WI-136.md) — First new skill demonstrating progressive-disclosure convention — status:verified
+- [WI-137](WI-137.md) — setup script does not symlink `_shared/` directory contents (5-host gap, severity:high) — status:VERIFIED
+- [WI-138](WI-138.md) — Strategy 3 hardening — backlog from WI-134 G5 review — status:backlog
+- [WI-139](WI-139.md) — landing-page + benchmark-landing must run mandatory visual side-by-side before declaring done (severity:high) — status:VERIFIED
+- [WI-140](WI-140-competitive-awareness-deep-research.md) — Competitive awareness deep research (SDKG primitive layer + keyword-scoped gate) — status:verified (scope-extended-by-WI-142)
+- [WI-141](WI-141.md) — design-logo: remove designer-handoff exit, reach designer-grade via AI orchestration alone (severity:high) — status:verified
+- [WI-142](WI-142.md) — Industry Grounding becomes default — knowledge-base read at gate, never web-fetch (severity:critical, supersedes-scope-of WI-140) — status:verified
+- [WI-143](WI-143.md) — refresh-competitors skill + raise competitor floor to 30 + analyze-competitors split (severity:medium, blocked-by WI-142) — status:verified
+- [WI-144](WI-144.md) — Framework skip-integrity improvements — status:completed
+- [WI-145](WI-145.md) — readKnowledgeBase + lane-tasks validator fixes (post-Kimi-review) — status:verified
+- [WI-146](WI-146.md) — Fix 5-File Sync Contract (audited 2026-05-08: counts wrong, linter already enforces sync) — status:CLOSED-INVALID
+- [WI-147](WI-147.md) — Remove duplicate question-fatigue rule from rulesRegistry (severity:high) — status:verified
+- [WI-148](WI-148.md) — Fix route-workflow Self-Verify table numbering gap (severity:high) — status:verified
+- [WI-149](WI-149.md) — REPO_MODES `5.` dup + bootstrap/greenfield asymmetry (severity:high, downgraded-from-critical, subsumes-WI-146-finding) — status:verified
+- [WI-150](WI-150.md) — review-plan/security in corePackForRouting (severity:medium, RESCOPE: bundle-with-WI-159 as discuss-phase) — status:verified
+- [WI-151](WI-151.md) — Make concern scanner host-aware (severity:critical, bundle-with-WI-167) — status:verified
+- [WI-152](WI-152.md) — External addon skills "missing" (audited 2026-05-08: external-by-design) — status:CLOSED-INVALID
+- [WI-153](WI-153.md) — Add Self-Verify to base44-environment + sweep (severity:high, frontmatter-sweep) — status:verified
+- [WI-154](WI-154.md) — Populate route-workflow chain.lanes (severity:high, frontmatter-sweep) — status:verified
+- [WI-155](WI-155.md) — Align session contract freshness 24h vs 60min (severity:high) — status:verified
+- [WI-156](WI-156.md) — Add intent-routing disambiguation protocol (severity:high) — status:verified
+- [WI-157](WI-157.md) — Fix visual-output hook path mismatch for design-logo (severity:high) — status:verified
+- [WI-158](WI-158.md) — Expand tier-3 judge coverage from 2.8% (severity:high, downgraded-from-critical, +5/quarter target) — status:closed-superseded
+- [WI-159](WI-159.md) — review-plan in pipeline array (severity:medium, RESCOPE: bundle-with-WI-150) — status:verified
+- [WI-160](WI-160.md) — Evaluate 4 rules with last_evaluated:null (severity:medium) — status:verified
+- [WI-161](WI-161.md) — Make track-visuals mode machine-readable (severity:medium, NEEDS-VERIFICATION, likely-merge-into-WI-162) — status:verified
+- [WI-162](WI-162.md) — Document role boundaries between 4 skill-order arrays (severity:medium, RESCOPE: do-not-merge-arrays) — status:verified
+- [WI-163](WI-163.md) — Document autorun for 16 missing human_checkpoint skills (severity:medium, count-corrected-from-18) — status:verified
+- [WI-164](WI-164.md) — Add chain block + terminal:true to strategic-decision (severity:medium, frontmatter-sweep) — status:verified
+- [WI-165](WI-165.md) — Verify tier 1.5+ eval timeout (severity:medium, verify-internals-first) — status:verified
+- [WI-166](WI-166.md) — Cross-host task-graph.mjs validator (severity:high, NEEDS-VERIFICATION) — status:verified
+- [WI-167](WI-167.md) — Fix relative paths in route-workflow (severity:critical, bundle-with-WI-151) — status:verified
+- [WI-168](WI-168.md) — write-journeys --auto-discover-chrome — generate skeleton journeys for chrome controls without spec coverage — status:verified
+- [WI-169](WI-169.md) — catalog-domain-capabilities → write-journeys auto-chain for table-stakes capabilities — status:verified
+- [WI-170](WI-170.md) — tier-1 validator validate-chrome-journey-coverage — session-start WARN escalating to HIGH after 30 days — status:verified
+- [WI-171](WI-171.md) — Tier-1 is red on main (F-001, severity:critical) — status:verified
+- [WI-172](WI-172.md) — `validate-feature-gate.sh` fails silently on malformed/closed WIs (F-002, severity:critical) — status:verified
+- [WI-173](WI-173.md) — `validate-hook-scripts-loadable.sh` catches a broken installed hook (F-003, severity:high) — status:verified
+- [WI-174](WI-174.md) — Framework self-management validator fails on `discuss-phase` (F-004, severity:critical) — status:verified
+- [WI-175](WI-175.md) — Pipeline decision schema has invalid historical rows (F-005, severity:high) — status:verified
+- [WI-176](WI-176.md) — Knowledge provenance gate is red for a post-gate domain (F-006, severity:high) — status:verified
+- [WI-177](WI-177.md) — 13 legacy knowledge domains remain unproven (F-007, severity:high) — status:verified
+- [WI-178](WI-178.md) — WI closeout evidence validator fails on WI index drift (F-008, severity:high) — status:verified
+- [WI-179](WI-179.md) — Preflight rollout is still 0/79 and advisory-only (F-009, severity:high) — status:verified
+- [WI-180](WI-180.md) — `Before Starting` context loading is mostly advisory (F-010, severity:high) — status:verified
+- [WI-181](WI-181.md) — Stop completion guard wiring discards hook stdin (F-011, severity:critical) — status:completed
+- [WI-182](WI-182.md) — Completion guard still documents legacy `lane-tasks.json` (F-012, severity:high) — status:verified
+- [WI-183](WI-183.md) — Completion guard allows stop after three blocks (F-013, severity:high) — status:verified
+- [WI-184](WI-184.md) — `svc-wi-pillars-check` is still a soft warning on VERIFIED (F-014, severity:high) — status:verified
+- [WI-185](WI-185.md) — Preflight hook is fail-open by design (F-015, severity:high) — status:verified
+- [WI-186](WI-186.md) — SessionStart healthcheck only mentions Claude in shared hooks config (F-016, severity:high) — status:verified
+- [WI-187](WI-187.md) — Cursor and Antigravity are provisioned without hook enforcement (F-017, severity:high) — status:verified
+- [WI-188](WI-188.md) — Manifest excludes real top-level skills (F-018, severity:high) — status:verified
+- [WI-189](WI-189.md) — Skill corpus violates its own 500-line progressive-disclosure norm (F-019, severity:high) — status:closed-invalid
+- [WI-190](WI-190.md) — `write-journeys` has known P0 coverage debt (F-020, severity:critical) — status:verified
+- [WI-191](WI-191.md) — Skill execution process is not trace-validated (F-021, severity:critical) — status:closed-split
+- [WI-192](WI-192.md) — Tier-3 coverage remains effectively absent (F-022, severity:high) — status:verified
+- [WI-193](WI-193.md) — Tier-2 assertions are often presence checks rather than process checks (F-023, severity:high) — status:verified
+- [WI-194](WI-194.md) — Route workflow autorun is documented but insufficiently tested (F-024, severity:high) — status:verified
+- [WI-195](WI-195.md) — Atomic state writer not universally enforced; no lock/concurrent-session protection (F-025, severity:high) — status:verified
+- [WI-196](WI-196.md) — Atomic state write validator is advisory-only (F-026, severity:high) — status:verified
+- [WI-197](WI-197.md) — Runtime verification can still be delegated to the user (F-027, severity:critical) — status:verified
+- [WI-198](WI-198.md) — End-to-end commitment is not a first-class session mode (F-028, severity:critical) — status:verified
+- [WI-199](WI-199.md) — V0 bundle-grep can be substituted for live verification (F-029, severity:critical) — status:verified
+- [WI-200](WI-200.md) — Multi-PR verification sampling is not required (F-030, severity:high) — status:verified
+- [WI-201](WI-201.md) — Mid-task method corrections are misrouted as new goals (F-031, severity:high) — status:verified
+- [WI-202](WI-202.md) — User typo normalization is not part of routing (F-032, severity:high) — status:verified
+- [WI-203](WI-203.md) — Cross-cutting infrastructure does not generate journeys (F-033, severity:high) — status:closed-duplicate
+- [WI-204](WI-204.md) — Chrome controls are not covered as journey sources (F-034, severity:critical) — status:closed-duplicate
+- [WI-205](WI-205.md) — `route-workflow` claims live-evidence hook behavior that is not a real hook (F-035, severity:high) — status:verified
+- [WI-206](WI-206.md) — SDKG post-task trigger router fail-opens (F-036, severity:high) — status:verified
+- [WI-207](WI-207.md) — Tier-1 validators mutate repo state (F-037, severity:high) — status:verified
+- [WI-208](WI-208.md) — `.svc` active state contains stale completed-file naming inconsistencies (F-038, severity:high) — status:verified
+- [WI-209](WI-209.md) — README overstates parallel orchestration capability (F-039, severity:high) — status:verified
+- [WI-210](WI-210.md) — Historical proposals remain open without a triage SLA (F-040, severity:high) — status:verified
+- [WI-211](WI-211.md) — Phase-receipts Phase B — migrate canonical 5 skills (parent:WI-191, severity:high) — status:verified
+- [WI-212](WI-212.md) — Phase-receipts Phase C — rolling backlog one WI per remaining skill (parent:WI-191, severity:medium) — status:verified
+- [WI-213](WI-213.md) — Phase-receipts Phase D — gate flip + Stop hook enforcement (parent:WI-191, severity:critical) — status:verified
+- [WI-214](WI-214.md) — Enforce fresh session contract when lane task graphs are created (F2, severity:medium) — status:verified
+- [WI-215](WI-215.md) — Trim route-workflow hot-path skill body (F3, severity:medium) — status:verified
+- [WI-216](WI-216.md) — Mechanically enforce destructive git preamble (F4, severity:medium) — status:completed
+- [WI-217](WI-217.md) — Use git commit time for freshness validators (F5, severity:medium) — status:verified
+- [WI-218](WI-218.md) — Union-merge append-only svc jsonl logs (F6, severity:low) — status:completed
+- [WI-219](WI-219.md) — Codify review-gate policy for framework-lane risk surfaces (F8, severity:low) — status:verified
+- [WI-220](WI-220.md) — Require landing-state verification before audit-session closeout (severity:high) — status:verified
+- [WI-221](WI-221.md) — Mechanically enforce improve-framework quick-fix size threshold (severity:high) — status:closed-invalid
+- [WI-222](WI-222.md) — list-work-items ignores YAML-frontmatter WI status — status:verified
+- [WI-223](WI-223.md) — Phase C skill migration: write-vision phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-224](WI-224.md) — Phase C skill migration: analyze-domain phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-225](WI-225.md) — Phase C skill migration: analyze-competitors phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-226](WI-226.md) — Phase C skill migration: refresh-competitors phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-227](WI-227.md) — Phase C skill migration: catalog-domain-capabilities phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-228](WI-228.md) — Phase C skill migration: build-personas phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-229](WI-229.md) — Phase C skill migration: validate-feature phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-230](WI-230.md) — Phase C skill migration: capture-idea phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-231](WI-231.md) — Phase C skill migration: audit-ac phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-232](WI-232.md) — Phase C skill migration: sync-spec-code phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-233](WI-233.md) — Phase C skill migration: define-code-style phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-234](WI-234.md) — Phase C skill migration: write-e2e phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-235](WI-235.md) — Phase C skill migration: analyze-marketing phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-236](WI-236.md) — Phase C skill migration: route-workflow phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-237](WI-237.md) — Phase C skill migration: onboard-repo phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-238](WI-238.md) — Phase C skill migration: sync-work-items phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-239](WI-239.md) — Phase C skill migration: list-work-items phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-240](WI-240.md) — Phase C skill migration: discover-skills phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-241](WI-241.md) — Phase C skill migration: svc-advisor phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-242](WI-242.md) — Phase C skill migration: research phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-243](WI-243.md) — Phase C skill migration: discuss-phase phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-244](WI-244.md) — Phase C skill migration: ingest-guide phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-245](WI-245.md) — Phase C skill migration: ingest-guide-batch phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-246](WI-246.md) — Phase C skill migration: capability-registry phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-247](WI-247.md) — Phase C skill migration: capability-concierge phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-248](WI-248.md) — Phase C skill migration: honest-diagnosis phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-249](WI-249.md) — Phase C skill migration: write-spec phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-250](WI-250.md) — Phase C skill migration: design-ux phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-251](WI-251.md) — Phase C skill migration: design-ui phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-252](WI-252.md) — Phase C skill migration: design-logo phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-253](WI-253.md) — Phase C skill migration: design-tech phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-254](WI-254.md) — Phase C skill migration: explore-solutions phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-255](WI-255.md) — Phase C skill migration: explore-ux phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-256](WI-256.md) — Phase C skill migration: plan-changeset phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-257](WI-257.md) — Phase C skill migration: review-gate phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-258](WI-258.md) — Phase C skill migration: audit-implementation phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-259](WI-259.md) — Phase C skill migration: land-changeset phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-260](WI-260.md) — Phase C skill migration: extract-bootstrap phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-261](WI-261.md) — Phase C skill migration: review-cross-model phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-262](WI-262.md) — Phase C skill migration: review-plan phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-263](WI-263.md) — Phase C skill migration: benchmark-landing phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-264](WI-264.md) — Phase C skill migration: track-visuals phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-265](WI-265.md) — Phase C skill migration: review-security phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-266](WI-266.md) — Phase C skill migration: manage-learnings phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-267](WI-267.md) — Phase C skill migration: test-framework phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-268](WI-268.md) — Phase C skill migration: audit-session-execution phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-269](WI-269.md) — Phase C skill migration: evolve-framework phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-270](WI-270.md) — Phase C skill migration: blend-external phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-271](WI-271.md) — Phase C skill migration: blend-private phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-272](WI-272.md) — Phase C skill migration: wsl2-audio phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-273](WI-273.md) — Phase C skill migration: mine-builder phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-274](WI-274.md) — Phase C skill migration: find-opportunity phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-275](WI-275.md) — Phase C skill migration: stage-revenue phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-276](WI-276.md) — Phase C skill migration: create-skill phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-277](WI-277.md) — Phase C skill migration: quick-fix phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-278](WI-278.md) — Phase C skill migration: improve-framework phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-279](WI-279.md) — Phase C skill migration: teach-project phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-280](WI-280.md) — Phase C skill migration: plan-capabilities phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-281](WI-281.md) — Phase C skill migration: reverse-engineer phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-282](WI-282.md) — Phase C skill migration: audit-coverage phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-283](WI-283.md) — Phase C skill migration: platform-operating-architect phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-284](WI-284.md) — Phase C skill migration: base44-environment phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-285](WI-285.md) — Phase C skill migration: roadmap-evaluation phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-286](WI-286.md) — Phase C skill migration: monetization-architecture phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-287](WI-287.md) — Phase C skill migration: assess-market-readiness phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-288](WI-288.md) — Phase C skill migration: evaluate-rule phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-289](WI-289.md) — Phase C skill migration: manage-finops phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-290](WI-290.md) — Phase C skill migration: strategic-decision phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-291](WI-291.md) — Phase C skill migration: launch-knowledge phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-292](WI-292.md) — Phase C skill migration: generate-visuals phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-293](WI-293.md) — Phase C skill migration: landing-page phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-294](WI-294.md) — Phase C skill migration: recall-stack-knowledge phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-295](WI-295.md) — Phase C skill migration: plan-blast-radius phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-296](WI-296.md) — Phase C skill migration: track-topology-diff phase receipts (parent:WI-212, severity:medium) — status:verified
+- [WI-297](WI-297.md) — Dynamic progressive delivery graph epic — conditional mandatory orchestration (severity:critical) — status:verified
+- [WI-298](WI-298.md) — Delivery graph schema and route-workflow compiler (parent:WI-297, severity:critical) — status:verified
+- [WI-299](WI-299.md) — Delivery graph validators for evidence families and N/A skip ledgers (parent:WI-297, severity:critical) — status:verified
+- [WI-300](WI-300.md) — Skill outcome contract and progressive delivery graph mutation (parent:WI-297, severity:high) — status:verified
+- [WI-301](WI-301.md) — Delivery graph closeout classification and retrospective closure guard (parent:WI-297, severity:critical) — status:verified
+- [WI-302](WI-302.md) — Delivery graph replay fixtures and autorun proof (parent:WI-297, severity:high) — status:verified
+- [WI-303](WI-303.md) — Fix research skill global knowledge path resolution (severity:high) — status:verified
+- [WI-304](WI-304.md) — route-workflow closeout can leave main ahead of origin (severity:high) — status:verified
+- [WI-305](WI-305.md) — Feature validation closeout ledger (severity:critical) — status:verified
+- [WI-306](WI-306.md) — Provider fidelity and saved-outcome validation for generated deliverables (severity:critical) — status:verified
+- [WI-307](WI-307.md) — Journey and E2E contract hardening (severity:critical) — status:verified
+- [WI-308](WI-308.md) — Base44 data, persistence, and RLS verification pack (severity:high) — status:verified
+- [WI-309](WI-309.md) — Cross-system falsification and old-path proof (severity:high) — status:verified
+- [WI-310](WI-310.md) — Parallel WI dispatch and merge-back orchestration (severity:high) — status:verified
+- [WI-311](WI-311.md) — Proposal and session-audit residual promotion sweep (severity:high) — status:VERIFIED
+- [WI-312](WI-312.md) — Hook, guard, and host enforcement residuals (severity:high) — status:VERIFIED
+- [WI-313](WI-313.md) — Strategic research and launch knowledge discipline (severity:medium) — status:VERIFIED
+- [WI-314](WI-314.md) — Capability blocker and legacy-inertia detection (severity:high) — status:VERIFIED
+- [WI-315](WI-315.md) — External addon blend backlog consolidation (severity:medium) — status:backlog
+- [WI-316](WI-316.md) — Infra lane and Knowledge Spine activation (severity:medium) — status:backlog
+- [WI-317](WI-317.md) — svc doctor consolidated healthcheck (severity:medium) — status:backlog
+- [WI-318](WI-318.md) — Blocking discovery halt protocol (severity:high) — status:VERIFIED
+- [WI-319](WI-319.md) — OpenCode host integration residuals (severity:medium) — status:backlog
+- [WI-320](WI-320.md) — Explicit route-workflow delivery tier declaration (severity:high) — status:VERIFIED
+- [WI-321](WI-321.md) — Builder-profile-aware work item prioritization (severity:medium) — status:backlog
+- [WI-322](WI-322.md) — Work item archival and open-backlog hygiene (severity:medium) — status:backlog
+- [WI-323](WI-323.md) — PR merge and review-receipt enforcement (severity:high) — status:verified
+- [WI-324](WI-324.md) — Base44 schema-write guard for `coding/write` (severity:medium) — status:VERIFIED
+- [WI-325](WI-325.md) — Prompt-time progress audit and skill prerequisite receipts (severity:medium) — status:verified
+- [WI-326](WI-326.md) — Capability preflight skill and blocker ledger persistence (severity:medium) — status:VERIFIED
+- [WI-327](WI-327.md) — Deprecated foundation registry refresh and memory promotion (severity:medium) — status:VERIFIED
+- [WI-328](WI-328.md) — Parallel dispatch worker runtime hardening (severity:high) — status:verified
+- [WI-329](WI-329.md) — Work item affected-file metadata contract (severity:high) — status:verified
+- [WI-330](WI-330.md) — Parallel dispatch model routing and import graph hardening (severity:medium) — status:verified
+- [WI-331](WI-331.md) — Compression anomaly and deployed-unverified state enforcement (severity:high) — status:VERIFIED
+- [WI-332](WI-332.md) — Brownfield iteration PR and review binding enforcement (severity:high) — status:VERIFIED
+- [WI-333](WI-333.md) — Visual evidence automation and motion-pattern enforcement (severity:medium) — status:VERIFIED
+- [WI-334](WI-334.md) — Journey format, coverage, and comprehension validators (severity:high) — status:VERIFIED
+- [WI-335](WI-335.md) — Write-journeys refresh trigger and journey boilerplate cleanup (severity:medium) — status:VERIFIED
+- [WI-336](WI-336.md) — Design-time testability contract for chrome controls (severity:medium) — status:VERIFIED
+- [WI-337](WI-337.md) — End-to-end continuation audit policy (severity:medium) — status:VERIFIED
+- [WI-338](WI-338.md) — Mid-task hint persistence and skill resolver (severity:medium) — status:VERIFIED
+- [WI-339](WI-339.md) — Verification tier labeling and cumulative closeout prerequisites (severity:medium) — status:VERIFIED
+- [WI-340](WI-340.md) — Enforce review-receipt merge guard on Codex shell merge path (severity:high) — status:VERIFIED
+- [WI-341](WI-341.md) — Pre-WI promotion compression gate (`capture-idea --from-proposal`) (severity:high) — status:backlog (bootstrap exception)
+- [WI-342](WI-342.md) — Autonomous `discuss-phase` with adversarial reviewer (severity:medium) — status:backlog (depends on WI-341)
+- [WI-343](WI-343.md) — Auto-learning capture hook (severity:high) — status:verified (closed 2026-05-13; PRs #125, #126, #127, #128)
+- [WI-344](WI-344.md) — Native runtime UI proof and structural escalation for Capacitor/WebView bugs (severity:high) — status:backlog
+- [WI-345](WI-345.md) — Closeout leftover artifact hygiene (severity:high) — status:backlog
+- [WI-346](WI-346.md) — route-workflow closeout can leave completed worktrees and branches open (severity:high) — status:verified
+- [WI-347](WI-347.md) — Implement the Absolute Plan Standard — status:open
+- [WI-348](WI-348.md) — Wave closeout validator for multi-WI follow-up batches (severity:high) — status:verified
+- [WI-349](WI-349.md) — Receipt-emission --sha pinning for multi-session collision prevention (severity:high) — status:VERIFIED
+- [WI-350](WI-350.md) — test-journeys analytics and replay provider-visible evidence contract (severity:high) — status:verified
+- [WI-351](WI-351.md) — Stop hooks session-isolation for parallel execution safety (severity:high) — status:verified
+- [WI-352](WI-352.md) — WI-scoped parallel session isolation for hooks, accumulators, and worktrees (severity:critical) — status:VERIFIED
+- [WI-353](WI-353.md) — Solution confidence protocol defaults to automatic design-to-implementation flow (severity:high) — status:VERIFIED
+- [WI-354](WI-354.md) — Active user intent isolation and stale completion guard suppression (severity:critical) — status:VERIFIED
+- [WI-355](WI-355.md) — Persona trace evidence gate across feature artifacts (severity:high) — status:VERIFIED
+- [WI-356](WI-356.md) — EIT Urban Mobility funding research (knowledge extraction) (severity:medium) — status:DEFERRED
+- [WI-357](WI-357.md) — Model-registry refresh + single-sourced model tables (severity:high) — status:VERIFIED
+- [WI-358](WI-358.md) — Local CI-equivalent: scoped pre-push tier-1 gate (cloud CI deferred to go-public) (severity:high) — status:VERIFIED (PR #30, 2026-06-07)
+- [WI-359](WI-359.md) — wire-hooks dedup fix + settings cleanup + async observational hooks + latency validator (severity:critical) — status:VERIFIED (PR #31, 2026-06-07)
+- [WI-360](WI-360.md) — Quick-fix eligibility carve-out for exempt-class commits (severity:high) — status:VERIFIED (PR #32, 2026-06-07)
+- [WI-361](WI-361.md) — Context diet phase 1: signal-gated rule injection (~6 always-on) (severity:critical) — status:VERIFIED (PR #33, 2026-06-07)
+- [WI-362](WI-362.md) — FRAMEWORK-STATE.md slim: live file <50KB, history archived (severity:medium) — status:VERIFIED (2026-06-07)
+- [WI-363](WI-363.md) — Phase-receipt automation: observable phases only, one pilot skill (severity:high) — status:VERIFIED (PR #35, 2026-06-07)
+- [WI-364](WI-364.md) — Generate-don't-lint: 5-way sync becomes codegen from manifest (severity:medium) — status:VERIFIED (2026-06-07, PR #36)
+- [WI-365](WI-365.md) — Context diet phase 2: skill-catalog budget occupancy (layered native design) (severity:high) — status:VERIFIED (PR #38, 2026-06-07)
+- [WI-366](WI-366.md) — Core-skill diet: 5 hot-path skills to ≤300 lines + references (severity:medium) — status:VERIFIED (PR #39, #40, 2026-06-07)
+- [WI-367](WI-367.md) — Native transport re-base research spike + host-matrix corrections (severity:medium) — status:VERIFIED (2026-06-07)
+- [WI-368](WI-368.md) — Tier-3 judge coverage: top-10 load-bearing skills (severity:medium) — status:VERIFIED (2026-06-07)
+- [WI-369](WI-369.md) — Decay discipline + framework-ratio telemetry (measurement only) (severity:medium) — status:VERIFIED (PR #41, 2026-06-07)
+- [WI-370](WI-370.md) — Hook dispatcher consolidation (conditional on WI-359 re-measure) (severity:medium) — status:VERIFIED (PR #34, 2026-06-07)
+- [WI-371](WI-371.md) — Phase-0 meta-WI: framework evaluation persistence + WI intake (severity:medium) — status:DONE
+- [WI-372](WI-372.md) — Migrate agents/*.md to native .claude/agents (locked-agent policy mechanical) (severity:medium) — status:VERIFIED (PR #44, 2026-06-08)
+- [WI-373](WI-373.md) — Workflow-tool transport for read-only analysis fan-outs (severity:low) — status:VERIFIED (2026-06-08, PR #45)
+- [WI-374](WI-374.md) — Agent SDK credit billing analysis (parallel-orchestrator filed) (severity:medium) — status:pending (BY USER DIRECTIVE — do not auto-dispatch; frozen)
+- [WI-375](WI-375.md) — Validator git-isolation sweep (identity-leak class, live x2) (severity:high) — status:VERIFIED (PR #42, 2026-06-08)
+- [WI-376](WI-376.md) — Exempt-class widening: closeout .svc state + docs/plans join quick-fix carve-out (severity:medium) — status:VERIFIED (2026-06-07, PR #37)
+- [WI-377](WI-377.md) — Skill-catalog L2/L3: per-project plugin partitioning + paths scoping (severity:high) — status:VERIFIED (2026-06-08, PR #43; --apply user-gated)
+- [WI-378](WI-378.md) — Unify Claude-host install on plugins: svc-core + packs, setup-orchestrated (severity:medium) — status:backlog
+- [WI-379](WI-379.md) — Harden svc-task-completion-guard env-var-payload sites (E2BIG class) (severity:low) — status:VERIFIED (PR #71, 2026-06-10; via stage-isolated transport)
+- [WI-380](WI-380.md) — Mandatory-chain stage-context isolation (per-stage fresh subagents) (severity:high) — status:VERIFIED (PR #61, 2026-06-09)
+- [WI-381](WI-381.md) — Pipeline baton: machine-readable per-WI handoff (extend plan-manifest receipt) (severity:medium) — status:VERIFIED (PR #51, 2026-06-08)
+- [WI-382](WI-382.md) — Post-exec parallel review station (one perspective-diverse wave) (severity:medium) — status:VERIFIED (PR #58, 2026-06-08)
+- [WI-383](WI-383.md) — Receipt-mined gate telemetry → measured ceremony tiering (severity:medium) — status:VERIFIED (PR #52, 2026-06-08)
+- [WI-384](WI-384.md) — Action-point learning injection (extend WI-361 injector to learnings) (severity:medium) — status:VERIFIED (PR #56, 2026-06-08)
+- [WI-385](WI-385.md) — Risk-tiered receipt envelope (graded, re-derived from diff, fail-closed) (severity:medium) — status:VERIFIED (PR #59, 2026-06-08)
+- [WI-386](WI-386.md) — Conditional plan blueprints (kill Opus-priced double-spend on inline path) (severity:low) — status:VERIFIED (PR #55, 2026-06-08)
+- [WI-387](WI-387.md) — Discovery triple fan-out (parallel domain ∥ competitors ∥ personas) (severity:low) — status:VERIFIED (PR #62, 2026-06-09)
+- [WI-388](WI-388.md) — Native Workflow execution over the manifest task graph (intra-changeset) (severity:medium) — status:VERIFIED (PR #63, 2026-06-09; core — AC5 multi-WI slice deferred to WI-374)
+- [WI-389](WI-389.md) — spec-index query tool + forbid raw Read of the index (severity:low) — status:VERIFIED (PR #54, 2026-06-08)
+- [WI-390](WI-390.md) — Feature Graph: relational product-artifact source-of-truth (generate-don't-lint) (severity:high) — status:VERIFIED (PR #60, 2026-06-09)
+- [WI-391](WI-391.md) — write-e2e emits @AC-ID tags into test source + writes back coverage columns (severity:medium) — status:VERIFIED (PR #55, 2026-06-08)
+- [WI-392](WI-392.md) — Intended-owner action-time guard (route tasks to owning skill/app) (severity:high) — status:VERIFIED (PR #57, 2026-06-08)
+- [WI-393](WI-393.md) — Session-survival output guard (kill output-token-limit death spiral) (severity:high) — status:VERIFIED (PR #55, 2026-06-08)
+- [WI-394](WI-394.md) — Insights rule batch: never-fabricate + settings-write validation hook (severity:medium) — status:VERIFIED (PR #55, 2026-06-08)
+- [WI-395](WI-395.md) — S0: main-green integrity (repair red tier-1 gates + closeout-green gate + canary) (severity:critical) — status:VERIFIED (PR #47, 2026-06-08)
+- [WI-396](WI-396.md) — S1: close two reproduced envelope-integrity holes (exempt-code + receipt value-check) (severity:critical) — status:VERIFIED (PR #48, 2026-06-08)
+- [WI-397](WI-397.md) — S3: perf/budget regression nets (lock in the cluster's wins) (severity:high) — status:VERIFIED (PR #49, 2026-06-08; AC2/AC3 deferred fast-follow)
+- [WI-398](WI-398.md) — S5: mutable .svc state merge protocol (multi-orchestrator coordination) (severity:high) — status:VERIFIED (PR #50, 2026-06-08)
+- [WI-399](WI-399.md) — Claude-host capability restoration + flow-multiplier activation sweep (bulk: hooks R1-R10, 9 locked agents, chain journeys, activation runs) (severity:high) — status:VERIFIED (PRs #68/#69/#70/#71 + closeout, 2026-06-10; stage-transport + station ACTIVATED, opt-in per measure-then-promote)
+- [WI-400](WI-400.md) — `ad-video-script` skill: placement-aware 60s performance ad-video scripts (one base, or many variants when placement/awareness qualifies) (severity:medium) — status:in_progress (evolving ad-strategist agent + CTR/CPA feedback loop → WI-401)
+- [WI-401](WI-401.md) — `ad-strategist` evolving locked agent + CTR/CPA feedback loop (the 'levels up' agent; ExpeL two-pool reusing learnings.jsonl) (severity:medium) — status:backlog (depends on WI-400)
+- [WI-402](WI-402.md) — `ad-video-producer` agent: beat sheet → consistent 60s video via 10s-chunk chaining (Veo 3.1 + Nano Banana keyframes + last-frame seeding + ffmpeg) (severity:medium) — status:backlog (depends on WI-400; sibling of WI-401)
+- [WI-410](WI-410.md) — Blind-Control-Plan Floor — prove the framework plan is never worse than a bare-model baseline (best-of-2 retention + cross-family floor judge + control-plan ROI receipt) (severity:high) — status:VERIFIED (PR #75, 2026-06-22; merged 6dd54de0; WARN/shadow, default OFF)
+- [WI-411](WI-411.md) — `craft-prompt` skill — emit world-class output-shaped prompts proven never worse than the baseline (LEAN: authoring rubric + best-of-2 floor reusing WI-410; heavy optimizer deferred) (severity:medium) — status:verified (merged PR #76; WARN/shadow, default OFF)
+- [WI-403](WI-403.md) — Company operating fleet: ledger doctrine + `chief-of-staff` synthesis/cadence brain + cadence + schedule activation doc (runtime → WI-408) (severity:medium) — status:SUPERSEDED-LANDED (delivered by WI-507, PR #169 `ca985fc9`, closeout PR #170; verified by the presence of the five fleet agent files and `scripts/company-state.mjs` on main. The earlier `implemented/unmerged` status was stale — the `feat/company-operating-fleet` branch never merged under its own number, the work landed under WI-507.)
+- [WI-404](WI-404.md) — Company operating fleet: `financial-analyst` brain (runway-to-zero, default-alive, burn-multiple bands, SaaS benchmark panel) (severity:medium) — status:SUPERSEDED-LANDED (delivered by WI-507, PR #169 `ca985fc9`, closeout PR #170; verified by the presence of the five fleet agent files and `scripts/company-state.mjs` on main. The earlier `implemented/unmerged` status was stale — the `feat/company-operating-fleet` branch never merged under its own number, the work landed under WI-507.)
+- [WI-405](WI-405.md) — Company operating fleet: `market-intel` brain (bottom-up TAM/SAM/SOM, 4-tier competitor map, Mom Test, opportunity/threat radar) (severity:medium) — status:SUPERSEDED-LANDED (delivered by WI-507, PR #169 `ca985fc9`, closeout PR #170; verified by the presence of the five fleet agent files and `scripts/company-state.mjs` on main. The earlier `implemented/unmerged` status was stale — the `feat/company-operating-fleet` branch never merged under its own number, the work landed under WI-507.)
+- [WI-406](WI-406.md) — Company operating fleet: `growth-lead` brain (loops>funnels, 40% PMF gate, Bullseye channel, ICE experiments) (severity:medium) — status:SUPERSEDED-LANDED (delivered by WI-507, PR #169 `ca985fc9`, closeout PR #170; verified by the presence of the five fleet agent files and `scripts/company-state.mjs` on main. The earlier `implemented/unmerged` status was stale — the `feat/company-operating-fleet` branch never merged under its own number, the work landed under WI-507.)
+- [WI-407](WI-407.md) — Company operating fleet: `product-lead` brain (continuous discovery, opportunity-solution tree, Cagan 4 risks, retention-flattening PMF, now/next/later) (severity:medium) — status:SUPERSEDED-LANDED (delivered by WI-507, PR #169 `ca985fc9`, closeout PR #170; verified by the presence of the five fleet agent files and `scripts/company-state.mjs` on main. The earlier `implemented/unmerged` status was stale — the `feat/company-operating-fleet` branch never merged under its own number, the work landed under WI-507.)
+- [WI-408](WI-408.md) — Company operating fleet: runtime activation — `scripts/company-state.mjs` (scaffold/read/append/rank) + first real weekly WBR run on app=example-marketplace (12 brain cards → 10 ranked; two-tier app/company routing) (severity:medium) — status:SUPERSEDED-LANDED (delivered by WI-507, PR #169 `ca985fc9`, closeout PR #170; verified by the presence of the five fleet agent files and `scripts/company-state.mjs` on main. The earlier `implemented/unmerged` status was stale — the `feat/company-operating-fleet` branch never merged under its own number, the work landed under WI-507.)
+- [WI-409](WI-409.md) — Company operating fleet: review remediation — fix the 10 review findings (HIGH-1 orchestration reframe, schema+validator, doctrine honesty, status downgrade) (severity:high) — status:SUPERSEDED-LANDED (delivered by WI-507, PR #169 `ca985fc9`, closeout PR #170; verified by the presence of the five fleet agent files and `scripts/company-state.mjs` on main. The earlier `implemented/unmerged` status was stale — the `feat/company-operating-fleet` branch never merged under its own number, the work landed under WI-507.)
+- [WI-440](WI-440.md) — **EPIC** — No-Loss Redundancy + Performance audit (7-dimension, 14 agents): convert the surviving SAFE improvements into one-per-run children, zero func/quality loss (severity:medium) — status:in_progress (13 findings: 10 child WIs [5 verified: WI-446, WI-452, WI-453, WI-458, WI-460 (PRs #105/#107/#110/#111/#112); 4 remaining: WI-454/455/456/457 = A2/A3/B1/B2; WI-459/C2 rejected — semantic coupling] + 3 prose C3/C4/C5 done)
+- [WI-446](WI-446.md) — Fix deriveGraphStatus terminal-state bug — a skipped task is terminal; graphs with no open work now derive "skipped"/"completed" not "pending" (18 real graphs, 12 with active stored≠derived) + tier-1 regression validator (severity:medium) — status:verified (merged PR #105; parent WI-440)
+- [WI-452](WI-452.md) — Hooks must resolve `.svc/` runtime state against the repo root, not cwd — stop `/tmp/.svc` pollution that fooled the freshness gate (blocked scratchpad writes + tier-1 A3 red); durable fix for the env root cause (severity:medium) — status:verified (merged PR #107; shared .svc resolver + 11 seeder hooks guarded; tier-1 regression validator; parent WI-440)
+- [WI-453](WI-440.md) — A1: parallelize the tier-1 eval suite — bounded parallel batch + sequential pre-pass for host/.svc-state validators, post-join aggregation, same env/timeout; measured ~377s → ~163s (~57% cut), zero coverage loss (severity:medium) — status:verified (merged PR #110; parent WI-440)
+- [WI-454](WI-440.md) — A2: consolidate hot-path context-injection hooks (rule + learning + owner inject) into one in-process dispatcher; manifest read once; ~80-100 ms/Edit; golden-output no-loss (severity:medium) — status:backlog (parent WI-440)
+- [WI-455](WI-440.md) — A3: progressive-disclose the 3 largest skills (base44-environment 1801L, design-ui 1401L, write-journeys 1197L) — relocate reference-grade bulk, no instruction deleted; ~2.5K tokens off hot reads (severity:medium) — status:backlog (parent WI-440)
+- [WI-456](WI-440.md) — B1: consolidate the PostToolUse state-sync trio (edit-accumulator + lane-tasks-validator + phase-receipt-autoemit) into one spawn, preserving the validator's hard-block ordering; ~90 ms/Edit (severity:medium) — status:backlog (parent WI-440)
+- [WI-457](WI-440.md) — B2: extract `scripts/lib/validator-base.mjs` and migrate the ~30 standard validators (leave the ~4 complex standalone); ~400-600 L dedup, identical exit/format (severity:low) — status:backlog (parent WI-440)
+- [WI-458](WI-440.md) — C1: dedup byte-identical `norm()` path fn (learning-index + owner-index) → `hooks/lib/normalize-path.mjs` (severity:low) — status:verified (merged PR #111; parent WI-440)
+- [WI-459](WI-440.md) — C2: collapse identical `VALID_STATUSES` / `VALID_GRAPH_STATUSES` in `scripts/task-graph.mjs` to one constant (severity:low) — status:rejected (semantic coupling — task-status vs graph-status are distinct domains that merely coincide; collapsing couples them on core chain machinery for a 1-line saving; no-loss bias keeps the separation; parent WI-440)
+- [WI-460](WI-440.md) — C6: orphan `references/project-secrets-hygiene.md` (zero inbound refs) — wired into review-security Key Rules (severity:low) — status:verified (merged PR #112; parent WI-440)
+- [WI-461](WI-461.md) — **EPIC** — Execution-speed optimization (post-audit, adversarial-corrected): 5×+ wall-clock, ZERO quality loss; builds on WI-380/382/383/387/399 (severity:high) — status:in_progress (backlog filed; children WI-462..469 ranked, ship one-per-run)
+- [WI-462](WI-461.md) — (17) pre-loop verification discipline guard `scripts/lib/no-loss-preflight.mjs` — mechanical: assert cwd=repo-root + OLD-baseline-recorded before any verify loop; BLOCK if violated (prevents ~11/17 worst-case runs) + tier-1 `validate-no-loss-verify.sh` (severity:high) — status:verified (parent WI-461)
+- [WI-463](WI-461.md) — (1) no-loss-verify harness `scripts/no-loss-verify.mjs` — preflight guard → OLD-baseline → NEW → diff; collapses ~17→4 runs on hot-path refactors; imports the WI-462 guard (severity:high) — status:verified (parent WI-461)
+- [WI-464](WI-461.md) — (9) no-loop merge halt + merge-helper standing permission — `references/merge-gate-permission.md` (standing `Bash(node scripts/merge-pr-with-review-receipt.mjs:*)` permission + blocked-on-user STOP-retrying protocol), wired into land-changeset Step 4 + tier-1 `validate-merge-gate-permission.sh`; host `/goal`-loop noted out-of-svc-scope (severity:medium) — status:verified (parent WI-461)
+- [WI-465](WI-461.md) — (10) destructive-preamble de-friction — markdown-tolerant matcher + one preamble authorizes a named batch of same-kind ops (severity:low) — status:backlog (P2; parent WI-461)
+- [WI-466](WI-461.md) — (11) pre-commit drift-check cadence — move 8-host `./setup` drift from pre-commit (>2min SIGTERM) to pre-push or make incremental (severity:low) — status:backlog (P2; parent WI-461)
+- [WI-467](WI-461.md) — (12) contract-freshness auto-refresh — auto-append fresh contract line on active session instead of HARD-blocking the write (severity:low) — status:backlog (P2; parent WI-461)
+- [WI-468](WI-461.md) — (13) emit-envelope generator `scripts/emit-envelope.mjs` — build all 5 chain receipts from git + Codex output; kills hand-authored JSON + fabrication risk (severity:low) — status:backlog (P2; parent WI-461)
+- [WI-469](WI-461.md) — (8) conductor + parallel executors — MEASURED EXPERIMENT (not default): promote WI-380/382 transport for multi-item epics only, behind WI-383+WI-399 gates; SUBAGENT dispatch ONLY (not `-P`); prove 0-quality-loss first (severity:medium) — status:backlog (P3 experiment; parent WI-461)
+- [WI-470](WI-470.md) — Route execution-class (EXEC + REVIEW) to Sonnet 5 — WI-357 successor: `sonnet-5` alias (claude-sonnet-5, claude-api-verified); svc-default EXEC/REVIEW → sonnet-5 + effort:high *declared*; STRAT/PLAN stay Opus 4.8; EXEC/REVIEW agent model-pins → claude-sonnet-5 (svc-stage-exec/land, journey-qa, lens-correctness/security/spec-fidelity, plan/strategic-reviewer); dispatch-worker ANTHROPIC_MODEL; mirrors synced. Effort consumer-applied via Agent dispatch param (WI-399 follow-on) (severity:medium) — status:verified (merged PR #118; Codex 4-round PASS)
+- [WI-471](WI-471.md) — **EPIC** — Framework 3× program: 3 judge-approved levers, 2.36× floor product (~2.5× with cross-terms, ~2.0× if sign-offs declined), zero quality loss GATED not asserted; from the 2026-07-06 10-dimension 43-agent adversarial review (`docs/analysis/framework-3x-proposals-2026-07-06.md`) (severity:high) — status:backlog (awaiting owner pick; children WI-472..474, one per run, in order)
+- [WI-472](WI-472.md) — Deterministic bounded reconcile — timeouts on all child-process calls, Responsibility A batched onto existing `--range`, auto-drive detached behind a drive-outcome receipt, watcher-advance strictness fix (receipt + gh_available coupling); resolves the 78-SHA portable backlog through per-commit review with zero mass waivers; WI-463 golden-output floor + 2 mutation-red-tested validators (severity:high) — status:VERIFIED-L3 (headless post-merge behavioral proof; realistic 1.4×; landed FIRST; parent WI-471)
+- [WI-473](WI-471.md) — Chain-throughput dead-time program — (0) concurrency-safe receipt-notes sync replacing the lossy force refspec, (1) closeout-tail collapse via exempt flip path [sign-off WI], (2) cross-WI speculative planning fenced by disjoint-scopes [sign-off WI; surfaces WI-459/C2 precedent], (3) review-wait dovetail with tree-SHA-keyed baseline; WI-470 baseline: 58-min tail = 45% of cycle (severity:high) — status:backlog (realistic 1.35×, floor 1.15×; extends WI-461; after WI-472; parent WI-471)
+- [WI-474](WI-471.md) — Close the severed learning loop — ledger schema unification (0/23 project entries injectable today; string-confidence false-green), land-time promotion triage (72 candidates stranded), elevation executor for orphaned `elevationCandidates()` (13 qualify, 0 ever elevated) through mandatory evaluate-rule, cross-project federation of 15 roots (severity:high) — status:backlog (realistic 1.25×; extends WI-384/343; file-disjoint from siblings; parent WI-471)
+- [WI-476](WI-476.md) — Re-blend coreyhaines31/marketingskills v1.9.0→v2.6.0: knowledge layer refreshed (46 skills, Andromeda/loops/OKF), blend plan with 3 items (loop state/guardrail contract, Andromeda paid-creative doctrine, upstream-staleness probe), registry coverage gap closed (source was never registered) (severity:medium) — status:done (2026-07-13; proposal: proposals/2026-07-13-blend-coreyhaines-v2.6.0.md)
+- [WI-477](WI-477.md) — Update coreyhaines addon pin v1.9.0→v2.6.0 (`2815104d`) + migrate v2.0.0 breaking renames (17 renames + cro consolidation) across ~14 live files + wire prospecting/public-relations/marketing-plan/marketing-loops to fleet consumers; WI-475 is the template (severity:medium-high) — status:backlog (full chain; source WI-476)
+- [WI-478](WI-478.md) — Blend item 2: Andromeda paid-creative doctrine (creative-as-targeting platform split, static-first Meta, interest-stacking anti-pattern) into ad-strategist + ad-video-script + campaigns-ledger `creative_format` field; hybrid = doctrine priors verified by ledger (severity:medium) — status:backlog (after WI-477; source WI-476 blend plan item 2)
+- [WI-479](WI-479.md) — Autonomous-loop contract (blend item 1): new references/autonomous-loop-contract.md — loop-state schema (.svc/loops/<loop>.json watermark/dedupe/cooldown/in-flight), run-log + vanity-loop rule, Tier-1/Tier-2 action model, kill-switch/caps/allowlist prereqs for propose-only→bounded-execute, hybrid Tier-2-actions-emit-receipts; + fleet agent pointers + chief-of-staff loop-health check (severity:high) — status:backlog (worktree-isolated full chain; source WI-476 item 1)
+- [WI-480](WI-480.md) — Upstream-staleness probe (blend item 3): blend-registry.json upstream_ref_cmd per source + blend-external audit-mode stale-sources table + self-verify registry-coverage row; wire evolve-framework gap-scan feeder (severity:medium) — status:backlog (after WI-479; source WI-476 item 3)
+- [WI-481](WI-481.md) — Universal Change Impact Triad for every mutating lane; mechanical risk escalation + coverage/runtime/independent proof (severity:high) — status:planning (program pillar 1; FP-025)
+- [WI-482](WI-482.md) — Mandatory default-checkout isolation; all mutations in lazy current-base `.worktrees/` worktrees (severity:high) — status:VERIFIED (program pillar 2; PRs #135 and #136)
+- [WI-483](WI-483.md) — Mobile worktree build identity + canonical-release separation through a generic consumer adapter contract (severity:medium-high) — status:VERIFIED (program pillar 3; PR #137 plus post-merge verification)
+- [WI-484](WI-484.md) — Session/worktree/WI ownership binding; foreign claims never create completion pressure or path cross-talk (severity:critical) — status:VERIFIED (program pillar 4; PRs #133 and #134)
+- [WI-485](WI-485.md) — Codex-only prompt authority + exact skill-loading gate; retire concurrent shared Stop entry and prove other hosts unchanged (severity:critical) — status:VERIFIED (program pillar 5; PR #131; live Codex 0.144.4 trace)
+- [WI-486](WI-486.md) — Session-scoped multi-WI bootstrap: foreign live graphs cannot block reads or safe isolated creation; legacy/unsupported graph state is normalized or quarantined with a bounded loop breaker (severity:high) — status:VERIFIED (PR #149; promoted origin/main `0a64c07f`; tuple-only authority + atomic intent-anchored bootstrap + bounded task-state migration; gpt-5.6-sol 3-round bounded review 8+7+4 findings, 0 residual critical, R3-004→WI-492; Tier-1 248/0; full 5-receipt chain envelope)
+- [WI-487](WI-487.md) — Durable, observable installed enforcement: all-host first-run migration repairs ephemeral/dangling/old installs; hook denials are actionable and deduplicated, never anonymous code-1 storms or retry loops (severity:critical) — status:VERIFIED (PR #151; promoted origin/main `a7281341`; durable non-symlinked enforcement launcher + fail-closed + actionable 5-field denials + all-host migration; gpt-5.6-sol 2 plan + 3 exec bounded rounds, 0 unresolved critical, residuals->WI-493; Tier-1 251/0; full 5-receipt chain envelope)
+- [WI-488](WI-488.md) — Deterministic external review: canonical structured/isolated launcher; Codex 5.6 sol high; Fable 5 high; Opus xhigh only for classified Fable unavailability; receipted overrides and duplicate-call suppression (severity:high) — status:VERIFIED (PR #143; promoted commit `71e01336`; 69/69 ACs; promoted Tier 1 244/244)
+- [WI-489](WI-489.md) — Correct WI-488 structured-output turn handling and distinguish provider safety routing; add a phase-to-review-kind guard; make the findings schema OpenAI strict-compatible so gpt-5.6-sol reviews actually run (severity:critical) — status:VERIFIED (PR #145; promoted origin/main `88162aae`; gpt-5.6-sol two-round review; launcher 144/144, AGY 12/12, promoted Tier-1 245/245; full 5-receipt chain; EXEC-005/006 → WI-490)
+- [WI-490](WI-490.md) — Phase-guard deep hardening: mandatory launcher binding + semantic plan-content binding to durable plan-manifest receipt + reachability-independent exec-record note scan (defends the DIRECT-caller adversarial threat model, not only the sanctioned adapter) (severity:high) — status:identified (gpt-5.6-sol round-2 EXEC-005/006; follow-up to WI-489)
+- [WI-491](WI-491.md) — Bounded adversarial review loop: 3-round hard cap + High-disposition terminal exit + fail-closed mechanical enforcement (scripts/check-review-round-cap.mjs) + tier-1 guard; closes the unbounded review-loop bug that ran WI-486 nine rounds (severity:high) — status:VERIFIED (PR #147; promoted origin/main `e9875376`; gpt-5.6-sol 3-round review 5+4+2 findings all dispositioned at the cap; round-cap guard 31/31 on promoted main; full 5-receipt chain envelope)
+- [WI-492](WI-492.md) — Authenticated owner capability for task-state migration: replace the structured-but-agent-writable JSON authorization on svc-migrate-task-state.mjs with an owner-controlled authenticated capability (bound to repo+WI+operation+graph-digest, single-use, expiring) (severity:medium) — status:identified (WI-486 exec review round-3 R3-004, dispositioned at the cap; follow-up to WI-486)
+- [WI-493](WI-493.md) — WI-487 residuals: hermetic svc-stop-quality denial runtime proof + opencode/mimo native durable pre-mutation hook (both reviewer-certified dispositionable at the WI-487 cap) (severity:medium) — status:identified (follow-up to WI-487)
+- [WI-494](WI-494.md) — Codex skill-load enforcer: zero-state bootstrap deadlock (the bootstrap exception requires an owned graph, but creating the first graph is itself a denied governed mutation — no repo can ever start) + read misclassification (allowlist lacks kubectl/gh/argocd; any quoted command is treated as mutation). Includes the taste decision that the Claude host gets NO parity port (skill_tool vs direct_skill_file) (severity:critical) — status:identified (live Codex v0.144.5 session blocked for 6 turns; follow-up to WI-486/WI-487)
+- [WI-496](WI-496.md) — Codex bootstrap exit unusable in onboarded product repos: the WI-494 zero-state exit requires `scripts/svc-ensure-worktree.mjs` to exist INSIDE the governed repo, but product repos don't vendor svc scripts, so the guard denies its own recovery command (live-reproduced in example-marketplace). Fix = accept the enforcer's own installed sibling script (import.meta.url-derived, WI-487 pattern) as the second canonical realpath + repo-aware recovery string; applies WI-494's deferred R2-F001 absolute-path binding (severity:critical) — status:identified (follow-up to WI-494)
+- [WI-497](WI-497.md) — Unify WI-id convention: core tooling (svc-ensure-worktree, task-graph, wi-claim, codex bootstrap enforcer) widened from numeric-only `/^WI-\d+$/` to `/^WI-[A-Z0-9][A-Z0-9-]*$/` so svc can bootstrap the NAMED WIs its own onboard-repo produces (WI-SOCIAL-01, WI-LOC-UX-01). Injection-safe (argv-lexed + no metacharacters). Owner-directed fast lane (severity:high) — status:identified
+- [WI-498](WI-498.md) — Codex second-stage bootstrap deadlock: the enforcer requires an `in_progress` task for any governed mutation, bootstrap creates the first task `pending`, and the sanctioned loader (`task-graph.mjs load-skill`) records a skill_receipt but never sets `in_progress` — so `set-status …in_progress` is itself denied (it needs an in-progress task). No path pending→in_progress; Codex-only (Claude host has no enforcer). Fix = the sanctioned first-skill load atomically activates the sole runnable pending task, no new enforcer exemption. Live-reproduced in example-marketplace WI-SOCIAL-01 (severity:high) — status:identified (follow-up to WI-496)
+- [WI-499](WI-499.md) — Codex session-id bridge (enforcer ownership reads session from payload, not just env — closed the "no owned in_progress task" denial of EVERY live Codex mutation) + SessionStart JSON host-contract (learning-preload/healthcheck emit valid JSON on Codex; Claude byte-identical). The missing piece that made WI-486/494/496/498 usable on live Codex — proven by example-marketplace PR #293 (feature shipped autonomously). status:identified
+- [WI-502](WI-502.md) — Canonical operation scope + durable authority: tool-specific workdir and every mutation target resolve to one exact worktree before authority; controller lease generations enable resume/handover/recovery; scoped inner-worktree child capabilities and merge receipts enable safe multiple mutating agents; Bash syntax checks remain guardrails backed by declared host containment (severity:critical) — status:verified
+- [WI-503](WI-503.md) — External-review adapter relative artifact path: Fable review succeeds and writes receipt, but final receipt-display `require()` treats `.svc/.../summary.json` as a package id and can print MODULE_NOT_FOUND while returning success; normalize absolute paths and fail closed on post-launch summary/receipt errors (severity:medium) — status:identified
+- [WI-505](WI-505.md) — Automatic stale complete-tuple reclaim: make `svc-ensure-worktree` correlate binding security, claim freshness, exact generation/path, and active v2 precedence before generation-bound transfer; retire the exact old binding without deleting the existing worktree or user files (severity:critical) — status:verified
+- [WI-506](WI-506.md) — Secure runtime-root portability: centralize unavailable-vs-insecure XDG handling across framework state consumers and preflight Codex session receipt storage before graph activation; permanent blend-artifact phase classification; promoted invalid-XDG Example Marketplace replay with zero host-install drift (severity:critical) — status:VERIFIED (PR #166; `4cce515f`; L4 system-runtime evidence)
+- [WI-507](WI-507.md) — 15-brain company operating fleet, parent-resolving company state, bounded SessionStart briefings, non-mutating diagnostics, and G7-only Work Item promotion memory (severity:high) — status:VERIFIED-L3 (PR #169; `ca985fc9`; all-host install + live installed-hook runtime proof; no visual surface)
+- [WI-508](WI-508.md) — Candidate Reservoir, live code-grounding evaluator, and multi-role triage engine with project-isolated native SQLite plus deterministic Git mirrors (severity:high) — status:VERIFIED-L3 (PR #171; `8097f53b`; promoted rank/top/promote/reject CLI replay; no visual surface)
+- [WI-509](WI-509.md) — Bounded deterministic receipt-range workers prevent `svc-reconcile` from projecting a valid growing history as timeout-based missing debt (severity:high) — status:VERIFIED-L3 (PR #173; promoted replay; no visual surface)
+- [WI-510](WI-510.md) — Make skip-integrity validation phase-receipt aware while preserving fail-closed authorization and legacy behavior (severity:high) — status:verified (PR #175)
+- [WI-511](WI-511.md) — Retire loop-guard session files inactive for more than seven days in the owning hook while rejecting stale or quality-reducing optimization premises (severity:medium) — status:VERIFIED-L3 (PR #178; `3ded0052`; focused promoted replay plus 274/274 Tier-1; no visual surface)
+- [WI-512](WI-512.md) — Lightweight-mode batch landing the 2-week proposal cluster: skill port (audit-feature/align-feature/decide) + framework-born learning outputs, review-economy loop inversion + defect rules, OPT-01..16 speed batch + conditional stage activation + quick-fix lane retirement, genesis-first branch index + import-shape freshness + phase artifact sets (severity:high) — status:in_progress (owner-directed lightweight run; parent of B1..B4; sources proposals/2026-08-02-one-lane-framework.md PR #181 + docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md PR #182)
+- [WI-513](WI-513.md) — Enforce the `authorization_envelope` declared in the session contract: WI-512 landed §4c declaratively, nothing reads it; needs a real enforcement point (blocked outside the envelope, recorded when the executor stops inside it) with hot-path cost measured before and after (severity:medium) — status:identified (deferred from WI-512 B2)
+- [WI-514](WI-514.md) — `svc-skill-artifact-authenticity` and every sibling `PreToolUse` guard matching only `Edit|Write` are defeated by writing the protected path via Bash; reproduced live during WI-512 B1. Enumerate all such guards, extend to `Bash` reusing the WI-501 decoded-argv classifier, tier-1 negative coverage (severity:high) — status:identified (WI-512 B1 review finding B1-003)
+- [WI-515](WI-515.md) — Drain the proposal triage backlog (22 open proposals untriaged, 17 deferrals expired, against a declared `max_open_days: 1`) and add the mechanical check that stops it re-accumulating; the source plan's quoted counts of 26/3 did not reproduce (severity:medium) — status:identified (measured during WI-512 landing hygiene)
+- [WI-516](WI-516.md) — Complete the quick-fix retirement: the skill is deprecated in prose but still listed in `corePackForRouting`, so route-workflow loads it every run. Remove + regenerate mirrors; eligibility detectors stay untouched by design (severity:medium) — status:identified (WI-512 B3 review; manifest churn was fenced out of that batch)
+- [WI-517](WI-517.md) — `task-graph.mjs record-phase` read-then-write TOCTOU (OPT-16 residual): convert to `updateJsonAtomic` using the throw-inside-closure idiom already at `:710`, so no `process.exit()` runs inside the lock. WI-512 deferred it on diff-cap grounds; the "impossible" framing was refuted (severity:medium) — status:identified
+- [WI-518](WI-518.md) — Resolve OPT-01: no markdown candidate format exists and its `.gitignore line 60` rationale is provably false. Either specify the format deliberately or delete the item; do not build a parser for an unspecified format (severity:low) — status:identified (WI-512 B3 `stale-premise`, reviewer-confirmed)
+- [WI-519](WI-519.md) — `scripts/stage-activation.mjs` is unwired: nothing invokes it, so §2 conditional stage activation is documented but cannot fire and the `na`-validity rule governs a value nothing produces. Same defect class Batch 2 fixed at HIGH; recurred unseen because batch reviewers are scope-locked (severity:high) — status:CLOSED by WI-521 (PR pending; stage-activation is now invoked from route-workflow P3 with a literal bash block and Self-Verify row 2b points at it; stage names re-based on references/stage-registry.json; the essential-fence exit 2 survives the re-basing and is proven at three consumers)
+- [WI-520](WI-520.md) — Bare-basename citation resolution in `branch-index-freshness.mjs` picks the first repo-wide match, so a short-form citation can bind the import-shape check to the wrong file in both directions; refuse ambiguity instead of resolving it arbitrarily (severity:medium) — status:CLOSED by WI-521 (PR pending; bare-basename AND two-segment citation tiers now report `unresolvable` with a capped candidate list and exclude the token, never binding arbitrarily; the sibling tier that silently collapsed into the basename tier was found and fixed too)
+- [WI-521](WI-521.md) — Stage-receipt spine + branch-index effectiveness: one canonical `references/stage-registry.json` killing the four-vocabulary split, the example-marketplace story-receipt validator ported and parameterized (no embedded fallback), per-WI receipts seeded at genesis and materialized as the harness task pile, branch index made cheap-to-author / size-bounded / impossible-to-silently-trust-when-stale, and both wired into land gates. Two receipt granularities with explicit roles and one hash cross-link — deliberately NOT merged (severity:high) — status:in_progress (parent of A/B/C; closes WI-519 + WI-520; follows WI-512 PR #184)
+- [WI-522](WI-522.md) — Declare `story_receipt_sha256` in the verify-promotion receipt schema: the field is written by `svc-auto-drive.mjs` but undeclared, so it is tolerated rather than validated and would break silently under `additionalProperties:false`. Deferred from WI-521 because any `schemas/` touch classifies HIGH and the impact-triad guard requires a different-family review that Codex quota exhaustion made unavailable — the guard working as designed (severity:low) — status:identified (needs cross-family review)
+- [WI-522](WI-522.md) — Declare `story_receipt_sha256` in the verify-promotion receipt schema: written by `svc-auto-drive.mjs` but undeclared, so tolerated rather than validated and would break silently under `additionalProperties:false`. Deferred from WI-521 because any `schemas/` touch classifies HIGH and the impact-triad guard requires a different-family review that Codex quota exhaustion made unavailable — the guard working as designed (severity:low) — status:identified (needs cross-family review)
+- [WI-523](WI-523.md) — WI-521 residuals from the fresh-context global pass: registry validation reaches 1 of 3 consumers fully (third instance of the same asymmetry in one WI, prefer a shared loader), `write-spec` genesis header says `Derived-at: HEAD` which `parseBranchIndex` rejects as malformed, `route-workflow` is 235 lines against a 220 budget, one P3 bash block is abbreviated and fails if copied verbatim, and one `execSync` interpolation should be an arg-array (severity:low) — status:identified

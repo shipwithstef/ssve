@@ -1,0 +1,10 @@
+Skill: monetization-architecture
+
+Q: What is the output file for monetization-architecture, and what three things does it produce that adjacent skills miss?
+A: Expected pattern: `docs/specs/monetization-architecture.md` with a Feature-Tier Gating Matrix. It classifies features, selects gating mechanisms, and audits enforcement.
+
+Q: What are the five adoption roles used to classify features in monetization-architecture?
+A: Expected pattern: Table-stakes, Wedge, Differentiation, Premium, Retention.
+
+Q: What is the critical rule about hard-paywalling the wedge feature of a pre-revenue product?
+A: Expected pattern: Never hard-paywall the wedge feature of a pre-revenue product. Usage limits or time trials let users experience value and convert naturally.

@@ -1,0 +1,102 @@
+{
+  "wi": "WI-SPINE-001",
+  "feature": "knowledge-spine-foundation",
+  "lane": "framework",
+  "branch": "framework/WI-SPINE-001",
+  "created": "2026-04-30T00:00:00Z",
+  "status": "blocked",
+  "source_proposal": "proposals/done/2026-04-30-infra-project-support.md",
+  "phase": "Phase A — Spine foundation",
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "validate-feature",
+      "status": "completed",
+      "subject": "validate-feature: framework Enabler WI — likely skip per framework lane convention",
+      "skip_reason": "Framework lane convention: internal enabler WIs skip validate-feature; business case is framework self-improvement, not product feature."
+    },
+    {
+      "id": 2,
+      "skill": "write-spec",
+      "status": "blocked",
+      "subject": "write-spec: knowledge-spine-foundation",
+      "expected_outputs": [
+        "docs/specs/features/knowledge-spine-foundation.md"
+      ],
+      "blocked_by": "Proposal not approved",
+      "block_reason": "Source proposal 'proposals/done/2026-04-30-infra-project-support.md' is explicitly Status: DRAFT — awaiting builder approval (line 5, line 537). WI-SPINE-001 cannot proceed until builder approves the proposal."
+    },
+    {
+      "id": 3,
+      "skill": "design-ux",
+      "status": "blocked",
+      "subject": "design-ux: likely skip — framework-internal, no UI surface",
+      "blocked_by": "Task 2",
+      "block_reason": "Blocked until spec is written (Task 2). Also: framework-internal, no UI surface — likely skip."
+    },
+    {
+      "id": 4,
+      "skill": "design-ui",
+      "status": "blocked",
+      "subject": "design-ui: likely skip — framework-internal, no UI surface",
+      "blocked_by": "Task 2",
+      "block_reason": "Blocked until spec is written (Task 2). Also: framework-internal, no UI surface — likely skip."
+    },
+    {
+      "id": 5,
+      "skill": "design-tech",
+      "status": "blocked",
+      "subject": "design-tech: spec-index schema, recall gate semantics, frontmatter contract, hook wiring strategy",
+      "blocked_by": "Task 2",
+      "block_reason": "Blocked until spec is written (Task 2)."
+    },
+    {
+      "id": 6,
+      "skill": "plan-changeset",
+      "status": "blocked",
+      "subject": "plan-changeset: manifest + task graph for the 5 deliverables",
+      "blocked_by": "Task 2",
+      "block_reason": "Blocked until spec is written (Task 2)."
+    },
+    {
+      "id": 7,
+      "skill": "review-plan",
+      "status": "blocked",
+      "subject": "review-plan: G2 gate",
+      "blocked_by": "Task 6",
+      "block_reason": "Blocked until plan-changeset is written (Task 6)."
+    },
+    {
+      "id": 8,
+      "skill": "execute-changeset",
+      "status": "blocked",
+      "subject": "execute-changeset: build recall-stack-knowledge skill, spec-index hook, frontmatter contract, validate-no-rediscovery",
+      "blocked_by": "Task 7",
+      "block_reason": "Blocked until review-plan passes (Task 7)."
+    },
+    {
+      "id": 9,
+      "skill": "audit-implementation",
+      "status": "blocked",
+      "subject": "audit-implementation: AC1-AC7 verification",
+      "blocked_by": "Task 8",
+      "block_reason": "Blocked until execute-changeset completes (Task 8)."
+    },
+    {
+      "id": 10,
+      "skill": "review-gate",
+      "status": "blocked",
+      "subject": "review-gate: G3-G5 review protocol",
+      "blocked_by": "Task 8",
+      "block_reason": "Blocked until execute-changeset completes (Task 8)."
+    },
+    {
+      "id": 11,
+      "skill": "verify-promotion",
+      "status": "blocked",
+      "subject": "verify-promotion: post-merge verification, learnings written",
+      "blocked_by": "Task 9,10",
+      "block_reason": "Blocked until audit-implementation and review-gate pass (Tasks 9,10)."
+    }
+  ]
+}

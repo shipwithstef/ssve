@@ -1,0 +1,369 @@
+{
+  "wi": "WI-348",
+  "lane": "framework",
+  "created": "2026-05-17T12:07:08Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Route wave-closeout validator as framework improvement",
+      "status": "completed",
+      "metadata": {
+        "skill": "route-workflow"
+      },
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-05-17T12:07:08Z",
+        "loaded_via": "codex",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-05-17T12:07:08Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/session-contract.jsonl"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-05-17T12:07:08Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "route-workflow-normalized-intent:deliver-wave-closeout-validator"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-05-17T12:07:08Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-348.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-05-17T12:07:08Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "scripts/svc-reconcile.mjs:ok-gh-unavailable"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-05-17T12:07:08Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-348.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-05-17T12:07:08Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-348.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-17T12:07:08Z"
+    },
+    {
+      "id": 2,
+      "subject": "Implement wave closeout validator, docs, and WI records",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-17T12:12:00Z",
+        "loaded_via": "codex",
+        "phases_executed": [
+          {
+            "id": "P1-FrameworkRepoAndMemoryLoad",
+            "ts": "2026-05-17T12:12:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "FRAMEWORK-STATE.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-PendingProposalAndEvidenceSelection",
+            "ts": "2026-05-17T12:12:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "proposals/done/2026-05-17-framework-improvement-wave-closeout-validator.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-DiagnosisAndDuplicateFilter",
+            "ts": "2026-05-17T12:12:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-348.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ImplementationRouteDecision",
+            "ts": "2026-05-17T12:12:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "references/wave-closeout-validation.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-ImplementationAndReplayVerification",
+            "ts": "2026-05-17T12:12:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "test-framework/evals/tier-1/validate-wave-closeout.sh:PASS-11-0"
+              }
+            ]
+          },
+          {
+            "id": "P6-ImprovementRecordAndStateMutation",
+            "ts": "2026-05-17T12:12:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "FRAMEWORK-STATE.md"
+              }
+            ]
+          },
+          {
+            "id": "P7-ProposalDoneAndRemoteSync",
+            "ts": "2026-05-17T12:12:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "proposals/done/2026-05-17-framework-improvement-wave-closeout-validator.md"
+              }
+            ]
+          },
+          {
+            "id": "P8-SelfVerifyContinuation",
+            "ts": "2026-05-17T12:12:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-348.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-17T12:20:00Z"
+    },
+    {
+      "id": 3,
+      "subject": "Replay focused tier-1 coverage for wave closeout",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "metadata": {
+        "skill": "test-framework"
+      },
+      "skill_receipt": {
+        "skill": "test-framework",
+        "loaded_at": "2026-05-17T12:22:00Z",
+        "loaded_via": "codex",
+        "phases_executed": [
+          {
+            "id": "P1-TestModeSelection",
+            "ts": "2026-05-17T12:22:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "focused-tier1-wave-closeout"
+              }
+            ]
+          },
+          {
+            "id": "P2-StaticOrScenarioRunnerExecution",
+            "ts": "2026-05-17T12:22:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "test-framework/evals/tier-1/validate-wave-closeout.sh:PASS-11-0"
+              }
+            ]
+          },
+          {
+            "id": "P3-LiveAutopilotOrComparisonExecution",
+            "ts": "2026-05-17T12:22:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "validate-route-workflow-self-verify-numbering.sh:PASS"
+              }
+            ]
+          },
+          {
+            "id": "P4-MethodologyUsageAudit",
+            "ts": "2026-05-17T12:22:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "validate-skill-structure.sh:PASS-917-0"
+              }
+            ]
+          },
+          {
+            "id": "P5-ResultsPersistenceGapRouting",
+            "ts": "2026-05-17T12:22:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/evidence/WI-348/wave-closeout-validation.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-05-17T12:22:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-348.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-17T12:26:00Z"
+    },
+    {
+      "id": 4,
+      "subject": "Commit isolated framework patch and close publication/worktree state",
+      "status": "completed",
+      "blocked_by": [
+        3
+      ],
+      "metadata": {
+        "skill": "route-workflow"
+      },
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-05-17T12:28:00Z",
+        "loaded_via": "codex",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-05-17T12:28:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/session-contract.jsonl"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-05-17T12:28:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-348.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-05-17T12:28:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-348.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-05-17T12:28:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "scripts/svc-reconcile.mjs:ok-gh-unavailable"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-05-17T12:28:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/evidence/WI-348/wave-closeout-validation.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-05-17T12:28:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-348.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-17T12:30:00Z"
+    }
+  ],
+  "delivery_graph": {
+    "change_type": "framework",
+    "delivery_tier": {
+      "mode": "end_to_end"
+    },
+    "risk_flags": [
+      "user-challenged-closeout",
+      "retroactive"
+    ],
+    "required_skills": [
+      "route-workflow",
+      "improve-framework",
+      "test-framework"
+    ],
+    "evidence_families": {
+      "route_workflow_contract": "satisfied",
+      "wave_closeout_validation": "satisfied",
+      "tier1_validation": "satisfied",
+      "publication_state": "satisfied",
+      "scoped_worktree_cleanup": "satisfied"
+    },
+    "closeout_classification": "corrective-closure-complete",
+    "closeout_classification_reasons": [
+      "delivery_tier=end_to_end",
+      "wave closeout validator and focused tier-1 evidence are complete"
+    ],
+    "closeout_delivery_tier": "end_to_end"
+  }
+}

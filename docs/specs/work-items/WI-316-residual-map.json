@@ -1,0 +1,84 @@
+{
+  "schema": 1,
+  "wi": "WI-316",
+  "source_proposals": [
+    "proposals/done/2026-04-30-infra-project-support.md"
+  ],
+  "status": "partial-with-backlog-owner",
+  "coverage": [
+    {
+      "source_proposal": "proposals/done/2026-04-30-infra-project-support.md",
+      "proposal_item": "Knowledge Spine foundation exists: recall-stack-knowledge, spec-index, provenance checks, and no-rediscovery validator",
+      "status": "partial",
+      "owner_wi": "WI-SPINE-001",
+      "evidence": [
+        "docs/specs/work-items/WI-SPINE-001.md",
+        "recall-stack-knowledge/SKILL.md",
+        "scripts/build-spec-index.mjs",
+        "test-framework/evals/tier-1/validate-spine-frontmatter.sh",
+        "test-framework/evals/tier-1/validate-no-rediscovery.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-30-infra-project-support.md",
+      "proposal_item": "Knowledge-domain provenance hardening is advisory and queued for hard-block activation",
+      "status": "partial",
+      "owner_wi": "WI-SPINE-006",
+      "evidence": [
+        "docs/specs/work-items/WI-SPINE-006.md",
+        "test-framework/evals/tier-1/validate-knowledge-domain-provenance.sh",
+        "test-framework/evals/tier-1/validate-knowledge-legacy-backfill.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-30-infra-project-support.md",
+      "proposal_item": "infra-specific skills plan-blast-radius and track-topology-diff exist and have phase-receipt coverage",
+      "status": "covered",
+      "owner_wi": "WI-316",
+      "evidence": [
+        "plan-blast-radius/SKILL.md",
+        "track-topology-diff/SKILL.md",
+        "docs/specs/work-items/WI-295.md",
+        "docs/specs/work-items/WI-296.md"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-30-infra-project-support.md",
+      "proposal_item": "infra lanes are documented in the lane model but are not yet mechanically compiled by the delivery graph or manifest laneDefinitions",
+      "status": "partial",
+      "owner_wi": "WI-316",
+      "evidence": [
+        "docs/specs/work-items/WI-316.md",
+        "route-workflow/references/lane-model.md",
+        "scripts/compile-delivery-graph.mjs",
+        "skills-manifest.json"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-30-infra-project-support.md",
+      "proposal_item": "infra validators for spec dimensions, version pins, stack-profile freshness, and rediscovery exist as guardrails",
+      "status": "covered",
+      "owner_wi": "WI-316",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-infra-spec-dimensions.sh",
+        "test-framework/evals/tier-1/validate-infra-version-pins.sh",
+        "test-framework/evals/tier-1/validate-stack-profile-freshness.sh",
+        "test-framework/evals/tier-1/validate-no-rediscovery.sh"
+      ]
+    }
+  ],
+  "residuals": [
+    {
+      "wi": "WI-SPINE-001",
+      "title": "Knowledge Spine Foundation"
+    },
+    {
+      "wi": "WI-SPINE-006",
+      "title": "Recall gate must require .sources.jsonl on knowledge domains"
+    },
+    {
+      "wi": "WI-316",
+      "title": "Infra lane and Knowledge Spine activation"
+    }
+  ]
+}

@@ -1,0 +1,111 @@
+{
+  "date": "2026-04-04",
+  "scenario": "S1",
+  "prompt": "I want to make an app that suggests what to learn for AI based on what is trendy in social platforms today. Three deployment modes: (1) self-hosted free, (2) hosted for profit, (3) self-hosted private.",
+  "approaches": {
+    "svc": {
+      "port": 3000,
+      "worktree": "/tmp/svc-test-S1-svc",
+      "methodology": "19-skill progressive narrowing pipeline",
+      "universal_score": 15,
+      "universal_max": 19,
+      "scores": { "E1": 3, "E2": 4, "E3": 2, "E4": 1, "E5": 2, "E6": 3 },
+      "files": 20,
+      "loc": 832,
+      "tests": 16,
+      "spec_docs": 15,
+      "acs_defined": 30,
+      "acs_implemented": 20,
+      "deploy_modes_in_code": 0,
+      "platforms": ["hackernews", "reddit"],
+      "first_visit_useful": false,
+      "time_to_server": "pre-existing"
+    },
+    "gstack": {
+      "port": 3002,
+      "worktree": "/tmp/svc-test-S1-raw",
+      "methodology": "office-hours forcing questions + direct coding",
+      "universal_score": 17,
+      "universal_max": 19,
+      "scores": { "E1": 3, "E2": 4, "E3": 3, "E4": 2, "E5": 2, "E6": 3 },
+      "files": 7,
+      "loc": 718,
+      "tests": 0,
+      "spec_docs": 0,
+      "acs_defined": 0,
+      "deploy_modes_in_code": 1,
+      "platforms": ["github", "hackernews", "linkedin", "reddit", "twitter", "youtube"],
+      "first_visit_useful": true,
+      "time_to_server": "~3 min"
+    },
+    "obra": {
+      "port": 3001,
+      "worktree": "/tmp/svc-test-S1-obra",
+      "methodology": "brainstorm → plan → execute (superpowers)",
+      "universal_score": 18,
+      "universal_max": 19,
+      "scores": { "E1": 3, "E2": 4, "E3": 3, "E4": 3, "E5": 2, "E6": 3 },
+      "files": 21,
+      "loc": 800,
+      "tests": 0,
+      "spec_docs": 2,
+      "acs_defined": 0,
+      "deploy_modes_in_code": 3,
+      "platforms": ["twitter", "reddit", "youtube"],
+      "first_visit_useful": true,
+      "time_to_server": "~8 min",
+      "has_auth": true
+    },
+    "raw": {
+      "port": 3003,
+      "worktree": "/tmp/svc-test-S1-raw-new",
+      "methodology": "single prompt, no skills, no planning",
+      "universal_score": 19,
+      "universal_max": 19,
+      "scores": { "E1": 3, "E2": 4, "E3": 3, "E4": 4, "E5": 2, "E6": 3 },
+      "files": 9,
+      "loc": 589,
+      "tests": 0,
+      "spec_docs": 0,
+      "acs_defined": 0,
+      "deploy_modes_in_code": 3,
+      "platforms": ["twitter", "reddit", "hackernews"],
+      "first_visit_useful": true,
+      "time_to_server": "~2 min",
+      "mode_switcher_ui": true
+    }
+  },
+  "rankings": {
+    "universal_score": ["raw", "obra", "gstack", "svc"],
+    "code_architecture": ["obra", "svc", "raw", "gstack"],
+    "visual_design": ["gstack", "raw", "obra", "svc"],
+    "spec_quality": ["svc", "obra", "gstack", "raw"],
+    "test_coverage": ["svc", "gstack", "obra", "raw"],
+    "deploy_mode_coverage": ["raw", "obra", "gstack", "svc"]
+  },
+  "skill_fixes": [
+    {
+      "skill": "write-spec",
+      "fix": "Added deployment mode extraction from vision doc — modes must become ACs",
+      "reason": "Deployment modes were in vision doc but never translated to ACs or code"
+    },
+    {
+      "skill": "plan-changeset",
+      "fix": "Added mandatory config section for deployment modes",
+      "reason": "Code generation must include DEPLOY_MODE env var and mode middleware"
+    },
+    {
+      "skill": "test-framework",
+      "fix": "Added first-time user experience test",
+      "reason": "Empty first-visit experience wasn't caught by existing pipeline tests"
+    }
+  ],
+  "key_insights": [
+    "Planning overhead inversely correlates with MVP user-visible quality",
+    "The most novel user requirement (deployment modes) was best captured by the approach with zero planning",
+    "Phase boundary translations are lossy — specs must actively constrain code generation, not just describe intent",
+    "Plan-to-code fidelity matters more than plan quality (obra > svc on this dimension)",
+    "Only svc produced tests — pipeline overhead pays dividends for test discipline",
+    "Design quality correlates with design attention (forcing questions), not formal design process"
+  ]
+}

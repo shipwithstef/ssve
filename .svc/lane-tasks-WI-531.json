@@ -1,0 +1,650 @@
+{
+  "schema_version": 1,
+  "wi": "WI-531",
+  "lane": "framework",
+  "status": "completed",
+  "created": "2026-08-11T04:46:03.748Z",
+  "tasks": [
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "route-workflow",
+      "subject": "Route zero-block hooks, fast provisioning, and Tier-1 closure",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-08-11T04:47:54.202Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-08-11T04:58:15.535Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-session-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-08-11T04:58:18.820Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-intent.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-08-11T04:58:21.443Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-531.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-08-11T04:58:23.643Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-concern-gate.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-08-11T04:58:26.054Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-531.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-08-11T04:58:27.608Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-11T04:58:36.058Z"
+    },
+    {
+      "id": 2,
+      "status": "completed",
+      "skill": "plan-changeset",
+      "subject": "Materialize WI-531 parent manifest and WI-532 through WI-536 child range",
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-08-11T04:58:43.663Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-08-11T05:12:58.629Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-archetype.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-08-11T05:12:59.915Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-scope.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-08-11T05:13:01.212Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-11-zero-block-hook-recovery/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-08-11T05:13:02.522Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-11-zero-block-hook-recovery/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-08-11T05:13:03.815Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-08-11T05:13:05.648Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-11T05:14:50.612Z"
+    },
+    {
+      "id": 3,
+      "status": "completed",
+      "skill": "review-plan",
+      "subject": "Mechanically and adversarially review the exact WI-531 plan",
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-08-11T05:16:11.211Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-08-11T05:16:54.609Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-tier1.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-08-11T05:16:54.672Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-external-state-check.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-08-11T05:16:54.734Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/WI-531-plan-agy-r2/findings.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-08-11T05:16:54.796Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-11-zero-block-hook-recovery/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-08-11T05:16:54.851Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-11-zero-block-hook-recovery/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-08-11T05:16:54.912Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-plan-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-11T05:16:54.971Z"
+    },
+    {
+      "id": 4,
+      "status": "completed",
+      "skill": "execute-changeset",
+      "subject": "Implement Phase A recovery/provisioning and Phase B zero-baseline closure",
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-08-11T05:17:09.226Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-08-11T06:59:32.107Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/plans/2026-08-11-zero-block-hook-recovery/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-08-11T06:59:32.175Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/zero-block-hook-recovery.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-08-11T06:59:32.239Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi531-full-tier1.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-08-11T06:59:32.298Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/plans/2026-08-11-zero-block-hook-recovery/tier1-baseline.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-11T07:05:22.811Z"
+    },
+    {
+      "id": 5,
+      "status": "completed",
+      "skill": "review-gate",
+      "subject": "Run G5 exact executed-diff gate",
+      "blocked_by": [
+        4
+      ],
+      "skill_receipt": {
+        "skill": "review-gate",
+        "loaded_at": "2026-08-11T07:05:22.883Z",
+        "loaded_via": "codex",
+        "phases_executed": [
+          {
+            "id": "P1-GateContextChecklistConcernScan",
+            "ts": "2026-08-11T07:22:34.002Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SelfReviewFindings",
+            "ts": "2026-08-11T07:22:34.158Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-self-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-SelfJudgment",
+            "ts": "2026-08-11T07:22:34.199Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-self-judgment.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-CrossReviewConvergence",
+            "ts": "2026-08-11T08:35:45.069Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-cross-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-GateDecisionBacklog",
+            "ts": "2026-08-11T08:35:45.144Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-decision.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-08-11T08:35:45.213Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-11T08:38:04.321Z"
+    },
+    {
+      "id": 6,
+      "status": "completed",
+      "skill": "review-exec",
+      "subject": "Run self, Sol, and configured AGY exact-candidate review",
+      "blocked_by": [
+        5
+      ],
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-08-11T08:41:04.718Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-08-11T09:52:55.992Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipts/staging/70b15ebd7b357eae069130420b1b60e9c0c95e9c/review-exec-self.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-08-11T09:52:56.056Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/review-exec-pair.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-08-11T09:52:56.122Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/zero-block-hook-recovery-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-IterationLoop",
+            "ts": "2026-08-11T09:52:56.188Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/zero-block-hook-recovery-exec-review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerdictAndReceiptFinalize",
+            "ts": "2026-08-11T09:52:56.260Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipts/4399485/review-exec.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-11T09:52:56.448Z"
+    },
+    {
+      "id": 7,
+      "status": "completed",
+      "skill": "audit-implementation",
+      "subject": "Audit authority security, all-host lifecycle, child closure, and live proof",
+      "blocked_by": [
+        6
+      ],
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-08-11T10:02:46.481Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextScopeConcern",
+            "ts": "2026-08-11T12:01:49.596Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-implementation-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecialistDispatchCoverageLedger",
+            "ts": "2026-08-11T12:01:49.635Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/zero-block-hook-recovery-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-HypothesisGeneration",
+            "ts": "2026-08-11T12:01:49.667Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/zero-block-hook-recovery-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-SubsystemBehaviorAudit",
+            "ts": "2026-08-11T12:01:49.699Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-implementation-subsystems.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-FindingsConvergenceReport",
+            "ts": "2026-08-11T12:01:49.730Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/zero-block-hook-recovery-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-08-11T12:01:49.761Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-implementation-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-11T12:01:49.792Z"
+    },
+    {
+      "id": 8,
+      "status": "completed",
+      "skill": "land-changeset",
+      "subject": "Governed PR and squash merge of WI-531",
+      "blocked_by": [
+        7
+      ],
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-08-11T12:02:44.863Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-context",
+            "ts": "2026-08-11T12:10:13.945Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/land-changeset-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-diff-audit",
+            "ts": "2026-08-11T12:10:13.981Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/land-changeset-diff-audit.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-validation",
+            "ts": "2026-08-11T12:10:14.010Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/land-changeset-validation.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-pr",
+            "ts": "2026-08-11T12:17:01.447Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/land-changeset-pr.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-merge",
+            "ts": "2026-08-11T12:18:18.491Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/land-changeset-merge.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-self-verify",
+            "ts": "2026-08-11T12:18:18.532Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/land-changeset-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-11T12:18:18.566Z"
+    },
+    {
+      "id": 9,
+      "status": "completed",
+      "skill": "verify-promotion",
+      "subject": "Verify final-SHA all-host provisioning and product canaries",
+      "blocked_by": [
+        8
+      ],
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-08-11T12:19:00.447Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-08-11T12:44:53.182Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-p1.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-08-11T12:44:53.227Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/zero-block-hook-recovery-promotion-verification.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-08-11T12:44:53.260Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-p3.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-08-11T12:44:53.297Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/zero-block-hook-recovery-promotion-verification.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-11T12:44:53.332Z"
+    }
+  ]
+}

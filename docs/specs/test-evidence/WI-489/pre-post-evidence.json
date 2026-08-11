@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "acceptance_critical": true,
+  "comparison": "fixed-by-change",
+  "selected_proof": {
+    "id": "wi489-external-review-runtime-replay",
+    "command": "bash test-framework/evals/tier-1/validate-external-review-launcher.sh",
+    "target": "scripts/run-external-review.mjs",
+    "environment": "Tier-1 fixture binaries under an isolated temporary root",
+    "fixture_account": "no-provider-account"
+  },
+  "pre": {
+    "status": "pass",
+    "evidence": "docs/plans/2026-07-16-wi489-reviewer-runtime-routing/progress.md#baseline-and-red-evidence",
+    "result": "97 passed, 0 failed under the old WI-488 contract"
+  },
+  "post": {
+    "status": "pass",
+    "evidence": "docs/plans/2026-07-16-wi489-reviewer-runtime-routing/progress.md#runtime-implementation-evidence",
+    "result": "144 passed, 0 failed under the WI-489 contract",
+    "fixture_account": "no-provider-account"
+  },
+  "iterations": [
+    {
+      "iteration": 1,
+      "fix_batch": "Add registry policy, receipt v2, four-turn protocol, structured exhaustion, provider route, cache, and selection runtime",
+      "classification": "fixed-by-change",
+      "evidence": "Targeted runtime replay reached 109 passed and 0 failed"
+    },
+    {
+      "iteration": 2,
+      "fix_batch": "Add secure selection negatives, explicit-profile receipts, cutover Opus replay, redaction, resolver parity, and active-contract inventory",
+      "classification": "fixed-by-change",
+      "evidence": "Targeted final replay reached 113 passed and 0 failed"
+    },
+    {
+      "iteration": 3,
+      "fix_batch": "Use the configured-argv parser probe for the officially documented but help-hidden max-turns flag and add a true parser-rejection fixture",
+      "classification": "fixed-by-change",
+      "evidence": "Targeted replay reached 115 passed and 0 failed; full Tier 1 remained 244 passed and 0 failed"
+    },
+    {
+      "iteration": 4,
+      "fix_batch": "Raise the complete-package production timeout to 1200 seconds, preserve the 2460-second lock invariant, and pin short timing only inside stale-lock fixtures",
+      "classification": "fixed-by-change",
+      "evidence": "Targeted replay reached 117 passed and 0 failed without paid calls"
+    },
+    {
+      "iteration": 5,
+      "fix_batch": "Classify the real Claude error_max_budget_usd terminal as budget_exhausted, preserve protocol usage, forbid fallback, and require owner authority before raising spend",
+      "classification": "fixed-by-change",
+      "evidence": "Targeted replay reached 118 passed and 0 failed; the real failed receipt remains preserved outside the fixture suite"
+    },
+    {
+      "iteration": 6,
+      "fix_batch": "Replace the five-dollar default with the owner-approved fifty-dollar whole-review ceiling and cap fallback at the primary's unspent remainder",
+      "classification": "fixed-by-change",
+      "evidence": "Targeted replay reached 121 passed and 0 failed; a 7.25 primary fixture leaves exactly 42.75 for fallback"
+    },
+    {
+      "iteration": 7,
+      "fix_batch": "Resolve all first-pass independent-review findings: injected env scrub, missing-envelope negative, route effort normalization, executable mode, provenance, unreported cost, content proof, evidence freshness, prose, and receipt semantics",
+      "classification": "fixed-by-change",
+      "evidence": "Targeted replay reached 124 passed and 0 failed; review findings remain preserved for re-review"
+    },
+    {
+      "iteration": 8,
+      "fix_batch": "Pin exact gpt-5.6-sol identity, add truthful model attestation and worktree context packages, migrate research to safe AGY, harden selection state, label safety-route causation as inferred, and resolve all Fable plan-convergence findings",
+      "classification": "fixed-by-change",
+      "evidence": "Full targeted replay reached 129 passed and 0 failed; AGY replay reached 12 passed and 0 failed; full Tier 1 reached 245 validator scripts passed and 0 failed"
+    },
+    {
+      "iteration": 9,
+      "fix_batch": "Add the phase-to-review-kind guard: a paid plan review is refused before any provider spawn once a durable exec-record exists for the WI or implementation files diverged from the bound pre-execution base; graph/status is never trusted; receipted repository-owner retro-plan override is the sole exception",
+      "classification": "fixed-by-change",
+      "evidence": "Full targeted launcher replay reached 137 passed and 0 failed (8 new guard fixtures); full Tier 1 remained 245 scripts passed and 0 failed"
+    },
+    {
+      "iteration": 10,
+      "fix_batch": "Apply gpt-5.6-sol round-1 and round-2 review findings: OpenAI strict findings-schema, model/effort advisory (host+family hard-fail), adapter fail-closed WI derivation + branch/plan agreement, required plan_manifest_sha256, base..HEAD exec-record note scan, future-timestamp override rejection; deep binding+notes hardening deferred to WI-490",
+      "classification": "fixed-by-change",
+      "evidence": "Launcher suite 144 passed 0 failed; full Tier 1 245 passed 0 failed; two launcher-accepted gpt-5.6-sol reviews completed"
+    }
+  ],
+  "changed_signals": [
+    {
+      "signal": "One-turn Claude schema handshake now completes within a four-turn process ceiling",
+      "classification": "fixed-by-change",
+      "acceptance_critical": true
+    },
+    {
+      "signal": "Same-process Fable-to-Opus safeguard routing is distinct from launcher fallback and cache reuse",
+      "classification": "fixed-by-change",
+      "acceptance_critical": true
+    },
+    {
+      "signal": "The absolute cutover and explicit owner-selected Fable profile resolve deterministically",
+      "classification": "fixed-by-change",
+      "acceptance_critical": true
+    }
+  ]
+}

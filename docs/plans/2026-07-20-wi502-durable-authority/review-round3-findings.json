@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "review_kind": "plan",
+  "rubric_score": 8,
+  "rubric_failures": null,
+  "dependencies_needing_read": [
+    "scripts/emit-receipt.mjs",
+    ".gitignore",
+    "docs/specs/test-evidence/WI-502/task-paths.json"
+  ],
+  "reviewer": {
+    "host": "claude",
+    "family": "anthropic",
+    "model": "claude-fable-5",
+    "effort": "high"
+  },
+  "verdict": "pass-with-findings",
+  "summary": "Round-3 convergence review of the revised WI-502 manifest. The round-1/round-2 corrections are visibly present and structurally sound: single final implementation commit, post-review receipt entry point split from the execute block, ERR trap propagation via set -Eeuo, declared-file-set ordering assertion, tool preflight, per-task path allowlist enforcement via jq against task-paths.json, all-eight-host drift coverage, and lane skips dispositioned with a cited pipeline-decisions entry. Lane compliance (dimension g) passes: every framework-lane skill is dispositioned and the mandatory normal-chain stages are artifact-backed. No forbidden patterns appear in any fenced block. Remaining findings are execution-mechanics gaps, all fail-closed rather than unsafe: the task-7 file-universe gate can trip on its own runtime artifacts if `.svc/test-evidence/WI-502/` ignore status is not what the plan assumes (F-001); the resume procedure is prose while the monolithic script is not mechanically re-runnable after partial completion — expect_red inverts once implementation lands and the PREV_SNAPSHOT chain is not reconstructed (F-002); rollback anchors name snapshots but omit the exact restore commands, and stash-snapshot restore does not delete later-created files, contradicting the \"v1 bytes restore exactly\" claim in spirit (F-003); the preflight tolerates HEAD != BASE but the plan-snapshot creation then aborts on a clean tree (F-004); expect_red cannot distinguish intended red from setup failure (F-005); and the `emit-receipt.mjs --body` flag is unverified against the documented stdin invocation contract (F-006). No Critical or High findings; rubric_score 8 (deductions for rerun-safety and rollback mechanics; rubric_failures is null because the canonical 10-point list is not included in the package). rubric_failures unavailable → per protocol these mediums/lows must each be dispositioned in review-log.yaml under the round-3 bounded exit; no further adversarial round is permitted.",
+  "findings": [
+    {
+      "id": "F-001",
+      "severity": "medium",
+      "claim": "The task-7 file-universe gate can fail on its own runtime artifacts because the ignore status of .svc/test-evidence/WI-502/ is assumed, never asserted.",
+      "analysis": "Task 1 writes red logs 'under ignored .svc/test-evidence/WI-502/red/' — the word 'ignored' is an assumption, not a checked precondition. The repository's .svc/ directory is demonstrably NOT wholly gitignored: .svc/lane-tasks-WI-502.json appears as an untracked path in the worktree status and .svc/pipeline-decisions.jsonl is tracked and modified, both listed in this plan's own Files Planned table. Task 7 then generates .svc/test-evidence/WI-502/actual-files.txt and outside-declared.txt at the WI-502 level (not inside red/), and actual-files.txt is created by the shell redirect BEFORE `git ls-files --others --exclude-standard` executes, so if .svc/test-evidence/ is not covered by an ignore rule, the gate's own output files (plus the four red logs) appear in the untracked list, land in actual-files.txt, survive `comm -23` against the declared set, and make `test ! -s outside-declared.txt` fail. The failure is fail-closed (a false block at task-7), but it is a deterministic self-inflicted gate failure that the plan's Simulation Report does not cover.",
+      "evidence": [
+        "Manifest, task-1 details: \"Capture expected nonzero output under ignored `.svc/test-evidence/WI-502/red/`\" — asserted, never verified with git check-ignore.",
+        "Manifest, task-7 block: `{ git diff --name-only HEAD; git ls-files --others --exclude-standard } | LC_ALL=C sort -u > .svc/test-evidence/WI-502/actual-files.txt` followed by `test ! -s .svc/test-evidence/WI-502/outside-declared.txt` — both output paths are outside red/ and absent from the Files Planned table / declared set.",
+        "Worktree git status shows `?? .svc/lane-tasks-WI-502.json`, proving .svc/ is not globally ignored, so ignore coverage of .svc/test-evidence/ is genuinely undetermined from the plan package."
+      ],
+      "proposed_fix": "Add a preflight assertion immediately after the tool checks: `git check-ignore -q .svc/test-evidence/WI-502 || { echo '.svc/test-evidence/WI-502 must be gitignored' >&2; exit 1; }`. Alternatively, write actual-files.txt/outside-declared.txt to a mktemp directory outside the repo, or pipe `git ls-files --others` through `grep -v '^\\.svc/test-evidence/WI-502/'` before the comm comparison."
+    },
+    {
+      "id": "F-002",
+      "severity": "medium",
+      "claim": "Resume is specified only in prose; the monolithic execution script is not mechanically re-runnable after any partial completion, and the checkpoint diff-allowlist check breaks on a manually sliced resume.",
+      "analysis": "The manifest instructs: 'On resume, treat refs/svc/checkpoints/WI-502/* as authoritative … continue at the first task lacking either ref or passing proof.' But the script provides no mechanism to do this. Rerunning from the top after tasks 2-5 complete makes every expect_red call fail in the wrong direction (the validators are now green, so expect_red reports 'unexpectedly passed' and the ERR trap aborts). Manually slicing the script to start at task N is the only option, but then PREV_SNAPSHOT is unset or wrongly initialized to $BASE/reviewed-plan rather than the task-(N-1) checkpoint ref, so the `git diff --name-only \"$PREV_SNAPSHOT\" \"$snapshot\"` allowlist check compares against the wrong baseline and the jq per-task path assertion fails on files legitimately changed by earlier tasks. The resume contract and the script's actual mechanics contradict each other; dimension (e) rerun safety and dimension (h) copy-pasteability both fail for the resume path. Round 2 claimed rerun-safety was addressed ('repeated preflight remains valid'), but only the preflight is rerun-safe, not the task sequence.",
+      "evidence": [
+        "Manifest prose after the execute block: \"On resume, treat `refs/svc/checkpoints/WI-502/*` as authoritative … continue at the first task lacking either ref or passing proof\" — no corresponding code exists.",
+        "Manifest, task-1 block: `expect_red .svc/test-evidence/WI-502/red/operation-scope.log bash test-framework/evals/tier-1/validate-operation-scope-authority.sh` — inverts to a hard failure once task-2 makes the validator green, so a top-of-script rerun always aborts at task 1.",
+        "Manifest, checkpoint_task: `git diff --name-only \"$PREV_SNAPSHOT\" \"$snapshot\" | while … jq -e --arg task \"$task_id\" … index($file) != null` — PREV_SNAPSHOT is chain state initialized only at the top of the script (`PREV_SNAPSHOT=\"$BASE\"` then reviewed-plan), never re-derived from an existing checkpoint ref."
+      ],
+      "proposed_fix": "Make each task block self-gating and idempotent: wrap every task in `if git show-ref --verify -q refs/svc/checkpoints/WI-502/<task-id>; then PREV_SNAPSHOT=$(git rev-parse refs/svc/checkpoints/WI-502/<task-id>); else <task body>; checkpoint_task <task-id>; fi`, and guard the expect_red group with the same task-1 ref check so red capture never re-executes after its checkpoint exists. This makes the published script literally re-runnable from the top at any interruption point, matching the prose resume contract."
+    },
+    {
+      "id": "F-003",
+      "severity": "medium",
+      "claim": "Rollback anchors are named but the restore mechanics are unspecified, and restoring a stash-create snapshot does not delete files created after it — contradicting the claimed clean reversions.",
+      "analysis": "The Checkpoint Plan says e.g. 'restore the task-2 snapshot; v1 authority remains intact' and Reversibility claims 'Task 3 … keeps exact v1 backup/rollback' with validation 'v1 bytes restore exactly'. But no rollback command is given anywhere. The snapshots are `git stash create` commits reachable via refs/svc/checkpoints/WI-502/*; the natural restore (`git checkout <ref> -- .` or `git restore --source=<ref> -- .`) rewrites files that exist in the snapshot tree but does NOT remove files absent from it. Rolling back from mid-task-3 to the task-2 snapshot therefore leaves schemas/controller-lease.schema.json, hooks/lib/authority-store.mjs, scripts/svc-authority.mjs etc. on disk (and possibly in the index), so the working state is a hybrid: v1 file bytes restored, v2 modules still present and potentially still wired if any task-2-era file was already edited to reference them. Dimension (c) requires a concrete, commit-scoped revert path; a named anchor without an executable restore procedure that handles created-file deletion does not meet that bar for an authority-infrastructure change.",
+      "evidence": [
+        "Manifest, Checkpoint Plan rows 2-6: rollback anchors are described only as \"restore the task-N snapshot\" — no command, no created-file cleanup step.",
+        "Manifest, Task Graph: task-3 touches include CREATE paths `schemas/controller-lease.schema.json`, `hooks/lib/authority-store.mjs`, `scripts/svc-authority.mjs` — files that a tree-restore to the task-2 snapshot cannot remove because they are absent from that tree.",
+        "Manifest, task-3 validation: \"v1 bytes restore exactly\" — true for restored file contents but silent about residual v2 artifacts."
+      ],
+      "proposed_fix": "Add one exact rollback recipe to the Checkpoint Plan, e.g.: `git restore --source=refs/svc/checkpoints/WI-502/<anchor> --staged --worktree -- . && jq -r '.[\"<rolled-back-task>\"][]' \"$TASK_PATHS\" | while read -r f; do git ls-tree -r --name-only refs/svc/checkpoints/WI-502/<anchor> | grep -qxF \"$f\" || rm -f -- \"$f\"; done` — restore the snapshot tree, then delete every rolled-back-task path not present in the anchor tree, and finish with the anchor task's focused validator as the rollback proof."
+    },
+    {
+      "id": "F-004",
+      "severity": "low",
+      "claim": "The preflight explicitly tolerates HEAD != BASE, but the very next mandatory step (plan-snapshot creation) aborts on a clean post-commit tree, so the tolerated state can never proceed.",
+      "analysis": "The preflight allows a rerun after the final commit exists: `if test \"$(git rev-parse HEAD)\" != \"$BASE\"; then git log -1 --format=%s | grep -q \"WI-502\"; fi`, and the prose says 'repeated preflight remains valid'. But immediately afterwards the script runs stage_declared_existing and `PLAN_SNAPSHOT=\"$(git stash create \"WI-502 reviewed-plan\")\"` followed by `test -n \"$PLAN_SNAPSHOT\"`. After the implementation commit, the declared files are committed and the tree is clean, so `git stash create` outputs an empty string and the test aborts via the ERR trap. The two guards are internally inconsistent: either HEAD != BASE is a supported entry state (then the snapshot step must be conditional) or it is not (then the preflight should hard-stop and point at the post-review entry point instead of merely grepping the subject line). Fail direction is closed, so this is an operability defect, not a safety one.",
+      "evidence": [
+        "Manifest, preflight: `if test \"$(git rev-parse HEAD)\" != \"$BASE\"; then git log -1 --format=%s | grep -q \"WI-502\"; fi` — permits post-commit reruns.",
+        "Manifest, next block: `PLAN_SNAPSHOT=\"$(git stash create \"WI-502 reviewed-plan\")\"` / `test -n \"$PLAN_SNAPSHOT\"` — `git stash create` prints nothing on a clean tree, so this deterministically fails in exactly the state the preflight just accepted."
+      ],
+      "proposed_fix": "Replace the subject-line grep with a hard redirect: `if test \"$(git rev-parse HEAD)\" != \"$BASE\"; then echo 'Implementation commit exists — use the post-review entry point; do not rerun the execute block' >&2; exit 0; fi`. This also removes the fragile dependence on the commit subject containing \"WI-502\"."
+    },
+    {
+      "id": "F-005",
+      "severity": "low",
+      "claim": "expect_red accepts any nonzero exit, so the task-1 validation claim 'fails for its intended missing behavior, not syntax/setup' is not mechanically enforced.",
+      "analysis": "Task 1's validation column requires each red validator to fail for the right reason, and `bash -n` covers syntax. But expect_red's contract is only 'command exited nonzero': a validator that crashes on a missing fixture directory, a typo'd path, an unset variable under `set -u`, or a wrong tool invocation satisfies expect_red identically to one that correctly detects the missing operation-scope/lease/delegation/containment behavior. Since these four validators are the red/green proof backbone for every AC family (OS/SB/AU/DG), a setup-broken validator silently converts the red phase into noise — the later green phase would then be the first time the validator's assertions actually execute, and a validator that is green-by-accident (e.g., dies before its assertions in a way that a later refactor turns into exit 0) is exactly the failure mode red/green discipline exists to exclude. The captured logs make manual inspection possible, but nothing in the sequence reads them.",
+      "evidence": [
+        "Manifest, expect_red definition: `if \"$@\" >\"$log\" 2>&1; then echo \"Expected red validation unexpectedly passed: $*\" >&2; return 1; fi; return 0` — no inspection of the log or the exit code's cause.",
+        "Manifest, task-1 validation cell: \"Each focused validator fails for its intended missing behavior, not syntax/setup\" — stated requirement with no mechanical check behind it."
+      ],
+      "proposed_fix": "Have each new validator print a stable contract marker on intended failure (e.g., `WI502-RED operation-scope: canonical scope module missing`) and extend expect_red to require it: after the inverted exit check, add `grep -q \"WI502-RED\" \"$log\" || { echo \"red failure lacks contract marker: $*\" >&2; return 1; }`. This turns 'red for the right reason' into a mechanical gate at near-zero cost."
+    },
+    {
+      "id": "F-006",
+      "severity": "low",
+      "claim": "The `--body` flag passed to scripts/emit-receipt.mjs is unverified; the documented invocation contract for that script uses a stdin heredoc, not a --body argument.",
+      "analysis": "Both receipt-emission blocks invoke `node scripts/emit-receipt.mjs --type \"$type\" --wi WI-502 --sha \"$IMPL_SHA\" --body \".svc/receipt-bodies/WI-502/$type.json\"`. Every documented usage of emit-receipt.mjs in the repository guidance shipped with this review package pipes the JSON body via stdin (`cat <<'JSON' | node scripts/emit-receipt.mjs --type … --wi … --sha …`). No evidence in the plan package establishes that a `--body <path>` flag exists. Tier-1 mechanical checks verify tools are on PATH but not CLI flags, so this would surface only at the receipt-emission step — after the implementation commit, at the point where a failure is most annoying to diagnose. If the flag is silently ignored rather than rejected, the script could hang reading stdin or emit an empty-body receipt, which is worse than a hard error. This is dimension (h) command determinism; it is Low only because the fix is trivial and the failure is late-but-loud in the likely case.",
+      "evidence": [
+        "Manifest, receipt blocks: `node scripts/emit-receipt.mjs --type \"$type\" --wi WI-502 --sha \"$IMPL_SHA\" --body \".svc/receipt-bodies/WI-502/$type.json\"` (used in both the execute block and the post-review entry point).",
+        "Repository guidance included in the review package (CLAUDE.md / skill receipt sections) documents only the stdin form: `cat <<'JSON' | node scripts/emit-receipt.mjs --type review-plan --wi $WI --sha \"$BASE_SHA\"`.",
+        "Listed in dependencies_needing_read: scripts/emit-receipt.mjs could not be read under the scope lock."
+      ],
+      "proposed_fix": "Verify the flag against scripts/emit-receipt.mjs before promotion. If `--body` is unsupported, rewrite both loops to the documented stdin form: `node scripts/emit-receipt.mjs --type \"$type\" --wi WI-502 --sha \"$IMPL_SHA\" < \".svc/receipt-bodies/WI-502/$type.json\"`. Either way, add the chosen invocation to the Tier-1-verifiable surface by asserting the flag in the script's --help output during preflight, or simply standardize on stdin."
+    }
+  ],
+  "certifications": []
+}

@@ -1,0 +1,26 @@
+{
+  "rule_path": null,
+  "source_repo": "affaan-m/everything-claude-code",
+  "source_path": "rules/common/git-workflow.md",
+  "scope": "global",
+  "stack": "universal",
+  "verdict": "reject",
+  "scores": {
+    "determinism_gain": 1,
+    "correctness_delta": 0,
+    "friction_cost": 1,
+    "convention_conflict": 3
+  },
+  "scenarios_evaluated": 3,
+  "tier2_ran": false,
+  "tier2_verdict": null,
+  "note": "HARD REJECT. The line 'Attribution disabled globally via ~/.claude/settings.json' directly contradicts vibomatic CLAUDE.md's locked Co-Authored-By requirement. convention_conflict=3 is automatic reject.",
+  "conflict_detail": "CLAUDE.md mandates: Co-Authored-By: Claude Opus 4.6 (1M context) <contact-cd29c5ac34@example.invalid>. This rule would silently disable that trailer.",
+  "evidence": {
+    "default_transcript": "docs/specs/rules-evaluation/common-git-workflow/default-transcript.md",
+    "diff_and_verdict": "docs/specs/rules-evaluation/common-git-workflow/diff-and-verdict.md"
+  },
+  "suggested_registry_entry": null,
+  "evaluated_at": "2026-04-13",
+  "contamination_caveat": "Rules fetched into context before skill invocation"
+}

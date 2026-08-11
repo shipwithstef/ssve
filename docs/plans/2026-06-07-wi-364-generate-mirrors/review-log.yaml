@@ -1,0 +1,5 @@
+review_log:
+  wi: WI-364
+  tier1: { exit: 0, first_pass: true }
+  tier2: { reviewer: gemini, round1: "REJECT: C1 EXTERNAL_ADDONS mapping (REJECTED w/ linter-contract evidence: compareList:187 + live 82==82), C2 model-table byte-identity vs registry gaps (CONFIRMED-PARTIAL -> descope multi-host tables, no fake backfill), H1 marker regex (fixed), H2 per-table blocks (fixed)", round2: approve }
+  terminal_state: APPROVED

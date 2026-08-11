@@ -1,0 +1,1 @@
+I think our feature specs are out of date — we've shipped several changes since the last spec review. Can you check if the code still matches what the specs say? I want to know where things have drifted.

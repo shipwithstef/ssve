@@ -1,0 +1,145 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /home/user/.claude/skills/hooks/svc-workflow-guard.mjs \"$TOOL_INPUT\""
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /home/user/.claude/skills/hooks/svc-workflow-guard.mjs \"$TOOL_INPUT\" --phase-boundary"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /home/user/.claude/skills/hooks/svc-workflow-guard.mjs \"$TOOL_INPUT\" --bash-guard"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|Edit|Write|StrReplaceFile|Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /home/user/.claude/skills/hooks/svc-loop-guard.mjs \"$TOOL_INPUT\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|Edit|Write|StrReplaceFile|Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /home/user/.claude/skills/hooks/svc-loop-guard.mjs"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|Edit|Write|StrReplaceFile|Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /home/user/.claude/skills/hooks/svc-loop-guard.mjs '$TOOL_INPUT'"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/user/.claude/skills/hooks/kimi/svc-kimi-branch-guard.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|StrReplaceFile",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /home/user/.claude/skills/hooks/svc-stop-quality.js --accumulate \"$TOOL_INPUT\""
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /home/user/.claude/skills/hooks/svc-vibe-auditor.js"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /home/user/.claude/skills/hooks/svc-auto-capture-learnings.mjs --trigger post-tool-use"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /home/user/projects/alpha/deploy.js"
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /home/user/projects/beta/deploy.js"
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /home/user/.claude/skills/hooks/svc-stop-quality.js --check"
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /home/user/.claude/skills/hooks/svc-auto-capture-learnings.mjs --trigger stop"
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /home/user/projects/gamma/notify.js --payload=$TOOL_INPUT"
+          }
+        ]
+      }
+    ]
+  }
+}

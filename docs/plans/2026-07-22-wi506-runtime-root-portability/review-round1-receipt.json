@@ -1,0 +1,205 @@
+{
+  "schema_version": 2,
+  "launcher_version": "2.2.0",
+  "cli_version": "codex-cli-exec 0.145.0",
+  "request_id": "0fab657c-8cfa-4013-810f-f7da86cfe156",
+  "review_kind": "plan",
+  "package_sha256": "fb345b6648a39bd2cc8826ca3445210aff28e32ed042aa675786c5e9562403a1",
+  "findings_schema_sha256": "f742e7410648aea34b4eaad056466ec819dff20981e2ae60960889068172facf",
+  "cache_key": "bbd794d2a3ff63048ea070ef612e6ff3fb5979ed58ffbfd8ea1fdf47cb0ab57c",
+  "fixture_mode": false,
+  "started_at": "2026-07-22T11:53:24.094Z",
+  "finished_at": "2026-07-22T11:54:49.408Z",
+  "status": "success",
+  "classification": "success",
+  "requested_tuple": {
+    "orchestrator": "claude",
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6-sol",
+    "effort": "high"
+  },
+  "invocation_tuple": {
+    "orchestrator": "claude",
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6-sol",
+    "effort": "high"
+  },
+  "effective_tuple": {
+    "orchestrator": "claude",
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6-sol",
+    "effort": "high"
+  },
+  "attempts": [
+    {
+      "index": 1,
+      "tuple": {
+        "orchestrator": "claude",
+        "host": "codex",
+        "family": "openai",
+        "model": "gpt-5.6-sol",
+        "effort": "high"
+      },
+      "started_at": "2026-07-22T11:53:24.395Z",
+      "finished_at": "2026-07-22T11:54:49.401Z",
+      "exit_code": 0,
+      "classification": "success",
+      "artifacts": {
+        "events": "/workspace/seriousvibecoding/.worktrees/framework-WI-506-runtime-root-portability/.svc/external-review-artifacts/plan/e5356c26ac076be13666cedfb94901646d3e1b80320bfac59cb2ec5066c87100/20260722T115323Z-570810/attempt-1-events.jsonl",
+        "stderr": "/workspace/seriousvibecoding/.worktrees/framework-WI-506-runtime-root-portability/.svc/external-review-artifacts/plan/e5356c26ac076be13666cedfb94901646d3e1b80320bfac59cb2ec5066c87100/20260722T115323Z-570810/attempt-1-stderr.log",
+        "findings": "/workspace/seriousvibecoding/.worktrees/framework-WI-506-runtime-root-portability/.svc/external-review-artifacts/plan/e5356c26ac076be13666cedfb94901646d3e1b80320bfac59cb2ec5066c87100/20260722T115323Z-570810/attempt-1-findings.json"
+      },
+      "usage": {
+        "input_tokens": 56181,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 3426,
+        "reasoning_output_tokens": 1195,
+        "observed_models": []
+      }
+    }
+  ],
+  "fallback": {
+    "eligible": false,
+    "used": false,
+    "reason": null
+  },
+  "override": {
+    "used": false,
+    "authority": null,
+    "source": null,
+    "path": null,
+    "expected_sha256": null,
+    "actual_sha256": null
+  },
+  "policy": {
+    "version": 3,
+    "profile": "codex-high",
+    "source": "fixed-policy",
+    "resolved_at": "2026-07-22T11:53:24.092Z",
+    "effective_window": {
+      "starts_at": null,
+      "ends_at": null
+    },
+    "cutover_utc": "2026-07-19T21:00:00Z",
+    "cutover_local": "2026-07-20 00:00:00 EEST",
+    "timezone": "Europe/Sofia",
+    "selection_sha256": null,
+    "selection_expires_at": null,
+    "selection_authority": null
+  },
+  "protocol": {
+    "process_invocations": 1,
+    "configured_turn_ceiling": null,
+    "configured_budget_usd": null,
+    "reported_turns": null,
+    "stop_reason": null,
+    "terminal_reason": null,
+    "errors": []
+  },
+  "route": {
+    "kind": "exact_primary",
+    "switching_enabled": false,
+    "cli_fallback_configured": false,
+    "evidence": "requested_primary"
+  },
+  "effective_effort": {
+    "value": "high",
+    "provenance": "requested"
+  },
+  "model_attestation": {
+    "level": "requested_accepted",
+    "requested_model": "gpt-5.6-sol",
+    "observed_models": [],
+    "evidence": "exact_model_argv_plus_successful_auth_schema_exit_no_server_model_echo"
+  },
+  "phase_guard": {
+    "applicable": true,
+    "kind": "plan",
+    "decision": "allow-override",
+    "reason": "owner_retro_plan_override",
+    "wi": "WI-506",
+    "pre_execution_base": "7a700259aa0a4c6debb900728cee8a35aefc61ca",
+    "plan_manifest_sha256": "e5356c26ac076be13666cedfb94901646d3e1b80320bfac59cb2ec5066c87100",
+    "exec_record_present": false,
+    "exec_record_path": null,
+    "implementation_diverged": true,
+    "diverged_files": [
+      "NOTICES",
+      "references/blend-registry.json",
+      "references/knowledge/INDEX.md",
+      "references/knowledge/source-heuristics.global.jsonl",
+      "references/knowledge/runtime-state-portability/.version",
+      "references/knowledge/runtime-state-portability/CAPABILITIES.md",
+      "references/knowledge/runtime-state-portability/details/runtime-state.md"
+    ],
+    "base_resolved": true,
+    "override": {
+      "used": true,
+      "authority": "repository-owner",
+      "source": "user-message-2026-07-22-WI-506",
+      "path": "/workspace/seriousvibecoding/.worktrees/framework-WI-506-runtime-root-portability/docs/plans/2026-07-22-wi506-runtime-root-portability/retro-plan-review-authorization.json",
+      "expected_sha256": "cf284b66a1f7d38e3391d8d256c093260e53035d3eb9f682a9af563b45f5ddad",
+      "actual_sha256": "cf284b66a1f7d38e3391d8d256c093260e53035d3eb9f682a9af563b45f5ddad",
+      "kind": "retro-plan-review"
+    }
+  },
+  "package_context": {
+    "version": 1,
+    "context_root": "/workspace/seriousvibecoding/.worktrees/framework-WI-506-runtime-root-portability",
+    "base_package_sha256": "69c040348034ace1521ce5f08b78b29fc5666bd0187ec9e7e9e2eb3363ad9054",
+    "files": [
+      {
+        "path": "target:AGENTS.md",
+        "sha256": "28096c57230e7221de65283ea4c9dfacfbbe332ebc553f265dfa6fbc35be6fc4",
+        "bytes": 23919
+      },
+      {
+        "path": "target:CLAUDE.md",
+        "sha256": "7642decad9c1522b0751d82b1a7d06d878e94e2019b08782576cd8660ad08464",
+        "bytes": 11370
+      },
+      {
+        "path": "framework:review-plan/SKILL.md",
+        "sha256": "58ef759400d38475ab217f7f51849e4da45812f7597f1d085d7697d2ee6fc91a",
+        "bytes": 20625
+      },
+      {
+        "path": "framework:review-cross-model/SKILL.md",
+        "sha256": "162a81e8af723ba95c87d1c04351805ce3d29cd7c43260bfc5b1330ac93181ec",
+        "bytes": 20728
+      },
+      {
+        "path": "framework:references/plan-review-protocol.md",
+        "sha256": "22bf1e94b122f7ef3220aec3cbbf1faa21c228564c11f41751b865a256f2f92f",
+        "bytes": 11385
+      },
+      {
+        "path": "framework:rules/plan-changeset-trigger.md",
+        "sha256": "63385c5d1d31e0afb83118184bbe8c5ff20fabf2f9c815a1d81679d3b956ebba",
+        "bytes": 3661
+      }
+    ]
+  },
+  "cache": {
+    "disposition": "published",
+    "reusable": true,
+    "entry": "/workspace/seriousvibecoding/.worktrees/framework-WI-506-runtime-root-portability/.svc/external-review-cache/v1/bbd794d2a3ff63048ea070ef612e6ff3fb5979ed58ffbfd8ea1fdf47cb0ab57c"
+  },
+  "artifacts": {
+    "findings": "/workspace/seriousvibecoding/.worktrees/framework-WI-506-runtime-root-portability/.svc/external-review-artifacts/plan/e5356c26ac076be13666cedfb94901646d3e1b80320bfac59cb2ec5066c87100/20260722T115323Z-570810/findings.json",
+    "receipt": "/workspace/seriousvibecoding/.worktrees/framework-WI-506-runtime-root-portability/.svc/external-review-artifacts/plan/e5356c26ac076be13666cedfb94901646d3e1b80320bfac59cb2ec5066c87100/20260722T115323Z-570810/receipt.json",
+    "capabilities": "/workspace/seriousvibecoding/.worktrees/framework-WI-506-runtime-root-portability/.svc/external-review-artifacts/plan/e5356c26ac076be13666cedfb94901646d3e1b80320bfac59cb2ec5066c87100/20260722T115323Z-570810/capabilities.log"
+  },
+  "usage": {
+    "input_tokens": 56181,
+    "cached_input_tokens": 0,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 3426,
+    "reasoning_output_tokens": 1195,
+    "observed_models": []
+  }
+}

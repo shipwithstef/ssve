@@ -1,0 +1,128 @@
+{
+  "wi": "WI-001",
+  "lane": "brownfield-feature",
+  "created": "2026-04-03T10:00:00Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "validate-feature: validate todo management idea",
+      "status": "completed",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "validate-feature",
+        "loaded_at": "2026-04-03T10:00:00Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-04-03T10:00:00Z"
+    },
+    {
+      "id": 2,
+      "subject": "write-spec: draft feature spec for todo management",
+      "status": "completed",
+      "blocked_by": [1],
+      "skill_receipt": {
+        "skill": "write-spec",
+        "loaded_at": "2026-04-03T10:00:00Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-04-03T10:00:00Z"
+    },
+    {
+      "id": 3,
+      "subject": "design-ux: UX flow for todo management",
+      "status": "completed",
+      "blocked_by": [2],
+      "skill_receipt": {
+        "skill": "design-ux",
+        "loaded_at": "2026-04-03T10:00:00Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-04-03T10:00:00Z"
+    },
+    {
+      "id": 4,
+      "subject": "design-ui: UI design for todo management",
+      "status": "completed",
+      "blocked_by": [3],
+      "skill_receipt": {
+        "skill": "design-ui",
+        "loaded_at": "2026-04-03T10:00:00Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-04-03T10:00:00Z"
+    },
+    {
+      "id": 5,
+      "subject": "design-tech: tech design for todo management",
+      "status": "completed",
+      "blocked_by": [3],
+      "skill_receipt": {
+        "skill": "design-tech",
+        "loaded_at": "2026-04-03T10:00:00Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-04-03T10:00:00Z"
+    },
+    {
+      "id": 6,
+      "subject": "plan-changeset: create implementation manifest",
+      "status": "completed",
+      "blocked_by": [4, 5],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-04-03T10:00:00Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-04-03T10:00:00Z"
+    },
+    {
+      "id": 7,
+      "subject": "execute-changeset: implement todo routes and store",
+      "status": "completed",
+      "blocked_by": [6],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-04-03T10:00:00Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-04-03T10:00:00Z"
+    },
+    {
+      "id": 8,
+      "subject": "review-gate: G5 implementation review",
+      "status": "completed",
+      "blocked_by": [7],
+      "skill_receipt": {
+        "skill": "review-gate",
+        "loaded_at": "2026-04-03T10:00:00Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-04-03T10:00:00Z"
+    },
+    {
+      "id": 9,
+      "subject": "land-changeset: merge to main",
+      "status": "completed",
+      "blocked_by": [8],
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-04-03T10:00:00Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-04-03T10:00:00Z"
+    },
+    {
+      "id": 10,
+      "subject": "verify-promotion: G7 post-merge verification",
+      "status": "completed",
+      "blocked_by": [9],
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-04-03T10:00:00Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-04-03T10:00:00Z"
+    }
+  ]
+}

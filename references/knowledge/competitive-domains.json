@@ -1,0 +1,24 @@
+{
+  "$comment": "Knowledge domains that require Competitive Context auto-surface when research/svc-advisor queries them. Project-extensible — add domain slugs as new core-mechanic areas emerge.",
+  "version": 1,
+  "domains": [
+    "loyalty",
+    "loyalty-programs",
+    "verification",
+    "fraud-prevention",
+    "enrollment",
+    "signup-flow",
+    "payment",
+    "pos-integration",
+    "checkout",
+    "card-link",
+    "rewards",
+    "points-economy"
+  ],
+  "domain_aliases": {
+    "loyalty": ["loyalty", "rewards", "points"],
+    "verification": ["verify", "attest", "proof-of-visit", "fraud"],
+    "enrollment": ["signup", "onboarding", "enroll", "register"],
+    "payment": ["pay", "checkout", "billing", "transaction"]
+  }
+}

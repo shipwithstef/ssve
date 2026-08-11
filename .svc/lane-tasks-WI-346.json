@@ -1,0 +1,129 @@
+{
+  "wi": "WI-346",
+  "lane": "framework",
+  "created": "2026-05-16T18:47:54Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Review completed worktree residue as a route-workflow framework issue and install prevention",
+      "status": "completed",
+      "metadata": {
+        "skill": "route-workflow"
+      },
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-05-16T18:47:54Z",
+        "loaded_via": "codex",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-05-16T18:47:54Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/session-contract.jsonl"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-05-16T18:47:54Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-346.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-05-16T18:47:54Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-346.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-05-16T18:47:54Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "route-workflow/references/worktree-branch-hygiene-closeout.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-05-16T18:47:54Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi346-main-run-all-evals-rerun.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-05-16T18:47:54Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "test-framework/evals/tier-1/validate-route-workflow-worktree-hygiene.sh"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-16T18:47:54Z"
+    }
+  ],
+  "delivery_graph": {
+    "change_type": "framework",
+    "delivery_tier": {
+      "mode": "end_to_end"
+    },
+    "risk_flags": [
+      "retroactive",
+      "user-challenged-closeout"
+    ],
+    "required_skills": [
+      "route-workflow"
+    ],
+    "conditional_mandatory_skills": [],
+    "skipped_skills": [],
+    "evidence_families": {
+      "route_workflow_contract": "satisfied",
+      "worktree_branch_hygiene": "satisfied",
+      "tier1_validation": "satisfied",
+      "publication_state": "satisfied",
+      "scoped_worktree_cleanup": "satisfied"
+    },
+    "corrective_evidence": {
+      "route_workflow_phase_receipts": true,
+      "route_decision_log": true,
+      "upstream_skip_ledger": true,
+      "post_merge_verification": true
+    },
+    "closeout_classification": "corrective-closure-complete",
+    "closeout_classification_reasons": [
+      "delivery_tier=end_to_end",
+      "corrective evidence and graph obligations are complete"
+    ],
+    "closeout_delivery_tier": "end_to_end",
+    "mutation_history": [
+      {
+        "ts": "2026-05-16T18:48:20.396Z",
+        "source": "classify-delivery-graph-closeout",
+        "action": "close_as_corrective_closure_complete",
+        "reason": "delivery_tier=end_to_end; corrective evidence and graph obligations are complete",
+        "affected_tasks": [],
+        "affected_evidence_families": [],
+        "validator_proof": "scripts/classify-delivery-graph-closeout.mjs --write"
+      }
+    ]
+  }
+}

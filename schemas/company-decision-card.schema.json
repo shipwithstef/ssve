@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://serious-vibe-coding/schemas/company-decision-card.schema.json",
+  "title": "Company Operating Fleet — decision card",
+  "description": "One line of decisions-pending.jsonl. Emitted by a fleet brain (references/company-operating-fleet.md §3); ranked by chief-of-staff. Authoritative over the illustrative block in the doctrine.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "ts", "proposed_by", "title", "door", "recommendation", "cost_of_delay", "ask", "status"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^D-[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{3}$",
+      "description": "D-YYYY-MM-DD-NNN"
+    },
+    "ts": { "type": "string", "description": "ISO-8601 timestamp" },
+    "proposed_by": {
+      "type": "string",
+      "enum": ["chief-of-staff", "financial-analyst", "growth-lead", "market-intel", "product-lead", "counsel", "security-ops", "customer-success", "revops", "comms", "data-collection", "people-ops"]
+    },
+    "title": { "type": "string", "minLength": 1 },
+    "door": { "type": "string", "enum": ["one-way", "two-way"] },
+    "recommendation": { "type": "string", "minLength": 1, "description": "Default action if the owner does not reply." },
+    "options": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["opt", "tradeoff"],
+        "properties": {
+          "opt": { "type": "string" },
+          "tradeoff": { "type": "string" }
+        }
+      }
+    },
+    "reversibility": { "type": "string" },
+    "cost_of_delay": { "type": "string", "enum": ["high", "med", "low"] },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "rice": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reach": { "type": "number" },
+        "impact": { "type": "number" },
+        "confidence": { "type": "number" },
+        "effort": { "type": "number" },
+        "score": { "type": "number" }
+      }
+    },
+    "deadline": { "type": "string", "description": "ISO-8601 or 'none'" },
+    "ask": { "type": "string", "enum": ["approve", "pick", "fyi"] },
+    "evidence": { "type": "array", "items": { "type": "string" } },
+    "evidence_gate": { "type": "string", "enum": ["passed", "owner-ask", "bypassed"], "description": "WI-414 Default-FAIL gate verdict stamped by company-state.mjs append-decision: passed = >=1 evidence resolved; owner-ask = explicit <TBD> + ask:pick|approve; bypassed = --allow-ungrounded override (logged, not silent)." },
+    "evidence_resolved": { "type": "array", "items": { "type": "string" }, "description": "WI-414: the evidence[] entries that resolved to a real file/metric at append time." },
+    "status": { "type": "string", "enum": ["pending", "approved", "rejected", "deferred"] },
+    "scope": { "type": "string", "enum": ["app", "company"], "description": "Routing tier (WI-408): app → the app's company-state; company → the company-decision repo's state." },
+    "actionability": { "type": "string", "enum": ["ready", "needs-owner", "needs-data"], "description": "PostHog-style triage tag set by chief-of-staff at synthesis: ready = owner can act now; needs-owner = blocked on one named owner input; needs-data = insufficient evidence (pair with a data-collection card)." }
+  }
+}

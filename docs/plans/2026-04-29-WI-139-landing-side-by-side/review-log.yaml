@@ -1,0 +1,20 @@
+review_log:
+  plan: docs/plans/2026-04-29-WI-139-landing-side-by-side/manifest.md
+  wi: WI-139
+  date: 2026-04-29
+  tier1: { script: scripts/verify-plan-mechanical.sh, exit_code: 0, issues: 0 }
+  tier1_5: { section_exists: true, coupled: 3, decoupled_justified: 0, untouched_walked: true, final: PASS }
+  tier2:
+    reviewer: sonnet
+    reviewer_family: anthropic
+    rubric_score: 7
+    findings:
+      - { id: F1, severity: HIGH, title: "Validator path-case mismatch — wi-lower vs <wi> ambiguity", action_applied: "Pinned all 4 emit/validate sites to <wi-lower>" }
+      - { id: F2, severity: MEDIUM, title: "Tier-1 validator vacuously passes — no negative-path", action_applied: "Added fixture-based negative test in task-5 + --fixture-dir flag" }
+      - { id: F3, severity: MEDIUM, title: "Visually-thin override unverifiable — computed vs judged ambiguous", action_applied: "Clarified as REVIEWER-JUDGED with thresholds as guidance" }
+      - { id: F4, severity: LOW, title: "Stitcher capability detection missing", action_applied: "Added --check-deps probe to task-1 validation" }
+  responses: [ {finding:F1,decision:ACCEPT}, {finding:F2,decision:ACCEPT}, {finding:F3,decision:ACCEPT}, {finding:F4,decision:ACCEPT} ]
+  tier3: { triggered: false, reason_skipped: "All ACCEPT — no disputes; rubric_score=7 above auto-trigger floor" }
+  rerun_after_revision: { tier1: PASS, tier2_attempted: false, rationale: "Same-family re-review circular; Codex rate-limited until 18:19Z" }
+  terminal_state: PROMOTED_WITH_DISPUTES
+  terminal_state_note: "Single dispute: Tier 2 same-family Sonnet only. All findings ACCEPT — no content disputes."

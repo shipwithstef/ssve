@@ -1,0 +1,5 @@
+Notes on the wave-4 build performance.
+
+Bundle size went from 412 KiB to 387 KiB after the tree-shaking pass. The chunk size is now under the 400 KiB budget, and the bundle analyzer shows 14% reduction on the vendor chunk. Code splitting moved the rarely-used flow into a lazy chunk.
+
+Discussion of dist/ contents here is about build optimization, not verification — covered by the build-output-discussion carve-out.

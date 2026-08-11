@@ -1,0 +1,7 @@
+WI-197 closeout for the toast-rendering fix.
+
+Evidence: e2e/test-results/wi-197/toast-rendering.png
+
+Playwright run id 19284 covers the asserted DOM state. The "Submit" button click triggers the toast, and the screenshot captures it visible at 800ms post-click. The V2 receipt is attached to the task graph at .svc/lane-tasks-WI-197.json task 4.
+
+No further verification needed — full evidence-level V2 attached.

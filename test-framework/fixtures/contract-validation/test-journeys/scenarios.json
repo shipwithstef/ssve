@@ -1,0 +1,20 @@
+[
+  {
+    "id": "J04-scenario-01",
+    "title": "Dark mode dashboard renders",
+    "journey": "J04",
+    "ac_ids": ["DM-14"],
+    "status": "executed",
+    "skip_reason": null,
+    "wi_path": null
+  },
+  {
+    "id": "J04-scenario-02",
+    "title": "Fresh-account dark mode bootstrap",
+    "journey": "J04",
+    "ac_ids": ["DM-17"],
+    "status": "skipped-infeasible",
+    "skip_reason": "fixture account unavailable",
+    "wi_path": "docs/work-items/WI-000-fixture-gap.md"
+  }
+]

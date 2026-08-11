@@ -1,0 +1,777 @@
+{
+  "schema_version": 1,
+  "wi": "WI-507",
+  "lane": "framework",
+  "created": "2026-07-22T16:59:09.950Z",
+  "status": "completed",
+  "authority_baton": {
+    "wi": "WI-507",
+    "branch": "WI-507-fleet-integration",
+    "base_sha": "5f02728ac8794283c317791a077c645f8420cc9e",
+    "worktree": "/workspace/seriousvibecoding/.worktrees/WI-507-fleet-integration",
+    "owner_session": "897d1823-7161-45d2-985b-130ab3526f2c",
+    "claim_generation": 1
+  },
+  "delivery_graph": {
+    "compiler_version": 1,
+    "user_intent": "Build, independently review, execute, land, install, and live-verify the generic 15-brain company operating fleet and promotion memory architecture.",
+    "repo_mode": "framework",
+    "change_type": "framework",
+    "lane": "framework",
+    "delivery_mode": "end_to_end",
+    "delivery_tier": {
+      "mode": "end_to_end",
+      "selected_by": "owner-handover",
+      "rationale": "The owner explicitly requires the complete plan-review-execute-review-audit-land-verify chain and cross-repository installed proof."
+    },
+    "risk_flags": [
+      "cross-cutting-framework",
+      "host-session-hooks",
+      "append-only-company-state",
+      "cross-repository-external-state",
+      "promotion-receipts",
+      "professional-domain-boundaries"
+    ],
+    "evidence_families": {
+      "acceptance_criteria": "satisfied",
+      "runtime": "satisfied",
+      "plan_review": "satisfied",
+      "code_review": "satisfied",
+      "implementation_audit": "satisfied",
+      "promotion": "satisfied"
+    },
+    "required_skills": [
+      "design-tech",
+      "plan-changeset",
+      "review-plan",
+      "execute-changeset",
+      "review-exec",
+      "audit-implementation",
+      "land-changeset",
+      "verify-promotion"
+    ],
+    "verification_tiers": {
+      "local": [
+        "focused-fleet-fixtures",
+        "full-tier-1"
+      ],
+      "runtime": [
+        "claude-gemini-install",
+        "example-marketplace-parent-resolution"
+      ],
+      "production": []
+    },
+    "mutation_history": [
+      {
+        "ts": "2026-07-22T16:59:09.950Z",
+        "source": "owner-handover",
+        "action": "initialize",
+        "reason": "Initial handover supplied an empty framework-evolution graph."
+      },
+      {
+        "ts": "2026-07-22T18:00:00.000Z",
+        "source": "plan-changeset",
+        "action": "reconstruct",
+        "reason": "Owner authorized loopback after the prior G2 assertion was found to have only a capability-probe receipt and stale base/branch metadata."
+      },
+      {
+        "ts": "2026-07-23T00:29:46.847Z",
+        "source": "classify-delivery-graph-closeout",
+        "action": "close_as_runtime_accepted",
+        "reason": "delivery_tier=end_to_end; all evidence families and required tasks are closed; WI-395 closeout gate: no main-green verdict — run scripts/validate-main-green.sh before recording closeout",
+        "affected_tasks": [],
+        "affected_evidence_families": [],
+        "validator_proof": "scripts/classify-delivery-graph-closeout.mjs --write"
+      }
+    ],
+    "closeout_classification": "runtime-accepted",
+    "closeout_classification_reasons": [
+      "delivery_tier=end_to_end",
+      "all evidence families and required tasks are closed",
+      "WI-395 closeout gate: no main-green verdict — run scripts/validate-main-green.sh before recording closeout"
+    ],
+    "closeout_delivery_tier": "end_to_end"
+  },
+  "tasks": [
+    {
+      "id": 0,
+      "status": "completed",
+      "skill": "design-tech",
+      "subject": "design-tech: baseline WI-507 persistent schemas and host architecture",
+      "description": "Invoke: /design-tech. Define exact company link, apps registry, promotion index, topology database, cache, hook, containment, cost, operations, and rollback contracts; complete G4 before final plan review.",
+      "metadata": {
+        "skill": "design-tech",
+        "reasoning": "high"
+      },
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "design-tech",
+        "loaded_at": "2026-07-22T17:48:00.000Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-SpecJourneyDiscussionPreflight",
+            "ts": "2026-07-22T17:49:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/design-tech-preflight.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-CodebasePatternAnalysis",
+            "ts": "2026-07-22T17:49:10.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/design-tech-codebase-analysis.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ArchitectureAlternativesAndDiagrams",
+            "ts": "2026-07-22T17:49:20.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/tech/wi-507-company-operating-fleet.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-CostOpsFeasibilityRiskDesign",
+            "ts": "2026-07-22T17:49:30.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/tech/wi-507-company-operating-fleet.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-G4ReviewAndDecisionLogging",
+            "ts": "2026-07-22T17:49:40.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/design-tech-g4-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-BaselinedSpecSelfVerify",
+            "ts": "2026-07-22T17:49:50.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/tech/wi-507-company-operating-fleet.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-22T17:50:00.000Z"
+    },
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "plan-changeset",
+      "subject": "plan-changeset: reconstruct WI-507 against the live worktree",
+      "description": "Invoke: /plan-changeset. Freeze exact schemas, files, five serial implementation tasks, tests, external-state lifecycle, rollback, and promoted live-resolution proof.",
+      "metadata": {
+        "skill": "plan-changeset",
+        "reasoning": "high"
+      },
+      "blocked_by": [
+        0
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-07-22T17:24:46.842Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-07-22T17:24:46.898Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-archetype.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-07-22T17:24:46.944Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-scope.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-07-22T17:24:46.981Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-22-company-operating-fleet/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-07-22T17:24:47.029Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-22-company-operating-fleet/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-07-22T17:24:47.082Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-07-22T17:24:47.132Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-22T17:24:47.180Z"
+    },
+    {
+      "id": 2,
+      "status": "completed",
+      "skill": "review-plan",
+      "subject": "review-plan: independently challenge the reconstructed fleet plan",
+      "description": "Invoke: /review-plan. Mechanically validate and independently review genericity, JSONL safety, promotion gating, hook fail-open behavior, registry sync, and external-state preservation.",
+      "metadata": {
+        "skill": "review-plan",
+        "reasoning": "high"
+      },
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-07-22T17:24:47.257Z",
+        "loaded_via": "direct_skill_file",
+        "validation_output": "docs/plans/2026-07-22-company-operating-fleet/review-log.yaml",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalValidation",
+            "ts": "2026-07-22T18:03:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-self-verify.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-PrerequisiteAndLaneAudit",
+            "ts": "2026-07-22T18:03:10.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-22-company-operating-fleet/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P3-CanonicalIndependentReview",
+            "ts": "2026-07-22T18:03:20.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/plan/d004946356caff37cd765093ed07e59278079cdaf11af4ee1e6be78a8d8552c8/20260722T175441Z-3335444/receipt.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-FindingDisposition",
+            "ts": "2026-07-22T18:03:30.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-22-company-operating-fleet/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P5-FinalDeterministicGates",
+            "ts": "2026-07-22T18:03:40.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-22-company-operating-fleet/manifest.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-22T18:03:45.000Z"
+    },
+    {
+      "id": 3,
+      "status": "completed",
+      "skill": "execute-changeset",
+      "subject": "execute-changeset: implement five reviewed WI-507 tasks serially",
+      "description": "Invoke: /execute-changeset. Apply only the independently reviewed manifest in this exact worktree, validate each checkpoint, preserve legacy state, and defer external mutation to Task 5.",
+      "metadata": {
+        "skill": "execute-changeset",
+        "reasoning": "high"
+      },
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-07-22T18:04:00.000Z",
+        "loaded_via": "direct_skill_file",
+        "validation_output": "test-framework/evals/tier-1/validate-company-fleet-integration.sh",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-07-22T18:04:10.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-22-company-operating-fleet/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-07-22T18:30:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/wi507-checkpoint-paths.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-07-22T18:50:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "test-framework/evals/tier-1/validate-company-fleet-integration.sh"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-07-22T18:51:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-507.json"
+              }
+            ]
+          }
+        ]
+      },
+      "process_tasks": [
+        {
+          "id": "3.1",
+          "name": "execute-changeset|core-cli-engine",
+          "status": "completed",
+          "blocked_by": [],
+          "subject": "Task 1: parent resolution, SLA/open-item commands, apps registry, and explicit Immune Mesh in scripts/company-state.mjs.",
+          "completed_at": "2026-07-22T18:16:00.000Z",
+          "evidence": [
+            "test-framework/evals/tier-1/validate-company-fleet-integration.sh",
+            "references/company-operating-fleet.md"
+          ]
+        },
+        {
+          "id": "3.2",
+          "name": "execute-changeset|universal-fleet-skills",
+          "status": "completed",
+          "blocked_by": [
+            "3.1"
+          ],
+          "subject": "Task 2: create and register the 15 generic proposer-only framework skills and routing scenarios.",
+          "completed_at": "2026-07-22T18:28:00.000Z",
+          "evidence": [
+            "test-framework/evals/tier-1/validate-company-fleet-skills.sh",
+            "test-framework/evals/tier-1/validate-terminal-skill-frontmatter.sh",
+            "scripts/lint-skills-manifest.mjs"
+          ]
+        },
+        {
+          "id": "3.3",
+          "name": "execute-changeset|promotion-memory-diagnostics",
+          "status": "completed",
+          "blocked_by": [
+            "3.2"
+          ],
+          "subject": "Task 3: promotion index, worktree topology, cross-app contract guard, and non-mutating auto-healer.",
+          "completed_at": "2026-07-22T18:40:00.000Z",
+          "evidence": [
+            "test-framework/evals/tier-1/validate-company-fleet-integration.sh",
+            "scripts/svc-wi-promotion-indexer.mjs",
+            "scripts/worktree-topology.mjs",
+            "scripts/cross-app-contract-guard.mjs",
+            "scripts/auto-healer.mjs"
+          ]
+        },
+        {
+          "id": "3.4",
+          "name": "execute-changeset|session-start-hooks",
+          "status": "completed",
+          "blocked_by": [
+            "3.3"
+          ],
+          "subject": "Task 4: cached /cos briefing and promoted-delta SessionStart hooks wired for Claude and Gemini.",
+          "completed_at": "2026-07-22T18:45:00.000Z",
+          "evidence": [
+            "hooks/cos-briefing.mjs",
+            "hooks/svc-delta-preload.mjs",
+            "scripts/wire-hooks.mjs",
+            "scripts/wire-gemini-hooks.mjs",
+            "test-framework/evals/tier-1/validate-company-fleet-integration.sh"
+          ]
+        },
+        {
+          "id": "3.5",
+          "name": "execute-changeset|external-links-worktree-resolution",
+          "status": "completed",
+          "blocked_by": [
+            "3.4"
+          ],
+          "subject": "Task 5a: create only the reviewed parent/product links and apps registry, run validate-only Claude/Gemini setup, and prove parent briefing resolution from the WI worktree. Promoted host installation remains owned by task 7 verify-promotion.",
+          "completed_at": "2026-07-22T18:50:00.000Z",
+          "evidence": [
+            ".svc/external-review-artifacts/WI-507/external-state-precheck.json",
+            "/home/svc-user/app-workspaces/example-company/.svc/company-link.json",
+            "/home/svc-user/app-workspaces/example-company/company-state/apps.json",
+            "/home/svc-user/app-workspaces/example-marketplace/.svc/company-link.json"
+          ]
+        }
+      ],
+      "completed_at": "2026-07-22T18:51:00.000Z"
+    },
+    {
+      "id": 4,
+      "status": "completed",
+      "skill": "review-exec",
+      "subject": "review-exec: G6 independent frozen-diff review",
+      "description": "Invoke: /review-exec. Review the final implementation for scope, security, append-only integrity, fail-open hooks, path containment, non-mutating diagnostics, and test strength.",
+      "metadata": {
+        "skill": "review-exec",
+        "reasoning": "high"
+      },
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-07-22T18:51:00.000Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-07-22T23:57:12.648Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-507-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-07-22T23:57:12.684Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-exec-pair.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-07-22T23:57:12.718Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-507-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-IterationLoop",
+            "ts": "2026-07-22T23:57:12.758Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-507-exec-review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerdictAndReceiptFinalize",
+            "ts": "2026-07-22T23:57:12.801Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-507-exec-review-log.yaml"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-22T23:57:12.841Z"
+    },
+    {
+      "id": 5,
+      "status": "completed",
+      "skill": "audit-implementation",
+      "args": {
+        "mode": "full"
+      },
+      "subject": "audit-implementation: trace WI-507 ACs through files, wiring, tests, and external state",
+      "description": "Invoke: /audit-implementation. Require substantive, wired, functional proof for every brain, command, script, hook, host, and parent-resolution path.",
+      "metadata": {
+        "skill": "audit-implementation",
+        "reasoning": "high"
+      },
+      "blocked_by": [
+        4
+      ],
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-07-22T23:57:12.894Z",
+        "loaded_via": "direct_skill_file",
+        "validation_output": "docs/specs/audit/wi-507-company-operating-fleet-analysis.md",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextScopeConcern",
+            "ts": "2026-07-22T23:57:12.936Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-implementation-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecialistDispatchCoverageLedger",
+            "ts": "2026-07-22T23:57:12.972Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-507-company-operating-fleet-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-HypothesisGeneration",
+            "ts": "2026-07-22T23:57:13.008Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-507-company-operating-fleet-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-SubsystemBehaviorAudit",
+            "ts": "2026-07-22T23:57:13.051Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-implementation-subsystems.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-FindingsConvergenceReport",
+            "ts": "2026-07-22T23:57:13.090Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-507-company-operating-fleet-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-22T23:57:13.130Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-implementation-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-22T23:57:13.169Z"
+    },
+    {
+      "id": 6,
+      "status": "completed",
+      "skill": "land-changeset",
+      "subject": "land-changeset: sanctioned WI-507 squash merge",
+      "description": "Invoke: /land-changeset. Freeze receipts, push, open/reuse the exact branch PR, obtain review evidence, squash merge, and issue a fresh final-SHA receipt envelope.",
+      "metadata": {
+        "skill": "land-changeset",
+        "reasoning": "high"
+      },
+      "blocked_by": [
+        5
+      ],
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-07-22T23:58:57.577Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-07-23T00:17:16.460Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-07-23T00:17:16.503Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-diff-audit.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-07-23T00:17:16.534Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-validation.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-PushPrCreation",
+            "ts": "2026-07-23T00:17:16.578Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-pr.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-MergeDecisionCleanup",
+            "ts": "2026-07-23T00:17:16.619Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-merge.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SpecStatusSelfVerify",
+            "ts": "2026-07-23T00:17:16.666Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T00:17:16.713Z"
+    },
+    {
+      "id": 7,
+      "status": "completed",
+      "skill": "verify-promotion",
+      "subject": "verify-promotion: G7 installed fleet, live /cos, and promotion index proof",
+      "description": "Invoke: /verify-promotion. Verify promoted main, refresh Claude/Gemini installs, replay example-marketplace parent briefing resolution, verify protected external state, and index/query WI-507 only after G7.",
+      "metadata": {
+        "skill": "verify-promotion",
+        "reasoning": "high"
+      },
+      "blocked_by": [
+        6
+      ],
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-07-23T00:17:16.748Z",
+        "loaded_via": "direct_skill_file",
+        "validation_output": "docs/specs/reviews/wi-507-promotion-verification.md",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-07-23T00:27:29.926Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-evidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-07-23T00:27:29.960Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-507-promotion-verification.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-07-23T00:27:29.995Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-runtime.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-07-23T00:27:30.028Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-507-promotion-verification.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T00:27:40.461Z"
+    }
+  ]
+}

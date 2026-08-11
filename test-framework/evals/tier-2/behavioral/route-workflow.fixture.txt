@@ -1,0 +1,7 @@
+Routing this freeform intent.
+
+Lane: brownfield-feature (the description names a new dashboard widget on top of an existing product).
+Change type: feature.
+Pre-lane skills: none triggered.
+
+Next: /validate-feature — first stop for a new feature idea. validate-feature will cross-check against existing personas, journeys, and specs, then ask the 8 business questions if the idea passes the duplicate-detection gate. After that, the lane proceeds write-spec → design-ux → design-ui → design-tech → plan-changeset → execute-changeset → review-gate → land-changeset.

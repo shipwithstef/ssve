@@ -1,0 +1,10 @@
+Skill: strategic-decision
+
+Q: What are the required inputs for strategic-decision, and what is its lane classification?
+A: Expected pattern: Required: `~/.svc/builder-profile.md` and a decision-question. It is a pre-lane skill that operates above the 7-lane model.
+
+Q: What are the four canonical constraint profiles presented in Phase 0 of strategic-decision?
+A: Expected pattern: Bootstrapper, Self-financed, Funded startup, Enterprise.
+
+Q: How many phases are in the strategic-decision flow, and what is the purpose of Phase 2.5?
+A: Expected pattern: 9 phases (-1 through 8). Phase 2.5 is the "Should we build this at all?" escape hatch, appended to DIMENSIONS.md.

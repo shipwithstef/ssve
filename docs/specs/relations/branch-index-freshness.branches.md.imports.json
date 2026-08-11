@@ -1,0 +1,10 @@
+{
+  "stamped_at": "cf3ebd12",
+  "imports": {
+    "scripts/branch-index-freshness.mjs": [
+      "node:child_process",
+      "node:fs",
+      "node:url"
+    ]
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "history": [
+    {
+      "fp": "3f14f4feba2fc7b6",
+      "tool": "Write",
+      "time": 1777039808556
+    },
+    {
+      "fp": "3f14f4feba2fc7b6",
+      "tool": "Write",
+      "time": 1777039808559
+    },
+    {
+      "fp": "15d68afa3561b147",
+      "tool": "Write",
+      "time": 1777039828969
+    },
+    {
+      "fp": "15d68afa3561b147",
+      "tool": "Write",
+      "time": 1777039828970
+    },
+    {
+      "fp": "560c1415cdbef44d",
+      "tool": "Write",
+      "time": 1777039869357
+    },
+    {
+      "fp": "bef9ecead3276ddf",
+      "tool": "Edit",
+      "time": 1777039881118
+    },
+    {
+      "fp": "bef9ecead3276ddf",
+      "tool": "Edit",
+      "time": 1777039881127
+    },
+    {
+      "fp": "aadebf764c5e8bb5",
+      "tool": "Edit",
+      "time": 1777039889336
+    },
+    {
+      "fp": "aadebf764c5e8bb5",
+      "tool": "Edit",
+      "time": 1777039889339
+    },
+    {
+      "fp": "85f5fd3a02ac5cc9",
+      "tool": "Bash",
+      "time": 1777039895672
+    },
+    {
+      "fp": "dc13b5efb964d79f",
+      "tool": "Bash",
+      "time": 1777039898539
+    },
+    {
+      "fp": "dc13b5efb964d79f",
+      "tool": "Bash",
+      "time": 1777039898554
+    },
+    {
+      "fp": "9574e9bf583acd45",
+      "tool": "Bash",
+      "time": 1777039904554
+    },
+    {
+      "fp": "9574e9bf583acd45",
+      "tool": "Bash",
+      "time": 1777039904566
+    }
+  ],
+  "warningsIssued": [],
+  "lastGitChecksum": "69186429187e0550",
+  "noProgressCount": 0
+}

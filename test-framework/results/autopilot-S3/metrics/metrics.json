@@ -1,0 +1,98 @@
+{
+  "scenario": "S3",
+  "type": "iteration",
+  "mode": "convert",
+  "date": "2026-04-03",
+  "target_project": "todo-api",
+  "feature_added": "real-time-collaboration",
+  "artifacts_produced": 7,
+  "skills_exercised": 6,
+  "per_skill_estimates": {
+    "write-vision": {
+      "mode": "REFINE",
+      "input_tokens_estimate": 1800,
+      "output_tokens_estimate": 2200,
+      "total_tokens_estimate": 4000,
+      "input_context": "existing vision.md (30 lines) + S3 scenario description + approval gate template",
+      "output_artifact": "vision-refine-proposal.md",
+      "output_lines": 87,
+      "convert_mode_overhead": "Evidence Table and Approval Gate sections add ~40% output vs bootstrap create mode",
+      "key_sections": ["Proposed Changes (4)", "Evidence Table (5 rows)", "Open Questions (3)", "Approval Gate"]
+    },
+    "build-personas": {
+      "mode": "Add New (Mode 3)",
+      "input_tokens_estimate": 1200,
+      "output_tokens_estimate": 1100,
+      "total_tokens_estimate": 2300,
+      "input_context": "existing P1.md (25 lines) + vision refinement + new feature requirement",
+      "output_artifact": "P2-team-collaborator.md",
+      "output_lines": 52,
+      "convert_mode_overhead": "Relationship to Existing Personas section is convert-mode-only (~15% of output)",
+      "key_sections": ["Role", "Goals (3)", "Needs (3)", "Pain Points (3)", "Relationship to Existing"]
+    },
+    "validate-feature": {
+      "mode": "VALIDATE against existing",
+      "input_tokens_estimate": 3200,
+      "output_tokens_estimate": 3500,
+      "total_tokens_estimate": 6700,
+      "input_context": "feature-todo-management.md + enabler-overdue-checker.md + S3 requirement + new persona",
+      "output_artifact": "feature-ship-brief-realtime-collab.md",
+      "output_lines": 108,
+      "convert_mode_overhead": "Cross-reference tables against existing ACs add ~60% output vs bootstrap discovery",
+      "key_sections": ["Cross-References (6 existing ACs mapped)", "New Enablers (2)", "Extension Architecture", "Cascade Diagram", "Validation Table (5 checks)"]
+    },
+    "write-spec": {
+      "mode": "New feature referencing existing",
+      "input_tokens_estimate": 3800,
+      "output_tokens_estimate": 4200,
+      "total_tokens_estimate": 8000,
+      "input_context": "feature-ship-brief + existing feature spec + existing enabler spec + persona P2 + vision refinement",
+      "output_artifact": "feature-realtime-collab.md",
+      "output_lines": 132,
+      "convert_mode_overhead": "System Dependencies split into Existing/New tables; cascade diagram; cross-AC references add ~30% vs clean slate",
+      "key_sections": ["User Stories (4)", "Acceptance Criteria (15, prefix COL)", "Dependencies Existing (2)", "Dependencies New (2)", "Cascade Diagram"]
+    },
+    "sync-spec-code": {
+      "mode": "Convert (cross-spec consistency)",
+      "input_tokens_estimate": 4500,
+      "output_tokens_estimate": 3800,
+      "total_tokens_estimate": 8300,
+      "input_context": "All 4 specs (2 existing + 2 new) + journey J01",
+      "output_artifact": "sync-spec-code-report.md",
+      "output_lines": 118,
+      "convert_mode_overhead": "Entirely different output structure vs S1; drift detection + conflict check tables are convert-mode-only",
+      "key_sections": ["Existing Consistency (5 checks)", "New Impact Analysis (10 checks)", "Annotations Summary (RESOLVED:14, PLANNED:4, DRIFT:1)", "Drift Detail", "Conflict Check (5 AC pairs)"]
+    },
+    "write-journeys": {
+      "mode": "Expand (Mode 2)",
+      "input_tokens_estimate": 4000,
+      "output_tokens_estimate": 4500,
+      "total_tokens_estimate": 8500,
+      "input_context": "J01 journey + feature-realtime-collab spec + both personas + enabler specs",
+      "output_artifact": "J02-realtime-collab.feature.md",
+      "output_lines": 178,
+      "convert_mode_overhead": "Prerequisite reference, conflict analysis table, and cross-journey AC coverage add ~45% vs bootstrap journey",
+      "key_sections": ["Scenarios (4 Gherkin)", "Layer 3 Analysis (18 steps grounded)", "Conflict Analysis (5 assumptions checked)", "AC Coverage (15/15 mapped, 14 exercised)"]
+    }
+  },
+  "totals": {
+    "total_input_tokens_estimate": 18500,
+    "total_output_tokens_estimate": 19300,
+    "total_tokens_estimate": 37800,
+    "total_output_lines": 675,
+    "average_convert_mode_overhead_percent": 38,
+    "drift_issues_found": 1,
+    "conflicts_found": 0,
+    "existing_acs_referenced": 9,
+    "new_acs_created": 15,
+    "existing_specs_validated": 3,
+    "new_specs_created": 4
+  },
+  "comparison_to_s1": {
+    "s1_total_tokens_estimate": "~85000 (19 skills)",
+    "s3_total_tokens_estimate": "~37800 (6 skills)",
+    "s3_per_skill_average": 6300,
+    "s1_per_skill_average": 4474,
+    "convert_overhead_explanation": "Convert mode skills average 41% more tokens per skill than bootstrap mode due to cross-reference validation, drift detection, and approval gates. Total is lower because fewer skills are exercised in an iteration."
+  }
+}

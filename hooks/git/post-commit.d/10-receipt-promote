@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+# svc post-commit slot: promote staged receipts to SHA-keyed mirror +
+# write consolidated JSON envelope as a git note on refs/notes/svc-receipts.
+#
+# Idempotent. Safe on amend / cherry-pick. Uses a cooperative lock to
+# prevent concurrent races with svc-auto-drive / emit-receipt.
+
+set -u
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+SHA="$(git rev-parse HEAD)"
+SHORT_SHA="${SHA:0:7}"
+TREE_HASH="$(git rev-parse 'HEAD^{tree}')"
+
+# Try BOTH short and full tree-hash paths (pre-commit uses full; staging
+# directory may exist under either depending on script version)
+STAGING_DIR=".svc/receipts/staging/$TREE_HASH"
+if [[ ! -d "$STAGING_DIR" ]]; then
+  STAGING_DIR=".svc/receipts/staging/${TREE_HASH:0:7}"
+fi
+MIRROR_DIR=".svc/receipts/$SHORT_SHA"
+
+if [[ ! -d "$STAGING_DIR" ]]; then
+  exit 0
+fi
+
+mkdir -p "$MIRROR_DIR"
+cp -n "$STAGING_DIR"/* "$MIRROR_DIR"/ 2>/dev/null || true
+
+# Acquire a cooperative lock on the notes ref for this SHA. The lock file
+# is the same one emit-receipt + svc-auto-drive use, so concurrent writers
+# serialize cleanly. Use flock if available; fall back to no-lock.
+LOCK_DIR=".svc/receipts"
+mkdir -p "$LOCK_DIR"
+LOCK_PATH="$LOCK_DIR/.notes-${SHORT_SHA}"
+touch "$LOCK_PATH"
+
+# Build consolidated envelope by reading current note (merge under lock to
+# preserve any concurrent writes) + folding in newly promoted receipts.
+TMP_PAYLOAD="$(mktemp /tmp/svc-postcommit-note-XXXXXX.json)"
+trap 'rm -f "$TMP_PAYLOAD"' EXIT
+
+(
+  # Acquire the lock if flock is available; otherwise proceed best-effort
+  if command -v flock >/dev/null 2>&1; then
+    flock -w 5 200 || true
+  fi
+
+  # Read existing envelope (may be empty if no prior writers)
+  EXISTING="$(git notes --ref=svc-receipts show "$SHA" 2>/dev/null || echo '{}')"
+  if [[ -z "$EXISTING" || "$EXISTING" == "null" ]]; then
+    EXISTING="{}"
+  fi
+
+  # Merge mirror receipts into envelope using jq if available; else fall back
+  if command -v jq >/dev/null 2>&1; then
+    MERGED="$EXISTING"
+    for f in "$MIRROR_DIR"/*.json; do
+      [[ -f "$f" ]] || continue
+      TYPE="$(basename "$f" .json)"
+      MERGED="$(jq --argjson r "$(cat "$f")" --arg t "$TYPE" '. + {($t): $r}' <<<"$MERGED")"
+    done
+    echo "$MERGED" > "$TMP_PAYLOAD"
+  else
+    # No jq — fall back to overwrite with just the new mirror set
+    ENVELOPE='{'
+    FIRST="true"
+    for f in "$MIRROR_DIR"/*.json; do
+      [[ -f "$f" ]] || continue
+      TYPE="$(basename "$f" .json)"
+      CONTENT="$(cat "$f")"
+      if [[ "$FIRST" == "true" ]]; then FIRST="false"; else ENVELOPE+=","; fi
+      ENVELOPE+="\"$TYPE\":$CONTENT"
+    done
+    ENVELOPE+='}'
+    echo "$ENVELOPE" > "$TMP_PAYLOAD"
+  fi
+
+  # Write note via file (no shell-escape issues on special characters)
+  git notes --ref=svc-receipts add -f -F "$TMP_PAYLOAD" "$SHA" 2>/dev/null || true
+) 200>"$LOCK_PATH"
+
+# Clean up staging
+rm -rf "$STAGING_DIR" 2>/dev/null || true
+
+exit 0

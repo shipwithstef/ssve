@@ -1,0 +1,40 @@
+{
+  "wi": "WI-228",
+  "lane": "framework",
+  "created": "2026-05-10T16:51:09.557Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Migrate build-personas skill contract and tier-2 scenario",
+      "status": "completed",
+      "blocked_by": [],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T16:51:24.776Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T16:52:58.457Z"
+    },
+    {
+      "id": 2,
+      "subject": "Validate and close WI-228",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T16:52:58.520Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T16:52:58.554Z"
+    }
+  ]
+}

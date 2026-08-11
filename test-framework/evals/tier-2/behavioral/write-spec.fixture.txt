@@ -1,0 +1,30 @@
+# Feature: Notification Preferences
+
+**Status:** DRAFT
+**Type:** Feature
+**Consumers:** P1 (end user)
+**Priority:** Medium
+
+## Problem Statement
+
+Users currently receive notifications via every available channel without opt-out. This produces channel fatigue and reduces engagement.
+
+## User Stories
+
+### US-1: Per-category channel selection
+
+**As** P1, **I want** to choose email / in-app / none per notification category, **So that** I get only the alerts I care about on the channel I prefer.
+
+| AC | Description | QA | E2E | Test |
+|----|-------------|-----|-----|------|
+| NOTIF-01 | User sees a settings page listing every notification category with email/in-app/none toggle | — | 🔲 | — |
+| NOTIF-02 | Selecting a channel persists immediately and is reflected on next page load | — | 🔲 | — |
+| NOTIF-03 | Default for new users: email for billing/security, in-app for everything else, none for marketing | — | 🔲 | — |
+
+## System Dependencies
+
+This feature depends on the existing user-preferences enabler (already shipped) and a notification-router enabler that consults user preferences before fan-out (this WI must spec).
+
+## Pillars Coverage Matrix
+
+All 8 pillars populated with explicit state per the contract.

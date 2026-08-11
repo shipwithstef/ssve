@@ -1,0 +1,21 @@
+{
+  "migration_version": "1",
+  "generated_note": "F-002/F-017 STRUCTURED blocking-hook inventory. Rows extracted from hooks/hooks.json (HARD BLOCK dispositions), the per-host manifests under provision/hosts/, and the codex hooks. disposition ∈ {route-through-launcher, adopt-emitDenial, passthrough-delegated:<reason>, context-injection-no-block:<reason>, non-file:<reason>}. adopt-emitDenial rows are RUNTIME denial-driven (each routes its block through the 5-field emitDenial envelope + durable receipt — R2-F003). passthrough-delegated / context-injection-no-block rows map to a real reviewed repo file but own NO independent block path (a passthrough that re-emits a delegated guard's output; a UserPromptSubmit advisory that never blocks), so they are asserted present, not denial-driven. hook_id/installed_command are hook metadata; repo_path is a repository path — never conflated. check-blocking-hook-inventory.mjs asserts every file-disposition row maps to exactly one reviewed repo file and emits the derived normalized repo-path list.",
+  "rows": [
+    { "hook_id": "svc-workflow-guard", "repo_path": "hooks/svc-workflow-guard.mjs", "installed_command": "node hooks/svc-workflow-guard.mjs", "disposition": "adopt-emitDenial" },
+    { "hook_id": "svc-bash-guard", "repo_path": "hooks/svc-workflow-guard.mjs", "installed_command": "node hooks/svc-workflow-guard.mjs --bash-guard", "disposition": "adopt-emitDenial" },
+    { "hook_id": "svc-eval-gate-pre", "repo_path": "scripts/eval-gate.mjs", "installed_command": "node scripts/eval-gate.mjs pre", "disposition": "adopt-emitDenial" },
+    { "hook_id": "svc-preflight-skill", "repo_path": "scripts/preflight.mjs", "installed_command": "node scripts/preflight.mjs --hook --fail-closed", "disposition": "adopt-emitDenial" },
+    { "hook_id": "svc-skill-artifact-authenticity", "repo_path": "hooks/svc-skill-artifact-authenticity.mjs", "installed_command": "node hooks/svc-skill-artifact-authenticity.mjs", "disposition": "adopt-emitDenial" },
+    { "hook_id": "svc-session-contract-freshness", "repo_path": "hooks/svc-session-contract-freshness.mjs", "installed_command": "node hooks/svc-session-contract-freshness.mjs", "disposition": "adopt-emitDenial" },
+    { "hook_id": "svc-inertia-check", "repo_path": "hooks/svc-inertia-check.mjs", "installed_command": "node hooks/svc-inertia-check.mjs", "disposition": "adopt-emitDenial" },
+    { "hook_id": "svc-lane-tasks-validator", "repo_path": "hooks/svc-lane-tasks-validator.mjs", "installed_command": "node hooks/svc-lane-tasks-validator.mjs", "disposition": "adopt-emitDenial" },
+    { "hook_id": "svc-wi-pillars-check", "repo_path": "hooks/svc-wi-pillars-check.sh", "installed_command": "bash hooks/svc-wi-pillars-check.sh", "disposition": "adopt-emitDenial" },
+    { "hook_id": "svc-stop-quality", "repo_path": "hooks/svc-stop-quality.js", "installed_command": "node hooks/svc-stop-quality.js --check", "disposition": "adopt-emitDenial" },
+    { "hook_id": "svc-verification-delegation-guard", "repo_path": "hooks/svc-verification-delegation-guard.sh", "installed_command": "bash hooks/svc-verification-delegation-guard.sh", "disposition": "adopt-emitDenial" },
+    { "hook_id": "svc-task-completion-guard", "repo_path": "hooks/svc-task-completion-guard.sh", "installed_command": "bash hooks/svc-task-completion-guard.sh", "disposition": "route-through-launcher" },
+    { "hook_id": "svc-codex-skill-load-enforcer", "repo_path": "hooks/codex/svc-codex-skill-load-enforcer.mjs", "installed_command": "node hooks/codex/svc-codex-skill-load-enforcer.mjs", "disposition": "route-through-launcher" },
+    { "hook_id": "svc-codex-stop-firewall", "repo_path": "hooks/codex/svc-codex-stop-firewall.mjs", "installed_command": "node hooks/codex/svc-codex-stop-firewall.mjs", "disposition": "passthrough-delegated:re-emits svc-task-completion-guard output; owns no independent denial" },
+    { "hook_id": "svc-codex-prompt-authority", "repo_path": "hooks/codex/svc-codex-prompt-authority.mjs", "installed_command": "node hooks/codex/svc-codex-prompt-authority.mjs", "disposition": "context-injection-no-block:UserPromptSubmit advisory only; never blocks" }
+  ]
+}

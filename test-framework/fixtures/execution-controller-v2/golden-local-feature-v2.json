@@ -1,0 +1,174 @@
+{
+  "schema_version": 2,
+  "fixture_id": "golden-local-feature-v2",
+  "simulation_only": true,
+  "run_id": "golden-local-feature-v2",
+  "timestamps": {
+    "started": "2026-08-10T08:00:00.000Z",
+    "evidence_produced": "2026-08-10T08:00:12.000Z",
+    "evidence_consumed": "2026-08-10T08:00:13.000Z"
+  },
+  "generation_bindings": {
+    "protocol_generation_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+    "product_generation_digest": "2222222222222222222222222222222222222222222222222222222222222222",
+    "context_generation_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+    "concern_generation_digest": "4444444444444444444444444444444444444444444444444444444444444444",
+    "control_generation_digest": "5555555555555555555555555555555555555555555555555555555555555555",
+    "authority_generation_digest": "6666666666666666666666666666666666666666666666666666666666666666",
+    "layer_inventory_digest": "7777777777777777777777777777777777777777777777777777777777777777"
+  },
+  "capsule": {
+    "schema_version": 2,
+    "wi": "WI-GOLDEN-LOCAL-V2",
+    "task_id": "implement-golden-feature",
+    "product_outcome": "prove one local feature through runner, evidence consumption, review projection, simulated release, and observation",
+    "generation_bindings": {
+      "protocol_generation_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+      "product_generation_digest": "2222222222222222222222222222222222222222222222222222222222222222",
+      "context_generation_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+      "concern_generation_digest": "4444444444444444444444444444444444444444444444444444444444444444",
+      "control_generation_digest": "5555555555555555555555555555555555555555555555555555555555555555",
+      "authority_generation_digest": "6666666666666666666666666666666666666666666666666666666666666666",
+      "layer_inventory_digest": "7777777777777777777777777777777777777777777777777777777777777777"
+    },
+    "dependencies": [],
+    "merge_dependencies": [],
+    "interfaces": { "provides": [], "consumes": [] },
+    "revision": 1,
+    "plan_digest": "8888888888888888888888888888888888888888888888888888888888888888",
+    "accepted_parent_sha": "0000000000000000000000000000000000000000",
+    "allowed_files": [
+      { "path": "golden-output.txt", "action": "CREATE" },
+      { "path": "rollback-probe.txt", "action": "CREATE" }
+    ],
+    "forbidden_writes": ["production/**", ".git/**"],
+    "decisions": [
+      { "id": "golden-direction", "status": "RESOLVED", "source_digest": "9999999999999999999999999999999999999999999999999999999999999999" }
+    ],
+    "authorities": [
+      { "id": "local-simulation-only", "status": "RESOLVED", "source_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
+    ],
+    "effect_capabilities": [
+      {
+        "id": "golden-filesystem-write",
+        "principal": "executor",
+        "kind": "filesystem_write",
+        "targets": ["golden-output.txt", "rollback-probe.txt"],
+        "max_cost_usd": 0,
+        "root_only": false,
+        "requires_idempotency": true,
+        "reversible": true
+      }
+    ],
+    "resource_claims": [{ "key": "repo:golden-local-feature", "mode": "exclusive" }],
+    "parallel_policy": { "eligible": false, "merge_order_key": "010-golden", "serialization_reason": "single golden proof" },
+    "active_budget_seconds": 60,
+    "validations": [
+      {
+        "id": "validate-golden-output",
+        "argv": ["node", "-e", "const fs=require('node:fs');if(fs.readFileSync('golden-output.txt','utf8')!=='golden feature\\n')process.exit(7)"],
+        "inputs": ["golden-output.txt"],
+        "validator_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "environment_class": "hermetic",
+        "cost_class": "micro",
+        "required_at_freeze": true
+      }
+    ],
+    "failure_policy": {
+      "local_attempts": 2,
+      "assist_attempts": 1,
+      "plan_freeze_categories": ["PRODUCT_CONTRACT", "SECURITY_AUTHORITY"]
+    }
+  },
+  "feature_effect": {
+    "adapter_id": "filesystem.write-file-v2",
+    "capability_id": "golden-filesystem-write",
+    "principal": "executor",
+    "kind": "filesystem_write",
+    "target": "golden-output.txt",
+    "file_action": "CREATE",
+    "cost_usd": 0,
+    "idempotency_key": "golden-feature-write-v2",
+    "adapter_input": { "content_utf8": "golden feature\n", "mode": 384 }
+  },
+  "rollback_probe_effect": {
+    "adapter_id": "filesystem.write-file-v2",
+    "capability_id": "golden-filesystem-write",
+    "principal": "executor",
+    "kind": "filesystem_write",
+    "target": "rollback-probe.txt",
+    "file_action": "CREATE",
+    "cost_usd": 0,
+    "idempotency_key": "golden-rollback-probe-v2",
+    "adapter_input": { "content_utf8": "must be compensated\n", "mode": 384 }
+  },
+  "evidence_contract": {
+    "id": "golden-validation-evidence",
+    "kind": "VALIDATION_EVIDENCE",
+    "producer_id": "golden-validator-runner",
+    "consumer_ids": [
+      {
+        "kind": "RUNTIME",
+        "id": "golden-task-acceptor",
+        "required": true,
+        "condition": "BEFORE_TASK_ACCEPTANCE",
+        "acknowledgement": { "state": "DECLARED", "evidence_digest": null }
+      }
+    ],
+    "outcome_ids": ["golden-outcome"],
+    "source_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "required": true,
+    "invalidation_input_digests": ["dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"],
+    "freshness": { "mode": "IMMUTABLE", "max_age_seconds": null },
+    "idempotency_key": "produce-golden-validation-evidence",
+    "retention": "RUN"
+  },
+  "journal_sequence": [
+    "RUN_COMPILED",
+    "RUN_STARTED",
+    "TASK_LEASE_ACQUIRED",
+    "TASK_DISPATCHED",
+    "EFFECT_AUTHORIZED",
+    "EFFECT_EXECUTED",
+    "EFFECT_AUTHORIZED",
+    "EFFECT_EXECUTED",
+    "EFFECT_COMPENSATED",
+    "VALIDATOR_STARTED",
+    "VALIDATOR_FINISHED",
+    "EVIDENCE_PRODUCED",
+    "EVIDENCE_CONSUMED",
+    "TASK_ACCEPTED",
+    "TASK_CONSUMED",
+    "CANDIDATE_FROZEN",
+    "FINAL_REVIEW_RECORDED",
+    "FINAL_SHA_BOUND",
+    "ROLLBACK_READY",
+    "RELEASE_STARTED",
+    "PRODUCTION_RELEASED",
+    "LIVE_VERIFIED",
+    "OBSERVATION_SCHEDULED",
+    "OUTCOME_OBSERVED",
+    "NEXT_DECISION_RECORDED"
+  ],
+  "acceptance_derivation": {
+    "required_before_task_accepted": [
+      "feature effect receipt status is CONFIRMED",
+      "validator argv was actually spawned and exited zero",
+      "validator receipt digest is bound into immutable CAS evidence",
+      "golden-task-acceptor acknowledged that exact CAS object"
+    ],
+    "required_before_task_consumed": [
+      "consumption ledger derives artifact state CONSUMED",
+      "evaluateTaskContribution derives next_status CONSUMED"
+    ],
+    "forbidden": "Do not synthesize TASK_ACCEPTED or TASK_CONSUMED from fixture declarations alone."
+  },
+  "expected": {
+    "runtime_status": "SIMULATED_OUTCOME_DECIDED",
+    "task_status": "CONSUMED",
+    "rollback_probe_exists_after_compensation": false,
+    "feature_output_exists": true,
+    "release_and_live_are_simulated": true,
+    "production_proof": false
+  }
+}

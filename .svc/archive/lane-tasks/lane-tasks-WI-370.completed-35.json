@@ -1,0 +1,583 @@
+{
+  "wi": "WI-370",
+  "lane": "framework",
+  "status": "completed",
+  "created": "2026-06-07T12:36:03Z",
+  "delivery_graph": {
+    "tier": "end_to_end",
+    "autorun": true,
+    "source": "route-workflow WI-370 SHRUNK",
+    "speed_levers": "single-round review; suite=gated-push reuse",
+    "closeout_classification": "framework-complete",
+    "closeout_classification_reasons": [
+      "delivery_tier=undeclared",
+      "all evidence families and required tasks are closed"
+    ],
+    "closeout_delivery_tier": "undeclared",
+    "mutation_history": [
+      {
+        "ts": "2026-06-07T13:10:09.774Z",
+        "source": "classify-delivery-graph-closeout",
+        "action": "close_as_framework_complete",
+        "reason": "delivery_tier=undeclared; all evidence families and required tasks are closed",
+        "affected_tasks": [],
+        "affected_evidence_families": [],
+        "validator_proof": "scripts/classify-delivery-graph-closeout.mjs --write"
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "route-workflow",
+      "subject": "route WI-370 shrunk scope (re-measure verdict logged)",
+      "status": "completed",
+      "metadata": {
+        "skill": "route-workflow"
+      },
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-06-07T12:43:10.696331+00:00Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-06-07T13:13:18.207Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-session-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-06-07T13:13:18.251Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-intent.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-06-07T13:13:18.296Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-370.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-06-07T13:13:18.343Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-concern-gate.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-06-07T13:13:18.385Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-370.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-06-07T13:13:18.432Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-self-verify.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": ".svc/lane-tasks-WI-370.json",
+        "validation_output": "routed shrunk scope; re-measure verdict ts in pipeline-decisions"
+      },
+      "completed_at": "2026-06-07T13:13:18.822Z"
+    },
+    {
+      "id": 2,
+      "skill": "plan-changeset",
+      "subject": "compact manifest: de-kimi claude chain",
+      "status": "completed",
+      "metadata": {
+        "skill": "plan-changeset"
+      },
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-06-07T12:43:10.696331+00:00Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-06-07T13:13:52.715Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p2a.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-06-07T13:13:52.762Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p2b.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-06-07T13:13:52.800Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-07-wi-370-de-kimi-claude-chain/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-06-07T13:13:52.852Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p2c.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-06-07T13:13:52.891Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p2d.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-06-07T13:13:52.932Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p2e.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-06-07-wi-370-de-kimi-claude-chain/manifest.md",
+        "validation_output": "SIMULATED compact; mech exit 0"
+      },
+      "completed_at": "2026-06-07T13:13:53.843Z"
+    },
+    {
+      "id": 3,
+      "skill": "review-plan",
+      "subject": "G2 single-round",
+      "status": "completed",
+      "metadata": {
+        "skill": "review-plan"
+      },
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-06-07T12:43:10.696331+00:00Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-06-07T13:13:52.968Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p3a.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-06-07T13:13:53.012Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p3b.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-06-07T13:13:53.051Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p3c.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-06-07T13:13:53.097Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p3d.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-06-07T13:13:53.144Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-07-wi-370-de-kimi-claude-chain/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-06-07T13:13:53.192Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p3f.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-06-07-wi-370-de-kimi-claude-chain/review-log.yaml",
+        "validation_output": "APPROVED gemini 95; 2 accepted, 1 rejected-cited"
+      },
+      "completed_at": "2026-06-07T13:13:53.886Z"
+    },
+    {
+      "id": 4,
+      "skill": "execute-changeset",
+      "subject": "worktree RED-GREEN",
+      "status": "completed",
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-06-07T13:10:09.724716+00:00Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-06-07T13:13:18.478Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-preflight.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-06-07T13:13:18.519Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-apply.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-06-07T13:13:18.558Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-verification.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-06-07T13:13:18.599Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-checkpoint.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "worktree 3 files @ 13831e3d",
+        "validation_output": "RED 2-fail -> GREEN 20/20; scope grew w/ evidence (8 more emissions exposed); suite 198/198"
+      },
+      "completed_at": "2026-06-07T13:13:18.870Z"
+    },
+    {
+      "id": 5,
+      "skill": "review-exec",
+      "subject": "G6 single-round",
+      "status": "completed",
+      "metadata": {
+        "skill": "review-exec"
+      },
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-06-07T13:10:09.724716+00:00Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-06-07T13:13:53.236Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p5a.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "review-log-g6.yaml",
+        "validation_output": "gemini 5/5 approve; MEDIUM refuted w/ self-disable evidence"
+      },
+      "completed_at": "2026-06-07T13:13:53.926Z"
+    },
+    {
+      "id": 6,
+      "skill": "audit-implementation",
+      "subject": "light",
+      "status": "completed",
+      "metadata": {
+        "skill": "audit-implementation"
+      },
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-06-07T13:10:09.724716+00:00Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextScopeConcern",
+            "ts": "2026-06-07T13:13:53.280Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p6.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecialistDispatchCoverageLedger",
+            "ts": "2026-06-07T13:13:53.328Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p6.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-HypothesisGeneration",
+            "ts": "2026-06-07T13:13:53.376Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p6.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-SubsystemBehaviorAudit",
+            "ts": "2026-06-07T13:13:53.430Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p6.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-FindingsConvergenceReport",
+            "ts": "2026-06-07T13:13:53.485Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p6.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-06-07T13:13:53.528Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p6.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "pipeline-decisions",
+        "validation_output": "light: EXACT-3; residue 0; suite via gated push"
+      },
+      "completed_at": "2026-06-07T13:13:53.973Z"
+    },
+    {
+      "id": 7,
+      "skill": "land-changeset",
+      "subject": "land",
+      "status": "completed",
+      "metadata": {
+        "skill": "land-changeset"
+      },
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-06-07T13:10:09.724716+00:00Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-06-07T13:13:53.568Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p7.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-06-07T13:13:53.617Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p7.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-06-07T13:13:53.662Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p7.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-PushPrCreation",
+            "ts": "2026-06-07T13:13:53.707Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p7.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-MergeDecisionCleanup",
+            "ts": "2026-06-07T13:13:53.749Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p7.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SpecStatusSelfVerify",
+            "ts": "2026-06-07T13:13:53.801Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p7.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "PR #34 -> ca8f97f7",
+        "validation_output": "gated push ENGAGED->PASS; merged; envelopes x2; notes synced"
+      },
+      "completed_at": "2026-06-07T13:13:54.016Z"
+    },
+    {
+      "id": 8,
+      "skill": "verify-promotion",
+      "subject": "G7 + live -618ms proof",
+      "status": "completed",
+      "metadata": {
+        "skill": "verify-promotion"
+      },
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-06-07T13:10:09.724716+00:00Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-06-07T13:13:18.637Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-P1-PromotionEvidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-06-07T13:13:18.683Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-P2-SpecACVerification.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-06-07T13:13:18.735Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-P3-RuntimeRegression.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-06-07T13:13:18.778Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-P4-StateCloseout.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "WI-370.md VERIFIED",
+        "validation_output": "LIVE: kimi entries 0; Bash 781->362ms (-54%); kimi host parity intact"
+      },
+      "completed_at": "2026-06-07T13:13:18.919Z"
+    },
+    {
+      "id": 9,
+      "skill": "design-tech",
+      "subject": "SKIPPED",
+      "status": "skipped",
+      "metadata": {
+        "skill": "design-tech"
+      },
+      "skip_reason": "Emission-gating removal of 3 lines + migration; measurement-driven scope from the WI's own conditional; no architecture."
+    }
+  ]
+}

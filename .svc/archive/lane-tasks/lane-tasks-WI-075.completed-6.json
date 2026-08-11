@@ -1,0 +1,25 @@
+{
+  "wi": "WI-075",
+  "lane": "framework",
+  "created": "2026-04-24T12:55:00Z",
+  "status": "completed",
+  "completed_at": "2026-04-24T13:30:00Z",
+  "merged_pr": "https://github.com/archived-contributor/seriousvibecoding/pull/6",
+  "merged_sha": "b6721c3",
+  "spec": "docs/specs/work-items/WI-075.md",
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "execute-changeset",
+      "subject": "All 5 file changes bundled",
+      "status": "completed",
+      "blocked_by": [],
+      "completed_at": "2026-04-24T13:30:00Z",
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-04-24T13:30:00Z",
+        "loaded_via": "legacy-backfill"
+      }
+    }
+  ]
+}

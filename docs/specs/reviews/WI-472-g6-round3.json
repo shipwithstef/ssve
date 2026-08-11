@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "wi": "WI-472",
+  "gate": "G6",
+  "round": 3,
+  "terminal_round": true,
+  "launcher_status": "success",
+  "content_verdict": "pass-with-findings",
+  "request_id": "0851780c-2053-4c96-9bd3-af4b68e67a65",
+  "reviewer": {"host": "claude", "family": "anthropic", "model": "claude-opus-4-8", "effort": "high"},
+  "receipt_sha256": "3d0049f1eafb321a7738c1660544edf0291c55634c846b0a26739f48c5a6d331",
+  "findings_sha256": "9adcf540c31664446198bfdbb5c2b6a303b7e5cb5461053fbc1ab5103848db59",
+  "backlog_certifications": {"required": 78, "positive": 78, "negative": 0},
+  "findings": [
+    {"id": "WI472-R3-01", "severity": "medium", "disposition": "fixed", "resolution": "Canonical launcher receipt and findings are archived as tracked artifacts; checker opens, hashes, and validates the exact row certification."},
+    {"id": "WI472-R3-02", "severity": "medium", "disposition": "fixed", "resolution": "Apply-time validateReview re-reads canonical certifications and re-binds all 78 rows."},
+    {"id": "WI472-R3-03", "severity": "low", "disposition": "accepted-with-justification", "justification": "Generation ownership closes stale-worker overwrite/unlink after replacement in the tested scheduler/finalizer path; the remaining read/unlink race requires a same-path external actor outside the cooperative contract."},
+    {"id": "WI472-R3-04", "severity": "low", "disposition": "accepted-with-justification", "justification": "RC-10 is verified in two worktrees under the same supported Git runtime; normalized binary diff hashing deliberately excludes object-format index IDs."},
+    {"id": "WI472-R3-05", "severity": "info", "disposition": "fixed", "resolution": "The review artifact was regenerated from round-3 request 0851780c-2053-4c96-9bd3-af4b68e67a65 before apply."},
+    {"id": "WI472-R3-06", "severity": "info", "disposition": "accepted", "justification": "One cross-family canonical invocation reviewed both the finished diff and each explicitly enumerated row, as requested."}
+  ],
+  "unresolved_critical": 0,
+  "remaining_high": 0,
+  "certification": true
+}

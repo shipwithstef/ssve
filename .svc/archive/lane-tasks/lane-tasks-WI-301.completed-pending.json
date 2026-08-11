@@ -1,0 +1,415 @@
+{
+  "wi": "WI-301",
+  "lane": "framework",
+  "created": "2026-05-11T05:07:12.522Z",
+  "status": "completed",
+  "delivery_graph": {
+    "compiler_version": 1,
+    "user_intent": "Add delivery graph closeout classification and retrospective closure guard",
+    "repo_mode": "convert",
+    "change_type": "framework",
+    "lane": "framework",
+    "delivery_mode": "end_to_end",
+    "risk_flags": [
+      "concurrency"
+    ],
+    "platform_contracts": [],
+    "evidence_families": {
+      "product": "satisfied",
+      "acceptance_criteria": "satisfied",
+      "journey": "satisfied",
+      "visual": "n/a",
+      "runtime": "n/a",
+      "plan_review": "satisfied",
+      "code_review": "satisfied",
+      "implementation_audit": "satisfied",
+      "deploy": "n/a",
+      "promotion": "satisfied",
+      "session_forensics": "n/a"
+    },
+    "required_skills": [
+      "improve-framework",
+      "test-framework",
+      "review-gate",
+      "verify-promotion"
+    ],
+    "conditional_mandatory_skills": [],
+    "optional_skills": [],
+    "skipped_skills": [
+      {
+        "skill": "track-visuals",
+        "skip_condition_id": "track-visuals:no-browser-visible-change",
+        "reason": "WI-301 changes static framework closeout tooling only.",
+        "evidence": "changed paths are scripts, validators, route-workflow, verify-promotion, and WI docs"
+      },
+      {
+        "skill": "test-journeys",
+        "skip_condition_id": "test-journeys:no-runtime-behavior-change",
+        "reason": "WI-301 has no product runtime behavior path.",
+        "evidence": "tier-1 static validator change"
+      },
+      {
+        "skill": "audit-implementation",
+        "skip_condition_id": "audit-implementation:no-technical-risk",
+        "reason": "WI-301 adds framework closeout classification tooling, not production implementation behavior.",
+        "evidence": "static classifier with replay fixtures"
+      },
+      {
+        "skill": "review-plan",
+        "skip_condition_id": "review-plan:trivial-or-prior-reviewed",
+        "reason": "Direct framework patch reviewed through review-gate; no separate plan artifact required.",
+        "evidence": "review-gate task and WI-301 evidence"
+      }
+    ],
+    "verification_tiers": {
+      "local": [
+        "tier-1"
+      ],
+      "runtime": [],
+      "production": []
+    },
+    "mutation_history": [
+      {
+        "ts": "2026-05-11T05:07:12.522Z",
+        "source": "route-workflow",
+        "action": "initial_compile",
+        "reason": "Compiled delivery graph at lane entry before downstream mutation."
+      },
+      {
+        "ts": "2026-05-11T05:07:12.556Z",
+        "source": "route-workflow",
+        "action": "closeout_route_refinement",
+        "reason": "Direct framework closeout-classification implementation used improve-framework, test-framework, review-gate, and verify-promotion."
+      },
+      {
+        "ts": "2026-05-11T05:08:02.401Z",
+        "source": "classify-delivery-graph-closeout",
+        "action": "close_as_framework_complete",
+        "reason": "all evidence families and required tasks are closed",
+        "affected_tasks": [],
+        "affected_evidence_families": [],
+        "validator_proof": "scripts/classify-delivery-graph-closeout.mjs --write"
+      }
+    ],
+    "closeout_classification_required": true,
+    "closeout_classification": "framework-complete",
+    "closeout_classification_reasons": [
+      "all evidence families and required tasks are closed"
+    ]
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Implement closeout classifier and retrospective guard",
+      "status": "completed",
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-11T05:07:12.556Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-FrameworkRepoAndMemoryLoad",
+            "ts": "2026-05-11T05:08:01.390Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-301-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-PendingProposalAndEvidenceSelection",
+            "ts": "2026-05-11T05:08:01.425Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-301-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-DiagnosisAndDuplicateFilter",
+            "ts": "2026-05-11T05:08:01.455Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-301-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ImplementationRouteDecision",
+            "ts": "2026-05-11T05:08:01.490Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-301-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-ImplementationAndReplayVerification",
+            "ts": "2026-05-11T05:08:01.521Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-301-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-ImprovementRecordAndStateMutation",
+            "ts": "2026-05-11T05:08:01.553Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-301-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P7-ProposalDoneAndRemoteSync",
+            "ts": "2026-05-11T05:08:01.585Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-301-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P8-SelfVerifyContinuation",
+            "ts": "2026-05-11T05:08:01.617Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-301-evidence.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-11T05:08:01.649Z"
+    },
+    {
+      "id": 2,
+      "subject": "Validate closeout classification replay fixtures",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "test-framework"
+      },
+      "skill_receipt": {
+        "skill": "test-framework",
+        "loaded_at": "2026-05-11T05:08:01.681Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-TestModeSelection",
+            "ts": "2026-05-11T05:08:01.713Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-301-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-StaticOrScenarioRunnerExecution",
+            "ts": "2026-05-11T05:08:01.745Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-301-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-LiveAutopilotOrComparisonExecution",
+            "ts": "2026-05-11T05:08:01.778Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-301-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-MethodologyUsageAudit",
+            "ts": "2026-05-11T05:08:01.812Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-301-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-ResultsPersistenceGapRouting",
+            "ts": "2026-05-11T05:08:01.843Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-301-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-05-11T05:08:01.876Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-301-evidence.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-11T05:08:01.908Z"
+    },
+    {
+      "id": 3,
+      "subject": "Review closeout classification enforcement surface",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "metadata": {
+        "skill": "review-gate"
+      },
+      "skill_receipt": {
+        "skill": "review-gate",
+        "loaded_at": "2026-05-11T05:08:01.944Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-GateContextChecklistConcernScan",
+            "ts": "2026-05-11T05:08:01.976Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-301-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SelfReviewFindings",
+            "ts": "2026-05-11T05:08:02.008Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-301-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-SelfJudgment",
+            "ts": "2026-05-11T05:08:02.040Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-301-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-CrossReviewConvergence",
+            "ts": "2026-05-11T05:08:02.072Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-301-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-GateDecisionBacklog",
+            "ts": "2026-05-11T05:08:02.104Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-301-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-05-11T05:08:02.136Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-301-evidence.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-11T05:08:02.172Z"
+    },
+    {
+      "id": 4,
+      "subject": "Close WI-301 evidence and state",
+      "status": "completed",
+      "blocked_by": [
+        3
+      ],
+      "metadata": {
+        "skill": "verify-promotion"
+      },
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-05-11T05:08:02.202Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-05-11T05:08:02.233Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-301-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-05-11T05:08:02.267Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-301-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-05-11T05:08:02.301Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-301-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-05-11T05:08:02.336Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-301-evidence.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-11T05:08:02.368Z"
+    }
+  ]
+}

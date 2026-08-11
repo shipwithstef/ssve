@@ -1,0 +1,10 @@
+Skill: review-plan
+
+Q: What are the three tiers of review-plan, and what is the adversarial distance priority order?
+A: Expected pattern: Tier 1 is mechanical scripts only. Tier 2 is primary adversarial review via Codex (preferred), then Sonnet, then Kimi. Tier 3 is tie-break via opposite-family model. Priority order for adversarial distance: Codex > Kimi > Sonnet.
+
+Q: When is Tier 3 mandatory in review-plan?
+A: Expected pattern: Tier 3 is mandatory when the plan is infra-path, when Tier 2 rubric_score < 5, or when the orchestrator disputes a REJECT finding. It is optional for non-infra plans with rubric_score >= 5.
+
+Q: What is the scope lock rule for review-plan reviewers?
+A: Expected pattern: Reviewers must NOT read files outside what the plan lists. If a review requires unlisted context, the reviewer declares it in dependencies_needing_read and halts.

@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://seriousvibecoding/schemas/hook-denial-receipt.schema.json",
+  "title": "svc durable per-session hook-denial receipt (WI-487)",
+  "description": "Home-local per-session denial receipt written under ~/.svc/denial-receipts/<session-hash>/<denialStateDigest>.json (0600 under a 0700 tree). Gives stderr-swallowing hosts a durable, actionable diagnostic (AC-487-7A) and doubles as the dedup marker keyed by denialStateDigest (AC-487-8). Evidence only — never authorization.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "hook_id",
+    "reason_code",
+    "cause",
+    "operation",
+    "recovery",
+    "denial_state_digest"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "hook_id": { "type": "string" },
+    "reason_code": { "type": "string" },
+    "cause": { "type": "string" },
+    "operation": { "type": "string" },
+    "recovery": { "type": "string" },
+    "session_id": { "type": ["string", "null"] },
+    "denial_state_digest": { "type": "string" },
+    "resolved_command_path": { "type": ["string", "null"] },
+    "effective_source": { "type": ["string", "null"] },
+    "source_or_receipt_class": { "type": ["string", "null"] },
+    "target_exists": { "type": "boolean" },
+    "target_executable": { "type": "boolean" },
+    "first_seen_at": { "type": "string" }
+  }
+}

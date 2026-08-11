@@ -1,0 +1,408 @@
+{
+  "wi": "WI-477",
+  "lane": "framework",
+  "created": "2026-07-13T15:53:11.814Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "write-spec",
+      "subject": "upstream write-spec (skipped)",
+      "status": "skipped",
+      "skip_reason": "Mechanical cross-reference migration; reviewed WI-477 doc ACs + WI-476 blend plan Assessment B are the spec. No product feature surface."
+    },
+    {
+      "id": 2,
+      "skill": "design-ux",
+      "subject": "upstream design-ux (skipped)",
+      "status": "skipped",
+      "skip_reason": "No UX surface — text token renames in skill/agent/reference docs + one JSON manifest."
+    },
+    {
+      "id": 3,
+      "skill": "design-ui",
+      "subject": "upstream design-ui (skipped)",
+      "status": "skipped",
+      "skip_reason": "No UI surface."
+    },
+    {
+      "id": 4,
+      "skill": "design-tech",
+      "subject": "design-tech (completed inline)",
+      "status": "completed",
+      "note": "completed INLINE: manifest § External State (state taxonomy, coupling rule, relink procedure, rollback). Round-1 finding 8 resolution.",
+      "skill_receipt": {
+        "skill": "design-tech",
+        "loaded_at": "2026-07-13T16:16:07.680Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-InlineTechnicalDesign",
+            "ts": "2026-07-13T16:16:07.729Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/manifest.md"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/manifest.md"
+      },
+      "completed_at": "2026-07-13T16:16:07.782Z"
+    },
+    {
+      "id": 5,
+      "skill": "explore-solutions",
+      "subject": "explore-solutions (completed inline)",
+      "status": "completed",
+      "note": "completed INLINE: manifest § External State Alternatives considered — (a) checkout-in-place CHOSEN vs (b) fresh clone vs (c) npx skills.",
+      "skill_receipt": {
+        "skill": "explore-solutions",
+        "loaded_at": "2026-07-13T16:16:07.840Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-InlineAlternativesAssessment",
+            "ts": "2026-07-13T16:16:07.899Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/manifest.md"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/manifest.md"
+      },
+      "completed_at": "2026-07-13T16:16:07.954Z"
+    },
+    {
+      "id": 6,
+      "skill": "define-code-style",
+      "subject": "upstream define-code-style (skipped)",
+      "status": "skipped",
+      "skip_reason": "No code authored; markdown/JSON token edits follow existing file conventions."
+    },
+    {
+      "id": 7,
+      "skill": "plan-changeset",
+      "subject": "Author migration manifest with per-file blueprints",
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-07-13T15:54:38.139Z",
+        "loaded_via": "manual",
+        "output_artifact": "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/manifest.md"
+      },
+      "completed_at": "2026-07-13T15:55:40.568Z"
+    },
+    {
+      "id": 8,
+      "skill": "review-plan",
+      "subject": "Codex adversarial review of manifest",
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-07-13T15:55:40.637Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-07-13T16:40:24.394Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/plan-tier1.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-07-13T16:40:12.665Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/plan-external-state-check.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-07-13T16:40:12.704Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-round3-codex-raw.txt"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-07-13T16:40:12.752Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-07-13T16:40:12.798Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-13T16:40:12.842Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-477.json"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-log.yaml"
+      },
+      "completed_at": "2026-07-13T16:56:26.061Z"
+    },
+    {
+      "id": 9,
+      "skill": "execute-changeset",
+      "subject": "Apply migration in wi477 worktree + re-pin central install",
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-07-13T16:56:26.184Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ExecutionComplete",
+            "ts": "2026-07-13T17:16:30.951Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-07-13T19:11:56.460Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-07-13T19:11:56.507Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-07-13T19:11:56.570Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-07-13T19:11:56.631Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/manifest.md"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/manifest.md"
+      },
+      "completed_at": "2026-07-13T17:16:31.001Z"
+    },
+    {
+      "id": 10,
+      "skill": "review-exec",
+      "subject": "G6: Codex review of frozen diff",
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-07-13T17:16:31.108Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-G6ReviewComplete",
+            "ts": "2026-07-13T18:49:31.088Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-exec-g6-codex-raw.txt"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-13T18:49:31.125Z"
+    },
+    {
+      "id": 11,
+      "skill": "audit-implementation",
+      "subject": "AC coverage audit vs WI-477 doc",
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-07-13T19:12:11.373Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-AuditComplete",
+            "ts": "2026-07-13T19:12:11.429Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/WI-477-analysis.md"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/specs/audit/WI-477-analysis.md"
+      },
+      "completed_at": "2026-07-13T19:12:11.482Z"
+    },
+    {
+      "id": 12,
+      "skill": "land-changeset",
+      "subject": "PR + merge + receipts",
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-07-13T19:12:11.569Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-Landed",
+            "ts": "2026-07-13T19:12:11.614Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/WI-477-analysis.md"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/manifest.md"
+      },
+      "completed_at": "2026-07-13T19:12:11.661Z"
+    },
+    {
+      "id": 13,
+      "skill": "verify-promotion",
+      "subject": "Post-merge verify: lint+tier-1 on main, symlink health, routing smoke",
+      "status": "completed",
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-07-13T19:12:11.766Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionVerified",
+            "ts": "2026-07-13T19:12:11.818Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/WI-477-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-07-13T19:13:44.847Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/WI-477-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-07-13T19:13:44.943Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/WI-477-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-07-13T19:13:45.024Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/WI-477-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-07-13T19:13:45.102Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/WI-477-analysis.md"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/specs/audit/WI-477-analysis.md"
+      },
+      "completed_at": "2026-07-13T19:13:45.179Z"
+    }
+  ],
+  "title": "WI-477: coreyhaines addon re-pin v2.6.0 + v2.0.0 rename migration (full chain)",
+  "upstream_completed": [
+    "route-workflow (this session)",
+    "blend-external (WI-476 — produced the rename map + Assessment B implementation spec)",
+    "diagnose/validate: WI-477 doc ACs"
+  ],
+  "upstream_skipped_with_justification": [
+    {
+      "skill": "write-spec",
+      "justification": "Mechanical cross-reference migration; the reviewed WI-477 doc ACs + WI-476 blend plan Assessment B are the spec. No product feature surface."
+    },
+    {
+      "skill": "design-ux",
+      "justification": "No UX surface — text token renames in skill/agent/reference docs + one JSON manifest."
+    },
+    {
+      "skill": "design-ui",
+      "justification": "No UI surface."
+    },
+    {
+      "skill": "define-code-style",
+      "justification": "No code authored; markdown/JSON token edits follow existing file conventions."
+    }
+  ],
+  "persona_coverage": {
+    "status": "not_required",
+    "reason": "framework-lane mechanical rename migration; no user-facing feature surface, no persona-differentiated behavior"
+  }
+}

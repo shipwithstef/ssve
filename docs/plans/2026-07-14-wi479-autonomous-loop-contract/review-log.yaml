@@ -1,0 +1,38 @@
+review_log:
+  plan: docs/plans/2026-07-14-wi479-autonomous-loop-contract/manifest.md
+  tier1: {script: scripts/verify-plan-mechanical.sh, exit_code: 0, issues: 0, log: docs/plans/2026-07-14-wi479-autonomous-loop-contract/mechanical-gate.log}
+  tier2:
+    reviewer: codex
+    reviewer_family: openai
+    rounds: 2
+    raw_captures: [review-round1-codex-raw.txt, review-round2-codex-raw.txt]
+    round1:
+      verdict: PASS-WITH-CHANGES
+      findings:
+        - {id: F-1, sev: HIGH, finding: "Tier-2 promotion fence declarative not a verifiable gate; 20% applied to all classes"}
+        - {id: F-2, sev: HIGH, finding: "state-root split omits the multi-company fleet consumer (COMPANY_STATE_DIR); product log path unspecified"}
+        - {id: F-3, sev: HIGH, finding: "claims exceed source (statutory rules, always-escalate, scheduler-substitution, PII-in-logs missing, false weekly-unattended claim)"}
+        - {id: F-4, sev: HIGH, finding: "receipt hybrid ambiguous vs chain receipts; crash-before-log retry gap unclosed"}
+        - {id: F-5, sev: MEDIUM, finding: "assertions prove keywords not contract integrity"}
+      responses:
+        - {id: F-1, response: ACCEPT, action: "fail-closed promotion field contract + per-class caps (20% spend-only, absolute volume for send)"}
+        - {id: F-2, response: ACCEPT, action: "deterministic state-root rule incl. COMPANY_STATE_DIR/loops; state+log colocated"}
+        - {id: F-3, response: ACCEPT, action: "source-trace table; statutory rules labeled svc-policy-not-legal; PII in state+log+receipts; corrected to currently-run-manually"}
+        - {id: F-4, response: ACCEPT, action: "runtime-action-receipt schema, NOT-a-chain-receipt; prepare/reconcile-or-idempotency-key"}
+        - {id: F-5, response: ACCEPT, action: "contract-integrity assertions added"}
+    round2:
+      verdict: PASS-WITH-CHANGES
+      note: "clean re-review (round-1 raw parked). F-1..F-5: F-2/F-3 resolved, F-1/F-4/F-5 partial; 4 new R2-01..R2-04"
+      findings:
+        - {id: R2-01, sev: HIGH, finding: "blueprint #2 wires chief-of-staff to .svc/loops but fleet root is COMPANY_STATE_DIR/loops"}
+        - {id: R2-02, sev: HIGH, finding: "Tier-2 retry: action_id not required deterministic/persisted; reconcile not required to update caps.consumed/handled/cooldowns from provider truth"}
+        - {id: R2-03, sev: MEDIUM, finding: "'machine-checkable schema' is prose not a JSON Schema; PII assertion stops at run log; separate greps don't prove safe branch"}
+        - {id: R2-04, sev: LOW, finding: "'neither source auditable' overclaims (upstream has run-log audit); PII state+log is upstream not svc-extended"}
+      responses:
+        - {id: R2-01, response: ACCEPT, action: "blueprint #2 -> COMPANY_STATE_DIR/loops + assertion it contains that root and NOT loop-health->.svc/loops"}
+        - {id: R2-02, response: ACCEPT, action: "§6 requires deterministic-or-persisted action_id AND reconcile-before-next-Tier-2 updating receipt+handled+cooldowns+caps.consumed from provider truth"}
+        - {id: R2-03, response: ACCEPT, action: "§5 downgraded to 'field contract a future enforcer WILL validate — NOT machine-enforced today (advisory v1)'; PII assertion extended to receipts"}
+        - {id: R2-04, response: ACCEPT, action: "§6 reworded (upstream has run-level logs; gap is per-action authz/cap/reconcile metadata); source-trace PII row attributes state+log upstream, receipts svc-native"}
+  tier3: {triggered: true, trigger_reason: infra_path, reviewer: agy, reviewer_family: google, status: COMPLETED, raw_capture: review-tier3-agy-raw.txt, ruling: agrees_with_orchestrator, verdict: SOUND-TO-EXECUTE}
+  terminal_state: REVISED_AND_REVIEWED
+  commit_sha: TBD-at-promotion

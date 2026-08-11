@@ -1,0 +1,10 @@
+Skill: svc-advisor
+
+Q: What is the primary required input for svc-advisor, and what is its core principle?
+A: Expected pattern: `references/knowledge/svc/CAPABILITIES.md`. Core principle: answer from stored knowledge files, never from memory.
+
+Q: What four competitor CAPABILITIES.md files can svc-advisor load for comparisons?
+A: Expected pattern: gstack/CAPABILITIES.md, superpowers/CAPABILITIES.md, gsd/CAPABILITIES.md, harness/CAPABILITIES.md.
+
+Q: What must svc-advisor do when the stored knowledge doesn't cover the user's question?
+A: Expected pattern: Say so explicitly, then offer to run `research`, run `evolve-framework`, or answer from first principles with a clear disclaimer.

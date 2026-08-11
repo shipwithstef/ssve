@@ -1,0 +1,44 @@
+review_log:
+  plan: docs/plans/2026-06-07-wi-359-wire-hooks-dedup/manifest.md
+  wi: WI-359
+  date: 2026-06-07
+  tier1:
+    script: scripts/verify-plan-mechanical.sh
+    latest_exit_code: 0
+    iterations: "initial 3 issues (tilde-path token; 2 thin diff contexts) fixed; PASS maintained through all review fixes"
+  tier1_5_external_state:
+    result: PASS
+    checks: "section present; 6 rows incl. live settings (coupled: backup+restore+rollback criterion), backup artifact, tmpdirs, rewire log, next-session reliance (V2-limit documented), worktree checkpoint log (F-005); decoupled prose present; taxonomy walk listed"
+  tier2_round1:
+    reviewer: codex
+    reviewer_family: openai
+    findings_count: 8
+    findings_summary:
+      - { id: F-001, severity: reject, claim: "lane compliance not artifact-cited", resolution: "PARTIAL-ACCEPT — artifact-cited table added (decision ts, evidence logs, receipts); evolve/improve-framework demand REJECTED per CLAUDE.md chain definition (identical rebuttal accepted at WI-358 round-2)" }
+      - { id: F-002, severity: high, claim: "RED step dies under set -e", resolution: "ACCEPT — status-gated capture" }
+      - { id: F-003, severity: high, claim: "relative checkpoint path + vague rollback", resolution: "ACCEPT — worktree-local log + explicit absolute-path recovery with rescue-branch preservation and reset --keep on clean tree" }
+      - { id: F-004, severity: medium, claim: "backup coverage of 3 write sites unproven", resolution: "ACCEPT — static grep assertion (count==3)" }
+      - { id: F-005, severity: medium, claim: "checkpoint log undisposed", resolution: "ACCEPT — External State row 6 + task-4 leftover classification" }
+      - { id: F-006, severity: medium, claim: "spec-index-update registry edit outside AC", resolution: "ACCEPT — dropped from WI; hooks.json edit now exactly the 3 emitted entries" }
+      - { id: F-007, severity: medium, claim: "live-rewire post-assertions not inlined", resolution: "ACCEPT — exact python3 heredoc with non-zero-exit asserts" }
+      - { id: F-008, severity: low, claim: "byte-identical idempotency too strict", resolution: "REJECT with citations — stable JSON.stringify at all 3 sites; writes conditional (idempotent run-2 performs no write); existing validate-settings-no-duplicate-hooks.sh byte-compare precedent green for months" }
+  tier2_round2:
+    delivery_failure: "codex CLI session hooks corrupted round-2 output twice — final message contained only hook-handling prose + bare claim (verdict iterate, F-002/F-007 still-open) with ZERO reasoning delivered"
+    disposition: "disputed pair routed to tier-3 opposite-family tie-break per reviewer allowlist {codex, claude, gemini}"
+  tier3:
+    reviewer: gemini
+    reviewer_family: google
+    trigger: infra-path plan (global settings writer) + tier-2 round-2 delivery failure
+    tiebreak:
+      - { id: F-002, ruling: confirmed-fixed, note: "status-capture pattern is exactly the idiomatic set -e-safe RED assert" }
+      - { id: F-007, ruling: confirmed-fixed, note: "concrete executable heredoc with numeric predicates + non-zero exit" }
+    round1_verdict: iterate
+    findings:
+      - { id: WI-359-T3-001, severity: critical, claim: "dedup-v2 basename identity collides DISTINCT user hooks sharing a basename across paths — silent deletion", resolution: "identity guard: fuzzy identity only for /^(svc-|eval-gate\\.|preflight\\.)/ basenames; user hooks keep exact-string identity; fixture gained same-basename user-hook pair + never-regress survival assertion (count==2)" }
+      - { id: WI-359-T3-002, severity: high, claim: "live token assertion scope mismatch — counts user hooks legitimately using payload var", resolution: "assertion scoped to svc commands, matching canonicalization predicate exactly" }
+    round2_verdict: approve
+    round2_raw: "tier3_round2: {T3-001: confirmed-fixed, T3-002: confirmed-fixed, verdict: approve}"
+  validator_assertions_final: 16
+  terminal_state: APPROVED_ALL_TIERS
+  plan_status_final: SIMULATED
+  scope_lock: "Reviewers received the full manifest + post-fix sections; codex sandbox read-only this run (no repo mutations)."

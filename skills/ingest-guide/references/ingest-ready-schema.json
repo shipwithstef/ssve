@@ -1,0 +1,100 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "svc://ingest-guide/ingest-ready/v1.0",
+  "title": "ingest-ready.json",
+  "description": "Structured handoff format from research skill to ingest-guide skill. Research produces this; ingest-guide consumes it. Eliminates re-parsing of raw research output.",
+  "type": "object",
+  "required": ["schema_version", "source_id", "produced_by", "produced_at", "extraction_method", "claims", "upstream_fetch"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["1.0"],
+      "description": "Schema version for forward compatibility."
+    },
+    "source_id": {
+      "type": "string",
+      "description": "Kebab-case identifier matching the ingest-guide source-id."
+    },
+    "produced_by": {
+      "type": "string",
+      "enum": ["research", "ingest-guide", "user"],
+      "description": "Which skill or actor produced this artifact."
+    },
+    "produced_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp when this artifact was generated."
+    },
+    "extraction_method": {
+      "type": "string",
+      "enum": ["detached", "inline", "reused", "manual"],
+      "description": "How the extraction was performed."
+    },
+    "claims": {
+      "type": "array",
+      "description": "Atomic claims extracted from the source. Each claim is one distinct idea.",
+      "items": {
+        "type": "object",
+        "required": ["id", "text", "type"],
+        "properties": {
+          "id": { "type": "integer", "minimum": 1 },
+          "text": { "type": "string", "description": "Verbatim or faithful summary of the claim." },
+          "type": {
+            "type": "string",
+            "enum": ["technique", "result", "condition", "assertion", "pattern", "tool"],
+            "description": "Category of the claim."
+          },
+          "upstream_url": {
+            "type": ["string", "null"],
+            "description": "Public URL cited by this specific claim, if any."
+          },
+          "confidence": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+            "description": "Researcher's confidence in the claim's accuracy."
+          }
+        }
+      }
+    },
+    "upstream_urls": {
+      "type": "array",
+      "description": "All public URLs mentioned in the source (deduplicated).",
+      "items": { "type": "string", "format": "uri" }
+    },
+    "content_summary": {
+      "type": "string",
+      "description": "1-3 sentence summary of what the source is about."
+    },
+    "upstream_fetch": {
+      "type": "object",
+      "required": ["attempted", "status"],
+      "properties": {
+        "attempted": { "type": "boolean" },
+        "status": { "type": "string", "enum": ["ok", "failed", "n/a"] },
+        "url": { "type": ["string", "null"] },
+        "excerpt": { "type": ["string", "null"], "description": "Short excerpt from fetched upstream, or null." },
+        "failure_reason": { "type": ["string", "null"] }
+      }
+    },
+    "domain": {
+      "type": ["string", "null"],
+      "description": "Knowledge domain slug if classified by research domain gate."
+    },
+    "raw_source_path": {
+      "type": "string",
+      "description": "Path to the raw pasted content file that was the input to research."
+    },
+    "provenance": {
+      "type": "array",
+      "description": "Sources consulted during extraction.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string" },
+          "retrieved_at": { "type": "string", "format": "date-time" },
+          "retrieval_method": { "type": "string", "enum": ["webfetch", "gemini-cli", "gh-api", "local-file"] }
+        }
+      }
+    }
+  }
+}

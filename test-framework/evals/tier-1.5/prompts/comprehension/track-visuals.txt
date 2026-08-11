@@ -1,0 +1,10 @@
+Skill: track-visuals
+
+Q: What are the five modes of track-visuals, and when does baseline mode run?
+A: Expected pattern: baseline, diff, update, audit, review. Baseline runs after first UI design or brownfield onboarding.
+
+Q: What is the 4-state lifecycle for visual screenshots in track-visuals?
+A: Expected pattern: CAPTURED → DIFFED → PROMOTED → CLEANED.
+
+Q: What is the hard rule about multi-viewport capture in track-visuals, and what is the aggregate pass condition?
+A: Expected pattern: Any component that can render at a non-design viewport must be captured at every size it actually ships at. Aggregate passes only if every viewport passes.

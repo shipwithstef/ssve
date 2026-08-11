@@ -1,0 +1,12 @@
+{
+  "skill": "route-workflow",
+  "scenario": "freeform feature intent should classify as feature lane",
+  "conversation": [
+    { "role": "user", "content": "I want to build a new dashboard widget that shows weekly metrics" }
+  ],
+  "assertions": [
+    { "type": "contains", "value": "lane" },
+    { "type": "contains", "value": "validate-feature" },
+    { "type": "not_contains", "value": "Sorry, I cannot" }
+  ]
+}
