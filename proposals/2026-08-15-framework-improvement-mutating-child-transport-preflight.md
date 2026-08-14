@@ -91,4 +91,3 @@ Per `rules/host-capability-research.md`, refresh the current Codex hook and agen
 | 3 | Root cause is classified as pre-dispatch transport selection, not a false guard denial | PASS |
 | 4 | Exact HoursHub failure topology and measurable outcome are captured | PASS |
 | 5 | Implementation route includes mandatory host research and full hot-path pipeline | PASS |
-
