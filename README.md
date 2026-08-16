@@ -614,7 +614,7 @@ Mode contract and detection logic: [`REPO_MODES.md`](REPO_MODES.md)
 - `privacy-dpo` — Privacy, personal-data, DPIA, and retention review.
 - `procurement` — Vendor diligence and buying-decision proposals; never purchases.
 - `product-lead` — Product prioritization, problem validation, and roadmap tradeoffs.
-- `quick-fix` — Fast lane for trivial changes (3 or fewer files, no architecture impact)
+- `quick-fix` — Compatibility-only retired lane; new work uses the full mandatory chain
 - `recall-stack-knowledge` — Knowledge Spine recall gate (see WI-SPINE-001)
 - `refresh-competitors` — Weekly diff-based refresh of tracked competitor state
 - `research` — Resolve uncertainty about APIs, libraries, patterns

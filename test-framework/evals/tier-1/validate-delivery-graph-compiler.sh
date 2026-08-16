@@ -41,7 +41,8 @@ for (const [fixture, expectations] of fixtures) {
       .filter((task) => task.metadata?.skill === "track-visuals")
       .map((task) => task.metadata?.mode);
     assert(visualModes.includes("baseline"), `${fixture}: browser-visible graph missing track-visuals baseline mode`);
-    assert(visualModes.includes("diff"), `${fixture}: browser-visible graph missing track-visuals diff mode`);
+    const execute = graph.tasks.find((task) => task.metadata?.skill === "execute-changeset");
+    assert(execute?.metadata?.required_process_steps?.some((step) => step.skill === "track-visuals" && step.mode === "diff" && step.before === "review-gate"), `${fixture}: browser-visible graph missing pre-G5 track-visuals diff process`);
   }
   if (graph.delivery_graph.change_type === "feature" &&
       graph.delivery_graph.risk_flags?.some((flag) => flag === "user-facing" || flag === "admin-facing")) {

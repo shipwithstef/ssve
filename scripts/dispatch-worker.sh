@@ -23,8 +23,17 @@ WORKER_WI=${SVC_WORKER_WI:-""}
 DISPATCH_DIR=${SVC_DISPATCH_DIR:-".svc/dispatch"}
 WORKER_TIMEOUT_SEC=${SVC_WORKER_TIMEOUT_SEC:-"0"}
 DELEGATION_ID=${SVC_DELEGATION_ID:-""}
+WORKER_MUTATION=${SVC_WORKER_MUTATION:-""}
+if [[ -z "$WORKER_MUTATION" ]]; then
+  case "$SKILL" in execute-changeset|dispatch-waves) WORKER_MUTATION="true" ;; *) WORKER_MUTATION="false" ;; esac
+fi
+if [[ "$WORKER_MUTATION" == "true" && -z "$DELEGATION_ID" ]]; then
+  echo "REFUSED: mutating worker launch requires a persisted SVC_DELEGATION_ID and the full delegation preflight; execute under the controller if unavailable" >&2
+  exit 2
+fi
 
 if [[ -n "$DELEGATION_ID" ]]; then
+  : "${SVC_WORKER_WI:?mutating delegated worker requires SVC_WORKER_WI for lifecycle completion}"
   : "${SVC_DELEGATION_STATE_ROOT:?mutating delegated worker requires SVC_DELEGATION_STATE_ROOT}"
   : "${SVC_DELEGATION_CHILD_PRINCIPAL:?mutating delegated worker requires SVC_DELEGATION_CHILD_PRINCIPAL}"
   : "${SVC_DELEGATION_TOKEN:?mutating delegated worker requires one-time SVC_DELEGATION_TOKEN}"
@@ -45,7 +54,17 @@ const [root, host] = process.argv.slice(1);
 const manifest = JSON.parse(fs.readFileSync(path.join(root, "provision/hosts", `${host}.json`), "utf8"));
 if (!manifest.authority_capabilities?.mutating_child_execution) throw new Error(`mutating child execution is unsupported on ${host}`);
 ' "$FRAMEWORK_ROOT" "$SVC_HOST" || exit 2
-  node "$FRAMEWORK_ROOT/scripts/svc-contained-exec.mjs" probe >/dev/null || exit 2
+  TRANSPORT_RECEIPT="${SVC_DELEGATION_TRANSPORT_RECEIPT:-$SVC_DELEGATION_STATE_ROOT/transport-receipts/$DELEGATION_ID.json}"
+  mkdir -p "$(dirname "$TRANSPORT_RECEIPT")" "$(dirname "$SVC_DELEGATION_COMPLETION_OUT")"
+  node "$FRAMEWORK_ROOT/scripts/resolve-child-transport.mjs" \
+    --state-root "$SVC_DELEGATION_STATE_ROOT" \
+    --delegation "$DELEGATION_ID" \
+    --child-principal "$SVC_DELEGATION_CHILD_PRINCIPAL" \
+    --token "$SVC_DELEGATION_TOKEN" \
+    --worktree "$(pwd -P)" \
+    --completion-receipt "$SVC_DELEGATION_COMPLETION_OUT" \
+    --host-manifest "$FRAMEWORK_ROOT/provision/hosts/$SVC_HOST.json" \
+    --receipt "$TRANSPORT_RECEIPT" >/dev/null || exit 2
   node "$FRAMEWORK_ROOT/scripts/dispatch-execution-task.mjs" accept \
     --state-root "$SVC_DELEGATION_STATE_ROOT" \
     --delegation "$DELEGATION_ID" \
@@ -137,7 +156,8 @@ fi
 
 CONTAINMENT_ARGV=()
 if [[ -n "$DELEGATION_ID" ]]; then
-  CONTAINMENT_ARGV=(node "$FRAMEWORK_ROOT/scripts/svc-contained-exec.mjs" run --root "$(pwd -P)" --)
+  GIT_RUNTIME_ROOT="$(git rev-parse --absolute-git-dir)"
+  CONTAINMENT_ARGV=(node "$FRAMEWORK_ROOT/scripts/svc-contained-exec.mjs" run --root "$(pwd -P)" --policy "$TRANSPORT_RECEIPT" --runtime-root "$GIT_RUNTIME_ROOT" --)
 fi
 
 echo "============================================================"

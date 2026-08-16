@@ -31,6 +31,15 @@ for (const name of ["review-plan", "review-exec"]) {
 }
 NODE
 
+node - <<'NODE' && pass "verify-promotion story receipt digest is optional and 64-hex when present" || fail "verify-promotion story receipt digest contract is missing or malformed"
+const schema=require('./schemas/receipts/verify-promotion.schema.json');
+const property=schema.properties.story_receipt_sha256;
+if(!property||property.type!=='string'||property.pattern!=='^[a-f0-9]{64}$') process.exit(1);
+if(schema.required.includes('story_receipt_sha256')) process.exit(1);
+for(const value of ['a'.repeat(64),'0'.repeat(64)]) if(!new RegExp(property.pattern).test(value)) process.exit(1);
+for(const value of ['','a'.repeat(63),'g'.repeat(64)]) if(new RegExp(property.pattern).test(value)) process.exit(1);
+NODE
+
 # ---- AC3/AC4/AC5: pure tier classifier — fail-closed + exactly two tiers ------
 node --input-type=module -e '
 import { classifyFiles } from "./scripts/derive-receipt-tier.mjs";

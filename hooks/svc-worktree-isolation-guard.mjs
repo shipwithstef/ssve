@@ -266,10 +266,11 @@ export function classifyMutation(call, env = process.env, now = Date.now()) {
     cwd: operationGit.current,
     session_id: normalized.sessionId,
   }, { ...env, PWD: operationGit.current, SVC_REQUIRE_SESSION_BINDING: "1" });
-  if (!resolution.authority || path.resolve(resolution.binding?.worktree_root || "") !== operationGit.current) {
+  const boundWorktree = resolution.binding?.worktree_root || resolution.tuple?.worktree_root || "";
+  if (!resolution.authority || !boundWorktree || path.resolve(boundWorktree) !== operationGit.current) {
     return { classification, allow: false, reason: resolution.diagnostics?.reason || "linked worktree lacks an authoritative session/WI binding", targets, operation_scope: scope, ...operationGit };
   }
-  return { classification, allow: true, binding: resolution.binding, targets, operation_scope: scope, ...operationGit };
+  return { classification, allow: true, binding: resolution.binding || resolution.tuple, targets, operation_scope: scope, ...operationGit };
 }
 
 function appendOverrideReceipt(decision, call, env) {

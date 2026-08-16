@@ -24,7 +24,7 @@ const MAX_INJECT = 3;
 async function main() {
   // Dynamic imports so a missing/broken repo dep fails OPEN, not a host-bricking crash.
   const { readHookPayload, resolveHookOperation } = await import("./lib/hook-payload.mjs");
-  const { loadLearnings, matchByPath, matchByCommand, renderInjection } = await import("./lib/learning-index.mjs");
+  const { loadLearningsDetailed, matchByPath, matchByCommand, renderInjection } = await import("./lib/learning-index.mjs");
   const { appendJsonlLine, writeJsonAtomic, readJsonAtomic } = await import("../scripts/state-io.mjs");
   const { resolveSvcStateDir } = await import("./lib/svc-state-dir.mjs");
 
@@ -47,7 +47,9 @@ async function main() {
   const command = tool === "Bash" ? (ti.command || "") : "";
   if (!touched && !command) return;
 
-  const learnings = loadLearnings(cwd);
+  const normalized = loadLearningsDetailed(cwd);
+  const learnings = normalized.learnings;
+  for (const finding of normalized.findings) { try { appendJsonlLine(join(svcDir, "learning-lifecycle.jsonl"), { ts: new Date().toISOString(), event: "malformed", ...finding }); } catch {} }
   if (!learnings.length) return;
 
   let matched = [];

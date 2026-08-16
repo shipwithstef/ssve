@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated": "2026-08-11T17:30:01.350Z",
+  "generated": "2026-08-15T14:33:34.812Z",
   "files": {
     "docs/specs/audit/WI-349-analysis.md": {
       "sections": 6,
@@ -684,8 +684,8 @@
     },
     "docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md": {
       "sections": 11,
-      "last_modified": "2026-08-11T13:49:18.669Z",
-      "content_sha256": "39d41dce6c768b0500896a7b0d13e0c3cce361bf8bad1eff9107190a9d64d568"
+      "last_modified": "2026-08-15T13:49:36.420Z",
+      "content_sha256": "a934aaf73f0b0834c5c80148546b42b99708e0eb6f46c9008da09b71b4270921"
     },
     "docs/specs/privacy/repository-publication-boundary.md": {
       "sections": 3,
@@ -708,9 +708,9 @@
       "content_sha256": "3337592bcdf2bcda3098f7ebd664c0454907e16a0715ae72944e1b159f414fc1"
     },
     "docs/specs/research-log.md": {
-      "sections": 22,
-      "last_modified": "2026-08-11T16:10:16.005Z",
-      "content_sha256": "917403aa2128a11e2c758ee63eb90fd68b035433691a9cd534d1b4e78948f022"
+      "sections": 23,
+      "last_modified": "2026-08-15T13:11:51.287Z",
+      "content_sha256": "9eabe15dc6ba719e1260d5aae0875fd312e247b388b1cb3a08705bb20f951f20"
     },
     "docs/specs/research-posthog-raw-extraction.md": {
       "sections": 51,
@@ -1539,13 +1539,13 @@
     },
     "docs/specs/work-items/INDEX.md": {
       "sections": 1,
-      "last_modified": "2026-08-11T16:10:16.007Z",
-      "content_sha256": "9dc9e1aa7a070543c7d698bf08da9dea66894134dda48cb829880937e02d4853"
+      "last_modified": "2026-08-15T13:04:20.172Z",
+      "content_sha256": "6de623c1e1d9e067142c76bf6809df9b9af0c8a549bff853cd25ee393623487b"
     },
     "docs/specs/work-items/PROPOSAL-PROMOTION-LEDGER.md": {
       "sections": 1,
-      "last_modified": "2026-08-11T13:49:18.724Z",
-      "content_sha256": "b08d4ec4b8408e026f4eab22e80134fed064598fc115e6c3c6796179a7779894"
+      "last_modified": "2026-08-15T14:31:37.312Z",
+      "content_sha256": "e6df8f3d59fdec0b66bf132c27dc3ad0db119411d2b61a0f344be8368d835ee7"
     },
     "docs/specs/work-items/WI-071.md": {
       "sections": 6,
@@ -3561,6 +3561,71 @@
       "sections": 6,
       "last_modified": "2026-08-11T13:49:18.795Z",
       "content_sha256": "a661304612b264ad161d71284ce560b47505da35e3688f1a41d74343c6ed1403"
+    },
+    "docs/specs/features/wi-541-full-transition.md": {
+      "sections": 24,
+      "last_modified": "2026-08-15T14:33:34.007Z",
+      "content_sha256": "531896b5a6283211160f6a619b5b8442dc54a15a099f24a86b7f189c16f4abf1"
+    },
+    "docs/specs/relations/wi-541-full-transition.branches.md": {
+      "sections": 10,
+      "last_modified": "2026-08-15T13:04:53.297Z",
+      "content_sha256": "914d8d801323887a2f55b0d881082f9f671c2fc581f7120ff09963d3f95b5cb9"
+    },
+    "docs/specs/work-items/WI-541.md": {
+      "sections": 7,
+      "last_modified": "2026-08-15T14:31:37.304Z",
+      "content_sha256": "690d9256e2147d36c813124d546fb41464e121507e3b5554d91473a47181f7b4"
+    },
+    "docs/specs/audit/wi-541-consumption-audit.md": {
+      "sections": 2,
+      "last_modified": "2026-08-15T14:33:34.003Z",
+      "content_sha256": "a12edd9b658bada4e23d322ae14976096b8ec3b8e7b88eb71b726070eec0d528"
+    },
+    "docs/specs/audit/wi-541-security-review.md": {
+      "sections": 1,
+      "last_modified": "2026-08-15T14:10:37.331Z",
+      "content_sha256": "ffd6600114b9c474f502bd2e658b0956ea877ff03fdc536f33379e047813862a"
+    },
+    "docs/specs/audit/wi-541-session-audit.md": {
+      "sections": 3,
+      "last_modified": "2026-08-15T14:10:37.335Z",
+      "content_sha256": "510421cc62de128749fc4ed00293228409e522b2395b49cdaa7592ae71a378a4"
+    },
+    "docs/specs/decisions/wi-541-full-transition.md": {
+      "sections": 6,
+      "last_modified": "2026-08-15T14:33:34.004Z",
+      "content_sha256": "a22c7a959a9a16c87e0324090be21cad7738df811204539389783a83735a6407"
+    },
+    "docs/specs/decisions/wi-541-solution-confidence/SOLUTION-CONFIDENCE.md": {
+      "sections": 14,
+      "last_modified": "2026-08-15T14:33:34.006Z",
+      "content_sha256": "3eaf78463ad1c0aba2fed8bd0a6579d5a1c7663106f0fd8d7302c8e912989d76"
+    },
+    "docs/specs/explorations/wi-541-full-transition/ANALYSIS.md": {
+      "sections": 5,
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "content_sha256": "2bb47355f3b0a720ffb3af309efa8aa7aec0f80a09f0981edeff00b88281de72"
+    },
+    "docs/specs/explorations/wi-541-full-transition/DECISION.md": {
+      "sections": 7,
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "content_sha256": "79895b4d32da01d6778220640a9b30eec4952b1eb62b0002a62846d196031122"
+    },
+    "docs/specs/explorations/wi-541-full-transition/PROBLEM_BRIEF.md": {
+      "sections": 9,
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "content_sha256": "1e2303d02efd5b40188231cf564e8ec40aeb8e6b4aa3e09aa110f768fc6e3c15"
+    },
+    "docs/specs/explorations/wi-541-full-transition/SOLUTION_MAP.md": {
+      "sections": 15,
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "content_sha256": "9fb77c850a6a7ab905d022118b06d703cefc3a21f1cb1b1fd4a8efab6bee8f45"
+    },
+    "docs/specs/tech/wi-541-full-transition.md": {
+      "sections": 16,
+      "last_modified": "2026-08-15T14:33:34.010Z",
+      "content_sha256": "d949b1bf206d487fe55a2efef7ab8d9dfeefa78ec47e0715e6d7bf65b9c45705"
     }
   },
   "sections": {
@@ -22754,127 +22819,6 @@
         22013
       ]
     },
-    "docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md#1-final-quality-verified-change-list-16-approved-items": {
-      "title": "🎯 1. Final Quality-Verified Change List (16 Approved Items)",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T13:49:18.669Z",
-      "byte_range": [
-        372,
-        3649
-      ]
-    },
-    "docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md#2-task-graph-file-manifest": {
-      "title": "🛠️ 2. Task Graph & File Manifest",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T13:49:18.669Z",
-      "byte_range": [
-        3649,
-        3687
-      ]
-    },
-    "docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md#affected-code-files": {
-      "title": "Affected Code Files:",
-      "depth": 3,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T13:49:18.669Z",
-      "byte_range": [
-        3687,
-        4020
-      ]
-    },
-    "docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md#verification-test-suite": {
-      "title": "Verification & Test Suite:",
-      "depth": 3,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T13:49:18.669Z",
-      "byte_range": [
-        4020,
-        4307
-      ]
-    },
-    "docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md#3-launch-ready-prompt-package-for-codex-execution": {
-      "title": "🚀 3. Launch-Ready Prompt Package for Codex Execution",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T13:49:18.669Z",
-      "byte_range": [
-        4307,
-        4460
-      ]
-    },
-    "docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md#1-context-quality-requirement": {
-      "title": "1. Context & Quality Requirement",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T13:49:18.669Z",
-      "byte_range": [
-        4460,
-        4947
-      ]
-    },
-    "docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md#2-implementation-deliverables": {
-      "title": "2. Implementation Deliverables",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T13:49:18.669Z",
-      "byte_range": [
-        4947,
-        5962
-      ]
-    },
-    "docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md#3-verification-validation-commands": {
-      "title": "3. Verification & Validation Commands",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T13:49:18.669Z",
-      "byte_range": [
-        5962,
-        6481
-      ]
-    },
-    "docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md#4-closeout-protocol": {
-      "title": "4. Closeout Protocol",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T13:49:18.669Z",
-      "byte_range": [
-        6481,
-        6632
-      ]
-    },
-    "docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md#disposition-ledger-wi-512-2026-08-04": {
-      "title": "Disposition ledger — WI-512 (2026-08-04)",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T13:49:18.669Z",
-      "byte_range": [
-        6632,
-        10080
-      ]
-    },
-    "docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md#measured-outcome-stated-honestly": {
-      "title": "Measured outcome, stated honestly",
-      "depth": 3,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T13:49:18.669Z",
-      "byte_range": [
-        10080,
-        11224
-      ]
-    },
     "docs/specs/privacy/repository-publication-boundary.md#allowed-identity": {
       "title": "Allowed identity",
       "depth": 2,
@@ -23390,248 +23334,6 @@
       "byte_range": [
         6993,
         7860
-      ]
-    },
-    "docs/specs/research-log.md#2026-05-11-gsd-framework-deep-in-session-extraction": {
-      "title": "2026-05-11: GSD Framework Deep In-Session Extraction",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T16:10:16.005Z",
-      "byte_range": [
-        102,
-        2327
-      ]
-    },
-    "docs/specs/research-log.md#2026-05-11-gstack-revisit-and-full-source-extraction-v1-32-0-0": {
-      "title": "2026-05-11: gstack revisit and full source extraction (v1.32.0.0)",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T16:10:16.005Z",
-      "byte_range": [
-        2327,
-        3206
-      ]
-    },
-    "docs/specs/research-log.md#2026-05-13-claude-legal-skills-released": {
-      "title": "2026-05-13: [Claude Legal Skills Released]",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T16:10:16.005Z",
-      "byte_range": [
-        3206,
-        4096
-      ]
-    },
-    "docs/specs/research-log.md#2026-05-14-claude-for-small-business": {
-      "title": "2026-05-14: Claude for Small Business",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T16:10:16.005Z",
-      "byte_range": [
-        4096,
-        4828
-      ]
-    },
-    "docs/specs/research-log.md#2026-05-15-suno-ai-v3-5-advanced-prompting-and-language-support": {
-      "title": "2026-05-15: Suno AI v3.5 Advanced Prompting and Language Support",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T16:10:16.005Z",
-      "byte_range": [
-        4828,
-        6611
-      ]
-    },
-    "docs/specs/research-log.md#2026-05-15-suno-ai-v3-5-masterclass-deep-dive-meta-tags-bulgarian-phonetics": {
-      "title": "2026-05-15: Suno AI v3.5 Masterclass (Deep Dive Meta-Tags & Bulgarian Phonetics)",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T16:10:16.005Z",
-      "byte_range": [
-        6611,
-        8896
-      ]
-    },
-    "docs/specs/research-log.md#2026-05-16-svc-route-workflow-research-trigger-gate-review": {
-      "title": "2026-05-16: svc route-workflow research-trigger gate review",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T16:10:16.005Z",
-      "byte_range": [
-        8896,
-        10541
-      ]
-    },
-    "docs/specs/research-log.md#2026-05-17-cold-outreach-stack-tools-research": {
-      "title": "2026-05-17: Cold Outreach Stack Tools Research",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T16:10:16.005Z",
-      "byte_range": [
-        10541,
-        11908
-      ]
-    },
-    "docs/specs/research-log.md#2026-05-20-gemini-xprize-antigravity-bonus": {
-      "title": "2026-05-20: Gemini XPRIZE & Antigravity Bonus",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T16:10:16.005Z",
-      "byte_range": [
-        11908,
-        12503
-      ]
-    },
-    "docs/specs/research-log.md#2026-05-27-posthog-full-technological-research": {
-      "title": "2026-05-27: PostHog full technological research",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T16:10:16.005Z",
-      "byte_range": [
-        12503,
-        14516
-      ]
-    },
-    "docs/specs/research-log.md#2026-06-05-ugc-scaling-micro-collaborations-and-growth-marketing-playbook-lucas-patiri": {
-      "title": "2026-06-05: UGC Scaling, Micro-Collaborations, and Growth Marketing Playbook (Lucas Patiri)",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T16:10:16.005Z",
-      "byte_range": [
-        14516,
-        18221
-      ]
-    },
-    "docs/specs/research-log.md#2026-06-06-eit-urban-mobility-startup-investment-open-call-2026-2028": {
-      "title": "2026-06-06: EIT Urban Mobility Startup Investment Open Call (2026-2028)",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T16:10:16.005Z",
-      "byte_range": [
-        18221,
-        19190
-      ]
-    },
-    "docs/specs/research-log.md#2026-06-07-eic-accelerator-full-site-funding-portfolio-extraction-analysis-mode": {
-      "title": "2026-06-07: EIC Accelerator — full-site funding-portfolio extraction (analysis mode)",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T16:10:16.005Z",
-      "byte_range": [
-        19190,
-        21008
-      ]
-    },
-    "docs/specs/research-log.md#2026-06-07-claude-code-dynamic-workflows-full-multi-source-extraction": {
-      "title": "2026-06-07: Claude Code Dynamic Workflows — full multi-source extraction",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T16:10:16.005Z",
-      "byte_range": [
-        21008,
-        24162
-      ]
-    },
-    "docs/specs/research-log.md#2026-06-20-cowork-vs-claude-code-shared-usage-limits-and-integration": {
-      "title": "2026-06-20: Cowork vs Claude Code — shared usage, limits, and integration",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T16:10:16.005Z",
-      "byte_range": [
-        24162,
-        27916
-      ]
-    },
-    "docs/specs/research-log.md#2026-06-30t18-49-13z-wi-470-model-verification-gate-claude-api": {
-      "title": "2026-06-30T18:49:13Z — WI-470 model verification gate (claude-api)",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T16:10:16.005Z",
-      "byte_range": [
-        27916,
-        28959
-      ]
-    },
-    "docs/specs/research-log.md#2026-07-14-codex-hooks-scope-authority-and-skill-loading-enforcement": {
-      "title": "2026-07-14: Codex hooks — scope authority and skill-loading enforcement",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T16:10:16.005Z",
-      "byte_range": [
-        28959,
-        32014
-      ]
-    },
-    "docs/specs/research-log.md#2026-07-15-claude-codex-external-review-invocation-audit": {
-      "title": "2026-07-15: Claude/Codex external-review invocation audit",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T16:10:16.005Z",
-      "byte_range": [
-        32014,
-        35889
-      ]
-    },
-    "docs/specs/research-log.md#2026-07-16-claude-structured-review-turns-and-fable-safety-routing": {
-      "title": "2026-07-16: Claude structured-review turns and Fable safety routing",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T16:10:16.005Z",
-      "byte_range": [
-        35889,
-        38484
-      ]
-    },
-    "docs/specs/research-log.md#2026-07-22-xdg-runtime-directory-unavailable-versus-insecure": {
-      "title": "2026-07-22: XDG runtime directory unavailable versus insecure",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T16:10:16.005Z",
-      "byte_range": [
-        38484,
-        40946
-      ]
-    },
-    "docs/specs/research-log.md#2026-07-23-canonical-precedent-for-phase-receipt-aware-skip-integrity": {
-      "title": "2026-07-23: Canonical precedent for phase-receipt-aware skip integrity",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T16:10:16.005Z",
-      "byte_range": [
-        40946,
-        44718
-      ]
-    },
-    "docs/specs/research-log.md#2026-08-10-codex-governed-command-is-the-effective-serialized-dispatcher": {
-      "title": "2026-08-10: Codex governed command is the effective serialized dispatcher",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T16:10:16.005Z",
-      "byte_range": [
-        44718,
-        46789
       ]
     },
     "docs/specs/research-posthog-raw-extraction.md#url-https-posthog-com-llms-txt": {
@@ -33983,28 +33685,6 @@
       "byte_range": [
         0,
         27461
-      ]
-    },
-    "docs/specs/work-items/INDEX.md": {
-      "title": "docs/specs/work-items/INDEX.md",
-      "depth": 1,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T16:10:16.007Z",
-      "byte_range": [
-        0,
-        72287
-      ]
-    },
-    "docs/specs/work-items/PROPOSAL-PROMOTION-LEDGER.md#open-proposals-md-mapping": {
-      "title": "OPEN-PROPOSALS.md Mapping",
-      "depth": 2,
-      "tags": [],
-      "topics": [],
-      "last_modified": "2026-08-11T13:49:18.724Z",
-      "byte_range": [
-        6278,
-        7909
       ]
     },
     "docs/specs/work-items/WI-071.md#root-cause": {
@@ -65829,6 +65509,1801 @@
       "byte_range": [
         2739,
         3034
+      ]
+    },
+    "docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md#1-final-quality-verified-change-list-16-approved-items": {
+      "title": "🎯 1. Final Quality-Verified Change List (16 Approved Items)",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:49:36.420Z",
+      "byte_range": [
+        372,
+        3420
+      ]
+    },
+    "docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md#2-task-graph-file-manifest": {
+      "title": "🛠️ 2. Task Graph & File Manifest",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:49:36.420Z",
+      "byte_range": [
+        3420,
+        3458
+      ]
+    },
+    "docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md#affected-code-files": {
+      "title": "Affected Code Files:",
+      "depth": 3,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:49:36.420Z",
+      "byte_range": [
+        3458,
+        3813
+      ]
+    },
+    "docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md#verification-test-suite": {
+      "title": "Verification & Test Suite:",
+      "depth": 3,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:49:36.420Z",
+      "byte_range": [
+        3813,
+        4100
+      ]
+    },
+    "docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md#3-launch-ready-prompt-package-for-codex-execution": {
+      "title": "🚀 3. Launch-Ready Prompt Package for Codex Execution",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:49:36.420Z",
+      "byte_range": [
+        4100,
+        4253
+      ]
+    },
+    "docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md#1-context-quality-requirement": {
+      "title": "1. Context & Quality Requirement",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:49:36.420Z",
+      "byte_range": [
+        4253,
+        4740
+      ]
+    },
+    "docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md#2-implementation-deliverables": {
+      "title": "2. Implementation Deliverables",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:49:36.420Z",
+      "byte_range": [
+        4740,
+        5755
+      ]
+    },
+    "docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md#3-verification-validation-commands": {
+      "title": "3. Verification & Validation Commands",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:49:36.420Z",
+      "byte_range": [
+        5755,
+        6274
+      ]
+    },
+    "docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md#4-closeout-protocol": {
+      "title": "4. Closeout Protocol",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:49:36.420Z",
+      "byte_range": [
+        6274,
+        6425
+      ]
+    },
+    "docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md#disposition-ledger-wi-512-2026-08-04": {
+      "title": "Disposition ledger — WI-512 (2026-08-04)",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:49:36.420Z",
+      "byte_range": [
+        6425,
+        9873
+      ]
+    },
+    "docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md#measured-outcome-stated-honestly": {
+      "title": "Measured outcome, stated honestly",
+      "depth": 3,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:49:36.420Z",
+      "byte_range": [
+        9873,
+        11017
+      ]
+    },
+    "docs/specs/research-log.md#2026-05-11-gsd-framework-deep-in-session-extraction": {
+      "title": "2026-05-11: GSD Framework Deep In-Session Extraction",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:11:51.287Z",
+      "byte_range": [
+        102,
+        2327
+      ]
+    },
+    "docs/specs/research-log.md#2026-05-11-gstack-revisit-and-full-source-extraction-v1-32-0-0": {
+      "title": "2026-05-11: gstack revisit and full source extraction (v1.32.0.0)",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:11:51.287Z",
+      "byte_range": [
+        2327,
+        3206
+      ]
+    },
+    "docs/specs/research-log.md#2026-05-13-claude-legal-skills-released": {
+      "title": "2026-05-13: [Claude Legal Skills Released]",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:11:51.287Z",
+      "byte_range": [
+        3206,
+        4096
+      ]
+    },
+    "docs/specs/research-log.md#2026-05-14-claude-for-small-business": {
+      "title": "2026-05-14: Claude for Small Business",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:11:51.287Z",
+      "byte_range": [
+        4096,
+        4828
+      ]
+    },
+    "docs/specs/research-log.md#2026-05-15-suno-ai-v3-5-advanced-prompting-and-language-support": {
+      "title": "2026-05-15: Suno AI v3.5 Advanced Prompting and Language Support",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:11:51.287Z",
+      "byte_range": [
+        4828,
+        6611
+      ]
+    },
+    "docs/specs/research-log.md#2026-05-15-suno-ai-v3-5-masterclass-deep-dive-meta-tags-bulgarian-phonetics": {
+      "title": "2026-05-15: Suno AI v3.5 Masterclass (Deep Dive Meta-Tags & Bulgarian Phonetics)",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:11:51.287Z",
+      "byte_range": [
+        6611,
+        8896
+      ]
+    },
+    "docs/specs/research-log.md#2026-05-16-svc-route-workflow-research-trigger-gate-review": {
+      "title": "2026-05-16: svc route-workflow research-trigger gate review",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:11:51.287Z",
+      "byte_range": [
+        8896,
+        10541
+      ]
+    },
+    "docs/specs/research-log.md#2026-05-17-cold-outreach-stack-tools-research": {
+      "title": "2026-05-17: Cold Outreach Stack Tools Research",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:11:51.287Z",
+      "byte_range": [
+        10541,
+        11908
+      ]
+    },
+    "docs/specs/research-log.md#2026-05-20-gemini-xprize-antigravity-bonus": {
+      "title": "2026-05-20: Gemini XPRIZE & Antigravity Bonus",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:11:51.287Z",
+      "byte_range": [
+        11908,
+        12503
+      ]
+    },
+    "docs/specs/research-log.md#2026-05-27-posthog-full-technological-research": {
+      "title": "2026-05-27: PostHog full technological research",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:11:51.287Z",
+      "byte_range": [
+        12503,
+        14516
+      ]
+    },
+    "docs/specs/research-log.md#2026-06-05-ugc-scaling-micro-collaborations-and-growth-marketing-playbook-lucas-patiri": {
+      "title": "2026-06-05: UGC Scaling, Micro-Collaborations, and Growth Marketing Playbook (Lucas Patiri)",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:11:51.287Z",
+      "byte_range": [
+        14516,
+        18221
+      ]
+    },
+    "docs/specs/research-log.md#2026-06-06-eit-urban-mobility-startup-investment-open-call-2026-2028": {
+      "title": "2026-06-06: EIT Urban Mobility Startup Investment Open Call (2026-2028)",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:11:51.287Z",
+      "byte_range": [
+        18221,
+        19190
+      ]
+    },
+    "docs/specs/research-log.md#2026-06-07-eic-accelerator-full-site-funding-portfolio-extraction-analysis-mode": {
+      "title": "2026-06-07: EIC Accelerator — full-site funding-portfolio extraction (analysis mode)",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:11:51.287Z",
+      "byte_range": [
+        19190,
+        21008
+      ]
+    },
+    "docs/specs/research-log.md#2026-06-07-claude-code-dynamic-workflows-full-multi-source-extraction": {
+      "title": "2026-06-07: Claude Code Dynamic Workflows — full multi-source extraction",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:11:51.287Z",
+      "byte_range": [
+        21008,
+        24162
+      ]
+    },
+    "docs/specs/research-log.md#2026-06-20-cowork-vs-claude-code-shared-usage-limits-and-integration": {
+      "title": "2026-06-20: Cowork vs Claude Code — shared usage, limits, and integration",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:11:51.287Z",
+      "byte_range": [
+        24162,
+        27916
+      ]
+    },
+    "docs/specs/research-log.md#2026-06-30t18-49-13z-wi-470-model-verification-gate-claude-api": {
+      "title": "2026-06-30T18:49:13Z — WI-470 model verification gate (claude-api)",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:11:51.287Z",
+      "byte_range": [
+        27916,
+        28959
+      ]
+    },
+    "docs/specs/research-log.md#2026-07-14-codex-hooks-scope-authority-and-skill-loading-enforcement": {
+      "title": "2026-07-14: Codex hooks — scope authority and skill-loading enforcement",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:11:51.287Z",
+      "byte_range": [
+        28959,
+        32014
+      ]
+    },
+    "docs/specs/research-log.md#2026-07-15-claude-codex-external-review-invocation-audit": {
+      "title": "2026-07-15: Claude/Codex external-review invocation audit",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:11:51.287Z",
+      "byte_range": [
+        32014,
+        35889
+      ]
+    },
+    "docs/specs/research-log.md#2026-07-16-claude-structured-review-turns-and-fable-safety-routing": {
+      "title": "2026-07-16: Claude structured-review turns and Fable safety routing",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:11:51.287Z",
+      "byte_range": [
+        35889,
+        38484
+      ]
+    },
+    "docs/specs/research-log.md#2026-07-22-xdg-runtime-directory-unavailable-versus-insecure": {
+      "title": "2026-07-22: XDG runtime directory unavailable versus insecure",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:11:51.287Z",
+      "byte_range": [
+        38484,
+        40946
+      ]
+    },
+    "docs/specs/research-log.md#2026-07-23-canonical-precedent-for-phase-receipt-aware-skip-integrity": {
+      "title": "2026-07-23: Canonical precedent for phase-receipt-aware skip integrity",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:11:51.287Z",
+      "byte_range": [
+        40946,
+        44718
+      ]
+    },
+    "docs/specs/research-log.md#2026-08-10-codex-governed-command-is-the-effective-serialized-dispatcher": {
+      "title": "2026-08-10: Codex governed command is the effective serialized dispatcher",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:11:51.287Z",
+      "byte_range": [
+        44718,
+        46790
+      ]
+    },
+    "docs/specs/research-log.md#2026-08-15-native-codex-subagent-availability-does-not-carry-ssve-mutation-authority": {
+      "title": "2026-08-15: Native Codex subagent availability does not carry SSVE mutation authority",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:11:51.287Z",
+      "byte_range": [
+        46790,
+        49503
+      ]
+    },
+    "docs/specs/work-items/INDEX.md": {
+      "title": "docs/specs/work-items/INDEX.md",
+      "depth": 1,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:04:20.172Z",
+      "byte_range": [
+        0,
+        72658
+      ]
+    },
+    "docs/specs/work-items/PROPOSAL-PROMOTION-LEDGER.md#open-proposals-md-mapping": {
+      "title": "OPEN-PROPOSALS.md Mapping",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:31:37.312Z",
+      "byte_range": [
+        6278,
+        8222
+      ]
+    },
+    "docs/specs/audit/wi-541-security-review.md": {
+      "title": "docs/specs/audit/wi-541-security-review.md",
+      "depth": 1,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:10:37.331Z",
+      "byte_range": [
+        0,
+        2297
+      ]
+    },
+    "docs/specs/audit/wi-541-session-audit.md#authority-and-scope": {
+      "title": "Authority and scope",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:10:37.335Z",
+      "byte_range": [
+        34,
+        552
+      ]
+    },
+    "docs/specs/audit/wi-541-session-audit.md#chain-evidence": {
+      "title": "Chain evidence",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:10:37.335Z",
+      "byte_range": [
+        552,
+        1226
+      ]
+    },
+    "docs/specs/audit/wi-541-session-audit.md#current-proof-boundary": {
+      "title": "Current proof boundary",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:10:37.335Z",
+      "byte_range": [
+        1226,
+        1566
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/ANALYSIS.md#tradeoff-matrix": {
+      "title": "Tradeoff matrix",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        46,
+        2091
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/ANALYSIS.md#eliminated": {
+      "title": "Eliminated",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        2091,
+        2843
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/ANALYSIS.md#finalists": {
+      "title": "Finalists",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        2843,
+        3262
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/ANALYSIS.md#key-differentiator": {
+      "title": "Key differentiator",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        3262,
+        3636
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/ANALYSIS.md#runner-up-value": {
+      "title": "Runner-up value",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        3636,
+        3941
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/DECISION.md#selected-approach": {
+      "title": "Selected approach",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        46,
+        286
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/DECISION.md#confidence": {
+      "title": "Confidence",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        286,
+        631
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/DECISION.md#evidence-chain": {
+      "title": "Evidence chain",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        631,
+        944
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/DECISION.md#why-this-approach": {
+      "title": "Why this approach",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        944,
+        1574
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/DECISION.md#why-not-the-alternatives": {
+      "title": "Why not the alternatives",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        1574,
+        2290
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/DECISION.md#runner-up": {
+      "title": "Runner-up",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        2290,
+        2509
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/DECISION.md#impact-on-technical-design": {
+      "title": "Impact on technical design",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        2509,
+        2794
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/PROBLEM_BRIEF.md#problem-statement": {
+      "title": "Problem statement",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        51,
+        311
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/PROBLEM_BRIEF.md#upstream-context": {
+      "title": "Upstream context",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        311,
+        1113
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/PROBLEM_BRIEF.md#success-criteria": {
+      "title": "Success criteria",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        1113,
+        1134
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/PROBLEM_BRIEF.md#must": {
+      "title": "Must",
+      "depth": 3,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        1134,
+        1598
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/PROBLEM_BRIEF.md#should": {
+      "title": "Should",
+      "depth": 3,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        1598,
+        1844
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/PROBLEM_BRIEF.md#nice": {
+      "title": "Nice",
+      "depth": 3,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        1844,
+        1971
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/PROBLEM_BRIEF.md#baseline-approach": {
+      "title": "Baseline approach",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        1971,
+        2284
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/PROBLEM_BRIEF.md#assumptions-to-challenge": {
+      "title": "Assumptions to challenge",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        2284,
+        2742
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/PROBLEM_BRIEF.md#constraints": {
+      "title": "Constraints",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        2742,
+        2969
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/SOLUTION_MAP.md#paradigm-a-shared-executable-seams-baseline": {
+      "title": "Paradigm A: Shared executable seams (BASELINE)",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        50,
+        214
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/SOLUTION_MAP.md#a1-small-pure-primitives-with-existing-consumers": {
+      "title": "A1: Small pure primitives with existing consumers",
+      "depth": 3,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        214,
+        755
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/SOLUTION_MAP.md#a2-one-universal-policy-engine": {
+      "title": "A2: One universal policy engine",
+      "depth": 3,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        755,
+        1144
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/SOLUTION_MAP.md#paradigm-b-generated-declarative-contracts": {
+      "title": "Paradigm B: Generated declarative contracts",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        1144,
+        1299
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/SOLUTION_MAP.md#b1-extend-skills-manifest-json-into-the-full-policy-source": {
+      "title": "B1: Extend `skills-manifest.json` into the full policy source",
+      "depth": 3,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        1299,
+        1765
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/SOLUTION_MAP.md#b2-generate-only-lane-topology-keep-other-seams-local": {
+      "title": "B2: Generate only lane topology; keep other seams local",
+      "depth": 3,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        1765,
+        2305
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/SOLUTION_MAP.md#paradigm-c-transactional-local-control-plane": {
+      "title": "Paradigm C: Transactional local control plane",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        2305,
+        2435
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/SOLUTION_MAP.md#c1-move-graphs-authority-proposals-and-learning-lifecycle-into-sqlite": {
+      "title": "C1: Move graphs, authority, proposals, and learning lifecycle into SQLite",
+      "depth": 3,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        2435,
+        2901
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/SOLUTION_MAP.md#c2-external-orchestration-service": {
+      "title": "C2: External orchestration service",
+      "depth": 3,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        2901,
+        3271
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/SOLUTION_MAP.md#paradigm-d-negative-space-simplification": {
+      "title": "Paradigm D: Negative-space simplification",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        3271,
+        3402
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/SOLUTION_MAP.md#d1-controller-only-execution-plus-minimal-cleanup": {
+      "title": "D1: Controller-only execution plus minimal cleanup",
+      "depth": 3,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        3402,
+        3821
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/SOLUTION_MAP.md#d2-docs-only-policy-and-human-review": {
+      "title": "D2: Docs-only policy and human review",
+      "depth": 3,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        3821,
+        4100
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/SOLUTION_MAP.md#non-obvious-option": {
+      "title": "Non-obvious option",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        4100,
+        4496
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/SOLUTION_MAP.md#grounding": {
+      "title": "Grounding",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        4496,
+        5184
+      ]
+    },
+    "docs/specs/explorations/wi-541-full-transition/SOLUTION_MAP.md#eliminated-early": {
+      "title": "Eliminated early",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:22:18.013Z",
+      "byte_range": [
+        5184,
+        5509
+      ]
+    },
+    "docs/specs/relations/wi-541-full-transition.branches.md#entry-points": {
+      "title": "Entry points",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:04:53.297Z",
+      "byte_range": [
+        216,
+        562
+      ]
+    },
+    "docs/specs/relations/wi-541-full-transition.branches.md#callers": {
+      "title": "Callers",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:04:53.297Z",
+      "byte_range": [
+        562,
+        833
+      ]
+    },
+    "docs/specs/relations/wi-541-full-transition.branches.md#auth": {
+      "title": "Auth",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:04:53.297Z",
+      "byte_range": [
+        833,
+        1005
+      ]
+    },
+    "docs/specs/relations/wi-541-full-transition.branches.md#state": {
+      "title": "State",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:04:53.297Z",
+      "byte_range": [
+        1005,
+        1142
+      ]
+    },
+    "docs/specs/relations/wi-541-full-transition.branches.md#currencies-counters": {
+      "title": "Currencies & counters",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:04:53.297Z",
+      "byte_range": [
+        1142,
+        1300
+      ]
+    },
+    "docs/specs/relations/wi-541-full-transition.branches.md#promises": {
+      "title": "Promises",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:04:53.297Z",
+      "byte_range": [
+        1300,
+        1435
+      ]
+    },
+    "docs/specs/relations/wi-541-full-transition.branches.md#outcomes": {
+      "title": "Outcomes",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:04:53.297Z",
+      "byte_range": [
+        1435,
+        1543
+      ]
+    },
+    "docs/specs/relations/wi-541-full-transition.branches.md#data": {
+      "title": "Data",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:04:53.297Z",
+      "byte_range": [
+        1543,
+        1651
+      ]
+    },
+    "docs/specs/relations/wi-541-full-transition.branches.md#journeys-tests": {
+      "title": "Journeys & tests",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:04:53.297Z",
+      "byte_range": [
+        1651,
+        1791
+      ]
+    },
+    "docs/specs/relations/wi-541-full-transition.branches.md#time-retry-concurrency": {
+      "title": "Time, retry & concurrency",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T13:04:53.297Z",
+      "byte_range": [
+        1791,
+        1961
+      ]
+    },
+    "docs/specs/work-items/WI-541.md#problem": {
+      "title": "Problem",
+      "depth": 2,
+      "tags": [
+        "wi:WI-541"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:31:37.304Z",
+      "byte_range": [
+        522,
+        916
+      ]
+    },
+    "docs/specs/work-items/WI-541.md#evidence": {
+      "title": "Evidence",
+      "depth": 2,
+      "tags": [
+        "wi:WI-541"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:31:37.304Z",
+      "byte_range": [
+        916,
+        1289
+      ]
+    },
+    "docs/specs/work-items/WI-541.md#affected-files": {
+      "title": "Affected Files",
+      "depth": 2,
+      "tags": [
+        "wi:WI-541"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:31:37.304Z",
+      "byte_range": [
+        1289,
+        1679
+      ]
+    },
+    "docs/specs/work-items/WI-541.md#affected-specs": {
+      "title": "Affected Specs",
+      "depth": 2,
+      "tags": [
+        "wi:WI-541"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:31:37.304Z",
+      "byte_range": [
+        1679,
+        1884
+      ]
+    },
+    "docs/specs/work-items/WI-541.md#acceptance-criteria": {
+      "title": "Acceptance Criteria",
+      "depth": 2,
+      "tags": [
+        "wi:WI-541"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:31:37.304Z",
+      "byte_range": [
+        1884,
+        2328
+      ]
+    },
+    "docs/specs/work-items/WI-541.md#route-recommendation": {
+      "title": "Route Recommendation",
+      "depth": 2,
+      "tags": [
+        "wi:WI-541"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:31:37.304Z",
+      "byte_range": [
+        2328,
+        2606
+      ]
+    },
+    "docs/specs/work-items/WI-541.md#notes": {
+      "title": "Notes",
+      "depth": 2,
+      "tags": [
+        "wi:WI-541"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:31:37.304Z",
+      "byte_range": [
+        2606,
+        2848
+      ]
+    },
+    "docs/specs/features/wi-541-full-transition.md#problem-statement": {
+      "title": "Problem Statement",
+      "depth": 2,
+      "tags": [
+        "feature:wi-541-full-transition"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.007Z",
+      "byte_range": [
+        235,
+        1009
+      ]
+    },
+    "docs/specs/features/wi-541-full-transition.md#goals": {
+      "title": "Goals",
+      "depth": 2,
+      "tags": [
+        "feature:wi-541-full-transition"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.007Z",
+      "byte_range": [
+        1009,
+        1650
+      ]
+    },
+    "docs/specs/features/wi-541-full-transition.md#non-goals": {
+      "title": "Non-Goals",
+      "depth": 2,
+      "tags": [
+        "feature:wi-541-full-transition"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.007Z",
+      "byte_range": [
+        1650,
+        2114
+      ]
+    },
+    "docs/specs/features/wi-541-full-transition.md#consumer-stories": {
+      "title": "Consumer Stories",
+      "depth": 2,
+      "tags": [
+        "feature:wi-541-full-transition"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.007Z",
+      "byte_range": [
+        2114,
+        2135
+      ]
+    },
+    "docs/specs/features/wi-541-full-transition.md#s1-framework-owner": {
+      "title": "S1 — Framework owner",
+      "depth": 3,
+      "tags": [
+        "feature:wi-541-full-transition"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.007Z",
+      "byte_range": [
+        2135,
+        2366
+      ]
+    },
+    "docs/specs/features/wi-541-full-transition.md#s2-route-controller": {
+      "title": "S2 — Route controller",
+      "depth": 3,
+      "tags": [
+        "feature:wi-541-full-transition"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.007Z",
+      "byte_range": [
+        2366,
+        2588
+      ]
+    },
+    "docs/specs/features/wi-541-full-transition.md#s3-secure-executor": {
+      "title": "S3 — Secure executor",
+      "depth": 3,
+      "tags": [
+        "feature:wi-541-full-transition"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.007Z",
+      "byte_range": [
+        2588,
+        2833
+      ]
+    },
+    "docs/specs/features/wi-541-full-transition.md#s4-planner-and-reviewer": {
+      "title": "S4 — Planner and reviewer",
+      "depth": 3,
+      "tags": [
+        "feature:wi-541-full-transition"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.007Z",
+      "byte_range": [
+        2833,
+        3063
+      ]
+    },
+    "docs/specs/features/wi-541-full-transition.md#s5-learning-system": {
+      "title": "S5 — Learning system",
+      "depth": 3,
+      "tags": [
+        "feature:wi-541-full-transition"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.007Z",
+      "byte_range": [
+        3063,
+        3298
+      ]
+    },
+    "docs/specs/features/wi-541-full-transition.md#acceptance-criteria": {
+      "title": "Acceptance Criteria",
+      "depth": 2,
+      "tags": [
+        "feature:wi-541-full-transition"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.007Z",
+      "byte_range": [
+        3298,
+        8954
+      ]
+    },
+    "docs/specs/features/wi-541-full-transition.md#system-dependencies": {
+      "title": "System Dependencies",
+      "depth": 2,
+      "tags": [
+        "feature:wi-541-full-transition"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.007Z",
+      "byte_range": [
+        8954,
+        8978
+      ]
+    },
+    "docs/specs/features/wi-541-full-transition.md#depends-on": {
+      "title": "Depends on",
+      "depth": 3,
+      "tags": [
+        "feature:wi-541-full-transition"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.007Z",
+      "byte_range": [
+        8978,
+        9307
+      ]
+    },
+    "docs/specs/features/wi-541-full-transition.md#depended-on-by": {
+      "title": "Depended on by",
+      "depth": 3,
+      "tags": [
+        "feature:wi-541-full-transition"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.007Z",
+      "byte_range": [
+        9307,
+        9576
+      ]
+    },
+    "docs/specs/features/wi-541-full-transition.md#event-and-state-contracts": {
+      "title": "Event and State Contracts",
+      "depth": 2,
+      "tags": [
+        "feature:wi-541-full-transition"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.007Z",
+      "byte_range": [
+        9576,
+        10054
+      ]
+    },
+    "docs/specs/features/wi-541-full-transition.md#industry-grounding": {
+      "title": "Industry Grounding",
+      "depth": 2,
+      "tags": [
+        "feature:wi-541-full-transition"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.007Z",
+      "byte_range": [
+        10054,
+        10173
+      ]
+    },
+    "docs/specs/features/wi-541-full-transition.md#what-the-industry-does": {
+      "title": "What the industry does",
+      "depth": 3,
+      "tags": [
+        "feature:wi-541-full-transition"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.007Z",
+      "byte_range": [
+        10173,
+        10415
+      ]
+    },
+    "docs/specs/features/wi-541-full-transition.md#what-we-re-doing": {
+      "title": "What we're doing",
+      "depth": 3,
+      "tags": [
+        "feature:wi-541-full-transition"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.007Z",
+      "byte_range": [
+        10415,
+        10662
+      ]
+    },
+    "docs/specs/features/wi-541-full-transition.md#why-we-differ": {
+      "title": "Why we differ",
+      "depth": 3,
+      "tags": [
+        "feature:wi-541-full-transition"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.007Z",
+      "byte_range": [
+        10662,
+        10885
+      ]
+    },
+    "docs/specs/features/wi-541-full-transition.md#reversibility": {
+      "title": "Reversibility",
+      "depth": 3,
+      "tags": [
+        "feature:wi-541-full-transition"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.007Z",
+      "byte_range": [
+        10885,
+        11113
+      ]
+    },
+    "docs/specs/features/wi-541-full-transition.md#pillars-coverage-matrix": {
+      "title": "Pillars Coverage Matrix",
+      "depth": 2,
+      "tags": [
+        "feature:wi-541-full-transition"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.007Z",
+      "byte_range": [
+        11113,
+        12326
+      ]
+    },
+    "docs/specs/features/wi-541-full-transition.md#journey-references": {
+      "title": "Journey References",
+      "depth": 2,
+      "tags": [
+        "feature:wi-541-full-transition"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.007Z",
+      "byte_range": [
+        12326,
+        12647
+      ]
+    },
+    "docs/specs/features/wi-541-full-transition.md#scope-review": {
+      "title": "Scope Review",
+      "depth": 2,
+      "tags": [
+        "feature:wi-541-full-transition"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.007Z",
+      "byte_range": [
+        12647,
+        13122
+      ]
+    },
+    "docs/specs/features/wi-541-full-transition.md#implementation-notes": {
+      "title": "Implementation Notes",
+      "depth": 2,
+      "tags": [
+        "feature:wi-541-full-transition"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.007Z",
+      "byte_range": [
+        13122,
+        14359
+      ]
+    },
+    "docs/specs/features/wi-541-full-transition.md#revision-log": {
+      "title": "Revision Log",
+      "depth": 2,
+      "tags": [
+        "feature:wi-541-full-transition"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.007Z",
+      "byte_range": [
+        14359,
+        14761
+      ]
+    },
+    "docs/specs/tech/wi-541-full-transition.md#architecture": {
+      "title": "Architecture",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.010Z",
+      "byte_range": [
+        154,
+        575
+      ]
+    },
+    "docs/specs/tech/wi-541-full-transition.md#processing-pipeline": {
+      "title": "Processing pipeline",
+      "depth": 3,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.010Z",
+      "byte_range": [
+        575,
+        1326
+      ]
+    },
+    "docs/specs/tech/wi-541-full-transition.md#authority-state-machine": {
+      "title": "Authority state machine",
+      "depth": 3,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.010Z",
+      "byte_range": [
+        1326,
+        1841
+      ]
+    },
+    "docs/specs/tech/wi-541-full-transition.md#child-dispatch-flow": {
+      "title": "Child dispatch flow",
+      "depth": 3,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.010Z",
+      "byte_range": [
+        1841,
+        2317
+      ]
+    },
+    "docs/specs/tech/wi-541-full-transition.md#learning-flow": {
+      "title": "Learning flow",
+      "depth": 3,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.010Z",
+      "byte_range": [
+        2317,
+        2753
+      ]
+    },
+    "docs/specs/tech/wi-541-full-transition.md#components": {
+      "title": "Components",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.010Z",
+      "byte_range": [
+        2753,
+        5333
+      ]
+    },
+    "docs/specs/tech/wi-541-full-transition.md#data-and-state-contracts": {
+      "title": "Data and state contracts",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.010Z",
+      "byte_range": [
+        5333,
+        6960
+      ]
+    },
+    "docs/specs/tech/wi-541-full-transition.md#external-dependencies-and-toggles": {
+      "title": "External dependencies and toggles",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.010Z",
+      "byte_range": [
+        6960,
+        7812
+      ]
+    },
+    "docs/specs/tech/wi-541-full-transition.md#technology-decisions": {
+      "title": "Technology decisions",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.010Z",
+      "byte_range": [
+        7812,
+        9170
+      ]
+    },
+    "docs/specs/tech/wi-541-full-transition.md#cost-model": {
+      "title": "Cost model",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.010Z",
+      "byte_range": [
+        9170,
+        10361
+      ]
+    },
+    "docs/specs/tech/wi-541-full-transition.md#operations-and-ownership": {
+      "title": "Operations and ownership",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.010Z",
+      "byte_range": [
+        10361,
+        11667
+      ]
+    },
+    "docs/specs/tech/wi-541-full-transition.md#test-matrix": {
+      "title": "Test matrix",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.010Z",
+      "byte_range": [
+        11667,
+        12880
+      ]
+    },
+    "docs/specs/tech/wi-541-full-transition.md#feasibility-matrix": {
+      "title": "Feasibility matrix",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.010Z",
+      "byte_range": [
+        12880,
+        15375
+      ]
+    },
+    "docs/specs/tech/wi-541-full-transition.md#risks-and-mitigations": {
+      "title": "Risks and mitigations",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.010Z",
+      "byte_range": [
+        15375,
+        16433
+      ]
+    },
+    "docs/specs/tech/wi-541-full-transition.md#trade-offs": {
+      "title": "Trade-offs",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.010Z",
+      "byte_range": [
+        16433,
+        17118
+      ]
+    },
+    "docs/specs/tech/wi-541-full-transition.md#adversarial-engineering-review": {
+      "title": "Adversarial engineering review",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.010Z",
+      "byte_range": [
+        17118,
+        18295
+      ]
+    },
+    "docs/specs/decisions/wi-541-full-transition.md#session-mode-auto": {
+      "title": "Session Mode: auto",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.004Z",
+      "byte_range": [
+        54,
+        77
+      ]
+    },
+    "docs/specs/decisions/wi-541-full-transition.md#d-1-program-architecture": {
+      "title": "D-1: Program architecture",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.004Z",
+      "byte_range": [
+        77,
+        1391
+      ]
+    },
+    "docs/specs/decisions/wi-541-full-transition.md#d-2-mutation-transport-selection": {
+      "title": "D-2: Mutation transport selection",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.004Z",
+      "byte_range": [
+        1391,
+        2523
+      ]
+    },
+    "docs/specs/decisions/wi-541-full-transition.md#d-3-authority-recovery-model": {
+      "title": "D-3: Authority recovery model",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.004Z",
+      "byte_range": [
+        2523,
+        3676
+      ]
+    },
+    "docs/specs/decisions/wi-541-full-transition.md#d-4-plan-safety-enforcement": {
+      "title": "D-4: Plan safety enforcement",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.004Z",
+      "byte_range": [
+        3676,
+        4746
+      ]
+    },
+    "docs/specs/decisions/wi-541-full-transition.md#d-5-learning-lifecycle": {
+      "title": "D-5: Learning lifecycle",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.004Z",
+      "byte_range": [
+        4746,
+        5837
+      ]
+    },
+    "docs/specs/decisions/wi-541-solution-confidence/SOLUTION-CONFIDENCE.md#1-user-ask-and-confidence-bar": {
+      "title": "1. User Ask And Confidence Bar",
+      "depth": 2,
+      "tags": [
+        "decision:wi-541-solution-confidence"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.006Z",
+      "byte_range": [
+        292,
+        1113
+      ]
+    },
+    "docs/specs/decisions/wi-541-solution-confidence/SOLUTION-CONFIDENCE.md#2-current-picture": {
+      "title": "2. Current Picture",
+      "depth": 2,
+      "tags": [
+        "decision:wi-541-solution-confidence"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.006Z",
+      "byte_range": [
+        1113,
+        2425
+      ]
+    },
+    "docs/specs/decisions/wi-541-solution-confidence/SOLUTION-CONFIDENCE.md#3-why-the-current-design-may-exist": {
+      "title": "3. Why The Current Design May Exist",
+      "depth": 2,
+      "tags": [
+        "decision:wi-541-solution-confidence"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.006Z",
+      "byte_range": [
+        2425,
+        3348
+      ]
+    },
+    "docs/specs/decisions/wi-541-solution-confidence/SOLUTION-CONFIDENCE.md#4-constraint-profile": {
+      "title": "4. Constraint Profile",
+      "depth": 2,
+      "tags": [
+        "decision:wi-541-solution-confidence"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.006Z",
+      "byte_range": [
+        3348,
+        4289
+      ]
+    },
+    "docs/specs/decisions/wi-541-solution-confidence/SOLUTION-CONFIDENCE.md#5-freshness-and-cache-classes": {
+      "title": "5. Freshness And Cache Classes",
+      "depth": 2,
+      "tags": [
+        "decision:wi-541-solution-confidence"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.006Z",
+      "byte_range": [
+        4289,
+        5292
+      ]
+    },
+    "docs/specs/decisions/wi-541-solution-confidence/SOLUTION-CONFIDENCE.md#6-cost-model": {
+      "title": "6. Cost Model",
+      "depth": 2,
+      "tags": [
+        "decision:wi-541-solution-confidence"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.006Z",
+      "byte_range": [
+        5292,
+        6145
+      ]
+    },
+    "docs/specs/decisions/wi-541-solution-confidence/SOLUTION-CONFIDENCE.md#7-world-grounding": {
+      "title": "7. World Grounding",
+      "depth": 2,
+      "tags": [
+        "decision:wi-541-solution-confidence"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.006Z",
+      "byte_range": [
+        6145,
+        7646
+      ]
+    },
+    "docs/specs/decisions/wi-541-solution-confidence/SOLUTION-CONFIDENCE.md#8-options-considered": {
+      "title": "8. Options Considered",
+      "depth": 2,
+      "tags": [
+        "decision:wi-541-solution-confidence"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.006Z",
+      "byte_range": [
+        7646,
+        8370
+      ]
+    },
+    "docs/specs/decisions/wi-541-solution-confidence/SOLUTION-CONFIDENCE.md#9-tradeoff-matrix": {
+      "title": "9. Tradeoff Matrix",
+      "depth": 2,
+      "tags": [
+        "decision:wi-541-solution-confidence"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.006Z",
+      "byte_range": [
+        8370,
+        9206
+      ]
+    },
+    "docs/specs/decisions/wi-541-solution-confidence/SOLUTION-CONFIDENCE.md#10-action-by-action-approval-packet": {
+      "title": "10. Action-by-Action Approval Packet",
+      "depth": 2,
+      "tags": [
+        "decision:wi-541-solution-confidence"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.006Z",
+      "byte_range": [
+        9206,
+        14426
+      ]
+    },
+    "docs/specs/decisions/wi-541-solution-confidence/SOLUTION-CONFIDENCE.md#11-outcome-coverage": {
+      "title": "11. Outcome Coverage",
+      "depth": 2,
+      "tags": [
+        "decision:wi-541-solution-confidence"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.006Z",
+      "byte_range": [
+        14426,
+        15933
+      ]
+    },
+    "docs/specs/decisions/wi-541-solution-confidence/SOLUTION-CONFIDENCE.md#12-decision-or-remaining-unknowns": {
+      "title": "12. Decision Or Remaining Unknowns",
+      "depth": 2,
+      "tags": [
+        "decision:wi-541-solution-confidence"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.006Z",
+      "byte_range": [
+        15933,
+        16393
+      ]
+    },
+    "docs/specs/decisions/wi-541-solution-confidence/SOLUTION-CONFIDENCE.md#13-base44-ai-suggestions-triage": {
+      "title": "13. Base44/AI Suggestions Triage",
+      "depth": 2,
+      "tags": [
+        "decision:wi-541-solution-confidence"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.006Z",
+      "byte_range": [
+        16393,
+        17380
+      ]
+    },
+    "docs/specs/decisions/wi-541-solution-confidence/SOLUTION-CONFIDENCE.md#14-user-facing-summary": {
+      "title": "14. User-Facing Summary",
+      "depth": 2,
+      "tags": [
+        "decision:wi-541-solution-confidence"
+      ],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.006Z",
+      "byte_range": [
+        17380,
+        18084
+      ]
+    },
+    "docs/specs/audit/wi-541-consumption-audit.md#source-and-consumer-matrix": {
+      "title": "Source and consumer matrix",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.003Z",
+      "byte_range": [
+        278,
+        2318
+      ]
+    },
+    "docs/specs/audit/wi-541-consumption-audit.md#removal-and-acceleration": {
+      "title": "Removal and acceleration",
+      "depth": 2,
+      "tags": [],
+      "topics": [],
+      "last_modified": "2026-08-15T14:33:34.003Z",
+      "byte_range": [
+        2318,
+        2780
       ]
     }
   }

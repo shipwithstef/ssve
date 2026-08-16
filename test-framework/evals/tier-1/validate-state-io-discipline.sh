@@ -27,6 +27,8 @@ const ALLOW = new Set([
   // docs/specs/reviews/proposal-lints/ or .svc/proposal-lints/.
   // Not JSON state; writeJsonAtomic doesn't apply.
   "scripts/lint-proposal-authorship.mjs",
+  // Writes transient .svc/promotion-exec.lock coordination lockfile.
+  "scripts/svc-owner-recovery.mjs",
 ]);
 
 function walk(dir, out = []) {

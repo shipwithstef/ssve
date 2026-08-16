@@ -114,6 +114,40 @@ function canonicalDirectory(value, label) {
   return resolved;
 }
 
+function canonicalWritable(value, label) {
+  if (!value) throw new Error(`${label} is required`);
+  const lexical = path.resolve(String(value)); const stat = fs.lstatSync(lexical);
+  if (stat.isSymbolicLink()) throw new Error(`${label} must not be a symlink`);
+  const real = fs.realpathSync(lexical);
+  if (real !== lexical || (!stat.isDirectory() && !stat.isFile())) throw new Error(`${label} must be a canonical file or directory`);
+  return real;
+}
+
+function staticPrefix(pattern) {
+  const normalized = String(pattern || "").replaceAll("\\", "/").replace(/^\.\//, "");
+  if (!normalized || normalized.startsWith("/") || normalized.split("/").includes("..")) throw new Error(`unsafe containment grant: ${pattern}`);
+  const wildcard = normalized.search(/[*?[{]/); const prefix = (wildcard < 0 ? normalized : normalized.slice(0, wildcard)).replace(/\/$/, "");
+  if (wildcard < 0) throw new Error(`delegated containment requires directory/**; exact files remain controller-owned: ${pattern}`);
+  if (!normalized.endsWith("/**")) throw new Error(`containment grant must be directory/**: ${pattern}`);
+  if (!prefix) throw new Error(`containment grant is unbounded: ${pattern}`);
+  return { prefix };
+}
+
+function policyWriteRoots(worktree, policyFile) {
+  const policy = JSON.parse(fs.readFileSync(path.resolve(policyFile), "utf8"));
+  if (policy.decision !== "delegated-wrapper" || !Array.isArray(policy.allowed_paths) || policy.allowed_paths.length === 0) throw new Error("containment policy is not a delegated-wrapper grant");
+  const roots = [];
+  for (const pattern of policy.allowed_paths) {
+    const { prefix } = staticPrefix(pattern); const target = path.resolve(worktree, prefix); const rel = path.relative(worktree, target);
+    if (rel.startsWith("..") || path.isAbsolute(rel)) throw new Error(`containment grant escapes worktree: ${pattern}`);
+    if (!fs.existsSync(target)) {
+      fs.mkdirSync(target, { recursive: true, mode: 0o700 });
+    }
+    roots.push(canonicalWritable(target, `containment grant ${pattern}`));
+  }
+  return roots;
+}
+
 export function probeContainment() {
   if (process.platform !== "linux") return { available: false, backend: "landlock", reason: "Landlock requires Linux" };
   try {
@@ -131,16 +165,17 @@ export function probeContainment() {
 }
 
 function parse(argv) {
-  const command = argv.shift(); const roots = []; let root = null; let runtimeRoot = null; let json = false;
+  const command = argv.shift(); const roots = []; let root = null; let runtimeRoot = null; let policy = null; let json = false;
   while (argv.length && argv[0] !== "--") {
     const flag = argv.shift();
     if (flag === "--root") root = argv.shift();
     else if (flag === "--runtime-root" || flag === "--write-root") { const value = argv.shift(); roots.push(value); if (flag === "--runtime-root") runtimeRoot = value; }
+    else if (flag === "--policy") policy = argv.shift();
     else if (flag === "--json") json = true;
     else throw new Error(`unknown option: ${flag}`);
   }
   if (argv[0] === "--") argv.shift();
-  return { command, root, runtimeRoot, roots, json, childArgv: argv };
+  return { command, root, runtimeRoot, roots, policy, json, childArgv: argv };
 }
 
 export function run(argv = process.argv.slice(2)) {
@@ -148,9 +183,11 @@ export function run(argv = process.argv.slice(2)) {
   if (args.command === "probe") {
     const result = probeContainment(); process.stdout.write(`${JSON.stringify(result, null, args.json ? 2 : 0)}\n`); return result.available ? 0 : 3;
   }
-  if (args.command !== "run" || args.childArgv.length === 0) throw new Error("Usage: svc-contained-exec.mjs probe [--json] | run --root PATH [--runtime-root PATH] [--write-root PATH] -- COMMAND...");
+  if (args.command !== "run" || args.childArgv.length === 0) throw new Error("Usage: svc-contained-exec.mjs probe [--json] | run --root PATH --policy RECEIPT [--runtime-root PATH] [--write-root PATH] -- COMMAND...");
   const worktree = canonicalDirectory(args.root, "--root");
-  const allowed = [...new Set([worktree, ...args.roots.filter(Boolean).map((value) => canonicalDirectory(value, "write root"))])];
+  const policyRoots = args.policy ? policyWriteRoots(worktree, args.policy) : [];
+  const controllerRoots = !args.policy && args.roots.length === 0 ? [worktree] : [];
+  const allowed = [...new Set([...policyRoots, ...controllerRoots, ...args.roots.filter(Boolean).map((value) => canonicalWritable(value, "write root"))])];
   const probe = probeContainment(); if (!probe.available) throw new Error(`filesystem containment unavailable: ${probe.reason}`);
   const result = spawnSync(probe.helper, [...allowed, "/dev/null", "--", ...args.childArgv], { cwd: worktree, stdio: "inherit", env: process.env });
   if (result.error) throw result.error;

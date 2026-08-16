@@ -27,10 +27,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const { readHookPayload, extractFilePath } = await import(
+const { readHookPayload, extractFilePath, extractCommand } = await import(
   path.join(__dirname, "lib", "hook-payload.mjs")
 );
 const { resolveOperationScope } = await import(path.join(__dirname, "lib", "operation-scope.mjs"));
+const { classifyBashMutationTargets } = await import(path.join(__dirname, "lib", "bash-mutation-targets.mjs"));
 // WI-487 (F-003/AC-487-7): route the block through the 5-field actionable-denial
 // envelope + durable receipt (fall back to the legacy prose on older installs).
 let emitDenial = null;
@@ -38,10 +39,7 @@ try { ({ emitDenial } = await import(path.join(__dirname, "lib", "hook-denial.mj
 
 const call = readHookPayload();
 if (!call) process.exit(0);
-if (!["Edit", "Write", "Update"].includes(call.toolName)) process.exit(0);
-
-const filePath = extractFilePath(call.toolInput);
-if (!filePath) process.exit(0);
+if (!["Edit", "Write", "Update", "Bash"].includes(call.toolName)) process.exit(0);
 
 const operationHost = call.raw?.host || process.env.SVC_HOST ||
   (process.env.CLAUDE_PLUGIN_ROOT || process.env.CLAUDE_CODE_REMOTE || process.env.CLAUDE_PROJECT_DIR ? "claude" : "codex");
@@ -53,6 +51,10 @@ if (!operationScope.ok) process.exit(0);
 const target = operationScope.targets[0];
 const targetRoot = target?.worktree_root || operationScope.operation_repository?.worktree_root || operationScope.operation_cwd;
 if (!targetRoot) process.exit(0);
+const filePaths = call.toolName === "Bash"
+  ? classifyBashMutationTargets(extractCommand(call.toolInput), { cwd: targetRoot })
+  : [extractFilePath(call.toolInput)].filter(Boolean);
+if (!filePaths.length) process.exit(0);
 
 if (process.env.SVC_SKILL_ARTIFACT_ALLOW === "1") process.exit(0);
 
@@ -98,17 +100,13 @@ function findRule(rel) {
   return null;
 }
 
-// Normalize file path to repo-relative
+// Normalize file paths to repo-relative and evaluate every matching target.
 const cwd = targetRoot;
-let rel = filePath;
-if (path.isAbsolute(rel)) {
-  rel = path.relative(cwd, target?.canonical || rel);
-}
-// strip leading ./
-if (rel.startsWith("./")) rel = rel.slice(2);
-
-const rule = findRule(rel);
-if (!rule) process.exit(0);
+const protectedTargets = filePaths.map((filePath) => path.isAbsolute(filePath)
+  ? path.relative(cwd, filePath)
+  : filePath.replace(/^\.\//, ""))
+  .map((rel) => ({ rel, rule: findRule(rel) })).filter((entry) => entry.rule);
+if (!protectedTargets.length) process.exit(0);
 
 // New-file exception: write-spec must be allowed to create the first version
 // of a feature spec from scratch. The check is meaningful when the file already
@@ -123,31 +121,18 @@ const cutoff = Date.now() - windowMin * 60 * 1000;
 
 // Read pipeline-decisions.jsonl and look for a recent matching skill invocation
 const decisionsPath = path.join(cwd, ".svc", "pipeline-decisions.jsonl");
-let recent = false;
-let lastSkill = null;
+let entries = [];
 if (fs.existsSync(decisionsPath)) {
-  const lines = fs.readFileSync(decisionsPath, "utf8").trim().split("\n");
-  // Walk in reverse (most recent first)
-  for (let i = lines.length - 1; i >= 0; i--) {
-    const line = lines[i].trim();
-    if (!line) continue;
-    let entry;
-    try {
-      entry = JSON.parse(line);
-    } catch {
-      continue;
-    }
-    const ts = Date.parse(entry.timestamp || "");
-    if (Number.isFinite(ts) && ts < cutoff) break; // older than window — stop
-    if (entry.skill && rule.skills.includes(entry.skill)) {
-      recent = true;
-      lastSkill = entry.skill;
-      break;
-    }
-  }
+  entries = fs.readFileSync(decisionsPath, "utf8").trim().split("\n").filter(Boolean).flatMap((line) => { try { return [JSON.parse(line)]; } catch { return []; } });
 }
-
-if (recent) process.exit(0);
+const hasRecent = (rule) => [...entries].reverse().some((entry) => {
+  const ts = Date.parse(entry.timestamp || "");
+  return Number.isFinite(ts) && ts >= cutoff && entry.skill && rule.skills.includes(entry.skill);
+});
+const denied = protectedTargets.find((entry) => !hasRecent(entry.rule));
+if (!denied) process.exit(0);
+let { rel, rule } = denied;
+if (rel.startsWith("./")) rel = rel.slice(2);
 
 const requiredSkill = rule.skills.length === 1 ? rule.skills[0] : rule.skills.join(" OR ");
 const humanReason =

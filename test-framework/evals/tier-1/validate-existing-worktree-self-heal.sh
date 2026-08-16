@@ -369,6 +369,25 @@ else
   bad "symlinked installed scripts path silently skipped the bootstrap entrypoint"
 fi
 
+# WI-541 / WI-538 topology: a registered legacy worktree has user residue and
+# no claim/binding directories. Canonical bootstrap creates only missing
+# authority, preserves residue, and rejects a foreign live marker.
+GEN0_REPO="$TMP/generation-zero"
+GEN0_WT="$GEN0_REPO/.worktrees/framework-WI-538-offline-improvements"
+GEN0_WI="WI-538"
+GEN0_SESSION="019fe17e-eeee-7cc3-902b-084b95218fe8"
+make_repo "$GEN0_REPO"
+git -C "$GEN0_REPO" worktree add -q -b framework-WI-538-offline-improvements "$GEN0_WT" origin/main
+mkdir -p "$GEN0_WT/.svc"
+printf 'protected legacy residue\n' > "$GEN0_WT/.svc/operator-residue.txt"
+GEN0_BEFORE="$(sha256sum "$GEN0_WT/.svc/operator-residue.txt" | cut -d' ' -f1)"
+GEN0_RESULT="$(cd "$GEN0_REPO" && SVC_SESSION_ID="$GEN0_SESSION" SVC_AUTHORITY_STATE_ROOT="$TMP/gen0-authority" node "$ROOT/scripts/svc-ensure-worktree.mjs" --wi "$GEN0_WI" --branch framework-WI-538-offline-improvements --from origin/main --authority-v2 --json)"
+if node -e 'const r=JSON.parse(process.argv[1]);process.exit(r.claim_generation===1&&r.authority_v2?.lease?.generation===1?0:1)' "$GEN0_RESULT" && [[ "$GEN0_BEFORE" == "$(sha256sum "$GEN0_WT/.svc/operator-residue.txt" | cut -d' ' -f1)" ]]; then
+  ok "generation-zero WI-538 topology gains exact authority without deleting residue"
+else
+  bad "generation-zero adoption changed residue or failed to converge authority"
+fi
+
 echo ""
 echo "existing worktree self-heal: $PASS passed, $FAIL failed"
 [[ "$FAIL" -eq 0 ]]

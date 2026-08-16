@@ -199,7 +199,7 @@ For `logic`, run the mapped test named by the receipt. For `high`, collect behav
 
 1. Build a nested execution graph with `plan-execution-wave.mjs`.
 2. Serialize unknown, overlapping, shared-state, lockfile, migration, and root-config scopes.
-3. Persist one generation-bound delegation before creating and launching each child worktree.
+3. Persist one generation-bound delegation before creating and launching each child worktree. Before launch, run `node scripts/resolve-child-transport.mjs --state-root <state-root> --delegation <id> --child-principal <principal> --token <one-time-token> --worktree <inner-worktree> --completion-receipt <receipt> --host-manifest <manifest> --receipt .svc/dispatch/<task>.prelaunch.json`. A mutation-bearing `--request` JSON is only a caller assertion and is rejected; a generic `agents: true` flag never authorizes mutation.
 4. Have the stable child principal accept its one-time token; it may mutate only the delegated worktree and allowed paths.
 5. Each child performs TDD, commits, validates, and emits a completion receipt with the exact diff digest.
 6. The controller recomputes every receipt field and merges accepted results sequentially with `validate-execution-merge-back.mjs`.
@@ -207,7 +207,7 @@ For `logic`, run the mapped test named by the receipt. For `high`, collect behav
 
 Children never edit the parent lane graph, controller lease, sibling results, or shared `.svc` state. A controller-generation change freezes outstanding results; the new controller must explicitly adopt, wait with a new receipt, revoke, or restart each child.
 
-**Native task-graph execution (WI-388 core — Claude host).** Instead of the dead
+**Native task-graph execution (WI-388 core — Claude host).** Read-only native children are eligible directly. A mutating native child is eligible only when `resolve-child-transport.mjs` returns `delegated-wrapper`; `controller` means execute in the controller session. Instead of the dead
 `dispatch-worker.sh` transport, partition the manifest task graph and run each
 independent node as a native `agent(prompt, {isolation:'worktree', schema:
 task-node-result})` call — in-session, on subscription. The partition fence is

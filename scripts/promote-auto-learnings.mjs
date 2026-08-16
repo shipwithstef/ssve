@@ -38,6 +38,8 @@ import { dedupAgainstPaths } from "./lib/learning-dedup.mjs";
 import { appendJsonlLine, writeJsonlAtomic } from "./state-io.mjs";
 import { resolveUserMemoryPath } from "./lib/resolve-user-memory-path.mjs";
 import { redactSecretsDeep, scrubSlugSecrets } from "./lib/secret-redaction.mjs";
+import { normalizeLearningEntry } from "../hooks/lib/learning-index.mjs";
+import { hasFrameworkLearningCredit } from "./learning-lifecycle.mjs";
 
 const ROOT = process.cwd();
 
@@ -86,7 +88,9 @@ function candidateToLearningRow(c) {
     source: provenance,
     files: Array.isArray(c.files) ? c.files : [],
   };
-  return row;
+  const normalized = normalizeLearningEntry(row, { origin: "auto-promotion", source: ".svc/auto-learnings.jsonl" });
+  if (!normalized.ok) throw new Error(`candidate ${c.key || "(unknown)"} is malformed: ${normalized.finding.reasons.join(", ")}`);
+  return { ...row, confidence: normalized.learning.confidence };
 }
 
 const TARGETS = {
@@ -346,6 +350,11 @@ async function main() {
     if (!destPath) {
       blocked.push({ candidate: c, reason });
       remaining.push(c); // keep in audit log; reviewer can re-classify
+      continue;
+    }
+    if (target === "framework-learnings" && !args.dryRun && !hasFrameworkLearningCredit(ROOT, c.key)) {
+      blocked.push({ candidate: c, reason: "framework credit requires a verified used outcome and independent evaluate-rule elevation" });
+      remaining.push(c);
       continue;
     }
 

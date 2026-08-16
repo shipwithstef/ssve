@@ -194,7 +194,7 @@ After the manifest, BEFORE handoff: walk the task graph in dependency order agai
 
 ## Adversarial Plan Review
 
-Plans face structured opposition before execution: mechanical checks (free), then `review-plan` (primary adversarial, structured YAML findings), convergence loop until residual ≤ MEDIUM. Self-review prompts + check catalog: `references/adversarial-review-detail.md`.
+Plans face structured opposition before execution: mechanical checks (free), then `review-plan` (primary adversarial, structured YAML findings), convergence loop until residual ≤ MEDIUM. Product-sensitive, parallel, deletion-bearing, or claim-heavy plans place `plan-contract.json` beside the manifest; `verify-plan-mechanical.sh` consumes it through `scripts/validate-plan-contract.mjs` and rejects overlapping ownership, unsafe reversible writers, unbounded absence/completeness claims, and executables without named consumers. Self-review prompts + check catalog: `references/adversarial-review-detail.md`.
 
 ### Decision Logging
 

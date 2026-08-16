@@ -677,6 +677,17 @@ Before declaring promoted work complete, run `git status --short --untracked-fil
 
 ## Chain Receipt Emission (Mandatory Chain)
 
+### Production verification capability boundary
+
+When detached automation launches the canonical verifier, bind it to the exact
+current SHA and consume the capability at execution. The only accepted argv is
+`node scripts/svc-auto-drive.mjs <exact-head-sha>` (an absolute path ending in
+that exact repository script is equivalent). Arbitrary Node scripts, added
+flags, or a different SHA are denied before launch. Use
+`scripts/svc-owner-recovery.mjs promote-mint` and `promote-exec` with the same
+repo/worktree/WI/generation/task/environment tuple and identical command argv,
+as shown by the local-land boundary in `land-changeset`.
+
 This skill emits receipt type `verify-promotion (P3 extended with three target types)` per the contract in
 `references/chain-receipt-contract.md`. The receipt is stored as a git
 note on `refs/notes/svc-receipts` (authoritative) and mirrored under

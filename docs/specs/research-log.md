@@ -350,3 +350,22 @@ The best-fit design is therefore one pure classifier for completed registry-skil
 **As-of date:** 2026-08-10
 **Re-verify after:** any Codex hook API, dispatcher, launcher, or setup-wiring change.
 **Version-specific:** repository base `0d75cb1d697d3c031e871f2bd182066a47f7bbb8`; official Codex hook provenance last refreshed 2026-05-10.
+
+## 2026-08-15: Native Codex subagent availability does not carry SSVE mutation authority
+
+**Asked by:** `research` / solution-confidence for WI-541
+**Context:** WI-541 must decide whether current native Codex collaboration can replace the contained child launcher for governed parallel mutation without weakening worktree, identity, delegation, or allowed-path enforcement.
+**Finding:** Current Codex releases support subagent workflows, and official guidance recommends beginning with read-heavy parallel work while treating concurrent write-heavy work carefully. The current hook lifecycle includes `SubagentStart` and `SubagentStop`, but lifecycle interception is not filesystem containment and does not create a persisted delegation. On the live Codex 0.147.0 host, the top-level CLI exposes working-directory and sandbox controls; however, the active native spawn interface carries only task instructions, task name, history-forking, and optional model/reasoning controls. It does not carry the stable child principal, exact canonical worktree, task token, disjoint allowed paths, environment handoff, or containment launcher required by the repository's mutation contract. Therefore `agents: true` means orchestration availability only. Native subagents remain read-only; governed child mutation uses `scripts/svc-contained-exec.mjs` with a persisted delegation and isolated inner worktree, or falls back to the controller.
+**Source(s):**
+
+- `codex --version`, `codex --help`, and the active `spawn_agent` tool schema [T1 installed/runtime authority]
+- https://learn.chatgpt.com/docs/agent-configuration/subagents [T1 official OpenAI subagent guidance]
+- https://developers.openai.com/codex/hooks [T1 official OpenAI lifecycle-hook contract]
+- `provision/hosts/codex.json`, `scripts/svc-contained-exec.mjs`, and the repository durable mutation authority contract [T1 local normative and executable authority]
+
+**Triangulation:** The installed/runtime schema proves what this session can actually transport; the official subagent page establishes availability and the read-heavy/write-heavy boundary; the official hook page establishes lifecycle observation; the repository contract defines the additional fields required for mutation. The conclusion is an explicit SSVE inference from those independent authorities.
+**Confidence:** high
+**Volatility:** volatile for Codex transport fields and lifecycle events; stable for the repository's current fail-closed authority requirement.
+**As-of date:** 2026-08-15
+**Re-verify after:** any Codex collaboration tool-schema, hook API, or contained-child transport change.
+**Version-specific:** Codex CLI 0.147.0 and the active 2026-08-15 collaboration tool schema.

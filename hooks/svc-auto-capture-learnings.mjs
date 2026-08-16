@@ -11,6 +11,7 @@ import { dedupAgainstPaths } from "../scripts/lib/learning-dedup.mjs";
 import { redactSecretsDeep } from "../scripts/lib/secret-redaction.mjs";
 import { resolveSvcStateDir } from "./lib/svc-state-dir.mjs";
 import { resolveOperationScope } from "./lib/operation-scope.mjs";
+import { recordStopAuthorizationSummary } from "../scripts/svc-authorized-action.mjs";
 
 const DEFAULT_BUDGET_MS = 200;
 
@@ -83,6 +84,7 @@ function main() {
   try { payload = JSON.parse(readStdin() || "{}"); } catch { payload = {}; }
   const root = loadRepoRoot(payload);
   if (!root) return;
+  if (trigger === "stop") try { recordStopAuthorizationSummary(root); } catch {}
 
   try {
     if (process.env.SVC_AUTO_LEARN_DISABLE === "1") return;

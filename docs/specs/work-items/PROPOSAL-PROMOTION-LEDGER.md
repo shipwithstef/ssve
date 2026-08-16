@@ -85,3 +85,5 @@ its residual map, not the proposal file.
 | `2026-08-10-framework-improvement-agy-chain-receipts.md` | WI-529 | Truthful AGY receipt identity; residual map `WI-529-residual-map.json` |
 | `2026-08-10-framework-improvement-codex-launcher-wiring.md` | WI-529 | Launcher-routed governed Codex dispatcher; residual map `WI-529-residual-map.json` |
 | `2026-08-10-framework-improvement-skills-package-layout.md` | WI-530 | Packaged source layout and preserved-worktree recovery; residual map `WI-530-residual-map.json` |
+| `2026-08-15-evolution-hoursHub-transition.md` | WI-541 | Content-deduplicated transition program; residual map `WI-541-residual-map.json` |
+| `2026-08-15-framework-improvement-mandatory-chain-graph-parity.md` | WI-541 | Exact mandatory chain compiler/validator repair; residual map `WI-541-residual-map.json` |

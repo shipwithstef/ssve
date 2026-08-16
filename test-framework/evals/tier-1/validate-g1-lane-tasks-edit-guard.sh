@@ -22,11 +22,12 @@ G375() { env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE git -C "$TMP_REPO" "$
 G375 init -q
 G375 config user.email t@t
 G375 config user.name t
-mkdir -p hooks scripts .svc
+mkdir -p hooks scripts/lib .svc
 cp -r "$REPO_ROOT/hooks/lib" hooks/
 cp "$REPO_ROOT/hooks/svc-lane-tasks-validator.mjs" hooks/
 cp "$REPO_ROOT/scripts/task-graph.mjs" scripts/
 cp "$REPO_ROOT/scripts/state-io.mjs" scripts/
+cp "$REPO_ROOT/scripts/lib/stage-registry.mjs" scripts/lib/
 
 cat > .svc/lane-tasks-WI-G1.json <<JSON
 {

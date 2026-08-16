@@ -35,7 +35,8 @@
     "package_context",
     "cache",
     "artifacts",
-    "usage"
+    "usage",
+    "reviewer_run"
   ],
   "properties": {
     "schema_version": { "type": "integer", "enum": [2] },
@@ -133,6 +134,11 @@
               "provider_safety_failure",
               "unknown_provider"
             ]
+          },
+          "command": {
+            "type": "object",
+            "required": ["binary", "argv"],
+            "properties": { "binary": { "type": "string" }, "argv": { "type": "array", "items": { "type": "string" } } }
           },
           "artifacts": { "type": "object" },
           "usage": { "type": "object" }
@@ -305,7 +311,16 @@
       }
     },
     "artifacts": { "type": "object" },
-    "usage": { "type": "object" }
+    "usage": { "type": "object" },
+    "reviewer_run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commands", "output_artifacts"],
+      "properties": {
+        "commands": { "type": "array" },
+        "output_artifacts": { "type": "array", "items": { "type": "string" } }
+      }
+    }
   },
   "definitions": {
     "tuple": {

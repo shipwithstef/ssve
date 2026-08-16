@@ -21,29 +21,44 @@ const LEDGERS = [
 ];
 
 export function loadLearnings(repoRoot) {
+  return loadLearningsDetailed(repoRoot).learnings;
+}
+
+export function normalizeLearningEntry(e, { origin = "unknown", source = "unknown", line = 0 } = {}) {
+  const findings = [];
+  const keyValue = e?.key ?? e?.id;
+  if (typeof keyValue !== "string" || !keyValue.trim()) findings.push("missing key/id");
+  let confidence = null;
+  if (typeof e?.confidence === "number") confidence = e.confidence;
+  else if (typeof e?.confidence === "string" && /^(?:10(?:\.0+)?|[0-9](?:\.\d+)?)$/.test(e.confidence.trim())) confidence = Number(e.confidence);
+  if (!Number.isFinite(confidence) || confidence < 0 || confidence > 10) findings.push("confidence must be a finite number or strict numeric string from 0 to 10");
+  if (typeof e?.insight !== "string" || !e.insight.trim()) findings.push("missing insight");
+  if (findings.length) return { ok: false, finding: { source, line, origin, reasons: findings } };
+  return { ok: true, learning: {
+    key: keyValue.trim(), insight: e.insight.trim(), confidence,
+    files: Array.isArray(e.files) ? e.files.filter((value) => typeof value === "string").map(String) : [],
+    skill: String(e.skill || ""), type: String(e.type || ""), origin,
+  } };
+}
+
+export function loadLearningsDetailed(repoRoot) {
   const out = [];
+  const findings = [];
   for (const [rel, origin] of LEDGERS) {
     const abs = join(repoRoot, rel);
     if (!existsSync(abs)) continue;
+    let lineNumber = 0;
     for (const line of readFileSync(abs, "utf8").split("\n")) {
+      lineNumber += 1;
       const s = line.trim();
       if (!s) continue;
       try {
-        const e = JSON.parse(s);
-        if (!e || !e.key) continue;
-        out.push({
-          key: String(e.key),
-          insight: String(e.insight || ""),
-          confidence: Number(e.confidence || 0),
-          files: Array.isArray(e.files) ? e.files.map(String) : [],
-          skill: String(e.skill || ""),
-          type: String(e.type || ""),
-          origin,
-        });
-      } catch { /* skip malformed line */ }
+        const normalized = normalizeLearningEntry(JSON.parse(s), { origin, source: rel, line: lineNumber });
+        if (normalized.ok) out.push(normalized.learning); else findings.push(normalized.finding);
+      } catch { findings.push({ source: rel, line: lineNumber, origin, reasons: ["malformed JSON"] }); }
     }
   }
-  return out;
+  return { learnings: out, findings };
 }
 
 // Does a touched repo path match one of a learning's `files` entries? Supports

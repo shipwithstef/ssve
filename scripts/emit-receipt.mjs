@@ -26,14 +26,15 @@
  * Exit 0 on success, 1 on validation error, 2 on usage error.
  */
 
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync, existsSync, mkdirSync, unlinkSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
-import { writeJsonAtomic, appendJsonlLine } from "./state-io.mjs";
+import { writeJsonAtomic } from "./state-io.mjs";
 import { acquireLock } from "./state-lock.mjs";
 import { familyOf } from "./lib/cognitive-family.mjs";   // WI-385 mechanical cross-family resolution
+import { verifyReviewerEvidence } from "./lib/reviewer-evidence.mjs";
 
 // WI-386: SCRIPT_DIR-relative, not cwd-relative. A cwd-relative SCHEMA_DIR returned
 // null from any other directory, so loadSchema → validateReceipt became a no-op that
@@ -49,7 +50,7 @@ function fail(msg, code = 2) {
 }
 
 function git(args) {
-  try { return execSync(`git ${args}`, { encoding: "utf8" }).trim(); }
+  try { return execFileSync("git", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim(); }
   catch (e) { return null; }
 }
 
@@ -110,7 +111,19 @@ function validateReceipt(type, body) {
   if (missing.length > 0) {
     return { valid: false, reasons: [`missing required: ${missing.join(", ")}`] };
   }
+  if ((type === "review-plan" || type === "review-exec") && Number(body.schema_version) >= 3) {
+    const evidenceReasons = verifyReviewerEvidence({ root: process.cwd(), reviewKind: type === "review-plan" ? "plan" : "exec", body });
+    if (evidenceReasons.length) return { valid: false, reasons: evidenceReasons };
+  }
   return { valid: true, reasons: [] };
+}
+
+function candidateHasDeletions(targetSha = null) {
+  const command = targetSha
+    ? ["diff-tree", "--no-commit-id", "--name-status", "-r", "--end-of-options", targetSha]
+    : ["diff", "--name-status", "HEAD"];
+  const output = git(command) || "";
+  return output.split(/\r?\n/).some((line) => /^(?:D|R\d*|C\d*)\t/.test(line));
 }
 
 function writeNote(sha, type, receipt) {
@@ -144,7 +157,7 @@ function writeNote(sha, type, receipt) {
     // 1. Seed from existing durable note (so we never lose keys that were
     //    only on the note and not in the local mirror cache).
     const envelope = {};
-    const existing = git(`notes --ref=svc-receipts show ${sha} 2>/dev/null`);
+    const existing = git(["notes", "--ref=svc-receipts", "show", sha]);
     if (existing) {
       try { Object.assign(envelope, JSON.parse(existing)); } catch {}
     }
@@ -170,7 +183,7 @@ function writeNote(sha, type, receipt) {
     const tmpPath = join(tmpdir(), `svc-note-${process.pid}-${Date.now()}.json`);
     writeFileSync(tmpPath, JSON.stringify(envelope));
     try {
-      execSync(`git notes --ref=svc-receipts add -f -F "${tmpPath}" ${sha}`, { stdio: "pipe" });
+      execFileSync("git", ["notes", "--ref=svc-receipts", "add", "-f", "-F", tmpPath, sha], { stdio: "pipe" });
       return true;
     } catch (e) {
       return false;
@@ -186,6 +199,11 @@ function main() {
   const args = parseArgs(process.argv.slice(2));
   if (!args.type) fail("--type <receipt-type> required");
   if (!args.wi) fail("--wi <wi-id> required");
+  let explicitTargetSha = null;
+  if (args.sha) {
+    explicitTargetSha = git(["rev-parse", "--verify", "--end-of-options", `${args.sha}^{commit}`]);
+    if (!explicitTargetSha || !/^[0-9a-f]{40}$/.test(explicitTargetSha)) fail(`provided --sha '${args.sha}' is not a valid commit in git`, 2);
+  }
 
   const raw = readBody(args);
   let body;
@@ -196,6 +214,16 @@ function main() {
   body.schema_version = body.schema_version || 1;
   body.wi = body.wi || args.wi;
   body.timestamp = body.timestamp || new Date().toISOString();
+
+  // Every review receipt produced after the WI-541 contract is v3. Historical
+  // v1/v2 receipts remain readable, but the producer can no longer mint a new
+  // receipt that skips direct reviewer-run evidence through version selection.
+  if (args.type === "review-plan" || args.type === "review-exec") {
+    body.schema_version = Math.max(3, Number(body.schema_version) || 1);
+    if (body.reviewer_evidence && typeof body.reviewer_evidence === "object") {
+      body.reviewer_evidence.deletion_bearing = candidateHasDeletions(explicitTargetSha);
+    }
+  }
 
   // WI-385: MECHANICALLY resolve the cross-family fields on review-exec from the
   // ACTUAL review hosts (orchestrator = author; the USED adversarial host =
@@ -216,38 +244,18 @@ function main() {
   const v = validateReceipt(args.type, body);
   if (!v.valid) fail(`receipt invalid: ${v.reasons.join("; ")}`, 1);
 
-  let targetSha = args.sha;
+  let targetSha = explicitTargetSha;
   let writeStaging = false;
+  const treeHash = git(["write-tree"]);
 
   if (targetSha) {
-    const resolved = git(`rev-parse --verify ${targetSha} 2>/dev/null`);
-    if (!resolved) {
-      fail(`provided --sha '${targetSha}' is not a valid commit in git`, 2);
-    }
-    targetSha = resolved;
+    // Already resolved and verified before any candidate-dependent operation.
   } else {
-    targetSha = git("rev-parse --verify HEAD 2>/dev/null");
-    writeStaging = !targetSha;
-
-    if (targetSha) {
-      try {
-        appendJsonlLine(".svc/pipeline-decisions.jsonl", {
-          timestamp: new Date().toISOString(),
-          run_id: args.wi,
-          skill: "emit-receipt",
-          type: "mechanical",
-          decision: "deprecation-warning",
-          reasoning: `Implicit checkout HEAD resolution was used because --sha was not provided for receipt type '${args.type}'. This fallback is deprecated to prevent concurrent checkout session collision receipt mis-routing.`,
-          decided_by: "P0",
-          overrideable: false
-        });
-      } catch (e) {
-        console.warn(`emit-receipt warning: failed to write deprecation entry to pipeline-decisions.jsonl: ${e.message}`);
-      }
-    }
+    targetSha = git(["rev-parse", "--verify", "HEAD"]);
+    const headTree = targetSha ? git(["rev-parse", `${targetSha}^{tree}`]) : null;
+    writeStaging = !targetSha || !treeHash || treeHash !== headTree;
+    if (writeStaging) targetSha = null;
   }
-
-  const treeHash = git("write-tree");
 
   let mirrorPath;
   if (writeStaging) {
@@ -267,9 +275,9 @@ function main() {
   // receipt — symmetric to the quick-fix tree_hash bind. schema_version 2 is the
   // EXPLICIT "tree-bound" marker (codex G6: grandfather by metadata, not by
   // tree_hash absence — else a forger omits tree_hash to skip every check).
-  if (targetSha && (args.type === "exec-record" || args.type === "review-exec")) {
-    const commitTree = git(`rev-parse ${targetSha}^{tree} 2>/dev/null`);
-    if (commitTree) body.tree_hash = commitTree;
+  if ((targetSha || writeStaging) && (args.type === "exec-record" || args.type === "review-exec")) {
+    const boundTree = targetSha ? git(["rev-parse", `${targetSha}^{tree}`]) : treeHash;
+    if (boundTree) body.tree_hash = boundTree;
     body.schema_version = Math.max(2, Number(body.schema_version) || 1);
   }
 

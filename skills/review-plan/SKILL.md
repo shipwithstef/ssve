@@ -105,6 +105,8 @@ Run the deterministic check script in the current session:
 bash scripts/verify-plan-mechanical.sh docs/plans/<date>-<name>/manifest.md
 ```
 
+When the plan changes money, entitlement, quota, inventory, identity, notification, parallel ownership, deletion, or completeness/absence claims, require the adjacent `plan-contract.json`. The command above validates it automatically; prose is not a substitute for its ordering, compensation, denominator, ownership, and consumer evidence.
+
 - Exit 0 → proceed to Tier 1.5
 - Exit 1 → orchestrator fixes trivially (path typos, missing npm scripts, syntax errors, forbidden patterns). Re-run Tier 1 before any model is invoked.
 - Exit 2 → input error; halt and report
@@ -381,11 +383,24 @@ After producing the canonical output, emit a SHA-keyed receipt:
 BASE_SHA="$(git rev-parse HEAD)"
 cat <<'JSON' | node scripts/emit-receipt.mjs --type review-plan --wi $WI --sha "$BASE_SHA"
 {
+  "schema_version": 3,
   "wi": "$WI",
-  ...{self_review, adversarial_review, verdict}
+  ...{self_review, adversarial_review, verdict},
+  "reviewer_evidence": {
+    "independent": true,
+    "submitter_only": false,
+    "commands": [{"binary":"<launcher>","argv":["<exact>"]}],
+    "output_artifacts": ["<launcher receipt>","<findings output>"],
+    "deletion_bearing": false,
+    "parse_collect_evidence": []
+  }
 }
 JSON
 ```
+
+The emitter upgrades every newly produced review receipt to schema v3 and
+derives `deletion_bearing` from the candidate diff. Missing direct reviewer
+evidence fails emission; callers cannot select a legacy version to bypass it.
 
 This writes to `.svc/receipts/<sha>/review-plan.json` (or staging if pre-commit)
 AND attaches it to the consolidated git note on `refs/notes/svc-receipts`.

@@ -98,7 +98,7 @@ Initialize `.svc/lane-tasks-<WI>.json` with the write-spec process tasks before 
 
 ### Genesis Branch Index (§3)
 
-Create `docs/specs/relations/<scope>.branches.md` at spec time — not later, via `align-feature` — using `references/branch-index-template.md` (`Derived-at: HEAD`, declared `Scope-paths`, all axis sections present but empty). Every later stage appends to this same file instead of writing a separate document, so the scope reaches "done" with a fresh index already in place.
+Create `docs/specs/relations/<scope>.branches.md` at spec time — not later, via `align-feature` — using `references/branch-index-template.md` (`Derived-at:` followed by the resolved 40-hex output of `git rev-parse HEAD`, never the symbolic word HEAD; declared `Scope-paths`; all axis sections present but empty). Every later stage appends to this same file instead of writing a separate document, so the scope reaches "done" with a fresh index already in place.
 
 Seed the 2 mechanically-derivable axes (Callers, Journeys & tests) instead of hand-walking them first:
 

@@ -12,7 +12,6 @@
 
 | ID | Component | Optimization / Refinement | Quality & Determinism Safeguard |
 | :--- | :--- | :--- | :--- |
-| **OPT-01** | `candidate-harness.mjs` | Auto-parse Markdown candidate specs (`docs/specs/candidates/*.md`) directly into SQLite | Follows repo `.gitignore` line 60; keeps 100% of candidate metadata; increases Git diffability. |
 | **OPT-02** | `candidate-harness.mjs` | Cache `project_id` in memory after initial resolution | `project_id` is invariant during execution. Eliminates 200ms `execFileSync` subshell. |
 | **OPT-03** | `candidate-harness.mjs` | Relax candidate ID regex to `/^CAND-[A-Z0-9_-]+$/i` | Supports domain-specific IDs without weakening string validation. |
 | **OPT-04** | `candidate-harness.mjs` | Cache checked target file paths in a `Set` during grounding check | Prevents redundant synchronous disk stats within a single script run. |
@@ -34,7 +33,7 @@
 ## 🛠️ 2. Task Graph & File Manifest
 
 ### Affected Code Files:
-- `scripts/candidate-harness.mjs` (OPT-01 to OPT-05)
+- `scripts/candidate-harness.mjs` (OPT-02 to OPT-05; OPT-01 refuted below)
 - `scripts/check-chain-receipts.mjs` (OPT-06)
 - `scripts/svc-reconcile.mjs` (OPT-07)
 - `scripts/lib/completed-task-integrity.mjs` (OPT-09 to OPT-11)

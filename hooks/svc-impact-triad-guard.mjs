@@ -157,7 +157,7 @@ export function evaluateImpactTriad({ cwd = process.cwd(), env = process.env, pa
   if (maintenanceScope.framework_maintenance) return { ok: true, maintenance: true, n_a: "framework maintenance" };
   const sid = sessionId(payload, env);
   const resolved = resolveWI({ ...payload, cwd: worktree, session_id: sid }, env);
-  if (!resolved.authority || !resolved.binding) return { ok: false, reason: `exact WI-484 binding required (${resolved.diagnostics?.reason || "unresolved"})` };
+  if (!resolved.authority || (!resolved.binding && !resolved.tuple)) return { ok: false, reason: `exact WI-484 binding required (${resolved.diagnostics?.reason || "unresolved"})` };
   const graphPath = path.join(worktree, ".svc", `lane-tasks-${resolved.wi}.json`);
   const graph = readJsonRegular(graphPath);
   if (!graph) return { ok: false, reason: "owned task graph missing or insecure" };

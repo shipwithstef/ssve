@@ -32,6 +32,7 @@ import { writeJsonAtomic } from "./state-io.mjs";
 import { acTableSha256 } from "./lib/normalize-ac-table.mjs";
 import { deriveTier } from "./derive-receipt-tier.mjs";
 import { familyOf } from "./lib/cognitive-family.mjs";
+import { verifyReviewerEvidence } from "./lib/reviewer-evidence.mjs";
 import { isExternalizedHistoryRange } from "./lib/history-epoch.mjs";
 
 const REQUIRED_TYPES_FULL = [
@@ -491,6 +492,10 @@ function validateReceipt(receiptType, receipt) {
     if (!/^[0-9a-f]{64}$/.test(String(receipt.diff_hash || ""))) {
       return { valid: false, reasons: [`diff_hash must be a 64-hex sha256 (got ${JSON.stringify(receipt.diff_hash)})`] };
     }
+  }
+  if ((receiptType === "review-plan" || receiptType === "review-exec") && Number(receipt.schema_version) >= 3) {
+    const evidenceReasons = verifyReviewerEvidence({ root: join(SCRIPT_DIR, ".."), reviewKind: receiptType === "review-plan" ? "plan" : "exec", body: receipt });
+    if (evidenceReasons.length) return { valid: false, reasons: evidenceReasons };
   }
   return { valid: true, reasons: [] };
 }

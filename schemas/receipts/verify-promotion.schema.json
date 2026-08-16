@@ -20,6 +20,7 @@
     "p3_budget_seconds": { "type": "number" },
     "p3_budget_consumed_seconds": { "type": "number" },
     "p3_outcome": { "type": "string", "enum": ["pass", "fail", "timeout", "skipped"] },
+    "story_receipt_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
     "verdict": { "type": "string", "enum": ["pass", "fail"] },
     "timestamp": { "type": "string", "format": "date-time" }
   }

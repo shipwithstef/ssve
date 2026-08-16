@@ -300,10 +300,47 @@ Quality ratings:
 
 ### Step 3a: Push the branch
 
-Still in the worktree:
+Before any detached local commit or remote promotion, mint and consume the
+single-use capability at the mutation boundary. The command after `--` is part
+of the capability tuple: mint and exec MUST receive byte-identical argv. Local
+land accepts only `git commit -m <message>`; remote promotion accepts only
+`git push origin <exact-head-sha>:refs/heads/<exact-branch>` or `node scripts/merge-pr-with-review-receipt.mjs --pr <pr-number> --squash --delete-branch --expected-repo <owner/repo> --expected-head <branch> --expected-head-sha <sha>`. Flags that widen the staged tree, bypass hooks, rewrite
+history, or change the destination are rejected before capability consumption.
 
 ```bash
-git push -u origin <branch-name>
+COMMAND=(git commit -m "$COMMIT_MESSAGE")
+MINT="$(node scripts/svc-owner-recovery.mjs promote-mint \
+  --repo "$REPO" --worktree "$WORKTREE" --state-root "$WORKTREE/.svc/runtime" \
+  --wi "$WI" --generation "$GENERATION" --task "$LAND_TASK" \
+  --environment local --operation local-land -- "${COMMAND[@]}")"
+CAPABILITY="$(node -e 'const x=JSON.parse(process.argv[1]);process.stdout.write(x.capability.capability_id)' "$MINT")"
+TOKEN="$(node -e 'const x=JSON.parse(process.argv[1]);process.stdout.write(x.token)' "$MINT")"
+node scripts/svc-owner-recovery.mjs promote-exec \
+  --repo "$REPO" --worktree "$WORKTREE" --state-root "$WORKTREE/.svc/runtime" \
+  --wi "$WI" --generation "$GENERATION" --task "$LAND_TASK" \
+  --environment local --operation local-land --capability "$CAPABILITY" --token "$TOKEN" \
+  -- "${COMMAND[@]}"
+```
+
+The same boundary is mandatory for the exact remote command. Do not run raw
+`git push` or `gh pr merge` after a capability has been minted for another argv.
+
+Still in the worktree, mint and consume a fresh capability for the exact push
+(the local-commit capability is already consumed and cannot authorize this):
+
+```bash
+COMMAND=(git push origin "$HEAD_SHA:refs/heads/$BRANCH")
+MINT="$(node scripts/svc-owner-recovery.mjs promote-mint \
+  --repo "$REPO" --worktree "$WORKTREE" --state-root "$WORKTREE/.svc/runtime" \
+  --wi "$WI" --generation "$GENERATION" --task "$LAND_TASK" \
+  --environment remote --operation remote-promotion -- "${COMMAND[@]}")"
+CAPABILITY="$(node -e 'const x=JSON.parse(process.argv[1]);process.stdout.write(x.capability.capability_id)' "$MINT")"
+TOKEN="$(node -e 'const x=JSON.parse(process.argv[1]);process.stdout.write(x.token)' "$MINT")"
+node scripts/svc-owner-recovery.mjs promote-exec \
+  --repo "$REPO" --worktree "$WORKTREE" --state-root "$WORKTREE/.svc/runtime" \
+  --wi "$WI" --generation "$GENERATION" --task "$LAND_TASK" \
+  --environment remote --operation remote-promotion --capability "$CAPABILITY" --token "$TOKEN" \
+  -- "${COMMAND[@]}"
 ```
 
 ### Step 3b: Switch to main and open PR
@@ -353,8 +390,19 @@ PR title convention:
 Merge immediately:
 
 ```bash
-# Ensure CWD is repo root, not inside the worktree (Step 3b handles this)
-node scripts/merge-pr-with-review-receipt.mjs --pr <pr-number> --squash --delete-branch
+# Mint after the push so the capability binds the current exact HEAD and tree.
+COMMAND=(node scripts/merge-pr-with-review-receipt.mjs --pr "$PR_NUMBER" --squash --delete-branch --expected-repo "$REMOTE_REPO" --expected-head "$BRANCH" --expected-head-sha "$HEAD_SHA")
+MINT="$(node scripts/svc-owner-recovery.mjs promote-mint \
+  --repo "$REPO" --worktree "$WORKTREE" --state-root "$WORKTREE/.svc/runtime" \
+  --wi "$WI" --generation "$GENERATION" --task "$LAND_TASK" \
+  --environment remote --operation remote-promotion -- "${COMMAND[@]}")"
+CAPABILITY="$(node -e 'const x=JSON.parse(process.argv[1]);process.stdout.write(x.capability.capability_id)' "$MINT")"
+TOKEN="$(node -e 'const x=JSON.parse(process.argv[1]);process.stdout.write(x.token)' "$MINT")"
+node scripts/svc-owner-recovery.mjs promote-exec \
+  --repo "$REPO" --worktree "$WORKTREE" --state-root "$WORKTREE/.svc/runtime" \
+  --wi "$WI" --generation "$GENERATION" --task "$LAND_TASK" \
+  --environment remote --operation remote-promotion --capability "$CAPABILITY" --token "$TOKEN" \
+  -- "${COMMAND[@]}"
 ```
 
 Then continue to Step 5.
@@ -367,6 +415,8 @@ promotion memory here: a merge is necessary but insufficient. `verify-promotion`
 must first issue a passing G7 receipt for that exact squash SHA. This prevents
 abandoned branch commits and merely merged-but-unverified changes from entering
 later-session memory.
+
+Before framework learning credit at land, run `node scripts/learning-lifecycle.mjs triage --root "$(git rev-parse --show-toplevel)" --limit 50`. Require a prior `used` event with outcome evidence plus a passing `evaluate-rule` receipt for elevation. Federated sources must be explicitly allowlisted and pass root ownership/symlink validation.
 
 **If the merge is denied by the auto-mode classifier (`[Self-Approval]`)** — this is the
 two-party-review boundary, working as designed. Follow the **blocked-on-user protocol** in

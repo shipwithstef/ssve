@@ -13,6 +13,13 @@ TARGET_COMMIT="$(printf '%s\n' 'receipt pinning fixture' | env \
   GIT_COMMITTER_NAME='SVC Fixture' GIT_COMMITTER_EMAIL='fixture@example.invalid' \
   git commit-tree "$(git rev-parse 'HEAD^{tree}')" -p HEAD)"
 
+INJECTION_PROBE="$(mktemp -u /tmp/svc-emit-receipt-injection.XXXXXX)"
+if printf '%s\n' '{"receipt_type":"quick-fix","schema_version":1,"tree_hash":"x","eligible":true,"reasons":["fixture"],"files":[]}' | \
+  node scripts/emit-receipt.mjs --type quick-fix --wi WI-349 --sha "HEAD;touch $INJECTION_PROBE" --no-note >/dev/null 2>&1; then
+  echo "FAIL: malicious --sha unexpectedly accepted" >&2; exit 1
+fi
+test ! -e "$INJECTION_PROBE"
+
 SHORT_TARGET="${TARGET_COMMIT:0:7}"
 MIRROR_FILE=".svc/receipts/${SHORT_TARGET}/quick-fix.json"
 

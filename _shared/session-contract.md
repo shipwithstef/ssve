@@ -18,6 +18,8 @@ Optional policy field:
 | Field | Values | Meaning |
 |---|---|---|
 | `execution_mode` | `normal` or `end_to_end` | `end_to_end` means the user has pre-authorized natural continuation until the scoped work is completed, blocked, or explicitly redirected. |
-| `authorization_envelope` | free-form string, e.g. `staging: auto · prod: auto · live-payment: ask · landing-edit: ask · secrets: ask` | Declares per-domain default authorization once per session (§4c), so the run doesn't hand-write the same envelope in prose every turn. **Operative clause:** the executor stops only OUTSIDE the declared envelope — a domain marked `auto` proceeds without asking again. **Declarative only** — hook enforcement is deferred (follow-up WI); existing hard blockers (destructive ops, paid spend, cross-lane scope) still apply regardless of the envelope. |
+| `authorization_envelope` | `{rules:[{id,action,environment,purpose,decision}]}`; legacy strings remain compatible | Exact typed rules are enforced for known outward adapters by `scripts/svc-authorized-action.mjs`; outside or incomplete tuples deny before process launch. An absent or legacy string field preserves current behavior. Existing controller, destructive, paid-spend, and scope blockers still apply. |
+
+At Stop, run `node scripts/svc-authorized-action.mjs record-stop --root <repo>` to append declared/used/unused envelope telemetry. This is observation only and never widens authority.
 
 Under `execution_mode: "end_to_end"`, natural continuations do not require confirmation. Verification-discovered gaps in the same problem domain should be filed and started automatically. Pause only for hard blockers, destructive blast radius, paid-spend thresholds, cross-lane scope expansion, or explicit user interjection.

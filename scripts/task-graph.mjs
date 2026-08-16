@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 
 import fs from "node:fs";
+import crypto from "node:crypto";
 import path from "node:path";
 import { readJsonAtomic, writeJsonAtomic, updateJsonAtomic, NO_WRITE } from "./state-io.mjs";
+import { loadStageRegistry } from "./lib/stage-registry.mjs";
 
 // WI-498: inlined here because task-graph.mjs is a standalone CLI that runs from
 // REDUCED/copied source sets (onboarded repos vendor scripts/ but NOT hooks/lib/),
@@ -45,6 +47,16 @@ const PERSONA_COVERAGE_STATUSES = new Set(["satisfied", "not_required"]);
 // and test-framework/evals/tier-1/validate-session-contract-freshness.sh.
 const SESSION_CONTRACT_MAX_AGE_MS = 4 * 60 * 60 * 1000;
 const TASK_GRAPH_CONTRACT_BOUND_TO = new Set(["wi-backlog", "user-request", "framework-evolution"]);
+const NON_SKIPPABLE_SKILLS = new Set(["plan-changeset", "review-plan", "execute-changeset", "review-gate", "review-exec", "audit-implementation", "land-changeset", "verify-promotion"]);
+
+function evidenceDigest(file) { return crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex"); }
+function assertRequiredProcesses(task) {
+  for (const step of task?.metadata?.required_process_steps || []) {
+    const receipt = (task.process_receipts || []).find((row) => row?.skill === step.skill && String(row?.mode || "") === String(step.mode || ""));
+    if (!receipt?.evidence?.path || !/^[0-9a-f]{64}$/.test(String(receipt.evidence.sha256 || ""))) throw new Error(`task ${task.id} requires a digest-bound ${step.skill}${step.mode ? `/${step.mode}` : ""} process receipt before completion`);
+    const file = path.resolve(receipt.evidence.path); if (!fs.existsSync(file) || evidenceDigest(file) !== receipt.evidence.sha256) throw new Error(`task ${task.id} process evidence is missing or stale for ${step.skill}`);
+  }
+}
 
 function die(message) {
   console.error(message);
@@ -459,7 +471,7 @@ function nextTask(graph, tasksById) {
 const [command, fileArg, ...rest] = process.argv.slice(2);
 if (!command || !fileArg) {
   die(
-  "Usage: node scripts/task-graph.mjs <init|generate|validate|next|summary|graph-status|set-status|load-skill|activate-skill|record-phase|backfill-receipts> <path> [...]"
+  "Usage: node scripts/task-graph.mjs <init|generate|validate|next|summary|graph-status|set-status|load-skill|activate-skill|record-process|record-phase|backfill-receipts> <path> [...]"
   );
 }
 
@@ -566,43 +578,11 @@ if (command === "generate") {
 
   const registryPath = path.resolve("references/stage-registry.json");
   let registry;
-  try {
-    registry = JSON.parse(fs.readFileSync(registryPath, "utf8"));
-  } catch (error) {
-    die(`stage registry not found or invalid: ${registryPath} — ${error.message}`);
-  }
-  // FIX S2 (review round): this is the THIRD independent registry loader
-  // (scripts/audit-story-receipts.mjs and scripts/stage-activation.mjs both
-  // already validate `class`) and was the only one that checked stage KEYS
-  // but not `class` — a "class":"Essential" (wrong case) registry silently
-  // produced zero essential stages here, defeating the FIX-1 essential fence
-  // one file over. Duplicated rather than extracted into a shared helper: a
-  // shared module would touch the two already-fixed/reviewed files too, past
-  // this fix's scope; if that consolidation is wanted later it is a separate,
-  // reviewed change, not folded in here.
-  if (!Array.isArray(registry.stages) || registry.stages.length === 0) {
-    die(`stage registry has no "stages" array: ${registryPath}`);
-  }
-  for (const s of registry.stages) {
-    if (!s || typeof s.key !== "string" || !s.key) {
-      die(`stage registry has an entry with no "key": ${registryPath}`);
-    }
-    if (!["essential", "conditional", "situational"].includes(s.class)) {
-      die(`stage registry entry "${s.key}" has class "${s.class}" — must be essential|conditional|situational: ${registryPath}`);
-    }
-  }
-  if (!registry.stages.some((s) => s.class === "essential")) {
-    die(`stage registry has zero essential-class stages: ${registryPath}`);
-  }
+  try { registry = loadStageRegistry(registryPath); }
+  catch (error) { die(error.message); }
   const profile = registry.story_type_profiles?.[storyType];
   if (!Array.isArray(profile)) {
     die(`unknown --story-type "${storyType}" — one of: ${Object.keys(registry.story_type_profiles || {}).join(", ")}`);
-  }
-  const registryKeys = new Set((registry.stages || []).map((s) => s.key));
-  for (const key of profile) {
-    if (!registryKeys.has(key)) {
-      die(`stage registry profile "${storyType}" references unknown stage key "${key}": ${registryPath}`);
-    }
   }
   const profileSet = new Set(profile);
   // Registry array order IS the canonical stage order (references/stage-registry.json
@@ -813,51 +793,73 @@ if (command === "set-status") {
   if (status !== COMPLETED_STATUS && flags["completed-at"]) {
     die("--completed-at is only valid when status is completed");
   }
-  const task = graph.tasks.find((item) => item.id === taskId);
-  if (!task) {
-    die(`task ${taskId} not found`);
-  }
-  const previousStatus = task.status;
-  task.status = status;
-  if (flags["blocked-by-json"]) {
-    try {
-      task.blocked_by = JSON.parse(flags["blocked-by-json"]);
-    } catch (error) {
-      die(`invalid --blocked-by-json: ${error.message}`);
-    }
-  }
-  if (status === COMPLETED_STATUS) {
-    const expectedSkill = expectedTaskSkill(task);
-    const hasMatchingReceipt = task.skill_receipt?.skill === expectedSkill;
-    if (expectedSkill && !flags["skip-reason"] && !hasMatchingReceipt) {
-      die(
-        `${filePath}: task ${taskId} cannot be completed without a matching load-skill receipt for ${expectedSkill}`
-      );
-    }
-    if (flags["completed-at"]) {
-      task.completed_at = flags["completed-at"];
-    } else if (previousStatus !== COMPLETED_STATUS || !task.completed_at) {
-      task.completed_at = new Date().toISOString();
-    }
-
-    if (flags["skip-reason"]) {
-      task.skip_reason = flags["skip-reason"];
-    } else if (previousStatus !== COMPLETED_STATUS) {
-      delete task.skip_reason;
-    }
-  } else {
-    delete task.completed_at;
-    delete task.skip_reason;
-  }
-  syncGraphStatus(graph);
+  if (flags["blocked-by-json"]) die("set-status cannot rewrite task dependencies; regenerate the validated graph instead");
   try {
-    validateGraph(graph);
+    updateJsonAtomic(filePath, (current) => {
+      validateGraph(current);
+      const task = current.tasks.find((item) => item.id === taskId);
+      if (!task) throw new Error(`task ${taskId} not found`);
+      const previousStatus = task.status;
+      const taskSkill = expectedTaskSkill(task);
+      if (status === "skipped" && NON_SKIPPABLE_SKILLS.has(taskSkill)) throw new Error(`mandatory task ${taskId} (${taskSkill}) cannot be skipped`);
+      const byKey = new Map(current.tasks.map((item) => [recoverableId(item.id), item]));
+      const blockersComplete = (task.blocked_by || []).every((id) => byKey.get(recoverableId(id))?.status === "completed");
+      if (["in_progress", "completed"].includes(status) && !blockersComplete) throw new Error(`task ${taskId} cannot ${status === "completed" ? "complete" : "start"} before all blockers are completed`);
+      if (status === "in_progress") {
+        const active = current.tasks.find((item) => item.status === "in_progress" && item.id !== task.id);
+        const runnable = active ? null : firstRunnablePendingTask(current);
+        if (active || (previousStatus === "pending" && recoverableId(runnable?.id) !== recoverableId(task.id))) throw new Error(`task ${taskId} is not the single first runnable task`);
+      }
+      if (status === COMPLETED_STATUS && !["pending", "in_progress", "completed"].includes(previousStatus)) throw new Error(`illegal task transition ${previousStatus} -> completed`);
+      if (status === COMPLETED_STATUS && previousStatus === "pending") {
+        const active = current.tasks.find((item) => item.status === "in_progress"); const runnable = active ? null : firstRunnablePendingTask(current);
+        if (active || recoverableId(runnable?.id) !== recoverableId(task.id)) throw new Error(`task ${taskId} is not the single first runnable task`);
+      }
+      task.status = status;
+      if (status === COMPLETED_STATUS) {
+        const expectedSkill = expectedTaskSkill(task);
+        const hasMatchingReceipt = task.skill_receipt?.skill === expectedSkill;
+        if (flags["skip-reason"] && (NON_SKIPPABLE_SKILLS.has(expectedSkill) || task.metadata?.skip_eligible !== true || !task.metadata?.skip_condition_id)) throw new Error(`task ${taskId} cannot use an unregistered skip reason`);
+        if (expectedSkill && !hasMatchingReceipt) {
+          throw new Error(`task ${taskId} cannot be completed without a matching load-skill receipt for ${expectedSkill}`);
+        }
+        assertRequiredProcesses(task);
+        task.completed_at = flags["completed-at"] ??
+          (previousStatus !== COMPLETED_STATUS || !task.completed_at ? new Date().toISOString() : task.completed_at);
+        if (flags["skip-reason"]) task.skip_reason = flags["skip-reason"];
+        else if (previousStatus !== COMPLETED_STATUS) delete task.skip_reason;
+      } else {
+        delete task.completed_at;
+        delete task.skip_reason;
+      }
+      syncGraphStatus(current);
+      validateGraph(current);
+      return current;
+    });
   } catch (error) {
     die(`${filePath}: ${error.message}`);
   }
-  writeGraph(filePath, graph);
   console.log(`updated task ${taskId} in ${filePath}`);
   process.exit(0);
+}
+
+if (command === "record-process") {
+  const [taskIdArg, processSkill, ...flagArgs] = rest; const taskId = Number(taskIdArg); const flags = parseFlags(flagArgs);
+  if (!Number.isFinite(taskId) || !processSkill || !flags.evidence) die("record-process requires <task-id> <skill> --evidence <type>:<path> [--mode MODE]");
+  const sep = flags.evidence.indexOf(":"); if (sep <= 0) die("--evidence must be formatted as <type>:<path>");
+  const evidenceType = flags.evidence.slice(0, sep); const evidencePath = path.resolve(flags.evidence.slice(sep + 1));
+  if (!fs.existsSync(evidencePath) || !fs.lstatSync(evidencePath).isFile()) die("record-process evidence must be an existing regular file");
+  try {
+    updateJsonAtomic(filePath, (current) => {
+      validateGraph(current); const task = current.tasks.find((item) => item.id === taskId); if (!task) throw new Error(`task ${taskId} not found`);
+      const required = (task.metadata?.required_process_steps || []).find((step) => step?.skill === processSkill && String(step?.mode || "") === String(flags.mode || ""));
+      if (!required) throw new Error(`${processSkill}${flags.mode ? `/${flags.mode}` : ""} is not a required process for task ${taskId}`);
+      task.process_receipts = (task.process_receipts || []).filter((row) => !(row.skill === processSkill && String(row.mode || "") === String(flags.mode || "")));
+      task.process_receipts.push({ skill: processSkill, ...(flags.mode ? { mode: flags.mode } : {}), recorded_at: new Date().toISOString(), evidence: { type: evidenceType, path: relativizeUnderCwd(evidencePath), sha256: evidenceDigest(evidencePath) } });
+      syncGraphStatus(current); validateGraph(current); return current;
+    });
+  } catch (error) { die(`${filePath}: ${error.message}`); }
+  console.log(`recorded ${processSkill} process receipt for task ${taskId} in ${filePath}`); process.exit(0);
 }
 
 if (command === "load-skill") {
@@ -870,26 +872,27 @@ if (command === "load-skill") {
     die(`invalid task id: ${taskIdArg}`);
   }
   const flags = parseFlags(flagArgs);
-  const task = graph.tasks.find((item) => item.id === taskId);
-  if (!task) {
-    die(`task ${taskId} not found`);
-  }
-  const expectedSkill = expectedTaskSkill(task);
-  if (expectedSkill && skillName !== expectedSkill) {
-    die(`task ${taskId} expects skill ${expectedSkill}, received ${skillName}`);
-  }
-  task.skill_receipt = {
-    skill: skillName,
-    loaded_at: flags["loaded-at"] ?? new Date().toISOString(),
-    loaded_via: flags.via ?? "manual",
-  };
-  syncGraphStatus(graph);
   try {
-    validateGraph(graph);
+    updateJsonAtomic(filePath, (current) => {
+      validateGraph(current);
+      const task = current.tasks.find((item) => item.id === taskId);
+      if (!task) throw new Error(`task ${taskId} not found`);
+      const expectedSkill = expectedTaskSkill(task);
+      if (expectedSkill && skillName !== expectedSkill) {
+        throw new Error(`task ${taskId} expects skill ${expectedSkill}, received ${skillName}`);
+      }
+      task.skill_receipt = {
+        skill: skillName,
+        loaded_at: flags["loaded-at"] ?? new Date().toISOString(),
+        loaded_via: flags.via ?? "manual",
+      };
+      syncGraphStatus(current);
+      validateGraph(current);
+      return current;
+    });
   } catch (error) {
     die(`${filePath}: ${error.message}`);
   }
-  writeGraph(filePath, graph);
   console.log(`recorded skill receipt for task ${taskId} in ${filePath}`);
   process.exit(0);
 }
@@ -998,33 +1001,27 @@ if (command === "record-phase") {
   if (!["file", "command_output", "screenshot", "live_dom"].includes(evidenceType)) {
     die(`invalid evidence type: ${evidenceType}`);
   }
-  const task = graph.tasks.find((item) => item.id === taskId);
-  if (!task) {
-    die(`task ${taskId} not found`);
-  }
-  if (!task.skill_receipt || typeof task.skill_receipt !== "object") {
-    die(`task ${taskId} must have a skill_receipt before recording phases`);
-  }
-  if (!Array.isArray(task.skill_receipt.phases_executed)) {
-    task.skill_receipt.phases_executed = [];
-  }
-  task.skill_receipt.phases_executed.push({
-    id: phaseId,
-    ts: flags.ts ?? new Date().toISOString(),
-    evidence_artifacts: [
-      {
-        type: evidenceType,
-        path: relativizeUnderCwd(evidencePath),
-      },
-    ],
-  });
-  syncGraphStatus(graph);
   try {
-    validateGraph(graph);
+    updateJsonAtomic(filePath, (current) => {
+      validateGraph(current);
+      const task = current.tasks.find((item) => item.id === taskId);
+      if (!task) throw new Error(`task ${taskId} not found`);
+      if (!task.skill_receipt || typeof task.skill_receipt !== "object") {
+        throw new Error(`task ${taskId} must have a skill_receipt before recording phases`);
+      }
+      if (!Array.isArray(task.skill_receipt.phases_executed)) task.skill_receipt.phases_executed = [];
+      task.skill_receipt.phases_executed.push({
+        id: phaseId,
+        ts: flags.ts ?? new Date().toISOString(),
+        evidence_artifacts: [{ type: evidenceType, path: relativizeUnderCwd(evidencePath) }],
+      });
+      syncGraphStatus(current);
+      validateGraph(current);
+      return current;
+    });
   } catch (error) {
     die(`${filePath}: ${error.message}`);
   }
-  writeGraph(filePath, graph);
   console.log(`recorded phase ${phaseId} for task ${taskId} in ${filePath}`);
   process.exit(0);
 }

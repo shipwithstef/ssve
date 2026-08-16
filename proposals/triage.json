@@ -322,6 +322,16 @@
       "archived_to": "proposals/done/",
       "reason": "Closed by WI-472, status VERIFIED-L3 in docs/specs/work-items/INDEX.md. Nothing actionable remained.",
       "closed_by": "WI-512 landing hygiene"
+    },
+    "2026-08-15-evolution-hoursHub-transition.md": {
+      "accepted_wi": "WI-541",
+      "residual_map": "docs/specs/work-items/WI-541-residual-map.json",
+      "reason": "The content-deduplicated transition program is the authoritative WI-541 scope ledger."
+    },
+    "2026-08-15-framework-improvement-mandatory-chain-graph-parity.md": {
+      "accepted_wi": "WI-541",
+      "residual_map": "docs/specs/work-items/WI-541-residual-map.json",
+      "reason": "The false-green graph defect is implemented as WI-541 T02."
     }
   }
 }

@@ -83,7 +83,6 @@ dieting safe.
 - `blend-external`
 - `blend-private`
 - `create-skill`
-- `quick-fix`
 - `plan-capabilities`
 - `platform-operating-architect`
 - `teach-project`

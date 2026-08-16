@@ -22,8 +22,10 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { WI_ID_RE } from "../hooks/lib/wi-id.mjs";
 import { resolveExternalReviewer } from './review-topology-v2.mjs';
+import { candidateTreeIdentity, issueExternalReviewProvenance } from './lib/external-review-provenance.mjs';
 
 const LAUNCHER_VERSION = '2.4.0';
+export const EXTERNAL_REVIEW_LAUNCHER_VERSION = LAUNCHER_VERSION;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FINDINGS_SCHEMA = path.join(ROOT, 'schemas/external-review-findings.schema.json');
 const RECEIPT_SCHEMA = path.join(ROOT, 'schemas/external-review-receipt.schema.json');
@@ -351,7 +353,7 @@ function validateFindings(findings, tuple, reviewKind, schema) {
   return errors;
 }
 
-function validateReceiptSemantics(receipt) {
+export function validateExternalReviewReceiptSemantics(receipt) {
   const errors = [];
   if (receipt.protocol?.process_invocations !== receipt.attempts?.length) errors.push('$.protocol.process_invocations: must equal attempts length');
   if (receipt.status === 'failure' && receipt.route?.kind !== 'hard_failure') errors.push('$.route.kind: failures must be hard_failure');
@@ -936,7 +938,7 @@ async function cacheHit(entryDir, cacheKey, tuple, reviewKind, candidateDigest, 
     const finishedAt = Date.parse(receipt.finished_at || '');
     if (!Number.isFinite(finishedAt) || finishedAt > Date.now() + 60_000 || Date.now() - finishedAt > ttlDays * 86_400_000) return null;
     const findingsBytes = await readFile(path.join(entryDir, 'findings.json'));
-    if (receipt.launcher_version !== LAUNCHER_VERSION || receipt.fixture_mode !== fixture || receipt.review_kind !== reviewKind || receipt.candidate_digest !== candidateDigest || receipt.cache_key !== cacheKey || receipt.package_sha256 !== packageHash || receipt.findings_schema_sha256 !== findingsSchemaHash || receipt.findings_sha256 !== sha256(findingsBytes) || validateSchema(receipt, receiptSchema).length || validateReceiptSemantics(receipt).length || validateFindings(findings, tuple, reviewKind, findingsSchema).length) return null;
+    if (receipt.launcher_version !== LAUNCHER_VERSION || receipt.fixture_mode !== fixture || receipt.review_kind !== reviewKind || receipt.candidate_digest !== candidateDigest || receipt.cache_key !== cacheKey || receipt.package_sha256 !== packageHash || receipt.findings_schema_sha256 !== findingsSchemaHash || receipt.findings_sha256 !== sha256(findingsBytes) || validateSchema(receipt, receiptSchema).length || validateExternalReviewReceiptSemantics(receipt).length || validateFindings(findings, tuple, reviewKind, findingsSchema).length) return null;
     if (receipt.status !== 'success' || receipt.classification !== 'success' || receipt.fallback.used || !receipt.cache.reusable || receipt.cache.disposition !== 'published' || receipt.cache.entry !== entryDir) return null;
     if (!tupleEqual(receipt.requested_tuple, tuple) || !tupleEqual(receipt.invocation_tuple, tuple) || !tupleEqual(receipt.effective_tuple, tuple)) return null;
     if (receipt.attempts.length !== 1 || receipt.attempts[0].index !== 1 || receipt.attempts[0].classification !== 'success' || !tupleEqual(receipt.attempts[0].tuple, tuple)) return null;
@@ -1081,8 +1083,10 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
         }
       } else if (tuple.host === 'agy') {
         const outer = JSON.parse(result.stdout.toString('utf8'));
-        const transportReceipt = JSON.parse(await readFile(path.join(artifactsDir, `${prefix}-agy-transport`, 'receipt.json'), 'utf8'));
-        usage = { ...(outer.stats && typeof outer.stats === 'object' ? outer.stats : {}), agy_transport_receipt: path.join(artifactsDir, `${prefix}-agy-transport`, 'receipt.json') };
+        const transportReceiptPath = path.join(artifactsDir, `${prefix}-agy-transport`, 'receipt.json');
+        const transportReceiptBytes = await readFile(transportReceiptPath);
+        const transportReceipt = JSON.parse(transportReceiptBytes.toString('utf8'));
+        usage = { ...(outer.stats && typeof outer.stats === 'object' ? outer.stats : {}), agy_transport_receipt: transportReceiptPath, agy_transport_receipt_sha256: sha256(transportReceiptBytes) };
         if (transportReceipt.status !== 'success') {
           classification = ['authentication', 'quota', 'network', 'timeout', 'model_unavailable'].includes(transportReceipt.classification)
             ? ({ quota: 'shared_quota' }[transportReceipt.classification] || transportReceipt.classification)
@@ -1140,6 +1144,7 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
     finished_at: new Date().toISOString(),
     exit_code: result.code,
     classification,
+    command: { binary, argv: args },
     artifacts: { events: eventsFile, stderr: stderrFile, findings: findings ? finalFile : null },
     usage,
   };
@@ -1234,6 +1239,7 @@ async function main() {
   await mkdir(artifactsDir, { recursive: true, mode: 0o700 });
   const findingsPath = path.join(artifactsDir, 'findings.json');
   const receiptPath = path.join(artifactsDir, 'receipt.json');
+  const packagePath = path.join(artifactsDir, 'review-package.bin');
   const startedAt = new Date().toISOString();
   const requestId = randomUUID();
   const schemaBytes = await readFile(FINDINGS_SCHEMA);
@@ -1248,6 +1254,7 @@ async function main() {
     catch (error) { packageError = error; }
   }
   const packageBytes = packageBundle.bytes;
+  if (!options.validateCapabilities) await writeFile(packagePath, packageBytes, { mode: 0o600 });
   let resolvedPolicy = null;
   let policyError = null;
   if (options.orchestrator === 'claude' || options.orchestrator === 'codex') {
@@ -1312,6 +1319,10 @@ async function main() {
     invocation_tuple: invocationTuple,
     effective_tuple: overrides.effectiveTuple ?? null,
     attempts,
+    reviewer_run: {
+      commands: attempts.map((attempt) => attempt.command),
+      output_artifacts: attempts.flatMap((attempt) => Object.values(attempt.artifacts || {}).filter(Boolean)),
+    },
     fallback: overrides.fallback || { eligible: false, used: false, reason: null },
     override,
     policy: resolvedPolicy?.metadata || { version: policy?.version || null, profile: null, source: null, resolved_at: now?.toISOString() || null, effective_window: null, cutover_utc: policy?.cutover_utc || null, cutover_local: policy?.cutover_local || null, timezone: policy?.timezone || null, selection_sha256: null, selection_expires_at: null, selection_authority: null },
@@ -1322,14 +1333,15 @@ async function main() {
     phase_guard: phaseGuardState,
     package_context: packageBundle.context,
     cache: overrides.cache || { disposition: 'skipped', reusable: false, entry: null },
-    artifacts: { findings: overrides.hasFindings ? findingsPath : null, receipt: receiptPath, capabilities: capabilityArtifact, ...(overrides.artifacts || {}) },
+    artifacts: { findings: overrides.hasFindings ? findingsPath : null, receipt: receiptPath, package: options.validateCapabilities ? null : packagePath, capabilities: capabilityArtifact, ...(overrides.artifacts || {}) },
     usage: overrides.usage || {},
     });
   };
   const writeReceipt = async (receipt) => {
-    const errors = [...validateSchema(receipt, receiptSchema), ...validateReceiptSemantics(receipt)];
+    const errors = [...validateSchema(receipt, receiptSchema), ...validateExternalReviewReceiptSemantics(receipt)];
     if (errors.length) throw new Error(`internal receipt schema failure: ${errors.join('; ')}`);
     await writeJson(receiptPath, receipt);
+    if (!fixture && receipt.status === 'success' && receipt.artifacts?.findings && receipt.artifacts?.package) issueExternalReviewProvenance({ receiptPath, packagePath: receipt.artifacts.package, findingsPath: receipt.artifacts.findings });
   };
   emergencyReceipt = async (error) => {
     const diagnostic = path.join(artifactsDir, 'internal-error.txt');
@@ -1353,6 +1365,12 @@ async function main() {
   if (options.reviewerStation && !options.validateCapabilities && (!/^[a-f0-9]{64}$/.test(options.candidateDigest ?? '') || !rawPackageBytes.includes(Buffer.from(options.candidateDigest)))) {
     await finishFailure('input_invalid', { detail: 'owner-configured review requires --candidate-digest and the exact digest in the review package' });
     return;
+  }
+  if (options.reviewerStation && !options.validateCapabilities && options.reviewKind === 'exec') {
+    try {
+      const identity=candidateTreeIdentity(contextRoot);
+      if (identity.candidate_digest!==options.candidateDigest) { await finishFailure('input_invalid',{detail:`candidate digest must bind current git tree ${identity.tree_hash}`}); return; }
+    } catch(error) { await finishFailure('input_invalid',{detail:`cannot bind review candidate to git tree: ${error.message}`}); return; }
   }
   if (packageError) {
     await finishFailure(packageError.classification || 'input_invalid', { detail: packageError.message });
@@ -1638,9 +1656,11 @@ async function main() {
   }
 }
 
-main().catch(async (error) => {
-  let receipt = null;
-  try { receipt = emergencyReceipt ? await emergencyReceipt(error) : null; } catch {}
-  process.stderr.write(`external-review: internal failure: ${redactDiagnostic(error.message)}${receipt ? `; receipt=${receipt}` : ''}\n`);
-  process.exitCode = 1;
-});
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch(async (error) => {
+    let receipt = null;
+    try { receipt = emergencyReceipt ? await emergencyReceipt(error) : null; } catch {}
+    process.stderr.write(`external-review: internal failure: ${redactDiagnostic(error.message)}${receipt ? `; receipt=${receipt}` : ''}\n`);
+    process.exitCode = 1;
+  });
+}

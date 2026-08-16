@@ -52,7 +52,6 @@ To use a skill, you can use the built-in `activate_skill` tool if available, or 
 | Verify after merge | `verify-promotion` |
 | Fix a bug | `diagnose-bug` → `plan-changeset` → `execute-changeset` |
 | Onboard existing repo | `onboard-repo` |
-| Quick trivial fix (≤3 files) | `quick-fix` |
 
 Full skill list: `~/.agents/skills/skills-manifest.json`
 

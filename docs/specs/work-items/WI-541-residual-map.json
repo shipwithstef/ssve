@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "wi": "WI-541",
+  "sources": [
+    "proposals/done/2026-08-15-evolution-hoursHub-transition.md",
+    "proposals/done/2026-08-15-framework-improvement-mandatory-chain-graph-parity.md"
+  ],
+  "findings": [
+    {
+      "source": "proposals/done/2026-08-15-evolution-hoursHub-transition.md",
+      "id": "content-deduplicated-transition-program",
+      "status": "covered",
+      "owner_wi": "WI-541",
+      "evidence": [
+        "docs/specs/evidence/wi-541-source-ledger.json",
+        "docs/plans/2026-08-15-wi541-full-framework-transition/manifest.md",
+        "docs/specs/audit/wi-541-consumption-audit.md"
+      ]
+    },
+    {
+      "source": "proposals/done/2026-08-15-framework-improvement-mandatory-chain-graph-parity.md",
+      "id": "mandatory-chain-graph-parity",
+      "status": "covered",
+      "owner_wi": "WI-541",
+      "evidence": [
+        "scripts/lib/mandatory-delivery-chain.mjs",
+        "scripts/compile-delivery-graph.mjs",
+        "scripts/validate-task-graph-lane.mjs",
+        "test-framework/evals/tier-1/validate-mandatory-delivery-chain.sh"
+      ]
+    }
+  ]
+}

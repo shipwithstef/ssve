@@ -30,13 +30,13 @@
       {
         "id": "svc-skill-artifact-authenticity",
         "description": "HARD BLOCK (G-4 / WI-114): blocks Edit/Write to canonical skill-output paths (docs/specs/features/, design-tech/, plans/, decisions/, capability-plan.md, etc.) when no recent invocation of the responsible skill exists in .svc/pipeline-decisions.jsonl. Recency window: SVC_SKILL_RECEIPT_WINDOW_MIN (default 90 min). Bypass: SVC_SKILL_ARTIFACT_ALLOW=1.",
-        "matcher": "Edit|Write",
+        "matcher": "Edit|Write|Bash",
         "command": "node hooks/svc-skill-artifact-authenticity.mjs"
       },
       {
         "id": "svc-session-contract-freshness",
-        "description": "HARD BLOCK: blocks Edit/Write when the session contract (.svc/session-contract.jsonl) is >1h old or when contract.skill mismatches SVC_CURRENT_SKILL. Prevents drift and ghost-completions from stale routing context. Origin: audit-session-execution F2 (May 6 2026). Bypass age: SVC_CONTRACT_MAX_AGE_HOURS=<n>. Disable: SVC_DISABLED_HOOKS=svc-session-contract-freshness.",
-        "matcher": "Edit|Write",
+        "description": "HARD BLOCK: blocks direct file tools and concrete Bash mutation targets when the session contract (.svc/session-contract.jsonl) is stale or mismatched. Read-only Bash remains on the fast path.",
+        "matcher": "Edit|Write|Bash",
         "command": "node hooks/svc-session-contract-freshness.mjs"
       },
       {
@@ -102,8 +102,8 @@
         "matcher": "Edit|Write",
         "command": "bash hooks/svc-wi-pillars-check.sh"
       },
-      {
-        "id": "svc-auto-capture-learnings",
+    {
+      "id": "svc-auto-capture-learnings",
         "description": "OBSERVE: detects high-signal learning candidates after edits and appends only to gitignored .svc/auto-learnings.jsonl. Never writes tracked learning files and never blocks.",
         "matcher": "Edit|Write",
         "command": "node hooks/svc-auto-capture-learnings.mjs --trigger post-tool-use",
@@ -204,8 +204,8 @@
         "description": "OBSERVE: captures high-signal learning candidates at session stop into gitignored .svc/auto-learnings.jsonl. Default silent; summary mode is opt-in.",
         "matcher": "*",
         "command": "node hooks/svc-auto-capture-learnings.mjs --trigger stop",
-        "async": true
-      }
+      "async": true
+    }
     ],
     "SubagentStart": [
       {

@@ -153,6 +153,13 @@ else
 fi
 
 # ── Report ────────────────────────────────────────────────────────────────
+PLAN_CONTRACT="$(dirname "$PLAN")/plan-contract.json"
+if [ -f "$PLAN_CONTRACT" ]; then
+  if ! node scripts/validate-plan-contract.mjs "$PLAN_CONTRACT" "$REPO_ROOT"; then
+    report "C10-FAIL: adjacent product-safety plan contract is invalid"
+  fi
+fi
+
 if [ "$FAIL" -eq 0 ]; then
   echo "TIER-1 PASS: all mechanical checks passed for $PLAN"
   exit 0

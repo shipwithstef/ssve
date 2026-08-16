@@ -9,7 +9,9 @@
     "plugins": true,
     "mcp": true,
     "commands": true,
-    "agents": true
+    "agents": true,
+    "child_transport_resolver": "scripts/resolve-child-transport.mjs",
+    "authorized_action_wrapper": "scripts/svc-authorized-action.mjs"
   },
   "runtime_ingress_v2": { "transport": "hook-adapter", "fallback": "cli-adapter", "canonical_journal": true, "projection_only": true },
   "authority_capabilities": {

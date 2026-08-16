@@ -583,6 +583,26 @@ function resumeExisting({ repo, wi, branch, from, owner, env, worktree, markerPa
     throw new Error(`existing worktree binding conflict (bootstrap owned by live session ${existingMarker.session_id})`);
   }
 
+  // WI-541 generation-zero adoption: an already registered, exact-branch
+  // worktree owned by this OS principal may predate claim/binding state. Adopt
+  // ONLY when both authority directories contain no JSON evidence. Existing
+  // graphs, ignored files, and user residue are preserved byte-for-byte.
+  const claimDir = path.join(worktree, ".svc", "claims");
+  const bindingDir = path.join(worktree, ".svc", "bindings");
+  const authorityEntries = [claimDir, bindingDir].flatMap((dir) => {
+    try { return fs.readdirSync(dir).filter((name) => name.endsWith(".json")).map((name) => path.join(dir, name)); }
+    catch (error) { if (error.code === "ENOENT") return []; throw error; }
+  });
+  if (authorityEntries.length === 0) {
+    const adopted = writeSessionBinding({
+      worktree_root: worktree, session_id: owner, role: "mutating", wi, branch,
+      repo_root: repo.root, host: env.SVC_HOST || env.SVC_HARNESS || "unknown", pid: ownerPid(env),
+    });
+    if (!adopted.ok || Number(adopted.binding?.generation || 0) !== 1) {
+      throw new Error(adopted.warning || "generation-zero authority adoption failed");
+    }
+  }
+
   const tuple = inspectV1AuthorityTuple({
     wi, branch, worktree_root: worktree, repo_root: repo.root, claim_path: claimP,
     session_id: owner, env,

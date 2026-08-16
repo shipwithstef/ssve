@@ -17,8 +17,15 @@ on decisions, and the EXEC-resolved model (Sonnet under svc-default per WI-357; 
 
 Example invocation:
 ```bash
-SVC_WORKER_SKILL="execute-changeset" SVC_WORKER_MODEL="claude-sonnet-4-6" bash scripts/dispatch-worker.sh "Execute Task 3. Target ONLY these files: src/app/auth.tsx. Task details: [insert task intent from manifest]"  # model = svc-default EXEC per WI-357; resolve dynamically via resolve-model.sh EXEC
+SVC_WORKER_MUTATION=true SVC_WORKER_WI="$wi" SVC_DELEGATION_ID="$delegation_id" SVC_DELEGATION_STATE_ROOT="$state_root" SVC_DELEGATION_CHILD_PRINCIPAL="$child_principal" SVC_DELEGATION_TOKEN="$one_time_token" SVC_EXECUTION_GRAPH="$execution_graph" SVC_HOST="$host" SVC_DELEGATION_VALIDATION="$validation_command" SVC_DELEGATION_COMPLETION_OUT="$completion_receipt" SVC_WORKER_SKILL="execute-changeset" SVC_WORKER_MODEL="claude-sonnet-4-6" bash scripts/dispatch-worker.sh "Execute Task 3. Target ONLY these files: src/app/auth.tsx. Task details: [insert task intent from manifest]"
 ```
+
+The dispatcher refuses a mutation-bearing launch before selecting a harness or reading provider credentials when any persisted-delegation field is absent. Set `SVC_WORKER_MUTATION=false` only for an explicitly read-only worker. If a complete tuple cannot be issued, run the task in the controller session.
+
+Delegated write grants are directory-scoped (`path/**`). Exact-file CREATE,
+MODIFY, and DELETE tasks stay controller-owned: ordinary editors create sibling
+temporary files and atomically rename them, while granting the parent directory
+would widen authority to unrelated siblings.
 
 ### Task graph execution
 

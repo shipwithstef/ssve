@@ -57,9 +57,13 @@ function isUserOrAdminFacingFeature(graph) {
 function allRequiredTasksClosed(graph) {
   const tasks = graph.tasks || [];
   const bySkill = new Map(tasks.map((task) => [taskSkill(task), task]));
+  const processClosed = (skill) => tasks.some((task) => task.status === "completed" &&
+    (task.metadata?.required_process_steps || []).some((step) => step?.skill === skill) &&
+    (task.process_receipts || []).some((receipt) => receipt?.skill === skill));
   for (const skill of graph.delivery_graph?.required_skills || []) {
     const task = bySkill.get(skill);
     if (task && task.status === "completed") continue;
+    if (processClosed(skill)) continue;
     if (skipsSkill(graph, skill)) continue;
     return false;
   }
@@ -67,6 +71,7 @@ function allRequiredTasksClosed(graph) {
     const skill = entry.skill;
     const task = bySkill.get(skill);
     if (task && task.status === "completed") continue;
+    if (processClosed(skill)) continue;
     if (skipsSkill(graph, skill)) continue;
     return false;
   }

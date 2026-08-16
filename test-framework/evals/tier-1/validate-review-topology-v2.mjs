@@ -47,7 +47,7 @@ const externalReceipt = (mode, station, status, classification) => {
     review_kind: 'exec', candidate_digest: candidate, package_sha256: '1'.repeat(64), findings_schema_sha256: '2'.repeat(64), findings_sha256: findingsBytes ? digest(findingsBytes) : null, cache_key: '3'.repeat(64), fixture_mode: true,
     started_at: '2026-08-10T00:00:00.000Z', finished_at: '2026-08-10T00:00:01.000Z', status, classification,
     requested_tuple: tuple, invocation_tuple: tuple, effective_tuple: success ? tuple : null,
-    attempts: [{ index: 1, tuple, started_at: '2026-08-10T00:00:00.000Z', finished_at: '2026-08-10T00:00:01.000Z', exit_code: success ? 0 : 1, classification, artifacts: { events: file, stderr: file, findings: success ? file : null }, usage: {} }],
+    attempts: [{ index: 1, tuple, started_at: '2026-08-10T00:00:00.000Z', finished_at: '2026-08-10T00:00:01.000Z', exit_code: success ? 0 : 1, classification, command: { binary: station.tuple.host, argv: ['--model', station.tuple.model] }, artifacts: { events: file, stderr: file, findings: success ? file : null }, usage: {} }],
     fallback: { eligible: false, used: false, reason: success ? null : classification },
     override: { used: false, authority: null, source: null, path: null, expected_sha256: null, actual_sha256: null },
     policy: { version: 2, profile: `${mode}:${station.id}`, source: 'owner-config', resolved_at: '2026-08-10T00:00:00.000Z', effective_window: { starts_at: null, ends_at: null }, cutover_utc: null, cutover_local: null, timezone: null, selection_sha256: topology.config_sha256, selection_expires_at: null, selection_authority: 'repository-owner' },
@@ -58,7 +58,8 @@ const externalReceipt = (mode, station, status, classification) => {
     phase_guard: { applicable: false, kind: 'exec', decision: 'not-applicable', reason: null, wi: null, pre_execution_base: null, plan_manifest_sha256: null, exec_record_present: null, exec_record_path: null, implementation_diverged: null, diverged_files: [], base_resolved: null, override: { used: false, authority: null, source: null, path: null, expected_sha256: null, actual_sha256: null, kind: null } },
     package_context: { version: 1, context_root: root, base_package_sha256: '4'.repeat(64), files: [] },
     cache: { disposition: success ? 'published' : 'not_reusable', reusable: success, entry: success ? root : null },
-    artifacts: { findings: success ? findingsFile : null, receipt: file, capabilities: file }, usage: {}
+    artifacts: { findings: success ? findingsFile : null, receipt: file, capabilities: file }, usage: {},
+    reviewer_run: { commands: [{ binary: station.tuple.host, argv: ['--model', station.tuple.model] }], output_artifacts: [file, ...(success ? [findingsFile] : [])] }
   };
   const bytes = Buffer.from(`${JSON.stringify(body)}\n`); fs.writeFileSync(file, bytes, { mode: 0o600 });
   return { file, findingsFile, digest: digest(bytes) };

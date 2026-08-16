@@ -41,9 +41,11 @@ function withGraphLock(graphPath, operation) {
 }
 
 function updateGraph(graphPath, taskId, mutation) {
-  const graph = load(graphPath); const task = graph.tasks?.[taskId];
-  if (!task) throw new Error(`execution task not found: ${taskId}`);
-  mutation(task, graph); save(graphPath, graph); return graph;
+  return withGraphLock(graphPath, () => {
+    const graph = load(graphPath); const task = graph.tasks?.[taskId];
+    if (!task) throw new Error(`execution task not found: ${taskId}`);
+    mutation(task, graph); save(graphPath, graph); return graph;
+  });
 }
 
 export function run(argv = process.argv.slice(2)) {
@@ -75,11 +77,10 @@ export function run(argv = process.argv.slice(2)) {
         git(inner, ["checkout", "-qb", branch, graph.base_sha]);
       }
       catch (error) { updateDelegationStatus({ stateRoot, delegationId: issued.capability.delegation_id, status: "failed", reason: "inner worktree creation failed" }); throw error; }
-      updateGraph(graphPath, taskId, (entry) => {
-        if (entry.state !== "pending") throw new Error("task is not pending");
-        entry.state = "delegated"; entry.delegation_id = issued.capability.delegation_id;
-        entry.inner_worktree = inner; entry.child_principal = issued.capability.child_principal;
-      });
+      if (task.state !== "pending") throw new Error("task is not pending");
+      task.state = "delegated"; task.delegation_id = issued.capability.delegation_id;
+      task.inner_worktree = inner; task.child_principal = issued.capability.child_principal;
+      save(graphPath, graph);
       return { ...issued, branch, inner_worktree: inner, graph_path: graphPath };
     });
     if (flags["--out"]) save(flags["--out"], result);

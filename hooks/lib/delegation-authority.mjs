@@ -84,7 +84,22 @@ export function globRegex(pattern) {
   return new RegExp(`${regex}$`);
 }
 export function matchesAny(target, patterns) { return patterns.some((pattern) => globRegex(pattern).test(normalizeRelative(target))); }
-function capabilityPath(stateRoot, delegationId) { return path.join(path.resolve(stateRoot), "delegations", `${delegationId}.json`); }
+const DELEGATION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+function exactDelegationId(value) { if (!DELEGATION_ID.test(String(value || ""))) throw new Error("delegation id must be a UUID"); return String(value); }
+function capabilityPath(stateRoot, delegationId) {
+  const dir = path.join(path.resolve(stateRoot), "delegations");
+  const file = path.join(dir, `${exactDelegationId(delegationId)}.json`);
+  if (path.dirname(file) !== dir) throw new Error("delegation path escapes authority state");
+  return file;
+}
+function readCapability(stateRoot, delegationId) {
+  const file = capabilityPath(stateRoot, delegationId); const dir = path.dirname(file);
+  const dirStat = fs.lstatSync(dir); if (!dirStat.isDirectory() || dirStat.isSymbolicLink() || fs.realpathSync(dir) !== path.resolve(dir) || (typeof process.getuid === "function" && dirStat.uid !== process.getuid())) throw new Error("delegation directory is insecure or foreign-owned");
+  const stat = fs.lstatSync(file); if (!stat.isFile() || stat.isSymbolicLink() || fs.realpathSync(file) !== file || (stat.mode & 0o077) !== 0 || (typeof process.getuid === "function" && stat.uid !== process.getuid())) throw new Error("delegation capability is insecure or foreign-owned");
+  const capability = JSON.parse(fs.readFileSync(file, "utf8"));
+  if (capability.delegation_id !== exactDelegationId(delegationId)) throw new Error("delegation stored identity mismatch");
+  return capability;
+}
 export function delegationSkillReceiptPath(stateRoot, delegationId) { return path.join(path.resolve(stateRoot), "delegation-receipts", `${delegationId}.json`); }
 
 export function planExecutionGraph({ wi, baseSha, tasks, now = Date.now() }) {
@@ -141,7 +156,16 @@ function canonicalPlannedPath(value) {
   return path.resolve(fs.realpathSync(cursor), ...tail);
 }
 
+const MAX_DELEGATION_TTL_MS = 24 * 60 * 60_000;
+function assertDelegationLifetime(capability, now) {
+  const issued = Date.parse(capability?.issued_at); const expires = Date.parse(capability?.expires_at);
+  if (!Number.isFinite(issued) || !Number.isFinite(expires) || expires <= issued || expires - issued > MAX_DELEGATION_TTL_MS || issued > now + 60_000) throw new Error("delegation lifetime is invalid");
+  if (expires <= now) throw new Error("delegation expired");
+}
+
 export function issueDelegation({ stateRoot, lease, childPrincipal, taskId, skill = "execute-changeset", waveId, innerWorktree, allowedPaths, deniedPaths = [".svc/**", ".git/**"], validationCommands = [], baseSha, ttlMs = 60 * 60_000, maxDepth = 0, parentDelegation = null, now = Date.now() }) {
+  if (!Number.isFinite(now)) throw new Error("delegation issue time is invalid");
+  if (!Number.isFinite(ttlMs) || ttlMs <= 0 || ttlMs > MAX_DELEGATION_TTL_MS) throw new Error("delegation ttl must be finite, positive, and bounded");
   if (!lease || lease.state !== "active" || !lease.lease_id || !Number.isInteger(lease.generation)) throw new Error("an active controller lease is required");
   if (!String(childPrincipal || "")) throw new Error("stable child principal is required");
   const allowed = (allowedPaths || []).map(normalizeRelative); if (!allowed.length) throw new Error("delegation requires allowed paths");
@@ -176,13 +200,13 @@ export function issueDelegation({ stateRoot, lease, childPrincipal, taskId, skil
   return { capability, token };
 }
 
-export function readDelegation({ stateRoot, delegationId }) { return readJson(capabilityPath(stateRoot, delegationId)); }
+export function readDelegation({ stateRoot, delegationId }) { return readCapability(stateRoot, delegationId); }
 
 export function acceptDelegation({ stateRoot, delegationId, childPrincipal, token, now = Date.now() }) {
   return withLock(stateRoot, delegationId, () => {
     const file = capabilityPath(stateRoot, delegationId); const capability = readJson(file);
     if (capability.status !== "issued") throw new Error("delegation already accepted or unavailable");
-    if (Date.parse(capability.expires_at) <= now) { atomicWrite(file, { ...capability, status: "expired" }); throw new Error("delegation token expired"); }
+    try { assertDelegationLifetime(capability, now); } catch (error) { if (error.message === "delegation expired") atomicWrite(file, { ...capability, status: "expired" }); throw error; }
     if (capability.child_principal !== childPrincipal) throw new Error("delegation child principal mismatch");
     if (capability.token_hash !== sha256(Buffer.from(String(token || "")))) throw new Error("invalid delegation token");
     const receipt = {
@@ -201,7 +225,7 @@ export function authorizeDelegatedMutation({ stateRoot, delegationId, childPrinc
   try {
     const capability = readDelegation({ stateRoot, delegationId });
     if (!["accepted", "running"].includes(capability.status)) throw new Error("delegation is not active");
-    if (Date.parse(capability.expires_at) <= now) throw new Error("delegation expired");
+    assertDelegationLifetime(capability, now);
     if (capability.child_principal !== childPrincipal) throw new Error("child principal mismatch");
     if (!lease || lease.state !== "active" || lease.lease_id !== capability.parent_lease_id || lease.generation !== capability.authority_generation) throw new Error("parent authority generation mismatch");
     if (fs.realpathSync(worktreeRoot) !== fs.realpathSync(capability.inner_worktree)) throw new Error("delegated inner worktree mismatch");

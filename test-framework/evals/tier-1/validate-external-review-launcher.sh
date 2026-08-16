@@ -321,7 +321,7 @@ node "$LAUNCHER" --clear-profile-selection --reason "explicit invocation fixture
 
 REVIEWER_CONFIG="$TMP/reviewer-policy-v2.json"
 node -e 'const fs=require("fs");const ext=(id,host,family,model,required=false)=>({id,kind:"external",required,authority:"independent",tuple:{host,family,model,effort:"high"}});const self={id:"self",kind:"inline-self",required:true,authority:"advisory",tuple:{host:"current",family:"openai",model:"current",effort:"high"}};const p={release_authority:false,stations:[self,ext("agy","agy","google","Gemini 3.6 Flash (High)"),ext("opus","claude","anthropic","claude-opus-4-6")]};fs.writeFileSync(process.argv[1],JSON.stringify({schema_version:2,authority:"repository-owner",default_mode:"fast",modes:{fast:{orchestrators:{codex:{plan:p,exec:p}}}}},null,2),{mode:0o600})' "$REVIEWER_CONFIG"
-CANDIDATE_DIGEST="$(printf '%064d' 0)"
+CANDIDATE_DIGEST="$(node --input-type=module -e 'import {candidateTreeIdentity} from "./scripts/lib/external-review-provenance.mjs"; process.stdout.write(candidateTreeIdentity(process.cwd()).candidate_digest)')"
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 printf 'agy-independent candidate_digest=%s' "$CANDIDATE_DIGEST" | SVC_EXTERNAL_REVIEW_NOW=2026-07-19T21:00:00Z node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$CANDIDATE_DIGEST" --reviewer-config "$REVIEWER_CONFIG" --reviewer-mode fast --reviewer-phase plan --reviewer-station agy --artifacts-dir "$TMP/out/agy-independent" > "$TMP/agy-independent.summary"
 AGY_RECEIPT="$(receipt_from_summary "$TMP/agy-independent.summary")"
@@ -633,7 +633,7 @@ expect "cache replay is bound to key and package/schema hashes" test "$(grep -c 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache" "$TMP/runtime-copy"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache" "$TMP/runtime-copy/scripts/lib" "$TMP/runtime-copy/schemas" "$TMP/runtime-copy/references" "$TMP/runtime-copy/skills/review-exec" "$TMP/runtime-copy/skills/review-cross-model" "$TMP/runtime-copy/hooks/lib" "$TMP/runtime-copy/skills/research/scripts"
 cp "$LAUNCHER" "$TMP/runtime-copy/scripts/run-external-review.mjs"
 cp "$ROOT/scripts/review-topology-v2.mjs" "$TMP/runtime-copy/scripts/review-topology-v2.mjs"
-cp "$ROOT/scripts/lib/json-schema-validator.mjs" "$TMP/runtime-copy/scripts/lib/json-schema-validator.mjs"
+cp "$ROOT/scripts/lib/json-schema-validator.mjs" "$ROOT/scripts/lib/external-review-provenance.mjs" "$TMP/runtime-copy/scripts/lib/"
 cp "$ROOT/skills/research/scripts/dispatch-agy.mjs" "$TMP/runtime-copy/skills/research/scripts/dispatch-agy.mjs"
 cp "$ROOT/hooks/lib/wi-id.mjs" "$TMP/runtime-copy/hooks/lib/wi-id.mjs"
 cp "$ROOT/schemas/external-review-findings.schema.json" "$ROOT/schemas/external-review-receipt.schema.json" "$ROOT/schemas/review-station-receipt-v2.schema.json" "$TMP/runtime-copy/schemas/"

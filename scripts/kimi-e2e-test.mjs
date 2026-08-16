@@ -19,6 +19,8 @@ function setupWorkspace(name) {
   fs.mkdirSync(path.join(ws, "src"), { recursive: true });
   fs.mkdirSync(path.join(ws, ".svc"), { recursive: true });
   fs.mkdirSync(path.join(ws, "scripts"), { recursive: true });
+  fs.mkdirSync(path.join(ws, "scripts/lib"), { recursive: true });
+  fs.mkdirSync(path.join(ws, "references"), { recursive: true });
   fs.copyFileSync(
     path.join(FRAMEWORK_ROOT, "scripts/task-graph.mjs"),
     path.join(ws, "scripts/task-graph.mjs")
@@ -26,6 +28,14 @@ function setupWorkspace(name) {
   fs.copyFileSync(
     path.join(FRAMEWORK_ROOT, "scripts/state-io.mjs"),
     path.join(ws, "scripts/state-io.mjs")
+  );
+  fs.copyFileSync(
+    path.join(FRAMEWORK_ROOT, "scripts/lib/stage-registry.mjs"),
+    path.join(ws, "scripts/lib/stage-registry.mjs")
+  );
+  fs.copyFileSync(
+    path.join(FRAMEWORK_ROOT, "references/stage-registry.json"),
+    path.join(ws, "references/stage-registry.json")
   );
   fs.writeFileSync(
     path.join(ws, "src/config.js"),

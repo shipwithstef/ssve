@@ -19,6 +19,9 @@ const root = path.resolve(argValue("--root") || process.cwd());
 const pr = argValue("--pr");
 const dryRun = hasFlag("--dry-run");
 const explicitRepo = argValue("--repo");
+const expectedRepo = argValue("--expected-repo");
+const expectedHead = argValue("--expected-head");
+const expectedHeadSha = argValue("--expected-head-sha");
 
 if (!pr || !/^[0-9]+$/.test(pr)) {
   console.error(
@@ -70,6 +73,20 @@ if (validate.stdout) process.stdout.write(validate.stdout);
 
 const ghArgs = ["pr", "merge", pr];
 const repo = resolveRepo();
+if (expectedRepo || expectedHead || expectedHeadSha) {
+  if (!expectedRepo || !expectedHead || !/^[0-9a-f]{40}$/.test(expectedHeadSha || "") || repo !== expectedRepo) {
+    console.error("[svc-pr-merge-review-receipt] BLOCKED: exact expected repo/head/head-sha binding is required."); process.exit(2);
+  }
+  if (!dryRun) {
+    const prView = spawnSync("gh", ["pr", "view", pr, "--repo", repo, "--json", "headRefName,headRefOid"], { encoding: "utf8" });
+    let prIdentity;
+    try { prIdentity = prView.status === 0 ? JSON.parse(prView.stdout) : null; } catch { prIdentity = null; }
+    if (!prIdentity || prIdentity.headRefName !== expectedHead || prIdentity.headRefOid !== expectedHeadSha) {
+      if (prView.stderr) process.stderr.write(prView.stderr);
+      console.error("[svc-pr-merge-review-receipt] BLOCKED: PR head identity does not match the promotion tuple."); process.exit(2);
+    }
+  }
+}
 ghArgs.push("--repo", repo);
 if (hasFlag("--squash")) ghArgs.push("--squash");
 if (hasFlag("--delete-branch")) ghArgs.push("--delete-branch");

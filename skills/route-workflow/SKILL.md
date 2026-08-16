@@ -119,7 +119,7 @@ Still end with exactly one `**Next:**` trailer per the Output Protocol, but in p
 Before declaring lane routing complete, evaluate which conditional/situational stages the diff actually activates, mechanically (not by judgement):
 
 ```bash
-node scripts/stage-activation.mjs --diff main..HEAD
+node scripts/stage-activation.mjs --diff "$(git merge-base HEAD origin/main)..HEAD"
 ```
 
 Exit 0 → a JSON array of `{stage, condition, evaluated_against, result}` is printed on stdout; essential stages (`plan`, `review-plan`, `implement`, `review-exec`, `spec-sync`, `index-restamp`, sourced from `references/stage-registry.json`) are always `result:"active"`. Exit 2 → usage/config error, including an attempt to condition an essential stage (never allowed) or a missing/invalid `--registry` target — halt and fix the input, never treat exit 2 as "no activations". Paste the JSON output into the session contract (`.svc/session-contract.jsonl`) so downstream stages and the task-graph generator (`scripts/task-graph.mjs generate --activation <this-output>`) read the same evaluation instead of re-deriving it.

@@ -13,7 +13,7 @@
  * Exit 1 if verify-promotion failed (rollback PR opened).
  */
 
-import { execSync, spawnSync } from "node:child_process";
+import { execFileSync, execSync, spawnSync } from "node:child_process";
 import { existsSync, appendFileSync, readFileSync, mkdirSync, writeFileSync, unlinkSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
@@ -51,19 +51,25 @@ function logDecision(entry) {
 // null, never guessed. Best-effort only; any git failure also yields null — this
 // must never invent a hash, only report one it can prove from the commit's tree.
 function findStoryReceiptSha256(mergeSha) {
-  const changed = git(`show --name-only --format= ${mergeSha}`)
+  let changedOutput;
+  try {
+    changedOutput = execFileSync("git", ["show", "--name-only", "--format=", mergeSha], { encoding: "utf8" });
+  } catch {
+    return null;
+  }
+  const changed = changedOutput
     .split("\n")
     .map((l) => l.trim())
     .filter((l) => /^docs\/specs\/receipts\/.+\.receipts\.json$/.test(l));
   if (changed.length !== 1) return null;
   let content;
   try {
-    // Raw bytes via execSync directly — NOT the shared git() helper above,
+    // Raw bytes via execFileSync directly — NOT the shared git() helper above,
     // which .trim()s its output (including the file's own trailing newline).
     // Caught in isolated testing: a trimmed read silently disagreed with a
     // plain `sha256sum docs/specs/receipts/<WI>.receipts.json`, which would
     // have made this field permanently unverifiable against the real file.
-    content = execSync(`git show ${mergeSha}:${changed[0]}`, { encoding: "utf8" });
+    content = execFileSync("git", ["show", `${mergeSha}:${changed[0]}`], { encoding: "utf8" });
   } catch (e) {
     return null;
   }

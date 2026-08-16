@@ -1,0 +1,28 @@
+import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import { candidateTreeIdentity, issueExternalReviewProvenance } from "../../../../scripts/lib/external-review-provenance.mjs";
+
+const sha = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
+export function createExternalReviewFixture({ frameworkRoot, repo, reviewKind = "exec", candidateSha = null }) {
+  const candidateDigest=candidateTreeIdentity(repo,{candidateSha}).candidate_digest;
+  process.env.SVC_EXTERNAL_REVIEW_PROVENANCE_FIXTURE="1";process.env.SVC_EXTERNAL_REVIEW_ISSUANCE_ROOT ||= path.join(repo,".svc","external-review-authority-fixture");
+  const dir = path.join(repo, ".svc/external-review-artifacts", reviewKind, candidateDigest, "fixture"); fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  const output = path.join(dir, "findings.json"); const receiptPath = path.join(dir, "receipt.json"); const transportPath = path.join(dir, "agy-transport-receipt.json");const packagePath=path.join(dir,"review-package.bin");fs.writeFileSync(packagePath,`candidate_digest=${candidateDigest}\n`,{mode:0o600});
+  const tuple = { orchestrator: "codex", host: "agy", family: "google", model: "Gemini 3.6 Flash (High)", effort: "high" };
+  const findings = { schema_version: 1, review_kind: reviewKind, rubric_score: reviewKind === "plan" ? 10 : null, rubric_failures: [], dependencies_needing_read: [], reviewer: { host: tuple.host, family: tuple.family, model: tuple.model, effort: tuple.effort }, verdict: "pass", summary: "fixture pass", findings: [], certifications: [] };
+  fs.writeFileSync(output, JSON.stringify(findings), { mode: 0o600 });
+  fs.writeFileSync(transportPath, JSON.stringify({ schema_version: 1, request_id: crypto.randomUUID(), started_at: "2026-08-15T00:00:00.000Z", finished_at: "2026-08-15T00:00:01.000Z", status: "success", classification: "success", requested_model: tuple.model, requested_effort: tuple.effort, response_schema_sha256: null, model_attestation: { level: "requested_accepted", evidence: "fixture exact argv" }, package_sha256: "f".repeat(64), package_bytes: 1, transport: "stdin_to_private_mode_0600_file", sandbox: true, mode: "plan", timeout_seconds: 1200, identical_json_repetitions_collapsed: 0, exit_code: 0, signal: null, artifacts: { output, stderr: path.join(dir, "stderr.log") } }), { mode: 0o600 });
+  const command = { binary: "agy", argv: ["review", "--frozen", candidateDigest] }; const nilOverride = { used: false, authority: null, source: null, path: null, expected_sha256: null, actual_sha256: null };
+  const receipt = { schema_version: 2, launcher_version: "2.4.0", cli_version: "fixture-cli", request_id: crypto.randomUUID(), review_kind: reviewKind, candidate_digest: candidateDigest, package_sha256: sha(fs.readFileSync(packagePath)), findings_schema_sha256: sha(fs.readFileSync(path.join(frameworkRoot, "schemas/external-review-findings.schema.json"))), findings_sha256: sha(fs.readFileSync(output)), cache_key: "c".repeat(64), fixture_mode: false, started_at: "2026-08-15T00:00:00.000Z", finished_at: "2026-08-15T00:00:01.000Z", status: "success", classification: "success", requested_tuple: tuple, invocation_tuple: tuple, effective_tuple: tuple,
+    attempts: [{ index: 1, tuple, started_at: "2026-08-15T00:00:00.000Z", finished_at: "2026-08-15T00:00:01.000Z", exit_code: 0, classification: "success", command, artifacts: { findings: output }, usage: {} }],
+    fallback: { eligible: false, used: false, reason: null }, override: nilOverride,
+    policy: { version: 2, profile: "production:agy", source: "owner-config", resolved_at: "2026-08-15T00:00:00.000Z", effective_window: { starts_at: null, ends_at: null }, cutover_utc: null, cutover_local: null, timezone: null, selection_sha256: null, selection_expires_at: null, selection_authority: "repository-owner" },
+    protocol: { process_invocations: 1, configured_turn_ceiling: null, configured_budget_usd: null, reported_turns: null, stop_reason: null, terminal_reason: null, errors: [] }, route: { kind: "owner_config_primary", switching_enabled: false, cli_fallback_configured: false, evidence: "requested_primary" }, effective_effort: { value: "high", provenance: "requested" }, model_attestation: { level: "requested_accepted", requested_model: tuple.model, observed_models: [], evidence: "canonical fixture" },
+    phase_guard: { applicable: false, kind: reviewKind, decision: "not-applicable", reason: null, wi: null, pre_execution_base: null, plan_manifest_sha256: null, exec_record_present: null, exec_record_path: null, implementation_diverged: null, diverged_files: [], base_resolved: null, override: { ...nilOverride, kind: null } },
+    package_context: { version: 1, context_root: repo, base_package_sha256: sha(fs.readFileSync(packagePath)), files: [] }, cache: { disposition: "published", reusable: true, entry: null }, artifacts: { findings: output, receipt: receiptPath, package: packagePath }, usage: { agy_transport_receipt: transportPath, agy_transport_receipt_sha256: sha(fs.readFileSync(transportPath)) }, reviewer_run: { commands: [command], output_artifacts: [output] } };
+  fs.writeFileSync(receiptPath, JSON.stringify(receipt), { mode: 0o600 });
+  issueExternalReviewProvenance({receiptPath,packagePath,findingsPath:output});
+  const artifact = (file) => ({ path: path.relative(repo, file), sha256: sha(fs.readFileSync(file)) });
+  return { candidateDigest, receiptPath, output, reviewerEvidence: { independent: true, submitter_only: false, launcher_receipts: [artifact(receiptPath)], commands: [command], output_artifacts: [artifact(output)], deletion_bearing: false, parse_collect_evidence: [] } };
+}

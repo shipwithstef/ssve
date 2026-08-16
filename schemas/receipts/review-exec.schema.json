@@ -7,6 +7,7 @@
     "receipt_type": { "const": "review-exec" },
     "schema_version": { "type": "integer", "minimum": 1 },
     "wi": { "type": "string" },
+    "candidate_digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
     "diff_hash": { "type": "string" },
     "fast_mode": { "type": "boolean" },
     "self_review": {
@@ -35,6 +36,21 @@
     "verdict": { "type": "string", "enum": ["pass", "fail", "pass-with-acks"] },
     "timestamp": { "type": "string", "format": "date-time" },
     "author_family": { "type": "string", "description": "WI-385: cognitive family of the diff's author/orchestrator (anthropic|openai|google). Mechanically resolved via scripts/lib/cognitive-family.mjs. REQUIRED for the low risk-tier; check-chain rejects author_family==reviewer_family wherever both are present (mechanical never-self-review fence)." },
-    "reviewer_family": { "type": "string", "description": "WI-385: cognitive family of the adversarial reviewer (anthropic|openai|google). Must DIFFER from author_family." }
-  }
+    "reviewer_family": { "type": "string", "description": "WI-385: cognitive family of the adversarial reviewer (anthropic|openai|google). Must DIFFER from author_family." },
+    "reviewer_evidence": { "$ref": "#/definitions/reviewerEvidence" }
+  },
+  "definitions": {
+    "reviewerEvidence": {
+      "type": "object",
+      "required": ["independent", "submitter_only", "launcher_receipts", "commands", "output_artifacts", "deletion_bearing", "parse_collect_evidence"],
+      "properties": {
+        "independent": { "const": true }, "submitter_only": { "const": false },
+        "launcher_receipts": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/artifact" } },
+        "commands": { "type": "array", "minItems": 1 }, "output_artifacts": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/artifact" } },
+        "deletion_bearing": { "type": "boolean" }, "parse_collect_evidence": { "type": "array", "items": { "$ref": "#/definitions/artifact" } }
+      }
+    },
+    "artifact": { "type": "object", "required": ["path", "sha256"], "properties": { "path": { "type": "string" }, "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" } }, "additionalProperties": false }
+  },
+  "allOf": [{ "if": { "properties": { "schema_version": { "minimum": 3 } } }, "then": { "required": ["candidate_digest", "reviewer_evidence"] } }]
 }

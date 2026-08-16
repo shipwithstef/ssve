@@ -137,6 +137,8 @@ review-exec closes all three: required to run, pair sourced from resolver, recei
 
 ## Process
 
+Every newly emitted review receipt is schema v3. It preserves the independent reviewer command argv and output artifact paths in `reviewer_evidence`; callers cannot request a legacy schema. The emitter derives `deletion_bearing` from the candidate diff. For deletion-bearing executable diffs, run `node scripts/find-callers.mjs --identifier <deleted-identifier>` and attach parse/collect evidence. Submitter-only output is never independent review evidence.
+
 ### P1 — Self-Review (mandatory)
 
 Orchestrator runs its own structured pass on the executed diff:
@@ -147,6 +149,11 @@ Orchestrator runs its own structured pass on the executed diff:
 A "no findings" self-review on a substantive diff is treated as suspicious and gets flagged at P3.
 
 Write self-review note to `.svc/receipts/staging/<tree-hash>/review-exec-self.json`.
+
+Emit the pre-commit receipt without `--sha`; the emitter compares the index
+tree to `HEAD` and binds a dirty candidate to
+`.svc/receipts/staging/<tree-hash>/review-exec.json`. Supplying the base SHA
+would review the wrong committed tree and is forbidden for an executed diff.
 
 **Deterministic coverage + one gap pass (§4).** Run the AC/scope/authority and
 receipt coverage checks, then one orchestrator gap pass over uncovered lenses.

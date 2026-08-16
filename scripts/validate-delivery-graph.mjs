@@ -136,7 +136,7 @@ function validateGraph(graph, filePath, validSkipIds) {
 
   const dg = graph.delivery_graph;
   const tasks = graph.tasks || [];
-  const taskSkills = new Set(tasks.map(taskSkill).filter(Boolean));
+  const taskSkills = new Set(tasks.flatMap((task) => [taskSkill(task), ...(task?.metadata?.required_process_steps || []).map((step) => step?.skill)]).filter(Boolean));
   const skipped = dg.skipped_skills || [];
   const riskFlags = Array.isArray(dg.risk_flags) ? dg.risk_flags : [];
   const platformContracts = Array.isArray(dg.platform_contracts) ? dg.platform_contracts : [];
@@ -286,8 +286,9 @@ function validateGraph(graph, filePath, validSkipIds) {
       addIssue(issues, "browser-visible graph lacks track-visuals task or valid visual N/A skip");
     }
     const visualModes = new Set(visualTasks.map((task) => task?.metadata?.mode).filter(Boolean));
-    if (visualTasks.length > 0 && (!visualModes.has("baseline") || !visualModes.has("diff"))) {
-      addIssue(issues, "browser-visible graph must include track-visuals tasks with metadata.mode baseline and diff");
+    const executeVisualDiff = tasksWithSkill(tasks, "execute-changeset").some((task) => task?.metadata?.required_process_steps?.some((step) => step?.skill === "track-visuals" && step?.mode === "diff" && step?.before === "review-gate"));
+    if (visualTasks.length > 0 && (!visualModes.has("baseline") || !executeVisualDiff)) {
+      addIssue(issues, "browser-visible graph requires a track-visuals baseline task and an execute-changeset diff process before review-gate");
     }
     if (completed && evidence.visual !== "satisfied" && evidence.visual !== "n/a") {
       addIssue(issues, "browser-visible completed graph lacks visual evidence satisfaction or valid N/A");

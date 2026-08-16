@@ -113,8 +113,7 @@ node scripts/validate-parallel-merge-back.mjs --plan .svc/parallel-dispatch-<run
 2. Compute waves from the conflict graph. WIs with overlapping affected files,
    overlapping dependency files, unknown scope, or shared config paths are not
    in the same parallel wave.
-3. Choose transport from `references/parallel-dispatch-transport.md`:
-   `local-inline`, `subagent`, `detached-kimi`, or `headless-worker`.
+3. Choose transport from `references/parallel-dispatch-transport.md`, then resolve every child through `node scripts/resolve-child-transport.mjs --request <request.json> --receipt .svc/dispatch/<WI>.prelaunch.json`. The resolver may return `read-only-native`, `delegated-wrapper`, or `controller`; an `agents: true` capability alone is never mutation authority.
 4. Assign each worker an ownership boundary. The worker may edit only its
    `write_scope` unless the parent revises the plan.
 5. For intra-WI mutating children, persist and accept a v2 delegation and use a

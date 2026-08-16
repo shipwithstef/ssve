@@ -19,8 +19,13 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import {
+  MANDATORY_DELIVERY_CHAIN,
+  validateMandatoryDeliveryChain,
+} from "./lib/mandatory-delivery-chain.mjs";
 
-// Lane model definitions — canonical skills per lane.
+// Lane-specific prerequisites. The exact delivery chain is imported from one
+// shared contract and validated separately for every mutable lane.
 // Source: route-workflow/references/lane-model.md
 // TODO: Consider loading dynamically from skills-manifest.json or lane-model.md
 //       to avoid drift when lane definitions change.
@@ -29,12 +34,7 @@ const LANE_MODELS = {
     name: "greenfield",
     mandatory: [
       "write-spec",
-      "plan-changeset",
-      "execute-changeset",
-      "review-gate",
-      "audit-implementation",
-      "land-changeset",
-      "verify-promotion",
+      ...MANDATORY_DELIVERY_CHAIN,
     ],
     optional: [
       "write-vision",
@@ -56,6 +56,7 @@ const LANE_MODELS = {
     name: "conversion",
     mandatory: [
       "onboard-repo",
+      ...MANDATORY_DELIVERY_CHAIN,
     ],
     optional: [
       "sync-work-items",
@@ -65,12 +66,7 @@ const LANE_MODELS = {
     name: "brownfield-feature",
     mandatory: [
       "write-spec",
-      "plan-changeset",
-      "execute-changeset",
-      "review-gate",
-      "audit-implementation",
-      "land-changeset",
-      "verify-promotion",
+      ...MANDATORY_DELIVERY_CHAIN,
     ],
     optional: [
       "sync-spec-code",
@@ -88,9 +84,7 @@ const LANE_MODELS = {
     name: "bugfix",
     mandatory: [
       "diagnose-bug",
-      "review-gate",
-      "land-changeset",
-      "verify-promotion",
+      ...MANDATORY_DELIVERY_CHAIN,
     ],
     optional: [
       "plan-changeset",
@@ -104,7 +98,7 @@ const LANE_MODELS = {
     name: "drift",
     mandatory: [
       "sync-spec-code",
-      "land-changeset",
+      ...MANDATORY_DELIVERY_CHAIN,
     ],
     optional: [
       "write-spec",
@@ -115,11 +109,7 @@ const LANE_MODELS = {
   6: {
     name: "refactor",
     mandatory: [
-      "plan-changeset",
-      "execute-changeset",
-      "review-gate",
-      "land-changeset",
-      "verify-promotion",
+      ...MANDATORY_DELIVERY_CHAIN,
     ],
     optional: [
       "define-code-style",
@@ -128,11 +118,7 @@ const LANE_MODELS = {
   7: {
     name: "framework",
     mandatory: [
-      "plan-changeset",
-      "execute-changeset",
-      "review-gate",
-      "land-changeset",
-      "verify-promotion",
+      ...MANDATORY_DELIVERY_CHAIN,
     ],
     optional: [
       "write-spec",
@@ -183,6 +169,7 @@ function collectGraphSkills(graph) {
   for (const task of graph.tasks ?? []) {
     const skill = taskSkill(task);
     if (skill) skills.add(skill);
+    for (const process of task?.metadata?.required_process_steps || []) if (process?.skill) skills.add(process.skill);
   }
   return skills;
 }
@@ -197,6 +184,7 @@ function validateLane(graph, filePath) {
   const NAME_TO_NUM = Object.fromEntries(
     Object.entries(LANE_MODELS).map(([num, def]) => [def.name, num])
   );
+  NAME_TO_NUM["brownfield-conversion"] = "2";
   const laneKey = LANE_MODELS[lane] ? lane : NAME_TO_NUM[lane];
   const laneModel = LANE_MODELS[laneKey];
   if (!laneModel) {
@@ -208,13 +196,18 @@ function validateLane(graph, filePath) {
   const missing = [];
 
   for (const skill of laneModel.mandatory) {
-    if (skill === "review-gate" && (graphSkills.has("review-gate") || graphSkills.has("review-exec"))) {
-      continue;
-    }
     if (!graphSkills.has(skill)) {
       missing.push(skill);
     }
   }
+
+  const chainValidation = validateMandatoryDeliveryChain(
+    (graph.tasks ?? []).map(taskSkill).filter(Boolean)
+  );
+  const visualRequired = graph.delivery_graph?.risk_flags?.includes("browser-visible") === true;
+  const executeTask = (graph.tasks ?? []).find((task) => taskSkill(task) === "execute-changeset");
+  const visualDiffProcess = executeTask?.metadata?.required_process_steps?.some((step) => step?.skill === "track-visuals" && step?.mode === "diff" && step?.before === "review-gate") === true;
+  const visualErrors = visualRequired && !visualDiffProcess ? ["browser-visible graph requires track-visuals diff as an execute-changeset process step before review-gate"] : [];
 
   return {
     lane,
@@ -222,7 +215,9 @@ function validateLane(graph, filePath) {
     graphSkills: Array.from(graphSkills),
     mandatory: laneModel.mandatory,
     missing,
-    pass: missing.length === 0,
+    mandatoryChain: chainValidation,
+    visualProcess: { required: visualRequired, pass: !visualRequired || visualDiffProcess, errors: visualErrors },
+    pass: missing.length === 0 && chainValidation.pass && visualErrors.length === 0,
   };
 }
 

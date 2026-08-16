@@ -5,6 +5,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { matchesAny, readDelegation, validateCompletionReceiptShape, updateDelegationStatus } from "../hooks/lib/delegation-authority.mjs";
+import { withStateLock } from "./state-io.mjs";
 
 function parse(argv) { const flags = {}; for (let i = 0; i < argv.length; i += 1) { const key = argv[i]; if (!key.startsWith("--")) throw new Error(`unexpected argument: ${key}`); const next = argv[i + 1]; if (next !== undefined && !next.startsWith("--")) { flags[key] = next; i += 1; } else flags[key] = true; } return flags; }
 function required(flags, key) { if (!flags[key] || flags[key] === true) throw new Error(`missing ${key}`); return String(flags[key]); }
@@ -44,22 +45,28 @@ export function run(argv = process.argv.slice(2)) {
   if (flags["--merge"]) {
     if (!flags["--expected-integration-head"]) throw new Error("--merge requires --expected-integration-head");
     const integration = fs.realpathSync(path.resolve(required(flags, "--integration-worktree")));
-    if (flags["--expected-integration-head"] && git(integration, ["rev-parse", "HEAD"]).trim() !== flags["--expected-integration-head"]) throw new Error("integration assumptions changed before merge");
-    const before = git(integration, ["rev-parse", "HEAD"]).trim();
     const commits = git(validated.capability.inner_worktree, ["rev-list", "--reverse", `${receipt.base_sha}..${receipt.head_sha}`]).trim().split(/\r?\n/).filter(Boolean);
-    try {
-      git(integration, ["fetch", "--quiet", validated.capability.inner_worktree, receipt.head_sha]);
-      for (const commit of commits) git(integration, ["cherry-pick", commit]);
-    }
-    catch (error) { try { git(integration, ["cherry-pick", "--abort"]); } catch {} updateDelegationStatus({ stateRoot, delegationId, status: "failed", reason: "merge_rejected" }); throw new Error(`merge rejected: ${error.message}`); }
-    const after = git(integration, ["rev-parse", "HEAD"]).trim(); mapping = { source_head: receipt.head_sha, integration_before: before, integration_commit: after };
     const requiredValidation = validated.capability.validation_commands || [];
     if (!requiredValidation.length) throw new Error("merge requires controller-defined validation commands");
-    for (const command of requiredValidation) {
-      try { execFileSync("bash", ["-lc", command], { cwd: integration, stdio: ["ignore", "pipe", "pipe"] }); }
-      catch (error) { updateDelegationStatus({ stateRoot, delegationId, status: "failed", reason: "post-merge validation failed" }); throw new Error(`post-merge validation failed: ${command}: ${error.message}`); }
-    }
-    updateDelegationStatus({ stateRoot, delegationId, status: "merged", details: { integration_mapping: mapping } });
+    const lockKey = crypto.createHash("sha256").update(integration).digest("hex");
+    mapping = withStateLock(path.join(stateRoot, "integration-locks", `${lockKey}.json`), () => {
+      const before = git(integration, ["rev-parse", "HEAD"]).trim();
+      if (before !== flags["--expected-integration-head"]) throw new Error("integration assumptions changed before merge");
+      if (git(integration, ["status", "--porcelain"]).trim()) throw new Error("integration worktree must be clean before merge");
+      try {
+        git(integration, ["fetch", "--quiet", validated.capability.inner_worktree, receipt.head_sha]);
+        for (const commit of commits) git(integration, ["cherry-pick", commit]);
+        for (const command of requiredValidation) execFileSync("bash", ["-lc", command], { cwd: integration, stdio: ["ignore", "pipe", "pipe"] });
+        const after = git(integration, ["rev-parse", "HEAD"]).trim(); const next = { source_head: receipt.head_sha, integration_before: before, integration_commit: after };
+        updateDelegationStatus({ stateRoot, delegationId, status: "merged", details: { integration_mapping: next } });
+        return next;
+      } catch (error) {
+        try { git(integration, ["cherry-pick", "--abort"]); } catch {}
+        try { git(integration, ["reset", "--hard", before]); } catch (rollbackError) { throw new Error(`merge rejected and rollback failed: ${error.message}; ${rollbackError.message}`); }
+        updateDelegationStatus({ stateRoot, delegationId, status: "failed", reason: "merge_or_validation_rejected_and_rolled_back" });
+        throw new Error(`merge rejected and rolled back: ${error.message}`);
+      }
+    });
   }
   const result = { ...validated, mapping };
   if (flags["--out"]) fs.writeFileSync(path.resolve(flags["--out"]), `${JSON.stringify(result, null, 2)}\n`);

@@ -12,7 +12,7 @@
 }
 ```
 
-Turn-scoped events (`PreToolUse`, `PermissionRequest`, `PostToolUse`, `UserPromptSubmit`, `Stop`) also include `turn_id: string`.
+Turn-scoped events (`PreToolUse`, `PermissionRequest`, `PostToolUse`, `PreCompact`, `PostCompact`, `UserPromptSubmit`, `SubagentStart`, `SubagentStop`, `Stop`) also include `turn_id: string` where documented by the active host.
 
 ## Per-Event Schemas
 
@@ -154,3 +154,17 @@ Note: `decision: "block"` does NOT undo the command — it replaces the tool res
 ```
 
 Important: `block` here means "continue the turn with this prompt", not "reject".
+
+### SubagentStart and SubagentStop
+
+Codex exposes lifecycle hooks when a subagent starts and when it stops. These events are
+useful for deterministic audit and policy context, but their presence is not evidence that
+the native spawn transport carried an SSVE stable principal, delegation token, exact
+worktree, allowed paths, or containment policy. Mutation authorization remains a separate
+persisted-and-validated contract.
+
+### SessionEnd, PreCompact, and PostCompact
+
+Current Codex documentation also exposes `SessionEnd`, `PreCompact`, and `PostCompact`.
+`SessionEnd` applies to the main thread, not subagents. Treat compact lifecycle events as
+context-management seams, never as substitutes for durable task or authority state.

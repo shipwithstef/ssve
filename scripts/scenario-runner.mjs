@@ -81,6 +81,8 @@ function copyFrameworkFiles(ws) {
   const scriptsDir = path.join(ws, "scripts");
   const hooksDir = path.join(ws, "hooks");
   fs.mkdirSync(scriptsDir, { recursive: true });
+  fs.mkdirSync(path.join(scriptsDir, "lib"), { recursive: true });
+  fs.mkdirSync(path.join(ws, "references"), { recursive: true });
   fs.mkdirSync(hooksDir, { recursive: true });
   fs.mkdirSync(path.join(ws, ".svc"), { recursive: true });
 
@@ -91,6 +93,14 @@ function copyFrameworkFiles(ws) {
   fs.copyFileSync(
     path.join(FRAMEWORK_ROOT, "scripts", "state-io.mjs"),
     path.join(scriptsDir, "state-io.mjs")
+  );
+  fs.copyFileSync(
+    path.join(FRAMEWORK_ROOT, "scripts", "lib", "stage-registry.mjs"),
+    path.join(scriptsDir, "lib", "stage-registry.mjs")
+  );
+  fs.copyFileSync(
+    path.join(FRAMEWORK_ROOT, "references", "stage-registry.json"),
+    path.join(ws, "references", "stage-registry.json")
   );
   fs.copyFileSync(
     path.join(FRAMEWORK_ROOT, "hooks", "svc-lane-tasks-validator.mjs"),

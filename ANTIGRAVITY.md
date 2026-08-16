@@ -54,7 +54,6 @@ Antigravity will read the `SKILL.md` and follow its instructions exactly.
 | Verify after merge | `verify-promotion` |
 | Fix a bug | `diagnose-bug` → `plan-changeset` → `execute-changeset` |
 | Onboard existing repo | `onboard-repo` |
-| Quick trivial fix (≤3 files) | `quick-fix` |
 
 Full skill list: `~/.gemini/antigravity/skills/skills-manifest.json`
 

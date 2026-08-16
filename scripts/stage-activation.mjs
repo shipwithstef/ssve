@@ -12,6 +12,7 @@
 
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
+import { loadStageRegistry as loadCanonicalStageRegistry } from "./lib/stage-registry.mjs";
 
 // WI-521 Batch C (C1, closes WI-519/G4): the hardcoded 6-stage essential table
 // this file used to carry was a SECOND copy of the same vocabulary now owned
@@ -21,39 +22,6 @@ import { existsSync, readFileSync } from "node:fs";
 // registry is a hard exit 2 (no embedded fallback — same rule as
 // scripts/audit-story-receipts.mjs, for the same reason).
 const DEFAULT_REGISTRY_PATH = "references/stage-registry.json";
-
-function loadStageRegistry(registryPath) {
-  let raw;
-  try {
-    raw = readFileSync(registryPath, "utf8");
-  } catch (error) {
-    fail(`stage registry not found or unreadable: ${registryPath} — ${error.message}`, 2);
-  }
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch (error) {
-    fail(`stage registry is invalid JSON: ${registryPath} — ${error.message}`, 2);
-  }
-  if (!Array.isArray(parsed.stages) || parsed.stages.length === 0) {
-    fail(`stage registry has no "stages" array: ${registryPath}`, 2);
-  }
-  // FIX 2 (review round): a registry that validates ONLY "stages is a non-empty
-  // array" lets a malformed `class` value (wrong case, typo, missing) through
-  // silently — the essential set derived from it below then goes empty and the
-  // WI-519 essential fence disappears with it, exit 0. Lifted from Batch A's own
-  // validator (scripts/audit-story-receipts.mjs loadRegistry), which already
-  // enforces this, rather than writing a second copy of the same check.
-  for (const s of parsed.stages) {
-    if (!s || typeof s.key !== "string" || !s.key) {
-      fail(`stage registry has an entry with no "key": ${registryPath}`, 2);
-    }
-    if (!["essential", "conditional", "situational"].includes(s.class)) {
-      fail(`stage registry entry "${s.key}" has class "${s.class}" — must be essential|conditional|situational: ${registryPath}`, 2);
-    }
-  }
-  return parsed;
-}
 
 // Quote-derived verbatim from proposals/2026-08-02-one-lane-framework.md §2
 // "Conditions, deliberately mechanical:" table. The regex/glob PATTERNS below
@@ -203,7 +171,9 @@ function evaluateCondition(name, def, files, text) {
 
 const args = parseArgs(process.argv.slice(2));
 const REGISTRY_PATH_USED = args.registry || DEFAULT_REGISTRY_PATH;
-const REGISTRY = loadStageRegistry(REGISTRY_PATH_USED);
+let REGISTRY;
+try { REGISTRY = loadCanonicalStageRegistry(REGISTRY_PATH_USED); }
+catch (error) { fail(error.message, 2); }
 // Registry order IS canonical order (references/stage-registry.json `_comment`) —
 // filter preserves it, so essential-stage output order is unchanged from before.
 const ESSENTIAL_STAGES = Object.freeze(
@@ -213,9 +183,6 @@ const ESSENTIAL_STAGES = Object.freeze(
 // case, but a registry that is internally consistent yet genuinely has zero
 // essential-class rows would still zero out the fence with no diagnostic — the
 // WI-519 essential fence must be provably non-empty, not just well-typed.
-if (ESSENTIAL_STAGES.length === 0) {
-  fail(`stage registry has zero essential-class stages: ${REGISTRY_PATH_USED}`, 2);
-}
 // FIX 9 (review round, LOW): DEFAULT_CONDITIONS' keys still duplicate the
 // registry's activation_condition set by hand instead of being derived from
 // it — G4 half-closed, agreeing with the registry today only by coincidence.

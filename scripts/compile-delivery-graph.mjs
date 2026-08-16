@@ -3,6 +3,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { writeJsonAtomic } from "./state-io.mjs";
+import { injectMandatoryDeliveryChain, validateMandatoryDeliveryChain } from "./lib/mandatory-delivery-chain.mjs";
 
 const EVIDENCE_FAMILIES = [
   "product",
@@ -284,15 +285,30 @@ function skippedSkills({ changeType, riskFlags }) {
 }
 
 function buildTaskSteps(baseSkills, conditionals) {
-  const steps = baseSkills.map((skill) => ({ skill, source: "lane" }));
+  const preLandProcesses = new Set(["test-framework", "review-security", "audit-session-execution"]);
+  const rawSteps = baseSkills.map((skill) => ({ skill, source: "lane" }));
+  const steps = rawSteps.filter((step) => !preLandProcesses.has(step.skill));
+  const audit = steps.find((step) => step.skill === "audit-implementation");
+  if (audit) for (const step of rawSteps.filter((candidate) => preLandProcesses.has(candidate.skill))) {
+    audit.required_process_steps = [...(audit.required_process_steps || []), { skill: step.skill, before: "land-changeset", evidence_required: true }];
+  }
   const insertAroundExecute = (entry) => {
+    const planIndex = steps.findIndex((step) => step.skill === "plan-changeset");
     const executeIndex = steps.findIndex((step) => step.skill === "execute-changeset");
-    if (executeIndex === -1) {
+    if (planIndex === -1 || executeIndex === -1) {
       steps.push(entry);
       return;
     }
-    const offset = entry.mode === "baseline" ? 0 : 1;
-    steps.splice(executeIndex + offset, 0, entry);
+    // The mandatory delivery chain is one indivisible authority transition.
+    // Baseline remains an explicit upstream node. The visual diff is a required
+    // process step owned by execute-changeset so G5 consumes it before review;
+    // it is not a top-level node that can split or trail the authority chain.
+    if (entry.mode === "diff") {
+      const processStep = { skill: "track-visuals", mode: "diff", before: "review-gate", signal: entry.signal };
+      steps[executeIndex].required_process_steps = [...(steps[executeIndex].required_process_steps || []), processStep];
+      return;
+    }
+    steps.splice(planIndex, 0, entry);
   };
   const insertRelative = (entry) => {
     const existingIndex = steps.findIndex((step) => step.skill === entry.skill);
@@ -334,6 +350,12 @@ function buildTaskSteps(baseSkills, conditionals) {
       insertRelative(entry);
       continue;
     }
+    if (preLandProcesses.has(entry.skill)) {
+      const auditStep = steps.find((step) => step.skill === "audit-implementation");
+      if (!auditStep) throw new Error(`${entry.skill} requires audit-implementation to own its pre-land process receipt`);
+      if (!auditStep.required_process_steps?.some((step) => step.skill === entry.skill)) auditStep.required_process_steps = [...(auditStep.required_process_steps || []), { skill: entry.skill, before: "land-changeset", evidence_required: true, signal: entry.signal }];
+      continue;
+    }
     if (!steps.some((step) => step.skill === entry.skill)) {
       steps.push({ ...entry, source: "conditional" });
     }
@@ -352,6 +374,7 @@ function taskList(steps, solutionConfidence) {
       skill: step.skill,
       ...(step.mode ? { mode: step.mode } : {}),
       ...(step.signal ? { signal: step.signal } : {}),
+      ...(step.required_process_steps ? { required_process_steps: step.required_process_steps } : {}),
     },
   }));
   if (solutionConfidence.required) {
@@ -393,13 +416,18 @@ export function compileDeliveryGraph(input) {
   const changeType = requireString(input.change_type, "change_type");
   if (!LANE_BASE_SKILLS[lane]) throw new Error(`Unsupported lane: ${lane}`);
 
+  const laneSkills = injectMandatoryDeliveryChain(LANE_BASE_SKILLS[lane]);
   const riskFlags = unique(list(input.risk_flags));
   const platformContracts = unique(list(input.platform_contracts));
   const solutionConfidence = normalizeSolutionConfidence(input, wi, riskFlags);
   const compression = normalizeCompression(input);
   const conditionals = conditionalInsertions({ changeType, riskFlags, platformContracts, solutionConfidence });
-  const requiredSkills = unique([...LANE_BASE_SKILLS[lane], ...conditionals.map((item) => item.skill)]);
-  const requiredSteps = buildTaskSteps(LANE_BASE_SKILLS[lane], conditionals);
+  const requiredSkills = unique([...laneSkills, ...conditionals.map((item) => item.skill)]);
+  const requiredSteps = buildTaskSteps(laneSkills, conditionals);
+  const chainValidation = validateMandatoryDeliveryChain(requiredSteps.map((step) => step.skill));
+  if (!chainValidation.pass) {
+    throw new Error(`compiler produced an invalid mandatory delivery chain: ${chainValidation.errors.join("; ")}`);
+  }
   const evidenceFamilies = Object.fromEntries(EVIDENCE_FAMILIES.map((family) => [
     family,
     evidenceStatus({ family, changeType, riskFlags, platformContracts }),

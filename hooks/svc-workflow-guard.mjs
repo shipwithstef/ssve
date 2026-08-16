@@ -43,6 +43,7 @@ const { blockViaExit, emitDecision, ASK, detectHost: detectHostEnv } = await imp
   path.join(__dirname, "lib", "hook-decision.mjs"),
 );
 const { resolveOperationScope } = await import(path.join(__dirname, "lib", "operation-scope.mjs"));
+const { classifyBashMutationTargets } = await import(path.join(__dirname, "lib", "bash-mutation-targets.mjs"));
 
 let operationRoot = process.cwd();
 let operationMaintenance = false;
@@ -1088,6 +1089,20 @@ async function main() {
     const base44SchemaWriteBlock = checkBase44SchemaWriteGuard(command);
     if (base44SchemaWriteBlock) bashDeny(base44SchemaWriteBlock, "Provide a schema-change artifact (rollback + round-trip/RLS/probe evidence) via SVC_BASE44_SCHEMA_WRITE_ARTIFACT/--schema-change-artifact, or log an approved override.");
 
+    // WI-541: path-specific protections apply to indirect Bash writers too.
+    // Reads stay on the fast path because the classifier returns no targets.
+    for (const filePath of classifyBashMutationTargets(command, { cwd: operationRoot })) {
+      const configVerdict = operationMaintenance ? null : checkConfigProtection(filePath);
+      if (configVerdict?.mode === "deny") bashDeny(configVerdict.message, "Do not mutate lock/env files through Bash; use the owning package manager or external secret management.");
+      if (configVerdict?.mode === "ask") bashDeny(configVerdict.message, "Use a direct file tool so the host can present its native permission prompt, or add the documented logged override.");
+      const phaseBlock = operationMaintenance ? null : checkDynamicPhaseGate(filePath, operationRoot, call.sessionId);
+      if (phaseBlock) bashDeny(phaseBlock, "Complete or explicitly skip the prerequisite phase in the task graph before the Bash mutation.");
+      const phaseWarning = checkPhaseBoundary(filePath);
+      if (phaseWarning) process.stderr.write(phaseWarning + "\n");
+      const scopeWarning = checkWorkflowScope(filePath);
+      if (scopeWarning) process.stderr.write(scopeWarning + "\n");
+    }
+
     process.exit(0);
   } else if (mode === "--phase-boundary") {
     const filePath = extractFilePath(toolInput);
@@ -1107,6 +1122,40 @@ async function main() {
     // Default --edit-write. WI-399 A1: also runs the former --phase-boundary
     // checks in the SAME process — one spawn per Edit/Write instead of two.
     // The --phase-boundary flag stays valid for hosts wired the old way.
+
+    // WI-541: auto-detect Bash payloads for hosts that don't split Edit/Write
+    // vs Bash into separate hook entries. Applies only the path-specific guards
+    // (config protection, phase gate, scope, boundary); the Bash-specific
+    // checks (no-verify, commit quality, destructive git) remain in --bash-guard.
+    if (call.toolName === "Bash") {
+      const command = extractCommand(toolInput);
+      if (!command) process.exit(0);
+      for (const fp of classifyBashMutationTargets(command, { cwd: operationRoot })) {
+        const configVerdict = operationMaintenance ? null : checkConfigProtection(fp);
+        if (configVerdict?.mode === "deny") denyActionable("svc-workflow-guard", "SVC-WORKFLOW-GUARD-BLOCK", configVerdict.message, {
+          operation: `Bash mutation of ${fp}`,
+          recovery: "Do not mutate lock/env files through Bash; use the owning package manager or external secret management.",
+          target: fp,
+        });
+        if (configVerdict?.mode === "ask") denyActionable("svc-workflow-guard", "SVC-WORKFLOW-GUARD-BLOCK", configVerdict.message, {
+          operation: `Bash mutation of ${fp}`,
+          recovery: "Use a direct file tool so the host can present its native permission prompt, or add the documented logged override.",
+          target: fp,
+        });
+        const phaseBlock = operationMaintenance ? null : checkDynamicPhaseGate(fp, operationRoot, call.sessionId);
+        if (phaseBlock) denyActionable("svc-workflow-guard", "SVC-WORKFLOW-GUARD-BLOCK", phaseBlock, {
+          operation: `Bash mutation of ${fp}`,
+          recovery: "Complete or explicitly skip the prerequisite phase in the task graph before the Bash mutation.",
+          target: fp,
+        });
+        const phaseWarning = checkPhaseBoundary(fp);
+        if (phaseWarning) process.stderr.write(phaseWarning + "\n");
+        const scopeWarning = checkWorkflowScope(fp);
+        if (scopeWarning) process.stderr.write(scopeWarning + "\n");
+      }
+      process.exit(0);
+    }
+
     const filePath = extractFilePath(toolInput);
     if (!filePath) process.exit(0);
 

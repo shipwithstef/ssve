@@ -1,5 +1,14 @@
 ## Lane Model
 
+Every mutable lane contains exactly one contiguous delivery chain, sourced by
+`scripts/lib/mandatory-delivery-chain.mjs` and consumed by both the graph
+compiler and validator:
+
+`plan-changeset → review-plan → execute-changeset → review-gate → review-exec → audit-implementation → land-changeset → verify-promotion`
+
+Neither review task substitutes for the other. Omission, duplication,
+substitution, or reordering fails lane validation.
+
 ### Pre-lane skills (operate ABOVE the 7-lane model)
 
 Certain svc skills operate BEFORE lane classification. Their output recommends which lane + skill to invoke next. Do not try to classify these into an existing lane.

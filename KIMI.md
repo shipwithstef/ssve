@@ -56,7 +56,6 @@ To execute a multi-step flow skill:
 | Verify after merge | `verify-promotion` |
 | Fix a bug | `diagnose-bug` → `plan-changeset` → `execute-changeset` |
 | Onboard existing repo | `onboard-repo` |
-| Quick trivial fix (≤3 files) | `quick-fix` |
 
 Full skill list: `~/.kimi/skills/skills-manifest.json`
 

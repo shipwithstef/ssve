@@ -19,6 +19,7 @@
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { WI_ID_RE, WI_ID_BODY } from '../hooks/lib/wi-id.mjs';
+import { loadStageRegistry } from './lib/stage-registry.mjs';
 
 // ---- Registry path — NEVER project-overridable (see below), unlike the paths block ----
 // A per-project override here would be a supported route to a second stage vocabulary —
@@ -53,73 +54,10 @@ function loadPaths() {
 }
 const PATHS = loadPaths();
 
-// ---- Registry load + sanity check (no embedded fallback — G4 is the disease this cures) ----
-function loadRegistry() {
-  let raw;
-  try {
-    raw = fs.readFileSync(REGISTRY_PATH, 'utf8');
-  } catch (e) {
-    console.error(`stage registry not found or unreadable: ${REGISTRY_PATH} — ${e.message}`);
-    process.exit(2);
-  }
-  let reg;
-  try {
-    reg = JSON.parse(raw);
-  } catch (e) {
-    console.error(`stage registry is invalid JSON: ${REGISTRY_PATH} — ${e.message}`);
-    process.exit(2);
-  }
-  if (!Array.isArray(reg.stages) || !reg.stages.length) {
-    console.error(`stage registry has no "stages" array: ${REGISTRY_PATH}`);
-    process.exit(2);
-  }
-  const seen = new Set();
-  for (const s of reg.stages) {
-    if (!s || typeof s.key !== 'string' || !s.key) {
-      console.error(`stage registry has an entry with no "key": ${REGISTRY_PATH}`);
-      process.exit(2);
-    }
-    if (seen.has(s.key)) {
-      console.error(`stage registry has a duplicate stage key "${s.key}": ${REGISTRY_PATH}`);
-      process.exit(2);
-    }
-    seen.add(s.key);
-    if (!['essential', 'conditional', 'situational'].includes(s.class)) {
-      console.error(`stage registry entry "${s.key}" has class "${s.class}" — must be essential|conditional|situational`);
-      process.exit(2);
-    }
-  }
-  const classByKey = new Map(reg.stages.map((s) => [s.key, s.class]));
-  const profiles = reg.story_type_profiles;
-  if (!profiles || typeof profiles !== 'object' || Array.isArray(profiles)) {
-    console.error(`stage registry has no "story_type_profiles" object: ${REGISTRY_PATH}`);
-    process.exit(2);
-  }
-  for (const [profile, list] of Object.entries(profiles)) {
-    if (!Array.isArray(list)) {
-      console.error(`stage registry profile "${profile}" is not an array: ${REGISTRY_PATH}`);
-      process.exit(2);
-    }
-    for (const key of list) {
-      if (!seen.has(key)) {
-        console.error(`stage registry profile "${profile}" references unknown stage key "${key}": ${REGISTRY_PATH}`);
-        process.exit(2);
-      }
-      // A profile may never REQUIRE a situational stage: situational stages are
-      // "receiptable when triggered", not part of any story type's unconditional
-      // floor. Allowing this here would let the registry assert a requirement the
-      // validator's core print loop silently never checks (fixed defense-in-depth
-      // below too, but the authoring-time rule is the one that should never let this
-      // exist in the first place).
-      if (classByKey.get(key) === 'situational') {
-        console.error(`stage registry profile "${profile}" requires situational stage "${key}" — situational stages cannot be a profile's unconditional floor`);
-        process.exit(2);
-      }
-    }
-  }
-  return reg;
-}
-const REGISTRY = loadRegistry();
+// ---- Registry load + sanity check (single shared fail-closed contract) ----
+let REGISTRY;
+try { REGISTRY = loadStageRegistry(REGISTRY_PATH); }
+catch (error) { console.error(error.message); process.exit(2); }
 // Core print loop = every non-situational stage, IN REGISTRY ORDER — that order is the
 // canonical stage order (references/stage-registry.json `_comment`); situational stages
 // are receiptable when triggered but are not part of every story's unconditional matrix.

@@ -52,7 +52,7 @@ expect_class() {
   if [[ "$actual" == "$expected" ]]; then pass "$label"; else echo "expected $expected, got $actual" >&2; fail "$label"; fi
 }
 
-complete_graph='graph.status = "completed"; for (const task of graph.tasks) task.status = "completed"; for (const key of Object.keys(graph.delivery_graph.evidence_families)) graph.delivery_graph.evidence_families[key] = "satisfied";'
+complete_graph='graph.status = "completed"; for (const task of graph.tasks) { task.status = "completed"; task.process_receipts = (task.metadata?.required_process_steps || []).map((step) => ({skill:step.skill, ...(step.mode ? {mode:step.mode} : {}), recorded_at:"2026-08-15T00:00:00.000Z", evidence:{type:"command_output",path:"fixture.log",sha256:"a".repeat(64)}})); } for (const key of Object.keys(graph.delivery_graph.evidence_families)) graph.delivery_graph.evidence_families[key] = "satisfied";'
 
 echo "=== Tier 1: Delivery Graph Closeout Classification ==="
 

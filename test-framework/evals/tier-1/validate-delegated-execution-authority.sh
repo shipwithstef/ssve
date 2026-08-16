@@ -167,5 +167,39 @@ assert.throws(() => mergeBack.validateMergeBack({ stateRoot: mergeState, delegat
 assert.equal(delegation.freezeDelegations({ stateRoot: mergeState, leaseId: mergeLease.lease_id, oldGeneration: mergeLease.generation }).length, 1, "unmerged race result freezes while merged result stays terminal");
 assert.equal(delegation.readDelegation({ stateRoot: mergeState, delegationId: mergeIssued.capability.delegation_id }).status, "merged");
 
-console.log("TIER-1 PASS: partition fence, delegation authority, completion receipt, and merge-back validation");
+function createMergeCase(name, validationCommands) {
+  const caseRepo = path.join(tmp, `${name}-repo`); const caseInner = path.join(tmp, `${name}-inner`); const caseState = path.join(tmp, `${name}-state`);
+  fs.mkdirSync(caseRepo); git(caseRepo, ["init", "-q"]); git(caseRepo, ["config", "user.email", "test@example.invalid"]); git(caseRepo, ["config", "user.name", "merge test"]);
+  fs.mkdirSync(path.join(caseRepo, "src")); fs.writeFileSync(path.join(caseRepo, "src", "base.txt"), "base\n"); git(caseRepo, ["add", "."]); git(caseRepo, ["commit", "-qm", "base"]);
+  const caseBase = git(caseRepo, ["rev-parse", "HEAD"]).trim(); const caseRepoId = authority.repositoryId(caseRepo);
+  const caseLease = authority.bootstrapController({ stateRoot: caseState, repoId: caseRepoId, wi: "WI-502", worktreeRoot: caseRepo, principal: "controller-principal" });
+  const caseIssued = delegation.issueDelegation({ stateRoot: caseState, lease: caseLease, childPrincipal: `${name}-child`, taskId: `${name}-task`, waveId: "wave-1", innerWorktree: caseInner, allowedPaths: ["src/**"], validationCommands, baseSha: caseBase });
+  git(caseRepo, ["worktree", "add", "-qb", `${name}-branch`, caseInner, caseBase]);
+  delegation.acceptDelegation({ stateRoot: caseState, delegationId: caseIssued.capability.delegation_id, childPrincipal: `${name}-child`, token: caseIssued.token });
+  fs.writeFileSync(path.join(caseInner, "src", "result.txt"), `${name}\n`); git(caseInner, ["add", "."]); git(caseInner, ["commit", "-qm", `${name} result`]);
+  const validationPath = path.join(tmp, `${name}-validation.json`); const receiptPath = path.join(tmp, `${name}-receipt.json`); const leasePath = path.join(tmp, `${name}-lease.json`);
+  writeJson(validationPath, [{ command: "test", exit_code: 0, output_digest: `sha256:${"2".repeat(64)}` }]); writeJson(leasePath, caseLease);
+  execFileSync("node", [path.join(root, "scripts/dispatch-execution-task.mjs"), "complete", "--state-root", caseState, "--delegation", caseIssued.capability.delegation_id, "--child-principal", `${name}-child`, "--validation", validationPath, "--out", receiptPath], { stdio: ["ignore", "pipe", "pipe"] });
+  const mergeArgs = [path.join(root, "scripts/validate-execution-merge-back.mjs"), "--state-root", caseState, "--delegation", caseIssued.capability.delegation_id, "--lease", leasePath, "--receipt", receiptPath, "--merge", "--integration-worktree", caseRepo, "--expected-integration-head", caseBase];
+  return { caseRepo, caseState, caseBase, caseIssued, mergeArgs };
+}
+
+const rejected = createMergeCase("rejected", ["test -f src/result.txt", "false"]);
+const rejectedRun = execFileSync;
+assert.throws(() => rejectedRun("node", rejected.mergeArgs, { stdio: ["ignore", "pipe", "pipe"] }), /Command failed/);
+assert.equal(git(rejected.caseRepo, ["rev-parse", "HEAD"]).trim(), rejected.caseBase, "failed controller validation left integration commits applied");
+assert.equal(git(rejected.caseRepo, ["status", "--porcelain"]).trim(), "", "failed merge-back did not restore a clean integration worktree");
+assert.equal(delegation.readDelegation({ stateRoot: rejected.caseState, delegationId: rejected.caseIssued.capability.delegation_id }).status, "failed");
+
+const concurrent = createMergeCase("concurrent", ["node -e 'setTimeout(() => {}, 250)'", "test -f src/result.txt"]);
+const raceMerge = (suffix) => new Promise((resolve) => {
+  const child = spawn("node", [...concurrent.mergeArgs, "--out", path.join(tmp, `concurrent-${suffix}.json`)], { stdio: "ignore" });
+  child.on("exit", (code) => resolve(code));
+});
+const mergeCodes = await Promise.all([raceMerge("a"), raceMerge("b")]);
+assert.deepEqual(mergeCodes.sort(), [0, 2], "concurrent merge-back did not serialize to one winner");
+assert.equal(Number(git(concurrent.caseRepo, ["rev-list", "--count", `${concurrent.caseBase}..HEAD`]).trim()), 1, "concurrent merge-back applied the delegated commit more than once");
+assert.equal(delegation.readDelegation({ stateRoot: concurrent.caseState, delegationId: concurrent.caseIssued.capability.delegation_id }).status, "merged");
+
+console.log("TIER-1 PASS: partition fence, delegation authority, completion receipt, failure-atomic merge-back, and concurrent integration serialization");
 NODE

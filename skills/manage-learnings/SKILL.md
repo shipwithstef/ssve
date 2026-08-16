@@ -68,6 +68,8 @@ a digest-bound source evidence object already acknowledged by a named product co
 outcome evidence object, and a recorded next product decision. Compile the link with
 `scripts/lib/runtime-memory-company-v2.mjs`.
 
+Use `node scripts/learning-lifecycle.mjs triage --root "$(git rev-parse --show-toplevel)" --limit 50` for the bounded normalized view. Record each applied or ignored row with `record --key <key> --decision used|ignored`; `used` requires `--outcome <evidence>`. Elevation requires `elevate --evaluation <passing-evaluate-rule-receipt>`. Never rewrite malformed historical JSONL; emit findings and append lifecycle events.
+
 Manage the project's institutional memory. Every skill logs operational
 discoveries during pipeline runs. This skill lets you review, search,
 prune, and export those learnings.

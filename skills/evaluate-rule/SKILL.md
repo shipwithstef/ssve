@@ -222,6 +222,15 @@ If Tier 2 flips: the final verdict becomes the more conservative of the two
 Tier 1 `adopt-as-is` + Tier 2 `adopt-with-edits` → final `adopt-with-edits`).
 Write `tier2_verdict: "flipped"` and update `verdict` accordingly.
 
+For framework-learning elevation, the canonical `verdict.json` remains the
+decision artifact; do not invent a `verdict: pass` substitute. After a global
+`adopt-as-is` or `adopt-with-edits` verdict receives a confirmed independent
+Tier 2 review, create the v2 elevation adapter consumed by
+`scripts/learning-lifecycle.mjs`. It binds `learning_key`, the prior
+`outcome_sha256`, the candidate commit, the canonical verdict path and digest,
+and schema-v3 `reviewer_evidence` from the real external-review launcher. A
+locally handwritten reviewer assertion or a noncanonical verdict is refused.
+
 ### 6. Batch mode
 
 If invoked with `--rule-pack <dir>`: iterate steps 1-5 per rule. At the end,

@@ -14,9 +14,11 @@ pass() { PASS=$((PASS + 1)); echo "  ✓ $1"; }
 fail() { FAIL=$((FAIL + 1)); ERRORS+="    ✗ $1\n"; echo "  ✗ $1"; }
 
 cd "$TMP"
-mkdir -p hooks/lib .svc docs/specs/features docs/specs/decisions
+mkdir -p hooks/lib hooks/codex/lib .svc docs/specs/features docs/specs/decisions
 cp "$REPO_ROOT/hooks/lib/hook-payload.mjs" hooks/lib/
 cp "$REPO_ROOT/hooks/lib/operation-scope.mjs" hooks/lib/
+cp "$REPO_ROOT/hooks/lib/bash-mutation-targets.mjs" hooks/lib/
+cp "$REPO_ROOT/hooks/codex/lib/argv-lex.mjs" hooks/codex/lib/
 cp "$HOOK" hooks/
 
 invoke() {
@@ -69,6 +71,11 @@ EXIT=$(invoke "docs/drafts/anything.md")
 # T8: exact-match path (capability-plan.md)
 EXIT=$(invoke "docs/specs/capability-plan.md")
 [ "$EXIT" = "2" ] && pass "T8 BLOCK: exact-match path docs/specs/capability-plan.md" || fail "T8 expected 2, got $EXIT"
+
+# Missing/malformed timestamps cannot become immortal invocation receipts.
+printf '%s\n' '{"timestamp":"not-a-time","skill":"write-spec"}' > .svc/pipeline-decisions.jsonl
+EXIT=$(invoke "docs/specs/features/malformed-time.md")
+[ "$EXIT" = "2" ] && pass "T9 BLOCK: malformed timestamp cannot satisfy freshness" || fail "T9 expected 2, got $EXIT"
 
 echo ""
 echo "  $PASS passed, $FAIL failed"

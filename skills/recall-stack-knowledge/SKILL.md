@@ -45,6 +45,8 @@ consumer, trust and freshness. The consumer must later record `used` or `ignored
 injected or displayed text alone is not consumption. Use
 `scripts/lib/runtime-memory-company-v2.mjs`.
 
+Normalize both learning ledgers through `node scripts/learning-lifecycle.mjs normalize --root "$(git rev-parse --show-toplevel)"` before trusting confidence or identity fields. After recall, record every selected learning as `used` with outcome evidence or `ignored`; serving text alone earns no framework credit.
+
 The retrieval architecture's load-bearing gate. **A skill never asks the Spine for knowledge — it declares need, and this gate fulfills it.**
 
 **Announce at start:** "I'm using recall-stack-knowledge to fetch what the next skill needs from the Spine."

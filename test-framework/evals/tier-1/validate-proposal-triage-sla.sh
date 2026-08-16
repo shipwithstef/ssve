@@ -110,7 +110,7 @@ function validate(rootPath, todayText) {
   const errors = [];
 
   if (!fs.existsSync(triagePath)) {
-    return ["proposals/triage.json is missing"];
+    return { errors: ["proposals/triage.json is missing"], total: 0, dispositioned: 0 };
   }
 
   const triage = readJson(triagePath);
@@ -127,7 +127,7 @@ function validate(rootPath, todayText) {
     errors.push("proposals/triage.json entries must be an object");
   }
 
-  if (errors.length > 0) return errors;
+  if (errors.length > 0) return { errors, total: 0, dispositioned: 0 };
 
   const proposalFiles = fs
     .readdirSync(proposalsDir)
@@ -149,21 +149,22 @@ function validate(rootPath, todayText) {
     }
   }
 
+  let dispositioned = 0;
   for (const fileName of proposalFiles) {
-    const age = ageDays(fileName, today);
-    if (age == null || age < triage.max_open_days) continue;
-
     const body = fs.readFileSync(path.join(proposalsDir, fileName), "utf8");
     const bodyMetadata = extractBodyMetadata(body);
     const registryMetadata = triage.entries[fileName] ?? {};
     const metadata = { max_defer_days: triage.max_defer_days, ...bodyMetadata, ...registryMetadata };
+    const before = errors.length;
     validateDisposition(fileName, metadata, today, rootPath, errors);
+    if (errors.length === before) dispositioned += 1;
   }
 
-  return errors;
+  return { errors, total: proposalFiles.length, dispositioned };
 }
 
-const errors = validate(root, todayText);
+const { errors, total, dispositioned } = validate(root, todayText);
+console.log(`proposal-triage: ${dispositioned}/${total} direct proposals dispositioned`);
 if (errors.length > 0) {
   for (const error of errors) console.error(error);
   process.exit(1);
@@ -270,10 +271,18 @@ fi
 
 TODAY="${PROPOSAL_TRIAGE_TODAY:-$(date -u +%F)}"
 if run_check "$REPO_ROOT" "$TODAY" >/tmp/proposal-triage-current.out 2>&1; then
+  cat /tmp/proposal-triage-current.out
   pass "all SLA-aged open proposals have triage metadata"
 else
   cat /tmp/proposal-triage-current.out
   fail "all SLA-aged open proposals have triage metadata"
+fi
+
+if grep -Eq '^proposal-triage: [0-9]+/[0-9]+ direct proposals dispositioned$' /tmp/proposal-triage-current.out \
+  && awk -F'[:/ ]+' '/^proposal-triage:/{exit !($2==$3)}' /tmp/proposal-triage-current.out; then
+  pass "current validator prints a complete numerator/denominator"
+else
+  fail "current validator does not prove numerator equals denominator"
 fi
 
 if grep -Fq "max_open_days" proposals/triage.json; then

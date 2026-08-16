@@ -55,10 +55,11 @@ const TEMP_ROOTS = (() => {
 })();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const { readHookPayload, extractFilePath } = await import(
+const { readHookPayload, extractFilePath, extractCommand } = await import(
   path.join(__dirname, "lib", "hook-payload.mjs")
 );
 const { resolveOperationScope } = await import(path.join(__dirname, "lib", "operation-scope.mjs"));
+const { classifyBashMutationTargets } = await import(path.join(__dirname, "lib", "bash-mutation-targets.mjs"));
 const { blockViaExit } = await import(path.join(__dirname, "lib", "hook-decision.mjs"));
 
 // WI-487 (F-003/AC-487-7): route BLOCK paths through the 5-field actionable-denial
@@ -199,12 +200,11 @@ async function main() {
   if (!call) process.exit(0);
 
   const { toolName, toolInput } = call;
-  if (!/^(Edit|Write|WriteFile|StrReplaceFile)$/.test(toolName)) {
+  if (!/^(Edit|Write|WriteFile|StrReplaceFile|Bash)$/.test(toolName)) {
     process.exit(0);
   }
 
-  const filePath = extractFilePath(toolInput);
-  if (!filePath) process.exit(0);
+  const requestedPath = extractFilePath(toolInput);
 
   // WI-399 A3: resolve the TARGET's repo. Outside any repo → not governed.
   // A repo WITHOUT a .svc directory is not svc-governed (scratch repos, /tmp
@@ -216,18 +216,25 @@ async function main() {
     ...call.raw, host: operationHost,
     tool_name: call.toolName, tool_input: call.toolInput, cwd: call.session_cwd || call.cwd,
   });
-  const absTarget = operationScope.targets[0]?.canonical || path.resolve(operationScope.operation_cwd || call.cwd || process.cwd(), filePath);
-  const repo = findRepoRoot(path.dirname(absTarget));
-  if (!repo) process.exit(0);
-  try {
-    if (!fs.statSync(path.join(repo.root, ".svc")).isDirectory()) process.exit(0);
-  } catch {
-    process.exit(0);
-  }
+  const operationRoot = operationScope.operation_repository?.worktree_root || operationScope.operation_cwd || call.cwd || process.cwd();
+  const mutationTargets = toolName === "Bash"
+    ? classifyBashMutationTargets(extractCommand(toolInput), { cwd: operationRoot })
+    : [operationScope.targets[0]?.canonical || path.resolve(operationRoot, requestedPath)].filter(Boolean);
+  if (!mutationTargets.length) process.exit(0);
+  const checkedRepos = new Set();
+  for (const absTarget of mutationTargets) {
+    const repo = findRepoRoot(path.dirname(absTarget));
+    if (!repo || checkedRepos.has(repo.root)) continue;
+    checkedRepos.add(repo.root);
+    try {
+      if (!fs.statSync(path.join(repo.root, ".svc")).isDirectory()) continue;
+    } catch {
+      continue;
+    }
 
-  const found = readLastContract(repo.root);
-  if (!found) {
-    denyContract("SVC-SESSION-CONTRACT-MISSING",
+    const found = readLastContract(repo.root);
+    if (!found) {
+      denyContract("SVC-SESSION-CONTRACT-MISSING",
       `[svc-session-contract-freshness] BLOCKED: Session contract is MISSING in ${repo.root}.\n` +
       `Before any Edit, Write, or Bash tool call, write a session contract entry to .svc/session-contract.jsonl:\n` +
       `  {\"ts\":\"ISO-8601\",\"bound_to\":\"user-request|wi-backlog|framework-evolution\",\"request\":\"<summary>\",\"wi\":null_or_id,\"skill\":null_or_name,\"guard_override_count\":0}\n` +
@@ -235,24 +242,25 @@ async function main() {
       `See route-workflow/SKILL.md §Session Contract and audit-session-execution F1/F2/F3.\n` +
       `Bypass: SVC_DISABLED_HOOKS=svc-session-contract-freshness (emergency only).`,
       { target: absTarget, recovery: "Write a session-contract entry to .svc/session-contract.jsonl (route-workflow does this automatically) before editing." }
-    );
-  }
+      );
+    }
 
-  const blockReason = checkFreshness(found.contract);
-  if (blockReason) {
-    if (isWorktreeBootstrap(repo, found.file)) {
-      process.stderr.write(
+    const blockReason = checkFreshness(found.contract);
+    if (blockReason) {
+      if (isWorktreeBootstrap(repo, found.file)) {
+        process.stderr.write(
         `[svc-session-contract-freshness] WARN (fresh-worktree bootstrap): the tracked ` +
         `contract in ${repo.root} carries the last COMMITTED line, which is stale. ` +
         `Append a fresh contract line for this worktree session:\n` +
         `  printf '%s\\n' "{\\"ts\\":\\"$(date -Iseconds)\\",...}" >> ${path.join(repo.root, ".svc", "session-contract.jsonl")}\n`
-      );
-      process.exit(0);
+        );
+        continue;
+      }
+      denyContract("SVC-SESSION-CONTRACT-STALE", blockReason, {
+        target: absTarget,
+        recovery: "Append a fresh contract line to .svc/session-contract.jsonl (or run route-workflow); set SVC_CONTRACT_MAX_AGE_HOURS=0 to bypass the age check for this session.",
+      });
     }
-    denyContract("SVC-SESSION-CONTRACT-STALE", blockReason, {
-      target: absTarget,
-      recovery: "Append a fresh contract line to .svc/session-contract.jsonl (or run route-workflow); set SVC_CONTRACT_MAX_AGE_HOURS=0 to bypass the age check for this session.",
-    });
   }
 
   process.exit(0);
