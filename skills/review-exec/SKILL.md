@@ -181,7 +181,7 @@ node scripts/review-topology-v2.mjs plan \
 
 Host detection selects only the topology namespace; it does not select a reviewer profile. This
 owner-only external file is the active topology authority. It configures self-review,
-same-family Sol, AGY Gemini 3.6 Flash High, and optional Opus independently by host, phase, and
+same-family Sol, AGY Gemini 3.7 Flash High, and optional Opus independently by host, phase, and
 mode. Do not use the legacy `--select-profile` registry operation to substitute Sol for a Claude
 tuple: that compatibility selector is not the owner panel. Pass every resolved external station
 to `run-external-review.mjs` with `--reviewer-config`, `--reviewer-mode production`,

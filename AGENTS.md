@@ -356,7 +356,7 @@ All smaller arrays must remain subsets of `includedSkills`. `scripts/lint-skills
   `SVC_REVIEWER_POLICY`). Reviewer topology is selected by orchestrator, phase,
   and mode; changing the policy does not require a framework commit.
 - For Codex production review, self-review is required, Sol is a required
-  same-family advisory reviewer, AGY Gemini 3.6 Flash High is the required
+  same-family advisory reviewer, AGY Gemini 3.7 Flash High is the required
   different-family independent reviewer, and Opus is optional when available.
 - `scripts/review-plan-codex.sh` auto-discovers that policy. Legacy
   `resolve-adversarial-reviewer.sh` / `--select-profile` behavior is
