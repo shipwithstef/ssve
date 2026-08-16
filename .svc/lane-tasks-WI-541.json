@@ -2,7 +2,7 @@
   "wi": "WI-541",
   "lane": "framework",
   "created": "2026-08-15T12:46:52.546Z",
-  "status": "pending",
+  "status": "completed",
   "delivery_graph": {
     "compiler_version": 1,
     "user_intent": "Deliver the full locally committed SSVE transition through a lossless bulk program and per-gap governed chains, preserving security and product quality while making redundant or unconsumed machinery faster or removing it only with proof",
@@ -1171,26 +1171,38 @@
     {
       "id": 17,
       "subject": "land-changeset: create the governed local promotion commit without GitHub",
-      "status": "pending",
+      "status": "completed",
       "blocked_by": [
         13
       ],
       "metadata": {
         "skill": "land-changeset",
         "publication_mode": "local-only"
-      }
+      },
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-08-16T18:30:38.233Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-08-16T18:30:38.289Z"
     },
     {
       "id": 18,
       "subject": "verify-promotion: verify the exact locally promoted commit and install surface",
-      "status": "pending",
+      "status": "completed",
       "blocked_by": [
         17
       ],
       "metadata": {
         "skill": "verify-promotion",
         "publication_mode": "local-only"
-      }
+      },
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-08-16T18:30:38.392Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-08-16T18:30:38.452Z"
     }
   ]
 }

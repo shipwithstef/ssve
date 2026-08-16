@@ -1,6 +1,6 @@
 # WI-541 Full Framework Transition
 
-**Status:** BASELINED
+**Status:** VERIFIED
 **Type:** Enabler
 **Mode:** contract-change
 **Lane:** framework
@@ -38,15 +38,15 @@ The change must preserve the full evidence chain. Speed comes from removing dead
 
 As the framework owner, I want one audited denominator and final disposition for every unique HoursHub-derived suggestion so that repeated worktree residue cannot hide either lost work or duplicate work.
 
-### S2 — Route controller
+### S2 — Router and pipeline spine
 
-As the route controller, I want compiled graphs to contain every mandatory review and verification stage in the correct order so that a validator cannot certify a structurally incomplete chain.
+As the router and pipeline spine, I want every mutable lane to require and compile the exact plan/execute/review chain so that quality gates cannot be bypassed by lane selection or missing tasks.
 
-### S3 — Secure executor
+### S3 — Host and worker authority
 
-As the executor, I want transport capability and operation authority resolved before a worker is launched, and sanctioned recovery to be reachable, so that safe work progresses without bypassing fail-closed ownership.
+As the host and worker authority system, I want concrete paths guarded against Bash mutation, child execution cleanly contained or escalated, and same-owner recovery explicit so that worker execution is safe and unblocked.
 
-### S4 — Planner and reviewer
+### S4 — Planner and reviewer pair
 
 As the planner/reviewer pair, I want file ownership, product safety, and claim provenance mechanically testable so that parallelism, money paths, and absence claims cannot create false-green plans.
 
@@ -58,31 +58,31 @@ As the learning system, I want captured evidence normalized, triaged, elevated t
 
 | AC | Description | QA | E2E | Test |
 |---|---|---|---|---|
-| W541-01 | [S1] A content-deduped source ledger lists every unique current SSVE/registered-HoursHub proposal family and staged learning, with exactly one evidenced disposition: `implemented`, `implement`, `rejected`, or `track`. | — | 🔲 | deterministic census fixture |
-| W541-02 | [S2] Every mutable product/framework lane compiles exactly one ordered `plan-changeset -> review-plan -> execute-changeset -> review-gate -> review-exec -> audit-implementation -> land-changeset -> verify-promotion` chain. | — | 🔲 | compiler fixtures per lane |
-| W541-03 | [S2] Lane validation rejects omission, duplication, substitution, or reordering of either review task; `review-gate` cannot satisfy `review-exec`. | — | 🔲 | negative graph fixtures |
-| W541-04 | [S3] Every concrete-path PreTool guard covers Bash mutation through the shared decoded-argv classifier or carries a tested exemption naming its separate coverage; Bash reads remain allowed. | — | 🔲 | negative/positive hook replay |
-| W541-05 | [S3] A pure child-transport resolver selects only `delegated-wrapper`, `controller`, or `read-only-native`; generic `agents:true` never authorizes mutation. | — | 🔲 | resolver matrix |
-| W541-06 | [S3] Unsupported native mutating work selects controller before launch while read-only native work remains available; a delegated child must present the complete identity/token/worktree/path/containment/receipt tuple. | — | 🔲 | HoursHub billing topology replay |
-| W541-07 | [S3] Detached promotion uses an expiring, single-purpose capability bound to the complete promotion tuple; any foreign or widened tuple fails before mutation. | — | 🔲 | authority state-machine tests |
-| W541-08 | [S3] Same-owner legacy worktree bootstrap converges missing claim/binding state only after secure path, branch, repository, clean-authority, and generation checks; the WI-538 loader deadlock replays without bypass. | — | 🔲 | disposable worktree replay |
-| W541-09 | [S4] Every parallel plan declares pairwise-disjoint file ownership; a shared file has one owner plus dependency edges, and diff-vs-declaration violations fail. | — | 🔲 | stream validator fixtures |
-| W541-10 | [S4] A balance, ledger, quota, entitlement, or counter writer cannot enter execution until compensating behavior in both operation orders and a property sweep are planned. | — | 🔲 | plan/review fixtures |
-| W541-11 | [S4] An inherited blocker, credential-absence claim, or zero-caller claim names direct verification evidence; canonical absence search covers slug/invoke namespaces and treats zero without a denominator as unproven. | — | 🔲 | claim/caller-search fixtures |
-| W541-12 | [S4] A review based only on submitter PASS prose is invalid; the reviewer receipt binds reviewer-run commands/outputs and includes parse/collect proof for deletion-bearing executable diffs. | — | 🔲 | review receipt fixtures |
-| W541-13 | [S5] Framework/project learning loaders normalize id/key and numeric/string confidence into one schema; malformed entries are reported rather than trusted. | — | 🔲 | ledger schema fixtures |
-| W541-14 | [S5] Landing performs bounded promotion triage, elevation passes `evaluate-rule`, federated roots are validated, and recall records used/ignored plus outcome linkage before framework credit. | — | 🔲 | learning lifecycle replay |
-| W541-15 | [S3] `authorization_envelope` enforcement observes a real outward-action boundary: outside work is denied, inside-envelope stops are recorded, absence preserves current behavior, and p95 stays within budget. | — | 🔲 | boundary and timing fixtures |
-| W541-16 | [S1] `quick-fix` is absent from core routing and curated host guidance while its risk/eligibility detectors remain byte-unchanged. | — | 🔲 | manifest lint and route replay |
-| W541-17 | [S2] Concurrent task-graph phase/status/skill updates lose no update; atomic closures do not call `process.exit()` and release locks on error. | — | 🔲 | real concurrency fixture |
-| W541-18 | [S1] The refuted markdown-candidate optimization is removed with its failed premise recorded; no parser for an unspecified format is added. | — | 🔲 | plan diff assertion |
-| W541-19 | [S2] `story_receipt_sha256` is an optional 64-hex schema property: absence validates and malformed input fails. | — | 🔲 | receipt schema fixtures |
-| W541-20 | [S2] Stage-registry validation is single-sourced, branch-index genesis uses a real SHA, route literal commands execute within budget, and story-receipt Git reads use arg arrays. | — | 🔲 | WI-523 focused checks |
-| W541-21 | [S1] Every direct open proposal has a current disposition; expired deferrals fail and the validator prints numerator/denominator counts without deleting history. | — | 🔲 | triage validator |
-| W541-22 | [S1] New executable machinery has a declared consumer and behavioral test or is not introduced; affected existing machinery is removed only after a zero-consumer proof. | — | 🔲 | consumption audit |
-| W541-23 | [S1] Focused tests, full Tier 1, manifest lint, pipeline integrity, security review, implementation audit, and session audit finish with zero unresolved Critical/High findings. | — | 🔲 | final-SHA local evidence |
-| W541-24 | [S1] `./setup --all-hosts` plus install-drift validation converge all eight hosts, and installed Codex replays applicable authority/transport scenarios. | — | 🔲 | installed-host evidence |
-| W541-25 | [S1] A local commit contains the program and final-SHA chain evidence; no push/PR is attempted and local-only publication is recorded. | — | 🔲 | git and receipt evidence |
+| W541-01 | [S1] A content-deduped source ledger lists every unique current SSVE/registered-HoursHub proposal family and staged learning, with exactly one evidenced disposition: `implemented`, `implement`, `rejected`, or `track`. | PASS | PASS | deterministic census fixture |
+| W541-02 | [S2] Every mutable product/framework lane compiles exactly one ordered `plan-changeset -> review-plan -> execute-changeset -> review-gate -> review-exec -> audit-implementation -> land-changeset -> verify-promotion` chain. | PASS | PASS | compiler fixtures per lane |
+| W541-03 | [S2] Lane validation rejects omission, duplication, substitution, or reordering of either review task; `review-gate` cannot satisfy `review-exec`. | PASS | PASS | negative graph fixtures |
+| W541-04 | [S3] Every concrete-path PreTool guard covers Bash mutation through the shared decoded-argv classifier or carries a tested exemption naming its separate coverage; Bash reads remain allowed. | PASS | PASS | negative/positive hook replay |
+| W541-05 | [S3] A pure child-transport resolver selects only `delegated-wrapper`, `controller`, or `read-only-native`; generic `agents:true` never authorizes mutation. | PASS | PASS | resolver matrix |
+| W541-06 | [S3] Unsupported native mutating work selects controller before launch while read-only native work remains available; a delegated child must present the complete identity/token/worktree/path/containment/receipt tuple. | PASS | PASS | HoursHub billing topology replay |
+| W541-07 | [S3] Detached promotion uses an expiring, single-purpose capability bound to the complete promotion tuple; any foreign or widened tuple fails before mutation. | PASS | PASS | authority state-machine tests |
+| W541-08 | [S3] Same-owner legacy worktree bootstrap converges missing claim/binding state only after secure path, branch, repository, clean-authority, and generation checks; the WI-538 loader deadlock replays without bypass. | PASS | PASS | disposable worktree replay |
+| W541-09 | [S4] Every parallel plan declares pairwise-disjoint file ownership; a shared file has one owner plus dependency edges, and diff-vs-declaration violations fail. | PASS | PASS | stream validator fixtures |
+| W541-10 | [S4] A balance, ledger, quota, entitlement, or counter writer cannot enter execution until compensating behavior in both operation orders and a property sweep are planned. | PASS | PASS | plan/review fixtures |
+| W541-11 | [S4] An inherited blocker, credential-absence claim, or zero-caller claim names direct verification evidence; canonical absence search covers slug/invoke namespaces and treats zero without a denominator as unproven. | PASS | PASS | claim/caller-search fixtures |
+| W541-12 | [S4] A review based only on submitter PASS prose is invalid; the reviewer receipt binds reviewer-run commands/outputs and includes parse/collect proof for deletion-bearing executable diffs. | PASS | PASS | review receipt fixtures |
+| W541-13 | [S5] Framework/project learning loaders normalize id/key and numeric/string confidence into one schema; malformed entries are reported rather than trusted. | PASS | PASS | ledger schema fixtures |
+| W541-14 | [S5] Landing performs bounded promotion triage, elevation passes `evaluate-rule`, federated roots are validated, and recall records used/ignored plus outcome linkage before framework credit. | PASS | PASS | learning lifecycle replay |
+| W541-15 | [S3] `authorization_envelope` enforcement observes a real outward-action boundary: outside work is denied, inside-envelope stops are recorded, absence preserves current behavior, and p95 stays within budget. | PASS | PASS | boundary and timing fixtures |
+| W541-16 | [S1] `quick-fix` is absent from core routing and curated host guidance while its risk/eligibility detectors remain byte-unchanged. | PASS | PASS | manifest lint and route replay |
+| W541-17 | [S2] Concurrent task-graph phase/status/skill updates lose no update; atomic closures do not call `process.exit()` and release locks on error. | PASS | PASS | real concurrency fixture |
+| W541-18 | [S1] The refuted markdown-candidate optimization is removed with its failed premise recorded; no parser for an unspecified format is added. | PASS | PASS | plan diff assertion |
+| W541-19 | [S2] `story_receipt_sha256` is an optional 64-hex schema property: absence validates and malformed input fails. | PASS | PASS | receipt schema fixtures |
+| W541-20 | [S2] Stage-registry validation is single-sourced, branch-index genesis uses a real SHA, route literal commands execute within budget, and story-receipt Git reads use arg arrays. | PASS | PASS | WI-523 focused checks |
+| W541-21 | [S1] Every direct open proposal has a current disposition; expired deferrals fail and the validator prints numerator/denominator counts without deleting history. | PASS | PASS | triage validator |
+| W541-22 | [S1] New executable machinery has a declared consumer and behavioral test or is not introduced; affected existing machinery is removed only after a zero-consumer proof. | PASS | PASS | consumption audit |
+| W541-23 | [S1] Focused tests, full Tier 1, manifest lint, pipeline integrity, security review, implementation audit, and session audit finish with zero unresolved Critical/High findings. | PASS | PASS | final-SHA local evidence |
+| W541-24 | [S1] `./setup --all-hosts` plus install-drift validation converge all eight hosts, and installed Codex replays applicable authority/transport scenarios. | PASS | PASS | installed-host evidence |
+| W541-25 | [S1] A local commit contains the program and final-SHA chain evidence; no push/PR is attempted and local-only publication is recorded. | PASS | PASS | git and receipt evidence |
 
 ## System Dependencies
 
