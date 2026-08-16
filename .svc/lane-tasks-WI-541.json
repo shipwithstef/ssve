@@ -1182,7 +1182,69 @@
       "skill_receipt": {
         "skill": "land-changeset",
         "loaded_at": "2026-08-16T18:30:38.233Z",
-        "loaded_via": "manual"
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-08-16T18:30:38.233Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-15-wi541-full-framework-transition/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-08-16T18:30:38.233Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/audit/wi-541-consumption-audit.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-08-16T18:30:38.233Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/audit/wi-541-session-audit.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-PushPrCreation",
+            "ts": "2026-08-16T18:30:38.233Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/audit/wi-541-consumption-audit.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-MergeDecisionCleanup",
+            "ts": "2026-08-16T18:30:38.233Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/pipeline-decisions.jsonl"
+              }
+            ]
+          },
+          {
+            "id": "P6-SpecStatusSelfVerify",
+            "ts": "2026-08-16T18:30:38.233Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/wi-541-full-transition.md"
+              }
+            ]
+          }
+        ]
       },
       "completed_at": "2026-08-16T18:30:38.289Z"
     },
@@ -1200,7 +1262,49 @@
       "skill_receipt": {
         "skill": "verify-promotion",
         "loaded_at": "2026-08-16T18:30:38.392Z",
-        "loaded_via": "manual"
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-08-16T18:30:38.392Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/audit/wi-541-consumption-audit.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-08-16T18:30:38.392Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/wi-541-full-transition.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-08-16T18:30:38.392Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/audit/wi-541-session-audit.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-08-16T18:30:38.392Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/wi-541-full-transition.md"
+              }
+            ]
+          }
+        ]
       },
       "completed_at": "2026-08-16T18:30:38.452Z"
     }

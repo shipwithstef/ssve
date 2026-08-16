@@ -7,48 +7,59 @@ set -u
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$REPO_ROOT"
 
-SCHEMA_DIR="schemas/receipts"
-RECEIPTS_DIR=".svc/receipts"
+node --input-type=module -e '
+import fs from "node:fs";
+import path from "node:path";
 
-if [[ ! -d "$SCHEMA_DIR" ]]; then
-  echo "PASS: no schemas yet (pre-chain installation)"
-  exit 0
-fi
-if [[ ! -d "$RECEIPTS_DIR" ]]; then
-  echo "PASS: no receipts yet"
-  exit 0
-fi
+const SCHEMA_DIR = "schemas/receipts";
+const RECEIPTS_DIR = ".svc/receipts";
 
-FAIL=0
-for s in "$SCHEMA_DIR"/*.schema.json; do
-  [[ -f "$s" ]] || continue
-  if ! python3 -c "import json,sys; json.load(open('$s'))" 2>/dev/null; then
-    echo "FAIL: schema $s is not valid JSON"
-    FAIL=1
-  fi
-done
+if (!fs.existsSync(SCHEMA_DIR)) {
+  console.log("PASS: no schemas yet (pre-chain installation)");
+  process.exit(0);
+}
 
-for r in "$RECEIPTS_DIR"/*/*.json; do
-  [[ -f "$r" ]] || continue
-  if ! python3 -c "import json,sys; json.load(open('$r'))" 2>/dev/null; then
-    echo "FAIL: receipt $r is not valid JSON"
-    FAIL=1
-    continue
-  fi
-  TYPE="$(python3 -c "import json; print(json.load(open('$r')).get('receipt_type','UNKNOWN'))")"
-  if [[ "$TYPE" == "UNKNOWN" ]]; then
-    echo "FAIL: receipt $r has no receipt_type"
-    FAIL=1
-    continue
-  fi
-  if [[ ! -f "$SCHEMA_DIR/${TYPE}.schema.json" ]]; then
-    echo "FAIL: receipt $r type=$TYPE has no schema"
-    FAIL=1
-  fi
-done
+let fail = 0;
+for (const s of fs.readdirSync(SCHEMA_DIR)) {
+  if (!s.endsWith(".schema.json")) continue;
+  try {
+    JSON.parse(fs.readFileSync(path.join(SCHEMA_DIR, s), "utf8"));
+  } catch (e) {
+    console.error(`FAIL: schema ${s} is not valid JSON`);
+    fail = 1;
+  }
+}
 
-if [[ $FAIL -eq 0 ]]; then
-  echo "PASS: receipts + schemas valid"
-  exit 0
-fi
-exit 1
+if (!fs.existsSync(RECEIPTS_DIR)) {
+  console.log("PASS: no receipts yet");
+  process.exit(fail ? 1 : 0);
+}
+
+for (const dir of fs.readdirSync(RECEIPTS_DIR)) {
+  const sub = path.join(RECEIPTS_DIR, dir);
+  let stat;
+  try { stat = fs.statSync(sub); } catch { continue; }
+  if (!stat.isDirectory()) continue;
+  for (const file of fs.readdirSync(sub)) {
+    if (!file.endsWith(".json")) continue;
+    const r = path.join(sub, file);
+    try {
+      const data = JSON.parse(fs.readFileSync(r, "utf8"));
+      const type = data.receipt_type;
+      if (!type) {
+        console.error(`FAIL: receipt ${r} has no receipt_type`);
+        fail = 1;
+      } else if (!fs.existsSync(path.join(SCHEMA_DIR, `${type}.schema.json`))) {
+        console.error(`FAIL: receipt ${r} type=${type} has no schema`);
+        fail = 1;
+      }
+    } catch (e) {
+      console.error(`FAIL: receipt ${r} is not valid JSON`);
+      fail = 1;
+    }
+  }
+}
+
+if (fail !== 0) process.exit(1);
+console.log("PASS: receipts + schemas valid");
+'
