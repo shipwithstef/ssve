@@ -38,10 +38,16 @@ cat > "$CONFIG" <<'EOF'
 installer = "internal"
 
 # keep this user comment
+# not an svc-owned hook
 [[hooks]]
 event = "SessionEnd"
 matcher = "*"
 command = "echo user-flat-keep"
+timeout = 5
+
+[[hooks.Stop]]
+matcher = "*"
+command = "node ~/.grok/skills/hooks/user-keep.mjs"
 timeout = 5
 
 [[hooks.UserPromptSubmit]]
@@ -147,7 +153,9 @@ for token in \
   'echo ${HOME}/brace-keep' \
   'FOO = "bar"' \
   'echo \"quoted-keep\"' \
-  "keep this user comment"
+  "keep this user comment" \
+  "not an svc-owned hook" \
+  "node ~/.grok/skills/hooks/user-keep.mjs"
 do
   if grep -Fq "$token" "$CONFIG"; then
     pass "preserved user text: $token"

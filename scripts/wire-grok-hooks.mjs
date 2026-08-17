@@ -380,7 +380,12 @@ function isHookTableHeader(trimmed) {
 }
 
 function isSvcOwnedText(text) {
-  return text.includes("svc-") || text.includes("/skills/hooks/");
+  // Drop governed SVC hook scripts and the svc-enforce launcher.
+  // Keep user hooks under ~/.grok/skills/hooks/user-keep.mjs and
+  // comments that mention "svc-" without a governed command.
+  return /(?:^|[^\w.-])svc-[A-Za-z0-9._-]+\.(?:mjs|js|sh)\b/.test(text)
+    || /(?:^|[^\w.-])svc-enforce(?:\s|$)/.test(text)
+    || text.includes("/skills/hooks/svc-");
 }
 
 // Split TOML into ordered text/hook-table regions so non-SVC hooks (HTTP, env,
