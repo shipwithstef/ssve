@@ -39,6 +39,14 @@ process.stdout.write(value);
 NODE
 }
 
+run_hook_isolated() {
+  local host="$1"
+  env -u GROK_SESSION_ID -u CLAUDE_SESSION_ID -u CODEX_SESSION_ID \
+    -u CODEX_THREAD_ID -u KIMI_SESSION_ID -u GEMINI_SESSION_ID -u SVC_SESSION_ID \
+    HOME="$TMP_HOME" SVC_HOST="$host" SVC_REPO_SEARCH_PATHS=/nonexistent \
+    node "$HOOK" </dev/null 2>&1 || true
+}
+
 run_for_host() {
   local host="$1"
   local skills_path
@@ -47,13 +55,38 @@ run_for_host() {
   ln -sf /nonexistent/svc-wi186-dangling "$skills_path/dangling-link"
 
   local out
-  out=$(HOME="$TMP_HOME" SVC_HOST="$host" SVC_REPO_SEARCH_PATHS=/nonexistent node "$HOOK" </dev/null 2>&1 || true)
+  out=$(run_hook_isolated "$host")
   rm -f "$skills_path/dangling-link"
 
   if echo "$out" | grep -q "\[svc-session-start:$host\]" && echo "$out" | grep -q "dangling"; then
     pass "$host drift is surfaced from host skills path"
   else
     fail "$host drift was not surfaced; output: $out"
+  fi
+}
+
+# WI-542: portable `~` command in Grok/Kimi TOML is present when the file exists.
+run_tilde_present() {
+  local host="$1"
+  local host_dir="$2"
+  local skills_path
+  skills_path="$(host_field "$host" skills_path)"
+  mkdir -p "$skills_path" "$TMP_HOME/.fakehost/skills/hooks"
+  printf '%s\n' 'export {}' > "$TMP_HOME/.fakehost/skills/hooks/foo.mjs"
+  mkdir -p "$TMP_HOME/$host_dir"
+  cat > "$TMP_HOME/$host_dir/config.toml" <<'EOF'
+[[hooks]]
+event = "SessionStart"
+command = "node ~/.fakehost/skills/hooks/foo.mjs"
+timeout = 30
+EOF
+  local out
+  out=$(run_hook_isolated "$host")
+  rm -f "$TMP_HOME/$host_dir/config.toml" "$TMP_HOME/.fakehost/skills/hooks/foo.mjs"
+  if [ -z "$out" ]; then
+    pass "$host TOML tilde path present is silent"
+  else
+    fail "$host TOML tilde present-path was not silent; output: $out"
   fi
 }
 
@@ -79,6 +112,9 @@ for (const file of fs.readdirSync("provision/hosts").filter((f) => f.endsWith(".
 for host in "${HOSTS[@]}"; do
   run_for_host "$host"
 done
+
+run_tilde_present grok ".grok"
+run_tilde_present kimi ".kimi"
 
 cat > "$FIXTURE_MANIFEST" <<'JSON'
 {
