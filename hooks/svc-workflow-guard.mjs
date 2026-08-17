@@ -666,7 +666,8 @@ function detectHost() {
       if (comm.includes("gemini")) return "gemini";
       if (comm.includes("opencode")) return "opencode";
       if (comm.includes("antigravity")) return "antigravity";
-      if (comm.includes("cursor")) return "cursor";
+      if (comm.includes("cursor") || comm === "agent" || comm.includes("cursor-agent")) return "cursor";
+      if (comm.includes("grok")) return "grok";
       pid = parseInt(execFileSync("ps", ["-o", "ppid=", String(pid)], { encoding: "utf8" }).trim(), 10);
       depth++;
     }
@@ -681,6 +682,7 @@ function detectHost() {
   if (process.env.GEMINI_CLI_IDE_SERVER_PORT) return "gemini";
   if (process.env.OPENCODE) return "opencode";
   if (process.env.CURSOR_TRACE_ID || process.env.CURSOR_AGENT) return "cursor";
+  if (process.env.GROK_CLI || process.env.GROK_HOME || process.env.GROK_SESSION_ID || process.env.XAI_API_KEY) return "grok";
   if (process.env.ANTIGRAVITY) return "antigravity";
 
   return "unknown";
@@ -706,7 +708,8 @@ function getCommitAttribution(host) {
     gemini: "Gemini 2.5 Pro (Gemini CLI) <contact-4a2d56cec3@example.invalid>",
     opencode: "OpenCode CLI <contact-dabed2f59a@example.invalid>",
     antigravity: "Antigravity <contact-4a2d56cec3@example.invalid>",
-    cursor: "Cursor <contact-a755e48a92@example.invalid>",
+    cursor: "Cursor CLI <contact-c4b78912de@example.invalid>",
+    grok:   "Grok 4.6 (Grok Build CLI) <contact-4f9e8a71b2@example.invalid>",
   };
   return attributions[host] || "<Model> (<Host>) <contact-a319d7a9d9@example.invalid>";
 }

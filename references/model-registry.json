@@ -183,6 +183,27 @@
    ],
    "commitAttribution": "OpenCode CLI <contact-dabed2f59a@example.invalid>"
   },
+  "cursor": {
+   "name": "Cursor CLI",
+   "detection": {
+    "envVars": [
+     "CURSOR_TRACE_ID",
+     "CURSOR_AGENT"
+    ],
+    "parentProcess": "agent"
+   },
+   "setupFlag": "--host cursor",
+   "skillsPath": "~/.cursor/skills",
+   "nativeCapabilities": [
+    "skills",
+    "hooks",
+    "plugins",
+    "mcp",
+    "commands",
+    "agents"
+   ],
+   "commitAttribution": "Cursor CLI <contact-c4b78912de@example.invalid>"
+  },
   "grok": {
    "name": "Grok Build CLI",
    "detection": {

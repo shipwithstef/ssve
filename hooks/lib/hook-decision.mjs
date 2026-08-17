@@ -47,7 +47,7 @@ export function detectHost() {
   if (process.env.CLAUDE_PROJECT_DIR) return "claude"; // Claude without plugin env
   if (process.env.CODEX_HOME || process.env.CODEX_SESSION_ID) return "codex";
   if (process.env.KIMI_HOME || process.env.KIMI_SESSION_ID) return "kimi";
-  if (process.env.GROK_SESSION_ID || process.env.XAI_API_KEY || process.env.GROK_HOME) return "grok";
+  if (process.env.GROK_SESSION_ID || process.env.XAI_API_KEY || process.env.GROK_HOME || process.env.GROK_CLI) return "grok";
   if (process.env.CURSOR_TRACE_ID || process.env.CURSOR_AGENT) return "cursor";
   if (process.env.ANTIGRAVITY) return "antigravity";
   return "unknown";

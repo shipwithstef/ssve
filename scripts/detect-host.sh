@@ -36,8 +36,8 @@ detect_by_parent_process() {
       *gemini*)    echo "gemini" ; return 0 ;;
       *opencode*)  echo "opencode" ; return 0 ;;
       *antigravity*) echo "antigravity" ; return 0 ;;
-      *cursor*)    echo "cursor" ; return 0 ;;
-      *grok*)      echo "grok" ; return 0 ;;
+      *cursor*|*cursor-agent*|agent)    echo "cursor" ; return 0 ;;
+      *grok*|*grok-build*|*grok-cli*)   echo "grok" ; return 0 ;;
     esac
 
     # Move up to parent
