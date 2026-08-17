@@ -25,6 +25,7 @@ import {
 import { authorityJson, resolveAuthorityHost } from "../hooks/lib/resolve-wi.mjs";
 import { markerPathFor, readMarker, secureAncestors } from "../hooks/codex/lib/bootstrap-marker.mjs";
 import { consumeBootstrapHandoff } from "../hooks/codex/lib/session-handoff.mjs";
+import { resolveChainPolicy } from "./lib/chain-policy.mjs";
 
 import { WI_ID_RE as WI_RE } from "../hooks/lib/wi-id.mjs";
 const BRANCH_RE = /^[A-Za-z0-9](?:[A-Za-z0-9._-]{0,126}[A-Za-z0-9])?$/;
@@ -446,6 +447,17 @@ function rollbackAttempt(repoRoot, worktree, branch, marker, markerPath, opts = 
   removeMarker(markerPath);
 }
 
+// WI-549 (AC-549-4): this bootstrap NEVER writes a per-worktree
+// .svc/chain-policy.json — a linked worktree observes the SAME
+// repository-shared mode as every other worktree, resolved fresh through the
+// single shared resolver. Surfacing it here (rather than only on first hook
+// invocation) means a caller sees the effective mode + provenance at the
+// exact moment a worktree is ensured, before any commit/push is attempted.
+function chainPolicySummary(worktree) {
+  const resolved = resolveChainPolicy({ start: worktree });
+  return { mode: resolved.mode, source: resolved.source, conflict: resolved.conflict };
+}
+
 function result({ wi, branch, baseSha, worktree, owner, graphPath, generation, created, resumed }) {
   return {
     wi,
@@ -457,6 +469,7 @@ function result({ wi, branch, baseSha, worktree, owner, graphPath, generation, c
     claim_generation: Number(generation || 0),
     created: Boolean(created),
     resumed: Boolean(resumed),
+    chain_policy: chainPolicySummary(worktree),
   };
 }
 

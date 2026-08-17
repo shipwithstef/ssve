@@ -8,10 +8,12 @@ set -u
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
 
-MODE="warn"
-if [[ -f .svc/chain-policy.json ]] && grep -q '"mode": *"refuse"' .svc/chain-policy.json 2>/dev/null; then
-  MODE="refuse"
-fi
+# Detect mode via the WI-549 shared resolver: SVC_CHAIN_POLICY env ->
+# $(git-common-dir)/svc-chain-policy.json -> ~/.svc/chain-policy.json ->
+# fail-closed "refuse". A missing/unreadable policy, or a worktree-local
+# .svc/chain-policy.json that conflicts with the shared one, resolves to
+# "refuse" and prints diagnostics to stderr — never a silent "warn".
+MODE="$(node "$REPO_ROOT/scripts/lib/chain-policy.mjs" --mode)"
 
 # Permanent, narrow framework-maintenance lane.  A Codex maintenance commit in
 # the canonical SVC main checkout carries an explicit urgent-maintenance body

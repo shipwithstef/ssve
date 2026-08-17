@@ -52,9 +52,11 @@ const dir=fs.mkdtempSync(path.join(os.tmpdir(),"wi472-git-timeout-"));
 const realGit=spawnSync("which",["git"],{encoding:"utf8"}).stdout.trim();
 fs.writeFileSync(path.join(dir,"git"),`#!/usr/bin/env bash\n[[ "$1" == "log" ]] && { sleep 10; exit 0; }\nexec "${realGit}" "$@"\n`); fs.chmodSync(path.join(dir,"git"),0o755);
 fs.writeFileSync(path.join(dir,"gh"),"#!/usr/bin/env bash\nif [[ \"$1 $2\" == \"auth status\" ]]; then echo 'github.com account s7an-it'; echo '  Active account: true'; else echo '[]'; fi\n"); fs.chmodSync(path.join(dir,"gh"),0o755);
-const base="6b026ea9fbcee849e682d7aa47c3eec894512de3", checkpoint=path.join(dir,"checkpoint.json"), policy=path.join(dir,"policy.json");
-fs.writeFileSync(checkpoint,JSON.stringify({last_reconciled_sha:base,last_pr_watcher_run:"2026-07-20T00:00:00.000Z"})); fs.writeFileSync(policy,JSON.stringify({mode:"refuse"}));
-const result=spawnSync(process.execPath,["scripts/svc-reconcile.mjs"],{encoding:"utf8",timeout:5000,env:{...process.env,PATH:`${dir}:${process.env.PATH}`,SVC_RECONCILE_CHECKPOINT_PATH:checkpoint,SVC_RECONCILE_POLICY_PATH:policy,SVC_GH_AUTH_RECOVERY_PATH:path.join(dir,"auth.json"),SVC_RECONCILE_DRIVE_ROOT:path.join(dir,"drive"),SVC_RECONCILE_CHILD_TIMEOUT_MS:"100"}});
+const base="6b026ea9fbcee849e682d7aa47c3eec894512de3", checkpoint=path.join(dir,"checkpoint.json");
+fs.writeFileSync(checkpoint,JSON.stringify({last_reconciled_sha:base,last_pr_watcher_run:"2026-07-20T00:00:00.000Z"}));
+// WI-549: mode is resolved through the shared chain-policy resolver; force it
+// via the SVC_CHAIN_POLICY env override instead of a bespoke policy-path file.
+const result=spawnSync(process.execPath,["scripts/svc-reconcile.mjs"],{encoding:"utf8",timeout:5000,env:{...process.env,PATH:`${dir}:${process.env.PATH}`,SVC_RECONCILE_CHECKPOINT_PATH:checkpoint,SVC_CHAIN_POLICY:"refuse",SVC_GH_AUTH_RECOVERY_PATH:path.join(dir,"auth.json"),SVC_RECONCILE_DRIVE_ROOT:path.join(dir,"drive"),SVC_RECONCILE_CHILD_TIMEOUT_MS:"100"}});
 assert.equal(result.status,1,result.stderr); const report=JSON.parse(result.stdout), after=JSON.parse(fs.readFileSync(checkpoint));
 assert.equal(report.reconcile_metadata.receipt_check.classification,"timeout"); assert.equal(report.reconcile_metadata.receipt_check.mode,"discovery-failed");
 assert.equal(report.unaccounted_count,1); assert.equal(after.last_reconciled_sha,base);
