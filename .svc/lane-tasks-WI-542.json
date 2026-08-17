@@ -146,10 +146,23 @@
       "id": 6,
       "skill": "execute-changeset",
       "subject": "execute-changeset: parser, fixtures, then gated Grok wirer",
-      "status": "in_progress",
+      "status": "completed",
       "blocked_by": [
         5
-      ]
+      ],
+      "completed_at": "2026-08-17T06:06:08.606Z",
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-08-17T06:06:08.607Z",
+        "loaded_via": "manual",
+        "output": "hooks/svc-session-start-healthcheck.mjs",
+        "checkpoints": [
+          "4e532fbd checkpoint: task-1-parser",
+          "24ef77df checkpoint: task-2-tests",
+          "a7f6deb6 checkpoint: task-3-grok-schema"
+        ],
+        "note": "task-4 isolated grok 0.09s and kimi 0.10s silent; AC-542-7 not claimed"
+      }
     },
     {
       "id": 7,
