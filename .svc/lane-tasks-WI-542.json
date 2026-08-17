@@ -1,0 +1,200 @@
+{
+  "schema_version": 1,
+  "wi": "WI-542",
+  "lane": "bugfix",
+  "status": "in_progress",
+  "created": "2026-08-17T04:40:00.000Z",
+  "flags": [],
+  "related": [
+    "WI-543"
+  ],
+  "change_type": "bugfix",
+  "persona_coverage": {
+    "status": "not_required",
+    "reason": "Host-hook parser fix; no product user or admin surface. write-e2e is skipped because proof is tier-1 plus a live Grok session log."
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "diagnose-bug",
+      "subject": "diagnose-bug: Grok SessionStart 1 red — tilde false-positive + timeout",
+      "status": "completed",
+      "blocked_by": [],
+      "completed_at": "2026-08-17T04:40:00.000Z",
+      "skill_receipt": {
+        "skill": "diagnose-bug",
+        "loaded_at": "2026-08-17T04:37:00.000Z",
+        "loaded_via": "manual",
+        "output": "docs/specs/bugfix/wi-542-grok-sessionstart-healthcheck-brief.md"
+      }
+    },
+    {
+      "id": 2,
+      "skill": "design-tech",
+      "subject": "design-tech: not a product surface",
+      "status": "skipped",
+      "skip_reason": "Framework hook-parser and host-wiring bugfix. No product UI, data model, or new runtime dependency. The diagnose-bug brief is the design artifact.",
+      "blocked_by": [
+        1
+      ]
+    },
+    {
+      "id": 3,
+      "skill": "write-e2e",
+      "subject": "write-e2e: no product browser surface",
+      "status": "skipped",
+      "skip_reason": "Background-only host-hook fix. Proof is tier-1 healthcheck fixtures plus a live Grok session_start log, not a product browser journey.",
+      "blocked_by": [
+        1
+      ]
+    },
+    {
+      "id": 4,
+      "skill": "plan-changeset",
+      "subject": "plan-changeset: WI-542/WI-543 host-safe implementation plan",
+      "status": "completed",
+      "completed_at": "2026-08-17T04:55:00.000Z",
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-08-17T04:50:03.514Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-08-17T04:50:03.553Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-archetype.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-08-17T04:50:03.588Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-scope.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-08-17T04:50:03.620Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-17-wi542-grok-sessionstart-hooks/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-08-17T04:50:03.655Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-17-wi542-grok-sessionstart-hooks/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-08-17T04:50:03.689Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-archetype.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-08-17T04:50:03.724Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-17-wi542-grok-sessionstart-hooks/manifest.md"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "skill": "review-plan",
+      "subject": "review-plan: mechanical + adversarial gate before execute",
+      "status": "completed",
+      "blocked_by": [
+        4
+      ],
+      "completed_at": "2026-08-17T05:45:18.836Z",
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-08-17T05:45:18.836Z",
+        "loaded_via": "manual",
+        "output": "docs/plans/2026-08-17-wi542-grok-sessionstart-hooks/review-log.yaml",
+        "note": "Mechanical Tier-1 PASS; existing review-log F1–F10 ACCEPT; terminal_state REVISED_AND_REVIEWED; round-cap OK"
+      }
+    },
+    {
+      "id": 6,
+      "skill": "execute-changeset",
+      "subject": "execute-changeset: parser, fixtures, then gated Grok wirer",
+      "status": "in_progress",
+      "blocked_by": [
+        5
+      ]
+    },
+    {
+      "id": 7,
+      "skill": "review-gate",
+      "subject": "review-gate: validate fix against AC-542 and AC-543",
+      "status": "pending",
+      "blocked_by": [
+        6
+      ]
+    },
+    {
+      "id": 8,
+      "skill": "review-exec",
+      "subject": "review-exec: adversarial review of executed hook/wirer diff",
+      "status": "pending",
+      "blocked_by": [
+        7
+      ]
+    },
+    {
+      "id": 9,
+      "skill": "audit-implementation",
+      "subject": "audit-implementation: host-compat and AC coverage",
+      "status": "pending",
+      "blocked_by": [
+        8
+      ]
+    },
+    {
+      "id": 10,
+      "skill": "land-changeset",
+      "subject": "land-changeset: land WI-542/WI-543",
+      "status": "pending",
+      "blocked_by": [
+        9
+      ]
+    },
+    {
+      "id": 11,
+      "skill": "verify-promotion",
+      "subject": "verify-promotion: next live Grok session SessionStart healthcheck success",
+      "status": "pending",
+      "blocked_by": [
+        10
+      ]
+    }
+  ]
+}
