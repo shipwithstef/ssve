@@ -56,10 +56,24 @@ export function issueExternalReviewProvenance({receiptPath,packagePath,findingsP
   const payload={schema_version:1,request_id:receipt.request_id,candidate_digest:receipt.candidate_digest,package_sha256:sha(packageBytes),findings_sha256:sha(findingsBytes),receipt_sha256:sha(receiptBytes),receipt_path:fs.realpathSync(receiptPath),package_path:fs.realpathSync(packagePath),findings_path:fs.realpathSync(findingsPath),launcher_version:receipt.launcher_version,effective_tuple:receipt.effective_tuple,issued_at:new Date().toISOString()};
   const marker={...payload,authority_hmac_sha256:crypto.createHmac("sha256",key).update(canonical(payload)).digest("hex")};const file=path.join(issuance,`${receipt.request_id}.json`);const fd=fs.openSync(file,fs.constants.O_CREAT|fs.constants.O_EXCL|fs.constants.O_WRONLY,0o600);try{fs.writeFileSync(fd,`${JSON.stringify(marker,null,2)}\n`);fs.fsyncSync(fd);}finally{fs.closeSync(fd);}return file;
 }
-export function verifyExternalReviewProvenance({receiptPath,packagePath,findingsPath}){
-  const receiptBytes=secureFile(receiptPath,"external review receipt"),receipt=JSON.parse(receiptBytes);if(!UUID.test(String(receipt.request_id||"")))throw new Error("external review request id must be a UUID");
-  const packageBytes=secureFile(packagePath,"external review package"),findingsBytes=secureFile(findingsPath,"external review findings");const root=externalReviewProvenanceRoot({receiptPath}),key=authorityKey(root),file=path.join(secureDirectory(path.join(root,"issuance"),"external review issuance directory"),`${receipt.request_id}.json`);const marker=JSON.parse(secureFile(file,"external review issuance marker"));
+function bytesOrFile(fileOrBytes, label, explicitBytes) {
+  if (Buffer.isBuffer(explicitBytes)) return explicitBytes;
+  if (fileOrBytes && Buffer.isBuffer(fileOrBytes.bytes)) return fileOrBytes.bytes;
+  if (typeof fileOrBytes === "string") return secureFile(fileOrBytes, label);
+  throw new Error(`${label} bytes are missing`);
+}
+
+export function verifyExternalReviewProvenance({receiptPath,packagePath,findingsPath,receiptBytes=null,packageBytes=null,findingsBytes=null}){
+  const resolvedReceiptBytes=bytesOrFile(receiptPath,"external review receipt",receiptBytes);
+  const receipt=JSON.parse(resolvedReceiptBytes);if(!UUID.test(String(receipt.request_id||"")))throw new Error("external review request id must be a UUID");
+  const resolvedPackageBytes=bytesOrFile(packagePath,"external review package",packageBytes);
+  const resolvedFindingsBytes=bytesOrFile(findingsPath,"external review findings",findingsBytes);
+  const provenanceHint=typeof receiptPath==="string"?receiptPath:null;
+  const root=externalReviewProvenanceRoot({receiptPath:provenanceHint}),key=authorityKey(root),file=path.join(secureDirectory(path.join(root,"issuance"),"external review issuance directory"),`${receipt.request_id}.json`);const marker=JSON.parse(secureFile(file,"external review issuance marker"));
   const {authority_hmac_sha256,...payload}=marker;const expected=crypto.createHmac("sha256",key).update(canonical(payload)).digest("hex");if(typeof authority_hmac_sha256!=="string"||!crypto.timingSafeEqual(Buffer.from(expected,"hex"),Buffer.from(authority_hmac_sha256,"hex")))throw new Error("external review issuance HMAC mismatch");
-  const wanted={request_id:receipt.request_id,candidate_digest:receipt.candidate_digest,package_sha256:sha(packageBytes),findings_sha256:sha(findingsBytes),receipt_sha256:sha(receiptBytes),receipt_path:fs.realpathSync(receiptPath),package_path:fs.realpathSync(packagePath),findings_path:fs.realpathSync(findingsPath),launcher_version:receipt.launcher_version,effective_tuple:receipt.effective_tuple};
-  for(const [keyName,value]of Object.entries(wanted))if(canonical(payload[keyName])!==canonical(value))throw new Error(`external review issuance mismatch: ${keyName}`);return marker;
+  const wanted={request_id:receipt.request_id,candidate_digest:receipt.candidate_digest,package_sha256:sha(resolvedPackageBytes),findings_sha256:sha(resolvedFindingsBytes),receipt_sha256:sha(resolvedReceiptBytes),launcher_version:receipt.launcher_version,effective_tuple:receipt.effective_tuple};
+  for(const [keyName,value]of Object.entries(wanted))if(canonical(payload[keyName])!==canonical(value))throw new Error(`external review issuance mismatch: ${keyName}`);
+  const hashesMatch=payload.receipt_sha256===wanted.receipt_sha256&&payload.package_sha256===wanted.package_sha256&&payload.findings_sha256===wanted.findings_sha256;
+  if(!hashesMatch)throw new Error("external review issuance content hashes do not match relocated bytes");
+  return marker;
 }

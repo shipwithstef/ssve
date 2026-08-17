@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { familyOf } from "./cognitive-family.mjs";
 import { EXTERNAL_REVIEW_LAUNCHER_VERSION, validateExternalReviewReceiptSemantics } from "../run-external-review.mjs";
 import { candidateTreeIdentity, verifyExternalReviewProvenance } from "./external-review-provenance.mjs";
+import { getObject, lookupRelocation, resolveEvidenceBytes } from "./review-evidence-store.mjs";
 
 const digest = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 const sameJson = (left, right) => JSON.stringify(left) === JSON.stringify(right);
@@ -43,11 +44,15 @@ export function validateEvidenceSchema(value, schema, rootSchema = schema, locat
   return errors;
 }
 
-function secureArtifact(root, value, { externalOnly = true } = {}) {
-  if (!value || typeof value.path !== "string" || !/^[0-9a-f]{64}$/.test(String(value.sha256 || ""))) throw new Error("evidence artifacts require path and sha256");
-  const absolute = path.resolve(root, value.path); const svc = path.join(root, ".svc"); const required = externalOnly ? path.join(svc, "external-review-artifacts") : svc;
+function localCheckoutArtifact(root, value, { externalOnly = true } = {}) {
+  const absolute = path.isAbsolute(value.path) ? path.resolve(value.path) : path.resolve(root, value.path);
+  const relToRoot = path.relative(root, absolute);
+  if (relToRoot.startsWith("..") || path.isAbsolute(relToRoot)) return null;
+  const svc = path.join(root, ".svc");
+  const required = externalOnly ? path.join(svc, "external-review-artifacts") : svc;
   const rel = path.relative(required, absolute);
-  if (rel.startsWith("..") || path.isAbsolute(rel)) throw new Error(`evidence path escapes ${externalOnly ? "external review artifacts" : ".svc"}: ${value.path}`);
+  if (rel.startsWith("..") || path.isAbsolute(rel)) return null;
+  if (!fs.existsSync(absolute)) return null;
   let cursor = path.resolve(required);
   for (const part of rel.split(path.sep).slice(0, -1)) {
     cursor = path.join(cursor, part); const parentStat = fs.lstatSync(cursor);
@@ -57,7 +62,48 @@ function secureArtifact(root, value, { externalOnly = true } = {}) {
   if (!stat.isFile() || stat.isSymbolicLink() || fs.realpathSync(absolute) !== absolute || (typeof process.getuid === "function" && stat.uid !== process.getuid())) throw new Error(`evidence artifact is insecure: ${value.path}`);
   const bytes = fs.readFileSync(absolute);
   if (digest(bytes) !== value.sha256) throw new Error(`evidence digest mismatch: ${value.path}`);
-  return { absolute, bytes };
+  return { absolute, bytes, source: "checkout" };
+}
+
+function secureArtifact(root, value, { externalOnly = true, extraPaths = [] } = {}) {
+  const local = localCheckoutArtifact(root, value, { externalOnly });
+  if (local) return local;
+  return resolveEvidenceBytes(value, { start: root, extraPaths: [value.path, ...extraPaths] });
+}
+
+function artifactDigest(root, maybePath, declaredSha = null) {
+  if (declaredSha && /^[0-9a-f]{64}$/.test(declaredSha)) {
+    try { return getObject(declaredSha, { start: root }).sha256; } catch { /* try path */ }
+  }
+  const candidates = [maybePath, declaredSha].filter((value) => typeof value === "string" && value);
+  for (const candidate of candidates) {
+    try {
+      const relocated = lookupRelocation(candidate, { start: root });
+      if (relocated) return relocated.sha256;
+    } catch { /* fail closed below */ }
+    if (!path.isAbsolute(candidate) || fs.existsSync(candidate)) {
+      try {
+        if (fs.existsSync(candidate) && fs.lstatSync(candidate).isFile() && !fs.lstatSync(candidate).isSymbolicLink()) {
+          return digest(fs.readFileSync(candidate));
+        }
+      } catch { /* continue */ }
+    }
+  }
+  throw new Error(`cannot resolve artifact digest: ${maybePath || declaredSha}`);
+}
+
+function selfBindHolds(repository, entry, receipt, receiptBytes) {
+  const historical = receipt.artifacts?.receipt || "";
+  const checkoutResolved = path.resolve(repository, entry.path);
+  if (historical && path.resolve(historical) === checkoutResolved) return true;
+  if (digest(receiptBytes) !== entry.sha256) return false;
+  const mappedHistorical = historical ? lookupRelocation(historical, { start: repository }) : null;
+  const mappedEntry = lookupRelocation(entry.path, { start: repository })
+    || lookupRelocation(checkoutResolved, { start: repository });
+  const objectOk = (() => { try { return getObject(entry.sha256, { start: repository }).sha256 === entry.sha256; } catch { return false; } })();
+  if (mappedHistorical && mappedHistorical.sha256 === entry.sha256 && objectOk) return true;
+  if (mappedEntry && mappedEntry.sha256 === entry.sha256 && objectOk) return true;
+  return false;
 }
 
 export function verifyReviewerEvidence({ root = process.cwd(), reviewKind, body }) {
@@ -75,22 +121,22 @@ export function verifyReviewerEvidence({ root = process.cwd(), reviewKind, body 
   const launcherCommands = []; const launcherOutputs = [];
   for (const entry of evidence.launcher_receipts) {
     try {
-      const { bytes } = secureArtifact(repository, entry); const receipt = JSON.parse(bytes.toString("utf8"));
+      const loaded = secureArtifact(repository, entry, { extraPaths: [entry.path, path.resolve(repository, entry.path)] }); const bytes = loaded.bytes; const receipt = JSON.parse(bytes.toString("utf8"));
       const schemaErrors = validateEvidenceSchema(receipt, EXTERNAL_RECEIPT_SCHEMA);
       if (schemaErrors.length) throw new Error(`launcher receipt schema invalid: ${schemaErrors.slice(0, 3).join("; ")}`);
       const semanticErrors = validateExternalReviewReceiptSemantics(receipt);
       if (semanticErrors.length) throw new Error(`launcher receipt semantics invalid: ${semanticErrors.slice(0, 3).join("; ")}`);
       if (receipt.launcher_version !== EXTERNAL_REVIEW_LAUNCHER_VERSION) reasons.push(`launcher version is not current: ${entry.path}`);
       if (receipt.fixture_mode !== false || !Array.isArray(receipt.attempts) || receipt.attempts.length === 0) reasons.push(`launcher receipt is not a real external attempt: ${entry.path}`);
-      if (path.resolve(receipt.artifacts?.receipt || "") !== path.resolve(repository, entry.path)) reasons.push(`launcher receipt does not self-bind its canonical path: ${entry.path}`);
+      if (!selfBindHolds(repository, entry, receipt, bytes)) reasons.push(`launcher receipt does not self-bind its canonical path: ${entry.path}`);
       if (receipt.findings_schema_sha256 !== digest(fs.readFileSync(path.join(SCHEMA_DIR, "external-review-findings.schema.json")))) reasons.push(`launcher findings schema digest mismatch: ${entry.path}`);
       if (receipt.status !== "success" || !["success", "cache_hit"].includes(receipt.classification)) reasons.push(`launcher receipt is not a successful review: ${entry.path}`);
       if (receipt.review_kind !== reviewKind) reasons.push(`launcher review_kind=${receipt.review_kind} expected ${reviewKind}`);
       if (receipt.candidate_digest !== body.candidate_digest) reasons.push(`launcher candidate digest mismatch: ${entry.path}`);
-      const packageEntry={path:receipt.artifacts?.package,sha256:receipt.package_sha256};const packageArtifact=secureArtifact(repository,packageEntry);
+      const packageEntry={path:receipt.artifacts?.package,sha256:receipt.package_sha256};const packageArtifact=secureArtifact(repository,packageEntry,{extraPaths:[receipt.artifacts?.package]});
       if(!packageArtifact.bytes.includes(Buffer.from(body.candidate_digest)))reasons.push(`launcher package does not contain candidate digest: ${entry.path}`);
       const findingsEntry = { path: receipt.artifacts?.findings, sha256: receipt.findings_sha256 };
-      const findingsBytes = secureArtifact(repository, findingsEntry); const findings = JSON.parse(findingsBytes.bytes.toString("utf8"));
+      const findingsBytes = secureArtifact(repository, findingsEntry, { extraPaths: [receipt.artifacts?.findings] }); const findings = JSON.parse(findingsBytes.bytes.toString("utf8"));
       const findingsSchemaErrors = validateEvidenceSchema(findings, EXTERNAL_FINDINGS_SCHEMA);
       if (findingsSchemaErrors.length) reasons.push(`launcher findings schema invalid: ${findingsSchemaErrors.slice(0, 3).join("; ")}`);
       if (findings.review_kind !== reviewKind || !String(findings.verdict || "").startsWith("pass")) reasons.push(`launcher findings do not carry a passing ${reviewKind} verdict: ${entry.path}`);
@@ -101,22 +147,34 @@ export function verifyReviewerEvidence({ root = process.cwd(), reviewKind, body 
       if (receipt.effective_tuple?.host === "agy") {
         try {
           const transportPath = receipt.usage?.agy_transport_receipt || "";
-          const transport = secureArtifact(repository, { path: path.relative(repository, transportPath), sha256: receipt.usage?.agy_transport_receipt_sha256 });
+          const transportRel = path.isAbsolute(transportPath) ? transportPath : path.relative(repository, transportPath);
+          const transport = secureArtifact(repository, { path: path.isAbsolute(transportPath) ? transportPath : transportRel, sha256: receipt.usage?.agy_transport_receipt_sha256 }, { extraPaths: [transportPath] });
           const transportReceipt = JSON.parse(transport.bytes.toString("utf8"));
           if (transportReceipt.schema_version !== 1 || transportReceipt.status !== "success" || transportReceipt.classification !== "success" || transportReceipt.requested_model !== receipt.effective_tuple.model || transportReceipt.requested_effort !== receipt.effective_tuple.effort || transportReceipt.sandbox !== true || transportReceipt.mode !== "plan" || Number(transportReceipt.exit_code) !== 0) reasons.push(`AGY transport receipt is not a successful exact sandboxed invocation: ${entry.path}`);
         } catch (error) { reasons.push(`cannot verify AGY transport receipt for ${entry.path}: ${error.message}`); }
       }
       const attemptCommands = receipt.attempts.map((attempt) => attempt.command).filter(Boolean);
       if (!sameJson(receipt.reviewer_run?.commands, attemptCommands)) reasons.push(`launcher reviewer_run commands do not match attempts: ${entry.path}`);
-      launcherCommands.push(...(receipt.reviewer_run?.commands || [])); launcherOutputs.push(...(receipt.reviewer_run?.output_artifacts || []).map((value) => path.resolve(value)));
-      verifyExternalReviewProvenance({receiptPath:path.resolve(repository,entry.path),packagePath:packageArtifact.absolute,findingsPath:findingsBytes.absolute});
+      launcherCommands.push(...(receipt.reviewer_run?.commands || []));
+      launcherOutputs.push(...(receipt.reviewer_run?.output_artifacts || []).map((value) => artifactDigest(repository, value)));
+      const receiptFile = bytes ? { absolute: entry.path, bytes } : null;
+      verifyExternalReviewProvenance({
+        receiptPath: receiptFile,
+        receiptBytes: bytes,
+        packagePath: packageArtifact.absolute,
+        packageBytes: packageArtifact.bytes,
+        findingsPath: findingsBytes.absolute,
+        findingsBytes: findingsBytes.bytes,
+      });
     } catch (error) { reasons.push(`cannot verify launcher receipt ${entry?.path || "<missing>"}: ${error.message}`); }
   }
   if (!sameJson(evidence.commands, launcherCommands)) reasons.push("declared reviewer commands do not exactly match launcher reviewer_run commands");
   const declaredOutputs = [];
   for (const entry of evidence.output_artifacts) {
-    try { declaredOutputs.push(secureArtifact(repository, entry).absolute); }
-    catch (error) { reasons.push(error.message); }
+    try {
+      const loaded = secureArtifact(repository, entry, { extraPaths: [entry.path] });
+      declaredOutputs.push(digest(loaded.bytes));
+    } catch (error) { reasons.push(error.message); }
   }
   if (!sameJson([...declaredOutputs].sort(), [...launcherOutputs].sort())) reasons.push("declared output artifacts do not exactly match launcher reviewer_run outputs");
   if (evidence.deletion_bearing === true) {

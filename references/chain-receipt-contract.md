@@ -12,6 +12,12 @@ L3 (`svc-reconcile`) enforcement.
 - **Pre-commit staging:** `.svc/receipts/staging/<tree-hash>/<receipt-type>.json`
   — used when SHA is not yet known. Post-commit hook promotes to mirror +
   writes git note.
+- **Review evidence store (WI-547):** `$(git rev-parse --git-common-dir)/svc-review-evidence/`
+  — content-addressed copies of external-review artifact bytes plus a
+  historical-path → object-id relocation map. Lets `review-plan` /
+  `review-exec` evidence verify from canonical main after the execution
+  worktree is gone. Relocation never rewrites launcher receipts or notes.
+  Verification never launches a reviewer.
 
 ## Receipt Types and Producers
 

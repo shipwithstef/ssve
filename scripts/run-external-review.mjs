@@ -23,6 +23,7 @@ import { fileURLToPath } from 'node:url';
 import { WI_ID_RE } from "../hooks/lib/wi-id.mjs";
 import { resolveExternalReviewer } from './review-topology-v2.mjs';
 import { candidateTreeIdentity, issueExternalReviewProvenance } from './lib/external-review-provenance.mjs';
+import { relocateTree } from './lib/review-evidence-store.mjs';
 
 const LAUNCHER_VERSION = '2.4.0';
 export const EXTERNAL_REVIEW_LAUNCHER_VERSION = LAUNCHER_VERSION;
@@ -1342,6 +1343,9 @@ async function main() {
     if (errors.length) throw new Error(`internal receipt schema failure: ${errors.join('; ')}`);
     await writeJson(receiptPath, receipt);
     if (!fixture && receipt.status === 'success' && receipt.artifacts?.findings && receipt.artifacts?.package) issueExternalReviewProvenance({ receiptPath, packagePath: receipt.artifacts.package, findingsPath: receipt.artifacts.findings });
+    if (!fixture && receipt.status === 'success') {
+      relocateTree(artifactsDir, { kind: reviewKind, candidate_digest: receipt.candidate_digest || null });
+    }
   };
   emergencyReceipt = async (error) => {
     const diagnostic = path.join(artifactsDir, 'internal-error.txt');
