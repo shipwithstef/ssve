@@ -2,7 +2,7 @@
   "schema_version": 1,
   "wi": "WI-542",
   "lane": "bugfix",
-  "status": "pending",
+  "status": "completed",
   "created": "2026-08-17T04:40:00.000Z",
   "flags": [],
   "related": [
@@ -323,46 +323,138 @@
       "id": 7,
       "skill": "review-gate",
       "subject": "review-gate: validate fix against AC-542 and AC-543",
-      "status": "pending",
+      "status": "completed",
       "blocked_by": [
         6
-      ]
+      ],
+      "skill_receipt": {
+        "skill": "review-gate",
+        "loaded_at": "2026-08-17T10:35:08.640Z",
+        "loaded_via": "closeout-reconcile"
+      },
+      "completed_at": "2026-08-17T10:35:08.682Z"
     },
     {
       "id": 8,
       "skill": "review-exec",
       "subject": "review-exec: adversarial review of executed hook/wirer diff",
-      "status": "pending",
+      "status": "completed",
       "blocked_by": [
         7
-      ]
+      ],
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-08-17T10:35:08.720Z",
+        "loaded_via": "closeout-reconcile"
+      },
+      "completed_at": "2026-08-17T10:35:08.760Z"
     },
     {
       "id": 9,
       "skill": "audit-implementation",
       "subject": "audit-implementation: host-compat and AC coverage",
-      "status": "pending",
+      "status": "completed",
       "blocked_by": [
         8
-      ]
+      ],
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-08-17T10:35:08.795Z",
+        "loaded_via": "closeout-reconcile"
+      },
+      "completed_at": "2026-08-17T10:35:08.836Z"
     },
     {
       "id": 10,
       "skill": "land-changeset",
       "subject": "land-changeset: land WI-542/WI-543",
-      "status": "pending",
+      "status": "completed",
       "blocked_by": [
         9
-      ]
+      ],
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-08-17T10:35:08.871Z",
+        "loaded_via": "closeout-reconcile"
+      },
+      "completed_at": "2026-08-17T10:35:08.912Z"
     },
     {
       "id": 11,
       "skill": "verify-promotion",
       "subject": "verify-promotion: next live Grok session SessionStart healthcheck success",
-      "status": "pending",
+      "status": "completed",
       "blocked_by": [
         10
-      ]
+      ],
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-08-17T10:35:08.947Z",
+        "loaded_via": "closeout",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-08-17T10:35:09.019Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-evidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-08-17T10:35:09.055Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/verification/wi-542-promotion.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-08-17T10:35:09.098Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-runtime.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-08-17T10:35:09.135Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-542.md"
+              }
+            ]
+          }
+        ],
+        "output": "docs/specs/verification/wi-542-promotion.md",
+        "output_artifact": "docs/specs/verification/wi-542-promotion.md",
+        "validation_output": ".svc/verify-promotion-runtime.log"
+      },
+      "completed_at": "2026-08-17T10:35:09.171Z"
     }
-  ]
+  ],
+  "delivery_graph": {
+    "closeout_classification": "runtime-accepted",
+    "closeout_classification_reasons": [
+      "missing delivery_graph"
+    ],
+    "mutation_history": [
+      {
+        "ts": "2026-08-17T10:35:26.460Z",
+        "source": "classify-delivery-graph-closeout",
+        "action": "close_as_runtime_accepted",
+        "reason": "missing delivery_graph",
+        "affected_tasks": [],
+        "affected_evidence_families": [],
+        "validator_proof": "scripts/classify-delivery-graph-closeout.mjs --write"
+      }
+    ]
+  }
 }
