@@ -30,10 +30,10 @@ Skills that update this: same list + any manual framework change
 |---|---|---|---|---|---|---|---|---|
 | **Skills** | ✅ | ✅ | ✅ | ✅ | ✅ (via Claude-compat path) | ✅ | ✅ | ✅ |
 | **Native hooks** | ✅ 28 events | ✅ 13 events | ✅ 6 events (opt-in flag) | ✅ 11 events | ✅ 10 events (via plugin API) | ❌ (not wired) | ✅ 4 events | ✅ 8 events |
-| Hook wire protocol | JSON stdin/stdout | JSON stdin/stdout | JSON stdin/stdout | JSON stdin/stdout (strict pure stdout) | TypeScript plugin (JS module) | n/a | JSON hooks.json | TOML [[hooks]] |
+| Hook wire protocol | JSON stdin/stdout | JSON stdin/stdout | JSON stdin/stdout | JSON stdin/stdout (strict pure stdout) | TypeScript plugin (JS module) | n/a | JSON hooks.json | TOML [[hooks.<Event>]] |
 | Hook decision format | `hookSpecificOutput.permissionDecision` | `hookSpecificOutput.permissionDecision` | `hookSpecificOutput.permissionDecision` | `{decision:"deny"}` | throw Error to block | n/a | exit-code-2 | `hookSpecificOutput.permissionDecision` |
 | Tool-event matchers | regex on any tool | regex on any tool | `Bash`, `apply_patch`/`Edit`/`Write`, MCP tool names | regex on any tool | tool name match in `tool.execute.before/after` | n/a | n/a (event-bound) | regex on any tool |
-| Hook config location | `~/.claude/settings.json` (JSON) | `~/.kimi/config.toml` (TOML `[[hooks]]`) | `~/.codex/hooks.json` (JSON) + `config.toml` flag | `~/.gemini/settings.json` (JSON) | `~/.config/opencode/plugins/` (TypeScript files) | n/a | `~/.cursor/hooks.json` (JSON) | `~/.grok/config.toml` (TOML `[[hooks]]`) |
+| Hook config location | `~/.claude/settings.json` (JSON) | `~/.kimi/config.toml` (TOML `[[hooks]]`) | `~/.codex/hooks.json` (JSON) + `config.toml` flag | `~/.gemini/settings.json` (JSON) | `~/.config/opencode/plugins/` (TypeScript files) | n/a | `~/.cursor/hooks.json` (JSON) | `~/.grok/config.toml` (TOML `[[hooks.<Event>]]`) |
 | Hook timeout unit | seconds (default 600) | seconds (default 30) | seconds (default 600) | **milliseconds** (default 60000) | n/a (plugin runs in-process) | n/a | exit-code | seconds (default 30) |
 | Hook types | command, http, mcp_tool, prompt, agent | command | command | command | TypeScript plugin module | n/a | command | command |
 | Async hooks | ✅ `async`, `asyncRewake` | ❌ | ❌ | ❌ | ✅ (all hooks are async) | n/a | ❌ | ❌ |

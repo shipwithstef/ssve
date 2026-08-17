@@ -40,6 +40,9 @@
     "tool_matcher_regex": true,
     "timeout_unit": "s",
     "timeout_default": 30,
+    "toml_table_shape": "[[hooks.<Event>]]",
+    "handler_shape": "hooks = [{ type, command, timeout }]",
+    "session_start_healthcheck_timeout_s": 30,
     "decision_format": "hookSpecificOutput.permissionDecision"
   },
   "task_graph": {
