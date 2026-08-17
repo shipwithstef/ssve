@@ -2,12 +2,12 @@
 
 **Spec Reference:** [docs/specs/bugfix/wi-542-grok-sessionstart-healthcheck-brief.md](../../specs/bugfix/wi-542-grok-sessionstart-healthcheck-brief.md)
 **WIs:** [WI-542](../../specs/work-items/WI-542.md), [WI-543](../../specs/work-items/WI-543.md)
-**Branch Name:** `bugfix-wi-542-grok-sessionstart-healthcheck`
-**Status:** SIMULATED
+**Branch Name:** `bugfix-WI-542-grok-sessionstart-healthcheck`
+**Status:** EXECUTED — remediations on HEAD `3242ad25`; this revision is the retro-plan text that matches that tree
 **Base Branch:** `main`
 **Base SHA:** `8c79c243f185678936a661357197da8439b36d9b`
 **Created At:** 2026-08-17T04:50:00Z
-**Revised At:** 2026-08-17T08:56:00Z
+**Revised At:** 2026-08-17T09:20:00Z
 **Lane:** bugfix
 **Execution mode:** `inline` (orchestrator executes with this diagnosis loaded; §3a blueprints skipped)
 **Archetype:** incremental extension of `svc-session-start-healthcheck` plus a **gated** Grok-wirer schema follow-up
@@ -51,7 +51,7 @@ Reviewed before promoting this draft to a complete plan-changeset. Findings that
 
 ## 1. Implementation Summary
 
-Fix Grok SessionStart 1 going red by making `findMissingHookScripts()` understand the portable `~/...mjs` commands the Grok and Kimi wirers already write. A healthy Grok or Kimi install must be silent and must not invoke `./setup`. Then, only after a live `grok inspect --json` probe, emit the hook TOML schema this Grok build actually executes — with dual-schema parse/remove, backup, and restore-on-failure so a nested rewrite cannot duplicate hooks on revert.
+Fix Grok SessionStart 1 going red by making `findMissingHookScripts()` understand the portable `~/...mjs` and `$HOME/...mjs` commands the Grok and Kimi wirers already write. A healthy Grok or Kimi install must be silent and must not invoke `./setup`. Same-session parallel healthchecks take an exclusive wx claim in a user-owned 0700 directory before the scan. Then, only after a live `grok inspect --json` probe, emit the hook TOML schema this Grok build actually executes — with lossless non-SVC keep, an immutable pre-migration backup plus per-attempt rollback, fail-closed reads, and restore-on-failure so a nested rewrite cannot duplicate or delete user hooks.
 
 ### Invariants
 
@@ -60,7 +60,7 @@ Fix Grok SessionStart 1 going red by making `findMissingHookScripts()` understan
 - Claude/Codex/Gemini/Cursor JSON installs that already use absolute script paths keep the same missing/present verdicts as today (except `~` tokens, which become real checks).
 - Kimi portable `~` commands become true negatives, not false missing.
 - Real missing absolute paths and real dangling skill symlinks still trigger self-heal.
-- WI-487 `healEnforcementSource` still runs on the **first** SessionStart invoke in a session. A same-session second invoke (Claude-compat + Grok-native) is a stamp no-op.
+- WI-487 `healEnforcementSource` still runs on the **first** SessionStart invoke in a session. A same-session second invoke (Claude-compat + Grok-native) takes an exclusive `wx` claim in a user-owned 0700 directory and skips.
 - No host wirer except Grok is rewritten in this changeset.
 - Claude-compat is not disabled.
 - `./setup --host grok` is not the repair.
@@ -92,6 +92,7 @@ Fix Grok SessionStart 1 going red by making `findMissingHookScripts()` understan
 | docs/specs/work-items/INDEX.md | MODIFY | diagnose-bug | Index rows |
 | docs/plans/2026-08-17-wi542-grok-sessionstart-hooks/manifest.md | CREATE | plan-changeset | Plan |
 | docs/plans/2026-08-17-wi542-grok-sessionstart-hooks/review-log.yaml | CREATE | review-plan | F1–F10 dispositions |
+| docs/plans/2026-08-17-wi542-grok-sessionstart-hooks/retro-plan-review-authorization.json | CREATE | review-plan | One owner retro-plan exception after execute began without a v3 review-plan receipt |
 | .svc/lane-tasks-WI-542.json | CREATE | route-workflow | Lane graph |
 | .gitignore | MODIFY | G5 residue | Ignore local full inspect dumps |
 
@@ -105,13 +106,13 @@ Fix Grok SessionStart 1 going red by making `findMissingHookScripts()` understan
 
 * **Description:** In the worktree, replace the TOML regex fallback and tighten the JSON token loop in `findMissingHookScripts()` per the host-safe contract. Setup runs only when dangling symlinks or truly missing **expanded absolute** script paths remain. Do not add a healEnforcementSource short-circuit. Add an **atomic exclusive same-session claim** (AC-543-6 runtime half): if `GROK_SESSION_ID` (or a peer host session id) is set, `wx`-create `svc-sshc-<host>-<sid>` in a validated user-owned 0700 directory (`~/.svc/sshc` or `SVC_SSHC_DIR`) **before** the healthcheck path. EEXIST skips. No session id always runs. Shared `/tmp` stamps are forbidden. This is not a WI-487 skip: the first invoke in a session still runs `healEnforcementSource`.
 * **Files:** hooks/svc-session-start-healthcheck.mjs
-* **AC Coverage:** AC-542-1, AC-542-2 (pre-merge time bound), AC-542-3, AC-542-4, AC-543-6 (runtime stamp)
+* **AC Coverage:** AC-542-1, AC-542-2 (pre-merge time bound), AC-542-3, AC-542-4, AC-543-6 (runtime wx claim)
 * **Validation:** See task-4-premerge-replay. Must include `SVC_HOST=grok` and `SVC_HOST=kimi`.
 * **Checkpoint:** `checkpoint-1-parser`
 
 ### `task-2-tests` (Prerequisites: `task-1-parser`)
 
-* **Description:** Extend the two existing SessionStart tier-1 scripts with hermetic HOME fixtures: TOML command `node ~/.fakehost/skills/hooks/foo.mjs` where the file exists → silent; same path absent → missing. Keep current dangling-symlink multi-host cases.
+* **Description:** Extend the two existing SessionStart tier-1 scripts with hermetic HOME fixtures: TOML `~/...mjs` and `$HOME/...mjs` present → silent; same paths absent → missing. Add T7 sequential claim skip and T8 two parallel same-session processes executing the full path exactly once. Keep T1–T3.
 * **Files:** test-framework/evals/tier-1/validate-session-start-self-heal.sh, test-framework/evals/tier-1/validate-session-start-healthcheck-multi-host.sh
 * **AC Coverage:** AC-542-6
 * **Validation:** Run those two scripts from the **worktree** root; both exit 0.
@@ -119,7 +120,7 @@ Fix Grok SessionStart 1 going red by making `findMissingHookScripts()` understan
 
 ### `task-3-grok-schema` (Prerequisites: `task-2-tests`)
 
-* **Description:** WI-543. Run the **exact probe** below. Then change `wire-grok-hooks.mjs` so `parseExistingToml` / serialize understand **both** flat `[[hooks]]` and nested `[[hooks.<Event>]]` (remove svc-owned entries of either shape, keep user hooks). Emit only the shape the probe proved Grok loads. Byte-backup the live config before any write. Two consecutive rewires of an isolated copy must be byte-identical. If live inspect after write does not show a Grok-home `source.path`, restore the backup and stop. Add the dedicated roundtrip validator. Do not edit other host wirers.
+* **Description:** WI-543. Run the **exact probe** below. Then change `wire-grok-hooks.mjs` so dual-schema regions are split and non-SVC tables are kept byte-verbatim (HTTP hooks, command `env`, `${HOME}` / brace commands, multiple handlers, comments, escaped strings, and user scripts such as `~/.grok/skills/hooks/user-keep.mjs`). Drop only governed `svc-*.mjs` commands, `/skills/hooks/svc-` paths, and the `svc-enforce` launcher. Emit nested `[[hooks.<Event>]]` plus standalone `command =`. Create immutable `config.toml.pre-migration.bak` once; write a separate per-attempt `.svc-wire.rollback`; fail closed on config read errors; preserve file mode. Three isolated rewires must be byte-identical. A simulated failure after a successful rewire must restore the last good wired bytes and leave the immutable backup untouched. Record honestly that live `~/.grok/config.toml.wi543.bak` was already overwritten and is not the original flat file. If live inspect after write does not show a Grok-home `source.path`, restore the rollback and stop. Do not edit other host wirers.
 * **Files:** scripts/wire-grok-hooks.mjs, provision/hosts/grok.json, FRAMEWORK-STATE.md, test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh
 * **AC Coverage:** AC-543-1 through AC-543-5, AC-543-6 (inspect half), AC-542-5
 * **Validation:** Probe receipt + isolated two-rewire identity + live inspect Grok-home origin (or restore and fail the task). Inspect may show two healthcheck **registrations** (Claude-compat + Grok-native). Pass AC-543-6 inspect half when Grok-home-sourced healthcheck count == 1 and Claude-sourced healthcheck count <= 1. Do not require total count == 1.
@@ -157,13 +158,13 @@ Fix Grok SessionStart 1 going red by making `findMissingHookScripts()` understan
 | AC-543-3 | Grok-native healthcheck timeout >= 30 in the file Grok loads | task-3-grok-schema |
 | AC-543-4 | FRAMEWORK-STATE + grok.json match live schema | task-3-grok-schema |
 | AC-543-5 | New roundtrip validator covers dual schema; Kimi wirer unchanged | task-3-grok-schema |
-| AC-543-6 | Exactly one Grok-home healthcheck registration; Claude-compat may add one more; runtime second invoke is a stamp no-op | task-1-parser (stamp), task-3-grok-schema (inspect counts) |
+| AC-543-6 | Exactly one Grok-home healthcheck registration; Claude-compat may add one more; runtime second invoke is an exclusive wx claim skip | task-1-parser (wx claim), task-3-grok-schema (inspect counts) |
 
 AC-542-5 is already the revised text on WI-542.md. This plan does not change it again.
 
 **AC-543-2 is not waived** if the probe shows flat tables already execute. That result means "do not rewrite the table header." It still requires inspect to list a Grok-home-sourced hook. If inspect still shows only `.claude` sources after a successful wire, the task fails.
 
-**AC-543-6 is not "total healthcheck registrations == 1".** After native wire, two registrations are expected and allowed: Claude-compat (`.claude`) plus Grok-native (`.grok`). The inspect half fails only if Grok-home healthchecks != 1 or Claude healthchecks > 1. The runtime half is the session stamp in task-1-parser.
+**AC-543-6 is not "total healthcheck registrations == 1".** After native wire, two registrations are expected and allowed: Claude-compat (`.claude`) plus Grok-native (`.grok`). The inspect half fails only if Grok-home healthchecks != 1 or Claude healthchecks > 1. The runtime half is the exclusive wx claim in task-1-parser.
 
 ---
 
@@ -183,7 +184,7 @@ AC-542-5 is already the revised text on WI-542.md. This plan does not change it 
 | AC-543-3 | Static + inspect | timeout field on the Grok-sourced healthcheck |
 | AC-543-4 | Static | FRAMEWORK-STATE + grok.json |
 | AC-543-5 | Tier-1 | validate-grok-hook-toml-roundtrip.sh |
-| AC-543-6 | Probe + stamp | inspect: grok-home healthcheck == 1, claude healthcheck <= 1; second invoke with same GROK_SESSION_ID exits immediately |
+| AC-543-6 | Probe + wx claim | inspect: grok-home healthcheck == 1, claude healthcheck <= 1; second same-session invoke exits immediately |
 
 No product E2E. write-e2e is skipped on the lane graph with that reason.
 
