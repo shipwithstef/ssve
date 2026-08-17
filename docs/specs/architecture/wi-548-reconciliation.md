@@ -70,27 +70,25 @@ already landed:
 after WI-551:
   WI-552  (restart continuation asks verify.restart)
 
-after 545 + 547 + 549 + 550 + (552 if restart fixtures are in the wave):
-  WI-546  (capability-aware live Grok/Cursor/AGY acceptance)
+WI-546 hard-depends on:
+  WI-545 + WI-547 + WI-549 + WI-550 + WI-551 + WI-552
 
 sequential musts:
-  547 before PR #10 merge
   551 before 552
-  545 before any Grok/Cursor Stop live fixture
-  549 + 550 before WI-546 policy/finalization fixtures
-  547 before WI-546 “AGY evidence consumed from Grok/Cursor/main” fixture
+  545, 547, 549, 550, 551, 552 before WI-546
+  WI-553 never blocks WI-546
 ```
 
 ### What WI-547 unlocked (observed 2026-08-17)
 
 - `check-chain-receipts --sha f27a143a` from canonical main using original AGY bytes — **PASS** (`ok:true`, `type:complete`, `receipt_source:note`)
 - Worktree-absolute AGY paths are no longer required for that SHA
-- PR #10 can be re-validated instead of re-running AGY
+- PR #10 later merged as `223436ab` using that portable evidence
 - WI-546 continuity fixtures can consume the store
 
 ### When PR #10 can close
 
-See §4. Not during this planning run.
+Already closed. Merged as `223436ab`. No remaining execution in this DAG.
 
 ### Does WI-545 precede broader parity?
 
@@ -104,21 +102,9 @@ Review/audit continuity, “real AGY evidence consumable from Grok/Cursor/main�
 
 Yes. WI-552 asks the resolver for `verify.restart` and must not invent a Claude fallback.
 
-## 4. Exact PR #10 unblock path
+## 4. PR #10 status
 
-Observed during this planning run:
-
-- WI-547 landed as PR #11 / `7bca62f3`.
-- From `.worktrees/verify-WI-547-on-main` at that SHA, `node scripts/check-chain-receipts.mjs --sha f27a143a` returned `ok:true`.
-- That was the original receipt-portability blocker.
-
-Remaining before merge (still not done by this planning WI):
-
-1. Rebase `closeout-WI-542-verify-promotion` onto `origin/main` `7bca62f3` so the closeout docs sit on the store-aware checker.
-2. Refresh the PR #10 verification note to cite the passing `f27a143a` check. Do not rerun AGY.
-3. If the closeout SHA must carry both WI-542 and WI-543 `verify-promotion` receipts, land WI-550 first or emit the two receipts onto distinct SHAs. Last-wins type@sha is still unsafe.
-4. Keep WI-545 chmod out of PR #10. Keep default-checkout dirty files out of PR #10.
-5. Then merge PR #10. Not from this planning WI.
+Landed as `223436ab`. WI-542 and WI-543 are VERIFIED-L3. Do not re-open, rebase, or re-merge PR #10. Dual-WI last-wins remains a WI-550 implementation concern for future same-SHA closeouts, not a PR #10 action.
 
 ## 5. Quality-gate results (planning)
 
@@ -134,7 +120,7 @@ Remaining before merge (still not done by this planning WI):
 | Owner copy/paste as normal continuation | closed by WI-552; last-resort blocker only |
 | Unnecessary paid calls in planning | none invoked |
 | WI-547 duplicated | no; referenced only |
-| PR #10 unblock | precise and achievable |
+| PR #10 | landed `223436ab` |
 
 ## 6. Intentionally deferred
 

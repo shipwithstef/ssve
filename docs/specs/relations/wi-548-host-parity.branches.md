@@ -44,4 +44,4 @@ Derived-at: 223436abe5124e6d9852551d249efd855759833b
 
 - Planning PR only for WI-548
 - Children land one-per-run
-- PR #10 after WI-547
+- PR #10 landed (`223436ab`)

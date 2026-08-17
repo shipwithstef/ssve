@@ -56,7 +56,9 @@ Constraints:
 | `proposals/2026-08-17-framework-improvement-native-host-dispatch-policy.md` | CREATE | accepted → WI-551 |
 | `proposals/2026-08-17-framework-improvement-autonomous-restart-boundary-continuation.md` | CREATE | accepted → WI-552 |
 | `docs/plans/2026-08-17-wi548-host-parity-plan/manifest.md` | CREATE | this file |
-| `docs/plans/2026-08-17-wi548-host-parity-plan/review-log.yaml` | CREATE (after T4) | plan review; not a pre-review existence gate |
+| `docs/plans/2026-08-17-wi548-host-parity-plan/review-log.yaml` | CREATE | plan review log |
+| `docs/plans/2026-08-17-wi548-host-parity-plan/sol-review.json` | CREATE | Cursor Agent Sol 5.6 High findings |
+| `docs/plans/2026-08-17-wi548-host-parity-plan/sol-review-launch.txt` | CREATE | launch command receipt |
 
 §3a Changeset Blueprint: SKIPPED (`mode=inline`, planning docs already authored in this session).
 
@@ -65,7 +67,7 @@ Constraints:
 | id | title | files | deps | AC | validation | checkpoint | parallel |
 |---|---|---|---|---|---|---|---|
 | T1 | Solution confidence + architecture | decisions + architecture/* | — | AC-548-1..3 | files exist; options ≥3 | commit-ready docs | A |
-| T2 | Child WIs + dispositions | WI-545..553, reconciliation | T1 | AC-548-4..6 | every listed item has a row | commit-ready docs | A |
+| T2 | Child WIs + dispositions | WI-545..553, reconciliation | T1 | AC-548-4..6 | each child has ACs, files, tests, rollback, cost; one DAG | commit-ready docs | A |
 | T3 | Spec + branch index + this manifest | feature spec, relations, manifest | T1 | PARITY-* mapped | mechanical plan check | commit-ready docs | — |
 | T4 | Adversarial plan review | review-log.yaml | T3 | AC-548-7 | `verify-plan-mechanical.sh` then `/review-plan` | review-log + launcher receipt | — |
 | T5 | Planning-only PR | branch push | T4 | AC-548-7, AC-548-8 | `git push` + `gh pr create` | STOP | — |
@@ -135,15 +137,19 @@ WT="/home/dianast/app-workspaces/seriousvibecoding/.worktrees/framework-WI-548-h
 cd "$WT"
 git merge-base --is-ancestor origin/main HEAD
 test -f docs/specs/work-items/WI-547.md
-test ! -f hooks/grok/svc-grok-task-completion-guard.sh || git diff --exit-code origin/main -- hooks scripts provision bin || true
+git diff --quiet origin/main -- hooks scripts provision bin
+git reset HEAD
 bash scripts/verify-plan-mechanical.sh docs/plans/2026-08-17-wi548-host-parity-plan/manifest.md
 git add -- docs/specs docs/plans proposals
+printf '%s\n' "$(git diff --cached --name-only)" | awk '
+  NF && $0 !~ /^(docs\/specs\/|docs\/plans\/|proposals\/)/ { bad=1; print "illegal: " $0 }
+  END { if (bad) { print "FAIL: staged path outside planning allowlist"; exit 1 } }
+'
 git diff --cached --check
 git status --short --branch
 SVC_SESSION_ID="${SVC_SESSION_ID:-$GROK_SESSION_ID}" git commit -m "docs(WI-548): reconcile plan onto origin/main"
 SVC_SESSION_ID="${SVC_SESSION_ID:-$GROK_SESSION_ID}" git push -u origin HEAD
 gh pr create --base main --head framework-WI-548-host-parity-plan --title "docs(WI-548): reviewed portable host-parity program plan" --body-file docs/plans/2026-08-17-wi548-host-parity-plan/manifest.md
-# Do not execute children. PR #10 already merged.
 ```
 
 RECOVERY_IF_FAIL: if push/auth fails, report; do not force-push; do not
@@ -199,7 +205,13 @@ Journey walkthrough: N/A — no product journey. Fixture walkthrough is WI-546.
 
 See `docs/specs/architecture/wi-548-reconciliation.md` §3.
 
-Order: WI-547 landed; PR #10 landed; WI-545 identified on main ∥ WI-549 ∥ WI-550 ∥ WI-551 ∥ WI-553 ∥ WI-544(ops) → WI-552 after 551 → WI-546 last.
+Canonical DAG (hard edges):
+
+WI-547 (landed) and PR #10 (landed) are inputs, not work.
+Independent now: WI-545, WI-549, WI-550, WI-551, WI-553, WI-544(ops).
+WI-552 depends on WI-551 and WI-547.
+WI-546 depends on WI-545, WI-547, WI-549, WI-550, WI-551, and WI-552.
+WI-553 never blocks WI-546.
 
 ## Paid-review and test-cost plan
 

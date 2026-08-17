@@ -115,10 +115,10 @@ session.
 
 ## System Dependencies
 
-Depends on: WI-502 authority APIs, existing notes receipts, WI-547 store
-(in progress), `provision/hosts/*.json`, owner `~/.svc/*` files.
+Depends on: WI-502 authority APIs, existing notes receipts, landed WI-547 store,
+`provision/hosts/*.json`, owner `~/.svc/*` files.
 
-Depended on by: PR #10 closeout, WI-546 live acceptance, future host adds.
+Depended on by: WI-546 live acceptance, future host adds. PR #10 is already landed.
 
 ## Industry Grounding
 

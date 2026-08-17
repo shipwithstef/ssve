@@ -10,12 +10,12 @@
 
 The user asked for one authoritative, reviewed plan covering every improvement
 found during WI-542/WI-543 and the Grok/Cursor/AGY parity investigation.
-Planning only: no runtime implementation, no WI-547 mutation, no PR #10 merge,
+Planning only: no runtime implementation. WI-547 and PR #10 are already landed.
 no default-checkout edits.
 
 “Good enough to plan” means: every listed item has a disposition, architecture
 questions have a selected option with rejected alternatives, children are
-independently landable, and PR #10 has a precise unblock path.
+independently landable, and landed WI-547 / PR #10 are not re-opened.
 
 Out of scope: implementing children, re-running WI-542 AGY reviews, repairing
 `.wi543.bak`, adding a Grok key to the owner reviewer policy file.
@@ -32,9 +32,8 @@ auto-drive / verify-promotion.
 Current runtime: WI-542/WI-543 SessionStart behavior is proven on merged
 `a4d0efa3`. WI-547 landed as PR #11 (`7bca62f3`) during this planning run;
 `check-chain-receipts --sha f27a143a` now passes from canonical main. PR #10
-remains open: rebase onto `7bca62f3` and refresh closeout evidence. Local
-default checkout is dirty and must not be mutated. This planning worktree
-started from `origin/main` at `a4d0efa3` and rebases onto `7bca62f3`.
+is merged as `223436ab`. Local default checkout is dirty and must not be
+mutated. This planning branch is based on `origin/main` `223436ab`.
 
 ## 3. Why the current design may exist
 
@@ -124,7 +123,7 @@ focused tests; one full Tier-1 at landing boundaries.
 | Land WI-552 continuation after 551+547 | Owner became the message bus | Hash-bound baton + exactly-once launch | One logical run | Host may lack a launch API | Owner paste remains “success” | Fake transport unit tests; live launch in 546 |
 | Land WI-553 independently | Risk flags were documented but not compiled | Extra plan-contract sections only when matched | Cheap fail-closed | Over-trigger on docs-only WIs | Next host-rewire repeats G5 gaps | Negative no-flag fixture |
 | Keep WI-546 as the live acceptance wave | Registration ≠ behavior | After 545/547/549/550 | Real Grok/Cursor/AGY proof | Temptation to start 546 early | “Parity” remains a manifesto | Setup + drift + fixtures listed in the matrix |
-| Unblock PR #10 after rebase onto 547 | Portability blocker is gone; closeout docs still sit on `a4d0efa3` | See reconciliation §4 | Close 542/543 without re-paying AGY | Merge stale closeout docs | Dual-WI last-wins or stale base | Rebase + refreshed verification note |
+| Leave PR #10 landed | It merged as `223436ab` | No further closeout work in this DAG | Avoid re-opening a closed PR | None | Re-implement closeout | Status row in INDEX |
 | Accept `.wi543.bak` as historical residue | File exists; hashes matched live after second rewire | Retain on disk; do not commit or restore | Avoid fake rollback | Lose a useless backup | None material | Path named in this packet |
 | Do not invoke paid review while planning | Owner policy optional AGY; user forbid paid planning fixtures | Native Grok self-review + mechanical checks | Zero planning spend | No different-family stamp on the plan | Repeat AGY for a docs PR | review-log records capability-limited topology |
 
@@ -145,7 +144,7 @@ focused tests; one full Tier-1 at landing boundaries.
 
 ## 12. Decision or remaining unknowns
 
-**Selected:** POCCA, children 545 / 547 / 549–553 / 546, PR #10 after 547.
+**Selected:** POCCA. Children 545 / 549–553 / 546. WI-547 and PR #10 are landed inputs.
 
 Remaining unknowns that do **not** block planning:
 
@@ -176,7 +175,7 @@ launch APIs (explicitly deferred to WI-552/WI-546).
 ## 14. User-facing summary
 
 - Keep one portable delivery contract; let hosts differ honestly.
-- Finish WI-547 so old AGY reviews survive worktree deletion; then PR #10 can close.
+- WI-547 and PR #10 are already landed. Next implementation is WI-545 and WI-549..WI-553, then WI-546.
 - Fix Stop adapter mode bits (WI-545), shared refuse (WI-549), and dual-WI receipt keys (WI-550) as separate small lands.
 - Add an owner-external dispatch resolver (WI-551) before autonomous restart (WI-552).
 - Keep risk-triggered plan contracts (WI-553) on their own track.

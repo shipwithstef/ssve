@@ -95,7 +95,7 @@ WI-502 (exists)     WI-547 (LANDED #11)     WI-545     WI-549     WI-550     WI-
         \                   |                  |          |          |          v
          \                  +----+-------------+----------+----------+----> WI-552
           \                      |
-           \                     +-------------------------------> PR #10 closeout
+           \                     +
             \                    |
              +-------------------+-------------------------------> WI-546 live acceptance
 ```
@@ -105,5 +105,5 @@ No cycles.
 ## Rollback of the program
 
 Each child rolls back independently. The program-level rollback is: leave
-POCCA unimplemented; keep WI-542/543 runtime; keep PR #10 open; keep WI-547
-worktree intact. Do not restore silent remap or prompt-copy as success.
+unlanded POCCA children unimplemented. Keep landed WI-542/543/547 and PR #10.
+Do not restore silent remap or prompt-copy as success.
