@@ -114,4 +114,4 @@ review_log:
     independent_review_verdict:
       sol: fail
       fable: pass
-  commit_sha: pending-fable-remediation
+  commit_sha: 59ae174b8a2f5c5120adaf6a01118e8e84a328be
