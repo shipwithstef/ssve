@@ -133,7 +133,7 @@ This is generic: `fresh_process`, `service_restart`, `host_session_start`, and `
 
 ## Route
 
-**Lane:** framework  
+**Lane:** framework
 **Sequence:** `write-spec` → `design-tech` → `plan-changeset` → `review-plan` → `execute-changeset` → `review-gate` → `review-exec` → `audit-implementation` → `land-changeset` → `verify-promotion`
 
 Not a quick fix: it changes cross-session authority, host process launch, and post-land automation.

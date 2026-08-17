@@ -18,7 +18,7 @@ Every listed proposal, WI, and extra discovered item has exactly one disposition
 | WI-545 Grok/Cursor Stop adapters | implement separately | WI-545 | Small executable-mode repair; precedes Stop fixtures |
 | WI-546 capability-aware parity | implement separately as integration wave | WI-546 | After 545/547/549/550; live Grok/Cursor/AGY acceptance |
 | WI-547 durable review evidence | accepted historical state (landed during this planning run) | PR #11 squash `7bca62f3`; closeout PR #12 `ac04fbb6` | Foundation is on `origin/main`. This run verified `check-chain-receipts --sha f27a143a` → `ok:true` from `.worktrees/verify-WI-547-on-main`. Do not duplicate. |
-| PR #10 + WI-542/WI-543 closeout | operational follow-up after WI-547 | PR #10 | Unblock path below; do not merge during planning |
+| PR #10 + WI-542/WI-543 closeout | accepted historical state | PR #10 merged as `223436ab` | Closeout landed; WI-542/WI-543 are VERIFIED-L3 |
 | Shared chain-policy for linked worktrees | implement separately | WI-549 | Absorbs WI-358 follow-up |
 | Canonical receipt validation before Stop/VERIFIED/final | merge into | WI-550 | Same barrier as collision-safe identity |
 | Multi-WI receipt collision | implement separately | WI-550 | Composite note keys |
@@ -32,8 +32,8 @@ Every listed proposal, WI, and extra discovered item has exactly one disposition
 | WI-506 runtime-root portability | accepted historical state | already VERIFIED | WI-547/WI-549 reuse common-dir patterns; do not re-implement |
 | WI-521 stage-receipt spine | keep independent | WI-521 | Complementary object; WI-550 must not collapse stage receipts into chain notes |
 | Execution Controller v2 / WI-368 | supersede only the “owner as transport” gap | remainder stays WI-368 | This program consumes WI-502 authority APIs; it does not implement Luna/capsule runtime |
-| WI-542 runtime SessionStart | accepted historical state | merged `a4d0efa3` | Proven; remaining work is closeout + follow-ups |
-| WI-543 native hook schema | accepted historical state | merged `a4d0efa3` | Proven with WI-542 |
+| WI-542 runtime SessionStart | accepted historical state | `a4d0efa3` + closeout PR #10 `223436ab` | VERIFIED-L3 |
+| WI-543 native hook schema | accepted historical state | same as WI-542 | VERIFIED-L3 |
 | WI-503 relative artifact path display | keep independent | WI-503 | Adjacent display bug; not required for this DAG |
 | WI-468 emit-envelope | keep independent / defer | WI-468 | Optional later helper; WI-550 is the identity fix |
 | Silent Claude/Codex remap | close as obsolete after WI-551 | current `resolve-adversarial-reviewer.sh` rewrite | Replaced by fail-closed resolver |
@@ -64,8 +64,8 @@ independent now:
   WI-553  (risk-triggered contracts)
   WI-544  (ops: live Kimi config)
 
-after WI-547 (already true):
-  PR #10 closeout can rebase onto `7bca62f3` and cite the passing `f27a143a` check
+already landed:
+  PR #10 closeout (`223436ab`)
 
 after WI-551:
   WI-552  (restart continuation asks verify.restart)

@@ -1,7 +1,7 @@
 # Branch index — portable host-parity program
 
 Scope-paths: docs/specs/architecture/wi-548-*.md docs/specs/features/framework-portable-host-parity.md docs/specs/decisions/2026-08-17-wi-548-host-parity/ docs/specs/work-items/WI-54*.md docs/plans/2026-08-17-wi548-host-parity-plan/ proposals/2026-08-17-framework-improvement-*.md
-Derived-at: 7bca62f3ef5e6a3eb2e0eff9c10694a2b44fb8c3
+Derived-at: 223436abe5124e6d9852551d249efd855759833b
 
 ## Callers
 

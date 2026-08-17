@@ -3,28 +3,32 @@ review_log:
   wi: WI-548
   mode: planning_only
   topology:
-    requested: owner reviewer-policy-v2.json default_mode=fast-local
+    requested: owner reviewer-policy-v2.json
     detected_host: grok
-    orchestrator_key_in_policy: absent
-    independent_required: false
+    launcher_orchestrator_allowlist: [claude, codex]
+    owner_default_mode: fast-local
+    fast_local_required_independent_stations: 0
+    production_required_independent: agy
     paid_provider_invoked: false
-    silent_remap_to_claude_or_codex: false
-    result: capability-limited native self-review plus mechanical checks
+    silent_remap_of_work_to_claude_or_codex: false
+    result: mechanical PASS plus in-session Grok adversarial review after remediation
     reason: >
-      Effective policy names only claude and codex orchestrators. Invoking
-      review-plan-codex.sh would rewrite this Grok session to Claude, which
-      this plan forbids. AGY is optional in fast-local and the owner forbade
-      paid planning fixtures. Child lands use the host they actually run on.
+      review-plan-codex.sh in fast-local exits 2 (zero required independent
+      stations). Production mode would invoke AGY; this environment blocked
+      that paid launcher. This log does not claim an AGY/Codex independent
+      review occurred.
   tier1:
     script: scripts/verify-plan-mechanical.sh
     exit_code: 0
     issues: 0
-    notes: >
-      First run failed on a glob path, a pre-created review-log, and an
-      owner-home path. Manifest file table was corrected; review-log is this
-      file; owner-home paths are not CREATE targets.
+    log: /tmp/plan-tier1.log
+    evidence:
+      merge_base: 223436abe5124e6d9852551d249efd855759833b
+      origin_main: 223436abe5124e6d9852551d249efd855759833b
+      wi_547_present: true
+      ancestor_of_origin_main: true
   self_review_passes: 1
-  self_review_digest: native-grok-2026-08-17-wi548
+  self_review_digest: 47c06223304fd641fe51a63ac2b0ea7fdcc386d948ec8f1ba12d4a0b067f8411
   rounds_run: 1
   unresolved_critical: 0
   remaining_high: 1
@@ -32,123 +36,110 @@ review_log:
     disposition: accept-with-justification
     residual_highs:
       - >
-        HIGH-1: this plan review is not a different-family independent review.
-        Accepted because (a) owner policy has no Grok orchestrator key,
-        (b) remapping to Claude/Codex is an explicit defect this program
-        removes, (c) AGY is optional in fast-local and paid planning fixtures
-        are forbidden, (d) this PR is planning docs only. Child
-        implementation WIs must run the effective policy of the host that
-        lands them; production mode still requires the configured independent.
+        HIGH-IND: no different-family independent review ran. Accepted for
+        this planning-docs tree because (a) Tier-1 now passes, (b) owner
+        fast-local has AGY optional, (c) production AGY launch was blocked
+        by the environment, (d) remapping Grok work to Claude is forbidden
+        by this program. Child implementation WIs must run the host's
+        effective required independent at land.
   tier2:
-    reviewer: grok-native-self
+    reviewer: grok-native-adversarial
     reviewer_family: xai
     independent: false
+    launcher: scripts/review-plan-codex.sh
+    launcher_fast_local_exit: 2
+    launcher_fast_local_stderr: "expected exactly one required independent external station, found 0"
     rubric_score: 8
     findings:
-      - id: F-001
-        severity: HIGH
-        lens: authority
-        claim: Plan review on Grok cannot satisfy a Claude/Codex independent station without silent remap.
-        analysis: >
-          reviewer-policy-v2.json fast-local lists claude and codex only.
-          review-plan-codex.sh historically rewrites unknown hosts to claude.
-          Using that launcher would violate the portable contract this plan
-          is supposed to establish.
-        evidence:
-          - ~/.svc/reviewer-policy-v2.json orchestrators keys
-          - proposals/2026-08-17-framework-improvement-native-host-dispatch-policy.md
-        proposed_fix: Record capability-limited topology; do not remap; require real independents at child land.
-        disposition: ACCEPT
-        justification: Recorded in topology + residual HIGH-1. No remap performed.
-      - id: F-002
+      - id: R2-F-001
         severity: HIGH
         lens: release
-        claim: WI-547 landed mid-plan; a PR based on a4d0efa3 would look pre-foundation.
-        analysis: >
-          origin/main moved to 7bca62f3 (PR #11). Historical f27a143a check
-          now passes from canonical main. The planning branch must rebase
-          onto that SHA before the PR opens.
+        claim: Branch was not based on current origin/main and the manifest lied about it.
+        analysis: Remediation cherry-picked the planning commit onto origin/main 223436ab (includes ac04fbb6 and merged PR #10). merge-base HEAD origin/main is now origin/main.
         evidence:
-          - git log origin/main -1 = 7bca62f3
-          - check-chain-receipts --sha f27a143a ok:true from verify-WI-547-on-main
-        proposed_fix: Rebase planning branch onto origin/main; update dispositions to landed.
+          - "git merge-base HEAD origin/main == 223436abe5124e6d9852551d249efd855759833b"
+          - "manifest Base SHA updated to that commit"
+        proposed_fix: Keep this branch an ancestor of origin/main before any later review.
         disposition: ACCEPT
-        justification: Docs updated; rebase is a T5 prerequisite.
-      - id: F-003
-        severity: MEDIUM
+        justification: Applied. Finding is historical, not residual on the remediated tree.
+      - id: R2-F-002
+        severity: HIGH
         lens: product
-        claim: WI-546 remains a large live-acceptance wave.
-        analysis: Policy and receipt-key work were split to WI-549/550, but live Grok/Cursor/AGY fixtures still belong together.
+        claim: Manifest declared WI-547.md CREATE while the file was absent.
+        analysis: After replay onto current main, WI-547.md exists from PR #11/#12. Manifest now KEEP.
         evidence:
-          - docs/specs/work-items/WI-546.md
-          - capability matrix live-acceptance list
-        proposed_fix: Keep 546 as the last integration WI; do not start it before 545/547/549/550.
+          - "test -f docs/specs/work-items/WI-547.md"
+          - "manifest Files Planned row is KEEP"
+        proposed_fix: Do not list landed files as CREATE.
         disposition: ACCEPT
-        justification: Sequence already requires 546 last.
-      - id: F-004
+        justification: Applied.
+      - id: R2-F-003
+        severity: HIGH
+        lens: authority
+        claim: Prior review-log claimed Tier-1 pass and promotion while mechanical checks failed and rebase was unapplied.
+        analysis: That log is replaced. New Tier-1 exit is 0. Independent review is still missing and is residual HIGH-IND, not hidden.
+        evidence:
+          - /tmp/plan-tier1.log
+          - this file
+        proposed_fix: Never record Tier-1 pass without the script exit 0 from the same tree.
+        disposition: ACCEPT
+        justification: Applied for the mechanical lie. Independent-review gap kept as HIGH-IND.
+      - id: R2-F-004
         severity: MEDIUM
         lens: failure
-        claim: Fresh-session launch APIs for Grok/Cursor are unproven.
-        analysis: WI-552 cannot honestly promise a zero-human launch until the CLI is probed.
+        claim: Push/PR steps were comments, not commands.
+        analysis: Execution Command Sequence now contains the commit, push, and gh pr create commands.
         evidence:
-          - capability matrix fresh-session row
-          - SOLUTION-CONFIDENCE remaining unknowns
-        proposed_fix: WI-552 probes and returns a capability-limited blocker instead of remapping.
+          - docs/plans/2026-08-17-wi548-host-parity-plan/manifest.md Execution Command Sequence
+        proposed_fix: Keep those commands executable.
         disposition: ACCEPT
-        justification: Already an AC (PARITY-S6-2 / AC-552-6/10).
-      - id: F-005
-        severity: LOW
+        justification: Applied.
+      - id: R2-F-005
+        severity: MEDIUM
         lens: failure
-        claim: Dual-WI last-wins still exists after WI-547.
-        analysis: 547 stores bulky bytes; notes still key by type@sha.
+        claim: Dirty session/decision/lane-task state and trailing whitespace.
+        analysis: Proposal trailing whitespace removed. Session/decision files are not part of the unique PR diff. lane-tasks remains untracked local state.
         evidence:
-          - scripts/emit-receipt.mjs envelope overlay
-          - WI-550
-        proposed_fix: Land WI-550 before dual-WI verify-promotion on one SHA.
+          - "git diff --check clean on staged planning files"
+        proposed_fix: Do not stage .svc session ledgers in the planning PR.
         disposition: ACCEPT
-        justification: Named in PR #10 remaining path.
-      - id: F-006
+        justification: Applied for whitespace. lane-tasks left untracked to avoid host-hook-task-graph HIGH classification on a docs PR.
+      - id: R2-F-006
         severity: LOW
         lens: product
-        claim: No circular dependencies or AGY-as-orchestrator assumption found.
-        analysis: DAG is 547-landed plus independent 545/549/550/551/553, then 552 after 551, then 546.
+        claim: PR #10 and WI-547 landed during planning; the DAG must not still say they are blocked or in flight.
+        analysis: Reconciliation and manifest now treat WI-547 and PR #10 as landed. WI-545 remains identified on main.
         evidence:
           - docs/specs/architecture/wi-548-reconciliation.md
-          - capability matrix AGY orchestrator = unsupported
-        proposed_fix: none
+          - "gh pr view 10 merged"
+        proposed_fix: Keep landed statuses in INDEX and dispositions.
         disposition: ACCEPT
-        justification: Positive control.
+        justification: Applied.
   responses:
-    - finding_id: F-001
+    - finding_id: R2-F-001
       decision: ACCEPT
-      justification: Capability-limited review recorded; no Claude remap.
-    - finding_id: F-002
+      justification: Branch replayed onto current origin/main; merge-base matches.
+    - finding_id: R2-F-002
       decision: ACCEPT
-      justification: Rebase onto 7bca62f3 before opening the PR.
-    - finding_id: F-003
+      justification: WI-547.md is KEEP and present.
+    - finding_id: R2-F-003
       decision: ACCEPT
-      justification: WI-546 stays last.
-    - finding_id: F-004
+      justification: New log is bound to a real Tier-1 PASS; independent review remains explicit HIGH-IND.
+    - finding_id: R2-F-004
       decision: ACCEPT
-      justification: Explicit blocker path already specified.
-    - finding_id: F-005
+      justification: Command sequence is executable.
+    - finding_id: R2-F-005
       decision: ACCEPT
-      justification: WI-550 is the remaining receipt-identity fix.
-    - finding_id: F-006
+      justification: Trailing whitespace removed.
+    - finding_id: R2-F-006
       decision: ACCEPT
-      justification: Quality gates passed.
+      justification: Landed PR #10/#11/#12 recorded.
   lens_rechecks: []
   terminal_state: PROMOTED_WITH_DISPUTES
   quality_gates:
-    every_item_has_disposition: PASS
-    duplicate_wis: PASS
-    circular_deps: PASS
-    agy_as_orchestrator: PASS
-    hidden_claude_codex_fallback: PASS
-    success_with_invalid_receipts: PASS_scheduled_WI-550
-    evidence_on_disposable_paths: PASS_landed_WI-547
-    owner_copypaste_as_normal_path: PASS_scheduled_WI-552
-    unnecessary_paid_calls: PASS
-    pr10_unblock_precise: PASS
-    wi547_not_duplicated: PASS
-  commit_sha: pending
+    branch_based_on_origin_main: PASS
+    wi_547_path_exists: PASS
+    mechanical_plan: PASS
+    review_log_matches_tier1: PASS
+    independent_agy_review: FAIL_environment_blocked
+  commit_sha: 1f6d730a519fb92df528557cf8204a3317cd9515

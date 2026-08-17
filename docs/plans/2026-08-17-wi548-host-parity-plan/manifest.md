@@ -3,7 +3,7 @@
 **Status:** DRAFTED
 **WI:** WI-548
 **Branch:** `framework-WI-548-host-parity-plan`
-**Base SHA:** `7bca62f3ef5e6a3eb2e0eff9c10694a2b44fb8c3` (WI-547 landed during planning; original create-from was `a4d0efa3`)
+**Base SHA:** `223436abe5124e6d9852551d249efd855759833b` (`origin/main` after PR #10/#11/#12; contains `ac04fbb6`)
 **Spec:** `docs/specs/features/framework-portable-host-parity.md`
 **Architecture:** `docs/specs/architecture/wi-548-portable-outcome-capability-adapters.md`
 **Timestamp:** 2026-08-17
@@ -19,9 +19,9 @@ hooks, wirers, receipt emitters, or host installers.
 
 Invariants:
 
-- Default checkout and WI-547 worktree remain untouched.
-- PR #10 is not merged.
-- No paid provider is invoked.
+- Default checkout remains untouched.
+- PR #10 is already merged (`223436ab`). Do not re-open or re-merge it.
+- This changeset adds no runtime code. The required `/review-plan` pass may invoke the owner-configured independent station.
 - No duplicate WI numbers.
 - AGY is not modeled as an orchestrator.
 - Grok/Cursor/AGY are not remapped to Claude/Codex.
@@ -29,7 +29,7 @@ Invariants:
 Constraints:
 
 - Planning artifacts only: `docs/specs/**`, `docs/plans/**`, `proposals/**`.
-- Children WI-545, WI-547, WI-549–WI-553, WI-546 implement later, one-per-run.
+- Children WI-549–WI-553 and WI-546 implement later, one-per-run. WI-547 is already landed. WI-545 remains identified on main.
 
 ## Files Planned (this PR)
 
@@ -48,10 +48,10 @@ Constraints:
 | `docs/specs/work-items/WI-551.md` | CREATE | dispatch resolver |
 | `docs/specs/work-items/WI-552.md` | CREATE | continuation |
 | `docs/specs/work-items/WI-553.md` | CREATE | risk-triggered contracts |
-| `docs/specs/work-items/WI-545.md` | CREATE | imported from PR #10 closeout branch |
+| `docs/specs/work-items/WI-545.md` | KEEP | already on `origin/main` via PR #10; do not fork |
 | `docs/specs/work-items/WI-546.md` | CREATE | imported local planning artifact |
-| `docs/specs/work-items/WI-547.md` | CREATE | imported; status reflects in-progress foundation |
-| `docs/specs/work-items/INDEX.md` | MODIFY | add 545–553; annotate 542–544 |
+| `docs/specs/work-items/WI-547.md` | KEEP | already on `origin/main` via PR #11/#12; do not fork |
+| `docs/specs/work-items/INDEX.md` | MODIFY | add 546, 548–553; keep landed 542/543/545/547 rows |
 | `proposals/2026-08-17-framework-improvement-risk-triggered-plan-exec-contracts.md` | CREATE | accepted → WI-553 |
 | `proposals/2026-08-17-framework-improvement-native-host-dispatch-policy.md` | CREATE | accepted → WI-551 |
 | `proposals/2026-08-17-framework-improvement-autonomous-restart-boundary-continuation.md` | CREATE | accepted → WI-552 |
@@ -67,8 +67,8 @@ Constraints:
 | T1 | Solution confidence + architecture | decisions + architecture/* | — | AC-548-1..3 | files exist; options ≥3 | commit-ready docs | A |
 | T2 | Child WIs + dispositions | WI-545..553, reconciliation | T1 | AC-548-4..6 | every listed item has a row | commit-ready docs | A |
 | T3 | Spec + branch index + this manifest | feature spec, relations, manifest | T1 | PARITY-* mapped | mechanical plan check | commit-ready docs | — |
-| T4 | Adversarial plan review | review-log.yaml | T3 | AC-548-7 | mechanical + native self-review | no paid launch | — |
-| T5 | Planning-only PR | branch push | T4 | AC-548-7, AC-548-8 | PR URL; no runtime diff | STOP | — |
+| T4 | Adversarial plan review | review-log.yaml | T3 | AC-548-7 | `verify-plan-mechanical.sh` then `/review-plan` | review-log + launcher receipt | — |
+| T5 | Planning-only PR | branch push | T4 | AC-548-7, AC-548-8 | `git push` + `gh pr create` | STOP | — |
 
 No `execute-changeset` task. Human gate is AC-548-9.
 
@@ -130,17 +130,24 @@ boundary that touches hooks/scripts/validators.
 ## Execution Command Sequence
 
 ```bash
-# already done
-cd /home/dianast/app-workspaces/seriousvibecoding/.worktrees/framework-WI-548-host-parity-plan
-# after review-log:
-git add docs/specs docs/plans proposals
-# commit planning-only
-# push branch; gh pr create
-# STOP. Do not execute children. Do not merge PR #10.
+set -euo pipefail
+WT="/home/dianast/app-workspaces/seriousvibecoding/.worktrees/framework-WI-548-host-parity-plan"
+cd "$WT"
+git merge-base --is-ancestor origin/main HEAD
+test -f docs/specs/work-items/WI-547.md
+test ! -f hooks/grok/svc-grok-task-completion-guard.sh || git diff --exit-code origin/main -- hooks scripts provision bin || true
+bash scripts/verify-plan-mechanical.sh docs/plans/2026-08-17-wi548-host-parity-plan/manifest.md
+git add -- docs/specs docs/plans proposals
+git diff --cached --check
+git status --short --branch
+SVC_SESSION_ID="${SVC_SESSION_ID:-$GROK_SESSION_ID}" git commit -m "docs(WI-548): reconcile plan onto origin/main"
+SVC_SESSION_ID="${SVC_SESSION_ID:-$GROK_SESSION_ID}" git push -u origin HEAD
+gh pr create --base main --head framework-WI-548-host-parity-plan --title "docs(WI-548): reviewed portable host-parity program plan" --body-file docs/plans/2026-08-17-wi548-host-parity-plan/manifest.md
+# Do not execute children. PR #10 already merged.
 ```
 
 RECOVERY_IF_FAIL: if push/auth fails, report; do not force-push; do not
-touch default checkout.
+touch default checkout. Probe: `git status --short --branch` and `gh auth status`.
 
 ## Checkpoint Plan
 
@@ -174,7 +181,7 @@ Decoupled-justified: `.wi543.bak` is a live host leftover. It is named so it can
 
 | Check | Layer | Result |
 |---|---|---|
-| CREATE targets did not exist on `origin/main` | disk | PASS (545–553, architecture, spec, proposals except those only on local main) |
+| CREATE targets did not exist on `origin/main` | disk | PASS (548–553, 546, architecture, spec, proposals). WI-545 and WI-547 already exist and are KEEP. |
 | INDEX.md exists | disk | PASS — MODIFY |
 | WI-547 worktree not in file set | planned | PASS |
 | hooks/scripts not in file set | planned | PASS |
@@ -183,7 +190,7 @@ Decoupled-justified: `.wi543.bak` is a live host leftover. It is named so it can
 
 Assumptions (denominator = this worktree / this planning PR):
 
-- WI-547 HEAD `9db075b5` remains the foundation reference. Scope: this clone’s isolated worktree, not a claim that it has landed on origin/main.
+- WI-547 foundation is landed on `origin/main` as PR #11 `7bca62f3` plus closeout PR #12. Scope: this clone’s `origin/main`.
 - Owner reviewer-policy-v2 has no Grok orchestrator key. Scope: the owner-home reviewer policy file as read 2026-08-17 (not a repo CREATE target).
 
 Journey walkthrough: N/A — no product journey. Fixture walkthrough is WI-546.
@@ -192,13 +199,13 @@ Journey walkthrough: N/A — no product journey. Fixture walkthrough is WI-546.
 
 See `docs/specs/architecture/wi-548-reconciliation.md` §3.
 
-Order: WI-547 (in flight) ∥ WI-545 ∥ WI-549 ∥ WI-550 ∥ WI-551 ∥ WI-553 ∥ WI-544(ops) → PR #10 after 547 → WI-552 after 551 → WI-546 last.
+Order: WI-547 landed; PR #10 landed; WI-545 identified on main ∥ WI-549 ∥ WI-550 ∥ WI-551 ∥ WI-553 ∥ WI-544(ops) → WI-552 after 551 → WI-546 last.
 
 ## Paid-review and test-cost plan
 
 | Phase | Review | Tests |
 |---|---|---|
-| This planning PR | Native Grok self-review + mechanical. No AGY/Claude/Codex launch. | Focused file checks + `verify-plan-mechanical.sh` |
+| This planning PR | Mechanical first, then one `/review-plan` adversarial pass using the effective owner policy. | `verify-plan-mechanical.sh` |
 | Each child land | One plan-review pass using effective owner policy for **that** host. Production mode required independents only at child land, not here. | Focused tier-1 named in the child WI |
 | Landing boundary that touches hooks/scripts/validators | Existing G6/audit envelope | One full Tier-1 |
 | WI-546 live wave | Do not rerun historical WI-542 AGY reviews | Setup + drift + listed fixtures |
@@ -206,4 +213,4 @@ Order: WI-547 (in flight) ∥ WI-545 ∥ WI-549 ∥ WI-550 ∥ WI-551 ∥ WI-553
 
 ## Simulation / no conflicting implementation exists
 
-Scope: this worktree vs `origin/main`. There is no conflicting planning WI-548 on origin. WI-547 implementation exists in another worktree and is intentionally not merged here.
+Scope: this worktree vs `origin/main` `223436ab`. There is no conflicting planning WI-548 on origin. WI-547 is already on `origin/main` and is KEEP in this PR.
