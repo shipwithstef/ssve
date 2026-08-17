@@ -1,0 +1,21 @@
+{
+  "same_input": "hermetic TOML command = \"node ~/.grok/skills/hooks/foo.mjs\" with that file present under isolated HOME",
+  "isolated_home": "/tmp/wi542-probe-53Dh8o",
+  "present_script": "/tmp/wi542-probe-53Dh8o/.grok/skills/hooks/foo.mjs",
+  "old_path": {
+    "regex": "/\\/[^\\s\"'`]+?\\.(?:mjs|js|sh)\\b/g",
+    "hits": [
+      "/.grok/skills/hooks/foo.mjs"
+    ],
+    "missing": [
+      "/.grok/skills/hooks/foo.mjs"
+    ],
+    "result": "failing-state"
+  },
+  "new_path": {
+    "missing": [],
+    "result": "PASS"
+  },
+  "ran_at": "2026-08-17T08:56:04.180Z",
+  "note": "Live tokenize/expand vs pre-WI-542 slash-seeking regex on the same fixture bytes."
+}

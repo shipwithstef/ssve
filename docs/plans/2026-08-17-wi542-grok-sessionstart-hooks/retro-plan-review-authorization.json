@@ -1,0 +1,8 @@
+{
+  "authority": "repository-owner",
+  "source": "user-message-2026-08-17-WI-542",
+  "reason": "Owner authorized one retro-plan-review for WI-542 because execute already began without a v3 review-plan receipt. Source: user-message-2026-08-17-WI-542.",
+  "kind": "retro-plan-review",
+  "wi": "WI-542",
+  "timestamp": "2026-08-17T09:22:00.000Z"
+}

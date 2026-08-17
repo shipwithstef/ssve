@@ -1,0 +1,437 @@
+{
+  "hook_count": 43,
+  "hooks": [
+    {
+      "event": "session_start",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-learning-preload.mjs",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "session_start",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-session-start-healthcheck.mjs",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "session_start",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/scripts/zombie-session-sweep.mjs",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "session_start",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/cos-briefing.mjs",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "session_start",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-delta-preload.mjs",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "user_prompt_submit",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-prompt-stale-state.mjs",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "pre_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/scripts/eval-gate.mjs pre \"$TOOL_INPUT\"",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "pre_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-workflow-guard.mjs",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "pre_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-workflow-guard.mjs --bash-guard",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "pre_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-loop-guard.mjs",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "pre_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-skill-artifact-authenticity.mjs",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "pre_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-session-contract-freshness.mjs",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "pre_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/scripts/preflight.mjs --hook --fail-closed",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "pre_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-inertia-check.mjs",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "pre_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-rule-injector.mjs",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "pre_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-rule-injector.mjs",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "pre_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-workflow-guard.mjs --phase-boundary",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "pre_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-learning-inject.mjs",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "pre_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-owner-inject.mjs",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "pre_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-worktree-isolation-guard.mjs",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "pre_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-impact-triad-guard.mjs",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "pre_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node scripts/eval-gate.mjs pre \"$TOOL_INPUT\"",
+      "source": {
+        "type": "project",
+        "path": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/bugfix-wi-542-grok-sessionstart-healthcheck/.claude"
+      }
+    },
+    {
+      "event": "post_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/scripts/eval-gate.mjs post \"$TOOL_INPUT\"",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "post_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-stop-quality.js --accumulate",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "post_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-vibe-auditor.js",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "post_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-lane-tasks-validator.mjs",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "post_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "bash -c 'FP=$(echo \"$TOOL_INPUT\" | node -e \"try{const i=JSON.parse(require(\\\"fs\\\").readFileSync(0,\\\"utf8\\\"));console.log(i.file_path||i.path||\\\"\\\");}catch{console.log(\\\"\\\");}\"); [[ \"$FP\" =~ docs/specs/work-items/WI-.*\\.md$ ]] && node /home/dianast/.claude/skills/scripts/verify-wi-pillars.mjs \"$FP\" 2>&1 | head -40 || true'",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "post_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "bash /home/dianast/.claude/skills/hooks/svc-wi-pillars-check.sh",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "post_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-auto-capture-learnings.mjs --trigger post-tool-use",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "post_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-rule-injector.mjs",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "post_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-phase-receipt-autoemit.mjs",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "post_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-phase-receipt-autoemit.mjs",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "post_tool_use",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node scripts/eval-gate.mjs post \"$TOOL_INPUT\"",
+      "source": {
+        "type": "project",
+        "path": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/bugfix-wi-542-grok-sessionstart-healthcheck/.claude"
+      }
+    },
+    {
+      "event": "stop",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.svc/enforcement/1/bin/svc-enforce svc-task-completion-guard",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "stop",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-stop-quality.js --check",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "stop",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "bash /home/dianast/.claude/skills/hooks/svc-verification-delegation-guard.sh",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "stop",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-auto-capture-learnings.mjs --trigger stop",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "notification",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-notification-surface.mjs",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "pre_compact",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-pre-compact-snapshot.mjs",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "pre_compact",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-auto-capture-learnings.mjs --trigger pre-compact",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "session_end",
+      "vendor": "claude",
+      "timeout": null,
+      "target": "node /home/dianast/.claude/skills/hooks/svc-session-end-log.mjs",
+      "source": {
+        "type": "user",
+        "path": "/home/dianast/.claude"
+      }
+    },
+    {
+      "event": "(plugin)",
+      "vendor": null,
+      "timeout": null,
+      "target": "",
+      "source": {
+        "type": "plugin",
+        "plugin_name": "last30days",
+        "path": "/home/dianast/.claude/plugins/cache/last30days-skill/last30days/2.9.5"
+      }
+    },
+    {
+      "event": "(plugin)",
+      "vendor": null,
+      "timeout": null,
+      "target": "/home/dianast/.claude/plugins/cache/claude-plugins-official/superpowers/6.2.0/hooks/hooks.json",
+      "source": {
+        "type": "plugin",
+        "plugin_name": "superpowers",
+        "path": "/home/dianast/.claude/plugins/cache/claude-plugins-official/superpowers/6.2.0"
+      }
+    }
+  ]
+}

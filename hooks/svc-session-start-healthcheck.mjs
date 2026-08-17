@@ -14,8 +14,8 @@
 // WI-186: made the healthcheck host-aware; it now resolves skills/config paths
 // from provision/hosts/<host>.json instead of checking Claude only.
 import { execFileSync, spawnSync } from "node:child_process";
-import { readFileSync, existsSync, lstatSync, realpathSync, statSync } from "node:fs";
-import { basename, dirname } from "node:path";
+import { readFileSync, writeFileSync, existsSync, lstatSync, realpathSync, statSync, mkdirSync, chmodSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolveHostPaths } from "../scripts/resolve-host-paths.mjs";
 
@@ -51,6 +51,59 @@ function findDanglingSymlinks(skillsDir) {
   }
 }
 
+// WI-542: tokenize commands, expand only ~ / ~/ / $HOME/, existsSync only on
+// absolute *.mjs/*.js/*.sh after expand. Never slice `~/.host/...` into
+// `/.host/...`. Ignore relative tokens, ${VAR} / %VAR%, and the interpreter.
+function tokenizeHookCommand(cmd) {
+  return String(cmd || "").split(/\s+/).filter(Boolean);
+}
+
+function stripHookQuotes(tok) {
+  return tok.replace(/^["']|["']$/g, "");
+}
+
+function expandHookPathToken(tok) {
+  const home = process.env.HOME || "";
+  if (tok === "~") return home || tok;
+  if (tok.startsWith("~/")) return home ? home + tok.slice(1) : tok;
+  if (tok.startsWith("$HOME/")) return home ? home + tok.slice("$HOME".length) : tok;
+  return tok;
+}
+
+function isInterpolatedHookToken(tok) {
+  return /\$\{[A-Za-z_][A-Za-z0-9_]*\}/.test(tok) || /%[A-Za-z_][A-Za-z0-9_]*%/.test(tok);
+}
+
+function isHookScriptPath(tok) {
+  return /\.(?:mjs|js|sh)$/.test(tok);
+}
+
+function collectMissingFromCommand(cmd, labelPrefix, missing) {
+  for (const raw of tokenizeHookCommand(cmd)) {
+    const tok = stripHookQuotes(raw);
+    if (!tok || isInterpolatedHookToken(tok)) continue;
+    const expanded = expandHookPathToken(tok);
+    if (!isHookScriptPath(expanded)) continue;
+    if (!expanded.startsWith("/")) continue;
+    if (!existsSync(expanded)) missing.push(`${labelPrefix}${expanded}`);
+  }
+}
+
+function extractTomlCommands(raw) {
+  const cmds = [];
+  const re = /\bcommand\s*=\s*("(?:[^"\\]|\\.)*"|'[^']*')/g;
+  let m;
+  while ((m = re.exec(raw))) {
+    const lit = m[1];
+    try {
+      cmds.push(lit.startsWith("\"") ? JSON.parse(lit) : lit.slice(1, -1));
+    } catch {
+      cmds.push(lit.replace(/^["']|["']$/g, ""));
+    }
+  }
+  return cmds;
+}
+
 function findMissingHookScripts(settingsPath, hooksSupported) {
   if (!hooksSupported || !settingsPath || !existsSync(settingsPath)) return [];
   const raw = readFileSync(settingsPath, "utf8");
@@ -65,28 +118,84 @@ function findMissingHookScripts(settingsPath, hooksSupported) {
       for (const matcherEntry of arr) {
         const inner = matcherEntry.hooks || [];
         for (const h of inner) {
-          const cmd = h.command || "";
-          for (const tok of cmd.split(/\s+/)) {
-            const t = tok.replace(/^["']|["']$/g, "");
-            if (/^\/.+\.(m?js|sh)$/.test(t) && !existsSync(t)) {
-              missing.push(`${event}: ${t}`);
-            }
-          }
+          collectMissingFromCommand(h.command || "", `${event}: `, missing);
         }
       }
     }
     return missing;
   } catch {
-    // Fall through to regex scanning for TOML and host-specific config formats.
+    // Fall through to command extraction for TOML and host-specific config formats.
   }
 
-  for (const match of raw.matchAll(/\/[^\s"'`]+?\.(?:mjs|js|sh)\b/g)) {
-    const p = match[0];
-    if (!existsSync(p)) {
-      missing.push(`hook command: ${p}`);
-    }
+  for (const cmd of extractTomlCommands(raw)) {
+    collectMissingFromCommand(cmd, "hook command: ", missing);
   }
   return missing;
+}
+
+// WI-543 AC-543-6: collapse Claude-compat + Grok-native double-fire in one session.
+// No session id (replays/tests) always runs the full path. Same-session parallel
+// invokes take an atomic exclusive claim at startup in a user-owned 0700 dir —
+// existsSync-then-write is racy under Grok parallel hook execution.
+function sessionIdFromEnv(env = process.env) {
+  return env.GROK_SESSION_ID
+    || env.CLAUDE_SESSION_ID
+    || env.CODEX_SESSION_ID
+    || env.CODEX_THREAD_ID
+    || env.KIMI_SESSION_ID
+    || env.GEMINI_SESSION_ID
+    || env.SVC_SESSION_ID
+    || "";
+}
+
+function assertUserPrivateDir(dir) {
+  const st = lstatSync(dir);
+  if (!st.isDirectory() || st.isSymbolicLink()) {
+    throw new Error(`session-claim dir is not a real directory: ${dir}`);
+  }
+  if (process.getuid && st.uid !== process.getuid()) {
+    throw new Error(`session-claim dir is not owned by the current user: ${dir}`);
+  }
+  if ((st.mode & 0o777) !== 0o700) {
+    throw new Error(`session-claim dir is not mode 0700: ${dir}`);
+  }
+  return dir;
+}
+
+function resolveSessionClaimDir(home, env = process.env) {
+  const override = env.SVC_SSHC_DIR || "";
+  if (override) {
+    if (!override.startsWith("/")) throw new Error("SVC_SSHC_DIR must be absolute");
+    return assertUserPrivateDir(override);
+  }
+  const svc = join(home, ".svc");
+  if (!existsSync(svc)) mkdirSync(svc, { recursive: true, mode: 0o755 });
+  const dir = join(svc, "sshc");
+  try {
+    mkdirSync(dir, { mode: 0o700 });
+  } catch (err) {
+    if (err.code !== "EEXIST") throw err;
+  }
+  chmodSync(dir, 0o700);
+  return assertUserPrivateDir(dir);
+}
+
+// Returns "run" (this process owns the full path) or "skip" (another invoke already claimed).
+// No session id always returns "run". Claim failures other than EEXIST fail open to "run"
+// so SessionStart never blocks.
+function claimSameSession(host, sessionId, home, env = process.env) {
+  if (!sessionId) return "run";
+  try {
+    const dir = resolveSessionClaimDir(home, env);
+    const safeHost = String(host).replace(/[^A-Za-z0-9._-]/g, "_");
+    const safeSid = String(sessionId).replace(/[^A-Za-z0-9._-]/g, "_");
+    const claimPath = join(dir, `svc-sshc-${safeHost}-${safeSid}`);
+    writeFileSync(claimPath, `${process.pid}\n`, { flag: "wx", mode: 0o600 });
+    return "run";
+  } catch (err) {
+    if (err && err.code === "EEXIST") return "skip";
+    return "run";
+  }
 }
 
 // WI-134: a candidate repo path is acceptable only if it is canonical (not
@@ -370,6 +479,9 @@ try {
   }
 
   const host = activeHost(HOOK_REPO_ROOT, home);
+  const sessionId = sessionIdFromEnv();
+  if (claimSameSession(host, sessionId, home) === "skip") process.exit(0);
+
   const hostPaths = resolveHostPaths(host, { repoRoot: HOOK_REPO_ROOT, home });
   const skillsDir = hostPaths.skillsPath;
   const settingsPath = hostPaths.configFile;

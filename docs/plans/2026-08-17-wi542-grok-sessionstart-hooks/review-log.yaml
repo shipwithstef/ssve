@@ -1,0 +1,102 @@
+review_log:
+  plan: docs/plans/2026-08-17-wi542-grok-sessionstart-hooks/manifest.md
+  date: 2026-08-17
+  reviewer: pasted-review-plan-findings
+  reviewer_family: owner-pasted
+  self_review_passes: 1
+  rounds_run: 1
+  unresolved_critical: 0
+  remaining_high: 0
+  terminal_state: REVISED_AND_REVIEWED
+  tier1:
+    script: scripts/verify-plan-mechanical.sh
+    exit_code: 0
+    issues: 0
+  responses:
+    - id: F1
+      severity: HIGH
+      disposition: ACCEPT
+      justification: >
+        WORKTREES.md requires all mutation in a linked worktree via
+        scripts/worktree.sh create. git checkout -b on the default checkout
+        violates that. A fresh Grok session started from main cannot prove
+        unmerged worktree code. Pre-merge proof is a direct replay of the
+        candidate hook; AC-542-7 / AC-543-2 live session proof moves to
+        verify-promotion. grok inspect --json can prove hook origin without
+        a new chat session.
+    - id: F2
+      severity: HIGH
+      disposition: ACCEPT
+      justification: >
+        parseExistingToml in scripts/wire-grok-hooks.mjs only treats a line
+        that is exactly [[hooks]] as a hook block. Nested [[hooks.SessionStart]]
+        would land in nonHookText. A later revert to flat tables would keep
+        the nested block and append new [[hooks]], duplicating handlers.
+        Schema change now requires byte backup, dual-schema parse/remove,
+        user-hook preservation, two identical rewires, and restore-on-failure.
+    - id: F3
+      severity: HIGH
+      disposition: ACCEPT
+      justification: >
+        grok inspect --help does not list loaded hooks. grok inspect --json
+        does: .hooks[].event, .hooks[].source.path, .hooks[].vendor,
+        .hooks[].target, .hooks[].timeout. Baseline on 2026-08-17 showed
+        five session_start hooks, all vendor=claude source=/home/dianast/.claude,
+        zero source paths under .grok. That is the probe.
+    - id: F4
+      severity: HIGH
+      disposition: ACCEPT
+      justification: >
+        activeHost() uses detect-host.sh unless SVC_HOST is set. A bare
+        node hooks/svc-session-start-healthcheck.mjs can silently exercise
+        Claude. Replay commands now set SVC_HOST=grok and SVC_HOST=kimi
+        explicitly.
+    - id: F5
+      severity: MEDIUM
+      disposition: ACCEPT
+      justification: >
+        "Flat tables already execute" is a reason not to rewrite the wirer,
+        not a waiver of AC-543-2. Native origin is proven only when
+        grok inspect --json shows a session_start (or other wired event)
+        hook whose source.path is under the Grok home config, not only
+        global/settings / .claude.
+    - id: F6
+      severity: MEDIUM
+      disposition: ACCEPT
+      justification: >
+        validate-hook-host-residuals, validate-cross-host-hook-conformance,
+        and validate-governed-wirer-fail-fast do not assert Grok TOML table
+        shape. Scope is now exact: CREATE
+        test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh
+        plus the existing two SessionStart validators. No vague
+        "Grok-only validator rows".
+    - id: F7
+      severity: MEDIUM
+      disposition: ACCEPT
+      justification: >
+        An underspecified already-ok short-circuit can skip WI-487 loss
+        detection. Removed from this changeset. Latency follow-up is filed
+        only when a healthy replay is 1s <= t < 5s; t >= 5s fails the checkpoint.
+    - id: F8
+      severity: LOW
+      disposition: ACCEPT
+      justification: >
+        Prose now uses only task-1-parser, task-2-tests, task-3-grok-schema,
+        task-4-premerge-replay. AC-542-5 is already revised on WI-542.md;
+        the "will be updated later" sentence is deleted.
+    - id: F9
+      severity: HIGH
+      disposition: ACCEPT
+      justification: >
+        AC-543-6 cannot require inspect healthcheck count == 1 while
+        Claude-compat stays enabled and AC-543-3 adds a Grok-native
+        registration. Redefined: exactly one Grok-home-sourced healthcheck;
+        Claude-compat may add one more. Runtime double-fire is a session
+        stamp in hooks/svc-session-start-healthcheck.mjs (task-1-parser
+        file set, not task-3).
+    - id: F10
+      severity: LOW
+      disposition: ACCEPT
+      justification: >
+        Timing dead zone closed. t < 1s pass; 1s <= t < 5s pass with note
+        plus a follow-up WI; t >= 5s fails. Matches Grok's 5s observe ceiling.

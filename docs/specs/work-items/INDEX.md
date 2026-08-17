@@ -1,5 +1,9 @@
 # Work Items Index
 
+- [WI-544](WI-544.md) — Live Kimi config leftover `/tmp/fake` hook commands (severity:medium) — status:identified; follow-up to WI-542, not in the Grok parser/wirer changeset
+- [WI-542](WI-542.md) — Grok SessionStart 1 is red: healthcheck false-positive `~` paths re-run setup past the 5s timeout (severity:high) — status:identified
+- [WI-543](WI-543.md) — Grok-native `[[hooks]]` tables are not the hooks Grok executes (severity:high) — status:identified; sibling of WI-542
+
 - [WI-537](WI-537.md) — Privacy-safe single-root history reset with verified private recovery archive (severity:critical) — status:IN_PROGRESS
 
 - [WI-531](WI-531.md) — Zero-block hooks and instant governed provisioning; parent for Phase A recovery UX plus WI-532..WI-536 Tier-1 closure (severity:critical) — status:VERIFIED-L3

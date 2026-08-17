@@ -134,6 +134,10 @@ docs/specs/work-items/evidence/*SELFTEST*/
 .svc/install-migrations/
 .svc/install-state/
 
+# WI-542: local full grok inspect dumps; tracked extracts live under docs/specs/verification/
+.svc/wi-543-inspect-*.json
+.svc/wi-542-*.json
+
 # Repository-publication boundary: transient research and raw local artifacts
 /scratch/
 

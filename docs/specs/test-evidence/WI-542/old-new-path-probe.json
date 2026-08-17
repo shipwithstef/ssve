@@ -1,0 +1,56 @@
+{
+  "probes": [
+    {
+      "id": "wi542-tilde-parser-migration",
+      "hypothesis": "Tokenize + expand ~ / ~/ / $HOME/ reports a present portable hook script; the old slash-seeking regex reports it missing.",
+      "change_reason": "Migrate findMissingHookScripts off the slash-seeking regex and route through tokenize/expand instead.",
+      "migration": true,
+      "requires_old_new_path_proof": true,
+      "same_input": "hermetic TOML command = \"node ~/.grok/skills/hooks/foo.mjs\" with that file present under isolated HOME",
+      "confirmation_check": {
+        "predicate": "new tokenizer reports missing=[] for the present ~/.grok/skills/hooks/foo.mjs token",
+        "result": "PASS"
+      },
+      "falsification_check": {
+        "predicate": "old regex /[^\\s\"'`]+?\\.(?:mjs|js|sh)\\b hits /.grok/skills/hooks/foo.mjs and existsSync is false",
+        "result": "PASS"
+      },
+      "old_path": {
+        "command": "node --input-type=module probe: raw.matchAll(/\\/[^\\s\"'`]+?\\.(?:mjs|js|sh)\\b/g) then existsSync",
+        "result": "failing-state"
+      },
+      "new_path": {
+        "command": "node --input-type=module probe: extract command tokens, expand ~ and $HOME/, existsSync only absolute scripts",
+        "result": "PASS"
+      },
+      "verdict": "hypothesis-holds",
+      "evidence": "docs/specs/test-evidence/WI-542/old-new-path-probe-run.json"
+    },
+    {
+      "id": "wi543-nested-schema-load",
+      "hypothesis": "After the wirer emits nested [[hooks.<Event>]], grok inspect --json lists a session_start healthcheck whose source.path is under the Grok home config.",
+      "change_reason": "Route Grok hook emit through nested [[hooks.<Event>]] instead of flat [[hooks]] tables.",
+      "migration": true,
+      "requires_old_new_path_proof": true,
+      "same_input": "grok inspect --json on this machine before and after wire-grok-hooks.mjs",
+      "confirmation_check": {
+        "predicate": "inspect-after has exactly one healthcheck with source.path containing /.grok and Claude healthcheck count <= 1",
+        "result": "PASS"
+      },
+      "falsification_check": {
+        "predicate": "inspect-before has grok_native_session_start == 0 and all five session_start rows vendor=claude",
+        "result": "PASS"
+      },
+      "old_path": {
+        "command": "grok inspect --json > docs/specs/verification/wi-542-grok-inspect-before.hooks.json",
+        "result": "failing-state"
+      },
+      "new_path": {
+        "command": "grok inspect --json > docs/specs/verification/wi-542-grok-inspect-after.hooks.json",
+        "result": "PASS"
+      },
+      "verdict": "hypothesis-holds",
+      "evidence": "docs/specs/verification/wi-542-grok-inspect-before.hooks.json and wi-542-grok-inspect-after.hooks.json"
+    }
+  ]
+}

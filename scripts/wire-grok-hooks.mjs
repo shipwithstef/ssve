@@ -4,9 +4,10 @@
  * wire-grok-hooks.mjs — Idempotently merges svc enforcement hooks into
  * Grok Build CLI config (~/.grok/config.toml).
  *
- * Grok hook model:
+ * Grok hook model (WI-543 live inspect 2026-08-17):
  *   - Events: PreToolUse, PostToolUse, UserPromptSubmit, Stop, SessionStart, SessionEnd
- *   - Format: TOML [[hooks]] tables
+ *   - Loaded schema: nested [[hooks.<Event>]] + inner hooks = [{ type, command, timeout }]
+ *   - Parser also removes leftover flat [[hooks]] tables so a later revert cannot duplicate
  *   - Exit code 2 = hard block (PreToolUse, Stop)
  *
  * Usage:
@@ -139,7 +140,7 @@ export function buildGrokHookEntries(skillsPath) {
       event: "SessionStart",
       matcher: "*",
       command: `${NODE_CMD} ${hooksDir}/svc-session-start-healthcheck.mjs`,
-      timeout: 10,
+      timeout: 30,
     });
   }
 
@@ -176,81 +177,285 @@ export function buildGrokHookEntries(skillsPath) {
   return hooks;
 }
 
-function parseExistingToml(content) {
+function parseTomlScalar(raw) {
+  const t = String(raw).trim();
+  if (t.startsWith("\"")) {
+    try { return JSON.parse(t); } catch { return t.replace(/^"|"$/g, ""); }
+  }
+  if (t.startsWith("'")) return t.slice(1, -1);
+  if (/^[0-9]+$/.test(t)) return parseInt(t, 10);
+  if (/^(true|false)$/i.test(t)) return t.toLowerCase() === "true";
+  return t;
+}
+
+function assignTomlKv(obj, line) {
+  const matchStr = line.match(/^\s*([a-zA-Z0-9_-]+)\s*=\s*("(?:[^"\\]|\\.)*"|'[^']*')/);
+  const matchNum = line.match(/^\s*([a-zA-Z0-9_-]+)\s*=\s*([0-9]+)/);
+  const matchBool = line.match(/^\s*([a-zA-Z0-9_-]+)\s*=\s*(true|false)\b/i);
+  if (matchStr) {
+    obj[matchStr[1]] = parseTomlScalar(matchStr[2]);
+    return matchStr[1];
+  }
+  if (matchNum) {
+    obj[matchNum[1]] = parseInt(matchNum[2], 10);
+    return matchNum[1];
+  }
+  if (matchBool) {
+    obj[matchBool[1]] = matchBool[2].toLowerCase() === "true";
+    return matchBool[1];
+  }
+  return null;
+}
+
+function parseInlineHookObjects(text) {
+  const hooks = [];
+  const re = /\{([^}]*)\}/g;
+  let m;
+  while ((m = re.exec(text))) {
+    const obj = {};
+    const inner = m[1];
+    const kv = /([a-zA-Z0-9_-]+)\s*=\s*("(?:[^"\\]|\\.)*"|'[^']*'|[0-9]+|true|false)/gi;
+    let pair;
+    while ((pair = kv.exec(inner))) {
+      obj[pair[1]] = parseTomlScalar(pair[2]);
+    }
+    if (obj.command) hooks.push(obj);
+  }
+  return hooks;
+}
+
+function collectBracketBlock(lines, startIdx) {
+  let buf = lines[startIdx];
+  let i = startIdx;
+  let depth = 0;
+  let inStr = false;
+  let esc = false;
+  const scan = (s) => {
+    for (const ch of s) {
+      if (inStr) {
+        if (esc) { esc = false; continue; }
+        if (ch === "\\") { esc = true; continue; }
+        if (ch === "\"") inStr = false;
+        continue;
+      }
+      if (ch === "\"") { inStr = true; continue; }
+      if (ch === "[") depth++;
+      if (ch === "]") depth--;
+    }
+  };
+  scan(lines[startIdx]);
+  while (depth > 0 && i + 1 < lines.length) {
+    i++;
+    buf += "\n" + lines[i];
+    scan(lines[i]);
+  }
+  return { text: buf, endIdx: i };
+}
+
+function classifyHookHeader(trimmed) {
+  if (trimmed === "[[hooks]]") return { kind: "flat" };
+  const handler = trimmed.match(/^\[\[hooks\.([A-Za-z][A-Za-z0-9]*)\.hooks\]\]$/);
+  if (handler) return { kind: "nested-handler", event: handler[1] };
+  const event = trimmed.match(/^\[\[hooks\.([A-Za-z][A-Za-z0-9]*)\]\]$/);
+  if (event) return { kind: "nested-event", event: event[1] };
+  return null;
+}
+
+export function parseExistingToml(content) {
   const nonHookSections = [];
   const existingHooks = [];
-  const lines = content.split(/\r?\n/);
-  let inHook = false;
+  const lines = String(content || "").split(/\r?\n/);
+  let mode = "none";
   let currentHook = {};
+  let currentEvent = "";
+  let eventMatcher = "";
   let currentNonHook = [];
+
+  const flushHook = () => {
+    if (currentHook.command) existingHooks.push(currentHook);
+    currentHook = {};
+  };
+  const flushNonHook = () => {
+    if (currentNonHook.length > 0) {
+      nonHookSections.push(currentNonHook.join("\n"));
+      currentNonHook = [];
+    }
+  };
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (line.trim() === "[[hooks]]") {
-      if (inHook && currentHook.command) {
-        existingHooks.push(currentHook);
+    const trimmed = line.trim();
+    const header = classifyHookHeader(trimmed);
+    if (header) {
+      flushHook();
+      flushNonHook();
+      if (header.kind === "flat") {
+        mode = "flat";
+        currentEvent = "";
+        eventMatcher = "";
+        currentHook = {};
+      } else if (header.kind === "nested-event") {
+        mode = "nested-event";
+        currentEvent = header.event;
+        eventMatcher = "";
+        currentHook = { event: header.event };
+      } else {
+        mode = "nested-handler";
+        currentEvent = header.event;
+        currentHook = { event: header.event };
+        if (eventMatcher) currentHook.matcher = eventMatcher;
       }
-      if (currentNonHook.length > 0) {
-        nonHookSections.push(currentNonHook.join("\n"));
-        currentNonHook = [];
-      }
-      inHook = true;
-      currentHook = {};
       continue;
     }
 
-    if (inHook && line.trim().startsWith("[") && line.trim() !== "[[hooks]]") {
-      if (currentHook.command) {
-        existingHooks.push(currentHook);
-      }
-      inHook = false;
-      currentHook = {};
+    if (mode !== "none" && trimmed.startsWith("[")) {
+      flushHook();
+      mode = "none";
+      currentEvent = "";
+      eventMatcher = "";
       currentNonHook.push(line);
       continue;
     }
 
-    if (inHook) {
-      const matchStr = line.match(/^\s*([a-zA-Z0-9_-]+)\s*=\s*("(?:[^"\\]|\\.)*"|'[^']*')/);
-      const matchNum = line.match(/^\s*([a-zA-Z0-9_-]+)\s*=\s*([0-9]+)/);
-      const matchBool = line.match(/^\s*([a-zA-Z0-9_-]+)\s*=\s*(true|false)\b/i);
-      if (matchStr) {
-        try { currentHook[matchStr[1]] = JSON.parse(matchStr[2]); } catch { currentHook[matchStr[1]] = matchStr[2].replace(/^'|'$/g, ""); }
-      } else if (matchNum) {
-        currentHook[matchNum[1]] = parseInt(matchNum[2], 10);
-      } else if (matchBool) {
-        currentHook[matchBool[1]] = matchBool[2].toLowerCase() === "true";
-      }
-    } else {
+    if (mode === "none") {
       currentNonHook.push(line);
+      continue;
     }
+
+    if ((mode === "nested-event" || mode === "nested-handler") && /^\s*hooks\s*=\s*\[/.test(line)) {
+      const block = collectBracketBlock(lines, i);
+      const matcher = currentHook.matcher || eventMatcher || "*";
+      for (const inner of parseInlineHookObjects(block.text)) {
+        existingHooks.push({
+          event: currentEvent || currentHook.event,
+          matcher,
+          type: inner.type || "command",
+          command: inner.command,
+          timeout: inner.timeout,
+        });
+      }
+      currentHook = { event: currentEvent };
+      if (eventMatcher) currentHook.matcher = eventMatcher;
+      i = block.endIdx;
+      continue;
+    }
+
+    const key = assignTomlKv(currentHook, line);
+    if (key === "matcher") eventMatcher = currentHook.matcher;
+    if (key === "event") currentEvent = currentHook.event;
   }
 
-  if (inHook && currentHook.command) {
-    existingHooks.push(currentHook);
-  }
-  if (currentNonHook.length > 0) {
-    nonHookSections.push(currentNonHook.join("\n"));
-  }
-
+  flushHook();
+  flushNonHook();
   return { nonHookText: nonHookSections.join("\n\n").trim(), existingHooks };
 }
 
-function serializeToml(nonHookText, hooks) {
+export function serializeToml(nonHookText, hooks) {
   const blocks = [];
-  if (nonHookText) {
-    blocks.push(nonHookText);
-  }
+  if (nonHookText) blocks.push(nonHookText);
 
+  // Emit [[hooks.<Event>]] plus [[hooks.<Event>.hooks]] so `command = "..."`
+  // stays on its own line. Grok docs accept this form, and existing TOML
+  // command extractors (migrate-install, WI-487 heal) only match that line shape.
   for (const h of hooks) {
-    const lines = ["[[hooks]]"];
-    for (const [k, v] of Object.entries(h)) {
-      if (typeof v === "string") lines.push(`${k} = ${JSON.stringify(v)}`);
-      else if (typeof v === "number" || typeof v === "boolean") lines.push(`${k} = ${v}`);
-    }
+    const event = h.event || "SessionStart";
+    const matcher = h.matcher == null ? "*" : h.matcher;
+    const type = h.type || "command";
+    const lines = [
+      `[[hooks.${event}]]`,
+      `matcher = ${JSON.stringify(matcher)}`,
+      `[[hooks.${event}.hooks]]`,
+      `type = ${JSON.stringify(type)}`,
+      `command = ${JSON.stringify(h.command || "")}`,
+    ];
+    if (typeof h.timeout === "number") lines.push(`timeout = ${h.timeout}`);
     blocks.push(lines.join("\n"));
   }
 
   return blocks.join("\n\n") + "\n";
+}
+
+function isHookTableHeader(trimmed) {
+  return trimmed === "[[hooks]]" || /^\[\[hooks\.[A-Za-z][A-Za-z0-9]*(?:\.hooks)?\]\]$/.test(trimmed);
+}
+
+function isSvcOwnedText(text) {
+  // Drop governed SVC hook scripts and the svc-enforce launcher.
+  // Keep user hooks under ~/.grok/skills/hooks/user-keep.mjs and
+  // comments that mention "svc-" without a governed command.
+  return /(?:^|[^\w.-])svc-[A-Za-z0-9._-]+\.(?:mjs|js|sh)\b/.test(text)
+    || /(?:^|[^\w.-])svc-enforce(?:\s|$)/.test(text)
+    || text.includes("/skills/hooks/svc-");
+}
+
+// Split TOML into ordered text/hook-table regions so non-SVC hooks (HTTP, env,
+// comments, escaped strings, ${HOME}, multi-handler) are kept byte-verbatim.
+export function splitTomlHookRegions(content) {
+  const lines = String(content || "").split(/\r?\n/);
+  const parts = [];
+  let buf = [];
+  let inHook = false;
+  const flush = () => {
+    if (buf.length === 0) return;
+    parts.push({ kind: inHook ? "hook" : "text", text: buf.join("\n") });
+    buf = [];
+  };
+  const bufEvent = () => {
+    if (!inHook || buf.length === 0) return "";
+    return classifyHookHeader(buf[0].trim())?.event || "";
+  };
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const header = classifyHookHeader(trimmed);
+    if (header) {
+      if (inHook && header.kind === "nested-handler" && header.event && header.event === bufEvent()) {
+        buf.push(line);
+        continue;
+      }
+      flush();
+      inHook = true;
+      buf.push(line);
+      continue;
+    }
+    if (inHook && trimmed.startsWith("[") && !isHookTableHeader(trimmed)) {
+      flush();
+      inHook = false;
+      buf.push(line);
+      continue;
+    }
+    buf.push(line);
+  }
+  flush();
+  return parts;
+}
+
+function composeWiredToml(content, svcHooks) {
+  const kept = [];
+  for (const part of splitTomlHookRegions(content)) {
+    if (part.kind === "text" || !isSvcOwnedText(part.text)) kept.push(part.text);
+  }
+  const prefix = kept.join("\n\n").replace(/\n{3,}/g, "\n\n").trim();
+  const svcBlock = serializeToml("", svcHooks).trim();
+  if (prefix && svcBlock) return `${prefix}\n\n${svcBlock}\n`;
+  if (svcBlock) return `${svcBlock}\n`;
+  return prefix ? `${prefix}\n` : "\n";
+}
+
+function fileMode(file) {
+  return fs.statSync(file).mode & 0o777;
+}
+
+function copyPreservingMode(src, dest) {
+  fs.copyFileSync(src, dest);
+  fs.chmodSync(dest, fileMode(src));
+}
+
+function immutableBackupPath(configFile) {
+  return `${configFile}.pre-migration.bak`;
+}
+
+function rollbackPath(configFile) {
+  return `${configFile}.svc-wire.rollback`;
 }
 
 export function wireGrok(options = {}) {
@@ -258,27 +463,22 @@ export function wireGrok(options = {}) {
   const skillsPath = options.skillsPath || path.join(home, ".grok", "skills");
   const configFile = options.configFile || path.join(home, ".grok", "config.toml");
   const dryRun = options.dryRun || false;
+  const immutableBak = immutableBackupPath(configFile);
+  const rollbackBak = rollbackPath(configFile);
 
   let content = "";
+  let existingMode = 0o644;
   if (fs.existsSync(configFile)) {
     try {
       content = fs.readFileSync(configFile, "utf8");
-    } catch {
-      content = "";
+      existingMode = fileMode(configFile);
+    } catch (err) {
+      throw new Error(`cannot read grok config ${configFile}: ${err.message}`);
     }
   }
 
-  const { nonHookText, existingHooks } = parseExistingToml(content);
   const svcHooks = buildGrokHookEntries(skillsPath);
-
-  // Retain non-svc hooks
-  const nonSvcHooks = existingHooks.filter((h) => {
-    const cmd = h.command || "";
-    return !cmd.includes("svc-") && !cmd.includes("/skills/hooks/");
-  });
-
-  const mergedHooks = [...nonSvcHooks, ...svcHooks];
-  const output = serializeToml(nonHookText, mergedHooks);
+  const output = composeWiredToml(content, svcHooks);
 
   if (dryRun) {
     process.stdout.write(output);
@@ -286,11 +486,28 @@ export function wireGrok(options = {}) {
   }
 
   fs.mkdirSync(path.dirname(configFile), { recursive: true });
-  const tmp = `${configFile}.${process.pid}.tmp`;
-  fs.writeFileSync(tmp, output, "utf8");
-  fs.renameSync(tmp, configFile);
-  process.stdout.write(`Wired Grok hooks in ${configFile}\n`);
-  return 0;
+  if (fs.existsSync(configFile)) {
+    if (!fs.existsSync(immutableBak)) {
+      copyPreservingMode(configFile, immutableBak);
+    }
+    copyPreservingMode(configFile, rollbackBak);
+  }
+  try {
+    if (process.env.SVC_WIRE_GROK_FAIL_AFTER_BACKUP === "1") {
+      throw new Error("simulated write failure");
+    }
+    const tmp = `${configFile}.${process.pid}.tmp`;
+    fs.writeFileSync(tmp, output, { encoding: "utf8", mode: existingMode });
+    fs.chmodSync(tmp, existingMode);
+    fs.renameSync(tmp, configFile);
+    process.stdout.write(`Wired Grok hooks in ${configFile}\n`);
+    return 0;
+  } catch (err) {
+    if (fs.existsSync(rollbackBak)) {
+      copyPreservingMode(rollbackBak, configFile);
+    }
+    throw err;
+  }
 }
 
 function parseArgs(argv) {
