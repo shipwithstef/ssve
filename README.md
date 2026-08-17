@@ -493,7 +493,9 @@ running setup to activate them.
 
 **For Antigravity:** `./setup --host antigravity` installs to `~/.gemini/antigravity/skills/`. This is a skills-only target; hooks are not enforced until a verified Antigravity wirer exists.
 
-**For Cursor:** `./setup --host cursor` installs to `~/.cursor/skills/`. This is a skills-only target; hooks are not enforced until a verified Cursor wirer exists.
+**For Cursor:** `./setup --host cursor` installs to `~/.cursor/skills/` and wires hooks into `~/.cursor/hooks.json`.
+
+**For Grok:** `./setup --host grok` installs to `~/.grok/skills/` and wires hooks into `~/.grok/config.toml`.
 
 **Update:** `cd ~/.claude/skills/svc && git pull && ./setup`
 

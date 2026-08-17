@@ -83,17 +83,19 @@ cp "$REPO_ROOT/references/opencode-mimo-config.json" "$SRC/references/" 2>/dev/n
 # F-004/F-010: the migration orchestrates the manifest-declared host wiring
 # primitives — copy EVERY wirer so the fixture exercises real wiring + governed-
 # command verification, not a stub.
-for w in wire-hooks wire-codex-hooks wire-gemini-hooks wire-kimi-hooks wire-opencode-hooks; do
+for w in wire-hooks wire-codex-hooks wire-gemini-hooks wire-kimi-hooks wire-opencode-hooks wire-cursor-hooks wire-grok-hooks; do
   cp "$REPO_ROOT/scripts/$w.mjs" "$SRC/scripts/"
 done
-# ALL 8 host manifests (dynamic inventory must find every one).
-ALL_HOSTS=(antigravity claude codex cursor gemini kimi mimo-code opencode)
+# ALL 9 host manifests (dynamic inventory must find every one).
+ALL_HOSTS=(antigravity claude codex cursor gemini grok kimi mimo-code opencode)
 for h in "${ALL_HOSTS[@]}"; do cp "$REPO_ROOT/provision/hosts/$h.json" "$SRC/provision/hosts/"; done
-# Create each host's skills dir + (for kimi) an existing config so it is "present".
+# Create each host's skills dir + (for kimi/grok) an existing config so it is "present".
 mkdir -p "$FHOME/.claude/skills" "$FHOME/.codex/skills" "$FHOME/.gemini/skills" \
          "$FHOME/.kimi/skills" "$FHOME/.config/opencode/skills" "$FHOME/.mimocode/skills" \
-         "$FHOME/.gemini/antigravity/skills" "$FHOME/.cursor/skills" "$FHOME/.codex" "$FHOME/.gemini"
+         "$FHOME/.gemini/antigravity/skills" "$FHOME/.cursor/skills" "$FHOME/.grok/skills" \
+         "$FHOME/.codex" "$FHOME/.gemini" "$FHOME/.cursor" "$FHOME/.grok"
 printf 'x' > "$FHOME/.kimi/config.toml"   # kimi wirer requires an existing config.toml
+printf 'x' > "$FHOME/.grok/config.toml"   # grok wirer requires an existing config.toml
 # A SUPPORTED (current-version, well-formed) WI-state graph so the WI-486
 # classification path is exercised without requiring migration authorization.
 printf '{"version":1,"wi":"WI-999","tasks":[{"id":"t1","title":"x","status":"pending","blocked_by":[]}]}' > "$SRC/.svc/lane-tasks-WI-999.json"
@@ -116,7 +118,7 @@ disp() { echo "$AOUT" | node -e '
   const h=o.hosts.find(x=>x.host===process.argv[1])||{};
   process.stdout.write(JSON.stringify({status:h.status,governed:h.governed,routed:h.governed_routed,note:h.wiring_note||h.detail||""}));
 ' "$1"; }
-for h in claude codex gemini kimi; do
+for h in claude codex cursor gemini grok kimi; do
   D="$(disp "$h")"
   if echo "$D" | grep -q '"status":"ok"' && echo "$D" | grep -q '"governed":true' && echo "$D" | grep -q '"routed":true'; then
     pass "governed launcher host migrated + routes through launcher: $h"
@@ -132,7 +134,7 @@ for h in opencode mimo-code; do
     fail "plugin host $h did not carry an explicit governed:false disposition (got $D)"
   fi
 done
-for h in antigravity cursor; do
+for h in antigravity; do
   D="$(disp "$h")"
   if echo "$D" | grep -q '"status":"ok"' && echo "$D" | grep -qi 'skills-only'; then
     pass "non-hook-capable host migrated skills-only (explicit): $h"
@@ -195,9 +197,11 @@ echo "$RB2" | grep -q '"status":"noop"' && pass "a second --rollback of the same
 # Roll back the remaining launcher hosts; the LAST one out removes the shared bundle.
 HOME="$FHOME" node "$MIG" --rollback --host codex --repo-root "$SRC" --json >/dev/null 2>&1
 HOME="$FHOME" node "$MIG" --rollback --host gemini --repo-root "$SRC" --json >/dev/null 2>&1
-# opencode/mimo/antigravity/cursor also hold receipts referencing the bundle; roll them
+HOME="$FHOME" node "$MIG" --rollback --host cursor --repo-root "$SRC" --json >/dev/null 2>&1
+HOME="$FHOME" node "$MIG" --rollback --host grok --repo-root "$SRC" --json >/dev/null 2>&1
+# opencode/mimo/antigravity also hold receipts referencing the bundle; roll them
 # back too so kimi is genuinely the last governed launcher host.
-for h in opencode mimo-code antigravity cursor; do HOME="$FHOME" node "$MIG" --rollback --host "$h" --repo-root "$SRC" --json >/dev/null 2>&1; done
+for h in opencode mimo-code antigravity; do HOME="$FHOME" node "$MIG" --rollback --host "$h" --repo-root "$SRC" --json >/dev/null 2>&1; done
 RBLAST="$(HOME="$FHOME" node "$MIG" --rollback --host kimi --repo-root "$SRC" --json 2>/dev/null | tail -1)"
 [ ! -d "$FHOME/.svc/enforcement/1" ] && pass "F-006: bundle removed only when the LAST referencing host is rolled back" || fail "F-006: bundle not removed after last host rollback"
 echo "$RBLAST" | grep -q '"bundle_removed":true' && pass "F-006: final rollback reports bundle removed" || fail "F-006: final rollback did not report bundle removed"

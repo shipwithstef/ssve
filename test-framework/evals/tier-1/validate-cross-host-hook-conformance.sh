@@ -19,6 +19,8 @@ HOST_TO_FILE_kimi="$REPO_ROOT/scripts/wire-kimi-hooks.mjs"
 HOST_TO_FILE_codex="$REPO_ROOT/scripts/wire-codex-hooks.mjs"
 HOST_TO_FILE_gemini="$REPO_ROOT/scripts/wire-gemini-hooks.mjs"
 HOST_TO_FILE_opencode="$REPO_ROOT/scripts/wire-opencode-hooks.mjs"
+HOST_TO_FILE_cursor="$REPO_ROOT/scripts/wire-cursor-hooks.mjs"
+HOST_TO_FILE_grok="$REPO_ROOT/scripts/wire-grok-hooks.mjs"
 
 PASS=0; FAIL=0; WARN=0
 
@@ -122,6 +124,8 @@ while IFS=$'\t' read -r kind gate host pattern; do
     codex)  wire="$HOST_TO_FILE_codex" ;;
     gemini) wire="$HOST_TO_FILE_gemini" ;;
     opencode) wire="$HOST_TO_FILE_opencode" ;;
+    cursor) wire="$HOST_TO_FILE_cursor" ;;
+    grok)   wire="$HOST_TO_FILE_grok" ;;
     *) continue ;;
   esac
   if [ ! -f "$wire" ]; then

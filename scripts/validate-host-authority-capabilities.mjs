@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const HOSTS = ["antigravity", "claude", "codex", "cursor", "gemini", "kimi", "mimo-code", "opencode"];
+const HOSTS = ["antigravity", "claude", "codex", "cursor", "gemini", "grok", "kimi", "mimo-code", "opencode"];
 
 function parse(argv) { const index = argv.indexOf("--root"); return index >= 0 ? path.resolve(argv[index + 1]) : process.cwd(); }
 

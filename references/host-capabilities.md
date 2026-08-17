@@ -3,7 +3,7 @@
 ## Execution Controller v2 ingress
 
 Every provisioned host declares `runtime_ingress_v2`. Hook-capable hosts normalize lifecycle events
-through a thin hook adapter with the same CLI fallback; Antigravity and Cursor use the CLI adapter.
+through a thin hook adapter with the same CLI fallback; Antigravity uses the CLI adapter.
 Both transports append generation-bound events to the canonical runtime journal. Lane tasks,
 orchestrator state, receipt mirrors and decision logs are generated projections and never writable
 workflow truth. Hooks remain optional normalization/UX adapters, not authority, containment,
@@ -39,36 +39,36 @@ Reference doc for orchestrator hosts supported by Serious Vibe Coding. Skills an
 
 ## Matrix
 
-| Capability | Claude Code | Kimi CLI | Codex CLI | Gemini CLI | OpenCode CLI | Antigravity | Cursor |
-|------------|:-----------:|:--------:|:---------:|:----------:|:------------:|:-----------:|:------:|
-| Skills | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Hooks | ✅ | ✅ (beta) | ✅ (opt-in) | ✅ | ✅ (plugin) | ❌ skills-only | ❌ skills-only |
-| Plugins | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ |
-| MCP | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Commands | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
-| Agents | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
-| Subagents | ❌ | ✅ (built-in) | ❌ | ❌ | ✅ (general/explore) | ❌ | ❌ |
-| Flow Skills | ❌ | ✅ (`/flow`) | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Background Tasks | ❌ | ✅ (native) | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Thinking Toggle | ❌ | ✅ (`/model`) | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Plan Mode | ❌ | ✅ (`/plan`) | ❌ | ❌ | ✅ (Tab key) | ❌ | ❌ |
-| Side Questions | ❌ | ✅ (`/btw`) | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Session Export/Import | ❌ | ✅ (`/export`, `/import`) | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Capability | Claude Code | Kimi CLI | Codex CLI | Gemini CLI | OpenCode CLI | Antigravity | Cursor | Grok Build |
+|------------|:-----------:|:--------:|:---------:|:----------:|:------------:|:-----------:|:------:|:----------:|
+| Skills | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Hooks | ✅ | ✅ (beta) | ✅ (opt-in) | ✅ | ✅ (plugin) | ❌ skills-only | ✅ (native) | ✅ (native) |
+| Plugins | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ | ✅ |
+| MCP | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Commands | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ |
+| Agents | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ |
+| Subagents | ❌ | ✅ (built-in) | ❌ | ❌ | ✅ (general/explore) | ❌ | ❌ | ❌ |
+| Flow Skills | ❌ | ✅ (`/flow`) | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Background Tasks | ❌ | ✅ (native) | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Thinking Toggle | ❌ | ✅ (`/model`) | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Plan Mode | ❌ | ✅ (`/plan`) | ❌ | ❌ | ✅ (Tab key) | ❌ | ❌ | ❌ |
+| Side Questions | ❌ | ✅ (`/btw`) | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Session Export/Import | ❌ | ✅ (`/export`, `/import`) | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 
 ### Skills-Only Hosts
 
-Antigravity and Cursor are first-class install targets for `SKILL.md` discovery and framework infrastructure, but they are not hook-enforced hosts yet. Their manifests set `capabilities.hooks=false`, and `references/canonical-gates.json` classifies them under `skills_only_hosts` until a host-specific hook wirer is researched, implemented, and validated.
+Antigravity is a first-class install target for `SKILL.md` discovery and framework infrastructure, but is not a hook-enforced host yet. Its manifest sets `capabilities.hooks=false`, and `references/canonical-gates.json` classifies it under `skills_only_hosts` until a host-specific hook wirer is researched, implemented, and validated.
 
-Route output and reviews must describe these hosts as **skills-only** or **limited** for enforcement. Do not claim "cross-host hook enforcement" includes Antigravity or Cursor; `.svc/lane-tasks-<WI>.json` remains the source of truth for those hosts.
+Route output and reviews must describe Antigravity as **skills-only** or **limited** for enforcement. Do not claim "cross-host hook enforcement" includes Antigravity; `.svc/lane-tasks-<WI>.json` remains the source of truth for that host.
 
 ## Durable Mutation Authority
 
 The `authority_capabilities` object in each provisioned manifest is the
-machine-readable source of truth. Claude, Codex, Gemini, and Kimi can enable
-mutating child execution only after the canonical Landlock wrapper probe passes;
-OpenCode and MiMo-Code remain controller-only because their current plugin is
-observational and cannot enforce path-scoped capability checks. Antigravity and
-Cursor remain skills-only.
+machine-readable source of truth. Claude, Codex, Gemini, Kimi, Cursor, and Grok
+can enable mutating child execution only after the canonical Landlock wrapper
+probe passes; OpenCode and MiMo-Code remain controller-only because their current
+plugin is observational and cannot enforce path-scoped capability checks.
+Antigravity remains skills-only.
 
 PreTool classification rejects obvious cross-root forms and validates authority,
 but it is an authority guardrail, not a complete shell security boundary. Shell

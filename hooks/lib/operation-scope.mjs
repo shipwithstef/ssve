@@ -20,6 +20,7 @@ const TRUSTED_WORKDIR_FIELDS = {
   antigravity: new Set(["workdir"]),
   cursor: new Set(["workdir"]),
   "mimo-code": new Set(["workdir"]),
+  grok: new Set(["workdir"]),
 };
 
 function digest(value) {

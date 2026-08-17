@@ -153,7 +153,9 @@ export function resolveHookOperation(call, env = process.env) {
   const raw = call?.raw || {};
   const host = String(raw.host || env.SVC_HOST ||
     (env.CLAUDE_PLUGIN_ROOT || env.CLAUDE_CODE_REMOTE || env.CLAUDE_PROJECT_DIR ? "claude" :
-      (env.CODEX_HOME || env.CODEX_SESSION_ID ? "codex" : "")) || "").toLowerCase();
+      (env.CODEX_HOME || env.CODEX_SESSION_ID ? "codex" :
+        (env.CURSOR_TRACE_ID || env.CURSOR_AGENT ? "cursor" :
+          (env.GROK_SESSION_ID || env.XAI_API_KEY ? "grok" : "")))) || "").toLowerCase();
   if (host !== "codex") return { host, scope: null, cwd: call?.cwd || process.cwd(), root: call?.cwd || process.cwd() };
   const scope = resolveOperationScope({
     ...raw,

@@ -21,6 +21,7 @@ export function familyOf(host) {
   if (h.includes("claude") || h.includes("anthropic")) return "anthropic";
   if (h.includes("codex") || h.includes("openai")) return "openai";
   if (h.includes("gemini") || h.includes("google") || h.includes("antigravity") || h.includes("agy")) return "google";
+  if (h.includes("grok") || h.includes("xai")) return "xai";
   return "unknown";   // fail-closed: an unrecognized host is never a valid reviewer family
 }
 

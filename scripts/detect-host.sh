@@ -2,7 +2,7 @@
 # scripts/detect-host.sh — Detect which AI CLI host is currently running this session.
 #
 # Usage:
-#   bash scripts/detect-host.sh              # prints host name (claude|kimi|codex|gemini|opencode|antigravity|cursor|mimo-code|unknown)
+#   bash scripts/detect-host.sh              # prints host name (claude|kimi|codex|gemini|opencode|antigravity|cursor|mimo-code|grok|unknown)
 #   bash scripts/detect-host.sh --json       # prints JSON with host + confidence
 #   bash scripts/detect-host.sh --quiet      # exit code only (0=detected, 1=unknown)
 #
@@ -37,6 +37,7 @@ detect_by_parent_process() {
       *opencode*)  echo "opencode" ; return 0 ;;
       *antigravity*) echo "antigravity" ; return 0 ;;
       *cursor*)    echo "cursor" ; return 0 ;;
+      *grok*)      echo "grok" ; return 0 ;;
     esac
 
     # Move up to parent
@@ -48,7 +49,7 @@ detect_by_parent_process() {
 }
 
 detect_by_env() {
-  if [[ "${SVC_HOST:-}" =~ ^(claude|kimi|codex|gemini|opencode|antigravity|cursor|mimo-code)$ ]]; then
+  if [[ "${SVC_HOST:-}" =~ ^(claude|kimi|codex|gemini|opencode|antigravity|cursor|mimo-code|grok)$ ]]; then
     echo "$SVC_HOST"
     return 0
   fi
@@ -82,6 +83,12 @@ detect_by_env() {
   # OpenCode CLI
   if [ -n "${OPENCODE:-}" ]; then
     echo "opencode"
+    return 0
+  fi
+
+  # Grok Build CLI
+  if [ -n "${GROK_CLI:-}" ] || [ -n "${GROK_HOME:-}" ] || [ -n "${GROK_SESSION_ID:-}" ] || [ -n "${XAI_API_KEY:-}" ]; then
+    echo "grok"
     return 0
   fi
 
@@ -138,7 +145,7 @@ detect_by_session_files() {
 HOST="unknown"
 METHOD="none"
 
-if [[ "${SVC_HOST:-}" =~ ^(claude|kimi|codex|gemini|opencode|antigravity|cursor)$ ]]; then
+if [[ "${SVC_HOST:-}" =~ ^(claude|kimi|codex|gemini|opencode|antigravity|cursor|mimo-code|grok)$ ]]; then
   HOST="$SVC_HOST"
   METHOD="env_var"
 elif detect_by_parent_process >/dev/null 2>&1; then

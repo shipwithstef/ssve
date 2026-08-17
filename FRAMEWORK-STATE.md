@@ -24,27 +24,27 @@ Skills that update this: same list + any manual framework change
 - **Execution Controller v2 (WI-368, merged at `0d75cb1d`):** one digest-bound product graph and canonical layer inventory feed an append-only runtime journal, durable leases, real argv/effect execution, CAS evidence consumption, owner/memory/company adapters, release/rollback/live/observation lifecycle, host projections, N/N-1 migration, mutation proof and cutover gate. Local simulation uses `SIMULATED_*` states and cannot close delivery/outcome or prove the 60-minute SLO. Default cutover remains disabled until an explicitly authorized real Sample direction-to-live canary and rollback proof. WI-529 closes two integration seams without weakening that boundary: mandatory chain schemas represent the actual AGY reviewer identity, and the effective serialized Codex mutation dispatcher is launcher-routed and setup-verified.
 - **Last lint:** PASS (2026-08-10 — manifest mirrors report 103 included and 59 router-core skills during WI-368 local candidate validation). The generic product pipeline-integrity script remains a baseline-inapplicable check for this framework root because both frozen base and candidate intentionally have no root `vision.md`.
 
-## Host Capability Matrix (2026-05-09, conservative manifest audit)
+## Host Capability Matrix (2026-08-17, conservative manifest audit)
 
-| Capability | Claude Code | Kimi CLI | Codex CLI | Gemini CLI | OpenCode CLI | Antigravity | Cursor |
-|---|---|---|---|---|---|---|---|
-| **Skills** | ✅ | ✅ | ✅ | ✅ | ✅ (via Claude-compat path) | ✅ | ✅ |
-| **Native hooks** | ✅ 28 events | ✅ 13 events | ✅ 6 events (opt-in flag) | ✅ 11 events | ✅ 10 events (via plugin API) | ❌ (not wired) | ❌ (not wired) |
-| Hook wire protocol | JSON stdin/stdout | JSON stdin/stdout | JSON stdin/stdout | JSON stdin/stdout (strict pure stdout) | TypeScript plugin (JS module) | n/a | n/a |
-| Hook decision format | `hookSpecificOutput.permissionDecision` | `hookSpecificOutput.permissionDecision` | `hookSpecificOutput.permissionDecision` | `{decision:"deny"}` | throw Error to block | n/a | n/a |
-| Tool-event matchers | regex on any tool | regex on any tool | `Bash`, `apply_patch`/`Edit`/`Write`, MCP tool names | regex on any tool | tool name match in `tool.execute.before/after` | n/a | n/a |
-| Hook config location | `~/.claude/settings.json` (JSON) | `~/.kimi/config.toml` (TOML `[[hooks]]`) | `~/.codex/hooks.json` (JSON) + `config.toml` flag | `~/.gemini/settings.json` (JSON) | `~/.config/opencode/plugins/` (TypeScript files) | n/a | n/a |
-| Hook timeout unit | seconds (default 600) | seconds (default 30) | seconds (default 600) | **milliseconds** (default 60000) | n/a (plugin runs in-process) | n/a | n/a |
-| Hook types | command, http, mcp_tool, prompt, agent | command | command | command | TypeScript plugin module | n/a | n/a |
-| Async hooks | ✅ `async`, `asyncRewake` | ❌ | ❌ | ❌ | ✅ (all hooks are async) | n/a | n/a |
-| Env vars injected | `CLAUDE_PROJECT_DIR`, `CLAUDE_PLUGIN_ROOT`, `CLAUDE_ENV_FILE`, `CLAUDE_CODE_REMOTE` | via ContextVar only | `CODEX_HOME`, `CODEX_THREAD_ID`, `CODEX_CI` observed in Windows app WSL2 PTY | `GEMINI_PROJECT_DIR`, `GEMINI_SESSION_ID`, `CLAUDE_PROJECT_DIR` (alias) | `SVC_HOST=opencode`, `SVC_HARNESS=opencode` (via plugin) | no stable svc contract yet | no stable svc contract yet |
-| Subagents | ✅ (Agent tool, 3+ built-in types) | ✅ (YAML-defined, coder/explore/plan) | ❌ | ❌ | ✅ (general/explore built-in, custom via config) | unknown | unknown |
-| Background tasks | ✅ (`run_in_background`, /tasks, TaskOutput, `background: true` agents — live-verified 2026-06-07) | ✅ (persistent, heartbeats) | ❌ | ❌ | ❌ | unknown | unknown |
-| Task graph UI | TaskList/TaskUpdate/TaskCreate/TaskGet (live 2026-06-07) | /task + TaskList/TaskOutput | update_plan | write_todos | todowrite | file-backed only | file-backed only |
-| Plugin hook auto-wiring | ✅ (hooks.json auto-wired on plugin enable — docs-verified 2026-06-06) | ❌ | ❌ | ❌ | ❌ | unknown | unknown |
-| svc wirer script | `scripts/wire-hooks.mjs` | `scripts/wire-kimi-hooks.mjs` | `scripts/wire-codex-hooks.mjs` (2026-04-24) | `scripts/wire-gemini-hooks.mjs` (2026-04-24) | `scripts/wire-opencode-hooks.mjs` (2026-04-27) | none | none |
+| Capability | Claude Code | Kimi CLI | Codex CLI | Gemini CLI | OpenCode CLI | Antigravity | Cursor | Grok Build |
+|---|---|---|---|---|---|---|---|---|
+| **Skills** | ✅ | ✅ | ✅ | ✅ | ✅ (via Claude-compat path) | ✅ | ✅ | ✅ |
+| **Native hooks** | ✅ 28 events | ✅ 13 events | ✅ 6 events (opt-in flag) | ✅ 11 events | ✅ 10 events (via plugin API) | ❌ (not wired) | ✅ 4 events | ✅ 8 events |
+| Hook wire protocol | JSON stdin/stdout | JSON stdin/stdout | JSON stdin/stdout | JSON stdin/stdout (strict pure stdout) | TypeScript plugin (JS module) | n/a | JSON hooks.json | TOML [[hooks]] |
+| Hook decision format | `hookSpecificOutput.permissionDecision` | `hookSpecificOutput.permissionDecision` | `hookSpecificOutput.permissionDecision` | `{decision:"deny"}` | throw Error to block | n/a | exit-code-2 | `hookSpecificOutput.permissionDecision` |
+| Tool-event matchers | regex on any tool | regex on any tool | `Bash`, `apply_patch`/`Edit`/`Write`, MCP tool names | regex on any tool | tool name match in `tool.execute.before/after` | n/a | n/a (event-bound) | regex on any tool |
+| Hook config location | `~/.claude/settings.json` (JSON) | `~/.kimi/config.toml` (TOML `[[hooks]]`) | `~/.codex/hooks.json` (JSON) + `config.toml` flag | `~/.gemini/settings.json` (JSON) | `~/.config/opencode/plugins/` (TypeScript files) | n/a | `~/.cursor/hooks.json` (JSON) | `~/.grok/config.toml` (TOML `[[hooks]]`) |
+| Hook timeout unit | seconds (default 600) | seconds (default 30) | seconds (default 600) | **milliseconds** (default 60000) | n/a (plugin runs in-process) | n/a | exit-code | seconds (default 30) |
+| Hook types | command, http, mcp_tool, prompt, agent | command | command | command | TypeScript plugin module | n/a | command | command |
+| Async hooks | ✅ `async`, `asyncRewake` | ❌ | ❌ | ❌ | ✅ (all hooks are async) | n/a | ❌ | ❌ |
+| Env vars injected | `CLAUDE_PROJECT_DIR`, `CLAUDE_PLUGIN_ROOT`, `CLAUDE_ENV_FILE`, `CLAUDE_CODE_REMOTE` | via ContextVar only | `CODEX_HOME`, `CODEX_THREAD_ID`, `CODEX_CI` observed in Windows app WSL2 PTY | `GEMINI_PROJECT_DIR`, `GEMINI_SESSION_ID`, `CLAUDE_PROJECT_DIR` (alias) | `SVC_HOST=opencode`, `SVC_HARNESS=opencode` (via plugin) | no stable svc contract yet | `CURSOR_TRACE_ID`, `CURSOR_AGENT` | `GROK_CLI`, `GROK_HOME`, `GROK_SESSION_ID` |
+| Subagents | ✅ (Agent tool, 3+ built-in types) | ✅ (YAML-defined, coder/explore/plan) | ❌ | ❌ | ✅ (general/explore built-in, custom via config) | unknown | unknown | ❌ |
+| Background tasks | ✅ (`run_in_background`, /tasks, TaskOutput, `background: true` agents — live-verified 2026-06-07) | ✅ (persistent, heartbeats) | ❌ | ❌ | ❌ | unknown | unknown | ✅ (background) |
+| Task graph UI | TaskList/TaskUpdate/TaskCreate/TaskGet (live 2026-06-07) | /task + TaskList/TaskOutput | update_plan | write_todos | todowrite | file-backed only | file-backed only | TaskList/TaskOutput |
+| Plugin hook auto-wiring | ✅ (hooks.json auto-wired on plugin enable — docs-verified 2026-06-06) | ❌ | ❌ | ❌ | ❌ | unknown | unknown | ❌ |
+| svc wirer script | `scripts/wire-hooks.mjs` | `scripts/wire-kimi-hooks.mjs` | `scripts/wire-codex-hooks.mjs` (2026-04-24) | `scripts/wire-gemini-hooks.mjs` (2026-04-24) | `scripts/wire-opencode-hooks.mjs` (2026-04-27) | none | `scripts/wire-cursor-hooks.mjs` | `scripts/wire-grok-hooks.mjs` |
 
-**Portable hook set** (works on hook-capable hosts under local names): `session-start`, `pre-tool-use`, `post-tool-use`, `user-prompt-submit` (Claude/Kimi/Codex only), `stop` (Claude/Kimi/Codex only), `session-end` (Claude/Kimi/Gemini only). OpenCode covers `session-start`, `pre-tool-use`, `post-tool-use`, `session-idle`, `session-compacted`, `shell-env` via plugin events. Antigravity and Cursor are skills-only until a verified hook wirer exists.
+**Portable hook set** (works on hook-capable hosts under local names): `session-start`, `pre-tool-use`, `post-tool-use`, `user-prompt-submit` (Claude/Kimi/Codex/Grok only), `stop` (Claude/Kimi/Codex/Cursor/Grok only), `session-end` (Claude/Kimi/Gemini/Grok only). OpenCode covers `session-start`, `pre-tool-use`, `post-tool-use`, `session-idle`, `session-compacted`, `shell-env` via plugin events. Antigravity remains skills-only until a verified hook wirer exists.
 
 **Durable authority v2 (WI-502, 2026-07-20):** mutation scope now resolves the verified explicit workdir and all structured file targets to exact canonical Git identities. Controller ownership is a repository-shared CAS lease with generation-bound resume, handover, recovery, and explicit v1 migration/rollback. Nested execution graphs support disjoint mutating child tasks through persisted delegation capabilities, isolated inner worktrees, recomputed completion receipts, and sequential merge-back. Claude, Codex, Gemini, and Kimi may enable child mutation only through the probed Landlock wrapper; OpenCode/MiMo-Code remain controller-only because their plugins are observational, while Antigravity/Cursor remain skills-only. Shell hooks are explicitly an authority guardrail rather than the containment boundary.
 

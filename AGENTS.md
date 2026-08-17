@@ -8,7 +8,7 @@ Bootstrap rule for onboarded projects: respect the project's local AGENTS.md/CLA
 
 ## 1. Project Overview
 
-**Serious Serious Vibe Engineering (SSVE)** is a **production-grade governed skill and runtime framework** for progressive deterministic development with LLMs. It is **not a single application**. Its 103 first-party reusable skills are packaged beneath `skills/` and installed consistently across eight supported agent hosts. The lowercase `svc` name remains the compatibility namespace for commands, paths, state, and hooks.
+**Serious Serious Vibe Engineering (SSVE)** is a **production-grade governed skill and runtime framework** for progressive deterministic development with LLMs. It is **not a single application**. Its 103 first-party reusable skills are packaged beneath `skills/` and installed consistently across nine supported agent hosts. The lowercase `svc` name remains the compatibility namespace for commands, paths, state, and hooks.
 
 Skills form a deterministic pipeline from product vision to verified code merge:
 
@@ -104,7 +104,8 @@ seriousvibecoding/
 ./setup --host opencode          # Install for OpenCode CLI
 ./setup --host antigravity       # Install for Antigravity
 ./setup --host cursor            # Install for Cursor
-./setup --all-hosts              # Converge all eight provisioned hosts
+./setup --host grok              # Install for Grok Build CLI
+./setup --all-hosts              # Converge all nine provisioned hosts
 ./setup --all-hosts --full       # Force a complete rebuild on every host
 ```
 Normal setup is content-addressed: unchanged hosts are a byte-stable no-op, while per-host locks and bounded concurrency make all-host refreshes safe and fast. Use `--full` only for an explicit rebuild. Post-install, run `bash scripts/check-install-drift.sh --all-hosts` to aggregate stale/missing state across every provisioned host.
@@ -118,13 +119,13 @@ node scripts/lint-skills-manifest.mjs
 bash test-framework/scripts/validate-pipeline-integrity.sh .
 
 # Detect install drift (missing/stale symlinks)
-bash scripts/check-install-drift.sh [--host claude|kimi|codex|gemini|opencode|mimo-code|antigravity|cursor] [--quiet]
+bash scripts/check-install-drift.sh [--host claude|kimi|codex|gemini|opencode|mimo-code|antigravity|cursor|grok] [--quiet]
 bash scripts/check-install-drift.sh --all-hosts [--quiet]
 ```
 
 ### Multi-Host Install Protection
 
-Framework-wide skills must be installed on **all provisioned hosts** (Claude, Kimi, Codex, Gemini, OpenCode, MiMo-Code, Antigravity, Cursor), not just the active session host.
+Framework-wide skills must be installed on **all provisioned hosts** (Claude, Kimi, Codex, Gemini, OpenCode, MiMo-Code, Antigravity, Cursor, Grok), not just the active session host.
 
 **Pre-commit hook** (`hooks/svc-pre-commit-multi-host-check.sh`):
 - Auto-detects when framework files are staged

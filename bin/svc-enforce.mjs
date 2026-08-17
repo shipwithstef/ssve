@@ -40,6 +40,8 @@ const DEFAULT_REGISTRY = {
   // F-010: Kimi's governed Stop guard is a distinct wrapper script; it is known
   // in the DEFAULT registry so the launcher fails closed even without a manifest.
   "svc-kimi-task-completion-guard": { relpath: "hooks/kimi/svc-kimi-task-completion-guard.sh", runner: "bash", event: "Stop" },
+  "svc-cursor-task-completion-guard": { relpath: "hooks/cursor/svc-cursor-task-completion-guard.sh", runner: "bash", event: "Stop" },
+  "svc-grok-task-completion-guard": { relpath: "hooks/grok/svc-grok-task-completion-guard.sh", runner: "bash", event: "Stop" },
 };
 
 // ── BREAK-GLASS (WI-501) ────────────────────────────────────────────────────

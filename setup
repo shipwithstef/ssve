@@ -1,12 +1,14 @@
 #!/bin/bash
 # Serious Vibe Coding — framework installer
-# Usage: git clone https://github.com/s7an-it/seriousvibecoding.git ~/.claude/skills/svc && cd ~/.claude/skills/svc && ./setup
+# Usage:
+#   ./setup [options]
 #
-# Installs skills + framework infrastructure via symlinks.
-# Host-adapter system: reads provision/hosts/<host>.json for paths and capabilities.
+# Common hosts: claude|codex|kimi|gemini|opencode|mimo-code|antigravity|cursor|grok (default: claude)
 #
-# Supports any manifest in provision/hosts/*.json.
-# Common hosts: claude|codex|kimi|gemini|opencode|antigravity|cursor (default: claude)
+# Options:
+#   --host <name>    Target a specific host manifest
+#   --all-hosts      Run across all discovered hosts
+#   --full           Force clean install of all symlinks
 
 set -euo pipefail
 
@@ -886,7 +888,8 @@ for c in m.get('post_install_commands', []):
   #   Gemini:    ~/.gemini/settings.json          (JSON, Before*/After* event names, timeout in ms)
   #   OpenCode:  ~/.config/opencode/plugins/      (TypeScript plugin files) — runs via post_install
   #   MiMo-Code: ~/.config/mimocode/mimocode.json (OpenCode fork plugin) — runs via post_install
-  #   Cursor:    supported for skills; hook wirer intentionally pending (non-hook-capable)
+  #   Cursor:    ~/.cursor/hooks.json             (JSON, beforeShellExecution/afterFileEdit/sessionStart/stop)
+  #   Grok:      ~/.grok/config.toml              (TOML [[hooks]] arrays) — runs via post_install
   #   Antigravity: supported for skills; no hook runtime (non-hook-capable)
 
   if [ "$SUPPORTS_HOOKS" = "True" ]; then
@@ -903,7 +906,11 @@ for c in m.get('post_install_commands', []):
         echo "Hooks:"
         "$NODE_BIN" "$SCRIPT_DIR/scripts/wire-gemini-hooks.mjs" --skills-path "$SKILLS_TARGET"
         ;;
-      # opencode + mimo-code + kimi wire via post_install_commands (run above, AFTER materialization)
+      cursor)
+        echo "Hooks:"
+        "$NODE_BIN" "$SCRIPT_DIR/scripts/wire-cursor-hooks.mjs" --skills-path "$SKILLS_TARGET"
+        ;;
+      # opencode + mimo-code + kimi + grok wire via post_install_commands (run above, AFTER materialization)
     esac
 
     # WI-529: every governed wirer must prove its EFFECTIVE installed command,
@@ -996,6 +1003,10 @@ PY_SETUP_WRITE
     cursor)
       echo "Start Cursor in any project and skills are available from:"
       echo "  $SKILLS_TARGET"
+      ;;
+    grok)
+      echo "Start Grok Build in any project and skills are available:"
+      echo "  cd your-project && grok"
       ;;
   esac
   echo ""

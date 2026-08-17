@@ -125,7 +125,7 @@ const CONTRACTS = [
   },
   {
     validator: "validate-host-runtime-adapter-v2.mjs",
-    inputs: ["schemas/host-ingress-v2.schema.json", "scripts/svc-host-runtime-adapter-v2.mjs", "provision/hosts/claude.json", "provision/hosts/codex.json", "provision/hosts/kimi.json", "provision/hosts/gemini.json", "provision/hosts/opencode.json", "provision/hosts/mimo-code.json", "provision/hosts/antigravity.json", "provision/hosts/cursor.json", "test-framework/evals/tier-1/validate-host-runtime-adapter-v2.mjs"]
+    inputs: ["schemas/host-ingress-v2.schema.json", "scripts/svc-host-runtime-adapter-v2.mjs", "provision/hosts/claude.json", "provision/hosts/codex.json", "provision/hosts/kimi.json", "provision/hosts/gemini.json", "provision/hosts/opencode.json", "provision/hosts/mimo-code.json", "provision/hosts/antigravity.json", "provision/hosts/cursor.json", "provision/hosts/grok.json", "test-framework/evals/tier-1/validate-host-runtime-adapter-v2.mjs"]
   },
   {
     validator: "validate-runtime-migration-v2.mjs",

@@ -52,6 +52,8 @@ const MATERIALIZE_REGISTRY = {
   "svc-codex-skill-load-enforcer": { relpath: "hooks/codex/svc-codex-skill-load-enforcer.mjs", runner: "node", event: "PreToolUse" },
   "svc-codex-pretool-dispatcher": { relpath: "hooks/codex/svc-codex-pretool-dispatcher.mjs", runner: "node", event: "PreToolUse" },
   "svc-kimi-task-completion-guard": { relpath: "hooks/kimi/svc-kimi-task-completion-guard.sh", runner: "bash", event: "Stop" },
+  "svc-cursor-task-completion-guard": { relpath: "hooks/cursor/svc-cursor-task-completion-guard.sh", runner: "bash", event: "Stop" },
+  "svc-grok-task-completion-guard": { relpath: "hooks/grok/svc-grok-task-completion-guard.sh", runner: "bash", event: "Stop" },
 };
 
 // F-013: a TERMINAL-class failure (unsupported host / unavailable-or-quarantine
@@ -330,7 +332,7 @@ function hostIsPresent(skillsPath, configPath) {
 function wireHostConfig(ctx, host, manifest, wiring, skillsPath, backupDir) {
   const { repoRoot, home, stateRoot } = ctx;
   if (!wiring.hook_capable) {
-    // Skills-only host (antigravity/cursor): no hook surface to wire.
+    // Skills-only host (antigravity): no hook surface to wire.
     return { hooks_installed: false, governed: false, config_path: null, config_existed: false, routed: true, note: "skills-only (non-hook-capable)" };
   }
   if (!wiring.wirer) {

@@ -25,7 +25,7 @@ bash test-framework/evals/tier-1/validate-self-verify-sections.sh
 bash test-framework/evals/tier-1/validate-worktree-safety.sh
 
 # Install framework (symlinks skills + infra into ~/.claude/skills/)
-./setup --all-hosts      # provision all eight supported hosts
+./setup --all-hosts      # provision all nine supported hosts
 ./setup --host claude    # or any single host when intentionally scoped
 
 # Worktree management

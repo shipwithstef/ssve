@@ -8,7 +8,7 @@ const hosts = fs.readdirSync('provision/hosts').filter(file => file.endsWith('.j
 for (const host of hosts) {
   const policy = loadHostIngressPolicy(host, process.cwd());
   assert.equal(policy.canonical_journal, true); assert.equal(policy.projection_only, true);
-  if (['antigravity', 'cursor'].includes(host)) assert.equal(policy.transport, 'cli-adapter');
+  if (['antigravity'].includes(host)) assert.equal(policy.transport, 'cli-adapter');
 }
 const generations = Object.fromEntries(['protocol_generation_digest','product_generation_digest','context_generation_digest','concern_generation_digest','control_generation_digest','authority_generation_digest','layer_inventory_digest'].map((key, i) => [key, String(i + 1).repeat(64)]));
 const normalized = normalizeHostIngress({ host: 'antigravity', transport: 'cli-adapter', run_id: 'r1', host_event_id: 'e1', canonical_type: 'PROJECTION_EMITTED', observed_at: '2026-08-10T00:00:00.000Z', principal: 'operator', generation_bindings: generations }, process.cwd());

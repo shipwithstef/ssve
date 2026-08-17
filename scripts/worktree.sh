@@ -729,6 +729,7 @@ NODE_BINDING_REMOVE
       "$HOME/.mimocode/skills"
       "$HOME/.gemini/antigravity/skills"
       "$HOME/.cursor/skills"
+      "$HOME/.grok/skills"
     )
     local poisoned_links=()
     for root in "${host_skill_roots[@]}"; do
@@ -757,6 +758,7 @@ NODE_BINDING_REMOVE
           "$HOME/.config/opencode/skills/"*) hosts_to_repoint+=("opencode");;
           "$HOME/.gemini/antigravity/skills/"*) hosts_to_repoint+=("antigravity");;
           "$HOME/.cursor/skills/"*) hosts_to_repoint+=("cursor");;
+          "$HOME/.grok/skills/"*)   hosts_to_repoint+=("grok");;
         esac
       done
       # Dedupe

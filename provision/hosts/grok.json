@@ -1,8 +1,8 @@
 {
-  "host": "cursor",
-  "name": "Cursor",
-  "skills_path": "~/.cursor/skills",
-  "rules_path": "~/.cursor/rules",
+  "host": "grok",
+  "name": "Grok Build CLI",
+  "skills_path": "~/.grok/skills",
+  "rules_path": "~/.grok/rules",
   "builder_profile_path": "~/.svc/builder-profile.md",
   "capabilities": {
     "skills": true,
@@ -24,27 +24,29 @@
     "mutating_child_execution": true
   },
   "hook_events": [
-    "beforeShellExecution",
-    "afterFileEdit",
-    "sessionStart",
-    "stop"
+    "PreToolUse",
+    "PostToolUse",
+    "PostToolUseFailure",
+    "UserPromptSubmit",
+    "Stop",
+    "StopFailure",
+    "SessionStart",
+    "SessionEnd"
   ],
   "hook_quirks": {
-    "config_file": "~/.cursor/hooks.json",
-    "config_format": "json",
-    "parallel_execution": false,
-    "tool_matcher_regex": false,
-    "timeout_unit": "exit-code",
-    "timeout_default": null,
-    "decision_format": "exit-code-2-blocks",
-    "skill_load_mode": "skill_or_slash_command",
-    "notes": "Cursor 2.4+ hooks.json: flat hooks object with event keys mapping to command arrays. Exit code 2 = hard block. No matcher support — all commands run on every tool use for that event."
+    "config_file": "~/.grok/config.toml",
+    "config_format": "toml",
+    "parallel_execution": true,
+    "tool_matcher_regex": true,
+    "timeout_unit": "s",
+    "timeout_default": 30,
+    "decision_format": "hookSpecificOutput.permissionDecision"
   },
   "task_graph": {
-    "task_ui": "none; use .svc/lane-tasks-<WI>.json as source of truth",
-    "background_tasks": false,
+    "task_ui": "TaskList/TaskOutput (observational); .svc/lane-tasks-<WI>.json remains source of truth",
+    "background_tasks": true,
     "skill_load_mode": "slash_skill_or_direct_skill_file",
-    "native_task_read_tools": []
+    "native_task_read_tools": ["TaskList", "TaskOutput"]
   },
   "infra_files": [
     "DOCTRINE.md",
@@ -54,7 +56,7 @@
     "FRAMEWORK-STATE.md",
     "skills-manifest.json",
     "CONTRIBUTING.md",
-    "AGENTS.md"
+    "GROK.md"
   ],
   "infra_dirs": [
     "scripts",
@@ -69,7 +71,9 @@
     "concerns"
   ],
   "skip": [],
-  "post_install_commands": [],
+  "post_install_commands": [
+    "node {skills_path}/scripts/wire-grok-hooks.mjs --skills-path {skills_path}"
+  ],
   "verify_commands": [
     "test -f {skills_path}/route-workflow/SKILL.md",
     "test -f {skills_path}/DOCTRINE.md",
@@ -79,14 +83,14 @@
   ],
   "wiring": {
     "hook_capable": true,
-    "wirer": "scripts/wire-cursor-hooks.mjs",
-    "wirer_via": "case",
+    "wirer": "scripts/wire-grok-hooks.mjs",
+    "wirer_via": "post_install",
     "governed": true,
     "governed_token": [
       "svc-enforce",
-      "svc-cursor-task-completion-guard"
+      "svc-grok-task-completion-guard"
     ],
-    "config_file": "~/.cursor/hooks.json",
+    "config_file": "~/.grok/config.toml",
     "enforcement": "launcher"
   }
 }
