@@ -6,6 +6,7 @@ Total closed: **264**
 
 | ID | Status | Closed | Subject |
 |----|--------|--------|---------|
+| [WI-547](WI-547.md) | VERIFIED-L3 | 2026-08-17 | External-review evidence survives promotion without rewriting AGY bytes |
 | [WI-371](WI-371.md) | DONE | 2026-06-06 | Phase-0 meta-WI — framework evaluation persistence + WI intake (2026-06-06) |
 | [WI-343](WI-343.md) | verified | 2026-05-13 | Auto-learning capture hook |
 | [WI-136](WI-136.md) | VERIFIED | 2026-05-12 | BLEND-13 follow-up — first new skill demonstrating progressive-disclosure convention |
