@@ -3,9 +3,95 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
+import { RISK_FLAG_SET } from "./lib/risk-flags.mjs";
 
 const RISKY_RESOURCES = new Set(["money", "ledger", "subscription", "entitlement", "quota", "counter", "inventory", "identity", "notification"]);
+// WI-553 AC-553-4: an atomic-primitive allowlist. Freeform prose ("check if
+// the file exists, then write it") is exactly the WI-542 defect — requiring a
+// real primitive name is the mechanical rejection.
+const CONCURRENCY_ATOMIC_PRIMITIVES = new Set(["flock", "o_excl", "atomic_rename", "compare_and_swap", "advisory_lock", "mkdir_exclusive"]);
+const CHECK_THEN_WRITE_RE = /\b(?:check|exists?|stat)\b(?:[^.]{0,40}?)\b(?:then|before)\b(?:[^.]{0,40}?)\b(?:writ(?:e|ing)|creat(?:e|ing))\b/i;
 const hasText = (v) => typeof v === "string" && v.trim().length > 0;
+
+function normalizedPrimitive(value) {
+  return String(value ?? "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+}
+
+/**
+ * WI-553 AC-553-3/AC-553-4: plan-contract.json grows only the sections
+ * matched by contract.risk_flags. Each matched section is required and
+ * mechanically checked against the concrete WI-542 shapes named in AC-553-4:
+ *   - check-then-write / exists-then-create under runtime_concurrency
+ *   - one backup path serving as both immutable baseline and rolling
+ *     rollback under idempotent_rewriter or external_state_writer
+ *   - "preserve user/unknown entries" without a named fixture per documented
+ *     entry type under lossless_rmw
+ * An unmatched section present without its flag is also rejected — the
+ * contract must grow ONLY the matched sections, never more.
+ */
+export function validateRiskSections(contract, root, errors) {
+  const flags = Array.isArray(contract.risk_flags) ? contract.risk_flags : [];
+  for (const flag of flags) if (!RISK_FLAG_SET.has(flag)) errors.push(`unknown risk flag: ${flag}`);
+  const has = (flag) => flags.includes(flag);
+
+  if (has("runtime_concurrency")) {
+    const c = contract.concurrency;
+    if (!c || typeof c !== "object" || Array.isArray(c)) errors.push("runtime_concurrency flag requires a concurrency section");
+    else {
+      if (!hasText(c.atomic_primitive)) errors.push("concurrency.atomic_primitive is required");
+      else if (!CONCURRENCY_ATOMIC_PRIMITIVES.has(normalizedPrimitive(c.atomic_primitive))) errors.push(`concurrency.atomic_primitive must name a real atomic primitive (one of ${[...CONCURRENCY_ATOMIC_PRIMITIVES].join(", ")}), got: ${c.atomic_primitive}`);
+      if (!hasText(c.owner_key)) errors.push("concurrency.owner_key is required");
+      if (!hasText(c.concurrent_invoke_behavior)) errors.push("concurrency.concurrent_invoke_behavior is required");
+      else if (CHECK_THEN_WRITE_RE.test(c.concurrent_invoke_behavior)) errors.push("concurrency.concurrent_invoke_behavior describes a check-then-write / exists-then-create race under runtime_concurrency (WI-542 shape) — use an atomic primitive instead");
+      if (!hasText(c.stale_lock_cleanup)) errors.push("concurrency.stale_lock_cleanup is required");
+      if (!hasText(c.concurrency_test)) errors.push("concurrency.concurrency_test is required");
+    }
+  } else if (contract.concurrency !== undefined) {
+    errors.push("plan-contract.concurrency is present without the runtime_concurrency flag — plan-contract.json grows only matched sections");
+  }
+
+  if (has("external_state_writer") || has("idempotent_rewriter")) {
+    const w = contract.external_writer;
+    if (!w || typeof w !== "object" || Array.isArray(w)) errors.push("external_state_writer/idempotent_rewriter flags require an external_writer section");
+    else {
+      if (!hasText(w.immutable_baseline)) errors.push("external_writer.immutable_baseline is required");
+      if (!hasText(w.rolling_rollback)) errors.push("external_writer.rolling_rollback is required");
+      if (hasText(w.immutable_baseline) && hasText(w.rolling_rollback) && w.immutable_baseline === w.rolling_rollback) {
+        errors.push("external_writer.immutable_baseline and external_writer.rolling_rollback name the same path — one backup path cannot serve as both the immutable baseline and the rolling rollback (WI-542 shape)");
+      }
+      if (!hasText(w.read_failure_policy)) errors.push("external_writer.read_failure_policy is required");
+      if (!hasText(w.file_mode_preservation)) errors.push("external_writer.file_mode_preservation is required");
+    }
+  } else if (contract.external_writer !== undefined) {
+    errors.push("plan-contract.external_writer is present without external_state_writer or idempotent_rewriter flags — plan-contract.json grows only matched sections");
+  }
+
+  if (has("lossless_rmw")) {
+    const l = contract.lossless_rmw;
+    const entries = l && Array.isArray(l.entry_types) ? l.entry_types : null;
+    if (!entries || entries.length === 0) {
+      errors.push("lossless_rmw flag requires lossless_rmw.entry_types with at least one documented entry type");
+    } else {
+      const seen = new Set();
+      for (const entry of entries) {
+        const type = entry?.type;
+        if (!hasText(type)) { errors.push("lossless_rmw entry_types row is missing type"); continue; }
+        if (seen.has(type)) errors.push(`lossless_rmw entry_types has a duplicate type: ${type}`);
+        seen.add(type);
+        if (!hasText(entry?.fixture)) { errors.push(`lossless_rmw entry type "${type}" has no fixture — "preserve user/unknown entries" requires a fixture per documented entry type (WI-542 shape)`); continue; }
+        if (!fs.existsSync(path.resolve(root, entry.fixture))) errors.push(`lossless_rmw fixture does not exist for entry type "${type}": ${entry.fixture}`);
+      }
+    }
+  } else if (contract.lossless_rmw !== undefined) {
+    errors.push("plan-contract.lossless_rmw is present without the lossless_rmw flag — plan-contract.json grows only matched sections");
+  }
+
+  if (has("idempotent_rewriter")) {
+    if (!hasText(contract.idempotent_rewriter?.proof)) errors.push("idempotent_rewriter flag requires idempotent_rewriter.proof (that attempt N cannot overwrite the immutable baseline)");
+  } else if (contract.idempotent_rewriter !== undefined) {
+    errors.push("plan-contract.idempotent_rewriter is present without the idempotent_rewriter flag — plan-contract.json grows only matched sections");
+  }
+}
 function normalizedScope(value) {
   const scope = String(value || "").replaceAll("\\", "/").replace(/^\.\//, "");
   if (!scope || scope.startsWith("/") || scope.split("/").includes("..") || /[?[{]/.test(scope) || (scope.includes("*") && !scope.endsWith("/**"))) throw new Error(`unsafe ownership scope: ${value}`);
@@ -185,6 +271,7 @@ export function validatePlanContract(contract, { root = process.cwd() } = {}) {
       errors.push(`unknown claim verification: ${evidence.verification}`);
     }
   }
+  validateRiskSections(contract, root, errors);
   return errors;
 }
 

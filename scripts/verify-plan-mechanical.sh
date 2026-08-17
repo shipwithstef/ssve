@@ -155,8 +155,38 @@ fi
 # ── Report ────────────────────────────────────────────────────────────────
 PLAN_CONTRACT="$(dirname "$PLAN")/plan-contract.json"
 if [ -f "$PLAN_CONTRACT" ]; then
+  # WI-553 AC-553-3/4: validate-plan-contract.mjs also mechanically checks the
+  # risk-triggered sections (concurrency, external_writer, lossless_rmw,
+  # idempotent_rewriter) whenever plan-contract.json declares the matching
+  # risk_flags — same call, no separate invocation needed.
   if ! node scripts/validate-plan-contract.mjs "$PLAN_CONTRACT" "$REPO_ROOT"; then
     report "C10-FAIL: adjacent product-safety plan contract is invalid"
+  fi
+fi
+
+# ── Check 11: manifest-declared risk flags require a matching plan-contract.json ──
+# WI-553 AC-553-3: a manifest that declares "**Risk Flags:** <flag>[, <flag>...]"
+# for any AC-553-1 flag MUST have an adjacent plan-contract.json whose
+# risk_flags array includes that flag — otherwise the risk-triggered sections
+# (and their AC-553-4 mechanical checks) would never run. Manifests with no
+# "**Risk Flags:**" line, or an explicit "none"/"n/a", are unaffected — this
+# is the AC-553-6 efficiency bound: zero extra cost for unmatched work.
+RISK_LINE=$(grep -m1 -E '^[[:space:]]*(-[[:space:]]+)?\*\*Risk Flags:\*\*' "$PLAN" || true)
+if [ -n "$RISK_LINE" ]; then
+  DECLARED=$(echo "$RISK_LINE" | sed -E 's/^[[:space:]]*(-[[:space:]]+)?\*\*Risk Flags:\*\*[[:space:]]*//' | tr ',' '\n' | sed -E 's/^[[:space:]]+|[[:space:]]+$//g' | grep -viE '^(none|n/a)?$' || true)
+  MATCHED=$(echo "$DECLARED" | grep -E '^(runtime_concurrency|external_state_writer|config_schema_migration|lossless_rmw|idempotent_rewriter)$' || true)
+  if [ -n "$MATCHED" ]; then
+    if [ ! -f "$PLAN_CONTRACT" ]; then
+      report "C11-FAIL: manifest declares risk flag(s) [$(echo "$MATCHED" | tr '\n' ' ' | sed -E 's/[[:space:]]+$//')] but no plan-contract.json exists beside the manifest (WI-553 AC-553-3)"
+    else
+      CONTRACT_FLAGS=$(node -e 'let c;try{c=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"))}catch(e){process.exit(0)};(c.risk_flags||[]).forEach((f)=>console.log(f))' "$PLAN_CONTRACT" 2>/dev/null || true)
+      while IFS= read -r f; do
+        [ -z "$f" ] && continue
+        if ! printf '%s\n' "$CONTRACT_FLAGS" | grep -qx "$f"; then
+          report "C11-FAIL: manifest declares risk flag '$f' but plan-contract.json risk_flags does not include it (WI-553 AC-553-3)"
+        fi
+      done <<< "$MATCHED"
+    fi
   fi
 fi
 

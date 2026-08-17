@@ -23,6 +23,7 @@ import {
   MANDATORY_DELIVERY_CHAIN,
   validateMandatoryDeliveryChain,
 } from "./lib/mandatory-delivery-chain.mjs";
+import { effectiveRiskFlags, designTechSkipDenialFlags } from "./lib/risk-flags.mjs";
 
 // Lane-specific prerequisites. The exact delivery chain is imported from one
 // shared contract and validated separately for every mutable lane.
@@ -174,6 +175,42 @@ function collectGraphSkills(graph) {
   return skills;
 }
 
+/**
+ * WI-553 AC-553-2: design-tech skip is fail-closed on the AC-553-1 risk
+ * flags. A "no product UI / no data model / framework chrome" skip_reason on
+ * design-tech is invalid whenever a risk flag is declared on the graph OR
+ * implied by the graph's planned files. Absent every flag, this check is a
+ * no-op — unmatched work pays zero extra review.
+ */
+function validateDesignTechRiskGate(graph) {
+  const declaredFlags = [
+    ...(Array.isArray(graph.flags) ? graph.flags : []),
+    ...(Array.isArray(graph.delivery_graph?.risk_flags) ? graph.delivery_graph.risk_flags : []),
+  ];
+  const plannedFiles = Array.isArray(graph.delivery_graph?.planned_files) ? graph.delivery_graph.planned_files : [];
+  const effective = effectiveRiskFlags({ declaredFlags, plannedFiles });
+  if (effective.size === 0) {
+    return { applies: false, pass: true, effectiveFlags: [], errors: [] };
+  }
+
+  const effectiveFlags = Array.from(effective);
+  const designTechTask = (graph.tasks ?? []).find((task) => taskSkill(task) === "design-tech");
+  const errors = [];
+  if (!designTechTask) {
+    errors.push(
+      `design-tech is required when risk flag(s) are in effect (${effectiveFlags.join(", ")}) but no design-tech task exists in the graph (AC-553-2)`
+    );
+  } else if (["completed", "skipped"].includes(designTechTask.status)) {
+    const denied = designTechSkipDenialFlags(designTechTask.skip_reason, effective);
+    if (denied.length > 0) {
+      errors.push(
+        `design-tech skip_reason "${designTechTask.skip_reason}" is invalid while risk flag(s) are in effect: ${denied.join(", ")} (AC-553-2)`
+      );
+    }
+  }
+  return { applies: true, pass: errors.length === 0, effectiveFlags, errors };
+}
+
 function validateLane(graph, filePath) {
   const lane = graph.lane;
   if (lane == null) {
@@ -209,6 +246,8 @@ function validateLane(graph, filePath) {
   const visualDiffProcess = executeTask?.metadata?.required_process_steps?.some((step) => step?.skill === "track-visuals" && step?.mode === "diff" && step?.before === "review-gate") === true;
   const visualErrors = visualRequired && !visualDiffProcess ? ["browser-visible graph requires track-visuals diff as an execute-changeset process step before review-gate"] : [];
 
+  const designTechRiskGate = validateDesignTechRiskGate(graph);
+
   return {
     lane,
     laneName: laneModel.name,
@@ -217,7 +256,8 @@ function validateLane(graph, filePath) {
     missing,
     mandatoryChain: chainValidation,
     visualProcess: { required: visualRequired, pass: !visualRequired || visualDiffProcess, errors: visualErrors },
-    pass: missing.length === 0 && chainValidation.pass && visualErrors.length === 0,
+    designTechRiskGate,
+    pass: missing.length === 0 && chainValidation.pass && visualErrors.length === 0 && designTechRiskGate.pass,
   };
 }
 

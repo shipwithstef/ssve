@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "wi": "WI-553",
+  "lane": "framework",
+  "status": "completed",
+  "created": "2026-08-17T22:38:33.228Z",
+  "flags": [],
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "improve-framework",
+      "subject": "WI-553: risk-triggered plan/execution contracts — direct implementation session (AC-553-1..7)",
+      "status": "completed",
+      "blocked_by": [],
+      "completed_at": "2026-08-18T00:00:00.000Z",
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-08-17T22:38:33.228Z",
+        "loaded_via": "manual",
+        "completed_at": "2026-08-18T00:00:00.000Z"
+      },
+      "notes": "Direct implementation per explicit user instruction (scope: WI-553 only). Full plan-changeset/review-plan/execute-changeset chain not run for this WI; see .svc/wi-553-impl-summary.md for validation evidence (lint + tier-1 evals) in lieu of the chain receipts."
+    },
+    {
+      "id": 2,
+      "skill": "review-exec",
+      "subject": "WI-553: deferred final independent review (different-family) for the direct-implementation session",
+      "status": "pending",
+      "blocked_by": [1],
+      "notes": "Genuinely deferred, not fabricated: this direct-implementation session ran no paid different-family reviewer (per explicit user instruction: no paid provider). The impact-triad receipt binds its independent_review as schema-v2 deferred-to-final to this task per hooks/svc-impact-triad-guard.mjs; a human or a later different-family pass must complete this task before treating WI-553 as fully chain-reviewed."
+    }
+  ]
+}

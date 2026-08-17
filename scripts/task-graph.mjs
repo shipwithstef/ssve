@@ -3,6 +3,8 @@
 import fs from "node:fs";
 import crypto from "node:crypto";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { readJsonAtomic, writeJsonAtomic, updateJsonAtomic, NO_WRITE } from "./state-io.mjs";
 import { loadStageRegistry } from "./lib/stage-registry.mjs";
 
@@ -48,6 +50,111 @@ const PERSONA_COVERAGE_STATUSES = new Set(["satisfied", "not_required"]);
 const SESSION_CONTRACT_MAX_AGE_MS = 4 * 60 * 60 * 1000;
 const TASK_GRAPH_CONTRACT_BOUND_TO = new Set(["wi-backlog", "user-request", "framework-evolution"]);
 const NON_SKIPPABLE_SKILLS = new Set(["plan-changeset", "review-plan", "execute-changeset", "review-gate", "review-exec", "audit-implementation", "land-changeset", "verify-promotion"]);
+
+// WI-553 AC-553-5: execute-changeset cannot complete without schema-valid
+// plan-manifest, review-plan, and exec-record receipts for the CURRENT tree
+// (staging allowed pre-commit — the same tree/staging split emit-receipt.mjs
+// already uses). This is process enforcement of the EXISTING chain-receipt
+// contract (references/chain-receipt-contract.md), not a new review — the
+// gap it closes is that task-graph completion previously required only a
+// skill_receipt, so WI-542's execute-changeset task could be marked
+// completed with zero chain receipts.
+//
+// Rollout is scoped to graphs created on/after this cutoff (mirrors the
+// PERSONA_COVERAGE_GATE_CUTOFF pattern below) so historical and ad-hoc
+// synthetic task graphs — which never carried these receipts and were never
+// meant to — are not retroactively broken. Per the WI-553 Migration note:
+// "flags default off... existing completed graphs are not rewritten."
+const EXEC_RECEIPT_GATE_CUTOFF = Date.parse("2026-08-18T00:00:00.000Z");
+const EXEC_RECEIPT_TYPES = ["plan-manifest", "review-plan", "exec-record"];
+const RECEIPTS_SCHEMA_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "schemas", "receipts");
+
+function gitTry(args) {
+  try { return execFileSync("git", args, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim(); }
+  catch { return null; }
+}
+
+// Mirrors emit-receipt.mjs's own staging/mirror split: an uncommitted tree
+// (or one with no commit yet) resolves to .svc/receipts/staging/<tree-hash>/;
+// a tree that already matches HEAD resolves to the durable per-SHA mirror.
+function currentTreeReceiptsDir() {
+  const treeHash = gitTry(["write-tree"]);
+  if (!treeHash) return null;
+  const headSha = gitTry(["rev-parse", "--verify", "HEAD"]);
+  const headTree = headSha ? gitTry(["rev-parse", `${headSha}^{tree}`]) : null;
+  if (headSha && treeHash === headTree) return path.join(".svc", "receipts", headSha.slice(0, 7));
+  return path.join(".svc", "receipts", "staging", treeHash);
+}
+
+function loadReceiptSchema(type) {
+  try { return JSON.parse(fs.readFileSync(path.join(RECEIPTS_SCHEMA_DIR, `${type}.schema.json`), "utf8")); }
+  catch { return null; }
+}
+
+// Deliberately NOT the full `scripts/lib/json-schema-validator.mjs` engine —
+// pulling that in as a static import breaks reduced-copy consumers that
+// vendor only task-graph.mjs + state-io.mjs into an isolated tmp dir (see
+// validate-stage-registry-single-source.sh). A shallow required-field +
+// primitive-type check over the receipt schema's top-level `required`/
+// `properties` is sufficient for a completion GATE (existence + shape of the
+// chain receipt), not a substitute for the chain's own authoritative
+// validators (check-chain-receipts.mjs) which already run at push time.
+function shallowSchemaCheck(schema, body) {
+  const errors = [];
+  if (!schema || typeof schema !== "object") return errors;
+  for (const key of schema.required ?? []) {
+    if (body == null || !(key in body)) errors.push(`missing required field: ${key}`);
+  }
+  const properties = schema.properties ?? {};
+  for (const [key, propSchema] of Object.entries(properties)) {
+    if (body == null || !(key in body)) continue;
+    const value = body[key];
+    const type = propSchema?.type;
+    if (type === "string" && typeof value !== "string") errors.push(`${key} must be a string`);
+    else if (type === "array" && !Array.isArray(value)) errors.push(`${key} must be an array`);
+    else if (type === "object" && (typeof value !== "object" || value === null || Array.isArray(value))) errors.push(`${key} must be an object`);
+    else if (type === "integer" && !Number.isInteger(value)) errors.push(`${key} must be an integer`);
+    if (propSchema?.const !== undefined && value !== propSchema.const) errors.push(`${key} must equal ${JSON.stringify(propSchema.const)}`);
+  }
+  return errors;
+}
+
+function receiptGateAppliesToGraph(graph) {
+  const created = parseTime(graph.created);
+  return created != null && created >= EXEC_RECEIPT_GATE_CUTOFF;
+}
+
+function assertExecuteChangesetReceipts(task, graph) {
+  if (expectedTaskSkill(task) !== "execute-changeset") return;
+  if (!receiptGateAppliesToGraph(graph)) return;
+  const dir = currentTreeReceiptsDir();
+  const missing = [];
+  const invalid = [];
+  for (const type of EXEC_RECEIPT_TYPES) {
+    const receiptPath = dir ? path.join(dir, `${type}.json`) : null;
+    let body = null;
+    if (receiptPath && fs.existsSync(receiptPath)) {
+      try { body = JSON.parse(fs.readFileSync(receiptPath, "utf8")); }
+      catch { invalid.push(`${type}: receipt is not valid JSON`); continue; }
+    }
+    if (!body) { missing.push(type); continue; }
+    if (body.receipt_type !== type) { invalid.push(`${type}: receipt_type mismatch (got ${body.receipt_type ?? "none"})`); continue; }
+    const schema = loadReceiptSchema(type);
+    if (schema) {
+      const schemaErrors = shallowSchemaCheck(schema, body);
+      if (schemaErrors.length) invalid.push(`${type}: ${schemaErrors.join("; ")}`);
+    }
+  }
+  if (missing.length || invalid.length) {
+    const parts = [];
+    if (missing.length) parts.push(`missing: ${missing.join(", ")}`);
+    if (invalid.length) parts.push(`invalid: ${invalid.join("; ")}`);
+    throw new Error(
+      `task ${task.id} (execute-changeset) cannot complete without schema-valid plan-manifest, review-plan, ` +
+      `and exec-record receipts for the current tree (AC-553-5) — ${parts.join("; ")}`
+    );
+  }
+}
 
 function evidenceDigest(file) { return crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex"); }
 function assertRequiredProcesses(task) {
@@ -824,6 +931,7 @@ if (command === "set-status") {
           throw new Error(`task ${taskId} cannot be completed without a matching load-skill receipt for ${expectedSkill}`);
         }
         assertRequiredProcesses(task);
+        assertExecuteChangesetReceipts(task, current);
         task.completed_at = flags["completed-at"] ??
           (previousStatus !== COMPLETED_STATUS || !task.completed_at ? new Date().toISOString() : task.completed_at);
         if (flags["skip-reason"]) task.skip_reason = flags["skip-reason"];

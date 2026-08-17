@@ -155,6 +155,8 @@ Process tasks for Lane Task 1 (diagnose-bug) are embedded inside Task 1's entry 
 
 IDs are composite: lane task `1`, process tasks `1.1` through `1.10`. The `name` field uses the `skill|phase` convention so the task is identifiable in any flat task list.
 
+The top-level `flags` array starts empty here and is populated at Step 4.6 (Risk-Flag Classification) with any AC-553-1 flags the fix matches — leave it `[]` until that step runs.
+
 ```json
 {
   "wi": "<WI-###>",
@@ -631,6 +633,35 @@ If the pattern scan finds additional broken instances, the bugfix scope expands 
 
 Skipping the pattern scan is a self-verify failure. If the root cause is so specific that no scan is possible (e.g., a one-time data corruption event in a single row), document that explicitly: "Pattern scan: N/A — root cause is non-generalizable. Reason: ..."
 
+### 4.6 Risk-Flag Classification — MANDATORY
+
+Before defining the smallest safe fix, classify it against the shared
+risk-flag table (`scripts/lib/risk-flags.mjs`, AC-553-1). This step itself is
+mandatory and cheap (one table lookup); the flags it MAY set are what is
+mechanically expensive. Unmatched work — the common case (docs-only,
+parser-only, copy-only, most bugfixes) — matches zero flags and pays zero
+extra plan/exec contract cost downstream. Do not skip the classification just
+because you expect the answer to be "none."
+
+| Flag | Set when the fix... |
+|---|---|
+| `runtime_concurrency` | touches code invoked by more than one process/session/hook concurrently (locks, PID files, race-prone check-then-write) |
+| `external_state_writer` | writes or backs up state OUTSIDE the git-tracked tree (host config, `~/.claude/settings.json`, provisioned symlinks, an external DB row) |
+| `config_schema_migration` | changes the on-disk shape of a config/schema file other readers already depend on |
+| `lossless_rmw` | reads a file, mutates part of it, and rewrites the whole file (read-modify-write) where other/unknown entries must survive byte-for-byte |
+| `idempotent_rewriter` | the same fix logic may run more than once (retries, re-invocation, resumed session) and must not double-apply or corrupt an already-applied baseline |
+| `cross_runtime_integration` | (pre-existing flag) the fix spans two host runtimes/protocols/storage layers |
+
+Record the result in the work item under a `**Risk Flags:**` line —
+`**Risk Flags:** runtime_concurrency, external_state_writer` or
+`**Risk Flags:** none` — and set the `flags` array in
+`.svc/lane-tasks-<WI>.json` to the same list. These flags are the sole input
+to `validate-task-graph-lane.mjs`'s design-tech skip-denial gate (AC-553-2)
+and to `plan-changeset`'s `plan-contract.json` risk-triggered sections
+(AC-553-3/4). Declare accurately: a false negative here means those
+mechanical checks never fire for a change that actually needed them; a false
+positive only costs one extra `design-tech` pass.
+
 ### 5. Define smallest safe fix
 
 Specify:
@@ -899,6 +930,7 @@ Before declaring done, verify:
 | 13 | Task graph written | `test -f .svc/lane-tasks-<WI>.json` — file must exist with ≥7 tasks and Task 1 = `completed` | |
 | 14 | All process tasks completed | TaskList — all 10 `diagnose-bug|*` tasks must be `completed`. `diagnose-bug|fault-isolate` subject must reflect the causal classification from `diagnose-bug|repro-classify` (not the placeholder "[DYNAMIC]" text) | |
 | 15 | Close-out uses the latest evidence | final brief/summary cites the latest reproduction artifact, failing assertion, or runtime log rather than an earlier superseded theory | |
+| 16 | Risk-Flag Classification run | grep for `**Risk Flags:**` line in the WI, and confirm `.svc/lane-tasks-<WI>.json` `flags` matches it (AC-553-1) | |
 
 If any check FAILs, fix before continuing. If a fix requires upstream changes, stop and report.
 
