@@ -1,9 +1,10 @@
 # Work Items Index
 
 - [WI-547](WI-547.md) — External-review evidence is bound to its execution worktree and cannot survive promotion (severity:critical) — status:VERIFIED-L3
+- [WI-545](WI-545.md) — Grok/Cursor task-completion adapters committed 100644 while svc-enforce requires 100755 (severity:high) — status:identified; follow-up from WI-542 verify-promotion Stop denial
 - [WI-544](WI-544.md) — Live Kimi config leftover `/tmp/fake` hook commands (severity:medium) — status:identified; follow-up to WI-542, not in the Grok parser/wirer changeset
-- [WI-542](WI-542.md) — Grok SessionStart 1 is red: healthcheck false-positive `~` paths re-run setup past the 5s timeout (severity:high) — status:identified
-- [WI-543](WI-543.md) — Grok-native `[[hooks]]` tables are not the hooks Grok executes (severity:high) — status:identified; sibling of WI-542
+- [WI-542](WI-542.md) — Grok SessionStart 1 is red: healthcheck false-positive `~` paths re-run setup past the 5s timeout (severity:high) — status:VERIFIED-L3
+- [WI-543](WI-543.md) — Grok-native `[[hooks]]` tables are not the hooks Grok executes (severity:high) — status:VERIFIED-L3; sibling of WI-542
 
 - [WI-537](WI-537.md) — Privacy-safe single-root history reset with verified private recovery archive (severity:critical) — status:IN_PROGRESS
 
