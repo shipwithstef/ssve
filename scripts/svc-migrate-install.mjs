@@ -56,6 +56,31 @@ const MATERIALIZE_REGISTRY = {
   "svc-grok-task-completion-guard": { relpath: "hooks/grok/svc-grok-task-completion-guard.sh", runner: "bash", event: "Stop" },
 };
 
+// WI-545: setup used to report success while a present bash adapter stayed
+// mode 100644. svc-enforce then classified that file as dangling. Fail closed
+// after materialize instead of chmod-healing a non-executable git blob.
+function assertBashHooksExecutable(sourceRoot) {
+  const failures = [];
+  for (const [id, entry] of Object.entries(MATERIALIZE_REGISTRY)) {
+    if (!entry || entry.runner !== "bash") continue;
+    const hookPath = path.join(sourceRoot, entry.relpath);
+    let st;
+    try { st = fs.statSync(hookPath); } catch {
+      failures.push(`${id}: missing ${entry.relpath}`);
+      continue;
+    }
+    if (!st.isFile() || (st.mode & 0o100) === 0) {
+      const mode = st.isFile() ? (st.mode & 0o777).toString(8).padStart(3, "0") : "not-a-file";
+      failures.push(`${id}: ${entry.relpath} is not owner-executable (mode ${mode})`);
+    }
+  }
+  if (failures.length) {
+    const err = new Error(`SVC-ENFORCE-HOOK-MODE: governed bash hook(s) not owner-executable after materialize:\n${failures.join("\n")}`);
+    err.code = "SVC-ENFORCE-HOOK-MODE";
+    throw err;
+  }
+}
+
 // F-013: a TERMINAL-class failure (unsupported host / unavailable-or-quarantine
 // compatibility contract / missing-authorization) is fail-closed on the FIRST
 // occurrence — it is NOT a transient failure and is NEVER auto-retried. It is
@@ -524,6 +549,7 @@ async function migrateHost(ctx, host) {
     // 2. Materialize the durable launcher + canonical core (copy, byte/hash-verified).
     const registry = MATERIALIZE_REGISTRY;
     const { launcherPath } = materializeLauncher(stateRoot, repoRoot, repoRoot, registry);
+    assertBashHooksExecutable(repoRoot);
     if (failPoint === "after-launcher") throw new Error("injected fail-point after-launcher");
 
     // 3. Repoint the host source pointer to the durable canonical checkout (the
@@ -783,6 +809,13 @@ function materializeCmd(ctx, host) {
     report.status = "refused"; report.detail = `refusing to materialize from a non-durable source (${effClass}): ${repoRoot}`; return report;
   }
   const { launcherPath } = materializeLauncher(stateRoot, repoRoot, repoRoot, MATERIALIZE_REGISTRY);
+  try {
+    assertBashHooksExecutable(repoRoot);
+  } catch (e) {
+    report.status = "refused";
+    report.detail = e.message;
+    return report;
+  }
   // Derive receipt booleans from LIVE post-state, never an unconditional true
   // (F-004/F-012). setup wires the host config in a SEPARATE step, so hooks_installed
   // reflects whether the ACTUAL installed governed command already routes through the
