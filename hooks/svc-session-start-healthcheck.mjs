@@ -34,10 +34,7 @@ if (typeof process.argv[1] === "string" && process.argv[1].replace(/\\/g,"/").in
   process.on("exit", () => { if (!__svcEmitted) { try { __w("{}\n"); } catch {} } });
 }
 
-try {
-  // Drain stdin (non-blocking)
-  try { readFileSync(0, "utf8"); } catch {}
-} catch {}
+// Drain stdin is not needed for SessionStart and causes hangs if stdin is an open pipe without EOF.
 
 function findDanglingSymlinks(skillsDir) {
   if (!existsSync(skillsDir)) return [];
