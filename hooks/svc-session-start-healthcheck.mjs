@@ -14,8 +14,8 @@
 // WI-186: made the healthcheck host-aware; it now resolves skills/config paths
 // from provision/hosts/<host>.json instead of checking Claude only.
 import { execFileSync, spawnSync } from "node:child_process";
-import { readFileSync, writeFileSync, existsSync, lstatSync, realpathSync, statSync } from "node:fs";
-import { basename, dirname } from "node:path";
+import { readFileSync, writeFileSync, existsSync, lstatSync, realpathSync, statSync, mkdirSync, chmodSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolveHostPaths } from "../scripts/resolve-host-paths.mjs";
 
@@ -134,8 +134,9 @@ function findMissingHookScripts(settingsPath, hooksSupported) {
 }
 
 // WI-543 AC-543-6: collapse Claude-compat + Grok-native double-fire in one session.
-// No session id (replays/tests) always runs the full path. First invoke still
-// runs healEnforcementSource; the stamp is written only after that pass finishes.
+// No session id (replays/tests) always runs the full path. Same-session parallel
+// invokes take an atomic exclusive claim at startup in a user-owned 0700 dir —
+// existsSync-then-write is racy under Grok parallel hook execution.
 function sessionIdFromEnv(env = process.env) {
   return env.GROK_SESSION_ID
     || env.CLAUDE_SESSION_ID
@@ -147,20 +148,53 @@ function sessionIdFromEnv(env = process.env) {
     || "";
 }
 
-function sessionStampPath(host, sessionId) {
-  const runtime = process.env.XDG_RUNTIME_DIR;
-  const dir = (runtime && existsSync(runtime)) ? runtime.replace(/\/+$/, "") : "/tmp";
-  const safeHost = String(host).replace(/[^A-Za-z0-9._-]/g, "_");
-  const safeSid = String(sessionId).replace(/[^A-Za-z0-9._-]/g, "_");
-  return `${dir}/svc-sshc-${safeHost}-${safeSid}`;
+function assertUserPrivateDir(dir) {
+  const st = lstatSync(dir);
+  if (!st.isDirectory() || st.isSymbolicLink()) {
+    throw new Error(`session-claim dir is not a real directory: ${dir}`);
+  }
+  if (process.getuid && st.uid !== process.getuid()) {
+    throw new Error(`session-claim dir is not owned by the current user: ${dir}`);
+  }
+  if ((st.mode & 0o777) !== 0o700) {
+    throw new Error(`session-claim dir is not mode 0700: ${dir}`);
+  }
+  return dir;
 }
 
-function writeSessionStamp(stampPath) {
-  if (!stampPath) return;
+function resolveSessionClaimDir(home, env = process.env) {
+  const override = env.SVC_SSHC_DIR || "";
+  if (override) {
+    if (!override.startsWith("/")) throw new Error("SVC_SSHC_DIR must be absolute");
+    return assertUserPrivateDir(override);
+  }
+  const svc = join(home, ".svc");
+  if (!existsSync(svc)) mkdirSync(svc, { recursive: true, mode: 0o755 });
+  const dir = join(svc, "sshc");
   try {
-    writeFileSync(stampPath, "");
-  } catch {
-    // never block
+    mkdirSync(dir, { mode: 0o700 });
+  } catch (err) {
+    if (err.code !== "EEXIST") throw err;
+  }
+  chmodSync(dir, 0o700);
+  return assertUserPrivateDir(dir);
+}
+
+// Returns "run" (this process owns the full path) or "skip" (another invoke already claimed).
+// No session id always returns "run". Claim failures other than EEXIST fail open to "run"
+// so SessionStart never blocks.
+function claimSameSession(host, sessionId, home, env = process.env) {
+  if (!sessionId) return "run";
+  try {
+    const dir = resolveSessionClaimDir(home, env);
+    const safeHost = String(host).replace(/[^A-Za-z0-9._-]/g, "_");
+    const safeSid = String(sessionId).replace(/[^A-Za-z0-9._-]/g, "_");
+    const claimPath = join(dir, `svc-sshc-${safeHost}-${safeSid}`);
+    writeFileSync(claimPath, `${process.pid}\n`, { flag: "wx", mode: 0o600 });
+    return "run";
+  } catch (err) {
+    if (err && err.code === "EEXIST") return "skip";
+    return "run";
   }
 }
 
@@ -446,8 +480,7 @@ try {
 
   const host = activeHost(HOOK_REPO_ROOT, home);
   const sessionId = sessionIdFromEnv();
-  const stampPath = sessionId ? sessionStampPath(host, sessionId) : "";
-  if (stampPath && existsSync(stampPath)) process.exit(0);
+  if (claimSameSession(host, sessionId, home) === "skip") process.exit(0);
 
   const hostPaths = resolveHostPaths(host, { repoRoot: HOOK_REPO_ROOT, home });
   const skillsDir = hostPaths.skillsPath;
@@ -461,7 +494,6 @@ try {
 
   const issues = dangling.length + missing.length;
   if (issues === 0) {
-    writeSessionStamp(stampPath);
     process.exit(0);
   }
 
@@ -471,7 +503,6 @@ try {
       `[svc-session-start:${host}] WARN: ${dangling.length} dangling symlink(s), ${missing.length} missing hook script(s). ` +
       `Could not detect repo root for auto-repair; re-run \`./setup --host ${host}\` from your svc checkout.\n`
     );
-    writeSessionStamp(stampPath);
     process.exit(0);
   }
 
@@ -497,7 +528,6 @@ try {
       process.stderr.write(`[svc-session-start:${host}] setup stderr: ${stderr.split("\n").slice(0, 3).join(" | ")}\n`);
     }
   }
-  writeSessionStamp(stampPath);
 } catch (e) {
   // never block
   try {

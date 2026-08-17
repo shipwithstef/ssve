@@ -354,27 +354,103 @@ export function serializeToml(nonHookText, hooks) {
   const blocks = [];
   if (nonHookText) blocks.push(nonHookText);
 
+  // Emit [[hooks.<Event>]] plus [[hooks.<Event>.hooks]] so `command = "..."`
+  // stays on its own line. Grok docs accept this form, and existing TOML
+  // command extractors (migrate-install, WI-487 heal) only match that line shape.
   for (const h of hooks) {
     const event = h.event || "SessionStart";
     const matcher = h.matcher == null ? "*" : h.matcher;
     const type = h.type || "command";
-    const inner = [`type = ${JSON.stringify(type)}`, `command = ${JSON.stringify(h.command || "")}`];
-    if (typeof h.timeout === "number") inner.push(`timeout = ${h.timeout}`);
-    blocks.push([
+    const lines = [
       `[[hooks.${event}]]`,
       `matcher = ${JSON.stringify(matcher)}`,
-      "hooks = [",
-      `  { ${inner.join(", ")} },`,
-      "]",
-    ].join("\n"));
+      `[[hooks.${event}.hooks]]`,
+      `type = ${JSON.stringify(type)}`,
+      `command = ${JSON.stringify(h.command || "")}`,
+    ];
+    if (typeof h.timeout === "number") lines.push(`timeout = ${h.timeout}`);
+    blocks.push(lines.join("\n"));
   }
 
   return blocks.join("\n\n") + "\n";
 }
 
-function isSvcOwnedHook(hook) {
-  const cmd = hook.command || "";
-  return cmd.includes("svc-") || cmd.includes("/skills/hooks/");
+function isHookTableHeader(trimmed) {
+  return trimmed === "[[hooks]]" || /^\[\[hooks\.[A-Za-z][A-Za-z0-9]*(?:\.hooks)?\]\]$/.test(trimmed);
+}
+
+function isSvcOwnedText(text) {
+  return text.includes("svc-") || text.includes("/skills/hooks/");
+}
+
+// Split TOML into ordered text/hook-table regions so non-SVC hooks (HTTP, env,
+// comments, escaped strings, ${HOME}, multi-handler) are kept byte-verbatim.
+export function splitTomlHookRegions(content) {
+  const lines = String(content || "").split(/\r?\n/);
+  const parts = [];
+  let buf = [];
+  let inHook = false;
+  const flush = () => {
+    if (buf.length === 0) return;
+    parts.push({ kind: inHook ? "hook" : "text", text: buf.join("\n") });
+    buf = [];
+  };
+  const bufEvent = () => {
+    if (!inHook || buf.length === 0) return "";
+    return classifyHookHeader(buf[0].trim())?.event || "";
+  };
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const header = classifyHookHeader(trimmed);
+    if (header) {
+      if (inHook && header.kind === "nested-handler" && header.event && header.event === bufEvent()) {
+        buf.push(line);
+        continue;
+      }
+      flush();
+      inHook = true;
+      buf.push(line);
+      continue;
+    }
+    if (inHook && trimmed.startsWith("[") && !isHookTableHeader(trimmed)) {
+      flush();
+      inHook = false;
+      buf.push(line);
+      continue;
+    }
+    buf.push(line);
+  }
+  flush();
+  return parts;
+}
+
+function composeWiredToml(content, svcHooks) {
+  const kept = [];
+  for (const part of splitTomlHookRegions(content)) {
+    if (part.kind === "text" || !isSvcOwnedText(part.text)) kept.push(part.text);
+  }
+  const prefix = kept.join("\n\n").replace(/\n{3,}/g, "\n\n").trim();
+  const svcBlock = serializeToml("", svcHooks).trim();
+  if (prefix && svcBlock) return `${prefix}\n\n${svcBlock}\n`;
+  if (svcBlock) return `${svcBlock}\n`;
+  return prefix ? `${prefix}\n` : "\n";
+}
+
+function fileMode(file) {
+  return fs.statSync(file).mode & 0o777;
+}
+
+function copyPreservingMode(src, dest) {
+  fs.copyFileSync(src, dest);
+  fs.chmodSync(dest, fileMode(src));
+}
+
+function immutableBackupPath(configFile) {
+  return `${configFile}.pre-migration.bak`;
+}
+
+function rollbackPath(configFile) {
+  return `${configFile}.svc-wire.rollback`;
 }
 
 export function wireGrok(options = {}) {
@@ -382,22 +458,22 @@ export function wireGrok(options = {}) {
   const skillsPath = options.skillsPath || path.join(home, ".grok", "skills");
   const configFile = options.configFile || path.join(home, ".grok", "config.toml");
   const dryRun = options.dryRun || false;
-  const backupFile = `${configFile}.wi543.bak`;
+  const immutableBak = immutableBackupPath(configFile);
+  const rollbackBak = rollbackPath(configFile);
 
   let content = "";
+  let existingMode = 0o644;
   if (fs.existsSync(configFile)) {
     try {
       content = fs.readFileSync(configFile, "utf8");
-    } catch {
-      content = "";
+      existingMode = fileMode(configFile);
+    } catch (err) {
+      throw new Error(`cannot read grok config ${configFile}: ${err.message}`);
     }
   }
 
-  const { nonHookText, existingHooks } = parseExistingToml(content);
   const svcHooks = buildGrokHookEntries(skillsPath);
-  const nonSvcHooks = existingHooks.filter((h) => !isSvcOwnedHook(h));
-  const mergedHooks = [...nonSvcHooks, ...svcHooks];
-  const output = serializeToml(nonHookText, mergedHooks);
+  const output = composeWiredToml(content, svcHooks);
 
   if (dryRun) {
     process.stdout.write(output);
@@ -406,20 +482,24 @@ export function wireGrok(options = {}) {
 
   fs.mkdirSync(path.dirname(configFile), { recursive: true });
   if (fs.existsSync(configFile)) {
-    fs.copyFileSync(configFile, backupFile);
+    if (!fs.existsSync(immutableBak)) {
+      copyPreservingMode(configFile, immutableBak);
+    }
+    copyPreservingMode(configFile, rollbackBak);
   }
   try {
     if (process.env.SVC_WIRE_GROK_FAIL_AFTER_BACKUP === "1") {
       throw new Error("simulated write failure");
     }
     const tmp = `${configFile}.${process.pid}.tmp`;
-    fs.writeFileSync(tmp, output, "utf8");
+    fs.writeFileSync(tmp, output, { encoding: "utf8", mode: existingMode });
+    fs.chmodSync(tmp, existingMode);
     fs.renameSync(tmp, configFile);
     process.stdout.write(`Wired Grok hooks in ${configFile}\n`);
     return 0;
   } catch (err) {
-    if (fs.existsSync(backupFile)) {
-      fs.copyFileSync(backupFile, configFile);
+    if (fs.existsSync(rollbackBak)) {
+      copyPreservingMode(rollbackBak, configFile);
     }
     throw err;
   }

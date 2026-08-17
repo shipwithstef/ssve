@@ -7,7 +7,7 @@
 **Base Branch:** `main`
 **Base SHA:** `8c79c243f185678936a661357197da8439b36d9b`
 **Created At:** 2026-08-17T04:50:00Z
-**Revised At:** 2026-08-17T05:35:00Z
+**Revised At:** 2026-08-17T08:56:00Z
 **Lane:** bugfix
 **Execution mode:** `inline` (orchestrator executes with this diagnosis loaded; §3a blueprints skipped)
 **Archetype:** incremental extension of `svc-session-start-healthcheck` plus a **gated** Grok-wirer schema follow-up
@@ -71,13 +71,29 @@ Fix Grok SessionStart 1 going red by making `findMissingHookScripts()` understan
 
 | File | Action | Task | Purpose |
 |------|--------|------|---------|
-| hooks/svc-session-start-healthcheck.mjs | MODIFY | task-1-parser | Tokenize + expand `~`/`$HOME`; no setup on false-positives; leave WI-487 probe intact; per-session stamp so Claude-compat + Grok-native double-fire is a no-op on the second invoke |
-| test-framework/evals/tier-1/validate-session-start-self-heal.sh | MODIFY | task-2-tests | Isolated-HOME TOML `~` fixture; keep existing T1–T3 |
+| hooks/svc-session-start-healthcheck.mjs | MODIFY | task-1-parser | Tokenize + expand `~`/`$HOME`; no setup on false-positives; leave WI-487 probe intact; atomic wx same-session claim in a user-owned 0700 dir |
+| test-framework/evals/tier-1/validate-session-start-self-heal.sh | MODIFY | task-2-tests | Isolated-HOME TOML `~` and `$HOME/` fixtures; parallel claim test; keep T1–T3 |
 | test-framework/evals/tier-1/validate-session-start-healthcheck-multi-host.sh | MODIFY | task-2-tests | Grok + Kimi TOML `~` present-path cases |
-| test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh | CREATE | task-3-grok-schema | Isolated-config dual-schema parse, user-hook keep, two-rewire idempotence, restore-on-failure |
-| scripts/wire-grok-hooks.mjs | MODIFY | task-3-grok-schema | Dual-schema parse/remove; emit the schema inspect proves; Grok-native healthcheck timeout >= 30; backup+restore |
+| test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh | CREATE | task-3-grok-schema | Lossless user hooks, three-rewire identity, immutable backup + rollback, fail-closed read |
+| scripts/wire-grok-hooks.mjs | MODIFY | task-3-grok-schema | Dual-schema parse/remove; lossless non-SVC keep; nested emit with standalone `command =`; immutable + rollback backups |
 | provision/hosts/grok.json | MODIFY | task-3-grok-schema | Document live TOML shape + timeout |
 | FRAMEWORK-STATE.md | MODIFY | task-3-grok-schema | Grok hook-format row matches live Grok only |
+| docs/specs/contract-maps/wi-542-grok-sessionstart-hooks.md | CREATE | G5 evidence | System Contract Map |
+| docs/specs/test-evidence/WI-542/old-new-path-probe.json | CREATE | G5 evidence | Old-path/new-path cross-system probe |
+| docs/specs/test-evidence/WI-542/old-new-path-probe-run.json | CREATE | G5 evidence | Probe run bytes |
+| docs/specs/test-evidence/WI-542/pre-post-evidence.json | CREATE | G5 evidence | Pre/post validation evidence |
+| docs/specs/verification/wi-542-inspect-summary.md | CREATE | G5 evidence | Inspect before/after summary |
+| docs/specs/verification/wi-542-grok-inspect-before.hooks.json | CREATE | G5 evidence | Tracked inspect extract (before) |
+| docs/specs/verification/wi-542-grok-inspect-after.hooks.json | CREATE | G5 evidence | Tracked inspect extract (after) |
+| docs/specs/bugfix/wi-542-grok-sessionstart-healthcheck-brief.md | CREATE | diagnose-bug | Bugfix brief |
+| docs/specs/work-items/WI-542.md | CREATE | diagnose-bug | WI-542 |
+| docs/specs/work-items/WI-543.md | CREATE | diagnose-bug | WI-543 |
+| docs/specs/work-items/WI-544.md | CREATE | follow-up | Live Kimi `/tmp/fake` leftover — not cleaned here |
+| docs/specs/work-items/INDEX.md | MODIFY | diagnose-bug | Index rows |
+| docs/plans/2026-08-17-wi542-grok-sessionstart-hooks/manifest.md | CREATE | plan-changeset | Plan |
+| docs/plans/2026-08-17-wi542-grok-sessionstart-hooks/review-log.yaml | CREATE | review-plan | F1–F10 dispositions |
+| .svc/lane-tasks-WI-542.json | CREATE | route-workflow | Lane graph |
+| .gitignore | MODIFY | G5 residue | Ignore local full inspect dumps |
 
 `validate-hook-host-residuals`, `validate-cross-host-hook-conformance`, and `validate-governed-wirer-fail-fast` do **not** assert Grok TOML table headers. They are not in this file set unless a later inspect shows they started asserting shape.
 
@@ -87,7 +103,7 @@ Fix Grok SessionStart 1 going red by making `findMissingHookScripts()` understan
 
 ### `task-1-parser` (Prerequisites: worktree exists)
 
-* **Description:** In the worktree, replace the TOML regex fallback and tighten the JSON token loop in `findMissingHookScripts()` per the host-safe contract. Setup runs only when dangling symlinks or truly missing **expanded absolute** script paths remain. Do not add a healEnforcementSource short-circuit. Add a **session stamp** (AC-543-6 runtime half): if `GROK_SESSION_ID` / `CLAUDE_SESSION_ID` / peer is set and `${XDG_RUNTIME_DIR:-/tmp}/svc-sshc-${host}-${sessionId}` already exists, exit 0 immediately; write the stamp only after a finished pass. Replays and tests without a session id always run the full path. This is not a WI-487 skip: the first invoke in a session still runs `healEnforcementSource`.
+* **Description:** In the worktree, replace the TOML regex fallback and tighten the JSON token loop in `findMissingHookScripts()` per the host-safe contract. Setup runs only when dangling symlinks or truly missing **expanded absolute** script paths remain. Do not add a healEnforcementSource short-circuit. Add an **atomic exclusive same-session claim** (AC-543-6 runtime half): if `GROK_SESSION_ID` (or a peer host session id) is set, `wx`-create `svc-sshc-<host>-<sid>` in a validated user-owned 0700 directory (`~/.svc/sshc` or `SVC_SSHC_DIR`) **before** the healthcheck path. EEXIST skips. No session id always runs. Shared `/tmp` stamps are forbidden. This is not a WI-487 skip: the first invoke in a session still runs `healEnforcementSource`.
 * **Files:** hooks/svc-session-start-healthcheck.mjs
 * **AC Coverage:** AC-542-1, AC-542-2 (pre-merge time bound), AC-542-3, AC-542-4, AC-543-6 (runtime stamp)
 * **Validation:** See task-4-premerge-replay. Must include `SVC_HOST=grok` and `SVC_HOST=kimi`.
@@ -326,7 +342,7 @@ Loop-backs: if the parser cannot distinguish `${VAR}` from a path without false 
 | # | Environment | What state | Coupling | Lifecycle wiring |
 |---|-------------|------------|----------|------------------|
 | 1 | Host filesystem outside repo | Grok/Kimi skills hook scripts must exist for tilde expansion to count present | coupled | healthcheck existsSync after expand; setup still repairs real holes |
-| 2 | Host config files | Reads Grok and Kimi TOML plus Claude/Codex/Gemini/Cursor JSON via resolveHostPaths. task-3 may rewrite live Grok config | coupled | Byte backup `config.toml.wi543.bak`; dual-schema parse; restore-on-failure; inspect before/after |
+| 2 | Host config files | Reads Grok and Kimi TOML plus Claude/Codex/Gemini/Cursor JSON via resolveHostPaths. task-3 may rewrite live Grok config | coupled | Immutable `config.toml.pre-migration.bak` created once; per-attempt `config.toml.svc-wire.rollback`; fail-closed config reads; restore-on-failure; inspect before/after. Live `.wi543.bak` was already overwritten (same hash as current nested config) and is **not** the original flat pre-migration backup |
 | 12 | Downstream framework artifacts | FRAMEWORK-STATE Grok hook-format row; grok host manifest; new roundtrip validator | coupled | task-3 updates those with the probe result |
 | 15 | Runtime logs + inspect JSON | Grok updates.jsonl and grok inspect --json | decoupled-justified | Inspect JSON is saved under the worktree `.svc/` as the probe receipt. Fresh-session updates.jsonl is verify-promotion evidence, not a git file |
 

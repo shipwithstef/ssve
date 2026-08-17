@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Tier-1: WI-543 Grok hook TOML dual-schema roundtrip.
+# Tier-1: WI-543 Grok hook TOML dual-schema roundtrip + lossless user hooks +
+# immutable migration backup / per-attempt rollback.
 # Isolated config only — does not write ~/.grok/config.toml.
 set -euo pipefail
 
@@ -36,6 +37,7 @@ cat > "$CONFIG" <<'EOF'
 [cli]
 installer = "internal"
 
+# keep this user comment
 [[hooks]]
 event = "SessionEnd"
 matcher = "*"
@@ -46,6 +48,25 @@ timeout = 5
 matcher = "*"
 hooks = [
   { type = "command", command = "echo user-nested-keep", timeout = 5 },
+  { type = "command", command = "echo user-second-handler", timeout = 5 },
+]
+
+[[hooks.Notification]]
+matcher = "*"
+hooks = [
+  { type = "http", url = "https://example.invalid/hook", timeout = 5 },
+]
+
+[[hooks.PostToolUse]]
+matcher = "*"
+hooks = [
+  { type = "command", command = "echo ${HOME}/brace-keep", env = { FOO = "bar" }, timeout = 5 },
+]
+
+[[hooks.SessionEnd]]
+matcher = "*"
+hooks = [
+  { type = "command", command = "echo \"quoted-keep\"", timeout = 5 },
 ]
 
 [[hooks]]
@@ -64,8 +85,23 @@ hooks = [
 privacy_banner_acked = "test"
 EOF
 
+chmod 644 "$CONFIG"
 cp -a "$CONFIG" "$TMP/fixture-original.toml"
 ORIG_SHA=$(sha256sum "$TMP/fixture-original.toml" | awk '{print $1}')
+
+# Fail-closed read: unreadable config must not be treated as empty.
+cp -a "$CONFIG" "$TMP/unreadable.toml"
+chmod 000 "$TMP/unreadable.toml"
+if node "$WIRER" --skills-path "$SKILLS" --config "$TMP/unreadable.toml" >/tmp/wi543-unreadable.out 2>/tmp/wi543-unreadable.err; then
+  fail "unreadable config should fail closed"
+else
+  if grep -qi 'cannot read grok config' /tmp/wi543-unreadable.err; then
+    pass "unreadable config fails closed"
+  else
+    fail "unreadable config failed without fail-closed message: $(cat /tmp/wi543-unreadable.err)"
+  fi
+fi
+chmod 644 "$TMP/unreadable.toml"
 
 if SVC_WIRE_GROK_FAIL_AFTER_BACKUP=1 node "$WIRER" --skills-path "$SKILLS" --config "$CONFIG" >/tmp/wi543-fail-wire.out 2>/tmp/wi543-fail-wire.err; then
   fail "simulated failure should exit non-zero"
@@ -76,42 +112,56 @@ else
   else
     fail "restore-on-failure changed fixture (orig=$ORIG_SHA now=$RESTORED_SHA)"
   fi
-  if [ -f "$CONFIG.wi543.bak" ]; then
-    pass "backup written before simulated failure"
+  if [ -f "$CONFIG.pre-migration.bak" ]; then
+    pass "immutable pre-migration backup written"
   else
-    fail "backup missing after simulated failure"
+    fail "immutable pre-migration backup missing"
+  fi
+  if [ -f "$CONFIG.svc-wire.rollback" ]; then
+    pass "per-attempt rollback written"
+  else
+    fail "per-attempt rollback missing"
   fi
 fi
 
 cp -a "$TMP/fixture-original.toml" "$CONFIG"
+rm -f "$CONFIG.pre-migration.bak" "$CONFIG.svc-wire.rollback"
 if node "$WIRER" --skills-path "$SKILLS" --config "$CONFIG" >/tmp/wi543-wire1.out 2>/tmp/wi543-wire1.err; then
   pass "first isolated rewire exits 0"
 else
   fail "first isolated rewire failed: $(cat /tmp/wi543-wire1.err)"
 fi
 
-if grep -q 'echo user-flat-keep' "$CONFIG" && grep -q 'echo user-nested-keep' "$CONFIG"; then
-  pass "user hooks kept across both schema styles"
+IMMUTABLE_SHA=$(sha256sum "$CONFIG.pre-migration.bak" | awk '{print $1}')
+if [ "$IMMUTABLE_SHA" = "$ORIG_SHA" ]; then
+  pass "immutable backup matches original fixture"
 else
-  fail "user hooks were dropped"
+  fail "immutable backup is not the original fixture"
 fi
 
-if grep -q '\[\[hooks\.SessionStart\]\]' "$CONFIG"; then
-  pass "emits nested [[hooks.SessionStart]]"
-else
-  fail "did not emit nested SessionStart table"
-fi
+for token in \
+  "echo user-flat-keep" \
+  "echo user-nested-keep" \
+  "echo user-second-handler" \
+  "https://example.invalid/hook" \
+  'echo ${HOME}/brace-keep' \
+  'FOO = "bar"' \
+  'echo \"quoted-keep\"' \
+  "keep this user comment"
+do
+  if grep -Fq "$token" "$CONFIG"; then
+    pass "preserved user text: $token"
+  else
+    fail "lost user text: $token"
+  fi
+done
 
-if grep -n 'svc-session-start-healthcheck' "$CONFIG" | grep -q 'timeout = 30'; then
-  pass "Grok-native healthcheck timeout is 30"
+if grep -q '\[\[hooks\.SessionStart\]\]' "$CONFIG" \
+  && grep -q 'svc-session-start-healthcheck' "$CONFIG" \
+  && grep -q 'timeout = 30' "$CONFIG"; then
+  pass "emits nested SessionStart healthcheck timeout 30"
 else
-  fail "healthcheck timeout is not 30: $(grep -n -A3 'svc-session-start-healthcheck' "$CONFIG" || true)"
-fi
-
-if grep -q '^\[\[hooks\]\]$' "$CONFIG"; then
-  fail "flat [[hooks]] leftover after nested emit"
-else
-  pass "no leftover flat [[hooks]] tables"
+  fail "nested SessionStart healthcheck timeout 30 missing"
 fi
 
 if grep -q '^\[cli\]' "$CONFIG" && grep -q '^\[privacy\]' "$CONFIG"; then
@@ -121,18 +171,44 @@ else
 fi
 
 FIRST_SHA=$(sha256sum "$CONFIG" | awk '{print $1}')
-if node "$WIRER" --skills-path "$SKILLS" --config "$CONFIG" >/tmp/wi543-wire2.out 2>/tmp/wi543-wire2.err; then
-  SECOND_SHA=$(sha256sum "$CONFIG" | awk '{print $1}')
-  if [ "$FIRST_SHA" = "$SECOND_SHA" ]; then
-    pass "two isolated rewires are byte-identical"
-  else
-    fail "second rewire changed bytes ($FIRST_SHA vs $SECOND_SHA)"
-  fi
+node "$WIRER" --skills-path "$SKILLS" --config "$CONFIG" >/tmp/wi543-wire2.out 2>/tmp/wi543-wire2.err
+SECOND_SHA=$(sha256sum "$CONFIG" | awk '{print $1}')
+node "$WIRER" --skills-path "$SKILLS" --config "$CONFIG" >/tmp/wi543-wire3.out 2>/tmp/wi543-wire3.err
+THIRD_SHA=$(sha256sum "$CONFIG" | awk '{print $1}')
+IMMUTABLE_AFTER=$(sha256sum "$CONFIG.pre-migration.bak" | awk '{print $1}')
+if [ "$FIRST_SHA" = "$SECOND_SHA" ] && [ "$SECOND_SHA" = "$THIRD_SHA" ]; then
+  pass "three isolated rewires are byte-identical"
 else
-  fail "second isolated rewire failed: $(cat /tmp/wi543-wire2.err)"
+  fail "rewires diverged $FIRST_SHA $SECOND_SHA $THIRD_SHA"
+fi
+if [ "$IMMUTABLE_AFTER" = "$ORIG_SHA" ]; then
+  pass "three rewires did not overwrite immutable backup"
+else
+  fail "immutable backup changed after rewires"
 fi
 
-# Other host wirers must not be part of this change (static path check).
+# Failure after a successful rewire must restore the last good wired bytes,
+# not the original fixture, and must leave the immutable backup untouched.
+WIRED_SHA=$THIRD_SHA
+if SVC_WIRE_GROK_FAIL_AFTER_BACKUP=1 node "$WIRER" --skills-path "$SKILLS" --config "$CONFIG" >/tmp/wi543-fail2.out 2>/tmp/wi543-fail2.err; then
+  fail "post-success simulated failure should exit non-zero"
+else
+  AFTER_FAIL=$(sha256sum "$CONFIG" | awk '{print $1}')
+  IMMUTABLE_FINAL=$(sha256sum "$CONFIG.pre-migration.bak" | awk '{print $1}')
+  if [ "$AFTER_FAIL" = "$WIRED_SHA" ]; then
+    pass "failure after success restores last good wired bytes"
+  else
+    fail "failure after success restored unexpected bytes"
+  fi
+  if [ "$IMMUTABLE_FINAL" = "$ORIG_SHA" ]; then
+    pass "failure after success left immutable backup untouched"
+  else
+    fail "failure after success mutated immutable backup"
+  fi
+fi
+
+# Live host note is not a test assertion; recorded in tracked evidence.
+# Other host wirers must not be part of this change.
 OTHER_DIRTY=0
 for w in wire-kimi-hooks.mjs wire-hooks.mjs wire-cursor-hooks.mjs wire-codex-hooks.mjs wire-gemini-hooks.mjs; do
   if git -C "$REPO_ROOT" diff --name-only -- "scripts/$w" | grep -q .; then

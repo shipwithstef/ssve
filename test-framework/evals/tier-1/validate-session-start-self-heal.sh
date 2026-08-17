@@ -7,7 +7,10 @@
 # T4: isolated-HOME TOML `~` path present → silent (WI-542)
 # T5: isolated-HOME TOML `~` path absent → missing (WI-542)
 # T6: ${VAR} / relative / interpreter tokens are not treated as missing (WI-542)
-# T7: session stamp skips a second invoke; no session id always runs (WI-543)
+# T7: atomic session claim skips a second invoke; no session id always runs (WI-543)
+# T8: two parallel same-session invokes run the full path exactly once (WI-543)
+# T9: isolated-HOME TOML $HOME/ path present → silent (WI-542)
+# T10: isolated-HOME TOML $HOME/ path absent → missing (WI-542)
 #
 # Tests run with isolated HOME so the real ~/.claude is untouched.
 # Setup is intentionally NOT triggered: the .source-repo pointer is omitted
@@ -60,10 +63,28 @@ timeout = 30
 EOF
 }
 
+write_home_var_toml() {
+  local home="$1"
+  local host_dir="$2"
+  mkdir -p "$home/$host_dir"
+  cat > "$home/$host_dir/config.toml" <<'EOF'
+[[hooks]]
+event = "SessionStart"
+command = "node $HOME/.fakehost/skills/hooks/foo.mjs"
+timeout = 30
+EOF
+}
+
+make_private_dir() {
+  local dir="$1"
+  mkdir -p "$dir"
+  chmod 700 "$dir"
+}
+
 # ----- T1: healthy state, isolated HOME with no skills dir at all → silent
 T1_HOME=$(mktemp -d)
-T4_HOME=""; T5_HOME=""; T6_HOME=""; T7_HOME=""; T7_RUNTIME=""
-trap 'rm -rf "$T1_HOME" "$T2_HOME" "$T3_HOME" "$T4_HOME" "$T5_HOME" "$T6_HOME" "$T7_HOME" "$T7_RUNTIME" 2>/dev/null || true' EXIT
+T4_HOME=""; T5_HOME=""; T6_HOME=""; T7_HOME=""; T7_CLAIM=""; T8_HOME=""; T8_CLAIM=""; T9_HOME=""; T10_HOME=""
+trap 'rm -rf "$T1_HOME" "$T2_HOME" "$T3_HOME" "$T4_HOME" "$T5_HOME" "$T6_HOME" "$T7_HOME" "$T7_CLAIM" "$T8_HOME" "$T8_CLAIM" "$T9_HOME" "$T10_HOME" 2>/dev/null || true' EXIT
 mkdir -p "$T1_HOME/.claude/skills"
 echo '{"hooks":{}}' > "$T1_HOME/.claude/settings.json"
 T1_OUT=$(run_hook "$T1_HOME")
@@ -158,36 +179,103 @@ else
   FAIL=$((FAIL+1))
 fi
 
-# ----- T7: session stamp — second invoke with same id is a no-op
+# ----- T7: atomic claim — second invoke with same id is a no-op
 T7_HOME=$(mktemp -d)
-T7_RUNTIME=$(mktemp -d)
+T7_CLAIM=$(mktemp -d)
+chmod 700 "$T7_CLAIM"
 mkdir -p "$T7_HOME/.claude/skills"
 ln -s /nonexistent/does/not/exist "$T7_HOME/.claude/skills/dangling-link"
 echo '{"hooks":{}}' > "$T7_HOME/.claude/settings.json"
 T7_SID="wi542-stamp-$$"
 T7_FIRST=$(env -u GROK_SESSION_ID -u CLAUDE_SESSION_ID -u CODEX_SESSION_ID \
   -u CODEX_THREAD_ID -u KIMI_SESSION_ID -u GEMINI_SESSION_ID -u SVC_SESSION_ID \
-  HOME="$T7_HOME" SVC_HOST=claude GROK_SESSION_ID="$T7_SID" XDG_RUNTIME_DIR="$T7_RUNTIME" \
+  HOME="$T7_HOME" SVC_HOST=claude GROK_SESSION_ID="$T7_SID" SVC_SSHC_DIR="$T7_CLAIM" \
   node "$HOOK" </dev/null 2>&1 || true)
 T7_SECOND=$(env -u GROK_SESSION_ID -u CLAUDE_SESSION_ID -u CODEX_SESSION_ID \
   -u CODEX_THREAD_ID -u KIMI_SESSION_ID -u GEMINI_SESSION_ID -u SVC_SESSION_ID \
-  HOME="$T7_HOME" SVC_HOST=claude GROK_SESSION_ID="$T7_SID" XDG_RUNTIME_DIR="$T7_RUNTIME" \
+  HOME="$T7_HOME" SVC_HOST=claude GROK_SESSION_ID="$T7_SID" SVC_SSHC_DIR="$T7_CLAIM" \
   node "$HOOK" </dev/null 2>&1 || true)
 T7_NO_SID=$(env -u GROK_SESSION_ID -u CLAUDE_SESSION_ID -u CODEX_SESSION_ID \
   -u CODEX_THREAD_ID -u KIMI_SESSION_ID -u GEMINI_SESSION_ID -u SVC_SESSION_ID \
-  HOME="$T7_HOME" SVC_HOST=claude XDG_RUNTIME_DIR="$T7_RUNTIME" \
+  HOME="$T7_HOME" SVC_HOST=claude SVC_SSHC_DIR="$T7_CLAIM" \
   node "$HOOK" </dev/null 2>&1 || true)
 if echo "$T7_FIRST" | grep -qE "dangling|self-heal" \
   && [ -z "$T7_SECOND" ] \
   && echo "$T7_NO_SID" | grep -qE "dangling|self-heal" \
-  && [ -f "$T7_RUNTIME/svc-sshc-claude-$T7_SID" ]; then
-  echo "  ✓ T7: session stamp no-op; no session id still runs"
+  && [ -f "$T7_CLAIM/svc-sshc-claude-$T7_SID" ]; then
+  echo "  ✓ T7: atomic claim no-op; no session id still runs"
   PASS=$((PASS+1))
 else
-  echo "  ✗ T7: stamp contract failed first='$T7_FIRST' second='$T7_SECOND' nosid='$T7_NO_SID'"
+  echo "  ✗ T7: claim contract failed first='$T7_FIRST' second='$T7_SECOND' nosid='$T7_NO_SID'"
   FAIL=$((FAIL+1))
 fi
-rm -rf "$T7_RUNTIME"
+
+# ----- T8: two parallel same-session invokes execute the full path exactly once
+T8_HOME=$(mktemp -d)
+T8_CLAIM=$(mktemp -d)
+chmod 700 "$T8_CLAIM"
+mkdir -p "$T8_HOME/.claude/skills"
+ln -s /nonexistent/does/not/exist "$T8_HOME/.claude/skills/dangling-link"
+echo '{"hooks":{}}' > "$T8_HOME/.claude/settings.json"
+T8_SID="wi542-parallel-$$"
+T8_A="$T8_HOME/a.err"
+T8_B="$T8_HOME/b.err"
+env -u GROK_SESSION_ID -u CLAUDE_SESSION_ID -u CODEX_SESSION_ID \
+  -u CODEX_THREAD_ID -u KIMI_SESSION_ID -u GEMINI_SESSION_ID -u SVC_SESSION_ID \
+  HOME="$T8_HOME" SVC_HOST=claude GROK_SESSION_ID="$T8_SID" SVC_SSHC_DIR="$T8_CLAIM" \
+  node "$HOOK" </dev/null >"$T8_HOME/a.out" 2>"$T8_A" &
+T8_PID_A=$!
+env -u GROK_SESSION_ID -u CLAUDE_SESSION_ID -u CODEX_SESSION_ID \
+  -u CODEX_THREAD_ID -u KIMI_SESSION_ID -u GEMINI_SESSION_ID -u SVC_SESSION_ID \
+  HOME="$T8_HOME" SVC_HOST=claude GROK_SESSION_ID="$T8_SID" SVC_SSHC_DIR="$T8_CLAIM" \
+  node "$HOOK" </dev/null >"$T8_HOME/b.out" 2>"$T8_B" &
+T8_PID_B=$!
+wait "$T8_PID_A" "$T8_PID_B" || true
+T8_HITS=$(grep -cE "dangling|self-heal" "$T8_A" "$T8_B" 2>/dev/null | awk -F: '{s+=$2+$1} END {print s+0}')
+T8_NOSID_A=$(env -u GROK_SESSION_ID -u CLAUDE_SESSION_ID -u CODEX_SESSION_ID \
+  -u CODEX_THREAD_ID -u KIMI_SESSION_ID -u GEMINI_SESSION_ID -u SVC_SESSION_ID \
+  HOME="$T8_HOME" SVC_HOST=claude SVC_SSHC_DIR="$T8_CLAIM" \
+  node "$HOOK" </dev/null 2>&1 || true)
+T8_NOSID_B=$(env -u GROK_SESSION_ID -u CLAUDE_SESSION_ID -u CODEX_SESSION_ID \
+  -u CODEX_THREAD_ID -u KIMI_SESSION_ID -u GEMINI_SESSION_ID -u SVC_SESSION_ID \
+  HOME="$T8_HOME" SVC_HOST=claude SVC_SSHC_DIR="$T8_CLAIM" \
+  node "$HOOK" </dev/null 2>&1 || true)
+if [ "$T8_HITS" -eq 1 ] \
+  && echo "$T8_NOSID_A" | grep -qE "dangling|self-heal" \
+  && echo "$T8_NOSID_B" | grep -qE "dangling|self-heal"; then
+  echo "  ✓ T8: parallel same-session full path runs exactly once"
+  PASS=$((PASS+1))
+else
+  echo "  ✗ T8: expected one parallel full-path run, hits=$T8_HITS a=$(cat "$T8_A") b=$(cat "$T8_B")"
+  FAIL=$((FAIL+1))
+fi
+
+# ----- T9: $HOME/ path present
+T9_HOME=$(mktemp -d)
+mkdir -p "$T9_HOME/.grok/skills" "$T9_HOME/.fakehost/skills/hooks"
+printf '%s\n' 'export {}' > "$T9_HOME/.fakehost/skills/hooks/foo.mjs"
+write_home_var_toml "$T9_HOME" ".grok"
+T9_OUT=$(run_hook "$T9_HOME" "" grok)
+if [ -z "$T9_OUT" ]; then
+  echo "  ✓ T9: present \$HOME/ TOML path is silent"
+  PASS=$((PASS+1))
+else
+  echo "  ✗ T9: expected silent for present \$HOME/ path, got: $T9_OUT"
+  FAIL=$((FAIL+1))
+fi
+
+# ----- T10: $HOME/ path absent
+T10_HOME=$(mktemp -d)
+mkdir -p "$T10_HOME/.grok/skills" "$T10_HOME/.fakehost/skills/hooks"
+write_home_var_toml "$T10_HOME" ".grok"
+T10_OUT=$(run_hook "$T10_HOME" "" grok)
+if echo "$T10_OUT" | grep -qE "missing|self-heal"; then
+  echo "  ✓ T10: absent \$HOME/ TOML path is missing"
+  PASS=$((PASS+1))
+else
+  echo "  ✗ T10: expected missing/self-heal for absent \$HOME/ path, got: $T10_OUT"
+  FAIL=$((FAIL+1))
+fi
 
 echo ""
 echo "validate-session-start-self-heal: $PASS passed, $FAIL failed"
