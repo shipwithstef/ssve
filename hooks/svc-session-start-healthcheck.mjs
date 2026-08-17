@@ -14,7 +14,7 @@
 // WI-186: made the healthcheck host-aware; it now resolves skills/config paths
 // from provision/hosts/<host>.json instead of checking Claude only.
 import { execFileSync, spawnSync } from "node:child_process";
-import { readFileSync, existsSync, lstatSync, realpathSync, statSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, lstatSync, realpathSync, statSync } from "node:fs";
 import { basename, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolveHostPaths } from "../scripts/resolve-host-paths.mjs";
@@ -51,6 +51,59 @@ function findDanglingSymlinks(skillsDir) {
   }
 }
 
+// WI-542: tokenize commands, expand only ~ / ~/ / $HOME/, existsSync only on
+// absolute *.mjs/*.js/*.sh after expand. Never slice `~/.host/...` into
+// `/.host/...`. Ignore relative tokens, ${VAR} / %VAR%, and the interpreter.
+function tokenizeHookCommand(cmd) {
+  return String(cmd || "").split(/\s+/).filter(Boolean);
+}
+
+function stripHookQuotes(tok) {
+  return tok.replace(/^["']|["']$/g, "");
+}
+
+function expandHookPathToken(tok) {
+  const home = process.env.HOME || "";
+  if (tok === "~") return home || tok;
+  if (tok.startsWith("~/")) return home ? home + tok.slice(1) : tok;
+  if (tok.startsWith("$HOME/")) return home ? home + tok.slice("$HOME".length) : tok;
+  return tok;
+}
+
+function isInterpolatedHookToken(tok) {
+  return /\$\{[A-Za-z_][A-Za-z0-9_]*\}/.test(tok) || /%[A-Za-z_][A-Za-z0-9_]*%/.test(tok);
+}
+
+function isHookScriptPath(tok) {
+  return /\.(?:mjs|js|sh)$/.test(tok);
+}
+
+function collectMissingFromCommand(cmd, labelPrefix, missing) {
+  for (const raw of tokenizeHookCommand(cmd)) {
+    const tok = stripHookQuotes(raw);
+    if (!tok || isInterpolatedHookToken(tok)) continue;
+    const expanded = expandHookPathToken(tok);
+    if (!isHookScriptPath(expanded)) continue;
+    if (!expanded.startsWith("/")) continue;
+    if (!existsSync(expanded)) missing.push(`${labelPrefix}${expanded}`);
+  }
+}
+
+function extractTomlCommands(raw) {
+  const cmds = [];
+  const re = /\bcommand\s*=\s*("(?:[^"\\]|\\.)*"|'[^']*')/g;
+  let m;
+  while ((m = re.exec(raw))) {
+    const lit = m[1];
+    try {
+      cmds.push(lit.startsWith("\"") ? JSON.parse(lit) : lit.slice(1, -1));
+    } catch {
+      cmds.push(lit.replace(/^["']|["']$/g, ""));
+    }
+  }
+  return cmds;
+}
+
 function findMissingHookScripts(settingsPath, hooksSupported) {
   if (!hooksSupported || !settingsPath || !existsSync(settingsPath)) return [];
   const raw = readFileSync(settingsPath, "utf8");
@@ -65,28 +118,50 @@ function findMissingHookScripts(settingsPath, hooksSupported) {
       for (const matcherEntry of arr) {
         const inner = matcherEntry.hooks || [];
         for (const h of inner) {
-          const cmd = h.command || "";
-          for (const tok of cmd.split(/\s+/)) {
-            const t = tok.replace(/^["']|["']$/g, "");
-            if (/^\/.+\.(m?js|sh)$/.test(t) && !existsSync(t)) {
-              missing.push(`${event}: ${t}`);
-            }
-          }
+          collectMissingFromCommand(h.command || "", `${event}: `, missing);
         }
       }
     }
     return missing;
   } catch {
-    // Fall through to regex scanning for TOML and host-specific config formats.
+    // Fall through to command extraction for TOML and host-specific config formats.
   }
 
-  for (const match of raw.matchAll(/\/[^\s"'`]+?\.(?:mjs|js|sh)\b/g)) {
-    const p = match[0];
-    if (!existsSync(p)) {
-      missing.push(`hook command: ${p}`);
-    }
+  for (const cmd of extractTomlCommands(raw)) {
+    collectMissingFromCommand(cmd, "hook command: ", missing);
   }
   return missing;
+}
+
+// WI-543 AC-543-6: collapse Claude-compat + Grok-native double-fire in one session.
+// No session id (replays/tests) always runs the full path. First invoke still
+// runs healEnforcementSource; the stamp is written only after that pass finishes.
+function sessionIdFromEnv(env = process.env) {
+  return env.GROK_SESSION_ID
+    || env.CLAUDE_SESSION_ID
+    || env.CODEX_SESSION_ID
+    || env.CODEX_THREAD_ID
+    || env.KIMI_SESSION_ID
+    || env.GEMINI_SESSION_ID
+    || env.SVC_SESSION_ID
+    || "";
+}
+
+function sessionStampPath(host, sessionId) {
+  const runtime = process.env.XDG_RUNTIME_DIR;
+  const dir = (runtime && existsSync(runtime)) ? runtime.replace(/\/+$/, "") : "/tmp";
+  const safeHost = String(host).replace(/[^A-Za-z0-9._-]/g, "_");
+  const safeSid = String(sessionId).replace(/[^A-Za-z0-9._-]/g, "_");
+  return `${dir}/svc-sshc-${safeHost}-${safeSid}`;
+}
+
+function writeSessionStamp(stampPath) {
+  if (!stampPath) return;
+  try {
+    writeFileSync(stampPath, "");
+  } catch {
+    // never block
+  }
 }
 
 // WI-134: a candidate repo path is acceptable only if it is canonical (not
@@ -370,6 +445,10 @@ try {
   }
 
   const host = activeHost(HOOK_REPO_ROOT, home);
+  const sessionId = sessionIdFromEnv();
+  const stampPath = sessionId ? sessionStampPath(host, sessionId) : "";
+  if (stampPath && existsSync(stampPath)) process.exit(0);
+
   const hostPaths = resolveHostPaths(host, { repoRoot: HOOK_REPO_ROOT, home });
   const skillsDir = hostPaths.skillsPath;
   const settingsPath = hostPaths.configFile;
@@ -382,6 +461,7 @@ try {
 
   const issues = dangling.length + missing.length;
   if (issues === 0) {
+    writeSessionStamp(stampPath);
     process.exit(0);
   }
 
@@ -391,6 +471,7 @@ try {
       `[svc-session-start:${host}] WARN: ${dangling.length} dangling symlink(s), ${missing.length} missing hook script(s). ` +
       `Could not detect repo root for auto-repair; re-run \`./setup --host ${host}\` from your svc checkout.\n`
     );
+    writeSessionStamp(stampPath);
     process.exit(0);
   }
 
@@ -416,6 +497,7 @@ try {
       process.stderr.write(`[svc-session-start:${host}] setup stderr: ${stderr.split("\n").slice(0, 3).join(" | ")}\n`);
     }
   }
+  writeSessionStamp(stampPath);
 } catch (e) {
   // never block
   try {
