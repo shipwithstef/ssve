@@ -90,15 +90,17 @@ It never silently remaps to Claude or Codex.
 ## Dependency DAG
 
 ```
-WI-502 (exists)     WI-547 (LANDED #11)     WI-545     WI-549     WI-550     WI-551     WI-553     WI-544 (ops)
-       \                    |                  |          |          |          |
-        \                   |                  |          |          |          v
-         \                  +----+-------------+----------+----------+----> WI-552
-          \                      |
-           \                     +
-            \                    |
-             +-------------------+-------------------------------> WI-546 live acceptance
+WI-502 (exists)   WI-547 (landed)   WI-545   WI-549   WI-550   WI-551   WI-553   WI-544 (ops)
+       \                |              |        |        |        |        |
+        \               |              |        |        |        v        |
+         \              +--------------|--------|--------|--> WI-552       |
+          \                             |        |        |        |        |
+           +----------------------------+--------+--------+--------+--------+--> WI-546
 ```
+
+Hard edges: WI-552 depends on WI-551 + landed WI-547 + existing WI-502.
+WI-546 depends on WI-545 + WI-547 + WI-549 + WI-550 + WI-551 + WI-552.
+WI-553 never blocks WI-546.
 
 No cycles.
 

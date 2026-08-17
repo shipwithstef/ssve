@@ -1,0 +1,77 @@
+{
+  "verdict": "pass",
+  "rubric_score": 7,
+  "reviewer": "claude-fable-5-thinking-high",
+  "reviewer_family": "anthropic",
+  "transport": "cursor-agent",
+  "findings": [
+    {
+      "id": "FAB-001",
+      "severity": "MEDIUM",
+      "lens": "determinism",
+      "claim": "The canonical WI-546 prerequisite set (545+547+549+550+551+552) is not mirrored in three secondary surfaces, which still state the pre-SOL-004 four-predecessor set.",
+      "analysis": "The SOL-004 remediation fixed the WI-546 header, the manifest handoff DAG, and reconciliation section 3, all of which now require six predecessors including WI-551 and WI-552. However the INDEX.md WI-546 row says 'integration after 545/547/549/550', the reconciliation section 1 disposition row for WI-546 says 'After 545/547/549/550', and the SOLUTION-CONFIDENCE action packet row 'Keep WI-546 as the live acceptance wave' says 'After 545/547/549/550'. All three omit WI-551 and WI-552. An implementer scheduling from INDEX or the disposition table could start the WI-546 live wave before the dispatch resolver and restart continuation land, which would make its restart-continuation and no-remap fixtures (AC-546-3, AC-546-6) unexecutable or falsely scoped.",
+      "evidence": [
+        "docs/specs/work-items/INDEX.md:10",
+        "docs/specs/architecture/wi-548-reconciliation.md:19",
+        "docs/specs/decisions/2026-08-17-wi-548-host-parity/SOLUTION-CONFIDENCE.md:125",
+        "docs/specs/work-items/WI-546.md:10",
+        "docs/specs/architecture/wi-548-reconciliation.md:73-79"
+      ],
+      "proposed_fix": "Update the INDEX.md WI-546 row, the reconciliation section 1 WI-546 disposition row, and the SOLUTION-CONFIDENCE action-packet row to the full six-predecessor set 545/547/549/550/551/552, matching the canonical DAG."
+    },
+    {
+      "id": "FAB-002",
+      "severity": "MEDIUM",
+      "lens": "coverage",
+      "claim": "The manifest Files Planned table no longer matches the actual changeset: WI-545.md is declared KEEP but is modified, and one committed file is absent from the table entirely.",
+      "analysis": "git diff origin/main...HEAD --name-status shows 'M docs/specs/work-items/WI-545.md' (25 insertions: the SOL-003 ACs, focused tests, rollback, and cost sections) while manifest line 51 still declares WI-545 as 'KEEP | already on origin/main via PR #10; do not fork'. The diff also contains 'A docs/specs/planning-imports/wi-547/HEAD-meta.txt', which appears nowhere in the Files Planned table. The table is the plan's declared scope; a mechanical or human check comparing declared actions to the diff either false-passes (unlisted file) or false-fails (KEEP file with modifications), and a later child planner reading the manifest would not know WI-545's ACs were extended in this branch.",
+      "evidence": [
+        "docs/plans/2026-08-17-wi548-host-parity-plan/manifest.md:51",
+        "docs/plans/2026-08-17-wi548-host-parity-plan/manifest.md:34-61",
+        "git diff origin/main...HEAD --name-status (shows M docs/specs/work-items/WI-545.md and A docs/specs/planning-imports/wi-547/HEAD-meta.txt)"
+      ],
+      "proposed_fix": "Change the WI-545 row action to MODIFY with a note 'add SOL-003 planning ACs/tests/rollback/cost; implementation stays a later child', and add a row for docs/specs/planning-imports/wi-547/HEAD-meta.txt (CREATE, WI-547 reference snapshot)."
+    },
+    {
+      "id": "FAB-003",
+      "severity": "MEDIUM",
+      "lens": "release",
+      "claim": "The reconciliation document header still declares the plan base as origin/main a4d0efa3, a residual of the pre-rebase state that SOL-002 remediation missed.",
+      "analysis": "Reconciliation line 6 reads 'Base: origin/main a4d0efa3'. The manifest declares Base SHA 223436abe5124e6d9852551d249efd855759833b and the live merge-base with origin/main confirms 223436ab. a4d0efa3 is the pre-PR-#10 main that the WI-542/543 runtime was proven on, not the base of this plan. The body of the reconciliation was correctly rebased onto landed reality (sections 3, 4, 5), but a reader anchoring child dispositions to the header base would reconcile against a superseded main that lacks PR #10, PR #11 (WI-547), and PR #12.",
+      "evidence": [
+        "docs/specs/architecture/wi-548-reconciliation.md:6",
+        "docs/plans/2026-08-17-wi548-host-parity-plan/manifest.md:6",
+        "git merge-base HEAD origin/main == 223436abe5124e6d9852551d249efd855759833b"
+      ],
+      "proposed_fix": "Change the reconciliation Base line to origin/main 223436ab (post PR #10/#11/#12), optionally noting a4d0efa3 only as the historical SHA on which WI-542/543 runtime behavior was proven."
+    },
+    {
+      "id": "FAB-004",
+      "severity": "MEDIUM",
+      "lens": "authority",
+      "claim": "The review-log's last recorded independent verdict is fail (rubric 4) while its quality gate reports independent_sol_review PASS and terminal_state REVISED_AND_REVIEWED, with no post-remediation review round bound to the remediated tree.",
+      "analysis": "tier2 records verdict fail and rubric_score 4 from the pre-remediation tree. All eight findings are dispositioned ACCEPT and applied in 45843ad4, rounds_run stays 1, lens_rechecks is empty, and quality_gates.independent_sol_review says PASS. A consumer that reads the verdict field concludes the plan failed independent review; one that reads the gate concludes it passed. Neither field is bound to evidence that the remediated tree was re-examined. The bounded-review protocol permits terminal exit on full disposition, but the log as written leaves a contradictory authority record: the PASS gate is not backed by any recorded passing verdict.",
+      "evidence": [
+        "docs/plans/2026-08-17-wi548-host-parity-plan/review-log.yaml:32-37",
+        "docs/plans/2026-08-17-wi548-host-parity-plan/review-log.yaml:89-96",
+        "docs/plans/2026-08-17-wi548-host-parity-plan/sol-review.json:2-3"
+      ],
+      "proposed_fix": "Append a round-2 entry recording the post-remediation residual review (this Fable pass), with its verdict, rubric score, findings, and the commit it examined; rename or annotate the gate to 'independent_review_ran: PASS' versus 'independent_review_verdict', so verdict and gate cannot be read as contradicting."
+    },
+    {
+      "id": "FAB-005",
+      "severity": "LOW",
+      "lens": "determinism",
+      "claim": "The architecture document's ASCII dependency drawing shows WI-545, WI-549, and WI-550 feeding WI-552, contradicting the canonical hard edges everywhere else (WI-552 depends only on WI-551, WI-547, and WI-502).",
+      "analysis": "In the Dependency DAG figure, the connector line '+----+-------------+----------+----------+----> WI-552' joins the columns under WI-547, WI-545, WI-549, WI-550, and WI-551 into WI-552. The canonical DAG in the manifest handoff section, reconciliation section 3 ('after WI-551: WI-552'), and the WI-552 header ('Depends on: WI-551, WI-547, WI-502') give WI-552 only two in-plan predecessors. The prose is consistent; only the drawing over-constrains. An implementer trusting the figure would needlessly serialize WI-552 behind three independent WIs, delaying the WI-546 wave.",
+      "evidence": [
+        "docs/specs/architecture/wi-548-portable-outcome-capability-adapters.md:90-103",
+        "docs/specs/work-items/WI-552.md:10",
+        "docs/specs/architecture/wi-548-reconciliation.md:70-79",
+        "docs/plans/2026-08-17-wi548-host-parity-plan/manifest.md:208-215"
+      ],
+      "proposed_fix": "Redraw the ASCII figure so only WI-551 (and the landed WI-547 / existing WI-502 inputs) feed WI-552, with WI-545/549/550/553 feeding only WI-546, matching the canonical hard-edge list."
+    }
+  ]
+}

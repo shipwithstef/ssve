@@ -3,19 +3,17 @@ review_log:
   wi: WI-548
   mode: planning_only
   topology:
-    requested: Codex Sol 5.6 high through cursor-agent
+    requested: Sol 5.6 High then Fable 5 thinking-high through cursor-agent
     detected_host: grok
-    transport: cursor-agent
-    model: gpt-5.6-sol-high
-    reviewer_family: openai
+    transports:
+      - { model: gpt-5.6-sol-high, family: openai, command: "cursor-agent --print --mode ask --model gpt-5.6-sol-high" }
+      - { model: claude-fable-5-thinking-high, family: anthropic, command: "cursor-agent --print --mode ask --model claude-fable-5-thinking-high" }
     independent: true
-    same_family_as_orchestrator: false
     paid_provider_invoked: true
     silent_remap_of_work_to_claude: false
-    command: cursor-agent --print --mode ask --output-format text --model gpt-5.6-sol-high
     artifacts:
       - docs/plans/2026-08-17-wi548-host-parity-plan/sol-review.json
-      - docs/plans/2026-08-17-wi548-host-parity-plan/sol-review-launch.txt
+      - docs/plans/2026-08-17-wi548-host-parity-plan/fable-review.json
   tier1:
     script: scripts/verify-plan-mechanical.sh
     exit_code: 0
@@ -26,7 +24,7 @@ review_log:
       wi_547_present: true
   self_review_passes: 1
   self_review_digest: 47c06223304fd641fe51a63ac2b0ea7fdcc386d948ec8f1ba12d4a0b067f8411
-  rounds_run: 1
+  rounds_run: 2
   unresolved_critical: 0
   remaining_high: 0
   tier2:
@@ -87,10 +85,33 @@ review_log:
       decision: ACCEPT
       justification: Added WI-550 transition matrix mapping each completion consumer to SHA and required identities.
   lens_rechecks: []
+  fable_round:
+    reviewer: claude-fable-5-thinking-high
+    reviewer_family: anthropic
+    independent: true
+    rubric_score: 7
+    verdict: pass
+    findings_source: docs/plans/2026-08-17-wi548-host-parity-plan/fable-review.json
+    examined_commit: 80b03a368a8120ceeaa48cdbff0f0d064ed3c4f8
+    findings:
+      - { id: FAB-001, severity: MEDIUM, disposition: ACCEPT }
+      - { id: FAB-002, severity: MEDIUM, disposition: ACCEPT }
+      - { id: FAB-003, severity: MEDIUM, disposition: ACCEPT }
+      - { id: FAB-004, severity: MEDIUM, disposition: ACCEPT }
+      - { id: FAB-005, severity: LOW, disposition: ACCEPT }
+    responses:
+      - { finding_id: FAB-001, decision: ACCEPT, justification: INDEX, reconciliation, and SOLUTION-CONFIDENCE now list 545/547/549/550/551/552. }
+      - { finding_id: FAB-002, decision: ACCEPT, justification: WI-545 is MODIFY; planning-imports/wi-547/HEAD-meta.txt is listed CREATE. }
+      - { finding_id: FAB-003, decision: ACCEPT, justification: Reconciliation base is origin/main 223436ab. }
+      - { finding_id: FAB-004, decision: ACCEPT, justification: This round-2 Fable pass is recorded separately from the Sol fail verdict. Gates distinguish independent_review_ran vs independent_review_verdict. }
+      - { finding_id: FAB-005, decision: ACCEPT, justification: ASCII DAG now has WI-552 depend only on WI-551 plus landed WI-547/WI-502. }
   terminal_state: REVISED_AND_REVIEWED
   quality_gates:
     branch_based_on_origin_main: PASS
     wi_547_path_exists: PASS
     mechanical_plan: PASS
-    independent_sol_review: PASS
-  commit_sha: 45843ad429c1784dec20bea6352d2a9dee4ff65c
+    independent_review_ran: PASS
+    independent_review_verdict:
+      sol: fail
+      fable: pass
+  commit_sha: pending-fable-remediation

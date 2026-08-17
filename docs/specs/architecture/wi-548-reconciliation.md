@@ -3,7 +3,7 @@
 **Status:** BASELINED for planning PR
 **Date:** 2026-08-17
 **Planning WI:** WI-548
-**Base:** `origin/main` `a4d0efa3`
+**Base:** `origin/main` `223436ab` (post PR #10/#11/#12). `a4d0efa3` is only the historical SHA where WI-542/543 runtime was proven.
 
 ## 1. Disposition table
 
@@ -16,7 +16,7 @@ Every listed proposal, WI, and extra discovered item has exactly one disposition
 | `proposals/2026-08-17-framework-improvement-autonomous-restart-boundary-continuation.md` | implement separately | WI-552 | Lifecycle controller; consumes WI-551 + WI-547 + WI-502 |
 | WI-544 Kimi `/tmp/fake` | operational follow-up | live `~/.kimi/config.toml` | Not a framework code change; do not fold into 542/543 |
 | WI-545 Grok/Cursor Stop adapters | implement separately | WI-545 | Small executable-mode repair; precedes Stop fixtures |
-| WI-546 capability-aware parity | implement separately as integration wave | WI-546 | After 545/547/549/550; live Grok/Cursor/AGY acceptance |
+| WI-546 capability-aware parity | implement separately as integration wave | WI-546 | After 545/547/549/550/551/552; live Grok/Cursor/AGY acceptance |
 | WI-547 durable review evidence | accepted historical state (landed during this planning run) | PR #11 squash `7bca62f3`; closeout PR #12 `ac04fbb6` | Foundation is on `origin/main`. This run verified `check-chain-receipts --sha f27a143a` → `ok:true` from `.worktrees/verify-WI-547-on-main`. Do not duplicate. |
 | PR #10 + WI-542/WI-543 closeout | accepted historical state | PR #10 merged as `223436ab` | Closeout landed; WI-542/WI-543 are VERIFIED-L3 |
 | Shared chain-policy for linked worktrees | implement separately | WI-549 | Absorbs WI-358 follow-up |

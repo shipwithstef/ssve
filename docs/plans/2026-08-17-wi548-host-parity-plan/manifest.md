@@ -48,7 +48,7 @@ Constraints:
 | `docs/specs/work-items/WI-551.md` | CREATE | dispatch resolver |
 | `docs/specs/work-items/WI-552.md` | CREATE | continuation |
 | `docs/specs/work-items/WI-553.md` | CREATE | risk-triggered contracts |
-| `docs/specs/work-items/WI-545.md` | KEEP | already on `origin/main` via PR #10; do not fork |
+| `docs/specs/work-items/WI-545.md` | MODIFY | add planning ACs/tests/rollback/cost; implementation stays a later child |
 | `docs/specs/work-items/WI-546.md` | CREATE | imported local planning artifact |
 | `docs/specs/work-items/WI-547.md` | KEEP | already on `origin/main` via PR #11/#12; do not fork |
 | `docs/specs/work-items/INDEX.md` | MODIFY | add 546, 548–553; keep landed 542/543/545/547 rows |
@@ -59,6 +59,8 @@ Constraints:
 | `docs/plans/2026-08-17-wi548-host-parity-plan/review-log.yaml` | CREATE | plan review log |
 | `docs/plans/2026-08-17-wi548-host-parity-plan/sol-review.json` | CREATE | Cursor Agent Sol 5.6 High findings |
 | `docs/plans/2026-08-17-wi548-host-parity-plan/sol-review-launch.txt` | CREATE | launch command receipt |
+| `docs/plans/2026-08-17-wi548-host-parity-plan/fable-review.json` | CREATE | Cursor Agent Fable 5 thinking-high findings |
+| `docs/specs/planning-imports/wi-547/HEAD-meta.txt` | CREATE | WI-547 landed-reference snapshot |
 
 §3a Changeset Blueprint: SKIPPED (`mode=inline`, planning docs already authored in this session).
 
