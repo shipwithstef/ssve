@@ -42,7 +42,12 @@ if (!sessionId) process.exit(0);
 
 let outcome;
 try {
-  outcome = isPhaseForbiddenForSession({ sessionId, skill: skillName, cwd: call.cwd || process.cwd() });
+  outcome = isPhaseForbiddenForSession({
+    sessionId,
+    skill: skillName,
+    cwd: call.cwd || process.cwd(),
+    continuationToken: process.env.SVC_CONTINUATION_TOKEN || null,
+  });
 } catch (error) {
   // SOL-E005: continuation children fail closed when the ledger is unreadable.
   // Unrelated sessions still fail open by absence.

@@ -185,14 +185,14 @@ function reconcileResponsibilityA(cp) {
   if (!shas.length) return { unaccounted: [], main, receipt_check: { classification: "success", duration_ms: discovered.result.duration_ms, mode: "empty" } };
   if (cp.last_reconciled_sha) {
     const range = `${cp.last_reconciled_sha}..origin/${main}`;
-    const { result, parsed } = checkReceipts(["--range", range], shas);
+    const { result, parsed } = checkReceipts(["--range", range, "--consumer", "reconcile"], shas);
     return { unaccounted: missingFromReceiptResult(parsed), main, receipt_check: { classification: result.classification, duration_ms: result.duration_ms, mode: "range", range } };
   }
   const rows = [];
   let duration = 0;
   let classification = "success";
   for (const sha of shas) {
-    const checked = checkReceipts(["--sha", sha], [sha]);
+    const checked = checkReceipts(["--sha", sha, "--consumer", "reconcile"], [sha]);
     rows.push(...missingFromReceiptResult(checked.parsed));
     duration += checked.result.duration_ms;
     if (!checked.result.ok) classification = checked.result.classification;

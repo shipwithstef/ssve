@@ -345,7 +345,8 @@ assert.equal(closed.baton.status, 'closed_pass');
 const reconsumeSame = consume({ wi, cwd: tmp, result: validResult });
 assert.equal(reconsumeSame.action, 'already-closed');
 const afterCloseOutcome = isPhaseForbiddenForSession({ sessionId: childSessionId, skill: 'plan-changeset', cwd: tmp });
-assert.equal(afterCloseOutcome.forbidden, false, 'a closed baton no longer scopes its former child session');
+assert.equal(afterCloseOutcome.forbidden, true, 'SOL-R2-002: an identified continuation child cannot run forbidden phases once the launched baton is gone');
+assert.equal(afterCloseOutcome.reason, 'no-matching-baton');
 
 // ---------------------------------------------------------------------------
 // AC-552-9: reconcile on a closed baton is a terminal, crash-safe no-op —
@@ -354,6 +355,14 @@ assert.equal(afterCloseOutcome.forbidden, false, 'a closed baton no longer scope
 // ---------------------------------------------------------------------------
 const reconcileClosed = reconcile({ wi, cwd: tmp });
 assert.equal(reconcileClosed.action, 'done');
+
+const missingLedger = isPhaseForbiddenForSession({
+  sessionId: 'svc-continuation-missing-ledger',
+  skill: 'plan-changeset',
+  cwd: path.join(tmp, 'no-such-child-root'),
+});
+assert.equal(missingLedger.forbidden, true, 'SOL-R2-002: identified child with missing ledger is denied');
+assert.equal(missingLedger.reason, 'ledger-missing');
 
 const wiGhost = 'WI-9555';
 createBaton({

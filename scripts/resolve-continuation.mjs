@@ -569,10 +569,23 @@ export function status(options = {}) {
 // continuation ledger for a session currently bound to a launched-but-not-
 // closed baton, and denies the skill if it is outside the delegated scope.
 // ---------------------------------------------------------------------------
-export function isPhaseForbiddenForSession({ sessionId, skill, cwd = process.cwd() } = {}) {
+export function isPhaseForbiddenForSession({ sessionId, skill, cwd = process.cwd(), continuationToken = null } = {}) {
   if (!sessionId || !skill) return { forbidden: false };
+  const identifiedChild = Boolean(continuationToken || process.env.SVC_CONTINUATION_TOKEN)
+    || String(sessionId).startsWith('svc-continuation-');
   const root = ledgerRoot(cwd);
-  if (!fs.existsSync(root)) return { forbidden: false };
+  if (!fs.existsSync(root)) {
+    if (identifiedChild && DEFAULT_FORBIDDEN_PHASES.includes(skill)) {
+      return {
+        forbidden: true,
+        wi: null,
+        forbidden_phases: DEFAULT_FORBIDDEN_PHASES,
+        reason: 'ledger-missing',
+      };
+    }
+    return { forbidden: false };
+  }
+  let matched = null;
   for (const file of fs.readdirSync(root)) {
     if (!file.endsWith('.ledger.jsonl')) continue;
     const wi = file.replace(/\.ledger\.jsonl$/, '');
@@ -580,9 +593,19 @@ export function isPhaseForbiddenForSession({ sessionId, skill, cwd = process.cwd
     if (!baton || baton.status !== 'launched') continue;
     const active = latestLaunch(baton);
     if (!active || active.session_id !== sessionId) continue;
+    matched = { wi, baton };
     if (baton.forbidden_phases.includes(skill)) {
       return { forbidden: true, wi, forbidden_phases: baton.forbidden_phases };
     }
+    return { forbidden: false, wi, forbidden_phases: baton.forbidden_phases };
+  }
+  if (!matched && identifiedChild && DEFAULT_FORBIDDEN_PHASES.includes(skill)) {
+    return {
+      forbidden: true,
+      wi: null,
+      forbidden_phases: DEFAULT_FORBIDDEN_PHASES,
+      reason: 'no-matching-baton',
+    };
   }
   return { forbidden: false };
 }

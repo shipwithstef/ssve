@@ -53,14 +53,14 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     if [[ -n "$MAIN_REF" ]]; then
       RANGE="$MAIN_REF..$local_sha"
     else
-      RESULT="$(node scripts/check-chain-receipts.mjs --sha "$local_sha" 2>/dev/null)"
+      RESULT="$(node scripts/check-chain-receipts.mjs --sha "$local_sha" --consumer push 2>/dev/null)"
     fi
   else
     RANGE="$remote_sha..$local_sha"
   fi
 
   if [[ -n "${RANGE:-}" ]]; then
-    RESULT="$(node scripts/check-chain-receipts.mjs --range "$RANGE" 2>/dev/null)"
+    RESULT="$(node scripts/check-chain-receipts.mjs --range "$RANGE" --consumer push 2>/dev/null)"
   fi
   if [[ -n "${RANGE:-}" ]] && framework_maintenance_range "$RANGE"; then
     echo "svc chain: framework maintenance receipt exception for $RANGE" >&2

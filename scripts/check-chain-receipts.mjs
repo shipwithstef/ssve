@@ -59,6 +59,8 @@ const CONSUMER_TYPES = new Set([
   "stop",
   "verify-promotion",
   "final-report",
+  "push",
+  "reconcile",
 ]);
 const CONSUMER_REQUIRED_TYPES = {
   "execute-changeset": ["plan-manifest", "review-plan", "exec-record"],
@@ -66,12 +68,32 @@ const CONSUMER_REQUIRED_TYPES = {
   "audit-implementation": ["exec-record", "audit-implementation"],
   "verify-promotion": ["verify-promotion"],
 };
-// SOL-E001: finalization consumers cannot be authorized by a gitignored mirror.
+// SOL-E001 / SOL-R2-001: finalization and land consumers cannot be authorized
+// by a gitignored mirror. push/reconcile are the L2/L3 callers that previously
+// invoked the checker with no consumer and inherited the development fallback.
 const NOTE_REQUIRED_CONSUMERS = new Set([
   "stop",
   "verify-promotion",
   "final-report",
+  "push",
+  "reconcile",
 ]);
+const PASSING_VERDICTS = {
+  "review-plan": new Set(["pass", "pass-with-acks"]),
+  "review-exec": new Set(["pass", "pass-with-acks"]),
+  "audit-implementation": new Set(["pass", "pass-with-acks"]),
+  "verify-promotion": new Set(["pass"]),
+};
+const EXPECTED_STAGE_TYPES = {
+  "quick-fix": ["quick-fix"],
+  plan: ["plan-manifest"],
+  "review-plan": ["plan-manifest", "review-plan"],
+  exec: ["plan-manifest", "review-plan", "exec-record"],
+  "review-exec": ["plan-manifest", "review-plan", "exec-record", "review-exec"],
+  audit: REQUIRED_TYPES_FULL,
+  "verify-promotion": ["verify-promotion"],
+  full: REQUIRED_TYPES_FULL,
+};
 const RANGE_CONCURRENCY_MAX = 16;
 const RANGE_WORKER_TIMEOUT_MIN_MS = 1_000;
 const RANGE_WORKER_TIMEOUT_MAX_MS = 10_000;
@@ -262,6 +284,7 @@ export function checkShaInWorker(sha, policy = {}) {
   const childArgs = [SCRIPT_FILE, "--sha", sha];
   if (policy.wi) childArgs.push("--wi", policy.wi);
   if (policy.consumer) childArgs.push("--consumer", policy.consumer);
+  if (policy.expectedStage) childArgs.push("--expected-stage", policy.expectedStage);
 
   return new Promise((resolveResult) => {
     execFile(
@@ -526,21 +549,27 @@ function commitIsQuickFix(entriesByType, wi = null) {
   return Boolean(match?.receipt?.eligible === true);
 }
 
-function requiredTypesForStop(entriesByType) {
-  const has = (type) => selectReceipts(entriesByType, type).length > 0;
-  if (has("quick-fix")) return ["quick-fix"];
-  if (has("verify-promotion")) return ["verify-promotion"];
-  if (has("audit-implementation")) return REQUIRED_TYPES_FULL;
-  if (has("review-exec")) return ["plan-manifest", "review-plan", "exec-record", "review-exec"];
-  if (has("exec-record")) return ["plan-manifest", "review-plan", "exec-record"];
-  if (has("review-plan")) return ["plan-manifest", "review-plan"];
-  return ["plan-manifest"];
+function requiredTypesForStop(entriesByType, options = {}) {
+  const expectedStage = options.expectedStage || null;
+  if (expectedStage) {
+    const mapped = EXPECTED_STAGE_TYPES[expectedStage];
+    if (!mapped) return null;
+    return mapped;
+  }
+  if (commitIsQuickFix(entriesByType, options.wi || null)) return ["quick-fix"];
+  // SOL-R2-004: do not infer the required stage from whichever leftover
+  // receipts happen to exist. Terminal Stop/final-report require the full
+  // envelope unless the caller names an explicit --expected-stage.
+  return REQUIRED_TYPES_FULL;
 }
 
-function requiredTypesForConsumer(consumer, entriesByType) {
+function requiredTypesForConsumer(consumer, entriesByType, options = {}) {
   if (!consumer) return null;
+  if (consumer === "stop" || consumer === "final-report") {
+    return requiredTypesForStop(entriesByType, options);
+  }
+  if (consumer === "push" || consumer === "reconcile") return null;
   if (consumer in CONSUMER_REQUIRED_TYPES) return CONSUMER_REQUIRED_TYPES[consumer];
-  if (consumer === "stop" || consumer === "final-report") return requiredTypesForStop(entriesByType);
   return null;
 }
 
@@ -691,6 +720,10 @@ function validateReceipt(receiptType, receipt) {
     const evidenceReasons = verifyReviewerEvidence({ root: join(SCRIPT_DIR, ".."), reviewKind: receiptType === "review-plan" ? "plan" : "exec", body: receipt });
     if (evidenceReasons.length) return { valid: false, reasons: evidenceReasons };
   }
+  const allowedVerdicts = PASSING_VERDICTS[receiptType];
+  if (allowedVerdicts && Object.prototype.hasOwnProperty.call(receipt, "verdict") && !allowedVerdicts.has(receipt.verdict)) {
+    return { valid: false, reasons: [`${receiptType} verdict=${JSON.stringify(receipt.verdict)} is not authorizing evidence`] };
+  }
   return { valid: true, reasons: [] };
 }
 
@@ -716,6 +749,7 @@ function checkSha(sha, options = {}) {
     receipt_source: source,
     ...(options.wi ? { wi: options.wi } : {}),
     ...(consumer ? { consumer } : {}),
+    ...(options.expectedStage ? { expected_stage: options.expectedStage } : {}),
   };
 }
 
@@ -765,7 +799,10 @@ function checkShaAgainstReceipts(sha, envelope, options = {}) {
     const v = validateRetroactiveAttestation(sha, receiptEntries["retroactive-attestation"]);
     return { sha, ok: v.valid, missing: v.reasons, type: v.valid ? "retroactive-attestation" : "invalid" };
   }
-  const consumerRequiredTypes = requiredTypesForConsumer(consumer, entriesByType);
+  const consumerRequiredTypes = requiredTypesForConsumer(consumer, entriesByType, {
+    expectedStage: options.expectedStage || null,
+    wi,
+  });
   const allowQuickFixShortcut = !consumerRequiredTypes || (
     consumerRequiredTypes.length === 1 && consumerRequiredTypes[0] === "quick-fix"
   );
@@ -943,6 +980,7 @@ async function main() {
   let sawPr = false;
   let wi = null;
   let consumer = null;
+  let expectedStage = null;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--sha") {
@@ -963,6 +1001,8 @@ async function main() {
       wi = args[++i];
     } else if (args[i] === "--consumer") {
       consumer = args[++i];
+    } else if (args[i] === "--expected-stage") {
+      expectedStage = args[++i];
     }
   }
 
@@ -972,8 +1012,11 @@ async function main() {
   if (consumer && !CONSUMER_TYPES.has(consumer)) {
     throw new RangeConfigError(`--consumer must be one of: ${[...CONSUMER_TYPES].join(", ")}`);
   }
+  if (expectedStage && !EXPECTED_STAGE_TYPES[expectedStage]) {
+    throw new RangeConfigError(`--expected-stage must be one of: ${Object.keys(EXPECTED_STAGE_TYPES).join(", ")}`);
+  }
   if (shas.length === 0) {
-    console.error("Usage: check-chain-receipts.mjs --sha <sha> | --range <base>..<head> | --pr <n> [--wi WI-###] [--consumer execute-changeset|review-exec|audit-implementation|stop|verify-promotion|final-report]");
+    console.error("Usage: check-chain-receipts.mjs --sha <sha> | --range <base>..<head> | --pr <n> [--wi WI-###] [--consumer execute-changeset|review-exec|audit-implementation|stop|verify-promotion|final-report|push|reconcile] [--expected-stage STAGE]");
     process.exit(1);
   }
 
@@ -997,10 +1040,10 @@ async function main() {
     checkedResults = await checkShasWithPool(
       shasToCheck,
       concurrency,
-      (sha) => checkShaInWorker(sha, { timeout, wi, consumer }),
+      (sha) => checkShaInWorker(sha, { timeout, wi, consumer, expectedStage }),
     );
   } else {
-    checkedResults = shasToCheck.map((sha) => checkSha(sha, { wi, consumer }));
+    checkedResults = shasToCheck.map((sha) => checkSha(sha, { wi, consumer, expectedStage }));
   }
   // Cache hits are only admitted from NOTE-sourced complete receipts. Keep
   // the public result byte-stable across cold and warm runs so callers do not

@@ -102,15 +102,7 @@ const readVerificationEnvelope = (repo, sha) => {
     return { envelope: JSON.parse(runGit(repo, ["notes", "--ref=svc-receipts", "show", sha])), source: "refs/notes/svc-receipts" };
   }
   catch {
-    const envelope = buildMirrorEnvelope(repo, sha);
-    if (envelope) {
-      const mirrorDir = path.join(repo, ".svc", "receipts", sha.slice(0, 7));
-      const compatPath = path.join(mirrorDir, "verify-promotion.json");
-      return { envelope, source: fs.existsSync(compatPath) ? compatPath : mirrorDir };
-    }
-    const mirror = path.join(repo, ".svc", "receipts", sha.slice(0, 7), "verify-promotion.json");
-    try { return { envelope: { "verify-promotion": JSON.parse(fs.readFileSync(mirror, "utf8")) }, source: mirror }; }
-    catch { fail("consolidated receipt note and development mirror are missing or invalid"); }
+    fail("verify-promotion requires a note-sourced envelope; gitignored mirrors are not authority");
   }
 };
 const validVerificationReceipt = (receipt, wi, sha) => {
