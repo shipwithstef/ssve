@@ -19,7 +19,7 @@ done
 printf '%s  %s\n' \
   abb5f3074680a6d8754e6f9bdaf38225a29189efe9af14a296fd354a2cdde04f scripts/quick-fix-eligibility.mjs \
   6d4dc7dafe8752d6569025df1c5457524ae9178b3beb1f3d636ecec208e30143 scripts/classify-change-risk.mjs \
-  bc1d233ea75265ffff39cc80a96b59812024a4ddeb8192c554c18c692e0ad4f1 hooks/git/pre-commit.d/20-quick-fix-eligibility | sha256sum -c -
+  cf549b9e572acfc21e066c5defc82bb2eb7db14661e6e46a336b32f660f74e32 hooks/git/pre-commit.d/20-quick-fix-eligibility | sha256sum -c -
 
 grep -q '^  DEPRECATED (retired as a lane)' skills/quick-fix/SKILL.md
 echo 'PASS: quick-fix is compatibility-only and detector bytes are unchanged'

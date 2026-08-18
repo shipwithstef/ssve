@@ -16,9 +16,9 @@ import {
   shouldAdvanceWatcher,
   validateReceiptChildResult,
 } from "./lib/reconcile-core.mjs";
+import { resolveChainPolicy } from "./lib/chain-policy.mjs";
 
 const CHECKPOINT_PATH = process.env.SVC_RECONCILE_CHECKPOINT_PATH || ".svc/reconcile-checkpoint.json";
-const POLICY_PATH = process.env.SVC_RECONCILE_POLICY_PATH || ".svc/chain-policy.json";
 const GH_AUTH_RECOVERY_PATH = process.env.SVC_GH_AUTH_RECOVERY_PATH || ".svc/runtime/gh-auth-restore.json";
 const DRIVE_STATE_ROOT = process.env.SVC_RECONCILE_DRIVE_ROOT || ".svc/reconcile-drive";
 const CHILD_TIMEOUT_MS = Math.min(Number(process.env.SVC_RECONCILE_CHILD_TIMEOUT_MS || 10_000), 20_000);
@@ -139,8 +139,17 @@ function noteHasVerifyPromotion(noteText) {
   catch { return false; }
 }
 
+// WI-549: chain-policy mode is resolved through the single shared resolver
+// (SVC_CHAIN_POLICY -> $(git-common-dir)/svc-chain-policy.json ->
+// ~/.svc/chain-policy.json -> fail-closed "refuse"). Missing or unreadable
+// policy at every tier, or a worktree-local file that conflicts with the
+// shared one, is surfaced to stderr and NEVER silently downgraded to "warn".
 function getMode() {
-  return readJson(POLICY_PATH, { mode: "warn" }).mode || "warn";
+  const resolved = resolveChainPolicy();
+  if (resolved.source !== "shared" && resolved.source !== "home" && resolved.source !== "env") {
+    console.error(`svc-reconcile: chain-policy ${resolved.reason}`);
+  }
+  return resolved.mode;
 }
 
 function readCheckpoint() {
