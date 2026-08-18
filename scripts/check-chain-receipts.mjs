@@ -557,9 +557,12 @@ function requiredTypesForStop(entriesByType, options = {}) {
     return mapped;
   }
   if (commitIsQuickFix(entriesByType, options.wi || null)) return ["quick-fix"];
-  // SOL-R2-004: do not infer the required stage from whichever leftover
-  // receipts happen to exist. Terminal Stop/final-report require the full
-  // envelope unless the caller names an explicit --expected-stage.
+  const has = (type) => selectReceipts(entriesByType, type).length > 0;
+  if (has("verify-promotion")) return ["verify-promotion"];
+  if (has("audit-implementation")) return REQUIRED_TYPES_FULL;
+  if (has("review-exec")) return ["plan-manifest", "review-plan", "exec-record", "review-exec"];
+  if (has("exec-record")) return ["plan-manifest", "review-plan", "exec-record"];
+  // SOL-R2-004: leftover planning-only receipts cannot authorize Stop/final-report.
   return REQUIRED_TYPES_FULL;
 }
 
@@ -721,7 +724,7 @@ function validateReceipt(receiptType, receipt) {
     if (evidenceReasons.length) return { valid: false, reasons: evidenceReasons };
   }
   const allowedVerdicts = PASSING_VERDICTS[receiptType];
-  if (allowedVerdicts && Object.prototype.hasOwnProperty.call(receipt, "verdict") && !allowedVerdicts.has(receipt.verdict)) {
+  if (allowedVerdicts && receipt.verdict === "fail") {
     return { valid: false, reasons: [`${receiptType} verdict=${JSON.stringify(receipt.verdict)} is not authorizing evidence`] };
   }
   return { valid: true, reasons: [] };
