@@ -196,6 +196,8 @@ After the manifest, BEFORE handoff: walk the task graph in dependency order agai
 
 Plans face structured opposition before execution: mechanical checks (free), then `review-plan` (primary adversarial, structured YAML findings), convergence loop until residual ≤ MEDIUM. Product-sensitive, parallel, deletion-bearing, or claim-heavy plans place `plan-contract.json` beside the manifest; `verify-plan-mechanical.sh` consumes it through `scripts/validate-plan-contract.mjs` and rejects overlapping ownership, unsafe reversible writers, unbounded absence/completeness claims, and executables without named consumers. Self-review prompts + check catalog: `references/adversarial-review-detail.md`.
 
+**Risk-triggered contract sections (WI-553):** if `diagnose-bug`, `write-spec`, or this skill's own classification declared any AC-553-1 flag (`runtime_concurrency`, `external_state_writer`, `config_schema_migration`, `lossless_rmw`, `idempotent_rewriter`, `cross_runtime_integration` — see `scripts/lib/risk-flags.mjs`), the manifest MUST carry a `**Risk Flags:**` line naming them AND `plan-contract.json` MUST declare the same flags in its `risk_flags` array with the matching section(s) filled in. Unmatched plans (no flags) add nothing — `plan-contract.json` grows only matched sections (AC-553-3). Section contract, required fields, and the exact WI-542 shapes each section mechanically rejects: `references/plan-contract-risk-sections.md`.
+
 ### Decision Logging
 
 Log the plan as a `mechanical` decision (manifest path = the plan) and the G2 outcome to `.svc/pipeline-decisions.jsonl`.

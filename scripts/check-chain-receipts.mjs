@@ -78,6 +78,49 @@ const NOTE_REQUIRED_CONSUMERS = new Set([
   "push",
   "reconcile",
 ]);
+// SOL-HARNESS-005: v1/v2 review envelopes are grandfathered only for SHAs
+// that are ancestors of the WI-548 land (inclusive). Newer commits in this
+// repo must carry schema_version >= 3 so a synthetic v1 note cannot skip
+// reviewer_evidence. Isolated fixture SHAs that are not in this object
+// store keep the historical grandfather so range-worker tests stay hermetic.
+const REVIEW_V3_CUTOFF_SHA = "30381c5c5e6635a102944834e04319063824dc53";
+
+export function reviewEnvelopeRequiresSchemaV3(sha, options = {}) {
+  const cutoff = options.cutoff || process.env.SVC_REVIEW_V3_CUTOFF_SHA || REVIEW_V3_CUTOFF_SHA;
+  const repo = options.gitCwd || join(SCRIPT_DIR, "..");
+  if (!sha || !/^[0-9a-f]{7,40}$/i.test(String(sha))) return true;
+  const cutoffType = (() => {
+    try {
+      return execFileSync("git", ["-C", repo, "cat-file", "-t", cutoff], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+      }).trim();
+    } catch {
+      return null;
+    }
+  })();
+  if (cutoffType !== "commit") return false;
+  const shaType = (() => {
+    try {
+      return execFileSync("git", ["-C", repo, "cat-file", "-t", sha], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+      }).trim();
+    } catch {
+      return null;
+    }
+  })();
+  if (shaType !== "commit") return false;
+  try {
+    execFileSync("git", ["-C", repo, "merge-base", "--is-ancestor", sha, cutoff], {
+      stdio: "ignore",
+    });
+    return false;
+  } catch {
+    return true;
+  }
+}
+
 const PASSING_VERDICTS = {
   "review-plan": new Set(["pass", "pass-with-acks"]),
   "review-exec": new Set(["pass", "pass-with-acks"]),
@@ -672,7 +715,7 @@ function loadSchema(receiptType) {
   catch (e) { return null; }
 }
 
-function validateReceipt(receiptType, receipt) {
+function validateReceipt(receiptType, receipt, sha = null) {
   // Minimal in-process validator: checks required keys + receipt_type.
   // Full JSON Schema validation can be plugged in later; for now,
   // verify required fields per the schema's "required" array.
@@ -719,9 +762,19 @@ function validateReceipt(receiptType, receipt) {
       return { valid: false, reasons: [`diff_hash must be a 64-hex sha256 (got ${JSON.stringify(receipt.diff_hash)})`] };
     }
   }
-  if ((receiptType === "review-plan" || receiptType === "review-exec") && Number(receipt.schema_version) >= 3) {
-    const evidenceReasons = verifyReviewerEvidence({ root: join(SCRIPT_DIR, ".."), reviewKind: receiptType === "review-plan" ? "plan" : "exec", body: receipt });
-    if (evidenceReasons.length) return { valid: false, reasons: evidenceReasons };
+  if (receiptType === "review-plan" || receiptType === "review-exec") {
+    if (reviewEnvelopeRequiresSchemaV3(sha) && Number(receipt.schema_version) < 3) {
+      return {
+        valid: false,
+        reasons: [
+          `${receiptType} schema_version ${receipt.schema_version ?? "missing"} is below 3; v1/v2 review envelopes are grandfathered only for ancestors of ${REVIEW_V3_CUTOFF_SHA.slice(0, 7)}`,
+        ],
+      };
+    }
+    if (Number(receipt.schema_version) >= 3) {
+      const evidenceReasons = verifyReviewerEvidence({ root: join(SCRIPT_DIR, ".."), reviewKind: receiptType === "review-plan" ? "plan" : "exec", body: receipt });
+      if (evidenceReasons.length) return { valid: false, reasons: evidenceReasons };
+    }
   }
   const allowedVerdicts = PASSING_VERDICTS[receiptType];
   if (allowedVerdicts && receipt.verdict === "fail") {
@@ -953,7 +1006,7 @@ function checkShaAgainstReceipts(sha, envelope, options = {}) {
   // All required receipts present; validate each (the resolved tier's set)
   const invalid = [];
   for (const t of requiredTypes) {
-    const v = validateReceipt(t, receiptEntries[t]);
+    const v = validateReceipt(t, receiptEntries[t], sha);
     if (!v.valid) invalid.push(`${t}: ${v.reasons.join("; ")}`);
   }
   return {

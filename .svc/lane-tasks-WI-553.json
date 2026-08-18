@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "wi": "WI-553",
+  "lane": "framework",
+  "status": "in_progress",
+  "created": "2026-08-17T22:38:33.228Z",
+  "flags": [],
+  "mid_task_hints": [
+    {
+      "raw": "but why do you keep stopping I clearly requested all the thing this should be a /goal where each skill is a task in sequence until all is done",
+      "normalized_intent": "treat remaining work as an end_to_end goal: review-exec then audit then receipts then land then parent closeout; do not stop at Next",
+      "classification": "method-correction",
+      "method_swap": "end_to_end sequential skill chain instead of advisory Next trailer",
+      "timestamp": "2026-08-18T11:45:30Z"
+    }
+  ],
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "improve-framework",
+      "subject": "WI-553: risk-triggered plan/execution contracts and reviewer remediations",
+      "status": "completed",
+      "blocked_by": [],
+      "completed_at": "2026-08-18T11:37:00.000Z",
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-08-17T22:38:33.228Z",
+        "loaded_via": "manual",
+        "completed_at": "2026-08-18T11:37:00.000Z"
+      },
+      "notes": "Implementation + HIGH remediations at d97ae473. 27/27 risk-triggered fixtures pass."
+    },
+    {
+      "id": 2,
+      "skill": "review-exec",
+      "subject": "review-exec: self-review + Cursor Fable High independent of d97ae473",
+      "status": "in_progress",
+      "blocked_by": [1],
+      "metadata": { "skill": "review-exec" },
+      "notes": "Owner-requested independent station: Cursor claude-fable-5-thinking-high, fast off. Self-review written to docs/specs/reviews/wi553-exec-self-grok-high-r3.json."
+    },
+    {
+      "id": 3,
+      "skill": "audit-implementation",
+      "subject": "audit-implementation of WI-553 remediations vs AC-553-1..7 and closed HIGH findings",
+      "status": "pending",
+      "blocked_by": [2],
+      "metadata": { "skill": "audit-implementation" }
+    },
+    {
+      "id": 4,
+      "skill": "land-changeset",
+      "subject": "land-changeset: push, PR, squash-merge WI-553 via merge-pr-with-review-receipt",
+      "status": "pending",
+      "blocked_by": [3],
+      "metadata": { "skill": "land-changeset" }
+    },
+    {
+      "id": 5,
+      "skill": "verify-promotion",
+      "subject": "verify-promotion G7 for 553 squash + WI-548 parent closeout",
+      "status": "pending",
+      "blocked_by": [4],
+      "metadata": { "skill": "verify-promotion" }
+    }
+  ]
+}

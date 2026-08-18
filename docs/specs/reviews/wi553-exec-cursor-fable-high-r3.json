@@ -1,0 +1,95 @@
+{
+  "review_kind": "exec",
+  "reviewer": "claude-fable-5-thinking-high",
+  "reviewer_family": "anthropic",
+  "host": "cursor",
+  "fast": false,
+  "independent": true,
+  "examined_sha": "d97ae473f3585ac0cf5c4de9311eb3a22af7720a",
+  "base": "50a3440a",
+  "verdict": "pass_with_findings",
+  "checked": [
+    "HEAD confirmed d97ae473f3585ac0cf5c4de9311eb3a22af7720a via .git/worktrees/feature-WI-553-risk-triggered-contracts HEAD->refs/heads ref (shell execution was rejected in this session, so verification is static re-read of current worktree files, which match HEAD for all product paths per git status; only .svc state files are dirty).",
+    "scripts/compile-delivery-graph.mjs — loadInput copies --planned-files/--files-planned/--files into planned_files (line 95); compileDeliveryGraph normalizes it (line 422) and emits delivery_graph.planned_files (line 449).",
+    "skills/route-workflow/references/lane-model.md — documented compile command includes --planned-files (line 142).",
+    "scripts/task-graph.mjs — ac553PlannedFiles (lines 180-191) unions graph.planned_files, delivery_graph.planned_files, delivery_graph.files AND ac553LiveDiffFiles (lines 151-178: diff HEAD, diff --cached, ls-files --others, diff origin/main...HEAD); feeds ac553EffectiveFlags (193-204) and assertDesignTechRiskGate (206-217), wired into validateGraph (line 672) so set-status skip and validate both refuse.",
+    "test-framework/evals/tier-1/validate-risk-triggered-contracts.sh — fixtures: set-status skip refuses (lines 130-138), compile CLI --planned-files populates delivery_graph.planned_files (163-186), dirty untracked hook in a scratch git repo implies a flag and refuses the skip via set-status (188-207), flagless negative fixture (209-217).",
+    "scripts/validate-plan-contract.mjs — CHECK_THEN_WRITE_RE (line 15) is tested against normalizeProse output (lines 18-20, 57) which strips all punctuation to single spaces, so 'Check if the file exists. Then write it.' normalizes to a period-free string and matches; concurrencyTestExists (lines 22-26, 60) rejects 'none'/placeholder and requires the named file to exist at root or cwd.",
+    "test-framework/evals/tier-1/validate-risk-triggered-contracts.sh — CGH-553-005 fixtures: period-split-check-then-write rejects (lines 274-284), concurrency-test-none rejects (285-295), corrected shape names this validator script itself as the real test file (271).",
+    "scripts/check-chain-receipts.mjs — REVIEW_V3_CUTOFF_SHA=30381c5c... (line 86); reviewEnvelopeRequiresSchemaV3 (88-122) requires v3 unless the SHA is a commit in the framework repo AND an ancestor of the cutoff (merge-base --is-ancestor), fail-closed to require-v3 on malformed sha (line 91), grandfathering only unresolvable/foreign fixture SHAs; enforced for review-plan and review-exec in validateReceipt (765-773) with schema_version>=3 additionally triggering verifyReviewerEvidence (774-777); sha is threaded through the required-type validation loop (line 1009); default sha=null fails closed to require-v3.",
+    "test-framework/evals/tier-1/validate-sol-r2-fail-closed.mjs — SOL-HARNESS-005 unit assertions (lines 153-173): cutoff itself grandfathered, ancestor 50a3440a grandfathered, WI-553 tip f57d1a93 requires v3, isolated fixture SHA outside the object store grandfathered.",
+    "scripts/merge-pr-with-review-receipt.mjs — namedWisFromText/omittedWisFromText/missingNamedWis (lines 18-39); provenance gate (176-189) blocks exit 2 when a named WI has no net-diff path containing its token and no omitted:/excluded:/reverted: disposition line; non-dry-run gh-view failure is fail-closed (148-153).",
+    "test-framework/evals/tier-1/validate-review-receipt-merge-guard.sh — refusal fixture (line 78), omitted-disposition acceptance (79), net-file-evidence acceptance (80).",
+    "scripts/resolve-dispatch.mjs — parseOverlay (193-207): overlay without non-empty scope.wi hard-fails dispatch_overlay_invalid (200-201); scoped overlay with no caller WI refuses global leak (202); scope.wi mismatch returns applied:false (203-205).",
+    "test-framework/evals/tier-1/validate-dispatch-resolver-wi551.mjs — overlay fixtures (154-216): matching WI applies, mismatched WI does not leak, missing caller WI throws, unscoped overlay throws with the SOL-R2-006 / FAB-548-005 label (194-216).",
+    "scripts/lib/risk-flags.mjs + scripts/validate-task-graph-lane.mjs — shared flag table, impliedRiskFlags patterns, and lane-validator parity: collectPlannedFiles unions graph fields with liveDiffFiles at the validate path (lane validator lines 27, 29-35, 211-218)."
+  ],
+  "findings": [
+    {
+      "id": "FAB-553-R3-001",
+      "severity": "LOW",
+      "claim": "ac553PlannedFiles reaches into the CLI's module-level `filePath` const declared 529 lines below it",
+      "analysis": "scripts/task-graph.mjs line 189 evaluates `typeof filePath === 'string' ? path.dirname(filePath) : process.cwd()` inside a helper defined at line 180, while `const filePath` is declared at module top level at line 718. This works today because every call happens from command handlers that execute after line 718, but `typeof` on a lexically-declared module binding is a temporal-dead-zone ReferenceError if the helper is ever invoked during module evaluation, and the implicit coupling makes the helper silently cwd-fallback if the file is ever split into a library. Functional at HEAD; fragile style only.",
+      "evidence": ["scripts/task-graph.mjs:189", "scripts/task-graph.mjs:718"],
+      "proposed_fix": "Thread the graph file path into ac553PlannedFiles/ac553EffectiveFlags/assertDesignTechRiskGate as an explicit parameter (validate-task-graph-lane.mjs already does exactly this at its line 211)."
+    },
+    {
+      "id": "FAB-553-R3-002",
+      "severity": "LOW",
+      "claim": "Explicit --subject/--body override narrows the named-WI merge gate to caller-supplied text",
+      "analysis": "In scripts/merge-pr-with-review-receipt.mjs collectPrProvenance (lines 131-142), when the caller passes --subject/--body/--net-files, the gate evaluates ONLY that explicit text and skips fetching the PR's real title/body/commits. A caller can merge a PR whose GitHub body names WIs by passing a WI-free --subject. Mitigating: with --squash the explicit subject/body IS the landed commit message, so the durable record matches exactly what was checked, and the gh-fetched default path (the one land-changeset/worktree.sh use) is fully gated. Residual risk is limited to deliberate operator override.",
+      "evidence": ["scripts/merge-pr-with-review-receipt.mjs:131", "scripts/merge-pr-with-review-receipt.mjs:177"],
+      "proposed_fix": "When --subject/--body are explicit AND a PR number resolves, additionally fetch the PR body and union its named WIs into namedWis (net files still from --net-files or the PR file list)."
+    },
+    {
+      "id": "FAB-553-R3-003",
+      "severity": "LOW",
+      "claim": "Named-WI net-diff evidence uses substring matching, so a longer WI id can satisfy a shorter one",
+      "analysis": "missingNamedWis (scripts/merge-pr-with-review-receipt.mjs lines 27-38) tests `file.includes(token)` with token 'wi-553'; a net file named for WI-5533 (e.g. docs/specs/work-items/WI-5533.md) contains 'wi-553' as a substring and would count as evidence for WI-553. Requires an adjacent WI id that shares a prefix, so practical exposure is small.",
+      "evidence": ["scripts/merge-pr-with-review-receipt.mjs:34", "scripts/merge-pr-with-review-receipt.mjs:35"],
+      "proposed_fix": "Match the token with a trailing non-digit boundary, e.g. new RegExp(`${token}(?![0-9])`)."
+    }
+  ],
+  "closed_from_prior": [
+    {
+      "id": "CGH-553-002",
+      "status": "closed",
+      "proof": "scripts/compile-delivery-graph.mjs:95 (loadInput copies --planned-files); skills/route-workflow/references/lane-model.md:142 (documented command includes --planned-files); scripts/task-graph.mjs:180-191 with 151-178 (ac553PlannedFiles unions live git diffs — worktree, staged, untracked, origin/main...HEAD — not only graph fields); fixtures test-framework/evals/tier-1/validate-risk-triggered-contracts.sh:163-186 (CLI compile), :188-207 (dirty hook refuses set-status skip), :130-138 (set-status skip refuses)."
+    },
+    {
+      "id": "FAB-548-001",
+      "status": "closed",
+      "proof": "Same closure as CGH-553-002: scripts/task-graph.mjs:189 pushes ac553LiveDiffFiles output into the effective-flag computation consumed by assertDesignTechRiskGate (scripts/task-graph.mjs:206-217, wired at :672); parity in the lane validator via scripts/lib/risk-flags.mjs collectPlannedFiles + scripts/validate-task-graph-lane.mjs:217."
+    },
+    {
+      "id": "CGH-553-005",
+      "status": "closed",
+      "proof": "scripts/validate-plan-contract.mjs:57 tests CHECK_THEN_WRITE_RE against normalizeProse output (:18-20), which replaces every non-alphanumeric character (including periods) with single spaces, so 'Check if the file exists. Then write it.' matches; :60 with :22-26 requires concurrency_test to name an existing file and rejects 'none'; fixtures test-framework/evals/tier-1/validate-risk-triggered-contracts.sh:274-284 (period-split rejects) and :285-295 (concurrency_test 'none' rejects)."
+    },
+    {
+      "id": "FAB-548-009",
+      "status": "closed",
+      "proof": "Same closure as CGH-553-005: scripts/validate-plan-contract.mjs:13-26,57,60."
+    },
+    {
+      "id": "SOL-HARNESS-005",
+      "status": "closed",
+      "proof": "scripts/check-chain-receipts.mjs:86 (REVIEW_V3_CUTOFF_SHA=30381c5c...), :88-122 (reviewEnvelopeRequiresSchemaV3: require v3 unless the SHA is a commit ancestor of the cutoff in this repo; malformed sha fails closed to require-v3; foreign fixture SHAs grandfathered), :765-773 (review-plan/review-exec schema_version<3 rejected when required), :1009 (sha threaded into validateReceipt); unit fixture test-framework/evals/tier-1/validate-sol-r2-fail-closed.mjs:153-173 asserts cutoff/ancestor grandfathered and the WI-553 tip requires v3."
+    },
+    {
+      "id": "SOL-HARNESS-006",
+      "status": "closed",
+      "proof": "scripts/merge-pr-with-review-receipt.mjs:18-39 (namedWisFromText/omittedWisFromText/missingNamedWis) and :176-189 (BLOCKED exit 2 when a named WI has no net-diff path and no omitted/excluded/reverted line; non-dry-run provenance fetch failure is fail-closed at :148-153); fixture test-framework/evals/tier-1/validate-review-receipt-merge-guard.sh:78 (refusal), :79 (omitted disposition accepted), :80 (net-file evidence accepted). Residual LOW notes filed as FAB-553-R3-002/003."
+    },
+    {
+      "id": "FAB-548-005",
+      "status": "closed",
+      "proof": "scripts/resolve-dispatch.mjs:200-201 (overlay without non-empty scope.wi hard-fails dispatch_overlay_invalid instead of applying globally), :202 (no caller WI refuses global leak), :203-205 (WI mismatch returns applied:false); fixture test-framework/evals/tier-1/validate-dispatch-resolver-wi551.mjs:194-216 (unscoped overlay throws on /scope\\.wi/), :183-192 (no caller WI throws), :174-182 (mismatched WI does not leak)."
+    },
+    {
+      "id": "SOL-R2-006",
+      "status": "closed",
+      "proof": "Same closure as FAB-548-005: scripts/resolve-dispatch.mjs:193-207 with the fixture assertion explicitly labeled 'SOL-R2-006 / FAB-548-005: unscoped work overlay must not apply globally' at test-framework/evals/tier-1/validate-dispatch-resolver-wi551.mjs:215."
+    }
+  ]
+}

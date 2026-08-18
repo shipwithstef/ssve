@@ -1,0 +1,119 @@
+{
+  "review_kind": "exec",
+  "reviewer": "cursor-grok-4.6-high",
+  "reviewer_family": "xai",
+  "host": "cursor",
+  "usage_pool": "Cursor Models",
+  "fast": false,
+  "role": "inline-self",
+  "independent": false,
+  "examined_sha": "72c4df27486baec0e1ffefa18b4db939da0f8329",
+  "base": "223436abe5124e6d9852551d249efd855759833b",
+  "verdict": "fail",
+  "rubric_score": 5,
+  "checked": [
+    "AC-553-1 shared RISK_FLAGS 6-flag table in scripts/lib/risk-flags.mjs vs proposal AC-01",
+    "AC-553-2 design-tech skip denial in validateDesignTechRiskGate / designTechSkipDenialFlags",
+    "AC-553-2 implied-flag path (IMPLIED_FLAG_PATTERNS + delivery_graph.planned_files + compile-delivery-graph output)",
+    "AC-553-2 skip mutation path: task-graph.mjs set-status skipped, NON_SKIPPABLE_SKILLS, task-graph validate, svc-lane-tasks-validator, verify-plan-mechanical.sh",
+    "AC-553-3 section-without-flag rejection in validateRiskSections (concurrency/external_writer/lossless_rmw/idempotent_rewriter)",
+    "AC-553-3 Check 11 in verify-plan-mechanical.sh (manifest **Risk Flags:** requires matching plan-contract.json)",
+    "AC-553-4 WI-542 check-then-write (CHECK_THEN_WRITE_RE + CONCURRENCY_ATOMIC_PRIMITIVES allowlist)",
+    "AC-553-4 WI-542 shared backup path (immutable_baseline === rolling_rollback)",
+    "AC-553-4 WI-542 lossless_rmw fixture-per-entry-type existsSync",
+    "AC-553-5 assertExecuteChangesetReceipts wiring on set-status completed, currentTreeReceiptsDir vs emit-receipt staging/SHA split, shallowSchemaCheck, receiptGateAppliesToGraph cutoff vs persona-coverage null handling",
+    "AC-553-6 unmatched-work efficiency: T6 flagless docs-only skip accepted; empty risk_flags adds no plan-contract sections; Check 11 no-ops without a Risk Flags line; receipt gate is existing chain process not extra model review",
+    "AC-553-7 synthetic WI-542-shaped contract vs corrected shape in validate-risk-triggered-contracts.sh",
+    "compile-delivery-graph.mjs does not import risk-flags.mjs and still inserts design-tech only on the old concurrency/external-integration/data-model-change signals",
+    "schemas/plan-contract.schema.json optional-section documentation vs JS iff enforcement"
+  ],
+  "findings": [
+    {
+      "id": "CGH-553-001",
+      "severity": "HIGH",
+      "lens": "correctness",
+      "claim": "AC-553-2 skip denial is not on the path that actually skips or validates lane-tasks, so a flagged graph can still skip design-tech with the banned reason.",
+      "analysis": "validateDesignTechRiskGate lives only in scripts/validate-task-graph-lane.mjs, which is a prompt-invoked CLI (plan-changeset handoff). It is not called from task-graph.mjs validate, set-status, or hooks/svc-lane-tasks-validator.mjs (that hook runs `task-graph.mjs validate` only). design-tech is absent from NON_SKIPPABLE_SKILLS, so `set-status <id> skipped` succeeds while flags are in effect, including skip_reason 'no product UI / no data model'. verify-plan-mechanical.sh Check 11 never runs the skip gate. WI-542's actual failure was a bugfix skip of design-tech; that mutation still has no fail-closed checker.",
+      "evidence": [
+        "scripts/validate-task-graph-lane.mjs:185",
+        "scripts/validate-task-graph-lane.mjs:249",
+        "scripts/task-graph.mjs:52",
+        "scripts/task-graph.mjs:815",
+        "scripts/task-graph.mjs:911",
+        "hooks/svc-lane-tasks-validator.mjs:63",
+        "scripts/verify-plan-mechanical.sh:167"
+      ],
+      "proposed_fix": "Call validateDesignTechRiskGate from task-graph.mjs validate and from set-status when the target is design-tech skipped/completed. Add design-tech to a risk-flag-conditional non-skippable check. Have the lane-tasks PostToolUse hook (or verify-plan-mechanical.sh) invoke the same gate so a JSON edit cannot apply the banned skip after plan-time validation."
+    },
+    {
+      "id": "CGH-553-002",
+      "severity": "HIGH",
+      "lens": "correctness",
+      "claim": "The implied-by-planned-files half of AC-553-2 is dead in production: impliedRiskFlags only reads delivery_graph.planned_files, and nothing in the compiler or plan path writes that field.",
+      "analysis": "AC-02 requires skip denial when a flag is declared OR implied by planned files (host wirer, session-coordinating hook, config parser/serializer). impliedRiskFlags implements that, but validateDesignTechRiskGate reads only graph.delivery_graph.planned_files. compile-delivery-graph.mjs never emits planned_files (confirmed: no occurrence in that file). The T2d fixture passes only because it hand-builds that field. An undeclared change to hooks/svc-session-start-healthcheck.mjs or scripts/wire-grok-hooks.mjs — the WI-542 class — has empty planned_files, effective flags stay empty, and the 'no product UI' skip is accepted. diagnose-bug Step 4.6 is still prose; the mechanical backstop for a forgotten declaration does not fire.",
+      "evidence": [
+        "scripts/validate-task-graph-lane.mjs:190",
+        "scripts/lib/risk-flags.mjs:46",
+        "scripts/lib/risk-flags.mjs:56",
+        "scripts/compile-delivery-graph.mjs:438",
+        "test-framework/evals/tier-1/validate-risk-triggered-contracts.sh:109"
+      ],
+      "proposed_fix": "Populate delivery_graph.planned_files from the compiler and/or the plan-changeset Files Planned table, and have Check 11 / validateDesignTechRiskGate also scan the manifest ownership table and the live git diff. Keep implication fail-closed when those sources exist even if graph.flags is []."
+    },
+    {
+      "id": "CGH-553-003",
+      "severity": "HIGH",
+      "lens": "correctness",
+      "claim": "AC-553-5 receipt gating fail-opens when graph.created is missing or predates 2026-08-18, which is an invented exemption that inverts the persona-coverage null pattern and reopens the WI-542 complete-without-receipts hole.",
+      "analysis": "Proposal AC-05 is unconditional: execute-changeset cannot be completed without schema-valid plan-manifest, review-plan, and exec-record for the current tree. receiptGateAppliesToGraph returns false when created is null/unparseable or < 2026-08-18T00:00:00.000Z, and assertExecuteChangesetReceipts then returns without checking. The comment claims this mirrors PERSONA_COVERAGE_GATE_CUTOFF, but isModernPersonaGateGraph treats null created as modern (gate applies). The receipt predicate is the opposite. The cutoff is also unnecessary for already-completed historical graphs: the check runs only on the completed transition. The tier-1 fixture encodes omit-created as PASS. Any hand-written or backdated graph, including in-flight 2026-08-17 WIs, can mark execute-changeset completed with zero chain receipts — the exact WI-542 gap AC-05 was filed to close.",
+      "evidence": [
+        "scripts/task-graph.mjs:68",
+        "scripts/task-graph.mjs:122",
+        "scripts/task-graph.mjs:127",
+        "scripts/task-graph.mjs:451",
+        "scripts/task-graph.mjs:934",
+        "test-framework/evals/tier-1/validate-risk-triggered-contracts.sh:394"
+      ],
+      "proposed_fix": "Apply the receipt gate whenever expectedTaskSkill is execute-changeset, matching persona-coverage's null-created=modern rule. If a legacy exemption is required, key it on an explicit opt-out field, not absence of created. Flip the omit-created fixture from PASS to FAIL."
+    },
+    {
+      "id": "CGH-553-004",
+      "severity": "MEDIUM",
+      "lens": "correctness",
+      "claim": "Even when the lane validator runs, a design-tech task with status skipped and a non-matching or empty skip_reason is accepted while AC-553-1 flags are in effect.",
+      "analysis": "Missing design-tech is rejected, but a present skipped task is denied only when skip_reason matches /no product ui|no data model|framework chrome/i. skip_reason undefined, 'not required', or 'docs-only bugfix' all return [] from designTechSkipDenialFlags and pass. AC-02 names that phrase, so this is letter-faithful, but it is the obvious skip-denial bypass: keep the task, skip it with different prose. Pending design-tech also passes, so plan-time validation of a flagged graph with design-tech still pending is a no-op on skip policy.",
+      "evidence": [
+        "scripts/lib/risk-flags.mjs:38",
+        "scripts/lib/risk-flags.mjs:88",
+        "scripts/validate-task-graph-lane.mjs:199"
+      ],
+      "proposed_fix": "While any AC-553-1 flag is in effect, reject every design-tech skipped/completed-with-skip_reason disposition, not only the named phrase. Require status in {pending, in_progress, completed} with no skip_reason."
+    },
+    {
+      "id": "CGH-553-005",
+      "severity": "MEDIUM",
+      "lens": "spec-fidelity",
+      "claim": "The check-then-write mechanical check is a narrow prose regex that misses the WI-542 shape when the author uses a period or alternate phrasing; atomic_primitive allowlist is the real gate and is sound.",
+      "analysis": "CHECK_THEN_WRITE_RE requires check|exists?|stat, then then|before, then writ|creat, and [^.]{0,40} dies at a period. 'Check if the file exists. Then write it.', 'if missing, create it', and 'write only when absent' all evade. The allowlist (flock, o_excl, atomic_rename, compare_and_swap, advisory_lock, mkdir_exclusive) still rejects 'check exists first' as a primitive, so a fully WI-542-shaped primitive+prose pair still fails. A contract that names o_excl while describing a check-then-write race in concurrent_invoke_behavior can pass. concurrency_test: 'none' also satisfies hasText.",
+      "evidence": [
+        "scripts/validate-plan-contract.mjs:12",
+        "scripts/validate-plan-contract.mjs:13",
+        "scripts/validate-plan-contract.mjs:45",
+        "scripts/validate-plan-contract.mjs:47"
+      ],
+      "proposed_fix": "Normalize concurrent_invoke_behavior (strip punctuation, collapse whitespace) before the regex; add an existence check that concurrency_test names a real file; keep the primitive allowlist as the hard gate."
+    },
+    {
+      "id": "CGH-553-006",
+      "severity": "MEDIUM",
+      "lens": "spec-fidelity",
+      "claim": "AC-553-4 shared-backup rejection uses exact string equality, so equivalent paths with different spellings pass.",
+      "analysis": "immutable_baseline === rolling_rollback catches the honest WI-542 reproduction (same '.svc/settings.bak' twice). It does not catch './.svc/settings.bak' vs '.svc/settings.bak', extra slashes, or case on a case-folding FS. Path normalization is already used elsewhere in this file (normalizedScope) and is not applied here.",
+      "evidence": [
+        "scripts/validate-plan-contract.mjs:59",
+        "scripts/validate-plan-contract.mjs:95"
+      ],
+      "proposed_fix": "Compare posix-normalized, repo-relative paths (strip leading ./, collapse slashes) before equality. Optionally resolve against root and compare realpaths when both exist."
+    }
+  ]
+}

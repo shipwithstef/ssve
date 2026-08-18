@@ -139,12 +139,60 @@ node scripts/compile-delivery-graph.mjs \
   --change-type feature \
   --intent "normalized user goal" \
   --risk-flags browser-visible,user-facing \
+  --planned-files hooks/svc-session-start-healthcheck.mjs,scripts/wire-hooks.mjs \
   --out .svc/lane-tasks-WI-123.json
 ```
 
 The output is still a normal `.svc/lane-tasks-<WI>.json` file. The
 `delivery_graph` block explains why the tasks exist and becomes the source for
 later graph mutation and closeout classification.
+
+### AC-553-1 Risk Flags — design-tech Skip Denial (WI-553)
+
+A separate, narrower flag namespace from the compiler signals above triggers
+extra plan/exec contracts and mechanical checks. Single source of truth:
+`scripts/lib/risk-flags.mjs`. Unmatched work (no flags declared or implied)
+pays zero extra model review — this is the efficiency guarantee the whole
+mechanism is built around.
+
+| Flag | Meaning |
+|---|---|
+| `runtime_concurrency` | code invoked by more than one process/session/hook concurrently |
+| `external_state_writer` | writes/backs up state outside the git-tracked tree |
+| `config_schema_migration` | changes the on-disk shape of a config/schema file other readers depend on |
+| `lossless_rmw` | read-modify-write over a file where unrelated/unknown entries must survive |
+| `idempotent_rewriter` | the same logic may run more than once and must not double-apply |
+| `cross_runtime_integration` | (pre-existing) fix spans two host runtimes/protocols/storage layers |
+
+**How flags are declared:** a top-level `flags` array on the lane-tasks graph
+(written by `diagnose-bug` Step 4.6, `plan-changeset`, or any skill that
+classifies risk) and/or `delivery_graph.risk_flags`. Flags are also **implied**
+by planned/changed file paths — see `impliedRiskFlags()` in
+`scripts/lib/risk-flags.mjs` (host wirers, session-coordinating hooks, config
+parser/serializer files) — so an author who forgets to declare a flag the
+files clearly require still gets caught mechanically.
+
+**design-tech skip denial (AC-553-2):** `scripts/validate-task-graph-lane.mjs`
+computes the effective flag set (declared ∪ implied) for the graph. If any
+flag is in effect, a `design-tech` task's `skip_reason` matching the "no
+product UI / no data model / framework chrome" family (see
+`DESIGN_TECH_SKIP_DENY_PATTERN`) is rejected — that skip reason is valid ONLY
+when zero AC-553-1 flags are in effect. A missing `design-tech` task entirely,
+while flags are in effect, is also rejected.
+
+**Downstream effects of a declared flag:**
+- `plan-changeset`'s `plan-contract.json` grows exactly the matched
+  risk-triggered section(s) (AC-553-3) — see
+  `skills/plan-changeset/references/plan-contract-risk-sections.md`.
+- `scripts/verify-plan-mechanical.sh` Check 11 requires a `plan-contract.json`
+  beside the plan manifest whenever the manifest declares a `**Risk
+  Flags:**` line naming any of these flags.
+- `scripts/validate-plan-contract.mjs` mechanically rejects the WI-542 failure
+  shapes inside those sections (AC-553-4): check-then-write races under
+  `runtime_concurrency`, one backup path serving as both immutable baseline
+  and rolling rollback under `external_state_writer`/`idempotent_rewriter`,
+  and "preserve unknown entries" claims with no fixture per entry type under
+  `lossless_rmw`.
 
 For user/admin-facing feature work, closeout is not a set of loose receipts.
 The graph must close `feature_validation_closeout` by producing

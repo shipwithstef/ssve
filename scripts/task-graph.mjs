@@ -4,6 +4,7 @@ import fs from "node:fs";
 import crypto from "node:crypto";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { readJsonAtomic, writeJsonAtomic, updateJsonAtomic, NO_WRITE } from "./state-io.mjs";
 import { loadStageRegistry } from "./lib/stage-registry.mjs";
 
@@ -56,6 +57,197 @@ const CHAIN_COMPLETION_CONSUMER = new Map([
   ["verify-promotion", "verify-promotion"],
 ]);
 
+// WI-553 AC-553-5: execute-changeset cannot complete without schema-valid
+// plan-manifest, review-plan, and exec-record receipts for the CURRENT tree
+// (staging allowed pre-commit — the same tree/staging split emit-receipt.mjs
+// already uses). This is process enforcement of the EXISTING chain-receipt
+// contract (references/chain-receipt-contract.md), not a new review — the
+// gap it closes is that task-graph completion previously required only a
+// skill_receipt, so WI-542's execute-changeset task could be marked
+// completed with zero chain receipts.
+//
+// Gate runs only on the execute-changeset `completed` transition, so already
+// completed historical graphs are not rewritten. Absence of `created` is
+// treated as modern (same polarity as isModernPersonaGateGraph).
+const EXEC_RECEIPT_TYPES = ["plan-manifest", "review-plan", "exec-record"];
+const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
+const RECEIPTS_SCHEMA_DIR = path.join(SCRIPT_DIR, "..", "schemas", "receipts");
+
+function gitTry(args) {
+  try { return execFileSync("git", args, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim(); }
+  catch { return null; }
+}
+
+// Mirrors emit-receipt.mjs's own staging/mirror split: an uncommitted tree
+// (or one with no commit yet) resolves to .svc/receipts/staging/<tree-hash>/;
+// a tree that already matches HEAD resolves to the durable per-SHA mirror.
+function currentTreeReceiptsDir() {
+  const treeHash = gitTry(["write-tree"]);
+  if (!treeHash) return null;
+  const headSha = gitTry(["rev-parse", "--verify", "HEAD"]);
+  const headTree = headSha ? gitTry(["rev-parse", `${headSha}^{tree}`]) : null;
+  if (headSha && treeHash === headTree) return path.join(".svc", "receipts", headSha.slice(0, 7));
+  return path.join(".svc", "receipts", "staging", treeHash);
+}
+
+function loadReceiptSchema(type) {
+  try { return JSON.parse(fs.readFileSync(path.join(RECEIPTS_SCHEMA_DIR, `${type}.schema.json`), "utf8")); }
+  catch { return null; }
+}
+
+// Deliberately NOT the full `scripts/lib/json-schema-validator.mjs` engine —
+// pulling that in as a static import breaks reduced-copy consumers that
+// vendor only task-graph.mjs + state-io.mjs into an isolated tmp dir (see
+// validate-stage-registry-single-source.sh). A shallow required-field +
+// primitive-type check over the receipt schema's top-level `required`/
+// `properties` is sufficient for a completion GATE (existence + shape of the
+// chain receipt), not a substitute for the chain's own authoritative
+// validators (check-chain-receipts.mjs) which already run at push time.
+function shallowSchemaCheck(schema, body) {
+  const errors = [];
+  if (!schema || typeof schema !== "object") return errors;
+  for (const key of schema.required ?? []) {
+    if (body == null || !(key in body)) errors.push(`missing required field: ${key}`);
+  }
+  const properties = schema.properties ?? {};
+  for (const [key, propSchema] of Object.entries(properties)) {
+    if (body == null || !(key in body)) continue;
+    const value = body[key];
+    const type = propSchema?.type;
+    if (type === "string" && typeof value !== "string") errors.push(`${key} must be a string`);
+    else if (type === "array" && !Array.isArray(value)) errors.push(`${key} must be an array`);
+    else if (type === "object" && (typeof value !== "object" || value === null || Array.isArray(value))) errors.push(`${key} must be an object`);
+    else if (type === "integer" && !Number.isInteger(value)) errors.push(`${key} must be an integer`);
+    if (propSchema?.const !== undefined && value !== propSchema.const) errors.push(`${key} must equal ${JSON.stringify(propSchema.const)}`);
+  }
+  return errors;
+}
+
+function receiptGateAppliesToGraph(_graph) {
+  return true;
+}
+
+// Inlined AC-553-2 gate. task-graph.mjs is copied into reduced fixtures that
+// vendor only this file + state-io.mjs, so it cannot import risk-flags.mjs.
+const AC553_FLAG_SET = new Set([
+  "runtime_concurrency",
+  "external_state_writer",
+  "config_schema_migration",
+  "lossless_rmw",
+  "idempotent_rewriter",
+  "cross_runtime_integration",
+]);
+const AC553_IMPLIED_FLAG_PATTERNS = [
+  { flag: "runtime_concurrency", pattern: /(?:^|\/)hooks\/.*(?:session-?start|session-?end|parallel)[^/]*\.(?:mjs|js|cjs|ts|sh)$/i },
+  { flag: "external_state_writer", pattern: /(?:^|\/)(?:provision\/hosts|hooks)\/.*(?:wirer|wire-hooks|healthcheck)[^/]*\.(?:mjs|js|cjs|ts|sh)$/i },
+  { flag: "config_schema_migration", pattern: /(?:^|\/)(?:[^/]*(?:parse|serialize)[-_]?config[^/]*|[^/]*config[-_]?(?:parser|serializer)[^/]*)\.(?:mjs|js|cjs|ts)$/i },
+];
+
+// Inlined (do not import risk-flags.mjs — this CLI is copied into reduced
+// fixtures that vendor only task-graph.mjs + state-io.mjs). Same union the
+// lane validator uses: declared graph fields + live worktree/diff names so
+// an undeclared hook/wirer/config-parser edit still implies a flag at the
+// set-status/validate path (CGH-553-002 / FAB-548-001).
+function ac553LiveDiffFiles(startDir) {
+  let root = startDir || process.cwd();
+  try {
+    root = execFileSync("git", ["-C", root, "rev-parse", "--show-toplevel"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return [];
+  }
+  const names = [];
+  const commands = [
+    ["diff", "--name-only", "HEAD"],
+    ["diff", "--cached", "--name-only"],
+    ["ls-files", "--others", "--exclude-standard"],
+    ["diff", "--name-only", "origin/main...HEAD"],
+  ];
+  for (const args of commands) {
+    try {
+      const out = execFileSync("git", ["-C", root, ...args], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+      });
+      for (const line of out.split("\n")) if (line) names.push(line);
+    } catch { /* empty tree / missing origin/main */ }
+  }
+  return names;
+}
+
+function ac553PlannedFiles(graph) {
+  const files = [];
+  const pushAll = (list) => {
+    if (!Array.isArray(list)) return;
+    for (const item of list) if (typeof item === "string" && item) files.push(item);
+  };
+  pushAll(graph?.planned_files);
+  pushAll(graph?.delivery_graph?.planned_files);
+  pushAll(graph?.delivery_graph?.files);
+  pushAll(ac553LiveDiffFiles(typeof filePath === "string" ? path.dirname(filePath) : process.cwd()));
+  return files;
+}
+
+function ac553EffectiveFlags(graph) {
+  const effective = new Set();
+  for (const flag of [...(graph?.flags || []), ...(graph?.delivery_graph?.risk_flags || [])]) {
+    if (AC553_FLAG_SET.has(flag)) effective.add(flag);
+  }
+  for (const file of ac553PlannedFiles(graph)) {
+    for (const { flag, pattern } of AC553_IMPLIED_FLAG_PATTERNS) {
+      if (pattern.test(file)) effective.add(flag);
+    }
+  }
+  return effective;
+}
+
+function assertDesignTechRiskGate(graph) {
+  const effective = ac553EffectiveFlags(graph);
+  if (effective.size === 0) return;
+  const flags = Array.from(effective).join(", ");
+  const task = (graph.tasks || []).find((item) => expectedTaskSkill(item) === "design-tech");
+  if (!task) {
+    throw new Error(`design-tech is required when risk flag(s) are in effect (${flags}) (AC-553-2)`);
+  }
+  if (task.status === "skipped" || (task.status === "completed" && task.skip_reason)) {
+    throw new Error(`design-tech cannot be skipped while risk flag(s) are in effect: ${flags} (AC-553-2)`);
+  }
+}
+
+function assertExecuteChangesetReceipts(task, graph) {
+  if (expectedTaskSkill(task) !== "execute-changeset") return;
+  if (!receiptGateAppliesToGraph(graph)) return;
+  const dir = currentTreeReceiptsDir();
+  const missing = [];
+  const invalid = [];
+  for (const type of EXEC_RECEIPT_TYPES) {
+    const receiptPath = dir ? path.join(dir, `${type}.json`) : null;
+    let body = null;
+    if (receiptPath && fs.existsSync(receiptPath)) {
+      try { body = JSON.parse(fs.readFileSync(receiptPath, "utf8")); }
+      catch { invalid.push(`${type}: receipt is not valid JSON`); continue; }
+    }
+    if (!body) { missing.push(type); continue; }
+    if (body.receipt_type !== type) { invalid.push(`${type}: receipt_type mismatch (got ${body.receipt_type ?? "none"})`); continue; }
+    const schema = loadReceiptSchema(type);
+    if (schema) {
+      const schemaErrors = shallowSchemaCheck(schema, body);
+      if (schemaErrors.length) invalid.push(`${type}: ${schemaErrors.join("; ")}`);
+    }
+  }
+  if (missing.length || invalid.length) {
+    const parts = [];
+    if (missing.length) parts.push(`missing: ${missing.join(", ")}`);
+    if (invalid.length) parts.push(`invalid: ${invalid.join("; ")}`);
+    throw new Error(
+      `task ${task.id} (execute-changeset) cannot complete without schema-valid plan-manifest, review-plan, ` +
+      `and exec-record receipts for the current tree (AC-553-5) — ${parts.join("; ")}`
+    );
+  }
+}
+
 function evidenceDigest(file) { return crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex"); }
 function assertRequiredProcesses(task) {
   for (const step of task?.metadata?.required_process_steps || []) {
@@ -88,7 +280,7 @@ function assertCanonicalReceiptCompletion({ wi, skill }) {
   let output;
   try {
     output = execFileSync(process.execPath, [
-      path.resolve("scripts/check-chain-receipts.mjs"),
+      path.join(SCRIPT_DIR, "check-chain-receipts.mjs"),
       "--sha", sha,
       "--wi", wi,
       "--consumer", consumer,
@@ -477,6 +669,7 @@ function validateGraph(graph) {
   const tasksById = buildTaskMap(graph);
   assertGraphIntegrity(graph, tasksById);
   assertPersonaCoverageGate(graph);
+  assertDesignTechRiskGate(graph);
   if (graph.status != null) {
     const derivedStatus = deriveGraphStatus(graph.tasks);
     if (graph.status !== derivedStatus) {
@@ -846,6 +1039,7 @@ if (command === "set-status") {
     if (!target) die(`${filePath}: task ${taskId} not found`);
     const targetSkill = expectedTaskSkill(target);
     try {
+      assertExecuteChangesetReceipts(target, graph);
       assertCanonicalReceiptCompletion({ wi: graph.wi, skill: targetSkill });
     } catch (error) {
       die(`${filePath}: ${error.message}`);
@@ -859,6 +1053,9 @@ if (command === "set-status") {
       const previousStatus = task.status;
       const taskSkill = expectedTaskSkill(task);
       if (status === "skipped" && NON_SKIPPABLE_SKILLS.has(taskSkill)) throw new Error(`mandatory task ${taskId} (${taskSkill}) cannot be skipped`);
+      if (status === "skipped" && taskSkill === "design-tech" && ac553EffectiveFlags(current).size > 0) {
+        throw new Error(`design-tech cannot be skipped while risk flag(s) are in effect: ${Array.from(ac553EffectiveFlags(current)).join(", ")} (AC-553-2)`);
+      }
       const byKey = new Map(current.tasks.map((item) => [recoverableId(item.id), item]));
       const blockersComplete = (task.blocked_by || []).every((id) => byKey.get(recoverableId(id))?.status === "completed");
       if (["in_progress", "completed"].includes(status) && !blockersComplete) throw new Error(`task ${taskId} cannot ${status === "completed" ? "complete" : "start"} before all blockers are completed`);
@@ -881,6 +1078,7 @@ if (command === "set-status") {
           throw new Error(`task ${taskId} cannot be completed without a matching load-skill receipt for ${expectedSkill}`);
         }
         assertRequiredProcesses(task);
+        assertExecuteChangesetReceipts(task, current);
         task.completed_at = flags["completed-at"] ??
           (previousStatus !== COMPLETED_STATUS || !task.completed_at ? new Date().toISOString() : task.completed_at);
         if (flags["skip-reason"]) task.skip_reason = flags["skip-reason"];

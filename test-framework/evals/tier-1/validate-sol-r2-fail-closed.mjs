@@ -150,4 +150,26 @@ const stranger = isPhaseForbiddenForSession({
 });
 assert.equal(stranger.forbidden, false, 'unrelated sessions still fail open by absence');
 
-console.log('validate-sol-r2-fail-closed: PASS (SOL-R2-001 push/reconcile mirror reject, SOL-R2-002 missing-ledger deny, SOL-R2-003 fail-verdict refuse, SOL-R2-004 stop no leftover infer, SOL-R2-005 indexer notes-only)');
+const { reviewEnvelopeRequiresSchemaV3 } = await import(path.join(ROOT, 'scripts/check-chain-receipts.mjs'));
+assert.equal(
+  reviewEnvelopeRequiresSchemaV3('30381c5c5e6635a102944834e04319063824dc53'),
+  false,
+  'SOL-HARNESS-005: cutoff SHA itself stays grandfathered',
+);
+assert.equal(
+  reviewEnvelopeRequiresSchemaV3('50a3440a'),
+  false,
+  'SOL-HARNESS-005: ancestor of cutoff stays grandfathered',
+);
+assert.equal(
+  reviewEnvelopeRequiresSchemaV3('f57d1a93'),
+  true,
+  'SOL-HARNESS-005: 553 tip is not an ancestor of the cutoff and must require schema v3',
+);
+assert.equal(
+  reviewEnvelopeRequiresSchemaV3(sha),
+  false,
+  'SOL-HARNESS-005: isolated fixture SHA is not in the framework repo object store',
+);
+
+console.log('validate-sol-r2-fail-closed: PASS (SOL-R2-001 push/reconcile mirror reject, SOL-R2-002 missing-ledger deny, SOL-R2-003 fail-verdict refuse, SOL-R2-004 stop no leftover infer, SOL-R2-005 indexer notes-only, SOL-HARNESS-005 review schema cutoff)');

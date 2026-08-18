@@ -92,6 +92,7 @@ function loadInput(args) {
       decision_log_ref: args["delivery-tier-decision"],
     },
     risk_flags: list(args["risk-flags"]),
+    planned_files: list(args["planned-files"] || args["files-planned"] || args.files),
     platform_contracts: list(args["platform-contracts"]),
     compression: {
       ratio: args["compression-ratio"],
@@ -418,6 +419,7 @@ export function compileDeliveryGraph(input) {
 
   const laneSkills = injectMandatoryDeliveryChain(LANE_BASE_SKILLS[lane]);
   const riskFlags = unique(list(input.risk_flags));
+  const plannedFiles = unique(list(input.planned_files || input.files_planned || input.files));
   const platformContracts = unique(list(input.platform_contracts));
   const solutionConfidence = normalizeSolutionConfidence(input, wi, riskFlags);
   const compression = normalizeCompression(input);
@@ -444,6 +446,7 @@ export function compileDeliveryGraph(input) {
     delivery_mode: input.delivery_mode || "interactive",
     delivery_tier: deliveryTier,
     risk_flags: riskFlags,
+    planned_files: plannedFiles,
     platform_contracts: platformContracts,
     solution_confidence: solutionConfidence,
     compression,

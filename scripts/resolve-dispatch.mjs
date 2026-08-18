@@ -197,11 +197,11 @@ function parseOverlay(pathSpec, wi) {
   const scope = isObject(overlay.scope) ? overlay.scope : {};
   const patch = isObject(overlay.patch) ? overlay.patch : isObject(overlay.overlay) ? overlay.overlay : overlay;
   if (!isObject(patch)) fail(`work overlay patch must be an object: ${loaded.absolute}`, 'dispatch_overlay_invalid');
-  if (typeof scope.wi === 'string' && scope.wi.trim()) {
-    if (!wi) fail('scoped work overlay requires the current WI; refusing global leak', 'dispatch_overlay_invalid');
-    if (scope.wi !== wi) {
-      return { applied: false, scope, sha256: loaded.sha256, patch: null, reason: 'wi-mismatch', path: loaded.absolute };
-    }
+  const scopeWi = typeof scope.wi === 'string' ? scope.wi.trim() : '';
+  if (!scopeWi) fail('work overlay requires a non-empty scope.wi matching the current WI', 'dispatch_overlay_invalid');
+  if (!wi) fail('scoped work overlay requires the current WI; refusing global leak', 'dispatch_overlay_invalid');
+  if (scopeWi !== wi) {
+    return { applied: false, scope, sha256: loaded.sha256, patch: null, reason: 'wi-mismatch', path: loaded.absolute };
   }
   return { applied: true, scope, sha256: loaded.sha256, patch, reason: 'applied', path: loaded.absolute };
 }

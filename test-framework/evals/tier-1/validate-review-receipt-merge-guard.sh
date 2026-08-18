@@ -75,6 +75,10 @@ check "validator accepts logged bypass" node "$ROOT/scripts/validate-review-rece
 check "bash guard allows logged bypass" bash -c "cd '$FIX' && printf '%s' '$payload' | node '$ROOT/hooks/svc-workflow-guard.mjs' --bash-guard"
 check "codex shell wrapper accepts logged bypass" node "$ROOT/scripts/merge-pr-with-review-receipt.mjs" --root "$FIX" --repo example/repo --pr 123 --squash --delete-branch --dry-run
 
+check_fail "wrapper refuses named WI with no net-diff evidence" node "$ROOT/scripts/merge-pr-with-review-receipt.mjs" --root "$FIX" --repo example/repo --pr 123 --squash --delete-branch --dry-run --subject "feat(WI-553): ghost list" --body "" --net-files "scripts/foo.mjs"
+check "wrapper accepts omitted disposition for a named WI" node "$ROOT/scripts/merge-pr-with-review-receipt.mjs" --root "$FIX" --repo example/repo --pr 123 --squash --delete-branch --dry-run --subject "feat(WI-546): land" --body "omitted: WI-553 — fail review" --net-files "docs/specs/work-items/WI-546.md"
+check "wrapper accepts named WI present in net files" node "$ROOT/scripts/merge-pr-with-review-receipt.mjs" --root "$FIX" --repo example/repo --pr 123 --squash --delete-branch --dry-run --subject "feat(WI-553): risk flags" --body "" --net-files "docs/specs/work-items/WI-553.md,scripts/lib/risk-flags.mjs"
+
 check "land-changeset documents wrapper instead of raw merge" bash -c "! grep -q '^gh pr merge <pr-number>' '$ROOT/skills/land-changeset/SKILL.md' && grep -q 'merge-pr-with-review-receipt.mjs --pr <pr-number>' '$ROOT/skills/land-changeset/SKILL.md'"
 check "worktree promote uses wrapper for auto-merge" grep -q 'merge-pr-with-review-receipt.mjs.*--pr "$pr_number"' "$ROOT/scripts/worktree.sh"
 
