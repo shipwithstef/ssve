@@ -1,0 +1,6 @@
+transport: cursor-agent
+model: gpt-5.6-sol-high
+mode: ask (read-only)
+cwd: .worktrees/framework-WI-548-host-parity-plan
+exit: 0
+command: cursor-agent --print --mode ask --output-format text --model gpt-5.6-sol-high

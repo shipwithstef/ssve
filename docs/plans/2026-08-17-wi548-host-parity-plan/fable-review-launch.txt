@@ -1,0 +1,5 @@
+transport: cursor-agent
+model: claude-fable-5-thinking-high
+mode: ask (read-only)
+exit: 0
+command: cursor-agent --print --mode ask --output-format text --model claude-fable-5-thinking-high
