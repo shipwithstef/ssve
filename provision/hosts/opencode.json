@@ -22,7 +22,11 @@
     "containment_launcher": "scripts/svc-contained-exec.mjs",
     "containment_probe_required": true,
     "mutating_child_execution": false,
-    "reason": "Current plugin is observational and cannot enforce delegated path scope before mutation."
+    "reason": "Current plugin is observational and cannot enforce delegated path scope before mutation.",
+    "fresh_session_launch": {
+      "enabled": false,
+      "reason": "No automatable fresh-session transport declared for this host yet (WI-552 migration note: disabled by default until a host manifest declares fresh_session_launch)."
+    }
   },
   "hook_events": [
     "session.created",

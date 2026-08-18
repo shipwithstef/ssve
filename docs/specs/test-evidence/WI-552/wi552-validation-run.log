@@ -1,0 +1,41 @@
+=== validate-continuation-lifecycle-wi552.mjs ===
+validate-continuation-lifecycle-wi552: PASS (AC-552-1,2,3,4,6,7,8,9 replay matrix)
+
+=== validate-hook-latency.sh ===
+=== Tier 1: Hook Spawn Count (WI-397) ===
+  ✓ PreToolUse: 12 <= 12
+  ✓ PostToolUse: 10 <= 10
+  ✓ SessionStart: 1 <= 1
+  ✓ SessionEnd: 1 <= 1
+  ✓ UserPromptSubmit: 1 <= 1
+  ✓ PreCompact: 2 <= 2
+  ✓ Notification: 1 <= 1
+  ✓ Stop: 4 <= 4
+  ✓ SubagentStart: 1 <= 1
+  ✓ SubagentStop: 1 <= 1
+  ✓ hook spawn counts within budget
+hook spawn count: 1 passed, 0 failed
+
+=== validate-tier1-selector-v2.mjs ===
+tier1 selector v2: 13 passed, 0 failed
+
+=== validate-skill-structure.sh ===
+=== Tier 1: Skill Structure Validation ===
+  1251 passed, 0 failed, 0 advisory
+  PASS — all skills have required structure
+
+=== validate-contracts.sh ===
+=== Tier 1: Contract Validation ===
+  661 passed, 0 failed
+  PASS — all contracts valid
+
+=== validate-worktree-safety.sh ===
+=== Tier 1: Worktree Safety Validation ===
+  6 passed, 0 failed
+  PASS — worktree safety checks valid
+
+=== node scripts/lint-skills-manifest.mjs ===
+skills-manifest lint passed
+- included skills: 103
+- routing core skills: 58
+- coreyhaines add-on skills: 12

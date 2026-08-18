@@ -30,6 +30,7 @@ check("proposal selects complete v2 focused closure", () => {
   const result = selectTier1Validators(["proposals/2026-08-10-wi368-execution-controller-v2.md"]);
   assert.deepEqual(result.selected, [
     "validate-concern-compiler-v2.mjs",
+    "validate-continuation-lifecycle-wi552.mjs",
     "validate-control-value-audit-v2.mjs",
     "validate-dispatch-resolver-wi551.mjs",
     "validate-execution-controller-v2.mjs",

@@ -172,6 +172,30 @@ const CONTRACTS = [
   {
     validator: "validate-runtime-state-model-v2.mjs",
     inputs: ["scripts/lib/runtime-state-model-v2.mjs", "scripts/svc-runtime-v2.mjs", "test-framework/evals/tier-1/validate-runtime-state-model-v2.mjs"]
+  },
+  {
+    validator: "validate-continuation-lifecycle-wi552.mjs",
+    inputs: [
+      "schemas/continuation-baton.schema.json",
+      "schemas/continuation-result.schema.json",
+      "scripts/resolve-continuation.mjs",
+      "scripts/resolve-dispatch.mjs",
+      "hooks/svc-continuation-phase-guard.mjs",
+      "hooks/hooks.json",
+      ".svc/perf-baseline.json",
+      "provision/hosts/antigravity.json",
+      "provision/hosts/claude.json",
+      "provision/hosts/codex.json",
+      "provision/hosts/cursor.json",
+      "provision/hosts/gemini.json",
+      "provision/hosts/grok.json",
+      "provision/hosts/kimi.json",
+      "provision/hosts/mimo-code.json",
+      "provision/hosts/opencode.json",
+      "skills/land-changeset/SKILL.md",
+      "skills/verify-promotion/SKILL.md",
+      "test-framework/evals/tier-1/validate-continuation-lifecycle-wi552.mjs"
+    ]
   }
 ];
 

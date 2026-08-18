@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seriousvibecoding.dev/schemas/continuation-result.schema.json",
+  "title": "Restart-boundary continuation child result (WI-552)",
+  "description": "Structured evidence a continuation child must return. Free-text 'looks good' or 'prompt to send' is never a valid result (AC-552-7).",
+  "type": "object",
+  "required": [
+    "schema_version", "wi", "session_id", "started_at", "event_status",
+    "proof_query", "ac_mapping", "artifacts", "verdict"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "enum": [1] },
+    "wi": { "type": "string" },
+    "session_id": { "type": "string" },
+    "started_at": { "type": "string" },
+    "event_status": { "type": "string", "enum": ["success", "failure", "timeout"] },
+    "proof_query": { "type": "string" },
+    "ac_mapping": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["ac", "status"],
+        "properties": {
+          "ac": { "type": "string" },
+          "status": { "type": "string", "enum": ["pass", "fail", "n/a"] }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "tasks_executed": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "verdict": { "type": "string", "enum": ["pass", "fail"] }
+  }
+}

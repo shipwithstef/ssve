@@ -450,6 +450,59 @@ export function resolveDispatchModel(options = {}) {
   };
 }
 
+// WI-552: generic role resolution independent of the seven cognitive labels.
+// Continuation lifecycle roles (e.g. "verify.restart") are not STRAT/PLAN/EXEC/
+// REVIEW/SENSE/DISC/PASS — they name a lifecycle capability directly. This asks
+// the SAME owner dispatch policy (modes.<mode>.roles.<role> or modes.<mode>.<role>)
+// with the SAME fail-closed, no-silent-remap semantics as resolveDispatchModel.
+// A host with no configured route for the role fails closed — it is never
+// silently remapped to Claude/Codex (WI-552 AC-552-6).
+export function resolveDispatchRoleTuple(options = {}) {
+  const role = String(options.role || '').trim();
+  if (!role) fail('role resolution requires --role', 'dispatch_input_invalid');
+  const orchestrator = options.orchestrator || process.env.SVC_HOST || null;
+  if (!orchestrator) fail('role resolution requires --orchestrator or SVC_HOST', 'dispatch_input_invalid');
+  if (orchestrator === 'agy') fail('AGY is reviewer transport only and cannot be an orchestrator', 'dispatch_input_invalid');
+  const context = normalizeDispatchContext(options);
+  const entry = normalizeRoleEntry(context.mode_config, role, null);
+  if (!entry) fail(`role "${role}" is not configured in mode "${context.mode}"`, 'dispatch_policy_invalid');
+  const tuple = tupleFromRoleEntry(entry, role, orchestrator);
+  applyDenyAllow(context.policy, tuple, role);
+  return {
+    schema_version: 1,
+    source: 'owner-dispatch-policy',
+    config_path: context.config_path,
+    config_sha256: context.config_sha256,
+    mode: context.mode,
+    orchestrator,
+    role,
+    tuple: { orchestrator, ...tuple },
+    harness: tuple.host,
+    provider: tuple.host,
+    model: tuple.model,
+    effort: tuple.effort,
+    thinking: entry?.thinking ?? null,
+    invocation: entry?.invocation ?? null,
+    layering: {
+      overlay: {
+        requested: Boolean(options.workOverlayPath || process.env.SVC_DISPATCH_WORK_OVERLAY),
+        applied: context.overlay.applied,
+        reason: context.overlay.reason,
+        path: context.overlay.path,
+        sha256: context.overlay.sha256,
+      },
+      session_override: {
+        requested: parseBoolean(options.sessionOverrideRequested ?? process.env.SVC_DISPATCH_OVERRIDE_REQUESTED) ?? false,
+        applied: context.session_override.applied,
+        reason: context.session_override.reason,
+        source_path: context.session_override.source_path,
+        override_sha256: context.session_override.sha256,
+        receipt_sha256: context.session_override.receipt_sha256,
+      },
+    },
+  };
+}
+
 export function resolveDispatchReviewTopology(options = {}) {
   const orchestrator = options.orchestrator || process.env.SVC_HOST || null;
   const phase = String(options.phase || '').toLowerCase();
@@ -623,6 +676,12 @@ function cli() {
     printModel(result, options.format || null);
     return;
   }
+  if (command === 'role') {
+    const role = requireOption(options, 'role', 'role command requires --role');
+    const result = resolveDispatchRoleTuple({ ...shared, role });
+    printModel(result, options.format || null);
+    return;
+  }
   if (command === 'topology') {
     const phase = requireOption(options, 'phase', 'topology command requires --phase');
     const result = resolveDispatchReviewTopology({ ...shared, phase });
@@ -640,7 +699,7 @@ function cli() {
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     return;
   }
-  fail('usage: resolve-dispatch.mjs model|topology|external|policy-status ...', 'dispatch_input_invalid');
+  fail('usage: resolve-dispatch.mjs model|role|topology|external|policy-status ...', 'dispatch_input_invalid');
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

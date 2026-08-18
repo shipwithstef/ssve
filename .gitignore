@@ -144,3 +144,8 @@ docs/specs/work-items/evidence/*SELFTEST*/
 # Candidate mirror atomic-write residue after abrupt termination
 docs/specs/candidates/*.lock
 docs/specs/candidates/*.tmp.*
+
+# WI-552: restart-boundary continuation ledgers are machine-local, regenerable
+# runtime state (the hash-bound baton is the fold of this ledger, not a
+# committed artifact).
+.svc/continuation/
