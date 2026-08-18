@@ -466,6 +466,28 @@ node scripts/pipeline-log.mjs append \
   --overrideable false
 ```
 
+### Restart-Boundary Continuation (WI-552)
+
+If the WI's plan or verify-promotion target declares `requires_fresh_session`
+(the post-merge proof needs a genuinely new host session/process — e.g. a
+SessionStart healthcheck), persist the hash-bound continuation baton BEFORE
+merge, then stamp it with the exact merge SHA immediately after:
+
+```bash
+node scripts/resolve-continuation.mjs create \
+  --wi "$WI" --host <host> --event <event-name> \
+  --proof-query "<what the fresh session must prove>" \
+  --session-id "$SVC_SESSION_ID"
+# ...merge happens...
+node scripts/resolve-continuation.mjs stamp-deploy --wi "$WI" --merge-sha "$(git rev-parse HEAD)"
+```
+
+Do not do anything else with the baton here — launch, freshness checks, and
+consumption are `verify-promotion`'s job (called by `svc-auto-drive.mjs`
+post-merge, or by `reconcile` on resume). This is additive: a WI with no
+restart boundary never creates a baton and land-changeset's control flow is
+unchanged (AC-552-8 — ordinary verification launches zero new sessions).
+
 ### Step 5: Clean up worktree (after merge)
 
 After the PR is merged (either by you or by a reviewer):

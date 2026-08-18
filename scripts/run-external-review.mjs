@@ -32,6 +32,15 @@ const FINDINGS_SCHEMA = path.join(ROOT, 'schemas/external-review-findings.schema
 const RECEIPT_SCHEMA = path.join(ROOT, 'schemas/external-review-receipt.schema.json');
 const MODEL_REGISTRY = path.join(ROOT, 'references/model-registry.json');
 const AGY_DISPATCHER = path.join(ROOT, 'skills/research/scripts/dispatch-agy.mjs');
+const REVIEW_HOST_TRANSPORTS = Object.freeze({
+  codex: { env: 'SVC_EXTERNAL_REVIEW_CODEX_BIN', binary: 'codex' },
+  agy: { env: 'SVC_EXTERNAL_REVIEW_AGY_BIN', binary: 'agy' },
+  claude: { env: 'SVC_EXTERNAL_REVIEW_CLAUDE_BIN', binary: 'claude' },
+});
+
+function reviewTransport(host) {
+  return REVIEW_HOST_TRANSPORTS[host] || null;
+}
 const ELIGIBLE_FALLBACKS = new Set(['model_unavailable', 'model_entitlement', 'provider_overload']);
 const DEFAULT_TIMEOUT_SECONDS = 1200;
 const DEFAULT_REVIEW_BUDGET_USD = 50;
@@ -46,7 +55,7 @@ let emergencyReceipt;
 
 function usage(message = '') {
   const prefix = message ? `external-review: ${message}\n` : '';
-  return `${prefix}usage: run-external-review.mjs --orchestrator claude|codex --review-kind KIND --artifacts-dir DIR [--context-root DIR] [--reviewer-config FILE --reviewer-mode MODE --reviewer-phase plan|exec --reviewer-station ID] [--owner-override-file FILE] [--phase-binding FILE] [--phase-override-file FILE]\n       run-external-review.mjs --validate-capabilities --orchestrator claude|codex --artifacts-dir DIR [reviewer config options]\n       run-external-review.mjs --policy-status --orchestrator claude|codex\n       run-external-review.mjs --select-profile fable-high --reason TEXT [--expires-at ISO]\n       run-external-review.mjs --clear-profile-selection --reason TEXT\n       run-external-review.mjs --gc-cache [--artifacts-dir DIR]`;
+  return `${prefix}usage: run-external-review.mjs --orchestrator HOST --review-kind KIND --artifacts-dir DIR [--context-root DIR] [--reviewer-config FILE --reviewer-mode MODE --reviewer-phase plan|exec|design --reviewer-station ID] [--owner-override-file FILE] [--phase-binding FILE] [--phase-override-file FILE]\n       run-external-review.mjs --validate-capabilities --orchestrator HOST --artifacts-dir DIR [reviewer config options]\n       run-external-review.mjs --policy-status --orchestrator HOST\n       run-external-review.mjs --select-profile fable-high --reason TEXT [--expires-at ISO]\n       run-external-review.mjs --clear-profile-selection --reason TEXT\n       run-external-review.mjs --gc-cache [--artifacts-dir DIR]`;
 }
 
 function parseArgs(argv) {
@@ -554,6 +563,9 @@ async function runProcess(binary, args, input, timeoutMs, env = process.env) {
 }
 
 async function capabilityCheck(tuple, binary, timeoutMs) {
+  if (!reviewTransport(tuple.host)) {
+    return { ok: false, missing: [`no review transport for host ${tuple.host}`], output: '' };
+  }
   const required = tuple.host === 'codex'
     ? ['--config', '--strict-config', '--model', '--sandbox', 'read-only', '--skip-git-repo-check', '--ephemeral', '--ignore-user-config', '--ignore-rules', '--output-schema', '--json', '--output-last-message', '--color']
     : tuple.host === 'agy'
@@ -1028,6 +1040,7 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
   const suppressSafetyEnvelope = process.env.SVC_EXTERNAL_REVIEW_FIXTURE === '1' && process.env.SVC_EXTERNAL_REVIEW_FIXTURE_DISABLE_SAFETY_ENVELOPE === '1';
   const switchingEnabled = tuple.model === 'claude-fable-5' && !suppressSafetyEnvelope;
   let args;
+  let result = null;
   if (tuple.host === 'codex') {
     args = ['exec', '--skip-git-repo-check', '--sandbox', 'read-only', '--ephemeral', '--ignore-user-config', '--ignore-rules', '--strict-config', '--model', tuple.model, '-c', `model_reasoning_effort="${tuple.effort}"`, '--output-schema', FINDINGS_SCHEMA, '--json', '--output-last-message', finalFile, '--color', 'never', '-'];
   } else if (tuple.host === 'agy') {
@@ -1037,14 +1050,18 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
     args = [AGY_DISPATCHER, '--stdin', '--model', tuple.model, '--timeout-seconds', String(Math.max(1, Math.floor(timeoutMs / 1000))), '--artifacts-dir', transportDir];
     if (process.env.SVC_EXTERNAL_REVIEW_FIXTURE === '1') env.PATH = `${path.dirname(binary)}${path.delimiter}${env.PATH || ''}`;
     binary = process.execPath;
-  } else {
+  } else if (tuple.host === 'claude') {
     const inlineSchema = JSON.stringify(JSON.parse(schemaBytes.toString('utf8')));
     for (const key of ['CLAUDE_CODE_DISABLE_REFUSAL_FALLBACK', 'ANTHROPIC_MODEL', 'CLAUDE_MODEL', 'CLAUDE_CODE_MODEL', 'ANTHROPIC_DEFAULT_OPUS_MODEL', 'ANTHROPIC_DEFAULT_SONNET_MODEL', 'ANTHROPIC_DEFAULT_HAIKU_MODEL']) delete env[key];
     args = ['--print', '--model', tuple.model, '--effort', tuple.effort, '--safe-mode', '--tools', '', '--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}', '--permission-mode', 'plan', '--no-session-persistence', '--max-turns', '4', '--disable-slash-commands', '--no-chrome', ...(switchingEnabled ? ['--settings', '{"switchModelsOnFlag":true}'] : []), '--json-schema', inlineSchema, '--output-format', 'json', '--max-budget-usd', String(budgetUsd)];
+  } else {
+    args = [];
+    result = { code: null, signal: null, timedOut: false, stdout: Buffer.alloc(0), stderr: Buffer.from(`no review transport for host ${tuple.host}`), spawnError: true };
   }
-  let result;
-  try { result = await runProcess(binary, args, packageBytes, timeoutMs, env); }
-  catch (error) { result = { code: null, signal: null, timedOut: false, stdout: Buffer.alloc(0), stderr: Buffer.from(error.message), spawnError: true }; }
+  if (!result) {
+    try { result = await runProcess(binary, args, packageBytes, timeoutMs, env); }
+    catch (error) { result = { code: null, signal: null, timedOut: false, stdout: Buffer.alloc(0), stderr: Buffer.from(error.message), spawnError: true }; }
+  }
   await writeFile(eventsFile, redactDiagnostic(result.stdout.toString('utf8')), { mode: 0o600 });
   await writeFile(stderrFile, redactDiagnostic(result.stderr.toString('utf8')), { mode: 0o600 });
   let findings = null;
@@ -1179,8 +1196,37 @@ async function main() {
   }
   if (options.policyStatus) {
     try {
-      const resolved = await resolvePolicy(policy, options.orchestrator, now, selectionPath);
-      process.stdout.write(`${JSON.stringify({ ok: true, orchestrator: options.orchestrator, policy_version: resolved.metadata.version, profile: resolved.metadata.profile, profile_source: resolved.metadata.source, tuple: resolved.tuple, fallback: resolved.fallback, effective_window: resolved.metadata.effective_window, resolved_at: resolved.metadata.resolved_at, cutover_utc: policy.cutover_utc, cutover_local: policy.cutover_local, timezone: policy.timezone, next_cutover: resolved.metadata.effective_window.ends_at, selection: resolved.metadata.source === 'explicit-selection' ? { sha256: resolved.metadata.selection_sha256, expires_at: resolved.metadata.selection_expires_at, authority: resolved.metadata.selection_authority } : null })}\n`);
+      const external = resolveExternalReviewer({
+        configPath: options.reviewerConfig,
+        mode: options.reviewerMode,
+        orchestrator: options.orchestrator,
+        phase: options.reviewerPhase || 'plan',
+        stationId: options.reviewerStation || null,
+        wi: process.env.SVC_WI || null,
+        workOverlayPath: process.env.SVC_DISPATCH_WORK_OVERLAY || null,
+        sessionId: process.env.SVC_SESSION_ID || null,
+        sessionOverrideSpec: process.env.SVC_DISPATCH_OVERRIDE || null,
+        sessionOverrideRequested: process.env.SVC_DISPATCH_OVERRIDE_REQUESTED || null,
+        sessionOverrideReceiptSpec: process.env.SVC_DISPATCH_OVERRIDE_RECEIPT || null,
+        explicitAsk: process.env.SVC_DISPATCH_EXPLICIT_ASK === '1' || process.env.SVC_DISPATCH_EXPLICIT_ASK === 'true',
+        unavailableStations: process.env.SVC_DISPATCH_UNAVAILABLE_STATIONS || '',
+      });
+      process.stdout.write(`${JSON.stringify({
+        ok: true,
+        orchestrator: options.orchestrator,
+        policy_version: external.topology.schema_version || null,
+        profile: `${external.topology.mode}:${external.station.id}`,
+        profile_source: 'owner-config',
+        tuple: external.tuple,
+        fallback: null,
+        effective_window: { starts_at: null, ends_at: null },
+        resolved_at: now.toISOString(),
+        cutover_utc: null,
+        cutover_local: null,
+        timezone: null,
+        next_cutover: null,
+        selection: { sha256: external.topology.config_sha256, expires_at: null, authority: 'repository-owner' },
+      })}\n`);
     } catch (error) {
       process.stderr.write(`external-review: ${error.classification || 'config_invalid'}: ${actionableDiagnostic(error.classification || 'config_invalid')}; detail=${error.message}\n`);
       process.exitCode = 1;
@@ -1258,34 +1304,44 @@ async function main() {
   if (!options.validateCapabilities) await writeFile(packagePath, packageBytes, { mode: 0o600 });
   let resolvedPolicy = null;
   let policyError = null;
-  if (options.orchestrator === 'claude' || options.orchestrator === 'codex') {
-    try {
-      if (options.reviewerStation) {
-        if (!options.reviewerPhase || !['plan', 'exec'].includes(options.reviewerPhase) || (options.reviewKind && options.reviewKind !== options.reviewerPhase)) throw Object.assign(new Error('owner reviewer station requires matching --reviewer-phase plan|exec'), { classification: 'input_invalid' });
-        const external = resolveExternalReviewer({ configPath: options.reviewerConfig, mode: options.reviewerMode, orchestrator: options.orchestrator, phase: options.reviewerPhase, stationId: options.reviewerStation });
-        resolvedPolicy = {
-          tuple: external.tuple,
-          fallback: null,
-          metadata: {
-            version: 2,
-            profile: `${external.topology.mode}:${external.station.id}`,
-            source: 'owner-config',
-            resolved_at: now.toISOString(),
-            effective_window: { starts_at: null, ends_at: null },
-            cutover_utc: null,
-            cutover_local: null,
-            timezone: null,
-            selection_sha256: external.topology.config_sha256,
-            selection_expires_at: null,
-            selection_authority: 'repository-owner',
-          },
-        };
-      } else {
-        if (options.reviewerConfig || options.reviewerMode || options.reviewerPhase) throw Object.assign(new Error('--reviewer-config/--reviewer-mode/--reviewer-phase require --reviewer-station'), { classification: 'input_invalid' });
-        resolvedPolicy = await resolvePolicy(policy, options.orchestrator, now, selectionPath);
-      }
-    }
-    catch (error) { policyError = error; }
+  try {
+    const inferredPhase = options.reviewerPhase || (options.reviewKind === 'plan' || options.reviewKind === 'prompt-floor' || options.reviewKind === 'blind-floor' ? 'plan' : 'exec');
+    if (!['plan', 'exec', 'design'].includes(inferredPhase)) throw Object.assign(new Error(`unsupported reviewer phase ${inferredPhase}`), { classification: 'input_invalid' });
+    if (options.reviewKind && ['plan', 'exec'].includes(options.reviewKind) && options.reviewKind !== inferredPhase) throw Object.assign(new Error('review-kind must match reviewer phase when both are explicit'), { classification: 'input_invalid' });
+    const external = resolveExternalReviewer({
+      configPath: options.reviewerConfig,
+      mode: options.reviewerMode,
+      orchestrator: options.orchestrator,
+      phase: inferredPhase,
+      stationId: options.reviewerStation || null,
+      wi: process.env.SVC_WI || null,
+      workOverlayPath: process.env.SVC_DISPATCH_WORK_OVERLAY || null,
+      sessionId: process.env.SVC_SESSION_ID || null,
+      sessionOverrideSpec: process.env.SVC_DISPATCH_OVERRIDE || null,
+      sessionOverrideRequested: process.env.SVC_DISPATCH_OVERRIDE_REQUESTED || null,
+      sessionOverrideReceiptSpec: process.env.SVC_DISPATCH_OVERRIDE_RECEIPT || null,
+      explicitAsk: process.env.SVC_DISPATCH_EXPLICIT_ASK === '1' || process.env.SVC_DISPATCH_EXPLICIT_ASK === 'true',
+      unavailableStations: process.env.SVC_DISPATCH_UNAVAILABLE_STATIONS || '',
+    });
+    resolvedPolicy = {
+      tuple: external.tuple,
+      fallback: null,
+      metadata: {
+        version: external.topology.schema_version || 1,
+        profile: `${external.topology.mode}:${external.station.id}`,
+        source: 'owner-config',
+        resolved_at: now.toISOString(),
+        effective_window: { starts_at: null, ends_at: null },
+        cutover_utc: null,
+        cutover_local: null,
+        timezone: null,
+        selection_sha256: external.topology.config_sha256,
+        selection_expires_at: null,
+        selection_authority: 'repository-owner',
+      },
+    };
+  } catch (error) {
+    policyError = error;
   }
   const defaultTuple = resolvedPolicy?.tuple || null;
   const configuredFallback = resolvedPolicy?.fallback || null;
@@ -1362,7 +1418,7 @@ async function main() {
     process.exitCode = 1;
   };
 
-  if (!options.orchestrator || !['claude', 'codex'].includes(options.orchestrator) || !options.artifactsDir || (!options.validateCapabilities && (!options.reviewKind || rawPackageBytes.length === 0))) {
+  if (!options.orchestrator || options.orchestrator === 'agy' || !options.artifactsDir || (!options.validateCapabilities && (!options.reviewKind || rawPackageBytes.length === 0))) {
     await finishFailure('input_invalid');
     return;
   }
@@ -1499,11 +1555,16 @@ async function main() {
 
     let binary;
     try {
-      binary = requestedTuple.host === 'codex'
-        ? await fixtureBinary('SVC_EXTERNAL_REVIEW_CODEX_BIN', 'codex', fixtureRoot)
-        : requestedTuple.host === 'agy'
-          ? await fixtureBinary('SVC_EXTERNAL_REVIEW_AGY_BIN', 'agy', fixtureRoot)
-          : await fixtureBinary('SVC_EXTERNAL_REVIEW_CLAUDE_BIN', 'claude', fixtureRoot);
+      const transport = reviewTransport(requestedTuple.host);
+      if (!transport) {
+        await finishFailure('capability', {
+          cacheKey,
+          detail: `no review transport for host ${requestedTuple.host}`,
+          cache: { disposition: 'miss', reusable: false, entry: entryDir },
+        });
+        return;
+      }
+      binary = await fixtureBinary(transport.env, transport.binary, fixtureRoot);
     } catch {
       await finishFailure('capability', { cacheKey, cache: { disposition: 'miss', reusable: false, entry: entryDir } });
       return;

@@ -18,7 +18,11 @@
     "stable_child_identity": false,
     "filesystem_containment": "none",
     "mutating_child_execution": false,
-    "reason": "Skills-only host with no verified lifecycle hook identity or containment adapter."
+    "reason": "Skills-only host with no verified lifecycle hook identity or containment adapter.",
+    "fresh_session_launch": {
+      "enabled": false,
+      "reason": "No automatable fresh-session transport declared for this host yet (WI-552 migration note: disabled by default until a host manifest declares fresh_session_launch)."
+    }
   },
   "infra_files": [
     "DOCTRINE.md",

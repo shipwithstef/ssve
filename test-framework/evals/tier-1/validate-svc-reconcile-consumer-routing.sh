@@ -61,7 +61,8 @@ fs.chmodSync(path.join(bin, "gh"), 0o755);
 
 const state = path.join(temp, "state");
 fs.mkdirSync(state);
-fs.writeFileSync(path.join(state, "policy.json"), JSON.stringify({ mode: "warn" }));
+// WI-549: mode is resolved through the shared chain-policy resolver; force it
+// via the SVC_CHAIN_POLICY env override instead of a bespoke policy-path file.
 const result = spawnSync(process.execPath, [script, "--repo", repo], {
   cwd: outside,
   encoding: "utf8",
@@ -69,7 +70,7 @@ const result = spawnSync(process.execPath, [script, "--repo", repo], {
     ...process.env,
     PATH: `${bin}:${process.env.PATH}`,
     SVC_RECONCILE_CHECKPOINT_PATH: path.join(state, "checkpoint.json"),
-    SVC_RECONCILE_POLICY_PATH: path.join(state, "policy.json"),
+    SVC_CHAIN_POLICY: "warn",
     SVC_GH_AUTH_RECOVERY_PATH: path.join(state, "gh-recovery.json"),
     SVC_RECONCILE_DRIVE_ROOT: path.join(state, "drive"),
     SVC_RECONCILE_CHILD_TIMEOUT_MS: "3000",

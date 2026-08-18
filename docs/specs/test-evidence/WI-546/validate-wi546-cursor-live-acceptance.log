@@ -1,0 +1,30 @@
+=== Tier 1: WI-546 Cursor live-acceptance ===
+  model_id_required: cursor-grok-4.6-high
+  usage_pool: Cursor Grok 4.6 High (not Anthropic Sonnet)
+  ✓ AC-546-7: capability matrix documents Cursor differences and this fixture
+  ✓ wire-cursor-hooks.mjs parses
+  ✓ Cursor Stop adapter bash syntax valid
+  ✓ AC-546-1/2: Cursor Stop adapter is git mode 100755
+  ✓ Cursor host manifest declares hooks.json / no matcher / no Task UI / launch disabled
+  ✓ AC-546-2: wirer declares sessionStart healthcheck + Stop adapter
+  ✓ AC-546-7 #6: ./setup --host cursor from this worktree refuses (AP-30)
+  ✓ isolated Cursor setup source is outside .worktrees/
+  ✓ AC-546-1: isolated ./setup --host cursor exits 0
+  ✓ AC-546-1: isolated check-install-drift.sh --host cursor is zero
+  ✓ AC-546-2: isolated Cursor hooks.json loads SessionStart + Stop adapters
+  ✓ AC-546-2: live Cursor session hooks.json already loads declared adapters
+  ✓ AC-546-3/7: Cursor Stop adapter exits 2 when canonical receipts fail
+  ✓ AC-546-4: check-chain-receipts consume path does not launch AGY
+  ✓ AC-546-4: check-chain-receipts --sha f27a143a consumes notes from this tree/common git dir
+  ✓ AC-546-6: Cursor EXEC stays cursor-grok-4.6-high; missing policy and sonnet remap fail closed
+  ✓ AC-546-6: live resolve-model EXEC fail-closes on missing owner dispatch file (no Sonnet remap)
+  ✓ AC-546-6: detect-host.sh reports cursor in this session
+  ✓ compose WI-545 bash hook mode
+  ✓ compose WI-547 review-evidence portability
+  ✓ compose WI-549 shared chain-policy
+  ✓ compose WI-550 receipt identity + Stop/finalization
+  ✓ compose WI-551 dispatch no-remap
+  ✓ compose WI-552 restart continuation (fake transport / cursor capability_limited)
+  ✓ compose task-state persistence includes cursor
+
+WI-546 Cursor live-acceptance: 25 passed, 0 failed

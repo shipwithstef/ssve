@@ -10,6 +10,7 @@
  *   check-chain-receipts.mjs --sha <sha>
  *   check-chain-receipts.mjs --range <base>..<head>
  *   check-chain-receipts.mjs --pr <pr-number>     # uses gh CLI
+ *   check-chain-receipts.mjs --sha <sha> --wi <WI-###> [--consumer <name>]
  *
  * Exit 0 if all receipts present and valid. Exit 1 if any missing/invalid.
  *
@@ -50,6 +51,49 @@ const REQUIRED_TYPES_FULL = [
 const LOW_TIER_TYPES = ["plan-manifest", "exec-record", "review-exec"];
 
 const QUICK_FIX_TYPES = ["quick-fix"];
+const SLOT_PREFIX = "slot::";
+const CONSUMER_TYPES = new Set([
+  "execute-changeset",
+  "review-exec",
+  "audit-implementation",
+  "stop",
+  "verify-promotion",
+  "final-report",
+  "push",
+  "reconcile",
+]);
+const CONSUMER_REQUIRED_TYPES = {
+  "execute-changeset": ["plan-manifest", "review-plan", "exec-record"],
+  "review-exec": ["exec-record", "review-exec"],
+  "audit-implementation": ["exec-record", "audit-implementation"],
+  "verify-promotion": ["verify-promotion"],
+};
+// SOL-E001 / SOL-R2-001: finalization and land consumers cannot be authorized
+// by a gitignored mirror. push/reconcile are the L2/L3 callers that previously
+// invoked the checker with no consumer and inherited the development fallback.
+const NOTE_REQUIRED_CONSUMERS = new Set([
+  "stop",
+  "verify-promotion",
+  "final-report",
+  "push",
+  "reconcile",
+]);
+const PASSING_VERDICTS = {
+  "review-plan": new Set(["pass", "pass-with-acks"]),
+  "review-exec": new Set(["pass", "pass-with-acks"]),
+  "audit-implementation": new Set(["pass", "pass-with-acks"]),
+  "verify-promotion": new Set(["pass"]),
+};
+const EXPECTED_STAGE_TYPES = {
+  "quick-fix": ["quick-fix"],
+  plan: ["plan-manifest"],
+  "review-plan": ["plan-manifest", "review-plan"],
+  exec: ["plan-manifest", "review-plan", "exec-record"],
+  "review-exec": ["plan-manifest", "review-plan", "exec-record", "review-exec"],
+  audit: REQUIRED_TYPES_FULL,
+  "verify-promotion": ["verify-promotion"],
+  full: REQUIRED_TYPES_FULL,
+};
 const RANGE_CONCURRENCY_MAX = 16;
 const RANGE_WORKER_TIMEOUT_MIN_MS = 1_000;
 const RANGE_WORKER_TIMEOUT_MAX_MS = 10_000;
@@ -237,11 +281,15 @@ export function checkShaInWorker(sha, policy = {}) {
   const childEnv = { ...process.env, SVC_RECEIPT_RANGE_WORKER: "1" };
   delete childEnv.SVC_RECEIPT_RANGE_CONCURRENCY;
   delete childEnv.SVC_RECEIPT_RANGE_WORKER_TIMEOUT_MS;
+  const childArgs = [SCRIPT_FILE, "--sha", sha];
+  if (policy.wi) childArgs.push("--wi", policy.wi);
+  if (policy.consumer) childArgs.push("--consumer", policy.consumer);
+  if (policy.expectedStage) childArgs.push("--expected-stage", policy.expectedStage);
 
   return new Promise((resolveResult) => {
     execFile(
       process.execPath,
-      [SCRIPT_FILE, "--sha", sha],
+      childArgs,
       {
         encoding: "utf8",
         env: childEnv,
@@ -329,8 +377,16 @@ function readMirrorForSha(sha) {
     for (const t of types) {
       const f = join(dir, t);
       const content = JSON.parse(readFileSync(f, "utf8"));
-      const typeName = t.replace(/\.json$/, "");
-      receipts[typeName] = content;
+      const typeName = typeof content.receipt_type === "string"
+        ? content.receipt_type
+        : t.replace(/\.json$/, "");
+      const wi = typeof content.wi === "string" && content.wi.length > 0 ? content.wi : null;
+      const phase = typeof content.phase === "string" && content.phase.length > 0 ? content.phase : null;
+      if (wi && /^[0-9a-f]{40}$/.test(sha)) {
+        receipts[compositeSlotKey(typeName, wi, sha, phase)] = content;
+      } else {
+        receipts[typeName] = content;
+      }
     }
     return receipts;
   } catch (e) {
@@ -341,8 +397,20 @@ function readMirrorForSha(sha) {
 function regenerateMirror(sha, envelope) {
   const dir = join(".svc", "receipts", shortSha(sha));
   mkdirSync(dir, { recursive: true });
-  for (const [type, receipt] of Object.entries(envelope)) {
-    writeJsonAtomic(join(dir, `${type}.json`), receipt);
+  const safe = (value) => String(value || "").replace(/[^A-Za-z0-9._-]/g, "_");
+  for (const [slotKey, receipt] of Object.entries(envelope)) {
+    const slot = parseCompositeSlotKey(slotKey);
+    let fileName = null;
+    if (slot) {
+      fileName = `${safe(slot.receiptType)}--${safe(slot.wi)}${slot.phase ? `--${safe(slot.phase)}` : ""}.json`;
+    } else {
+      fileName = `${safe(slotKey)}.json`;
+    }
+    writeJsonAtomic(join(dir, fileName), receipt);
+    // Compatibility alias for legacy readers that still expect <type>.json.
+    if (slot && !existsSync(join(dir, `${safe(slot.receiptType)}.json`))) {
+      writeJsonAtomic(join(dir, `${safe(slot.receiptType)}.json`), receipt);
+    }
   }
 }
 
@@ -364,8 +432,166 @@ function getReceiptsForSha(sha) {
   return { envelope: mirror, source: mirror ? "mirror" : null };
 }
 
-function commitIsQuickFix(receipts) {
-  return receipts && receipts["quick-fix"] && receipts["quick-fix"].eligible === true;
+function parseCompositeSlotKey(key) {
+  if (typeof key !== "string" || !key.startsWith(SLOT_PREFIX)) return null;
+  const tail = key.slice(SLOT_PREFIX.length);
+  const parts = tail.split("::");
+  if (parts.length < 3 || parts.length > 4) return null;
+  const [receiptType, wi, targetSha, phase] = parts;
+  if (!receiptType || !wi || !/^[0-9a-f]{40}$/.test(String(targetSha))) return null;
+  return {
+    receiptType,
+    wi,
+    targetSha,
+    phase: phase || null,
+  };
+}
+
+function compositeSlotKey(receiptType, wi, sha, phase = null) {
+  return `${SLOT_PREFIX}${receiptType}::${wi}::${sha}${phase ? `::${phase}` : ""}`;
+}
+
+function normalizeEnvelopeEntries(sha, envelope) {
+  const entries = [];
+  const explicitWIs = new Set();
+  const issues = [];
+
+  if (!envelope || typeof envelope !== "object" || Array.isArray(envelope)) {
+    return { entries, explicitWIs, issues };
+  }
+
+  for (const [key, rawReceipt] of Object.entries(envelope)) {
+    if (!rawReceipt || typeof rawReceipt !== "object" || Array.isArray(rawReceipt)) continue;
+    const slot = parseCompositeSlotKey(key);
+    const receiptType = typeof rawReceipt.receipt_type === "string"
+      ? rawReceipt.receipt_type
+      : (slot?.receiptType || key);
+    const entry = {
+      key,
+      receipt: rawReceipt,
+      receiptType,
+      wi: null,
+      phase: null,
+      source: slot ? "composite" : "legacy",
+      unresolved_owner: false,
+    };
+
+    if (slot) {
+      entry.wi = slot.wi;
+      entry.phase = slot.phase;
+      explicitWIs.add(slot.wi);
+      if (slot.targetSha !== sha) {
+        issues.push(`slot ${key} targets ${slot.targetSha}, expected ${sha}`);
+      }
+      if (rawReceipt.wi && rawReceipt.wi !== slot.wi) {
+        issues.push(`slot ${key} wi mismatch: key=${slot.wi} body=${rawReceipt.wi}`);
+      }
+      if (rawReceipt.target_sha && rawReceipt.target_sha !== sha) {
+        issues.push(`slot ${key} body target_sha mismatch: ${rawReceipt.target_sha} != ${sha}`);
+      }
+    } else {
+      const wi = typeof rawReceipt.wi === "string" && rawReceipt.wi.length > 0 ? rawReceipt.wi : null;
+      if (wi) {
+        entry.wi = wi;
+        explicitWIs.add(wi);
+      }
+      if (typeof rawReceipt.phase === "string" && rawReceipt.phase.length > 0) {
+        entry.phase = rawReceipt.phase;
+      }
+    }
+    entries.push(entry);
+  }
+
+  for (const entry of entries) {
+    if (entry.wi) continue;
+    if (entry.source !== "legacy") continue;
+    if (explicitWIs.size === 1) {
+      entry.wi = [...explicitWIs][0];
+      entry.source = "legacy-projected";
+      continue;
+    }
+    entry.unresolved_owner = true;
+    if (explicitWIs.size === 0) {
+      issues.push(`legacy slot '${entry.key}' has no wi and no unique owner claim`);
+    } else {
+      issues.push(
+        `legacy slot '${entry.key}' has no wi and multiple WI claims exist (${[...explicitWIs].join(", ")})`,
+      );
+    }
+  }
+  return { entries, explicitWIs, issues };
+}
+
+function indexEntriesByType(entries, wi = null) {
+  const byType = new Map();
+  for (const entry of entries) {
+    if (wi && entry.wi !== wi) continue;
+    const bucket = byType.get(entry.receiptType) || [];
+    bucket.push(entry);
+    byType.set(entry.receiptType, bucket);
+  }
+  return byType;
+}
+
+function selectReceipts(byType, type) {
+  const entries = byType.get(type) || [];
+  // Prefer the non-phase receipt when multiple phase-keyed siblings exist.
+  const phaseLess = entries.filter((entry) => !entry.phase);
+  if (phaseLess.length > 0) return phaseLess;
+  return entries;
+}
+
+function commitIsQuickFix(entriesByType, wi = null) {
+  const quickFixEntries = selectReceipts(entriesByType, "quick-fix");
+  const match = wi
+    ? quickFixEntries.find((entry) => entry.wi === wi)
+    : quickFixEntries[0];
+  return Boolean(match?.receipt?.eligible === true);
+}
+
+function requiredTypesForStop(entriesByType, options = {}) {
+  const expectedStage = options.expectedStage || null;
+  if (expectedStage) {
+    const mapped = EXPECTED_STAGE_TYPES[expectedStage];
+    if (!mapped) return null;
+    return mapped;
+  }
+  if (commitIsQuickFix(entriesByType, options.wi || null)) return ["quick-fix"];
+  const has = (type) => selectReceipts(entriesByType, type).length > 0;
+  if (has("verify-promotion")) return ["verify-promotion"];
+  if (has("audit-implementation")) return REQUIRED_TYPES_FULL;
+  if (has("review-exec")) return ["plan-manifest", "review-plan", "exec-record", "review-exec"];
+  if (has("exec-record")) return ["plan-manifest", "review-plan", "exec-record"];
+  // SOL-R2-004: leftover planning-only receipts cannot authorize Stop/final-report.
+  return REQUIRED_TYPES_FULL;
+}
+
+function requiredTypesForConsumer(consumer, entriesByType, options = {}) {
+  if (!consumer) return null;
+  if (consumer === "stop" || consumer === "final-report") {
+    return requiredTypesForStop(entriesByType, options);
+  }
+  if (consumer === "push" || consumer === "reconcile") return null;
+  if (consumer in CONSUMER_REQUIRED_TYPES) return CONSUMER_REQUIRED_TYPES[consumer];
+  return null;
+}
+
+function selectBestEntry(entries) {
+  if (!entries || entries.length === 0) return null;
+  const sourceRank = (source) => {
+    if (source === "composite") return 3;
+    if (source === "legacy-projected") return 2;
+    return 1;
+  };
+  return entries
+    .slice()
+    .sort((a, b) => {
+      const rank = sourceRank(b.source) - sourceRank(a.source);
+      if (rank !== 0) return rank;
+      const tsA = Date.parse(a.receipt?.timestamp || 0) || 0;
+      const tsB = Date.parse(b.receipt?.timestamp || 0) || 0;
+      return tsB - tsA;
+    })[0];
 }
 
 function validateRetroactiveAttestation(sha, receipt) {
@@ -497,33 +723,102 @@ function validateReceipt(receiptType, receipt) {
     const evidenceReasons = verifyReviewerEvidence({ root: join(SCRIPT_DIR, ".."), reviewKind: receiptType === "review-plan" ? "plan" : "exec", body: receipt });
     if (evidenceReasons.length) return { valid: false, reasons: evidenceReasons };
   }
+  const allowedVerdicts = PASSING_VERDICTS[receiptType];
+  if (allowedVerdicts && receipt.verdict === "fail") {
+    return { valid: false, reasons: [`${receiptType} verdict=${JSON.stringify(receipt.verdict)} is not authorizing evidence`] };
+  }
   return { valid: true, reasons: [] };
 }
 
-function checkSha(sha) {
-  const { envelope: receipts, source } = getReceiptsForSha(sha);
-  const result = checkShaAgainstReceipts(sha, receipts);
-  return { ...result, receipt_source: source };
+function checkSha(sha, options = {}) {
+  const { envelope, source } = getReceiptsForSha(sha);
+  const consumer = options.consumer || null;
+  if (NOTE_REQUIRED_CONSUMERS.has(consumer) && source !== "note") {
+    return {
+      sha,
+      ok: false,
+      missing: [
+        `${consumer} requires a note-sourced envelope; gitignored mirrors are not authority`,
+      ],
+      type: "unaccounted",
+      receipt_source: source,
+      ...(options.wi ? { wi: options.wi } : {}),
+      consumer,
+    };
+  }
+  const result = checkShaAgainstReceipts(sha, envelope, options);
+  return {
+    ...result,
+    receipt_source: source,
+    ...(options.wi ? { wi: options.wi } : {}),
+    ...(consumer ? { consumer } : {}),
+    ...(options.expectedStage ? { expected_stage: options.expectedStage } : {}),
+  };
 }
 
-function checkShaAgainstReceipts(sha, receipts) {
-  if (!receipts) {
+function checkShaAgainstReceipts(sha, envelope, options = {}) {
+  const wi = options.wi || null;
+  const consumer = options.consumer || null;
+  if (consumer && !CONSUMER_TYPES.has(consumer)) {
+    return { sha, ok: false, missing: [`unknown consumer '${consumer}'`], type: "invalid" };
+  }
+  if (wi && !/^WI-[A-Z0-9]+(?:-[A-Z0-9]+)*$/i.test(String(wi))) {
+    return { sha, ok: false, missing: [`invalid --wi value '${wi}'`], type: "invalid" };
+  }
+  if (!envelope) {
     return { sha, ok: false, missing: ["ALL — no note or mirror found"], type: "unaccounted" };
   }
-  if (receipts["retroactive-attestation"]) {
-    const v = validateRetroactiveAttestation(sha, receipts["retroactive-attestation"]);
+
+  const normalized = normalizeEnvelopeEntries(sha, envelope);
+  const unresolvedLegacy = normalized.entries.filter((entry) => entry.unresolved_owner);
+  if (wi && unresolvedLegacy.length > 0) {
+    return {
+      sha,
+      ok: false,
+      missing: [
+        `legacy type-only slots cannot be projected uniquely for ${wi}; add explicit WI ownership map`,
+        ...normalized.issues,
+      ],
+      type: "invalid",
+    };
+  }
+  if (normalized.issues.length > 0) {
+    return { sha, ok: false, missing: normalized.issues, type: "invalid" };
+  }
+
+  const entriesByType = indexEntriesByType(normalized.entries, wi);
+  const receiptEntries = {};
+  for (const [type] of entriesByType.entries()) {
+    const candidates = selectReceipts(entriesByType, type);
+    const selected = selectBestEntry(candidates);
+    if (selected) receiptEntries[type] = selected.receipt;
+  }
+
+  if (wi && Object.keys(receiptEntries).length === 0) {
+    return { sha, ok: false, missing: [`no receipts found for ${wi} at ${sha}`], type: "incomplete" };
+  }
+
+  if (receiptEntries["retroactive-attestation"]) {
+    const v = validateRetroactiveAttestation(sha, receiptEntries["retroactive-attestation"]);
     return { sha, ok: v.valid, missing: v.reasons, type: v.valid ? "retroactive-attestation" : "invalid" };
   }
-  if (commitIsQuickFix(receipts)) {
-    const v = validateReceipt("quick-fix", receipts["quick-fix"]);
+  const consumerRequiredTypes = requiredTypesForConsumer(consumer, entriesByType, {
+    expectedStage: options.expectedStage || null,
+    wi,
+  });
+  const allowQuickFixShortcut = !consumerRequiredTypes || (
+    consumerRequiredTypes.length === 1 && consumerRequiredTypes[0] === "quick-fix"
+  );
+  if (allowQuickFixShortcut && commitIsQuickFix(entriesByType, wi)) {
+    const v = validateReceipt("quick-fix", receiptEntries["quick-fix"]);
     if (!v.valid) return { sha, ok: false, missing: [`quick-fix invalid: ${v.reasons.join("; ")}`], type: "invalid" };
     // WI-360: bind the receipt to THIS commit — a quick-fix verdict computed
     // from a different staged tree must not validate this commit (observed
     // live: 1-file receipt promoted onto a 26-file commit, dfe22a00).
     try {
       const commitTree = git(["rev-parse", `${sha}^{tree}`]);
-      if (receipts["quick-fix"].tree_hash !== commitTree) {
-        return { sha, ok: false, missing: [`quick-fix tree mismatch: receipt ${String(receipts["quick-fix"].tree_hash).slice(0, 12)} vs commit ${commitTree.slice(0, 12)}`], type: "invalid" };
+      if (receiptEntries["quick-fix"].tree_hash !== commitTree) {
+        return { sha, ok: false, missing: [`quick-fix tree mismatch: receipt ${String(receiptEntries["quick-fix"].tree_hash).slice(0, 12)} vs commit ${commitTree.slice(0, 12)}`], type: "invalid" };
       }
     } catch {
       return { sha, ok: false, missing: ["quick-fix tree mismatch: commit tree unresolvable"], type: "invalid" };
@@ -548,12 +843,12 @@ function checkShaAgainstReceipts(sha, receipts) {
   // (the declared risk_tier on any receipt is never trusted — derive-receipt-tier
   // reads the commit's own diff and fails CLOSED to full). The low tier still
   // demands a real cross-family adversarial review (never self-review).
-  let requiredTypes = REQUIRED_TYPES_FULL;
-  if (readRiskTieringPolicy() === "graded") {
+  let requiredTypes = consumerRequiredTypes || REQUIRED_TYPES_FULL;
+  if (!consumer && readRiskTieringPolicy() === "graded") {
     let derived;
     try { derived = deriveTier(sha); } catch { derived = { tier: "full" }; }
     if (derived && derived.tier === "low") {
-      const re = receipts["review-exec"] || {};
+      const re = receiptEntries["review-exec"] || {};
       // AC1/AC2: the "never self-review" fence is MECHANICAL. The declared
       // author_family/reviewer_family are REQUIRED (AC2), but enforcement does
       // NOT trust them — Gemini G6 #3: re-derive the families from the receipt's
@@ -575,22 +870,24 @@ function checkShaAgainstReceipts(sha, receipts) {
     // emitted the low set will fail the missing check below (declared-low,
     // derives-full → rejected, fail-closed).
   }
-  const missing = requiredTypes.filter((t) => !receipts[t]);
+  const missing = requiredTypes.filter((t) => !receiptEntries[t]);
   if (missing.length > 0) {
     return { sha, ok: false, missing, type: "incomplete" };
   }
+  const strictMode = !consumer;
+  const shouldValidateType = (type) => strictMode || requiredTypes.includes(type);
   // WI-385 AC2 (BOTH tiers, wherever declared): if review-exec carries the family
   // fields, they must be a real cross-family pair — a self-review (same family)
   // is rejected even in the full tier. New emissions populate these; legacy
   // receipts without them are grandfathered (the full tier's review-plan +
   // audit-implementation remain its cross-family evidence).
   {
-    const re = receipts["review-exec"] || {};
+    const re = receiptEntries["review-exec"] || {};
     // Re-derive from the receipt's own hosts (not the declared families). Applies
     // to BOTH tiers wherever the review structure reveals a self-review.
     const sr = re.self_review || {};
     const ar = re.adversarial_review || {};
-    if (sr.orchestrator && ar && (ar.primary_reviewer_host || ar.fallback_host)) {
+    if (shouldValidateType("review-exec") && sr.orchestrator && ar && (ar.primary_reviewer_host || ar.fallback_host)) {
       const reviewerHost = ar.fallback_used ? ar.fallback_host : ar.primary_reviewer_host;
       const af = familyOf(sr.orchestrator), rf = familyOf(reviewerHost);
       if (af !== "unknown" && af === rf) {
@@ -606,7 +903,8 @@ function checkShaAgainstReceipts(sha, receipts) {
   try {
     const commitTree = git(["rev-parse", `${sha}^{tree}`]);
     for (const t of ["exec-record", "review-exec"]) {
-      const r = receipts[t] || {};
+      if (!shouldValidateType(t)) continue;
+      const r = receiptEntries[t] || {};
       const bound = Number(r.schema_version) >= 2 || r.tree_hash; // explicit post-WI-396 marker
       if (bound && !r.tree_hash) {
         // schema_version>=2 promises a tree bind; a missing tree_hash is the omission bypass.
@@ -625,8 +923,8 @@ function checkShaAgainstReceipts(sha, receipts) {
   // binding (spec ACs revised after distillation) must fail. Recompute against
   // the spec AS IT IS IN THIS COMMIT'S TREE — each baton binds to its own commit,
   // so legitimate later spec evolution never false-fails a historical commit.
-  {
-    const pm = receipts["plan-manifest"] || {};
+  if (shouldValidateType("plan-manifest")) {
+    const pm = receiptEntries["plan-manifest"] || {};
     const ad = pm.ac_digests;
     // Gemini G6 #1: a PRESENT baton must ALWAYS be bound + recomputed, regardless
     // of schema_version — else a forged v2 receipt carrying ac_digests WITHOUT a
@@ -655,7 +953,7 @@ function checkShaAgainstReceipts(sha, receipts) {
   // All required receipts present; validate each (the resolved tier's set)
   const invalid = [];
   for (const t of requiredTypes) {
-    const v = validateReceipt(t, receipts[t]);
+    const v = validateReceipt(t, receiptEntries[t]);
     if (!v.valid) invalid.push(`${t}: ${v.reasons.join("; ")}`);
   }
   return {
@@ -683,6 +981,9 @@ async function main() {
   let sawRange = false;
   let sawSha = false;
   let sawPr = false;
+  let wi = null;
+  let consumer = null;
+  let expectedStage = null;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--sha") {
@@ -699,20 +1000,33 @@ async function main() {
     } else if (args[i] === "--pr") {
       sawPr = true;
       shas = shas.concat(shasFromPr(args[++i]));
+    } else if (args[i] === "--wi") {
+      wi = args[++i];
+    } else if (args[i] === "--consumer") {
+      consumer = args[++i];
+    } else if (args[i] === "--expected-stage") {
+      expectedStage = args[++i];
     }
   }
 
   if (sawRange && (sawSha || sawPr)) {
     throw new RangeConfigError("mixed --range with --sha or --pr is not supported");
   }
+  if (consumer && !CONSUMER_TYPES.has(consumer)) {
+    throw new RangeConfigError(`--consumer must be one of: ${[...CONSUMER_TYPES].join(", ")}`);
+  }
+  if (expectedStage && !EXPECTED_STAGE_TYPES[expectedStage]) {
+    throw new RangeConfigError(`--expected-stage must be one of: ${Object.keys(EXPECTED_STAGE_TYPES).join(", ")}`);
+  }
   if (shas.length === 0) {
-    console.error("Usage: check-chain-receipts.mjs --sha <sha> | --range <base>..<head> | --pr <n>");
+    console.error("Usage: check-chain-receipts.mjs --sha <sha> | --range <base>..<head> | --pr <n> [--wi WI-###] [--consumer execute-changeset|review-exec|audit-implementation|stop|verify-promotion|final-report|push|reconcile] [--expected-stage STAGE]");
     process.exit(1);
   }
 
   const notesTip = gitTry(["rev-parse", "refs/notes/svc-receipts"]);
   const fingerprint = policyFingerprint();
-  const cachedGreen = readReconcileCache(notesTip, fingerprint);
+  const canUseCache = !wi && !consumer;
+  const cachedGreen = canUseCache ? readReconcileCache(notesTip, fingerprint) : new Set();
   const cacheHitShas = shas.filter((sha) => cachedGreen.has(sha));
   const shasToCheck = shas.filter((sha) => !cachedGreen.has(sha));
 
@@ -729,10 +1043,10 @@ async function main() {
     checkedResults = await checkShasWithPool(
       shasToCheck,
       concurrency,
-      (sha) => checkShaInWorker(sha, { timeout }),
+      (sha) => checkShaInWorker(sha, { timeout, wi, consumer, expectedStage }),
     );
   } else {
-    checkedResults = shasToCheck.map(checkSha);
+    checkedResults = shasToCheck.map((sha) => checkSha(sha, { wi, consumer, expectedStage }));
   }
   // Cache hits are only admitted from NOTE-sourced complete receipts. Keep
   // the public result byte-stable across cold and warm runs so callers do not
@@ -751,7 +1065,9 @@ async function main() {
   // is removed, and the cache must never assert green for a SHA that would
   // now come back unaccounted.
   const newlyGreen = checkedResults.filter((r) => r.ok && r.receipt_source === "note").map((r) => r.sha);
-  writeReconcileCache(notesTip, fingerprint, new Set([...cachedGreen, ...newlyGreen]));
+  if (canUseCache) {
+    writeReconcileCache(notesTip, fingerprint, new Set([...cachedGreen, ...newlyGreen]));
+  }
   const failed = results.filter((r) => !r.ok);
   const infrastructureFailures = failed
     .filter(isInfrastructureFailure)

@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import crypto from "node:crypto";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 import { readJsonAtomic, writeJsonAtomic, updateJsonAtomic, NO_WRITE } from "./state-io.mjs";
 import { loadStageRegistry } from "./lib/stage-registry.mjs";
 
@@ -48,6 +49,12 @@ const PERSONA_COVERAGE_STATUSES = new Set(["satisfied", "not_required"]);
 const SESSION_CONTRACT_MAX_AGE_MS = 4 * 60 * 60 * 1000;
 const TASK_GRAPH_CONTRACT_BOUND_TO = new Set(["wi-backlog", "user-request", "framework-evolution"]);
 const NON_SKIPPABLE_SKILLS = new Set(["plan-changeset", "review-plan", "execute-changeset", "review-gate", "review-exec", "audit-implementation", "land-changeset", "verify-promotion"]);
+const CHAIN_COMPLETION_CONSUMER = new Map([
+  ["execute-changeset", "execute-changeset"],
+  ["review-exec", "review-exec"],
+  ["audit-implementation", "audit-implementation"],
+  ["verify-promotion", "verify-promotion"],
+]);
 
 function evidenceDigest(file) { return crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex"); }
 function assertRequiredProcesses(task) {
@@ -61,6 +68,46 @@ function assertRequiredProcesses(task) {
 function die(message) {
   console.error(message);
   process.exit(1);
+}
+
+function assertCanonicalReceiptCompletion({ wi, skill }) {
+  const consumer = CHAIN_COMPLETION_CONSUMER.get(skill);
+  if (!consumer) return;
+  if (!WI_ID_RE.test(String(wi || ""))) {
+    throw new Error(`cannot verify canonical receipts for ${skill}: graph WI is missing or invalid`);
+  }
+  let sha;
+  try {
+    sha = execFileSync("git", ["rev-parse", "--verify", "HEAD"], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+  } catch {
+    throw new Error(`cannot resolve HEAD while validating canonical receipts for ${skill}`);
+  }
+  if (!/^[0-9a-f]{40}$/.test(sha)) {
+    throw new Error(`invalid HEAD '${sha}' while validating canonical receipts for ${skill}`);
+  }
+  let output;
+  try {
+    output = execFileSync(process.execPath, [
+      path.resolve("scripts/check-chain-receipts.mjs"),
+      "--sha", sha,
+      "--wi", wi,
+      "--consumer", consumer,
+    ], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  } catch (error) {
+    const detail = [error?.stdout, error?.stderr].filter(Boolean).map(String).join("\n").trim();
+    throw new Error(`canonical receipt check failed for ${skill} (${wi}@${sha}): ${detail || "missing required receipt identities"}`);
+  }
+  try {
+    const parsed = JSON.parse(output);
+    const row = Array.isArray(parsed.results) ? parsed.results[0] : null;
+    if (!parsed.ok || !row || row.ok !== true) {
+      const missing = row && Array.isArray(row.missing) ? row.missing.join("; ") : "missing required receipt identities";
+      throw new Error(`canonical receipt check failed for ${skill} (${wi}@${sha}): ${missing}`);
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("canonical receipt check failed")) throw error;
+    throw new Error(`canonical receipt check returned malformed output for ${skill} (${wi}@${sha})`);
+  }
 }
 
 function parseFlags(argv) {
@@ -794,6 +841,16 @@ if (command === "set-status") {
     die("--completed-at is only valid when status is completed");
   }
   if (flags["blocked-by-json"]) die("set-status cannot rewrite task dependencies; regenerate the validated graph instead");
+  if (status === COMPLETED_STATUS) {
+    const target = graph.tasks.find((item) => item.id === taskId);
+    if (!target) die(`${filePath}: task ${taskId} not found`);
+    const targetSkill = expectedTaskSkill(target);
+    try {
+      assertCanonicalReceiptCompletion({ wi: graph.wi, skill: targetSkill });
+    } catch (error) {
+      die(`${filePath}: ${error.message}`);
+    }
+  }
   try {
     updateJsonAtomic(filePath, (current) => {
       validateGraph(current);

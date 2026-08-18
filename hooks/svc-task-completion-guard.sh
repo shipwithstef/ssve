@@ -116,6 +116,87 @@ emit_block() {
   node -e 'console.log(JSON.stringify({ decision: "block", reason: process.argv[1] }))' "$reason"
 }
 
+first_lane_file() {
+  local line
+  while IFS= read -r line; do
+    [[ -n "$line" ]] || continue
+    printf '%s' "$line"
+    return 0
+  done <<< "${LANE_TASKS_LIST:-}"
+  return 1
+}
+
+derive_canonical_wi() {
+  if [[ -n "${CONTRACT_WI:-}" && "${CONTRACT_WI}" != "none" ]]; then
+    printf '%s' "$CONTRACT_WI"
+    return 0
+  fi
+  if [[ -n "${BOUND_WI:-}" ]]; then
+    printf '%s' "$BOUND_WI"
+    return 0
+  fi
+  if [[ -n "${WI:-}" && "${WI}" != "none" ]]; then
+    printf '%s' "${WI%%,*}"
+    return 0
+  fi
+  local first
+  if first="$(first_lane_file 2>/dev/null)"; then
+    first="$(basename "$first")"
+    if [[ "$first" =~ lane-tasks-(WI-[A-Za-z0-9-]+)\.json$ ]]; then
+      printf '%s' "${BASH_REMATCH[1]}"
+      return 0
+    fi
+  fi
+  return 1
+}
+
+enforce_canonical_receipt_barrier() {
+  local canonical_wi canonical_sha check_output summary checker inside_git
+  inside_git="$(git rev-parse --is-inside-work-tree 2>/dev/null || true)"
+  [[ "$inside_git" == "true" ]] || return 0
+  canonical_wi="$(derive_canonical_wi 2>/dev/null || true)"
+  [[ "$canonical_wi" =~ ^WI-[A-Za-z0-9-]+$ ]] || return 0
+  checker="$HOOK_DIR/../scripts/check-chain-receipts.mjs"
+  if [[ ! -f "$checker" ]]; then
+    emit_block "SVC COMPLETION GUARD: stop blocked because canonical receipt checker is missing at ${checker}; rerun setup."
+    exit 0
+  fi
+  canonical_sha="$(git rev-parse --verify HEAD 2>/dev/null || true)"
+  if [[ ! "$canonical_sha" =~ ^[0-9a-f]{40}$ ]]; then
+    emit_block "SVC COMPLETION GUARD: stop blocked because HEAD is unresolved; canonical receipt validation requires an exact SHA for ${canonical_wi}."
+    exit 0
+  fi
+  check_output="$(node "$checker" --sha "$canonical_sha" --wi "$canonical_wi" --consumer stop 2>&1 || true)"
+  summary="$(printf '%s' "$check_output" | node -e '
+let raw = "";
+process.stdin.on("data", (c) => { raw += c; });
+process.stdin.on("end", () => {
+  try {
+    const j = JSON.parse(raw);
+    const row = Array.isArray(j.results) ? j.results[0] : null;
+    if (!row || row.ok !== true) {
+      const missing = row && Array.isArray(row.missing) ? row.missing.join("; ") : "missing canonical receipt identities";
+      process.stdout.write(`FAIL\t${missing}`);
+      return;
+    }
+    process.stdout.write("PASS\t");
+  } catch {
+    process.stdout.write("FAIL\tunable to parse receipt-check output");
+  }
+});
+' 2>/dev/null || printf 'FAIL\tunable to parse receipt-check output')"
+  if [[ "${summary%%$'\t'*}" != "PASS" ]]; then
+    local reason="${summary#*$'\t'}"
+    emit_block "SVC COMPLETION GUARD: stop blocked because canonical receipt validation failed for ${canonical_wi} at ${canonical_sha}.
+
+Required identity check: {receipt_type, wi, target_sha, phase?} on consumer=stop.
+Failure: ${reason}
+
+Run: node scripts/check-chain-receipts.mjs --sha ${canonical_sha} --wi ${canonical_wi} --consumer stop"
+    exit 0
+  fi
+}
+
 # WI-487 (AC-487-2/7/7A): fail-closed enforcement-source guard. Routed through the
 # durable launcher by setup (host command becomes `node $LAUNCHER
 # svc-task-completion-guard`); this in-file pre-check is the second layer for when
@@ -1049,6 +1130,12 @@ NODE_LEGACY_CLAIM
       exit 0
     fi
   fi
+fi
+
+# WI-550: Stop success is conditional on canonical WI+SHA receipt identities.
+# Task-graph completion is an index, not authority over receipt validity.
+if [[ "${ACTIONABLE:-0}" == "0" && "$STATUS" =~ ^(allow|advisory_contract|advisory_active_intent)$ ]]; then
+  enforce_canonical_receipt_barrier
 fi
 
 case "$STATUS" in

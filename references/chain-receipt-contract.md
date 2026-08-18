@@ -7,8 +7,9 @@ L3 (`svc-reconcile`) enforcement.
 ## Authoritative Storage
 
 - **Git notes ref:** `refs/notes/svc-receipts` — the durable source of truth.
-- **Working-tree mirror:** `.svc/receipts/<short-sha>/<receipt-type>.json` —
-  gitignored speed cache, regenerable from notes.
+- **Working-tree mirror:** `.svc/receipts/<short-sha>/<receipt-type>--<WI>[--<phase>].json` —
+  gitignored speed cache, regenerable from notes. Compatibility aliases at
+  `<receipt-type>.json` are best-effort and must not be treated as canonical.
 - **Pre-commit staging:** `.svc/receipts/staging/<tree-hash>/<receipt-type>.json`
   — used when SHA is not yet known. Post-commit hook promotes to mirror +
   writes git note.
@@ -82,10 +83,10 @@ cat > "$MIRROR_DIR/<receipt-type>.json" <<EOF
 }
 EOF
 
-# Update consolidated git note (merge into envelope)
+# Update consolidated git note (merge into envelope by identity slot)
 ENV="$(git notes --ref=svc-receipts show "$BASE_SHA" 2>/dev/null || echo '{}')"
 NEW_ENV="$(echo "$ENV" | jq --argjson r "$(cat "$MIRROR_DIR/<receipt-type>.json")" \
-  '. + {"<receipt-type>": $r}')"
+  '. + {"slot::<receipt-type>::'"$WI"'::'"$BASE_SHA"'": $r}')"
 echo "$NEW_ENV" | git notes --ref=svc-receipts add -f -F - "$BASE_SHA"
 ```
 
@@ -116,12 +117,30 @@ Every chain skill's Self-Verify section must include:
 
 ## Validation
 
-`scripts/check-chain-receipts.mjs --sha <sha>` reads the git note as
+`scripts/check-chain-receipts.mjs --sha <sha> --wi <WI>` reads the git note as
 authoritative, regenerates the mirror cache if missing, and validates
-each receipt against its schema. Missing or invalid receipts are reported
+each receipt against its schema. Finalization consumers (`stop`,
+`verify-promotion`, `final-report`) refuse a mirror-only envelope — gitignored
+mirrors are not authority and must never be merged back into notes.
+Missing or invalid receipts are reported
 as `unaccounted` and surface at:
 - `hooks/git/pre-push.d/10-receipts-complete` (L2 enforcement)
 - `scripts/svc-reconcile.mjs` responsibility A (L3 enforcement)
+
+### Identity model (WI-550)
+
+Canonical note entries are keyed by:
+
+`slot::<receipt_type>::<wi>::<target_sha>[::<phase>]`
+
+Legacy envelopes keyed as `{ "<receipt-type>": { ...receipt... } }` remain
+readable. Projection rules:
+
+1. If the legacy body has `wi`, project to `{type, wi}`.
+2. If it has no `wi`, projection is allowed only when exactly one WI owner is
+   claimed for that SHA.
+3. If owner projection is ambiguous, fail closed and require an explicit owner
+   map (no guessing, no destructive rewrite of historical bytes).
 
 ### Bounded reconcile and reviewed historical recovery (WI-472)
 

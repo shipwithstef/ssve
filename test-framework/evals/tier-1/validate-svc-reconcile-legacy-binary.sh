@@ -36,6 +36,8 @@ fs.mkdirSync(path.join(newRuntime, "lib"), { recursive: true });
 fs.copyFileSync(path.join(root, "scripts/svc-reconcile.mjs"), path.join(newRuntime, "svc-reconcile.mjs"));
 fs.symlinkSync(path.join(root, "scripts/state-io.mjs"), path.join(newRuntime, "state-io.mjs"));
 fs.symlinkSync(path.join(root, "scripts/lib/reconcile-core.mjs"), path.join(newRuntime, "lib/reconcile-core.mjs"));
+fs.symlinkSync(path.join(root, "scripts/lib/chain-policy.mjs"), path.join(newRuntime, "lib/chain-policy.mjs"));
+fs.symlinkSync(path.join(root, "scripts/lib/review-evidence-store.mjs"), path.join(newRuntime, "lib/review-evidence-store.mjs"));
 fs.copyFileSync(path.join(temp, "scripts/check-chain-receipts.mjs"), path.join(newRuntime, "check-chain-receipts.mjs"));
 fs.copyFileSync(path.join(temp, "scripts/svc-auto-drive.mjs"), path.join(newRuntime, "svc-auto-drive.mjs"));
 const bin = path.join(temp, "bin"); fs.mkdirSync(bin);
@@ -51,7 +53,11 @@ exit 0
 fs.chmodSync(path.join(bin, "gh"), 0o755);
 
 function invoke(script, state) {
-  fs.writeFileSync(path.join(temp, ".svc/chain-policy.json"), JSON.stringify({ mode: state.mode }));
+  // WI-549: mode is resolved through the shared chain-policy resolver
+  // (SVC_CHAIN_POLICY -> $(git-common-dir)/svc-chain-policy.json -> ...),
+  // not a worktree-local .svc/chain-policy.json. This fixture repo has no
+  // linked worktrees, so git-common-dir is its own .git/.
+  fs.writeFileSync(path.join(temp, ".git/svc-chain-policy.json"), JSON.stringify({ mode: state.mode }));
   fs.writeFileSync(path.join(temp, ".svc/reconcile-checkpoint.json"), JSON.stringify({ last_reconciled_sha: state.base, last_pr_watcher_run: "2000-01-01T00:00:00.000Z" }));
   const result = spawnSync(process.execPath, [script], { cwd: temp, encoding: "utf8", env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, FIX_RECEIPTS: state.receipts, FIX_GH: state.gh, FIX_HEAD: head, SVC_RECONCILE_CHILD_TIMEOUT_MS: "2000" } });
   const parsed = JSON.parse(result.stdout);

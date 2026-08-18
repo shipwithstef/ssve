@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "wi": "WI-552",
+  "lane": "framework",
+  "status": "pending",
+  "created": "2026-08-18T04:16:59.362Z",
+  "tasks": [
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "execute-changeset",
+      "subject": "Autonomous restart-boundary continuation: hash-bound baton lifecycle, WI-551 verify.restart role resolution, phase-gated continuation children, host fresh_session_launch capability wiring",
+      "affected_files": [
+        "schemas/continuation-baton.schema.json",
+        "schemas/continuation-result.schema.json",
+        "scripts/resolve-continuation.mjs",
+        "scripts/resolve-dispatch.mjs",
+        "hooks/svc-continuation-phase-guard.mjs",
+        "hooks/hooks.json",
+        "provision/hosts/antigravity.json",
+        "provision/hosts/claude.json",
+        "provision/hosts/codex.json",
+        "provision/hosts/cursor.json",
+        "provision/hosts/gemini.json",
+        "provision/hosts/grok.json",
+        "provision/hosts/kimi.json",
+        "provision/hosts/mimo-code.json",
+        "provision/hosts/opencode.json",
+        "skills/land-changeset/SKILL.md",
+        "skills/verify-promotion/SKILL.md",
+        "scripts/select-tier1-validators-v2.mjs",
+        ".svc/perf-baseline.json",
+        ".gitignore",
+        "test-framework/evals/tier-1/validate-continuation-lifecycle-wi552.mjs",
+        "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs"
+      ],
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-08-18T05:08:28.382Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-08-18T05:08:34.756Z"
+    },
+    {
+      "id": 2,
+      "status": "pending",
+      "skill": "review-exec",
+      "subject": "Review WI-552 restart-boundary continuation changeset",
+      "blocked_by": [
+        1
+      ]
+    }
+  ]
+}

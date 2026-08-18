@@ -6,11 +6,19 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validate } from './lib/json-schema-validator.mjs';
+import { resolveDispatchExternalReviewer, resolveDispatchReviewTopology } from './resolve-dispatch.mjs';
 
-const DEFAULT_CONFIG = path.join(os.homedir(), '.svc', 'reviewer-policy-v2.json');
+const DEFAULT_DISPATCH_CONFIG = path.join(os.homedir(), '.svc', 'dispatch-policy.json');
+const DEFAULT_LEGACY_CONFIG = path.join(os.homedir(), '.svc', 'reviewer-policy-v2.json');
 const DIGEST = /^[a-f0-9]{64}$/;
 const OPTIONAL_UNAVAILABLE = new Set(['capability', 'model_unavailable', 'model_entitlement', 'authentication', 'shared_quota', 'provider_overload']);
-const HOST_FAMILY = { codex: 'openai', claude: 'anthropic', agy: 'google' };
+const HOST_FAMILY = {
+  codex: 'openai',
+  claude: 'anthropic',
+  gemini: 'google',
+  agy: 'google',
+  grok: 'xai',
+};
 const STATION_KINDS = new Set(['inline-self', 'subagent', 'external']);
 const SCHEMA_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'schemas');
 const EXTERNAL_RECEIPT_SCHEMA = JSON.parse(fs.readFileSync(path.join(SCHEMA_ROOT, 'external-review-receipt.schema.json'), 'utf8'));
@@ -26,22 +34,22 @@ const hash = value => crypto.createHash('sha256').update(Buffer.isBuffer(value) 
 function fail(message) { throw new Error(`review-topology-v2: ${message}`); }
 
 export function reviewerPolicyPath(explicit = null) {
-  return path.resolve(explicit || process.env.SVC_REVIEWER_POLICY || DEFAULT_CONFIG);
+  return path.resolve(explicit || process.env.SVC_DISPATCH_POLICY || process.env.SVC_REVIEWER_POLICY || DEFAULT_DISPATCH_CONFIG);
 }
 
-function validateTuple(tuple, station, orchestrator) {
+function validateTupleLegacy(tuple, station, orchestrator) {
   if (!tuple || typeof tuple !== 'object') fail(`${orchestrator}/${station.id} tuple is required`);
   const keys = Object.keys(tuple).sort().join(',');
   if (keys !== 'effort,family,host,model') fail(`${orchestrator}/${station.id} tuple keys must be effort,family,host,model`);
   if (!['low', 'medium', 'high', 'xhigh', 'max', 'provider-managed'].includes(tuple.effort) || !tuple.host || !tuple.family || !tuple.model) fail(`${orchestrator}/${station.id} tuple values are invalid`);
-  if (station.kind === 'external' && HOST_FAMILY[tuple.host] !== tuple.family) fail(`${orchestrator}/${station.id} external host/family mismatch`);
+  if (station.kind === 'external' && HOST_FAMILY[tuple.host] && HOST_FAMILY[tuple.host] !== tuple.family) fail(`${orchestrator}/${station.id} external host/family mismatch`);
   if (tuple.effort === 'provider-managed') fail(`${orchestrator}/${station.id} provider-managed effort is not a verifiable reviewer tuple; configure an exact host effort`);
   if (tuple.host === 'agy' && !new RegExp(`(?:\\(|-)${tuple.effort}\\)?$`, 'i').test(tuple.model)) fail(`${orchestrator}/${station.id} AGY model preset must encode the configured effort`);
   if (station.kind === 'inline-self' && tuple.host !== 'current') fail(`${orchestrator}/${station.id} inline self host must be current`);
-  if (station.kind === 'subagent' && tuple.family !== HOST_FAMILY[orchestrator]) fail(`${orchestrator}/${station.id} subagent must remain in the orchestrator family`);
+  if (station.kind === 'subagent' && HOST_FAMILY[orchestrator] && tuple.family !== HOST_FAMILY[orchestrator]) fail(`${orchestrator}/${station.id} subagent must remain in the orchestrator family`);
 }
 
-function validatePhase(phase, orchestrator, phaseName) {
+function validatePhaseLegacy(phase, orchestrator, phaseName) {
   if (!phase || typeof phase !== 'object' || !Array.isArray(phase.stations) || phase.stations.length === 0) fail(`${orchestrator}/${phaseName} stations are required`);
   if (typeof phase.release_authority !== 'boolean') fail(`${orchestrator}/${phaseName} release_authority must be boolean`);
   const ids = new Set();
@@ -49,17 +57,17 @@ function validatePhase(phase, orchestrator, phaseName) {
     if (!station?.id || ids.has(station.id)) fail(`${orchestrator}/${phaseName} station ids must be unique`);
     ids.add(station.id);
     if (!STATION_KINDS.has(station.kind) || typeof station.required !== 'boolean' || !['advisory', 'independent'].includes(station.authority)) fail(`${orchestrator}/${phaseName}/${station.id} station contract is invalid`);
-    validateTuple(station.tuple, station, orchestrator);
+    validateTupleLegacy(station.tuple, station, orchestrator);
     if (station.kind === 'inline-self' && station.authority !== 'advisory') fail(`${orchestrator}/${phaseName}/${station.id} self-review cannot be independent`);
     if (station.kind === 'subagent' && station.authority !== 'advisory') fail(`${orchestrator}/${phaseName}/${station.id} subagent cannot be independent release authority`);
-    if (station.kind === 'external' && station.authority === 'independent' && station.tuple.family === HOST_FAMILY[orchestrator]) fail(`${orchestrator}/${phaseName}/${station.id} independent external authority must be different-family`);
+    if (station.kind === 'external' && station.authority === 'independent' && HOST_FAMILY[orchestrator] && station.tuple.family === HOST_FAMILY[orchestrator]) fail(`${orchestrator}/${phaseName}/${station.id} independent external authority must be different-family`);
   }
   if (phase.stations[0].kind !== 'inline-self') fail(`${orchestrator}/${phaseName} must start with inline self-review`);
-  if (phase.release_authority && !phase.stations.some(station => station.kind === 'external' && station.required && station.authority === 'independent' && station.tuple.family !== HOST_FAMILY[orchestrator])) fail(`${orchestrator}/${phaseName} release authority requires a required different-family external station`);
+  if (phase.release_authority && HOST_FAMILY[orchestrator] && !phase.stations.some(station => station.kind === 'external' && station.required && station.authority === 'independent' && station.tuple.family !== HOST_FAMILY[orchestrator])) fail(`${orchestrator}/${phaseName} release authority requires a required different-family external station`);
 }
 
-export function loadReviewerPolicy(configPath = null) {
-  const file = reviewerPolicyPath(configPath);
+function loadLegacyReviewerPolicy(configPath = null) {
+  const file = path.resolve(configPath || process.env.SVC_REVIEWER_POLICY || DEFAULT_LEGACY_CONFIG);
   let info;
   try { info = fs.lstatSync(file); } catch (error) { fail(`cannot read owner config ${file}: ${error.code || error.message}`); }
   if (!info.isFile()) fail(`owner config is not a regular file: ${file}`);
@@ -78,15 +86,83 @@ export function loadReviewerPolicy(configPath = null) {
     if (modeName === 'fast-local' && Object.values(mode.orchestrators).some(phases => phases?.plan?.release_authority || phases?.exec?.release_authority)) fail('fast-local mode can never carry release authority');
     for (const [orchestrator, phases] of Object.entries(mode.orchestrators)) {
       if (!HOST_FAMILY[orchestrator]) fail(`${modeName} has unsupported orchestrator ${orchestrator}`);
-      for (const phaseName of ['plan', 'exec']) validatePhase(phases?.[phaseName], orchestrator, phaseName);
+      for (const phaseName of ['plan', 'exec']) validatePhaseLegacy(phases?.[phaseName], orchestrator, phaseName);
     }
   }
   return { file, sha256: hash(bytes), policy };
 }
 
-export function resolveReviewTopology({ configPath = null, mode = null, orchestrator, phase }) {
-  if (!HOST_FAMILY[orchestrator] || !['plan', 'exec'].includes(phase)) fail('orchestrator must be claude|codex and phase must be plan|exec');
+export function loadReviewerPolicy(configPath = null) {
+  const file = reviewerPolicyPath(configPath);
+  let bytes;
+  try { bytes = fs.readFileSync(file); } catch (error) { fail(`cannot read owner config ${file}: ${error.code || error.message}`); }
+  let policy;
+  try { policy = JSON.parse(bytes); } catch { fail(`owner config is not valid JSON: ${file}`); }
+  if (policy.schema_version === 1) {
+    return { file, sha256: hash(bytes), policy, format: 'dispatch-v1' };
+  }
+  if (policy.schema_version === 2) {
+    const loaded = loadLegacyReviewerPolicy(file);
+    return { ...loaded, format: 'legacy-v2' };
+  }
+  fail(`unsupported reviewer policy schema_version ${policy.schema_version ?? '<missing>'}`);
+}
+
+function selectLegacyExternalStation(topology, stationId = null) {
+  if (stationId) {
+    const station = topology.stations.find(row => row.id === stationId);
+    if (!station || station.kind !== 'external') fail(`station ${stationId} is not an external reviewer in the selected topology`);
+    return station;
+  }
+  const requiredIndependent = topology.stations.find((station) =>
+    station.kind === 'external' && station.required === true && station.authority === 'independent');
+  if (requiredIndependent) return requiredIndependent;
+  const firstExternal = topology.stations.find(station => station.kind === 'external');
+  if (!firstExternal) fail('selected topology has no external stations');
+  return firstExternal;
+}
+
+export function resolveReviewTopology({
+  configPath = null,
+  mode = null,
+  orchestrator,
+  phase,
+  wi = null,
+  workOverlayPath = null,
+  sessionId = null,
+  sessionOverrideSpec = null,
+  sessionOverrideRequested = null,
+  sessionOverrideReceiptSpec = null,
+}) {
+  if (!orchestrator || !['plan', 'exec', 'design'].includes(phase)) fail('orchestrator is required and phase must be plan|exec|design');
   const loaded = loadReviewerPolicy(configPath);
+  if (loaded.format === 'dispatch-v1') {
+    const topology = resolveDispatchReviewTopology({
+      configPath: loaded.file,
+      mode,
+      orchestrator,
+      phase,
+      wi,
+      workOverlayPath,
+      sessionId,
+      sessionOverrideSpec,
+      sessionOverrideRequested,
+      sessionOverrideReceiptSpec,
+    });
+    return {
+      schema_version: 2,
+      config_path: topology.config_path,
+      config_sha256: topology.config_sha256,
+      mode: topology.mode,
+      orchestrator: topology.orchestrator,
+      orchestrator_family: topology.orchestrator_family,
+      phase: topology.phase,
+      release_authority: topology.release_authority,
+      final_receipt_count: 1,
+      stations: topology.stations.map(station => ({ ...station })),
+    };
+  }
+  if (!HOST_FAMILY[orchestrator] || !['plan', 'exec'].includes(phase)) fail('legacy reviewer policy supports claude|codex and phase plan|exec only');
   const selectedMode = mode || loaded.policy.default_mode;
   const selected = loaded.policy.modes?.[selectedMode]?.orchestrators?.[orchestrator]?.[phase];
   if (!selected) fail(`mode ${selectedMode} has no ${orchestrator}/${phase} route`);
@@ -104,10 +180,42 @@ export function resolveReviewTopology({ configPath = null, mode = null, orchestr
   };
 }
 
-export function resolveExternalReviewer({ configPath = null, mode = null, orchestrator, phase, stationId }) {
-  const topology = resolveReviewTopology({ configPath, mode, orchestrator, phase });
-  const station = topology.stations.find(row => row.id === stationId);
-  if (!station || station.kind !== 'external') fail(`station ${stationId} is not an external reviewer in the selected topology`);
+export function resolveExternalReviewer({
+  configPath = null,
+  mode = null,
+  orchestrator,
+  phase,
+  stationId = null,
+  wi = null,
+  workOverlayPath = null,
+  sessionId = null,
+  sessionOverrideSpec = null,
+  sessionOverrideRequested = null,
+  sessionOverrideReceiptSpec = null,
+  explicitAsk = false,
+  unavailableStations = [],
+}) {
+  const loaded = loadReviewerPolicy(configPath);
+  if (loaded.format === 'dispatch-v1') {
+    const resolved = resolveDispatchExternalReviewer({
+      configPath: loaded.file,
+      mode,
+      orchestrator,
+      phase,
+      stationId,
+      wi,
+      workOverlayPath,
+      sessionId,
+      sessionOverrideSpec,
+      sessionOverrideRequested,
+      sessionOverrideReceiptSpec,
+      explicitAsk,
+      unavailableStations,
+    });
+    return { topology: resolveReviewTopology({ configPath: loaded.file, mode, orchestrator, phase, wi, workOverlayPath, sessionId, sessionOverrideSpec, sessionOverrideRequested, sessionOverrideReceiptSpec }), station: resolved.station, tuple: resolved.tuple };
+  }
+  const topology = resolveReviewTopology({ configPath: loaded.file, mode, orchestrator, phase });
+  const station = selectLegacyExternalStation(topology, stationId);
   return { topology, station, tuple: { orchestrator, ...station.tuple } };
 }
 
@@ -236,9 +344,34 @@ function args(argv) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const { command, options } = args(process.argv.slice(2));
   if (command === 'plan') {
-    process.stdout.write(`${JSON.stringify(resolveReviewTopology({ configPath: options.config, mode: options.mode, orchestrator: options.orchestrator, phase: options.phase }), null, 2)}\n`);
+    process.stdout.write(`${JSON.stringify(resolveReviewTopology({
+      configPath: options.config,
+      mode: options.mode,
+      orchestrator: options.orchestrator,
+      phase: options.phase,
+      wi: options.wi,
+      workOverlayPath: options['work-overlay'],
+      sessionId: options['session-id'],
+      sessionOverrideSpec: options['session-override'],
+      sessionOverrideRequested: options['session-override-requested'],
+      sessionOverrideReceiptSpec: options['session-override-receipt'],
+    }), null, 2)}\n`);
   } else if (command === 'external') {
-    process.stdout.write(`${JSON.stringify(resolveExternalReviewer({ configPath: options.config, mode: options.mode, orchestrator: options.orchestrator, phase: options.phase, stationId: options.station }), null, 2)}\n`);
+    process.stdout.write(`${JSON.stringify(resolveExternalReviewer({
+      configPath: options.config,
+      mode: options.mode,
+      orchestrator: options.orchestrator,
+      phase: options.phase,
+      stationId: options.station,
+      wi: options.wi,
+      workOverlayPath: options['work-overlay'],
+      sessionId: options['session-id'],
+      sessionOverrideSpec: options['session-override'],
+      sessionOverrideRequested: options['session-override-requested'],
+      sessionOverrideReceiptSpec: options['session-override-receipt'],
+      explicitAsk: options['explicit-ask'] === 'true' || options['explicit-ask'] === '1',
+      unavailableStations: options['unavailable-stations'] || '',
+    }), null, 2)}\n`);
   } else if (command === 'aggregate') {
     if (!options.input || !options.out) fail('aggregate requires --input and --out');
     const result = aggregateReviewTopology(JSON.parse(fs.readFileSync(options.input, 'utf8')));

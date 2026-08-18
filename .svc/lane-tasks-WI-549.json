@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "wi": "WI-549",
+  "lane": "bugfix",
+  "status": "in_progress",
+  "created": "2026-08-17T22:38:31.424Z",
+  "tasks": [
+    {
+      "id": 1,
+      "status": "in_progress",
+      "skill": "execute-changeset",
+      "subject": "Repository-shared chain-policy resolver: single resolver, hook/tooling integration, fail-closed refuse",
+      "affected_files": [
+        "scripts/lib/chain-policy.mjs",
+        "scripts/svc-reconcile.mjs",
+        "hooks/git/pre-commit.d/20-quick-fix-eligibility",
+        "hooks/git/pre-push.d/10-receipts-complete",
+        "hooks/git/pre-push.d/15-tier1-gate",
+        "scripts/svc-ensure-worktree.mjs",
+        "scripts/worktree.sh",
+        "test-framework/evals/tier-1/validate-shared-chain-policy.sh",
+        "test-framework/evals/tier-1/validate-svc-reconcile-bounded.sh",
+        "test-framework/evals/tier-1/validate-svc-reconcile-consumer-routing.sh",
+        "test-framework/evals/tier-1/validate-svc-reconcile-legacy-binary.sh"
+      ],
+      "blocked_by": []
+    },
+    {
+      "id": 2,
+      "status": "pending",
+      "skill": "review-exec",
+      "subject": "Review WI-549 shared chain-policy resolver changeset",
+      "blocked_by": [1]
+    }
+  ]
+}

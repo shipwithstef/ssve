@@ -22,6 +22,7 @@
  * Optional:
  *   --body <path>            read receipt body from file; default is stdin
  *   --no-note                skip writing the git note (mirror only)
+ *   --phase <phase-id>       optional identity phase for multi-phase receipts
  *
  * Exit 0 on success, 1 on validation error, 2 on usage error.
  */
@@ -31,6 +32,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, unlinkSync, readdir
 import { join, dirname } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
 import { writeJsonAtomic } from "./state-io.mjs";
 import { acquireLock } from "./state-lock.mjs";
 import { familyOf } from "./lib/cognitive-family.mjs";   // WI-385 mechanical cross-family resolution
@@ -43,6 +45,7 @@ import { verifyReviewerEvidence } from "./lib/reviewer-evidence.mjs";
 // script's own location so the gate enforces regardless of caller cwd.
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const SCHEMA_DIR = join(SCRIPT_DIR, "..", "schemas", "receipts");
+const SLOT_PREFIX = "slot::";
 
 function fail(msg, code = 2) {
   console.error(`emit-receipt: ${msg}`);
@@ -55,7 +58,7 @@ function git(args) {
 }
 
 function parseArgs(argv) {
-  const out = { type: null, wi: null, body: null, noNote: false, sha: null };
+  const out = { type: null, wi: null, body: null, noNote: false, sha: null, phase: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--type") out.type = argv[++i];
@@ -63,8 +66,83 @@ function parseArgs(argv) {
     else if (a === "--body") out.body = argv[++i];
     else if (a === "--no-note") out.noNote = true;
     else if (a === "--sha") out.sha = argv[++i];
+    else if (a === "--phase") out.phase = argv[++i];
   }
   return out;
+}
+
+function receiptDigest(receipt) {
+  return createHash("sha256").update(JSON.stringify(receipt)).digest("hex");
+}
+
+function sleepMs(ms) {
+  if (!Number.isFinite(ms) || ms <= 0) return;
+  try {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+  } catch {}
+}
+
+function slotKeyForIdentity({ type, wi, targetSha, phase = null }) {
+  return `${SLOT_PREFIX}${type}::${wi}::${targetSha}${phase ? `::${phase}` : ""}`;
+}
+
+function readJsonFileIfExists(filePath) {
+  if (!existsSync(filePath)) return null;
+  try { return JSON.parse(readFileSync(filePath, "utf8")); }
+  catch { return null; }
+}
+
+function parseCompositeSlotKey(key) {
+  if (typeof key !== "string" || !key.startsWith(SLOT_PREFIX)) return null;
+  const tail = key.slice(SLOT_PREFIX.length);
+  const parts = tail.split("::");
+  if (parts.length < 3 || parts.length > 4) return null;
+  const [type, wi, targetSha, phase] = parts;
+  if (!type || !wi || !/^[0-9a-f]{40}$/.test(String(targetSha))) return null;
+  return { type, wi, targetSha, phase: phase || null };
+}
+
+function normalizeMirrorEnvelope(mirrorDir, targetSha) {
+  const envelope = {};
+  if (!existsSync(mirrorDir)) return envelope;
+  try {
+    for (const name of readdirSync(mirrorDir)) {
+      if (!name.endsWith(".json")) continue;
+      const content = readJsonFileIfExists(join(mirrorDir, name));
+      if (!content || typeof content !== "object") continue;
+      const type = typeof content.receipt_type === "string" ? content.receipt_type : name.replace(/\.json$/, "");
+      const wi = typeof content.wi === "string" && content.wi.length > 0 ? content.wi : null;
+      const phase = typeof content.phase === "string" && content.phase.length > 0 ? content.phase : null;
+      if (wi && targetSha) {
+        envelope[slotKeyForIdentity({ type, wi, targetSha, phase })] = content;
+        continue;
+      }
+      envelope[type] = content;
+    }
+  } catch {}
+  return envelope;
+}
+
+function supersessionFor(receipt) {
+  const supersession = receipt?.supersession;
+  if (!supersession || typeof supersession !== "object" || Array.isArray(supersession)) return null;
+  return supersession;
+}
+
+function validateSupersession(receipt, previousReceipt) {
+  const supersession = supersessionFor(receipt);
+  if (!supersession) return "existing identity slot; re-emission requires supersession contract";
+  const contract = String(supersession.contract || "");
+  const contractSha = String(supersession.contract_sha256 || "");
+  const priorSha = String(supersession.supersedes_receipt_sha256 || "");
+  if (!contract || contract.length < 16) return "supersession.contract must be a meaningful non-empty string";
+  if (!/^[0-9a-f]{64}$/.test(contractSha)) return "supersession.contract_sha256 must be a 64-hex sha256";
+  const computedContractSha = createHash("sha256").update(contract).digest("hex");
+  if (computedContractSha !== contractSha) return "supersession.contract_sha256 does not match supersession.contract";
+  if (!/^[0-9a-f]{64}$/.test(priorSha)) return "supersession.supersedes_receipt_sha256 must be a 64-hex sha256";
+  const previousDigest = receiptDigest(previousReceipt);
+  if (previousDigest !== priorSha) return "supersession.supersedes_receipt_sha256 does not match existing receipt bytes";
+  return null;
 }
 
 function readBody(args) {
@@ -126,70 +204,97 @@ function candidateHasDeletions(targetSha = null) {
   return output.split(/\r?\n/).some((line) => /^(?:D|R\d*|C\d*)\t/.test(line));
 }
 
-function writeNote(sha, type, receipt) {
-  // Per codex P1 review:
-  //   1. Git note is the DURABLE store. Mirror is a regenerable cache that
-  //      may be empty (fresh clone, GC, manual wipe). Seed envelope from
-  //      existing note BEFORE overlaying mirror — otherwise we overwrite
-  //      durable receipts with an incomplete local view.
-  //   2. Even with mirror-union, snapshot-then-write isn't atomic between
-  //      processes. Lock the read+merge+write critical section.
-
+function writeNote(sha, type, wi, phase, receipt) {
+  // WI-550:
+  // - Canonical identity key: {receipt_type, wi, target_sha, phase?}
+  // - Concurrent safety primitive: lock + CAS + retry (no check-then-write)
+  // - Second write of the same identity requires explicit supersession contract
   const shortSha = sha.substring(0, 7);
   const mirrorDir = join(".svc", "receipts", shortSha);
-  mkdirSync(".svc/receipts", { recursive: true });
-  const sentinelPath = join(".svc/receipts", `.notes-${shortSha}`);
+  const noteSlotKey = slotKeyForIdentity({ type, wi, targetSha: sha, phase });
+  const notesRef = "refs/notes/svc-receipts";
+  const commonDir = git(["rev-parse", "--git-common-dir"]) || ".git";
+  const lockDir = join(commonDir, "svc-receipts-locks");
+  const lockStem = join(lockDir, `${shortSha}-note`);
+  mkdirSync(lockDir, { recursive: true });
 
   let release = null;
-  try {
-    // Acquire lock with retry (up to 10s). acquireLock uses O_EXCL on
-    // <sentinel>.lock; concurrent writers serialize cleanly.
-    const deadline = Date.now() + 10000;
-    while (true) {
-      try { release = acquireLock(sentinelPath); break; }
-      catch (e) {
-        if (Date.now() > deadline) break;  // proceed best-effort
-        const t0 = Date.now();
-        while (Date.now() - t0 < 100) { /* spin 100ms */ }
+  const deadline = Date.now() + 15000;
+  while (!release) {
+    try {
+      release = acquireLock(lockStem, { staleMs: 60_000 });
+    } catch (e) {
+      if (Date.now() >= deadline) {
+        return { ok: false, reason: `lock timeout (${String(e.message || e)})`, slot_key: noteSlotKey };
       }
+      sleepMs(125);
     }
+  }
 
-    // 1. Seed from existing durable note (so we never lose keys that were
-    //    only on the note and not in the local mirror cache).
-    const envelope = {};
-    const existing = git(["notes", "--ref=svc-receipts", "show", sha]);
-    if (existing) {
-      try { Object.assign(envelope, JSON.parse(existing)); } catch {}
-    }
+  try {
+    for (let attempt = 1; attempt <= 8; attempt++) {
+      const refBefore = git(["rev-parse", "--verify", notesRef]) || "";
+      const envelope = {};
 
-    // 2. Overlay mirror union (any receipts written locally that aren't
-    //    yet in the note — typically the just-written receipt).
-    if (existsSync(mirrorDir)) {
+      const existing = git(["notes", "--ref=svc-receipts", "show", sha]);
+      if (existing) {
+        try { Object.assign(envelope, JSON.parse(existing)); }
+        catch {
+          return { ok: false, reason: "existing receipt note is malformed JSON", slot_key: noteSlotKey };
+        }
+      }
+
+      // SOL-E001: notes are the only durable authority. Never merge gitignored
+      // mirror siblings into the note — a forged verify-promotion mirror must
+      // not be promoted during an unrelated legitimate emission. Mirrors are
+      // regenerated FROM notes after a successful write, never the reverse.
+
+      const existingSameSlot = envelope[noteSlotKey];
+      if (existingSameSlot) {
+        const supersessionError = validateSupersession(receipt, existingSameSlot);
+        if (supersessionError) {
+          return { ok: false, reason: supersessionError, slot_key: noteSlotKey };
+        }
+      }
+
+      const refNow = git(["rev-parse", "--verify", notesRef]) || "";
+      if (refNow !== refBefore) {
+        sleepMs(25 * attempt);
+        continue;
+      }
+
+      envelope[noteSlotKey] = receipt;
+
+      const tmpPath = join(tmpdir(), `svc-note-${process.pid}-${Date.now()}-${attempt}.json`);
+      writeFileSync(tmpPath, JSON.stringify(envelope));
+      let wrote = false;
       try {
-        for (const name of readdirSync(mirrorDir)) {
-          if (!name.endsWith(".json")) continue;
-          const typeName = name.replace(/\.json$/, "");
-          try {
-            envelope[typeName] = JSON.parse(readFileSync(join(mirrorDir, name), "utf8"));
-          } catch {}
+        execFileSync("git", ["notes", "--ref=svc-receipts", "add", "-f", "-F", tmpPath, sha], { stdio: "pipe" });
+        wrote = true;
+      } catch (e) {
+        wrote = false;
+      } finally {
+        try { unlinkSync(tmpPath); } catch {}
+      }
+      if (!wrote) {
+        sleepMs(25 * attempt);
+        continue;
+      }
+
+      const verifyRaw = git(["notes", "--ref=svc-receipts", "show", sha]);
+      if (!verifyRaw) {
+        sleepMs(25 * attempt);
+        continue;
+      }
+      try {
+        const parsed = JSON.parse(verifyRaw);
+        if (parsed && parsed[noteSlotKey] && receiptDigest(parsed[noteSlotKey]) === receiptDigest(receipt)) {
+          return { ok: true, slot_key: noteSlotKey };
         }
       } catch {}
+      sleepMs(25 * attempt);
     }
-
-    // 3. Overlay current receipt explicitly (safety net for fsync races).
-    envelope[type] = receipt;
-
-    // 4. Write via tempfile (no shell-escape bugs).
-    const tmpPath = join(tmpdir(), `svc-note-${process.pid}-${Date.now()}.json`);
-    writeFileSync(tmpPath, JSON.stringify(envelope));
-    try {
-      execFileSync("git", ["notes", "--ref=svc-receipts", "add", "-f", "-F", tmpPath, sha], { stdio: "pipe" });
-      return true;
-    } catch (e) {
-      return false;
-    } finally {
-      try { unlinkSync(tmpPath); } catch {}
-    }
+    return { ok: false, reason: "failed to persist identity slot after retries", slot_key: noteSlotKey };
   } finally {
     if (release) release();
   }
@@ -213,6 +318,7 @@ function main() {
   body.receipt_type = body.receipt_type || args.type;
   body.schema_version = body.schema_version || 1;
   body.wi = body.wi || args.wi;
+  if (args.phase) body.phase = body.phase || args.phase;
   body.timestamp = body.timestamp || new Date().toISOString();
 
   // Every review receipt produced after the WI-541 contract is v3. Historical
@@ -258,16 +364,22 @@ function main() {
   }
 
   let mirrorPath;
+  let mirrorAliasPath = null;
+  const phaseIdentity = args.phase || (typeof body.phase === "string" ? body.phase : null);
   if (writeStaging) {
     if (!treeHash) fail("could not compute tree hash for staging");
     const dir = join(".svc", "receipts", "staging", treeHash);
     mkdirSync(dir, { recursive: true });
-    mirrorPath = join(dir, `${args.type}.json`);
+    const slotName = `${args.type}--${args.wi}${phaseIdentity ? `--${phaseIdentity}` : ""}`;
+    mirrorPath = join(dir, `${slotName}.json`);
+    mirrorAliasPath = join(dir, `${args.type}.json`);
   } else {
     const shortSha = targetSha.substring(0, 7);
     const dir = join(".svc", "receipts", shortSha);
     mkdirSync(dir, { recursive: true });
-    mirrorPath = join(dir, `${args.type}.json`);
+    const slotName = `${args.type}--${args.wi}${phaseIdentity ? `--${phaseIdentity}` : ""}`;
+    mirrorPath = join(dir, `${slotName}.json`);
+    mirrorAliasPath = join(dir, `${args.type}.json`);
   }
 
   // WI-396: bind exec-record/review-exec to the commit TREE (squash-invariant,
@@ -281,20 +393,51 @@ function main() {
     body.schema_version = Math.max(2, Number(body.schema_version) || 1);
   }
 
-  writeJsonAtomic(mirrorPath, body);
+  if (targetSha) {
+    body.target_sha = body.target_sha || targetSha;
+    body.sha = body.sha || targetSha;
+  }
+
+  const existingMirrorSlot = readJsonFileIfExists(mirrorPath);
+  if (existingMirrorSlot) {
+    const supersessionError = validateSupersession(body, existingMirrorSlot);
+    if (supersessionError) {
+      fail(`refused mirror overwrite for identity slot ${mirrorPath}: ${supersessionError}`, 1);
+    }
+  }
 
   let noteWritten = false;
+  let noteSlotKey = null;
   if (!args.noNote && targetSha) {
-    noteWritten = writeNote(targetSha, args.type, body);
+    const noteResult = writeNote(targetSha, args.type, args.wi, phaseIdentity, body);
+    noteWritten = noteResult.ok;
+    noteSlotKey = noteResult.slot_key || null;
+    if (!noteResult.ok) {
+      fail(`refused note write for identity slot (${noteResult.slot_key || "unknown"}): ${noteResult.reason}`, 1);
+    }
+  }
+
+  writeJsonAtomic(mirrorPath, body);
+  // Compatibility alias: preserve historical <type>.json readers only when this
+  // does not clobber a different WI's receipt.
+  if (mirrorAliasPath) {
+    const existingAlias = readJsonFileIfExists(mirrorAliasPath);
+    const aliasOwnedBySameWi = existingAlias && String(existingAlias.wi || "") === String(body.wi || "");
+    if (!existingAlias || aliasOwnedBySameWi) {
+      writeJsonAtomic(mirrorAliasPath, body);
+    }
   }
 
   console.log(JSON.stringify({
     ok: true,
     mirror_path: mirrorPath,
+    mirror_alias_path: mirrorAliasPath,
     note_written: noteWritten,
     staging: writeStaging,
     type: args.type,
     wi: args.wi,
+    phase: phaseIdentity,
+    note_slot_key: noteSlotKey,
   }, null, 2));
 }
 

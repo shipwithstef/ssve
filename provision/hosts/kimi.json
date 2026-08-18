@@ -21,7 +21,11 @@
     "containment_backend": "landlock",
     "containment_launcher": "scripts/svc-contained-exec.mjs",
     "containment_probe_required": true,
-    "mutating_child_execution": true
+    "mutating_child_execution": true,
+    "fresh_session_launch": {
+      "enabled": false,
+      "reason": "No automatable fresh-session transport declared for this host yet (WI-552 migration note: disabled by default until a host manifest declares fresh_session_launch)."
+    }
   },
   "hook_events": [
     "PreToolUse",

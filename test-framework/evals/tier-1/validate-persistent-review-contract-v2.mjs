@@ -43,7 +43,7 @@ const checks = [
   [files["skills/review-exec/SKILL.md"].includes("--reviewer-mode production"), "production execution review binds the production owner mode"],
   [files["skills/review-exec/SKILL.md"].includes("same-family Sol station remains advisory"), "same-family Sol is never mislabeled independent"],
   [!files["skills/review-exec/SKILL.md"].includes("bash scripts/resolve-adversarial-reviewer.sh > .svc/review-exec-pair.json"), "execution review no longer starts from the legacy scheduled selector"],
-  [files["scripts/review-plan-codex.sh"].includes('SVC_REVIEWER_POLICY:-$HOME/.svc/reviewer-policy-v2.json'), "plan review automatically discovers the owner config"],
+  [files["scripts/review-plan-codex.sh"].includes('SVC_DISPATCH_POLICY:-${SVC_REVIEWER_POLICY:-$HOME/.svc/dispatch-policy.json}'), "plan review automatically discovers the owner dispatch config"],
   [files["scripts/review-plan-codex.sh"].includes('REVIEWER_STATION="${SVC_REVIEWER_STATION:-}"'), "plan review preserves an explicit owner station override"],
   [files["scripts/review-plan-codex.sh"].includes('(!requested || station.id === requested)'), "explicit plan station remains bound to required independent authority"],
   [files["scripts/review-plan-codex.sh"].includes('review-topology-v2.mjs" plan'), "plan review derives its default station from owner topology"],
@@ -56,11 +56,42 @@ const checks = [
   [files["references/plan-review-protocol.md"].includes("owner/founder"), "product/security disagreement routes to owner authority"]
 ];
 
+const detectFixture = fs.mkdtempSync(path.join(os.tmpdir(), "svc-dispatch-detect-"));
+const detectPolicy = path.join(detectFixture, "dispatch-policy.json");
+fs.writeFileSync(detectPolicy, JSON.stringify({
+  schema_version: 1,
+  authority: "repository-owner",
+  default_mode: "detect",
+  modes: {
+    detect: {
+      labels: {
+        STRAT: { host: "codex", family: "openai", model: "gpt-5.6-sol", effort: "high" },
+        PLAN: { host: "codex", family: "openai", model: "gpt-5.6-sol", effort: "high" },
+        EXEC: { host: "codex", family: "openai", model: "gpt-5.6-sol", effort: "high" },
+        REVIEW: { host: "codex", family: "openai", model: "gpt-5.6-sol", effort: "high" },
+        SENSE: { host: "codex", family: "openai", model: "gpt-5.6-sol", effort: "high" },
+        DISC: { host: "codex", family: "openai", model: "web_search", effort: "high" },
+        PASS: { host: "codex", family: "openai", model: "gpt-5.6-sol", effort: "high" }
+      },
+      review: {
+        plan: { release_authority: true, stations: [
+          { id: "self", kind: "inline-self", required: true, authority: "advisory", tuple: { host: "codex", family: "openai", model: "gpt-5.6-sol", effort: "high" } },
+          { id: "independent", kind: "external", required: true, authority: "independent", tuple: { host: "agy", family: "google", model: "Gemini 3.7 Flash (High)", effort: "high" } }
+        ] },
+        exec: { release_authority: true, stations: [
+          { id: "self", kind: "inline-self", required: true, authority: "advisory", tuple: { host: "codex", family: "openai", model: "gpt-5.6-sol", effort: "high" } },
+          { id: "independent", kind: "external", required: true, authority: "independent", tuple: { host: "agy", family: "google", model: "Gemini 3.7 Flash (High)", effort: "high" } }
+        ] }
+      }
+    }
+  }
+}), { mode: 0o600 });
 const detected = JSON.parse(execFileSync("bash", [path.join(root, "scripts/resolve-adversarial-reviewer.sh")], {
   encoding: "utf8",
-  env: { PATH: process.env.PATH, HOME: process.env.HOME, CODEX_THREAD_ID: "019fe940-ae80-7b70-8cbe-ceb1fa4172b7" },
+  env: { PATH: process.env.PATH, HOME: process.env.HOME, CODEX_THREAD_ID: "019fe940-ae80-7b70-8cbe-ceb1fa4172b7", SVC_DISPATCH_POLICY: detectPolicy },
 }));
 checks.push([detected.orchestrator === "codex", "plan and execution review agree on CODEX_THREAD_ID host detection"]);
+fs.rmSync(detectFixture, { recursive: true, force: true });
 
 const fixture = fs.mkdtempSync(path.join(os.tmpdir(), "svc-review-station-"));
 try {
@@ -78,7 +109,7 @@ try {
   try {
     execFileSync("bash", [path.join(root, "scripts/review-plan-codex.sh"), plan], {
       encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
-      env: { ...process.env, SVC_HOST: "codex", SVC_REVIEWER_POLICY: policy, SVC_REVIEWER_MODE: "production", SVC_REVIEWER_STATION: "optional" },
+      env: { ...process.env, SVC_HOST: "codex", SVC_DISPATCH_POLICY: policy, SVC_REVIEWER_POLICY: policy, SVC_REVIEWER_MODE: "production", SVC_REVIEWER_STATION: "optional" },
     });
   } catch (error) {
     rejectionDetail = String(error.stderr || "");

@@ -88,6 +88,18 @@ _write_binding() {
   info "Bound session $session_id to ${wi:-read-only} at $wt_path"
 }
 
+# WI-549 (AC-549-4): this manager NEVER writes a per-worktree
+# .svc/chain-policy.json — a new/resumed worktree observes the SAME
+# repository-shared mode as every other worktree. This surfaces the
+# resolved mode + provenance (never treats a per-worktree copy as
+# authority) at creation time via the single shared resolver.
+_print_chain_policy() {
+  local wt_path="$1"
+  local resolved
+  resolved=$(node "$REPO_ROOT/scripts/lib/chain-policy.mjs" --repo "$wt_path" --mode 2>/dev/null || echo "refuse")
+  info "Chain policy: mode=$resolved (repository-shared; see: node scripts/lib/chain-policy.mjs --repo \"$wt_path\")"
+}
+
 _binding_status_rows() {
   local wt_path="$1"
   node --input-type=module - "$wt_path" <<'NODE_BINDING_STATUS'
@@ -393,6 +405,7 @@ cmd_create() {
     echo "  Path:    $ensured_path"
     echo "  Branch:  $ensured_branch"
     echo "  Owner:   $owner"
+    _print_chain_policy "$ensured_path"
     echo ""
     echo "  cd $ensured_path"
     return 0
@@ -463,6 +476,7 @@ LANE_EOF
     fi
   fi
   _write_binding "$wt_path" "$session_id" "$wt_wi" "$role"
+  _print_chain_policy "$wt_path"
 
   # --- Project setup (auto-detect) ---
   _run_setup "$wt_path"

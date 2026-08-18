@@ -122,6 +122,60 @@ verify-promotion. If running sub-skills in the same session, they share this
 context. If spawning as subagents, pass the file paths explicitly — do NOT let
 each sub-skill independently discover artifacts by scanning `docs/specs/`.
 
+## Restart-Boundary Continuation (WI-552)
+
+Check for a continuation baton before starting ordinary verification:
+
+```bash
+node scripts/resolve-continuation.mjs status --wi "$WI"
+```
+
+**No baton, or no WI declared `requires_fresh_session`:** proceed with
+ordinary verification below. Zero new sessions are launched (AC-552-8).
+
+**Baton exists and is `deploy_stamped` or `blocked` (retryable):** this run
+IS the lifecycle controller. Ask the WI-551 resolver for role
+`verify.restart` and launch EXACTLY ONCE — never twice, never a silent
+Claude/Codex remap of a host the owner policy did not select:
+
+```bash
+node scripts/resolve-continuation.mjs reconcile --wi "$WI"
+```
+
+- If the result is `blocked` with `code: capability_limited`, the target
+  host has no `fresh_session_launch` capability declared in
+  `provision/hosts/<host>.json`. Report the single explicit blocker per the
+  Boundaries in `docs/specs/work-items/WI-552.md` — do not treat owner
+  copy/paste as success and do not substitute a different host.
+- If `launched`, STOP here in this session. The launched child session is
+  the one that continues G7 for this baton; report the launch receipt and
+  exit. Read-only proof needs no mutating lease (AC-552-5).
+
+**This session IS the freshly launched continuation child** (detect via
+`SVC_SESSION_ID` matching the baton's latest `launches[].session_id` from
+`status`): run ONLY the declared verification/closeout tasks. The
+`svc-continuation-phase-guard` PreToolUse hook mechanically denies
+`diagnose-bug`, `plan-changeset`, and `execute-changeset` for this session
+(AC-552-4) — do not attempt to route around it. Produce a structured result
+(never free-text "looks good" or "prompt to send" — AC-552-7) and consume it
+to close the baton:
+
+```bash
+node scripts/resolve-continuation.mjs consume --wi "$WI" --result '{
+  "schema_version": 1, "wi": "<WI>", "session_id": "<this session id>",
+  "started_at": "<ISO timestamp>", "event_status": "success",
+  "proof_query": "<must equal the baton boundary.proof_query>",
+  "ac_mapping": [{"ac": "AC-552-1", "status": "pass"}],
+  "artifacts": ["<evidence path>"], "verdict": "pass"
+}'
+```
+
+`consume` rejects a result whose `session_id` equals the implementation
+session, does not match the exact launched session, or whose `started_at`
+is not strictly after the deploy receipt — these are freshness violations,
+not warnings (AC-552-2). If the parent process died after launch, a fresh
+`reconcile` call resumes from the ledger without spawning again (AC-552-9).
+
 ## Verification Escalation Ladder
 
 **Verification is AI-first. User handoff is the LAST option, not a shortcut.**
@@ -717,10 +771,11 @@ cat <<'JSON' | node scripts/emit-receipt.mjs --type verify-promotion --wi $WI --
 JSON
 ```
 
-This writes to `.svc/receipts/<sha>/verify-promotion.json` (or staging if pre-commit)
-AND attaches it to the consolidated git note on `refs/notes/svc-receipts`.
+This writes to `.svc/receipts/<sha>/verify-promotion--<WI>.json` (or staging if pre-commit)
+and attaches it to the consolidated git note on `refs/notes/svc-receipts`
+under identity `slot::verify-promotion::<WI>::<sha>`.
 
-Self-verify: `node scripts/check-chain-receipts.mjs --sha HEAD` shows this
+Self-verify: `node scripts/check-chain-receipts.mjs --sha HEAD --wi $WI --consumer verify-promotion` shows this
 receipt type as present + schema-valid.
 
 Only after that self-verification succeeds, append the promoted WI to shared
