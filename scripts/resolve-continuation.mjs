@@ -387,6 +387,15 @@ export function launch(options = {}) {
   }
   const configDigest = hash({ tuple: resolved.tuple, boundary: baton.boundary, attempt });
   const launchCommand = capability.capability?.launch_command || null;
+  if (!fake && !launchCommand) {
+    // SOL-E003: enabled-without-command is capability_limited, not a ghost launch.
+    appendEvent(wi, 'launch_blocked', {
+      attempt,
+      reason: `host "${targetHost}" declares fresh_session_launch but launch_command is null`,
+      code: 'capability_limited',
+    }, cwd);
+    return { ok: false, action: 'blocked', baton: readBaton(wi, cwd) };
+  }
   let pid = null;
   if (!fake && launchCommand) {
     // Best-effort real transport: fire-and-forget, never awaited (the whole
@@ -404,6 +413,14 @@ export function launch(options = {}) {
       appendEvent(wi, 'launch_blocked', {
         attempt,
         reason: `launch command for host "${targetHost}" failed to start: ${error.message}`,
+        code: 'launch_spawn_failed',
+      }, cwd);
+      return { ok: false, action: 'blocked', baton: readBaton(wi, cwd) };
+    }
+    if (!pid) {
+      appendEvent(wi, 'launch_blocked', {
+        attempt,
+        reason: `launch command for host "${targetHost}" produced no process id`,
         code: 'launch_spawn_failed',
       }, cwd);
       return { ok: false, action: 'blocked', baton: readBaton(wi, cwd) };
@@ -455,6 +472,9 @@ export function consume(options = {}) {
   }
   const schemaResult = validate(RESULT_SCHEMA, result);
   if (!schemaResult.valid) fail(`result schema violation: ${schemaResult.errors.join('; ')}`, 'continuation_result_invalid');
+  if (result.wi !== wi) {
+    fail(`result.wi "${result.wi}" does not match baton WI "${wi}"`, 'continuation_foreign_wi');
+  }
 
   const baton = readBaton(wi, cwd);
   if (!baton) fail(`no continuation baton exists for ${wi}`, 'continuation_missing');
@@ -491,6 +511,21 @@ export function consume(options = {}) {
   const forbiddenHit = executed.find((task) => baton.forbidden_phases.includes(task));
   if (forbiddenHit) {
     fail(`result reports executing forbidden phase "${forbiddenHit}" outside the delegated scope`, 'continuation_scope_violation');
+  }
+
+  const failingAcs = Array.isArray(result.ac_mapping)
+    ? result.ac_mapping.filter((row) => row && row.status === 'fail').map((row) => row.ac)
+    : [];
+  if (result.verdict === 'pass') {
+    if (result.event_status !== 'success') {
+      fail('closed_pass requires event_status=success (contradictory result is not evidence)', 'continuation_result_invalid');
+    }
+    if (failingAcs.length > 0) {
+      fail(`closed_pass cannot include failing AC mappings: ${failingAcs.join(', ')}`, 'continuation_result_invalid');
+    }
+    if (!Array.isArray(result.artifacts) || result.artifacts.length === 0) {
+      fail('closed_pass requires at least one evidence artifact', 'continuation_result_invalid');
+    }
   }
 
   appendEvent(wi, 'result_received', { result }, cwd);

@@ -299,6 +299,35 @@ assert.throws(
   'AC-552-4: a self-reported forbidden-phase execution cannot close the baton',
 );
 
+assert.throws(
+  () => consume({
+    wi, cwd: tmp,
+    result: {
+      schema_version: 1, wi: 'WI-OTHER', session_id: childSessionId,
+      started_at: new Date(Date.now() + 1000).toISOString(), event_status: 'success',
+      proof_query: created.baton.boundary.proof_query,
+      ac_mapping: [{ ac: 'AC-552-1', status: 'pass' }], artifacts: ['docs/specs/test-evidence/WI-9552/healthcheck.log'],
+      verdict: 'pass',
+    },
+  }),
+  /does not match baton WI/,
+  'SOL-E004: consume binds result.wi to the baton WI',
+);
+assert.throws(
+  () => consume({
+    wi, cwd: tmp,
+    result: {
+      schema_version: 1, wi, session_id: childSessionId,
+      started_at: new Date(Date.now() + 1000).toISOString(), event_status: 'failure',
+      proof_query: created.baton.boundary.proof_query,
+      ac_mapping: [{ ac: 'AC-552-1', status: 'pass' }], artifacts: ['docs/specs/test-evidence/WI-9552/healthcheck.log'],
+      verdict: 'pass',
+    },
+  }),
+  /event_status=success/,
+  'SOL-E004: contradictory failure+pass cannot close as closed_pass',
+);
+
 const validResult = {
   schema_version: 1, wi, session_id: childSessionId,
   started_at: new Date(Date.now() + 1000).toISOString(), event_status: 'success',
@@ -325,5 +354,17 @@ assert.equal(afterCloseOutcome.forbidden, false, 'a closed baton no longer scope
 // ---------------------------------------------------------------------------
 const reconcileClosed = reconcile({ wi, cwd: tmp });
 assert.equal(reconcileClosed.action, 'done');
+
+const wiGhost = 'WI-9555';
+createBaton({
+  wi: wiGhost, host: 'grok', event: 'SessionStart', proofQuery: 'q',
+  sessionId: 'svc-impl-session-ghost', cwd: tmp,
+});
+stampDeploy({ wi: wiGhost, mergeSha: 'd'.repeat(40), cwd: tmp });
+const ghostLaunch = launch({ wi: wiGhost, cwd: tmp, fake: false });
+assert.equal(ghostLaunch.ok, false);
+assert.equal(ghostLaunch.action, 'blocked');
+assert.equal(ghostLaunch.baton.block_code, 'capability_limited');
+assert.match(ghostLaunch.baton.block_reason, /launch_command is null/);
 
 console.log('validate-continuation-lifecycle-wi552: PASS (AC-552-1,2,3,4,6,7,8,9 replay matrix)');

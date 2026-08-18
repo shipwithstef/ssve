@@ -32,6 +32,15 @@ const FINDINGS_SCHEMA = path.join(ROOT, 'schemas/external-review-findings.schema
 const RECEIPT_SCHEMA = path.join(ROOT, 'schemas/external-review-receipt.schema.json');
 const MODEL_REGISTRY = path.join(ROOT, 'references/model-registry.json');
 const AGY_DISPATCHER = path.join(ROOT, 'skills/research/scripts/dispatch-agy.mjs');
+const REVIEW_HOST_TRANSPORTS = Object.freeze({
+  codex: { env: 'SVC_EXTERNAL_REVIEW_CODEX_BIN', binary: 'codex' },
+  agy: { env: 'SVC_EXTERNAL_REVIEW_AGY_BIN', binary: 'agy' },
+  claude: { env: 'SVC_EXTERNAL_REVIEW_CLAUDE_BIN', binary: 'claude' },
+});
+
+function reviewTransport(host) {
+  return REVIEW_HOST_TRANSPORTS[host] || null;
+}
 const ELIGIBLE_FALLBACKS = new Set(['model_unavailable', 'model_entitlement', 'provider_overload']);
 const DEFAULT_TIMEOUT_SECONDS = 1200;
 const DEFAULT_REVIEW_BUDGET_USD = 50;
@@ -554,6 +563,9 @@ async function runProcess(binary, args, input, timeoutMs, env = process.env) {
 }
 
 async function capabilityCheck(tuple, binary, timeoutMs) {
+  if (!reviewTransport(tuple.host)) {
+    return { ok: false, missing: [`no review transport for host ${tuple.host}`], output: '' };
+  }
   const required = tuple.host === 'codex'
     ? ['--config', '--strict-config', '--model', '--sandbox', 'read-only', '--skip-git-repo-check', '--ephemeral', '--ignore-user-config', '--ignore-rules', '--output-schema', '--json', '--output-last-message', '--color']
     : tuple.host === 'agy'
@@ -1028,6 +1040,7 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
   const suppressSafetyEnvelope = process.env.SVC_EXTERNAL_REVIEW_FIXTURE === '1' && process.env.SVC_EXTERNAL_REVIEW_FIXTURE_DISABLE_SAFETY_ENVELOPE === '1';
   const switchingEnabled = tuple.model === 'claude-fable-5' && !suppressSafetyEnvelope;
   let args;
+  let result = null;
   if (tuple.host === 'codex') {
     args = ['exec', '--skip-git-repo-check', '--sandbox', 'read-only', '--ephemeral', '--ignore-user-config', '--ignore-rules', '--strict-config', '--model', tuple.model, '-c', `model_reasoning_effort="${tuple.effort}"`, '--output-schema', FINDINGS_SCHEMA, '--json', '--output-last-message', finalFile, '--color', 'never', '-'];
   } else if (tuple.host === 'agy') {
@@ -1037,14 +1050,18 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
     args = [AGY_DISPATCHER, '--stdin', '--model', tuple.model, '--timeout-seconds', String(Math.max(1, Math.floor(timeoutMs / 1000))), '--artifacts-dir', transportDir];
     if (process.env.SVC_EXTERNAL_REVIEW_FIXTURE === '1') env.PATH = `${path.dirname(binary)}${path.delimiter}${env.PATH || ''}`;
     binary = process.execPath;
-  } else {
+  } else if (tuple.host === 'claude') {
     const inlineSchema = JSON.stringify(JSON.parse(schemaBytes.toString('utf8')));
     for (const key of ['CLAUDE_CODE_DISABLE_REFUSAL_FALLBACK', 'ANTHROPIC_MODEL', 'CLAUDE_MODEL', 'CLAUDE_CODE_MODEL', 'ANTHROPIC_DEFAULT_OPUS_MODEL', 'ANTHROPIC_DEFAULT_SONNET_MODEL', 'ANTHROPIC_DEFAULT_HAIKU_MODEL']) delete env[key];
     args = ['--print', '--model', tuple.model, '--effort', tuple.effort, '--safe-mode', '--tools', '', '--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}', '--permission-mode', 'plan', '--no-session-persistence', '--max-turns', '4', '--disable-slash-commands', '--no-chrome', ...(switchingEnabled ? ['--settings', '{"switchModelsOnFlag":true}'] : []), '--json-schema', inlineSchema, '--output-format', 'json', '--max-budget-usd', String(budgetUsd)];
+  } else {
+    args = [];
+    result = { code: null, signal: null, timedOut: false, stdout: Buffer.alloc(0), stderr: Buffer.from(`no review transport for host ${tuple.host}`), spawnError: true };
   }
-  let result;
-  try { result = await runProcess(binary, args, packageBytes, timeoutMs, env); }
-  catch (error) { result = { code: null, signal: null, timedOut: false, stdout: Buffer.alloc(0), stderr: Buffer.from(error.message), spawnError: true }; }
+  if (!result) {
+    try { result = await runProcess(binary, args, packageBytes, timeoutMs, env); }
+    catch (error) { result = { code: null, signal: null, timedOut: false, stdout: Buffer.alloc(0), stderr: Buffer.from(error.message), spawnError: true }; }
+  }
   await writeFile(eventsFile, redactDiagnostic(result.stdout.toString('utf8')), { mode: 0o600 });
   await writeFile(stderrFile, redactDiagnostic(result.stderr.toString('utf8')), { mode: 0o600 });
   let findings = null;
@@ -1538,11 +1555,16 @@ async function main() {
 
     let binary;
     try {
-      binary = requestedTuple.host === 'codex'
-        ? await fixtureBinary('SVC_EXTERNAL_REVIEW_CODEX_BIN', 'codex', fixtureRoot)
-        : requestedTuple.host === 'agy'
-          ? await fixtureBinary('SVC_EXTERNAL_REVIEW_AGY_BIN', 'agy', fixtureRoot)
-          : await fixtureBinary('SVC_EXTERNAL_REVIEW_CLAUDE_BIN', 'claude', fixtureRoot);
+      const transport = reviewTransport(requestedTuple.host);
+      if (!transport) {
+        await finishFailure('capability', {
+          cacheKey,
+          detail: `no review transport for host ${requestedTuple.host}`,
+          cache: { disposition: 'miss', reusable: false, entry: entryDir },
+        });
+        return;
+      }
+      binary = await fixtureBinary(transport.env, transport.binary, fixtureRoot);
     } catch {
       await finishFailure('capability', { cacheKey, cache: { disposition: 'miss', reusable: false, entry: entryDir } });
       return;

@@ -197,8 +197,11 @@ function parseOverlay(pathSpec, wi) {
   const scope = isObject(overlay.scope) ? overlay.scope : {};
   const patch = isObject(overlay.patch) ? overlay.patch : isObject(overlay.overlay) ? overlay.overlay : overlay;
   if (!isObject(patch)) fail(`work overlay patch must be an object: ${loaded.absolute}`, 'dispatch_overlay_invalid');
-  if (typeof scope.wi === 'string' && scope.wi.trim() && wi && scope.wi !== wi) {
-    return { applied: false, scope, sha256: loaded.sha256, patch: null, reason: 'wi-mismatch', path: loaded.absolute };
+  if (typeof scope.wi === 'string' && scope.wi.trim()) {
+    if (!wi) fail('scoped work overlay requires the current WI; refusing global leak', 'dispatch_overlay_invalid');
+    if (scope.wi !== wi) {
+      return { applied: false, scope, sha256: loaded.sha256, patch: null, reason: 'wi-mismatch', path: loaded.absolute };
+    }
   }
   return { applied: true, scope, sha256: loaded.sha256, patch, reason: 'applied', path: loaded.absolute };
 }
@@ -243,20 +246,34 @@ function parseSessionOverride({
   const document = loadedOverride.document;
   const patch = isObject(document.patch) ? document.patch : isObject(document.override) ? document.override : document;
   if (!isObject(patch)) fail('session override patch must be an object', 'dispatch_override_invalid');
-  const loadedReceipt = parseJsonSpec(sessionOverrideReceiptSpec, 'session override receipt')
-    || (isObject(document.receipt) ? { document: document.receipt, absolute: null, sha256: hash(document.receipt) } : null);
+  if (!sessionOverrideReceiptSpec) fail('session override was requested but no receipt was supplied', 'dispatch_override_invalid');
+  if (String(sessionOverrideReceiptSpec).trim().startsWith('{')) {
+    fail('session override receipt must be a protected owner file, not inline JSON', 'dispatch_override_invalid');
+  }
+  const loadedReceipt = parseJsonSpec(sessionOverrideReceiptSpec, 'session override receipt');
   if (!loadedReceipt) fail('session override was requested but no receipt was supplied', 'dispatch_override_invalid');
+  if (!loadedReceipt.absolute) fail('session override receipt must be a protected owner file, not inline JSON', 'dispatch_override_invalid');
   const receipt = loadedReceipt.document;
   if (!isObject(receipt)) fail('session override receipt must be an object', 'dispatch_override_invalid');
   if (receipt.type !== 'dispatch-session-override') fail('session override receipt type must be dispatch-session-override', 'dispatch_override_invalid');
   if (receipt.authority !== 'repository-owner') fail('session override receipt authority must be repository-owner', 'dispatch_override_invalid');
   if (typeof receipt.session_id !== 'string' || !receipt.session_id.trim()) fail('session override receipt session_id is required', 'dispatch_override_invalid');
   if (sessionId && receipt.session_id !== sessionId) fail(`session override receipt session_id mismatch (expected ${sessionId}, got ${receipt.session_id})`, 'dispatch_override_invalid');
-  if (wi && receipt.wi && receipt.wi !== wi) fail(`session override receipt wi mismatch (expected ${wi}, got ${receipt.wi})`, 'dispatch_override_invalid');
-  if (receipt.expires_at) {
-    const expires = Date.parse(receipt.expires_at);
-    if (!Number.isFinite(expires) || expires <= Date.now()) fail('session override receipt is expired', 'dispatch_override_invalid');
+  if (!wi) fail('session override receipt requires the current WI', 'dispatch_override_invalid');
+  if (typeof receipt.wi !== 'string' || !receipt.wi.trim()) fail('session override receipt wi is required', 'dispatch_override_invalid');
+  if (receipt.wi !== wi) fail(`session override receipt wi mismatch (expected ${wi}, got ${receipt.wi})`, 'dispatch_override_invalid');
+  if (typeof receipt.override_sha256 !== 'string' || !DIGEST.test(receipt.override_sha256)) {
+    fail('session override receipt override_sha256 must be a sha256 of the override payload', 'dispatch_override_invalid');
   }
+  if (receipt.override_sha256 !== loadedOverride.sha256) {
+    fail('session override receipt override_sha256 does not bind the override payload', 'dispatch_override_invalid');
+  }
+  if (typeof receipt.issued_at !== 'string' || !Number.isFinite(Date.parse(receipt.issued_at))) {
+    fail('session override receipt issued_at is required', 'dispatch_override_invalid');
+  }
+  if (!receipt.expires_at) fail('session override receipt expires_at is required', 'dispatch_override_invalid');
+  const expires = Date.parse(receipt.expires_at);
+  if (!Number.isFinite(expires) || expires <= Date.now()) fail('session override receipt is expired', 'dispatch_override_invalid');
   return {
     applied: true,
     patch,
@@ -305,7 +322,7 @@ function normalizeDispatchContext(options = {}) {
     || (contractOverride?.patch ? JSON.stringify({ patch: contractOverride.patch, requested: contractOverride.requested, receipt: contractOverride.receipt || null }) : null);
   const sessionOverrideRequested = options.sessionOverrideRequested ?? process.env.SVC_DISPATCH_OVERRIDE_REQUESTED ?? contractOverride?.requested ?? null;
   const sessionOverrideReceiptSpec = options.sessionOverrideReceiptSpec || process.env.SVC_DISPATCH_OVERRIDE_RECEIPT
-    || (contractOverride?.receipt ? JSON.stringify(contractOverride.receipt) : null);
+    || (typeof contractOverride?.receipt_path === 'string' ? contractOverride.receipt_path : null);
   const globalPolicy = readProtectedJson(configPath, 'owner dispatch policy');
   if (globalPolicy.document?.schema_version !== 1) {
     const error = new Error(`resolve-dispatch: unsupported policy schema_version ${globalPolicy.document?.schema_version ?? '<missing>'}`);

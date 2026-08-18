@@ -1,0 +1,139 @@
+{
+  "verdict": "fail",
+  "rubric_score": 3,
+  "reviewer": "gpt-5.6-sol-high",
+  "reviewer_family": "openai",
+  "independent": true,
+  "examined_sha": "5a95ab3c9db00730862771fcd7f7e9aa4a119454",
+  "findings": [
+    {
+      "id": "SOL-E001",
+      "severity": "CRITICAL",
+      "lens": "authority",
+      "claim": "Canonical finalization can be authorized by forged gitignored mirror receipts.",
+      "analysis": "The contract declares git notes authoritative, but the checker falls back to .svc receipt mirrors whenever no note exists and completion consumers do not reject mirror-sourced success. The emitter also merges every mirror entry into the canonical note without validating those sibling entries. A locally fabricated verify-promotion mirror can therefore pass Stop/final-report or be promoted into durable notes during an unrelated legitimate emission.",
+      "evidence": [
+        "references/chain-receipt-contract.md:7",
+        "references/chain-receipt-contract.md:120",
+        "scripts/check-chain-receipts.mjs:392",
+        "scripts/check-chain-receipts.mjs:401",
+        "scripts/emit-receipt.mjs:247",
+        "scripts/emit-receipt.mjs:263"
+      ],
+      "proposed_fix": "Require note-sourced envelopes for stop, verify-promotion, final-report, push, and reconcile consumers. Never merge mirror contents into notes; regenerate mirrors only from validated notes."
+    },
+    {
+      "id": "SOL-E002",
+      "severity": "HIGH",
+      "lens": "authority",
+      "claim": "External dispatch silently remaps Cursor, Grok, and other non-Codex/non-AGY hosts to the Claude binary.",
+      "analysis": "The launcher selects Codex and AGY explicitly, then routes every other host through Claude CLI arguments. Owner policy can name host=cursor, yet the recorded tuple remains Cursor while the executed binary is Claude. This defeats dispatch provenance and violates AC-551-7/AC-546-6.",
+      "evidence": [
+        "scripts/run-external-review.mjs:1031",
+        "scripts/run-external-review.mjs:1040",
+        "scripts/run-external-review.mjs:1541",
+        "scripts/run-external-review.mjs:1545",
+        "examples/dispatch-policy.example.json:92"
+      ],
+      "proposed_fix": "Use an explicit host-to-transport registry. Invoke the exact declared transport or return capability_limited; reject unknown hosts instead of using an else-to-Claude branch."
+    },
+    {
+      "id": "SOL-E003",
+      "severity": "HIGH",
+      "lens": "correctness",
+      "claim": "Grok continuation records a successful launch although no process is launched.",
+      "analysis": "Grok declares fresh_session_launch enabled but launch_command is null. Non-fake launch skips spawn when the command is absent and still appends launch_receipted with pid=null. Reconcile then treats it as already launched forever. The live fixture invokes grok -p separately and does not exercise this controller path.",
+      "evidence": [
+        "provision/hosts/grok.json:25",
+        "provision/hosts/grok.json:29",
+        "scripts/resolve-continuation.mjs:389",
+        "scripts/resolve-continuation.mjs:391",
+        "scripts/resolve-continuation.mjs:412",
+        "test-framework/evals/tier-1/validate-wi546-grok-live-acceptance.sh:196"
+      ],
+      "proposed_fix": "Treat enabled-without-launch_command as capability_limited. Require confirmed process creation before launch_receipted and test the real controller launch path."
+    },
+    {
+      "id": "SOL-E004",
+      "severity": "HIGH",
+      "lens": "authority",
+      "claim": "Continuation consumption accepts contradictory or cross-WI evidence as a passing closeout.",
+      "analysis": "Consumption never verifies result.wi against the baton WI and does not require event_status=success, all AC mappings to pass, or substantive artifacts. A result with event_status=failure and verdict=pass closes as closed_pass solely from verdict.",
+      "evidence": [
+        "schemas/continuation-result.schema.json:7",
+        "schemas/continuation-result.schema.json:16",
+        "scripts/resolve-continuation.mjs:180",
+        "scripts/resolve-continuation.mjs:456",
+        "scripts/resolve-continuation.mjs:478",
+        "scripts/resolve-continuation.mjs:496"
+      ],
+      "proposed_fix": "Bind WI, session, launch token, and result digest; require event_status=success, verdict=pass, no failing AC mappings, and required evidence artifacts before closed_pass."
+    },
+    {
+      "id": "SOL-E005",
+      "severity": "HIGH",
+      "lens": "authority",
+      "claim": "The continuation phase guard fails open when its ledger is corrupt or unreadable.",
+      "analysis": "Any exception during baton lookup exits successfully, allowing the continuation child to invoke forbidden planning or execution skills. This contradicts the mechanical-denial requirement in AC-552-4.",
+      "evidence": [
+        "hooks/svc-continuation-phase-guard.mjs:43",
+        "hooks/svc-continuation-phase-guard.mjs:47",
+        "hooks/svc-continuation-phase-guard.mjs:50"
+      ],
+      "proposed_fix": "Fail closed for sessions identified as continuation children when ledger validation fails, with an explicit recovery blocker."
+    },
+    {
+      "id": "SOL-E006",
+      "severity": "HIGH",
+      "lens": "correctness",
+      "claim": "Cursor and Grok Stop adapters convert core-guard execution failures into success.",
+      "analysis": "Both adapters discard stderr and apply `|| true` around the core guard. Missing scripts, crashes, or malformed empty output consequently reach the unconditional exit 0 path.",
+      "evidence": [
+        "hooks/cursor/svc-cursor-task-completion-guard.sh:31",
+        "hooks/cursor/svc-cursor-task-completion-guard.sh:50",
+        "hooks/grok/svc-grok-task-completion-guard.sh:32",
+        "hooks/grok/svc-grok-task-completion-guard.sh:51"
+      ],
+      "proposed_fix": "Preserve the core exit status and require schema-valid allow output. Any execution or parse failure must emit a compact blocker and exit 2."
+    },
+    {
+      "id": "SOL-E007",
+      "severity": "CRITICAL",
+      "lens": "authority",
+      "claim": "A caller can forge the repository-owner session-override receipt and replace owner dispatch policy.",
+      "analysis": "Overrides and receipts may be supplied as inline JSON. Receipt validation only checks self-asserted strings, optional expiry, and session/WI values; it neither authenticates owner issuance nor binds the receipt to the override digest. A session can fabricate authority=repository-owner and remap its own execution.",
+      "evidence": [
+        "scripts/resolve-dispatch.mjs:206",
+        "scripts/resolve-dispatch.mjs:246",
+        "scripts/resolve-dispatch.mjs:251",
+        "scripts/resolve-dispatch.mjs:260"
+      ],
+      "proposed_fix": "Require a protected owner-created receipt that binds the exact override SHA-256, WI, session, issue time, and expiry, with independently verifiable owner authorization."
+    },
+    {
+      "id": "SOL-E008",
+      "severity": "HIGH",
+      "lens": "determinism",
+      "claim": "A WI-scoped dispatch overlay leaks whenever the caller omits the current WI.",
+      "analysis": "Scope mismatch is enforced only when both overlay.scope.wi and a caller WI are present. If WI resolution is absent, the scoped overlay applies globally and can silently remap another workflow.",
+      "evidence": [
+        "scripts/resolve-dispatch.mjs:193",
+        "scripts/resolve-dispatch.mjs:200",
+        "scripts/resolve-dispatch.mjs:203",
+        "test-framework/evals/tier-1/validate-dispatch-resolver-wi551.mjs:160"
+      ],
+      "proposed_fix": "Reject a scoped overlay when the current WI is unavailable, and require explicit scope for work overlays."
+    },
+    {
+      "id": "SOL-E009",
+      "severity": "MEDIUM",
+      "lens": "release",
+      "claim": "The requested examined SHA is not a valid frozen revision.",
+      "analysis": "The supplied SHA is 38 hexadecimal characters and does not resolve. Repository HEAD and the self-review identify the actual 40-character SHA as 5a95ab3c9db00730862771fcd7f7e9aa4a119454, which is the revision examined here.",
+      "evidence": [
+        "docs/specs/reviews/wi546-exec-grok-high-self.json:7"
+      ],
+      "proposed_fix": "Bind all review and receipt artifacts to the actual 40-character HEAD SHA and correct the frozen-range metadata before release."
+    }
+  ]
+}

@@ -119,7 +119,10 @@ Every chain skill's Self-Verify section must include:
 
 `scripts/check-chain-receipts.mjs --sha <sha> --wi <WI>` reads the git note as
 authoritative, regenerates the mirror cache if missing, and validates
-each receipt against its schema. Missing or invalid receipts are reported
+each receipt against its schema. Finalization consumers (`stop`,
+`verify-promotion`, `final-report`) refuse a mirror-only envelope — gitignored
+mirrors are not authority and must never be merged back into notes.
+Missing or invalid receipts are reported
 as `unaccounted` and surface at:
 - `hooks/git/pre-push.d/10-receipts-complete` (L2 enforcement)
 - `scripts/svc-reconcile.mjs` responsibility A (L3 enforcement)

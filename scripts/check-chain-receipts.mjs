@@ -66,6 +66,12 @@ const CONSUMER_REQUIRED_TYPES = {
   "audit-implementation": ["exec-record", "audit-implementation"],
   "verify-promotion": ["verify-promotion"],
 };
+// SOL-E001: finalization consumers cannot be authorized by a gitignored mirror.
+const NOTE_REQUIRED_CONSUMERS = new Set([
+  "stop",
+  "verify-promotion",
+  "final-report",
+]);
 const RANGE_CONCURRENCY_MAX = 16;
 const RANGE_WORKER_TIMEOUT_MIN_MS = 1_000;
 const RANGE_WORKER_TIMEOUT_MAX_MS = 10_000;
@@ -690,12 +696,26 @@ function validateReceipt(receiptType, receipt) {
 
 function checkSha(sha, options = {}) {
   const { envelope, source } = getReceiptsForSha(sha);
+  const consumer = options.consumer || null;
+  if (NOTE_REQUIRED_CONSUMERS.has(consumer) && source !== "note") {
+    return {
+      sha,
+      ok: false,
+      missing: [
+        `${consumer} requires a note-sourced envelope; gitignored mirrors are not authority`,
+      ],
+      type: "unaccounted",
+      receipt_source: source,
+      ...(options.wi ? { wi: options.wi } : {}),
+      consumer,
+    };
+  }
   const result = checkShaAgainstReceipts(sha, envelope, options);
   return {
     ...result,
     receipt_source: source,
     ...(options.wi ? { wi: options.wi } : {}),
-    ...(options.consumer ? { consumer: options.consumer } : {}),
+    ...(consumer ? { consumer } : {}),
   };
 }
 

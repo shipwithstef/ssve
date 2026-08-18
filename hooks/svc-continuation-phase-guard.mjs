@@ -43,11 +43,27 @@ if (!sessionId) process.exit(0);
 let outcome;
 try {
   outcome = isPhaseForbiddenForSession({ sessionId, skill: skillName, cwd: call.cwd || process.cwd() });
-} catch {
-  // A corrupt/unreadable ledger must never itself become a denial surface —
-  // fail open exactly as the rest of the WI-552 lifecycle fails closed only
-  // at the launch/consume boundary, not here.
-  process.exit(0);
+} catch (error) {
+  // SOL-E005: continuation children fail closed when the ledger is unreadable.
+  // Unrelated sessions still fail open by absence.
+  const looksLikeChild = Boolean(process.env.SVC_CONTINUATION_TOKEN)
+    || String(sessionId).startsWith("svc-continuation-");
+  if (!looksLikeChild) process.exit(0);
+  const reason = `restart-boundary continuation ledger is unreadable for child session; fail-closed (${error.message})`;
+  if (emitDenial) {
+    emitDenial({
+      hook_id: "svc-continuation-phase-guard",
+      reason_code: "SVC-CONTINUATION-LEDGER",
+      cause: reason,
+      operation: `Skill invocation (${skillName})`,
+      recovery: "Repair or restore .svc/continuation/<WI>.ledger.jsonl, then retry from the parent session.",
+      resolved_command_path: skillName,
+      session_id: sessionId,
+    });
+  }
+  process.stderr.write(`[svc-continuation-phase-guard] BLOCKED: ${reason}\n`);
+  process.stdout.write(`${JSON.stringify({ hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: reason } })}\n`);
+  process.exit(2);
 }
 
 if (!outcome.forbidden) process.exit(0);

@@ -244,7 +244,10 @@ function writeNote(sha, type, wi, phase, receipt) {
         }
       }
 
-      Object.assign(envelope, normalizeMirrorEnvelope(mirrorDir, sha));
+      // SOL-E001: notes are the only durable authority. Never merge gitignored
+      // mirror siblings into the note — a forged verify-promotion mirror must
+      // not be promoted during an unrelated legitimate emission. Mirrors are
+      // regenerated FROM notes after a successful write, never the reverse.
 
       const existingSameSlot = envelope[noteSlotKey];
       if (existingSameSlot) {

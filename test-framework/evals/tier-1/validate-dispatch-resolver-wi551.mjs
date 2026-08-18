@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -19,6 +20,21 @@ const sessionId = 'svc-impl-wi551-test';
 
 const writeJson = (file, value) => {
   fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o600 });
+};
+
+const fileSha256 = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+
+const writeBoundReceipt = ({ sessionId: sid, wi, overrideFile, receiptFile }) => {
+  writeJson(receiptFile, {
+    type: 'dispatch-session-override',
+    authority: 'repository-owner',
+    session_id: sid,
+    wi,
+    reason: 'owner request',
+    issued_at: new Date().toISOString(),
+    expires_at: new Date(Date.now() + 60_000).toISOString(),
+    override_sha256: fileSha256(overrideFile),
+  });
 };
 
 const basePolicy = {
@@ -103,13 +119,11 @@ writeJson(overridePath, {
     },
   },
 });
-writeJson(overrideReceiptPath, {
-  type: 'dispatch-session-override',
-  authority: 'repository-owner',
-  session_id: sessionId,
+writeBoundReceipt({
+  sessionId,
   wi: 'WI-551',
-  reason: 'owner request',
-  expires_at: new Date(Date.now() + 60_000).toISOString(),
+  overrideFile: overridePath,
+  receiptFile: overrideReceiptPath,
 });
 const overrideApplied = resolveDispatchModel({
   configPath: policyPath,
@@ -166,6 +180,16 @@ const leakedOverlay = resolveDispatchModel({
 });
 assert.equal(withOverlay.tuple.model, 'grok-4.6-overlay');
 assert.equal(leakedOverlay.tuple.model, 'grok-4.6-patch');
+assert.throws(
+  () => resolveDispatchModel({
+    configPath: policyPath,
+    label: 'EXEC',
+    orchestrator: 'grok',
+    workOverlayPath: overlayPath,
+  }),
+  /scoped work overlay requires the current WI/,
+  'SOL-E008: scoped overlay without a caller WI must not apply globally',
+);
 
 // AC-10 (6): deny-list beats defaults (no silent bypass).
 const deniedPolicy = structuredClone(basePolicy);
@@ -218,6 +242,34 @@ writeJson(overridePath, {
     },
   },
 });
+writeBoundReceipt({
+  sessionId,
+  wi: 'WI-551',
+  overrideFile: overridePath,
+  receiptFile: overrideReceiptPath,
+});
+assert.throws(
+  () => resolveDispatchModel({
+    configPath: policyPath,
+    label: 'EXEC',
+    orchestrator: 'grok',
+    wi: 'WI-551',
+    sessionId,
+    sessionOverrideSpec: overridePath,
+    sessionOverrideRequested: 'true',
+    sessionOverrideReceiptSpec: JSON.stringify({
+      type: 'dispatch-session-override',
+      authority: 'repository-owner',
+      session_id: sessionId,
+      wi: 'WI-551',
+      override_sha256: fileSha256(overridePath),
+      issued_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 60_000).toISOString(),
+    }),
+  }),
+  /protected owner file, not inline JSON/,
+  'SOL-E007: inline owner receipts cannot authorize a session override',
+);
 assert.throws(
   () => resolveDispatchModel({
     configPath: policyPath,
