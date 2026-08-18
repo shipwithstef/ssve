@@ -1,17 +1,32 @@
 # Branch index — portable host-parity program
 
-Scope-paths: docs/specs/architecture/wi-548-*.md docs/specs/features/framework-portable-host-parity.md docs/specs/decisions/2026-08-17-wi-548-host-parity/ docs/specs/work-items/WI-54*.md docs/plans/2026-08-17-wi548-host-parity-plan/ proposals/2026-08-17-framework-improvement-*.md
-Derived-at: 223436abe5124e6d9852551d249efd855759833b
+Derived-at: a65e9f8b77581f8b508f3e1c852d013a8a0d0f96
+Scope-paths:
+  - docs/specs/architecture/wi-548-*.md
+  - docs/specs/features/framework-portable-host-parity.md
+  - docs/specs/decisions/2026-08-17-wi-548-host-parity/
+  - docs/specs/work-items/WI-54*.md
+  - docs/plans/2026-08-17-wi548-host-parity-plan/
+  - proposals/2026-08-17-framework-improvement-*.md
+
+## Entry points
+- IN: `docs/specs/work-items/WI-548.md:1` — planning umbrella.
+- IN: `docs/specs/work-items/WI-549.md:1` — shared chain-policy child.
+- IN: `docs/specs/work-items/WI-550.md:1` — receipt identity child.
+- IN: `docs/specs/work-items/WI-551.md:1` — dispatch resolver child.
+- IN: `docs/specs/work-items/WI-552.md:1` — continuation child.
+- IN: `docs/specs/work-items/WI-553.md:1` — risk-triggered contracts child.
+- IN: `docs/specs/architecture/wi-548-reconciliation.md:1` — child DAG and dispositions.
+- IN: `docs/specs/architecture/wi-548-contract-map.md:1` — producer/consumer map.
+- IN: `docs/plans/2026-08-17-wi548-host-parity-plan/manifest.md:1` — planning-only manifest.
 
 ## Callers
-
-- `scripts/run-external-review.mjs` — review launcher; WI-547 consumer
-- `scripts/emit-receipt.mjs` — receipt writer; WI-550
-- `scripts/check-chain-receipts.mjs` — receipt checker; WI-547/WI-550
-- `scripts/svc-reconcile.mjs` — policy reader; WI-549
-- `hooks/svc-task-completion-guard.sh` — Stop barrier; WI-545/WI-550
-- `scripts/svc-auto-drive.mjs` — continuation; WI-552
-- `scripts/resolve-adversarial-reviewer.sh` — remap to remove; WI-551
+- IN: `scripts/run-external-review.mjs:1` — review launcher; WI-547 consumer
+- IN: `scripts/emit-receipt.mjs:1` — receipt writer; WI-550
+- IN: `scripts/check-chain-receipts.mjs:1` — receipt checker; WI-547/WI-550
+- IN: `scripts/svc-reconcile.mjs:1` — policy reader; WI-549
+- IN: `hooks/svc-task-completion-guard.sh:1` — Stop barrier; WI-545/WI-550
+- IN: `scripts/resolve-adversarial-reviewer.sh:1` — remap to remove; WI-551
 
 ## Journeys & tests
 
@@ -43,5 +58,5 @@ Derived-at: 223436abe5124e6d9852551d249efd855759833b
 ## Release
 
 - Planning PR only for WI-548
-- Children land one-per-run
-- PR #10 landed (`223436ab`)
+- Children 545/549-552/546 landed via PR #13 (`50a3440a`); WI-553 still review-then-land
+- PR #10 landed (`223436ab`); PR #11/#12 landed WI-547
