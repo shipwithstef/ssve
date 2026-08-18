@@ -289,17 +289,20 @@ assert.throws(
 fs.rmSync(tmp, { recursive: true, force: true });
 NODE
 
-# Live missing owner file must refuse, never svc-default Sonnet.
+# Owner ~/.svc/dispatch-policy.json now exists (EXEC = Grok 4.6 high).
+# Live resolve must not remap to Sonnet. Missing file still fail-closes.
 set +e
 LIVE_RESOLVE="$(env -u SVC_DISPATCH_POLICY SVC_HOST=cursor bash scripts/resolve-model.sh EXEC --json 2>&1)"
 LIVE_RESOLVE_RC=$?
 set -uo pipefail
-if [[ "$LIVE_RESOLVE_RC" -ne 0 ]] \
-  && echo "$LIVE_RESOLVE" | grep -qi 'missing' \
-  && ! echo "$LIVE_RESOLVE" | grep -qi 'claude-sonnet'; then
+if echo "$LIVE_RESOLVE" | grep -qi 'claude-sonnet'; then
+  fail "live resolve-model EXEC remapped to Sonnet: $LIVE_RESOLVE"
+elif [[ "$LIVE_RESOLVE_RC" -eq 0 ]] && echo "$LIVE_RESOLVE" | grep -Eq 'grok-4.6|cursor-grok-4.6-high'; then
+  pass "AC-546-6: live resolve-model EXEC stays Grok 4.6 high (no Sonnet remap)"
+elif [[ "$LIVE_RESOLVE_RC" -ne 0 ]] && echo "$LIVE_RESOLVE" | grep -qi 'missing'; then
   pass "AC-546-6: live resolve-model EXEC fail-closes on missing owner dispatch file (no Sonnet remap)"
 else
-  fail "live resolve-model EXEC did not fail closed without remap: $LIVE_RESOLVE"
+  fail "live resolve-model EXEC unexpected: rc=$LIVE_RESOLVE_RC $LIVE_RESOLVE"
 fi
 
 DETECTED="$(bash scripts/detect-host.sh 2>/dev/null || true)"

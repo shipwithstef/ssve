@@ -1,0 +1,25 @@
+=== Tier 1: WI-546 Grok live-acceptance ===
+  exec_default: grok-4.6 high (fast forbidden on Cursor CLI)
+  ✓ capability matrix names the Grok live fixture
+  ✓ AC-546-1/2: Grok Stop adapter is git mode 100755
+  ✓ Grok Stop adapter bash syntax valid
+  ✓ Grok manifest declares TOML hooks + fresh_session_launch
+  ✓ AC-546-2: wirer declares SessionStart healthcheck + Stop adapter
+  ✓ worktree ./setup --host grok refuses (AP-30)
+  ✓ isolated Grok setup source is outside .worktrees/
+  ✓ AC-546-1: isolated ./setup --host grok exits 0
+  ✓ AC-546-1: isolated check-install-drift.sh --host grok is zero
+  ✓ AC-546-2: isolated ~/.grok/config.toml loads SessionStart + Stop adapters
+  ✓ AC-546-2: live ~/.grok/config.toml already loads declared adapters
+  ✓ Cursor EXEC default is cursor-grok-4.6-high with fast=false
+  ✓ AC-546-6: live resolve-model EXEC is grok-4.6 (no Sonnet/fast remap)
+  ✓ AC-546-6: detect-host.sh reports grok
+  ✓ compose WI-545 bash hook mode
+  ✓ compose WI-547 review-evidence portability
+  ✓ compose WI-549 shared chain-policy
+  ✓ compose WI-550 receipt identity + Stop/finalization
+  ✓ compose WI-551 dispatch no-remap
+  ✓ compose WI-552 restart continuation (fake transport)
+  ✓ AC-546-3 live: grok -p single-turn launch returned pong
+
+WI-546 Grok live-acceptance: 21 passed, 0 failed

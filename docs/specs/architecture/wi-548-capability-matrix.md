@@ -54,6 +54,17 @@ Every unavoidable Cursor difference above is covered by `test-framework/evals/ti
 | 5 | Owner reviewer-policy is external; no invented Cursor/Grok orchestrator key | Missing `~/.svc/dispatch-policy.json` fails closed; fixture policy keeps `cursor-grok-4.6-high` with no Claude/Codex/Sonnet remap |
 | 6 | Worktree setup refusal (AP-30) | Direct `./setup --host cursor` from this worktree exits non-zero without override |
 
+## Grok fixture coverage (WI-546 / AC-546-1/2)
+
+Covered by `test-framework/evals/tier-1/validate-wi546-grok-live-acceptance.sh`.
+
+| Fact | Fixture |
+|---|---|
+| Isolated `./setup --host grok` + zero drift | Isolated non-worktree source copy (AP-30) |
+| Live `~/.grok/config.toml` SessionStart + Stop | Observational check of this Grok session |
+| EXEC default is Grok 4.6 high; Cursor fast variants forbidden | `~/.svc/cursor-exec-default.json` + `~/.svc/dispatch-policy.json` |
+| Cursor CLI `--model cursor-grok-4.6-high` (fast=false) | Owner pin; `cli-config.json` already `fast:false` |
+
 ## Live acceptance the final wave (WI-546) must prove
 
 - `./setup --host grok` and `./setup --host cursor` succeed with zero drift.
