@@ -124,15 +124,46 @@ else
   fail "agents/svc-kimi-executor.yaml missing"
 fi
 
-# 8. Verify resolve-model.sh works for all profiles
-for profile in svc-default kimi-native claude-native codex-native kimi-orchestrator-mixed; do
-  result=$(SVC_MODEL_PROFILE="$profile" bash "$SCRIPT_DIR/scripts/resolve-model.sh" STRAT 2>/dev/null || true)
-  if [ -n "$result" ] && [ "$result" != "Error:"* ]; then
-    pass "resolve-model.sh STRAT works for profile '$profile'"
-  else
-    fail "resolve-model.sh STRAT failed for profile '$profile'"
-  fi
-done
+# 8. Verify resolve-model.sh fail-closed behavior and owner-policy routing
+if bash "$SCRIPT_DIR/scripts/resolve-model.sh" STRAT >/dev/null 2>&1; then
+  fail "resolve-model.sh unexpectedly succeeded without owner dispatch policy"
+else
+  pass "resolve-model.sh refuses when owner dispatch policy is missing"
+fi
+
+POLICY_FIXTURE_DIR="$(mktemp -d)"
+chmod 700 "$POLICY_FIXTURE_DIR"
+POLICY_FIXTURE="$POLICY_FIXTURE_DIR/dispatch-policy.json"
+cat > "$POLICY_FIXTURE" <<'JSON'
+{
+  "schema_version": 1,
+  "authority": "repository-owner",
+  "default_mode": "fixture",
+  "modes": {
+    "fixture": {
+      "labels": {
+        "STRAT": { "host": "kimi", "family": "moonshot", "model": "kimi-k2", "effort": "high" },
+        "PLAN": { "host": "kimi", "family": "moonshot", "model": "kimi-k2", "effort": "high" },
+        "EXEC": { "host": "kimi", "family": "moonshot", "model": "kimi-k2", "effort": "high" },
+        "REVIEW": { "host": "kimi", "family": "moonshot", "model": "kimi-k2", "effort": "high" },
+        "SENSE": { "host": "kimi", "family": "moonshot", "model": "kimi-k2", "effort": "high" },
+        "DISC": { "host": "kimi", "family": "moonshot", "model": "web_search", "effort": "high" },
+        "PASS": { "host": "kimi", "family": "moonshot", "model": "kimi-k2", "effort": "high" }
+      }
+    }
+  }
+}
+JSON
+chmod 600 "$POLICY_FIXTURE"
+
+result=$(SVC_DISPATCH_POLICY="$POLICY_FIXTURE" SVC_HOST=kimi bash "$SCRIPT_DIR/scripts/resolve-model.sh" STRAT 2>/dev/null || true)
+if [ "$result" = "kimi:kimi-k2" ]; then
+  pass "resolve-model.sh routes through owner dispatch policy"
+else
+  fail "resolve-model.sh did not return owner-policy route (got '$result')"
+fi
+
+rm -rf "$POLICY_FIXTURE_DIR"
 
 # Summary
 echo ""

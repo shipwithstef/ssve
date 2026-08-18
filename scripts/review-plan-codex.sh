@@ -21,7 +21,10 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LAUNCHER="$ROOT/scripts/run-external-review.mjs"
 PROTOCOL_REF="$ROOT/references/plan-review-protocol.md"
 ORCHESTRATOR="$(bash "$ROOT/scripts/resolve-adversarial-reviewer.sh" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s).orchestrator))')"
-case "$ORCHESTRATOR" in claude|codex) ;; *) printf 'review-plan-codex: unsupported orchestrator %q\n' "$ORCHESTRATOR" >&2; exit 3 ;; esac
+if [[ -z "$ORCHESTRATOR" || "$ORCHESTRATOR" == "agy" ]]; then
+  printf 'review-plan-codex: unsupported orchestrator %q\n' "$ORCHESTRATOR" >&2
+  exit 3
+fi
 
 PLAN_SHA="$(sha256sum "$PLAN" | awk '{print $1}')"
 CONTEXT_ROOT="$(git -C "$(dirname "$PLAN")" rev-parse --show-toplevel 2>/dev/null || pwd -P)"
@@ -36,7 +39,7 @@ SUMMARY="$ARTIFACTS/summary.json"
 # only pre-execution; once code exists, use review-exec instead.
 PHASE_ARGS=()
 REVIEWER_ARGS=()
-REVIEWER_CONFIG="${SVC_REVIEWER_POLICY:-$HOME/.svc/reviewer-policy-v2.json}"
+REVIEWER_CONFIG="${SVC_DISPATCH_POLICY:-${SVC_REVIEWER_POLICY:-$HOME/.svc/dispatch-policy.json}}"
 if [[ -f "$REVIEWER_CONFIG" && ! -L "$REVIEWER_CONFIG" ]]; then
   REVIEWER_MODE="${SVC_REVIEWER_MODE:-production}"
   REVIEWER_STATION="${SVC_REVIEWER_STATION:-}"

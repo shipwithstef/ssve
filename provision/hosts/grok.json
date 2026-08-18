@@ -21,7 +21,14 @@
     "containment_backend": "landlock",
     "containment_launcher": "scripts/svc-contained-exec.mjs",
     "containment_probe_required": true,
-    "mutating_child_execution": true
+    "mutating_child_execution": true,
+    "fresh_session_launch": {
+      "enabled": true,
+      "transport": "cli-launch",
+      "event": "SessionStart",
+      "launch_command": null,
+      "note": "WI-552: lifecycle wiring only. Live launch adapter + fixtures are WI-546 scope, not this WI unit budget."
+    }
   },
   "hook_events": [
     "PreToolUse",
