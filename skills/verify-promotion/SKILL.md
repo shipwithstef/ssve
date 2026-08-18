@@ -717,10 +717,11 @@ cat <<'JSON' | node scripts/emit-receipt.mjs --type verify-promotion --wi $WI --
 JSON
 ```
 
-This writes to `.svc/receipts/<sha>/verify-promotion.json` (or staging if pre-commit)
-AND attaches it to the consolidated git note on `refs/notes/svc-receipts`.
+This writes to `.svc/receipts/<sha>/verify-promotion--<WI>.json` (or staging if pre-commit)
+and attaches it to the consolidated git note on `refs/notes/svc-receipts`
+under identity `slot::verify-promotion::<WI>::<sha>`.
 
-Self-verify: `node scripts/check-chain-receipts.mjs --sha HEAD` shows this
+Self-verify: `node scripts/check-chain-receipts.mjs --sha HEAD --wi $WI --consumer verify-promotion` shows this
 receipt type as present + schema-valid.
 
 Only after that self-verification succeeds, append the promoted WI to shared

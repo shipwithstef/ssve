@@ -30,9 +30,84 @@ const readRows = () => {
     try { return JSON.parse(line); } catch { fail(`index line ${index + 1} is invalid JSON`); }
   });
 };
+const SLOT_PREFIX = "slot::";
+const parseCompositeSlot = (key) => {
+  if (typeof key !== "string" || !key.startsWith(SLOT_PREFIX)) return null;
+  const parts = key.slice(SLOT_PREFIX.length).split("::");
+  if (parts.length < 3 || parts.length > 4) return null;
+  const [receiptType, wi, targetSha, phase] = parts;
+  if (!receiptType || !wi || !/^[0-9a-f]{40}$/.test(String(targetSha))) return null;
+  return { receiptType, wi, targetSha, phase: phase || null };
+};
+const buildMirrorEnvelope = (repo, sha) => {
+  const dir = path.join(repo, ".svc", "receipts", sha.slice(0, 7));
+  if (!fs.existsSync(dir)) return null;
+  const envelope = {};
+  for (const name of fs.readdirSync(dir)) {
+    if (!name.endsWith(".json")) continue;
+    const full = path.join(dir, name);
+    let receipt;
+    try { receipt = JSON.parse(fs.readFileSync(full, "utf8")); }
+    catch { continue; }
+    if (!receipt || typeof receipt !== "object") continue;
+    const type = typeof receipt.receipt_type === "string" ? receipt.receipt_type : name.replace(/\.json$/, "");
+    const wi = typeof receipt.wi === "string" && receipt.wi.length > 0 ? receipt.wi : "";
+    const phase = typeof receipt.phase === "string" && receipt.phase.length > 0 ? receipt.phase : "";
+    const slotKey = wi ? `${SLOT_PREFIX}${type}::${wi}::${sha}${phase ? `::${phase}` : ""}` : type;
+    envelope[slotKey] = receipt;
+  }
+  return Object.keys(envelope).length ? envelope : null;
+};
+const projectLegacyWi = (envelope, targetWi) => {
+  const explicit = new Set(
+    Object.values(envelope || {})
+      .map((receipt) => (receipt && typeof receipt.wi === "string" ? receipt.wi : ""))
+      .filter(Boolean),
+  );
+  if (explicit.size === 1 && explicit.has(targetWi)) return targetWi;
+  return null;
+};
+const selectVerifyPromotionReceipt = (envelope, wi, sha) => {
+  const candidates = [];
+  for (const [key, receipt] of Object.entries(envelope || {})) {
+    if (!receipt || typeof receipt !== "object") continue;
+    const slot = parseCompositeSlot(key);
+    const type = slot?.receiptType || receipt.receipt_type || key;
+    if (type !== "verify-promotion") continue;
+    if (slot) {
+      if (slot.targetSha !== sha || slot.wi !== wi) continue;
+      candidates.push({ key, receipt, rank: 3 });
+      continue;
+    }
+    if (receipt.wi === wi) {
+      candidates.push({ key, receipt, rank: 2 });
+      continue;
+    }
+    if (!receipt.wi) {
+      const projected = projectLegacyWi(envelope, wi);
+      if (projected === wi) candidates.push({ key, receipt, rank: 1 });
+    }
+  }
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => {
+    if (b.rank !== a.rank) return b.rank - a.rank;
+    const tsA = Date.parse(a.receipt?.timestamp || 0) || 0;
+    const tsB = Date.parse(b.receipt?.timestamp || 0) || 0;
+    return tsB - tsA;
+  });
+  return candidates[0];
+};
 const readVerificationEnvelope = (repo, sha) => {
-  try { return { envelope: JSON.parse(runGit(repo, ["notes", "--ref=svc-receipts", "show", sha])), source: "refs/notes/svc-receipts" }; }
+  try {
+    return { envelope: JSON.parse(runGit(repo, ["notes", "--ref=svc-receipts", "show", sha])), source: "refs/notes/svc-receipts" };
+  }
   catch {
+    const envelope = buildMirrorEnvelope(repo, sha);
+    if (envelope) {
+      const mirrorDir = path.join(repo, ".svc", "receipts", sha.slice(0, 7));
+      const compatPath = path.join(mirrorDir, "verify-promotion.json");
+      return { envelope, source: fs.existsSync(compatPath) ? compatPath : mirrorDir };
+    }
     const mirror = path.join(repo, ".svc", "receipts", sha.slice(0, 7), "verify-promotion.json");
     try { return { envelope: { "verify-promotion": JSON.parse(fs.readFileSync(mirror, "utf8")) }, source: mirror }; }
     catch { fail("consolidated receipt note and development mirror are missing or invalid"); }
@@ -70,8 +145,11 @@ if (command === "index") {
   const promotedRef = promotedRefFor(repo);
   try { execFileSync("git", ["-C", repo, "merge-base", "--is-ancestor", sha, promotedRef], { stdio: "ignore" }); } catch { fail("SHA is not promoted to origin/main"); }
   const { envelope, source } = readVerificationEnvelope(repo, sha);
-  const receipt = envelope["verify-promotion"];
-  if (!validVerificationReceipt(receipt, wi, sha)) fail("passing verify-promotion receipt does not match WI/SHA or schema");
+  const selection = selectVerifyPromotionReceipt(envelope, wi, sha);
+  if (!selection || !validVerificationReceipt(selection.receipt, wi, sha)) {
+    fail("passing verify-promotion receipt does not match WI/SHA or schema");
+  }
+  const receipt = selection.receipt;
   const id = crypto.createHash("sha256").update(`${repo}\0${wi}\0${sha}`).digest("hex");
   const entry = { schema_version: 1, id, repo_path: repo, wi, promoted_sha: sha, summary, receipt_ref: source, verified_at: receipt.timestamp, indexed_at: new Date().toISOString() };
   if (opt("--supersedes-id")) entry.supersedes_id = opt("--supersedes-id");

@@ -16,10 +16,19 @@ else
   SCRIPT_DIR="$(cd "$HOOK_DIR/.." && pwd)/skills"
 fi
 
-TARGET_DIR="${PWD}"
+PAYLOAD=$(cat 2>/dev/null || echo "{}")
+CWD=$(echo "$PAYLOAD" | node -e "
+try {
+  const d = JSON.parse(require('fs').readFileSync(0, 'utf8'));
+  console.log(d.cwd || '');
+} catch {
+  console.log('');
+}
+" 2>/dev/null || echo "")
+TARGET_DIR="${CWD:-$PWD}"
 
 # Forward to the core guard script
-OUTPUT=$(cd "$TARGET_DIR" && bash "$SCRIPT_DIR/hooks/svc-task-completion-guard.sh" 2>/dev/null || true)
+OUTPUT=$(cd "$TARGET_DIR" && printf '%s' "$PAYLOAD" | bash "$SCRIPT_DIR/hooks/svc-task-completion-guard.sh" 2>/dev/null || true)
 
 if [ -n "$OUTPUT" ]; then
   echo "$OUTPUT"

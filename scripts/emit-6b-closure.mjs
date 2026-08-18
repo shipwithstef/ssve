@@ -20,6 +20,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 
 function arg(name) { const i = process.argv.indexOf(name); return i >= 0 ? process.argv[i + 1] : undefined; }
 function die(msg) { process.stderr.write(`emit-6b-closure: ${msg}\n`); process.exit(2); }
@@ -36,6 +37,40 @@ if (!wi || !root) die("--wi and --root are required");
 
 const abs = (p) => path.isAbsolute(p) ? p : path.join(root, p);
 const nowIso = new Date().toISOString();
+const chainChecker = path.join(root, "scripts", "check-chain-receipts.mjs");
+const closeoutSha = mergeSha || (() => {
+  try { return execFileSync("git", ["-C", root, "rev-parse", "--verify", "HEAD"], { encoding: "utf8" }).trim(); }
+  catch { return ""; }
+})();
+if (!/^[0-9a-f]{40}$/.test(closeoutSha)) {
+  die("closeout SHA is unresolved; canonical receipt validation cannot run");
+}
+if (!fs.existsSync(chainChecker)) {
+  die(`missing checker: ${chainChecker}`);
+}
+let checkOutput = "";
+try {
+  checkOutput = execFileSync(process.execPath, [chainChecker, "--sha", closeoutSha, "--wi", wi, "--consumer", "final-report"], {
+    encoding: "utf8",
+    cwd: root,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+} catch (error) {
+  const stdout = String(error?.stdout || "");
+  const stderr = String(error?.stderr || "");
+  const detail = [stdout, stderr].filter(Boolean).join("\n").trim() || "receipt check failed";
+  die(`canonical receipt validation failed for ${wi}@${closeoutSha}: ${detail}`);
+}
+try {
+  const parsed = JSON.parse(checkOutput);
+  const row = Array.isArray(parsed.results) ? parsed.results[0] : null;
+  if (!parsed.ok || !row || row.ok !== true) {
+    const missing = row && Array.isArray(row.missing) ? row.missing.join("; ") : "missing canonical receipt identities";
+    die(`canonical receipt validation failed for ${wi}@${closeoutSha}: ${missing}`);
+  }
+} catch {
+  die(`canonical receipt check returned malformed output for ${wi}@${closeoutSha}`);
+}
 
 // 1. Frozen full-suite identity evidence.
 if (evidenceFrozen) {
