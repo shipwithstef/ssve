@@ -7,6 +7,7 @@
 - **Status:** DRAFTED (lifecycle: DRAFTED → SIMULATED → EXECUTING → CHECKPOINTED → PROMOTED → VERIFIED)
 - base branch and base SHA (typically `main` and its current HEAD)
 - creation timestamp
+- **Risk Flags:** the AC-553-1 flags in effect for this changeset (`runtime_concurrency`, `external_state_writer`, `config_schema_migration`, `lossless_rmw`, `idempotent_rewriter`, `cross_runtime_integration`), comma-separated, or `none`. Any flag named here requires an adjacent `plan-contract.json` declaring the same flags in `risk_flags` (`scripts/verify-plan-mechanical.sh` Check 11) — see `references/plan-contract-risk-sections.md`.
 
 ### 2. Implementation Summary
 

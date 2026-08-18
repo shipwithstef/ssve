@@ -1,0 +1,145 @@
+{
+  "review_kind": "session-harness-audit",
+  "reviewer": "gpt-5.6-sol-high",
+  "reviewer_family": "openai",
+  "host": "cursor",
+  "fast": false,
+  "session_id": "01a01070-2480-7af3-b85b-69b792159785",
+  "verdict": "fail",
+  "harness_targets": [
+    "grok",
+    "cursor"
+  ],
+  "checked": [
+    "WI-553 Cursor Grok review rounds: docs/specs/reviews/wi553-exec-cursor-grok-high.json and docs/specs/reviews/wi553-exec-cursor-grok-high-r2.json",
+    "Landed WI-546 review chain: docs/specs/reviews/wi546-exec-cursor-sol-high.json, docs/specs/reviews/wi546-exec-cursor-grok-high.json, and docs/specs/reviews/wi546-exec-r2-closeout.json",
+    "Grok goal fidelity: session goal/plan.md, goal/state.json, goal/goal-classifier-912cd5661232-1.md, and compaction/segment_002.md",
+    "Full-session scale and compaction behavior: session compaction/INDEX.md and signals.json",
+    "PR #13 provenance: session terminal/call-5503118f-7385-4fd4-b1e9-3e178c0d4986-136.log",
+    "Cursor EXEC owner pin: /home/dianast/.svc/cursor-exec-default.json; observed launches used cursor-grok-4.6-high with fast=false",
+    "Grok/Cursor session binding: session terminal/call-55bbaa78-9848-4acb-855c-74003c4bbf64-93.log, call-a5b60109-e377-4291-bb70-e32878ee06ed-35.log, and call-bc39a414-334d-4ae9-bb86-41bcb63eb092-43.log",
+    "Cursor agent lifecycle: session terminal/call-8d6398fb-af7a-40f8-8349-f307c6a59a2a-217.log, call-7142b624-68d0-4abb-8e53-edce428744bc-123.log, and call-2c9231c0-f44c-4296-90f7-c831475ef066-231.log",
+    "Receipt authority/version behavior: goal/state.json, goal classifier evidence, scripts/check-chain-receipts.mjs, and scripts/emit-receipt.mjs; mirror-only push/reconcile/indexing holes from the landed Sol review are closed, but fresh legacy envelopes remain accepted",
+    "Shared chain-policy migration: session terminal/call-292aa0a3-1127-4111-bdb2-fadffac2eda8-108.log and scripts/lib/chain-policy.mjs",
+    "Default checkout isolation: the dirty/diverged main checkout was intentionally preserved and was not used as the WI-553 mutation worktree"
+  ],
+  "findings": [
+    {
+      "id": "SOL-HARNESS-001",
+      "severity": "HIGH",
+      "harness": "both",
+      "gap": "The goal verifier allowed a child-WI push plan to replace the end-to-end WI-548 parent objective and declare success without merge, WI-553, G7, or parent closeout.",
+      "evidence": [
+        "/home/dianast/.grok/sessions/%2Fhome%2Fdianast%2Fapp-workspaces%2Fseriousvibecoding/01a01070-2480-7af3-b85b-69b792159785/goal/state.json:3-4,23-30,38-41",
+        "/home/dianast/.grok/sessions/%2Fhome%2Fdianast%2Fapp-workspaces%2Fseriousvibecoding/01a01070-2480-7af3-b85b-69b792159785/goal/plan.md:1-10,19-23,31-37",
+        "/home/dianast/.grok/sessions/%2Fhome%2Fdianast%2Fapp-workspaces%2Fseriousvibecoding/01a01070-2480-7af3-b85b-69b792159785/goal/goal-classifier-912cd5661232-1.md:73-82,104-106,132-139",
+        "/home/dianast/.grok/sessions/%2Fhome%2Fdianast%2Fapp-workspaces%2Fseriousvibecoding/01a01070-2480-7af3-b85b-69b792159785/compaction/segment_002.md:23-35",
+        "skills/route-workflow/SKILL.md:169-176"
+      ],
+      "why_general": "Any long Grok/Cursor run can narrow its generated plan after a review or compaction; the current wave validator runs only after the agent already decides to claim that a batch is closing and is not bound to an immutable root objective.",
+      "harness_fix": "Extend _shared/session-contract.md and the route-workflow prompt composer with immutable original_objective, objective_root_wi, required_wis, and terminal_condition fields; make the Grok /goal verifier and hooks/svc-task-completion-guard.sh reject a narrower plan or final response unless an owner-approved goal-change record exists, and automatically run scripts/validate-wave-closeout.mjs over required_wis.",
+      "not_a_human_memory_rule": true
+    },
+    {
+      "id": "SOL-HARNESS-002",
+      "severity": "HIGH",
+      "harness": "grok",
+      "gap": "The harness kept the multi-WI program in one 14-hour Grok context through six compactions instead of isolating WIs and chain stages.",
+      "evidence": [
+        "/home/dianast/.grok/sessions/%2Fhome%2Fdianast%2Fapp-workspaces%2Fseriousvibecoding/01a01070-2480-7af3-b85b-69b792159785/signals.json:1",
+        "/home/dianast/.grok/sessions/%2Fhome%2Fdianast%2Fapp-workspaces%2Fseriousvibecoding/01a01070-2480-7af3-b85b-69b792159785/compaction/INDEX.md:3-7",
+        "skills/route-workflow/SKILL.md:184-186"
+      ],
+      "why_general": "The shipped route contract explicitly limits fresh stage subagents to Claude and leaves non-Claude hosts on the prose chain, so the next Grok parent program will again accumulate unrelated WI state, tool output, and closeout obligations in one degrading context.",
+      "harness_fix": "Extend scripts/stage-segment.mjs and the Stage-context isolation block in skills/route-workflow/SKILL.md to Grok and Cursor: one WI/stage per fresh governed child, a hash-bound stage baton, receipt verification before return, and no prose-summary authority across compaction boundaries.",
+      "not_a_human_memory_rule": true
+    },
+    {
+      "id": "SOL-HARNESS-003",
+      "severity": "HIGH",
+      "harness": "both",
+      "gap": "Grok-to-Cursor mutation handoff did not normalize the real Grok session identity or create a releasable delegated child claim, leaving WI-553 owned by a dead synthetic session.",
+      "evidence": [
+        "/home/dianast/.grok/sessions/%2Fhome%2Fdianast%2Fapp-workspaces%2Fseriousvibecoding/01a01070-2480-7af3-b85b-69b792159785/terminal/call-55bbaa78-9848-4acb-855c-74003c4bbf64-93.log:5-8",
+        "/home/dianast/.grok/sessions/%2Fhome%2Fdianast%2Fapp-workspaces%2Fseriousvibecoding/01a01070-2480-7af3-b85b-69b792159785/terminal/call-a5b60109-e377-4291-bb70-e32878ee06ed-35.log:1-2",
+        "/home/dianast/.grok/sessions/%2Fhome%2Fdianast%2Fapp-workspaces%2Fseriousvibecoding/01a01070-2480-7af3-b85b-69b792159785/terminal/call-bc39a414-334d-4ae9-bb86-41bcb63eb092-43.log:14-31",
+        "scripts/svc-ensure-worktree.mjs:47-50"
+      ],
+      "why_general": "Grok exposes GROK_SESSION_ID while svc-ensure-worktree does not read it, and direct Cursor children can outlive or exit without releasing synthetic claims; every cross-host mutation can therefore collide with its own prior owner.",
+      "harness_fix": "Normalize GROK_SESSION_ID to SVC_SESSION_ID in the Grok SessionStart/wirer and add GROK_SESSION_ID to scripts/svc-ensure-worktree.mjs sessionId(); require the Cursor launch wrapper to mint a task-specific delegated child binding carrying parent session, PID/process-start token, and generation, then release or evidence-recover that binding on child exit.",
+      "not_a_human_memory_rule": true
+    },
+    {
+      "id": "SOL-HARNESS-004",
+      "severity": "HIGH",
+      "harness": "cursor",
+      "gap": "Cursor agents were launched directly without a governed lifecycle channel, so captured stdout stayed empty while work and hook failures continued only in private Cursor logs.",
+      "evidence": [
+        "/home/dianast/.grok/sessions/%2Fhome%2Fdianast%2Fapp-workspaces%2Fseriousvibecoding/01a01070-2480-7af3-b85b-69b792159785/terminal/call-8d6398fb-af7a-40f8-8349-f307c6a59a2a-217.log:1-5",
+        "/home/dianast/.grok/sessions/%2Fhome%2Fdianast%2Fapp-workspaces%2Fseriousvibecoding/01a01070-2480-7af3-b85b-69b792159785/terminal/call-7142b624-68d0-4abb-8e53-edce428744bc-123.log:15-35",
+        "/home/dianast/.grok/sessions/%2Fhome%2Fdianast%2Fapp-workspaces%2Fseriousvibecoding/01a01070-2480-7af3-b85b-69b792159785/terminal/call-2c9231c0-f44c-4296-90f7-c831475ef066-231.log:1-11",
+        "scripts/run-external-review.mjs:35-43"
+      ],
+      "why_general": "The canonical review launcher still has no Cursor transport, so operators must use raw cursor-agent --print and infer running, completed, failed, or hook-degraded state from PIDs, output artifacts, and /tmp/cursor-agent-logs-*.",
+      "harness_fix": "Add a first-class Cursor transport to scripts/run-external-review.mjs backed by a scripts/run-cursor-agent.mjs wrapper that emits a durable launch/status/result JSON, records PID and Cursor session-log path, streams or heartbeats when stdout is buffered, validates the requested artifact at process exit, and reports hook empty_stdout events as degraded or failed instead of silent progress.",
+      "not_a_human_memory_rule": true
+    },
+    {
+      "id": "SOL-HARNESS-005",
+      "severity": "HIGH",
+      "harness": "both",
+      "gap": "The receipt checker accepts schema-v1 review envelopes on fresh commits, allowing manually written notes to bypass schema-v3 reviewer_evidence.",
+      "evidence": [
+        "/home/dianast/.grok/sessions/%2Fhome%2Fdianast%2Fapp-workspaces%2Fseriousvibecoding/01a01070-2480-7af3-b85b-69b792159785/goal/state.json:41",
+        "/home/dianast/.grok/sessions/%2Fhome%2Fdianast%2Fapp-workspaces%2Fseriousvibecoding/01a01070-2480-7af3-b85b-69b792159785/goal/goal-classifier-912cd5661232-1.md:94-98,132-136",
+        "scripts/check-chain-receipts.mjs:675-724",
+        "scripts/emit-receipt.mjs:318-330"
+      ],
+      "why_general": "The official emitter upgrades new review receipts to v3, but the consumer grandfathering is keyed only to the self-declared schema_version rather than the target commit's age, so any future Grok/Cursor run can attach a synthetic v1 note to a new SHA.",
+      "harness_fix": "In scripts/check-chain-receipts.mjs, bind legacy acceptance to a fixed rollout tag/cutoff commit and reject review-plan/review-exec schema_version below 3 for newer SHAs; keep scripts/emit-receipt.mjs as the sole new-note writer and add a migration helper that can upgrade legacy envelopes only from validated durable reviewer artifacts.",
+      "not_a_human_memory_rule": true
+    },
+    {
+      "id": "SOL-HARNESS-006",
+      "severity": "HIGH",
+      "harness": "both",
+      "gap": "The land wrapper allowed PR and squash provenance to name WI-553 even though the frozen net tree contained none of WI-553's files.",
+      "evidence": [
+        "/home/dianast/.grok/sessions/%2Fhome%2Fdianast%2Fapp-workspaces%2Fseriousvibecoding/01a01070-2480-7af3-b85b-69b792159785/terminal/call-5503118f-7385-4fd4-b1e9-3e178c0d4986-136.log:1-13",
+        "skills/land-changeset/SKILL.md:362-385",
+        "scripts/merge-pr-with-review-receipt.mjs:74-106"
+      ],
+      "why_general": "Squash merges can copy the branch's historical commit list into release text even when a commit's files are absent from the final tree; current landing checks bind head identity and review receipt but never reconcile named WIs to the net diff and manifest.",
+      "harness_fix": "Add a pre-merge provenance check in scripts/merge-pr-with-review-receipt.mjs that reads PR commits, files, frozen head tree, and manifest; require every WI named in title/body/squash text to have net-diff evidence or an explicit omitted/reverted disposition, and pass an explicit --subject/--body derived from the validated net change instead of accepting GitHub's historical auto-body.",
+      "not_a_human_memory_rule": true
+    },
+    {
+      "id": "SOL-HARNESS-007",
+      "severity": "MEDIUM",
+      "harness": "cursor",
+      "gap": "Cursor model selection was pinned correctly, but the operator status loop exposed no authoritative usage-pool telemetry and encouraged reading an unrelated percentage bar.",
+      "evidence": [
+        "/home/dianast/.svc/cursor-exec-default.json:1-19",
+        "/home/dianast/.grok/sessions/%2Fhome%2Fdianast%2Fapp-workspaces%2Fseriousvibecoding/01a01070-2480-7af3-b85b-69b792159785/compaction/segment_001.md:23-33",
+        "/home/dianast/.grok/sessions/%2Fhome%2Fdianast%2Fapp-workspaces%2Fseriousvibecoding/01a01070-2480-7af3-b85b-69b792159785/terminal/call-fe1e8561-dbcd-42a7-8875-84af1319633d-223.log:70-89"
+      ],
+      "why_general": "Cursor Models, Other Models/Auto, and BYOK are separate accounting surfaces, while raw cursor-agent status provides no run-bound pool percentage; the next delegated run will produce the same ambiguity even when the model argv is correct.",
+      "harness_fix": "Have scripts/run-cursor-agent.mjs read /home/dianast/.svc/cursor-exec-default.json and emit model, fast, usage_pool, and usage_percent_source in every launch/status record; when Cursor exposes no matching quota endpoint, report usage_percent as unavailable and explicitly reject inference from Other Models/Auto.",
+      "not_a_human_memory_rule": true
+    },
+    {
+      "id": "SOL-HARNESS-008",
+      "severity": "MEDIUM",
+      "harness": "both",
+      "gap": "The shared chain-policy resolver fails closed safely but setup/worktree ensure does not perform or clearly drive its required one-time migration.",
+      "evidence": [
+        "/home/dianast/.grok/sessions/%2Fhome%2Fdianast%2Fapp-workspaces%2Fseriousvibecoding/01a01070-2480-7af3-b85b-69b792159785/terminal/call-292aa0a3-1127-4111-bdb2-fadffac2eda8-108.log:1-3",
+        "scripts/lib/chain-policy.mjs:198-237",
+        "scripts/svc-ensure-worktree.mjs:449-453"
+      ],
+      "why_general": "Every clone upgraded to repository-shared policy can reach linked-worktree hooks before the git-common-dir file is seeded, producing the same refusal/noise and inviting ad hoc policy handling.",
+      "harness_fix": "Wire scripts/lib/chain-policy.mjs migrate-seed into setup and svc-ensure-worktree under a git-common-dir lock when exactly one trusted legacy or owner-home source exists; on ambiguity or no source, keep refusal but emit the exact migration command and source requirements in the worktree-ensure result.",
+      "not_a_human_memory_rule": true
+    }
+  ]
+}

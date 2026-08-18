@@ -15,6 +15,29 @@ function hasFlag(name) {
   return process.argv.includes(name);
 }
 
+export function namedWisFromText(text) {
+  return [...new Set(String(text || "").match(/WI-\d+/gi) || [])].map((id) => id.toUpperCase());
+}
+
+export function omittedWisFromText(text) {
+  return [...String(text || "").matchAll(/\b(?:omitted|excluded|reverted):\s*(WI-\d+)/gi)]
+    .map((match) => match[1].toUpperCase());
+}
+
+export function missingNamedWis({ namedWis = [], netFiles = [], dispositionText = "" } = {}) {
+  const omitted = new Set(omittedWisFromText(dispositionText));
+  const files = (netFiles || []).map((file) => String(file).toLowerCase());
+  const missing = [];
+  for (const wi of namedWis) {
+    const id = String(wi || "").toUpperCase();
+    if (!id || omitted.has(id)) continue;
+    const token = id.toLowerCase();
+    if (files.some((file) => file.includes(token))) continue;
+    missing.push(id);
+  }
+  return missing;
+}
+
 const root = path.resolve(argValue("--root") || process.cwd());
 const pr = argValue("--pr");
 const dryRun = hasFlag("--dry-run");
@@ -94,6 +117,76 @@ if (hasFlag("--rebase")) ghArgs.push("--rebase");
 if (hasFlag("--merge")) ghArgs.push("--merge");
 if (hasFlag("--auto")) ghArgs.push("--auto");
 if (hasFlag("--admin")) ghArgs.push("--admin");
+const explicitSubject = argValue("--subject");
+const explicitBody = argValue("--body");
+if (explicitSubject) ghArgs.push("--subject", explicitSubject);
+if (explicitBody) ghArgs.push("--body", explicitBody);
+
+function netFilesFromArg() {
+  const raw = argValue("--net-files");
+  if (!raw) return null;
+  return raw.split(",").map((item) => item.trim()).filter(Boolean);
+}
+
+function collectPrProvenance() {
+  const explicitFiles = netFilesFromArg();
+  if (explicitSubject != null || explicitBody != null || explicitFiles) {
+    const title = explicitSubject || "";
+    const body = explicitBody || "";
+    return {
+      title,
+      body,
+      files: explicitFiles || [],
+      commitText: "",
+    };
+  }
+  const view = spawnSync(
+    "gh",
+    ["pr", "view", pr, "--repo", repo, "--json", "title,body,files,commits"],
+    { encoding: "utf8" },
+  );
+  if (view.status !== 0) {
+    if (dryRun) return null;
+    if (view.stderr) process.stderr.write(view.stderr);
+    console.error("[svc-pr-merge-review-receipt] BLOCKED: cannot read PR title/body/files for named-WI provenance.");
+    process.exit(2);
+  }
+  let payload;
+  try { payload = JSON.parse(view.stdout); } catch { payload = null; }
+  if (!payload) {
+    if (dryRun) return null;
+    console.error("[svc-pr-merge-review-receipt] BLOCKED: PR provenance JSON is invalid.");
+    process.exit(2);
+  }
+  const commitText = Array.isArray(payload.commits)
+    ? payload.commits.map((commit) => commit?.messageHeadline || commit?.message || "").join("\n")
+    : "";
+  const files = Array.isArray(payload.files)
+    ? payload.files.map((file) => file?.path || file).filter(Boolean)
+    : [];
+  return {
+    title: payload.title || "",
+    body: payload.body || "",
+    files,
+    commitText,
+  };
+}
+
+const provenance = collectPrProvenance();
+if (provenance) {
+  const namedWis = namedWisFromText(`${provenance.title}\n${provenance.body}\n${provenance.commitText}`);
+  const missing = missingNamedWis({
+    namedWis,
+    netFiles: provenance.files,
+    dispositionText: provenance.body,
+  });
+  if (missing.length) {
+    console.error(
+      `[svc-pr-merge-review-receipt] BLOCKED: named WI(s) ${missing.join(", ")} have no net-diff evidence and no omitted/excluded/reverted disposition.`,
+    );
+    process.exit(2);
+  }
+}
 
 if (dryRun) {
   console.log(`DRY-RUN: gh ${ghArgs.join(" ")}`);

@@ -23,6 +23,33 @@ import {
   MANDATORY_DELIVERY_CHAIN,
   validateMandatoryDeliveryChain,
 } from "./lib/mandatory-delivery-chain.mjs";
+import { execFileSync } from "node:child_process";
+import { effectiveRiskFlags, designTechDispositionDenied, collectPlannedFiles } from "./lib/risk-flags.mjs";
+
+function liveDiffFiles(startDir) {
+  let root = startDir;
+  try {
+    root = execFileSync("git", ["-C", startDir, "rev-parse", "--show-toplevel"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return [];
+  }
+  const names = [];
+  for (const args of [
+    ["diff", "--name-only", "HEAD"],
+    ["diff", "--cached", "--name-only"],
+    ["ls-files", "--others", "--exclude-standard"],
+    ["diff", "--name-only", "origin/main...HEAD"],
+  ]) {
+    try {
+      const out = execFileSync("git", ["-C", root, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+      for (const line of out.split("\n")) if (line) names.push(line);
+    } catch { /* empty tree / missing origin/main */ }
+  }
+  return names;
+}
 
 // Lane-specific prerequisites. The exact delivery chain is imported from one
 // shared contract and validated separately for every mutable lane.
@@ -174,6 +201,41 @@ function collectGraphSkills(graph) {
   return skills;
 }
 
+/**
+ * WI-553 AC-553-2: design-tech skip is fail-closed on the AC-553-1 risk
+ * flags. A "no product UI / no data model / framework chrome" skip_reason on
+ * design-tech is invalid whenever a risk flag is declared on the graph OR
+ * implied by the graph's planned files. Absent every flag, this check is a
+ * no-op — unmatched work pays zero extra review.
+ */
+function validateDesignTechRiskGate(graph, filePath) {
+  const declaredFlags = [
+    ...(Array.isArray(graph.flags) ? graph.flags : []),
+    ...(Array.isArray(graph.delivery_graph?.risk_flags) ? graph.delivery_graph.risk_flags : []),
+  ];
+  const root = filePath ? path.dirname(path.resolve(filePath)) : process.cwd();
+  const plannedFiles = collectPlannedFiles(graph, liveDiffFiles(root));
+  const effective = effectiveRiskFlags({ declaredFlags, plannedFiles });
+  if (effective.size === 0) {
+    return { applies: false, pass: true, effectiveFlags: [], errors: [] };
+  }
+
+  const effectiveFlags = Array.from(effective);
+  const designTechTask = (graph.tasks ?? []).find((task) => taskSkill(task) === "design-tech");
+  const errors = [];
+  const denied = designTechDispositionDenied(designTechTask, effective);
+  if (!designTechTask) {
+    errors.push(
+      `design-tech is required when risk flag(s) are in effect (${effectiveFlags.join(", ")}) but no design-tech task exists in the graph (AC-553-2)`
+    );
+  } else if (denied.length > 0) {
+    errors.push(
+      `design-tech cannot be skipped while risk flag(s) are in effect: ${denied.join(", ")} (AC-553-2)`
+    );
+  }
+  return { applies: true, pass: errors.length === 0, effectiveFlags, errors };
+}
+
 function validateLane(graph, filePath) {
   const lane = graph.lane;
   if (lane == null) {
@@ -209,6 +271,8 @@ function validateLane(graph, filePath) {
   const visualDiffProcess = executeTask?.metadata?.required_process_steps?.some((step) => step?.skill === "track-visuals" && step?.mode === "diff" && step?.before === "review-gate") === true;
   const visualErrors = visualRequired && !visualDiffProcess ? ["browser-visible graph requires track-visuals diff as an execute-changeset process step before review-gate"] : [];
 
+  const designTechRiskGate = validateDesignTechRiskGate(graph, filePath);
+
   return {
     lane,
     laneName: laneModel.name,
@@ -217,7 +281,8 @@ function validateLane(graph, filePath) {
     missing,
     mandatoryChain: chainValidation,
     visualProcess: { required: visualRequired, pass: !visualRequired || visualDiffProcess, errors: visualErrors },
-    pass: missing.length === 0 && chainValidation.pass && visualErrors.length === 0,
+    designTechRiskGate,
+    pass: missing.length === 0 && chainValidation.pass && visualErrors.length === 0 && designTechRiskGate.pass,
   };
 }
 

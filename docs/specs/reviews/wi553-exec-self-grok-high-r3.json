@@ -1,0 +1,43 @@
+{
+  "review_kind": "exec",
+  "reviewer": "grok-4.6",
+  "reviewer_family": "xai",
+  "host": "grok",
+  "fast": false,
+  "role": "inline-self",
+  "independent": false,
+  "examined_sha": "d97ae473",
+  "base": "50a3440a",
+  "verdict": "pass_with_findings",
+  "checked": [
+    "compile-delivery-graph loadInput copies planned_files from --planned-files",
+    "lane-model.md documented compile includes --planned-files",
+    "task-graph ac553PlannedFiles unions live diffs including untracked and origin/main...HEAD",
+    "validate-task-graph-lane liveDiffFiles matches that union",
+    "T2-cli-planned-files and T2-live-diff-skip fixtures pass",
+    "reviewEnvelopeRequiresSchemaV3: cutoff 30381c5c grandfathered; f57d1a93 requires v3; isolated fixture SHA does not",
+    "merge wrapper missingNamedWis refuses feat(WI-553) without net file or omitted: line",
+    "parseOverlay requires non-empty scope.wi",
+    "CHECK_THEN_WRITE_RE runs on punctuation-normalized prose; period-split fixture fails; concurrency_test none fails"
+  ],
+  "findings": [],
+  "closed_from_prior": [
+    { "id": "CGH-553-002", "status": "closed", "proof": "scripts/compile-delivery-graph.mjs loadInput planned_files; scripts/task-graph.mjs ac553LiveDiffFiles; validate-risk-triggered-contracts.sh T2-cli and T2-live-diff-skip" },
+    { "id": "FAB-548-001", "status": "closed", "proof": "same as CGH-553-002 plus lane-model.md --planned-files" },
+    { "id": "SOL-HARNESS-005", "status": "closed", "proof": "scripts/check-chain-receipts.mjs reviewEnvelopeRequiresSchemaV3 + validate-sol-r2-fail-closed.mjs" },
+    { "id": "SOL-HARNESS-006", "status": "closed", "proof": "scripts/merge-pr-with-review-receipt.mjs missingNamedWis + validate-review-receipt-merge-guard.sh" },
+    { "id": "FAB-548-005", "status": "closed", "proof": "scripts/resolve-dispatch.mjs parseOverlay requires scope.wi + validate-dispatch-resolver-wi551.mjs unscoped overlay throw" },
+    { "id": "CGH-553-005", "status": "closed", "proof": "scripts/validate-plan-contract.mjs normalizeProse + period-split and concurrency-test-none fixtures" },
+    { "id": "FAB-548-009", "status": "closed", "proof": "same as CGH-553-005" }
+  ],
+  "known_gaps_not_in_this_diff": [
+    "FAB-548-002 G7 verify-promotion of PR #13/#14 from canonical checkout",
+    "FAB-548-003 5-receipt envelope still missing until this review-exec + emit-receipt complete",
+    "SOL-HARNESS-001 goal-narrowing and SOL-HARNESS-004 cursor empty-stdout transport"
+  ],
+  "confidence": {
+    "correctness": "high",
+    "spec_fidelity": "high",
+    "process": "medium — receipts and land remain"
+  }
+}

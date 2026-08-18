@@ -191,6 +191,30 @@ assert.throws(
   'SOL-E008: scoped overlay without a caller WI must not apply globally',
 );
 
+const unscopedOverlayPath = path.join(tmp, 'overlay-unscoped.json');
+writeJson(unscopedOverlayPath, {
+  patch: {
+    modes: {
+      'mixed-grok-cursor': {
+        labels: {
+          EXEC: { host: 'grok', family: 'xai', model: 'grok-4.6-unscoped', effort: 'high' },
+        },
+      },
+    },
+  },
+});
+assert.throws(
+  () => resolveDispatchModel({
+    configPath: policyPath,
+    label: 'EXEC',
+    orchestrator: 'grok',
+    wi: 'WI-551',
+    workOverlayPath: unscopedOverlayPath,
+  }),
+  /scope\.wi/,
+  'SOL-R2-006 / FAB-548-005: unscoped work overlay must not apply globally',
+);
+
 // AC-10 (6): deny-list beats defaults (no silent bypass).
 const deniedPolicy = structuredClone(basePolicy);
 deniedPolicy.modes['mixed-grok-cursor'].labels.EXEC = { host: 'claude', family: 'anthropic', model: 'claude-sonnet-5', effort: 'high' };
