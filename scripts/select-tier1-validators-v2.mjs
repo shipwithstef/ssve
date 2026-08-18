@@ -196,6 +196,21 @@ const CONTRACTS = [
       "skills/verify-promotion/SKILL.md",
       "test-framework/evals/tier-1/validate-continuation-lifecycle-wi552.mjs"
     ]
+  },
+  {
+    validator: "validate-wi546-cursor-live-acceptance.sh",
+    inputs: [
+      "docs/specs/architecture/wi-548-capability-matrix.md",
+      "provision/hosts/cursor.json",
+      "scripts/wire-cursor-hooks.mjs",
+      "hooks/cursor/svc-cursor-task-completion-guard.sh",
+      "setup",
+      "scripts/check-install-drift.sh",
+      "scripts/resolve-dispatch.mjs",
+      "scripts/resolve-model.sh",
+      "test-framework/evals/tier-1/validate-wi546-cursor-live-acceptance.sh",
+      "test-framework/evals/tier-1/validate-task-graph-cross-host.sh"
+    ]
   }
 ];
 

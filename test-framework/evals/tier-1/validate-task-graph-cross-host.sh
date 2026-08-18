@@ -9,7 +9,7 @@ TASK_GRAPH="$REPO_ROOT/scripts/task-graph.mjs"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-HOSTS=(claude kimi codex gemini opencode)
+HOSTS=(claude kimi codex gemini opencode cursor grok)
 PASS=0
 FAIL=0
 

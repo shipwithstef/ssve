@@ -55,7 +55,8 @@ check("proposal selects complete v2 focused closure", () => {
     "validate-sample-shadow-replay-v2.mjs",
     "validate-skill-runtime-contracts-v2.mjs",
     "validate-story-receipt-delivery-projection-v2.mjs",
-    "validate-tier1-selector-v2.mjs"
+    "validate-tier1-selector-v2.mjs",
+    "validate-wi546-cursor-live-acceptance.sh"
   ]);
 });
 
