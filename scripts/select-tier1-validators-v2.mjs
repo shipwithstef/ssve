@@ -152,6 +152,20 @@ const CONTRACTS = [
     inputs: ["schemas/external-review-findings.schema.json", "schemas/external-review-receipt.schema.json", "schemas/reviewer-policy-v2.schema.json", "scripts/review-topology-v2.mjs", "scripts/run-external-review.mjs", "test-framework/evals/tier-1/validate-external-review-launcher.sh"]
   },
   {
+    validator: "validate-dispatch-resolver-wi551.mjs",
+    inputs: [
+      "schemas/dispatch-policy.schema.json",
+      "examples/dispatch-policy.example.json",
+      "scripts/resolve-dispatch.mjs",
+      "scripts/resolve-model.sh",
+      "scripts/review-topology-v2.mjs",
+      "scripts/resolve-adversarial-reviewer.sh",
+      "scripts/review-plan-codex.sh",
+      "scripts/run-external-review.mjs",
+      "test-framework/evals/tier-1/validate-dispatch-resolver-wi551.mjs"
+    ]
+  },
+  {
     validator: "validate-story-receipt-delivery-projection-v2.mjs",
     inputs: ["scripts/audit-story-receipts.mjs", "test-framework/evals/tier-1/validate-story-receipt-delivery-projection-v2.mjs"]
   },

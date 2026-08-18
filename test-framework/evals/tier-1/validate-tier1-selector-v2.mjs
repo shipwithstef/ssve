@@ -31,6 +31,7 @@ check("proposal selects complete v2 focused closure", () => {
   assert.deepEqual(result.selected, [
     "validate-concern-compiler-v2.mjs",
     "validate-control-value-audit-v2.mjs",
+    "validate-dispatch-resolver-wi551.mjs",
     "validate-execution-controller-v2.mjs",
     "validate-external-review-launcher.sh",
     "validate-host-runtime-adapter-v2.mjs",
@@ -93,7 +94,7 @@ check("global runner input forces full sweep", () => {
 check("reviewer owner config support selects exact topology and launcher validators", () => {
   const result = selectTier1Validators(["scripts/review-topology-v2.mjs"]);
   assert.equal(result.fallback_full, false);
-  assert.deepEqual(result.selected, ["validate-external-review-launcher.sh", "validate-review-topology-v2.mjs"]);
+  assert.deepEqual(result.selected, ["validate-dispatch-resolver-wi551.mjs", "validate-external-review-launcher.sh", "validate-review-topology-v2.mjs"]);
 });
 
 check("story projection selects its focused receipt validator", () => {
