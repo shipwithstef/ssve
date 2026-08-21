@@ -6,6 +6,7 @@ Total closed: **266**
 
 | ID | Status | Closed | Subject |
 |----|--------|--------|---------|
+| [WI-554](WI-554.md) | VERIFIED-L3 | 2026-08-21 | Central check-chain-receipts verifies reviewer evidence against consumer repo root |
 | [WI-547](WI-547.md) | VERIFIED-L3 | 2026-08-17 | External-review evidence survives promotion without rewriting AGY bytes |
 | [WI-543](WI-543.md) | VERIFIED-L3 | 2026-08-17 | Grok-native `[[hooks]]` tables are not the hooks Grok executes |
 | [WI-542](WI-542.md) | VERIFIED-L3 | 2026-08-17 | Grok SessionStart 1 is red: healthcheck false-positive `~` paths |
