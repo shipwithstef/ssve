@@ -637,6 +637,43 @@ function selectBestEntry(entries) {
     })[0];
 }
 
+// WI-555: WI-472 authority stays in the framework package (SCRIPT_DIR parent).
+// Post-WI-472 consumer gaps resolve ledger/bundle/review from the invocation
+// repo root (repoRootForCache()), matching WI-554's consumer-root contract.
+const WI472_HISTORICAL_RANGE = "985a8d5de2255288daaacda91c739e294b8a67d5..6b026ea9fbcee849e682d7aa47c3eec894512de3";
+
+function resolveRetroactiveAuthority(receipt) {
+  const wi = String(receipt?.wi || "");
+  if (wi === "WI-472") {
+    return {
+      wi,
+      root: join(SCRIPT_DIR, ".."),
+      ledgerRel: "docs/specs/audit/wi-472-reconcile-backlog.json",
+      bundleRel: "docs/specs/audit/wi-472-reconcile-backlog-bundle.json",
+      reviewRel: "docs/specs/reviews/wi-472-backlog-review.json",
+      certPrefix: "wi472-backlog",
+      frozenRange: WI472_HISTORICAL_RANGE,
+      missingAuthority: "tracked WI-472 bundle/review authority is unavailable",
+      outsideAllowlist: "target SHA is outside the reviewed 78-row allowlist",
+    };
+  }
+  if (!/^WI-[A-Z0-9][A-Z0-9_-]*$/.test(wi)) {
+    return { wi, error: `attestation wi=${wi || "<missing>"} is not a valid WI id` };
+  }
+  const slug = wi.toLowerCase();
+  return {
+    wi,
+    root: repoRootForCache(),
+    ledgerRel: `docs/specs/audit/${slug}-reconcile-backlog.json`,
+    bundleRel: `docs/specs/audit/${slug}-reconcile-backlog-bundle.json`,
+    reviewRel: `docs/specs/reviews/${slug}-backlog-review.json`,
+    certPrefix: `${slug}-backlog`,
+    frozenRange: null,
+    missingAuthority: `tracked ${wi} consumer recovery bundle/review authority is unavailable`,
+    outsideAllowlist: `target SHA is outside the reviewed ${wi} recovery allowlist`,
+  };
+}
+
 function validateRetroactiveAttestation(sha, receipt) {
   const base = validateReceipt("retroactive-attestation", receipt);
   if (!base.valid) return base;
@@ -646,9 +683,11 @@ function validateRetroactiveAttestation(sha, receipt) {
   if (JSON.stringify(actualKeys) !== JSON.stringify(allowedKeys)) reasons.push("attestation contains missing or additional properties");
   const producerFamily = familyOf(receipt.producer?.host);
   const reviewerFamily = familyOf(receipt.reviewer?.host);
+  const authority = resolveRetroactiveAuthority(receipt);
+  if (authority.error) reasons.push(authority.error);
   const historicalRange = String(receipt?.historical_range || "");
   const [rangeAncestor = "", rangeDescendant = ""] = historicalRange.split("..");
-  const root = join(SCRIPT_DIR, "..");
+  const root = authority.root || join(SCRIPT_DIR, "..");
   const externalized = isExternalizedHistoryRange(root, rangeAncestor, rangeDescendant);
   let tree = null;
   try { tree = git(["rev-parse", `${sha}^{tree}`]); }
@@ -657,18 +696,22 @@ function validateRetroactiveAttestation(sha, receipt) {
   if (tree && receipt.tree_hash !== tree) reasons.push(`tree_hash=${receipt.tree_hash} expected ${tree}`);
   const sha256 = (value) => createHash("sha256").update(value).digest("hex");
   let bundle, review, ledgerBytes;
-  try {
-    ledgerBytes = readFileSync(join(root, "docs/specs/audit/wi-472-reconcile-backlog.json"));
-    bundle = JSON.parse(readFileSync(join(root, "docs/specs/audit/wi-472-reconcile-backlog-bundle.json"), "utf8"));
-    review = JSON.parse(readFileSync(join(root, "docs/specs/reviews/wi-472-backlog-review.json"), "utf8"));
-  } catch { reasons.push("tracked WI-472 bundle/review authority is unavailable"); }
+  if (!authority.error) {
+    try {
+      ledgerBytes = readFileSync(join(root, authority.ledgerRel));
+      bundle = JSON.parse(readFileSync(join(root, authority.bundleRel), "utf8"));
+      review = JSON.parse(readFileSync(join(root, authority.reviewRel), "utf8"));
+    } catch { reasons.push(authority.missingAuthority); }
+  }
   if (bundle && review) {
     const { bundle_sha256: ignored, ...boundBundle } = bundle;
     const row = bundle.rows?.find((candidate) => candidate.sha === sha);
     const approval = review.rows?.find((candidate) => candidate.sha === sha);
     if (sha256(ledgerBytes) !== bundle.ledger_sha256 || receipt.ledger_sha256 !== bundle.ledger_sha256) reasons.push("ledger binding mismatch");
     if (sha256(JSON.stringify(boundBundle)) !== bundle.bundle_sha256 || receipt.bundle_sha256 !== bundle.bundle_sha256) reasons.push("bundle binding mismatch");
-    if (!row || !approval) reasons.push("target SHA is outside the reviewed 78-row allowlist");
+    if (bundle.wi && bundle.wi !== receipt.wi) reasons.push(`bundle wi=${bundle.wi} expected ${receipt.wi}`);
+    if (review.wi && review.wi !== receipt.wi) reasons.push(`review wi=${review.wi} expected ${receipt.wi}`);
+    if (!row || !approval) reasons.push(authority.outsideAllowlist);
     if (row) {
       if (externalized && receipt.tree_hash !== row.proof?.target_tree) reasons.push("externalized target tree does not match the tracked reviewed row");
       const { basis_sha256, ...basis } = row;
@@ -685,22 +728,27 @@ function validateRetroactiveAttestation(sha, receipt) {
     if (!approval || approval.verdict !== "approve" || !approval.evidence_checked?.includes(receipt.basis_sha256)) reasons.push("tracked row approval is absent or not basis-bound");
     if (review.verdict !== "pass" || review.zero_waivers_verified !== true || review.ledger_sha256 !== bundle.ledger_sha256 || review.bundle_sha256 !== bundle.bundle_sha256) reasons.push("tracked global review is not a bound zero-waiver pass");
     if (receipt.review?.request_id !== review.reviewer?.request_id || receipt.review?.package_sha256 !== review.reviewer?.package_sha256 || receipt.review?.receipt_sha256 !== review.reviewer?.receipt_sha256 || receipt.review?.findings_sha256 !== review.reviewer?.findings_sha256) reasons.push("canonical review identity mismatch");
+    const certKey = `${authority.certPrefix}-${sha}`;
     try {
       const launcherReceipt = JSON.parse(readFileSync(join(root, review.reviewer.receipt), "utf8"));
       const launcherFindings = JSON.parse(readFileSync(join(root, review.reviewer.findings), "utf8"));
-      const cert = launcherFindings.certifications?.find((candidate) => candidate.key === `wi472-backlog-${sha}`);
+      const cert = launcherFindings.certifications?.find((candidate) => candidate.key === certKey);
       if (sha256(readFileSync(join(root, review.reviewer.receipt))) !== review.reviewer.receipt_sha256 || sha256(readFileSync(join(root, review.reviewer.findings))) !== review.reviewer.findings_sha256) reasons.push("tracked launcher artifact hash mismatch");
       if (launcherReceipt.status !== "success" || launcherReceipt.request_id !== review.reviewer.request_id || !String(launcherFindings.verdict || "").startsWith("pass") || !cert?.certified || cert.for_content_sha !== receipt.basis_sha256 || cert.reviewer_family !== reviewerFamily) reasons.push("tracked launcher artifacts do not certify this row");
     } catch { reasons.push("tracked launcher artifacts are unavailable or invalid"); }
+    if (authority.frozenRange) {
+      if (receipt.historical_range !== authority.frozenRange) reasons.push("historical range mismatch");
+    } else if (receipt.historical_range !== bundle.historical_range) {
+      reasons.push("historical range mismatch");
+    }
   }
-  if (receipt.historical_range !== "985a8d5de2255288daaacda91c739e294b8a67d5..6b026ea9fbcee849e682d7aa47c3eec894512de3") reasons.push("historical range mismatch");
   if (receipt.verdict !== "approved" || receipt.zero_waivers !== true) reasons.push("attestation is not an approved zero-waiver review");
   if (!receipt.review?.request_id || !/^[0-9a-f]{64}$/.test(String(receipt.review?.receipt_sha256 || "")) || !/^[0-9a-f]{64}$/.test(String(receipt.review?.findings_sha256 || ""))) {
     reasons.push("attestation lacks a hash-bound canonical review receipt");
   }
   if (!producerFamily || !reviewerFamily || producerFamily === reviewerFamily) reasons.push("attestation review is not cross-family");
   if (producerFamily !== receipt.producer?.family || reviewerFamily !== receipt.reviewer?.family) reasons.push("declared reviewer family does not match host");
-  if (receipt.review?.row_certification !== `wi472-backlog-${sha}`) reasons.push("row certification key mismatch");
+  if (!authority.error && receipt.review?.row_certification !== `${authority.certPrefix}-${sha}`) reasons.push("row certification key mismatch");
   return { valid: reasons.length === 0, reasons };
 }
 

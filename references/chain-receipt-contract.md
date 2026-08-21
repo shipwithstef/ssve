@@ -31,7 +31,7 @@ L3 (`svc-reconcile`) enforcement.
 | `review-exec` | `review-exec` (P5 final) | `schemas/receipts/review-exec.schema.json` |
 | `audit-implementation` | `audit-implementation` (final pass) | `schemas/receipts/audit-implementation.schema.json` |
 | `verify-promotion` | `verify-promotion` (P3 extended) | `schemas/receipts/verify-promotion.schema.json` |
-| `retroactive-attestation` | WI-472 reviewed historical reconciliation only | `schemas/receipts/retroactive-attestation.schema.json` |
+| `retroactive-attestation` | Reviewed historical reconciliation (WI-472 framework package, or post-WI-472 consumer package under `repoRootForCache()`) | `schemas/receipts/retroactive-attestation.schema.json` |
 
 `retroactive-attestation` is not a reconstructed phase chain. It records the
 target commit/tree, immutable evidence hashes, and the real cross-family row
@@ -39,6 +39,14 @@ approval that accounted for a historical gap. The checker reports its type as
 `retroactive-attestation`, never `complete`. It cannot assert that
 plan/review/exec/audit phases ran, and it is invalid without a tree match,
 zero-waiver verdict, and hash-bound canonical review artifacts.
+
+**Authority roots (WI-555):** `wi=WI-472` resolves ledger/bundle/review from the
+framework package (`SCRIPT_DIR` parent) with frozen range
+`985a8d5..6b026ea9` and `wi472-backlog-*` certification keys. Any other valid
+`WI-*` id resolves from the invocation repo root (`repoRootForCache()`) at
+`docs/specs/audit/<wi-lower>-reconcile-backlog{,-bundle}.json` and
+`docs/specs/reviews/<wi-lower>-backlog-review.json`, with certification prefix
+`<wi-lower>-backlog` and `historical_range` bound to the consumer bundle range.
 
 ## Pipeline Baton — `plan-manifest.ac_digests` (WI-381)
 
@@ -142,7 +150,7 @@ readable. Projection rules:
 3. If owner projection is ambiguous, fail closed and require an explicit owner
    map (no guessing, no destructive rewrite of historical bytes).
 
-### Bounded reconcile and reviewed historical recovery (WI-472)
+### Bounded reconcile and reviewed historical recovery (WI-472; consumer packages WI-555)
 
 L3 uses one bounded `--range` receipt check when a checkpoint exists; only the
 first-run last-five bootstrap remains per-SHA. Every synchronous child call is
