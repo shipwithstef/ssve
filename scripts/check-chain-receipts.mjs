@@ -772,7 +772,9 @@ function validateReceipt(receiptType, receipt, sha = null) {
       };
     }
     if (Number(receipt.schema_version) >= 3) {
-      const evidenceReasons = verifyReviewerEvidence({ root: join(SCRIPT_DIR, ".."), reviewKind: receiptType === "review-plan" ? "plan" : "exec", body: receipt });
+      // WI-554: evidence lives in the invocation/consumer repo, not the
+      // centrally installed framework checkout that owns SCRIPT_DIR.
+      const evidenceReasons = verifyReviewerEvidence({ root: repoRootForCache(), reviewKind: receiptType === "review-plan" ? "plan" : "exec", body: receipt });
       if (evidenceReasons.length) return { valid: false, reasons: evidenceReasons };
     }
   }

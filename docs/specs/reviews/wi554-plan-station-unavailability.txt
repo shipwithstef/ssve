@@ -1,0 +1,6 @@
+WI-554 plan-review station unavailability (mechanical, not owner override):
+- fable / sol-high tuples use host=cursor
+- scripts/run-external-review.mjs REVIEW_HOST_TRANSPORTS = {codex,agy,claude} only
+- schemas/external-review-receipt.schema.json host enum = codex|claude|agy only
+- Direct launch attempt 20260821T100647Z failed: internal receipt schema failure: $.requested_tuple: no anyOf branch matched
+- Therefore SVC_DISPATCH_UNAVAILABLE_STATIONS=fable,sol-high and station agy-gemini-3.7-high (fallback_only) becomes eligible via preferredUnavailable
