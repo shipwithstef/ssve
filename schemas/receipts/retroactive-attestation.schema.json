@@ -7,7 +7,7 @@
   "properties": {
     "receipt_type": {"const": "retroactive-attestation"},
     "schema_version": {"const": 1},
-    "wi": {"const": "WI-472"},
+    "wi": {"type": "string", "pattern": "^WI-[A-Z0-9][A-Z0-9_-]*$"},
     "target_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
     "tree_hash": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
     "historical_range": {"type": "string"},

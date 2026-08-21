@@ -1,5 +1,6 @@
 # Work Items Index
 
+- [WI-555](WI-555.md) — Consumer-local reviewed retroactive receipt recovery: post-WI-472 gaps resolve ledger/bundle/review from `repoRootForCache()`, WI-472 framework-package authority unchanged (severity:high) — status:in_progress
 - [WI-554](WI-554.md) — Centrally installed `check-chain-receipts` must verify schema-v3 reviewer evidence against the consumer/invocation repo root via `repoRootForCache()`, not `SCRIPT_DIR`'s framework parent (severity:critical) — status:VERIFIED-L3 (PR #16 `39e91c1b`, verify-promotion closeout)
 - [WI-553](WI-553.md) — Risk-triggered plan and execution contracts (severity:high) — status:exec-complete (72c4df27); review-exec pending; parent WI-548
 - [WI-552](WI-552.md) — Autonomous restart-boundary continuation (severity:high) — status:landed via PR #13 `50a3440a`; depends on WI-551 + WI-547; parent WI-548
