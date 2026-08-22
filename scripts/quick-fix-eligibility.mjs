@@ -305,9 +305,11 @@ function classifyDiff(diff, files) {
 function writeReceipt(treeHash, verdict, files) {
   const dir = join(".svc", "receipts", "staging", treeHash);
   mkdirSync(dir, { recursive: true });
+  const wi = process.env.SVC_WI || null;
   const receipt = {
     receipt_type: "quick-fix",
     schema_version: 1,
+    ...(wi ? { wi } : {}),
     tree_hash: treeHash,
     eligible: verdict.eligible,
     reasons: verdict.reasons,

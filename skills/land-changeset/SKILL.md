@@ -392,6 +392,8 @@ Merge immediately:
 ```bash
 # Mint after the push so the capability binds the current exact HEAD and tree.
 COMMAND=(node scripts/merge-pr-with-review-receipt.mjs --pr "$PR_NUMBER" --squash --delete-branch --expected-repo "$REMOTE_REPO" --expected-head "$BRANCH" --expected-head-sha "$HEAD_SHA")
+# Exit-code contract (WI-556): 0=verified, 2=pre-merge block, 3=MERGED_UNVERIFIED
+# On 3: do NOT reopen/re-merge; record squash SHA, run receipt recovery, then verify.
 MINT="$(node scripts/svc-owner-recovery.mjs promote-mint \
   --repo "$REPO" --worktree "$WORKTREE" --state-root "$WORKTREE/.svc/runtime" \
   --wi "$WI" --generation "$GENERATION" --task "$LAND_TASK" \
@@ -406,6 +408,13 @@ node scripts/svc-owner-recovery.mjs promote-exec \
 ```
 
 Then continue to Step 5.
+
+**Exit-code contract (WI-556):** the merge command exits `0` when merged AND
+coverage-verified, `2` for pre-merge blocks, and **`3` for MERGED_UNVERIFIED**
+(merge exists on GitHub but coverage notes could not be published/verified).
+On exit 3: do NOT reopen or re-merge; record the squash SHA from
+`gh pr view --json mergeCommit`, run receipt recovery, and only then proceed
+to Step 5 verification.
 
 ### Promotion-memory handoff
 

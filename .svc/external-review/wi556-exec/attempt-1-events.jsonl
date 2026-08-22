@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "review_kind": "exec",
+  "rubric_score": 7,
+  "rubric_failures": [1],
+  "dependencies_needing_read": [],
+  "reviewer": {
+    "host": "agy",
+    "family": "google",
+    "model": "Gemini 3.7 Flash (High)",
+    "effort": "high"
+  },
+  "verdict": "fail",
+  "summary": "Adversarial execution review of WI-556 final-SHA mandatory-skill coverage implementation identified two High-severity defects in scripts/merge-pr-with-review-receipt.mjs and scripts/check-chain-receipts.mjs: (1) malformed Git CLI argument syntax for '--force-with-lease' during CAS notes push causing retry exhaustion and spurious MERGED_UNVERIFIED exits, and (2) slot key phase stripping in merge finalization where exec-record receipts keyed with phase P3 are recorded with unphased receipt_slot values that fail child resolution in check-chain-receipts.mjs.",
+  "findings": [
+    {
+      "id": "EXEC-WI556-001",
+      "severity": "high",
+      "claim": "scripts/merge-pr-with-review-receipt.mjs passes malformed \"-force-with-lease\" argument to git push during CAS publish",
+      "analysis": "In scripts/merge-pr-with-review-receipt.mjs (line 2949), CAS push argument construction performs 'if (lease) pushArgs.push(\"-force-with-lease\" + lease);'. Git command-line option parsing requires double-dash flags ('--force-with-lease=...') for long options. Passing '-force-with-lease<lease>' causes git push to error on unknown command switches whenever a lease ref exists, exhausting all 5 publish retries and aborting with finalizeFail('CAS publish exhausted retries') (exit code 3 MERGED_UNVERIFIED).",
+      "evidence": [
+        "scripts/merge-pr-with-review-receipt.mjs:2947-2950: const lease = gitOut([\"rev-parse\", \"refs/notes/svc-receipts-remote-view\"]) || \"\"; const pushArgs = [\"push\", \"origin\", \"refs/notes/svc-receipts:refs/notes/svc-receipts\"]; if (lease) pushArgs.push(\"-force-with-lease\" + lease); const pushRes = spawnSync(\"git\", pushArgs, { cwd: root, encoding: \"utf8\" });"
+      ],
+      "proposed_fix": "Update line 2949 in scripts/merge-pr-with-review-receipt.mjs to use valid Git force-with-lease syntax: if (lease) pushArgs.push(`--force-with-lease=refs/notes/svc-receipts:${lease}`);"
+    },
+    {
+      "id": "EXEC-WI556-002",
+      "severity": "high",
+      "claim": "Slot phase mismatch between merge-pr-with-review-receipt.mjs coverage compilation and check-chain-receipts.mjs child lookup",
+      "analysis": "In scripts/merge-pr-with-review-receipt.mjs (lines 2923-2926), child receipt lookup checks both unphased and phased slot keys (childBySlot.get(slot) || childBySlot.get(`${slot}::P3`)), but always sets entry.receipt_slot to the unphased slot string. In scripts/check-chain-receipts.mjs (lines 2530-2532), slotMap keys are indexed with candidate.phase (e.g. slot::exec-record::WI-556::<sha>::P3). During verifyCoverage, resolveChild(entry.receipt_slot) queries the unphased slot key and returns null because slotMap only contains the phased key. This causes verifyCoverage to fail with 'execute-changeset: child receipt slot missing' on final SHAs carrying phased exec-record receipts.",
+      "evidence": [
+        "scripts/merge-pr-with-review-receipt.mjs:2923-2927: const slot = `slot::${entry.producer_receipt_type}::${wiMatch}::${oid}`; const child = childBySlot.get(slot) || childBySlot.get(`${slot}::P3`) || null; return { ...entry, receipt_slot: slot, ...(child ? { receipt_sha256: cov.sha256Hex(cov.stableStringify(child)) } : {}) };",
+        "scripts/check-chain-receipts.mjs:2530-2532: for (const candidate of normalized.entries) { slotMap.set(compositeSlotKey(candidate.receipt_type || candidate.type, candidate.wi ?? candidate.receipt?.wi ?? covWi, sha, candidate.phase ?? null), candidate.receipt); }",
+        "scripts/lib/skill-coverage.mjs:2814-2820: const slot = String(entry.receipt_slot || \"\"); const child = typeof resolveChild === \"function\" ? resolveChild(slot) : null; if (!child) { rows.push({ ...pickRowFields(entry), result: \"MISSING\", detail: `child slot not found in envelope` }); fail(`${entry.skill}: child receipt slot missing`); continue; }"
+      ],
+      "proposed_fix": "In scripts/merge-pr-with-review-receipt.mjs, record the actual matched slot key in receipt_slot (e.g., const matchedSlot = childBySlot.has(slot) ? slot : (childBySlot.has(`${slot}::P3`) ? `${slot}::P3` : slot); return { ...entry, receipt_slot: matchedSlot, ... };) and/or update scripts/check-chain-receipts.mjs resolveChild fallback to query both slot and slot + '::P3'."
+    }
+  ],
+  "certifications": []
+}

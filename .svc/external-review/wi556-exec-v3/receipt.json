@@ -1,0 +1,217 @@
+{
+  "schema_version": 2,
+  "launcher_version": "2.4.0",
+  "cli_version": "1.1.18",
+  "request_id": "a35e11bf-572e-4e1b-9b55-5d23bf7a0946",
+  "review_kind": "exec",
+  "candidate_digest": "895afe7621b112c9e739a25445cda87808b8e61508c588fa698ba02300aa0cfc",
+  "package_sha256": "f97a2a03101aeb929577c25806b036f3448f611b36c0f15300efbbf02e4e531d",
+  "findings_schema_sha256": "c53006becb41df17e49ba913ddffa9b9fa70c0e1f2039fb9b86457446191774b",
+  "findings_sha256": "b9af3a9c8880c0c5324b79cbfeb658251b0eae54efca3e6829bc0f34e4b38f23",
+  "cache_key": "15ef5dd3e69e3e1de3e5e25e9ba5bebb5a86934d0db502434bfd36e23e6ee3e8",
+  "fixture_mode": false,
+  "started_at": "2026-08-22T19:22:06.347Z",
+  "finished_at": "2026-08-22T19:23:24.539Z",
+  "status": "success",
+  "classification": "success",
+  "requested_tuple": {
+    "orchestrator": "codex",
+    "host": "agy",
+    "family": "google",
+    "model": "Gemini 3.7 Flash (High)",
+    "effort": "high"
+  },
+  "invocation_tuple": {
+    "orchestrator": "codex",
+    "host": "agy",
+    "family": "google",
+    "model": "Gemini 3.7 Flash (High)",
+    "effort": "high"
+  },
+  "effective_tuple": {
+    "orchestrator": "codex",
+    "host": "agy",
+    "family": "google",
+    "model": "Gemini 3.7 Flash (High)",
+    "effort": "high"
+  },
+  "attempts": [
+    {
+      "index": 1,
+      "tuple": {
+        "orchestrator": "codex",
+        "host": "agy",
+        "family": "google",
+        "model": "Gemini 3.7 Flash (High)",
+        "effort": "high"
+      },
+      "started_at": "2026-08-22T19:22:06.692Z",
+      "finished_at": "2026-08-22T19:23:24.537Z",
+      "exit_code": 0,
+      "classification": "success",
+      "command": {
+        "binary": "/home/dianast/.nvm/versions/node/v24.13.0/bin/node",
+        "argv": [
+          "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/skills/research/scripts/dispatch-agy.mjs",
+          "--stdin",
+          "--model",
+          "Gemini 3.7 Flash (High)",
+          "--timeout-seconds",
+          "1200",
+          "--artifacts-dir",
+          "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/.svc/external-review/wi556-exec-v3/attempt-1-agy-transport"
+        ]
+      },
+      "artifacts": {
+        "events": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/.svc/external-review/wi556-exec-v3/attempt-1-events.jsonl",
+        "stderr": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/.svc/external-review/wi556-exec-v3/attempt-1-stderr.log",
+        "findings": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/.svc/external-review/wi556-exec-v3/attempt-1-findings.json"
+      },
+      "usage": {
+        "agy_transport_receipt": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/.svc/external-review/wi556-exec-v3/attempt-1-agy-transport/receipt.json",
+        "agy_transport_receipt_sha256": "1f489d9380b0c90a30c12b087d22e5584508c82f51d70bbf9a257cc52614b104"
+      }
+    }
+  ],
+  "reviewer_run": {
+    "commands": [
+      {
+        "binary": "/home/dianast/.nvm/versions/node/v24.13.0/bin/node",
+        "argv": [
+          "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/skills/research/scripts/dispatch-agy.mjs",
+          "--stdin",
+          "--model",
+          "Gemini 3.7 Flash (High)",
+          "--timeout-seconds",
+          "1200",
+          "--artifacts-dir",
+          "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/.svc/external-review/wi556-exec-v3/attempt-1-agy-transport"
+        ]
+      }
+    ],
+    "output_artifacts": [
+      "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/.svc/external-review/wi556-exec-v3/attempt-1-events.jsonl",
+      "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/.svc/external-review/wi556-exec-v3/attempt-1-stderr.log",
+      "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/.svc/external-review/wi556-exec-v3/attempt-1-findings.json"
+    ]
+  },
+  "fallback": {
+    "eligible": false,
+    "used": false,
+    "reason": null
+  },
+  "override": {
+    "used": false,
+    "authority": null,
+    "source": null,
+    "path": null,
+    "expected_sha256": null,
+    "actual_sha256": null
+  },
+  "policy": {
+    "version": 2,
+    "profile": "production:agy",
+    "source": "owner-config",
+    "resolved_at": "2026-08-22T19:22:06.347Z",
+    "effective_window": {
+      "starts_at": null,
+      "ends_at": null
+    },
+    "cutover_utc": null,
+    "cutover_local": null,
+    "timezone": null,
+    "selection_sha256": "bf755c737672d2ca49f2aa683cae35136b01eb71f50ed99e0d3334e1f7199474",
+    "selection_expires_at": null,
+    "selection_authority": "repository-owner"
+  },
+  "protocol": {
+    "process_invocations": 1,
+    "configured_turn_ceiling": null,
+    "configured_budget_usd": null,
+    "reported_turns": null,
+    "stop_reason": null,
+    "terminal_reason": null,
+    "errors": []
+  },
+  "route": {
+    "kind": "owner_config_primary",
+    "switching_enabled": false,
+    "cli_fallback_configured": false,
+    "evidence": "requested_primary"
+  },
+  "effective_effort": {
+    "value": "high",
+    "provenance": "requested"
+  },
+  "model_attestation": {
+    "level": "requested_accepted",
+    "requested_model": "Gemini 3.7 Flash (High)",
+    "observed_models": [],
+    "evidence": "canonical_agy_dispatch_receipt_exact_model_preset_package_schema"
+  },
+  "phase_guard": {
+    "applicable": true,
+    "kind": "exec",
+    "decision": "allow",
+    "reason": "frozen_binding_recorded",
+    "wi": "WI-556",
+    "pre_execution_base": "75986ebecabafc599c6acdcdf2617db8b91b0c4a",
+    "plan_manifest_sha256": "df8252e0c83809ad5804d66f699c1beed47d3168f0beb74e9e1074a1647ff252",
+    "exec_record_present": null,
+    "exec_record_path": null,
+    "implementation_diverged": null,
+    "diverged_files": [],
+    "base_resolved": null,
+    "override": {
+      "used": false,
+      "authority": null,
+      "source": null,
+      "path": null,
+      "expected_sha256": null,
+      "actual_sha256": null,
+      "kind": null
+    }
+  },
+  "package_context": {
+    "version": 1,
+    "context_root": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage",
+    "base_package_sha256": "a09ba2236555b48aa3ad6a25bc5211d270874044eb5a4b85ed8b3ae25b96f4d8",
+    "files": [
+      {
+        "path": "target:AGENTS.md",
+        "sha256": "82c6958c1e80833f812707112ed53c3e25f9c6e02565dcffbb009cebd393296c",
+        "bytes": 27101
+      },
+      {
+        "path": "target:CLAUDE.md",
+        "sha256": "2a438d254509b3cb2b40f22b24c5075e92ea6b9b1fc96a1c5518602cb6c3eb03",
+        "bytes": 11576
+      },
+      {
+        "path": "framework:skills/review-exec/SKILL.md",
+        "sha256": "8ba47d6071bda764f25df64825abd85871cb9bad462b31a65cf95f48b95fa9f9",
+        "bytes": 19527
+      },
+      {
+        "path": "framework:skills/review-cross-model/SKILL.md",
+        "sha256": "4bbe2968bef6e84511483f8277232352e8ad406d397789038e89798afe263abf",
+        "bytes": 22108
+      }
+    ]
+  },
+  "cache": {
+    "disposition": "published",
+    "reusable": true,
+    "entry": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/.svc/external-review-cache/v1/15ef5dd3e69e3e1de3e5e25e9ba5bebb5a86934d0db502434bfd36e23e6ee3e8"
+  },
+  "artifacts": {
+    "findings": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/.svc/external-review/wi556-exec-v3/findings.json",
+    "receipt": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/.svc/external-review/wi556-exec-v3/receipt.json",
+    "package": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/.svc/external-review/wi556-exec-v3/review-package.bin",
+    "capabilities": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/.svc/external-review/wi556-exec-v3/capabilities.log"
+  },
+  "usage": {
+    "agy_transport_receipt": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/.svc/external-review/wi556-exec-v3/attempt-1-agy-transport/receipt.json",
+    "agy_transport_receipt_sha256": "1f489d9380b0c90a30c12b087d22e5584508c82f51d70bbf9a257cc52614b104"
+  }
+}

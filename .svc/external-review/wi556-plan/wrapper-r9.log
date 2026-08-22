@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "review_kind": "plan",
+  "rubric_score": 8,
+  "rubric_failures": [
+    4
+  ],
+  "dependencies_needing_read": [],
+  "reviewer": {
+    "host": "agy",
+    "family": "google",
+    "model": "Gemini 3.7 Flash (High)",
+    "effort": "high"
+  },
+  "verdict": "pass-with-findings",
+  "summary": "The WI-556 implementation manifest is structurally thorough, robustly scoped with inline mode and multi-round convergence records, but contains actionable gaps in the Execution Command Sequence where T4 files are omitted from git staging/commit and a staging tree hash is hardcoded.",
+  "findings": [
+    {
+      "id": "F-001",
+      "severity": "high",
+      "claim": "T4-owned files scripts/worktree.sh and skills/land-changeset/SKILL.md are omitted from staging and commit in Execution Command Sequence",
+      "analysis": "Manifest §Files Planned allocates scripts/merge-pr-with-review-receipt.mjs, scripts/worktree.sh, and skills/land-changeset/SKILL.md to Task T4 to implement the 0/2/3 exit-code branching contract (Architecture Decision D5 and finding G4). However, in §Execution Command Sequence lines 2293-2297, the T3+T4 commit step executes 'git add scripts/check-chain-receipts.mjs scripts/merge-pr-with-review-receipt.mjs' and commits. Neither scripts/worktree.sh nor skills/land-changeset/SKILL.md is ever added or committed in any step of the sequence. If executed verbatim, the worktree branching and skill updates will remain uncommitted dirty modifications or be omitted from the branch history.",
+      "evidence": [
+        "Files Planned T4: scripts/merge-pr-with-review-receipt.mjs;scripts/worktree.sh;skills/land-changeset/SKILL.md",
+        "Execution Command Sequence (lines 2294-2296): git add scripts/check-chain-receipts.mjs scripts/merge-pr-with-review-receipt.mjs && git commit --trailer \"$TRAILER\" -m \"feat(receipts): coverage verification in checker and atomic merge finalizer (WI-556)\""
+      ],
+      "proposed_fix": "Update the T3+T4 commit step in §Execution Command Sequence to include syntax validation for scripts/worktree.sh and stage all T4 targets: 'bash -n scripts/worktree.sh && git add scripts/check-chain-receipts.mjs scripts/merge-pr-with-review-receipt.mjs scripts/worktree.sh skills/land-changeset/SKILL.md'."
+    },
+    {
+      "id": "F-002",
+      "severity": "medium",
+      "claim": "Ephemeral hardcoded staging tree hash in receipt carry command breaks reproducibility across environments",
+      "analysis": "Line 2281 of §Execution Command Sequence hardcodes a specific 40-character tree hash ('e0b7c7939be9ad3aba4e292265cb6c7608007580') to copy the staged plan-manifest receipt body from the main repository checkout. Staging tree hashes change whenever staging state fluctuates or when reproducing the run on another clone/worktree. If the hash differs, cp will fail under 'set -euo pipefail', halting the execution sequence.",
+      "evidence": [
+        "Execution Command Sequence (line 2281): cp \"$REPO_ROOT\"/.svc/receipts/staging/e0b7c7939be9ad3aba4e292265cb6c7608007580/plan-manifest--WI-556.json \"$BODY\""
+      ],
+      "proposed_fix": "Resolve the staged plan-manifest path dynamically, for example: 'PM_SOURCE=$(find \"$REPO_ROOT\"/.svc/receipts/staging -name \"plan-manifest--WI-556.json\" | head -n 1) && cp \"$PM_SOURCE\" \"$BODY\"'."
+    },
+    {
+      "id": "F-003",
+      "severity": "low",
+      "claim": "Static Co-authored-by trailer violates orchestrator dynamic derivation guideline",
+      "analysis": "Line 2258 of §Execution Command Sequence defines TRAILER='Co-authored-by: ox-alpha (opencode/x-preview-f-free)'. AGENTS.md §12 specifies that co-author trailers must derive the active orchestrator model at commit time and never hardcode a different host or model family into the receipt or trailer. A static string causes misattribution when executed under a different host (such as Claude, Codex, or Gemini).",
+      "evidence": [
+        "Execution Command Sequence (line 2258): TRAILER=\"Co-authored-by: ox-alpha (opencode/x-preview-f-free)\"",
+        "AGENTS.md §12: derive the ACTIVE orchestrator/model at commit time; never hardcode a different host or model family into the receipt or trailer"
+      ],
+      "proposed_fix": "Define TRAILER with fallback or derive dynamically: 'TRAILER=\"${TRAILER:-$(bash scripts/derive-coauthor-trailer.sh 2>/dev/null || echo \"Co-authored-by: ${USER} <${USER}@local>\")}\"'."
+    }
+  ],
+  "certifications": [
+    {
+      "key": "ac_coverage",
+      "certified": true,
+      "reviewer_family": "google",
+      "for_content_sha": "dc38bd8a524220247dcc37b376348402ec02a5e520683f5a371279635d3c39f8"
+    },
+    {
+      "key": "rollback_adequacy",
+      "certified": true,
+      "reviewer_family": "google",
+      "for_content_sha": "dc38bd8a524220247dcc37b376348402ec02a5e520683f5a371279635d3c39f8"
+    },
+    {
+      "key": "external_state_coupling",
+      "certified": true,
+      "reviewer_family": "google",
+      "for_content_sha": "dc38bd8a524220247dcc37b376348402ec02a5e520683f5a371279635d3c39f8"
+    }
+  ]
+}
+review-plan-codex: receipt=/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/.svc/external-review-artifacts/plan/dc38bd8a524220247dcc37b376348402ec02a5e520683f5a371279635d3c39f8/20260822T170935Z-903651/receipt.json

@@ -31,6 +31,7 @@ L3 (`svc-reconcile`) enforcement.
 | `review-exec` | `review-exec` (P5 final) | `schemas/receipts/review-exec.schema.json` |
 | `audit-implementation` | `audit-implementation` (final pass) | `schemas/receipts/audit-implementation.schema.json` |
 | `verify-promotion` | `verify-promotion` (P3 extended) | `schemas/receipts/verify-promotion.schema.json` |
+| `skill-coverage` | `merge-pr-with-review-receipt.mjs` finalization (WI-556) | `schemas/receipts/skill-coverage.schema.json` |
 | `retroactive-attestation` | Reviewed historical reconciliation (WI-472 framework package, or post-WI-472 consumer package under `repoRootForCache()`) | `schemas/receipts/retroactive-attestation.schema.json` |
 
 `retroactive-attestation` is not a reconstructed phase chain. It records the
@@ -184,6 +185,10 @@ produces an exact per-SHA envelope bundle, requires a different-family
 independent review with one verdict for every row, then applies the reviewed
 hash only after creating a write-once notes-ref backup. Any rejection or hash,
 coverage, reviewer-independence, or zero-waiver failure blocks mutation.
+
+### Final-SHA coverage index (WI-556)
+
+`skill-coverage` is an INDEX receipt, not phase proof: it lists the mandatory-chain tasks applicable to the reviewed route and binds each to its producer receipt slot on the same final SHA. `scripts/lib/skill-coverage.mjs` recomputes the applicable set from the canonicalized commit-tree lane-tasks (`graph_digest`, volatile execution state excluded) and requires exact task_id+skill multiset equality — digest equality alone never passes. AUTHORIZED_NA requires a registered policy condition plus decision evidence; silence is MISSING. Emission happens only inside merge finalization onto the GitHub squash SHA after a closed identity remap of child slots (slot-key sha / target_sha / sha rewritten; tree_hash and diff_hash byte-identical); tree divergence refuses with exit 3 `MERGED_UNVERIFIED`. Enforcement arming beyond strict-validate-if-present is an explicit owner decision recorded in FRAMEWORK-STATE.
 
 ## Bypass Path
 

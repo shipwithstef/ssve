@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "review_kind": "plan",
+  "rubric_score": 8,
+  "rubric_failures": [
+    9,
+    10
+  ],
+  "dependencies_needing_read": [],
+  "reviewer": {
+    "host": "agy",
+    "family": "google",
+    "model": "Gemini 3.7 Flash (High)",
+    "effort": "high"
+  },
+  "verdict": "pass-with-findings",
+  "summary": "Independent plan review for WI-556 (final-SHA mandatory-skill coverage). The architectural design (D1-D7), AC mapping (AC-1..AC-10), external state taxonomy walk, and comprehensive tamper-resistance/recomputation mechanisms are solid and thoroughly specified. Review identified 4 findings in the Execution Command Sequence: (1) missing .svc directory creation prior to lane-tasks copy causing failure under set -e in clean worktrees, (2) omitted git add staging for scripts/worktree.sh and skills/land-changeset/SKILL.md in task T4, (3) brittle hardcoded ephemeral staging tree hash for the plan-manifest receipt body, and (4) static hardcoded co-author trailer violating AGENTS.md §12 active orchestrator derivation rule.",
+  "findings": [
+    {
+      "id": "F-001",
+      "severity": "high",
+      "claim": "Execution command sequence fails under set -e in clean worktree due to missing .svc directory creation.",
+      "analysis": "In the Execution Command Sequence, line 2050 creates directories with `mkdir -p docs/plans/2026-08-22-final-sha-skill-coverage docs/specs/work-items test-framework/fixtures/skill-coverage` but omits `.svc`. Subsequently, line 2054 executes `cp \"$REPO_ROOT\"/.svc/lane-tasks-WI-556.json .svc/lane-tasks-WI-556.json`. In a freshly created git worktree under `.worktrees/feature-final-sha-skill-coverage`, `.svc` does not exist. Because `set -euo pipefail` is active from line 2036, attempting to copy into a nonexistent directory causes `cp` to exit with an error, halting the execution sequence at step 1.",
+      "evidence": [
+        "Line 2036: set -euo pipefail",
+        "Line 2050: mkdir -p docs/plans/2026-08-22-final-sha-skill-coverage docs/specs/work-items test-framework/fixtures/skill-coverage",
+        "Line 2054: cp \"$REPO_ROOT\"/.svc/lane-tasks-WI-556.json .svc/lane-tasks-WI-556.json"
+      ],
+      "proposed_fix": "Add `.svc` to the directory list in the `mkdir -p` command at line 2050: `mkdir -p .svc docs/plans/2026-08-22-final-sha-skill-coverage docs/specs/work-items test-framework/fixtures/skill-coverage`."
+    },
+    {
+      "id": "F-002",
+      "severity": "medium",
+      "claim": "Execution command sequence omits scripts/worktree.sh and skills/land-changeset/SKILL.md from git add in task T4.",
+      "analysis": "Task T4 in the Files Planned table lists three files: `scripts/merge-pr-with-review-receipt.mjs;scripts/worktree.sh;skills/land-changeset/SKILL.md`. Furthermore, Architecture Decision D5 and the Grok R2 #4 / G4 resolution explicitly specify widening the exit-code contract to 0/2/3 and updating `worktree.sh` and `land-changeset/SKILL.md` to branch on exit code 3 (MERGED_UNVERIFIED). However, in the Execution Command Sequence at line 2076, `git add` only stages `scripts/check-chain-receipts.mjs scripts/merge-pr-with-review-receipt.mjs`. Consequently, modifications to `worktree.sh` and `land-changeset/SKILL.md` remain unstaged and uncommitted, leading to incomplete task commits and a dirty worktree during promotion.",
+      "evidence": [
+        "Files Planned T4: scripts/merge-pr-with-review-receipt.mjs;scripts/worktree.sh;skills/land-changeset/SKILL.md",
+        "Line 2076: git add scripts/check-chain-receipts.mjs scripts/merge-pr-with-review-receipt.mjs",
+        "Line 2238 (G4 disposition): T4 widened: exit-code contract 0/2/3; worktree.sh + land-changeset SKILL.md branch on 3"
+      ],
+      "proposed_fix": "Update line 2076 in the Execution Command Sequence to stage all files modified in T4: `git add scripts/check-chain-receipts.mjs scripts/merge-pr-with-review-receipt.mjs scripts/worktree.sh skills/land-changeset/SKILL.md`."
+    },
+    {
+      "id": "F-003",
+      "severity": "medium",
+      "claim": "Hardcoded ephemeral staging tree hash path in execution command sequence compromises reproducibility.",
+      "analysis": "Line 2062 in the Execution Command Sequence specifies copying the plan-manifest receipt body from a hardcoded staging directory: `cp \"$REPO_ROOT\"/.svc/receipts/staging/e0b7c7939be9ad3aba4e292265cb6c7608007580/plan-manifest--WI-556.json \"$BODY\"`. Staging receipt paths are keyed by the working tree hash at staging time. If any pre-planning file modifications occur or staging state is cleaned/regenerated, this hardcoded 40-character hex path will not exist, halting execution under `set -e`.",
+      "evidence": [
+        "Line 2062: cp \"$REPO_ROOT\"/.svc/receipts/staging/e0b7c7939be9ad3aba4e292265cb6c7608007580/plan-manifest--WI-556.json \"$BODY\""
+      ],
+      "proposed_fix": "Dynamically locate the staged plan-manifest receipt body rather than hardcoding the tree hash, for example: `cp \"$(find \"$REPO_ROOT/.svc/receipts/staging\" -name 'plan-manifest--WI-556.json' | head -n 1)\" \"$BODY\"`."
+    },
+    {
+      "id": "F-004",
+      "severity": "low",
+      "claim": "Static hardcoded co-author trailer violates dynamic active orchestrator derivation policy.",
+      "analysis": "Line 2039 sets `TRAILER=\"Co-authored-by: ox-alpha (opencode/x-preview-f-free)\"`. AGENTS.md §12 states: 'Co-author trailer: derive the ACTIVE orchestrator/model at commit time; never hardcode a different host or model family into the receipt or trailer.' If the plan is executed by another orchestrator host or model (e.g. Claude Opus or Codex), a static trailer fails policy compliance.",
+      "evidence": [
+        "Line 2039: TRAILER=\"Co-authored-by: ox-alpha (opencode/x-preview-f-free)\"",
+        "AGENTS.md §12: derive the ACTIVE orchestrator/model at commit time; never hardcode a different host or model family into the receipt or trailer."
+      ],
+      "proposed_fix": "Set TRAILER dynamically based on active orchestrator identity or standard environment variables instead of hardcoding a fixed model identifier."
+    }
+  ],
+  "certifications": [
+    {
+      "key": "plan_review",
+      "certified": true,
+      "reviewer_family": "google",
+      "for_content_sha": "cf6f31907e549c073be3629d9ce2de2f1942e8cbeaf9e2e4185e145728f06f89"
+    },
+    {
+      "key": "mechanical_compliance",
+      "certified": true,
+      "reviewer_family": "google",
+      "for_content_sha": "cf6f31907e549c073be3629d9ce2de2f1942e8cbeaf9e2e4185e145728f06f89"
+    },
+    {
+      "key": "external_state_coupling",
+      "certified": true,
+      "reviewer_family": "google",
+      "for_content_sha": "cf6f31907e549c073be3629d9ce2de2f1942e8cbeaf9e2e4185e145728f06f89"
+    }
+  ]
+}

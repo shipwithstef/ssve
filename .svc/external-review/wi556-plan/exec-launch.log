@@ -1,0 +1,1 @@
+external-review: config_invalid: repair the named SVC_EXTERNAL_REVIEW configuration value before retrying; detail=resolve-dispatch: mode "production" does not define review.exec; receipt=/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/.svc/external-review/wi556-exec/receipt.json

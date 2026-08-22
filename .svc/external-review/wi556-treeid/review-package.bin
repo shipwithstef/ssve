@@ -1,0 +1,2197 @@
+SVC_REVIEW_CONTEXT_MANIFEST_V1 {"version":1,"files":[{"path":"target:AGENTS.md","sha256":"82c6958c1e80833f812707112ed53c3e25f9c6e02565dcffbb009cebd393296c","bytes":27101},{"path":"target:CLAUDE.md","sha256":"2a438d254509b3cb2b40f22b24c5075e92ea6b9b1fc96a1c5518602cb6c3eb03","bytes":11576},{"path":"framework:skills/review-plan/SKILL.md","sha256":"b05121118baf9da701ce65940b4957a4f1d783badb0529b99cd1ee51a9e2f1d9","bytes":24238},{"path":"framework:skills/review-cross-model/SKILL.md","sha256":"4bbe2968bef6e84511483f8277232352e8ad406d397789038e89798afe263abf","bytes":22108},{"path":"framework:references/plan-review-protocol.md","sha256":"ec253319a937e74d4421c62cda35fdee0cbe1406e8df3f56bee4a2e50ddd8d9e","bytes":10684},{"path":"framework:rules/plan-changeset-trigger.md","sha256":"63385c5d1d31e0afb83118184bbe8c5ff20fabf2f9c815a1d81679d3b956ebba","bytes":3661}]}
+
+<<<SVC_CONTEXT target:AGENTS.md sha256=82c6958c1e80833f812707112ed53c3e25f9c6e02565dcffbb009cebd393296c>>>
+# AGENTS.md — Serious Serious Vibe Engineering (SSVE)
+
+> AI-agent guidance for working in this repository. Read this first before making any changes.
+
+Bootstrap rule for onboarded projects: respect the project's local AGENTS.md/CLAUDE.md and svc route-workflow contract from its actual worktree; post-deploy/production validation asks require live post-deploy evidence, never local substitutes.
+
+---
+
+## 1. Project Overview
+
+**Serious Serious Vibe Engineering (SSVE)** is a **production-grade governed skill and runtime framework** for progressive deterministic development with LLMs. It is **not a single application**. Its 103 first-party reusable skills are packaged beneath `skills/` and installed consistently across nine supported agent hosts. The lowercase `svc` name remains the compatibility namespace for commands, paths, state, and hooks.
+
+Skills form a deterministic pipeline from product vision to verified code merge:
+
+```
+vision → domain → competitors → personas → validate → spec → UX → UI → tech → plan → execute → review → land → verify
+```
+
+Core principles:
+- **Progressive narrowing** — each phase constrains the solution space until code generation is essentially deterministic.
+- **Worktree isolation** — feature implementation runs in git worktrees under `.worktrees/`.
+- **Seven review gates (G1–G7)** — adversarial review protocol at fixed checkpoints.
+- **Local-first, mock-by-default** — external dependencies are mocked unless explicitly enabled.
+- **Four-layer token cache** — 50–60% cost reduction through structured caching.
+- **Zero-block operator UX** — safe reads work without a WI, the first task binds atomically, and same-owner recovery self-heals while foreign or ambiguous mutation remains fail-closed.
+- **Configurable review topology** — owner policy selects phase-, mode-, and host-specific reviewers without changing framework code.
+
+---
+
+## 2. Technology Stack
+
+This repository is **documentation and script-driven**. There is no compiled application, no root `package.json`, `pyproject.toml`, or `Cargo.toml`.
+
+| Layer | Technology |
+|-------|------------|
+| **Skills** | Markdown with YAML frontmatter (`SKILL.md`) |
+| **Scripts** | Bash (portable, `set -euo pipefail`), Node.js (`.mjs` with inline `#!/usr/bin/env node`), Python 3 (auxiliary) |
+| **Registry** | JSON (`skills-manifest.json`) |
+| **State** | Markdown (`FRAMEWORK-STATE.md`, `docs/specs/project-state.md`) + JSON (`.svc/lane-tasks-*.json`) |
+| **Policies** | TOML (`provision/policies/svc-safety.toml`) |
+| **Host integration** | Claude Code, Kimi Code CLI, OpenAI Codex CLI, Gemini CLI, OpenCode CLI |
+| **Runtime deps** | `bash`, `git`, `node`, `python3`, `flock` (util-linux), `claude` (for tier 2/3 tests), optional `jq`, `gh` |
+
+There is **no Docker, no CI/CD platform, no traditional deploy target**. The "build" is `./setup`, a content-addressed installer that materializes skills and infrastructure into host-specific locations.
+
+---
+
+## 3. Project Structure
+
+```
+seriousvibecoding/
+├── skills/                    # First-party source package
+│   └── <skill-name>/          # One directory per skill (kebab-case)
+│       ├── SKILL.md           # Authoritative contract (YAML frontmatter + markdown body)
+│       ├── scripts/           # Skill-local helpers (optional)
+│       ├── references/        # Skill-local docs (optional)
+│       └── assets/            # Templates, viewers, icons (optional)
+├── scripts/                   # Framework-wide utilities (bash + .mjs)
+├── test-framework/            # Multi-tier eval harness (its skill contract is skills/test-framework/SKILL.md)
+│   └── evals/
+│       ├── run-all-evals.sh
+│       ├── tier-1/            # Static validation (free, <10s)
+│       ├── tier-1.5/          # Skill comprehension (~5K tokens/test)
+│       ├── tier-2/            # Integration scenarios (~50K tokens/scenario)
+│       └── tier-3/            # LLM-as-judge (~20K tokens/judgment)
+├── references/                # Shared doctrine and reusable references
+│   ├── anti-patterns.md
+│   ├── blend-registry.json
+│   ├── context-budget.md
+│   ├── knowledge/             # Layered expertise (INDEX → CAPABILITIES → detail)
+│   ├── landing-bank/          # Sector reference bank for benchmark-landing
+│   └── bootstraps/            # Bootstrap templates
+├── hooks/                     # Claude Code PreToolUse / PostToolUse hooks
+├── rules/                     # Correction and steering rules for CLAUDE.md / AGENTS.md injection
+├── agents/                    # First-class agent definitions (YAML frontmatter + system prompt)
+├── provision/
+│   ├── hosts/                 # Host manifests (claude.json, kimi.json, codex.json, gemini.json, opencode.json)
+│   └── policies/              # Global safety policies
+├── docs/
+│   ├── specs/                 # Feature specs, journeys, work items, decisions
+│   ├── learnings/             # Project learnings
+│   ├── logs/                  # Session logs
+│   └── plans/                 # Changeset plans
+├── .svc/                      # Pipeline state (lane tasks, decision logs)
+├── .worktrees/                # Git worktrees for feature isolation
+├── skills-manifest.json       # Central registry: skills, lanes, gates, rules, artifacts
+├── DOCTRINE.md                # Complete methodology documentation
+├── FRAMEWORK-STATE.md         # Living framework self-knowledge
+├── WORKTREES.md               # Worktree model documentation
+├── setup                      # Framework installer (bash)
+└── AGENTS.md                  # This file
+```
+
+---
+
+## 4. Build, Install, and Development Commands
+
+### Install / Refresh Framework
+```bash
+./setup                          # Install for default host (Claude Code)
+./setup --host kimi              # Install for Kimi Code CLI
+./setup --host codex             # Install for Codex CLI
+./setup --host gemini            # Install for Gemini CLI
+./setup --host opencode          # Install for OpenCode CLI
+./setup --host antigravity       # Install for Antigravity
+./setup --host cursor            # Install for Cursor
+./setup --host grok              # Install for Grok Build CLI
+./setup --all-hosts              # Converge all nine provisioned hosts
+./setup --all-hosts --full       # Force a complete rebuild on every host
+```
+Normal setup is content-addressed: unchanged hosts are a byte-stable no-op, while per-host locks and bounded concurrency make all-host refreshes safe and fast. Use `--full` only for an explicit rebuild. Post-install, run `bash scripts/check-install-drift.sh --all-hosts` to aggregate stale/missing state across every provisioned host.
+
+### Validation & Linting
+```bash
+# Validate skills-manifest.json against skill metadata and cross-reference files
+node scripts/lint-skills-manifest.mjs
+
+# Check pipeline integrity for this repo
+bash test-framework/scripts/validate-pipeline-integrity.sh .
+
+# Detect install drift (missing/stale symlinks)
+bash scripts/check-install-drift.sh [--host claude|kimi|codex|gemini|opencode|mimo-code|antigravity|cursor|grok] [--quiet]
+bash scripts/check-install-drift.sh --all-hosts [--quiet]
+```
+
+### Multi-Host Install Protection
+
+Framework-wide skills must be installed on **all provisioned hosts** (Claude, Kimi, Codex, Gemini, OpenCode, MiMo-Code, Antigravity, Cursor, Grok), not just the active session host.
+
+**Pre-commit hook** (`hooks/svc-pre-commit-multi-host-check.sh`):
+- Auto-detects when framework files are staged
+- Runs `check-install-drift.sh` for all hosts
+- Auto-runs `./setup --host <host>` if drift detected
+- Blocks commit if any host setup fails
+
+```bash
+# Install the hook
+ln -s ../../hooks/svc-pre-commit-multi-host-check.sh .git/hooks/pre-commit
+```
+
+### Durable Mutation Authority
+
+- Resolve mutation authority from the canonical operation worktree, never from
+  the session checkout alone. Explicit `tool_input.workdir` and every file-tool
+  target must canonicalize to the same exact Git worktree.
+- Controller authority is a repository-shared v2 lease bound to a stable
+  principal and generation. Same-session resume reattaches; a different session
+  requires atomic handover or evidence-backed recovery.
+- Safe read-only operations do not require a WI or controller lease. The
+  canonical first-task loader is the sole allowed atomic pre-task activation;
+  same-owner branch and binding drift converges idempotently without an owner
+  shell ritual, while foreign, ambiguous, or escaping state is denied before
+  mutation.
+- Mutating children require a persisted, task-specific delegation, an isolated
+  inner worktree, disjoint allowed paths, and a host capability whose containment
+  probe passes. Child results merge sequentially after receipt recomputation.
+- PreTool hooks are an authority guardrail, not a complete shell security
+  boundary. Use the host sandbox or `scripts/svc-contained-exec.mjs` for actual
+  filesystem containment.
+- Proven read-only Codex operations run without a WI/controller lease. The
+  consolidated PreToolUse dispatcher keeps mutation authority fail-closed and
+  uses an argv-aware fast path with an executable native p95 budget.
+- SessionStart self-heal executes setup only from the durable install receipt's
+  canonical Git source; a pathname or lookalike file set is never authority.
+- Setup is content-addressed and transactional across its managed host surface:
+  manifest infrastructure participates in drift, target ancestry is no-follow,
+  and late verification/wiring failure restores the prior bytes.
+
+### Testing
+```bash
+# Tier 1 only — no paid LLM. Focused checks are normally <10s; the complete
+# corpus can take several minutes. Run it before every commit.
+bash test-framework/evals/run-all-evals.sh
+
+# Full suite — tiers 1.5, 2, and 3. Requires `claude` or `kimi` CLI + LLM tokens.
+EVALS=1 bash test-framework/evals/run-all-evals.sh
+```
+
+### Worktree Management
+```bash
+bash scripts/worktree.sh create <branch>      # Create worktree for feature branch
+bash scripts/worktree.sh enter <branch>       # Enter worktree directory
+bash scripts/worktree.sh status <branch>      # Show worktree status
+bash scripts/worktree.sh promote <branch>     # Push, open PR, squash-merge
+bash scripts/worktree.sh remove <branch>      # Remove worktree and branch
+bash scripts/worktree.sh list                 # List all worktrees
+bash scripts/worktree.sh guard <skill-name>   # Check if skill should run on main vs worktree
+```
+
+### Individual Tier-1 Checks
+```bash
+bash test-framework/evals/tier-1/validate-skill-structure.sh
+bash test-framework/evals/tier-1/validate-contracts.sh
+bash test-framework/evals/tier-1/validate-chain-references.sh
+bash test-framework/evals/tier-1/validate-self-verify-sections.sh
+bash test-framework/evals/tier-1/validate-worktree-safety.sh
+```
+
+---
+
+## 5. Skill Anatomy & Coding Conventions
+
+### Directory Naming
+- Skill directories use **lowercase kebab-case**: `write-spec`, `route-workflow`, `benchmark-landing`.
+- The authoritative contract is always `SKILL.md` inside the skill directory.
+
+### SKILL.md Format
+Every `SKILL.md` has two parts:
+
+1. **YAML frontmatter** with these fields:
+   - `name` — kebab-case identifier (max 64 chars)
+   - `description` — **WHEN to trigger**, not what steps it takes. Includes trigger phrases. Max 1024 chars. No angle brackets.
+   - `inputs` / `outputs` — Required and optional artifacts with paths and artifact names
+   - `chain.lanes` — Lane position mapping (`greenfield`, `brownfield-feature`, `bugfix`, `framework`, etc.) with `position`, `prev`, `next`
+   - `progressive` — Whether the skill auto-invokes the next skill in the lane
+   - `self_verify` — Whether the skill runs a PASS/FAIL checklist before declaring done
+   - `human_checkpoint` — Whether it stops for user confirmation in interactive mode
+
+2. **Markdown body** conventions:
+   - Start with an "Announce at start" line.
+   - Use **imperative, operational** language.
+   - Use tables heavily for decision matrices, checklists, and anti-patterns.
+   - Include a **Self-Verify** table with columns `# | Check | How | PASS/FAIL` and at least 3 data rows.
+   - Include a **Pipeline Continuation** section describing how to update `.svc/lane-tasks-<WI>.json`.
+   - Include **Rationalization Tables** and **Red Flags** in discipline-enforcing skills.
+   - Keep `SKILL.md` under **500 lines** where possible. Larger content goes in `references/` or `scripts/`.
+
+### Shell Scripts
+- Portable Bash with `set -euo pipefail` where appropriate.
+- Node.js scripts use `.mjs` extension with inline `#!/usr/bin/env node` shebang.
+
+### Markdown Style
+- Concise, imperative, operational.
+- Preserve YAML frontmatter fields and path conventions such as `docs/specs/...` and `references/...`.
+
+---
+
+## 6. Testing Strategy
+
+The test framework uses a **tiered cost model**:
+
+| Tier | Cost | Duration | What it tests |
+|------|------|----------|---------------|
+| **Tier 1** | $0 | focused <10s; full corpus may take minutes | Static and local integration validation — structure, contracts, routing, authority, host installation, receipts, and worktree safety. **Always runs.** |
+| **Tier 1.5** | ~5K tokens/test | ~30–60s | Skill comprehension & triggering — asks the host LLM factual questions and verifies correct skill routing. |
+| **Tier 2** | ~50K tokens/scenario | ~2min | Integration scenarios — runs `claude -p` against scaffolded workspaces, asserts file existence and content. |
+| **Tier 3** | ~20K tokens/judgment | ~1min | LLM-as-judge — scores tier-2 outputs on completeness, consistency, and actionability. |
+
+### Key Test Scripts
+- `test-framework/evals/run-all-evals.sh` — Orchestrates tiers. Set `EVALS=1` to run tiers 1.5–3.
+- `scripts/lint-skills-manifest.mjs` — Cross-checks `skills-manifest.json` against `README.md`, `REPO_MODES.md`, `EXTERNAL_ADDONS.md`, and `skills/route-workflow/references/routing-rules.md`.
+- `scripts/verify-plan-mechanical.sh <manifest.md>` — Checks file paths, npm scripts, bash syntax, forbidden patterns, and task-graph `blocked_by` references.
+- `scripts/check-install-drift.sh` — Detects skills present in source but not installed at target.
+
+### Adding Tests
+- Add new eval fixtures under `test-framework/evals/tier-*`.
+- Keep scenario names descriptive.
+- When changing skill contracts, run at least the relevant tier plus the manifest linter.
+- Store generated evidence under `test-framework/results/` when the workflow expects it.
+
+---
+
+## 7. Worktree Model & Branching
+
+All feature work that produces code runs in a **git worktree** under `.worktrees/`.
+
+| Phase | Runs on main | Runs in worktree |
+|-------|-------------|------------------|
+| Planning | write-vision, validate-feature, write-spec, design-ux, design-ui, design-tech, plan-changeset | — |
+| Build + Validate | — | execute-changeset, review-gate, audit-implementation, E2E tests |
+| Merge + Verify | land-changeset (squash-merge), verify-promotion | — |
+
+### Branch Naming
+| Lane | Pattern | Example |
+|------|---------|---------|
+| Greenfield / Brownfield Feature | `feature-<name>` | `feature-notifications` |
+| Bugfix | `bugfix-<name>` | `bugfix-auth-500` |
+| Refactor | `refactor-<name>` | `refactor-api-layer` |
+| Framework Test | `test-<name>` | `test-autopilot-s1` |
+
+### Rules
+1. All worktrees live under `.worktrees/` — never `/tmp/`, never a sibling directory.
+2. `.worktrees/` must be in `.gitignore` (enforced by `scripts/worktree.sh preflight` and tier-1 validation).
+3. One worktree per branch — the branch name is the worktree directory name.
+4. `worktree.sh create` is idempotent — safe to re-run after interruption.
+
+---
+
+## 8. Review Gates & Lanes
+
+### Seven Review Gates (G1–G7)
+Fixed checkpoints between pipeline phases:
+
+| Gate | After Skill | Purpose |
+|------|-------------|---------|
+| G1 | `write-spec` | Spec completeness, AC coverage, scope review |
+| G2 | `design-ux` | UX flow correctness, state coverage |
+| G3 | `design-ui` | Visual design completeness, component specs |
+| G4 | `design-tech` | Architecture soundness, security, data model |
+| G5 | `execute-changeset` | Implementation vs spec, test coverage, code quality |
+| G6 | `land-changeset` | Merge cleanliness, commit history |
+| G7 | `verify-promotion` | Post-merge verification, promotion completeness |
+
+### Seven Lanes
+Skills declare their lane position in `chain.lanes` within `skills-manifest.json`:
+
+1. `greenfield` — New product from scratch
+2. `brownfield-conversion` — Convert existing repo to svc
+3. `brownfield-feature` — Add feature to existing svc repo
+4. `bugfix` — Fix broken behavior
+5. `drift` — Fix spec/code drift
+6. `refactor` — Restructure without behavior change
+7. `framework` — Improve the svc framework itself
+
+### Feature States
+Artifacts progress through: `DRAFT` → `UX-REVIEWED` → `DESIGNED` → `BASELINED` → `CHANGE-SET-APPROVED` → `PROMOTED` → `VERIFIED` (plus `REJECTED`, `PIVOTED`).
+
+---
+
+## 9. State Management & Source-of-Truth Files
+
+### Two State Systems (never use both simultaneously)
+- **`docs/specs/project-state.md`** — Per-project pipeline state (product work).
+- **`FRAMEWORK-STATE.md`** — Framework self-knowledge (framework work).
+
+### Five Files That Must Stay in Sync
+The manifest linter enforces agreement across these files. Edit one, update the others:
+
+1. `skills-manifest.json` — `includedSkills`, `corePackForRouting`, `laneDefinitions`, `bootstrapStartSequence`
+2. `README.md` — Skill list (order must match `includedSkills`)
+3. `EXTERNAL_ADDONS.md` — Core pack list (order must match manifest)
+4. `REPO_MODES.md` — Bootstrap sequence (numbered list must match manifest)
+5. `skills/route-workflow/SKILL.md` — Core Pack section (list must match `corePackForRouting`)
+
+### Manifest Array Roles
+The manifest arrays are intentionally not one canonical order:
+
+| Array | Role |
+|-------|------|
+| `includedSkills` | Complete first-party skill registry and install surface. |
+| `corePackForRouting` | Router-suggestable baseline; excludes skills that are normally auto-invoked by gates or lane logic. |
+| `bootstrapStartSequence` | Minimal greenfield bootstrap order, not the full greenfield lane. |
+| `pipeline` | Product-build spine for gate placement and documentation. |
+| `laneDefinitions.<lane>.skills` | Lane-specific execution order with conditional and skip-eligible steps. |
+
+All smaller arrays must remain subsets of `includedSkills`. `scripts/lint-skills-manifest.mjs` enforces the subset invariant and the role metadata in `skills-manifest.json`.
+
+### Cross-Host Task Graph
+- `.svc/lane-tasks-<WI>.json` is the **cross-host source of truth** for active task graphs.
+- Two-level structure: **Lane Tasks** (top-level skill invocations) + **Process Tasks** (embedded steps).
+- Skills mark themselves `completed` in the JSON before leaving.
+- Host UI mirroring (`TaskList`/`TaskUpdate` in Claude, `update_plan` in Codex) is secondary.
+
+### Reviewer Policy
+
+- The owner-controlled external policy is `~/.svc/reviewer-policy-v2.json` (or
+  `SVC_REVIEWER_POLICY`). Reviewer topology is selected by orchestrator, phase,
+  and mode; changing the policy does not require a framework commit.
+- For Codex production review, self-review is required, Sol is a required
+  same-family advisory reviewer, AGY Gemini 3.7 Flash High is the required
+  different-family independent reviewer, and Opus is optional when available.
+- `scripts/review-plan-codex.sh` auto-discovers that policy. Legacy
+  `resolve-adversarial-reviewer.sh` / `--select-profile` behavior is
+  compatibility-only and must not override an explicit owner policy.
+
+---
+
+## 10. Hooks, Rules, and Agents
+
+### Hooks (`hooks/`)
+Installed into host settings (e.g., `~/.claude/settings.json`) by `./setup`. Key hooks:
+
+Codex intentionally exposes one consolidated `PreToolUse` dispatcher in its UI.
+That count represents the command-bound dispatcher, not the number of internal
+SVC checks and not deleted lifecycle protection. Validate effective wiring with
+`./setup --host codex` and `bash scripts/check-install-drift.sh --host codex`.
+
+| Hook | Type | Purpose |
+|------|------|---------|
+| `svc-workflow-guard.js` | PreToolUse (Edit/Write) | Blocks config/lockfile edits; warns on out-of-scope file writes |
+| `svc-phase-boundary-detector` | PreToolUse | Catches spec drift during execution |
+| `svc-bash-guard` | PreToolUse (Bash) | Blocks `--no-verify` git bypass; enforces commit trailers |
+| `svc-eval-gate-pre` | PreToolUse (TaskUpdate) | Blocks completed tasks with unfilled pillar entries |
+| `svc-eval-gate-post` | PostToolUse (TaskUpdate) | Injects eval matrix reminder |
+| `svc-lane-tasks-validator.mjs` | PostToolUse (Edit/Write) | **Hard block** on malformed `.svc/lane-tasks-*.json` |
+| `svc-stop-quality.js` | Stop | Batch format + typecheck all edited files |
+| `svc-task-completion-guard.sh` | Stop | Blocks stop when actionable work remains in task graph |
+
+### Rules (`rules/`)
+13 registered rules across stacks (universal, web, golang, rust, python, react, react-native). Each rule has:
+- `type`: `correction` (prevents mistakes) or `steering` (guides style)
+- `scope`: `universal` or stack-specific
+- `source`: `local` or `blended:ecc`
+
+Rules are injected into `CLAUDE.md` / `AGENTS.md` based on the active stack.
+
+### Agents (`agents/`)
+First-class primitives distinct from skills. Three agents defined:
+- `summary-extractor` — Haiku 4.5, locked pass-through for extracting `SVC_WORKER_SUMMARY` blocks
+- `plan-reviewer` — Sonnet 4.6, adversarial reviewer for plan-changeset manifests
+
+Agent format: YAML frontmatter (`name`, `description`, `model`, `tools`, `harness`) + system prompt body.
+
+---
+
+## 11. Security Considerations
+
+- **`provision/policies/svc-safety.toml`** — Global tool safety policy protecting `.git/`, `.env`, and `FRAMEWORK-STATE.md`.
+- **`svc-bash-guard` hook** — Blocks `--no-verify` git bypasses and enforces commit trailers.
+- **`svc-workflow-guard` hook** — Blocks dangerous config/lockfile edits and warns on out-of-scope file writes.
+- **`scripts/verify-plan-mechanical.sh`** — Scans plans for forbidden patterns (`--force`, `rm -rf /`, etc.).
+- **No secrets in the repo** — `.env` is protected by policy. Builder profile lives at `~/.svc/builder-profile.md` outside the repo.
+- **Worktree isolation** — Feature code never lands directly on `main`; squash-merge via `land-changeset` ensures clean history.
+
+---
+
+## 12. Commit & Pull Request Guidelines
+
+- **Author:** `s7an-it <angelovsan@gmail.com>` (configured in repo `.git/config`)
+- **Co-author trailer:** derive the ACTIVE orchestrator/model at commit time;
+  never hardcode a different host or model family into the receipt or trailer.
+- **Branch protection is on** — direct push bypasses with warning.
+- Use short, **imperative summaries** with clear scope.
+  - Good: `Add plan-capabilities: project-type-aware capability planning`
+  - Good: `Fix list-work-items parser drift for DEFER state`
+- Keep commits focused on **one framework concern**.
+- PRs should explain:
+  - The problem
+  - The affected skills or docs
+  - What validation ran
+  - Link proposals or state files when relevant
+- Include screenshots **only** for visual or UI-documentation changes.
+
+---
+
+## 13. Agent Notes
+
+- When framework behavior changes, keep `skills-manifest.json`, router logic, and any affected doctrine or state files in sync.
+- Prefer updating the **smallest set of skills** needed, then prove the change with evals.
+- Run `node scripts/lint-skills-manifest.mjs` after any manifest, README, or routing change.
+- Run `bash test-framework/evals/run-all-evals.sh` before committing skill changes.
+- **Post-commit verification:** After any commit, re-run at least the relevant tier-1 validators to confirm the committed state still passes. Do not assume pre-commit validation is sufficient — file state can shift between staging and commit.
+- **File persistence verification:** After any batch of WriteFile/StrReplaceFile calls that creates or modifies 3+ files, run `bash scripts/verify-file-persistence.sh --from-git-status` before proceeding. If it reports MISSING files, re-create them using Shell-based writes (heredoc) instead of WriteFile/StrReplaceFile — this is the recovery pattern for post-compaction persistence failures.
+- Keep edits small and local. Do not refactor multiple skills in one commit unless the change is a cross-cutting convention update.
+- If you add a new skill, follow the `create-skill` SKILL.md process: validate frontmatter, add to manifest, update README, run `./setup --host <your-host>` (e.g., `claude` or `kimi`), run the manifest linter.
+
+---
+
+## 14. Key Reference Docs
+
+| File | Purpose |
+|------|---------|
+| `DOCTRINE.md` | Complete methodology: progressive narrowing, review protocol, worktree model, token cost analysis |
+| `FRAMEWORK-STATE.md` | Living framework self-knowledge (updated with every change) |
+| `WORKTREES.md` | Full worktree model documentation |
+| `REPO_MODES.md` | Bootstrap vs convert mode detection |
+| `EXTERNAL_ADDONS.md` | Optional external skill ecosystems |
+| `references/anti-patterns.md` | 24 universal anti-patterns (AP-1 through AP-24) |
+| `references/context-budget.md` | Context degradation tiers and read-depth rules |
+| `references/verification-patterns.md` | 4-level verification (exists / substantive / wired / functional) |
+| `references/thinking-models.md` | 5 structured reasoning models for decision points |
+| `references/knowledge-protocol.md` | 4-pass research extraction protocol |
+| `references/blend-registry.json` | Tracks patterns blended from external repos |
+| `references/pillars-coverage-matrix.md` | 8-pillar coverage matrix spec |
+
+
+## Mandatory Plan-Exec-Review Chain (added by mandatory-chain rollout)
+
+The `feat/mandatory-plan-exec-chain` branch introduces a three-layer
+enforcement system that makes plan-changeset + review-plan +
+execute-changeset + review-exec + audit-implementation + land-changeset
++ verify-promotion mandatory for every non-quick-fix change.
+
+Key additions:
+- `skills/review-exec/SKILL.md` — new G6 gate (self-review + adversarial via resolver)
+- `scripts/quick-fix-eligibility.mjs` — mechanical quick-fix gate
+- `scripts/svc-reconcile.mjs` — local L3 gate (responsibilities A + B)
+- `scripts/run-external-review.mjs` — canonical schema/receipt/cache review launcher
+- `scripts/resolve-adversarial-reviewer.sh` — probe-free exact tuple policy view
+- `scripts/install-git-hooks.mjs` — installs hook dispatchers into .git/hooks/
+- `hooks/git/{pre-commit,post-commit,pre-push}.d/` — slot directories
+- `refs/notes/svc-receipts` — durable receipt store (per commit)
+- Working-tree mirror at `.svc/receipts/<sha>/` (gitignored, regenerable)
+
+For full context: see the plan-changeset producing this work and
+`references/chain-receipt-contract.md`.
+
+<<<END_SVC_CONTEXT target:AGENTS.md>>>
+
+<<<SVC_CONTEXT target:CLAUDE.md sha256=2a438d254509b3cb2b40f22b24c5075e92ea6b9b1fc96a1c5518602cb6c3eb03>>>
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What This Is
+
+Serious Serious Vibe Engineering (SSVE) — a 103-skill framework for progressive deterministic development (count = `skills-manifest.json includedSkills.length`, verified 2026-08-11; check the manifest, don't trust this prose). This repo IS the framework, not a project built with it. Skills are SKILL.md files that Claude Code loads as prompts. The lowercase `svc` name remains the compatibility namespace for commands, paths, state, and hooks.
+
+Bootstrap rule for onboarded projects: respect the project's local AGENTS.md/CLAUDE.md and svc route-workflow contract from its actual worktree; post-deploy/production validation asks require live post-deploy evidence, never local substitutes.
+
+## Commands
+
+```bash
+# Lint — validates skills-manifest.json against README, REPO_MODES, route-workflow, EXTERNAL_ADDONS
+node scripts/lint-skills-manifest.mjs
+
+# Tier 1 evals (static, no LLM, <30s)
+bash test-framework/evals/run-all-evals.sh --tier1
+
+# Individual tier 1 checks
+bash test-framework/evals/tier-1/validate-skill-structure.sh
+bash test-framework/evals/tier-1/validate-contracts.sh
+bash test-framework/evals/tier-1/validate-chain-references.sh
+bash test-framework/evals/tier-1/validate-self-verify-sections.sh
+bash test-framework/evals/tier-1/validate-worktree-safety.sh
+
+# Install framework (symlinks skills + infra into ~/.claude/skills/)
+./setup --all-hosts      # provision all nine supported hosts
+./setup --host claude    # or any single host when intentionally scoped
+
+# Worktree management
+bash scripts/worktree.sh guard <skill-name>
+bash scripts/worktree.sh create <branch>
+bash scripts/worktree.sh promote <branch>
+```
+
+## Architecture
+
+### Skill Structure
+
+Every skill is a directory with `SKILL.md` containing YAML frontmatter + markdown instructions. The frontmatter declares: `name`, `description`, `inputs`, `outputs`, `chain` (lane positions), `progressive`, `self_verify`, `human_checkpoint`.
+
+### Five Source-of-Truth Files That Must Agree
+
+The linter checks these are in sync. Edit one, update the others:
+
+1. `skills-manifest.json` — `includedSkills`, `corePackForRouting`, `laneDefinitions`, `bootstrapStartSequence`
+2. `README.md` — skill list (order must match manifest `includedSkills`)
+3. `EXTERNAL_ADDONS.md` — core pack list (order must match manifest)
+4. `REPO_MODES.md` — bootstrap sequence (numbered list must match manifest)
+5. `skills/route-workflow/SKILL.md` — Core Pack section (list must match manifest `corePackForRouting`)
+
+### Shared-Content Registry (WI-137)
+
+`references/shared-content-dirs.json` lists every top-level directory whose content is referenced from skills via `<dir>/<file>.md` patterns and that must therefore appear in `infra_dirs` of every host manifest under `provision/hosts/`. Currently: `["_shared"]`. Adding an entry here REQUIRES adding the same dir to all 5 host manifests' `infra_dirs` in the same change — the meta-rule in `scripts/lint-skills-manifest.mjs` enforces this, and the tier-1 validator `validate-shared-symlinks-meta-rule.sh` covers the negative path.
+
+### Two State Systems
+
+- **`docs/specs/project-state.md`** — per-project pipeline state (product work)
+- **`FRAMEWORK-STATE.md`** — framework self-knowledge (framework work)
+
+Never use both simultaneously. Product work reads project-state. Framework work reads FRAMEWORK-STATE.
+
+### Knowledge System
+
+`references/knowledge/` stores layered expertise. Layer 1 (INDEX.md) → Layer 2 (CAPABILITIES.md per source) → Layer 3 (detail files on demand). All research skills write here. `references/knowledge-protocol.md` defines the 4-pass extraction protocol.
+
+`references/knowledge/svc/CAPABILITIES.md` is the framework's self-description in the same format used for external sources.
+
+### Seven Lanes
+
+Product: greenfield, brownfield-conversion, brownfield-feature, bugfix, drift, refactor. Framework: framework (self-improvement).
+
+### Commit Rules
+
+- Author: `s7an-it <angelovsan@gmail.com>` (configured in repo `.git/config`)
+- Co-author trailer: use the ACTIVE orchestrator model — currently `Co-Authored-By: Claude Opus 4.8 (1M context) <contact-cd29c5ac34@example.invalid>`
+- Branch protection is on — direct push bypasses with warning
+
+### Profile-Based Model Routing
+
+This framework uses **profiles** to map cognitive labels to execution harnesses. The default profile for Claude Code is **`svc-default`** — the framework's proven multi-harness mixing.
+
+```bash
+# What harness + model should I use for execution right now?
+bash scripts/resolve-model.sh EXEC --json
+# → harness: claude, model: claude-sonnet-5, effort: high (svc-default per WI-470)
+```
+
+### svc-default Profile (Production)
+
+<!-- svc:generated:begin claude-md-svc-default — edit skills-manifest.json / references/model-registry.json, then run: node scripts/generate-manifest-mirrors.mjs --write -->
+| Label | Harness | Model |
+|-------|---------|-------|
+| **[STRAT]** | Claude | Opus 4.8 |
+| **[PLAN]** | Claude | Opus 4.8 |
+| **[EXEC]** | Claude | Sonnet 5 |
+| **[REVIEW]** | Claude | Sonnet 5 |
+| **[SENSE]** | **MiMo** | **MiMo-V2.5-Pro** |
+| **[DISC]** | Native | web_search |
+| **[PASS]** | Claude | Haiku 4.5 |
+<!-- svc:generated:end claude-md-svc-default -->
+
+> ⚠️ Model IDs single-sourced from `references/model-registry.json` — refreshed by **WI-357** (2026-06-06; EXEC→Sonnet 4.6) then **WI-470** (2026-06-30; EXEC+REVIEW→Sonnet 5, effort:high declared, claude-api-verified). Table generation pending WI-364 — until then edit the registry first, then sync mirrors.
+
+MiMo is an **execution harness**, not an orchestrator. Since WI-470, svc-default pins the EXEC + REVIEW subagents to **Sonnet 5** — `svc-stage-exec`/`svc-stage-land`, `svc-journey-qa`, and the review agents `svc-lens-correctness`/`-security`/`-spec-fidelity`, `plan-reviewer`, `strategic-reviewer` (the PASS-tier `svc-lens-perf` stays Haiku) — with **high reasoning effort declared in the registry** (`output_config.effort:high`, surfaced via `resolve-model.sh EXEC --effort`). The model pin is what runtime honors today; the effort value is the routing *declaration* — consumers apply it via the Agent dispatch effort param (WI-399). It delegates only video/visual QA (SENSE) to MiMo when `MIMO_API_KEY` is set; MiMo-everything execution remains available via the `opencode-mimo` profile.
+
+### Switching Profiles
+
+```bash
+# Pure Claude — no MiMo delegation
+export SVC_MODEL_PROFILE=claude-native
+
+# Pure Kimi — if you want to test how Kimi handles everything
+export SVC_MODEL_PROFILE=kimi-native
+```
+
+When running in parallel with Kimi, each orchestrator resolves labels through its own profile. See `references/model-routing.md` and `references/model-registry.json`.
+
+### Key Reference Docs
+
+| File | Purpose |
+|---|---|
+| `DOCTRINE.md` | Methodology: phases, gates, feedback loops, invocation modes |
+| `references/knowledge-protocol.md` | 4-pass research protocol for all knowledge extraction |
+| `references/context-budget.md` | Context degradation tiers and read-depth rules |
+| `references/verification-patterns.md` | 4-level verification (exists/substantive/wired/functional) |
+| `references/anti-patterns.md` | 24 universal anti-patterns |
+| `references/thinking-models.md` | 5 structured reasoning models for decision points |
+
+### Provisioning
+
+`provision/hosts/<host>.json` defines per-host capabilities. `setup` reads the manifest and symlinks accordingly. Adding a new host = one JSON file.
+
+
+## Mandatory Plan-Exec-Review Chain (added 2026-05-13)
+
+This repo now ships a three-layer enforcement chain that makes
+plan-changeset + review-plan + execute-changeset + review-exec +
+audit-implementation + land-changeset + verify-promotion mandatory for
+every non-quick-fix change.
+
+Key entry points for this host:
+- `scripts/run-external-review.mjs` — sole paid independent-review launcher;
+  Claude → Codex 5.6 sol/high with no fallback; Codex resolves the versioned
+  reviewer profile (`fable-high` before the UTC cutover, `opus-high` after it,
+  or an explicit owner-selected Fable profile). A Fable provider safeguard
+  route is receipted as same-process Opus, while the separate Opus xhigh
+  launcher fallback remains limited to classified availability failures.
+- `scripts/resolve-adversarial-reviewer.sh` — probe-free compatibility adapter
+  over `run-external-review.mjs --policy-status`
+- `scripts/svc-reconcile.mjs` — local L3 gate; route-workflow preflight runs this
+- `scripts/emit-receipt.mjs` — one-call receipt emitter every chain skill must invoke
+- `references/chain-receipt-contract.md` — schema and lifecycle contract
+- Receipts are stored as git notes on `refs/notes/svc-receipts` (durable,
+  pushable; mirror at `.svc/receipts/<sha>/` is a regenerable cache)
+
+Chain mode is read from `.svc/chain-policy.json` (gitignored, machine-local) —
+**read the file, never assume.** On this machine: **refuse mode since
+2026-05-13**. Exempt-class commits (docs/specs, docs/analysis, proposals,
+references/knowledge, append-only `.svc/*.jsonl` — WI-360) need only the
+auto-emitted quick-fix receipt, which is tree-bound to its commit; every
+other pushed non-quick-fix commit needs the 5-receipt envelope
+(plan-manifest, review-plan, exec-record, review-exec, audit-implementation),
+and the pre-push hook validates the ENTIRE `remote..local` range, not just
+the tip.
+
+Rules load on demand since WI-361: 5 always-on behavioral rules live in the
+global rules dir (WI-393 demoted long-output-to-file to signal-injection on
+output-heavy skill paths); the rest inject via `hooks/svc-rule-injector.mjs`
+when their path/command/content signals match (registry:
+`skills-manifest.json` rulesRegistry `auto_inject`/`signals`; Claude host
+only — other hosts keep the full install until injector parity lands).
+
+Out-of-scope as orchestrators for this plan: OpenCode, Gemini, Kimi, MiMo.
+Out-of-scope as reviewers: Kimi, MiMo.
+Reviewer allowlist: `{codex, claude, gemini}`.
+
+See the full plan in this commit's history and the `mandatory-chain-v1.0` tag.
+
+## Current Assessment (2026-06-06)
+
+A deep 12-dimension evaluation of the framework lives at
+`docs/analysis/framework-evaluation-2026-06-06.md` (companions:
+`docs/analysis/plan-pressure-test-2026-06-06.md`,
+`docs/analysis/skill-catalog-context-research-2026-06-06.md`,
+`docs/specs/reviews/framework-eval-plan-cross-model.md`). Verdict: world-class
+verification/learning layers; top liabilities are context economy and hook
+latency. The fix backlog is **WI-357..WI-371** (see
+`docs/specs/work-items/INDEX.md`) — executed SEQUENTIALLY, one WI per
+pipeline run, through `/route-workflow`; WI-357 (model-registry refresh)
+first. The cluster is COMPLETE (2026-06-09); WI-380..399 extend it.
+
+Parallel/multi-agent transport policy (S5, recorded 2026-06-09 — supersedes
+the older "read-only analysis only" line): mutating work MAY use isolated or
+parallel transport (per-stage fresh subagents per WI-380; disjoint-file
+worktree waves per WI-387/388) **under the structural fences** — claims
+discipline, the disjoint-file pre-dispatch fence
+(`scripts/lib/disjoint-scopes.mjs`), post-barrier receipts, and the `.svc`
+3-way merge driver (WI-398). See `references/workflow-fanout-protocol.md` and
+the `S5-policy` ledger entry. The sequential single-WI chain remains the
+DEFAULT; subagent dispatch is bound by WI-399 §Subagent design constraints
+(dispatch decision tree, model tiers, measure-then-promote). Never bulk-edit
+the hot path.
+
+<<<END_SVC_CONTEXT target:CLAUDE.md>>>
+
+<<<SVC_CONTEXT framework:skills/review-plan/SKILL.md sha256=b05121118baf9da701ce65940b4957a4f1d783badb0529b99cd1ee51a9e2f1d9>>>
+---
+name: review-plan
+version: "1.0"
+handles_concerns:
+  - data-model-mutation
+  - paid-external-api
+  - auth-surface
+  - build-ship-alignment
+description: >
+  Plan-level adversarial review gate. Runs after plan-changeset produces a
+  manifest + task graph and BEFORE any execute-changeset dispatch. Two gates:
+  (1) compiled mechanical/coverage checks — free, in-session; (2) one holistic
+  adversarial review via the canonical external-review launcher with structured
+  findings and a tuple receipt. Corrections recheck only invalidated lenses;
+  disputed product/security authority routes to the owner, not a second model. Iteration loop
+  with justified accept/reject responses — same discipline on both sides.
+  Use when: plan-changeset manifest exists and is about to be promoted.
+  Blocks promotion until all findings have resolutions.
+phases:
+  - id: P1-MechanicalPlanValidation
+    trigger: always
+    reads: ["docs/plans/<date>-<name>/manifest.md", "scripts/verify-plan-mechanical.sh"]
+    writes: ["/tmp/plan-tier1-exit", "/tmp/plan-tier1.log"]
+    evidence_kind: command_output
+    required_for_completion: true
+  - id: P2-ExternalStateCouplingCheck
+    trigger: always
+    reads: ["docs/plans/<date>-<name>/manifest.md", "references/external-state-lifecycle-protocol.md"]
+    writes: ["/tmp/plan-external-state-check.log"]
+    evidence_kind: command_output
+    required_for_completion: true
+  - id: P3-PrimaryAdversarialReview
+    trigger: always
+    reads: ["docs/plans/<date>-<name>/manifest.md", "references/plan-review-protocol.md"]
+    writes: ["/tmp/review-tier2.json", "/tmp/review-tier2.err"]
+    evidence_kind: file
+    required_for_completion: true
+  - id: P4-ResponseTier3Decision
+    trigger: always
+    reads: ["/tmp/review-tier2.json", "orchestrator responses", "relevant lens digests"]
+    writes: ["docs/plans/<date>-<name>/review-log.yaml"]
+    evidence_kind: file
+    required_for_completion: true
+  - id: P5-ReviewLogPersistence
+    trigger: always
+    reads: ["tier1 output", "holistic review output", "invalidated lens rechecks", "orchestrator responses"]
+    writes: ["docs/plans/<date>-<name>/review-log.yaml"]
+    evidence_kind: file
+    required_for_completion: true
+  - id: P6-SelfVerifyContinuation
+    trigger: always
+    reads: ["docs/plans/<date>-<name>/review-log.yaml", ".svc/lane-tasks-<WI>.json"]
+    writes: [".svc/lane-tasks-<WI>.json"]
+    evidence_kind: command_output
+    required_for_completion: true
+inputs:
+  required:
+    - { path: "docs/plans/<date>-<name>/manifest.md", artifact: plan-manifest }
+  optional:
+    - { path: "docs/plans/<date>-<name>/lane-tasks.json", artifact: task-graph }
+    - { path: "docs/specs/features/<name>.md", artifact: originating-spec }
+outputs:
+  produces:
+    - { path: "docs/plans/<date>-<name>/review-log.yaml", artifact: review-log }
+    - { path: "docs/plans/<date>-<name>/manifest.md", artifact: revised-plan, note: "revised in place if findings ACCEPTED" }
+
+# Compatibility note: the phase ID P4-ResponseTier3Decision is retained only as
+# an N-1 task-graph/receipt alias. In v2 it records response dispositions and
+# invalidated-lens decisions; it does not authorize or require a Tier 3 reviewer.
+
+chain:
+  lanes: {}
+  progressive: false
+  self_verify: true
+  human_checkpoint: false
+---
+
+> **Cognitive routing:** 🛡️ `scripts/review-plan-codex.sh` automatically adopts the owner-only `~/.svc/reviewer-policy-v2.json` (or `SVC_REVIEWER_POLICY`) and invokes its configured AGY station through `scripts/run-external-review.mjs`. The legacy scheduled profile remains compatibility-only when no owner config exists. Same-family Sol review is advisory and never mislabeled as different-family authority.
+
+# Plan Review
+
+## Overview
+
+This skill is the mandatory gate between `plan-changeset` and `execute-changeset`. It catches ambiguity, rename-drift, forbidden patterns, and scope creep BEFORE MiMo (or any executor) dispatches against a broken plan. A broken plan wastes an entire execute-changeset cycle — this gate costs ~$0.05 to prevent.
+
+The protocol is enforced by the canonical `references/plan-review-protocol.md`. Read that file if you need the full finding format, accept/reject shape, or iteration rules.
+
+**Announce at start:** "I'm using review-plan to gate the plan before MiMo execution."
+
+## Inputs (hard-scoped)
+
+- `plan-manifest` (required): `docs/plans/<date>-<name>/manifest.md`
+- `task-graph` (optional): `.svc/lane-tasks-<WI>.json` or inline JSON in the manifest
+- `originating-spec` (optional): `docs/specs/features/<name>.md`
+
+Reviewers must NOT read files outside what the plan lists. If a review requires unlisted context, the reviewer declares it in `dependencies_needing_read` and halts — the orchestrator decides whether to re-plan with that dependency explicit.
+
+## Process
+
+### Step 1 — Tier 1: Mechanical (scripts only, no model)
+
+Run the deterministic check script in the current session:
+
+```bash
+bash scripts/verify-plan-mechanical.sh docs/plans/<date>-<name>/manifest.md
+```
+
+When the plan changes money, entitlement, quota, inventory, identity, notification, parallel ownership, deletion, or completeness/absence claims, require the adjacent `plan-contract.json`. The command above validates it automatically; prose is not a substitute for its ordering, compensation, denominator, ownership, and consumer evidence.
+
+- Exit 0 → proceed to Tier 1.5
+- Exit 1 → orchestrator fixes trivially (path typos, missing npm scripts, syntax errors, forbidden patterns). Re-run Tier 1 before any model is invoked.
+- Exit 2 → input error; halt and report
+
+Tier 1 is free. Always runs first.
+
+### Step 1.5 — External-state coupling check (mechanical, generic)
+
+Per `references/external-state-lifecycle-protocol.md` and AP-30 in `references/anti-patterns.md`, every plan-changeset manifest must contain a populated `## External State` section. Apply the following mechanical checks:
+
+1. **Section exists.** `grep -q '^## External State' <manifest>` — missing section is `external-state-uncoupled` HIGH severity, BLOCK.
+2. **Section is populated.** Section contains either a non-empty table OR an explicit `Untouched environments (walked the taxonomy, found nothing): <list>` line covering at least the 15 taxonomy entries (or naming the ones checked). An empty section is `external-state-uncoupled` HIGH severity, BLOCK.
+3. **Diff vs section consistency.** Compute the file-set the manifest will write. For every path NOT under `{repo-root, worktree-root, .svc/}` (i.e. host configs, symlink targets, package registries, schedulers, external SaaS endpoints, DB migrations, etc.) cross-reference against the section's table. Any path written but not declared in the section is `external-state-uncoupled` HIGH severity, BLOCK.
+4. **Coupling wiring named.** Every `coupled` row must reference an actual file/script/check. Bare assertions like "we will be careful" do not count. A row with `coupled` and no wiring is `external-state-uncoupled` HIGH severity, BLOCK.
+5. **Decoupled-justified entries.** Every `decoupled-justified` row must be followed by a paragraph explaining why decoupling is safe and naming the monitoring/recovery path that catches drift. Missing prose = HIGH severity, BLOCK.
+
+**§3g mechanical checks (rules 1-4 — the same-day-four-defects class):**
+
+6. **Denominator stated (§3g#1).** Locus: every row of the manifest's Simulation/Assumptions section (or equivalent "no conflicting X exists" claim there). Each such row must state its scope explicitly; a row scoped to "this worktree" or "this repo" may never ratify a claim about a namespace shared with live environments or sibling branches (e.g. a migration version, an allocation id). A Simulation/Assumptions row with no stated scope is `check-denominator-mismatch` HIGH severity, BLOCK.
+7. **External-state evidence is a response, not a file (§3g#2).** "External state" means state held by an external system (staging, prod, a live DB). Its evidence is a response from that system — walking repo files never counts as external-state evidence. A claim citing repo files for an external-state row is `external-state-evidence-mismatch` HIGH severity, BLOCK.
+8. **No unprobed absences (§3g#3).** Locus: any manifest or handover sentence matching `/\bno (deployment|commit|migration|PR)\b/i`. Such a sentence may not assert the absence of that action without citing the probe that checked for it (a command, a query, a diff). A matching sentence with no cited probe is `unprobed-absence-claim` HIGH severity, BLOCK.
+9. **File presence is not work evidence (§3g#4).** A completion or gating claim keyed only on a tracked file's presence (rather than on commits/diffs touching the WI's scope) is `file-presence-as-evidence` HIGH severity, BLOCK.
+10. **No feature task may transitively depend on a deploy (§3g#5).** Run:
+
+    ```bash
+    node scripts/check-plan-deploy-dependency.mjs --lane-tasks .svc/lane-tasks-<WI>.json
+    ```
+
+    - Exit 0 → no non-deploy task transitively depends on a deploy-class task (`{"violations":[]}`); proceed.
+    - Exit 1 → `violations[]` names each offending task and its `path_to_deploy_task`; this is `deploy-class-dependency` HIGH severity, BLOCK — deploying happens after merge, deliberately, by a human, never as an executor task.
+    - Exit 2 → usage/input error (missing lane-tasks file or a `tasks` field that isn't an array); halt and report, never treat as `{"violations":[]}`.
+
+Step 1.5 is mechanical first. Only after the mechanical pass does Tier 2 (the model reviewer) inspect the section for *quality* — whether the declared coupling actually catches the failure modes the planner claims to mitigate.
+
+If Step 1.5 fails: orchestrator fixes the section, re-runs Tier 1 + Tier 1.5 BEFORE invoking Tier 2 (saves model tokens on a plan that's not yet adversarially reviewable).
+
+### Step 1.75 — Deterministic coverage + one gap pass (§4)
+
+Before the external review, run the compiled coverage/contradiction checks, then
+one orchestrator gap pass over only uncovered decision, authority, failure and
+release lenses. Normalize finding IDs and persist the coverage/finding digest.
+Do not repeat full self-review until two subjective “empty” passes. A correction
+reruns this step only when its relevant lens digest changed. Record
+`self_review_passes: 1` and `self_review_digest` in `review-log.yaml`.
+
+The one gap pass never substitutes for the independent holistic plan review; it
+drains cheap defects before that review without paying for repeated full rereads.
+
+### Step 2 — Tier 2: Primary adversarial review (cross-model preferred)
+
+Build the plan package, then invoke the sole external-review adapter. The
+primary invocation doubles as the availability probe; never run a paid smoke
+call or consumer-local fallback.
+
+```bash
+SVC_HOST="${SVC_HOST:-claude}" \
+  bash scripts/review-plan-codex.sh docs/plans/<date>-<name>/manifest.md \
+    > /tmp/review-tier2.json 2>/tmp/review-tier2.err
+```
+
+Output: the shared findings JSON. The launcher receipt path is reported on
+stderr and must be copied into the durable review log.
+
+Missing CLI controls, authentication, shared quota, timeout, network, schema,
+turn-budget exhaustion, invalid profile state, provider-safety failure, and
+tuple mismatch are hard failures. The launcher alone owns profile resolution,
+same-process provider routing, and the separate narrowly classified
+Fable-availability fallback.
+
+### Step 3 — Parse findings and decide
+
+Parse `/tmp/review-tier2.json`:
+
+- `rubric_score: 10` AND `findings: []` → PROMOTE the plan. Copy review to `docs/plans/<date>-<name>/review-log.yaml`. Skill completes.
+- Else → orchestrator (Opus) writes responses for each finding per the accept/reject format in `references/plan-review-protocol.md`. NO bare ACCEPT or REJECT — every decision must carry `justification` and (for REJECTs) `counter_evidence`.
+
+### Step 4 — Apply responses and invalidate exact lenses
+
+- `ACCEPT` → apply the action, rerun Tier 1 and only the deterministic/lens checks
+  whose relevant digest changed.
+- `REJECT` → record justification and counter-evidence. A disputed Critical/High
+  product or security-authority decision routes to founder/strategic authority;
+  it does not automatically buy a second full-plan reviewer.
+- Remaining High/Medium/Low findings receive explicit dispositions. Unresolved
+  Critical findings block promotion.
+
+There is no standalone Tier 3 reviewer in v2 and no broad “infra path means a
+second complete review” rule. High-risk infra stays protected by compiled
+authority/effect proof, the one holistic plan reviewer and final execution review.
+
+### Step 5 — Bounded lens convergence inside the one review stage
+
+If accepted fixes change a reviewed semantic lens, send only that invalidated
+lens, prior finding and correction evidence back through the same review stage.
+At most three adversarial lens rounds may occur; this is remediation inside the
+single holistic review, not a new standalone review or a full package restart.
+Content-addressed evidence reuses every unchanged lens. A disputed product or
+security choice escalates to the owner rather than switching models or raising
+effort until somebody agrees.
+
+### Step 6 — Persist review log and close
+
+Write full review log to `docs/plans/<date>-<name>/review-log.yaml`:
+
+```yaml
+review_log:
+  plan: docs/plans/<date>-<name>/manifest.md
+  tier1:
+    script: scripts/verify-plan-mechanical.sh
+    exit_code: 0
+    issues: 0
+  tier2:
+    reviewer: codex | sonnet | kimi
+    reviewer_family: openai | anthropic | moonshot
+    rubric_score: 10
+    findings: [...]
+  responses: [...]      # orchestrator's accept/reject per finding
+  lens_rechecks:        # only invalidated lenses inside this review stage
+    - lens: <authority | product | failure | release | ...>
+      prior_finding_id: <id>
+      relevant_digest: <sha256>
+      findings: [...]
+  terminal_state: PROMOTED | PROMOTED_WITH_DISPUTES | REVISED_AND_REVIEWED | ESCALATED_TO_USER
+  self_review_passes: 1        # one deterministic coverage + gap pass
+  self_review_digest: <sha256>
+  rounds_run: <int>            # adversarial rounds actually run — HARD-capped at 3
+  unresolved_critical: <int>   # machine-readable; any > 0 blocks promotion
+  remaining_high: <int>        # machine-readable; each must be enumerated below
+  bounded_exit:                # REQUIRED when rounds_run == 3 and remaining_high > 0
+    disposition: accept-with-justification | reject-with-justification
+    residual_highs:            # one entry PER remaining High (count must equal remaining_high)
+      - "<remaining High #1 + why accepted/rejected>"
+      - "<remaining High #2 + why accepted/rejected>"
+  commit_sha: <sha of plan at promotion time>
+```
+
+**HARD 3-round cap (WI-491) — mechanically enforced, fail-closed.** An
+adversarial reviewer never runs out of High findings on a complex plan, so "loop
+until zero High" is unreachable. Run at most **3** rounds. After round 3,
+terminate by DISPOSITION: an unresolved Critical is NEVER dispositioned — it gets
+an exact `terminal_state: ESCALATED_TO_USER` and BLOCKS (the plan does not
+promote until the owner rules); every remaining High is enumerated in
+`bounded_exit`. Before writing `terminal_state`, prove the loop stayed bounded:
+
+```bash
+node scripts/check-review-round-cap.mjs --log docs/plans/<date>-<name>/review-log.yaml
+```
+
+- **Exit 0** = bounded, 0 unresolved Critical, every remaining High enumerated +
+  dispositioned → close/promote.
+- **Exit 3** = an unresolved Critical is correctly escalated → terminal_state
+  `ESCALATED_TO_USER`; the plan does NOT promote. Owner decides.
+- **Exit 1** = a 4th round ran, an unresolved Critical lacks the exact escalation
+  record, a High is undispositioned, or the round record is missing/malformed →
+  fix the disposition, never start another round.
+
+The checker fails closed: a bare `bounded_exit` mention, prose escalation, or a
+`residual_highs` list shorter than `remaining_high` is a VIOLATION. This is the
+same guard `review-exec` runs; it exists because the WI-486 plan looped 9 rounds
+on 6 persistent High / 0 Critical.
+
+Git-tracked alongside the plan manifest. Audit trail.
+
+## Self-Verify
+
+| # | Check | How | PASS/FAIL |
+|---|---|---|---|
+| 1 | Tier 1 ran and exit 0 | check /tmp/plan-tier1-exit matches 0 | |
+| 2 | Tier 2 produced schema-valid JSON | launcher schema validation plus JSON parse succeeds | |
+| 3 | Every finding has analysis + evidence + proposed_fix | scan JSON fields | |
+| 4 | Every response has justification (no bare ACCEPT/REJECT) | scan response fields | |
+| 5 | No standalone Tier 3; only invalidated lens rechecks or owner escalation | review-log lens/authority check | |
+| 6 | review-log.yaml written to docs/plans/<date>/ | `test -f` | |
+| 7 | No model called Tier 2 before Tier 1 passed | log ordering check | |
+| 8 | Scope lock honored — no reviewer read files outside plan's named inputs | grep worker log for out-of-scope reads | |
+
+## Phase Receipt Contract
+
+When running in task-graph mode, record these phase receipts before marking the `review-plan` task complete:
+
+```bash
+node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P1-MechanicalPlanValidation --evidence command_output:/tmp/plan-tier1.log
+node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P2-ExternalStateCouplingCheck --evidence command_output:/tmp/plan-external-state-check.log
+node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P3-PrimaryAdversarialReview --evidence file:/tmp/review-tier2.json
+node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P4-ResponseTier3Decision --evidence file:docs/plans/<date>-<name>/review-log.yaml
+node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P5-ReviewLogPersistence --evidence file:docs/plans/<date>-<name>/review-log.yaml
+node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-SelfVerifyContinuation --evidence command_output:.svc/review-plan-self-verify.log
+```
+
+## Pipeline Continuation
+
+Follow the canonical task-graph chaining contract: see `references/task-graph-chaining-protocol.md`.
+
+### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
+- Treat `Invoke: /skill-name` and `metadata.skill` as routing instructions, not explanatory prose
+- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
+- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
+- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
+- Evaluate the next task's conditions from its description
+- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
+- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
+- Per `route-workflow` Task-Graph Execution Protocol
+
+**Default chain:** `plan-changeset` → `review-plan` → (if PASS) `execute-changeset`. review-plan is a gate, not a pipeline step — the task graph position is inside plan-changeset's self-verify, not as a separate task unless the user explicitly promotes it.
+
+## Non-goals
+
+- This skill does NOT rewrite the plan. It reviews. Orchestrator applies revisions.
+- This skill does NOT do taste review — "is this the prettiest architecture" is out of scope.
+- This skill does NOT run tests, builds, or installs. Read + analyze only.
+- This skill does NOT edit files outside `docs/plans/<date>-<name>/review-log.yaml`.
+
+## Key Principles
+
+- **Every claim provable.** Analysis + evidence + proposed_fix for every finding.
+- **Symmetric discipline.** Orchestrator responses carry the same rigor as reviewer findings.
+- **Tier 1 always first.** Mechanical checks catch ~40% of issues for free. Never skip.
+- **Deterministic adversary.** Use the exact launcher-owned tuple and preserve its receipt; no consumer-local model selection.
+- **Infra paths escalate.** Two-reviewer consensus required for framework/infra changes.
+
+### Self-Verify
+
+Before declaring the review complete:
+
+| # | Check | How | PASS/FAIL |
+|---|-------|-----|-----------|
+| 1 | Tier 1 mechanical ran | `verify-plan-mechanical.sh` exit 0 | |
+| 2 | Findings are structured | Every finding has claim + analysis + evidence + proposed_fix | |
+| 3 | Review log persisted | `docs/plans/<date>-<name>/review-log.yaml` exists with terminal_state | |
+| 4 | Skip justified (if skipped) | If skipped: lane-tasks skip_reason cites either (a) "trivial changeset (≤2 files, ≤50 lines)" or (b) "post-plan review exists at <path>". NEVER skip on >2 files / >50 lines without a prior review-log. | |
+
+If any check FAILs, fix before continuing.
+
+## Post-Compaction Recovery
+
+If Kimi CLI compacted context and you lost track of framework state:
+
+1. **Read the lane-tasks file** — `.svc/lane-tasks-<WI>.json` is the sole source of truth
+2. **Find the next task** — First `in_progress`, else first `pending` with blockers satisfied
+3. **Re-load the skill** — `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`
+4. **Re-read this SKILL.md** — Refresh context for the current step
+5. **Resume execution** — Continue from where the task left off
+6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
+
+If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
+
+## Skill Outcome Contract
+
+When this skill discovers new delivery-graph signals, emit `skill_outcome` per
+`references/skill-outcome-contract.md` before completing the task.
+
+## Chain Receipt Emission (Mandatory Chain)
+
+This skill emits receipt type `review-plan` per the contract in
+`references/chain-receipt-contract.md`. The receipt is stored as a git
+note on `refs/notes/svc-receipts` (authoritative) and mirrored under
+`.svc/receipts/<sha>/<type>.json` (gitignored cache).
+
+If the skill runs before a commit exists, it writes to
+`.svc/receipts/staging/<tree-hash>/<type>.json` — the post-commit hook
+(`hooks/git/post-commit.d/10-receipt-promote`) promotes to SHA mirror
+and writes the consolidated git note.
+
+Self-verify: receipt at `.svc/receipts/<sha>/<type>.json` exists, passes
+its schema (`schemas/receipts/<type>.schema.json`), and is reflected in
+the consolidated git note.
+
+
+## Chain Receipt Emission (Mandatory Chain — Actionable)
+
+After producing the canonical output, emit a SHA-keyed receipt:
+
+```bash
+BASE_SHA="$(git rev-parse HEAD)"
+cat <<'JSON' | node scripts/emit-receipt.mjs --type review-plan --wi $WI --sha "$BASE_SHA"
+{
+  "schema_version": 3,
+  "wi": "$WI",
+  ...{self_review, adversarial_review, verdict},
+  "reviewer_evidence": {
+    "independent": true,
+    "submitter_only": false,
+    "commands": [{"binary":"<launcher>","argv":["<exact>"]}],
+    "output_artifacts": ["<launcher receipt>","<findings output>"],
+    "deletion_bearing": false,
+    "parse_collect_evidence": []
+  }
+}
+JSON
+```
+
+The emitter upgrades every newly produced review receipt to schema v3 and
+derives `deletion_bearing` from the candidate diff. Missing direct reviewer
+evidence fails emission; callers cannot select a legacy version to bypass it.
+
+This writes to `.svc/receipts/<sha>/review-plan.json` (or staging if pre-commit)
+AND attaches it to the consolidated git note on `refs/notes/svc-receipts`.
+
+Self-verify: `node scripts/check-chain-receipts.mjs --sha HEAD` shows this
+receipt type as present + schema-valid.
+
+Reference: `references/chain-receipt-contract.md`.
+
+<<<END_SVC_CONTEXT framework:skills/review-plan/SKILL.md>>>
+
+<<<SVC_CONTEXT framework:skills/review-cross-model/SKILL.md sha256=4bbe2968bef6e84511483f8277232352e8ad406d397789038e89798afe263abf>>>
+---
+name: review-cross-model
+version: "1.0"
+handles_concerns:
+  - data-model-mutation
+  - database-migration
+  - auth-surface
+  - security-cross-family-review
+description: >
+  Adversarial code review using the canonical deterministic external-review launcher.
+  Sends diff + goals + spec to the second model, gets findings back, then
+  Claude evaluates each finding: accept with justification or reject with
+  justification. Back and forth until all remaining findings are medium
+  severity max. Use when "cross-model review", "second opinion", "codex
+  review", "adversarial review", or when `review-gate` leaves residual risk
+  on changes involving new data models or integrations.
+phases:
+  - id: P1-ReviewPackagePreparation
+    trigger: always
+    reads: ["docs/specs/features/<name>.md", "docs/plans/<date>-<name>/manifest.md", "git diff main..HEAD", "docs/specs/decisions/"]
+    writes: [".svc/review-cross-model-package.md"]
+    evidence_kind: file
+    required_for_completion: true
+  - id: P2-SecondModelDispatch
+    trigger: always
+    reads: [".svc/review-cross-model-package.md", "scripts/run-external-review.mjs"]
+    writes: [".svc/review-cross-model-findings.json", ".svc/review-cross-model-receipt.json"]
+    evidence_kind: file
+    required_for_completion: true
+  - id: P3-FindingEvaluation
+    trigger: always
+    reads: [".svc/review-cross-model-findings.json", ".svc/review-cross-model-receipt.json", "changed code", "feature spec"]
+    writes: ["docs/specs/reviews/<name>-cross-model.md"]
+    evidence_kind: file
+    required_for_completion: true
+  - id: P4-ConvergenceLoop
+    trigger: always
+    reads: ["accepted findings", "git diff main..HEAD", "updated second-model review output"]
+    writes: ["docs/specs/reviews/<name>-cross-model.md"]
+    evidence_kind: file
+    required_for_completion: true
+  - id: P5-ReviewDocumentation
+    trigger: always
+    reads: ["finding evaluations", "fix evidence", "remaining severity counts"]
+    writes: ["docs/specs/reviews/<name>-cross-model.md"]
+    evidence_kind: file
+    required_for_completion: true
+  - id: P6-SelfVerifyContinuation
+    trigger: always
+    reads: ["docs/specs/reviews/<name>-cross-model.md", ".svc/lane-tasks-<WI>.json"]
+    writes: [".svc/lane-tasks-<WI>.json"]
+    evidence_kind: command_output
+    required_for_completion: true
+inputs:
+  required:
+    - { path: "docs/specs/features/<name>.md", artifact: feature-spec }
+    - { path: "docs/plans/<date>-<name>/manifest.md", artifact: implementation-manifest }
+  optional:
+    - { path: "docs/specs/explorations/<name>/DECISION.md", artifact: solution-decision }
+outputs:
+  produces:
+    - { path: "docs/specs/reviews/<name>-cross-model.md", artifact: review-cross-model }
+chain:
+  lanes: {}
+  progressive: false
+  self_verify: true
+  human_checkpoint: false
+---
+
+# Cross-Model Review
+
+Independent code review from a second model. Two models disagree on code quality
+more often than you'd expect — those disagreements are where the real bugs hide.
+
+**Announce at start:** "I'm using review-cross-model for an independent second-model review."
+
+## Why Two Models
+
+Same-model review has a blind spot: the model that wrote the code shares the
+same training biases as the model reviewing it. A second model (Codex, Gemini,
+or any model accessible via CLI) brings genuinely different pattern recognition.
+
+When both models agree something is fine → high confidence.
+When they disagree → that's the signal worth investigating.
+
+## Prerequisites
+
+- The policy-selected Codex or Claude CLI is installed and authenticated
+- Feature branch with committed code in the worktree
+- Feature spec with ACs
+
+## Process
+
+This skill runs **inside the worktree** where the code lives.
+
+### Step 1: Prepare the Review Package
+
+Gather context for the second model:
+
+```markdown
+## Review Package
+
+### Goal
+<one paragraph from the feature spec: what this feature does and for whom>
+
+### Acceptance Criteria
+<AC table from the spec>
+
+### Key Decisions
+<from docs/specs/decisions/ if exists — what was chosen and why>
+
+### Diff
+<git diff main..HEAD — the actual changes to review>
+
+### Files Changed
+<list with brief purpose of each>
+```
+
+Keep it under 50K tokens. If the diff is larger, split by subsystem and
+run multiple review rounds.
+
+### Step 2: Send to the Canonical Launcher
+
+```bash
+mkdir -p .svc/external-review-artifacts/cross-model
+SUMMARY=.svc/external-review-artifacts/cross-model/summary.json
+node scripts/run-external-review.mjs \
+  --orchestrator "${SVC_HOST:-claude}" \
+  --review-kind exec \
+  --artifacts-dir .svc/external-review-artifacts/cross-model \
+  < .svc/review-cross-model-package.md > "$SUMMARY"
+node - "$SUMMARY" <<'NODE'
+const fs = require('fs');
+const summary = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+if (!summary.ok || !summary.findings || !summary.receipt) process.exit(1);
+fs.copyFileSync(summary.findings, '.svc/review-cross-model-findings.json');
+fs.copyFileSync(summary.receipt, '.svc/review-cross-model-receipt.json');
+NODE
+```
+
+The launcher is the sole paid invocation path. It pins the requested model and
+effort, takes the exact package on stdin, constrains findings to the shared
+schema, writes an invocation receipt, and hard-fails on unavailable capability.
+Do not construct provider commands in this skill.
+
+The prompt to the second model:
+
+```
+You are reviewing a code change. Here is the context:
+
+<review package>
+
+Review this diff for:
+1. Bugs — logic errors, off-by-one, null handling, race conditions
+2. AC violations — does the code actually satisfy each acceptance criterion?
+3. Security — injection, auth bypass, data leaks, insecure defaults
+4. Design — does the implementation match the stated decisions?
+5. Missing — what should be here but isn't?
+
+For each finding, provide:
+- Severity: Critical / High / Medium / Low
+- Location: file:line
+- Finding: what's wrong
+- Evidence: why you believe this
+- Proposal: how to fix it
+
+Be specific. "Error handling could be better" is not a finding.
+"api/users.ts:42 — no try/catch around the database call, a connection
+timeout will crash the process" is a finding.
+```
+
+The resolved primary invocation is also the availability probe. There is no
+paid smoke call and no generic tri-model fallback. For the Fable profile only,
+a classified model-unavailable, entitlement, or provider-overload failure may
+start a separate Opus xhigh invocation. A provider-managed same-process
+Fable-to-Opus safeguard route is not that fallback and never starts another
+Opus process. Authentication, shared quota, network, timeout, capability,
+schema, turn-budget, profile-state, provider-safety, and unknown failures halt
+the gate. Scheduled Opus/high is itself the primary and has no fallback.
+
+### Step 3: Evaluate Each Finding and Its Receipt
+
+For each finding the second model returns, Claude evaluates independently:
+
+```markdown
+### Finding: <title from second model>
+**Second model says:** <severity> — <finding summary>
+**Location:** <file:line>
+
+**Claude's evaluation:**
+- [ ] **ACCEPT** — <justification: why this is a real issue>
+  - Priority: <keep severity or adjust>
+  - Action: <what to fix>
+- [ ] **REJECT** — <justification: why this is not an issue>
+  - Reason: <false positive / already handled / out of scope / misunderstood context>
+  - Evidence: <code citation proving it's handled>
+```
+
+Rules:
+- Never reject without citing code that proves it's handled
+- Never accept without verifying the finding is real (read the code)
+- If uncertain → accept and mark for investigation
+- Rejections must be more specific than acceptances (higher bar to dismiss)
+- Retain both the schema-valid findings path and launcher receipt path in the
+  review document; never infer the effective tuple from prose.
+
+### Step 4: Convergence Loop
+
+After first evaluation pass:
+
+1. Count remaining accepted findings by severity
+2. If any **Critical** or **High** → fix them in the worktree (or, for a High, disposition it — see the cap below)
+3. After fixes, re-send the updated diff to the second model
+4. Evaluate new findings
+5. Repeat, subject to the HARD 3-round cap below.
+
+### HARD 3-round cap and bounded exit (WI-491)
+
+**Never run more than 3 adversarial rounds.** An adversarial reviewer prompted to
+find flaws does not run dry on a genuinely complex change — it keeps producing
+new High-severity concerns every round. "Loop until zero High" is therefore an
+**unreachable** stopping condition and MUST NOT be used. Convergence is defined by
+**disposition**, not by the reviewer running out of findings:
+
+The loop is CONVERGED (terminates, change proceeds) as soon as **both** hold:
+- **No unresolved Critical** findings, AND
+- **Every** remaining High/Medium/Low finding carries a documented disposition —
+  `accept-with-justification` (recorded as an execution-time risk to verify) or
+  `reject-with-justification`.
+
+Hard cap by round:
+- **Rounds 1–3:** fix or disposition findings each round; re-review.
+- **After round 3** (do NOT start a round 4):
+  - **Unresolved Critical remain →** ESCALATE to the user/owner. Criticals always block; never auto-accept a Critical.
+  - **Only High/Medium/Low remain →** the loop TERMINATES. Each remaining High MUST be dispositioned NOW (accept-with-justification as a logged execution-time risk, or reject-with-justification) and the change PROCEEDS. Do not run another round.
+
+A rubric_score that does not improve across rounds is a signal the reviewer has
+reached diminishing returns, not a signal to keep looping — apply the cap.
+
+**Mechanical enforcement (wire it into the loop).** Record `rounds_run` and, when
+you terminate, a `bounded_exit` (or escalation) block in the review-log. BEFORE
+starting any new round, if you have already completed round 3, STOP — do not
+dispatch a 4th round; disposition instead. The loop is guarded by
+`node scripts/check-review-round-cap.mjs --log <review-log>`, which FAILS a run
+with `rounds_run > 3`, an unresolved Critical without escalation, or any remaining
+High lacking a documented disposition. A convergence/exec review is not complete
+until this check passes.
+
+> Anti-pattern (WI-491 origin): running 9 review rounds because 6 High findings
+> persisted with 0 Critical. That is the exact unbounded-loop bug this cap fixes.
+> High-only persistence AT round 3 is a DISPOSITION event, not a re-review event —
+> you never reach round 4.
+
+## Single-Vendor Windows (§4g)
+
+When only one vendor family is reachable (quota, outage, cost), the reviewer
+available for this loop is same-family with the executor and shares its
+priors — repeating same-family passes approaches a floor set by those shared
+priors and buys almost nothing past the first.
+
+**The compensation is mechanism, not more passes.** In a single-vendor window,
+every claim that would otherwise go to cross-family review must instead
+acquire one of: a mechanical/grep-derived check, a contract claim
+(`audit-*-contract.mjs`-style re-derivation from source on every run), a
+negative test (deliberately break the check and require it to fail), or be
+recorded as **UNVERIFIED** with the reason. It is never silently downgraded to
+a same-family pass and marked reviewed.
+
+**Self-terminating.** Record `review_family: cross | same` per round in
+the review doc (Step 5 Summary block). When a second, opposite-family vendor becomes
+available again, the accumulated `review_family: "same"` receipts ARE the
+drain queue for what deserves a real cross-family look — no separate ledger
+to maintain. The window ends when that queue is drained, not when the quota
+resets. This is the standing justification for same-family (e.g. Opus-only)
+review windows.
+
+### Step 5: Document the Review
+
+Save to `docs/specs/reviews/<feature-name>-cross-model.md`:
+
+```markdown
+# Cross-Model Review: <feature name>
+
+**Date:** <timestamp>
+**Models:** Claude (primary) + <second model name>
+**Rounds:** <count>
+**Branch:** <branch name>
+
+## Summary
+- Findings from second model: <count>
+- Accepted: <count> (Critical: N, High: N, Medium: N, Low: N)
+- Rejected: <count> (with justification for each)
+- Fixed: <count>
+- Remaining: <count> (each remaining High individually dispositioned — accept-with-justification as a logged risk, or reject-with-justification; unresolved Critical escalates and blocks)
+- rounds_run: <count> (HARD cap 3)
+- review_family: cross | same (§4g — per round; drives the drain queue when a single-vendor window ends)
+
+## Round 1
+### Accepted
+<finding + justification + fix>
+
+### Rejected
+<finding + rejection justification + evidence>
+
+## Round 2 (if needed)
+...
+
+## Verdict
+<PROMOTED (rounds_run<=3, 0 unresolved Critical, every remaining High dispositioned) / ESCALATED_TO_USER (unresolved Critical — blocks)>
+```
+
+## When To Skip
+
+- Pure documentation or config changes (no behavioral code to review)
+- Changes under 20 lines (overhead not worth it)
+
+If policy or the concern registry requires cross-model review, missing CLI
+capability is an actionable hard failure, never a skip or waiver substitute.
+
+## Anti-Patterns
+
+- Accepting all findings without reading the code ("the other model must be right")
+- Rejecting all findings without evidence ("I wrote it so it's fine")
+- Stopping after round 1 with unresolved Critical findings
+- Sending the entire codebase instead of just the diff + context
+
+## Phase Receipt Contract
+
+When running in task-graph mode, record these phase receipts before marking the `review-cross-model` task complete:
+
+```bash
+node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P1-ReviewPackagePreparation --evidence file:.svc/review-cross-model-package.md
+node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P2-SecondModelDispatch --evidence file:.svc/review-cross-model-receipt.json
+node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P3-FindingEvaluation --evidence file:docs/specs/reviews/<name>-cross-model.md
+node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P4-ConvergenceLoop --evidence file:docs/specs/reviews/<name>-cross-model.md
+node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P5-ReviewDocumentation --evidence file:docs/specs/reviews/<name>-cross-model.md
+node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-SelfVerifyContinuation --evidence command_output:.svc/review-cross-model-self-verify.log
+```
+
+## Pipeline Continuation
+
+### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
+- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
+- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
+- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
+- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
+- Evaluate the next task's conditions from its description
+- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
+- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
+- Per `route-workflow` Task-Graph Execution Protocol
+
+### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
+- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
+- Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
+  cross-session, cross-subagent source of truth.
+- Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
+  is ONLY performed when running in the parent/top-level session. Detect via:
+  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
+  check fails, skip host mirroring — file state is the durable record; the
+  orchestrator parent will re-read and re-mirror after the subagent returns.
+- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
+  graceful; it's silent drift between the subagent's intent and the host UI.
+- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
+- Evaluate the next task's conditions from its description
+- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
+- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
+- Per `route-workflow` Task-Graph Execution Protocol
+
+### Self-Verify
+
+| # | Check | How | PASS/FAIL |
+|---|-------|-----|-----------|
+| 1 | Review doc exists | `test -f docs/specs/reviews/<name>-cross-model.md` | |
+| 2 | No unresolved Critical | grep for `Critical` in accepted + not fixed; any unresolved Critical must be `terminal_state: ESCALATED_TO_USER` (blocks, never promotes) | |
+| 3 | Every remaining High dispositioned (NOT "no High remains") | each remaining High has accept-with-justification (logged risk) or reject-with-justification — Highs need not disappear | |
+| 4 | Round record + cap gate ran | `rounds_run<=3` recorded; `node scripts/check-review-round-cap.mjs --log <review-log>` exits 0 (or 3 = escalated Critical, which blocks) — capture its output before the verdict | |
+| 5 | Every rejection has evidence | each REJECT has a code citation | |
+
+### Chaining
+
+**Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`):**
+- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
+- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
+- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
+- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
+- Evaluate the next task's conditions from its description
+- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
+- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
+- Per `route-workflow` Task-Graph Execution Protocol
+
+This skill is standalone — invoke it when you want a second opinion.
+It does not auto-chain in progressive mode (optional, not mandatory).
+Suggest: "Cross-model review complete. Proceed to `audit-implementation` or `land-changeset`."
+
+## Post-Compaction Recovery
+
+If Kimi CLI compacted context and you lost track of framework state:
+
+1. **Read the lane-tasks file** — `.svc/lane-tasks-<WI>.json` is the sole source of truth
+2. **Find the next task** — First `in_progress`, else first `pending` with blockers satisfied
+3. **Re-load the skill** — `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`
+4. **Re-read this SKILL.md** — Refresh context for the current step
+5. **Resume execution** — Continue from where the task left off
+6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
+
+If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
+
+## Chain Receipt Emission (Mandatory Chain)
+
+This skill emits receipt type `review-plan|review-exec (per --mode flag)` per the contract in
+`references/chain-receipt-contract.md`. The receipt is stored as a git
+note on `refs/notes/svc-receipts` (authoritative) and mirrored under
+`.svc/receipts/<sha>/<type>.json` (gitignored cache).
+
+If the skill runs before a commit exists, it writes to
+`.svc/receipts/staging/<tree-hash>/<type>.json` — the post-commit hook
+(`hooks/git/post-commit.d/10-receipt-promote`) promotes to SHA mirror
+and writes the consolidated git note.
+
+Self-verify: receipt at `.svc/receipts/<sha>/<type>.json` exists, passes
+its schema (`schemas/receipts/<type>.schema.json`), and is reflected in
+the consolidated git note.
+
+
+## Chain Receipt Emission (Mandatory Chain — Actionable)
+
+After producing the canonical output, emit a SHA-keyed receipt:
+
+```bash
+BASE_SHA="$(git rev-parse HEAD)"
+cat <<'JSON' | node scripts/emit-receipt.mjs --type review-plan --wi $WI --sha "$BASE_SHA"
+{
+  "wi": "$WI",
+  ...{self_review, adversarial_review, verdict} — use --type review-plan when run pre-exec or --type review-exec when run post-exec
+}
+JSON
+```
+
+This writes to `.svc/receipts/<sha>/review-plan.json` (or staging if pre-commit)
+AND attaches it to the consolidated git note on `refs/notes/svc-receipts`.
+
+Self-verify: `node scripts/check-chain-receipts.mjs --sha HEAD` shows this
+receipt type as present + schema-valid.
+
+Reference: `references/chain-receipt-contract.md`.
+
+<<<END_SVC_CONTEXT framework:skills/review-cross-model/SKILL.md>>>
+
+<<<SVC_CONTEXT framework:references/plan-review-protocol.md sha256=ec253319a937e74d4421c62cda35fdee0cbe1406e8df3f56bee4a2e50ddd8d9e>>>
+# Plan Review Protocol
+
+Canonical contract for `review-plan` and the schema-constrained deterministic external reviewer.
+
+## Two gates plus bounded lens remediation
+
+### Tier 1 — Mechanical checks (same-context, no model)
+
+Runs via `scripts/verify-plan-mechanical.sh <plan-manifest-md>` in the orchestrator's current session. Zero model cost. Zero subprocess.
+
+**Checks:**
+
+1. Every file path in the plan resolves on disk
+2. Every npm/pnpm/yarn script referenced exists in `package.json`
+3. Every fenced bash block passes `bash -n` syntax
+4. No forbidden patterns (`--force`, `--no-verify`, `git push -f`, `rm -rf /`, `sudo`, `curl | sh`)
+5. Every task-graph `blocked_by` reference resolves to a valid task id
+6. Every claimed CLI tool is on PATH
+
+**Exit code:**
+- `0` = all checks pass → advance to Tier 2
+- `1` = one or more checks fail → orchestrator fixes trivially (path typos, rename drift) and re-runs Tier 1 before any model sees the plan
+- `2` = usage error (missing file, unreadable input)
+
+### Tier 2 — One holistic adversarial review
+
+The canonical launcher owns the exact cross-family tuple:
+
+```bash
+SVC_HOST="${SVC_HOST:-claude}" \
+  bash scripts/review-plan-codex.sh "$PLAN" > /tmp/review-tier2.json
+```
+
+Claude-orchestrated review requests Codex 5.6 sol/high and never falls back.
+Codex-orchestrated review resolves the registry-owned scheduled or explicit
+profile through the canonical launcher. Before the cutover that is Fable
+5/high; at and after the cutover it is Opus 4.8/high unless an owner-selected
+Fable profile is active. Only the Fable profile may start a separate Opus xhigh
+invocation, and only after classified model unavailability, entitlement, or
+provider overload. A same-process provider safeguard route is receipted
+separately and never authorizes another Opus call.
+
+Every canonical-launcher path emits the same schema-constrained JSON findings envelope. YAML below is used only for the durable human-readable review log.
+
+### Bounded invalidated-lens remediation
+
+Accepted corrections rerun mechanical checks and only the semantic lenses whose
+relevant digest changed. The same review stage receives the prior finding,
+correction and lens digest. There is no standalone second full-plan reviewer.
+A disputed Critical/High product or security-authority choice routes to the
+repository owner/founder; model disagreement cannot manufacture product authority.
+
+## Review focus dimensions (per WI-075)
+
+Reviewers must cover all nine dimensions. Lane compliance (dimension g) was added 2026-04-24 after both Kimi and Codex missed the `improve-framework` skip in WI-073.
+
+| # | Dimension | Prompt |
+|---|---|---|
+| a | AC-to-task coverage gaps | Do all spec ACs map to at least one task in the plan? |
+| b | Scope-boundary leaks | Does any task touch a file outside the declared `touches:` list? |
+| c | Rollback adequacy | Is there a concrete, commit-scoped revert path? |
+| d | Determinism rubric | Score the 10-point rubric (see kimi reviewer script for the canonical list). |
+| e | Idempotency / re-run safety | What happens if a task is re-run after partial completion? |
+| f | Execute-risk | What will actually break during execute-changeset? |
+| g | **Lane compliance** | For the declared lane, list every mandatory upstream skill. Is each either completed (cite artifact) or skipped-with-justification (cite `.svc/pipeline-decisions.jsonl`)? An unnamed lane skill = **REJECT** finding. |
+| h | **Command Determinism** | Are all shell commands copy-pasteable, non-interactive, correct, and complete from branch creation to merge? |
+| i | **Blueprint Completeness** | **Dispatch mode (`mode: dispatch` / unset):** does copying the blueprints produce a lint-clean and fully compiled codebase state? An absent/incomplete blueprint = REJECT. **Inline mode (`mode: inline`, WI-386):** §3a is intentionally skipped — do NOT raise a missing-blueprint finding; instead verify the manifest still gives the orchestrator enough (file set + task graph + execution sequence) to apply the change with its already-loaded context. |
+
+## Finding format
+
+Provider output must validate against
+`schemas/external-review-findings.schema.json`; invocation evidence must validate
+against `schemas/external-review-receipt.schema.json`. Legacy YAML below is a
+review-log presentation format only, never the provider transport contract.
+
+```yaml
+rubric_score: <0-10>            # determinism rubric out of 10
+rubric_failures: [<int>, ...]   # list of rubric point numbers that failed
+findings:
+  - id: F-001                   # stable within this review pass
+    claim: "<one-line problem statement>"
+    severity: high | medium | low
+    analysis: |
+      <multi-paragraph reasoning showing why this is a problem,
+       not just what the problem is>
+    evidence:
+      - type: file_not_found | cross_reference | command_output | mechanical_check
+        path: <file path if applicable>
+        line: <line number if applicable>
+        quote: "<exact quote from the plan>"
+        check_command: "<reproducible command>"
+        exit_code: <int if applicable>
+        output: "<actual output if applicable>"
+    proposed_fix: |
+      <concrete change — specific rewrite, not 'improve X'>
+dependencies_needing_read:      # optional — files the reviewer could not check
+  - path: <file>
+    reason: "<why its absence gates this finding>"
+```
+
+## Reviewee response format (orchestrator emits this — same rigor)
+
+The orchestrator must respond to EVERY finding before the loop closes. Bare ACCEPT or REJECT is forbidden — same discipline as the reviewer.
+
+```yaml
+responses:
+  - finding_id: F-001
+    decision: ACCEPT | REJECT | PARTIAL
+    justification: |
+      <multi-line reasoning for the decision>
+    # ACCEPT:
+    action: "<concrete revision to plan>"
+    # REJECT:
+    counter_analysis: |
+      <why the reviewer's claim is wrong>
+    counter_evidence:
+      - type: <same types as findings>
+        path: ...
+        check_command: ...
+        output: ...
+    # PARTIAL:
+    accepted_part: "<what's accepted>"
+    rejected_part: "<what's rejected>"
+    counter_proposal: "<alternative fix for the rejected part>"
+```
+
+## Iteration loop
+
+```
+1. Active orchestrator writes plan-changeset manifest + task graph
+2. Tier 1 mechanical (scripts/verify-plan-mechanical.sh)
+   │
+   ├─ exit 1 → active orchestrator fixes trivially, loop back to 1 (no model call)
+   └─ exit 0 → continue
+3. One canonical external holistic review (registry profile resolved once)
+   │
+   ├─ rubric_score == 10 AND findings == [] → PROMOTE to done, dispatch MiMo
+   └─ findings > 0 OR rubric_score < 5 → active orchestrator writes responses
+      │
+      ├─ ACCEPTED → revise, mechanically invalidate exact lenses, loop to 2
+      ├─ disputed product/security Critical or High → owner authority
+      └─ other REJECT/PARTIAL → disposition with counter-evidence
+          └─ changed semantic lens → bounded same-review lens recheck only
+```
+
+**Terminal conditions (bounded — WI-491):**
+- The holistic review (plus bounded invalidated-lens remediation, if needed)
+  returns zero Critical findings, OR
+- All findings have documented ACCEPT/REJECT/PARTIAL responses with
+  justifications and any disputed product/security authority has an owner ruling.
+
+**HARD 3-round cap.** Convergence is by DISPOSITION, never by the adversarial
+reviewer running out of findings — an adversarial reviewer does not run dry on a
+complex plan, so "loop until zero High" is unreachable and forbidden. Run at most
+**3** adversarial rounds. After round 3 (never start round 4):
+- **Unresolved Critical remain →** escalate to the owner; Criticals always block.
+- **Only High/Medium/Low remain →** the loop TERMINATES. Every remaining High is
+  dispositioned now (`accept-with-justification` = logged execution-time risk in
+  `review-log.yaml`, or `reject-with-justification`), and the plan PROMOTES. A
+  flat rubric_score across rounds is a diminishing-returns signal — apply the cap,
+  do not re-loop. (Origin: WI-486 plan looped 9 rounds on 6 persistent High / 0
+  Critical — the exact bug this cap closes.) This bounded exit is enforced
+  mechanically by `scripts/check-review-round-cap.mjs`; `review-log.yaml` MUST
+  record machine-readable `rounds_run`, `unresolved_critical`, and
+  `remaining_high` integers, and — when `rounds_run == 3` and High findings
+  remain — a `bounded_exit` block that enumerates one `residual_highs` entry per
+  remaining High plus an allowed `disposition` (a bare `bounded_exit` mention
+  proves nothing; the checker fails closed on missing/ambiguous evidence). An
+  unresolved Critical is never dispositioned: it requires an exact
+  `terminal_state: ESCALATED_TO_USER` and the checker HALTS (exit 3, blocking) —
+  the change never promotes until the owner rules. A 4th round is forbidden, so
+  `bounded_exit` is recorded at `rounds_run == 3`, never `> 3`.
+
+**Audit trail:** all findings + responses persisted to `docs/plans/<date>-<name>/review-log.yaml`. Review log is part of the plan deliverable and lands with it into `docs/plans/done/`.
+
+**Reviewer family tracking:** The `reviewer_family` field logs which model family performed the holistic review. Over time this enables outcome calibration without adding routine reviewers. Historical pair examples remain useful benchmark data:
+- `openai → moonshot` (Codex → Kimi)
+- `moonshot → openai` (Kimi → Codex)
+- `openai → anthropic` (Codex → Sonnet) — medium signal, same broad architectural lineage
+
+## Triggers for lens remediation or owner authority
+
+- Accepted correction changes a reviewed relevant digest → recheck that lens.
+- Disputed Critical/High product or security-authority choice → owner decision.
+- Unchanged lens → reuse its exact review evidence; never rerun the full package
+  merely because another lens changed.
+
+## Cost envelope
+
+- Tier 1: $0, ~3s
+- Tier 2 holistic stage: ~$0.01-0.05 baseline (provider-dependent)
+- Invalidated-lens remediation: bounded and measured separately
+
+Expected per plan: compiled Gate 1 once, one holistic Gate 2, and only changed-lens remediation. The exact cost is recorded from the launcher rather than fixed in prose.
+
+## What the protocol is NOT
+
+- Not a taste review. Reviewers check determinism, completeness, correctness — not "is this the prettiest architecture."
+- Not a security audit. `review-security` is separate; review-plan's only security-ish check is forbidden-pattern scanning.
+- Not a lane-level review. Pipeline-level architectural review happens at G3/G5 via `review-gate`; this is specifically the plan-is-unambiguous-before-MiMo-executes gate.
+
+<<<END_SVC_CONTEXT framework:references/plan-review-protocol.md>>>
+
+<<<SVC_CONTEXT framework:rules/plan-changeset-trigger.md sha256=63385c5d1d31e0afb83118184bbe8c5ff20fabf2f9c815a1d81679d3b956ebba>>>
+# Rule: When to gate framework changes through plan-changeset
+
+Framework self-improvement must go through `write-spec → plan-changeset → execute-changeset` in a worktree **when the change carries semantic risk**, regardless of size. Conversely, changes that are purely additive or documentation should land as direct commits to avoid ceremony that catches nothing.
+
+**Supersedes** the earlier size-based trigger ("any framework change >2 files or >50 lines") which mis-targeted: it gated harmless additive work while letting small-but-risky edits sail through.
+
+## Risk signals — any ONE triggers plan-changeset
+
+1. **Contract change.** Modifies an interface other code depends on:
+   - function signature, class API, module export
+   - hook wire protocol (stdin payload shape, stdout decision format, exit codes)
+   - skill frontmatter schema (inputs/outputs/chain fields)
+   - config file format (`skills-manifest.json`, `provision/hosts/*.json`, `.svc/*.json`)
+   - CLI arguments for framework scripts
+   - svc canonical event names, lane names, review gate IDs
+
+2. **Behavior change on a hot path.** Edits a file in:
+   - `hooks/svc-*` or `hooks/lib/*` — runs on every tool call
+   - `scripts/wire-*`, `scripts/resolve-*`, `scripts/init-*` — runs on every install/session-start
+   - `test-framework/evals/tier-1/` — runs on every lint
+   - `scripts/lint-skills-manifest.mjs` or any other top-level validator
+
+   Regressions here cascade across every session.
+
+3. **Refactor without behavior change.** Rewrites that preserve external behavior but restructure internals:
+   - porting `.js` → `.mjs` (or vice versa)
+   - extracting modules / shared libraries
+   - renaming frequently-referenced exports
+   - reorganizing directory structure
+
+   Ceremony is needed even though the change "should" be invisible — to catch missed call sites and silent breakage.
+
+## Explicit exemptions — do NOT trigger plan-changeset
+
+- **Purely additive.** New files that existing code doesn't yet reference:
+  - a new hook, new skill, new test, new knowledge node, new provision entry
+  - a new proposal or rule file
+- **Documentation-only.** `FRAMEWORK-STATE.md`, `README.md`, `EXTERNAL_ADDONS.md`, `REPO_MODES.md`, `WORKTREES.md`, `DOCTRINE.md`, `CLAUDE.md`, `KIMI.md`, `GEMINI.md`, any `proposals/*.md`, any file under `references/knowledge/`. Substantive prose edits to a `SKILL.md` that do NOT alter frontmatter or declared process still count as docs.
+- **Learning updates.** Appending to `framework-learnings.jsonl` or project `learnings.jsonl`.
+- **Proposal lifecycle.** Moving a file from `proposals/` to `proposals/done/` with a superseded-by pointer.
+- **Revert.** Git revert of a bad commit on the same branch.
+
+## Decision procedure
+
+Before committing framework changes, ask in order:
+
+1. Does my change match any exemption above? → **commit directly.**
+2. Does my change match any risk signal above? → **open a worktree and go through write-spec → plan-changeset → execute-changeset.**
+3. Unclear? → default to plan-changeset. The ceremony cost is low; the regression cost is high.
+
+## Operational notes
+
+- If you're mid-session and realize a change you intended as "additive" now touches a hot path, **stop, land what's harmless, and route the rest through plan-changeset.**
+- If the user explicitly directs a bypass ("just do it"), proceed but note the bypass in the commit message. The user's judgment call is the override.
+- Learning confidence: when this rule prevents a mistake, bump the underlying learning's confidence (cap 10). When a false trigger wastes cycles, log the false positive so the rule can be further calibrated.
+
+<<<END_SVC_CONTEXT framework:rules/plan-changeset-trigger.md>>>
+
+<<<SVC_REVIEW_REQUEST sha256=cf6f31907e549c073be3629d9ce2de2f1942e8cbeaf9e2e4185e145728f06f89>>>
+CANDIDATE_DIGEST=90953982e04a7789e940d89ec645d8334bb5bbde17b2a5a0e4a94e8e66e9859a
+Review the following svc framework implementation plan (WI-556 final-SHA mandatory-skill coverage) adversarially per the attached protocol files. Return schema-constrained findings only.
+
+# Implementation Manifest — WI-556 Final-SHA Mandatory-Skill Coverage
+
+## Header
+
+| Field | Value |
+|---|---|
+| Spec | proposals/2026-08-21-framework-improvement-final-sha-mandatory-skill-coverage.md (accepted protocol; ACs AC-1..AC-10 verbatim) plus docs/specs/work-items/WI-556.md |
+| Branch | feature-final-sha-skill-coverage (framework lane, worktree under .worktrees/) |
+| Status | DRAFTED (lifecycle: DRAFTED → SIMULATED → EXECUTING → CHECKPOINTED → PROMOTED → VERIFIED) |
+| Base branch / SHA | main @ 75986ebecabafc599c6acdcdf2617db8b91b0c4a |
+| Created | 2026-08-22T07:17:46Z |
+| **Execution Mode** | **inline** (WI-386) — orchestrator executes with full context loaded (checker internals, merge finalizer, receipt contract read this session); no zero-context dispatch worker planned for fail-closed receipt-authority code. Consequence: Changeset Blueprint SKIPPED per WI-386 double-spend rule. Recorded in the plan-manifest receipt mode:"inline"; absent mode fails closed to dispatch semantics, so the field is load-bearing. |
+| **Risk Flags** | runtime_concurrency, external_state_writer, lossless_rmw — declared sections in adjacent plan-contract.json (verify-plan-mechanical Check 11) |
+
+## Implementation Summary
+
+**What changes:** SVC gains one canonical completion verdict per governed final SHA. A content-addressed skill-coverage receipt (index over the route's compiled mandatory set) is emitted into the Git note envelope on the GitHub-created squash SHA by an atomic merge-finalization contract; check-chain-receipts strictly validates any such receipt by recomputing every referenced child (never trusting the embedded verdict); a --coverage mode prints the human-readable per-skill table naming every missing/invalid entry and why it was mandatory.
+
+**Invariants:** the five-type chain (REQUIRED_TYPES_FULL), quick-fix tiering, slot identity slot::type::wi::sha[::phase], and NOTE_REQUIRED_CONSUMERS authority rules are unchanged; emitting coverage creates no commit (AC-6); recomputation makes forged verdicts fail closed (AC-8); envelope RMW preserves sibling receipts of both shapes (lossless); no evidence-carrier bypass for mixed commits (AC-7).
+
+**Constraints:** binary truth YES/NO/UNKNOWN-INFRA_FAILURE; AUTHORIZED_NA needs registered policy condition plus decision evidence, silence is MISSING; skill-load alone cannot satisfy phase-required tasks; receipts carry digests never secrets; enforcement arming beyond strict-validate-if-present is an explicit owner decision recorded post-replay (proposal Human Checkpoint honored).
+
+## Architecture Decisions
+
+| # | Decision | Rationale | Alternative rejected |
+|---|---|---|---|
+| D1 | Coverage receipt is an index; checker recomputes referenced children against slot identity, tree, graph digest | Tamper resistance without a new trust root (AC-8) | Trusting embedded verdict (forgeable) |
+| D2 | Compiled required[] lives inside the receipt; verifyCoverage RECOMPILES the applicable set from the canonicalized commit-tree lane-tasks (sorted keys, volatile state excluded) and requires exact task_id+skill multiset equality with the receipt - digest equality is necessary, never sufficient (grok R2#2); graph source falls back to the candidate-tree blob fetched during finalization when squash tree omits it, so consumer repos that do not track .svc keep legacy behavior via emission-skip instead of permanent UNKNOWN (codex C1 refinement of cursor-agent #1); normalized-graph digests cached by blob OID plus canonicalizer version for range reconcile | Recompute anchor defeats under-compilation AND pruned-inventory forgery | Trusting digest equality alone (grok R2#2); live-file reads; per-SHA uncached tree reads in 16-worker reconcile |
+| D3 | AUTHORIZED_NA validated against schema-enum conditions (no_product_surface, external_grade_addon, conditional_route_rule) plus decision-evidence digest | Conditional truth without prose-only skips (AC-3) | Free-text reason string (unfalsifiable) |
+| D4 | Phase depth via producer binding: each entry names required_phases plus an evidence receipt_type drawn from a schema-enum producer map whose types are emitted only after those phases (exec-record ⇒ execute phases; review-plan ⇒ mechanical+adversarial plan phases); evidence identities are receipt slots by construction, so a skill-load artifact can never satisfy | Skill-load does not prove phases ran (AC-4) | Reading exec-record.receipt.phases[] (field absent from schemas/receipts/exec-record.schema.json — verified Pass 3); self-asserted phases arrays (forgeable prose) |
+| D5 | Finalizer sequence: ONE consolidated pre-merge gh pr view snapshot (identity+provenance+freshness behindBy===0; refuse BEFORE merge on stale base) -> squash-only refusals (--auto/--rebase/--merge) -> gh pr merge from tmpdir cwd gated status===0 -> REPLACE the terminal process.exit(merge.status||0) block (grok R2#3: appending after it is dead code): immediate gh pr view --json mergeCommit,state with poll ONLY if empty (no unconditional sleep; grok R2#5) -> ONE combined git fetch refspec <oid> + refs/notes/svc-receipts -> tree EQUAL => closed identity remap (slot-key sha/target_sha/sha only) PLUS coverage slot merged in ONE envelope RMW and ONE CAS publish (grok R2#11; codex C6) -> post-merge verify once via --sha on squash OID -> exit 0 verified / exit 3 MERGED_UNVERIFIED merged-but-unverified-notes (callers branch on 3) / exit 2 pre-merge blocks; request counts logged and successful-path added latency must equal baseline wrapper + exactly 1 fetch + 1 notes publish with ZERO sleep-poll (p95 acceptance, codex C6) | Net-effective per founder mandate; no dead code; no duplicate checker runs | Unconditional polling (up to 10s/land); two CAS pushes; second full checker pass |
+| D6 | Checker strict-validates presence and finalizer always emits from day one; hard-requirement cutoff deliberately deferred to owner decision recorded in FRAMEWORK-STATE after replay proof | Zero historical breakage; honors proposal Human Checkpoint; interim observation-only telemetry (merged-PR-without-coverage-note warning) recorded as FRAMEWORK-STATE Known Gaps follow-up in T6, no enforcement | REVIEW_V3_CUTOFF_SHA-style cutoff now (self-referential at own land; churn on in-flight WIs) |
+| D7 | Applicable-set scope: coverage required[] = mandatory delivery chain minus verify-promotion (all producers exist pre-merge); optional/non-producer selected skills are excluded BY LANE-MODEL DEFINITION, not skipped - extending coverage to arbitrary selected skills requires new authoritative producers and is a documented future WI (codex C1/C2); verify-promotion remains governed by existing CONSUMER_REQUIRED_TYPES plus G7 | Every required entry binds to a real producer receipt type today; founder intent (#826 chain gap) preserved without retrofitting child schemas | Adding task_id/skill-digest fields to five child schemas (scope creep across nine hosts) |
+
+## Files Planned
+
+| Task | Title | Files | Action | Purpose |
+|------|-------|-------|--------|---------|
+| T1 | coverage-schema | `schemas/receipts/skill-coverage.schema.json` | CREATE | Structural contract only: required fields, policy-condition enum + policy_registry_digest + decided_at, item-count cap, total receipt byte ceiling (codex C8) |
+| T2 | coverage-library | `scripts/lib/skill-coverage.mjs` | CREATE | Parses lane-tasks internally (NO task-graph CLI exec, grok R2#7); exports compileCoverage(graph)/verifyCoverage(receipt,envelope,treeGraph|null); compile table: not-selected omitted, skipped+registered condition=>NA, silence=>MISSING, chain-mandatory=>required; canonicalizer version constant |
+| T3 | checker-integration | `scripts/check-chain-receipts.mjs` | MODIFY | Hook point: validate present skill-coverage immediately AFTER envelope normalize and BEFORE every early return incl. quick-fix/retroactive/consumer tiers (codex C4); presence-gated DYNAMIC import so legacy SHAs pay zero module cost (grok R2#12); no REQUIRED_TYPES_FULL change; PASSING_VERDICTS is not the hook (grok R2#1); duplicate task_id rejection; add lib to policyFingerprint inputs (grok R2#10); batch cat-file --batch graph reads keyed by blob OID (codex C5); UNKNOWN-vs-NO taxonomy; opt-in --coverage mode with default JSON byte-stable |
+| T4 | merge-finalizer | `scripts/merge-pr-with-review-receipt.mjs`;`scripts/worktree.sh`;`skills/land-changeset/SKILL.md` | MODIFY | REPLACE terminal exit block with finalization sequence (grok R2#3 - appending is dead code); one RMW + one CAS publish; skip pre-merge checker when land already validated same candidate (grok R2#8); exit codes 0/2/3, callers branch on 3 |
+| T5 | tier1-validator | `test-framework/evals/tier-1/validate-skill-coverage.sh`;`test-framework/fixtures/skill-coverage/envelope-composite.json`;`test-framework/fixtures/skill-coverage/envelope-legacy.json` | CREATE | Hermetic scenarios S1-S13 (S11 remap integrity both directions; S12 fetch fail-closed; S13 pruned-inventory vs recomputed-set mismatch fails); SHARED fixture repo; S5 test backoff=0 (production keeps linear backoff); mechanical stopwatch assertion failing the validator above 15s wall |
+| T6 | contract-docs | `references/chain-receipt-contract.md`;`FRAMEWORK-STATE.md` | MODIFY | Register type/producer/termination; policy_registry_digest forward-compat note; fix stale staging-filename line 13; Known Gaps incl. arming decision + merged-PR-without-coverage telemetry follow-up |
+| T7 | wi-meta | `docs/specs/work-items/WI-556.md`;`docs/specs/work-items/INDEX.md`;`.svc/lane-tasks-WI-556.json` | MODIFY | WI promotion record, index row, cross-host task graph |
+| T8 | plan-artifacts | `docs/plans/2026-08-22-final-sha-skill-coverage/manifest.md`;`docs/plans/2026-08-22-final-sha-skill-coverage/plan-contract.json` | CREATE | This manifest and its safety contract |
+
+## Task Graph
+
+| ID | Title | Deps | AC coverage | Validation command | Checkpoint | Parallel group |
+|----|-------|------|-------------|--------------------|------------|----------------|
+| T1 | Author skill-coverage JSON Schema | — | AC-2, AC-3 | JSON.parse smoke → SCHEMA-OK | CP-T1 | g1 |
+| T2 | Compile/bind/verify library | T1 | AC-1..AC-4, AC-8 | node --check plus export probe → LIB-OK | CP-T2 | g1 |
+| T3 | Checker strict validation plus --coverage mode | T2 | AC-2, AC-8, AC-9 | node --check plus usage smoke → CHECKER-SMOKE-OK | CP-T3 | g2 |
+| T4 | Merge finalization contract | T2 | AC-5, AC-6, AC-10 | node --check plus usage smoke → FINALIZER-SMOKE-OK | CP-T4 | g2 |
+| T5 | Tier-1 validator plus RMW fixtures | T3, T4 | AC-1..AC-10 | bash test-framework/evals/tier-1/validate-skill-coverage.sh | CP-T5 | g3 |
+| T6 | Contract plus state registration | T5 | AC-10 | grep anchors → DOCS-OK | CP-T6 | g3 |
+| T7 | WI meta records | — | — | validate-task-graph-lane PASS plus INDEX row present | CP-PLAN | g0 |
+| T8 | Plan artifacts | — | — | mechanical suite green at CP-PRELAND | CP-PLAN | g0 |
+
+Chain obligations: framework lane requires plan-changeset → review-plan → execute-changeset → review-gate → review-exec → audit-implementation → land-changeset → verify-promotion, exactly once each, contiguous — encoded in `.svc/lane-tasks-WI-556.json` and validated PASS (12 tasks, positions 4..11 contiguous).
+
+## Changeset Blueprint (Execution Mode inline)
+
+SKIPPED per WI-386 — see Header. Executor sources of truth: Architecture Decisions above, proposal Protocol Contract §§1–7, and the verified MODIFY anchor map:
+
+- scripts/check-chain-receipts.mjs: REQUIRED_TYPES_FULL @39, NOTE_REQUIRED_CONSUMERS @74, generic schema loader loadSchema() @755 (auto-discovers new type — zero registration needed), arg parsing in main() @1081.
+- scripts/merge-pr-with-review-receipt.mjs: provenance block ends @189, dry-run exit @191–194, terminal gh call @199–200 (pre-merge validation inserts before it gated on flags; post-merge finalization inserts after line 200 gated on merge.status===0).
+
+## AC-to-Task Mapping
+
+| AC | Statement (condensed) | Tasks |
+|----|-----------------------|-------|
+| AC-1 | Complete inventory: every applicable mandatory task listed exactly once | T2, T5 |
+| AC-2 | Binary truth: YES only when all required entries validate | T1, T2, T3 |
+| AC-3 | AUTHORIZED_NA needs registered policy condition plus decision evidence; prose-only skip fails | T1, T2, T5 |
+| AC-4 | Skill-load alone cannot satisfy phase-required tasks | T2, T5 |
+| AC-5 | Final-SHA authority: candidate/head receipts cannot green a squash SHA; the final SHA must carry a valid note envelope | T3, T4, T5 |
+| AC-6 | Natural termination: emission changes no commit tree, creates no obligation | T2, T4, T5 |
+| AC-7 | No evidence bypass: mixed evidence/config commit keeps normal classifier | T4, T5, T6 |
+| AC-8 | Tamper resistance: graph, child, digest, or note mutation invalidates coverage | T2, T3, T5 |
+| AC-9 | Failing command names each missing/invalid skill and why mandatory | T3, T5 |
+| AC-10 | Compact canonical storage: digest references, no duplicate raw artifacts | T4, T5, T6 |
+
+Full coverage — no PARTIAL, no MISSING rows.
+
+## AC-to-Test Mapping
+
+| AC | Test type | Evidence |
+|----|-----------|----------|
+| AC-1 | Unit | tier-1 S1 subset-selection; S13 recomputed-inventory vs receipt multiset equality |
+| AC-2 | Unit | tier-1 S2/S4 all-pass vs one-missing matrices |
+| AC-3 | Unit | tier-1 S3 NA-policy accept plus prose-skip reject |
+| AC-4 | Unit | tier-1 S3b producer-map rejects lighter-than-required evidence |
+| AC-5 | Unit | tier-1 S6 green only after note publication; S9 stale-base refused BEFORE merge by behindBy gate; S11 remap keeps tree_hash byte-identical; S12 unfetched-object write fails closed |
+| AC-6 | Unit | tier-1 S6 SHA identical before/after emission |
+| AC-7 | Unit | tier-1 S7 mixed-commit classifier stays NO |
+| AC-8 | Unit | tier-1 S4 tamper matrix; S10 deleted evidence object ⇒ UNKNOWN-INFRA_FAILURE never YES |
+| AC-9 | Unit | tier-1 S2 named-skills output assertions |
+| AC-10 | Unit | tier-1 S8 digest reference resolves into evidence store |
+
+Live GitHub squash replay (proposal Replay target 3 end-to-end) is Manual at verify-promotion on a throwaway PR; hermetic S6 covers the invariant locally.
+
+## Prerequisite Alignment Matrix
+
+| Trace | Source | Applied to |
+|-------|--------|-----------|
+| Technical design | Proposal Required Product plus Protocol Contract §§1–7; manifest Architecture Decisions D1–D6 | All tasks |
+| UX transitions | N/A — no UI surface; CLI verdict-table format fixed by proposal Required Product table | T3 |
+| UI visual tokens | N/A — no UI surface | — |
+| Style contract | Repo shell conventions (AGENTS.md §5): Node .mjs ESM with shebang, portable Bash set -euo pipefail | T2, T5 |
+| Persona trace | N/A — framework chrome; stakeholder is founder requirement quoted in proposal Evidence section | All tasks |
+| Journey trace | J-FW-02 unaffected; G7 closeout records replay evidence per proposal Replay Verification | T5, verify-promotion |
+
+## Validation Plan
+
+Task-level commands are in the Task Graph. Branch-level, before land:
+
+```bash
+bash test-framework/evals/run-all-evals.sh   # full corpus; globs the new validator automatically
+node scripts/lint-skills-manifest.mjs        # cheap insurance, unchanged surface
+```
+
+Performance acceptance (founder mandate): successful sanctioned land adds exactly one object fetch plus one notes publish over today's wrapper baseline - zero sleep-poll on the happy path, zero added work on legacy SHAs (presence-gated dynamic import), enforced p95 recorded in finalization output.
+
+Receipt obligations: every chain skill emits its canonical receipt; this skill emits plan-manifest (schema v3, ac_digests baton, mode inline) at P-final.
+
+## Execution Command Sequence
+
+```bash
+set -euo pipefail
+WI=WI-556
+BASE=75986ebecabafc599c6acdcdf2617db8b91b0c4a
+TRAILER="Co-authored-by: ox-alpha (opencode/x-preview-f-free)"
+
+# carry planning artifacts into the worktree branch
+REPO_ROOT="$(pwd)"
+bash scripts/worktree.sh create feature-final-sha-skill-coverage
+cd .worktrees/feature-final-sha-skill-coverage
+
+# re-verify MODIFY anchors before patching (main may have moved since base pin)
+grep -q "REQUIRED_TYPES_FULL" scripts/check-chain-receipts.mjs && grep -q 'ghArgs.push("--squash")' scripts/merge-pr-with-review-receipt.mjs
+
+# carry planning artifacts: they are untracked on main and ABSENT in a fresh worktree
+mkdir -p docs/plans/2026-08-22-final-sha-skill-coverage docs/specs/work-items test-framework/fixtures/skill-coverage
+cp "$REPO_ROOT"/docs/plans/2026-08-22-final-sha-skill-coverage/manifest.md docs/plans/2026-08-22-final-sha-skill-coverage/
+cp "$REPO_ROOT"/docs/plans/2026-08-22-final-sha-skill-coverage/plan-contract.json docs/plans/2026-08-22-final-sha-skill-coverage/
+cp "$REPO_ROOT"/docs/specs/work-items/WI-556.md "$REPO_ROOT"/docs/specs/work-items/INDEX.md docs/specs/work-items/
+cp "$REPO_ROOT"/.svc/lane-tasks-WI-556.json .svc/lane-tasks-WI-556.json
+cp -r "$REPO_ROOT"/test-framework/fixtures/skill-coverage/. test-framework/fixtures/skill-coverage/
+
+git add docs/plans/2026-08-22-final-sha-skill-coverage docs/specs/work-items/WI-556.md docs/specs/work-items/INDEX.md .svc/lane-tasks-WI-556.json test-framework/fixtures/skill-coverage
+git commit --trailer "$TRAILER" -m "chore(plan): WI-556 planning artifacts and lane task graph"
+
+# receipt for this commit: emit directly onto its SHA (staging lives in main's .svc and is invisible to this worktree)
+BODY=".svc/receipts/staging/pm-body-wi556.json"; mkdir -p "$(dirname "$BODY")"
+cp "$REPO_ROOT"/.svc/receipts/staging/e0b7c7939be9ad3aba4e292265cb6c7608007580/plan-manifest--WI-556.json "$BODY"
+node scripts/emit-receipt.mjs --type plan-manifest --wi WI-556 --sha "$(git rev-parse HEAD)" --body "$BODY"
+git -C "$REPO_ROOT" reset -q   # unstage main index now that artifacts are carried
+
+# deps: none beyond Node stdlib (no package.json change)
+
+# T1+T2 (g1)
+node -e 'JSON.parse(require("fs").readFileSync("schemas/receipts/skill-coverage.schema.json","utf8"))' && echo SCHEMA-OK
+node --check scripts/lib/skill-coverage.mjs && node --input-type=module -e 'import("./scripts/lib/skill-coverage.mjs").then(m=>console.log(typeof m.compileCoverage==="function"&&typeof m.verifyCoverage==="function"?"LIB-OK":"LIB-MISSING"))'
+git add schemas/receipts/skill-coverage.schema.json scripts/lib/skill-coverage.mjs
+git commit --trailer "$TRAILER" -m "feat(receipts): skill-coverage schema and compile/verify library (WI-556)"
+
+# T3+T4 (g2)
+node --check scripts/check-chain-receipts.mjs && node --check scripts/merge-pr-with-review-receipt.mjs
+git add scripts/check-chain-receipts.mjs scripts/merge-pr-with-review-receipt.mjs
+git commit --trailer "$TRAILER" -m "feat(receipts): coverage verification in checker and atomic merge finalizer (WI-556)"
+
+# T5 (g3)
+bash test-framework/evals/tier-1/validate-skill-coverage.sh
+git add test-framework/evals/tier-1/validate-skill-coverage.sh
+git commit --trailer "$TRAILER" -m "test(tier-1): skill-coverage compile/binding/tamper/termination/concurrency fixtures (WI-556)"
+
+# T6 (g3)
+grep -q "skill-coverage" references/chain-receipt-contract.md && grep -q "WI-556" FRAMEWORK-STATE.md && echo DOCS-OK
+git add references/chain-receipt-contract.md FRAMEWORK-STATE.md
+git commit --trailer "$TRAILER" -m "docs(receipts): register skill-coverage type and arming decision (WI-556)"
+
+# chain continuation
+node scripts/validate-task-graph-lane.mjs .svc/lane-tasks-WI-556.json
+
+# RECOVERY_IF_FAIL: git stash push -u -m "WI-556-wip" (never checkout -- .);
+# fix forward, re-validate, stash pop. Unrecoverable:
+#   bash scripts/worktree.sh remove feature-final-sha-skill-coverage && restart.
+```
+
+## Checkpoint Plan
+
+| Order | Checkpoint | Anchor | Rollback |
+|-------|-----------|--------|----------|
+| 1 | CP-PLAN | Manifest SIMULATED, mechanical suite green (deferred items closed), review-plan PASS | revert plan artifacts |
+| 2 | CP-T1/T2 | schema + library commit green | git reset --soft HEAD~1 in worktree |
+| 3 | CP-T3/T4 | checker + finalizer wired, smokes green | same pattern |
+| 4 | CP-T5 | tier-1 validator PASS | same pattern |
+| 5 | CP-T6 | docs registered, full corpus green | same pattern |
+| 6 | CP-PRELAND | review-exec + audit clean, residual ≤ MEDIUM, mechanical suite re-run fully green in worktree | findings loop-back per review-gate |
+| 7 | CP-LAND | squash + coverage note on final SHA + verify YES | MERGED_UNVERIFIED schedules bounded recovery (D5) |
+
+Sequencing constraint: WI-555 (in_progress) also modifies scripts/check-chain-receipts.mjs; this branch must rebase onto or land after WI-555's chain to avoid checker merge conflicts — resolved at CP-PRELAND before review-exec.
+
+Mechanical-gate sequencing note: C1 path-existence and C10 diff-parity can only be satisfied once CREATE targets materialize inside the worktree; they are therefore enforced as the CP-PRELAND re-run of verify-plan-mechanical plus validate-plan-contract, not waived. Structure-level fixes (headings, contract shape, concrete filenames) are applied now.
+
+## Promotion Readiness Checklist
+
+- [ ] Final diff contains exactly the §Files Planned set
+- [ ] Every task validation executed and logged
+- [ ] All 10 ACs mapped to ≥1 task and ≥1 test type
+- [ ] All checkpoints named with rollback anchors
+- [ ] Schema-drift check: N/A — no ORM/entity files touched (JSON receipt schema is additive, not a data-model migration)
+- [ ] Tier-1 promotion note for new validator — validator_path: test-framework/evals/tier-1/validate-skill-coverage.sh; failure_class: false-completion (final-SHA coverage unobservable); promotion_signal: founder requirement plus HoursHub PR #826 incident (44d9cc57 merged without final-SHA note); expected_runtime_budget: at most 10s hermetic disposable repo (12 scenarios incl. S9 stale-base pre-merge refusal, S11 remap integrity, S12 fetch fail-closed, S10 UNKNOWN classification, shared fixture init); why_tier_2_or_targeted_is_insufficient: protects receipt hot path exercised by pre-push L2 and reconcile L3 on every governed commit
+- [ ] plan-contract.json risk flags match manifest declaration (Check 11)
+- [ ] Lane-model validation exits 0
+- [ ] resource_review.denominator updated to the worktree executable census before CP-LAND
+
+## External State
+
+Taxonomy walk over all 15 environments of references/external-state-lifecycle-protocol.md (git refs, remotes/PR state, CI, caches, registries, env files, containers, cloud resources, external services, filesystem-outside-artifact, host config, process state, scheduled jobs, shared locks, ad-hoc). Matched:
+
+| # | Environment | What state | Coupling | Lifecycle wiring |
+|---|-------------|------------|----------|------------------|
+| 1 | ad-hoc: Git notes ref refs/notes/svc-receipts (local + remote) | skill-coverage receipt appended to existing envelope | coupled | Read authority plus validation in check-chain-receipts (note-required consumers); backup wiring in plan-contract external_writer section |
+| 2 | ad-hoc: GitHub PR merge state (squash SHA created remotely) | existence plus identity of final SHA | coupled | Finalizer fetches mergeCommit via gh pr view and refuses to proceed without it (T4) |
+| 3 | .svc/lane-tasks-WI-556.json pipeline state | graph whose normalized digest becomes graph_digest | coupled | Digest recorded in both manifest and receipt (D2); malformed graphs blocked by lane-tasks hooks |
+| 4 | ad-hoc: tier-1 eval corpus discovery | new validator auto-enrolls in full runs | coupled | run-all-evals.sh globs tier-1/*.sh (verified in simulation log) |
+| 5 | FRAMEWORK-STATE.md Known Gaps and Decisions | closure plus arming-decision record | decoupled-justified | Updated at verify-promotion closeout, not at execution; drift detected by review-gate G7 state sync; recovery: G7 blocks promotion until updated |
+
+Untouched environments (walked the taxonomy, found nothing): databases, caches, registries, env/secrets files, containers/orchestration, cloud resources, paid third-party APIs, scheduled jobs, host wirer configs, process supervision state.
+
+Decoupled justification for #5: the doc record trails implementation by design because its content depends on replay outcomes produced by verify-promotion; monitoring path is the G7 review which fails promotion when FRAMEWORK-STATE lacks the WI-556 closure entry.
+
+## Pre-Implementation Simulation Report
+
+Layer walked: disk. Planned-layer conflicts re-checked at each checkpoint.
+
+| Check | Target | Result |
+|-------|--------|--------|
+| CREATE targets absent | schema, library, validator | PASS ×3 (.svc/plan-changeset-simulation.log) |
+| MODIFY anchors present | REQUIRED_TYPES_FULL@39, NOTE_REQUIRED_CONSUMERS@74, loadSchema@755, --squash@114, terminal exit@200 | PASS ×5 |
+| Imports resolve | state-io.mjs, lib/normalize-ac-table.mjs present; stdlib-only additions | PASS |
+| Fixture parent dir | test-framework/fixtures/ exists; both RMW fixtures written | PASS |
+| Eval auto-discovery | glob-based enrollment confirmed | PASS |
+| Route conflicts | N/A — no routes in framework repo | PASS |
+| Deprecated foundations scan | scan-deprecated-foundations.mjs --fail-on-findings on both MODIFY targets | PASS, 0 findings |
+| New npm deps | none (Node stdlib only) | PASS |
+
+Journey Scenario Walkthrough: no product journeys apply (framework chrome); G7 replays proposal targets 1–4 via tier-1 S-scenarios.
+
+All checks PASS — proceeding to adversarial review.
+
+## Adversarial Review Record
+
+Structure-level mechanical findings already applied during authoring: exact parser headings (Execution Command Sequence, Prerequisite Alignment Matrix, Files Planned→Task Graph block), contract-shaped Files Planned table (T-numbered owners), concrete lane-tasks filename replacing glob, de-backticked promotion-note values, full ownership/claims/executables/resource_review contract fields. Deferred-by-design gates (C1 existence, C10 diff parity, denominator census) are enforced at CP-PRELAND inside the worktree. Self-review Pass 1 and Pass 2 records follow below.
+
+### Self-Review Pass 1 — correctness/completeness (2026-08-22)
+
+| # | Check | Finding | Disposition |
+|---|-------|---------|-------------|
+| 1 | Banned-phrase scan across manifest/WI/lane-tasks | CLEAN | — |
+| 2 | AC coverage matrix | AC-5 row dropped proposal clause "final SHA must carry a valid note envelope" | FIXED — restored |
+| 3 | Naming consistency | `skill-coverage` used uniformly (25 hits); no snake/camel drift | PASS |
+| 4 | Checkpoint referential integrity | Task Graph referenced CP-T7 absent from Checkpoint Plan | FIXED — T7 folded into CP-PLAN commit |
+| 5 | Cross-WI file conflict | WI-555 also touches check-chain-receipts.mjs; unsequenced | FIXED — rebased-after-WI-555 constraint added |
+| 6 | Risk-flag honesty | config_schema_migration/idempotent_rewriter/cross_runtime_integration rejected with reasons in scope log | PASS |
+| 7 | External State completeness | 5 coupled/decoupled entries + untouched-list present | PASS |
+| 8 | Mode fail-closed trap | mode:inline explicit in Header + lane graph + planned receipt field | PASS |
+
+Residual after Pass 1: deferred-by-design mechanical gates only (documented at Checkpoint Plan).
+
+### Self-Review Pass 2 — efficiency convergence (2026-08-22)
+
+| # | Lens | Finding | Disposition |
+|---|------|---------|-------------|
+| 1 | Task-count minimality | 8 owner rows is the floor imposed by diff-parity ownership (every changed path needs exactly one owner); merging T7/T8 would blur meta vs product ownership for zero gate benefit | KEEP |
+| 2 | Parallelism | Waves g0→g1→g2→g3 already maximal given deps (T3⊥T4 after T2) | PASS |
+| 3 | Ceremony minimality | claims[] and executables[] empty — contract carries only matched risk sections + required base arrays | PASS |
+| 4 | Redundant validation listing | branch-level block listed focused validator separately from run-all-evals corpus (double execution) | FIXED — single corpus command with glob note |
+| 5 | Enforcement economics | D6 defers hard-requirement cutoff: zero churn on in-flight WIs, no self-referential land problem | PASS |
+| 6 | Blueprint economics | inline mode skips §3a re-authoring per WI-386; anchors + decisions give executor-equivalent determinism at inline prices | PASS |
+
+Convergence verdict: two consecutive passes with only one cosmetic finding in Pass 2 → residual stable at deferred-gates-only. Plan declared SIMULATED/REVIEWED for handoff to review-plan (lane task 6).
+
+### Self-Review Pass 3 — pre-execution readiness audit (build-mode, 2026-08-22)
+
+Fresh adversarial pass over on-disk artifacts hunting what breaks when executed.
+
+| # | Check | Finding | Severity | Disposition |
+|---|-------|---------|----------|-------------|
+| 1 | Manifest structural integrity after earlier table-insertion incident | exactly one Files Planned / Task Graph section each | — | PASS |
+| 2 | Ownership triangle contract↔manifest | zero multi-owner paths, zero mismatches both directions | — | PASS |
+| 3 | D4 mechanism vs schema reality | exec-record.schema.json has NO phases property — D4 referenced a nonexistent field | HIGH | FIXED — D4 rewritten to producer-binding enum (evidence identity = receipt slot type; skill-load structurally cannot satisfy); S3b wording aligned |
+| 4 | §7a worktree transfer | planning artifacts are untracked on main only; fresh worktree git add would fail | HIGH | FIXED — explicit cp carry step added before add/commit |
+| 5 | Receipt visibility across .svc dirs | staged plan-manifest sits in main's .svc; worktree post-commit hook cannot promote it | MEDIUM | FIXED — per-commit emission with explicit --sha from body copied into worktree's gitignored receipts dir; main index unstaged after carry |
+| 6 | Runtime-budget honesty | under-5s claim unrealistic for 8 disposable-repo scenarios | LOW | FIXED — ≤10s with shared fixture init |
+| 7 | exec-record schema surface cross-check | diff_hash/files_touched/test_results present as assumed by checker integration | — | PASS |
+
+Residual: deferred-by-design CP-PRELAND gates unchanged. Plan re-declared READY for execution.
+
+### Independent Review Disposition — cursor-agent CLI (plan mode, 2026-08-22)
+
+External adversarial review dispatched per founder instruction: `cursor-agent -p --mode plan` grounded against checker/finalizer/task-graph/schemas. Full transcript: .svc/plan-changeset-cursor-agent-review.log (168KB stream-json). Verdict was FIX-FIRST; disposition of all 12 findings:
+
+| # | Sev | Disposition | Fix applied |
+|---|-----|-------------|-------------|
+| 1 required[] trust root / under-compilation | HIGH | ACCEPT | D2: checker cross-checks graph_digest vs commit-tree lane-tasks; absence ⇒ UNKNOWN never YES |
+| 2 digest canonicalization undefined over volatile fields | HIGH | ACCEPT | D2/T1: sorted keys + volatile-state exclusion + two-lifecycle-state digest test |
+| 3 squash-tree ≠ candidate-tree collides with checker tree-bind | HIGH | ACCEPT | D5: divergence ⇒ refuse + MERGED_UNVERIFIED, tree_hash rewriting forbidden; S9 scenario added |
+| 4 composite fixture short-SHA/mixed-target bug | HIGH | ACCEPT | Fixture rewritten: full 40-hex single target (verified by parser-shape assert) |
+| 5 zero-envelope probe uses ref-wide list | MED | ACCEPT | Contract: per-object show+list probe; rev-parse for ref health |
+| 6 gh edge paths (lag/--auto/--rebase/tmpdir cwd/baseRef) | MED | ACCEPT | D5: squash-only refusal set, merge.status gate, bounded poll, baseRef fetch; anchor corrected to post-line-200 gate |
+| 7 CAS lease must use fetched REMOTE tip; flock host-local | MED | ACCEPT | Contract concurrency rewritten accordingly; cross-host limitation documented |
+| 8 UNKNOWN taxonomy missing | MED | ACCEPT | T3 owns read-failure⇒UNKNOWN vs mismatch⇒NO split; S10 deleted-object scenario |
+| 9 schema cannot express counts arithmetic; PASSING_VERDICTS gap | MED | ACCEPT | Semantic checks assigned to verifyCoverage/checker hook incl. skill-coverage verdict handling; schema stays structural |
+| 10 NA-enum churn + unverifiable temporal clause | MED | PARTIAL | v1 enum kept + policy_registry_digest field + decided_at ordering test; registry-growth path documented in T6 |
+| 11 uncovered merges invisible until arming | LOW | SCOPED | Observation-only telemetry recorded as FRAMEWORK-STATE Known Gaps follow-up (T6); no new owned files, Human Checkpoint preserved |
+| 12 misc (glob pin / scenario count / stale contract line / anchor drift) | LOW ×4 | ACCEPT | Exact staging-dir pin; S1–S10 count; line-13 fix folded into T6; §7a anchor re-verify step added |
+
+Post-fix state: mechanical suite re-run shows only the known deferred-by-design gates. Plan re-declared READY.
+
+### Independent Review Disposition — grok-build CLI round 1 (partial, timeout-cut) + codex round 1 (no synthesis)
+
+Both stations dispatched in parallel with a mandatory performance lens (founder requirement: execution must not get measurably slower; net pure effective optimization; baseline chain receipts accepted). grok streamed 4 HIGH findings before the wall-clock ceiling killed it mid-synthesis; codex produced 346KB of tool-grounding but no final report. Round 2 relaunches are detached with completion markers and a known-dispositioned exclusion list so they hunt NEW ground plus PERF-BUDGET.
+
+| # | Sev | Finding | Disposition | Fix applied |
+|---|-----|---------|-------------|-------------|
+| G1 | HIGH | Verbatim slot translation cannot pass checker — slot-key SHA and body target_sha must equal SHA-under-test | ACCEPT | D5: closed identity remap (slot-key sha, target_sha, sha ONLY; tree_hash/diff_hash bytes untouched); S11 fixture asserts both failure directions |
+| G2 | HIGH | Squash object exists only on GitHub until fetched — tree compare and notes write would fail post-merge | ACCEPT | D5: git fetch origin <oid> + notes ref BEFORE any bind/write; S12 fail-closed scenario |
+| G3 | HIGH | Behind-but-mergeable PR squashes to merge-result tree ≠ head tree — common case, dead-end after merge | ACCEPT | D5: pre-merge freshness gate behindBy===0 refuses BEFORE gh merge; MERGED_UNVERIFIED reserved for lag/API mismatch |
+| G4 | HIGH | Exit 3 collides with caller semantics — worktree.sh:625 and land-changeset Step 4 treat non-zero as PR-still-open | ACCEPT | T4 widened: exit-code contract 0/2/3; worktree.sh + land-changeset SKILL.md branch on 3 (owned-file set updated, parity re-verified clean) |
+
+Codex round-1 salvage: none usable as findings (sandbox blocked its temp-write probes; no verdict emitted) — superseded by round 2 with pipes-only instruction.
+
+### Independent Review Disposition — grok-build R2 + codex R2 (both completed, 2026-08-22)
+
+Both stations delivered full reports with PERF-BUDGET tables; both initial verdicts FIX-FIRST. Dispositions:
+
+| Finding | Sev | Disposition | Fix |
+|---|-----|-------------|-----|
+| grok#1 T3 hook is no-op on live checker | HIGH | ACCEPT | Hook verifyCoverage after envelope normalize, presence-gated, default --sha path; PASSING_VERDICTS is not the hook |
+| grok#2 digest-equal ≠ recompile | HIGH | ACCEPT | D2: recompile applicable set from canonicalized tree graph + exact task_id/skill multiset equality; S13 scenario |
+| grok#3 insert-after-line-200 is dead code | HIGH | ACCEPT | T4: REPLACE terminal exit block with finalization sequence |
+| grok#4 compile table missing → own WI can never YES; untracked-.svc repos dead-end | HIGH | ACCEPT | D7/T2 compile table; emission-skip fallback for consumer repos |
+| grok#5 5×2s poll + duplicate checker = slower lands | HIGH | ACCEPT | D5: immediate mergeCommit view, poll-only-if-empty; skip pre-merge checker when land validated |
+| grok#6 range child cap is 5s/10s not 20s; no nested execs | MED | ACCEPT | D2/T3 constraints recorded |
+| grok#7 task-graph CLI-only, wrong API | MED | ACCEPT | T2 internal parse + compileCoverage/verifyCoverage exports |
+| grok#8 duplicate pre/post validation vs land | MED | ACCEPT | T4 skip-if-land-validated; --coverage opt-in, byte-stable default JSON |
+| grok#9 S5 production backoff breaks budget claim | MED | ACCEPT | T5 shared fixture repo, test backoff=0, mechanical stopwatch ≤15s else FAIL |
+| grok#10 policyFingerprint misses new lib | LOW | ACCEPT | T3 fingerprint input |
+| grok#11 envelope cost fine; need ONE RMW+ONE CAS | LOW | ACCEPT | D5/T4 single publish, compact stringify |
+| grok#12 static import taxes legacy SHAs | LOW | ACCEPT | T3 dynamic import presence-gate |
+| codex C1 producer gap for arbitrary tasks | CRITICAL | PARTIAL | D7: scope = mandatory-chain minus verify-promotion (all producers exist); optional skills excluded by lane-model definition; extension = future WI with new producers; child-schema retrofit rejected as scope creep |
+| codex C2 coverage at land cannot include post-merge verify-promotion truthfully | CRITICAL | ACCEPT via C1 scoping | verify-promotion stays governed by CONSUMER_REQUIRED_TYPES + G7 |
+| codex C3 own skips lack registered conditions | HIGH | ACCEPT (dogfooded now) | lane-tasks t0a-c carry structured skip_condition_id/decision_ref/decided_at |
+| codex C4 early returns bypass strict-validate-if-present | HIGH | ACCEPT | T3 hook BEFORE all early returns incl. quick-fix/retroactive tiers + mixed-envelope tests |
+| codex C5 cold reconcile ×16 workers repeat graph reads | HIGH | ACCEPT | Batch cat-file --batch keyed by blob OID + OID/version-keyed digest cache |
+| codex C6 finalizer RT bloat, no latency acceptance | HIGH | ACCEPT | D5 consolidated snapshot, combined refspecs, request-count logging; Validation Plan p95 acceptance: baseline + exactly 1 fetch + 1 notes publish, zero happy-path sleep-poll |
+| codex C7 tier-1 budget unproven | MED | ACCEPT (overlaps grok#9) | Stopwatch assertion enforced in-validator |
+| codex C8 no receipt/envelope byte ceiling (baseline measured: 91 notes, avg 3.8KiB, max 27KiB) | MED | ACCEPT | T1 item cap + total byte ceiling; compact canonical fields |
+
+NET-EFFECT resolution per founder mandate: both stations scored the pre-fix plan SLOWER. Post-fix accounting: legacy SHAs zero cost (presence-gated dynamic import, no git-show); sanctioned land adds exactly one object fetch plus one notes publish over today's wrapper (no sleep-poll, one RMW/one CAS); range reconcile gains batched reads only on coverage-bearing SHAs; tier-1 addition self-enforced at ≤15s shared-fixture wall clock.
+
+<<<END_SVC_REVIEW_REQUEST>>>

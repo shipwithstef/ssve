@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "review_kind": "exec",
+  "rubric_score": 9,
+  "rubric_failures": [],
+  "dependencies_needing_read": [],
+  "reviewer": {
+    "host": "agy",
+    "family": "google",
+    "model": "Gemini 3.7 Flash (High)",
+    "effort": "high"
+  },
+  "verdict": "pass-with-findings",
+  "summary": "WI-556 implementation correctly delivers the final-SHA mandatory-skill coverage contract (AC-1..AC-10) with content-addressed indexing, tamper-resistant recomputation in check-chain-receipts, presence-gated zero-cost execution for legacy commits, and atomic merge finalization with exit-code contract 0/2/3. Three medium/low findings noted around row result accounting during child verification failures, slot phase prefix matching during finalization, and CLI verdict string formatting.",
+  "findings": [
+    {
+      "id": "FINDING-01",
+      "severity": "medium",
+      "claim": "verifyCoverage row result erroneously reports PASS when child receipt type, WI, or slot SHA check fails",
+      "analysis": "In scripts/lib/skill-coverage.mjs verifyCoverage(), lines 2988-2990 evaluate child.receipt_type, child.wi, and slotSha matching, invoking fail() on mismatch. Line 2991 then sets 'beforeLen = reasons.length' immediately prior to checking receipt_sha256 digest matching. If any of the preceding three checks failed but receipt_sha256 matches, 'reasons.length === beforeLen' evaluates to true at line 2993, causing rows.push to report result: 'PASS' and detail: '... slot verified' for that row in the coverage table despite the child validation failures. The overall verifyCoverage verdict correctly returns 'no', but the individual row verdict in rows[] is misleading.",
+      "evidence": [
+        "scripts/lib/skill-coverage.mjs:2988-2994"
+      ],
+      "proposed_fix": "Capture the pre-item reason count before line 2988 (e.g. const itemBeforeLen = reasons.length;) and evaluate row result at line 2993 with 'reasons.length === itemBeforeLen ? \"PASS\" : \"INVALID\"'."
+    },
+    {
+      "id": "FINDING-02",
+      "severity": "medium",
+      "claim": "Merge finalizer child slot resolution only recognizes bare slots and ::P3 phase suffix",
+      "analysis": "In scripts/merge-pr-with-review-receipt.mjs lines 3125-3129, when compiling required entries from remapped child slots, matchedKey checks childBySlot.has(baseSlot) followed only by childBySlot.has(`${baseSlot}::P3`). If a producer receipt slot carries any other phase suffix (e.g. ::P1, ::P5, or custom phase identifiers), matchedKey evaluates to null and falls back to baseSlot, which does not exist in remapped. Consequently, receipt_sha256 is omitted and post-merge verification in check-chain-receipts fails with 'child receipt slot missing', causing merge finalization to exit 3 (MERGED_UNVERIFIED).",
+      "evidence": [
+        "scripts/merge-pr-with-review-receipt.mjs:3125-3132"
+      ],
+      "proposed_fix": "Resolve child slots by prefix matching across childBySlot keys: const matchedKey = childBySlot.has(baseSlot) ? baseSlot : ([...childBySlot.keys()].find((k) => k.startsWith(`${baseSlot}::`)) || null);"
+    },
+    {
+      "id": "FINDING-03",
+      "severity": "low",
+      "claim": "--coverage mode maps passing check results to 'pass' instead of 'YES', printing verdict=PASS instead of verdict=YES",
+      "analysis": "In scripts/check-chain-receipts.mjs line 1240, main() renders coverage tables by mapping row.ok to verdict: verdict === 'YES' ? 'pass' : ... before calling renderCoverageTable. In scripts/lib/skill-coverage.mjs line 3008, renderCoverageTable prints result.verdict.toUpperCase(), outputting 'verdict=PASS' rather than the canonical 'verdict=YES' specified in the WI-556 Goal and AC-2 specification table.",
+      "evidence": [
+        "scripts/check-chain-receipts.mjs:1239-1242",
+        "scripts/lib/skill-coverage.mjs:3008"
+      ],
+      "proposed_fix": "Pass verdict: verdict.toLowerCase() or pass { verdict: row.ok ? 'yes' : ... } so renderCoverageTable prints verdict=YES / verdict=NO / verdict=UNKNOWN."
+    }
+  ],
+  "certifications": [
+    {
+      "key": "adversarial_exec_review",
+      "certified": true,
+      "reviewer_family": "google",
+      "for_content_sha": "4b3c377f1c4f44496dcd4bee6d22b05ac73014a97463bb7360018d0a2c533229"
+    }
+  ]
+}

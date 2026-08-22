@@ -1,5 +1,6 @@
 # Work Items Index
 
+- [WI-556](WI-556.md) — Final-SHA mandatory-skill coverage with terminating receipts: one binary yes/no per final commit via content-addressed `skill-coverage` note index + atomic merge finalization (severity:high) — status:in_progress
 - [WI-555](WI-555.md) — Consumer-local reviewed retroactive receipt recovery: post-WI-472 gaps resolve ledger/bundle/review from `repoRootForCache()`, WI-472 framework-package authority unchanged (severity:high) — status:in_progress
 - [WI-554](WI-554.md) — Centrally installed `check-chain-receipts` must verify schema-v3 reviewer evidence against the consumer/invocation repo root via `repoRootForCache()`, not `SCRIPT_DIR`'s framework parent (severity:critical) — status:VERIFIED-L3 (PR #16 `39e91c1b`, verify-promotion closeout)
 - [WI-553](WI-553.md) — Risk-triggered plan and execution contracts (severity:high) — status:exec-complete (72c4df27); review-exec pending; parent WI-548

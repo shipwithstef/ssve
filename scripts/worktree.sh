@@ -622,11 +622,16 @@ $(git diff --stat "main...$branch_name" 2>/dev/null)" 2>&1 || true
   if $auto_merge && [[ -n "$pr_number" ]]; then
     echo ""
     echo "=== Auto-merge ==="
-    if node "$REPO_ROOT/scripts/merge-pr-with-review-receipt.mjs" --root "$REPO_ROOT" --pr "$pr_number" --squash --delete-branch 2>&1; then
+    local _mrc=0
+    node "$REPO_ROOT/scripts/merge-pr-with-review-receipt.mjs" --root "$REPO_ROOT" --pr "$pr_number" --squash --delete-branch 2>&1 || _mrc=$?
+    if [[ $_mrc -eq 0 ]]; then
       ok "PR #$pr_number merged"
       echo ""
       info "Clean up worktree:"
       echo "  scripts/worktree.sh remove $branch_name"
+    elif [[ $_mrc -eq 3 ]]; then
+      warn "PR #$pr_number MERGED but coverage UNVERIFIED (exit 3 = MERGED_UNVERIFIED)"
+      info "Do NOT reopen the PR or re-merge. Run receipt recovery for the squash SHA, then verify-promotion."
     else
       warn "Auto-merge failed (branch protection or review required?)"
       info "PR #$pr_number is open — waiting for approval"

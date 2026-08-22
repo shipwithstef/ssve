@@ -1,0 +1,233 @@
+{
+  "wi": "WI-556",
+  "lane": "framework",
+  "title": "Final-SHA mandatory-skill coverage with terminating receipts",
+  "created": "2026-08-22",
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "write-spec",
+      "status": "skipped",
+      "skip_reason": "The accepted proposal proposals/2026-08-21-framework-improvement-final-sha-mandatory-skill-coverage.md is the reviewed spec; its ACs AC-1..AC-10 are carried verbatim into the manifest \u00a75/\u00a76 without revision.",
+      "subject": "write-spec (skipped: accepted proposal is the reviewed spec)",
+      "skip_condition_id": "accepted_spec_substitution",
+      "decision_ref": "docs/specs/work-items/WI-556.md",
+      "decided_at": "2026-08-22T07:30:00Z"
+    },
+    {
+      "id": 2,
+      "skill": "design-ux",
+      "status": "skipped",
+      "skip_reason": "No UX surface \u2014 CLI receipt verdict output only, format fixed by the proposal \u00a7Required Product table.",
+      "subject": "design-ux (no UX surface)",
+      "skip_condition_id": "no_product_surface",
+      "decision_ref": "manifest.md#prerequisite-alignment-matrix",
+      "decided_at": "2026-08-22T07:30:00Z"
+    },
+    {
+      "id": 3,
+      "skill": "design-ui",
+      "status": "skipped",
+      "skip_reason": "No UI surface.",
+      "subject": "design-ui (no UI surface)",
+      "skip_condition_id": "no_product_surface",
+      "decision_ref": "manifest.md#prerequisite-alignment-matrix",
+      "decided_at": "2026-08-22T07:30:00Z"
+    },
+    {
+      "id": 4,
+      "skill": "design-tech",
+      "status": "completed",
+      "metadata": {
+        "evidence": "Architecture decisions D1-D6 locked in docs/plans/2026-08-22-final-sha-skill-coverage/manifest.md \u00a7Architecture Decisions, grounded in proposal \u00a7Protocol Contract \u00a7\u00a71-7; risk-flag sections authored in adjacent plan-contract.json"
+      },
+      "subject": "design-tech (D1-D6 locked in manifest + risk-flag contract sections)",
+      "skill_receipt": {
+        "skill": "design-tech",
+        "loaded_at": "2026-08-22T07:45:00Z",
+        "loaded_via": "manual",
+        "evidence": "Architecture Decisions D1-D6 in docs/plans/2026-08-22-final-sha-skill-coverage/manifest.md; risk-flag sections in adjacent plan-contract.json; grounded in proposal Protocol Contract sections 1-7"
+      }
+    },
+    {
+      "id": 5,
+      "skill": "plan-changeset",
+      "status": "completed",
+      "metadata": {
+        "manifest": "docs/plans/2026-08-22-final-sha-skill-coverage/manifest.md",
+        "mode": "inline"
+      },
+      "subject": "plan-changeset: author implementation manifest and task graph",
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-08-22T07:20:00Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-08-22T07:42:52.836Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-archetype.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-08-22T07:42:53.429Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-scope.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-08-22T07:42:54.002Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-22-final-sha-skill-coverage/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-08-22T07:42:54.562Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-22-final-sha-skill-coverage/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-08-22T07:44:54.889Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-08-22T07:44:55.428Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-22T07:46:01.521Z"
+    },
+    {
+      "id": 6,
+      "skill": "review-plan",
+      "status": "completed",
+      "blocked_by": [
+        5
+      ],
+      "subject": "review-plan: mechanical + adversarial plan review",
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-08-22T17:30:00Z",
+        "loaded_via": "manual",
+        "evidence": "AGY external review pass-with-findings; launcher receipt .svc/external-review/wi556-treeid/receipt.json"
+      },
+      "completed_at": "2026-08-22T17:27:40.339Z"
+    },
+    {
+      "id": 7,
+      "skill": "execute-changeset",
+      "status": "completed",
+      "blocked_by": [
+        6
+      ],
+      "metadata": {
+        "mode": "inline"
+      },
+      "subject": "execute-changeset: implement T1-T8 in worktree",
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-08-22T18:00:00Z",
+        "loaded_via": "manual"
+      }
+    },
+    {
+      "id": 8,
+      "skill": "review-gate",
+      "status": "completed",
+      "blocked_by": [
+        7
+      ],
+      "subject": "review-gate: G5 staged-diff review",
+      "skill_receipt": {
+        "skill": "review-gate",
+        "loaded_at": "2026-08-22T21:00:00Z",
+        "loaded_via": "manual",
+        "evidence": "dual-station G5 (cursor-agent + grok-4.6 high): 17 consolidated findings all fixed; validator PASS"
+      }
+    },
+    {
+      "id": 9,
+      "skill": "review-exec",
+      "status": "completed",
+      "blocked_by": [
+        8
+      ],
+      "subject": "review-exec: adversarial execution review via external launcher",
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-08-22T22:00:00Z",
+        "loaded_via": "manual",
+        "evidence": "AGY exec-kind round v2: pass-with-findings rubric 9; findings 01-03 fixed in CP-EXECFIX; launcher receipt .svc/external-review/wi556-exec-v2/receipt.json"
+      }
+    },
+    {
+      "id": 10,
+      "skill": "audit-implementation",
+      "status": "completed",
+      "blocked_by": [
+        9
+      ],
+      "subject": "audit-implementation: correctness audit vs spec ACs",
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-08-22T22:20:00Z",
+        "loaded_via": "manual",
+        "evidence": "docs/specs/audit-reports/WI-556-audit.md"
+      }
+    },
+    {
+      "id": 11,
+      "skill": "land-changeset",
+      "status": "pending",
+      "blocked_by": [
+        10
+      ],
+      "subject": "land-changeset: squash-merge with coverage finalization"
+    },
+    {
+      "id": 12,
+      "skill": "verify-promotion",
+      "status": "pending",
+      "blocked_by": [
+        11
+      ],
+      "subject": "verify-promotion: post-merge verification + G7 closeout"
+    }
+  ],
+  "persona_coverage": {
+    "status": "not_required",
+    "reason": "Framework-lane receipt-integrity change with no user-facing product surface; no personas apply - see manifest Prerequisite Alignment Matrix persona trace row.",
+    "decision_ref": "docs/plans/2026-08-22-final-sha-skill-coverage/manifest.md#prerequisite-alignment-matrix"
+  },
+  "status": "in_progress"
+}

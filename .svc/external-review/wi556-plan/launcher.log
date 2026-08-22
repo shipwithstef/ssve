@@ -1,0 +1,1 @@
+external-review: internal failure: internal receipt schema failure: $.requested_tuple: no anyOf branch matched; $.candidate_digest: owner-configured review must bind the frozen candidate

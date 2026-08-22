@@ -1,0 +1,126 @@
+{
+  "schema_version": 2,
+  "launcher_version": "2.4.0",
+  "cli_version": null,
+  "request_id": "dbd692d6-5f69-468c-9e14-94ff3c54b09d",
+  "review_kind": "plan",
+  "candidate_digest": "b44d3df3f0f036bb7000cd835121f16e7c20c7d3c368caa37194e078c1548039",
+  "package_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "findings_schema_sha256": "c53006becb41df17e49ba913ddffa9b9fa70c0e1f2039fb9b86457446191774b",
+  "findings_sha256": null,
+  "cache_key": "",
+  "fixture_mode": false,
+  "started_at": "2026-08-22T15:48:35.936Z",
+  "finished_at": "2026-08-22T15:48:35.947Z",
+  "status": "failure",
+  "classification": "input_invalid",
+  "requested_tuple": {
+    "orchestrator": "codex",
+    "host": "agy",
+    "family": "google",
+    "model": "Gemini 3.7 Flash (High)",
+    "effort": "high"
+  },
+  "invocation_tuple": null,
+  "effective_tuple": null,
+  "attempts": [],
+  "reviewer_run": {
+    "commands": [],
+    "output_artifacts": []
+  },
+  "fallback": {
+    "eligible": false,
+    "used": false,
+    "reason": null
+  },
+  "override": {
+    "used": false,
+    "authority": null,
+    "source": null,
+    "path": null,
+    "expected_sha256": null,
+    "actual_sha256": null
+  },
+  "policy": {
+    "version": 2,
+    "profile": "fast-local:agy",
+    "source": "owner-config",
+    "resolved_at": "2026-08-22T15:48:35.935Z",
+    "effective_window": {
+      "starts_at": null,
+      "ends_at": null
+    },
+    "cutover_utc": null,
+    "cutover_local": null,
+    "timezone": null,
+    "selection_sha256": "a781f488e7ec5e7507b0ddf1d4556a17b37d6901bbc62130f1476fdcb83acbbb",
+    "selection_expires_at": null,
+    "selection_authority": "repository-owner"
+  },
+  "protocol": {
+    "process_invocations": 0,
+    "configured_turn_ceiling": null,
+    "configured_budget_usd": null,
+    "reported_turns": null,
+    "stop_reason": null,
+    "terminal_reason": null,
+    "errors": []
+  },
+  "route": {
+    "kind": "hard_failure",
+    "switching_enabled": false,
+    "cli_fallback_configured": false,
+    "evidence": "failure"
+  },
+  "effective_effort": {
+    "value": null,
+    "provenance": "none"
+  },
+  "model_attestation": {
+    "level": "none",
+    "requested_model": null,
+    "observed_models": [],
+    "evidence": null
+  },
+  "phase_guard": {
+    "applicable": false,
+    "kind": "plan",
+    "decision": "not-applicable",
+    "reason": null,
+    "wi": null,
+    "pre_execution_base": null,
+    "plan_manifest_sha256": null,
+    "exec_record_present": null,
+    "exec_record_path": null,
+    "implementation_diverged": null,
+    "diverged_files": [],
+    "base_resolved": null,
+    "override": {
+      "used": false,
+      "authority": null,
+      "source": null,
+      "path": null,
+      "expected_sha256": null,
+      "actual_sha256": null,
+      "kind": null
+    }
+  },
+  "package_context": {
+    "version": 1,
+    "context_root": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage",
+    "base_package_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "files": []
+  },
+  "cache": {
+    "disposition": "skipped",
+    "reusable": false,
+    "entry": null
+  },
+  "artifacts": {
+    "findings": null,
+    "receipt": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/.svc/external-review/wi556-plan/receipt.json",
+    "package": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/.svc/external-review/wi556-plan/review-package.bin",
+    "capabilities": null
+  },
+  "usage": {}
+}

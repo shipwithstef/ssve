@@ -1,0 +1,21 @@
+{
+  "_comment": "Lossless-RMW fixture: WI-550 composite-slot envelope shape. Keys carry FULL 40-hex target SHAs and ONE target per envelope so parseCompositeSlotKey classifies every entry as composite (cursor-agent finding #4). The coverage RMW must preserve sibling slots byte-semantically.",
+  "slot::plan-manifest::WI-555::21da99be00000000000000000000000000000000": {
+    "receipt_type": "plan-manifest",
+    "schema_version": 3,
+    "wi": "WI-555",
+    "timestamp": "2026-08-21T10:00:00Z"
+  },
+  "slot::exec-record::WI-555::21da99be00000000000000000000000000000000::P3": {
+    "receipt_type": "exec-record",
+    "wi": "WI-555",
+    "phase": "P3",
+    "timestamp": "2026-08-21T11:30:00Z"
+  },
+  "slot::review-exec::WI-555::21da99be00000000000000000000000000000000": {
+    "receipt_type": "review-exec",
+    "wi": "WI-555",
+    "verdict": "pass",
+    "timestamp": "2026-08-21T12:00:00Z"
+  }
+}

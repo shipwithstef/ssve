@@ -1,0 +1,15 @@
+{
+  "_comment": "Lossless-RMW fixture: pre-WI-550 legacy envelope shape keyed by bare receipt type. Projection ambiguity rules apply; the coverage RMW must not drop or rewrite these entries.",
+  "plan-manifest": {
+    "receipt_type": "plan-manifest",
+    "schema_version": 2,
+    "wi": "WI-508",
+    "timestamp": "2026-07-22T09:00:00Z"
+  },
+  "verify-promotion": {
+    "receipt_type": "verify-promotion",
+    "wi": "WI-508",
+    "verdict": "pass",
+    "timestamp": "2026-07-23T16:00:00Z"
+  }
+}
