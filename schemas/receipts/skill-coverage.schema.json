@@ -1,0 +1,194 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "skill-coverage",
+  "description": "WI-556 final-SHA mandatory-skill coverage index. Structural contract only: semantic truth is recomputed by scripts/lib/skill-coverage.mjs verifyCoverage against the commit-tree graph and every referenced child receipt. Emission is allowed only with verdict=pass.",
+  "type": "object",
+  "required": [
+    "receipt_type",
+    "schema_version",
+    "wi",
+    "target_sha",
+    "tree_hash",
+    "graph_digest",
+    "graph_source",
+    "canonicalizer_version",
+    "required",
+    "counts",
+    "verdict",
+    "generated_at"
+  ],
+  "properties": {
+    "receipt_type": {
+      "const": "skill-coverage"
+    },
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "wi": {
+      "type": "string",
+      "pattern": "^WI-[A-Z0-9][A-Z0-9_-]*$"
+    },
+    "target_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "tree_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "graph_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "graph_source": {
+      "enum": [
+        "commit_tree",
+        "candidate_tree_fetched"
+      ]
+    },
+    "canonicalizer_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "required": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "required": [
+          "task_id",
+          "skill",
+          "reason",
+          "status",
+          "producer_receipt_type"
+        ],
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "skill": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "enum": [
+              "mandatory_chain"
+            ]
+          },
+          "status": {
+            "enum": [
+              "pass",
+              "authorized_na"
+            ]
+          },
+          "producer_receipt_type": {
+            "enum": [
+              "plan-manifest",
+              "review-plan",
+              "exec-record",
+              "review-exec",
+              "audit-implementation"
+            ]
+          },
+          "receipt_slot": {
+            "type": "string",
+            "minLength": 1
+          },
+          "receipt_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "policy_condition_id": {
+            "enum": [
+              "accepted_spec_substitution",
+              "external_grade_addon",
+              "no_product_surface",
+              "conditional_route_rule"
+            ]
+          },
+          "decision_ref": {
+            "type": "string",
+            "minLength": 1
+          },
+          "decided_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "authorized_na"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "policy_condition_id",
+                "decision_ref",
+                "decided_at"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "pass"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "receipt_slot"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "counts": {
+      "type": "object",
+      "required": [
+        "required",
+        "pass",
+        "authorized_na"
+      ],
+      "properties": {
+        "required": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pass": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "authorized_na": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "verdict": {
+      "const": "pass"
+    },
+    "envelope_provenance": {
+      "type": "object"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "policy_registry_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "additionalProperties": false
+}

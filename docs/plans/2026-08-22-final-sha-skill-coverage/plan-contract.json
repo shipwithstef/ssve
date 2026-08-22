@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "wi": "WI-556",
+  "manifest": "docs/plans/2026-08-22-final-sha-skill-coverage/manifest.md",
+  "risk_flags": [
+    "runtime_concurrency",
+    "external_state_writer",
+    "lossless_rmw"
+  ],
+  "concurrency": {
+    "atomic_primitive": "compare_and_swap",
+    "owner_key": "operator git identity + target final SHA + freshly FETCHED REMOTE notes-ref tip OID (lease value read via git fetch origin refs/notes/svc-receipts immediately before each attempt)",
+    "concurrent_invoke_behavior": "Fetches the remote notes tip, JSON-merges only its own slot into that fetched envelope, then publishes refs/notes/svc-receipts via git push --force-with-lease=refs/notes/svc-receipts:<fetched-remote-tip-OID>. A concurrent writer (same or different host) advances the remote tip; the loser's lease fails as non-fast-forward, it re-fetches, re-merges its slot into the fresh tip, and retries bounded at 5 attempts with linear backoff. Overwriting a foreign tip never occurs; exhaustion reports MERGED_UNVERIFIED naming the losing slot. The flock lock is same-host coordination only; cross-host safety rests entirely on the fetched-tip lease.",
+    "stale_lock_cleanup": "Per-target-SHA advisory lock file $(git rev-parse --git-common-dir)/svc-locks/<final-sha>.lock held via flock for the envelope read-modify-write window. The OS releases flock when the holder process exits or crashes, so orphaned holders self-heal on the next acquisition; no janitor process exists.",
+    "concurrency_test": "test-framework/evals/tier-1/validate-skill-coverage.sh scenario S5: two concurrent emitters race one CAS update on a disposable repo; exactly one loses the lease, retries after re-merge, and BOTH slots survive in the final envelope."
+  },
+  "external_writer": {
+    "immutable_baseline": ".svc/receipts/pre-coverage/<final-sha>-envelope.json \u2014 write-once copy of the complete envelope bytes read before the first coverage mutation; the finalizer never rewrites this file.",
+    "rolling_rollback": "refs/notes/svc-receipts-backup/<rfc3339-ts> \u2014 notes ref created before any recovery mutation; restore procedure re-publishes this ref over refs/notes/svc-receipts (distinct from the immutable baseline file).",
+    "read_failure_policy": "Absence versus corruption is probed PER OBJECT: git notes --ref=svc-receipts show <final-sha> failing AND git notes --ref=svc-receipts list <final-sha> returning empty means genuinely absent for this object (initialize-empty allowed with provenance recorded in envelope_provenance); any other read failure (corrupt JSON, git errors) aborts with MERGED_UNVERIFIED. Ref-level health is checked separately once via git rev-parse refs/notes/svc-receipts.",
+    "file_mode_preservation": "n/a \u2014 targets are Git object-store artifacts (blobs and notes refs), not working-tree files; git preserves object modes internally."
+  },
+  "lossless_rmw": {
+    "entry_types": [
+      {
+        "type": "composite-slot",
+        "fixture": "test-framework/fixtures/skill-coverage/envelope-composite.json"
+      },
+      {
+        "type": "legacy-envelope",
+        "fixture": "test-framework/fixtures/skill-coverage/envelope-legacy.json"
+      }
+    ]
+  },
+  "base_sha": "75986ebecabafc599c6acdcdf2617db8b91b0c4a",
+  "ownership": [
+    {
+      "task": "T1",
+      "paths": [
+        "schemas/receipts/skill-coverage.schema.json"
+      ]
+    },
+    {
+      "task": "T2",
+      "paths": [
+        "scripts/lib/skill-coverage.mjs"
+      ]
+    },
+    {
+      "task": "T3",
+      "paths": [
+        "scripts/check-chain-receipts.mjs"
+      ]
+    },
+    {
+      "task": "T4",
+      "paths": [
+        "scripts/merge-pr-with-review-receipt.mjs",
+        "scripts/worktree.sh",
+        "skills/land-changeset/SKILL.md"
+      ]
+    },
+    {
+      "task": "T5",
+      "paths": [
+        "test-framework/evals/tier-1/validate-skill-coverage.sh",
+        "test-framework/fixtures/skill-coverage/envelope-composite.json",
+        "test-framework/fixtures/skill-coverage/envelope-legacy.json"
+      ]
+    },
+    {
+      "task": "T6",
+      "paths": [
+        "references/chain-receipt-contract.md",
+        "FRAMEWORK-STATE.md"
+      ]
+    },
+    {
+      "task": "T7",
+      "paths": [
+        "docs/specs/work-items/WI-556.md",
+        "docs/specs/work-items/INDEX.md",
+        ".svc/lane-tasks-WI-556.json"
+      ]
+    },
+    {
+      "task": "T8",
+      "paths": [
+        "docs/plans/2026-08-22-final-sha-skill-coverage/manifest.md",
+        "docs/plans/2026-08-22-final-sha-skill-coverage/plan-contract.json"
+      ]
+    }
+  ],
+  "resource_writers": [],
+  "claims": [],
+  "executables": [],
+  "resource_review": {
+    "verification": "changed-executable-census",
+    "denominator": 0,
+    "evidence": "Census recomputed by validate-plan-contract on every run against base_sha; planning-state tree contains zero changed executable files (manifest/WI/lane-tasks are .md/.json); at CP-PRELAND inside the worktree the denominator is updated to the post-execution census and disposition re-evaluated.",
+    "disposition": "no-risky-resource-writers"
+  }
+}

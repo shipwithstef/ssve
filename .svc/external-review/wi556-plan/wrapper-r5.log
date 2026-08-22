@@ -1,0 +1,1 @@
+review-plan-codex: cannot derive exactly one authoritative WI (found 3: WI-386 WI-555 WI-556); refusing plan review before any provider call. Use an unambiguous WI branch or plan, or run review-exec if implementation has begun.

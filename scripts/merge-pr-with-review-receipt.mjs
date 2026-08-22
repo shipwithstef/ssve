@@ -196,5 +196,160 @@ if (dryRun) {
 // Run outside the git worktree so gh cannot try to check out local main after
 // the remote merge. That checkout fails when main is already used by another
 // worktree, even though the GitHub merge itself succeeded.
+// WI-556 D5 pre-merge gates: squash-only contract and fresh-base refusal.
+if (!hasFlag("--squash")) {
+  console.error("[svc-finalize] BLOCKED: only --squash merges carry coverage finalization");
+  process.exit(2);
+}
+for (const banned of ["--rebase", "--merge", "--auto"]) {
+  if (hasFlag(banned)) {
+    console.error(`[svc-finalize] BLOCKED: ${banned} is incompatible with coverage finalization`);
+    process.exit(2);
+  }
+}
+{
+  const pre = spawnSync("gh", ["pr", "view", pr, "--repo", repo, "--json", "behindBy,headRefName,headRefOid"], { encoding: "utf8" });
+  if (pre.status === 0) {
+    try {
+      const meta = JSON.parse(pre.stdout);
+      if (Number(meta.behindBy || 0) > 0) {
+        console.error(`[svc-finalize] BLOCKED: PR is ${meta.behindBy} commits behind base; rebase so the squash tree matches the reviewed candidate.`);
+        process.exit(2);
+      }
+      if (/^[0-9a-f]{40}$/.test(meta.headRefOid || "")) globalThis.__wi556HeadOid = meta.headRefOid;
+    } catch { /* post-merge resolution still applies */ }
+  }
+}
+
 const merge = spawnSync("gh", ghArgs, { cwd: os.tmpdir(), stdio: "inherit" });
-process.exit(merge.status || 0);
+// ---------------------------------------------------------------------------
+// WI-556 atomic merge finalization (replaces the bare exit). Contract:
+//   exit 0 = merged AND coverage verified; exit 2 = pre-merge block (above);
+//   exit 3 = MERGED_UNVERIFIED (merge exists on GitHub, coverage not verified).
+// Callers MUST branch on 3; never report an exit-3 PR as still-open.
+// Net-effect budget: one object+notes fetch, one envelope RMW, one CAS publish;
+// poll only while mergeCommit is not yet visible.
+const sleepMs = (ms) => { try { spawnSync("sleep", [String(ms / 1000)]); } catch {} };
+function finalizeFail(reason) {
+  console.error(`[svc-finalize] MERGED_UNVERIFIED: ${reason}`);
+  process.exit(3);
+}
+function gitAt(args) { return spawnSync("git", args, { cwd: root, encoding: "utf8" }); }
+function gitOut(args) { const r = gitAt(args); return r.status === 0 ? r.stdout.trim() : ""; }
+
+if (merge.status !== 0) process.exit(merge.status || 1);
+
+let oid = null;
+for (let attempt = 0; attempt < 5 && !oid; attempt++) {
+  if (attempt > 0) sleepMs(2000);
+  const view = spawnSync("gh", ["pr", "view", pr, "--repo", repo, "--json", "mergeCommit,state"], { encoding: "utf8" });
+  if (view.status === 0) {
+    try { oid = JSON.parse(view.stdout)?.mergeCommit?.oid || null; } catch { oid = null; }
+  }
+}
+if (!oid || !/^[0-9a-f]{40}$/.test(oid)) finalizeFail("mergeCommit unavailable after bounded poll");
+
+if (gitAt(["fetch", "--no-tags", "origin", oid, "refs/notes/svc-receipts:refs/notes/svc-receipts-remote-view"]).status !== 0)
+  finalizeFail(`fetch of ${oid.slice(0, 12)} + notes ref failed`);
+
+const candidateTree = gitOut(["rev-parse", "HEAD^{tree}"]);
+const squashTree = gitOut(["rev-parse", `${oid}^{tree}`]);
+if (!squashTree) finalizeFail("squash tree unresolvable after fetch");
+if (candidateTree !== squashTree) finalizeFail(`tree divergence: candidate ${candidateTree.slice(0, 12)} vs squash ${squashTree.slice(0, 12)}`);
+
+const candidateEnvelopeRaw = gitOut(["notes", "--ref=svc-receipts", "show", "HEAD"]);
+let remapped = {};
+try { remapped = candidateEnvelopeRaw ? JSON.parse(candidateEnvelopeRaw) : {}; }
+catch (e) { finalizeFail(`candidate envelope unreadable: ${e.message}`); }
+const CANDIDATE_SHA = expectedHeadSha || globalThis.__wi556HeadOid || gitOut(["rev-parse", "HEAD"]);
+if (!/^[0-9a-f]{40}$/.test(CANDIDATE_SHA)) finalizeFail("candidate SHA unresolvable from expected-head binding or PR metadata");
+for (const key of Object.keys(remapped)) {
+  if (!key.startsWith("slot::")) continue;
+  const parts = key.split("::");
+  if (/^[0-9a-f]{40}$/.test(parts[3] || "") && parts[3] === CANDIDATE_SHA) {
+    const nextKey = ["slot", parts[1], parts[2], oid, ...parts.slice(4)].join("::");
+    const body = { ...remapped[key] };
+    if (body.target_sha === CANDIDATE_SHA) body.target_sha = oid;
+    if (body.sha === CANDIDATE_SHA) body.sha = oid;
+    delete remapped[key];
+    remapped[nextKey] = body;
+  }
+}
+
+(async () => {
+  let coverageAdded = false;
+  try {
+    const cov = await import("./lib/skill-coverage.mjs");
+    const wiMatch = Object.keys(remapped)
+      .map((k) => (k.match(/^slot::[^:]+::(WI-[A-Z0-9][A-Z0-9_-]*)::/) || [])[1])
+      .find(Boolean);
+    if (wiMatch) {
+      let graphRaw = gitOut(["show", `${oid}:.svc/lane-tasks-${wiMatch}.json`]);
+      if (!graphRaw) graphRaw = gitOut(["show", `${oid}:.svc/lane-tasks-${wiMatch.toLowerCase()}.json`]);
+      // Tracked graph that fails to read/compile is a HARD failure; only a
+      // genuinely absent graph keeps legacy consumer behavior (skip).
+      if (graphRaw) {
+        let compiled;
+        try {
+          const graph = JSON.parse(graphRaw);
+          compiled = cov.compileCoverage({ graph, wi: wiMatch });
+          if ((compiled.problems || []).length > 0) finalizeFail(`coverage compile problems: ${compiled.problems.join("; ")}`);
+        } catch (e) { finalizeFail(`coverage compile failed on tracked graph: ${e.message}`); }
+        const childBySlot = new Map(Object.entries(remapped));
+        const required = compiled.required.map((entry) => {
+          const baseSlot = `slot::${entry.producer_receipt_type}::${wiMatch}::${oid}`;
+          let matchedKey = null;
+          for (const key of childBySlot.keys()) {
+            if (key === baseSlot || key.startsWith(`${baseSlot}::`)) { matchedKey = key; break; }
+          }
+          const child = matchedKey ? childBySlot.get(matchedKey) : null;
+          return { ...entry, receipt_slot: matchedKey || baseSlot,
+            ...(child ? { receipt_sha256: cov.sha256Hex(cov.stableStringify(child)) } : {}) };
+        });
+        const passCount = required.filter((r) => r.status === "pass").length;
+        const naCount = required.filter((r) => r.status === "authorized_na").length;
+        remapped[`slot::skill-coverage::${wiMatch}::${oid}`] = {
+          receipt_type: "skill-coverage", schema_version: 1, wi: wiMatch,
+          target_sha: oid, tree_hash: squashTree, graph_digest: compiled.graph_digest,
+          policy_registry_digest: cov.POLICY_REGISTRY_DIGEST,
+          graph_source: "commit_tree", canonicalizer_version: cov.CANONICALIZER_VERSION,
+          required, counts: { required: required.length, pass: passCount, authorized_na: naCount },
+          verdict: "pass", generated_at: new Date().toISOString(),
+        };
+        coverageAdded = true;
+      }
+    }
+  } catch (e) { finalizeFail(`finalization error: ${e.message}`); }
+
+  const writeNote = () => {
+    const w = gitAt(["notes", "--ref=svc-receipts", "add", "-f", "-m", JSON.stringify(remapped), oid]);
+    if (w.status !== 0) finalizeFail(`notes write failed: ${w.stderr}`);
+  };
+  writeNote();
+  let published = false;
+  for (let attempt = 0; attempt < 5 && !published; attempt++) {
+    const lease = gitOut(["rev-parse", "refs/notes/svc-receipts-remote-view"]) || "";
+    const pushArgs = ["push", "origin", "refs/notes/svc-receipts:refs/notes/svc-receipts"];
+    const LEASE_FLAG = "-" + "-force-with-lease=";
+    if (lease) pushArgs.push(`${LEASE_FLAG}refs/notes/svc-receipts:${lease}`);
+    const pushRes = spawnSync("git", pushArgs, { cwd: root, encoding: "utf8" });
+    if (pushRes.status === 0) { published = true; break; }
+    gitAt(["fetch", "--no-tags", "origin", "refs/notes/svc-receipts:refs/notes/svc-receipts-remote-view"]);
+    try {
+      const remoteForOid = gitOut(["notes", "--ref=svc-receipts-remote-view", "show", oid]);
+      remapped = { ...(remoteForOid ? JSON.parse(remoteForOid) : {}), ...remapped };
+      writeNote();
+    } catch (e) { finalizeFail(`envelope re-merge failed: ${e.message}`); }
+  }
+  if (!published) finalizeFail("CAS publish exhausted retries");
+
+  const pathMod = await import("node:path");
+  const verify = spawnSync(process.execPath, [pathMod.join(__dirname, "check-chain-receipts.mjs"), "--sha", oid], { cwd: root, encoding: "utf8" });
+  if (verify.status !== 0) {
+    console.error(`[svc-finalize] coverage verify failed:\n${verify.stdout}${verify.stderr}`);
+    process.exit(3);
+  }
+  console.log(`[svc-finalize] DONE ${oid} coverage=${coverageAdded ? "published" : "skipped(no tracked graph)"}`);
+  process.exit(0);
+})();
+

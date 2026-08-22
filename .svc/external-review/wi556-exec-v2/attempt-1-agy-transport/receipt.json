@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "request_id": "91eac48a-adb0-4cfa-aabf-4347294b4981",
+  "started_at": "2026-08-22T19:12:14.698Z",
+  "finished_at": "2026-08-22T19:13:18.905Z",
+  "status": "success",
+  "classification": "success",
+  "requested_model": "Gemini 3.7 Flash (High)",
+  "requested_effort": "high",
+  "response_schema_sha256": null,
+  "model_attestation": {
+    "level": "requested_accepted",
+    "evidence": "exact_model_argv_plus_successful_process_exit_no_server_model_echo"
+  },
+  "package_sha256": "63f9501558ad346856c253db25dad1a0286dae3f7a2dd82e01361a4e57370f8e",
+  "package_bytes": 229007,
+  "transport": "stdin_to_private_mode_0600_file",
+  "sandbox": true,
+  "mode": "plan",
+  "timeout_seconds": 1200,
+  "identical_json_repetitions_collapsed": 0,
+  "exit_code": 0,
+  "signal": null,
+  "artifacts": {
+    "output": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/.svc/external-review/wi556-exec-v2/attempt-1-agy-transport/output.txt",
+    "stderr": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/.svc/external-review/wi556-exec-v2/attempt-1-agy-transport/stderr.log"
+  }
+}

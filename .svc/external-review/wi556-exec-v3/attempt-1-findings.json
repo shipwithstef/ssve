@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "review_kind": "exec",
+  "rubric_score": 9,
+  "rubric_failures": [],
+  "dependencies_needing_read": [],
+  "reviewer": {
+    "host": "agy",
+    "family": "google",
+    "model": "Gemini 3.7 Flash (High)",
+    "effort": "high"
+  },
+  "verdict": "pass-with-findings",
+  "summary": "Final adversarial execution review for WI-556 (Final-SHA mandatory-skill coverage with terminating receipts). The implementation is verified to correctly enforce final-SHA coverage verification in check-chain-receipts.mjs, atomic merge finalization in merge-pr-with-review-receipt.mjs, deterministic compilation/verification in scripts/lib/skill-coverage.mjs, and schema validation. A minor display formatting issue was identified on the passing path of --coverage mode where result.coverage_rows retains the array of result objects rather than flattened task rows.",
+  "findings": [
+    {
+      "id": "WI-556-EXEC-01",
+      "severity": "low",
+      "claim": "--coverage mode table rendering prints undefined columns for passing target SHAs due to unflattened coverage_rows",
+      "analysis": "In check-chain-receipts.mjs, checkShaAgainstReceipts collects verifyCoverage result objects into coverageResults ([{ verdict, reasons, rows }]) and invokes options.coverageReport(coverageResults). In checkSha, the callback captures this array and sets result.coverage_rows = capturedCoverageRows.flat(). Because capturedCoverageRows is a 1D array of result objects, .flat() returns the array of result objects instead of extracting and flattening the inner result.rows arrays. In main(), renderCoverageTable expects rows to be individual task rows ({ task_id, skill, status, result, detail }), causing table rendering on the passing path to print undefined for each column. The failure path (when result.verdict !== 'pass') returns result.rows directly and renders correctly.",
+      "evidence": [
+        "scripts/check-chain-receipts.mjs:2697",
+        "scripts/check-chain-receipts.mjs:2705",
+        "scripts/check-chain-receipts.mjs:2741",
+        "scripts/lib/skill-coverage.mjs:3056"
+      ],
+      "proposed_fix": "In scripts/check-chain-receipts.mjs checkSha, update the options.coverageReport callback to extract and flatten the row arrays: options.coverageReport = (res) => { capturedCoverageRows = res.flatMap((r) => r.rows || []); };"
+    }
+  ],
+  "certifications": []
+}

@@ -62,6 +62,11 @@ Skills that update this: same list + any manual framework change
 
 > Gemini parity-drift note (2026-06-07, WI-367): gemini host rejects `UserPromptSubmit`/`Stop` hook event names from project config (live stderr evidence) — wire-gemini-hooks must map or omit them.
 
+## Known Gaps (WI-556 open items)
+
+- Coverage enforcement arming (hard-required skill-coverage on future SHAs) is deferred pending owner decision after first live replay; until then merges performed OUTSIDE the finalizer produce no coverage note and only reconcile-level observation exists (telemetry follow-up).
+- Extending coverage required[] beyond the five producer-backed chain skills requires new authoritative producers (future WI; see manifest D7).
+
 ## Blend History
 
 | Source | Date | Patterns taken | Key additions |

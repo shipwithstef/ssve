@@ -35,6 +35,7 @@ import { deriveTier } from "./derive-receipt-tier.mjs";
 import { familyOf } from "./lib/cognitive-family.mjs";
 import { verifyReviewerEvidence } from "./lib/reviewer-evidence.mjs";
 import { isExternalizedHistoryRange } from "./lib/history-epoch.mjs";
+import { verifyCoverage, renderCoverageTable, CANONICALIZER_VERSION as COVERAGE_CANONICALIZER_VERSION } from "./lib/skill-coverage.mjs";
 
 const REQUIRED_TYPES_FULL = [
   "plan-manifest",
@@ -247,10 +248,13 @@ function reconcileCacheIsIgnored() {
 }
 
 function policyFingerprint() {
+  // WI-556: the coverage verifier participates in reconcile cache identity so a
+  // later tighten of skill-coverage.mjs invalidates stale green sets.
   const inputs = [
     join(repoRootForCache(), ".svc", "chain-policy.json"),
     join(SCRIPT_DIR, "quick-fix-eligibility.mjs"),
     join(SCRIPT_DIR, "classify-change-risk.mjs"),
+    join(SCRIPT_DIR, "lib", "skill-coverage.mjs"),
   ];
   const parts = inputs.map((p) => { try { return readFileSync(p, "utf8"); } catch { return ""; } });
   return createHash("sha256").update(parts.join("")).digest("hex");
@@ -834,6 +838,8 @@ function validateReceipt(receiptType, receipt, sha = null) {
 }
 
 function checkSha(sha, options = {}) {
+  let capturedCoverageRows;
+  if (options.coverageMode) options.coverageReport = (rows) => { capturedCoverageRows = rows; };
   const { envelope, source } = getReceiptsForSha(sha);
   const consumer = options.consumer || null;
   if (NOTE_REQUIRED_CONSUMERS.has(consumer) && source !== "note") {
@@ -850,6 +856,7 @@ function checkSha(sha, options = {}) {
     };
   }
   const result = checkShaAgainstReceipts(sha, envelope, options);
+  if (options.coverageMode && capturedCoverageRows !== undefined) result.coverage_rows = capturedCoverageRows.flat(2);
   return {
     ...result,
     receipt_source: source,
@@ -899,6 +906,37 @@ function checkShaAgainstReceipts(sha, envelope, options = {}) {
 
   if (wi && Object.keys(receiptEntries).length === 0) {
     return { sha, ok: false, missing: [`no receipts found for ${wi} at ${sha}`], type: "incomplete" };
+  }
+
+  // WI-556: strict-validate any present skill-coverage receipt BEFORE every
+  // early return — quick-fix/retroactive/consumer tiers cannot bypass it.
+  // Presence-gated: envelopes without the type pay zero added work.
+  const coverageSlotEntries = normalized.entries.filter((entry) => entry.receiptType === "skill-coverage");
+  if (coverageSlotEntries.length > 0) {
+    const coverageResults = [];
+    for (const covEntry of coverageSlotEntries) {
+      const covWi = wi || covEntry.wi || covEntry.receipt?.wi;
+      let treeGraphRaw = null;
+      for (const graphPath of [`.svc/lane-tasks-${covWi}.json`, `.svc/lane-tasks-${String(covWi || "").toLowerCase()}.json`]) {
+        try { treeGraphRaw = gitTry(["show", `${sha}:${graphPath}`]) || null; } catch { treeGraphRaw = null; }
+        if (treeGraphRaw) break;
+      }
+      const slotMap = new Map();
+      for (const candidate of normalized.entries) slotMap.set(candidate.key, candidate.receipt);
+      let result;
+      try {
+        result = verifyCoverage({ receipt: covEntry.receipt, treeGraphRaw, resolveChild: (slot) => slotMap.get(slot) || null });
+      } catch (error) {
+        return { sha, ok: false, missing: [`skill-coverage verification error: ${error.message}`], type: "invalid", coverage_verdict: "unknown" };
+      }
+      result.targetSha = sha;
+      coverageResults.push(result);
+      if (result.verdict !== "pass") {
+        const tag = result.verdict === "unknown" ? "UNKNOWN-INFRA_FAILURE" : "NO";
+        return { sha, ok: false, missing: [`skill-coverage ${tag}: ${result.reasons.join("; ")}`], type: "invalid", coverage_verdict: result.verdict, coverage_rows: result.rows };
+      }
+    }
+    if (options.coverageReport) options.coverageReport(coverageResults);
   }
 
   if (receiptEntries["retroactive-attestation"]) {
@@ -1087,6 +1125,7 @@ async function main() {
   let wi = null;
   let consumer = null;
   let expectedStage = null;
+  let coverageMode = false;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--sha") {
@@ -1109,6 +1148,8 @@ async function main() {
       consumer = args[++i];
     } else if (args[i] === "--expected-stage") {
       expectedStage = args[++i];
+    } else if (args[i] === "--coverage") {
+      coverageMode = true;
     }
   }
 
@@ -1149,7 +1190,10 @@ async function main() {
       (sha) => checkShaInWorker(sha, { timeout, wi, consumer, expectedStage }),
     );
   } else {
-    checkedResults = shasToCheck.map((sha) => checkSha(sha, { wi, consumer, expectedStage }));
+    // WI-556 --coverage mode: coverage receipts carry their own wi identity;
+    // skipping the caller wi avoids legacy-slot owner-projection failures that
+    // are irrelevant to coverage verification.
+    checkedResults = shasToCheck.map((sha) => checkSha(sha, { wi: coverageMode ? null : wi, consumer, expectedStage, coverageMode }));
   }
   // Cache hits are only admitted from NOTE-sourced complete receipts. Keep
   // the public result byte-stable across cold and warm runs so callers do not
@@ -1172,6 +1216,18 @@ async function main() {
     writeReconcileCache(notesTip, fingerprint, new Set([...cachedGreen, ...newlyGreen]));
   }
   const failed = results.filter((r) => !r.ok);
+  if (coverageMode) {
+    for (const row of results) {
+      const covInvolved = row.coverage_rows !== undefined || (row.missing || []).some((m) => m.startsWith("skill-coverage"));
+      if (!covInvolved) continue;
+      const rows = row.coverage_rows || [];
+      const unknown = (row.missing || []).some((m) => m.startsWith("skill-coverage UNKNOWN")) || row.coverage_verdict === "unknown";
+      const verdict = row.ok ? "YES" : (unknown ? "UNKNOWN" : "NO");
+      for (const line of renderCoverageTable({ verdict: verdict === "YES" ? "pass" : verdict === "UNKNOWN" ? "unknown" : "no", reasons: row.missing || [], rows }, { targetSha: row.sha })) console.log(line);
+    }
+    process.exitCode = failed.length === 0 ? 0 : 1;
+    return;
+  }
   const infrastructureFailures = failed
     .filter(isInfrastructureFailure)
     .map((candidate) => candidate.sha);

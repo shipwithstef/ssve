@@ -1,0 +1,19 @@
+file:///home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/scripts/resolve-dispatch.mjs:37
+  const error = new Error(`resolve-dispatch: ${message}`);
+                ^
+
+Error: resolve-dispatch: mode "production" is not configured
+    at fail (file:///home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/scripts/resolve-dispatch.mjs:37:17)
+    at selectMode (file:///home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/scripts/resolve-dispatch.mjs:189:30)
+    at normalizeDispatchContext (file:///home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/scripts/resolve-dispatch.mjs:345:40)
+    at resolveDispatchReviewTopology (file:///home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/scripts/resolve-dispatch.mjs:529:19)
+    at resolveReviewTopology (file:///home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/scripts/review-topology-v2.mjs:140:22)
+    at file:///home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-final-sha-skill-coverage/scripts/review-topology-v2.mjs:347:44
+    at ModuleJob.run (node:internal/modules/esm/module_job:413:25)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:660:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  code: 'dispatch_policy_invalid'
+}
+
+Node.js v24.13.0
