@@ -332,6 +332,10 @@
       "accepted_wi": "WI-541",
       "residual_map": "docs/specs/work-items/WI-541-residual-map.json",
       "reason": "The false-green graph defect is implemented as WI-541 T02."
+    },
+    "2026-08-22-framework-improvement-capability-scoped-plugin-mcp-startup.md": {
+      "deferred_until": "2026-09-05",
+      "reason": "Triage with WI-551's single dispatch resolver before deciding whether to fold it in or promote a focused follow-up."
     }
   }
 }
