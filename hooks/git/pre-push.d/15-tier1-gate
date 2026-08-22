@@ -119,8 +119,10 @@ if [[ -n "$HOT_HITS" ]]; then
   # GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE to hook subprocesses; validators that
   # create scratch git repos would otherwise execute git ops against THIS repo
   # (observed: main ref hijack, core.bare flip, identity overwrite).
+  # WI-557: focused mode uses select-tier1-validators internally when available,
+  # falls back to full sweep otherwise. No manual wiring needed.
   env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE -u GIT_PREFIX -u GIT_OBJECT_DIRECTORY -u GIT_ALTERNATE_OBJECT_DIRECTORIES -u GIT_QUARANTINE_PATH \
-    EVALS=0 timeout "$GATE_TIMEOUT" bash test-framework/evals/run-all-evals.sh --tier1 >"$LOG" 2>&1
+    EVALS=0 SVC_TIER1_MODE=focused timeout "$GATE_TIMEOUT" bash test-framework/evals/run-all-evals.sh --tier1 >"$LOG" 2>&1
   SUITE_CODE=$?
 fi
 

@@ -19,6 +19,10 @@ const HOST_FAMILY = {
   agy: 'google',
   grok: 'xai',
 };
+// Multi-model harnesses (cursor, opencode, kimi) intentionally ABSENT:
+// their family comes from the dispatch policy tuple, not from the host name.
+// This prevents independence laundering where a multi-model harness running
+// the same provider as the orchestrator counts as "different-family".
 const STATION_KINDS = new Set(['inline-self', 'subagent', 'external']);
 const SCHEMA_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'schemas');
 const EXTERNAL_RECEIPT_SCHEMA = JSON.parse(fs.readFileSync(path.join(SCHEMA_ROOT, 'external-review-receipt.schema.json'), 'utf8'));
@@ -162,7 +166,7 @@ export function resolveReviewTopology({
       stations: topology.stations.map(station => ({ ...station })),
     };
   }
-  if (!HOST_FAMILY[orchestrator] || !['plan', 'exec'].includes(phase)) fail('legacy reviewer policy supports claude|codex and phase plan|exec only');
+  if (!['plan','exec'].includes(phase)) fail('phase must be plan|exec');
   const selectedMode = mode || loaded.policy.default_mode;
   const selected = loaded.policy.modes?.[selectedMode]?.orchestrators?.[orchestrator]?.[phase];
   if (!selected) fail(`mode ${selectedMode} has no ${orchestrator}/${phase} route`);

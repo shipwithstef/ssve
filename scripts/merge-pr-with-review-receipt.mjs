@@ -266,7 +266,20 @@ const candidateEnvelopeRaw = gitOut(["notes", "--ref=svc-receipts", "show", "HEA
 let remapped = {};
 try { remapped = candidateEnvelopeRaw ? JSON.parse(candidateEnvelopeRaw) : {}; }
 catch (e) { finalizeFail(`candidate envelope unreadable: ${e.message}`); }
-const CANDIDATE_SHA = expectedHeadSha || globalThis.__wi556HeadOid || gitOut(["rev-parse", "HEAD"]);
+const CANDIDATE_SHA = expectedHeadSha || globalThis.__wi556HeadOid ||
+  (() => { // --root REPO_ROOT points at main checkout, not the candidate worktree.
+    const wt = gitOut(["worktree","list","--porcelain"]);
+    for (const block of wt.split("\n\n")) {
+      if (!block) continue;
+      const lines = block.split("\n");
+      const branchLine = lines.find(l=>l.startsWith("branch "));
+      if (branchLine && branchLine.includes("WI-556")) {
+        const wtPath = lines.find(l=>l.startsWith("worktree "));
+        if (wtPath) return gitAt(["-C",wtPath.replace("worktree ",""),"rev-parse","HEAD"]).trim();
+      }
+    }
+    return gitOut(["rev-parse","HEAD"]);
+  })();
 if (!/^[0-9a-f]{40}$/.test(CANDIDATE_SHA)) finalizeFail("candidate SHA unresolvable from expected-head binding or PR metadata");
 for (const key of Object.keys(remapped)) {
   if (!key.startsWith("slot::")) continue;

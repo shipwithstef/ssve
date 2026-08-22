@@ -88,6 +88,26 @@ When no external review station is available (quota exhausted, billing blocked, 
 
 **Rationale:** A product that ships with local-only validation is better than a product that doesn't ship because a paid API ran out of credits.
 
+
+## Review Compression Protocol (WI-557)
+
+**New protocol:** 2+1 rounds instead of 7.
+
+| Round | Who | What |
+|-------|-----|------|
+| Self-pass | orchestrator | AC coverage + structural correctness (free, in-session) |
+| External | ONE station (best available from dispatch policy preference order) | Adversarial findings on code diff |
+| Terminal confirm | Same station re-run | ONLY if external found HIGHs that were fixed |
+
+**Eliminated rounds:** confirmatory re-reviews where a station re-reviewed fixes it already reviewed. AGY v3/v4/v5 confirmed what G5 already fixed at zero marginal information cost (~2h wasted).
+
+**Station preference order (config-driven, not hardcoded):**
+1. Best available external station by quality tier
+2. Fall through to next on unavailability (quota, billing, CLI missing)
+3. Local-only validation as last resort (documented fallback policy)
+
+**Availability probe:** `gh pr view` + binary existence check before invoking.
+
 ## Blend History
 
 | Source | Date | Patterns taken | Key additions |

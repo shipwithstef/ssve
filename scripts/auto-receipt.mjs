@@ -46,7 +46,7 @@ const receipt = {
   product_surface: { answer: "See manifest Prerequisite Alignment Matrix.", sources: ["manifest"], evidence: ["auto-generated"] },
   coverage_tasks: [{ owner: sessionId, status: "completed", validation: "validate-skill-coverage.sh" }],
   independent_review: { status: "pass", executor_family: "opencode", reviewer_family: "external", artifacts: [] },
-  runtime_proof: { status: "pass", kind: cls.tier === "logic" ? "mapped-test" : "behavioral",
+  runtime_proof: { status: "pass", kind: cls.tier === "cosmetic" ? "static" : cls.tier === "logic" ? "mapped-test" : "behavioral",
     artifacts: ["test-framework/evals/tier-1/validate-skill-coverage.sh"] },
   created_at: now,
 };
