@@ -36,6 +36,10 @@ const REVIEW_HOST_TRANSPORTS = Object.freeze({
   codex: { env: 'SVC_EXTERNAL_REVIEW_CODEX_BIN', binary: 'codex' },
   agy: { env: 'SVC_EXTERNAL_REVIEW_AGY_BIN', binary: 'agy' },
   claude: { env: 'SVC_EXTERNAL_REVIEW_CLAUDE_BIN', binary: 'claude' },
+  cursor: { env: 'SVC_EXTERNAL_REVIEW_CURSOR_BIN', binary: 'cursor-agent' },
+  grok: { env: 'SVC_EXTERNAL_REVIEW_GROK_BIN', binary: 'grok' },
+  opencode: { env: 'SVC_EXTERNAL_REVIEW_OPENCODE_BIN', binary: 'opencode' },
+  kimi: { env: 'SVC_EXTERNAL_REVIEW_KIMI_BIN', binary: 'kimi' },
 });
 
 function reviewTransport(host) {

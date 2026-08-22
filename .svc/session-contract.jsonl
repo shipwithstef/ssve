@@ -1,1 +1,1 @@
-{"ts":"2026-08-22T23:11:43Z","ts_epoch":1787440303,"bound_to":"wi","wi":"WI-557","skill":"execute-changeset","request":"Governance speed pass + universal model support + auto-recovery","branch":"WI-557-governance-speed-pass","owner_session":"svc-opencode-wi557-speedpass"}
+{"ts":"2026-08-22T23:26:14Z","bound_to":"wi","wi":"WI-557","skill":"execute-changeset","request":"Full governance speed pass + universal model config + auto-recovery + review compression","branch":"WI-557-governance-speed-pass-v2","owner_session":"svc-opencode-wi557-v2"}
