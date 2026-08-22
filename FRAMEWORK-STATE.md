@@ -67,6 +67,15 @@ Skills that update this: same list + any manual framework change
 - Coverage enforcement arming (hard-required skill-coverage on future SHAs) is deferred pending owner decision after first live replay; until then merges performed OUTSIDE the finalizer produce no coverage note and only reconcile-level observation exists (telemetry follow-up).
 - Extending coverage required[] beyond the five producer-backed chain skills requires new authoritative producers (future WI; see manifest D7).
 
+## WI-556 Enforcement-Arming Decision (2026-08-22)
+
+**Decision:** Coverage receipt remains strict-validate-if-present + finalizer-always-emits. Hard-requirement cutoff (all new SHAs must carry skill-coverage) is DEFERRED to a separate owner decision once at least one full sprint operates under the new machinery without false-positive MERGED_UNVERIFIED states.
+
+**Rationale:** PR #20 proved the end-to-end pipeline works but also surfaced that CAS publish can race with concurrent sessions (recovery path functioned correctly). One sprint of operational data will calibrate whether hard enforcement is safe or needs a grace-period mechanism.
+
+**Revisit trigger:** After 20 governed lands via the finalizer, or first MERGED_UNVERIFIED recovery, whichever comes first.
+
+
 ## Blend History
 
 | Source | Date | Patterns taken | Key additions |
