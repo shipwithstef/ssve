@@ -15,14 +15,14 @@ const OPTIONAL_UNAVAILABLE = new Set(['capability', 'model_unavailable', 'model_
 const HOST_FAMILY = {
   codex: 'openai',
   claude: 'anthropic',
-  cursor: 'anthropic',
   gemini: 'google',
   agy: 'google',
   grok: 'xai',
-  opencode: 'opencode',
-  kimi: 'kimi',
-  mistral: 'mistral',
 };
+// Multi-model harnesses (cursor, opencode, kimi) intentionally ABSENT:
+// their family comes from the dispatch policy tuple, not from the host name.
+// This prevents independence laundering where a multi-model harness running
+// the same provider as the orchestrator counts as "different-family".
 const STATION_KINDS = new Set(['inline-self', 'subagent', 'external']);
 const SCHEMA_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'schemas');
 const EXTERNAL_RECEIPT_SCHEMA = JSON.parse(fs.readFileSync(path.join(SCHEMA_ROOT, 'external-review-receipt.schema.json'), 'utf8'));

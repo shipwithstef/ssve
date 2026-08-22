@@ -1,24 +1,23 @@
-// cognitive-family — dynamic host-to-family mapping. Any host string is valid;
-// family is derived by substring match against KNOWN_FAMILIES patterns.
-// Adding a new tool = adding one line here OR just letting it fall through to
-// the raw host string (which still passes cross-family checks if different).
+// cognitive-family — dynamic host-to-family mapping (WI-385).
+//
+// Multi-model harnesses (cursor, opencode, kimi) intentionally resolve to
+// their RAW host string, NOT to a model family. Their effective family comes
+// from the dispatch policy tuple, trusted because operator-configured.
+// This prevents independence laundering where a harness running the same
+// provider as the orchestrator counts as "different-family".
 const FAMILY_PATTERNS = [
   [/claude|anthropic/, "anthropic"],
   [/codex|openai/, "openai"],
   [/gemini|google|antigravity|agy/, "google"],
   [/grok|xai/, "xai"],
-  [/cursor/, "cursor-anthropic"],
-  [/opencode|openrouter/, "opencode"],
-  [/kimi/, "kimi"],
-  [/mistral/, "mistral"],
 ];
 export function familyOf(host) {
   const h = String(host || "").trim().toLowerCase();
   if (!h) return "unknown";
   for (const [pattern, family] of FAMILY_PATTERNS) {
-    if (h.includes(pattern.source.replace(/\\/g,""))) return family;
+    if (h.includes(pattern.source)) return family;
   }
-  return h; // unknown hosts resolve to their own name — never same-family unless identical
+  return h; // unknown hosts resolve to own name — always cross-family vs known families
 }
 export function crossFamily(authorHost, reviewerHost) {
   const a = familyOf(authorHost);
