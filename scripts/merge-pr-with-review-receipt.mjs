@@ -209,15 +209,20 @@ for (const banned of ["--rebase", "--merge", "--auto"]) {
 }
 {
   const pre = spawnSync("gh", ["pr", "view", pr, "--repo", repo, "--json", "behindBy,headRefName,headRefOid"], { encoding: "utf8" });
-  if (pre.status === 0) {
-    try {
-      const meta = JSON.parse(pre.stdout);
-      if (Number(meta.behindBy || 0) > 0) {
-        console.error(`[svc-finalize] BLOCKED: PR is ${meta.behindBy} commits behind base; rebase so the squash tree matches the reviewed candidate.`);
-        process.exit(2);
-      }
-      if (/^[0-9a-f]{40}$/.test(meta.headRefOid || "")) globalThis.__wi556HeadOid = meta.headRefOid;
-    } catch { /* post-merge resolution still applies */ }
+  if (pre.status !== 0 || !pre.stdout) {
+    console.error("[svc-finalize] BLOCKED: cannot verify PR freshness (gh pr view failed). Merge refused to prevent stale-base coverage mismatch.");
+    process.exit(2);
+  }
+  try {
+    const meta = JSON.parse(pre.stdout);
+    if (Number(meta.behindBy ?? -1) !== 0) {
+      console.error(`[svc-finalize] BLOCKED: PR behindBy=${meta.behindBy ?? "unknown"} (must be 0); rebase so squash tree matches reviewed candidate.`);
+      process.exit(2);
+    }
+    if (/^[0-9a-f]{40}$/.test(meta.headRefOid || "")) globalThis.__wi556HeadOid = meta.headRefOid;
+  } catch (e) {
+    console.error(`[svc-finalize] BLOCKED: pre-merge metadata parse failed: ${e.message}`);
+    process.exit(2);
   }
 }
 
