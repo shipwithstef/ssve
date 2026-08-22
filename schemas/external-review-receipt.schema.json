@@ -39,20 +39,66 @@
     "reviewer_run"
   ],
   "properties": {
-    "schema_version": { "type": "integer", "enum": [2] },
-    "launcher_version": { "type": "string" },
-    "cli_version": { "type": ["string", "null"] },
-    "request_id": { "type": "string" },
-    "review_kind": { "type": "string" },
-    "candidate_digest": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
-    "package_sha256": { "type": "string" },
-    "findings_schema_sha256": { "type": "string" },
-    "findings_sha256": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
-    "cache_key": { "type": "string" },
-    "fixture_mode": { "type": "boolean" },
-    "started_at": { "type": "string" },
-    "finished_at": { "type": "string" },
-    "status": { "type": "string", "enum": ["success", "failure"] },
+    "schema_version": {
+      "type": "integer",
+      "enum": [
+        2
+      ]
+    },
+    "launcher_version": {
+      "type": "string"
+    },
+    "cli_version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "request_id": {
+      "type": "string"
+    },
+    "review_kind": {
+      "type": "string"
+    },
+    "candidate_digest": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "package_sha256": {
+      "type": "string"
+    },
+    "findings_schema_sha256": {
+      "type": "string"
+    },
+    "findings_sha256": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "cache_key": {
+      "type": "string"
+    },
+    "fixture_mode": {
+      "type": "boolean"
+    },
+    "started_at": {
+      "type": "string"
+    },
+    "finished_at": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "failure"
+      ]
+    },
     "classification": {
       "type": "string",
       "enum": [
@@ -86,20 +132,32 @@
     },
     "requested_tuple": {
       "anyOf": [
-        { "$ref": "#/definitions/tuple" },
-        { "type": "null" }
+        {
+          "$ref": "#/definitions/tuple"
+        },
+        {
+          "type": "null"
+        }
       ]
     },
     "invocation_tuple": {
       "anyOf": [
-        { "$ref": "#/definitions/tuple" },
-        { "type": "null" }
+        {
+          "$ref": "#/definitions/tuple"
+        },
+        {
+          "type": "null"
+        }
       ]
     },
     "effective_tuple": {
       "anyOf": [
-        { "$ref": "#/definitions/tuple" },
-        { "type": "null" }
+        {
+          "$ref": "#/definitions/tuple"
+        },
+        {
+          "type": "null"
+        }
       ]
     },
     "attempts": {
@@ -107,13 +165,34 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["index", "tuple", "started_at", "finished_at", "exit_code", "classification", "artifacts"],
+        "required": [
+          "index",
+          "tuple",
+          "started_at",
+          "finished_at",
+          "exit_code",
+          "classification",
+          "artifacts"
+        ],
         "properties": {
-          "index": { "type": "integer" },
-          "tuple": { "$ref": "#/definitions/tuple" },
-          "started_at": { "type": "string" },
-          "finished_at": { "type": "string" },
-          "exit_code": { "type": ["integer", "null"] },
+          "index": {
+            "type": "integer"
+          },
+          "tuple": {
+            "$ref": "#/definitions/tuple"
+          },
+          "started_at": {
+            "type": "string"
+          },
+          "finished_at": {
+            "type": "string"
+          },
+          "exit_code": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
           "classification": {
             "type": "string",
             "enum": [
@@ -137,142 +216,530 @@
           },
           "command": {
             "type": "object",
-            "required": ["binary", "argv"],
-            "properties": { "binary": { "type": "string" }, "argv": { "type": "array", "items": { "type": "string" } } }
+            "required": [
+              "binary",
+              "argv"
+            ],
+            "properties": {
+              "binary": {
+                "type": "string"
+              },
+              "argv": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
           },
-          "artifacts": { "type": "object" },
-          "usage": { "type": "object" }
+          "artifacts": {
+            "type": "object"
+          },
+          "usage": {
+            "type": "object"
+          }
         }
       }
     },
     "fallback": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["eligible", "used", "reason"],
+      "required": [
+        "eligible",
+        "used",
+        "reason"
+      ],
       "properties": {
-        "eligible": { "type": "boolean" },
-        "used": { "type": "boolean" },
-        "reason": { "type": ["string", "null"] }
+        "eligible": {
+          "type": "boolean"
+        },
+        "used": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       }
     },
     "override": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["used", "authority", "source", "path", "expected_sha256", "actual_sha256"],
+      "required": [
+        "used",
+        "authority",
+        "source",
+        "path",
+        "expected_sha256",
+        "actual_sha256"
+      ],
       "properties": {
-        "used": { "type": "boolean" },
-        "authority": { "type": ["string", "null"] },
-        "source": { "type": ["string", "null"] },
-        "path": { "type": ["string", "null"] },
-        "expected_sha256": { "type": ["string", "null"] },
-        "actual_sha256": { "type": ["string", "null"] }
+        "used": {
+          "type": "boolean"
+        },
+        "authority": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "expected_sha256": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "actual_sha256": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       }
     },
     "policy": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["version", "profile", "source", "resolved_at", "effective_window", "cutover_utc", "cutover_local", "timezone", "selection_sha256", "selection_expires_at", "selection_authority"],
+      "required": [
+        "version",
+        "profile",
+        "source",
+        "resolved_at",
+        "effective_window",
+        "cutover_utc",
+        "cutover_local",
+        "timezone",
+        "selection_sha256",
+        "selection_expires_at",
+        "selection_authority"
+      ],
       "properties": {
-        "version": { "type": ["integer", "null"] },
-        "profile": { "type": ["string", "null"] },
-        "source": { "type": ["string", "null"], "enum": ["schedule", "explicit-selection", "fixed-policy", "owner-config", null] },
-        "resolved_at": { "type": ["string", "null"] },
+        "version": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "profile": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "schedule",
+            "explicit-selection",
+            "fixed-policy",
+            "owner-config",
+            null
+          ]
+        },
+        "resolved_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "effective_window": {
           "anyOf": [
             {
               "type": "object",
               "additionalProperties": false,
-              "required": ["starts_at", "ends_at"],
+              "required": [
+                "starts_at",
+                "ends_at"
+              ],
               "properties": {
-                "starts_at": { "type": ["string", "null"] },
-                "ends_at": { "type": ["string", "null"] }
+                "starts_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "ends_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
               }
             },
-            { "type": "null" }
+            {
+              "type": "null"
+            }
           ]
         },
-        "cutover_utc": { "type": ["string", "null"] },
-        "cutover_local": { "type": ["string", "null"] },
-        "timezone": { "type": ["string", "null"] },
-        "selection_sha256": { "type": ["string", "null"] },
-        "selection_expires_at": { "type": ["string", "null"] },
-        "selection_authority": { "type": ["string", "null"] }
+        "cutover_utc": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "cutover_local": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "timezone": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "selection_sha256": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "selection_expires_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "selection_authority": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       }
     },
     "protocol": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["process_invocations", "configured_turn_ceiling", "configured_budget_usd", "reported_turns", "stop_reason", "terminal_reason", "errors"],
+      "required": [
+        "process_invocations",
+        "configured_turn_ceiling",
+        "configured_budget_usd",
+        "reported_turns",
+        "stop_reason",
+        "terminal_reason",
+        "errors"
+      ],
       "properties": {
-        "process_invocations": { "type": "integer", "minimum": 0 },
-        "configured_turn_ceiling": { "type": ["integer", "null"] },
-        "configured_budget_usd": { "type": ["number", "null"], "exclusiveMinimum": 0 },
-        "reported_turns": { "type": ["integer", "null"] },
-        "stop_reason": { "type": ["string", "null"] },
-        "terminal_reason": { "type": ["string", "null"] },
-        "errors": { "type": "array", "items": { "type": "string" } }
+        "process_invocations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "configured_turn_ceiling": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "configured_budget_usd": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0
+        },
+        "reported_turns": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "stop_reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "terminal_reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       }
     },
     "route": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind", "switching_enabled", "cli_fallback_configured", "evidence"],
+      "required": [
+        "kind",
+        "switching_enabled",
+        "cli_fallback_configured",
+        "evidence"
+      ],
       "properties": {
-        "kind": { "type": "string", "enum": ["exact_primary", "scheduled_primary", "explicit_profile_primary", "owner_config_primary", "provider_safety_route", "launcher_availability_fallback", "cache_hit", "hard_failure"] },
-        "switching_enabled": { "type": "boolean" },
-        "cli_fallback_configured": { "type": "boolean" },
-        "evidence": { "type": "string", "enum": ["requested_primary", "provider_model_usage_envelope_inferred", "launcher_attempt_chain", "cache_receipt_replay", "failure"] }
+        "kind": {
+          "type": "string",
+          "enum": [
+            "exact_primary",
+            "scheduled_primary",
+            "explicit_profile_primary",
+            "owner_config_primary",
+            "provider_safety_route",
+            "launcher_availability_fallback",
+            "cache_hit",
+            "hard_failure"
+          ]
+        },
+        "switching_enabled": {
+          "type": "boolean"
+        },
+        "cli_fallback_configured": {
+          "type": "boolean"
+        },
+        "evidence": {
+          "type": "string",
+          "enum": [
+            "requested_primary",
+            "provider_model_usage_envelope_inferred",
+            "launcher_attempt_chain",
+            "cache_receipt_replay",
+            "failure"
+          ]
+        }
       }
     },
     "effective_effort": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["value", "provenance"],
+      "required": [
+        "value",
+        "provenance"
+      ],
       "properties": {
-        "value": { "type": ["string", "null"], "enum": ["low", "medium", "high", "xhigh", "max", "provider-managed", null] },
-        "provenance": { "type": "string", "enum": ["runtime", "requested", "provider-managed", "none"] }
+        "value": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+            "provider-managed",
+            null
+          ]
+        },
+        "provenance": {
+          "type": "string",
+          "enum": [
+            "runtime",
+            "requested",
+            "provider-managed",
+            "none"
+          ]
+        }
       }
     },
     "model_attestation": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["level", "requested_model", "observed_models", "evidence"],
+      "required": [
+        "level",
+        "requested_model",
+        "observed_models",
+        "evidence"
+      ],
       "properties": {
-        "level": { "type": "string", "enum": ["none", "requested_accepted", "server_observed", "cache_replay"] },
-        "requested_model": { "type": ["string", "null"] },
-        "observed_models": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
-        "evidence": { "type": ["string", "null"] }
+        "level": {
+          "type": "string",
+          "enum": [
+            "none",
+            "requested_accepted",
+            "server_observed",
+            "cache_replay"
+          ]
+        },
+        "requested_model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "observed_models": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "evidence": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       }
     },
     "phase_guard": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["applicable", "kind", "decision", "reason", "wi", "pre_execution_base", "plan_manifest_sha256", "exec_record_present", "exec_record_path", "implementation_diverged", "diverged_files", "base_resolved", "override"],
+      "required": [
+        "applicable",
+        "kind",
+        "decision",
+        "reason",
+        "wi",
+        "pre_execution_base",
+        "plan_manifest_sha256",
+        "exec_record_present",
+        "exec_record_path",
+        "implementation_diverged",
+        "diverged_files",
+        "base_resolved",
+        "override"
+      ],
       "properties": {
-        "applicable": { "type": "boolean" },
-        "kind": { "type": ["string", "null"] },
-        "decision": { "type": "string", "enum": ["allow", "allow-override", "reject", "not-applicable"] },
-        "reason": { "type": ["string", "null"] },
-        "wi": { "type": ["string", "null"] },
-        "pre_execution_base": { "type": ["string", "null"] },
-        "plan_manifest_sha256": { "type": ["string", "null"] },
-        "exec_record_present": { "type": ["boolean", "null"] },
-        "exec_record_path": { "type": ["string", "null"] },
-        "implementation_diverged": { "type": ["boolean", "null"] },
-        "diverged_files": { "type": "array", "items": { "type": "string" } },
-        "base_resolved": { "type": ["boolean", "null"] },
+        "applicable": {
+          "type": "boolean"
+        },
+        "kind": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "allow",
+            "allow-override",
+            "reject",
+            "not-applicable"
+          ]
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "wi": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pre_execution_base": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "plan_manifest_sha256": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "exec_record_present": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "exec_record_path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "implementation_diverged": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "diverged_files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "base_resolved": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "override": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["used", "authority", "source", "path", "expected_sha256", "actual_sha256", "kind"],
+          "required": [
+            "used",
+            "authority",
+            "source",
+            "path",
+            "expected_sha256",
+            "actual_sha256",
+            "kind"
+          ],
           "properties": {
-            "used": { "type": "boolean" },
-            "authority": { "type": ["string", "null"] },
-            "source": { "type": ["string", "null"] },
-            "path": { "type": ["string", "null"] },
-            "expected_sha256": { "type": ["string", "null"] },
-            "actual_sha256": { "type": ["string", "null"] },
-            "kind": { "type": ["string", "null"] }
+            "used": {
+              "type": "boolean"
+            },
+            "authority": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "source": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "path": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "expected_sha256": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "actual_sha256": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "kind": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
           }
         }
       }
@@ -280,21 +747,46 @@
     "package_context": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["version", "context_root", "base_package_sha256", "files"],
+      "required": [
+        "version",
+        "context_root",
+        "base_package_sha256",
+        "files"
+      ],
       "properties": {
-        "version": { "type": "integer", "enum": [1] },
-        "context_root": { "type": "string" },
-        "base_package_sha256": { "type": "string" },
+        "version": {
+          "type": "integer",
+          "enum": [
+            1
+          ]
+        },
+        "context_root": {
+          "type": "string"
+        },
+        "base_package_sha256": {
+          "type": "string"
+        },
         "files": {
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["path", "sha256", "bytes"],
+            "required": [
+              "path",
+              "sha256",
+              "bytes"
+            ],
             "properties": {
-              "path": { "type": "string" },
-              "sha256": { "type": "string" },
-              "bytes": { "type": "integer", "minimum": 0 }
+              "path": {
+                "type": "string"
+              },
+              "sha256": {
+                "type": "string"
+              },
+              "bytes": {
+                "type": "integer",
+                "minimum": 0
+              }
             }
           }
         }
@@ -303,22 +795,56 @@
     "cache": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["disposition", "reusable", "entry"],
+      "required": [
+        "disposition",
+        "reusable",
+        "entry"
+      ],
       "properties": {
-        "disposition": { "type": "string", "enum": ["skipped", "miss", "hit", "published", "not_reusable"] },
-        "reusable": { "type": "boolean" },
-        "entry": { "type": ["string", "null"] }
+        "disposition": {
+          "type": "string",
+          "enum": [
+            "skipped",
+            "miss",
+            "hit",
+            "published",
+            "not_reusable"
+          ]
+        },
+        "reusable": {
+          "type": "boolean"
+        },
+        "entry": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       }
     },
-    "artifacts": { "type": "object" },
-    "usage": { "type": "object" },
+    "artifacts": {
+      "type": "object"
+    },
+    "usage": {
+      "type": "object"
+    },
     "reviewer_run": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["commands", "output_artifacts"],
+      "required": [
+        "commands",
+        "output_artifacts"
+      ],
       "properties": {
-        "commands": { "type": "array" },
-        "output_artifacts": { "type": "array", "items": { "type": "string" } }
+        "commands": {
+          "type": "array"
+        },
+        "output_artifacts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       }
     }
   },
@@ -326,13 +852,40 @@
     "tuple": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["orchestrator", "host", "family", "model", "effort"],
+      "required": [
+        "orchestrator",
+        "host",
+        "family",
+        "model",
+        "effort"
+      ],
       "properties": {
-        "orchestrator": { "type": "string", "enum": ["claude", "codex"] },
-        "host": { "type": "string", "enum": ["codex", "claude", "agy"] },
-        "family": { "type": "string", "enum": ["openai", "anthropic", "google"] },
-        "model": { "type": "string" },
-        "effort": { "type": "string", "enum": ["low", "medium", "high", "xhigh", "max", "provider-managed"] }
+        "orchestrator": {
+          "type": "string",
+          "minLength": 1
+        },
+        "host": {
+          "type": "string",
+          "minLength": 1
+        },
+        "family": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model": {
+          "type": "string"
+        },
+        "effort": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+            "provider-managed"
+          ]
+        }
       }
     }
   }

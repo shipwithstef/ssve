@@ -76,6 +76,18 @@ Skills that update this: same list + any manual framework change
 **Revisit trigger:** After 20 governed lands via the finalizer, or first MERGED_UNVERIFIED recovery, whichever comes first.
 
 
+
+## External Review Fallback Policy (WI-557)
+
+When no external review station is available (quota exhausted, billing blocked, CLI missing):
+1. Run local validation only (tier-1 focused validator + manifest lint)
+2. Record decision in pipeline-decisions.jsonl with reason "external-station-unavailable"
+3. Mark PR body with `review-mode: local-validation`
+4. External review runs retroactively when quota/billing is restored
+5. Coverage receipt still compiles and publishes — it validates code structure, not prose quality
+
+**Rationale:** A product that ships with local-only validation is better than a product that doesn't ship because a paid API ran out of credits.
+
 ## Blend History
 
 | Source | Date | Patterns taken | Key additions |
