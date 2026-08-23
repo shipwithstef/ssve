@@ -36,7 +36,9 @@ const REVIEW_HOST_TRANSPORTS = Object.freeze({
   codex: { env: 'SVC_EXTERNAL_REVIEW_CODEX_BIN', binary: 'codex' },
   agy: { env: 'SVC_EXTERNAL_REVIEW_AGY_BIN', binary: 'agy' },
   claude: { env: 'SVC_EXTERNAL_REVIEW_CLAUDE_BIN', binary: 'claude' },
+  cursor: { env: 'SVC_EXTERNAL_REVIEW_CURSOR_BIN', binary: 'cursor-agent' },
 });
+const CURSOR_FAMILIES = new Set(['anthropic', 'openai']);
 
 function reviewTransport(host) {
   return REVIEW_HOST_TRANSPORTS[host] || null;
@@ -392,7 +394,9 @@ export function validateExternalReviewReceiptSemantics(receipt) {
   if (receipt.status === 'success' && receipt.route?.kind !== 'cache_hit' && receipt.review_kind !== 'capability-probe') {
     if (receipt.model_attestation?.requested_model !== receipt.invocation_tuple?.model) errors.push('$.model_attestation.requested_model: must match invocation tuple');
     if (receipt.invocation_tuple?.host === 'claude' && receipt.model_attestation?.level !== 'server_observed') errors.push('$.model_attestation.level: Claude success requires server_observed');
-    if (['codex', 'agy'].includes(receipt.invocation_tuple?.host) && !['requested_accepted', 'server_observed'].includes(receipt.model_attestation?.level)) errors.push('$.model_attestation.level: Codex/AGY success requires requested_accepted or server_observed');
+    if (['codex', 'agy', 'cursor'].includes(receipt.invocation_tuple?.host) && !['requested_accepted', 'server_observed'].includes(receipt.model_attestation?.level)) errors.push('$.model_attestation.level: Codex/AGY/Cursor success requires requested_accepted or server_observed');
+    if (receipt.invocation_tuple?.host === 'cursor' && !CURSOR_FAMILIES.has(receipt.invocation_tuple?.family)) errors.push('$.invocation_tuple.family: Cursor success accepts only anthropic or openai family pairs');
+    if (receipt.invocation_tuple?.host === 'cursor' && receipt.model_attestation?.level === 'none') errors.push('$.model_attestation.level: Cursor success cannot use attestation none');
   }
   if (receipt.policy?.source === 'schedule' && receipt.route?.kind === 'explicit_profile_primary') errors.push('$.route.kind: scheduled policy cannot be explicit primary');
   if (receipt.policy?.source === 'explicit-selection' && receipt.route?.kind === 'scheduled_primary') errors.push('$.route.kind: explicit policy cannot be scheduled primary');
@@ -570,7 +574,9 @@ async function capabilityCheck(tuple, binary, timeoutMs) {
     ? ['--config', '--strict-config', '--model', '--sandbox', 'read-only', '--skip-git-repo-check', '--ephemeral', '--ignore-user-config', '--ignore-rules', '--output-schema', '--json', '--output-last-message', '--color']
     : tuple.host === 'agy'
       ? ['--sandbox', '--mode', '--model', '--effort', '--add-dir', '--json-schema', '--output-format', '--print-timeout', '--print']
-      : ['--print', '--model', '--effort', '--safe-mode', '--tools', '--strict-mcp-config', '--mcp-config', '--permission-mode', '--no-session-persistence', '--disable-slash-commands', '--no-chrome', '--settings', '--json-schema', '--output-format', '--max-budget-usd'];
+      : tuple.host === 'cursor'
+        ? ['--print', '--output-format', '--mode', '--sandbox', '--model']
+        : ['--print', '--model', '--effort', '--safe-mode', '--tools', '--strict-mcp-config', '--mcp-config', '--permission-mode', '--no-session-persistence', '--disable-slash-commands', '--no-chrome', '--settings', '--json-schema', '--output-format', '--max-budget-usd'];
   let result;
   try {
     result = await runProcess(binary, tuple.host === 'codex' ? ['exec', '--help'] : ['--help'], Buffer.alloc(0), Math.min(timeoutMs, 30_000));
@@ -585,7 +591,9 @@ async function capabilityCheck(tuple, binary, timeoutMs) {
     ? ['exec', '--skip-git-repo-check', '--sandbox', 'read-only', '--ephemeral', '--ignore-user-config', '--ignore-rules', '--strict-config', '--model', tuple.model, '-c', `model_reasoning_effort="${tuple.effort}"`, '--color', 'never', '--version']
     : tuple.host === 'agy'
       ? ['--version']
-      : ['--print', '--model', tuple.model, '--effort', tuple.effort, '--safe-mode', '--tools', '', '--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}', '--permission-mode', 'plan', '--no-session-persistence', '--max-turns', '4', '--disable-slash-commands', '--no-chrome', ...(tuple.model === 'claude-fable-5' ? ['--settings', '{"switchModelsOnFlag":true}'] : []), '--json-schema', '{"type":"object"}', '--output-format', 'json', '--max-budget-usd', '1', '--version'];
+      : tuple.host === 'cursor'
+        ? ['--print', '--output-format', 'json', '--mode', 'plan', '--sandbox', 'enabled', '--model', tuple.model, '--version']
+        : ['--print', '--model', tuple.model, '--effort', tuple.effort, '--safe-mode', '--tools', '', '--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}', '--permission-mode', 'plan', '--no-session-persistence', '--max-turns', '4', '--disable-slash-commands', '--no-chrome', ...(tuple.model === 'claude-fable-5' ? ['--settings', '{"switchModelsOnFlag":true}'] : []), '--json-schema', '{"type":"object"}', '--output-format', 'json', '--max-budget-usd', '1', '--version'];
   const parser = await runProcess(binary, parserArgs, Buffer.alloc(0), Math.min(timeoutMs, 30_000));
   if (parser.cancelled) return { ok: false, cancelled: true, missing: [], version: null, output: `${output}\n${parser.stdout}\n${parser.stderr}` };
   if (parser.code !== 0) missing.push(`configured argv parser exited ${parser.code}`);
@@ -609,7 +617,7 @@ async function parseOwnerOverride(file, primary) {
   const evidence = { used: true, authority: document.authority || null, source: document.source || null, path: absolute, expected_sha256: expected, actual_sha256: actual };
   const expectedFamily = primary.family;
   const tupleKeys = requested && typeof requested === 'object' ? Object.keys(requested).sort().join(',') : '';
-  const validHostFamily = (requested?.host === 'codex' && requested?.family === 'openai') || (requested?.host === 'claude' && requested?.family === 'anthropic') || (requested?.host === 'agy' && requested?.family === 'google');
+  const validHostFamily = (requested?.host === 'codex' && requested?.family === 'openai') || (requested?.host === 'claude' && requested?.family === 'anthropic') || (requested?.host === 'agy' && requested?.family === 'google') || (requested?.host === 'cursor' && CURSOR_FAMILIES.has(requested?.family));
   const validTuple = requested && tupleKeys === 'effort,family,host,model,orchestrator' && requested.orchestrator === primary.orchestrator && requested.host === primary.host && requested.family === expectedFamily && requested.model === primary.model && validHostFamily && ['low', 'medium', 'high', 'xhigh', 'max'].includes(requested.effort);
   if (!expected || expected !== actual || document.authority !== 'repository-owner' || typeof document.source !== 'string' || !document.source || typeof document.reason !== 'string' || !document.reason || !Number.isFinite(timestamp) || Math.abs(Date.now() - timestamp) > MAX_OWNER_OVERRIDE_AGE_MS || !validTuple) {
     throw Object.assign(new Error('owner override failed trust, freshness, provenance, or tuple validation'), { classification: 'override_invalid', overrideEvidence: evidence });
@@ -1054,6 +1062,8 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
     const inlineSchema = JSON.stringify(JSON.parse(schemaBytes.toString('utf8')));
     for (const key of ['CLAUDE_CODE_DISABLE_REFUSAL_FALLBACK', 'ANTHROPIC_MODEL', 'CLAUDE_MODEL', 'CLAUDE_CODE_MODEL', 'ANTHROPIC_DEFAULT_OPUS_MODEL', 'ANTHROPIC_DEFAULT_SONNET_MODEL', 'ANTHROPIC_DEFAULT_HAIKU_MODEL']) delete env[key];
     args = ['--print', '--model', tuple.model, '--effort', tuple.effort, '--safe-mode', '--tools', '', '--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}', '--permission-mode', 'plan', '--no-session-persistence', '--max-turns', '4', '--disable-slash-commands', '--no-chrome', ...(switchingEnabled ? ['--settings', '{"switchModelsOnFlag":true}'] : []), '--json-schema', inlineSchema, '--output-format', 'json', '--max-budget-usd', String(budgetUsd)];
+  } else if (tuple.host === 'cursor') {
+    args = ['--print', '--output-format', 'json', '--mode', 'plan', '--sandbox', 'enabled', '--model', tuple.model, packageBytes.toString('utf8')];
   } else {
     args = [];
     result = { code: null, signal: null, timedOut: false, stdout: Buffer.alloc(0), stderr: Buffer.from(`no review transport for host ${tuple.host}`), spawnError: true };
@@ -1122,6 +1132,36 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
           else findings = outer;
           modelAttestation = { level: 'requested_accepted', requested_model: tuple.model, observed_models: [], evidence: 'canonical_agy_dispatch_receipt_exact_model_preset_package_schema' };
           if (findings) await writeJson(finalFile, findings);
+        }
+      } else if (tuple.host === 'cursor') {
+        if (!CURSOR_FAMILIES.has(tuple.family)) {
+          classification = 'model_mismatch';
+        } else if (result.code === 0) {
+          const stdoutText = result.stdout.toString('utf8').trim();
+          let outer = null;
+          try { outer = JSON.parse(stdoutText); }
+          catch {
+            for (const line of stdoutText.split(/\r?\n/).filter(Boolean).reverse()) {
+              try { outer = JSON.parse(line); break; } catch {}
+            }
+          }
+          if (!outer || typeof outer !== 'object' || outer.is_error === true) throw new Error('cursor envelope is not a successful JSON result');
+          if (typeof outer.model === 'string' && outer.model !== tuple.model) {
+            classification = 'model_mismatch';
+          } else {
+            let raw = outer.result;
+            if (raw && typeof raw === 'object') findings = raw;
+            else if (typeof raw === 'string') findings = JSON.parse(raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim());
+            else throw new Error('cursor envelope missing result');
+            modelAttestation = {
+              level: 'requested_accepted',
+              requested_model: tuple.model,
+              observed_models: [],
+              evidence: 'exact_model_argv_plus_successful_auth_json_exit_no_server_model_echo',
+            };
+            usage = { cursor_output: path.join(artifactsDir, `${prefix}-events.jsonl`) };
+            if (findings) await writeJson(finalFile, findings);
+          }
         }
       } else {
         const outer = JSON.parse(result.stdout.toString('utf8'));
@@ -1196,37 +1236,56 @@ async function main() {
   }
   if (options.policyStatus) {
     try {
-      const external = resolveExternalReviewer({
-        configPath: options.reviewerConfig,
-        mode: options.reviewerMode,
-        orchestrator: options.orchestrator,
-        phase: options.reviewerPhase || 'plan',
-        stationId: options.reviewerStation || null,
-        wi: process.env.SVC_WI || null,
-        workOverlayPath: process.env.SVC_DISPATCH_WORK_OVERLAY || null,
-        sessionId: process.env.SVC_SESSION_ID || null,
-        sessionOverrideSpec: process.env.SVC_DISPATCH_OVERRIDE || null,
-        sessionOverrideRequested: process.env.SVC_DISPATCH_OVERRIDE_REQUESTED || null,
-        sessionOverrideReceiptSpec: process.env.SVC_DISPATCH_OVERRIDE_RECEIPT || null,
-        explicitAsk: process.env.SVC_DISPATCH_EXPLICIT_ASK === '1' || process.env.SVC_DISPATCH_EXPLICIT_ASK === 'true',
-        unavailableStations: process.env.SVC_DISPATCH_UNAVAILABLE_STATIONS || '',
-      });
-      process.stdout.write(`${JSON.stringify({
-        ok: true,
-        orchestrator: options.orchestrator,
-        policy_version: external.topology.schema_version || null,
-        profile: `${external.topology.mode}:${external.station.id}`,
-        profile_source: 'owner-config',
-        tuple: external.tuple,
-        fallback: null,
-        effective_window: { starts_at: null, ends_at: null },
-        resolved_at: now.toISOString(),
-        cutover_utc: null,
-        cutover_local: null,
-        timezone: null,
-        next_cutover: null,
-        selection: { sha256: external.topology.config_sha256, expires_at: null, authority: 'repository-owner' },
-      })}\n`);
+      if (options.reviewerConfig) {
+        const external = resolveExternalReviewer({
+          configPath: options.reviewerConfig,
+          mode: options.reviewerMode,
+          orchestrator: options.orchestrator,
+          phase: options.reviewerPhase || 'plan',
+          stationId: options.reviewerStation || null,
+          wi: process.env.SVC_WI || null,
+          workOverlayPath: process.env.SVC_DISPATCH_WORK_OVERLAY || null,
+          sessionId: process.env.SVC_SESSION_ID || null,
+          sessionOverrideSpec: process.env.SVC_DISPATCH_OVERRIDE || null,
+          sessionOverrideRequested: process.env.SVC_DISPATCH_OVERRIDE_REQUESTED || null,
+          sessionOverrideReceiptSpec: process.env.SVC_DISPATCH_OVERRIDE_RECEIPT || null,
+          explicitAsk: process.env.SVC_DISPATCH_EXPLICIT_ASK === '1' || process.env.SVC_DISPATCH_EXPLICIT_ASK === 'true',
+          unavailableStations: process.env.SVC_DISPATCH_UNAVAILABLE_STATIONS || '',
+        });
+        process.stdout.write(`${JSON.stringify({
+          ok: true,
+          orchestrator: options.orchestrator,
+          policy_version: external.topology.schema_version || null,
+          profile: `${external.topology.mode}:${external.station.id}`,
+          profile_source: 'owner-config',
+          tuple: external.tuple,
+          fallback: null,
+          effective_window: { starts_at: null, ends_at: null },
+          resolved_at: now.toISOString(),
+          cutover_utc: null,
+          cutover_local: null,
+          timezone: null,
+          next_cutover: null,
+          selection: { sha256: external.topology.config_sha256, expires_at: null, authority: 'repository-owner' },
+        })}\n`);
+      } else {
+        const resolved = await resolvePolicy(policy, options.orchestrator, now, selectionPath);
+        process.stdout.write(`${JSON.stringify({
+          ok: true,
+          orchestrator: options.orchestrator,
+          policy_version: resolved.metadata.version,
+          profile: resolved.metadata.profile,
+          profile_source: resolved.metadata.source,
+          tuple: resolved.tuple,
+          fallback: resolved.fallback,
+          effective_window: resolved.metadata.effective_window,
+          resolved_at: resolved.metadata.resolved_at,
+          cutover_utc: resolved.metadata.cutover_utc,
+          cutover_local: resolved.metadata.cutover_local,
+          timezone: resolved.metadata.timezone,
+          selection: { sha256: resolved.metadata.selection_sha256, expires_at: resolved.metadata.selection_expires_at, authority: resolved.metadata.selection_authority },
+        })}\n`);
+      }
     } catch (error) {
       process.stderr.write(`external-review: ${error.classification || 'config_invalid'}: ${actionableDiagnostic(error.classification || 'config_invalid')}; detail=${error.message}\n`);
       process.exitCode = 1;
@@ -1308,38 +1367,42 @@ async function main() {
     const inferredPhase = options.reviewerPhase || (options.reviewKind === 'plan' || options.reviewKind === 'prompt-floor' || options.reviewKind === 'blind-floor' ? 'plan' : 'exec');
     if (!['plan', 'exec', 'design'].includes(inferredPhase)) throw Object.assign(new Error(`unsupported reviewer phase ${inferredPhase}`), { classification: 'input_invalid' });
     if (options.reviewKind && ['plan', 'exec'].includes(options.reviewKind) && options.reviewKind !== inferredPhase) throw Object.assign(new Error('review-kind must match reviewer phase when both are explicit'), { classification: 'input_invalid' });
-    const external = resolveExternalReviewer({
-      configPath: options.reviewerConfig,
-      mode: options.reviewerMode,
-      orchestrator: options.orchestrator,
-      phase: inferredPhase,
-      stationId: options.reviewerStation || null,
-      wi: process.env.SVC_WI || null,
-      workOverlayPath: process.env.SVC_DISPATCH_WORK_OVERLAY || null,
-      sessionId: process.env.SVC_SESSION_ID || null,
-      sessionOverrideSpec: process.env.SVC_DISPATCH_OVERRIDE || null,
-      sessionOverrideRequested: process.env.SVC_DISPATCH_OVERRIDE_REQUESTED || null,
-      sessionOverrideReceiptSpec: process.env.SVC_DISPATCH_OVERRIDE_RECEIPT || null,
-      explicitAsk: process.env.SVC_DISPATCH_EXPLICIT_ASK === '1' || process.env.SVC_DISPATCH_EXPLICIT_ASK === 'true',
-      unavailableStations: process.env.SVC_DISPATCH_UNAVAILABLE_STATIONS || '',
-    });
-    resolvedPolicy = {
-      tuple: external.tuple,
-      fallback: null,
-      metadata: {
-        version: external.topology.schema_version || 1,
-        profile: `${external.topology.mode}:${external.station.id}`,
-        source: 'owner-config',
-        resolved_at: now.toISOString(),
-        effective_window: { starts_at: null, ends_at: null },
-        cutover_utc: null,
-        cutover_local: null,
-        timezone: null,
-        selection_sha256: external.topology.config_sha256,
-        selection_expires_at: null,
-        selection_authority: 'repository-owner',
-      },
-    };
+    if (options.reviewerConfig) {
+      const external = resolveExternalReviewer({
+        configPath: options.reviewerConfig,
+        mode: options.reviewerMode,
+        orchestrator: options.orchestrator,
+        phase: inferredPhase,
+        stationId: options.reviewerStation || null,
+        wi: process.env.SVC_WI || null,
+        workOverlayPath: process.env.SVC_DISPATCH_WORK_OVERLAY || null,
+        sessionId: process.env.SVC_SESSION_ID || null,
+        sessionOverrideSpec: process.env.SVC_DISPATCH_OVERRIDE || null,
+        sessionOverrideRequested: process.env.SVC_DISPATCH_OVERRIDE_REQUESTED || null,
+        sessionOverrideReceiptSpec: process.env.SVC_DISPATCH_OVERRIDE_RECEIPT || null,
+        explicitAsk: process.env.SVC_DISPATCH_EXPLICIT_ASK === '1' || process.env.SVC_DISPATCH_EXPLICIT_ASK === 'true',
+        unavailableStations: process.env.SVC_DISPATCH_UNAVAILABLE_STATIONS || '',
+      });
+      resolvedPolicy = {
+        tuple: external.tuple,
+        fallback: null,
+        metadata: {
+          version: external.topology.schema_version || 1,
+          profile: `${external.topology.mode}:${external.station.id}`,
+          source: 'owner-config',
+          resolved_at: now.toISOString(),
+          effective_window: { starts_at: null, ends_at: null },
+          cutover_utc: null,
+          cutover_local: null,
+          timezone: null,
+          selection_sha256: external.topology.config_sha256,
+          selection_expires_at: null,
+          selection_authority: 'repository-owner',
+        },
+      };
+    } else {
+      resolvedPolicy = await resolvePolicy(policy, options.orchestrator, now, selectionPath);
+    }
   } catch (error) {
     policyError = error;
   }

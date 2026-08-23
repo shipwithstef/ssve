@@ -16,7 +16,10 @@ const files = Object.fromEntries([
   "references/change-impact-triad.md",
   "references/plan-review-protocol.md",
   "hooks/svc-impact-triad-guard.mjs",
-  "schemas/change-impact-triad.schema.json"
+  "schemas/change-impact-triad.schema.json",
+  "scripts/run-external-review.mjs",
+  "schemas/external-review-receipt.schema.json",
+  "schemas/external-review-findings.schema.json"
 ].map((relative) => [relative, fs.readFileSync(path.join(root, relative), "utf8")]));
 
 const checks = [
@@ -45,13 +48,20 @@ const checks = [
   [!files["skills/review-exec/SKILL.md"].includes("bash scripts/resolve-adversarial-reviewer.sh > .svc/review-exec-pair.json"), "execution review no longer starts from the legacy scheduled selector"],
   [files["scripts/review-plan-codex.sh"].includes('SVC_DISPATCH_POLICY:-${SVC_REVIEWER_POLICY:-$HOME/.svc/dispatch-policy.json}'), "plan review automatically discovers the owner dispatch config"],
   [files["scripts/review-plan-codex.sh"].includes('REVIEWER_STATION="${SVC_REVIEWER_STATION:-}"'), "plan review preserves an explicit owner station override"],
-  [files["scripts/review-plan-codex.sh"].includes('(!requested || station.id === requested)'), "explicit plan station remains bound to required independent authority"],
-  [files["scripts/review-plan-codex.sh"].includes('review-topology-v2.mjs" plan'), "plan review derives its default station from owner topology"],
+  [files["scripts/review-plan-codex.sh"].includes("resolve-execute-dispatch.mjs") && files["scripts/review-plan-codex.sh"].includes("bind-plan"), "plan review binds WI identity through resolve-execute-dispatch.mjs bind-plan"],
+  [!files["scripts/review-plan-codex.sh"].includes('REVIEWER_MODE="${SVC_REVIEWER_MODE:-production}"'), "plan review does not hardcode a production reviewer mode"],
+  [!files["scripts/review-plan-codex.sh"].includes("review-topology-v2.mjs"), "plan review no longer duplicates topology station selection"],
+  [!files["scripts/review-plan-codex.sh"].includes("stations.length !== 1"), "plan review does not impose exact-one station cardinality"],
+  [/SVC_REVIEWER_MODE/.test(files["scripts/review-plan-codex.sh"]) && /--reviewer-mode/.test(files["scripts/review-plan-codex.sh"]) && !/\$\{SVC_REVIEWER_MODE:-production\}/.test(files["scripts/review-plan-codex.sh"]), "mode flag is appended only from an explicit non-empty SVC_REVIEWER_MODE"],
+  [/SVC_REVIEWER_STATION/.test(files["scripts/review-plan-codex.sh"]) && /--reviewer-station/.test(files["scripts/review-plan-codex.sh"]), "station flag is appended only from an explicit non-empty SVC_REVIEWER_STATION"],
   [!files["scripts/review-plan-codex.sh"].includes('SVC_REVIEWER_STATION:-agy'), "plan review has no hardcoded AGY default"],
   [files["scripts/review-plan-codex.sh"].includes('--candidate-digest "$PLAN_SHA"'), "plan review binds configured reviewer evidence to the exact plan digest"],
   [files["scripts/review-plan-codex.sh"].includes('candidate_digest=$PLAN_SHA'), "plan review package carries the exact candidate digest"],
   [files["scripts/review-plan-codex.sh"].includes('fs.readFileSync(process.argv[1],"utf8")'), "plan review reads relative summary paths as files rather than module identifiers"],
   [files["scripts/review-plan-codex.sh"].includes("receipt missing from launcher summary"), "plan review fails closed when the launcher receipt path is absent"],
+  [files["scripts/run-external-review.mjs"].includes("cursor-agent") && files["scripts/run-external-review.mjs"].includes("--sandbox") && files["scripts/run-external-review.mjs"].includes("enabled"), "canonical launcher owns Cursor read-only transport"],
+  [files["schemas/external-review-receipt.schema.json"].includes('"cursor"'), "receipt schema admits the owner-policy Cursor host"],
+  [files["schemas/external-review-findings.schema.json"].includes('"cursor"'), "findings schema admits the owner-policy Cursor host"],
   [!files["references/plan-review-protocol.md"].includes("### Tier 3"), "canonical protocol removes standalone Tier 3"],
   [files["references/plan-review-protocol.md"].includes("owner/founder"), "product/security disagreement routes to owner authority"]
 ];
@@ -96,13 +106,23 @@ fs.rmSync(detectFixture, { recursive: true, force: true });
 const fixture = fs.mkdtempSync(path.join(os.tmpdir(), "svc-review-station-"));
 try {
   const plan = path.join(fixture, "WI-531-plan.md");
-  const policy = path.join(fixture, "reviewer-policy-v2.json");
+  const policy = path.join(fixture, "dispatch-policy.json");
+  fs.writeFileSync(path.join(fixture, "CLAUDE.md"), "# fixture context root\n");
   fs.writeFileSync(plan, "# WI-531 plan\n");
-  const self = { id: "self", kind: "inline-self", required: true, authority: "advisory", tuple: { host: "current", family: "openai", model: "current", effort: "high" } };
-  const optional = { id: "optional", kind: "external", required: false, authority: "independent", tuple: { host: "agy", family: "google", model: "Gemini 3.6 Flash (High)", effort: "high" } };
-  const required = { ...optional, id: "required", required: true };
+  const self = { id: "self", kind: "inline-self", required: true, authority: "advisory", tuple: { host: "codex", family: "openai", model: "gpt-5.6-sol", effort: "high" } };
+  const optional = { id: "optional", kind: "external", required: false, authority: "independent", tuple: { host: "agy", family: "google", model: "Gemini 3.6 Flash (High)", effort: "high" }, fallback_only: true, explicit_request_only: true };
+  const required = { id: "required", kind: "external", required: true, authority: "independent", tuple: { host: "agy", family: "google", model: "Gemini 3.7 Flash (High)", effort: "high" } };
+  const labels = {
+    STRAT: { host: "codex", family: "openai", model: "gpt-5.6-sol", effort: "high" },
+    PLAN: { host: "codex", family: "openai", model: "gpt-5.6-sol", effort: "high" },
+    EXEC: { host: "codex", family: "openai", model: "gpt-5.6-sol", effort: "high" },
+    REVIEW: { host: "codex", family: "openai", model: "gpt-5.6-sol", effort: "high" },
+    SENSE: { host: "codex", family: "openai", model: "gpt-5.6-sol", effort: "high" },
+    DISC: { host: "codex", family: "openai", model: "web_search", effort: "high" },
+    PASS: { host: "codex", family: "openai", model: "gpt-5.6-sol", effort: "high" }
+  };
   const phase = { release_authority: true, stations: [self, optional, required] };
-  fs.writeFileSync(policy, JSON.stringify({ schema_version: 2, authority: "repository-owner", default_mode: "production", modes: { production: { orchestrators: { codex: { plan: phase, exec: phase } } } } }));
+  fs.writeFileSync(policy, JSON.stringify({ schema_version: 1, authority: "repository-owner", default_mode: "production", modes: { production: { labels, review: { plan: phase, exec: phase } } } }));
   fs.chmodSync(policy, 0o600);
   let rejected = false;
   let rejectionDetail = "";
@@ -112,13 +132,15 @@ try {
       env: { ...process.env, SVC_HOST: "codex", SVC_DISPATCH_POLICY: policy, SVC_REVIEWER_POLICY: policy, SVC_REVIEWER_MODE: "production", SVC_REVIEWER_STATION: "optional" },
     });
   } catch (error) {
-    rejectionDetail = String(error.stderr || "");
-    rejected = rejectionDetail.includes("required independent external station matching optional");
+    rejectionDetail = String(error.stderr || error.stdout || error.message || "");
+    rejected = /not eligible|not allowed|not present|explicit-request|fallback/i.test(rejectionDetail);
   }
   checks.push([rejected, `plan adapter rejects an optional external station before provider invocation${rejected ? "" : ` (${rejectionDetail.trim()})`}`]);
 
-  const sameFamily = { ...required, id: "same-family", tuple: { host: "codex", family: "openai", model: "gpt-5.6-sol", effort: "high" } };
-  const invalidPhase = { release_authority: true, stations: [self, sameFamily, required] };
+  const selfLegacy = { id: "self", kind: "inline-self", required: true, authority: "advisory", tuple: { host: "current", family: "openai", model: "current", effort: "high" } };
+  const sameFamily = { id: "same-family", kind: "external", required: true, authority: "independent", tuple: { host: "codex", family: "openai", model: "gpt-5.6-sol", effort: "high" } };
+  const requiredLegacy = { id: "required", kind: "external", required: true, authority: "independent", tuple: { host: "agy", family: "google", model: "Gemini 3.6 Flash (High)", effort: "high" } };
+  const invalidPhase = { release_authority: true, stations: [selfLegacy, sameFamily, requiredLegacy] };
   fs.writeFileSync(policy, JSON.stringify({ schema_version: 2, authority: "repository-owner", default_mode: "production", modes: { production: { orchestrators: { codex: { plan: invalidPhase, exec: invalidPhase } } } } }));
   fs.chmodSync(policy, 0o600);
   let sameFamilyRejected = false;

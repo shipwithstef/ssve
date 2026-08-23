@@ -128,13 +128,49 @@ if [[ "${SVC_FAKE_MODE:-success}" != "success" ]]; then printf "%s\n" "${SVC_FAK
 finding="{\"schema_version\":1,\"review_kind\":\"${SVC_REVIEW_KIND:-generic}\",\"rubric_score\":10,\"rubric_failures\":null,\"dependencies_needing_read\":null,\"reviewer\":{\"host\":\"agy\",\"family\":\"google\",\"model\":\"$model\",\"effort\":\"$effort\"},\"verdict\":\"pass\",\"summary\":\"fixture pass\",\"findings\":[],\"certifications\":[]}"
 node -e "process.stdout.write(JSON.stringify({response:process.argv[1],stats:{model:process.argv[2],input_tokens:10,output_tokens:5}}))" "$finding" "$model"
 ' > "$TMP/bin/agy"
-chmod 700 "$TMP/bin/codex" "$TMP/bin/claude" "$TMP/bin/agy"
+
+printf '%s\n' '#!/usr/bin/env bash' 'set -euo pipefail' '
+if [[ "${1:-}" == "--help" ]]; then
+  printf "%s\n" "--print --output-format json --mode plan --sandbox enabled --model --workspace"
+  exit 0
+fi
+for arg in "$@"; do if [[ "$arg" == "--version" ]]; then printf "%s\n" "2026.08.11-e8db854"; exit 0; fi; done
+mkdir -p "$SVC_FAKE_LOG"
+printf "%s\n" "$*" >> "$SVC_FAKE_LOG/cursor.argv"
+printf "%s\n" "cursor" >> "$SVC_FAKE_LOG/calls"
+joined=" $* "
+if [[ "$joined" == *"bypassPermissions"* || "$joined" == *" --yolo "* || "$joined" == *"--dangerously-skip-permissions"* || "$joined" == *" --force "* ]]; then
+  printf "%s\n" "forbidden approval mode" >&2
+  exit 2
+fi
+model=""
+while [[ $# -gt 0 ]]; do
+  if [[ "$1" == "--model" ]]; then model="$2"; shift 2
+  else shift; fi
+done
+family="${SVC_FAKE_CURSOR_FAMILY:-}"
+if [[ -z "$family" ]]; then
+  if [[ "$model" == gpt-5.6-sol* ]]; then family=openai; else family=anthropic; fi
+fi
+host="${SVC_FAKE_FINDINGS_HOST:-cursor}"
+effort="${SVC_FAKE_FINDINGS_EFFORT:-high}"
+finding="$(H="$host" F="$family" M="${SVC_FAKE_FINDINGS_MODEL:-$model}" E="$effort" python3 -c "import json,os; print(json.dumps({\"schema_version\":1,\"review_kind\":os.environ.get(\"SVC_REVIEW_KIND\",\"plan\"),\"rubric_score\":10,\"rubric_failures\":None,\"dependencies_needing_read\":None,\"reviewer\":{\"host\":os.environ[\"H\"],\"family\":os.environ[\"F\"],\"model\":os.environ[\"M\"],\"effort\":os.environ[\"E\"]},\"verdict\":\"pass\",\"summary\":\"fixture pass\",\"findings\":[],\"certifications\":[]}))")"
+if [[ "${SVC_FAKE_MODE:-success}" != "success" ]]; then printf "%s\n" "${SVC_FAKE_DIAGNOSTIC:-authentication failed}" >&2; exit 1; fi
+result="$finding"
+if [[ "${SVC_FAKE_CURSOR_FENCE:-0}" == 1 ]]; then result="```json
+$finding
+```"; fi
+if [[ "${SVC_FAKE_OUTPUT:-valid}" == malformed ]]; then printf "%s\n" "{\"type\":\"result\",\"is_error\":false,\"result\":\"{bad\"}"; exit 0; fi
+python3 -c "import json,sys; print(json.dumps({\"type\":\"result\",\"is_error\":False,\"result\":sys.argv[1]}))" "$result"
+' > "$TMP/bin/cursor-agent"
+chmod 700 "$TMP/bin/codex" "$TMP/bin/claude" "$TMP/bin/agy" "$TMP/bin/cursor-agent"
 
 export SVC_EXTERNAL_REVIEW_FIXTURE=1
 export SVC_EXTERNAL_REVIEW_FIXTURE_ROOT="$TMP"
 export SVC_EXTERNAL_REVIEW_CODEX_BIN="$TMP/bin/codex"
 export SVC_EXTERNAL_REVIEW_CLAUDE_BIN="$TMP/bin/claude"
 export SVC_EXTERNAL_REVIEW_AGY_BIN="$TMP/bin/agy"
+export SVC_EXTERNAL_REVIEW_CURSOR_BIN="$TMP/bin/cursor-agent"
 export SVC_EXTERNAL_REVIEW_CACHE_DIR="$TMP/cache"
 export SVC_EXTERNAL_REVIEW_POLICY_DIR="$TMP/policy"
 export SVC_EXTERNAL_REVIEW_CONTEXT_ROOT="$ROOT"
@@ -381,8 +417,9 @@ PRODUCTION_CLOCK_RC=$?
 set -e
 expect "production clock injection is rejected before provider activity" bash -c "test '$PRODUCTION_CLOCK_RC' -ne 0 && grep -q 'fixture-only' '$TMP/production-clock.err' && test ! -e '$SVC_FAKE_LOG/calls'"
 
+POLICY_FOR_STATUS="${SVC_DISPATCH_POLICY:-${SVC_REVIEWER_POLICY:-$HOME/.svc/dispatch-policy.json}}"
 SVC_HOST=codex bash "$ROOT/scripts/resolve-adversarial-reviewer.sh" > "$TMP/resolver-policy.json"
-node "$LAUNCHER" --policy-status --orchestrator codex > "$TMP/launcher-policy.json"
+node "$LAUNCHER" --policy-status --orchestrator codex --reviewer-config "$POLICY_FOR_STATUS" --reviewer-phase plan > "$TMP/launcher-policy.json"
 expect "shell resolver delegates to the canonical policy status without a paid probe" node -e 'const fs=require("fs"),a=JSON.parse(fs.readFileSync(process.argv[1],"utf8")),b=JSON.parse(fs.readFileSync(process.argv[2],"utf8"));if(a.policy_version!==b.policy_version||a.profile!==b.profile||JSON.stringify(a.tuple)!==JSON.stringify(b.tuple)||fs.existsSync(process.argv[3]))process.exit(1)' "$TMP/resolver-policy.json" "$TMP/launcher-policy.json" "$SVC_FAKE_LOG/calls"
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
@@ -633,10 +670,11 @@ expect "cache replay is bound to key and package/schema hashes" test "$(grep -c 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache" "$TMP/runtime-copy"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache" "$TMP/runtime-copy/scripts/lib" "$TMP/runtime-copy/schemas" "$TMP/runtime-copy/references" "$TMP/runtime-copy/skills/review-exec" "$TMP/runtime-copy/skills/review-cross-model" "$TMP/runtime-copy/hooks/lib" "$TMP/runtime-copy/skills/research/scripts"
 cp "$LAUNCHER" "$TMP/runtime-copy/scripts/run-external-review.mjs"
 cp "$ROOT/scripts/review-topology-v2.mjs" "$TMP/runtime-copy/scripts/review-topology-v2.mjs"
+cp "$ROOT/scripts/resolve-dispatch.mjs" "$TMP/runtime-copy/scripts/resolve-dispatch.mjs"
 cp "$ROOT/scripts/lib/json-schema-validator.mjs" "$ROOT/scripts/lib/external-review-provenance.mjs" "$ROOT/scripts/lib/review-evidence-store.mjs" "$TMP/runtime-copy/scripts/lib/"
 cp "$ROOT/skills/research/scripts/dispatch-agy.mjs" "$TMP/runtime-copy/skills/research/scripts/dispatch-agy.mjs"
 cp "$ROOT/hooks/lib/wi-id.mjs" "$TMP/runtime-copy/hooks/lib/wi-id.mjs"
-cp "$ROOT/schemas/external-review-findings.schema.json" "$ROOT/schemas/external-review-receipt.schema.json" "$ROOT/schemas/review-station-receipt-v2.schema.json" "$TMP/runtime-copy/schemas/"
+cp "$ROOT/schemas/external-review-findings.schema.json" "$ROOT/schemas/external-review-receipt.schema.json" "$ROOT/schemas/review-station-receipt-v2.schema.json" "$ROOT/schemas/dispatch-policy.schema.json" "$TMP/runtime-copy/schemas/"
 cp "$ROOT/references/model-registry.json" "$TMP/runtime-copy/references/"
 cp "$ROOT/skills/review-exec/SKILL.md" "$TMP/runtime-copy/skills/review-exec/"
 cp "$ROOT/skills/review-cross-model/SKILL.md" "$TMP/runtime-copy/skills/review-cross-model/"
@@ -1089,6 +1127,119 @@ SVC_HOST=claude SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR="$TMP/out/adapter-wimismatch" 
 ADAPTER_WIMISMATCH_RC=$?
 set -e
 expect "adapter fails closed when the branch WI does not appear in the plan (stale/reused branch)" bash -c "test '$ADAPTER_WIMISMATCH_RC' -eq 4 && test ! -e '$SVC_FAKE_LOG/calls' && grep -q 'does not appear in the plan' '$TMP/adapter-wimismatch.err'"
+
+# WI-559: named WI + owner-default multi-station Cursor transport
+write_cursor_policy() {
+  local file="$1"
+  POLICY_OUT="$file" node <<'NODE'
+const fs = require('fs');
+const file = process.env.POLICY_OUT;
+const labels = {
+  STRAT: { host: 'grok', family: 'xai', model: 'grok-4.6', effort: 'high' },
+  PLAN: { host: 'grok', family: 'xai', model: 'grok-4.6', effort: 'high' },
+  EXEC: { host: 'grok', family: 'xai', model: 'grok-4.6', effort: 'high' },
+  REVIEW: { host: 'grok', family: 'xai', model: 'grok-4.6', effort: 'high' },
+  SENSE: { host: 'grok', family: 'xai', model: 'grok-code-fast', effort: 'high' },
+  DISC: { host: 'grok', family: 'xai', model: 'web_search', effort: 'high' },
+  PASS: { host: 'grok', family: 'xai', model: 'grok-code-fast', effort: 'high' }
+};
+const plan = {
+  release_authority: true,
+  stations: [
+    { id: 'grok-self', kind: 'inline-self', required: true, authority: 'advisory', tuple: { host: 'grok', family: 'xai', model: 'grok-4.6', effort: 'high' } },
+    { id: 'fable', kind: 'external', required: true, authority: 'independent', tuple: { host: 'cursor', family: 'anthropic', model: 'claude-fable-5', effort: 'high' } },
+    { id: 'sol-high', kind: 'external', required: true, authority: 'independent', tuple: { host: 'cursor', family: 'openai', model: 'gpt-5.6-sol', effort: 'high' } }
+  ]
+};
+fs.writeFileSync(file, JSON.stringify({
+  schema_version: 1,
+  authority: 'repository-owner',
+  default_mode: 'mixed-grok-cursor',
+  modes: { 'mixed-grok-cursor': { labels, review: { plan, exec: plan } } }
+}) + '\n', { mode: 0o600 });
+NODE
+  chmod 600 "$file"
+}
+
+CURSOR_POLICY="$TMP/cursor-dispatch-policy.json"
+write_cursor_policy "$CURSOR_POLICY"
+REPO_SCOUT="$TMP/named-wi-scout-repo"; rm -rf "$REPO_SCOUT"; mkdir -p "$REPO_SCOUT"
+printf '# ctx\n' > "$REPO_SCOUT/CLAUDE.md"
+cat > "$REPO_SCOUT/plan.md" <<'EOF'
+# Scout capture durability plan
+
+| Field | Value |
+|---|---|
+| **Work item:** | WI-SCOUT-CAPTURE-DURABILITY-01 |
+EOF
+fxgit "$REPO_SCOUT" init -q; fxgit "$REPO_SCOUT" add -A; fxgit "$REPO_SCOUT" commit -q -m base
+fxgit "$REPO_SCOUT" update-ref refs/remotes/origin/main HEAD
+fxgit "$REPO_SCOUT" checkout -q -b bugfix-WI-SCOUT-CAPTURE-DURABILITY-01
+
+rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
+set +e
+env -u SVC_REVIEWER_MODE -u SVC_REVIEWER_STATION SVC_HOST=codex SVC_DISPATCH_POLICY="$CURSOR_POLICY" SVC_REVIEWER_POLICY="$CURSOR_POLICY" \
+  SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR="$TMP/out/adapter-named-default" \
+  bash "$ROOT/scripts/review-plan-codex.sh" "$REPO_SCOUT/plan.md" > "$TMP/adapter-named-default.findings" 2> "$TMP/adapter-named-default.err"
+ADAPTER_NAMED_DEFAULT_RC=$?
+set -e
+NAMED_DEFAULT_RECEIPT="$(grep -oE 'receipt=\S+' "$TMP/adapter-named-default.err" | tail -1 | sed 's/^receipt=//')"
+expect "named WI with two independent stations and no mode override reaches exactly one resolver-selected fake reviewer" bash -c "test '$ADAPTER_NAMED_DEFAULT_RC' -eq 0 && test \"\$(grep -c '^cursor$' '$SVC_FAKE_LOG/calls' 2>/dev/null || printf 0)\" = 1 && test \"\$(wc -l < '$SVC_FAKE_LOG/calls' | tr -d ' ')\" = 1"
+expect "default Cursor findings host matches the invoked tuple" node -e 'const fs=require("fs"),f=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); if(f.reviewer.host!=="cursor"||f.reviewer.family!=="anthropic"||f.review_kind!=="plan") process.exit(1)' "$TMP/adapter-named-default.findings"
+expect "default Cursor receipt is schema-valid with equal exact tuples and requested_accepted or stronger attestation" node -e '
+  const fs=require("fs"); const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));
+  const t=r.requested_tuple;
+  if(r.status!=="success"||t.host!=="cursor"||t.family!=="anthropic"||t.model!=="claude-fable-5") process.exit(1);
+  if(JSON.stringify(t)!==JSON.stringify(r.invocation_tuple)||JSON.stringify(t)!==JSON.stringify(r.effective_tuple)) process.exit(1);
+  if(!["requested_accepted","server_observed"].includes(r.model_attestation.level)) process.exit(1);
+  const argv=(r.attempts[0].command.argv||[]).slice(0,-1);
+  const joined=argv.join(" ");
+  if(!/--print/.test(joined)||!/--output-format/.test(joined)||!/--mode plan/.test(joined)||!/--sandbox enabled/.test(joined)||!/--model/.test(joined)) process.exit(1);
+  if(/bypassPermissions|--yolo|--dangerously-skip-permissions/.test(joined)) process.exit(1);
+' "$NAMED_DEFAULT_RECEIPT"
+
+rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
+set +e
+SVC_HOST=codex SVC_DISPATCH_POLICY="$CURSOR_POLICY" SVC_REVIEWER_STATION=sol-high \
+  SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR="$TMP/out/adapter-named-sol" \
+  bash "$ROOT/scripts/review-plan-codex.sh" "$REPO_SCOUT/plan.md" > "$TMP/adapter-named-sol.findings" 2> "$TMP/adapter-named-sol.err"
+ADAPTER_NAMED_SOL_RC=$?
+set -e
+NAMED_SOL_RECEIPT="$(grep -oE 'receipt=\S+' "$TMP/adapter-named-sol.err" | tail -1 | sed 's/^receipt=//')"
+expect "explicit Cursor Sol station produces one fake Cursor call and an exact openai tuple receipt" bash -c "test '$ADAPTER_NAMED_SOL_RC' -eq 0 && test \"\$(grep -c '^cursor$' '$SVC_FAKE_LOG/calls' 2>/dev/null || printf 0)\" = 1"
+expect "Sol findings and receipt stay on cursor/openai/gpt-5.6-sol" node -e '
+  const fs=require("fs");
+  const f=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));
+  const r=JSON.parse(fs.readFileSync(process.argv[2],"utf8"));
+  if(f.reviewer.host!=="cursor"||f.reviewer.family!=="openai") process.exit(1);
+  if(r.requested_tuple.host!=="cursor"||r.requested_tuple.family!=="openai"||r.requested_tuple.model!=="gpt-5.6-sol") process.exit(1);
+  if(!["requested_accepted","server_observed"].includes(r.model_attestation.level)) process.exit(1);
+' "$TMP/adapter-named-sol.findings" "$NAMED_SOL_RECEIPT"
+
+rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
+export SVC_FAKE_FINDINGS_HOST=codex
+set +e
+SVC_HOST=codex SVC_DISPATCH_POLICY="$CURSOR_POLICY" SVC_REVIEWER_STATION=fable \
+  SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR="$TMP/out/adapter-cursor-mismatch" \
+  bash "$ROOT/scripts/review-plan-codex.sh" "$REPO_SCOUT/plan.md" > "$TMP/adapter-cursor-mismatch.out" 2> "$TMP/adapter-cursor-mismatch.err"
+CURSOR_MISMATCH_RC=$?
+set -e
+unset SVC_FAKE_FINDINGS_HOST
+expect "Cursor findings host mismatch fail-closes without review authorization" test "$CURSOR_MISMATCH_RC" -ne 0
+
+expect "receipt and findings schemas admit cursor while retaining family enums" node -e '
+  const receipt=require(process.argv[1]); const findings=require(process.argv[2]);
+  if(!receipt.definitions.tuple.properties.host.enum.includes("cursor")) process.exit(1);
+  if(!findings.properties.reviewer.properties.host.enum.includes("cursor")) process.exit(1);
+  if(receipt.definitions.tuple.properties.orchestrator.enum.join(",")!=="claude,codex") process.exit(1);
+' "$ROOT/schemas/external-review-receipt.schema.json" "$ROOT/schemas/external-review-findings.schema.json"
+
+expect "Cursor success with attestation none remains semantically unauthorized" node --input-type=module -e "
+  import { validateExternalReviewReceiptSemantics } from 'file://${LAUNCHER}';
+  const tuple={orchestrator:'codex',host:'cursor',family:'anthropic',model:'claude-fable-5',effort:'high'};
+  const receipt={status:'success',review_kind:'plan',classification:'success',requested_tuple:tuple,invocation_tuple:tuple,effective_tuple:tuple,attempts:[{}],protocol:{process_invocations:1},fallback:{used:false},route:{kind:'owner_config_primary',evidence:'requested_primary'},cache:{reusable:false},model_attestation:{level:'none',requested_model:'claude-fable-5',observed_models:[]},policy:{source:'owner-config'},candidate_digest:'a'.repeat(64),findings_sha256:'b'.repeat(64)};
+  if(!validateExternalReviewReceiptSemantics(receipt).some((e)=>/model_attestation/.test(e))) process.exit(1);
+"
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 export SVC_EXTERNAL_REVIEW_CONTEXT_ROOT="$ROOT"

@@ -38,7 +38,7 @@ case "$ORCHESTRATOR" in
     exit 1
     ;;
   claude|codex|grok|cursor|gemini|kimi|opencode|antigravity|mimo-code)
-    if [[ "$POLICY_SCHEMA" == "2" ]]; then
+    if [[ "$POLICY_SCHEMA" == "1" || "$POLICY_SCHEMA" == "2" ]]; then
       exec node "$SCRIPT_DIR/run-external-review.mjs" --policy-status --orchestrator "$ORCHESTRATOR" --reviewer-config "$POLICY_PATH" --reviewer-phase plan
     fi
     exec node "$SCRIPT_DIR/resolve-dispatch.mjs" policy-status --orchestrator "$ORCHESTRATOR" --phase plan --config "$POLICY_PATH"
