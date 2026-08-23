@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-# svc pre-commit slot: passthrough placeholder — the lineage check is
-# performed inline by 20-quick-fix-eligibility (it must short-circuit
-# on lineage match). Kept as a separate slot for future expansion
-# (e.g., enforce a "plan must be reviewed" check that's distinct from
-# "plan exists").
-
-exit 0
