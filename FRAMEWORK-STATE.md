@@ -108,6 +108,19 @@ When no external review station is available (quota exhausted, billing blocked, 
 
 **Availability probe:** `gh pr view` + binary existence check before invoking.
 
+
+
+## Infrastructure Failure Auto-Fallback (WI-557)
+
+When ANY external service fails due to infrastructure/credit/billing (NOT code quality):
+1. Auto-degrade to local validation (tier-1 focused + manifest lint + coverage validator)
+2. Log one entry in pipeline-decisions.jsonl
+3. Proceed — do NOT block product shipping on external service availability
+4. Retroactive external review when service restores (supplementary, not blocking)
+
+Detection: steps=[], HTTP 402/403/429, quota exceeded, billing, capacity, runner allocation failed.
+Never falls back for: actual test failures, lint errors, type errors, security findings.
+
 ## Blend History
 
 | Source | Date | Patterns taken | Key additions |
