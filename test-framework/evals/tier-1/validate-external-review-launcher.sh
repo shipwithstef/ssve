@@ -360,18 +360,27 @@ node "$LAUNCHER" --clear-profile-selection --reason "explicit invocation fixture
 
 REVIEWER_CONFIG="$TMP/reviewer-policy-v2.json"
 node -e 'const fs=require("fs");const ext=(id,host,family,model,required=false)=>({id,kind:"external",required,authority:"independent",tuple:{host,family,model,effort:"high"}});const self={id:"self",kind:"inline-self",required:true,authority:"advisory",tuple:{host:"current",family:"openai",model:"current",effort:"high"}};const p={release_authority:false,stations:[self,ext("agy","agy","google","Gemini 3.6 Flash (High)"),ext("opus","claude","anthropic","claude-opus-4-6")]};fs.writeFileSync(process.argv[1],JSON.stringify({schema_version:2,authority:"repository-owner",default_mode:"fast",modes:{fast:{orchestrators:{codex:{plan:p,exec:p}}}}},null,2),{mode:0o600})' "$REVIEWER_CONFIG"
-CANDIDATE_DIGEST="$(node --input-type=module -e 'import {candidateTreeIdentity} from "./scripts/lib/external-review-provenance.mjs"; process.stdout.write(candidateTreeIdentity(process.cwd()).candidate_digest)')"
+OWNER_PLAN_BODY='agy-independent opus-disabled-subscription'
+CANDIDATE_DIGEST="$(printf '%s' "$OWNER_PLAN_BODY" | sha256sum | awk '{print $1}')"
+owner_plan_package() {
+  printf 'candidate_digest=%s\nSVC_PLAN_BYTES_BEGIN_V1\n%s\nSVC_PLAN_BYTES_END_V1\n' "$CANDIDATE_DIGEST" "$OWNER_PLAN_BODY"
+}
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
-printf 'agy-independent candidate_digest=%s' "$CANDIDATE_DIGEST" | SVC_EXTERNAL_REVIEW_NOW=2026-07-19T21:00:00Z node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$CANDIDATE_DIGEST" --reviewer-config "$REVIEWER_CONFIG" --reviewer-mode fast --reviewer-phase plan --reviewer-station agy --artifacts-dir "$TMP/out/agy-independent" > "$TMP/agy-independent.summary"
+owner_plan_package | SVC_EXTERNAL_REVIEW_NOW=2026-07-19T21:00:00Z node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$CANDIDATE_DIGEST" --reviewer-config "$REVIEWER_CONFIG" --reviewer-mode fast --reviewer-phase plan --reviewer-station agy --artifacts-dir "$TMP/out/agy-independent" > "$TMP/agy-independent.summary"
 AGY_RECEIPT="$(receipt_from_summary "$TMP/agy-independent.summary")"
 expect "owner-configured Gemini 3.6 Flash runs through canonical AGY and emits an exact independent Google receipt" node -e 'const fs=require("fs"),r=require(process.argv[1]),argv=fs.readFileSync(process.argv[2],"utf8");if(r.policy.profile!=="fast:agy"||r.policy.source!=="owner-config"||!r.policy.selection_sha256||!r.candidate_digest||r.requested_tuple.host!=="agy"||r.requested_tuple.family!=="google"||r.requested_tuple.model!=="Gemini 3.6 Flash (High)"||r.requested_tuple.effort!=="high"||r.route.kind!=="owner_config_primary"||r.model_attestation.level!=="requested_accepted"||!argv.includes("--sandbox --mode plan --model Gemini 3.6 Flash (High)")||argv.includes("--effort")||argv.includes("--json-schema")||argv.includes("--output-format"))process.exit(1)' "$AGY_RECEIPT" "$SVC_FAKE_LOG/agy.argv"
 expect "AGY review package crosses the canonical private-file bridge with the fail-closed schema" bash -c "grep -q 'agy-independent' '$SVC_FAKE_LOG/agy.package' && grep -q 'svc-external-review-findings-v1' '$SVC_FAKE_LOG/agy.package'"
+
+owner_plan_package | SVC_EXTERNAL_REVIEW_NOW=2026-07-19T21:00:00Z node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$CANDIDATE_DIGEST" --reviewer-config "$REVIEWER_CONFIG" --reviewer-mode fast --reviewer-phase plan --reviewer-station agy --artifacts-dir "$TMP/out/agy-cache-same-policy" > "$TMP/agy-cache-same-policy.summary"
+node -e 'const fs=require("fs"),file=process.argv[1],p=JSON.parse(fs.readFileSync(file,"utf8"));p.modes.fast.orchestrators.codex.plan.stations.find((s)=>s.id==="opus").required=true;fs.writeFileSync(file,JSON.stringify(p,null,2)+"\n",{mode:0o600})' "$REVIEWER_CONFIG"
+owner_plan_package | SVC_EXTERNAL_REVIEW_NOW=2026-07-19T21:00:00Z node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$CANDIDATE_DIGEST" --reviewer-config "$REVIEWER_CONFIG" --reviewer-mode fast --reviewer-phase plan --reviewer-station agy --artifacts-dir "$TMP/out/agy-cache-changed-policy" > "$TMP/agy-cache-changed-policy.summary"
+expect "cache key binds owner-policy digest mode phase station and workspace provenance" bash -c "test \"\$(grep -c '^agy$' '$SVC_FAKE_LOG/calls')\" -eq 2 && test \"\$(node -e 'const fs=require(\"fs\"),s=JSON.parse(fs.readFileSync(process.argv[1],\"utf8\"));process.stdout.write(require(s.receipt).classification)' '$TMP/agy-cache-same-policy.summary')\" = cache_hit && test \"\$(node -e 'const fs=require(\"fs\"),s=JSON.parse(fs.readFileSync(process.argv[1],\"utf8\"));process.stdout.write(require(s.receipt).classification)' '$TMP/agy-cache-changed-policy.summary')\" = success"
 
 node "$LAUNCHER" --validate-capabilities --orchestrator codex --reviewer-config "$REVIEWER_CONFIG" --reviewer-mode fast --reviewer-phase plan --reviewer-station opus --artifacts-dir "$TMP/out/opus46-capability" > "$TMP/opus46-capability.summary"
 expect "optional Opus 4.6 is capability-probed without a review invocation" node -e 'const r=require(process.argv[1]);if(r.status!=="success"||r.review_kind!=="capability-probe"||r.requested_tuple.model!=="claude-opus-4-6"||r.attempts.length!==0)process.exit(1)' "$TMP/out/opus46-capability/receipt.json"
 
 set +e
-printf 'opus-disabled-subscription candidate_digest=%s' "$CANDIDATE_DIGEST" | SVC_FAKE_CLAUDE_SUBSCRIPTION_DISABLED=1 node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$CANDIDATE_DIGEST" --reviewer-config "$REVIEWER_CONFIG" --reviewer-mode fast --reviewer-phase plan --reviewer-station opus --artifacts-dir "$TMP/out/opus46-disabled" > "$TMP/opus46-disabled.summary" 2> "$TMP/opus46-disabled.err"
+owner_plan_package | SVC_FAKE_CLAUDE_SUBSCRIPTION_DISABLED=1 node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$CANDIDATE_DIGEST" --reviewer-config "$REVIEWER_CONFIG" --reviewer-mode fast --reviewer-phase plan --reviewer-station opus --artifacts-dir "$TMP/out/opus46-disabled" > "$TMP/opus46-disabled.summary" 2> "$TMP/opus46-disabled.err"
 OPUS_DISABLED_RC=$?
 set -e
 expect "structured Claude subscription-disabled 403 is classified as model entitlement" bash -c "test '$OPUS_DISABLED_RC' -ne 0 && test \"\$(node -e 'process.stdout.write(require(process.argv[1]).classification)' '$TMP/out/opus46-disabled/receipt.json')\" = model_entitlement"
@@ -684,7 +693,7 @@ cp "$ROOT/skills/review-cross-model/SKILL.md" "$TMP/runtime-copy/skills/review-c
 printf schema-version-key | node "$TMP/runtime-copy/scripts/run-external-review.mjs" --orchestrator claude --review-kind exec --artifacts-dir "$TMP/out/key-schema-1" > "$TMP/key-schema-1.summary"
 printf '\n' >> "$TMP/runtime-copy/schemas/external-review-findings.schema.json"
 printf schema-version-key | node "$TMP/runtime-copy/scripts/run-external-review.mjs" --orchestrator claude --review-kind exec --artifacts-dir "$TMP/out/key-schema-2" > "$TMP/key-schema-2.summary"
-sed -i 's/const LAUNCHER_VERSION = '\''2.5.0'\''/const LAUNCHER_VERSION = '\''2.5.1'\''/' "$TMP/runtime-copy/scripts/run-external-review.mjs"
+sed -i 's/const LAUNCHER_VERSION = '\''2.6.0'\''/const LAUNCHER_VERSION = '\''2.6.1'\''/' "$TMP/runtime-copy/scripts/run-external-review.mjs"
 printf schema-version-key | node "$TMP/runtime-copy/scripts/run-external-review.mjs" --orchestrator claude --review-kind exec --artifacts-dir "$TMP/out/key-launcher-2" > "$TMP/key-launcher-2.summary"
 expect "changed findings schema and launcher version each force a fresh cache key" test "$(grep -c '^codex$' "$SVC_FAKE_LOG/calls")" -eq 3
 

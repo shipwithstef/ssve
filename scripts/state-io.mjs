@@ -13,6 +13,7 @@ import {
   constants,
   existsSync,
   fsyncSync,
+  lstatSync,
   mkdirSync,
   openSync,
   readFileSync,
@@ -21,11 +22,34 @@ import {
   unlinkSync,
   writeFileSync,
 } from "node:fs";
-import { dirname } from "node:path";
+import { dirname, isAbsolute, join, parse, relative, resolve } from "node:path";
 
 const DEFAULT_LOCK_TIMEOUT_MS = 5000;
 const DEFAULT_STALE_LOCK_MS = 10 * 60 * 1000;
 const DEFAULT_LOCK_RETRY_MS = 25;
+
+function assertNoSymlinkComponents(filePath, authorityRoot) {
+  if (!authorityRoot) return;
+  const root = resolve(authorityRoot);
+  const target = resolve(filePath);
+  const rel = relative(root, target);
+  if (rel === "" || rel === ".." || rel.startsWith(`..${process.platform === "win32" ? "\\" : "/"}`) || isAbsolute(rel)) {
+    throw new Error(`authority state path escapes root ${root}: ${filePath}`);
+  }
+  let cursor = parse(root).root;
+  for (const segment of root.slice(parse(root).root.length).split(/[\\/]+/).filter(Boolean)) {
+    cursor = join(cursor, segment);
+    if (lstatSync(cursor).isSymbolicLink()) throw new Error(`authority state root contains symlink component: ${cursor}`);
+  }
+  for (const segment of dirname(rel).split(/[\\/]+/).filter((value) => value && value !== ".")) {
+    cursor = join(cursor, segment);
+    try {
+      if (lstatSync(cursor).isSymbolicLink()) throw new Error(`authority state path contains symlink component: ${cursor}`);
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+    }
+  }
+}
 
 function sleepSync(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
@@ -184,7 +208,9 @@ export function writeJsonlAtomic(filePath, entries, opts = {}) {
 }
 
 export function appendJsonlLine(filePath, obj, opts = {}) {
+  assertNoSymlinkComponents(filePath, opts.authorityRoot);
   return withStateLock(filePath, () => {
+    assertNoSymlinkComponents(filePath, opts.authorityRoot);
     mkdirSync(dirname(filePath), { recursive: true });
     const fd = openSync(filePath, constants.O_WRONLY | constants.O_APPEND | constants.O_CREAT | constants.O_NOFOLLOW, 0o600);
     try {
@@ -193,7 +219,7 @@ export function appendJsonlLine(filePath, obj, opts = {}) {
     } finally {
       closeSync(fd);
     }
-    const dirFd = openSync(dirname(filePath), "r");
+    const dirFd = openSync(dirname(filePath), constants.O_RDONLY | constants.O_NOFOLLOW);
     try {
       fsyncSync(dirFd);
     } finally {

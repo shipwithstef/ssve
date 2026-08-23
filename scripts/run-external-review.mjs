@@ -25,7 +25,7 @@ import { resolveExternalReviewer } from './review-topology-v2.mjs';
 import { candidateTreeIdentity, issueExternalReviewProvenance } from './lib/external-review-provenance.mjs';
 import { relocateTree } from './lib/review-evidence-store.mjs';
 
-const LAUNCHER_VERSION = '2.5.0';
+const LAUNCHER_VERSION = '2.6.0';
 export const EXTERNAL_REVIEW_LAUNCHER_VERSION = LAUNCHER_VERSION;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FINDINGS_SCHEMA = path.join(ROOT, 'schemas/external-review-findings.schema.json');
@@ -102,6 +102,17 @@ function positiveNumber(name, fallback) {
 
 function sha256(value) {
   return createHash('sha256').update(value).digest('hex');
+}
+
+function boundPlanBytes(packageBytes) {
+  const startMarker = Buffer.from('SVC_PLAN_BYTES_BEGIN_V1\n');
+  const endMarker = Buffer.from('\nSVC_PLAN_BYTES_END_V1\n');
+  const start = packageBytes.indexOf(startMarker);
+  if (start < 0 || packageBytes.indexOf(startMarker, start + 1) >= 0) return null;
+  const bodyStart = start + startMarker.length;
+  const end = packageBytes.indexOf(endMarker, bodyStart);
+  if (end < 0 || packageBytes.indexOf(endMarker, end + 1) >= 0) return null;
+  return packageBytes.subarray(bodyStart, end);
 }
 
 async function buildReviewPackage(baseBytes, reviewKind, contextRoot) {
@@ -1227,6 +1238,11 @@ async function main() {
   let options;
   try { options = parseArgs(process.argv.slice(2)); } catch (error) { process.stderr.write(`${usage(error.message)}\n`); process.exitCode = 2; return; }
   if (options.help) { process.stdout.write(`${usage()}\n`); return; }
+  if (!options.reviewerConfig && (options.reviewerMode || options.reviewerPhase || options.reviewerStation)) {
+    process.stderr.write(`${usage('reviewer mode, phase, and station require --reviewer-config; refusing legacy-policy fallback')}\n`);
+    process.exitCode = 2;
+    return;
+  }
 
   const fixture = process.env.SVC_EXTERNAL_REVIEW_FIXTURE === '1';
   const fixtureRoot = fixture ? process.env.SVC_EXTERNAL_REVIEW_FIXTURE_ROOT : null;
@@ -1366,7 +1382,9 @@ async function main() {
   const findingsSchema = JSON.parse(schemaBytes.toString('utf8'));
   const receiptSchema = JSON.parse(await readFile(RECEIPT_SCHEMA, 'utf8'));
   const rawPackageBytes = options.validateCapabilities ? Buffer.alloc(0) : await readStdin();
-  const contextRoot = path.resolve(options.contextRoot || process.env.SVC_EXTERNAL_REVIEW_CONTEXT_ROOT || process.cwd());
+  const requestedContextRoot = path.resolve(options.contextRoot || process.env.SVC_EXTERNAL_REVIEW_CONTEXT_ROOT || process.cwd());
+  let contextRoot = requestedContextRoot;
+  try { contextRoot = await realpath(requestedContextRoot); } catch {}
   let packageBundle = { bytes: rawPackageBytes, context: { version: 1, context_root: contextRoot, base_package_sha256: sha256(rawPackageBytes), files: [] } };
   let packageError = null;
   if (!options.validateCapabilities && rawPackageBytes.length > 0) {
@@ -1499,9 +1517,16 @@ async function main() {
     await finishFailure('input_invalid');
     return;
   }
-  if (options.reviewerConfig && !options.validateCapabilities && (!/^[a-f0-9]{64}$/.test(options.candidateDigest ?? '') || !rawPackageBytes.includes(Buffer.from(options.candidateDigest)))) {
-    await finishFailure('input_invalid', { detail: 'owner-configured review requires --candidate-digest and the exact digest in the review package' });
+  if (options.reviewerConfig && !options.validateCapabilities && !/^[a-f0-9]{64}$/.test(options.candidateDigest ?? '')) {
+    await finishFailure('input_invalid', { detail: 'owner-configured review requires a canonical candidate digest' });
     return;
+  }
+  if (options.reviewerConfig && !options.validateCapabilities && options.reviewKind === 'plan') {
+    const planBytes = boundPlanBytes(rawPackageBytes);
+    if (!planBytes || sha256(planBytes) !== options.candidateDigest) {
+      await finishFailure('input_invalid', { detail: 'owner-configured plan review requires exactly one bounded plan-byte envelope whose SHA-256 equals candidate_digest' });
+      return;
+    }
   }
   if (options.reviewerConfig && !options.validateCapabilities && options.reviewKind === 'exec') {
     try {
@@ -1588,7 +1613,28 @@ async function main() {
 
   const packageHash = sha256(packageBytes);
   const findingsSchemaHash = sha256(schemaBytes);
-  const cacheKey = contentKey([packageBytes, canonical(requestedTuple), reviewKind, options.candidateDigest ?? '', schemaBytes, LAUNCHER_VERSION, fixture ? 'fixture:1' : 'fixture:0']);
+  const policyMetadata = resolvedPolicy?.metadata || null;
+  const cacheAuthority = canonical({
+    policy: policyMetadata ? {
+      version: policyMetadata.version,
+      profile: policyMetadata.profile,
+      source: policyMetadata.source,
+      selection_sha256: policyMetadata.selection_sha256,
+      selection_authority: policyMetadata.selection_authority,
+      effective_window: policyMetadata.effective_window,
+      cutover_utc: policyMetadata.cutover_utc,
+      cutover_local: policyMetadata.cutover_local,
+      timezone: policyMetadata.timezone,
+    } : null,
+    reviewer_mode: options.reviewerMode || null,
+    reviewer_phase: options.reviewerPhase || null,
+    reviewer_station: options.reviewerStation || null,
+    context_root: contextRoot,
+  });
+  // Cursor is explicitly granted a workspace, so package bytes alone cannot
+  // prove the complete inspected state. Never replay its findings from cache.
+  const cacheReuseAllowed = requestedTuple.host !== 'cursor';
+  const cacheKey = contentKey([packageBytes, canonical(requestedTuple), reviewKind, options.candidateDigest ?? '', schemaBytes, cacheAuthority, LAUNCHER_VERSION, fixture ? 'fixture:1' : 'fixture:0']);
   const entryDir = path.join(cacheRoot, cacheKey);
   const lockDir = path.join(cacheRoot, 'locks', `${cacheKey}.lock`);
   const owner = { hostname: hostname(), pid: process.pid, process_start_token: await processStartToken(), owner_token: randomUUID(), heartbeat_at: new Date().toISOString() };
@@ -1607,7 +1653,7 @@ async function main() {
   }
 
   try {
-    const hit = options.validateCapabilities ? null : await cacheHit(entryDir, cacheKey, requestedTuple, reviewKind, options.candidateDigest ?? null, packageHash, findingsSchemaHash, ttlDays, findingsSchema, receiptSchema, fixture);
+    const hit = options.validateCapabilities || !cacheReuseAllowed ? null : await cacheHit(entryDir, cacheKey, requestedTuple, reviewKind, options.candidateDigest ?? null, packageHash, findingsSchemaHash, ttlDays, findingsSchema, receiptSchema, fixture);
     if (hit) {
       await writeJson(findingsPath, hit.findings);
       const findingsSha256 = sha256(await readFile(findingsPath));
@@ -1706,6 +1752,23 @@ async function main() {
         return;
       }
       const primaryRoute = resolvedPolicy.metadata.source === 'schedule' ? 'scheduled_primary' : resolvedPolicy.metadata.source === 'explicit-selection' ? 'explicit_profile_primary' : resolvedPolicy.metadata.source === 'owner-config' ? 'owner_config_primary' : 'exact_primary';
+      if (!cacheReuseAllowed) {
+        const receipt = makeReceipt('success', {
+          cacheKey,
+          effectiveTuple: primaryResult.effectiveTuple,
+          attempts,
+          hasFindings: true,
+          findingsSha256,
+          cache: { disposition: 'not_reusable', reusable: false, entry: entryDir },
+          usage: primaryResult.attempt.usage,
+          protocol: primaryResult.protocol,
+          route: { kind: primaryRoute, switching_enabled: requestedTuple.model === 'claude-fable-5', cli_fallback_configured: false, evidence: 'requested_primary' },
+          modelAttestation: primaryResult.modelAttestation,
+        });
+        await writeReceipt(receipt);
+        process.stdout.write(`${JSON.stringify({ ok: true, findings: findingsPath, receipt: receiptPath, cache_disposition: 'not_reusable' })}\n`);
+        return;
+      }
       let receipt = makeReceipt('success', {
         cacheKey,
         effectiveTuple: primaryResult.effectiveTuple,

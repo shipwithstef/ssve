@@ -176,12 +176,17 @@ FAKE
 #!/usr/bin/env bash
 set -euo pipefail
 if [[ "${1:-}" == "--help" ]]; then
-  printf '%s\n' '--cwd --model --reasoning-effort --permission-mode auto --no-subagents --disable-web-search --single'
+  printf '%s\n' '--cwd --model --reasoning-effort --permission-mode auto --no-subagents --disable-web-search --prompt-file'
   exit 0
 fi
 mkdir -p "$SVC_FAKE_LOG"
 printf '%s\n' "$*" >> "$SVC_FAKE_LOG/grok.argv"
 GROK_ARGV_JSON="$SVC_FAKE_LOG/grok.argv.json" python3 -c 'import json,os,sys; p=os.environ["GROK_ARGV_JSON"]; json.dump(sys.argv[1:], open(p,"w"), separators=(",",":")); open(p,"a").write("\n")' -- "$@"
+previous=''
+for argument in "$@"; do
+  if [[ "$previous" == '--prompt-file' ]]; then cp "$argument" "$SVC_FAKE_LOG/grok.prompt"; fi
+  previous="$argument"
+done
 printf '%s\n' grok >> "$SVC_FAKE_LOG/calls"
 joined=" $* "
 if [[ "$joined" == *"bypassPermissions"* || "$joined" == *" --yolo "* || "$joined" == *"--dangerously-skip-permissions"* ]]; then
@@ -401,6 +406,14 @@ if want review; then
   expect "omitted owner-config station still requires exact candidate binding before provider spawn" bash -c "test '$DEFAULT_NO_CANDIDATE_RC' -ne 0 && test \"\$(call_count)\" = 0"
 
   reset_log
+  PLANSHA="$(sha256sum "$SCOUT/docs/plans/active/manifest.md" | awk '{print $1}')"
+  set +e
+  printf 'candidate_digest=%s\nSVC_PLAN_BYTES_BEGIN_V1\ntampered-plan-bytes\nSVC_PLAN_BYTES_END_V1\n' "$PLANSHA" | SVC_HOST=codex node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$PLANSHA" --reviewer-config "$POLICY_JSON" --reviewer-phase plan --artifacts-dir "$TMP/out/tampered-plan-envelope" > "$TMP/tampered-plan-envelope.out" 2> "$TMP/tampered-plan-envelope.err"
+  TAMPERED_PLAN_RC=$?
+  set -e
+  expect "launcher binds candidate digest to the exact packaged plan bytes" bash -c "test '$TAMPERED_PLAN_RC' -ne 0 && test \"\$(call_count)\" = 0 && grep -q 'bounded plan-byte envelope' '$TMP/tampered-plan-envelope.err'"
+
+  reset_log
   set +e
   SVC_HOST=codex SVC_DISPATCH_POLICY="$POLICY_JSON" SVC_REVIEWER_MODE=mixed-grok-cursor SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR="$TMP/out/explicit-mode" \
     bash "$ADAPTER" "$SCOUT/docs/plans/active/manifest.md" > "$TMP/explicit-mode.findings" 2> "$TMP/explicit-mode.err"
@@ -462,6 +475,13 @@ if want review; then
 
   reset_log
   set +e
+  printf 'station-only must not reach provider' | SVC_HOST=codex node "$LAUNCHER" --orchestrator codex --review-kind plan --reviewer-station fable --artifacts-dir "$TMP/out/station-only" > "$TMP/station-only.out" 2> "$TMP/station-only.err"
+  STATION_ONLY_RC=$?
+  set -e
+  expect "station-only launcher invocation refuses legacy-policy fallback" bash -c "test '$STATION_ONLY_RC' -ne 0 && test \"\$(call_count)\" = 0 && grep -q 'require --reviewer-config' '$TMP/station-only.err'"
+
+  reset_log
+  set +e
   SVC_HOST=codex SVC_DISPATCH_POLICY="$POLICY_JSON" SVC_REVIEWER_STATION=agy-gemini-3.7-high SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR="$TMP/out/optional-agy" \
     bash "$ADAPTER" "$SCOUT/docs/plans/active/manifest.md" > "$TMP/optional-agy.out" 2> "$TMP/optional-agy.err"
   OPTIONAL_RC=$?
@@ -514,6 +534,13 @@ if want cursor; then
     if(!argv.includes("--print")||!argv.includes("--output-format")||!argv.includes("json")||!argv.includes("--mode")||!argv.includes("plan")||!argv.includes("--sandbox")||!argv.includes("enabled")||!argv.includes("--model")) process.exit(1);
     if(/bypassPermissions|--yolo|--force\b|--dangerously-skip-permissions/.test(joined)) process.exit(1);
   ' "$RECEIPT_FABLE" "$SCOUT"
+  set +e
+  SVC_HOST=codex SVC_DISPATCH_POLICY="$POLICY_JSON" SVC_REVIEWER_STATION=fable SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR="$TMP/out/cursor-fable-repeat" \
+    bash "$ADAPTER" "$SCOUT/docs/plans/active/manifest.md" > "$TMP/cursor-fable-repeat.findings" 2> "$TMP/cursor-fable-repeat.err"
+  CURSOR_FABLE_REPEAT_RC=$?
+  set -e
+  RECEIPT_FABLE_REPEAT="$(grep -oE 'receipt=\S+' "$TMP/cursor-fable-repeat.err" | tail -1 | sed 's/^receipt=//')"
+  expect "Cursor workspace reviews are never replayed from package-only cache" bash -c "test '$CURSOR_FABLE_REPEAT_RC' -eq 0 && test \"\$(call_count cursor)\" = 2 && test \"\$(node -e 'process.stdout.write(require(process.argv[1]).cache.reusable?\"true\":\"false\")' '$RECEIPT_FABLE_REPEAT')\" = false"
 
   reset_log
   set +e
@@ -783,6 +810,27 @@ EOF
   set -e
   expect "multiple canonical manifests cannot share one execution authority log" bash -c "test '$DUAL_MANIFEST_RC' -ne 0 && grep -q 'exactly one canonical manifest' '$TMP/pre-dual-manifest.err'"
 
+  STALE_MANIFEST="$TMP/stale-manifest-repo"
+  make_plan_repo "$STALE_MANIFEST" bugfix-WI-559-stale-manifest WI-559
+  write_review_log "$STALE_MANIFEST/docs/plans/active/review-log.yaml" PROMOTED WI-559
+  mkdir -p "$STALE_MANIFEST/docs/plans/newer"
+  printf '# newer unreviewed plan\n\n**Work item:** WI-559\n' > "$STALE_MANIFEST/docs/plans/newer/manifest.md"
+  set +e
+  node "$HELPER" preflight --repo "$STALE_MANIFEST" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex > "$TMP/pre-stale-manifest.out" 2> "$TMP/pre-stale-manifest.err"
+  STALE_MANIFEST_RC=$?
+  set -e
+  expect "an unreviewed newer same-WI manifest invalidates stale review authority" bash -c "test '$STALE_MANIFEST_RC' -ne 0 && grep -q 'exactly one canonical manifest' '$TMP/pre-stale-manifest.err'"
+
+  MULTIDOC="$TMP/multidoc-review-repo"
+  make_plan_repo "$MULTIDOC" bugfix-WI-559-multidoc WI-559
+  MANIFEST_SHA="$(sha256sum "$MULTIDOC/docs/plans/active/manifest.md" | awk '{print $1}')"
+  printf 'wi: WI-559\nmanifest: docs/plans/active/manifest.md\n---\nmanifest_sha256: %s\nterminal_state: PROMOTED\n' "$MANIFEST_SHA" > "$MULTIDOC/docs/plans/active/review-log.yaml"
+  set +e
+  node "$HELPER" preflight --repo "$MULTIDOC" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex > "$TMP/pre-multidoc.out" 2> "$TMP/pre-multidoc.err"
+  MULTIDOC_RC=$?
+  set -e
+  expect "authority fields split across YAML documents fail closed" bash -c "test '$MULTIDOC_RC' -ne 0 && grep -q 'exactly one YAML document' '$TMP/pre-multidoc.err'"
+
   SYMLINK_LOG="$TMP/symlink-log-repo"
   make_plan_repo "$SYMLINK_LOG" bugfix-WI-559-symlink-log WI-559
   write_review_log "$TMP/symlink-review-log.yaml" PROMOTED WI-559
@@ -974,6 +1022,23 @@ NODE
   RECORD_SYMLINK_RC=$?
   set -e
   expect "dispatch evidence writer refuses a symlink target" test "$RECORD_SYMLINK_RC" -ne 0
+  set +e
+  node "$HELPER" verify-receipt --repo "$EXEC_REPO" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex > "$TMP/verify-symlink-log.out" 2> "$TMP/verify-symlink-log.err"
+  VERIFY_SYMLINK_LOG_RC=$?
+  set -e
+  expect "dispatch evidence reader refuses a symlink target" test "$VERIFY_SYMLINK_LOG_RC" -ne 0
+
+  PARENT_LINK_REPO="$TMP/parent-link-repo"
+  make_plan_repo "$PARENT_LINK_REPO" bugfix-WI-559-parent-link WI-559
+  write_review_log "$PARENT_LINK_REPO/docs/plans/active/review-log.yaml" PROMOTED WI-559
+  mkdir -p "$TMP/redirected-svc"
+  rmdir "$PARENT_LINK_REPO/.svc"
+  ln -s "$TMP/redirected-svc" "$PARENT_LINK_REPO/.svc"
+  set +e
+  node "$HELPER" record-override --repo "$PARENT_LINK_REPO" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex --allow-override-file "$OVERRIDE" > "$TMP/record-parent-link.out" 2> "$TMP/record-parent-link.err"
+  RECORD_PARENT_LINK_RC=$?
+  set -e
+  expect "dispatch evidence writer rejects symlinked parent components" bash -c "test '$RECORD_PARENT_LINK_RC' -ne 0 && test ! -e '$TMP/redirected-svc/dispatch-log.jsonl'"
   set -e
 fi
 
@@ -1014,13 +1079,51 @@ NODE
     const raw=fs.readFileSync(process.argv[1],"utf8").trim().split(/\n/).filter(Boolean).pop();
     const argv=JSON.parse(raw);
     const joined=argv.join(" ");
-    for (const flag of ["--cwd","--model","grok-4.6","--reasoning-effort","high","--permission-mode","auto","--no-subagents","--disable-web-search","--single"]) {
+    for (const flag of ["--cwd","--model","grok-4.6","--reasoning-effort","high","--permission-mode","auto","--no-subagents","--disable-web-search","--prompt-file"]) {
       if(!argv.includes(flag) && !joined.includes(flag)) process.exit(1);
     }
     if(argv[argv.indexOf("--cwd")+1]!==process.argv[2])process.exit(1);
     if(/bypassPermissions|--yolo|--dangerously-skip-permissions/.test(joined)) process.exit(1);
+    if(joined.includes("implement the reviewed plan")) process.exit(1);
   ' "$SVC_FAKE_LOG/grok.argv.json" "$EXEC_SHELL"
+  expect "Grok prompt is file-backed and byte-complete outside argv" grep -q 'implement the reviewed plan' "$SVC_FAKE_LOG/grok.prompt"
   expect "Grok worker fixture exited successfully" test "$WORKER_RC" -eq 0
+
+  head -c 262144 /dev/zero | tr '\0' x > "$TMP/large-grok-payload.txt"
+  reset_log
+  set +e
+  SVC_HARNESS=grok SVC_WORKER_SKILL=review-exec SVC_WORKER_MUTATION=false SVC_WORKER_MODEL=grok-4.6 SVC_WORKER_EFFORT=high SVC_WORKER_FAMILY=xai SVC_WORKER_POLICY_SHA256="$(sha256sum "$POLICY_JSON" | awk '{print $1}')" SVC_WORKER_MODE=mixed-grok-cursor SVC_WORKER_ORCHESTRATOR=codex SVC_WORKER_CWD="$EXEC_SHELL" SVC_DISPATCH_DIR="$TMP/large-worker-dispatch" SVC_HOST=codex SVC_DISPATCH_POLICY="$POLICY_JSON" SVC_WORKER_WI=WI-559 \
+    bash -c 'cd "$1" && bash "$2" "@$3"' _ "$EXEC_SHELL" "$WORKER" "$TMP/large-grok-payload.txt" > "$TMP/worker-large.out" 2> "$TMP/worker-large.err"
+  WORKER_LARGE_RC=$?
+  set -e
+  expect "Grok payload above MAX_ARG_STRLEN remains file-backed end to end" bash -c "test '$WORKER_LARGE_RC' -eq 0 && test \"\$(wc -c < '$SVC_FAKE_LOG/grok.prompt')\" -gt 262144 && ! grep -q 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' '$SVC_FAKE_LOG/grok.argv'"
+
+  DEFAULT_EVIDENCE_REPO="$TMP/default-evidence-repo"
+  make_plan_repo "$DEFAULT_EVIDENCE_REPO" bugfix-WI-559-default-evidence WI-559
+  write_review_log "$DEFAULT_EVIDENCE_REPO/docs/plans/active/review-log.yaml" PROMOTED WI-559
+  fxgit "$DEFAULT_EVIDENCE_REPO" add docs/plans/active/review-log.yaml
+  fxgit "$DEFAULT_EVIDENCE_REPO" commit -q -m reviewed-plan
+  reset_log
+  set +e
+  SVC_HARNESS=grok SVC_WORKER_SKILL=review-exec SVC_WORKER_MUTATION=false SVC_WORKER_MODEL=grok-4.6 SVC_WORKER_EFFORT=high SVC_WORKER_FAMILY=xai SVC_WORKER_POLICY_SHA256="$(sha256sum "$POLICY_JSON" | awk '{print $1}')" SVC_WORKER_MODE=mixed-grok-cursor SVC_WORKER_ORCHESTRATOR=codex SVC_WORKER_CWD="$DEFAULT_EVIDENCE_REPO" SVC_HOST=codex SVC_DISPATCH_POLICY="$POLICY_JSON" SVC_WORKER_WI=WI-559 \
+    bash -c 'cd "$1" && bash "$2" "default evidence path"' _ "$DEFAULT_EVIDENCE_REPO" "$WORKER" > "$TMP/worker-default-evidence.out" 2> "$TMP/worker-default-evidence.err"
+  DEFAULT_EVIDENCE_RC=$?
+  set -e
+  expect "dispatcher-owned runtime evidence defaults outside the child worktree" bash -c "test '$DEFAULT_EVIDENCE_RC' -eq 0 && test -z \"\$(git -C '$DEFAULT_EVIDENCE_REPO' status --porcelain)\" && test ! -e '$DEFAULT_EVIDENCE_REPO/.svc/dispatch'"
+
+  SUBDIR_REPO="$TMP/subdir-dispatch-repo"
+  make_plan_repo "$SUBDIR_REPO" bugfix-WI-559-subdir-dispatch WI-559
+  write_review_log "$SUBDIR_REPO/docs/plans/active/review-log.yaml" PROMOTED WI-559
+  fxgit "$SUBDIR_REPO" add docs/plans/active/review-log.yaml
+  fxgit "$SUBDIR_REPO" commit -q -m reviewed-plan
+  mkdir -p "$SUBDIR_REPO/docs/subdir"
+  printf 'subdirectory dispatch payload\n' > "$TMP/subdir-payload.txt"
+  reset_log
+  set +e
+  SVC_WORKER_WI=WI-559 SVC_HOST=codex SVC_DISPATCH_POLICY="$POLICY_JSON" bash -c 'cd "$1" && bash "$2" grok review-exec "@$3"' _ "$SUBDIR_REPO/docs/subdir" "$DISPATCH_LOG" "$TMP/subdir-payload.txt" > "$TMP/subdir-dispatch.out" 2> "$TMP/subdir-dispatch.err"
+  SUBDIR_DISPATCH_RC=$?
+  set -e
+  expect "dispatch from a subdirectory normalizes worker cwd to the authorized repo root" bash -c "test '$SUBDIR_DISPATCH_RC' -eq 0 && grep -q 'subdirectory dispatch payload' '$SVC_FAKE_LOG/grok.prompt' && test \"\$(node -e 'const fs=require(\"fs\"),a=JSON.parse(fs.readFileSync(process.argv[1],\"utf8\").trim().split(/\\n/).pop());process.stdout.write(a[a.indexOf(\"--cwd\")+1])' '$SVC_FAKE_LOG/grok.argv.json')\" = '$SUBDIR_REPO'"
 
   printf 'dirty before worker\n' > "$EXEC_SHELL/untracked.txt"
   set +e

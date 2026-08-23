@@ -128,8 +128,21 @@ Use review_kind "plan" and set rubric_score to the 0-10 determinism score. For z
 PROTOCOL REFERENCE:
 EOF
   cat "$PROTOCOL_REF"
-  printf '\nPLAN TO REVIEW:\n'
-  cat "$PLAN_SNAPSHOT"
+  printf '\nPLAN TO REVIEW:\nSVC_PLAN_BYTES_BEGIN_V1\n'
+  node -e '
+const fs=require("fs"),crypto=require("crypto");
+const [file,expected]=process.argv.slice(1); let fd;
+try {
+  fd=fs.openSync(file,fs.constants.O_RDONLY|fs.constants.O_NOFOLLOW);
+  const stat=fs.fstatSync(fd);
+  if(!stat.isFile()) throw new Error("snapshot is not a regular file");
+  const bytes=fs.readFileSync(fd);
+  const actual=crypto.createHash("sha256").update(bytes).digest("hex");
+  if(actual!==expected) throw new Error(`snapshot digest changed: expected ${expected}, got ${actual}`);
+  process.stdout.write(bytes);
+} finally { if(fd!==undefined) fs.closeSync(fd); }
+' "$PLAN_SNAPSHOT" "$PLAN_SHA" || exit 4
+  printf '\nSVC_PLAN_BYTES_END_V1\n'
 } | SVC_WI="$WI" node "$LAUNCHER" --orchestrator "$ORCHESTRATOR" --review-kind plan --candidate-digest "$PLAN_SHA" --context-root "$CONTEXT_ROOT" ${REVIEWER_ARGS[@]+"${REVIEWER_ARGS[@]}"} ${PHASE_ARGS[@]+"${PHASE_ARGS[@]}"} --artifacts-dir "$ARTIFACTS" > "$SUMMARY" || exit 1
 
 FINDINGS="$(node -e 'const fs=require("fs");const s=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(!s.ok||!s.findings)process.exit(2);process.stdout.write(s.findings)' "$SUMMARY")" || {

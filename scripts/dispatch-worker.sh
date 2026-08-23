@@ -28,10 +28,20 @@ WORKER_REVIEW_LOG_SHA256=${SVC_WORKER_REVIEW_LOG_SHA256:-""}
 WORKER_MODE=${SVC_WORKER_MODE:-""}
 WORKER_ORCHESTRATOR=${SVC_WORKER_ORCHESTRATOR:-""}
 WORKER_CWD=${SVC_WORKER_CWD:-""}
-DISPATCH_DIR=${SVC_DISPATCH_DIR:-".svc/dispatch"}
+DEFAULT_DISPATCH_DIR="$(git rev-parse --path-format=absolute --git-path svc-dispatch 2>/dev/null || printf '%s' '.svc/dispatch')"
+DISPATCH_DIR=${SVC_DISPATCH_DIR:-"$DEFAULT_DISPATCH_DIR"}
 WORKER_TIMEOUT_SEC=${SVC_WORKER_TIMEOUT_SEC:-"0"}
 DELEGATION_ID=${SVC_DELEGATION_ID:-""}
 WORKER_MUTATION=${SVC_WORKER_MUTATION:-""}
+TASK_PAYLOAD=${1:-""}
+if [[ "${TASK_PAYLOAD:0:1}" == "@" ]]; then
+  TASK_PAYLOAD_FILE="${TASK_PAYLOAD:1}"
+  [[ -f "$TASK_PAYLOAD_FILE" && ! -L "$TASK_PAYLOAD_FILE" && -r "$TASK_PAYLOAD_FILE" ]] || {
+    echo "ERROR: worker payload file must be a readable regular non-symlink file" >&2
+    exit 2
+  }
+  TASK_PAYLOAD="$(<"$TASK_PAYLOAD_FILE")"
+fi
 case "$SKILL" in
   execute-changeset|dispatch-waves)
     if [[ "$WORKER_MUTATION" == "false" ]]; then
@@ -181,6 +191,10 @@ elif [[ "$HARNESS" == "grok" ]]; then
       echo "ERROR: authorized worker cwd $AUTHORIZED_CWD does not match current worktree root $CURRENT_REPO_ROOT" >&2
       exit 2
     }
+    [[ "$(pwd -P)" == "$AUTHORIZED_CWD" ]] || {
+      echo "ERROR: grok worker must launch from its preflight-authorized worktree root $AUTHORIZED_CWD" >&2
+      exit 2
+    }
     RESOLVE_ARGS=(model --label EXEC --orchestrator "$WORKER_ORCHESTRATOR" --mode "$WORKER_MODE" --wi "$WORKER_WI" --format json)
     if [[ -n "${SVC_DISPATCH_POLICY:-}" ]]; then RESOLVE_ARGS+=(--config "$SVC_DISPATCH_POLICY"); fi
     RESOLVED_EXEC="$(node "$SCRIPT_DIR/resolve-dispatch.mjs" "${RESOLVE_ARGS[@]}")" || exit 2
@@ -202,7 +216,7 @@ process.stdout.write([value.tuple.host,value.tuple.family,value.tuple.model,valu
     fi
     WORKER_FAMILY="$RESOLVED_FAMILY"
     WORKER_POLICY_SHA256="$RESOLVED_POLICY_SHA"
-    EXEC_ARGV=(grok --cwd "$AUTHORIZED_CWD" --model "$MODEL" --reasoning-effort "$WORKER_EFFORT" --permission-mode auto --no-subagents --disable-web-search --single)
+    EXEC_ARGV=(grok --cwd "$AUTHORIZED_CWD" --model "$MODEL" --reasoning-effort "$WORKER_EFFORT" --permission-mode auto --no-subagents --disable-web-search)
 else
     echo "ERROR: unsupported harness: $HARNESS" >&2
     exit 2
@@ -210,8 +224,14 @@ fi
 
 CONTAINMENT_ARGV=()
 if [[ -n "$DELEGATION_ID" ]]; then
-  GIT_RUNTIME_ROOT="$(git rev-parse --absolute-git-dir)"
-  CONTAINMENT_ARGV=(node "$FRAMEWORK_ROOT/scripts/svc-contained-exec.mjs" run --root "$(pwd -P)" --policy "$TRANSPORT_RECEIPT" --runtime-root "$GIT_RUNTIME_ROOT" --)
+  CONTAINMENT_ROOT="${AUTHORIZED_CWD:-$(git rev-parse --show-toplevel 2>/dev/null)}"
+  CONTAINMENT_ROOT="$(realpath "$CONTAINMENT_ROOT")" || exit 2
+  [[ "$(pwd -P)" == "$CONTAINMENT_ROOT" ]] || {
+    echo "ERROR: containment root must equal the canonical current worktree root" >&2
+    exit 2
+  }
+  GIT_RUNTIME_ROOT="$(git -C "$CONTAINMENT_ROOT" rev-parse --absolute-git-dir)"
+  CONTAINMENT_ARGV=(node "$FRAMEWORK_ROOT/scripts/svc-contained-exec.mjs" run --root "$CONTAINMENT_ROOT" --policy "$TRANSPORT_RECEIPT" --runtime-root "$GIT_RUNTIME_ROOT" --)
 fi
 
 echo "============================================================"
@@ -325,18 +345,41 @@ next_action: <one-line recommendation for the orchestrator>
 The orchestrator greps for this block to decide the next task in the graph. If you cannot complete the task, still emit the block with status: fail and a clear blocker line — silent failure will dead-lock the orchestrator.
 
 Task Payload:
-$1"
+$TASK_PAYLOAD"
 
-# Execute (all three harnesses accept the prompt as a trailing positional arg)
+PROMPT_FILE=""
+PROMPT_ARGV=("$PROMPT")
+cleanup_prompt() {
+  if [[ -n "$PROMPT_FILE" && -f "$PROMPT_FILE" ]]; then rm -f -- "$PROMPT_FILE"; fi
+}
+trap cleanup_prompt EXIT
+if [[ "$HARNESS" == "grok" ]]; then
+  mkdir -p "$DISPATCH_DIR"
+  PROMPT_FILE="$(printf '%s' "$PROMPT" | node -e '
+const fs=require("fs"),path=require("path"),crypto=require("crypto");
+const dir=path.resolve(process.argv[1]); fs.mkdirSync(dir,{recursive:true,mode:0o700});
+const file=path.join(dir,`.grok-prompt-${process.pid}-${crypto.randomUUID()}.txt`);
+const bytes=fs.readFileSync(0); let fd;
+try { fd=fs.openSync(file,fs.constants.O_CREAT|fs.constants.O_EXCL|fs.constants.O_WRONLY|fs.constants.O_NOFOLLOW,0o600); fs.writeFileSync(fd,bytes); fs.fsyncSync(fd); }
+finally { if(fd!==undefined) fs.closeSync(fd); }
+const dfd=fs.openSync(dir,fs.constants.O_RDONLY|fs.constants.O_NOFOLLOW); try{fs.fsyncSync(dfd)}finally{fs.closeSync(dfd)}
+process.stdout.write(file);
+' "$DISPATCH_DIR")" || exit 2
+  EXEC_ARGV+=(--prompt-file "$PROMPT_FILE")
+  PROMPT_ARGV=()
+fi
+
+# Execute. Grok consumes the prompt from a private fsynced file; legacy hosts
+# retain their positional transport until their own adapter migration.
 if [ -n "$WORKER_WI" ]; then
   mkdir -p "$DISPATCH_DIR"
   RUN_LOG="$DISPATCH_DIR/$WORKER_WI.log"
   write_worker_progress "started" "running"
   set +e
   if [ "$WORKER_TIMEOUT_SEC" != "0" ]; then
-    timeout "$WORKER_TIMEOUT_SEC" "${CONTAINMENT_ARGV[@]}" "${EXEC_ARGV[@]}" "$PROMPT" 2>&1 | tee "$RUN_LOG"
+    timeout "$WORKER_TIMEOUT_SEC" "${CONTAINMENT_ARGV[@]}" "${EXEC_ARGV[@]}" ${PROMPT_ARGV[@]+"${PROMPT_ARGV[@]}"} 2>&1 | tee "$RUN_LOG"
   else
-    "${CONTAINMENT_ARGV[@]}" "${EXEC_ARGV[@]}" "$PROMPT" 2>&1 | tee "$RUN_LOG"
+    "${CONTAINMENT_ARGV[@]}" "${EXEC_ARGV[@]}" ${PROMPT_ARGV[@]+"${PROMPT_ARGV[@]}"} 2>&1 | tee "$RUN_LOG"
   fi
   EXIT_CODE=${PIPESTATUS[0]}
   set -e
@@ -365,4 +408,4 @@ if [ -n "$WORKER_WI" ]; then
   exit "$EXIT_CODE"
 fi
 
-"${CONTAINMENT_ARGV[@]}" "${EXEC_ARGV[@]}" "$PROMPT"
+"${CONTAINMENT_ARGV[@]}" "${EXEC_ARGV[@]}" ${PROMPT_ARGV[@]+"${PROMPT_ARGV[@]}"}

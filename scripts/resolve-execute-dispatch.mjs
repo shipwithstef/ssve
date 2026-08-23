@@ -31,6 +31,24 @@ function sha256(value) {
   return crypto.createHash("sha256").update(Buffer.isBuffer(value) ? value : String(value)).digest("hex");
 }
 
+function readRegularNoFollow(file, label, { ownerOnly = false } = {}) {
+  let fd;
+  try {
+    fd = fs.openSync(file, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+    const stat = fs.fstatSync(fd);
+    if (!stat.isFile()) fail(`${label} must be a regular non-symlink file: ${file}`, 1);
+    if (ownerOnly && typeof process.getuid === "function" && stat.uid !== process.getuid()) {
+      fail(`${label} must be owned by the current principal: ${file}`, 1);
+    }
+    return fs.readFileSync(fd);
+  } catch (error) {
+    if (error?.exitCode) throw error;
+    fail(`${label} is unreadable or ineligible: ${file}`, 1);
+  } finally {
+    if (fd !== undefined) fs.closeSync(fd);
+  }
+}
+
 function unique(values) {
   return [...new Set(values.filter(Boolean))];
 }
@@ -125,6 +143,12 @@ function writeManifestSnapshot(repoRoot, snapshotOut, bytes) {
   } finally {
     if (fd !== undefined) fs.closeSync(fd);
   }
+  const parentFd = fs.openSync(parent, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+  try {
+    fs.fsyncSync(parentFd);
+  } finally {
+    fs.closeSync(parentFd);
+  }
   return repoRelative(repoRoot, output);
 }
 
@@ -133,9 +157,7 @@ export function bindPlan({ repo, manifest, snapshotOut = null } = {}) {
   const repoRoot = realpathOrResolve(repo);
   if (!fs.existsSync(repoRoot) || !fs.statSync(repoRoot).isDirectory()) fail(`repo is unreadable: ${repo}`, 2);
   const manifestPath = containedAuthorityPath(repoRoot, manifest, "manifest");
-  const manifestStat = fs.lstatSync(manifestPath);
-  if (!manifestStat.isFile() || manifestStat.isSymbolicLink()) fail(`manifest must be a regular non-symlink file: ${manifest}`, 2);
-  const manifestBytes = fs.readFileSync(manifestPath);
+  const manifestBytes = readRegularNoFollow(manifestPath, "manifest");
   const manifestText = manifestBytes.toString("utf8");
   const branch = currentBranch(repoRoot);
   const branchCandidates = extractTokens(branch);
@@ -176,10 +198,11 @@ function listActivePlanDirs(repoRoot) {
     try {
       entries = fs.readdirSync(dir, { withFileTypes: true });
     } catch {
-      return;
+      fail(`preflight: active plan directory is unreadable: ${dir}`, 1);
     }
     for (const entry of entries) {
-      if (!entry.isDirectory() || entry.isSymbolicLink()) continue;
+      if (entry.isSymbolicLink()) fail(`preflight: active plan tree must not contain symlink entries: ${path.join(dir, entry.name)}`, 1);
+      if (!entry.isDirectory()) continue;
       const full = path.join(dir, entry.name);
       const rel = path.relative(path.join(repoRoot, "docs", "plans"), full).split(path.sep).join("/");
       if (rel === "done" || rel.startsWith("done/")) continue;
@@ -198,17 +221,17 @@ function findManifestsInDir(dir) {
     const candidate = path.join(dir, name);
     try {
       const stat = fs.lstatSync(candidate);
-      if (stat.isFile() && !stat.isSymbolicLink()) found.push(candidate);
-    } catch {}
+      if (stat.isSymbolicLink()) fail(`preflight: canonical manifest must not be a symlink: ${candidate}`, 1);
+      if (stat.isFile()) found.push(candidate);
+    } catch (error) {
+      if (error?.exitCode || error?.code !== "ENOENT") throw error;
+    }
   }
   return found;
 }
 
 function readManifestAuthority(manifestPath, wi) {
-  let stat;
-  try { stat = fs.lstatSync(manifestPath); } catch { return null; }
-  if (!stat.isFile() || stat.isSymbolicLink()) return null;
-  const bytes = fs.readFileSync(manifestPath);
+  const bytes = readRegularNoFollow(manifestPath, "manifest");
   const text = bytes.toString("utf8");
   const structured = extractStructuredTokens(text);
   if (structured.length) return structured.length === 1 && structured[0] === wi ? { path: manifestPath, bytes } : null;
@@ -216,32 +239,40 @@ function readManifestAuthority(manifestPath, wi) {
   return fallback.length === 1 && fallback[0] === wi ? { path: manifestPath, bytes } : null;
 }
 
-function rootScalar(text, name, reviewLogPath) {
-  const pattern = new RegExp(`^${name}\\s*:\\s*(.*)$`, "i");
-  const matches = String(text || "").split(/\r?\n/).map((line) => line.match(pattern)).filter(Boolean);
-  if (matches.length !== 1) fail(`preflight: review log must contain exactly one root-level ${name} field: ${reviewLogPath}`, 1);
-  return matches[0][1].trim().replace(/^['"]|['"]$/g, "");
+function parseReviewAuthorityDocument(text, reviewLogPath) {
+  const authorityNames = ["wi", "terminal_state", "manifest", "manifest_sha256"];
+  const lines = String(text || "").split(/\r?\n/);
+  if (lines.some((line) => /^(?:---|\.\.\.)\s*(?:#.*)?$/.test(line))) {
+    fail(`preflight: review log must contain exactly one YAML document: ${reviewLogPath}`, 1);
+  }
+  if (lines.some((line) => /^<<\s*:/.test(line))) {
+    fail(`preflight: review log must not use root-level YAML merges: ${reviewLogPath}`, 1);
+  }
+  const values = {};
+  for (const name of authorityNames) {
+    const pattern = new RegExp(`^${name}\\s*:\\s*(.*)$`, "i");
+    const matches = lines.map((line) => line.match(pattern)).filter(Boolean);
+    if (matches.length !== 1) fail(`preflight: review log must contain exactly one root-level ${name} field: ${reviewLogPath}`, 1);
+    const raw = matches[0][1].trim();
+    if (!raw || /^[&*!\[{|>]/.test(raw) || /\s+#/.test(raw)) {
+      fail(`preflight: review log root-level ${name} must be one plain scalar: ${reviewLogPath}`, 1);
+    }
+    values[name] = raw.replace(/^(['"])(.*)\1$/, "$2");
+  }
+  return values;
 }
 
 function parseTerminalState(reviewLogPath, expectedWi) {
-  let stat;
-  try {
-    stat = fs.lstatSync(reviewLogPath);
-  } catch {
-    fail(`preflight: review log is unreadable: ${reviewLogPath}`, 1);
-  }
-  if (!stat.isFile() || stat.isSymbolicLink()) {
-    fail(`preflight: review log must be a regular non-symlink file: ${reviewLogPath}`, 1);
-  }
-  const bytes = fs.readFileSync(reviewLogPath);
+  const bytes = readRegularNoFollow(reviewLogPath, "preflight: review log");
   const text = bytes.toString("utf8");
-  const reviewWi = rootScalar(text, "wi", reviewLogPath);
+  const authority = parseReviewAuthorityDocument(text, reviewLogPath);
+  const reviewWi = authority.wi;
   if (reviewWi !== expectedWi || !isValidWiId(reviewWi)) {
     fail(`preflight: review log WI ${reviewWi || "<missing>"} does not match requested ${expectedWi}: ${reviewLogPath}`, 1);
   }
-  const state = rootScalar(text, "terminal_state", reviewLogPath);
-  const manifest = rootScalar(text, "manifest", reviewLogPath);
-  const manifestSha256 = rootScalar(text, "manifest_sha256", reviewLogPath);
+  const state = authority.terminal_state;
+  const manifest = authority.manifest;
+  const manifestSha256 = authority.manifest_sha256;
   if (!/^[a-f0-9]{64}$/.test(manifestSha256)) fail(`preflight: review log manifest_sha256 is invalid: ${reviewLogPath}`, 1);
   return { state, wi: reviewWi, manifest, manifestSha256, bytes, text };
 }
@@ -325,36 +356,28 @@ export function preflight({
   if (!repo || !wi) fail("usage: resolve-execute-dispatch.mjs preflight --repo <root> --wi <WI> [--policy <path>] [--mode <mode>] [--orchestrator <host>] [--allow-override-file <path>]", 2);
   if (!isValidWiId(wi)) fail(`preflight: WI is not canonical: ${wi}`, 4);
   const repoRoot = realpathOrResolve(repo);
-  const matches = [];
+  const manifests = [];
   for (const dir of listActivePlanDirs(repoRoot)) {
-    const manifests = findManifestsInDir(dir).map((file) => readManifestAuthority(file, wi)).filter(Boolean);
-    if (!manifests.length) continue;
-    const reviewLog = path.join(dir, "review-log.yaml");
-    try {
-      const stat = fs.lstatSync(reviewLog);
-      if (!stat.isFile() || stat.isSymbolicLink()) continue;
-    } catch {
-      continue;
+    for (const file of findManifestsInDir(dir)) {
+      const manifest = readManifestAuthority(file, wi);
+      if (manifest) manifests.push({ dir, manifest });
     }
-    matches.push({ dir, manifests, reviewLog });
   }
-  if (matches.length === 0) fail(`preflight: no active review log structured-bound to ${wi}`, 1);
-  if (matches.length > 1) {
-    fail(`preflight: two matching active logs for ${wi}: ${matches.map((row) => repoRelative(repoRoot, row.reviewLog)).join(" ")}`, 1);
+  if (manifests.length !== 1) {
+    fail(`preflight: expected exactly one canonical manifest active for ${wi}, found ${manifests.length}${manifests.length ? `: ${manifests.map((row) => repoRelative(repoRoot, row.manifest.path)).join(" ")}` : ""}`, 1);
   }
-  const selected = matches[0];
-  if (selected.manifests.length !== 1) {
-    fail(`preflight: active review log must have exactly one canonical manifest for ${wi}: ${repoRelative(repoRoot, selected.reviewLog)}`, 1);
-  }
-  const parsed = parseTerminalState(selected.reviewLog, wi);
+  const selected = manifests[0];
+  const reviewLog = path.join(selected.dir, "review-log.yaml");
+  containedAuthorityPath(repoRoot, reviewLog, "review log");
+  const parsed = parseTerminalState(reviewLog, wi);
   if (!AUTHORIZED_STATES.has(parsed.state)) {
     fail(`preflight: review log terminal_state ${parsed.state} is not execution-authorized for ${wi}`, 1);
   }
-  const reviewRel = repoRelative(repoRoot, selected.reviewLog);
+  const reviewRel = repoRelative(repoRoot, reviewLog);
   const reviewSha = sha256(parsed.bytes);
-  const manifestPath = selected.manifests[0].path;
+  const manifestPath = selected.manifest.path;
   const manifestRel = repoRelative(repoRoot, manifestPath);
-  const manifestBytes = selected.manifests[0].bytes;
+  const manifestBytes = selected.manifest.bytes;
   const manifestSha = sha256(manifestBytes);
   if (parsed.manifest !== manifestRel || parsed.manifestSha256 !== manifestSha) {
     fail(`preflight: review log does not bind current manifest ${manifestRel} at ${manifestSha}`, 1);
@@ -394,10 +417,12 @@ export function preflight({
   });
 }
 
-function readDispatchRows(file) {
-  if (!fs.existsSync(file)) return [];
+function readDispatchRows(file, repoRoot) {
+  try { fs.lstatSync(file); } catch (error) { if (error?.code === "ENOENT") return []; throw error; }
+  containedAuthorityPath(repoRoot, file, "dispatch log");
+  const bytes = readRegularNoFollow(file, "dispatch log", { ownerOnly: true });
   const rows = [];
-  for (const line of fs.readFileSync(file, "utf8").split(/\r?\n/)) {
+  for (const line of bytes.toString("utf8").split(/\r?\n/)) {
     if (!line.trim()) continue;
     try {
       rows.push(JSON.parse(line));
@@ -426,7 +451,7 @@ export function verifyReceipt({
   const expected = preflight({ repo: repoRoot, wi, policy, mode, orchestrator });
   const logPath = path.join(repoRoot, ".svc", "dispatch-log.jsonl");
   const cutoff = Date.now() - boundedMaxAgeSeconds * 1000;
-  const rows = readDispatchRows(logPath);
+  const rows = readDispatchRows(logPath, repoRoot);
   const override = allowOverrideFile ? parseOverrideFile(allowOverrideFile, wi) : null;
   for (const row of rows.slice().reverse()) {
     if (!row || typeof row !== "object") continue;
@@ -473,7 +498,7 @@ export function recordOverride({ repo, wi, policy = null, mode = null, orchestra
     reason: decision.reason,
     exit_code: 0,
   };
-  appendJsonlLine(path.join(repoRoot, ".svc", "dispatch-log.jsonl"), row);
+  appendJsonlLine(path.join(repoRoot, ".svc", "dispatch-log.jsonl"), row, { authorityRoot: repoRoot });
   return row;
 }
 

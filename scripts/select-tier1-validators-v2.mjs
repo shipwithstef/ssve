@@ -156,9 +156,27 @@ const CONTRACTS = [
     inputs: ["schemas/external-review-findings.schema.json", "schemas/external-review-receipt.schema.json", "schemas/reviewer-policy-v2.schema.json", "scripts/review-topology-v2.mjs", "scripts/run-external-review.mjs", "test-framework/evals/tier-1/validate-external-review-launcher.sh"]
   },
   {
+    validator: "validate-parallel-wi-dispatch.sh",
+    inputs: ["scripts/dispatch-worker.sh", "test-framework/evals/tier-1/validate-parallel-wi-dispatch.sh"]
+  },
+  {
+    validator: "validate-child-transport-resolver.mjs",
+    inputs: ["scripts/dispatch-worker.sh", "scripts/resolve-child-transport.mjs", "test-framework/evals/tier-1/validate-child-transport-resolver.mjs"]
+  },
+  {
+    validator: "validate-state-io-discipline.sh",
+    inputs: ["scripts/state-io.mjs", "scripts/auto-receipt.mjs", "test-framework/evals/tier-1/validate-state-io-discipline.sh"]
+  },
+  {
+    validator: "validate-atomic-state-writes.sh",
+    inputs: ["scripts/state-io.mjs", "test-framework/evals/tier-1/validate-atomic-state-writes.sh"]
+  },
+  {
     validator: "validate-review-dispatch-adapter-convergence.sh",
     inputs: [
+      "hooks/lib/wi-id.mjs",
       "scripts/resolve-execute-dispatch.mjs",
+      "scripts/resolve-dispatch.mjs",
       "scripts/review-plan-codex.sh",
       "scripts/run-external-review.mjs",
       "scripts/execute-dispatch-preflight.sh",

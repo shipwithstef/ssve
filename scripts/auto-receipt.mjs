@@ -11,6 +11,7 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { writeJsonAtomic } from "./state-io.mjs";
 
 const wi = process.argv[process.argv.indexOf("--wi") + 1] || process.env.SVC_WI || null;
 if (!wi) { console.error("Usage: auto-receipt.mjs --wi WI-NNN"); process.exit(1); }
@@ -53,6 +54,5 @@ const receipt = {
 
 // Write
 const dir = path.join(".svc", "impact-triad", wi);
-fs.mkdirSync(dir, { recursive: true });
-fs.writeFileSync(path.join(dir, `task-${task.id}.json`), JSON.stringify(receipt, null, 2) + "\n");
+writeJsonAtomic(path.join(dir, `task-${task.id}.json`), receipt);
 console.log(`auto-receipt: wrote ${dir}/task-${task.id}.json (task=${task.id}, tier=${cls.tier}, hash=${cls.sha256.slice(0,12)})`);

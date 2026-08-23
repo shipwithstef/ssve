@@ -45,6 +45,7 @@
       "task": "T3",
       "paths": [
         "hooks/svc-execute-dispatch-guard.sh",
+        "scripts/auto-receipt.mjs",
         "scripts/dispatch-log.sh",
         "scripts/dispatch-worker.sh",
         "scripts/execute-dispatch-preflight.sh",
@@ -57,6 +58,7 @@
       "task": "T4",
       "paths": [
         "scripts/select-tier1-validators-v2.mjs",
+        "test-framework/evals/tier-1/validate-parallel-wi-dispatch.sh",
         "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs"
       ]
     },
@@ -71,6 +73,7 @@
         ".svc/lane-tasks-WI-559.json",
         ".svc/learning-fires.jsonl",
         ".svc/learning-lifecycle.jsonl",
+        ".svc/review-cross-model-package-r6.md",
         "FRAMEWORK-STATE.md",
         "docs/specs/research-log.md",
         "docs/specs/work-items/INDEX.md",
@@ -82,9 +85,9 @@
   ],
   "resource_review": {
     "verification": "changed-executable-census",
-    "denominator": 14,
+    "denominator": 16,
     "disposition": "no-risky-resource-writers",
-    "evidence": "The origin/main-to-candidate census contains 14 changed shell, JavaScript, or TypeScript executables including focused tests. Inspection and the convergence matrix show no money, ledger, subscription, entitlement, quota, counter, inventory, identity, or notification resource mutation."
+    "evidence": "The origin/main-to-candidate census contains 16 changed shell, JavaScript, or TypeScript executables including focused tests. Inspection and the convergence matrix show no money, ledger, subscription, entitlement, quota, counter, inventory, identity, or notification resource mutation."
   },
   "resource_writers": [],
   "claims": [

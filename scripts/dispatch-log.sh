@@ -17,7 +17,8 @@ fi
 if [[ "${PAYLOAD:0:1}" == "@" ]]; then
   PAYLOAD_FILE="${PAYLOAD:1}"
   [[ -r "$PAYLOAD_FILE" ]] || { echo "payload file unreadable: $PAYLOAD_FILE" >&2; exit 2; }
-  PAYLOAD="$(<"$PAYLOAD_FILE")"
+  PAYLOAD_FILE="$(realpath "$PAYLOAD_FILE")" || exit 2
+  PAYLOAD="@$PAYLOAD_FILE"
 fi
 
 PREFLIGHT_ARGS=(preflight --repo "$CONTEXT_ROOT" --wi "$WI_ID")
@@ -49,6 +50,8 @@ STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 RUN_LOG="/tmp/svc-dispatch-${STAMP}-$$.log"
 START_MS="$(date +%s%3N)"
 
+cd "$CONTEXT_ROOT" || exit 2
+
 SVC_HARNESS="$HOST" \
 SVC_WORKER_SKILL="$SKILL" \
 SVC_WORKER_MODEL="$MODEL" \
@@ -67,9 +70,9 @@ DURATION_MS=$((END_MS - START_MS))
 DISPATCH_JSONL="$CONTEXT_ROOT/.svc/dispatch-log.jsonl"
 
 set +e
-node --input-type=module - "$SCRIPT_DIR/state-io.mjs" "$DISPATCH_JSONL" "$WI_ID" "$DECISION" "$SKILL" "$MODE" "$HOST" "$FAMILY" "$MODEL" "$EFFORT" "$ORCHESTRATOR" "$POLICY_SHA" "$REVIEW_SHA" "$MANIFEST" "$MANIFEST_SHA" "$DURATION_MS" "$EXIT_CODE" "$RUN_LOG" <<'NODE'
+node --input-type=module - "$SCRIPT_DIR/state-io.mjs" "$DISPATCH_JSONL" "$CONTEXT_ROOT" "$WI_ID" "$DECISION" "$SKILL" "$MODE" "$HOST" "$FAMILY" "$MODEL" "$EFFORT" "$ORCHESTRATOR" "$POLICY_SHA" "$REVIEW_SHA" "$MANIFEST" "$MANIFEST_SHA" "$DURATION_MS" "$EXIT_CODE" "$RUN_LOG" <<'NODE'
 import { pathToFileURL } from 'node:url';
-const [stateIoPath, logPath, wi, decision, skill, mode, host, family, model, effort, orchestrator, policySha, reviewSha, manifest, manifestSha, durationMs, exitCode, runLog] = process.argv.slice(2);
+const [stateIoPath, logPath, authorityRoot, wi, decision, skill, mode, host, family, model, effort, orchestrator, policySha, reviewSha, manifest, manifestSha, durationMs, exitCode, runLog] = process.argv.slice(2);
 const { appendJsonlLine } = await import(pathToFileURL(stateIoPath).href);
 appendJsonlLine(logPath, {
   schema_version: 2,
@@ -90,7 +93,7 @@ appendJsonlLine(logPath, {
   duration_ms: Number(durationMs),
   exit_code: Number(exitCode),
   log_path: runLog,
-});
+}, { authorityRoot });
 NODE
 APPEND_RC=$?
 set -e

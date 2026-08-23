@@ -29,6 +29,8 @@ check("concern registry selects concern compiler validator", () => {
 check("proposal selects complete v2 focused closure", () => {
   const result = selectTier1Validators(["proposals/2026-08-10-wi368-execution-controller-v2.md"]);
   assert.deepEqual(result.selected, [
+    "validate-atomic-state-writes.sh",
+    "validate-child-transport-resolver.mjs",
     "validate-concern-compiler-v2.mjs",
     "validate-continuation-lifecycle-wi552.mjs",
     "validate-control-value-audit-v2.mjs",
@@ -40,6 +42,7 @@ check("proposal selects complete v2 focused closure", () => {
     "validate-layer-inventory-v2.mjs",
     "validate-memory-company-v2.mjs",
     "validate-owner-decision-v2.mjs",
+    "validate-parallel-wi-dispatch.sh",
     "validate-persistent-review-contract-v2.mjs",
     "validate-product-improvement-protocol-v2.mjs",
     "validate-product-proof-compiler-v2.mjs",
@@ -55,6 +58,7 @@ check("proposal selects complete v2 focused closure", () => {
     "validate-runtime-v2.mjs",
     "validate-sample-shadow-replay-v2.mjs",
     "validate-skill-runtime-contracts-v2.mjs",
+    "validate-state-io-discipline.sh",
     "validate-story-receipt-delivery-projection-v2.mjs",
     "validate-tier1-selector-v2.mjs",
     "validate-wi546-cursor-live-acceptance.sh"
@@ -100,9 +104,11 @@ check("reviewer owner config support selects exact topology and launcher validat
   assert.deepEqual(result.selected, ["validate-dispatch-resolver-wi551.mjs", "validate-external-review-launcher.sh", "validate-review-topology-v2.mjs"]);
 });
 
-check("WI-559 execution adapters select the exact convergence validator", () => {
+check("WI-559 execution adapters retain convergence proof across transitive inputs", () => {
   for (const input of [
+    "hooks/lib/wi-id.mjs",
     "scripts/resolve-execute-dispatch.mjs",
+    "scripts/resolve-dispatch.mjs",
     "scripts/execute-dispatch-preflight.sh",
     "scripts/dispatch-worker.sh",
     "scripts/dispatch-log.sh",
@@ -113,7 +119,18 @@ check("WI-559 execution adapters select the exact convergence validator", () => 
   ]) {
     const result = selectTier1Validators([input]);
     assert.equal(result.fallback_full, false, input);
-    assert.deepEqual(result.selected, ["validate-review-dispatch-adapter-convergence.sh"], input);
+    assert(result.selected.includes("validate-review-dispatch-adapter-convergence.sh"), input);
+  }
+});
+
+check("shared dispatch and state I/O inputs select every established direct validator", () => {
+  const worker = selectTier1Validators(["scripts/dispatch-worker.sh"]);
+  for (const validator of ["validate-child-transport-resolver.mjs", "validate-parallel-wi-dispatch.sh", "validate-review-dispatch-adapter-convergence.sh"]) {
+    assert(worker.selected.includes(validator), validator);
+  }
+  const state = selectTier1Validators(["scripts/state-io.mjs"]);
+  for (const validator of ["validate-atomic-state-writes.sh", "validate-state-io-discipline.sh", "validate-review-dispatch-adapter-convergence.sh"]) {
+    assert(state.selected.includes(validator), validator);
   }
 });
 

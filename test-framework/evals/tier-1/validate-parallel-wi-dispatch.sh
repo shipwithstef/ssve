@@ -268,7 +268,7 @@ echo "=== END_SVC_WORKER_SUMMARY ==="
 EOF
 chmod +x "$FAKEBIN/claude"
 
-check "dispatch worker emits result/progress artifacts" bash -c "cd '$FIX' && PATH='$FAKEBIN':\$PATH SVC_WORKER_MUTATION=false SVC_WORKER_WI=WI-003 SVC_HARNESS=claude bash '$ROOT/scripts/dispatch-worker.sh' 'fake read-only payload' >/tmp/svc-worker-test.out"
+check "dispatch worker emits result/progress artifacts" bash -c "cd '$FIX' && PATH='$FAKEBIN':\$PATH SVC_WORKER_SKILL=review-exec SVC_WORKER_MUTATION=false SVC_DISPATCH_DIR='$FIX/.svc/dispatch' SVC_WORKER_WI=WI-003 SVC_HARNESS=claude bash '$ROOT/scripts/dispatch-worker.sh' 'fake read-only payload' >/tmp/svc-worker-test.out"
 check "worker result artifact has required fields" node -e '
 const fs=require("fs");
 const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));
