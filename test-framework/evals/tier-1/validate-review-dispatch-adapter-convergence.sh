@@ -514,6 +514,74 @@ if want cursor; then
     const errors = validateExternalReviewReceiptSemantics(receipt);
     if(!errors.some((e)=>/family|host/.test(e))) process.exit(1);
   "
+
+  expect "splitCursorPromptArgs keeps small UTF-8 prompts as one argv and reconstructs spaced chunks under the bound" node --input-type=module -e "
+    import { splitCursorPromptArgs, CURSOR_PROMPT_ARG_MAX, LINUX_MAX_ARG_STRLEN } from 'file://${LAUNCHER}';
+    if (CURSOR_PROMPT_ARG_MAX !== 120 * 1024 || CURSOR_PROMPT_ARG_MAX >= LINUX_MAX_ARG_STRLEN) process.exit(1);
+    const small = 'review this plan';
+    const smallChunks = splitCursorPromptArgs(small);
+    if (smallChunks.length !== 1 || smallChunks[0] !== small) process.exit(1);
+    const token = 'ctx ';
+    const oversized = token.repeat(Math.ceil((CURSOR_PROMPT_ARG_MAX + 4096) / token.length));
+    const chunks = splitCursorPromptArgs(oversized);
+    if (chunks.length < 2 || chunks.join(' ') !== oversized) process.exit(1);
+    if (chunks.some((chunk) => Buffer.byteLength(chunk, 'utf8') > CURSOR_PROMPT_ARG_MAX)) process.exit(1);
+    const unsplittable = 'α'.repeat(CURSOR_PROMPT_ARG_MAX + 16);
+    if (splitCursorPromptArgs(unsplittable).length !== 0) process.exit(1);
+  "
+
+  LARGE="$TMP/cursor-large-repo"
+  make_plan_repo "$LARGE" bugfix-WI-SCOUT-CAPTURE-DURABILITY-01 WI-SCOUT-CAPTURE-DURABILITY-01
+  python3 - "$LARGE" <<'PY'
+from pathlib import Path
+import sys
+root = Path(sys.argv[1])
+# 140 KiB of spaced tokens so the assembled Cursor package exceeds Linux MAX_ARG_STRLEN.
+pad = ('context-token ' * 10000)
+(root / 'CLAUDE.md').write_text('# ctx\n' + pad + '\n', encoding='utf8')
+PY
+  fxgit "$LARGE" add CLAUDE.md
+  fxgit "$LARGE" commit -q -m pad
+  fxgit "$LARGE" checkout -q -B main
+  fxgit "$LARGE" update-ref refs/remotes/origin/main HEAD
+  fxgit "$LARGE" checkout -q -B bugfix-WI-SCOUT-CAPTURE-DURABILITY-01
+  reset_log
+  set +e
+  env -u SVC_REVIEWER_MODE -u SVC_REVIEWER_STATION SVC_HOST=codex SVC_DISPATCH_POLICY="$POLICY_JSON" SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR="$TMP/out/cursor-large" \
+    bash "$ADAPTER" "$LARGE/docs/plans/active/manifest.md" > "$TMP/cursor-large.findings" 2> "$TMP/cursor-large.err"
+  CURSOR_LARGE_RC=$?
+  set -e
+  RECEIPT_LARGE="$(grep -oE 'receipt=\S+' "$TMP/cursor-large.err" | tail -1 | sed 's/^receipt=//')"
+  expect "Cursor package larger than 128 KiB still reaches exactly one fake Cursor call" bash -c "test '$CURSOR_LARGE_RC' -eq 0 && test -n '$RECEIPT_LARGE' && test \"\$(call_count cursor)\" = 1"
+  expect "large Cursor findings stay schema-valid with the owner Cursor tuple" node -e 'const fs=require("fs"); const f=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); if(f.review_kind!=="plan"||f.reviewer.host!=="cursor"||f.reviewer.family!=="anthropic"||f.reviewer.model!=="claude-fable-5") process.exit(1)' "$TMP/cursor-large.findings"
+  expect "large Cursor receipt stays exact and no argv chunk exceeds the safe bound" node --input-type=module -e "
+    import fs from 'node:fs';
+    import { CURSOR_PROMPT_ARG_MAX, LINUX_MAX_ARG_STRLEN, splitCursorPromptArgs } from 'file://${LAUNCHER}';
+    const receiptPath = process.argv[1];
+    const r = JSON.parse(fs.readFileSync(receiptPath, 'utf8'));
+    const t = r.requested_tuple;
+    if (r.status !== 'success' || r.classification !== 'success') process.exit(1);
+    if (!t || t.host !== 'cursor' || t.family !== 'anthropic' || t.model !== 'claude-fable-5') process.exit(1);
+    if (JSON.stringify(t) !== JSON.stringify(r.invocation_tuple) || JSON.stringify(t) !== JSON.stringify(r.effective_tuple)) process.exit(1);
+    if (!['requested_accepted', 'server_observed'].includes(r.model_attestation.level) || r.model_attestation.level === 'none') process.exit(1);
+    const pkgPath = r.artifacts?.package;
+    if (!pkgPath || !fs.existsSync(pkgPath)) process.exit(1);
+    const packageBytes = fs.readFileSync(pkgPath);
+    if (packageBytes.length <= 128 * 1024) process.exit(1);
+    const argv = r.attempts[0]?.command?.argv;
+    if (!Array.isArray(argv)) process.exit(1);
+    const prefix = ['--print', '--output-format', 'json', '--mode', 'plan', '--sandbox', 'enabled', '--model', t.model];
+    if (argv.slice(0, prefix.length).join('\\0') !== prefix.join('\\0')) process.exit(1);
+    const chunks = argv.slice(prefix.length);
+    if (chunks.length < 2) process.exit(1);
+    if (chunks.some((chunk) => Buffer.byteLength(chunk, 'utf8') > CURSOR_PROMPT_ARG_MAX)) process.exit(1);
+    if (argv.some((arg) => Buffer.byteLength(String(arg), 'utf8') >= LINUX_MAX_ARG_STRLEN)) process.exit(1);
+    const reconstructed = chunks.join(' ');
+    if (reconstructed !== packageBytes.toString('utf8')) process.exit(1);
+    if (JSON.stringify(chunks) !== JSON.stringify(splitCursorPromptArgs(packageBytes.toString('utf8')))) process.exit(1);
+    const joinedFlags = prefix.join(' ');
+    if (/bypassPermissions|--yolo|--force\\b|--dangerously-skip-permissions/.test(joinedFlags)) process.exit(1);
+  " "$RECEIPT_LARGE"
   set -e
 fi
 

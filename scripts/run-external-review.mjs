@@ -39,9 +39,48 @@ const REVIEW_HOST_TRANSPORTS = Object.freeze({
   cursor: { env: 'SVC_EXTERNAL_REVIEW_CURSOR_BIN', binary: 'cursor-agent' },
 });
 const CURSOR_FAMILIES = new Set(['anthropic', 'openai']);
+// Linux MAX_ARG_STRLEN is 32 * PAGE_SIZE (131072 on 4 KiB pages) and counts the trailing NUL.
+// One argv payload therefore cannot exceed 131071 bytes even when ARG_MAX is 2 MiB.
+export const LINUX_MAX_ARG_STRLEN = 131072;
+export const CURSOR_PROMPT_ARG_MAX = 120 * 1024;
 
 function reviewTransport(host) {
   return REVIEW_HOST_TRANSPORTS[host] || null;
+}
+
+export function splitCursorPromptArgs(prompt, maxBytes = CURSOR_PROMPT_ARG_MAX) {
+  if (!Number.isInteger(maxBytes) || maxBytes < 1 || maxBytes >= LINUX_MAX_ARG_STRLEN) {
+    throw new Error('Cursor prompt argv bound must be a positive integer below LINUX_MAX_ARG_STRLEN');
+  }
+  const text = Buffer.isBuffer(prompt) ? prompt.toString('utf8') : String(prompt);
+  const bytes = Buffer.from(text, 'utf8');
+  if (bytes.length === 0) return [];
+  if (bytes.length <= maxBytes) return [text];
+  const chunks = [];
+  let offset = 0;
+  while (offset < bytes.length) {
+    const remaining = bytes.length - offset;
+    if (remaining <= maxBytes) {
+      chunks.push(bytes.subarray(offset).toString('utf8'));
+      break;
+    }
+    const window = bytes.subarray(offset, offset + maxBytes);
+    let splitAt = -1;
+    for (let index = window.length - 1; index >= 0; index -= 1) {
+      if (window[index] === 0x20) {
+        splitAt = index;
+        break;
+      }
+    }
+    // Cursor reconstructs `prompt...` with join(" "). A window with no interior ASCII space
+    // cannot be split without inserting a delimiter; return [] so invoke uses stdin only.
+    if (splitAt <= 0) return [];
+    chunks.push(window.subarray(0, splitAt).toString('utf8'));
+    offset += splitAt + 1;
+  }
+  if (chunks.length === 0 || chunks.join(' ') !== text) return [];
+  if (chunks.some((chunk) => Buffer.byteLength(chunk, 'utf8') > maxBytes)) return [];
+  return chunks;
 }
 const ELIGIBLE_FALLBACKS = new Set(['model_unavailable', 'model_entitlement', 'provider_overload']);
 const DEFAULT_TIMEOUT_SECONDS = 1200;
@@ -1063,7 +1102,8 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
     for (const key of ['CLAUDE_CODE_DISABLE_REFUSAL_FALLBACK', 'ANTHROPIC_MODEL', 'CLAUDE_MODEL', 'CLAUDE_CODE_MODEL', 'ANTHROPIC_DEFAULT_OPUS_MODEL', 'ANTHROPIC_DEFAULT_SONNET_MODEL', 'ANTHROPIC_DEFAULT_HAIKU_MODEL']) delete env[key];
     args = ['--print', '--model', tuple.model, '--effort', tuple.effort, '--safe-mode', '--tools', '', '--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}', '--permission-mode', 'plan', '--no-session-persistence', '--max-turns', '4', '--disable-slash-commands', '--no-chrome', ...(switchingEnabled ? ['--settings', '{"switchModelsOnFlag":true}'] : []), '--json-schema', inlineSchema, '--output-format', 'json', '--max-budget-usd', String(budgetUsd)];
   } else if (tuple.host === 'cursor') {
-    args = ['--print', '--output-format', 'json', '--mode', 'plan', '--sandbox', 'enabled', '--model', tuple.model, packageBytes.toString('utf8')];
+    const promptArgs = splitCursorPromptArgs(packageBytes.toString('utf8'));
+    args = ['--print', '--output-format', 'json', '--mode', 'plan', '--sandbox', 'enabled', '--model', tuple.model, ...promptArgs];
   } else {
     args = [];
     result = { code: null, signal: null, timedOut: false, stdout: Buffer.alloc(0), stderr: Buffer.from(`no review transport for host ${tuple.host}`), spawnError: true };
