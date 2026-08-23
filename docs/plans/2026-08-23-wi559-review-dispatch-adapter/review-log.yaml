@@ -2,11 +2,11 @@ review_kind: plan
 wi: WI-559
 plan: docs/plans/2026-08-23-wi559-review-dispatch-adapter/manifest.md
 manifest: docs/plans/2026-08-23-wi559-review-dispatch-adapter/manifest.md
-manifest_sha256: ddae181414bb0f398bea0f390f9df28ba08bb1e6c8a21b5b269502a46b613ba1
+manifest_sha256: 756cf5ab2490511b45466aaab9b15ce79722be2926ded1b382f0077b2a8ee8aa
 rounds_run: 3
 unresolved_critical: 0
 remaining_high: 0
-terminal_state: DRAFTED
+terminal_state: REVISED_AND_REVIEWED
 convergence_required: true
 convergence_reason: Cross-runtime policy, provider transport, audit evidence, and commit enforcement change together.
 self_review_passes: 1
@@ -67,6 +67,19 @@ execution_review_attempts:
     findings:
       - F-559-R9-1 policy-status shell did not select the launcher fixture that proves canonical delegation
     disposition: accepted and remediated; r10 exact-tree recheck required
+  - round: r10
+    candidate_commit: 1be9a1add31a9863dfe985c232d466167af80ce3
+    candidate_digest: 6082fe842d66e9d7d47b2bd4c0b287cea5d391d171c0a5f5a253f27a5dd188c6
+    reviewer: grok-4.6-build-high
+    verdict: pass
+    findings: []
+    certifications:
+      - pinned-authority-file-parents-leaves
+      - single-launcher-policy-authority
+      - phase-station-evidence-binding
+      - executed-child-containment-checks
+      - F-559-R9-1-policy-status-shell-selects-launcher-fixture
+    disposition: zero findings; implementation locally reviewed and ready for final evidence-tree recheck
 bootstrap_adversarial_review:
   transport: cursor-agent
   model: claude-fable-5-thinking-high
