@@ -31,17 +31,20 @@
     {
       "task": "T2",
       "paths": [
+        ".gitignore",
         "schemas/external-review-findings.schema.json",
         "schemas/external-review-receipt.schema.json",
         "scripts/resolve-adversarial-reviewer.sh",
         "scripts/lib/protected-file.mjs",
+        "scripts/lib/reviewer-evidence.mjs",
         "scripts/resolve-dispatch.mjs",
         "scripts/resolve-execute-dispatch.mjs",
         "scripts/review-topology-v2.mjs",
         "scripts/review-plan-codex.sh",
         "scripts/run-external-review.mjs",
         "test-framework/evals/tier-1/validate-external-review-launcher.sh",
-        "test-framework/evals/tier-1/validate-persistent-review-contract-v2.mjs"
+        "test-framework/evals/tier-1/validate-persistent-review-contract-v2.mjs",
+        "test-framework/evals/tier-1/validate-reviewer-run-evidence.sh"
       ]
     },
     {
@@ -74,9 +77,9 @@
         ".svc/dispatch/WI-559.result.json",
         ".svc/dispatch/wave-progress.jsonl",
         ".svc/lane-tasks-WI-559.json",
-        ".svc/learning-fires.jsonl",
-        ".svc/learning-lifecycle.jsonl",
-        ".svc/review-cross-model-package-r6.md",
+      ".svc/learning-fires.jsonl",
+      ".svc/learning-lifecycle.jsonl",
+      ".svc/review-cross-model-package-r6.md",
       "FRAMEWORK-STATE.md",
       "docs/specs/research-log.md",
       "docs/specs/reviews/wi-559-cross-system-review.md",
@@ -90,9 +93,9 @@
   ],
   "resource_review": {
     "verification": "changed-executable-census",
-    "denominator": 19,
+    "denominator": 21,
     "disposition": "no-risky-resource-writers",
-    "evidence": "The origin/main-to-candidate census contains 19 changed shell, JavaScript, or TypeScript executables including focused tests. Inspection and the convergence matrix show no money, ledger, subscription, entitlement, quota, counter, inventory, identity, or notification resource mutation."
+    "evidence": "The origin/main-to-candidate census contains 21 changed shell, JavaScript, or TypeScript executables including focused tests. Inspection and the convergence matrix show no money, ledger, subscription, entitlement, quota, counter, inventory, identity, or notification resource mutation."
   },
   "resource_writers": [],
   "claims": [

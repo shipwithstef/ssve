@@ -132,9 +132,15 @@ export function verifyReviewerEvidence({ root = process.cwd(), reviewKind, body 
       if (receipt.findings_schema_sha256 !== digest(fs.readFileSync(path.join(SCHEMA_DIR, "external-review-findings.schema.json")))) reasons.push(`launcher findings schema digest mismatch: ${entry.path}`);
       if (receipt.status !== "success" || !["success", "cache_hit"].includes(receipt.classification)) reasons.push(`launcher receipt is not a successful review: ${entry.path}`);
       if (receipt.review_kind !== reviewKind) reasons.push(`launcher review_kind=${receipt.review_kind} expected ${reviewKind}`);
-      if (receipt.candidate_digest !== body.candidate_digest) reasons.push(`launcher candidate digest mismatch: ${entry.path}`);
+      const launcherCandidateDigest = reviewKind === "plan"
+        ? receipt.phase_guard?.plan_manifest_sha256
+        : body.candidate_digest;
+      if (!/^[0-9a-f]{64}$/.test(String(launcherCandidateDigest || ""))) {
+        reasons.push(`launcher plan review lacks a phase-bound manifest digest: ${entry.path}`);
+      }
+      if (receipt.candidate_digest !== launcherCandidateDigest) reasons.push(`launcher candidate digest mismatch: ${entry.path}`);
       const packageEntry={path:receipt.artifacts?.package,sha256:receipt.package_sha256};const packageArtifact=secureArtifact(repository,packageEntry,{extraPaths:[receipt.artifacts?.package]});
-      if(!packageArtifact.bytes.includes(Buffer.from(body.candidate_digest)))reasons.push(`launcher package does not contain candidate digest: ${entry.path}`);
+      if(launcherCandidateDigest && !packageArtifact.bytes.includes(Buffer.from(launcherCandidateDigest)))reasons.push(`launcher package does not contain candidate digest: ${entry.path}`);
       const findingsEntry = { path: receipt.artifacts?.findings, sha256: receipt.findings_sha256 };
       const findingsBytes = secureArtifact(repository, findingsEntry, { extraPaths: [receipt.artifacts?.findings] }); const findings = JSON.parse(findingsBytes.bytes.toString("utf8"));
       const findingsSchemaErrors = validateEvidenceSchema(findings, EXTERNAL_FINDINGS_SCHEMA);

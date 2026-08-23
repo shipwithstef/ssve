@@ -2,8 +2,8 @@ review_kind: plan
 wi: WI-559
 plan: docs/plans/2026-08-23-wi559-review-dispatch-adapter/manifest.md
 manifest: docs/plans/2026-08-23-wi559-review-dispatch-adapter/manifest.md
-manifest_sha256: 756cf5ab2490511b45466aaab9b15ce79722be2926ded1b382f0077b2a8ee8aa
-rounds_run: 3
+manifest_sha256: 21c8493adf91838c081dc5140972408c00c199bb05679c555713414211b3ec2a
+rounds_run: 6
 unresolved_critical: 0
 remaining_high: 0
 terminal_state: REVISED_AND_REVIEWED
@@ -22,6 +22,36 @@ canonical_tier2_attempt:
   classification: internal_receipt_schema_failure
   error: "$.requested_tuple: no anyOf branch matched"
   disposition: bootstrap defect added to WI-559 scope; canonical promotion remains blocked until the repair is implemented
+retro_plan_review_attempts:
+  - round: agy-r1
+    candidate_manifest_sha256: 756cf5ab2490511b45466aaab9b15ce79722be2926ded1b382f0077b2a8ee8aa
+    reviewer: agy-gemini-3.7-high
+    verdict: fail
+    rubric_score: 7
+    override_sha256: a647f9dc2c1f3244f9c09d4c487e15329e9dabd36eea8278efe340a395c482ec
+    findings:
+      - F-001 contradictory base SHA in header versus validation and execution commands
+      - F-002 execution staging commands omitted ten planned files
+      - F-003 upstream lane compliance lacked explicit artifact or decision mapping
+    disposition: all accepted; manifest remediation and exact recheck required
+  - round: agy-r2
+    candidate_manifest_sha256: bfbf53d176417b4d23530445de5cebf6a67e17e98ff176c69a18e94e17803c28
+    reviewer: agy-gemini-3.7-high
+    verdict: pass
+    rubric_score: 10
+    override_sha256: a647f9dc2c1f3244f9c09d4c487e15329e9dabd36eea8278efe340a395c482ec
+    receipt: .svc/external-review-artifacts/plan/wi559-retro-plan-agy-r2-20260823T1032/receipt.json
+    findings: []
+    disposition: exact remediated manifest passed; subsequent receipt dual-binding repair requires one final manifest recheck
+  - round: agy-r3
+    candidate_manifest_sha256: 21c8493adf91838c081dc5140972408c00c199bb05679c555713414211b3ec2a
+    reviewer: agy-gemini-3.7-high
+    verdict: pass
+    rubric_score: 10
+    override_sha256: a647f9dc2c1f3244f9c09d4c487e15329e9dabd36eea8278efe340a395c482ec
+    receipt: .svc/external-review-artifacts/plan/wi559-retro-plan-agy-r3-20260823T1045/receipt.json
+    findings: []
+    disposition: exact final manifest and dual-binding repair ownership passed with zero findings
 execution_review_attempts:
   - round: r7
     candidate_commit: 82ed6bc274334ae9706cb4334a55946f47b0a4ef

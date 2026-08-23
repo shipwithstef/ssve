@@ -9,12 +9,27 @@
 | Work item | `WI-559` |
 | Branch | `bugfix-WI-559-review-dispatch-adapter` |
 | Lane | bugfix / framework |
-| Status | CHECKPOINTED (local candidate only; not yet reviewed, landed, installed, or consumer-replayed) |
+| Status | LOCAL CANDIDATE (review state is authoritative in the adjacent review log; not landed, installed, or consumer-replayed) |
 | Base branch / SHA | `origin/main` / `124cf8a4e1144d50c0c9ae7c45ed821ab4309609` |
 | Created | `2026-08-22T23:20:31Z` |
 | Execution mode | `dispatch` — owner-selected Grok Build CLI 4.6 High receives this complete contract in a zero-history process |
 | Risk Flags | `cross_runtime_integration` |
 | Contract map | `docs/specs/contract-maps/review-to-execute-dispatch.md` |
+
+### Upstream lane compliance
+
+| Required upstream boundary | Status | Evidence |
+|---|---|---|
+| Bugfix definition / write-spec-equivalent | completed | `docs/specs/bugfix/wi-559-review-dispatch-adapter-brief.md`; `docs/specs/work-items/WI-559.md`; task 1 `diagnose-bug` receipt in `.svc/lane-tasks-WI-559.json` |
+| G1-G3 behavior, contract, and risk inputs | completed | `docs/specs/work-items/WI-559.md`; `docs/specs/contract-maps/review-to-execute-dispatch.md`; `docs/specs/test-evidence/WI-559/design-capability-probes.json` |
+| G4 technical design | completed | `docs/specs/tech/WI-559.md`; `docs/specs/decisions/WI-559.md`; `.svc/wi559-g4-decision.log`; task 2 `design-tech` receipt |
+| Changeset planning | completed | this manifest; adjacent `plan-contract.json`; `.svc/plan-changeset-review.log`; task 3 `plan-changeset` receipt |
+| Plan review | active | adjacent `review-log.yaml`; canonical retro-plan review remains fail-closed until every accepted finding is remediated and rechecked |
+
+No mandatory upstream boundary is silently skipped. The bugfix brief is the
+lane's behavior-spec artifact; there is no separate feature `write-spec` output
+to impersonate. The durable task graph and named evidence files, rather than an
+uncited prose assertion, are the authority for completed boundaries.
 
 ### Architectural invariants
 
@@ -68,6 +83,7 @@ stations; their authority and model choices do not change.
 
 | File | Action | Task | Purpose |
 |---|---|---|---|
+| `.gitignore` | MODIFY | T2 | Keep private owner overrides and immutable review snapshots as machine-local evidence outside product diff parity |
 | test-framework/evals/tier-1/validate-review-dispatch-adapter-convergence.sh | CREATE | T1 | Hermetic original-failure and negative authorization matrix |
 | `test-framework/evals/tier-1/validate-external-review-launcher.sh` | MODIFY | T1 | Named-WI, owner-default, multi-station, explicit override, zero-provider-call adapter coverage |
 | `test-framework/evals/tier-1/validate-persistent-review-contract-v2.mjs` | MODIFY | T1 | Replace brittle old adapter-source assertions with resolver-delegation invariants |
@@ -76,10 +92,12 @@ stations; their authority and model choices do not change.
 | `scripts/run-external-review.mjs` | MODIFY | T2 | Preserve canonical schema/receipt authority while transporting selected Cursor stations read-only |
 | `scripts/resolve-adversarial-reviewer.sh` | MODIFY | T2 | Route schema-1 owner dispatch policy status through the canonical review launcher instead of the legacy scheduled-policy resolver |
 | `scripts/lib/protected-file.mjs` | CREATE | T2 | Pin authority-file parents and leaf reads through owner-checked directory/file descriptors |
+| `scripts/lib/reviewer-evidence.mjs` | MODIFY | T2 | Bind v3 chain receipts to the Git tree while independently requiring canonical plan-launcher receipts to bind the phase-guarded manifest digest |
 | `scripts/resolve-dispatch.mjs` | MODIFY | T2 | Read owner policy once through an owner-checked O_NOFOLLOW descriptor and reuse that exact snapshot for selection |
 | scripts/resolve-execute-dispatch.mjs | CREATE | T2 | Shared bind-plan, preflight, and verify-receipt authority helper |
 | `scripts/review-topology-v2.mjs` | MODIFY | T2 | Reuse the single protected owner-policy snapshot across topology and station resolution |
 | `scripts/review-plan-codex.sh` | MODIFY | T2 | Canonical named/numeric WI binding and resolver-owned default/station selection |
+| `test-framework/evals/tier-1/validate-reviewer-run-evidence.sh` | MODIFY | T2 | Prove plan manifest and execution tree identities are independently bound and mismatch-fail closed |
 | `scripts/execute-dispatch-preflight.sh` | MODIFY | T3 | Exact reviewed-WI authorization plus compact current EXEC tuple output |
 | `scripts/dispatch-worker.sh` | MODIFY | T3 | Safe delegated Grok CLI transport without weakening containment |
 | `scripts/dispatch-log.sh` | MODIFY | T3 | Schema-2 exact tuple/review/policy dispatch evidence |
@@ -117,7 +135,7 @@ this census and `plan-contract.json` to the complete executed diff before G5.
 |---|---|---|---|
 | T0 | Planning and G4 artifacts | .svc/skill-outcome-design-tech-WI-559.json;docs/plans/2026-08-23-wi559-review-dispatch-adapter/grok-build-prompt.md;docs/plans/2026-08-23-wi559-review-dispatch-adapter/manifest.md;docs/plans/2026-08-23-wi559-review-dispatch-adapter/plan-contract.json;docs/plans/2026-08-23-wi559-review-dispatch-adapter/review-log.yaml;docs/specs/bugfix/wi-559-review-dispatch-adapter-brief.md;docs/specs/contract-maps/review-to-execute-dispatch.md;docs/specs/decisions/WI-559.md;docs/specs/tech/WI-559.md;docs/specs/test-evidence/WI-559/design-capability-probes.json | changed |
 | T1 | Fail-first contract evidence | docs/specs/test-evidence/WI-559/t1-red-bind-review-cursor-helper.log;test-framework/evals/tier-1/validate-review-dispatch-adapter-convergence.sh | changed |
-| T2 | Review adapter convergence | schemas/external-review-findings.schema.json;schemas/external-review-receipt.schema.json;scripts/lib/protected-file.mjs;scripts/resolve-adversarial-reviewer.sh;scripts/resolve-dispatch.mjs;scripts/resolve-execute-dispatch.mjs;scripts/review-plan-codex.sh;scripts/review-topology-v2.mjs;scripts/run-external-review.mjs;test-framework/evals/tier-1/validate-external-review-launcher.sh;test-framework/evals/tier-1/validate-persistent-review-contract-v2.mjs | changed |
+| T2 | Review adapter convergence | .gitignore;schemas/external-review-findings.schema.json;schemas/external-review-receipt.schema.json;scripts/lib/protected-file.mjs;scripts/lib/reviewer-evidence.mjs;scripts/resolve-adversarial-reviewer.sh;scripts/resolve-dispatch.mjs;scripts/resolve-execute-dispatch.mjs;scripts/review-plan-codex.sh;scripts/review-topology-v2.mjs;scripts/run-external-review.mjs;test-framework/evals/tier-1/validate-external-review-launcher.sh;test-framework/evals/tier-1/validate-persistent-review-contract-v2.mjs;test-framework/evals/tier-1/validate-reviewer-run-evidence.sh | changed |
 | T3 | Exact execution adapter convergence | hooks/svc-execute-dispatch-guard.sh;scripts/auto-receipt.mjs;scripts/dispatch-log.sh;scripts/dispatch-worker.sh;scripts/execute-dispatch-preflight.sh;scripts/state-io.mjs;skills/execute-changeset/references/dispatch-preflight.md;skills/execute-changeset/references/subagent-dispatch.md | changed |
 | T4 | Focused validator closure | scripts/select-tier1-validators-v2.mjs;test-framework/evals/tier-1/validate-parallel-wi-dispatch.sh;test-framework/evals/tier-1/validate-tier1-selector-v2.mjs | changed |
 | T5 | WI, knowledge, and preserved local audit state | .svc/authorization-events.jsonl;.svc/dispatch/WI-559.edits.json;.svc/dispatch/WI-559.log;.svc/dispatch/WI-559.result.json;.svc/dispatch/wave-progress.jsonl;.svc/lane-tasks-WI-559.json;.svc/learning-fires.jsonl;.svc/learning-lifecycle.jsonl;.svc/review-cross-model-package-r6.md;FRAMEWORK-STATE.md;docs/specs/research-log.md;docs/specs/reviews/wi-559-cross-system-review.md;docs/specs/reviews/wi-559-exec-review.md;docs/specs/work-items/INDEX.md;docs/specs/work-items/WI-559.md;proposals/2026-08-23-framework-improvement-review-dispatch-adapter-convergence.md;references/knowledge/svc/CAPABILITIES.md | changed |
@@ -424,7 +442,9 @@ node test-framework/evals/tier-1/validate-child-transport-resolver.mjs
 bash test-framework/evals/tier-1/validate-parallel-wi-dispatch.sh
 bash test-framework/evals/tier-1/validate-state-io-discipline.sh
 bash test-framework/evals/tier-1/validate-atomic-state-writes.sh
+bash test-framework/evals/tier-1/validate-reviewer-run-evidence.sh
 node test-framework/evals/tier-1/validate-tier1-selector-v2.mjs
+git check-ignore .svc/owner-overrides/WI-559-retro-plan.json .svc/review-plan-snapshots/*.manifest.md
 ```
 
 ### Branch-level
@@ -438,7 +458,7 @@ bash scripts/verify-plan-mechanical.sh docs/plans/2026-08-23-wi559-review-dispat
 SVC_TIER1_MODE=focused bash test-framework/evals/run-all-evals.sh
 bash test-framework/evals/run-all-evals.sh
 git diff --check
-git diff --name-only 924760bd1af9ef78d843a520bbdbc01e319e0eb0...HEAD
+git diff --name-only 124cf8a4e1144d50c0c9ae7c45ed821ab4309609...HEAD
 ```
 
 ## Execution Command Sequence
@@ -446,7 +466,7 @@ git diff --name-only 924760bd1af9ef78d843a520bbdbc01e319e0eb0...HEAD
 ```bash
 cd /home/dianast/app-workspaces/seriousvibecoding/.worktrees/bugfix-WI-559-review-dispatch-adapter
 test "$(git branch --show-current)" = bugfix-WI-559-review-dispatch-adapter
-test "$(git merge-base HEAD origin/main)" = 924760bd1af9ef78d843a520bbdbc01e319e0eb0
+test "$(git merge-base HEAD origin/main)" = 124cf8a4e1144d50c0c9ae7c45ed821ab4309609
 
 # T1: add/update only the declared Tier-1 contracts, run syntax, then prove the
 # current implementation fails the new public fixture for the reproduced reasons.
@@ -460,7 +480,7 @@ bash test-framework/evals/tier-1/validate-external-review-launcher.sh
 node test-framework/evals/tier-1/validate-persistent-review-contract-v2.mjs
 node test-framework/evals/tier-1/validate-dispatch-resolver-wi551.mjs
 bash test-framework/evals/tier-1/validate-wi-id.sh
-git add scripts/resolve-execute-dispatch.mjs scripts/review-plan-codex.sh test-framework/evals/tier-1/validate-review-dispatch-adapter-convergence.sh test-framework/evals/tier-1/validate-external-review-launcher.sh test-framework/evals/tier-1/validate-persistent-review-contract-v2.mjs
+git add .gitignore schemas/external-review-findings.schema.json schemas/external-review-receipt.schema.json scripts/lib/protected-file.mjs scripts/lib/reviewer-evidence.mjs scripts/resolve-adversarial-reviewer.sh scripts/resolve-dispatch.mjs scripts/resolve-execute-dispatch.mjs scripts/review-plan-codex.sh scripts/review-topology-v2.mjs scripts/run-external-review.mjs test-framework/evals/tier-1/validate-review-dispatch-adapter-convergence.sh test-framework/evals/tier-1/validate-external-review-launcher.sh test-framework/evals/tier-1/validate-persistent-review-contract-v2.mjs test-framework/evals/tier-1/validate-reviewer-run-evidence.sh
 git diff --cached --check
 git commit -m "fix(dispatch): converge plan review adapters" -m "WI: WI-559" -m "Checkpoint: wi559-review-adapter-green"
 
@@ -469,7 +489,7 @@ bash test-framework/evals/tier-1/validate-review-dispatch-adapter-convergence.sh
 bash test-framework/evals/tier-1/validate-review-dispatch-adapter-convergence.sh
 node test-framework/evals/tier-1/validate-child-transport-resolver.mjs
 bash test-framework/evals/tier-1/validate-parallel-wi-dispatch.sh
-git add scripts/resolve-execute-dispatch.mjs scripts/execute-dispatch-preflight.sh scripts/dispatch-worker.sh scripts/dispatch-log.sh hooks/svc-execute-dispatch-guard.sh skills/execute-changeset/references/dispatch-preflight.md skills/execute-changeset/references/subagent-dispatch.md test-framework/evals/tier-1/validate-review-dispatch-adapter-convergence.sh
+git add hooks/svc-execute-dispatch-guard.sh scripts/auto-receipt.mjs scripts/dispatch-log.sh scripts/dispatch-worker.sh scripts/execute-dispatch-preflight.sh scripts/resolve-execute-dispatch.mjs scripts/state-io.mjs skills/execute-changeset/references/dispatch-preflight.md skills/execute-changeset/references/subagent-dispatch.md test-framework/evals/tier-1/validate-review-dispatch-adapter-convergence.sh
 git diff --cached --check
 git commit -m "fix(dispatch): enforce exact Grok execution evidence" -m "WI: WI-559" -m "Checkpoint: wi559-execute-adapter-green"
 
@@ -478,7 +498,7 @@ node test-framework/evals/tier-1/validate-tier1-selector-v2.mjs
 SVC_TIER1_MODE=focused bash test-framework/evals/run-all-evals.sh
 bash test-framework/evals/run-all-evals.sh
 git diff --check
-git add scripts/select-tier1-validators-v2.mjs test-framework/evals/tier-1/validate-tier1-selector-v2.mjs FRAMEWORK-STATE.md references/knowledge/svc/CAPABILITIES.md docs/specs/work-items/WI-559.md docs/specs/work-items/INDEX.md proposals/2026-08-23-framework-improvement-review-dispatch-adapter-convergence.md .svc/lane-tasks-WI-559.json .svc/pipeline-decisions.jsonl .svc/session-contract.jsonl docs/plans/2026-08-23-wi559-review-dispatch-adapter docs/specs/bugfix/wi-559-review-dispatch-adapter-brief.md docs/specs/contract-maps/review-to-execute-dispatch.md docs/specs/decisions/WI-559.md docs/specs/tech/WI-559.md docs/specs/test-evidence/WI-559 docs/specs/research-log.md docs/specs/reviews/wi-559-cross-system-review.md
+git add scripts/select-tier1-validators-v2.mjs test-framework/evals/tier-1/validate-parallel-wi-dispatch.sh test-framework/evals/tier-1/validate-tier1-selector-v2.mjs FRAMEWORK-STATE.md references/knowledge/svc/CAPABILITIES.md docs/specs/work-items/WI-559.md docs/specs/work-items/INDEX.md proposals/2026-08-23-framework-improvement-review-dispatch-adapter-convergence.md docs/plans/2026-08-23-wi559-review-dispatch-adapter docs/specs/bugfix/wi-559-review-dispatch-adapter-brief.md docs/specs/contract-maps/review-to-execute-dispatch.md docs/specs/decisions/WI-559.md docs/specs/tech/WI-559.md docs/specs/test-evidence/WI-559 docs/specs/research-log.md docs/specs/reviews/wi-559-cross-system-review.md docs/specs/reviews/wi-559-exec-review.md
 git diff --cached --check
 git commit -m "docs(dispatch): record WI-559 governed proof" -m "WI: WI-559" -m "Checkpoint: wi559-framework-green"
 

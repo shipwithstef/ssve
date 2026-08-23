@@ -72,6 +72,8 @@ suno-outputs/
 .svc/external-review-artifacts/
 .svc/external-review-cache/
 .svc/external-review-policy/
+.svc/owner-overrides/
+.svc/review-plan-snapshots/
 .svc/pending-push.json
 
 # Session loops and task-handling guard states
