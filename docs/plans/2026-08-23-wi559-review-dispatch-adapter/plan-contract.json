@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "manifest": "docs/plans/2026-08-23-wi559-review-dispatch-adapter/manifest.md",
+  "base_sha": "124cf8a4e1144d50c0c9ae7c45ed821ab4309609",
+  "risk_flags": [
+    "cross_runtime_integration"
+  ],
+  "ownership": [
+    {
+      "task": "T0",
+      "paths": [
+        ".svc/skill-outcome-design-tech-WI-559.json",
+        "docs/plans/2026-08-23-wi559-review-dispatch-adapter/grok-build-prompt.md",
+        "docs/plans/2026-08-23-wi559-review-dispatch-adapter/manifest.md",
+        "docs/plans/2026-08-23-wi559-review-dispatch-adapter/plan-contract.json",
+        "docs/plans/2026-08-23-wi559-review-dispatch-adapter/review-log.yaml",
+        "docs/specs/bugfix/wi-559-review-dispatch-adapter-brief.md",
+        "docs/specs/contract-maps/review-to-execute-dispatch.md",
+        "docs/specs/decisions/WI-559.md",
+        "docs/specs/tech/WI-559.md",
+        "docs/specs/test-evidence/WI-559/design-capability-probes.json"
+      ]
+    },
+    {
+      "task": "T1",
+      "paths": [
+        "docs/specs/test-evidence/WI-559/t1-red-bind-review-cursor-helper.log",
+        "test-framework/evals/tier-1/validate-review-dispatch-adapter-convergence.sh"
+      ]
+    },
+    {
+      "task": "T2",
+      "paths": [
+        "schemas/external-review-findings.schema.json",
+        "schemas/external-review-receipt.schema.json",
+        "scripts/resolve-adversarial-reviewer.sh",
+        "scripts/resolve-execute-dispatch.mjs",
+        "scripts/review-plan-codex.sh",
+        "scripts/run-external-review.mjs",
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+        "test-framework/evals/tier-1/validate-persistent-review-contract-v2.mjs"
+      ]
+    },
+    {
+      "task": "T3",
+      "paths": [
+        "hooks/svc-execute-dispatch-guard.sh",
+        "scripts/dispatch-log.sh",
+        "scripts/dispatch-worker.sh",
+        "scripts/execute-dispatch-preflight.sh",
+        "skills/execute-changeset/references/dispatch-preflight.md",
+        "skills/execute-changeset/references/subagent-dispatch.md"
+      ]
+    },
+    {
+      "task": "T4",
+      "paths": [
+        "scripts/select-tier1-validators-v2.mjs",
+        "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs"
+      ]
+    },
+    {
+      "task": "T5",
+      "paths": [
+        ".svc/dispatch/WI-559.edits.json",
+        ".svc/dispatch/WI-559.log",
+        ".svc/dispatch/WI-559.result.json",
+        ".svc/dispatch/wave-progress.jsonl",
+        ".svc/lane-tasks-WI-559.json",
+        ".svc/learning-fires.jsonl",
+        ".svc/learning-lifecycle.jsonl",
+        "FRAMEWORK-STATE.md",
+        "docs/specs/research-log.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-559.md",
+        "proposals/2026-08-23-framework-improvement-review-dispatch-adapter-convergence.md",
+        "references/knowledge/svc/CAPABILITIES.md"
+      ]
+    }
+  ],
+  "resource_review": {
+    "verification": "changed-executable-census",
+    "denominator": 13,
+    "disposition": "no-risky-resource-writers",
+    "evidence": "The origin/main-to-candidate census contains 13 changed shell, JavaScript, or TypeScript executables including focused tests. Inspection and the convergence matrix show no money, ledger, subscription, entitlement, quota, counter, inventory, identity, or notification resource mutation."
+  },
+  "resource_writers": [],
+  "claims": [
+    {
+      "kind": "absence",
+      "denominator": 0,
+      "evidence": {
+        "verification": "diff-manifest-parity"
+      }
+    },
+    {
+      "kind": "unused",
+      "denominator": 0,
+      "evidence": {
+        "verification": "executable-consumers"
+      }
+    }
+  ],
+  "executables": []
+}

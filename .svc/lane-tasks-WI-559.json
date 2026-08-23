@@ -1,0 +1,483 @@
+{
+  "schema_version": 1,
+  "wi": "WI-559",
+  "lane": "bugfix",
+  "story_type": "framework",
+  "change_type": "framework-bugfix",
+  "created": "2026-08-22T22:57:53.541Z",
+  "status": "in_progress",
+  "flags": [
+    "cross_runtime_integration"
+  ],
+  "labels": [
+    "cross-system-suspected"
+  ],
+  "cross_system": {
+    "suspected": true,
+    "diagnose_bug_invocations": 11,
+    "system_contract_map": {
+      "required": true,
+      "path": "docs/specs/contract-maps/review-to-execute-dispatch.md"
+    },
+    "review_cross_model_required": true
+  },
+  "required_skills": [
+    "review-cross-model"
+  ],
+  "delivery_graph": {
+    "lane": "bugfix",
+    "required_skills": [
+      "diagnose-bug",
+      "design-tech",
+      "plan-changeset",
+      "review-plan",
+      "review-cross-model",
+      "execute-changeset",
+      "review-gate",
+      "review-exec",
+      "audit-implementation",
+      "land-changeset",
+      "verify-promotion"
+    ],
+    "risk_flags": [
+      "cross_runtime_integration",
+      "cross-system-suspected"
+    ],
+    "mutation_history": [
+      {
+        "ts": "2026-08-22T23:17:42.269Z",
+        "source_skill": "design-tech",
+        "action": "escalate_review",
+        "signal_discovered": "cross-system-suspected",
+        "reason": "The iteration-cap validator requires diagnosis and contract-map review before execution.",
+        "affected_tasks": [
+          5
+        ],
+        "affected_evidence_families": [],
+        "validator_proof": "node scripts/check-cross-system-iteration-cap.mjs --lane-tasks .svc/lane-tasks-WI-559.json"
+      }
+    ],
+    "skill_outcomes": [
+      {
+        "skill": "design-tech",
+        "status": "pass",
+        "signals_added": [
+          "cross-system-suspected"
+        ],
+        "artifacts_produced": [
+          "docs/specs/tech/WI-559.md",
+          "docs/specs/decisions/WI-559.md",
+          "docs/specs/contract-maps/review-to-execute-dispatch.md",
+          "docs/specs/test-evidence/WI-559/design-capability-probes.json"
+        ],
+        "closeout_impact": "blocked"
+      }
+    ],
+    "conditional_mandatory_skills": [
+      {
+        "skill": "review-cross-model",
+        "signal": "cross-system-suspected",
+        "reason": "The iteration-cap validator requires diagnosis and contract-map review before execution."
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "diagnose-bug",
+      "subject": "diagnose-bug: isolate WI-551 review dispatch adapter regression",
+      "status": "completed",
+      "blocked_by": [],
+      "process_tasks": [
+        {
+          "id": "1.1",
+          "name": "diagnose-bug|spec-anchor",
+          "status": "completed",
+          "blocked_by": [],
+          "subject": "Read WI-551 dispatch ACs and owner policy contract"
+        },
+        {
+          "id": "1.2",
+          "name": "diagnose-bug|repro-classify",
+          "status": "completed",
+          "blocked_by": [
+            "1.1"
+          ],
+          "subject": "Action bug: canonical plan review refuses before provider dispatch"
+        },
+        {
+          "id": "1.3",
+          "name": "diagnose-bug|reading-list",
+          "status": "completed",
+          "blocked_by": [
+            "1.2"
+          ],
+          "subject": "Read review-plan-codex.sh, review-topology-v2.mjs, resolve-dispatch.mjs, focused validators"
+        },
+        {
+          "id": "1.4",
+          "name": "diagnose-bug|code-read",
+          "status": "completed",
+          "blocked_by": [
+            "1.3"
+          ],
+          "subject": "Compare adapter assumptions with WI-551 single-resolver contract"
+        },
+        {
+          "id": "1.5",
+          "name": "diagnose-bug|fault-isolate",
+          "status": "completed",
+          "blocked_by": [
+            "1.4"
+          ],
+          "subject": "Trace plan manifest -> owner default mode -> required stations -> WI binding -> provider launcher"
+        },
+        {
+          "id": "1.6",
+          "name": "diagnose-bug|root-cause",
+          "status": "completed",
+          "blocked_by": [
+            "1.5"
+          ],
+          "subject": "State duplicated legacy defaults and numeric-only identity parsing root cause"
+        },
+        {
+          "id": "1.7",
+          "name": "diagnose-bug|pillar-audit",
+          "status": "completed",
+          "blocked_by": [
+            "1.6"
+          ],
+          "subject": "Complete eight-pillar framework audit and eval matrix"
+        },
+        {
+          "id": "1.8",
+          "name": "diagnose-bug|pattern-scan",
+          "status": "completed",
+          "blocked_by": [
+            "1.7"
+          ],
+          "subject": "Scan active adapters for hardcoded modes, singular-station assumptions, and numeric-only WI parsing"
+        },
+        {
+          "id": "1.9",
+          "name": "diagnose-bug|register-disc",
+          "status": "completed",
+          "blocked_by": [
+            "1.8"
+          ],
+          "subject": "Register one bounded correction or explicit follow-ups"
+        },
+        {
+          "id": "1.10",
+          "name": "diagnose-bug|brief",
+          "status": "completed",
+          "blocked_by": [
+            "1.9"
+          ],
+          "subject": "Write implementation-ready brief and framework improvement record"
+        }
+      ],
+      "eval_matrix": {
+        "product_fit": "UNCHANGED — VERIFIED — docs/specs/work-items/WI-551.md",
+        "journey": "UPDATED — WI-559",
+        "acceptance_criteria": "UPDATED — WI-559",
+        "ux": "UNCHANGED — VERIFIED — docs/specs/bugfix/wi-559-review-dispatch-adapter-brief.md",
+        "ui": "N/A — headless shell and Node adapter repair",
+        "tech_architecture": "UPDATED — WI-559",
+        "cost_model": "UNCHANGED — VERIFIED — docs/specs/work-items/WI-559.md",
+        "operations_ownership": "UPDATED — WI-559"
+      },
+      "skill_receipt": {
+        "skill": "diagnose-bug",
+        "loaded_at": "2026-08-22T22:59:15.298Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-Inputs",
+            "ts": "2026-08-22T23:03:28.599Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi559-diagnosis-inputs.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-Reproduction",
+            "ts": "2026-08-22T23:03:29.761Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-559.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RootCause",
+            "ts": "2026-08-22T23:03:31.019Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/bugfix/wi-559-review-dispatch-adapter-brief.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-FixPlan",
+            "ts": "2026-08-22T23:03:32.103Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "proposals/2026-08-23-framework-improvement-review-dispatch-adapter-convergence.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-PillarRevisit",
+            "ts": "2026-08-22T23:03:33.274Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-559.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-22T23:03:34.379Z"
+    },
+    {
+      "id": 2,
+      "skill": "design-tech",
+      "subject": "design-tech: bind structured identity and multi-station dispatch semantics",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "design-tech",
+        "loaded_at": "2026-08-22T23:03:35.541Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SpecJourneyDiscussionPreflight",
+            "ts": "2026-08-22T23:18:18.573Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi559-design-preflight.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-CodebasePatternAnalysis",
+            "ts": "2026-08-22T23:18:19.131Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi559-design-codebase-analysis.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ArchitectureAlternativesAndDiagrams",
+            "ts": "2026-08-22T23:18:19.742Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/tech/WI-559.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-CostOpsFeasibilityRiskDesign",
+            "ts": "2026-08-22T23:18:20.468Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/tech/WI-559.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-G4ReviewAndDecisionLogging",
+            "ts": "2026-08-22T23:18:21.414Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi559-g4-decision.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-BaselinedSpecSelfVerify",
+            "ts": "2026-08-22T23:18:21.956Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/wi559-g4-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-22T23:18:22.359Z"
+    },
+    {
+      "id": 3,
+      "skill": "plan-changeset",
+      "subject": "plan-changeset: exact adapter and replay changeset",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-08-22T23:18:23.077Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-08-22T23:33:13.713Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-archetype.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-08-22T23:33:14.259Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-scope.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-08-22T23:33:14.846Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-23-wi559-review-dispatch-adapter/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-08-22T23:33:15.442Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-23-wi559-review-dispatch-adapter/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-08-22T23:33:16.134Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-08-22T23:33:16.795Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-22T23:33:47.372Z"
+    },
+    {
+      "id": 4,
+      "skill": "review-plan",
+      "subject": "review-plan: canonical independent review",
+      "status": "in_progress",
+      "blocked_by": [
+        3
+      ],
+      "process_tasks": [
+        {
+          "id": "4.1",
+          "name": "review-cross-model|cross-system-contract",
+          "skill": "review-cross-model",
+          "subject": "Challenge the diagnosis and system contract map after canonical plan review and before execution",
+          "status": "pending",
+          "blocked_by": []
+        }
+      ],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-08-22T23:33:48.289Z",
+        "loaded_via": "direct-skill-read"
+      }
+    },
+    {
+      "id": 6,
+      "skill": "execute-changeset",
+      "subject": "execute-changeset: implement adapter repair",
+      "status": "pending",
+      "blocked_by": [
+        4
+      ]
+    },
+    {
+      "id": 7,
+      "skill": "review-gate",
+      "subject": "review-gate: validate full diff against WI-559",
+      "status": "pending",
+      "blocked_by": [
+        6
+      ]
+    },
+    {
+      "id": 8,
+      "skill": "review-exec",
+      "subject": "review-exec: independent final-diff review",
+      "status": "pending",
+      "blocked_by": [
+        7
+      ]
+    },
+    {
+      "id": 9,
+      "skill": "audit-implementation",
+      "subject": "audit-implementation: trace acceptance and regression coverage",
+      "status": "pending",
+      "blocked_by": [
+        8
+      ]
+    },
+    {
+      "id": 10,
+      "skill": "land-changeset",
+      "subject": "land-changeset: publish framework repair through governed PR",
+      "status": "pending",
+      "blocked_by": [
+        9
+      ]
+    },
+    {
+      "id": 11,
+      "skill": "verify-promotion",
+      "subject": "verify-promotion: refresh installs and replay HoursHub canonical review",
+      "status": "pending",
+      "blocked_by": [
+        10
+      ]
+    }
+  ]
+}

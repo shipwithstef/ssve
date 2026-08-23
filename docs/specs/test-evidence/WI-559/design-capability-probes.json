@@ -1,0 +1,60 @@
+{
+  "probes": [
+    {
+      "id": "wi559-owner-policy-resolution",
+      "hypothesis": "The protected owner policy and canonical resolver already provide a deterministic default review station and an EXEC tuple of Grok 4.6 at high effort.",
+      "confirmation_check": {
+        "predicate": "resolve-dispatch external for plan without explicit mode returns one selected eligible external station, and resolve-model EXEC JSON returns host grok, model grok-4.6, effort high",
+        "result": "PASS"
+      },
+      "falsification_check": {
+        "predicate": "invoke with an unknown explicit mode and require a nonzero policy error rather than a silent remap",
+        "result": "PASS"
+      },
+      "verdict": "hypothesis-holds",
+      "evidence": "docs/specs/work-items/WI-559.md reproduction and protected-policy resolver probes"
+    },
+    {
+      "id": "wi559-grok-safe-cli-surface",
+      "hypothesis": "Installed Grok CLI 1.0.5 exposes every bounded headless control required by the execution design while retaining normal permission enforcement.",
+      "confirmation_check": {
+        "predicate": "grok --help lists --cwd, --model, --reasoning-effort, --permission-mode auto, --no-subagents, --disable-web-search, and --single",
+        "result": "PASS"
+      },
+      "falsification_check": {
+        "predicate": "inspect the proposed argv and require that neither bypassPermissions nor any permission-bypass synonym is present",
+        "result": "PASS"
+      },
+      "verdict": "hypothesis-holds",
+      "evidence": "docs/specs/research-log.md installed Grok CLI probe as of 2026-08-23"
+    },
+    {
+      "id": "wi559-cursor-read-only-review-surface",
+      "hypothesis": "Installed Cursor Agent exposes the bounded non-interactive read-only controls required to transport existing owner-policy Fable and Sol review stations.",
+      "confirmation_check": {
+        "predicate": "cursor-agent --help lists --print, --output-format, --mode plan, --sandbox enabled, --model, and --workspace; cursor-agent status succeeds for the current authenticated account",
+        "result": "PASS"
+      },
+      "falsification_check": {
+        "predicate": "inspect the proposed review argv and require that neither --force, --yolo, auto-approval, nor disabled sandbox is present",
+        "result": "PASS"
+      },
+      "verdict": "hypothesis-holds",
+      "evidence": "docs/specs/research-log.md installed Cursor Agent probe as of 2026-08-23"
+    },
+    {
+      "id": "wi559-adapter-contradiction",
+      "hypothesis": "The current compatibility adapters contradict successful canonical resolution before provider execution.",
+      "confirmation_check": {
+        "predicate": "the same HoursHub input fails successively on hardcoded production, exact-one station cardinality, named-WI parsing, and legacy Sonnet execution selection",
+        "result": "PASS"
+      },
+      "falsification_check": {
+        "predicate": "invoke the canonical resolver directly with the same protected policy and require successful default external selection plus Grok EXEC resolution",
+        "result": "PASS"
+      },
+      "verdict": "hypothesis-holds",
+      "evidence": ".svc/wi559-reproduction.log and docs/specs/work-items/WI-559.md"
+    }
+  ]
+}

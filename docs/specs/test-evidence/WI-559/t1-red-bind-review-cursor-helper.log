@@ -1,0 +1,192 @@
+
+=== bind-plan identity ===
+node:internal/modules/cjs/loader:1424
+  throw err;
+  ^
+
+Error: Cannot find module '/home/dianast/app-workspaces/seriousvibecoding/.worktrees/bugfix-WI-559-review-dispatch-adapter/scripts/resolve-execute-dispatch.mjs'
+[90m    at Module._resolveFilename (node:internal/modules/cjs/loader:1421:15)[39m
+[90m    at defaultResolveImpl (node:internal/modules/cjs/loader:1059:19)[39m
+[90m    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1064:22)[39m
+[90m    at Module._load (node:internal/modules/cjs/loader:1227:37)[39m
+[90m    at TracingChannel.traceSync (node:diagnostics_channel:328:14)[39m
+[90m    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)[39m
+[90m    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)[39m
+[90m    at node:internal/main/run_main_module:33:47[39m {
+  code: [32m'MODULE_NOT_FOUND'[39m,
+  requireStack: []
+}
+
+Node.js v24.13.0
+<anonymous_script>:1
+
+
+SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>)
+    at [eval]:1:14
+[90m    at runScriptInThisContext (node:internal/vm:219:10)[39m
+[90m    at node:internal/process/execution:451:12[39m
+    at [eval]-wrapper:6:24
+[90m    at runScriptInContext (node:internal/process/execution:449:60)[39m
+[90m    at evalFunction (node:internal/process/execution:283:30)[39m
+[90m    at evalTypeScript (node:internal/process/execution:295:3)[39m
+[90m    at node:internal/main/eval_string:71:3[39m
+
+Node.js v24.13.0
+  ✗ numeric WI-559 binds exactly
+node:internal/modules/cjs/loader:1424
+  throw err;
+  ^
+
+Error: Cannot find module '/home/dianast/app-workspaces/seriousvibecoding/.worktrees/bugfix-WI-559-review-dispatch-adapter/scripts/resolve-execute-dispatch.mjs'
+[90m    at Module._resolveFilename (node:internal/modules/cjs/loader:1421:15)[39m
+[90m    at defaultResolveImpl (node:internal/modules/cjs/loader:1059:19)[39m
+[90m    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1064:22)[39m
+[90m    at Module._load (node:internal/modules/cjs/loader:1227:37)[39m
+[90m    at TracingChannel.traceSync (node:diagnostics_channel:328:14)[39m
+[90m    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)[39m
+[90m    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)[39m
+[90m    at node:internal/main/run_main_module:33:47[39m {
+  code: [32m'MODULE_NOT_FOUND'[39m,
+  requireStack: []
+}
+
+Node.js v24.13.0
+  ✓ numeric bind is deterministic
+  ✓ bind-plan never calls a provider
+node:internal/modules/cjs/loader:1424
+  throw err;
+  ^
+
+Error: Cannot find module '/home/dianast/app-workspaces/seriousvibecoding/.worktrees/bugfix-WI-559-review-dispatch-adapter/scripts/resolve-execute-dispatch.mjs'
+[90m    at Module._resolveFilename (node:internal/modules/cjs/loader:1421:15)[39m
+[90m    at defaultResolveImpl (node:internal/modules/cjs/loader:1059:19)[39m
+[90m    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1064:22)[39m
+[90m    at Module._load (node:internal/modules/cjs/loader:1227:37)[39m
+[90m    at TracingChannel.traceSync (node:diagnostics_channel:328:14)[39m
+[90m    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)[39m
+[90m    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)[39m
+[90m    at node:internal/main/run_main_module:33:47[39m {
+  code: [32m'MODULE_NOT_FOUND'[39m,
+  requireStack: []
+}
+
+Node.js v24.13.0
+<anonymous_script>:1
+
+
+SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>)
+    at [eval]:1:14
+[90m    at runScriptInThisContext (node:internal/vm:219:10)[39m
+[90m    at node:internal/process/execution:451:12[39m
+    at [eval]-wrapper:6:24
+[90m    at runScriptInContext (node:internal/process/execution:449:60)[39m
+[90m    at evalFunction (node:internal/process/execution:283:30)[39m
+[90m    at evalTypeScript (node:internal/process/execution:295:3)[39m
+[90m    at node:internal/main/eval_string:71:3[39m
+
+Node.js v24.13.0
+  ✗ named WI-SCOUT-CAPTURE-DURABILITY-01 binds exactly
+node:internal/modules/cjs/loader:1424
+  throw err;
+  ^
+
+Error: Cannot find module '/home/dianast/app-workspaces/seriousvibecoding/.worktrees/bugfix-WI-559-review-dispatch-adapter/scripts/resolve-execute-dispatch.mjs'
+[90m    at Module._resolveFilename (node:internal/modules/cjs/loader:1421:15)[39m
+[90m    at defaultResolveImpl (node:internal/modules/cjs/loader:1059:19)[39m
+[90m    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1064:22)[39m
+[90m    at Module._load (node:internal/modules/cjs/loader:1227:37)[39m
+[90m    at TracingChannel.traceSync (node:diagnostics_channel:328:14)[39m
+[90m    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)[39m
+[90m    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)[39m
+[90m    at node:internal/main/run_main_module:33:47[39m {
+  code: [32m'MODULE_NOT_FOUND'[39m,
+  requireStack: []
+}
+
+Node.js v24.13.0
+<anonymous_script>:1
+
+
+SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>)
+    at [eval]:1:14
+[90m    at runScriptInThisContext (node:internal/vm:219:10)[39m
+[90m    at node:internal/process/execution:451:12[39m
+    at [eval]-wrapper:6:24
+[90m    at runScriptInContext (node:internal/process/execution:449:60)[39m
+[90m    at evalFunction (node:internal/process/execution:283:30)[39m
+[90m    at evalTypeScript (node:internal/process/execution:295:3)[39m
+[90m    at node:internal/main/eval_string:71:3[39m
+
+Node.js v24.13.0
+  ✗ structured Work item header binds
+  ✗ missing WI exits 4 with zero provider calls
+  ✗ two distinct WIs exit 4 and name both candidates
+  ✗ branch/manifest mismatch exits 4 before provider use
+  ✗ lowercase wi token is not a canonical candidate
+  ✗ two branch WI candidates exit 4
+
+=== review adapter selection ===
+  ✗ omitted mode uses owner default and makes exactly one fake reviewer call
+<anonymous_script>:1
+
+
+SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>)
+    at [eval]:1:38
+[90m    at runScriptInThisContext (node:internal/vm:219:10)[39m
+[90m    at node:internal/process/execution:451:12[39m
+    at [eval]-wrapper:6:24
+[90m    at runScriptInContext (node:internal/process/execution:449:60)[39m
+[90m    at evalFunction (node:internal/process/execution:283:30)[39m
+[90m    at evalTypeScript (node:internal/process/execution:295:3)[39m
+[90m    at node:internal/main/eval_string:71:3[39m
+
+Node.js v24.13.0
+  ✗ default-mode findings stay schema-valid with cursor host
+  ✗ explicit configured mode remains supported
+bash: line 1: call_count: command not found
+  ✗ unknown explicit mode fails closed with zero provider calls
+  ✗ explicit eligible fable station makes one Cursor call
+<anonymous_script>:1
+
+
+SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>)
+    at [eval]:1:38
+[90m    at runScriptInThisContext (node:internal/vm:219:10)[39m
+[90m    at node:internal/process/execution:451:12[39m
+    at [eval]-wrapper:6:24
+[90m    at runScriptInContext (node:internal/process/execution:449:60)[39m
+[90m    at evalFunction (node:internal/process/execution:283:30)[39m
+[90m    at evalTypeScript (node:internal/process/execution:295:3)[39m
+[90m    at node:internal/main/eval_string:71:3[39m
+
+Node.js v24.13.0
+  ✗ explicit fable findings host/family match invoked Cursor Anthropic tuple
+  ✗ explicit eligible sol station makes one Cursor call
+<anonymous_script>:1
+
+
+SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>)
+    at [eval]:1:38
+[90m    at runScriptInThisContext (node:internal/vm:219:10)[39m
+[90m    at node:internal/process/execution:451:12[39m
+    at [eval]-wrapper:6:24
+[90m    at runScriptInContext (node:internal/process/execution:449:60)[39m
+[90m    at evalFunction (node:internal/process/execution:283:30)[39m
+[90m    at evalTypeScript (node:internal/process/execution:295:3)[39m
+[90m    at node:internal/main/eval_string:71:3[39m
+
+Node.js v24.13.0
+  ✗ explicit sol findings host/family match invoked Cursor OpenAI tuple
+bash: line 1: call_count: command not found
+  ✗ wrong station fails closed with zero provider calls
+bash: line 1: call_count: command not found
+  ✗ optional/explicit-request station is rejected before provider invocation
+  ✗ numeric WI-559 review adapter binds and invokes once
+
+=== Cursor transport and receipt schema ===

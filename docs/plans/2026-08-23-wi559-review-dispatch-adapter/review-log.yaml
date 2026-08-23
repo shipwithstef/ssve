@@ -1,0 +1,82 @@
+review_kind: plan
+wi: WI-559
+plan: docs/plans/2026-08-23-wi559-review-dispatch-adapter/manifest.md
+rounds_run: 2
+unresolved_critical: 0
+remaining_high: 0
+terminal_state: DRAFTED
+convergence_required: true
+convergence_reason: Cross-runtime policy, provider transport, audit evidence, and commit enforcement change together.
+self_review_passes: 1
+self_review_digest: 0edbcac073a391f5c632437629c665cca02ff8716117c8ab0329871b730651ab
+tier1:
+  script: scripts/verify-plan-mechanical.sh
+  exit_code: 0
+  issues: 0
+canonical_tier2_attempt:
+  command: SVC_HOST=codex SVC_REVIEWER_MODE=mixed-grok-cursor SVC_REVIEWER_STATION=fable bash scripts/review-plan-codex.sh docs/plans/2026-08-23-wi559-review-dispatch-adapter/manifest.md
+  exit_code: 1
+  provider_invocations: 0
+  classification: internal_receipt_schema_failure
+  error: "$.requested_tuple: no anyOf branch matched"
+  disposition: bootstrap defect added to WI-559 scope; canonical promotion remains blocked until the repair is implemented
+bootstrap_adversarial_review:
+  transport: cursor-agent
+  model: claude-fable-5-thinking-high
+  mode: plan
+  sandbox: enabled
+  session_id: 999a4250-4179-46b0-948f-08bc3ece22ea
+  rubric_score: 6
+  verdict: fail
+  findings:
+    - id: F-001
+      severity: critical
+      claim: findings schema also rejects Cursor host and was absent from the file census
+    - id: F-002
+      severity: high
+      claim: amended Cursor CLI contract lacked installed capability evidence
+    - id: F-003
+      severity: medium
+      claim: Cursor positive model-attestation floor and host-family constraints were ambiguous
+    - id: F-004
+      severity: medium
+      claim: contract map omitted the newly discovered Cursor transport boundary
+    - id: F-005
+      severity: low
+      claim: probe wording and Grok single-use flag traceability were inconsistent
+responses:
+  - finding_id: F-001
+    decision: ACCEPT
+    justification: Both canonical findings and receipt schemas participate in authorization, so both must represent the exact selected Cursor host.
+    action: Added the findings schema to T2 and required end-to-end findings validation in the hermetic Cursor cases.
+  - finding_id: F-002
+    decision: ACCEPT
+    justification: Installed transport capability is volatile and cheap to prove before dispatch.
+    action: Recorded version, help, authentication, bounded flags, and forbidden approval modes in research, probes, and the contract map.
+  - finding_id: F-003
+    decision: PARTIAL
+    justification: The attestation gap is valid, but protected policy proves Cursor carries both Anthropic Fable and OpenAI Sol review stations, so an Anthropic-only pairing would incorrectly reject an authorized station.
+    accepted_part: Cursor success must require requested_accepted or stronger attestation and reject level none.
+    rejected_part: Cursor may pair only with Anthropic.
+    counter_proposal: Permit only the protected review pairs Cursor+Anthropic and Cursor+OpenAI; require exact findings host/family match and requested_accepted or stronger attestation.
+    counter_evidence: ~/.svc/dispatch-policy.json mixed-grok-cursor plan stations fable and sol-high
+  - finding_id: F-004
+    decision: ACCEPT
+    justification: The contract map must cover every cross-system authority boundary introduced by the design.
+    action: Added Cursor invariant, falsification, and old/new-path rows.
+  - finding_id: F-005
+    decision: ACCEPT
+    justification: Exact flag traceability prevents a green AC that omits a blueprint-mandated containment flag.
+    action: Unified the Cursor probe set and added --single to AC-559-5.
+lens_rechecks:
+  - lens: cursor_schema_transport_authority
+    reviewer: claude-fable-5-thinking-high
+    session_id: 999a4250-4179-46b0-948f-08bc3ece22ea
+    relevant_digest: 2a3226479a52035ecabe832f94c4b1b0aff7011948f724f4eaed81a803e57610
+    prior_finding_ids: [F-001, F-002, F-003, F-004, F-005]
+    verdict: pass
+    resolved: [F-001, F-002, F-003, F-004, F-005]
+    residual:
+      severity: low
+      claim: Implementation Summary still denied a findings-schema change.
+      disposition: accepted and corrected before bootstrap dispatch.

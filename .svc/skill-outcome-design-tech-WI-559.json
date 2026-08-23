@@ -1,0 +1,29 @@
+{
+  "skill_outcome": {
+    "skill": "design-tech",
+    "status": "pass",
+    "signals_added": [
+      "cross-system-suspected"
+    ],
+    "artifacts_produced": [
+      "docs/specs/tech/WI-559.md",
+      "docs/specs/decisions/WI-559.md",
+      "docs/specs/contract-maps/review-to-execute-dispatch.md",
+      "docs/specs/test-evidence/WI-559/design-capability-probes.json"
+    ],
+    "validator_proof": ".svc/wi559-g4-self-verify.log",
+    "graph_mutations_requested": [
+      {
+        "action": "escalate_review",
+        "target": "review-cross-model",
+        "signal": "cross-system-suspected",
+        "reason": "The iteration-cap validator requires diagnosis and contract-map review before execution.",
+        "affected_evidence_families": [
+          "cross-system"
+        ],
+        "validator_proof": "node scripts/check-cross-system-iteration-cap.mjs --lane-tasks .svc/lane-tasks-WI-559.json"
+      }
+    ],
+    "closeout_impact": "blocked"
+  }
+}

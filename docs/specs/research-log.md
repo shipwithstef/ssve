@@ -369,3 +369,30 @@ The best-fit design is therefore one pure classifier for completed registry-skil
 **As-of date:** 2026-08-15
 **Re-verify after:** any Codex collaboration tool-schema, hook API, or contained-child transport change.
 **Version-specific:** Codex CLI 0.147.0 and the active 2026-08-15 collaboration tool schema.
+
+## 2026-08-23: Cursor effort and workspace are explicit review authority inputs
+
+**Asked by:** WI-559 Sol High final-tree review
+**Context:** The first local Cursor transport passed the selected base model but
+only copied `effort: high` into receipts and inherited the caller's working
+directory.
+
+**Finding:** The installed `cursor-agent --help` documents parameterized models
+such as `model[effort=high]` and an explicit `--workspace <path-or-name>` flag.
+The canonical transport must therefore invoke
+`--model <base-model>[effort=<resolved-effort>] --workspace <context-root>`.
+Recording the effort without passing it is not exact tuple enforcement. The
+same local capability surface retains `--print`, JSON output, plan mode, and the
+enabled sandbox, so the review package remains stdin-only and read-only.
+
+**Source(s):**
+
+- Installed `cursor-agent --help` on 2026-08-23 [T1 installed CLI authority]
+- `scripts/run-external-review.mjs` and the WI-559 convergence fixture [T1 local executable contract]
+- `.svc/external-review-artifacts/cross-model/wi559-bootstrap-final-sol-r3/` [T1 preserved independent review evidence]
+
+**Confidence:** high
+**Volatility:** volatile across Cursor Agent CLI releases.
+**As-of date:** 2026-08-23
+**Re-verify after:** any Cursor Agent upgrade or review transport change.
+**Version-specific:** installed Cursor Agent reported `2026.08.11-e8db854` in the hermetic capability contract; live help was re-read on 2026-08-23.
