@@ -122,6 +122,19 @@ When ANY external service fails due to infrastructure/credit/billing (NOT code q
 Detection: steps=[], HTTP 402/403/429, quota exceeded, billing, capacity, runner allocation failed.
 Never falls back for: actual test failures, lint errors, type errors, security findings.
 
+## WI-557-v2 Governance Speed Pass Completion (2026-08-23)
+
+Repaired the 10 tier-1 regressions introduced by WI-556/557 and shipped two efficiency items:
+
+- **cognitive-family.mjs repaired** — pattern table now matches via `RegExp.test` (the prior `includes(pattern.source)` literal match never fired for alternations) and unknown hosts resolve to strict `"unknown"` (Gemini G6#4 fail-closed fence restored). Fixes receipt-tier, retroactive + consumer-retroactive attestation validators.
+- **Mid-execution gate retirement pinned in validators** — validate-git-hooks-installed (REQUIRED/REMOVED slot lists), validate-impact-triad (slot absent by design; auto-receipt.mjs is the generator), install-git-hooks REQUIRED_SLOTS repointed to the surviving quick-fix slot, validate-risk-triggered-contracts AC-553-5 flipped to boundary-enforcement expectations.
+- **Pre-push HEAD-only model pinned** — validate-svc-reconcile-golden asserts exactly one `check-chain-receipts.mjs --sha` invocation and no `--range`; validate-tier1-pre-push-gate matches the new `EVALS=0 SVC_TIER1_MODE=focused timeout` invocation.
+- **state-io discipline** — scripts/auto-receipt.mjs writes receipts via `writeJsonAtomic`, not raw `fs.writeFileSync`.
+- **FP-030 surface-scoped runner** — `run-all-evals.sh --surface <path>` selects only contract-mapped validators (selector: `selectTier1ValidatorsForSurfaces`); unmatched surfaces select nothing instead of failing open to full; full suite remains the CP-PRELAND gate.
+- **FP-029 AC-table authoring gate** — write-spec Self-Verify check #12 runs `normalize-ac-table.mjs acSignatures`; a malformed AC section fails at authoring time instead of failing later at plan-changeset digest binding.
+
+Full tier-1 after fixes: 316 passed / 19 failed — every failure present at base commit 75986ebe (environmental/session-state), zero new failures vs base.
+
 ## Blend History
 
 | Source | Date | Patterns taken | Key additions |

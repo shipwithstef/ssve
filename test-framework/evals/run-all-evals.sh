@@ -17,6 +17,28 @@ echo "  $(date -Iseconds)"
 echo "============================================"
 echo ""
 
+# FP-030: surface-scoped run — --surface <path> (repeatable/comma-separated)
+# restricts the sweep to validators whose contract inputs fall under the given
+# prefixes. The FULL suite remains the CP-PRELAND gate; surfaces are for fast,
+# targeted iteration. Explicit --surface takes precedence over SVC_TIER1_MODE.
+TIER1_SURFACES=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --tier1)
+      # Backward compat: tier-1 is already the suite default (WI-358 gate and
+      # older docs pass it explicitly). Accepted and ignored.
+      shift ;;
+    --surface)
+      [[ -n "${2:-}" ]] || { echo "FAIL: --surface requires a path argument" >&2; exit 2; }
+      IFS=',' read -r -a _parts <<< "$2"
+      TIER1_SURFACES+=("${_parts[@]}")
+      shift 2 ;;
+    *)
+      echo "FAIL: unknown argument $1 (supported: --surface <path>)" >&2
+      exit 2 ;;
+  esac
+done
+
 TIER1_PASS=0
 TIER1_FAIL=0
 TIER1_TIMEOUT=0
@@ -90,6 +112,31 @@ TIER1_ALL=()
 for script in "$SCRIPT_DIR/tier-1"/*.sh;  do [[ -f "$script" ]] && TIER1_ALL+=("$script"); done
 for script in "$SCRIPT_DIR/tier-1"/*.mjs; do [[ -f "$script" ]] && TIER1_ALL+=("$script"); done
 
+if [[ ${#TIER1_SURFACES[@]} -gt 0 ]]; then
+  SELECTOR="$SCRIPT_DIR/../../scripts/select-tier1-validators-v2.mjs"
+  SURFACE_FILE="$TIER1_RESULTS_DIR/surface-validators.txt"
+  if node "$SELECTOR" --repo-root "$SCRIPT_DIR/../.." --format lines --surface "$(IFS=,; printf '%s' "${TIER1_SURFACES[*]}")" > "$SURFACE_FILE"; then
+    # Zero RUNNABLE matches = typo'd surface. Count validators that exist on
+    # disk AND were selected (raw selector output can name a validator file
+    # that was renamed/deleted); the auto-added selector never counts.
+    TIER1_SURFACE=()
+    for script in "${TIER1_ALL[@]}"; do
+      name="$(basename "$script")"
+      if grep -qxF "$name" "$SURFACE_FILE"; then TIER1_SURFACE+=("$script"); fi
+    done
+    if [[ ${#TIER1_SURFACE[@]} -eq 0 ]]; then
+      echo "FAIL: surface(s) [${TIER1_SURFACES[*]}] matched zero runnable contract validators — typo? Surfaces must be repo paths that appear in the selector contract table (directory prefixes recommended)." >&2
+      exit 2
+    fi
+    TIER1_SURFACE+=("$SCRIPT_DIR/tier-1/validate-tier1-selector-v2.mjs")
+    echo "  surface scope: ${#TIER1_SURFACE[@]} validator(s) for ${#TIER1_SURFACES[@]} surface(s)"
+    TIER1_ALL=("${TIER1_SURFACE[@]}")
+  else
+    echo "FAIL: surface selector errored — refusing to fall open to full sweep" >&2
+    exit 2
+  fi
+fi
+
 # Controller v2 focused mode is opt-in until the historical replay/default-cutover
 # gate passes. Unknown inputs and changes to the runner/global manifests fail
 # closed to the complete legacy sweep. Default behavior remains byte-for-byte
@@ -102,14 +149,29 @@ fi
 if [[ "$SVC_TIER1_MODE" == "focused" ]]; then
   SELECTOR="$SCRIPT_DIR/../../scripts/select-tier1-validators-v2.mjs"
   SELECTION_FILE="$TIER1_RESULTS_DIR/selected-validators.txt"
-  if node "$SELECTOR" --repo-root "$SCRIPT_DIR/../.." --format lines > "$SELECTION_FILE"; then
+  CHANGED_ARGS=()
+  if [[ -n "${SVC_TIER1_CHANGED_FILES:-}" && -f "$SVC_TIER1_CHANGED_FILES" ]]; then
+    # WI-557-v2: the pre-push gate hands us the PUSHED-RANGE file list; without
+    # this, a clean post-commit working tree selects zero validators and the
+    # suite would green-light a push without running anything.
+    CHANGED_JSON="$(node -e 'const fs=require("fs");const list=[...new Set(fs.readFileSync(process.argv[1],"utf8").split(/\r?\n/).filter(Boolean))];process.stdout.write(JSON.stringify(list))' "$SVC_TIER1_CHANGED_FILES")"
+    CHANGED_ARGS=(--changed-json "$CHANGED_JSON")
+    echo "  focused selector: using pushed-range change list ($(wc -l < "$SVC_TIER1_CHANGED_FILES") files)"
+  fi
+  if node "$SELECTOR" --repo-root "$SCRIPT_DIR/../.." --format lines "${CHANGED_ARGS[@]}" > "$SELECTION_FILE"; then
     if ! grep -qxF '__FULL__' "$SELECTION_FILE"; then
       TIER1_FOCUSED=()
       for script in "${TIER1_ALL[@]}"; do
         if grep -qxF "$(basename "$script")" "$SELECTION_FILE"; then TIER1_FOCUSED+=("$script"); fi
       done
+      if [[ ${#TIER1_FOCUSED[@]} -eq 0 ]]; then
+        # Fail-closed: an empty closure with no explicit fallback reason means we
+        # know nothing about what changed — run everything.
+        echo "  focused selector: empty closure — failing closed to full sweep" >&2
+      else
       TIER1_ALL=("${TIER1_FOCUSED[@]}")
       echo "  focused selector: exact contract closure (${#TIER1_ALL[@]} validators)"
+      fi
     else
       echo "  focused selector: unknown/global input -> full sweep"
     fi

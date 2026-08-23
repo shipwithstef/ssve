@@ -1,10 +1,13 @@
-// cognitive-family — dynamic host-to-family mapping (WI-385).
+// cognitive-family — pattern-based host-to-family mapping (WI-385, repaired WI-557-v2).
 //
-// Multi-model harnesses (cursor, opencode, kimi) intentionally resolve to
-// their RAW host string, NOT to a model family. Their effective family comes
-// from the dispatch policy tuple, trusted because operator-configured.
-// This prevents independence laundering where a harness running the same
-// provider as the orchestrator counts as "different-family".
+// Any host string is schema-valid; the family used by the independence fence is
+// derived MECHANICALLY from the host string via ordered patterns. Adding a new
+// provider = adding one line to FAMILY_PATTERNS.
+//
+// Gemini G6 #4 (fail-closed fence): an unrecognized host resolves to "unknown",
+// which can NEVER satisfy crossFamily — a reviewer whose family cannot be
+// derived is not provably independent. The earlier raw-string fallback let an
+// unknown pairing read as cross-family and slipped the fence.
 const FAMILY_PATTERNS = [
   [/claude|anthropic/, "anthropic"],
   [/codex|openai/, "openai"],
@@ -15,9 +18,9 @@ export function familyOf(host) {
   const h = String(host || "").trim().toLowerCase();
   if (!h) return "unknown";
   for (const [pattern, family] of FAMILY_PATTERNS) {
-    if (h.includes(pattern.source)) return family;
+    if (pattern.test(h)) return family;
   }
-  return h; // unknown hosts resolve to own name — always cross-family vs known families
+  return "unknown";
 }
 export function crossFamily(authorHost, reviewerHost) {
   const a = familyOf(authorHost);

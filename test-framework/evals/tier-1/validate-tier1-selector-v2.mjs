@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
-import { selectTier1Validators } from "../../../scripts/select-tier1-validators-v2.mjs";
+import { selectTier1Validators, selectTier1ValidatorsForSurfaces } from "../../../scripts/select-tier1-validators-v2.mjs";
 
 let passed = 0;
 function check(name, fn) {
@@ -194,6 +194,40 @@ check("empty change set schedules no repeated proof", () => {
   assert.equal(result.valid, true);
   assert.equal(result.fallback_full, false);
   assert.deepEqual(result.selected, []);
+});
+
+// FP-030 surface mode: pure contract matches — the runner owns appending
+// validate-tier1-selector-v2.mjs and treating an empty scope as a loud failure.
+check("surface exact file selects its owning contracts and nothing else", () => {
+  const result = selectTier1ValidatorsForSurfaces(["concerns/REGISTRY.json"]);
+  assert.equal(result.valid, true);
+  assert.equal(result.fallback_full, false);
+  assert.deepEqual(result.selected, ["validate-concern-compiler-v2.mjs"]);
+});
+
+check("surface directory prefix selects every contract under the tree", () => {
+  const result = selectTier1ValidatorsForSurfaces(["schemas/"]);
+  for (const expected of ["validate-execution-controller-v2.mjs", "validate-product-proof-compiler-v2.mjs", "validate-review-topology-v2.mjs"]) {
+    assert.ok(result.selected.includes(expected), `missing ${expected} under schemas/ prefix`);
+  }
+  assert.ok(!result.selected.includes("validate-concern-compiler-v2.mjs"), "concerns/REGISTRY.json must not match a schemas/ prefix");
+});
+
+check("surface prefix does not leak sibling contracts outside the prefix", () => {
+  const result = selectTier1ValidatorsForSurfaces(["schemas/execution-task-capsule-v2.schema.json"]);
+  assert.ok(!result.selected.includes("validate-concern-compiler-v2.mjs"));
+  assert.ok(result.selected.includes("validate-execution-controller-v2.mjs"));
+});
+
+check("surface with no contract match returns an EMPTY selection (runner fails loudly)", () => {
+  const result = selectTier1ValidatorsForSurfaces(["no/such/tree.mjs"]);
+  assert.equal(result.valid, true);
+  assert.deepEqual(result.selected, []);
+});
+
+check("surface traversal attempt is rejected rather than widened", () => {
+  const result = selectTier1ValidatorsForSurfaces(["../outside/repo"]);
+  assert.equal(result.valid, false);
 });
 
 if (process.exitCode) process.stderr.write(`tier1 selector v2: ${passed} passed, failures present\n`);

@@ -185,6 +185,7 @@ Before declaring done, verify:
 | 9 | Pillars Coverage Matrix present and complete | grep for "## Pillars Coverage Matrix" section in spec + verify all 8 pillars populated with explicit state (`[NEW]`, `[UPDATED]`, `[UNCHANGED — VERIFIED]`, or `[N/A — justified]`). No blank cells, no TODO, no "skipped". See `references/pillars-coverage-matrix.md`. | |
 | 10 | Task graph written | `test -f .svc/lane-tasks-<WI>.json` — file must exist with Task {T} entry and process_tasks | |
 | 11 | All process tasks completed | In lane-tasks-<WI>.json, all 10 `write-spec|*` process_tasks must have `status: "completed"` | |
+| 12 | AC table is machine-parseable (FP-029) | `node --input-type=module -e "import{acSignatures}from './scripts/lib/normalize-ac-table.mjs';import fs from'node:fs';const sigs=acSignatures(fs.readFileSync('docs/specs/features/<name>.md','utf8'));if(!sigs.length){console.error('no parseable AC signatures');process.exit(1)}console.log(sigs.length+' ACs bound')"` — a malformed AC section (missing table/checklist rows, wrong heading) yields zero signatures and FAILS here at authoring time instead of failing later at plan-changeset digest binding | |
 
 If any check FAILs, fix before continuing. If a fix requires upstream changes, stop and report.
 

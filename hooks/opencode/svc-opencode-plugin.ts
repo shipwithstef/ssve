@@ -49,6 +49,57 @@ function makeRelative(filePath: string): string {
   return filePath;
 }
 
+// ── svc-skill-artifact-authenticity (G-4, ported from hooks/svc-skill-artifact-authenticity.mjs) ──
+// Path → required-skill mapping. Prefix match unless exact: true.
+const SKILL_OUTPUT_PATHS: Array<{ match: string; skills: string[]; exact?: boolean }> = [
+  { match: "docs/specs/features/", skills: ["validate-feature", "write-spec"] },
+  { match: "docs/specs/design-ux/", skills: ["design-ux"] },
+  { match: "docs/specs/design-ui/", skills: ["design-ui"] },
+  { match: "docs/specs/design-tech/", skills: ["design-tech"] },
+  { match: "docs/specs/plans/", skills: ["plan-changeset"] },
+  { match: "docs/specs/decisions/", skills: ["strategic-decision", "explore-solutions", "decide"] },
+  { match: "docs/specs/coverage-audit.md", skills: ["audit-coverage"], exact: true },
+  { match: "docs/specs/capability-plan.md", skills: ["plan-capabilities"], exact: true },
+  { match: "docs/specs/personas/", skills: ["build-personas"] },
+  { match: "docs/specs/journeys/", skills: ["write-journeys"] },
+  { match: "docs/specs/research-log.md", skills: ["research"], exact: true },
+  // Framework-critical files
+  { match: "skills-manifest.json", skills: ["plan-changeset", "improve-framework", "evolve-framework", "create-skill"], exact: true },
+  { match: "REPO_MODES.md", skills: ["plan-changeset", "improve-framework", "evolve-framework"], exact: true },
+  { match: "EXTERNAL_ADDONS.md", skills: ["plan-changeset", "improve-framework", "evolve-framework"], exact: true },
+  { match: "DOCTRINE.md", skills: ["plan-changeset", "improve-framework", "evolve-framework"], exact: true },
+  { match: "FRAMEWORK-STATE.md", skills: ["plan-changeset", "improve-framework", "evolve-framework"], exact: true },
+  { match: "AGENTS.md", skills: ["plan-changeset", "improve-framework", "evolve-framework"], exact: true },
+  { match: "skills/route-workflow/SKILL.md", skills: ["route-workflow", "improve-framework", "evolve-framework"], exact: true },
+  { match: "references/routing-rules.md", skills: ["route-workflow", "improve-framework", "evolve-framework"], exact: true },
+  { match: "references/lane-model.md", skills: ["improve-framework", "evolve-framework"], exact: true },
+  { match: "references/intent-routing.md", skills: ["route-workflow", "improve-framework", "evolve-framework"], exact: true },
+];
+
+function findArtifactRule(rel: string): { match: string; skills: string[] } | null {
+  for (const r of SKILL_OUTPUT_PATHS) {
+    if (r.exact) { if (rel === r.match) return r; }
+    else if (rel.startsWith(r.match)) return r;
+  }
+  return null;
+}
+
+function checkSkillReceipt(directory: string, skills: string[]): boolean {
+  const windowMin = Number.parseInt(process.env.SVC_SKILL_RECEIPT_WINDOW_MIN || "90", 10);
+  const cutoff = Date.now() - windowMin * 60 * 1000;
+  const decisionsPath = path.join(directory, ".svc", "pipeline-decisions.jsonl");
+  let entries: Array<Record<string, unknown>> = [];
+  try {
+    entries = fs.readFileSync(decisionsPath, "utf8").trim().split("\n").filter(Boolean).flatMap((line) => {
+      try { return [JSON.parse(line)]; } catch { return []; }
+    });
+  } catch { return false; }
+  return [...entries].reverse().some((entry) => {
+    const ts = Date.parse(String(entry.timestamp || ""));
+    return Number.isFinite(ts) && ts >= cutoff && typeof entry.skill === "string" && skills.includes(entry.skill);
+  });
+}
+
 function matchesAny(relativePath: string, patterns: RegExp[]): boolean {
   return patterns.some((pattern) => pattern.test(relativePath));
 }

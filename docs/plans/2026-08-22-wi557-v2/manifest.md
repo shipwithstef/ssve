@@ -1,13 +1,6 @@
 # svc Framework — Improvement Backlog
 
-## LANDED: WI-557-v2 Governance Speed Pass Completion (2026-08-23)
-
-Branch WI-557-v2 squash-merged to main. Results:
-
-- 10/10 tier-1 regressions fixed (see table below); validate-worktree-safety was already passing.
-- FP-030 surface-scoped runner implemented (`run-all-evals.sh --surface`, selector `selectTier1ValidatorsForSurfaces`).
-- FP-029 AC-table gate wired into write-spec Self-Verify #12 via normalize-ac-table acSignatures.
-- Final tier-1: 316 passed / 19 failed — all 19 failures also fail at base commit 75986ebe (pre-existing environmental), zero NEW failures vs base.
+## ACTIVE: WI-557-v2 Governance Speed Pass Completion
 
 **Branch:** WI-557-governance-speed-pass-v2 (worktree exists)
 **Scope:** Fix ~8 validator regressions from WI-556/557 hook deletions + schema enum removals + implement FP-030 surface-scoped runner + FP-029 AC-table gate
