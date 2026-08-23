@@ -39,6 +39,7 @@ pass() { PASS=$((PASS+1)); echo "  ok $1"; }
 fail() { FAIL=$((FAIL+1)); echo "  FAIL $1"; }
 
 REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+. "$REPO_ROOT/test-framework/evals/tier-1/lib/stage-governed-hooks.sh"; STAGE_HOOKS_REPO="$REPO_ROOT"
 echo "=== Tier 1: all-host install migration (WI-487 + round-2 coverage) ==="
 
 if [ ! -f "$REPO_ROOT/scripts/svc-migrate-install.mjs" ]; then
@@ -74,6 +75,7 @@ cp "$REPO_ROOT/hooks/lib/task-state-compatibility.mjs" "$SRC/hooks/lib/"
 cp "$REPO_ROOT/hooks/lib/svc-runtime-root.mjs" "$SRC/hooks/lib/"
 cp "$REPO_ROOT/hooks/svc-task-completion-guard.sh" "$SRC/hooks/"; chmod +x "$SRC/hooks/svc-task-completion-guard.sh"
 cp "$REPO_ROOT/hooks/kimi/svc-kimi-task-completion-guard.sh" "$SRC/hooks/kimi/"; chmod +x "$SRC/hooks/kimi/svc-kimi-task-completion-guard.sh"
+stage_governed_bash_hooks "$SRC"
 cp "$REPO_ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs" "$SRC/hooks/codex/" 2>/dev/null || true
 cp "$REPO_ROOT"/hooks/opencode/*.ts "$SRC/hooks/opencode/" 2>/dev/null || true
 cp "$REPO_ROOT/scripts/svc-migrate-install.mjs" "$SRC/scripts/"
@@ -359,7 +361,9 @@ node -e '
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "svc-r3f002-anc-"));
     const mid = path.join(root, "mid"); const leaf = path.join(mid, "leaf");
     fs.mkdirSync(leaf, { recursive: true });
-    fs.chmodSync(root, 0o700); fs.chmodSync(leaf, 0o700);
+    // Umask-proof the fixture: recursive creation can leave `mid` group-writable
+    // under umask 0002; the SECURE baseline must be explicitly non-writable.
+    fs.chmodSync(root, 0o700); fs.chmodSync(mid, 0o755); fs.chmodSync(leaf, 0o700);
     // Secure chain passes.
     let ok1=false; try { core.assertSecureAncestry(leaf, root); ok1=true; } catch {}
     // Make the middle component group/other-writable → must throw.

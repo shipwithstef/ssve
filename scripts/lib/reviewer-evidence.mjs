@@ -157,9 +157,12 @@ export function verifyReviewerEvidence({ root = process.cwd(), reviewKind, body 
       if (!sameJson(receipt.reviewer_run?.commands, attemptCommands)) reasons.push(`launcher reviewer_run commands do not match attempts: ${entry.path}`);
       launcherCommands.push(...(receipt.reviewer_run?.commands || []));
       launcherOutputs.push(...(receipt.reviewer_run?.output_artifacts || []).map((value) => artifactDigest(repository, value)));
-      const receiptFile = bytes ? { absolute: entry.path, bytes } : null;
+      // 7bca62f regression: receiptPath must remain a STRING. bytesOrFile()
+      // prefers the explicit bytes, but externalReviewProvenanceRoot() derives
+      // the issuance root only from a string path — an object hint silently
+      // falls back to ~/.svc and ENOENTs on per-repo fixture issuance.
       verifyExternalReviewProvenance({
-        receiptPath: receiptFile,
+        receiptPath: path.resolve(repository, entry.path),
         receiptBytes: bytes,
         packagePath: packageArtifact.absolute,
         packageBytes: packageArtifact.bytes,

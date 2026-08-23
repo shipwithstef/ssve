@@ -155,7 +155,9 @@ expect "valid fresh foreign claim prevents plain continuation theft" bash -c "te
 rm -f "$CLAIMS/WI-485.claim.json"
 
 mkdir -m 755 "$TMP/home-cache"
-expect "home fallback accepts conventional shared cache parent" env -u XDG_RUNTIME_DIR -u SVC_CODEX_RUNTIME_DIR HOME="$TMP/home" bash -c "mkdir -p '$TMP/home/.cache'; chmod 755 '$TMP/home/.cache'; node --input-type=module -e 'import {runtimeRoot} from \"$ROOT/hooks/codex/lib/codex-hook-context.mjs\"; const root=runtimeRoot({}); process.exit(root.endsWith(\"/.cache/svc-codex-runtime\")?0:1)'"
+# Umask-proof the fixture HOME: `mkdir -p` yields 0775 under umask 0002 and the
+# runtime-root ancestor check would reject a group-writable HOME outright.
+expect "home fallback accepts conventional shared cache parent" env -u XDG_RUNTIME_DIR -u SVC_CODEX_RUNTIME_DIR HOME="$TMP/home" bash -c "mkdir -p '$TMP/home/.cache'; chmod 755 '$TMP/home'; chmod 755 '$TMP/home/.cache'; node --input-type=module -e 'import {runtimeRoot} from \"$ROOT/hooks/codex/lib/codex-hook-context.mjs\"; const root=runtimeRoot({}); process.exit(root.endsWith(\"/.cache/svc-codex-runtime\")?0:1)'"
 mkdir -p "$TMP/consumer/skills/execute-changeset" "$TMP/installed/execute-changeset"
 printf '%s\n' 'consumer-local must not execute' > "$TMP/consumer/skills/execute-changeset/SKILL.md"
 printf '%s\n' 'installed consumer skill' > "$TMP/installed/execute-changeset/SKILL.md"

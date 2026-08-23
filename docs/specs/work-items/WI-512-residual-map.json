@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "wi": "WI-512",
+  "source_proposal": "proposals/done/2026-08-02-one-lane-framework.md",
+  "status": "implemented",
+  "coverage": [
+    {
+      "proposal_item": "One-lane execution model adopted framework-wide (batches B1-B4)",
+      "status": "covered",
+      "evidence": [
+        "skills/route-workflow/SKILL.md",
+        ".svc/lane-tasks-WI-512.json"
+      ],
+      "note": "Executed on branch wi512-one-lane-batch and landed; residual scope tracked in the WI doc."
+    },
+    {
+      "proposal_item": "Promote align-feature / audit-feature / decide out of the product repo",
+      "status": "superseded",
+      "evidence": [
+        "docs/specs/work-items/WI-512.md"
+      ],
+      "note": "Product-repo skill promotion is owned by the example-marketplace promotion track, not this framework WI."
+    }
+  ],
+  "source_proposals": [
+    "proposals/done/2026-08-02-one-lane-framework.md",
+    "proposals/done/2026-07-24-session-019f8cd3-audit-and-svc-framework-fixes.md"
+  ]
+}

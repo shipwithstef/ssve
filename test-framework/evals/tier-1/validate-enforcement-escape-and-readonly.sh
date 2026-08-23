@@ -48,17 +48,17 @@ if [ -s "$HOMEDIR/.svc/break-glass-audit.jsonl" ] && \
   ok "bypass appended a parseable audit row"
 else bad "no parseable audit row written"; fi
 
-mkdir -p "$HOMEDIR/.svc"; : > "$HOMEDIR/.svc/BREAK-GLASS"
+mkdir -p "$HOMEDIR/.svc"; : > "$HOMEDIR/.svc/BREAK-GLASS"; chmod 600 "$HOMEDIR/.svc/BREAK-GLASS"
 armed "$(fire)" && ok "fresh file marker bypasses" || bad "fresh file marker did not bypass"
 
 touch -d '25 hours ago' "$HOMEDIR/.svc/BREAK-GLASS"
 armed "$(fire SVC_BREAK_GLASS_TTL_HOURS=4)" && bad "EXPIRED marker still bypassed (fail-open)" || ok "expired marker fails safe"
 
-rm -f "$HOMEDIR/.svc/BREAK-GLASS"; : > "$HOMEDIR/.svc/real-marker"
+rm -f "$HOMEDIR/.svc/BREAK-GLASS"; : > "$HOMEDIR/.svc/real-marker"; chmod 600 "$HOMEDIR/.svc/real-marker"
 ln -s "$HOMEDIR/.svc/real-marker" "$HOMEDIR/.svc/BREAK-GLASS"
 armed "$(fire)" && bad "symlink marker accepted (R1-F002)" || ok "symlink marker refused"
 
-rm -f "$HOMEDIR/.svc/BREAK-GLASS"; : > "$HOMEDIR/.svc/BREAK-GLASS"; touch -d '30 days ago' "$HOMEDIR/.svc/BREAK-GLASS"
+rm -f "$HOMEDIR/.svc/BREAK-GLASS"; : > "$HOMEDIR/.svc/BREAK-GLASS"; chmod 600 "$HOMEDIR/.svc/BREAK-GLASS"; touch -d '30 days ago' "$HOMEDIR/.svc/BREAK-GLASS"
 armed "$(fire SVC_BREAK_GLASS_TTL_HOURS=999999)" && bad "unbounded TTL honored (marker never expires)" || ok "TTL clamped to a finite maximum"
 
 # R2-F002: a symlinked audit path must be REFUSED (not followed), and the refusal announced.

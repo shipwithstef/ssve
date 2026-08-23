@@ -35,6 +35,7 @@ pass() { PASS=$((PASS+1)); echo "  ok $1"; }
 fail() { FAIL=$((FAIL+1)); echo "  FAIL $1"; }
 
 REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+. "$REPO_ROOT/test-framework/evals/tier-1/lib/stage-governed-hooks.sh"; STAGE_HOOKS_REPO="$REPO_ROOT"
 echo "=== Tier 1: actionable hook denial + durable launcher fail-closed (WI-487) ==="
 
 # --- Red-first markers (fire only when the implementation is absent) -----------
@@ -68,6 +69,7 @@ chmod +x "$SRC/hooks/svc-task-completion-guard.sh"
 cp "$REPO_ROOT/scripts/svc-migrate-install.mjs" "$SRC/scripts/"
 cp "$REPO_ROOT/scripts/svc-runtime-root.mjs" "$SRC/scripts/"
 cp "$REPO_ROOT/provision/hosts/claude.json" "$SRC/provision/hosts/"
+stage_governed_bash_hooks "$SRC"
 
 # ---------------------------------------------------------------------------
 # Case A: materialize the launcher, DELETE the whole source checkout, then invoke
@@ -198,6 +200,7 @@ cp "$REPO_ROOT/hooks/svc-task-completion-guard.sh" "$SRC2/hooks/"; chmod +x "$SR
 cp "$REPO_ROOT/scripts/svc-migrate-install.mjs" "$SRC2/scripts/"
 cp "$REPO_ROOT/scripts/svc-runtime-root.mjs" "$SRC2/scripts/"
 cp "$REPO_ROOT/provision/hosts/claude.json" "$SRC2/provision/hosts/"
+stage_governed_bash_hooks "$SRC2"
 # Materialize the launcher for this fixture HOME (durable source), then wire the
 # REAL Claude host config through the launcher (wire-hooks resolves the launcher
 # from HOME and routes the governed Stop guard through it).
@@ -245,6 +248,7 @@ cp "$REPO_ROOT/hooks/svc-task-completion-guard.sh" "$SRC3/hooks/"; chmod +x "$SR
 cp "$REPO_ROOT/scripts/svc-migrate-install.mjs" "$SRC3/scripts/"
 cp "$REPO_ROOT/scripts/svc-runtime-root.mjs" "$SRC3/scripts/"
 cp "$REPO_ROOT/provision/hosts/claude.json" "$SRC3/provision/hosts/"
+stage_governed_bash_hooks "$SRC3"
 # Attacker-controlled "permissive" guard that would ALLOW if honored.
 printf '#!/usr/bin/env bash\necho "{\\"decision\\":\\"approve\\"}"\nexit 0\n' > "$ATTACK/hooks/svc-task-completion-guard.sh"
 chmod +x "$ATTACK/hooks/svc-task-completion-guard.sh"
@@ -267,6 +271,7 @@ SRC4="$(mktemp -d "$DURABLE_BASE/svc-wi487-forge-XXXXXX")"
 mkdir -p "$SRC4/bin" "$SRC4/hooks/lib" "$SRC4/scripts" "$SRC4/provision/hosts"
 cp "$REPO_ROOT/bin/svc-enforce.mjs" "$SRC4/bin/"; cp "$REPO_ROOT/hooks/lib/enforcement-core.mjs" "$SRC4/hooks/lib/"
 cp "$REPO_ROOT/scripts/svc-migrate-install.mjs" "$SRC4/scripts/"; cp "$REPO_ROOT/provision/hosts/claude.json" "$SRC4/provision/hosts/"
+stage_governed_bash_hooks "$SRC4"
 HOME="$FHOME7" node "$SRC4/scripts/svc-migrate-install.mjs" materialize --host claude --repo-root "$SRC4" --skills-path "$FHOME7/.claude/skills" >/dev/null 2>&1
 MANIFEST7="$FHOME7/.svc/enforcement/1/manifest.json"
 LAUNCHER7="$FHOME7/.svc/enforcement/1/bin/svc-enforce"

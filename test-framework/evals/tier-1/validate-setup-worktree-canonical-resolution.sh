@@ -13,6 +13,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+. "$REPO_ROOT/test-framework/evals/tier-1/lib/stage-governed-hooks.sh"; STAGE_HOOKS_REPO="$REPO_ROOT"
 SETUP="$REPO_ROOT/setup"
 EXPECTED_ROOT="$REPO_ROOT"
 if [[ "$REPO_ROOT" == *"/.worktrees/"* ]]; then
@@ -124,6 +125,7 @@ if [ -f "$REPO_ROOT/scripts/svc-migrate-install.mjs" ] && [ -f "$REPO_ROOT/bin/s
   cp "$REPO_ROOT/hooks/lib/enforcement-core.mjs" "$DSRC/hooks/lib/"
   cp "$REPO_ROOT/scripts/svc-migrate-install.mjs" "$DSRC/scripts/"
   cp "$REPO_ROOT/provision/hosts/claude.json" "$DSRC/provision/hosts/"
+  stage_governed_bash_hooks "$DSRC"
   # Durable materialization: launcher must be a COPIED real file, not a symlink.
   if HOME="$XHOME" node "$DSRC/scripts/svc-migrate-install.mjs" materialize --host claude --repo-root "$DSRC" --skills-path "$XHOME/.claude/skills" >/dev/null 2>&1; then
     LN="$XHOME/.svc/enforcement/1/bin/svc-enforce"
@@ -140,6 +142,9 @@ if [ -f "$REPO_ROOT/scripts/svc-migrate-install.mjs" ] && [ -f "$REPO_ROOT/bin/s
   mkdir -p "$ESRC/bin" "$ESRC/hooks/lib" "$ESRC/scripts" "$ESRC/provision/hosts"
   cp "$REPO_ROOT/bin/svc-enforce.mjs" "$ESRC/bin/"; cp "$REPO_ROOT/hooks/lib/enforcement-core.mjs" "$ESRC/hooks/lib/"
   cp "$REPO_ROOT/scripts/svc-migrate-install.mjs" "$ESRC/scripts/"; cp "$REPO_ROOT/provision/hosts/claude.json" "$ESRC/provision/hosts/"
+  # Stage the full governed hook surface so refusal is attributable to
+  # ephemerality alone, not to SVC-ENFORCE-HOOK-MODE.
+  stage_governed_bash_hooks "$ESRC"
   if HOME="$XHOME" node "$ESRC/scripts/svc-migrate-install.mjs" materialize --host claude --repo-root "$ESRC" --skills-path "$XHOME/.claude/skills" >/dev/null 2>&1; then
     echo "FAIL: materialize from an ephemeral (/tmp) source should be refused"; rm -rf "$DSRC" "$XHOME" "$ESRC"; exit 1
   else

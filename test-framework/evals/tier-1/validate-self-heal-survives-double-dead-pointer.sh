@@ -36,6 +36,7 @@ echo "=== Tier 1: self-heal survives double-dead-pointer (WI-134) ==="
 # no longer vanishes with the source). Self-contained + hermetic; a hard gate that
 # runs regardless of whether a real ~/.claude install exists. ---
 SELF487_REPO="$(cd "$(dirname "$0")/../../.." && pwd)"
+. "$SELF487_REPO/test-framework/evals/tier-1/lib/stage-governed-hooks.sh"; STAGE_HOOKS_REPO="$SELF487_REPO"
 if [ -f "$SELF487_REPO/bin/svc-enforce.mjs" ] && [ -f "$SELF487_REPO/scripts/svc-migrate-install.mjs" ] && command -v node >/dev/null 2>&1; then
   DBASE="${SVC_TEST_DURABLE_BASE:-$HOME/.cache}"; mkdir -p "$DBASE" 2>/dev/null || true
   DDP_SRC="$(mktemp -d "$DBASE/svc-wi487-ddp-XXXXXX")"
@@ -48,6 +49,7 @@ if [ -f "$SELF487_REPO/bin/svc-enforce.mjs" ] && [ -f "$SELF487_REPO/scripts/svc
   cp "$SELF487_REPO/scripts/svc-migrate-install.mjs" "$DDP_SRC/scripts/"
   cp "$SELF487_REPO/scripts/svc-runtime-root.mjs" "$DDP_SRC/scripts/"
   cp "$SELF487_REPO/provision/hosts/claude.json" "$DDP_SRC/provision/hosts/"
+  stage_governed_bash_hooks "$DDP_SRC"
   if ! HOME="$DDP_HOME" node "$DDP_SRC/scripts/svc-migrate-install.mjs" materialize --host claude --repo-root "$DDP_SRC" --skills-path "$DDP_HOME/.claude/skills" >/dev/null 2>&1; then
     echo "  ✗ WI-487: could not materialize launcher for deleted-checkout test"; rm -rf "$DDP_SRC" "$DDP_HOME"; exit 1
   fi

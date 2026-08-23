@@ -102,7 +102,10 @@ function breakGlassArmed() {
 function breakGlassAllow(hookId, event, armed) {
   try {
     const dir = path.join(os.homedir(), ".svc");
-    fs.mkdirSync(dir, { recursive: true });
+    // Explicit 0700: a default-mode creation under umask 0002 yields 0775 and
+    // the group-writable check below would reject our own directory. A
+    // pre-existing insecure directory is still refused, never chmod-healed.
+    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
     // R2-F002: the audit trail is evidence, so it must not be redirectable or
     // tamperable. Append with O_NOFOLLOW (a symlinked audit path is refused rather
     // than followed) and 0600, and refuse a pre-existing non-regular/foreign-owned file.

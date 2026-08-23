@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "wi": "WI-556",
+  "source_proposal": "proposals/done/2026-08-21-framework-improvement-final-sha-mandatory-skill-coverage.md",
+  "status": "implemented",
+  "coverage": [
+    {
+      "proposal_item": "Final-SHA mandatory skill coverage (schema, library, checker, finalizer)",
+      "status": "covered",
+      "evidence": [
+        "schemas/receipts/skill-coverage.schema.json",
+        "scripts/lib/skill-coverage.mjs",
+        "scripts/check-chain-receipts.mjs",
+        "scripts/merge-pr-with-review-receipt.mjs"
+      ],
+      "note": "Landed as e0cf025 (WI-556)."
+    }
+  ]
+}

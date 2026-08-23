@@ -259,8 +259,18 @@ async function writeSelection(file, profile, reason, expiresAt, policy, now) {
   const expiry = expiresAt || null;
   if (expiry !== null && (!Number.isFinite(Date.parse(expiry)) || Date.parse(expiry) <= now.getTime())) throw Object.assign(new Error('profile selection invalid: expiry must be a future ISO instant'), { classification: 'profile_selection_invalid' });
   const document = { schema_version: policy.selection.schema_version, profile, authority: policy.selection.authority, reason: reason.trim(), selected_at: now.toISOString(), expires_at: expiry };
+  const rejectSelection = (message) => { throw Object.assign(new Error(`profile selection invalid: ${message}`), { classification: 'profile_selection_invalid' }); };
   await mkdir(path.dirname(file), { recursive: true, mode: 0o700 });
   await validateSelectionDirectory(path.dirname(file));
+  // R2-F002 parity with the read path (O_NOFOLLOW): a symlinked selection store
+  // is evidence tampering — refuse it instead of atomically replacing it.
+  try {
+    const existing = await lstat(file);
+    if (existing.isSymbolicLink()) rejectSelection('selection must not be a symlink');
+    if ((existing.mode & 0o077) !== 0) rejectSelection('selection mode must be 0600');
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
   const temporary = `${file}.tmp-${process.pid}-${randomUUID()}`;
   const handle = await open(temporary, 'wx', 0o600);
   try { await handle.writeFile(`${JSON.stringify(document, null, 2)}\n`); await handle.sync(); } finally { await handle.close(); }

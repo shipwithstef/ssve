@@ -48,6 +48,17 @@ if [[ -z "$TS" ]]; then
   exit 1
 fi
 
+# WI-558: a terminal, unbound row (bound_to != "wi", e.g. an explicit closeout
+# or user-request row with wi:null) is not an ACTIVE contract. Freshness guards
+# against a stale WI binding drifting into edits; a closed contract is the good
+# end state and must not fail the gate forever. Only wi-bound rows age-check.
+BOUND_TO=$(echo "$LAST_LINE" | grep -oE '"bound_to":"[^"]+"' | cut -d'"' -f4 || true)
+BOUND_WI=$(echo "$LAST_LINE" | grep -oE '"wi":"[^"]+"' | cut -d'"' -f4 || true)
+if [[ "$BOUND_TO" != "wi" || -z "$BOUND_WI" ]]; then
+  echo "  PASS — last contract row is terminal/unbound (no active WI binding to go stale)"
+  exit 0
+fi
+
 # Convert to epoch seconds (handle both +03:00 and Z formats)
 TS_NORMALIZED=$(echo "$TS" | sed 's/+[0-9][0-9]:[0-9][0-9]//')
 TS_EPOCH=$(date -d "$TS_NORMALIZED" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%S" "$TS_NORMALIZED" +%s 2>/dev/null || echo 0)

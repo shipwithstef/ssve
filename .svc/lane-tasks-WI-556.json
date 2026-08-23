@@ -46,7 +46,69 @@
         "skill": "design-tech",
         "loaded_at": "2026-08-22T07:45:00Z",
         "loaded_via": "manual",
-        "evidence": "Architecture Decisions D1-D6 in docs/plans/2026-08-22-final-sha-skill-coverage/manifest.md; risk-flag sections in adjacent plan-contract.json; grounded in proposal Protocol Contract sections 1-7"
+        "evidence": "Architecture Decisions D1-D6 in docs/plans/2026-08-22-final-sha-skill-coverage/manifest.md; risk-flag sections in adjacent plan-contract.json; grounded in proposal Protocol Contract sections 1-7",
+        "phases_executed": [
+          {
+            "id": "P1-SpecJourneyDiscussionPreflight",
+            "ts": "2026-08-22T07:45:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-22-final-sha-skill-coverage/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-CodebasePatternAnalysis",
+            "ts": "2026-08-22T07:45:01.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "scripts/lib/skill-coverage.mjs"
+              }
+            ]
+          },
+          {
+            "id": "P3-ArchitectureAlternativesAndDiagrams",
+            "ts": "2026-08-22T07:45:02.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-22-final-sha-skill-coverage/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-CostOpsFeasibilityRiskDesign",
+            "ts": "2026-08-22T07:45:03.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-22-final-sha-skill-coverage/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-G4ReviewAndDecisionLogging",
+            "ts": "2026-08-22T07:45:04.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-22-final-sha-skill-coverage/plan-contract.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-BaselinedSpecSelfVerify",
+            "ts": "2026-08-22T07:45:05.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-556.md"
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -139,7 +201,69 @@
         "skill": "review-plan",
         "loaded_at": "2026-08-22T17:30:00Z",
         "loaded_via": "manual",
-        "evidence": "AGY external review pass-with-findings; launcher receipt .svc/external-review/wi556-treeid/receipt.json"
+        "evidence": "AGY external review pass-with-findings; launcher receipt .svc/external-review/wi556-treeid/receipt.json",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-08-22T17:30:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-22-final-sha-skill-coverage/plan-contract.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-08-22T17:30:01.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-22-final-sha-skill-coverage/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-08-22T17:30:02.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review/wi556-treeid/receipt.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-08-22T17:30:03.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review/wi556-treeid/findings.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-08-22T17:30:04.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-556.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-08-22T17:30:05.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-556.json"
+              }
+            ]
+          }
+        ]
       },
       "completed_at": "2026-08-22T17:27:40.339Z"
     },
@@ -157,7 +281,49 @@
       "skill_receipt": {
         "skill": "execute-changeset",
         "loaded_at": "2026-08-22T18:00:00Z",
-        "loaded_via": "manual"
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-08-22T18:00:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-22-final-sha-skill-coverage/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-08-22T18:00:01.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "schemas/receipts/skill-coverage.schema.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-08-22T18:00:02.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "scripts/lib/skill-coverage.mjs"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-08-22T18:00:03.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-556.md"
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -172,7 +338,69 @@
         "skill": "review-gate",
         "loaded_at": "2026-08-22T21:00:00Z",
         "loaded_via": "manual",
-        "evidence": "dual-station G5 (cursor-agent + grok-4.6 high): 17 consolidated findings all fixed; validator PASS"
+        "evidence": "dual-station G5 (cursor-agent + grok-4.6 high): 17 consolidated findings all fixed; validator PASS",
+        "phases_executed": [
+          {
+            "id": "P1-GateContextChecklistConcernScan",
+            "ts": "2026-08-22T21:00:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-22-final-sha-skill-coverage/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SelfReviewFindings",
+            "ts": "2026-08-22T21:00:01.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-556-audit.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-SelfJudgment",
+            "ts": "2026-08-22T21:00:02.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-556-audit.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-CrossReviewConvergence",
+            "ts": "2026-08-22T21:00:03.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review/wi556-exec-v4/findings.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-GateDecisionBacklog",
+            "ts": "2026-08-22T21:00:04.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-556.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-08-22T21:00:05.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-556.json"
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -187,7 +415,59 @@
         "skill": "review-exec",
         "loaded_at": "2026-08-22T22:00:00Z",
         "loaded_via": "manual",
-        "evidence": "AGY exec-kind round v2: pass-with-findings rubric 9; findings 01-03 fixed in CP-EXECFIX; launcher receipt .svc/external-review/wi556-exec-v2/receipt.json"
+        "evidence": "AGY exec-kind round v2: pass-with-findings rubric 9; findings 01-03 fixed in CP-EXECFIX; launcher receipt .svc/external-review/wi556-exec-v2/receipt.json",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-08-22T22:00:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-556-audit.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-08-22T22:00:01.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review/wi556-exec-v4/receipt.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-08-22T22:00:02.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review/wi556-exec-v4/receipt.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-IterationLoop",
+            "ts": "2026-08-22T22:00:03.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review/wi556-exec-v4/findings.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerdictAndReceiptFinalize",
+            "ts": "2026-08-22T22:00:04.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review/wi556-exec-v4/receipt.json"
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -202,7 +482,69 @@
         "skill": "audit-implementation",
         "loaded_at": "2026-08-22T22:20:00Z",
         "loaded_via": "manual",
-        "evidence": "docs/specs/audit-reports/WI-556-audit.md"
+        "evidence": "docs/specs/audit-reports/WI-556-audit.md",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextScopeConcern",
+            "ts": "2026-08-22T22:20:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-556-audit.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecialistDispatchCoverageLedger",
+            "ts": "2026-08-22T22:20:01.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-556-audit.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-HypothesisGeneration",
+            "ts": "2026-08-22T22:20:02.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-556-audit.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-SubsystemBehaviorAudit",
+            "ts": "2026-08-22T22:20:03.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-556-audit.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-FindingsConvergenceReport",
+            "ts": "2026-08-22T22:20:04.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-556-audit.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-08-22T22:20:05.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-556.json"
+              }
+            ]
+          }
+        ]
       }
     },
     {
