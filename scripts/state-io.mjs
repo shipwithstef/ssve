@@ -22,7 +22,7 @@ import {
   unlinkSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, isAbsolute, join, parse, relative, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, parse, relative, resolve } from "node:path";
 
 const DEFAULT_LOCK_TIMEOUT_MS = 5000;
 const DEFAULT_STALE_LOCK_MS = 10 * 60 * 1000;
@@ -209,23 +209,34 @@ export function writeJsonlAtomic(filePath, entries, opts = {}) {
 
 export function appendJsonlLine(filePath, obj, opts = {}) {
   assertNoSymlinkComponents(filePath, opts.authorityRoot);
-  return withStateLock(filePath, () => {
-    assertNoSymlinkComponents(filePath, opts.authorityRoot);
-    mkdirSync(dirname(filePath), { recursive: true });
-    const fd = openSync(filePath, constants.O_WRONLY | constants.O_APPEND | constants.O_CREAT | constants.O_NOFOLLOW, 0o600);
-    try {
-      appendFileSync(fd, `${JSON.stringify(obj)}\n`, "utf8");
-      fsyncSync(fd);
-    } finally {
-      closeSync(fd);
-    }
-    const dirFd = openSync(dirname(filePath), constants.O_RDONLY | constants.O_NOFOLLOW);
-    try {
+  const parent = dirname(filePath);
+  mkdirSync(parent, { recursive: true });
+  assertNoSymlinkComponents(filePath, opts.authorityRoot);
+  const dirFd = openSync(parent, constants.O_RDONLY | constants.O_NOFOLLOW | (constants.O_DIRECTORY || 0));
+  try {
+    // Node has no public openat(2) API. /proc/self/fd and /dev/fd provide the
+    // kernel-backed path to the already-open directory, so a rename/symlink
+    // swap of the pathname after this point cannot redirect the lock or append.
+    const fdRoot = existsSync(`/proc/self/fd/${dirFd}`)
+      ? `/proc/self/fd/${dirFd}`
+      : existsSync(`/dev/fd/${dirFd}`)
+        ? `/dev/fd/${dirFd}`
+        : null;
+    if (!fdRoot) throw new Error(`authority append requires directory-fd addressing support: ${parent}`);
+    const anchoredFile = join(fdRoot, basename(filePath));
+    return withStateLock(anchoredFile, () => {
+      const fd = openSync(anchoredFile, constants.O_WRONLY | constants.O_APPEND | constants.O_CREAT | constants.O_NOFOLLOW, 0o600);
+      try {
+        appendFileSync(fd, `${JSON.stringify(obj)}\n`, "utf8");
+        fsyncSync(fd);
+      } finally {
+        closeSync(fd);
+      }
       fsyncSync(dirFd);
-    } finally {
-      closeSync(dirFd);
-    }
-  }, opts);
+    }, opts);
+  } finally {
+    closeSync(dirFd);
+  }
 }
 
 export const stateIoDefaults = {

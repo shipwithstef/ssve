@@ -27,9 +27,9 @@ if [[ -n "${SVC_DISPATCH_MODE:-}" ]]; then PREFLIGHT_ARGS+=(--mode "$SVC_DISPATC
 if [[ -n "${SVC_HOST:-}" ]]; then PREFLIGHT_ARGS+=(--orchestrator "$SVC_HOST"); fi
 PREFLIGHT_JSON="$(node "$SCRIPT_DIR/resolve-execute-dispatch.mjs" "${PREFLIGHT_ARGS[@]}")" || exit $?
 
-IFS=$'\t' read -r DECISION MODE HOST FAMILY MODEL EFFORT ORCHESTRATOR POLICY_SHA REVIEW_SHA MANIFEST MANIFEST_SHA <<<"$(node -e '
+IFS=$'\t' read -r DECISION MODE PHASE STATION HOST FAMILY MODEL EFFORT ORCHESTRATOR POLICY_SHA REVIEW_SHA MANIFEST MANIFEST_SHA <<<"$(node -e '
 const value=JSON.parse(process.argv[1]);
-process.stdout.write([value.decision,value.mode,value.host,value.family,value.model,value.effort,value.orchestrator,value.policy_sha256,value.review_log_sha256,value.manifest,value.manifest_sha256].join("\t"));
+process.stdout.write([value.decision,value.mode,value.phase,value.station,value.host,value.family,value.model,value.effort,value.orchestrator,value.policy_sha256,value.review_log_sha256,value.manifest,value.manifest_sha256].join("\t"));
 ' "$PREFLIGHT_JSON")"
 
 if [[ "$DECISION" != "dispatch" || "$HARNESS" != "$HOST" ]]; then
@@ -60,6 +60,8 @@ SVC_WORKER_FAMILY="$FAMILY" \
 SVC_WORKER_POLICY_SHA256="$POLICY_SHA" \
 SVC_WORKER_REVIEW_LOG_SHA256="$REVIEW_SHA" \
 SVC_WORKER_MODE="$MODE" \
+SVC_WORKER_PHASE="$PHASE" \
+SVC_WORKER_STATION="$STATION" \
 SVC_WORKER_ORCHESTRATOR="$ORCHESTRATOR" \
 SVC_WORKER_CWD="$CONTEXT_ROOT" \
   bash "$SCRIPT_DIR/dispatch-worker.sh" "$PAYLOAD" >"$RUN_LOG" 2>&1
@@ -70,9 +72,9 @@ DURATION_MS=$((END_MS - START_MS))
 DISPATCH_JSONL="$CONTEXT_ROOT/.svc/dispatch-log.jsonl"
 
 set +e
-node --input-type=module - "$SCRIPT_DIR/state-io.mjs" "$DISPATCH_JSONL" "$CONTEXT_ROOT" "$WI_ID" "$DECISION" "$SKILL" "$MODE" "$HOST" "$FAMILY" "$MODEL" "$EFFORT" "$ORCHESTRATOR" "$POLICY_SHA" "$REVIEW_SHA" "$MANIFEST" "$MANIFEST_SHA" "$DURATION_MS" "$EXIT_CODE" "$RUN_LOG" <<'NODE'
+node --input-type=module - "$SCRIPT_DIR/state-io.mjs" "$DISPATCH_JSONL" "$CONTEXT_ROOT" "$WI_ID" "$DECISION" "$SKILL" "$MODE" "$PHASE" "$STATION" "$HOST" "$FAMILY" "$MODEL" "$EFFORT" "$ORCHESTRATOR" "$POLICY_SHA" "$REVIEW_SHA" "$MANIFEST" "$MANIFEST_SHA" "$DURATION_MS" "$EXIT_CODE" "$RUN_LOG" <<'NODE'
 import { pathToFileURL } from 'node:url';
-const [stateIoPath, logPath, authorityRoot, wi, decision, skill, mode, host, family, model, effort, orchestrator, policySha, reviewSha, manifest, manifestSha, durationMs, exitCode, runLog] = process.argv.slice(2);
+const [stateIoPath, logPath, authorityRoot, wi, decision, skill, mode, phase, station, host, family, model, effort, orchestrator, policySha, reviewSha, manifest, manifestSha, durationMs, exitCode, runLog] = process.argv.slice(2);
 const { appendJsonlLine } = await import(pathToFileURL(stateIoPath).href);
 appendJsonlLine(logPath, {
   schema_version: 2,
@@ -81,6 +83,8 @@ appendJsonlLine(logPath, {
   decision,
   skill,
   mode,
+  phase,
+  station,
   host,
   family,
   model,

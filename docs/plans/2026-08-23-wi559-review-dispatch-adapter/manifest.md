@@ -19,7 +19,9 @@
 ### Architectural invariants
 
 1. `scripts/resolve-dispatch.mjs` and protected owner policy remain the sole
-   authority for mode, reviewer station, and EXEC host/family/model/effort.
+   authority for mode, reviewer station, and EXEC host/family/model/effort. The
+   policy is opened once with `O_NOFOLLOW`, owner/mode checked from that file
+   descriptor, and the same bytes/hash snapshot drives format and tuple selection.
 2. Explicit owner mode/station overrides remain explicit; adapters never invent
    defaults or filter policy topology by their own cardinality rule.
 3. Named and numeric WIs use `hooks/lib/wi-id.mjs` canonical grammar. Missing,
@@ -27,8 +29,8 @@
 4. Only an exact active review log for the requested WI in `PROMOTED`,
    `PROMOTED_WITH_DISPUTES`, or `REVISED_AND_REVIEWED` authorizes execution.
 5. Dispatch evidence is append-only and durably binds WI, exact manifest path
-   and hash, policy hash, review-log hash, mode, orchestrator, exact tuple,
-   skill, decision, duration, timestamp, and exit code.
+   and hash, policy hash, review-log hash, mode, phase, station, orchestrator,
+   exact tuple, skill, decision, duration, timestamp, and exit code.
 6. Every active same-WI manifest participates in exact-one selection before a
    review log can authorize execution; review authority is one YAML document.
 7. Review packages bind the exact one-read plan bytes, and cache identity binds
@@ -70,10 +72,12 @@ stations; their authority and model choices do not change.
 | `test-framework/evals/tier-1/validate-external-review-launcher.sh` | MODIFY | T1 | Named-WI, owner-default, multi-station, explicit override, zero-provider-call adapter coverage |
 | `test-framework/evals/tier-1/validate-persistent-review-contract-v2.mjs` | MODIFY | T1 | Replace brittle old adapter-source assertions with resolver-delegation invariants |
 | `schemas/external-review-receipt.schema.json` | MODIFY | T2 | Admit the existing owner-policy Cursor host in exact receipt tuples |
-| `schemas/external-review-findings.schema.json` | MODIFY | T2 | Admit Cursor as the exact reviewer host while retaining family validation |
+| `schemas/external-review-findings.schema.json` | MODIFY | T2 | Admit exact Cursor and direct Grok/xAI reviewer tuples while retaining family validation |
 | `scripts/run-external-review.mjs` | MODIFY | T2 | Preserve canonical schema/receipt authority while transporting selected Cursor stations read-only |
 | `scripts/resolve-adversarial-reviewer.sh` | MODIFY | T2 | Route schema-1 owner dispatch policy status through the canonical review launcher instead of the legacy scheduled-policy resolver |
+| `scripts/resolve-dispatch.mjs` | MODIFY | T2 | Read owner policy once through an owner-checked O_NOFOLLOW descriptor and reuse that exact snapshot for selection |
 | scripts/resolve-execute-dispatch.mjs | CREATE | T2 | Shared bind-plan, preflight, and verify-receipt authority helper |
+| `scripts/review-topology-v2.mjs` | MODIFY | T2 | Reuse the single protected owner-policy snapshot across topology and station resolution |
 | `scripts/review-plan-codex.sh` | MODIFY | T2 | Canonical named/numeric WI binding and resolver-owned default/station selection |
 | `scripts/execute-dispatch-preflight.sh` | MODIFY | T3 | Exact reviewed-WI authorization plus compact current EXEC tuple output |
 | `scripts/dispatch-worker.sh` | MODIFY | T3 | Safe delegated Grok CLI transport without weakening containment |
@@ -112,7 +116,7 @@ this census and `plan-contract.json` to the complete executed diff before G5.
 |---|---|---|---|
 | T0 | Planning and G4 artifacts | .svc/skill-outcome-design-tech-WI-559.json;docs/plans/2026-08-23-wi559-review-dispatch-adapter/grok-build-prompt.md;docs/plans/2026-08-23-wi559-review-dispatch-adapter/manifest.md;docs/plans/2026-08-23-wi559-review-dispatch-adapter/plan-contract.json;docs/plans/2026-08-23-wi559-review-dispatch-adapter/review-log.yaml;docs/specs/bugfix/wi-559-review-dispatch-adapter-brief.md;docs/specs/contract-maps/review-to-execute-dispatch.md;docs/specs/decisions/WI-559.md;docs/specs/tech/WI-559.md;docs/specs/test-evidence/WI-559/design-capability-probes.json | changed |
 | T1 | Fail-first contract evidence | docs/specs/test-evidence/WI-559/t1-red-bind-review-cursor-helper.log;test-framework/evals/tier-1/validate-review-dispatch-adapter-convergence.sh | changed |
-| T2 | Review adapter convergence | schemas/external-review-findings.schema.json;schemas/external-review-receipt.schema.json;scripts/resolve-adversarial-reviewer.sh;scripts/resolve-execute-dispatch.mjs;scripts/review-plan-codex.sh;scripts/run-external-review.mjs;test-framework/evals/tier-1/validate-external-review-launcher.sh;test-framework/evals/tier-1/validate-persistent-review-contract-v2.mjs | changed |
+| T2 | Review adapter convergence | schemas/external-review-findings.schema.json;schemas/external-review-receipt.schema.json;scripts/resolve-adversarial-reviewer.sh;scripts/resolve-dispatch.mjs;scripts/resolve-execute-dispatch.mjs;scripts/review-plan-codex.sh;scripts/review-topology-v2.mjs;scripts/run-external-review.mjs;test-framework/evals/tier-1/validate-external-review-launcher.sh;test-framework/evals/tier-1/validate-persistent-review-contract-v2.mjs | changed |
 | T3 | Exact execution adapter convergence | hooks/svc-execute-dispatch-guard.sh;scripts/auto-receipt.mjs;scripts/dispatch-log.sh;scripts/dispatch-worker.sh;scripts/execute-dispatch-preflight.sh;scripts/state-io.mjs;skills/execute-changeset/references/dispatch-preflight.md;skills/execute-changeset/references/subagent-dispatch.md | changed |
 | T4 | Focused validator closure | scripts/select-tier1-validators-v2.mjs;test-framework/evals/tier-1/validate-parallel-wi-dispatch.sh;test-framework/evals/tier-1/validate-tier1-selector-v2.mjs | changed |
 | T5 | WI, knowledge, and preserved local audit state | .svc/authorization-events.jsonl;.svc/dispatch/WI-559.edits.json;.svc/dispatch/WI-559.log;.svc/dispatch/WI-559.result.json;.svc/dispatch/wave-progress.jsonl;.svc/lane-tasks-WI-559.json;.svc/learning-fires.jsonl;.svc/learning-lifecycle.jsonl;.svc/review-cross-model-package-r6.md;FRAMEWORK-STATE.md;docs/specs/research-log.md;docs/specs/work-items/INDEX.md;docs/specs/work-items/WI-559.md;proposals/2026-08-23-framework-improvement-review-dispatch-adapter-convergence.md;references/knowledge/svc/CAPABILITIES.md | changed |
@@ -216,7 +220,7 @@ functions for direct fixture use and implement three CLI subcommands:
    `EXEC` with WI/orchestrator/policy/optional explicit mode. It prints one compact
    JSON object with `schema_version: 2`, `decision: dispatch`, WI, repo-relative
    manifest path/hash, review log, `review_log_sha256`, policy path/hash, mode,
-   orchestrator, and exact tuple fields.
+   `phase: exec`, implementor station, orchestrator, and exact tuple fields.
    A valid accepted override prints `decision: owner-override`, exact WI,
    `override_sha256`, reason, and review-log hash; it never invents a tuple.
 3. `record-override --repo <root> --wi <WI> --allow-override-file <path>` is the
@@ -225,8 +229,8 @@ functions for direct fixture use and implement three CLI subcommands:
    fresh preflight without override, reads `.svc/dispatch-log.jsonl` defensively,
    ignores malformed/other-WI/other-skill rows, and succeeds only when a recent
    `exit_code: 0` row is neither stale nor future-dated and matches current
-   manifest, policy hash, review-log hash, mode, orchestrator, decision, host,
-   family, model, and effort. It separately accepts a schema-2 exact-WI
+   manifest, policy hash, review-log hash, mode, phase, station, orchestrator,
+   decision, host, family, model, and effort. It separately accepts a schema-2 exact-WI
    owner-override row with bound override hash/reason. Output is compact JSON;
    denial is nonzero and actionable.
 
@@ -289,10 +293,11 @@ returns a permissive `not-required` outcome and never calls `check-mimo-quota.sh
 effort mismatch, passes exact tuple context to the worker, captures every exit
 without losing `set -u` behavior, and appends through the repository state-I/O
 helper rather than interpolated Python. Its schema-2 row contains `ts`, `wi`,
-`decision`, `skill`, `mode`, `host`, `family`, `model`, `effort`,
+`decision`, `skill`, `mode`, `phase`, `station`, `host`, `family`, `model`, `effort`,
 `orchestrator`, `policy_sha256`, `review_log_sha256`, `manifest`,
-`manifest_sha256`, `duration_ms`, `exit_code`, and `log_path`. The append is
-fsynced, and append failure overrides a successful worker exit.
+`manifest_sha256`, `duration_ms`, `exit_code`, and `log_path`. The append pins
+the already-open parent directory while locking/writing, fsyncs file and that
+directory, and append failure overrides a successful worker exit.
 Duration and log path are informational; all other fields are authority inputs.
 
 `svc-execute-dispatch-guard.sh` retains its staged `src/` activation boundary.

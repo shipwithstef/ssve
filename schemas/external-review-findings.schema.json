@@ -27,8 +27,8 @@
       "additionalProperties": false,
       "required": ["host", "family", "model", "effort"],
       "properties": {
-        "host": { "type": "string", "enum": ["codex", "claude", "agy", "cursor"] },
-        "family": { "type": "string", "enum": ["openai", "anthropic", "google"] },
+        "host": { "type": "string", "enum": ["codex", "claude", "agy", "cursor", "grok"] },
+        "family": { "type": "string", "enum": ["openai", "anthropic", "google", "xai"] },
         "model": { "type": "string" },
         "effort": { "type": "string", "enum": ["low", "medium", "high", "xhigh", "max", "provider-managed"] }
       }

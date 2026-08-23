@@ -31,7 +31,7 @@ function sha256(value) {
   return crypto.createHash("sha256").update(Buffer.isBuffer(value) ? value : String(value)).digest("hex");
 }
 
-function readRegularNoFollow(file, label, { ownerOnly = false } = {}) {
+function readRegularNoFollow(file, label, { ownerOnly = false, privateOnly = false } = {}) {
   let fd;
   try {
     fd = fs.openSync(file, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
@@ -39,6 +39,9 @@ function readRegularNoFollow(file, label, { ownerOnly = false } = {}) {
     if (!stat.isFile()) fail(`${label} must be a regular non-symlink file: ${file}`, 1);
     if (ownerOnly && typeof process.getuid === "function" && stat.uid !== process.getuid()) {
       fail(`${label} must be owned by the current principal: ${file}`, 1);
+    }
+    if (privateOnly && (stat.mode & 0o077) !== 0) {
+      fail(`${label} must be mode 0600 or stricter: ${file}`, 1);
     }
     return fs.readFileSync(fd);
   } catch (error) {
@@ -282,12 +285,7 @@ function parseTerminalState(reviewLogPath, expectedWi) {
 function parseOverrideFile(file, expectedWi) {
   if (!file) return null;
   const absolute = path.resolve(file);
-  if (!fs.existsSync(absolute) || fs.lstatSync(absolute).isSymbolicLink()) fail(`override file is unreadable or ineligible: ${file}`, 1);
-  const stat = fs.statSync(absolute);
-  if (!stat.isFile() || (typeof process.getuid === "function" && stat.uid !== process.getuid()) || (stat.mode & 0o077) !== 0) {
-    fail(`override file must be an owner-controlled mode-0600 regular file: ${file}`, 1);
-  }
-  const bytes = fs.readFileSync(absolute);
+  const bytes = readRegularNoFollow(absolute, "override file", { ownerOnly: true, privateOnly: true });
   const text = bytes.toString("utf8");
   let accept = false;
   let reason = "";
@@ -325,7 +323,7 @@ function parseOverrideFile(file, expectedWi) {
   return { path: absolute, reason, authority, source, wi, timestamp, sha256: sha256(bytes) };
 }
 
-function compactDispatch({ wi, manifest, manifestSha, reviewLog, reviewLogSha, policyPath, policySha, mode, tuple }) {
+function compactDispatch({ wi, manifest, manifestSha, reviewLog, reviewLogSha, policyPath, policySha, mode, phase, station, tuple }) {
   return {
     schema_version: 2,
     decision: "dispatch",
@@ -337,6 +335,8 @@ function compactDispatch({ wi, manifest, manifestSha, reviewLog, reviewLogSha, p
     policy: policyPath,
     policy_sha256: policySha,
     mode,
+    phase,
+    station,
     host: tuple.host,
     family: tuple.family,
     model: tuple.model,
@@ -394,6 +394,8 @@ export function preflight({
       reason: override.reason,
       review_log: reviewRel,
       review_log_sha256: reviewSha,
+      phase: "exec",
+      station: "owner-override",
     };
   }
   const resolved = resolveDispatchModel({
@@ -413,6 +415,8 @@ export function preflight({
     policyPath: resolved.config_path,
     policySha: resolved.config_sha256,
     mode: resolved.mode,
+    phase: "exec",
+    station: resolved.role,
     tuple: resolved.tuple,
   });
 }
@@ -464,6 +468,7 @@ export function verifyReceipt({
     if (row.decision === "owner-override") {
       if (!override) continue;
       if (row.override_sha256 !== override.sha256) continue;
+      if (row.phase !== "exec" || row.station !== "owner-override") continue;
       if (row.review_log_sha256 !== expected.review_log_sha256) continue;
       if (row.manifest !== expected.manifest || row.manifest_sha256 !== expected.manifest_sha256) continue;
       if (row.reason !== override.reason) continue;
@@ -473,9 +478,9 @@ export function verifyReceipt({
     if (row.policy_sha256 !== expected.policy_sha256) continue;
     if (row.review_log_sha256 !== expected.review_log_sha256) continue;
     if (row.manifest !== expected.manifest || row.manifest_sha256 !== expected.manifest_sha256) continue;
-    if (row.mode !== expected.mode || row.orchestrator !== expected.orchestrator) continue;
+    if (row.mode !== expected.mode || row.phase !== expected.phase || row.station !== expected.station || row.orchestrator !== expected.orchestrator) continue;
     if (row.host !== expected.host || row.family !== expected.family || row.model !== expected.model || row.effort !== expected.effort) continue;
-    return { ok: true, decision: "dispatch", wi, mode: expected.mode, orchestrator: expected.orchestrator, host: expected.host, family: expected.family, model: expected.model, effort: expected.effort };
+    return { ok: true, decision: "dispatch", wi, mode: expected.mode, phase: expected.phase, station: expected.station, orchestrator: expected.orchestrator, host: expected.host, family: expected.family, model: expected.model, effort: expected.effort };
   }
   fail(`verify-receipt: no recent exact dispatch evidence for ${wi} (expected ${expected.host}/${expected.family}/${expected.model}/${expected.effort} policy=${expected.policy_sha256.slice(0, 12)} review=${expected.review_log_sha256.slice(0, 12)})`, 1);
 }
@@ -491,6 +496,8 @@ export function recordOverride({ repo, wi, policy = null, mode = null, orchestra
     wi,
     decision: "owner-override",
     skill: "execute-changeset",
+    phase: decision.phase,
+    station: decision.station,
     manifest: decision.manifest,
     manifest_sha256: decision.manifest_sha256,
     review_log_sha256: decision.review_log_sha256,

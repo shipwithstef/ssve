@@ -620,8 +620,19 @@ async function parseOwnerOverride(file, primary) {
   const absolute = path.resolve(file);
   const expected = process.env.SVC_EXTERNAL_REVIEW_OWNER_OVERRIDE_SHA256 || null;
   let bytes;
-  try { bytes = await readFile(absolute); }
-  catch { throw Object.assign(new Error('owner override is unreadable'), { classification: 'override_invalid', overrideEvidence: { ...empty, used: true, path: absolute, expected_sha256: expected } }); }
+  let handle;
+  try {
+    handle = await open(absolute, fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW);
+    const info = await handle.stat();
+    if (!info.isFile() || (typeof process.getuid === 'function' && info.uid !== process.getuid()) || (info.mode & 0o077) !== 0) {
+      throw new Error('owner override must be an owner-controlled mode-0600 regular file');
+    }
+    bytes = await handle.readFile();
+  } catch {
+    throw Object.assign(new Error('owner override is unreadable or ineligible'), { classification: 'override_invalid', overrideEvidence: { ...empty, used: true, path: absolute, expected_sha256: expected } });
+  } finally {
+    await handle?.close().catch(() => {});
+  }
   const actual = sha256(bytes);
   let document;
   try { document = JSON.parse(bytes.toString('utf8')); } catch { throw Object.assign(new Error('owner override is not valid JSON'), { classification: 'override_invalid', overrideEvidence: { ...empty, used: true, path: absolute, expected_sha256: expected, actual_sha256: actual } }); }

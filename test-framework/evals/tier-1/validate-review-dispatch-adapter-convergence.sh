@@ -614,6 +614,13 @@ if want cursor; then
 
   expect "generalized receipt schema admits cursor host without weakening non-empty tuples" node -e 'const s=require(process.argv[1]),t=s.definitions.tuple.properties; if(t.host.type!=="string"||t.host.minLength!==1||t.orchestrator.type!=="string"||t.orchestrator.minLength!==1) process.exit(1);' "$ROOT/schemas/external-review-receipt.schema.json"
   expect "findings schema admits cursor host" node -e 'const s=require(process.argv[1]); if(!s.properties.reviewer.properties.host.enum.includes("cursor")) process.exit(1);' "$ROOT/schemas/external-review-findings.schema.json"
+  expect "findings schema admits the exact direct Grok/xAI review tuple" node --input-type=module -e "
+    import fs from 'node:fs';
+    import { validate } from 'file://${ROOT}/scripts/lib/json-schema-validator.mjs';
+    const schema=JSON.parse(fs.readFileSync('${ROOT}/schemas/external-review-findings.schema.json','utf8'));
+    const findings={schema_version:1,review_kind:'exec',rubric_score:null,rubric_failures:[],dependencies_needing_read:[],reviewer:{host:'grok',family:'xai',model:'grok-4.6',effort:'high'},verdict:'pass',summary:'exact tuple',findings:[],certifications:[]};
+    if(!validate(schema,findings).valid) process.exit(1);
+  "
 
   expect "Cursor success with attestation none is semantically invalid" node --input-type=module -e "
     import { validateExternalReviewReceiptSemantics } from 'file://${LAUNCHER}';
@@ -747,7 +754,7 @@ if want helper; then
     const j=JSON.parse(process.argv[1]);
     if(j.schema_version!==2||j.decision!=="dispatch"||j.wi!=="WI-559") process.exit(1);
     if(j.host!=="grok"||j.family!=="xai"||j.model!=="grok-4.6"||j.effort!=="high") process.exit(1);
-    if(j.mode!=="mixed-grok-cursor"||!j.policy_sha256||!j.review_log_sha256) process.exit(1);
+    if(j.mode!=="mixed-grok-cursor"||j.phase!=="exec"||j.station!=="implementor"||!j.policy_sha256||!j.review_log_sha256) process.exit(1);
     if(!String(j.review_log||"").includes("docs/plans/active/review-log.yaml")) process.exit(1);
     if(String(j.review_log||"").includes("docs/plans/done")) process.exit(1);
   ' "$PRE_JSON"
@@ -890,6 +897,14 @@ NODE
     if(j.host||j.model||j.family||j.effort) process.exit(1);
   ' "$OV_JSON"
 
+  OVERRIDE_LINK="$TMP/override-link.json"
+  ln -s "$OVERRIDE" "$OVERRIDE_LINK"
+  set +e
+  node "$HELPER" preflight --repo "$EXEC_REPO" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex --allow-override-file "$OVERRIDE_LINK" > "$TMP/override-link.out" 2> "$TMP/override-link.err"
+  OVERRIDE_LINK_RC=$?
+  set -e
+  expect "symlinked execute owner override is denied before dispatch" test "$OVERRIDE_LINK_RC" -ne 0
+
   set +e
   node "$HELPER" preflight --repo "$DRAFT_REPO" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex --allow-override-file "$OVERRIDE" > "$TMP/override-draft.out" 2> "$TMP/override-draft.err"
   OVERRIDE_DRAFT_RC=$?
@@ -918,20 +933,20 @@ NODE
     expect "owner override rejects $BAD_KIND before dispatch" test "$BAD_OVERRIDE_RC" -ne 0
   done
 
-  HASHES="$(node -e 'const j=JSON.parse(process.argv[1]); process.stdout.write([j.policy_sha256,j.review_log_sha256,j.host,j.family,j.model,j.effort,j.mode,j.orchestrator,j.manifest,j.manifest_sha256].join(" "))' "$PRE_JSON")"
-  read -r POLICY_SHA REVIEW_SHA HOST FAMILY MODEL EFFORT MODE ORCHESTRATOR MANIFEST MANIFEST_SHA <<<"$HASHES"
+  HASHES="$(node -e 'const j=JSON.parse(process.argv[1]); process.stdout.write([j.policy_sha256,j.review_log_sha256,j.host,j.family,j.model,j.effort,j.mode,j.phase,j.station,j.orchestrator,j.manifest,j.manifest_sha256].join(" "))' "$PRE_JSON")"
+  read -r POLICY_SHA REVIEW_SHA HOST FAMILY MODEL EFFORT MODE PHASE STATION ORCHESTRATOR MANIFEST MANIFEST_SHA <<<"$HASHES"
   mkdir -p "$EXEC_REPO/.svc"
-  LOG_FILE="$EXEC_REPO/.svc/dispatch-log.jsonl" POLICY_SHA="$POLICY_SHA" REVIEW_SHA="$REVIEW_SHA" HOST="$HOST" FAMILY="$FAMILY" MODEL="$MODEL" EFFORT="$EFFORT" MODE="$MODE" ORCHESTRATOR="$ORCHESTRATOR" MANIFEST="$MANIFEST" MANIFEST_SHA="$MANIFEST_SHA" node <<'NODE'
+  LOG_FILE="$EXEC_REPO/.svc/dispatch-log.jsonl" POLICY_SHA="$POLICY_SHA" REVIEW_SHA="$REVIEW_SHA" HOST="$HOST" FAMILY="$FAMILY" MODEL="$MODEL" EFFORT="$EFFORT" MODE="$MODE" PHASE="$PHASE" STATION="$STATION" ORCHESTRATOR="$ORCHESTRATOR" MANIFEST="$MANIFEST" MANIFEST_SHA="$MANIFEST_SHA" node <<'NODE'
 const fs = require('fs');
 const file = process.env.LOG_FILE;
-const { POLICY_SHA: policy, REVIEW_SHA: review, HOST: host, FAMILY: family, MODEL: model, EFFORT: effort, MODE: mode, ORCHESTRATOR: orchestrator, MANIFEST: manifest, MANIFEST_SHA: manifest_sha256 } = process.env;
+const { POLICY_SHA: policy, REVIEW_SHA: review, HOST: host, FAMILY: family, MODEL: model, EFFORT: effort, MODE: mode, PHASE: phase, STATION: station, ORCHESTRATOR: orchestrator, MANIFEST: manifest, MANIFEST_SHA: manifest_sha256 } = process.env;
 const now = new Date().toISOString();
 const rows = [
   '{not-json',
   JSON.stringify({ schema_version: 2, ts: now, wi: 'WI-100', decision: 'dispatch', skill: 'execute-changeset', mode, host, family, model, effort, policy_sha256: policy, review_log_sha256: review, duration_ms: 1, exit_code: 0 }),
   JSON.stringify({ schema_version: 2, ts: now, wi: 'WI-559', decision: 'dispatch', skill: 'review-plan', mode, host, family, model, effort, policy_sha256: policy, review_log_sha256: review, duration_ms: 1, exit_code: 0 }),
   JSON.stringify({ ts: now, harness: 'opencode', model: 'mimo-v2-pro', skill: 'execute-changeset', exit_code: 0 }),
-  JSON.stringify({ schema_version: 2, ts: now, wi: 'WI-559', decision: 'dispatch', skill: 'execute-changeset', mode, orchestrator, host, family, model, effort, policy_sha256: policy, review_log_sha256: review, manifest, manifest_sha256, duration_ms: 9, exit_code: 0, log_path: '/tmp/x' })
+  JSON.stringify({ schema_version: 2, ts: now, wi: 'WI-559', decision: 'dispatch', skill: 'execute-changeset', mode, phase, station, orchestrator, host, family, model, effort, policy_sha256: policy, review_log_sha256: review, manifest, manifest_sha256, duration_ms: 9, exit_code: 0, log_path: '/tmp/x' })
 ];
 fs.writeFileSync(file, rows.join('\n') + '\n');
 NODE
@@ -971,12 +986,15 @@ NODE
   set -e
   expect "future-dated receipt beyond clock skew is denied" test "$FUTURE_RC" -ne 0
 
-  for AUTH_FIELD in mode orchestrator; do
-    LOG_FILE="$EXEC_REPO/.svc/dispatch-log.jsonl" POLICY_SHA="$POLICY_SHA" REVIEW_SHA="$REVIEW_SHA" HOST="$HOST" FAMILY="$FAMILY" MODEL="$MODEL" EFFORT="$EFFORT" MODE="$MODE" ORCHESTRATOR="$ORCHESTRATOR" MANIFEST="$MANIFEST" MANIFEST_SHA="$MANIFEST_SHA" AUTH_FIELD="$AUTH_FIELD" node <<'NODE'
+  for AUTH_FIELD in mode phase station orchestrator; do
+    LOG_FILE="$EXEC_REPO/.svc/dispatch-log.jsonl" POLICY_SHA="$POLICY_SHA" REVIEW_SHA="$REVIEW_SHA" HOST="$HOST" FAMILY="$FAMILY" MODEL="$MODEL" EFFORT="$EFFORT" MODE="$MODE" PHASE="$PHASE" STATION="$STATION" ORCHESTRATOR="$ORCHESTRATOR" MANIFEST="$MANIFEST" MANIFEST_SHA="$MANIFEST_SHA" AUTH_FIELD="$AUTH_FIELD" node <<'NODE'
 const fs = require('fs');
-let { POLICY_SHA: policy_sha256, REVIEW_SHA: review_log_sha256, HOST: host, FAMILY: family, MODEL: model, EFFORT: effort, MODE: mode, ORCHESTRATOR: orchestrator, MANIFEST: manifest, MANIFEST_SHA: manifest_sha256 } = process.env;
-if (process.env.AUTH_FIELD === 'mode') mode = 'wrong-mode'; else orchestrator = 'wrong-orchestrator';
-fs.writeFileSync(process.env.LOG_FILE, JSON.stringify({ schema_version: 2, ts: new Date().toISOString(), wi: 'WI-559', decision: 'dispatch', skill: 'execute-changeset', mode, orchestrator, host, family, model, effort, policy_sha256, review_log_sha256, manifest, manifest_sha256, duration_ms: 1, exit_code: 0 }) + '\n');
+let { POLICY_SHA: policy_sha256, REVIEW_SHA: review_log_sha256, HOST: host, FAMILY: family, MODEL: model, EFFORT: effort, MODE: mode, PHASE: phase, STATION: station, ORCHESTRATOR: orchestrator, MANIFEST: manifest, MANIFEST_SHA: manifest_sha256 } = process.env;
+if (process.env.AUTH_FIELD === 'mode') mode = 'wrong-mode';
+else if (process.env.AUTH_FIELD === 'phase') phase = 'plan';
+else if (process.env.AUTH_FIELD === 'station') station = 'wrong-station';
+else orchestrator = 'wrong-orchestrator';
+fs.writeFileSync(process.env.LOG_FILE, JSON.stringify({ schema_version: 2, ts: new Date().toISOString(), wi: 'WI-559', decision: 'dispatch', skill: 'execute-changeset', mode, phase, station, orchestrator, host, family, model, effort, policy_sha256, review_log_sha256, manifest, manifest_sha256, duration_ms: 1, exit_code: 0 }) + '\n');
 NODE
     set +e
     node "$HELPER" verify-receipt --repo "$EXEC_REPO" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex > "$TMP/verify-wrong-$AUTH_FIELD.out" 2> "$TMP/verify-wrong-$AUTH_FIELD.err"
@@ -1039,6 +1057,32 @@ NODE
   RECORD_PARENT_LINK_RC=$?
   set -e
   expect "dispatch evidence writer rejects symlinked parent components" bash -c "test '$RECORD_PARENT_LINK_RC' -ne 0 && test ! -e '$TMP/redirected-svc/dispatch-log.jsonl'"
+
+  SWAP_ROOT="$TMP/append-parent-swap"
+  SWAP_REDIRECT="$TMP/append-parent-redirect"
+  mkdir -p "$SWAP_ROOT/.svc" "$SWAP_REDIRECT"
+  node -e 'require("fs").writeFileSync(process.argv[1], JSON.stringify({pid:999999,ts:new Date(Date.now()+1000).toISOString()}))' "$SWAP_ROOT/.svc/dispatch-log.jsonl.lock"
+  node --input-type=module - "$ROOT/scripts/state-io.mjs" "$SWAP_ROOT" <<'NODE' > "$TMP/append-parent-swap.out" 2>&1 &
+import { pathToFileURL } from 'node:url';
+import path from 'node:path';
+const [stateIoPath, root] = process.argv.slice(2);
+const { appendJsonlLine } = await import(pathToFileURL(stateIoPath).href);
+appendJsonlLine(path.join(root, '.svc', 'dispatch-log.jsonl'), { marker: 'anchored-parent' }, {
+  authorityRoot: root,
+  staleMs: 500,
+  timeoutMs: 2500,
+  retryMs: 25,
+});
+NODE
+  SWAP_PID=$!
+  sleep 0.15
+  mv "$SWAP_ROOT/.svc" "$SWAP_ROOT/.svc-original"
+  ln -s "$SWAP_REDIRECT" "$SWAP_ROOT/.svc"
+  set +e
+  wait "$SWAP_PID"
+  SWAP_RC=$?
+  set -e
+  expect "dispatch append stays anchored when its parent path is swapped mid-write" bash -c "test '$SWAP_RC' -eq 0 && grep -q anchored-parent '$SWAP_ROOT/.svc-original/dispatch-log.jsonl' && test ! -e '$SWAP_REDIRECT/dispatch-log.jsonl'"
   set -e
 fi
 

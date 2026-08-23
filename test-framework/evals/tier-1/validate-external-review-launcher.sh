@@ -598,6 +598,7 @@ expect "Codex primary model-unavailable hard-fails after one attempt with no sub
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 OVERRIDE="$TMP/owner-override.json"
 node -e 'require("fs").writeFileSync(process.argv[1],JSON.stringify({authority:"repository-owner",source:"owner-console",reason:"explicit test override",timestamp:new Date().toISOString(),requested_tuple:{orchestrator:"codex",host:"claude",family:"anthropic",model:"claude-fable-5",effort:"xhigh"}}))' "$OVERRIDE"
+chmod 600 "$OVERRIDE"
 OVERRIDE_SHA="$(sha256sum "$OVERRIDE" | awk '{print $1}')"
 printf override-package | SVC_EXTERNAL_REVIEW_OWNER_OVERRIDE_SHA256="$OVERRIDE_SHA" node "$LAUNCHER" --orchestrator codex --review-kind plan --owner-override-file "$OVERRIDE" --artifacts-dir "$TMP/out/override" > "$TMP/override.summary"
 expect "hashed repository-owner override can raise primary effort and is receipted" node -e 'const fs=require("fs"),s=JSON.parse(fs.readFileSync(process.argv[1],"utf8")),r=require(s.receipt);if(!r.override.used||r.override.authority!=="repository-owner"||r.override.actual_sha256!==r.override.expected_sha256||r.requested_tuple.effort!=="xhigh"||r.fallback.used)process.exit(1)' "$TMP/override.summary"
@@ -606,6 +607,7 @@ expect "changed requested tuple gets a distinct cache identity and fresh primary
 
 SAME_FAMILY_OVERRIDE="$TMP/same-family-owner-override.json"
 node -e 'require("fs").writeFileSync(process.argv[1],JSON.stringify({authority:"repository-owner",source:"owner-console",reason:"same-family negative fixture",timestamp:new Date().toISOString(),requested_tuple:{orchestrator:"claude",host:"claude",family:"anthropic",model:"claude-fable-5",effort:"high"}}))' "$SAME_FAMILY_OVERRIDE"
+chmod 600 "$SAME_FAMILY_OVERRIDE"
 SAME_FAMILY_SHA="$(sha256sum "$SAME_FAMILY_OVERRIDE" | awk '{print $1}')"
 rm -rf "$SVC_FAKE_LOG"; mkdir -p "$SVC_FAKE_LOG"
 set +e
@@ -616,6 +618,7 @@ expect "owner override cannot defeat cross-family independence or unlock fallbac
 
 DIRECT_OPUS_OVERRIDE="$TMP/direct-opus-owner-override.json"
 node -e 'require("fs").writeFileSync(process.argv[1],JSON.stringify({authority:"repository-owner",source:"owner-console",reason:"direct fallback bypass negative fixture",timestamp:new Date().toISOString(),requested_tuple:{orchestrator:"codex",host:"claude",family:"anthropic",model:"claude-opus-4-8",effort:"xhigh"}}))' "$DIRECT_OPUS_OVERRIDE"
+chmod 600 "$DIRECT_OPUS_OVERRIDE"
 DIRECT_OPUS_SHA="$(sha256sum "$DIRECT_OPUS_OVERRIDE" | awk '{print $1}')"
 rm -rf "$SVC_FAKE_LOG"; mkdir -p "$SVC_FAKE_LOG"
 set +e
@@ -626,6 +629,7 @@ expect "owner override cannot bypass mandatory Fable-first policy with direct Op
 
 EXTRA_KEY_OVERRIDE="$TMP/extra-key-owner-override.json"
 node -e 'require("fs").writeFileSync(process.argv[1],JSON.stringify({authority:"repository-owner",source:"owner-console",reason:"extra tuple key negative fixture",timestamp:new Date().toISOString(),requested_tuple:{orchestrator:"codex",host:"claude",family:"anthropic",model:"claude-fable-5",effort:"high",surprise:true}}))' "$EXTRA_KEY_OVERRIDE"
+chmod 600 "$EXTRA_KEY_OVERRIDE"
 EXTRA_KEY_SHA="$(sha256sum "$EXTRA_KEY_OVERRIDE" | awk '{print $1}')"
 set +e
 printf extra-key | SVC_EXTERNAL_REVIEW_OWNER_OVERRIDE_SHA256="$EXTRA_KEY_SHA" node "$LAUNCHER" --orchestrator codex --review-kind plan --owner-override-file "$EXTRA_KEY_OVERRIDE" --artifacts-dir "$TMP/out/extra-key-override" > "$TMP/extra-key-override.summary" 2> "$TMP/extra-key-override.err"
@@ -638,6 +642,15 @@ printf unreadable-override | SVC_EXTERNAL_REVIEW_OWNER_OVERRIDE_SHA256=expected 
 UNREADABLE_OVERRIDE_RC=$?
 set -e
 expect "unreadable override records attempted path and expected hash" node -e 'const r=require(process.argv[1]);if(process.argv[2]!=="1"||r.classification!=="override_invalid"||!r.override.used||!r.override.path.endsWith("does-not-exist.json")||r.override.expected_sha256!=="expected")process.exit(1)' "$TMP/out/unreadable-override/receipt.json" "$UNREADABLE_OVERRIDE_RC"
+
+OVERRIDE_LINK="$TMP/owner-override-link.json"
+ln -s "$OVERRIDE" "$OVERRIDE_LINK"
+rm -rf "$SVC_FAKE_LOG"; mkdir -p "$SVC_FAKE_LOG"
+set +e
+printf symlink-override | SVC_EXTERNAL_REVIEW_OWNER_OVERRIDE_SHA256="$OVERRIDE_SHA" node "$LAUNCHER" --orchestrator codex --review-kind plan --owner-override-file "$OVERRIDE_LINK" --artifacts-dir "$TMP/out/symlink-override" > "$TMP/symlink-override.summary" 2> "$TMP/symlink-override.err"
+SYMLINK_OVERRIDE_RC=$?
+set -e
+expect "symlinked owner override hard-fails before provider invocation" bash -c "test '$SYMLINK_OVERRIDE_RC' -ne 0 && test ! -e '$SVC_FAKE_LOG/calls' && test \"\$(node -e 'process.stdout.write(require(process.argv[1]).classification)' '$TMP/out/symlink-override/receipt.json')\" = override_invalid"
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 set +e

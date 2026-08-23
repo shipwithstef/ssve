@@ -2,7 +2,7 @@ review_kind: plan
 wi: WI-559
 plan: docs/plans/2026-08-23-wi559-review-dispatch-adapter/manifest.md
 manifest: docs/plans/2026-08-23-wi559-review-dispatch-adapter/manifest.md
-manifest_sha256: 6f362380dedd645a9ce9c61a32d6663896ab010874702ec2b505adcddd518005
+manifest_sha256: db1731da939ba2faa458c0015f49140539e223912749f147f25b4e9b9eeab37f
 rounds_run: 3
 unresolved_critical: 0
 remaining_high: 0
@@ -22,6 +22,32 @@ canonical_tier2_attempt:
   classification: internal_receipt_schema_failure
   error: "$.requested_tuple: no anyOf branch matched"
   disposition: bootstrap defect added to WI-559 scope; canonical promotion remains blocked until the repair is implemented
+execution_review_attempts:
+  - round: r7
+    candidate_commit: 82ed6bc274334ae9706cb4334a55946f47b0a4ef
+    candidate_digest: 231b6f6f72bf5a63599e3d76bbd355f7ec0b5ef72566d3aa0d2b1752106bb528
+    reviewer: grok-4.6-build-high
+    verdict: fail
+    findings:
+      - F-559-R7-1 owner policy was not a single O_NOFOLLOW selection snapshot
+      - F-559-R7-2 owner override reads were follow-capable
+      - F-559-R7-3 authority append parent could be swapped after its path check
+      - F-559-R7-4 execute evidence omitted phase and station
+      - F-559-R7-5 selector omitted child transport and containment inputs
+      - F-559-R7-6 findings schema could not represent direct Grok and xAI
+    disposition: all accepted and remediated; r8 exact-tree recheck required
+  - round: r7-cursor-sol
+    reviewer: cursor-gpt-5.6-sol-high
+    verdict: unavailable
+    classification: unknown_provider
+    evidence: /tmp/wi559-final-sol-r7/receipt.json
+    reason: Cursor account usage limit; no substitution or retry
+  - round: r7-cursor-fable
+    reviewer: cursor-claude-fable-5-high
+    verdict: unavailable
+    classification: unknown_provider
+    evidence: /tmp/wi559-final-fable-r7/receipt.json
+    reason: Cursor account usage limit; no substitution or retry
 bootstrap_adversarial_review:
   transport: cursor-agent
   model: claude-fable-5-thinking-high

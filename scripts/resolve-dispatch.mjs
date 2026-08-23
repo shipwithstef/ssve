@@ -80,23 +80,36 @@ function deepMerge(base, overlay) {
   return deepClone(overlay);
 }
 
-function readProtectedJson(file, purpose) {
+export function readProtectedJson(file, purpose) {
   const absolute = path.resolve(file);
-  let info;
+  let parent;
   try {
-    info = fs.lstatSync(absolute);
+    parent = fs.lstatSync(path.dirname(absolute));
   } catch (error) {
     if (error.code === 'ENOENT') fail(`${purpose} is missing: ${absolute}`, 'dispatch_missing_global_file');
     fail(`${purpose} is unreadable: ${absolute} (${error.code || error.message})`, 'dispatch_io_error');
   }
-  if (!info.isFile() || info.isSymbolicLink()) fail(`${purpose} must be a regular non-symlink file: ${absolute}`, 'dispatch_policy_invalid');
-  if (typeof process.getuid === 'function' && info.uid !== process.getuid()) fail(`${purpose} must be owned by the current principal: ${absolute}`, 'dispatch_policy_invalid');
-  if ((info.mode & 0o022) !== 0) fail(`${purpose} must not be group/world writable: ${absolute}`, 'dispatch_policy_invalid');
-  const parent = fs.statSync(path.dirname(absolute));
+  if (!parent.isDirectory() || parent.isSymbolicLink()) fail(`${purpose} directory must be a regular non-symlink directory: ${path.dirname(absolute)}`, 'dispatch_policy_invalid');
   if (typeof process.getuid === 'function' && parent.uid !== process.getuid()) fail(`${purpose} directory must be owned by the current principal: ${path.dirname(absolute)}`, 'dispatch_policy_invalid');
   if ((parent.mode & 0o022) !== 0) fail(`${purpose} directory must not be group/world writable: ${path.dirname(absolute)}`, 'dispatch_policy_invalid');
+  let fd;
+  let info;
+  let bytes;
+  try {
+    fd = fs.openSync(absolute, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+    info = fs.fstatSync(fd);
+    if (!info.isFile()) fail(`${purpose} must be a regular non-symlink file: ${absolute}`, 'dispatch_policy_invalid');
+    if (typeof process.getuid === 'function' && info.uid !== process.getuid()) fail(`${purpose} must be owned by the current principal: ${absolute}`, 'dispatch_policy_invalid');
+    if ((info.mode & 0o022) !== 0) fail(`${purpose} must not be group/world writable: ${absolute}`, 'dispatch_policy_invalid');
+    bytes = fs.readFileSync(fd);
+  } catch (error) {
+    if (error?.code?.startsWith('dispatch_')) throw error;
+    if (error?.code === 'ELOOP') fail(`${purpose} must not be a symlink and must be a regular file: ${absolute}`, 'dispatch_policy_invalid');
+    fail(`${purpose} is unreadable or ineligible: ${absolute} (${error.code || error.message})`, error.code === 'ENOENT' ? 'dispatch_missing_global_file' : 'dispatch_policy_invalid');
+  } finally {
+    if (fd !== undefined) fs.closeSync(fd);
+  }
   let document;
-  const bytes = fs.readFileSync(absolute);
   try {
     document = JSON.parse(bytes.toString('utf8'));
   } catch {
@@ -323,7 +336,10 @@ function normalizeDispatchContext(options = {}) {
   const sessionOverrideRequested = options.sessionOverrideRequested ?? process.env.SVC_DISPATCH_OVERRIDE_REQUESTED ?? contractOverride?.requested ?? null;
   const sessionOverrideReceiptSpec = options.sessionOverrideReceiptSpec || process.env.SVC_DISPATCH_OVERRIDE_RECEIPT
     || (typeof contractOverride?.receipt_path === 'string' ? contractOverride.receipt_path : null);
-  const globalPolicy = readProtectedJson(configPath, 'owner dispatch policy');
+  const globalPolicy = options.policySnapshot || readProtectedJson(configPath, 'owner dispatch policy');
+  if (path.resolve(globalPolicy.absolute || '') !== configPath || !Buffer.isBuffer(globalPolicy.bytes) || !isObject(globalPolicy.document) || !DIGEST.test(globalPolicy.sha256 || '')) {
+    fail('owner dispatch policy snapshot is missing, malformed, or bound to another path', 'dispatch_policy_invalid');
+  }
   if (globalPolicy.document?.schema_version !== 1) {
     const error = new Error(`resolve-dispatch: unsupported policy schema_version ${globalPolicy.document?.schema_version ?? '<missing>'}`);
     error.code = 'DISPATCH_POLICY_UNSUPPORTED';
@@ -346,6 +362,7 @@ function normalizeDispatchContext(options = {}) {
   return {
     config_path: globalPolicy.absolute,
     config_sha256: globalPolicy.sha256,
+    policy_snapshot: globalPolicy,
     mode: selectedMode,
     mode_config: modeConfig,
     policy: effective,
@@ -603,7 +620,7 @@ export function resolveDispatchPolicyStatus(options = {}) {
   const phase = options.phase || 'plan';
   if (!orchestrator) fail('policy-status requires --orchestrator or SVC_HOST', 'dispatch_input_invalid');
   const context = normalizeDispatchContext(options);
-  const topology = resolveDispatchReviewTopology({ ...options, orchestrator, phase });
+  const topology = resolveDispatchReviewTopology({ ...options, orchestrator, phase, policySnapshot: context.policy_snapshot });
   const defaultExternal = selectExternalStation(topology, {
     stationId: null,
     explicitAsk: false,

@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validate } from './lib/json-schema-validator.mjs';
-import { resolveDispatchExternalReviewer, resolveDispatchReviewTopology } from './resolve-dispatch.mjs';
+import { readProtectedJson, resolveDispatchExternalReviewer, resolveDispatchReviewTopology } from './resolve-dispatch.mjs';
 
 const DEFAULT_DISPATCH_CONFIG = path.join(os.homedir(), '.svc', 'dispatch-policy.json');
 const DEFAULT_LEGACY_CONFIG = path.join(os.homedir(), '.svc', 'reviewer-policy-v2.json');
@@ -70,18 +70,13 @@ function validatePhaseLegacy(phase, orchestrator, phaseName) {
   if (phase.release_authority && HOST_FAMILY[orchestrator] && !phase.stations.some(station => station.kind === 'external' && station.required && station.authority === 'independent' && station.tuple.family !== HOST_FAMILY[orchestrator])) fail(`${orchestrator}/${phaseName} release authority requires a required different-family external station`);
 }
 
-function loadLegacyReviewerPolicy(configPath = null) {
+function loadLegacyReviewerPolicy(configPath = null, snapshot = null) {
   const file = path.resolve(configPath || process.env.SVC_REVIEWER_POLICY || DEFAULT_LEGACY_CONFIG);
-  let info;
-  try { info = fs.lstatSync(file); } catch (error) { fail(`cannot read owner config ${file}: ${error.code || error.message}`); }
-  if (!info.isFile()) fail(`owner config is not a regular file: ${file}`);
-  if (info.isSymbolicLink()) fail(`owner config must not be a symlink: ${file}`);
-  if (typeof process.getuid === 'function' && info.uid !== process.getuid()) fail(`owner config must be owned by the current principal: ${file}`);
-  if ((info.mode & 0o022) !== 0) fail(`owner config must not be group/world writable: ${file}`);
-  const parent = fs.statSync(path.dirname(file));
-  if (typeof process.getuid === 'function' && parent.uid !== process.getuid()) fail(`owner config directory must be owned by the current principal: ${path.dirname(file)}`);
-  if ((parent.mode & 0o022) !== 0) fail(`owner config directory must not be group/world writable: ${path.dirname(file)}`);
-  const bytes = fs.readFileSync(file);
+  let loaded;
+  try { loaded = snapshot || readProtectedJson(file, 'owner reviewer policy'); }
+  catch (error) { fail(`cannot read owner config ${file}: ${error.message}`); }
+  if (path.resolve(loaded.absolute) !== file) fail(`owner config snapshot path mismatch: ${file}`);
+  const bytes = loaded.bytes;
   let policy;
   try { policy = JSON.parse(bytes); } catch { fail(`owner config is not valid JSON: ${file}`); }
   if (policy.schema_version !== 2 || policy.authority !== 'repository-owner' || typeof policy.default_mode !== 'string' || !policy.modes?.[policy.default_mode]) fail('owner config header/default mode is invalid');
@@ -93,21 +88,21 @@ function loadLegacyReviewerPolicy(configPath = null) {
       for (const phaseName of ['plan', 'exec']) validatePhaseLegacy(phases?.[phaseName], orchestrator, phaseName);
     }
   }
-  return { file, sha256: hash(bytes), policy };
+  return { file, sha256: loaded.sha256, policy, snapshot: loaded };
 }
 
 export function loadReviewerPolicy(configPath = null) {
   const file = reviewerPolicyPath(configPath);
-  let bytes;
-  try { bytes = fs.readFileSync(file); } catch (error) { fail(`cannot read owner config ${file}: ${error.code || error.message}`); }
-  let policy;
-  try { policy = JSON.parse(bytes); } catch { fail(`owner config is not valid JSON: ${file}`); }
+  let loaded;
+  try { loaded = readProtectedJson(file, 'owner reviewer policy'); }
+  catch (error) { fail(`cannot read owner config ${file}: ${error.message}`); }
+  const { bytes, document: policy } = loaded;
   if (policy.schema_version === 1) {
-    return { file, sha256: hash(bytes), policy, format: 'dispatch-v1' };
+    return { file, sha256: loaded.sha256, policy, format: 'dispatch-v1', snapshot: loaded };
   }
   if (policy.schema_version === 2) {
-    const loaded = loadLegacyReviewerPolicy(file);
-    return { ...loaded, format: 'legacy-v2' };
+    const legacy = loadLegacyReviewerPolicy(file, loaded);
+    return { ...legacy, format: 'legacy-v2' };
   }
   fail(`unsupported reviewer policy schema_version ${policy.schema_version ?? '<missing>'}`);
 }
@@ -143,6 +138,7 @@ export function resolveReviewTopology({
   if (loaded.format === 'dispatch-v1') {
     const topology = resolveDispatchReviewTopology({
       configPath: loaded.file,
+      policySnapshot: loaded.snapshot,
       mode,
       orchestrator,
       phase,
@@ -203,6 +199,7 @@ export function resolveExternalReviewer({
   if (loaded.format === 'dispatch-v1') {
     const resolved = resolveDispatchExternalReviewer({
       configPath: loaded.file,
+      policySnapshot: loaded.snapshot,
       mode,
       orchestrator,
       phase,
@@ -216,9 +213,36 @@ export function resolveExternalReviewer({
       explicitAsk,
       unavailableStations,
     });
-    return { topology: resolveReviewTopology({ configPath: loaded.file, mode, orchestrator, phase, wi, workOverlayPath, sessionId, sessionOverrideSpec, sessionOverrideRequested, sessionOverrideReceiptSpec }), station: resolved.station, tuple: resolved.tuple };
+    const topology = {
+      schema_version: 2,
+      config_path: resolved.topology.config_path,
+      config_sha256: resolved.topology.config_sha256,
+      mode: resolved.topology.mode,
+      orchestrator: resolved.topology.orchestrator,
+      orchestrator_family: resolved.topology.orchestrator_family,
+      phase: resolved.topology.phase,
+      release_authority: resolved.topology.release_authority,
+      final_receipt_count: 1,
+      stations: resolved.topology.stations.map(station => ({ ...station })),
+    };
+    return { topology, station: resolved.station, tuple: resolved.tuple };
   }
-  const topology = resolveReviewTopology({ configPath: loaded.file, mode, orchestrator, phase });
+  if (!['plan','exec'].includes(phase)) fail('phase must be plan|exec');
+  const selectedMode = mode || loaded.policy.default_mode;
+  const selected = loaded.policy.modes?.[selectedMode]?.orchestrators?.[orchestrator]?.[phase];
+  if (!selected) fail(`mode ${selectedMode} has no ${orchestrator}/${phase} route`);
+  const topology = {
+    schema_version: 2,
+    config_path: loaded.file,
+    config_sha256: loaded.sha256,
+    mode: selectedMode,
+    orchestrator,
+    orchestrator_family: HOST_FAMILY[orchestrator],
+    phase,
+    release_authority: selected.release_authority,
+    final_receipt_count: 1,
+    stations: selected.stations.map((row, index) => ({ order: index + 1, ...row })),
+  };
   const station = selectLegacyExternalStation(topology, stationId);
   return { topology, station, tuple: { orchestrator, ...station.tuple } };
 }
