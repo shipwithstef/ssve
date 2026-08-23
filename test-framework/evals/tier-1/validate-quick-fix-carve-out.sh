@@ -135,11 +135,11 @@ G commit -qm renamed
 SHA8=$(G rev-parse HEAD)
 TREE8=$(G rev-parse "$SHA8^{tree}")
 # checker is notes-first: inject a consolidated note {"quick-fix": {...}}
-NOTE_BAD=$(python3 -c "import json;print(json.dumps({'quick-fix':{'receipt_type':'quick-fix','schema_version':1,'tree_hash':'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef','eligible':True,'reasons':[],'files':['docs/specs/smuggle.mjs'],'timestamp':'2026-06-07T00:00:00Z'}}))")
+NOTE_BAD=$(python3 -c "import json;print(json.dumps({'quick-fix':{'receipt_type':'quick-fix','wi':'WI-376','schema_version':1,'tree_hash':'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef','eligible':True,'reasons':[],'files':['docs/specs/smuggle.mjs'],'timestamp':'2026-06-07T00:00:00Z'}}))")
 G notes --ref=svc-receipts add -f -m "$NOTE_BAD" "$SHA8"
 ( cd "$TMP/repo" && env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE node "$REPO_ROOT/scripts/check-chain-receipts.mjs" --sha "$SHA8" > "$TMP/d8.out" 2>&1 ) || true
 check "D8 wrong-tree receipt rejected" grep -qi "tree mismatch" "$TMP/d8.out"
-NOTE_OK=$(python3 -c "import json;print(json.dumps({'quick-fix':{'receipt_type':'quick-fix','schema_version':1,'tree_hash':'$TREE8','eligible':True,'reasons':[],'files':['docs/specs/smuggle.mjs'],'timestamp':'2026-06-07T00:00:00Z'}}))")
+NOTE_OK=$(python3 -c "import json;print(json.dumps({'quick-fix':{'receipt_type':'quick-fix','wi':'WI-376','schema_version':1,'tree_hash':'$TREE8','eligible':True,'reasons':[],'files':['docs/specs/smuggle.mjs'],'timestamp':'2026-06-07T00:00:00Z'}}))")
 G notes --ref=svc-receipts add -f -m "$NOTE_OK" "$SHA8"
 # WI-369 D2 upgrade: tree-binding alone was BLIND to this forged note on the
 # rename-smuggle commit; the eligibility re-check now refuses it.
@@ -150,7 +150,7 @@ echo "clean docs" >> "$TMP/repo/docs/analysis/a.md"
 G add -A; G commit -qm d8c
 SHA8C=$(G rev-parse HEAD)
 TREE8C=$(G rev-parse "$SHA8C^{tree}")
-NOTE_8C=$(python3 -c "import json;print(json.dumps({'quick-fix':{'receipt_type':'quick-fix','schema_version':1,'tree_hash':'$TREE8C','eligible':True,'reasons':['exempt'],'files':['docs/analysis/a.md'],'timestamp':'2026-06-07T00:00:00Z'}}))")
+NOTE_8C=$(python3 -c "import json;print(json.dumps({'quick-fix':{'receipt_type':'quick-fix','wi':'WI-376','schema_version':1,'tree_hash':'$TREE8C','eligible':True,'reasons':['exempt'],'files':['docs/analysis/a.md'],'timestamp':'2026-06-07T00:00:00Z'}}))")
 G notes --ref=svc-receipts add -f -m "$NOTE_8C" "$SHA8C"
 ( cd "$TMP/repo" && env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE node "$REPO_ROOT/scripts/check-chain-receipts.mjs" --sha "$SHA8C" > "$TMP/d8c.out" 2>&1 ) || true
 check "D8c honest exempt note accepted (binding + predicate both pass)" grep -q "\"ok\": true" "$TMP/d8c.out"
@@ -249,7 +249,7 @@ echo "evil=1" > "$TMP/repo/hooks/forged.mjs"
 G add -A; G commit -qm forged
 SHA14=$(G rev-parse HEAD)
 TREE14=$(G rev-parse "$SHA14^{tree}")
-NOTE14=$(python3 -c "import json;print(json.dumps({'quick-fix':{'receipt_type':'quick-fix','schema_version':1,'tree_hash':'$TREE14','eligible':True,'reasons':['forged'],'files':['hooks/forged.mjs'],'timestamp':'2026-06-08T00:00:00Z'}}))")
+NOTE14=$(python3 -c "import json;print(json.dumps({'quick-fix':{'receipt_type':'quick-fix','wi':'WI-376','schema_version':1,'tree_hash':'$TREE14','eligible':True,'reasons':['forged'],'files':['hooks/forged.mjs'],'timestamp':'2026-06-08T00:00:00Z'}}))")
 G notes --ref=svc-receipts add -f -m "$NOTE14" "$SHA14"
 ( cd "$TMP/repo" && env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE node "$REPO_ROOT/scripts/check-chain-receipts.mjs" --sha "$SHA14" > "$TMP/d14.out" 2>&1 ) || true
 check "D14 forged eligible note refused (eligibility mismatch)" grep -qi "eligibility mismatch" "$TMP/d14.out"

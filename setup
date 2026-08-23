@@ -321,6 +321,25 @@ fi
 # Serialize setup per host. Different hosts may provision concurrently, but two
 # writers for the same host must never interleave config snapshots or wirers.
 SETUP_STATE_ROOT="${SVC_SETUP_STATE_ROOT:-$HOME/.svc/setup-state}"
+# The state HOME parent (~/.svc) is the enforcement state root (F-015): it must
+# be owner-private BEFORE any child dir or bundle is written. A default-mode
+# `mkdir -p` under umask 0002 yields 0775 and svc-migrate-install then refuses
+# its own root. Create securely on first touch; refuse a pre-existing insecure
+# root (never chmod-heal — that could mask tampering).
+SVC_STATE_HOME="$(dirname "$SETUP_STATE_ROOT")"
+# A symlinked state home is left for the canonical ancestry walk below to
+# reject with its own diagnostic ('state ancestry must not contain symlinks').
+if [ ! -L "$SVC_STATE_HOME" ]; then
+  if [ -d "$SVC_STATE_HOME" ]; then
+    SVC_STATE_HOME_MODE="$(stat -c %a "$SVC_STATE_HOME" 2>/dev/null || stat -f %Lp "$SVC_STATE_HOME")"
+    case "$SVC_STATE_HOME_MODE" in
+      *[2367]) echo "ERROR: svc state home is group/other-writable (mode $SVC_STATE_HOME_MODE): $SVC_STATE_HOME" >&2; exit 1 ;;
+    esac
+  elif [ ! -e "$SVC_STATE_HOME" ]; then
+    mkdir -p "$SVC_STATE_HOME"
+    chmod 700 "$SVC_STATE_HOME"
+  fi
+fi
 python3 - "$HOME" "$SETUP_STATE_ROOT" <<'PY_SECURE_STATE_ROOT'
 import os, pathlib, stat, sys
 home, target = pathlib.Path(sys.argv[1]).resolve(), pathlib.Path(sys.argv[2])

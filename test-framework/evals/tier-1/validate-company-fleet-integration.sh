@@ -155,13 +155,19 @@ if SVC_STATE_HOME="$FIXTURE_ROOT/promotion-state" node "$REPO_ROOT/scripts/svc-w
 check test ! -e "$FIXTURE_ROOT/promotion-state/wi-promotion-index.jsonl.lock"
 cp "$FIXTURE_ROOT/promotion-index.saved" "$FIXTURE_ROOT/promotion-state/wi-promotion-index.jsonl"
 
-# Development mirror fallback uses the same short-SHA path as emit-receipt.
+# Development mirror fallback is NOT authority (WI-546): with the note removed,
+# indexing must FAIL CLOSED even when a gitignored .svc/receipts/<sha>/ mirror
+# exists. The old contract asserted successful mirror indexing — that reopened
+# the "mirrors as receipts" hole the note-sourced rule closed.
 git -C "$PROMO" notes --ref=svc-receipts remove "$promo_sha" >/dev/null
 printf '.svc/\n' >> "$PROMO/.git/info/exclude"
 (cd "$PROMO" && printf '%s\n' "$(node -e 'const n=JSON.parse(process.argv[1]); process.stdout.write(JSON.stringify(n["verify-promotion"]))' "$note")" | node "$REPO_ROOT/scripts/emit-receipt.mjs" --type verify-promotion --wi WI-507 --sha "$promo_sha" --no-note >/dev/null)
-mirror_indexed="$(SVC_STATE_HOME="$FIXTURE_ROOT/promotion-mirror-state" node "$REPO_ROOT/scripts/svc-wi-promotion-indexer.mjs" index --repo "$PROMO" --wi WI-507 --sha "$promo_sha" --summary 'mirror fixture')"
-check grep -q '"status":"indexed"' <<< "$mirror_indexed"
-check grep -q 'verify-promotion.json' "$FIXTURE_ROOT/promotion-mirror-state/wi-promotion-index.jsonl"
+check test -f "$PROMO/.svc/receipts/${promo_sha:0:7}/verify-promotion.json"
+if SVC_STATE_HOME="$FIXTURE_ROOT/promotion-mirror-state" node "$REPO_ROOT/scripts/svc-wi-promotion-indexer.mjs" index --repo "$PROMO" --wi WI-507 --sha "$promo_sha" --summary 'mirror fixture' >/dev/null 2>&1; then
+  fail=$((fail + 1)); echo "FAIL: mirror-only envelope was indexed (must be refused)" >&2
+else
+  pass=$((pass + 1))
+fi
 
 # Task 4: SessionStart hooks are bounded, cached, fail-open, and removable.
 CACHE_ROOT="$FIXTURE_ROOT/cache"

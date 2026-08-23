@@ -35,7 +35,7 @@ EOF
   cat "$BLIND"
   printf '\nFRAMEWORK PLAN:\n'; cat "$MERGED"
   printf '\nROWS TO CERTIFY OR REJECT:\n'; cat "$ROWS"
-} | node "$LAUNCHER" --orchestrator "$ORCHESTRATOR" --review-kind blind-floor --context-root "$CONTEXT_ROOT" --artifacts-dir "$ARTIFACTS" > "$SUMMARY" || exit 4
+} | node "$LAUNCHER" --orchestrator "$ORCHESTRATOR" --review-kind blind-floor --candidate-digest "$CONTENT_SHA" --context-root "$CONTEXT_ROOT" --artifacts-dir "$ARTIFACTS" > "$SUMMARY" || exit 4
 
 node - "$SUMMARY" "$BLIND" "$MERGED" <<'NODE' || { printf 'blind-floor-judge: findings missing or malformed\n' >&2; exit 2; }
 const {createHash}=require('crypto');const fs=require('fs');

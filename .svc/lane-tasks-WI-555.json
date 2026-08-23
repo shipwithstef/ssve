@@ -22,12 +22,12 @@
     {
       "id": 3,
       "subject": "plan: plan-changeset",
-      "status": "completed",
+      "status": "pending",
       "blocked_by": [
         16
       ],
       "skill": "plan-changeset",
-      "completed_at": "2026-08-21T12:10:19.000Z"
+      "note": "WI-558: reverted ghost-completion (no skill_receipt; plan artifact lives in docs/plans/, not provable per-task execution)"
     },
     {
       "id": 4,

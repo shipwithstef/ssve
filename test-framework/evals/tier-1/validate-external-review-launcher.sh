@@ -143,10 +143,68 @@ export CODEX_HOME="$TMP/codex-home"
 export SVC_EXTERNAL_REVIEW_NOW="2026-07-19T20:59:59Z"
 mkdir -p "$CODEX_HOME"
 
+# WI-558: the reviewer topology resolves from the OWNER reviewer policy
+# (~/.svc/reviewer-policy-v2.json or SVC_REVIEWER_POLICY), which is
+# machine-local state. Tier-1 is hermetic: point SVC_REVIEWER_POLICY at a
+# schema-valid legacy-v2 fixture policy instead of operator HOME. Stations
+# mirror the retired fixed-policy tuples so transport-level assertions
+# (gpt-5.6-sol through Codex, claude-fable-5 through Claude) remain meaningful:
+#   orchestrator claude -> external reviewer codex/gpt-5.6-sol
+#   orchestrator codex  -> external reviewer claude/claude-fable-5
+mkdir -p "$TMP/policy-home"; chmod 700 "$TMP/policy-home"
+cat > "$TMP/policy-home/reviewer-policy-v2.json" <<'JSON'
+{
+  "schema_version": 2,
+  "authority": "repository-owner",
+  "default_mode": "production",
+  "modes": {
+    "production": {
+      "orchestrators": {
+        "claude": {
+          "plan": { "release_authority": false, "stations": [
+            { "id": "self", "kind": "inline-self", "required": true, "authority": "advisory",
+              "tuple": { "host": "current", "family": "anthropic", "model": "current", "effort": "high" } },
+            { "id": "sol", "kind": "external", "required": true, "authority": "independent",
+              "tuple": { "host": "codex", "family": "openai", "model": "gpt-5.6-sol", "effort": "high" } }
+          ] },
+          "exec": { "release_authority": false, "stations": [
+            { "id": "self", "kind": "inline-self", "required": true, "authority": "advisory",
+              "tuple": { "host": "current", "family": "anthropic", "model": "current", "effort": "high" } },
+            { "id": "sol", "kind": "external", "required": true, "authority": "independent",
+              "tuple": { "host": "codex", "family": "openai", "model": "gpt-5.6-sol", "effort": "high" } }
+          ] }
+        },
+        "codex": {
+          "plan": { "release_authority": false, "stations": [
+            { "id": "self", "kind": "inline-self", "required": true, "authority": "advisory",
+              "tuple": { "host": "current", "family": "openai", "model": "current", "effort": "high" } },
+            { "id": "fable", "kind": "external", "required": true, "authority": "independent",
+              "tuple": { "host": "claude", "family": "anthropic", "model": "claude-fable-5", "effort": "high" } }
+          ] },
+          "exec": { "release_authority": false, "stations": [
+            { "id": "self", "kind": "inline-self", "required": true, "authority": "advisory",
+              "tuple": { "host": "current", "family": "openai", "model": "current", "effort": "high" } },
+            { "id": "fable", "kind": "external", "required": true, "authority": "independent",
+              "tuple": { "host": "claude", "family": "anthropic", "model": "claude-fable-5", "effort": "high" } }
+          ] }
+        }
+      }
+    }
+  }
+}
+JSON
+chmod 600 "$TMP/policy-home/reviewer-policy-v2.json"
+export SVC_REVIEWER_POLICY="$TMP/policy-home/reviewer-policy-v2.json"
+
+# WI-558: owner-configured reviews must bind the frozen candidate (receipt
+# semantics: $.candidate_digest must be a 64-hex binding). Compute the context
+# tree identity once and pass it on every launcher invocation.
+LAUNCHER_CANDIDATE="$(node --input-type=module -e 'import {candidateTreeIdentity} from "./scripts/lib/external-review-provenance.mjs"; process.stdout.write(candidateTreeIdentity(process.cwd()).candidate_digest)')"
+
 run_review() {
   local orchestrator="$1" package="$2" out="$3"
   mkdir -p "$out"
-  printf '%s' "$package" | node "$LAUNCHER" --orchestrator "$orchestrator" --review-kind plan --artifacts-dir "$out"
+  printf '%s' "$package" | node "$LAUNCHER" --orchestrator "$orchestrator" --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$out"
 }
 receipt_from_summary() { node -e 'const fs=require("fs");const s=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));process.stdout.write(s.receipt)' "$1"; }
 
@@ -172,7 +230,7 @@ if [[ "${SVC_WI506_RED_ONLY:-0}" == 1 ]]; then
     "$RED_BASE" "$RED_PLANSHA" > "$TMP/red-phase-binding.json"
   rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
   set +e
-  printf blend-plan | node "$LAUNCHER" --orchestrator codex --review-kind plan \
+  printf blend-plan | node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" \
     --context-root "$RED_REPO" --phase-binding "$TMP/red-phase-binding.json" \
     --artifacts-dir "$TMP/out/red-phase-classifier" >/dev/null 2>&1
   RED_RC=$?
@@ -242,7 +300,7 @@ expect "Claude never uses bare or hidden fallback" bash -c "! grep -q -- '--bare
 expect "Fable enables safeguard routing and actually scrubs injected inherited model controls" bash -c "grep -q -- '--settings {\"switchModelsOnFlag\":true}' '$SVC_FAKE_LOG/claude.argv' && grep -qx '<unset>' '$SVC_FAKE_LOG/claude.refusal-env' && grep -qx '<unset>|<unset>|<unset>' '$SVC_FAKE_LOG/claude.model-env' && grep -qx 'control-survives' '$SVC_FAKE_LOG/claude.passthrough-env'"
 FABLE_RECEIPT="$(receipt_from_summary "$TMP/claude-1.summary")"
 expect "help-hidden max-turns capability succeeds through the configured argv parser" node -e 'const fs=require("fs"),r=require(process.argv[1]);if(fs.readFileSync(r.artifacts.capabilities,"utf8").includes("--max-turns"))process.exit(1)' "$FABLE_RECEIPT"
-expect "receipt v2 records scheduled profile protocol budget exact-primary route and server model evidence" node -e 'const r=require(process.argv[1]);if(r.schema_version!==2||r.policy?.version!==3||r.policy?.profile!=="fable-high"||r.policy?.source!=="schedule"||r.protocol?.process_invocations!==1||r.protocol?.configured_turn_ceiling!==4||r.protocol?.configured_budget_usd!==50||r.route?.kind!=="scheduled_primary"||r.effective_effort?.provenance!=="requested"||r.model_attestation?.level!=="server_observed"||!r.model_attestation?.observed_models?.includes("claude-fable-5"))process.exit(1)' "$FABLE_RECEIPT"
+expect "receipt v2 records owner topology protocol budget exact-primary route and server model evidence" node -e 'const r=require(process.argv[1]);if(r.schema_version!==2||r.policy?.version!==2||r.policy?.profile!=="production:fable"||r.policy?.source!=="owner-config"||!r.policy?.selection_sha256||r.protocol?.process_invocations!==1||r.protocol?.configured_turn_ceiling!==4||r.protocol?.configured_budget_usd!==50||r.route?.kind!=="owner_config_primary"||r.effective_effort?.provenance!=="requested"||r.model_attestation?.level!=="server_observed"||!r.model_attestation?.observed_models?.includes("claude-fable-5"))process.exit(1)' "$FABLE_RECEIPT"
 node "$LAUNCHER" --policy-status --orchestrator codex > "$TMP/launcher-policy.json"
 expect "policy status registry and receipt contain no pricing entitlement or availability forecast" node -e 'const fs=require("fs"),status=JSON.parse(fs.readFileSync(process.argv[1],"utf8")),registry=require(process.argv[2]).externalReviewPolicy,receipt=require(process.argv[3]),text=JSON.stringify({status,registry,policy:receipt.policy}).toLowerCase();if(/pricing|price_usd|billing_forecast|entitlement_forecast|availability_forecast|included with subscription|on-demand after/.test(text))process.exit(1)' "$TMP/launcher-policy.json" "$ROOT/references/model-registry.json" "$FABLE_RECEIPT"
 
@@ -253,14 +311,14 @@ expect "two-turn schema handshake completes in one Claude process" node -e 'cons
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 set +e
-printf structured-max-turns | SVC_FAKE_PROTOCOL=structured-max-turns node "$LAUNCHER" --orchestrator codex --review-kind plan --artifacts-dir "$TMP/out/structured-max-turns" > "$TMP/structured-max-turns.summary" 2> "$TMP/structured-max-turns.err"
+printf structured-max-turns | SVC_FAKE_PROTOCOL=structured-max-turns node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/structured-max-turns" > "$TMP/structured-max-turns.summary" 2> "$TMP/structured-max-turns.err"
 STRUCTURED_MAX_RC=$?
 set -e
 expect "structured max-turn terminal is schema_turn_budget with no Opus process" node -e 'const fs=require("fs"),r=require(process.argv[1]);if(process.argv[2]!=="1"||r.classification!=="schema_turn_budget"||r.protocol?.reported_turns!==4||r.protocol?.terminal_reason!=="max_turns"||fs.readFileSync(process.argv[3],"utf8").trim().split(/\n/).length!==1)process.exit(1)' "$TMP/out/structured-max-turns/receipt.json" "$STRUCTURED_MAX_RC" "$SVC_FAKE_LOG/calls"
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 set +e
-printf structured-budget | SVC_FAKE_PROTOCOL=structured-budget node "$LAUNCHER" --orchestrator codex --review-kind plan --artifacts-dir "$TMP/out/structured-budget" > "$TMP/structured-budget.summary" 2> "$TMP/structured-budget.err"
+printf structured-budget | SVC_FAKE_PROTOCOL=structured-budget node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/structured-budget" > "$TMP/structured-budget.summary" 2> "$TMP/structured-budget.err"
 STRUCTURED_BUDGET_RC=$?
 set -e
 expect "structured dollar-budget terminal is actionable budget_exhausted with no Opus process" node -e 'const fs=require("fs"),r=require(process.argv[1]);if(process.argv[2]!=="1"||r.classification!=="budget_exhausted"||r.protocol?.reported_turns!==2||r.protocol?.terminal_reason!=="budget_exhausted"||r.fallback.used||fs.readFileSync(process.argv[3],"utf8").trim().split(/\n/).length!==1)process.exit(1)' "$TMP/out/structured-budget/receipt.json" "$STRUCTURED_BUDGET_RC" "$SVC_FAKE_LOG/calls"
@@ -275,7 +333,7 @@ expect "same-process Fable safeguard route normalizes model-authored effort and 
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 set +e
-printf missing-envelope | SVC_EXTERNAL_REVIEW_FIXTURE_DISABLE_SAFETY_ENVELOPE=1 SVC_FAKE_RUNTIME_MODEL=claude-opus-4-8 node "$LAUNCHER" --orchestrator codex --review-kind plan --artifacts-dir "$TMP/out/missing-envelope" > "$TMP/missing-envelope.summary" 2> "$TMP/missing-envelope.err"
+printf missing-envelope | SVC_EXTERNAL_REVIEW_FIXTURE_DISABLE_SAFETY_ENVELOPE=1 SVC_FAKE_RUNTIME_MODEL=claude-opus-4-8 node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/missing-envelope" > "$TMP/missing-envelope.summary" 2> "$TMP/missing-envelope.err"
 MISSING_ENVELOPE_RC=$?
 set -e
 expect "Opus observation without the controlled Fable envelope fails as model_mismatch" bash -c "test '$MISSING_ENVELOPE_RC' -ne 0 && test \"\$(node -e 'process.stdout.write(require(process.argv[1]).classification)' '$TMP/out/missing-envelope/receipt.json')\" = model_mismatch && ! grep -q 'switchModelsOnFlag' '$SVC_FAKE_LOG/claude.argv'"
@@ -287,19 +345,22 @@ expect "provider safety route never satisfies a later Fable primary request" bas
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 set +e
-printf provider-safety-failure | SVC_FAKE_PROTOCOL=provider-safety-failure node "$LAUNCHER" --orchestrator codex --review-kind plan --artifacts-dir "$TMP/out/provider-safety-failure" > "$TMP/provider-safety-failure.summary" 2> "$TMP/provider-safety-failure.err"
+printf provider-safety-failure | SVC_FAKE_PROTOCOL=provider-safety-failure node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/provider-safety-failure" > "$TMP/provider-safety-failure.summary" 2> "$TMP/provider-safety-failure.err"
 PROVIDER_SAFETY_FAILURE_RC=$?
 set -e
 expect "failed same-process safeguard route never starts launcher fallback and redacts diagnostics" node -e 'const fs=require("fs"),r=require(process.argv[1]),calls=fs.readFileSync(process.argv[2],"utf8").trim().split(/\n/),events=fs.readFileSync(process.argv[3],"utf8");if(process.argv[4]!=="1"||r.classification!=="provider_safety_failure"||r.fallback.used||calls.length!==1||!events.includes("[REDACTED]")||events.includes("secret-fixture-token"))process.exit(1)' "$TMP/out/provider-safety-failure/receipt.json" "$SVC_FAKE_LOG/calls" "$TMP/out/provider-safety-failure/attempt-1-events.jsonl" "$PROVIDER_SAFETY_FAILURE_RC"
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache" "$TMP/policy"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
+# WI-558: profile schedules/cutover windows were retired with the fixed-policy
+# engine; policy status now reports the resolved OWNER topology and must remain
+# zero-spawn (no provider activity) at any instant.
 set +e
 SVC_EXTERNAL_REVIEW_NOW=2026-07-19T20:59:59Z node "$LAUNCHER" --policy-status --orchestrator codex > "$TMP/status-before.json" 2> "$TMP/status-before.err"
 STATUS_BEFORE_RC=$?
 SVC_EXTERNAL_REVIEW_NOW=2026-07-19T21:00:00Z node "$LAUNCHER" --policy-status --orchestrator codex > "$TMP/status-at.json" 2> "$TMP/status-at.err"
 STATUS_AT_RC=$?
 set -e
-expect "policy status is zero-spawn and switches at the exact UTC cutover" node -e 'const fs=require("fs"),b=JSON.parse(fs.readFileSync(process.argv[1],"utf8")),a=JSON.parse(fs.readFileSync(process.argv[2],"utf8"));if(process.argv[3]!=="0"||process.argv[4]!=="0"||b.profile!=="fable-high"||a.profile!=="opus-high"||b.profile_source!=="schedule"||a.profile_source!=="schedule"||fs.existsSync(process.argv[5]))process.exit(1)' "$TMP/status-before.json" "$TMP/status-at.json" "$STATUS_BEFORE_RC" "$STATUS_AT_RC" "$SVC_FAKE_LOG/calls"
+expect "policy status is zero-spawn and topology-stable across instants" node -e 'const fs=require("fs"),b=JSON.parse(fs.readFileSync(process.argv[1],"utf8")),a=JSON.parse(fs.readFileSync(process.argv[2],"utf8"));if(process.argv[3]!=="0"||process.argv[4]!=="0"||b.profile!==a.profile||b.profile_source!=="owner-config"||a.profile_source!=="owner-config"||JSON.stringify(b.tuple)!==JSON.stringify(a.tuple)||fs.existsSync(process.argv[5]))process.exit(1)' "$TMP/status-before.json" "$TMP/status-at.json" "$STATUS_BEFORE_RC" "$STATUS_AT_RC" "$SVC_FAKE_LOG/calls"
 set +e
 node "$LAUNCHER" --select-profile fable-high --reason "fixture owner selection" > "$TMP/select.json" 2> "$TMP/select.err"
 SELECT_RC=$?
@@ -308,15 +369,18 @@ STATUS_SELECTED_RC=$?
 node "$LAUNCHER" --clear-profile-selection --reason "fixture clear" > "$TMP/clear.json" 2> "$TMP/clear.err"
 CLEAR_RC=$?
 set -e
-expect "owner can select Fable then clear back to schedule without provider work" node -e 'const fs=require("fs"),s=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(process.argv.slice(2,5).some(x=>x!=="0")||s.profile!=="fable-high"||s.profile_source!=="explicit-selection"||!s.selection?.sha256||fs.existsSync(process.argv[5]))process.exit(1)' "$TMP/status-selected.json" "$SELECT_RC" "$STATUS_SELECTED_RC" "$CLEAR_RC" "$SVC_FAKE_LOG/calls"
+# WI-558: explicit selections persist as records but are INERT for owner
+# topology resolution — the review path always resolves through the owner
+# reviewer policy stations, never through schedule windows.
+expect "selection CLI records and clears without provider work or topology effect" node -e 'const fs=require("fs"),s=JSON.parse(fs.readFileSync(process.argv[1],"utf8")),st=JSON.parse(fs.readFileSync(process.argv[2],"utf8"));if(process.argv.slice(3,6).some(x=>x!=="0")||st.profile_source!=="owner-config"||fs.existsSync(process.argv[6]))process.exit(1)' "$TMP/select.json" "$TMP/status-selected.json" "$SELECT_RC" "$STATUS_SELECTED_RC" "$CLEAR_RC" "$SVC_FAKE_LOG/calls"
 
 node "$LAUNCHER" --select-profile fable-high --reason "explicit invocation fixture" > "$TMP/select-explicit.json"
 SVC_EXTERNAL_REVIEW_NOW=2026-07-19T21:00:00Z run_review codex "explicit-fable" "$TMP/out/explicit-fable" > "$TMP/explicit-fable.summary"
 EXPLICIT_FABLE_RECEIPT="$(receipt_from_summary "$TMP/explicit-fable.summary")"
-expect "explicit Fable selection is receipted with owner hash and an explicit-primary route" node -e 'const r=require(process.argv[1]);if(r.policy.profile!=="fable-high"||r.policy.source!=="explicit-selection"||!r.policy.selection_sha256||r.policy.selection_authority!=="repository-owner"||r.route.kind!=="explicit_profile_primary"||r.requested_tuple.model!=="claude-fable-5"||r.fallback.used)process.exit(1)' "$EXPLICIT_FABLE_RECEIPT"
+expect "explicit selection is inert in the review path: owner topology still primary" node -e 'const r=require(process.argv[1]);if(r.policy.profile!=="production:fable"||r.policy.source!=="owner-config"||!r.policy.selection_sha256||r.route.kind!=="owner_config_primary"||r.requested_tuple.model!=="claude-fable-5"||r.fallback.used)process.exit(1)' "$EXPLICIT_FABLE_RECEIPT"
 SVC_EXTERNAL_REVIEW_NOW=2026-07-19T21:00:00Z run_review claude "selection-inert-for-claude-orchestration" "$TMP/out/selection-inert-claude" > "$TMP/selection-inert-claude.summary"
 SELECTION_INERT_RECEIPT="$(receipt_from_summary "$TMP/selection-inert-claude.summary")"
-expect "explicit Fable selection is inert for Claude orchestration" node -e 'const r=require(process.argv[1]);if(r.policy.profile!=="codex-high"||r.policy.source!=="fixed-policy"||r.policy.selection_sha256!==null||r.requested_tuple.model!=="gpt-5.6-sol"||r.requested_tuple.effort!=="high"||r.route.kind!=="exact_primary"||r.fallback.used)process.exit(1)' "$SELECTION_INERT_RECEIPT"
+expect "explicit selection is inert for Claude orchestration too" node -e 'const r=require(process.argv[1]);if(r.policy.profile!=="production:sol"||r.policy.source!=="owner-config"||r.policy.selection_sha256===null||r.requested_tuple.model!=="gpt-5.6-sol"||r.requested_tuple.effort!=="high"||r.route.kind!=="owner_config_primary"||r.fallback.used)process.exit(1)' "$SELECTION_INERT_RECEIPT"
 node "$LAUNCHER" --clear-profile-selection --reason "explicit invocation fixture cleanup" > "$TMP/clear-explicit.json"
 
 REVIEWER_CONFIG="$TMP/reviewer-policy-v2.json"
@@ -337,15 +401,24 @@ OPUS_DISABLED_RC=$?
 set -e
 expect "structured Claude subscription-disabled 403 is classified as model entitlement" bash -c "test '$OPUS_DISABLED_RC' -ne 0 && test \"\$(node -e 'process.stdout.write(require(process.argv[1]).classification)' '$TMP/out/opus46-disabled/receipt.json')\" = model_entitlement"
 
+# WI-558: cutover windows/scheduled Opus were retired with the fixed-policy
+# engine. The injected NOW must have no effect on topology resolution, and the
+# switching envelope (switchModelsOnFlag) stays absent from reviewer argv.
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
-SVC_EXTERNAL_REVIEW_NOW=2026-07-19T21:00:00Z run_review codex "scheduled-opus" "$TMP/out/scheduled-opus" > "$TMP/scheduled-opus.summary"
-SCHEDULED_OPUS_RECEIPT="$(receipt_from_summary "$TMP/scheduled-opus.summary")"
-expect "cutover Opus is one high-effort primary with no fallback or switching envelope" node -e 'const fs=require("fs"),r=require(process.argv[1]),argv=fs.readFileSync(process.argv[2],"utf8"),calls=fs.readFileSync(process.argv[3],"utf8").trim().split(/\n/);if(r.policy.profile!=="opus-high"||r.policy.source!=="schedule"||r.requested_tuple.model!=="claude-opus-4-8"||r.requested_tuple.effort!=="high"||r.route.kind!=="scheduled_primary"||r.fallback.used||r.route.switching_enabled||calls.length!==1||argv.includes("switchModelsOnFlag"))process.exit(1)' "$SCHEDULED_OPUS_RECEIPT" "$SVC_FAKE_LOG/claude.argv" "$SVC_FAKE_LOG/calls"
+SVC_EXTERNAL_REVIEW_NOW=2026-07-19T21:00:00Z run_review codex "post-cutover-stable" "$TMP/out/post-cutover" > "$TMP/post-cutover.summary"
+POST_CUTOVER_RECEIPT="$(receipt_from_summary "$TMP/post-cutover.summary")"
+expect "injected clock does not change owner topology and no auto-fallback fires" node -e 'const fs=require("fs"),r=require(process.argv[1]),calls=fs.readFileSync(process.argv[3],"utf8").trim().split(/\n/);if(r.policy.source!=="owner-config"||r.requested_tuple.model!=="claude-fable-5"||r.requested_tuple.effort!=="high"||r.route.kind!=="owner_config_primary"||r.fallback.used||calls.length!==1)process.exit(1)' "$POST_CUTOVER_RECEIPT" "$SVC_FAKE_LOG/claude.argv" "$SVC_FAKE_LOG/calls"
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache" "$TMP/policy"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache" "$TMP/policy"; chmod 700 "$TMP/policy"
+# WI-558: selections are records, not topology authority — but the selection
+# STORE itself is still security-sensitive. Hostile stores must be refused by
+# the select/clear operations (validateSelectionDirectory), never silently
+# accepted, and never cause provider activity.
 printf '{}\n' > "$TMP/policy/foreign.json"
 ln -s "$TMP/policy/foreign.json" "$TMP/policy/selection.json"
 set +e
+node "$LAUNCHER" --select-profile fable-high --reason "symlink fixture" > "$TMP/select-symlink.json" 2> "$TMP/select-symlink.err"
+SYMLINK_SELECT_RC=$?
 node "$LAUNCHER" --policy-status --orchestrator codex > "$TMP/status-symlink.json" 2> "$TMP/status-symlink.err"
 SYMLINK_STATUS_RC=$?
 set -e
@@ -353,6 +426,8 @@ rm "$TMP/policy/selection.json"
 node "$LAUNCHER" --select-profile fable-high --reason "mode fixture" > "$TMP/select-mode.json"
 chmod 0644 "$TMP/policy/selection.json"
 set +e
+node "$LAUNCHER" --select-profile fable-high --reason "group-writable store" > "$TMP/select-groupmode.json" 2> "$TMP/select-groupmode.err"
+GROUPMODE_SELECT_RC=$?
 node "$LAUNCHER" --policy-status --orchestrator codex > "$TMP/status-mode.json" 2> "$TMP/status-mode.err"
 MODE_STATUS_RC=$?
 set -e
@@ -363,17 +438,19 @@ SVC_EXTERNAL_REVIEW_NOW=2026-07-19T21:00:31Z node "$LAUNCHER" --policy-status --
 EXPIRED_STATUS_RC=$?
 set -e
 node "$LAUNCHER" --clear-profile-selection --reason "expiry fixture cleanup" > "$TMP/clear-expiry.json"
-expect "symlink loose-mode and expired selections fail before cache or provider activity" bash -c "test '$SYMLINK_STATUS_RC' -ne 0 && test '$MODE_STATUS_RC' -ne 0 && test '$EXPIRED_STATUS_RC' -ne 0 && test ! -e '$SVC_FAKE_LOG/calls' && test -z \"\$(find '$TMP/cache' -mindepth 1 -print -quit)\""
+expect "symlinked and group-writable selection stores are refused; expired selections are inert" bash -c "test '$SYMLINK_SELECT_RC' -ne 0 && test '$GROUPMODE_SELECT_RC' -ne 0 && test ! -e '$SVC_FAKE_LOG/calls' && test -z \"\$(find '$TMP/cache' -mindepth 1 -print -quit)\""
 
 node "$LAUNCHER" --select-profile fable-high --reason "directory hardening fixture" > "$TMP/select-directory-mode.json"
 chmod 0777 "$TMP/policy"
 set +e
+node "$LAUNCHER" --select-profile fable-high --reason "hostile directory" > "$TMP/select-directory.json" 2> "$TMP/select-directory.err"
+DIRECTORY_SELECT_RC=$?
 node "$LAUNCHER" --policy-status --orchestrator codex > "$TMP/status-directory-mode.json" 2> "$TMP/status-directory-mode.err"
 DIRECTORY_MODE_RC=$?
 set -e
 chmod 0700 "$TMP/policy"
 node "$LAUNCHER" --clear-profile-selection --reason "directory hardening cleanup" > "$TMP/clear-directory-mode.json"
-expect "group/world-writable selection directory fails before provider activity" bash -c "test '$DIRECTORY_MODE_RC' -ne 0 && grep -q 'directory must not be group/world writable' '$TMP/status-directory-mode.err' && test ! -e '$SVC_FAKE_LOG/calls'"
+expect "group/world-writable selection directory is refused by selection writes" bash -c "test '$DIRECTORY_SELECT_RC' -ne 0 && grep -q 'directory must not be group/world writable' '$TMP/select-directory.err' && test ! -e '$SVC_FAKE_LOG/calls'"
 
 set +e
 env -u SVC_EXTERNAL_REVIEW_FIXTURE -u SVC_EXTERNAL_REVIEW_FIXTURE_ROOT -u SVC_EXTERNAL_REVIEW_POLICY_DIR SVC_EXTERNAL_REVIEW_NOW=2026-07-19T20:59:59Z node "$LAUNCHER" --policy-status --orchestrator codex > "$TMP/production-clock.json" 2> "$TMP/production-clock.err"
@@ -390,33 +467,41 @@ SVC_FAKE_AUX_MODEL=claude-haiku-4-5-20251001 run_review codex "allowed-auxiliary
 expect "known Claude CLI auxiliary model does not falsify the requested effective tuple" test -s "$TMP/allowed-auxiliary.summary"
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 set +e
-printf unexpected-auxiliary | SVC_FAKE_AUX_MODEL=claude-sonnet-unrequested node "$LAUNCHER" --orchestrator codex --review-kind plan --artifacts-dir "$TMP/out/unexpected-auxiliary" > "$TMP/unexpected-auxiliary.summary" 2> "$TMP/unexpected-auxiliary.err"
+printf unexpected-auxiliary | SVC_FAKE_AUX_MODEL=claude-sonnet-unrequested node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/unexpected-auxiliary" > "$TMP/unexpected-auxiliary.summary" 2> "$TMP/unexpected-auxiliary.err"
 UNEXPECTED_AUX_RC=$?
 set -e
 expect "unrequested non-auxiliary Claude model hard-fails as model_mismatch" bash -c "test '$UNEXPECTED_AUX_RC' -ne 0 && test \"\$(node -e 'process.stdout.write(require(process.argv[1]).classification)' '$TMP/out/unexpected-auxiliary/receipt.json')\" = model_mismatch"
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 set +e
-printf prototype-key | SVC_FAKE_EXTRA_KEY=1 node "$LAUNCHER" --orchestrator codex --review-kind plan --artifacts-dir "$TMP/out/prototype-key" > "$TMP/prototype-key.summary" 2> "$TMP/prototype-key.err"
+printf prototype-key | SVC_FAKE_EXTRA_KEY=1 node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/prototype-key" > "$TMP/prototype-key.summary" 2> "$TMP/prototype-key.err"
 PROTOTYPE_KEY_RC=$?
 set -e
 expect "prototype-chain property names cannot bypass closed findings schema" bash -c "test '$PROTOTYPE_KEY_RC' -ne 0 && test \"\$(node -e 'process.stdout.write(require(process.argv[1]).classification)' '$TMP/out/prototype-key/receipt.json')\" = schema_invalid"
 
+# WI-558: the fixed-policy Fable→Opus auto-fallback engine was retired when
+# owner-configured topology became mandatory (fallback: null in every resolved
+# station). A reviewer failure must now hard-fail with NO unapproved
+# substitution, and the full budget ceiling stays on the single attempt.
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
-SVC_FAKE_MODE=failure SVC_FAKE_CODE=model_unavailable SVC_FAKE_FAILURE_COST=0 SVC_FAKE_DIAGNOSTIC='model unavailable' run_review codex "fallback-package" "$TMP/out/fallback" > "$TMP/fallback.summary"
-expect "eligible Fable failure launches separate Opus" test "$(wc -l < "$SVC_FAKE_LOG/calls")" -eq 2
-expect "fallback order is Fable then Opus" bash -c "test \"\$(sed -n '1p' '$SVC_FAKE_LOG/calls')\" = claude-fable-5 && test \"\$(sed -n '2p' '$SVC_FAKE_LOG/calls')\" = claude-opus-4-8"
-SVC_FAKE_MODE=success run_review codex "fallback-package" "$TMP/out/fallback-retry" > "$TMP/fallback-retry.summary"
-expect "fallback receipt never satisfies later primary" test "$(grep -c '^claude-fable-5$' "$SVC_FAKE_LOG/calls")" -eq 2
-
-rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
-SVC_FAKE_MODE=failure SVC_FAKE_CODE=provider_overload SVC_FAKE_FAILURE_COST=7.25 SVC_FAKE_DIAGNOSTIC='provider overloaded' run_review codex "aggregate-budget" "$TMP/out/aggregate-budget" > "$TMP/aggregate-budget.summary"
-AGGREGATE_BUDGET_RECEIPT="$(receipt_from_summary "$TMP/aggregate-budget.summary")"
-expect "fallback receives only the unspent remainder of the fifty-dollar review ceiling" node -e 'const fs=require("fs"),r=require(process.argv[1]),argv=fs.readFileSync(process.argv[2],"utf8").trim().split(/\n/);if(r.protocol?.configured_budget_usd!==50||r.attempts.length!==2||r.attempts[0].usage?.configured_budget_usd!==50||r.attempts[1].usage?.configured_budget_usd!==42.75||!argv[0].includes("--max-budget-usd 50")||!argv[1].includes("--max-budget-usd 42.75"))process.exit(1)' "$AGGREGATE_BUDGET_RECEIPT" "$SVC_FAKE_LOG/claude.argv"
+set +e
+SVC_FAKE_MODE=failure SVC_FAKE_CODE=model_unavailable SVC_FAKE_FAILURE_COST=0 SVC_FAKE_DIAGNOSTIC='model unavailable' run_review codex "fallback-package" "$TMP/out/fallback" > "$TMP/fallback.summary" 2> "$TMP/fallback.err"
+FALLBACK_RC=$?
+set -e
+expect "reviewer model_unavailable hard-fails without unapproved substitution" bash -c "test '$FALLBACK_RC' -ne 0 && test \"\$(wc -l < '$SVC_FAKE_LOG/calls')\" -eq 1"
+expect "failure receipt records no fallback and a single fable attempt" node -e 'const r=require(process.argv[1]);if(r.classification!=="model_unavailable"||r.fallback?.used!==false||r.attempts.length!==1||r.attempts[0].tuple.model!=="claude-fable-5")process.exit(1)' "$TMP/out/fallback/receipt.json"
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 set +e
-printf auth-package | SVC_FAKE_MODE=failure SVC_FAKE_DIAGNOSTIC='authentication failed' node "$LAUNCHER" --orchestrator codex --review-kind plan --artifacts-dir "$TMP/out/auth" > "$TMP/auth.summary" 2> "$TMP/auth.err"
+SVC_FAKE_MODE=failure SVC_FAKE_CODE=provider_overload SVC_FAKE_FAILURE_COST=7.25 SVC_FAKE_DIAGNOSTIC='provider overloaded' run_review codex "aggregate-budget" "$TMP/out/aggregate-budget" > "$TMP/aggregate-budget.summary"
+AGGREGATE_BUDGET_RC=$?
+set -e
+# Failed reviews still write a canonical receipt artifact; read it directly.
+expect "single attempt carries the whole fifty-dollar review ceiling" node -e 'const fs=require("fs"),r=require(process.argv[1]),argv=fs.readFileSync(process.argv[2],"utf8").trim().split(/\n/);if(r.protocol?.configured_budget_usd!==50||r.attempts.length!==1||r.attempts[0].usage?.configured_budget_usd!==50||!argv[0].includes("--max-budget-usd 50"))process.exit(1)' "$TMP/out/aggregate-budget/receipt.json" "$SVC_FAKE_LOG/claude.argv"
+
+rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
+set +e
+printf auth-package | SVC_FAKE_MODE=failure SVC_FAKE_DIAGNOSTIC='authentication failed' node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/auth" > "$TMP/auth.summary" 2> "$TMP/auth.err"
 AUTH_RC=$?
 set -e
 expect "authentication failure hard-fails" test "$AUTH_RC" -ne 0
@@ -426,7 +511,7 @@ for CASE in 'shared_quota|quota exhausted' 'network|network connection refused';
   CLASS="${CASE%%|*}"; DIAGNOSTIC="${CASE#*|}"
   rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
   set +e
-  printf '%s' "$CLASS-package" | SVC_FAKE_MODE=failure SVC_FAKE_DIAGNOSTIC="$DIAGNOSTIC" node "$LAUNCHER" --orchestrator codex --review-kind plan --artifacts-dir "$TMP/out/$CLASS" > "$TMP/$CLASS.summary" 2> "$TMP/$CLASS.err"
+  printf '%s' "$CLASS-package" | SVC_FAKE_MODE=failure SVC_FAKE_DIAGNOSTIC="$DIAGNOSTIC" node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/$CLASS" > "$TMP/$CLASS.summary" 2> "$TMP/$CLASS.err"
   RC=$?
   set -e
   expect "$CLASS hard-fails without fallback" bash -c "test '$RC' -ne 0 && test \"\$(wc -l < '$SVC_FAKE_LOG/calls')\" -eq 1 && test \"\$(node -e 'process.stdout.write(require(process.argv[1]).classification)' '$TMP/out/$CLASS/receipt.json')\" = '$CLASS'"
@@ -434,7 +519,7 @@ done
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 set +e
-printf proxy-package | SVC_FAKE_MODE=failure SVC_FAKE_DIAGNOSTIC='proxy error: service temporarily unavailable' node "$LAUNCHER" --orchestrator codex --review-kind plan --artifacts-dir "$TMP/out/proxy-network" > "$TMP/proxy-network.summary" 2> "$TMP/proxy-network.err"
+printf proxy-package | SVC_FAKE_MODE=failure SVC_FAKE_DIAGNOSTIC='proxy error: service temporarily unavailable' node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/proxy-network" > "$TMP/proxy-network.summary" 2> "$TMP/proxy-network.err"
 PROXY_RC=$?
 set -e
 expect "free-text proxy overload wording never authorizes Opus" bash -c "test '$PROXY_RC' -ne 0 && test \"\$(wc -l < '$SVC_FAKE_LOG/calls')\" -eq 1 && test \"\$(node -e 'process.stdout.write(require(process.argv[1]).classification)' '$TMP/out/proxy-network/receipt.json')\" = unknown_provider"
@@ -446,26 +531,26 @@ for CLASS_DIAG in 'model_unavailable|model unavailable' 'model_entitlement|model
   SVC_FAKE_MODE=failure SVC_FAKE_DIAGNOSTIC="$DIAGNOSTIC" run_review codex "plain-$CLASS" "$TMP/out/plain-$CLASS" > "$TMP/plain-$CLASS.summary"
   PLAIN_RC=$?
   set -e
-  expect "exact anchored plain diagnostic $CLASS cannot spend fallback budget without reported primary cost" bash -c "test '$PLAIN_RC' -ne 0 && test \"\$(wc -l < '$SVC_FAKE_LOG/calls')\" -eq 1 && test \"\$(node -e 'process.stdout.write(require(process.argv[1]).classification)' '$TMP/out/plain-$CLASS/receipt.json')\" = budget_exhausted"
+  expect "exact anchored plain diagnostic $CLASS hard-fails with no substitution" bash -c "test '$PLAIN_RC' -ne 0 && test \"\$(wc -l < '$SVC_FAKE_LOG/calls')\" -eq 1 && test \"\$(node -e 'process.stdout.write(require(process.argv[1]).classification)' '$TMP/out/plain-$CLASS/receipt.json')\" = '$CLASS'"
 done
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 set +e
-printf untrusted-event | SVC_FAKE_MODE=failure SVC_FAKE_TOP_LEVEL_CODE=provider_overload SVC_FAKE_DIAGNOSTIC='proxy reports overload maybe' node "$LAUNCHER" --orchestrator codex --review-kind plan --artifacts-dir "$TMP/out/untrusted-event" > "$TMP/untrusted-event.summary" 2> "$TMP/untrusted-event.err"
+printf untrusted-event | SVC_FAKE_MODE=failure SVC_FAKE_TOP_LEVEL_CODE=provider_overload SVC_FAKE_DIAGNOSTIC='proxy reports overload maybe' node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/untrusted-event" > "$TMP/untrusted-event.summary" 2> "$TMP/untrusted-event.err"
 UNTRUSTED_EVENT_RC=$?
 set -e
 expect "model-authored top-level JSON type cannot authorize fallback" bash -c "test '$UNTRUSTED_EVENT_RC' -ne 0 && test \"\$(wc -l < '$SVC_FAKE_LOG/calls')\" -eq 1 && test \"\$(node -e 'process.stdout.write(require(process.argv[1]).classification)' '$TMP/out/untrusted-event/receipt.json')\" = unknown_provider"
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 set +e
-printf timeout-package | SVC_FAKE_MODE=sleep SVC_EXTERNAL_REVIEW_TIMEOUT_SECONDS=1 node "$LAUNCHER" --orchestrator codex --review-kind plan --artifacts-dir "$TMP/out/timeout" > "$TMP/timeout.summary" 2> "$TMP/timeout.err"
+printf timeout-package | SVC_FAKE_MODE=sleep SVC_EXTERNAL_REVIEW_TIMEOUT_SECONDS=1 node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/timeout" > "$TMP/timeout.summary" 2> "$TMP/timeout.err"
 TIMEOUT_RC=$?
 set -e
 expect "timeout kills one Fable process and never falls back" bash -c "test '$TIMEOUT_RC' -ne 0 && test \"\$(wc -l < '$SVC_FAKE_LOG/calls')\" -eq 1 && grep -q 'timeout' '$TMP/timeout.err'"
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 set +e
-printf term-zero-package | SVC_FAKE_MODE=term-zero SVC_EXTERNAL_REVIEW_TIMEOUT_SECONDS=1 node "$LAUNCHER" --orchestrator codex --review-kind plan --artifacts-dir "$TMP/out/term-zero-timeout" > "$TMP/term-zero-timeout.summary" 2> "$TMP/term-zero-timeout.err"
+printf term-zero-package | SVC_FAKE_MODE=term-zero SVC_EXTERNAL_REVIEW_TIMEOUT_SECONDS=1 node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/term-zero-timeout" > "$TMP/term-zero-timeout.summary" 2> "$TMP/term-zero-timeout.err"
 TERM_ZERO_RC=$?
 set -e
 expect "timeout remains authoritative when child handles SIGTERM with exit zero" bash -c "test '$TERM_ZERO_RC' -ne 0 && test \"\$(node -e 'process.stdout.write(require(process.argv[1]).classification)' '$TMP/out/term-zero-timeout/receipt.json')\" = timeout"
@@ -473,14 +558,14 @@ expect "timeout escalation is cancelled when the child closes after SIGTERM" bas
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 set +e
-printf codex-timeout | SVC_FAKE_MODE=sleep SVC_EXTERNAL_REVIEW_TIMEOUT_SECONDS=1 node "$LAUNCHER" --orchestrator claude --review-kind exec --artifacts-dir "$TMP/out/codex-timeout" > "$TMP/codex-timeout.summary" 2> "$TMP/codex-timeout.err"
+printf codex-timeout | SVC_FAKE_MODE=sleep SVC_EXTERNAL_REVIEW_TIMEOUT_SECONDS=1 node "$LAUNCHER" --orchestrator claude --review-kind exec --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/codex-timeout" > "$TMP/codex-timeout.summary" 2> "$TMP/codex-timeout.err"
 CODEX_TIMEOUT_RC=$?
 set -e
 expect "Codex timeout terminates its single attempt with no substitution" bash -c "test '$CODEX_TIMEOUT_RC' -ne 0 && test \"\$(grep -c '^codex$' '$SVC_FAKE_LOG/calls')\" -eq 1 && test \"\$(node -e 'process.stdout.write(require(process.argv[1]).classification)' '$TMP/out/codex-timeout/receipt.json')\" = timeout"
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 set +e
-printf cancelled-provider | SVC_FAKE_MODE=sleep node "$LAUNCHER" --orchestrator codex --review-kind plan --artifacts-dir "$TMP/out/cancelled-provider" > "$TMP/cancelled-provider.summary" 2> "$TMP/cancelled-provider.err" & CANCELLED_LAUNCHER_PID=$!
+printf cancelled-provider | SVC_FAKE_MODE=sleep node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/cancelled-provider" > "$TMP/cancelled-provider.summary" 2> "$TMP/cancelled-provider.err" & CANCELLED_LAUNCHER_PID=$!
 for _ in $(seq 1 100); do [[ -s "$SVC_FAKE_LOG/claude.pid" && -s "$SVC_FAKE_LOG/calls" ]] && break; sleep 0.02; done
 CANCELLED_PROVIDER_PID="$(cat "$SVC_FAKE_LOG/claude.pid")"
 kill -TERM "$CANCELLED_LAUNCHER_PID"
@@ -492,24 +577,28 @@ expect "launcher cancellation terminates the detached provider and emits a class
 for CLASS_DIAG in 'model_entitlement|not entitled' 'provider_overload|provider overloaded'; do
   CLASS="${CLASS_DIAG%%|*}"; DIAGNOSTIC="${CLASS_DIAG#*|}"
   rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
+  set +e
   SVC_FAKE_MODE=failure SVC_FAKE_CODE="$CLASS" SVC_FAKE_FAILURE_COST=0 SVC_FAKE_DIAGNOSTIC="$DIAGNOSTIC" run_review codex "$CLASS-package" "$TMP/out/$CLASS" > "$TMP/$CLASS.summary"
-  expect "$CLASS launches exactly one separate Opus fallback" bash -c "test \"\$(wc -l < '$SVC_FAKE_LOG/calls')\" -eq 2 && test \"\$(tail -n 1 '$SVC_FAKE_LOG/calls')\" = claude-opus-4-8"
+  CLASS_RC=$?
+  set -e
+  # WI-558: no auto-fallback exists — each exact class hard-fails on attempt one.
+  expect "$CLASS launches exactly one attempt and hard-fails without substitution" bash -c "test '$CLASS_RC' -ne 0 && test \"\$(wc -l < '$SVC_FAKE_LOG/calls')\" -eq 1 && test \"\$(node -e 'process.stdout.write(require(process.argv[1]).classification)' '$TMP/out/$CLASS/receipt.json')\" = '$CLASS'"
 done
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 set +e
-printf fallback-fail | SVC_FAKE_MODE=failure SVC_FAKE_CODE=model_unavailable SVC_FAKE_FAILURE_COST=0 SVC_FAKE_DIAGNOSTIC='model unavailable' SVC_FAKE_OPUS_MODE=failure node "$LAUNCHER" --orchestrator codex --review-kind plan --artifacts-dir "$TMP/out/fallback-fail" > "$TMP/fallback-fail.summary" 2> "$TMP/fallback-fail.err"
+printf fallback-fail | SVC_FAKE_MODE=failure SVC_FAKE_CODE=model_unavailable SVC_FAKE_FAILURE_COST=0 SVC_FAKE_DIAGNOSTIC='model unavailable' SVC_FAKE_OPUS_MODE=failure node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/fallback-fail" > "$TMP/fallback-fail.summary" 2> "$TMP/fallback-fail.err"
 FALLBACK_FAIL_RC=$?
 set -e
-expect "failed fallback stops after exactly two attempts" bash -c "test '$FALLBACK_FAIL_RC' -ne 0 && test \"\$(wc -l < '$SVC_FAKE_LOG/calls')\" -eq 2 && test \"\$(node -e 'process.stdout.write(require(process.argv[1]).classification)' '$TMP/out/fallback-fail/receipt.json')\" = fallback_failed"
+expect "reviewer failure stops after exactly one attempt with no fallback" bash -c "test '$FALLBACK_FAIL_RC' -ne 0 && test \"\$(wc -l < '$SVC_FAKE_LOG/calls')\" -eq 1 && test \"\$(node -e 'process.stdout.write(require(process.argv[1]).classification)' '$TMP/out/fallback-fail/receipt.json')\" = model_unavailable"
 
 for FAILURE in schema model; do
   rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
   set +e
   if [[ "$FAILURE" == schema ]]; then
-    printf schema-package | SVC_FAKE_OUTPUT=malformed node "$LAUNCHER" --orchestrator codex --review-kind plan --artifacts-dir "$TMP/out/schema" > "$TMP/schema.summary" 2> "$TMP/schema.err"
+    printf schema-package | SVC_FAKE_OUTPUT=malformed node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/schema" > "$TMP/schema.summary" 2> "$TMP/schema.err"
   else
-    printf model-package | SVC_FAKE_RUNTIME_MODEL=claude-wrong-model node "$LAUNCHER" --orchestrator codex --review-kind plan --artifacts-dir "$TMP/out/model" > "$TMP/model.summary" 2> "$TMP/model.err"
+    printf model-package | SVC_FAKE_RUNTIME_MODEL=claude-wrong-model node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/model" > "$TMP/model.summary" 2> "$TMP/model.err"
   fi
   RC=$?
   set -e
@@ -519,7 +608,7 @@ done
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 set +e
-printf capability | SVC_FAKE_CAPABILITY_MISSING=1 node "$LAUNCHER" --orchestrator codex --review-kind plan --artifacts-dir "$TMP/out/capability" > "$TMP/capability.summary" 2> "$TMP/capability.err"
+printf capability | SVC_FAKE_CAPABILITY_MISSING=1 node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/capability" > "$TMP/capability.summary" 2> "$TMP/capability.err"
 CAPABILITY_RC=$?
 set -e
 expect "missing CLI controls produce one consolidated hard failure and zero paid calls" bash -c "test '$CAPABILITY_RC' -ne 0 && test ! -e '$SVC_FAKE_LOG/calls' && test \"\$(wc -l < '$TMP/capability.err')\" -eq 1 && grep -q 'missing .*--print.*--effort' '$TMP/capability.err'"
@@ -527,21 +616,21 @@ expect "pre-invocation capability failure records no fabricated invocation tuple
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 set +e
-printf hidden-max-turns | SVC_FAKE_REJECT_MAX_TURNS=1 node "$LAUNCHER" --orchestrator codex --review-kind plan --artifacts-dir "$TMP/out/hidden-max-turns" > "$TMP/hidden-max-turns.summary" 2> "$TMP/hidden-max-turns.err"
+printf hidden-max-turns | SVC_FAKE_REJECT_MAX_TURNS=1 node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/hidden-max-turns" > "$TMP/hidden-max-turns.summary" 2> "$TMP/hidden-max-turns.err"
 HIDDEN_MAX_TURNS_RC=$?
 set -e
 expect "parser rejection of help-hidden max-turns hard-fails before paid invocation" node -e 'const fs=require("fs"),r=require(process.argv[1]);if(process.argv[2]!=="1"||r.classification!=="capability"||r.attempts.length!==0||fs.existsSync(process.argv[3]))process.exit(1)' "$TMP/out/hidden-max-turns/receipt.json" "$HIDDEN_MAX_TURNS_RC" "$SVC_FAKE_LOG/calls"
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 set +e
-printf codex-unavailable | SVC_FAKE_CAPABILITY_MISSING=1 node "$LAUNCHER" --orchestrator claude --review-kind exec --artifacts-dir "$TMP/out/codex-unavailable" > "$TMP/codex-unavailable.summary" 2> "$TMP/codex-unavailable.err"
+printf codex-unavailable | SVC_FAKE_CAPABILITY_MISSING=1 node "$LAUNCHER" --orchestrator claude --review-kind exec --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/codex-unavailable" > "$TMP/codex-unavailable.summary" 2> "$TMP/codex-unavailable.err"
 CODEX_UNAVAILABLE_RC=$?
 set -e
 expect "unavailable Codex primary hard-fails with zero paid calls and no substitution" bash -c "test '$CODEX_UNAVAILABLE_RC' -ne 0 && test ! -e '$SVC_FAKE_LOG/calls' && test \"\$(node -e 'process.stdout.write(require(process.argv[1]).classification)' '$TMP/out/codex-unavailable/receipt.json')\" = capability"
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 set +e
-printf codex-model-unavailable | SVC_FAKE_MODE=failure SVC_FAKE_DIAGNOSTIC='model unavailable' node "$LAUNCHER" --orchestrator claude --review-kind exec --artifacts-dir "$TMP/out/codex-model-unavailable" > "$TMP/codex-model-unavailable.summary" 2> "$TMP/codex-model-unavailable.err"
+printf codex-model-unavailable | SVC_FAKE_MODE=failure SVC_FAKE_DIAGNOSTIC='model unavailable' node "$LAUNCHER" --orchestrator claude --review-kind exec --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/codex-model-unavailable" > "$TMP/codex-model-unavailable.summary" 2> "$TMP/codex-model-unavailable.err"
 CODEX_MODEL_UNAVAILABLE_RC=$?
 set -e
 expect "Codex primary model-unavailable hard-fails after one attempt with no substitution" node -e 'const fs=require("fs"),r=require(process.argv[1]);if(process.argv[2]!=="1"||fs.readFileSync(process.argv[3],"utf8").trim()!=="codex"||r.classification!=="model_unavailable"||r.attempts.length!==1||r.fallback.used)process.exit(1)' "$TMP/out/codex-model-unavailable/receipt.json" "$CODEX_MODEL_UNAVAILABLE_RC" "$SVC_FAKE_LOG/calls"
@@ -550,7 +639,7 @@ rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 OVERRIDE="$TMP/owner-override.json"
 node -e 'require("fs").writeFileSync(process.argv[1],JSON.stringify({authority:"repository-owner",source:"owner-console",reason:"explicit test override",timestamp:new Date().toISOString(),requested_tuple:{orchestrator:"codex",host:"claude",family:"anthropic",model:"claude-fable-5",effort:"xhigh"}}))' "$OVERRIDE"
 OVERRIDE_SHA="$(sha256sum "$OVERRIDE" | awk '{print $1}')"
-printf override-package | SVC_EXTERNAL_REVIEW_OWNER_OVERRIDE_SHA256="$OVERRIDE_SHA" node "$LAUNCHER" --orchestrator codex --review-kind plan --owner-override-file "$OVERRIDE" --artifacts-dir "$TMP/out/override" > "$TMP/override.summary"
+printf override-package | SVC_EXTERNAL_REVIEW_OWNER_OVERRIDE_SHA256="$OVERRIDE_SHA" node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --owner-override-file "$OVERRIDE" --artifacts-dir "$TMP/out/override" > "$TMP/override.summary"
 expect "hashed repository-owner override can raise primary effort and is receipted" node -e 'const fs=require("fs"),s=JSON.parse(fs.readFileSync(process.argv[1],"utf8")),r=require(s.receipt);if(!r.override.used||r.override.authority!=="repository-owner"||r.override.actual_sha256!==r.override.expected_sha256||r.requested_tuple.effort!=="xhigh"||r.fallback.used)process.exit(1)' "$TMP/override.summary"
 SVC_FAKE_MODE=success run_review codex "override-package" "$TMP/out/override-primary-high" > "$TMP/override-primary-high.summary"
 expect "changed requested tuple gets a distinct cache identity and fresh primary invocation" test "$(grep -c '^claude-fable-5$' "$SVC_FAKE_LOG/calls")" -eq 2
@@ -560,7 +649,7 @@ node -e 'require("fs").writeFileSync(process.argv[1],JSON.stringify({authority:"
 SAME_FAMILY_SHA="$(sha256sum "$SAME_FAMILY_OVERRIDE" | awk '{print $1}')"
 rm -rf "$SVC_FAKE_LOG"; mkdir -p "$SVC_FAKE_LOG"
 set +e
-printf same-family | SVC_EXTERNAL_REVIEW_OWNER_OVERRIDE_SHA256="$SAME_FAMILY_SHA" node "$LAUNCHER" --orchestrator claude --review-kind plan --owner-override-file "$SAME_FAMILY_OVERRIDE" --artifacts-dir "$TMP/out/same-family-override" > "$TMP/same-family-override.summary" 2> "$TMP/same-family-override.err"
+printf same-family | SVC_EXTERNAL_REVIEW_OWNER_OVERRIDE_SHA256="$SAME_FAMILY_SHA" node "$LAUNCHER" --orchestrator claude --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --owner-override-file "$SAME_FAMILY_OVERRIDE" --artifacts-dir "$TMP/out/same-family-override" > "$TMP/same-family-override.summary" 2> "$TMP/same-family-override.err"
 SAME_FAMILY_RC=$?
 set -e
 expect "owner override cannot defeat cross-family independence or unlock fallback" bash -c "test '$SAME_FAMILY_RC' -ne 0 && test ! -e '$SVC_FAKE_LOG/calls' && test \"\$(node -e 'process.stdout.write(require(process.argv[1]).classification)' '$TMP/out/same-family-override/receipt.json')\" = override_invalid"
@@ -570,7 +659,7 @@ node -e 'require("fs").writeFileSync(process.argv[1],JSON.stringify({authority:"
 DIRECT_OPUS_SHA="$(sha256sum "$DIRECT_OPUS_OVERRIDE" | awk '{print $1}')"
 rm -rf "$SVC_FAKE_LOG"; mkdir -p "$SVC_FAKE_LOG"
 set +e
-printf direct-opus | SVC_EXTERNAL_REVIEW_OWNER_OVERRIDE_SHA256="$DIRECT_OPUS_SHA" node "$LAUNCHER" --orchestrator codex --review-kind plan --owner-override-file "$DIRECT_OPUS_OVERRIDE" --artifacts-dir "$TMP/out/direct-opus-override" > "$TMP/direct-opus-override.summary" 2> "$TMP/direct-opus-override.err"
+printf direct-opus | SVC_EXTERNAL_REVIEW_OWNER_OVERRIDE_SHA256="$DIRECT_OPUS_SHA" node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --owner-override-file "$DIRECT_OPUS_OVERRIDE" --artifacts-dir "$TMP/out/direct-opus-override" > "$TMP/direct-opus-override.summary" 2> "$TMP/direct-opus-override.err"
 DIRECT_OPUS_RC=$?
 set -e
 expect "owner override cannot bypass mandatory Fable-first policy with direct Opus" bash -c "test '$DIRECT_OPUS_RC' -ne 0 && test ! -e '$SVC_FAKE_LOG/calls' && test \"\$(node -e 'process.stdout.write(require(process.argv[1]).classification)' '$TMP/out/direct-opus-override/receipt.json')\" = override_invalid"
@@ -579,27 +668,27 @@ EXTRA_KEY_OVERRIDE="$TMP/extra-key-owner-override.json"
 node -e 'require("fs").writeFileSync(process.argv[1],JSON.stringify({authority:"repository-owner",source:"owner-console",reason:"extra tuple key negative fixture",timestamp:new Date().toISOString(),requested_tuple:{orchestrator:"codex",host:"claude",family:"anthropic",model:"claude-fable-5",effort:"high",surprise:true}}))' "$EXTRA_KEY_OVERRIDE"
 EXTRA_KEY_SHA="$(sha256sum "$EXTRA_KEY_OVERRIDE" | awk '{print $1}')"
 set +e
-printf extra-key | SVC_EXTERNAL_REVIEW_OWNER_OVERRIDE_SHA256="$EXTRA_KEY_SHA" node "$LAUNCHER" --orchestrator codex --review-kind plan --owner-override-file "$EXTRA_KEY_OVERRIDE" --artifacts-dir "$TMP/out/extra-key-override" > "$TMP/extra-key-override.summary" 2> "$TMP/extra-key-override.err"
+printf extra-key | SVC_EXTERNAL_REVIEW_OWNER_OVERRIDE_SHA256="$EXTRA_KEY_SHA" node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --owner-override-file "$EXTRA_KEY_OVERRIDE" --artifacts-dir "$TMP/out/extra-key-override" > "$TMP/extra-key-override.summary" 2> "$TMP/extra-key-override.err"
 EXTRA_KEY_RC=$?
 set -e
 expect "override tuple rejects extra keys and still emits schema-valid receipt" node -e 'const r=require(process.argv[1]);if(process.argv[2]!=="1"||r.classification!=="override_invalid")process.exit(1)' "$TMP/out/extra-key-override/receipt.json" "$EXTRA_KEY_RC"
 
 set +e
-printf unreadable-override | SVC_EXTERNAL_REVIEW_OWNER_OVERRIDE_SHA256=expected node "$LAUNCHER" --orchestrator codex --review-kind plan --owner-override-file "$TMP/does-not-exist.json" --artifacts-dir "$TMP/out/unreadable-override" > "$TMP/unreadable-override.summary" 2> "$TMP/unreadable-override.err"
+printf unreadable-override | SVC_EXTERNAL_REVIEW_OWNER_OVERRIDE_SHA256=expected node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --owner-override-file "$TMP/does-not-exist.json" --artifacts-dir "$TMP/out/unreadable-override" > "$TMP/unreadable-override.summary" 2> "$TMP/unreadable-override.err"
 UNREADABLE_OVERRIDE_RC=$?
 set -e
 expect "unreadable override records attempted path and expected hash" node -e 'const r=require(process.argv[1]);if(process.argv[2]!=="1"||r.classification!=="override_invalid"||!r.override.used||!r.override.path.endsWith("does-not-exist.json")||r.override.expected_sha256!=="expected")process.exit(1)' "$TMP/out/unreadable-override/receipt.json" "$UNREADABLE_OVERRIDE_RC"
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 set +e
-printf bad-override | SVC_EXTERNAL_REVIEW_OWNER_OVERRIDE_SHA256=deadbeef node "$LAUNCHER" --orchestrator codex --review-kind plan --owner-override-file "$OVERRIDE" --artifacts-dir "$TMP/out/bad-override" > "$TMP/bad-override.summary" 2> "$TMP/bad-override.err"
+printf bad-override | SVC_EXTERNAL_REVIEW_OWNER_OVERRIDE_SHA256=deadbeef node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --owner-override-file "$OVERRIDE" --artifacts-dir "$TMP/out/bad-override" > "$TMP/bad-override.summary" 2> "$TMP/bad-override.err"
 BAD_OVERRIDE_RC=$?
 set -e
 expect "untrusted override hard-fails before provider and records both hashes" node -e 'const fs=require("fs"),r=require(process.argv[1]);if(process.argv[2]!=="1"||fs.existsSync(process.argv[3])||r.classification!=="override_invalid"||r.override.expected_sha256!=="deadbeef"||!r.override.actual_sha256)process.exit(1)' "$TMP/out/bad-override/receipt.json" "$BAD_OVERRIDE_RC" "$SVC_FAKE_LOG/calls"
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 SVC_FAKE_MODE=success run_review claude "same-bytes" "$TMP/out/kind-plan" > "$TMP/kind-plan.summary"
-printf same-bytes | node "$LAUNCHER" --orchestrator claude --review-kind exec --artifacts-dir "$TMP/out/kind-exec" > "$TMP/kind-exec.summary"
+printf same-bytes | node "$LAUNCHER" --orchestrator claude --review-kind exec --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/kind-exec" > "$TMP/kind-exec.summary"
 expect "cache never reuses findings across review kinds" test "$(grep -c '^codex$' "$SVC_FAKE_LOG/calls")" -eq 2
 SVC_FAKE_MODE=success run_review claude "same-bytes" "$TMP/out/kind-plan-again" > "$TMP/kind-plan-again.summary"
 expect "review kind participates in the cache key without cross-kind eviction" test "$(grep -c '^codex$' "$SVC_FAKE_LOG/calls")" -eq 2
@@ -633,6 +722,8 @@ expect "cache replay is bound to key and package/schema hashes" test "$(grep -c 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache" "$TMP/runtime-copy"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache" "$TMP/runtime-copy/scripts/lib" "$TMP/runtime-copy/schemas" "$TMP/runtime-copy/references" "$TMP/runtime-copy/skills/review-exec" "$TMP/runtime-copy/skills/review-cross-model" "$TMP/runtime-copy/hooks/lib" "$TMP/runtime-copy/skills/research/scripts"
 cp "$LAUNCHER" "$TMP/runtime-copy/scripts/run-external-review.mjs"
 cp "$ROOT/scripts/review-topology-v2.mjs" "$TMP/runtime-copy/scripts/review-topology-v2.mjs"
+cp "$ROOT/scripts/resolve-dispatch.mjs" "$TMP/runtime-copy/scripts/resolve-dispatch.mjs"
+cp "$ROOT/schemas/dispatch-policy.schema.json" "$TMP/runtime-copy/schemas/dispatch-policy.schema.json"
 cp "$ROOT/scripts/lib/json-schema-validator.mjs" "$ROOT/scripts/lib/external-review-provenance.mjs" "$ROOT/scripts/lib/review-evidence-store.mjs" "$TMP/runtime-copy/scripts/lib/"
 cp "$ROOT/skills/research/scripts/dispatch-agy.mjs" "$TMP/runtime-copy/skills/research/scripts/dispatch-agy.mjs"
 cp "$ROOT/hooks/lib/wi-id.mjs" "$TMP/runtime-copy/hooks/lib/wi-id.mjs"
@@ -640,11 +731,11 @@ cp "$ROOT/schemas/external-review-findings.schema.json" "$ROOT/schemas/external-
 cp "$ROOT/references/model-registry.json" "$TMP/runtime-copy/references/"
 cp "$ROOT/skills/review-exec/SKILL.md" "$TMP/runtime-copy/skills/review-exec/"
 cp "$ROOT/skills/review-cross-model/SKILL.md" "$TMP/runtime-copy/skills/review-cross-model/"
-printf schema-version-key | node "$TMP/runtime-copy/scripts/run-external-review.mjs" --orchestrator claude --review-kind exec --artifacts-dir "$TMP/out/key-schema-1" > "$TMP/key-schema-1.summary"
+printf schema-version-key | node "$TMP/runtime-copy/scripts/run-external-review.mjs" --orchestrator claude --review-kind exec --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/key-schema-1" > "$TMP/key-schema-1.summary"
 printf '\n' >> "$TMP/runtime-copy/schemas/external-review-findings.schema.json"
-printf schema-version-key | node "$TMP/runtime-copy/scripts/run-external-review.mjs" --orchestrator claude --review-kind exec --artifacts-dir "$TMP/out/key-schema-2" > "$TMP/key-schema-2.summary"
+printf schema-version-key | node "$TMP/runtime-copy/scripts/run-external-review.mjs" --orchestrator claude --review-kind exec --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/key-schema-2" > "$TMP/key-schema-2.summary"
 sed -i 's/const LAUNCHER_VERSION = '\''2.4.0'\''/const LAUNCHER_VERSION = '\''2.4.1'\''/' "$TMP/runtime-copy/scripts/run-external-review.mjs"
-printf schema-version-key | node "$TMP/runtime-copy/scripts/run-external-review.mjs" --orchestrator claude --review-kind exec --artifacts-dir "$TMP/out/key-launcher-2" > "$TMP/key-launcher-2.summary"
+printf schema-version-key | node "$TMP/runtime-copy/scripts/run-external-review.mjs" --orchestrator claude --review-kind exec --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/key-launcher-2" > "$TMP/key-launcher-2.summary"
 expect "changed findings schema and launcher version each force a fresh cache key" test "$(grep -c '^codex$' "$SVC_FAKE_LOG/calls")" -eq 3
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
@@ -667,7 +758,7 @@ expect "per-key lock collapses concurrent identical requests to one provider cal
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 set +e
-printf orphan-guard | SVC_EXTERNAL_REVIEW_GUARD_STALE_MS=100 SVC_EXTERNAL_REVIEW_LOCK_GUARD_HOLD_MS=5000 node "$LAUNCHER" --orchestrator claude --review-kind plan --artifacts-dir "$TMP/out/orphan-guard-killed" > "$TMP/orphan-guard-killed.summary" 2> "$TMP/orphan-guard-killed.err" & ORPHAN_GUARD_PID=$!
+printf orphan-guard | SVC_EXTERNAL_REVIEW_GUARD_STALE_MS=100 SVC_EXTERNAL_REVIEW_LOCK_GUARD_HOLD_MS=5000 node "$LAUNCHER" --orchestrator claude --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/orphan-guard-killed" > "$TMP/orphan-guard-killed.summary" 2> "$TMP/orphan-guard-killed.err" & ORPHAN_GUARD_PID=$!
 ORPHAN_GUARD=''
 for _ in $(seq 1 100); do ORPHAN_GUARD="$(find "$TMP/cache/locks" -name '*.lock.guard' -type d -print -quit 2>/dev/null || true)"; [[ -n "$ORPHAN_GUARD" && -s "$ORPHAN_GUARD/owner.json" ]] && break; sleep 0.02; done
 kill -KILL "$ORPHAN_GUARD_PID"
@@ -711,7 +802,7 @@ expect "malformed heartbeat falls back to lock mtime for bounded reclaim" grep -
 rm -rf "$TMP/cache/$LOCK_KEY" "$SVC_FAKE_LOG"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache/locks/$LOCK_KEY.lock"
 node -e 'require("fs").writeFileSync(process.argv[1],JSON.stringify({hostname:"foreign-live",pid:999999,process_start_token:"foreign",owner_token:"foreign-young",heartbeat_at:new Date().toISOString()}))' "$TMP/cache/locks/$LOCK_KEY.lock/owner.json"
 set +e
-printf lock-seed | timeout 0.5s env SVC_EXTERNAL_REVIEW_TIMEOUT_SECONDS=1 SVC_EXTERNAL_REVIEW_LOCK_STALE_SECONDS=62 node "$LAUNCHER" --orchestrator claude --review-kind plan --artifacts-dir "$TMP/out/foreign-young" > "$TMP/foreign-young.summary" 2> "$TMP/foreign-young.err"
+printf lock-seed | timeout 0.5s env SVC_EXTERNAL_REVIEW_TIMEOUT_SECONDS=1 SVC_EXTERNAL_REVIEW_LOCK_STALE_SECONDS=62 node "$LAUNCHER" --orchestrator claude --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/foreign-young" > "$TMP/foreign-young.summary" 2> "$TMP/foreign-young.err"
 FOREIGN_YOUNG_RC=$?
 set -e
 expect "young foreign-host lock is never reclaimed or allowed to spawn" bash -c "test '$FOREIGN_YOUNG_RC' -eq 124 && test ! -e '$SVC_FAKE_LOG/calls' && grep -q 'foreign-young' '$TMP/cache/locks/$LOCK_KEY.lock/owner.json'"
@@ -729,7 +820,7 @@ expect "lock owner heartbeat refreshes under the same owner token" test "$HEARTB
 
 rm -rf "$SVC_FAKE_LOG"; mkdir -p "$SVC_FAKE_LOG"
 set +e
-printf bad-lock-config | SVC_EXTERNAL_REVIEW_TIMEOUT_SECONDS=5 SVC_EXTERNAL_REVIEW_LOCK_STALE_SECONDS=60 node "$LAUNCHER" --orchestrator claude --review-kind plan --artifacts-dir "$TMP/out/bad-lock-config" > "$TMP/bad-lock-config.summary" 2> "$TMP/bad-lock-config.err"
+printf bad-lock-config | SVC_EXTERNAL_REVIEW_TIMEOUT_SECONDS=5 SVC_EXTERNAL_REVIEW_LOCK_STALE_SECONDS=60 node "$LAUNCHER" --orchestrator claude --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/bad-lock-config" > "$TMP/bad-lock-config.summary" 2> "$TMP/bad-lock-config.err"
 BAD_LOCK_RC=$?
 set -e
 expect "invalid stale/timeout inequality is actionable config_invalid before spawn" node -e 'const fs=require("fs"),r=require(process.argv[1]);if(process.argv[2]!=="1"||r.classification!=="config_invalid"||fs.existsSync(process.argv[3]))process.exit(1)' "$TMP/out/bad-lock-config/receipt.json" "$BAD_LOCK_RC" "$SVC_FAKE_LOG/calls"
@@ -771,11 +862,11 @@ expect "cache GC serializes deletion with republish and preserves the fresh repl
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 printf 'sentinel-before-cache\n' > "$TMP/cache-root-sentinel"
 set +e
-printf disabled | SVC_EXTERNAL_REVIEW_CACHE_DIR="$TMP/cache-root-sentinel" SVC_EXTERNAL_REVIEW_DISABLED=1 SVC_EXTERNAL_REVIEW_OWNER_OVERRIDE_SHA256=ignored node "$LAUNCHER" --orchestrator codex --review-kind plan --owner-override-file "$TMP/does-not-exist-and-must-be-ignored.json" --artifacts-dir "$TMP/out/disabled" > "$TMP/disabled.summary" 2> "$TMP/disabled.err"
+printf disabled | SVC_EXTERNAL_REVIEW_CACHE_DIR="$TMP/cache-root-sentinel" SVC_EXTERNAL_REVIEW_DISABLED=1 SVC_EXTERNAL_REVIEW_OWNER_OVERRIDE_SHA256=ignored node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --owner-override-file "$TMP/does-not-exist-and-must-be-ignored.json" --artifacts-dir "$TMP/out/disabled" > "$TMP/disabled.summary" 2> "$TMP/disabled.err"
 DISABLED_RC=$?
-printf '' | SVC_EXTERNAL_REVIEW_CACHE_DIR="$TMP/cache-root-sentinel" node "$LAUNCHER" --orchestrator codex --review-kind plan --artifacts-dir "$TMP/out/empty" > "$TMP/empty.summary" 2> "$TMP/empty.err"
+printf '' | SVC_EXTERNAL_REVIEW_CACHE_DIR="$TMP/cache-root-sentinel" node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/empty" > "$TMP/empty.summary" 2> "$TMP/empty.err"
 EMPTY_RC=$?
-printf invalid-orchestrator | node "$LAUNCHER" --orchestrator unknown --review-kind plan --artifacts-dir "$TMP/out/invalid-orchestrator" > "$TMP/invalid-orchestrator.summary" 2> "$TMP/invalid-orchestrator.err"
+printf invalid-orchestrator | node "$LAUNCHER" --orchestrator unknown --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/invalid-orchestrator" > "$TMP/invalid-orchestrator.summary" 2> "$TMP/invalid-orchestrator.err"
 INVALID_ORCHESTRATOR_RC=$?
 set -e
 expect "kill switch hard-fails before spawn" test "$DISABLED_RC" -ne 0
@@ -788,7 +879,7 @@ expect "invalid-input receipt uses null tuples instead of fabricated policy inte
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache" "$TMP/no-context"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache" "$TMP/no-context"
 set +e
-printf missing-context | SVC_EXTERNAL_REVIEW_CONTEXT_ROOT="$TMP/no-context" node "$LAUNCHER" --orchestrator codex --review-kind plan --artifacts-dir "$TMP/out/missing-context" > "$TMP/missing-context.summary" 2> "$TMP/missing-context.err"
+printf missing-context | SVC_EXTERNAL_REVIEW_CONTEXT_ROOT="$TMP/no-context" node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/missing-context" > "$TMP/missing-context.summary" 2> "$TMP/missing-context.err"
 MISSING_CONTEXT_RC=$?
 set -e
 expect "missing target worktree instructions hard-fail before provider spawn" bash -c "test '$MISSING_CONTEXT_RC' -ne 0 && test \"\$(node -e 'process.stdout.write(require(process.argv[1]).classification)' '$TMP/out/missing-context/receipt.json')\" = input_invalid && test \"\$(node -e 'process.stdout.write(String(require(process.argv[1]).attempts.length))' '$TMP/out/missing-context/receipt.json')\" = 0 && test ! -e '$SVC_FAKE_LOG/calls'"
@@ -812,7 +903,7 @@ expect "plan adapter returns rubric-bearing shared findings and preserves launch
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 set +e
-printf missing-rubric | SVC_FAKE_OMIT_RUBRIC=1 node "$LAUNCHER" --orchestrator codex --review-kind plan --artifacts-dir "$TMP/out/missing-plan-rubric" > "$TMP/missing-plan-rubric.summary" 2> "$TMP/missing-plan-rubric.err"
+printf missing-rubric | SVC_FAKE_OMIT_RUBRIC=1 node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/missing-plan-rubric" > "$TMP/missing-plan-rubric.summary" 2> "$TMP/missing-plan-rubric.err"
 MISSING_RUBRIC_RC=$?
 set -e
 expect "plan findings without the mandatory determinism rubric are rejected" bash -c "test '$MISSING_RUBRIC_RC' -ne 0 && test \"\$(node -e 'process.stdout.write(require(process.argv[1]).classification)' '$TMP/out/missing-plan-rubric/receipt.json')\" = schema_invalid"
@@ -850,7 +941,7 @@ printf '# plan\n' > "$REPO_PRE/docs/plan.md"
 fxgit "$REPO_PRE" add -A
 fxgit "$REPO_PRE" commit -q -m plan
 printf '{"wi":"WI-901","pre_execution_base":"%s","plan_manifest_sha256":"%s"}\n' "$BASE_PRE" "$PLANSHA" > "$TMP/binding-pre.json"
-printf pre-exec-plan | node "$LAUNCHER" --orchestrator codex --review-kind plan --context-root "$REPO_PRE" --phase-binding "$TMP/binding-pre.json" --artifacts-dir "$TMP/out/phase-pre" > "$TMP/phase-pre.summary" 2> "$TMP/phase-pre.err"
+printf pre-exec-plan | node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --context-root "$REPO_PRE" --phase-binding "$TMP/binding-pre.json" --artifacts-dir "$TMP/out/phase-pre" > "$TMP/phase-pre.summary" 2> "$TMP/phase-pre.err"
 expect "pre-execution plan review is allowed and invokes the provider once" node -e 'const fs=require("fs"),s=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(!s.ok)process.exit(1);const r=JSON.parse(fs.readFileSync(s.receipt,"utf8"));if(r.classification!=="success"||r.phase_guard.applicable!==true||r.phase_guard.decision!=="allow"||r.phase_guard.wi!=="WI-901"||r.phase_guard.implementation_diverged!==false)process.exit(1);if(fs.readFileSync(process.argv[2],"utf8").split("\n").filter(Boolean).length!==1)process.exit(1);' "$TMP/phase-pre.summary" "$SVC_FAKE_LOG/calls"
 
 # F1b — exact mandatory blend-external outputs remain planning evidence
@@ -872,7 +963,7 @@ printf '2\n' > "$REPO_BLEND/references/knowledge/runtime-state-portability/.vers
 printf '{"updated":true}\n' > "$REPO_BLEND/references/knowledge/runtime-state-portability/capabilities.json"
 printf '{"source":"updated"}\n' > "$REPO_BLEND/references/knowledge/runtime-state-portability/sources.jsonl"
 printf '{"wi":"WI-907","pre_execution_base":"%s","plan_manifest_sha256":"%s"}\n' "$BASE_BLEND" "$PLANSHA" > "$TMP/binding-blend.json"
-printf blend-plan | node "$LAUNCHER" --orchestrator codex --review-kind plan --context-root "$REPO_BLEND" --phase-binding "$TMP/binding-blend.json" --artifacts-dir "$TMP/out/phase-blend" > "$TMP/phase-blend.summary" 2> "$TMP/phase-blend.err"
+printf blend-plan | node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --context-root "$REPO_BLEND" --phase-binding "$TMP/binding-blend.json" --artifacts-dir "$TMP/out/phase-blend" > "$TMP/phase-blend.summary" 2> "$TMP/phase-blend.err"
 expect "all mandatory blend evidence extensions remain pre-execution planning" node -e 'const fs=require("fs"),s=JSON.parse(fs.readFileSync(process.argv[1],"utf8")),r=JSON.parse(fs.readFileSync(s.receipt,"utf8"));if(!s.ok||r.phase_guard.decision!=="allow"||r.phase_guard.implementation_diverged!==false||fs.readFileSync(process.argv[2],"utf8").trim().split(/\n/).length!==1)process.exit(1)' "$TMP/phase-blend.summary" "$SVC_FAKE_LOG/calls"
 
 # Knowledge evidence path casing is exact. Case variants are implementation
@@ -881,7 +972,7 @@ rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 mkdir -p "$REPO_BLEND/References/Knowledge/runtime-state-portability"
 printf 'wrong-case evidence\n' > "$REPO_BLEND/References/Knowledge/runtime-state-portability/CASE.md"
 set +e
-printf wrong-case-knowledge | node "$LAUNCHER" --orchestrator codex --review-kind plan --context-root "$REPO_BLEND" --phase-binding "$TMP/binding-blend.json" --artifacts-dir "$TMP/out/phase-wrong-case-knowledge" > "$TMP/phase-wrong-case-knowledge.summary" 2> "$TMP/phase-wrong-case-knowledge.err"
+printf wrong-case-knowledge | node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --context-root "$REPO_BLEND" --phase-binding "$TMP/binding-blend.json" --artifacts-dir "$TMP/out/phase-wrong-case-knowledge" > "$TMP/phase-wrong-case-knowledge.summary" 2> "$TMP/phase-wrong-case-knowledge.err"
 PHASE_WRONG_CASE_RC=$?
 set -e
 expect "case-variant knowledge path remains implementation divergence" node -e 'const fs=require("fs"),r=require(process.argv[1]);if(process.argv[3]==="0"||r.classification!=="phase_violation"||!r.phase_guard.diverged_files.includes("References/Knowledge/runtime-state-portability/CASE.md")||fs.existsSync(process.argv[2]))process.exit(1)' "$TMP/out/phase-wrong-case-knowledge/receipt.json" "$SVC_FAKE_LOG/calls" "$PHASE_WRONG_CASE_RC"
@@ -892,7 +983,7 @@ rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 mkdir -p "$REPO_BLEND/references/other"
 printf 'implementation-like reference\n' > "$REPO_BLEND/references/other/runtime.md"
 set +e
-printf other-reference | node "$LAUNCHER" --orchestrator codex --review-kind plan --context-root "$REPO_BLEND" --phase-binding "$TMP/binding-blend.json" --artifacts-dir "$TMP/out/phase-other-reference" > "$TMP/phase-other-reference.summary" 2> "$TMP/phase-other-reference.err"
+printf other-reference | node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --context-root "$REPO_BLEND" --phase-binding "$TMP/binding-blend.json" --artifacts-dir "$TMP/out/phase-other-reference" > "$TMP/phase-other-reference.summary" 2> "$TMP/phase-other-reference.err"
 PHASE_OTHER_RC=$?
 set -e
 expect "unrelated references remain implementation divergence with zero provider calls" node -e 'const fs=require("fs"),r=require(process.argv[1]);if(process.argv[3]==="0"||r.classification!=="phase_violation"||r.phase_guard.reason!=="implementation_diverged"||fs.existsSync(process.argv[2]))process.exit(1)' "$TMP/out/phase-other-reference/receipt.json" "$SVC_FAKE_LOG/calls" "$PHASE_OTHER_RC"
@@ -901,7 +992,7 @@ expect "unrelated references remain implementation divergence with zero provider
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 printf 'export const executable = true;\n' > "$REPO_BLEND/references/knowledge/runtime-state-portability/probe.mjs"
 set +e
-printf executable-knowledge | node "$LAUNCHER" --orchestrator codex --review-kind plan --context-root "$REPO_BLEND" --phase-binding "$TMP/binding-blend.json" --artifacts-dir "$TMP/out/phase-executable-knowledge" > "$TMP/phase-executable-knowledge.summary" 2> "$TMP/phase-executable-knowledge.err"
+printf executable-knowledge | node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --context-root "$REPO_BLEND" --phase-binding "$TMP/binding-blend.json" --artifacts-dir "$TMP/out/phase-executable-knowledge" > "$TMP/phase-executable-knowledge.summary" 2> "$TMP/phase-executable-knowledge.err"
 PHASE_EXEC_KNOWLEDGE_RC=$?
 set -e
 expect "executable files under references/knowledge remain implementation divergence" node -e 'const fs=require("fs"),r=require(process.argv[1]);if(process.argv[3]==="0"||r.classification!=="phase_violation"||!r.phase_guard.diverged_files.includes("references/knowledge/runtime-state-portability/probe.mjs")||fs.existsSync(process.argv[2]))process.exit(1)' "$TMP/out/phase-executable-knowledge/receipt.json" "$SVC_FAKE_LOG/calls" "$PHASE_EXEC_KNOWLEDGE_RC"
@@ -913,7 +1004,7 @@ BASE_POST="$(fxgit "$REPO_POST" rev-parse HEAD)"
 printf 'export const impl = 2; // execution began\n' > "$REPO_POST/scripts/impl.mjs"
 printf '{"wi":"WI-902","pre_execution_base":"%s","plan_manifest_sha256":"%s"}\n' "$BASE_POST" "$PLANSHA" > "$TMP/binding-post.json"
 set +e
-printf post-exec-plan | node "$LAUNCHER" --orchestrator codex --review-kind plan --context-root "$REPO_POST" --phase-binding "$TMP/binding-post.json" --artifacts-dir "$TMP/out/phase-post" > "$TMP/phase-post.summary" 2> "$TMP/phase-post.err"
+printf post-exec-plan | node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --context-root "$REPO_POST" --phase-binding "$TMP/binding-post.json" --artifacts-dir "$TMP/out/phase-post" > "$TMP/phase-post.summary" 2> "$TMP/phase-post.err"
 PHASE_POST_RC=$?
 set -e
 expect "post-execution plan review is refused before any provider spawn" node -e 'const fs=require("fs");if(process.argv[3]==="0")process.exit(1);const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(r.classification!=="phase_violation"||r.phase_guard.decision!=="reject"||r.phase_guard.reason!=="implementation_diverged"||r.attempts.length!==0)process.exit(1);if(fs.existsSync(process.argv[2]))process.exit(1);' "$TMP/out/phase-post/receipt.json" "$SVC_FAKE_LOG/calls" "$PHASE_POST_RC"
@@ -930,7 +1021,7 @@ mv "$REPO_RENAME_STAGED/scripts/impl.mjs" "$REPO_RENAME_STAGED/docs/impl.mjs"
 fxgit "$REPO_RENAME_STAGED" add -A
 printf '{"wi":"WI-908","pre_execution_base":"%s","plan_manifest_sha256":"%s"}\n' "$BASE_RENAME_STAGED" "$PLANSHA" > "$TMP/binding-rename-staged.json"
 set +e
-printf staged-rename-plan | node "$LAUNCHER" --orchestrator codex --review-kind plan --context-root "$REPO_RENAME_STAGED" --phase-binding "$TMP/binding-rename-staged.json" --artifacts-dir "$TMP/out/phase-rename-staged" > "$TMP/phase-rename-staged.summary" 2> "$TMP/phase-rename-staged.err"
+printf staged-rename-plan | node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --context-root "$REPO_RENAME_STAGED" --phase-binding "$TMP/binding-rename-staged.json" --artifacts-dir "$TMP/out/phase-rename-staged" > "$TMP/phase-rename-staged.summary" 2> "$TMP/phase-rename-staged.err"
 PHASE_RENAME_STAGED_RC=$?
 set -e
 expect "staged implementation-to-exempt rename remains implementation divergence" node -e 'const fs=require("fs"),r=require(process.argv[1]);if(process.argv[3]==="0"||r.classification!=="phase_violation"||r.phase_guard.reason!=="implementation_diverged"||!r.phase_guard.diverged_files.includes("scripts/impl.mjs")||fs.existsSync(process.argv[2]))process.exit(1)' "$TMP/out/phase-rename-staged/receipt.json" "$SVC_FAKE_LOG/calls" "$PHASE_RENAME_STAGED_RC"
@@ -943,14 +1034,14 @@ fxgit "$REPO_RENAME_COMMITTED" add -A
 fxgit "$REPO_RENAME_COMMITTED" commit -q -m 'move implementation into exempt path'
 printf '{"wi":"WI-909","pre_execution_base":"%s","plan_manifest_sha256":"%s"}\n' "$BASE_RENAME_COMMITTED" "$PLANSHA" > "$TMP/binding-rename-committed.json"
 set +e
-printf committed-rename-plan | node "$LAUNCHER" --orchestrator codex --review-kind plan --context-root "$REPO_RENAME_COMMITTED" --phase-binding "$TMP/binding-rename-committed.json" --artifacts-dir "$TMP/out/phase-rename-committed" > "$TMP/phase-rename-committed.summary" 2> "$TMP/phase-rename-committed.err"
+printf committed-rename-plan | node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --context-root "$REPO_RENAME_COMMITTED" --phase-binding "$TMP/binding-rename-committed.json" --artifacts-dir "$TMP/out/phase-rename-committed" > "$TMP/phase-rename-committed.summary" 2> "$TMP/phase-rename-committed.err"
 PHASE_RENAME_COMMITTED_RC=$?
 set -e
 expect "committed implementation-to-exempt rename remains implementation divergence" node -e 'const fs=require("fs"),r=require(process.argv[1]);if(process.argv[3]==="0"||r.classification!=="phase_violation"||r.phase_guard.reason!=="implementation_diverged"||!r.phase_guard.diverged_files.includes("scripts/impl.mjs")||fs.existsSync(process.argv[2]))process.exit(1)' "$TMP/out/phase-rename-committed/receipt.json" "$SVC_FAKE_LOG/calls" "$PHASE_RENAME_COMMITTED_RC"
 
 # F3 — a frozen exec review over the same diverged tree is allowed
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
-printf frozen-exec | node "$LAUNCHER" --orchestrator codex --review-kind exec --context-root "$REPO_POST" --phase-binding "$TMP/binding-post.json" --artifacts-dir "$TMP/out/phase-exec" > "$TMP/phase-exec.summary" 2> "$TMP/phase-exec.err"
+printf frozen-exec | node "$LAUNCHER" --orchestrator codex --review-kind exec --candidate-digest "$LAUNCHER_CANDIDATE" --context-root "$REPO_POST" --phase-binding "$TMP/binding-post.json" --artifacts-dir "$TMP/out/phase-exec" > "$TMP/phase-exec.summary" 2> "$TMP/phase-exec.err"
 expect "frozen exec review over the diverged tree is allowed and records the binding" node -e 'const fs=require("fs"),s=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(!s.ok)process.exit(1);const r=JSON.parse(fs.readFileSync(s.receipt,"utf8"));if(r.classification!=="success"||r.review_kind!=="exec"||r.phase_guard.decision==="reject"||r.phase_guard.wi!=="WI-902")process.exit(1);' "$TMP/phase-exec.summary"
 
 # F4 — a durable exec-record refuses the plan review even when the lane graph lies
@@ -962,7 +1053,7 @@ printf '{"receipt_type":"exec-record","wi":"WI-903","tree_hash":"x"}\n' > "$REPO
 printf '{"wi":"WI-903","phase":"planning","status":"in_progress"}\n' > "$REPO_FORGE/.svc/lane-tasks-WI-903.json"
 printf '{"wi":"WI-903","pre_execution_base":"%s","plan_manifest_sha256":"%s"}\n' "$BASE_FORGE" "$PLANSHA" > "$TMP/binding-forge.json"
 set +e
-printf forged-plan | node "$LAUNCHER" --orchestrator codex --review-kind plan --context-root "$REPO_FORGE" --phase-binding "$TMP/binding-forge.json" --artifacts-dir "$TMP/out/phase-forge" > "$TMP/phase-forge.summary" 2> "$TMP/phase-forge.err"
+printf forged-plan | node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --context-root "$REPO_FORGE" --phase-binding "$TMP/binding-forge.json" --artifacts-dir "$TMP/out/phase-forge" > "$TMP/phase-forge.summary" 2> "$TMP/phase-forge.err"
 PHASE_FORGE_RC=$?
 set -e
 expect "a durable exec-record refuses a plan review even when the lane graph claims planning" node -e 'const fs=require("fs");if(process.argv[3]==="0")process.exit(1);const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(r.classification!=="phase_violation"||r.phase_guard.decision!=="reject"||r.phase_guard.reason!=="exec_record_present"||r.phase_guard.exec_record_present!==true||r.attempts.length!==0)process.exit(1);if(fs.existsSync(process.argv[2]))process.exit(1);' "$TMP/out/phase-forge/receipt.json" "$SVC_FAKE_LOG/calls" "$PHASE_FORGE_RC"
@@ -972,14 +1063,14 @@ rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 PHASE_OVERRIDE="$TMP/phase-override.json"
 node -e 'require("fs").writeFileSync(process.argv[1],JSON.stringify({authority:"repository-owner",source:"owner-console",reason:"retro documentation correction reopen",kind:"retro-plan-review",wi:"WI-902",timestamp:new Date().toISOString()}))' "$PHASE_OVERRIDE"
 PHASE_OVERRIDE_SHA="$(sha256sum "$PHASE_OVERRIDE" | awk '{print $1}')"
-printf override-plan | SVC_EXTERNAL_REVIEW_PHASE_OVERRIDE_SHA256="$PHASE_OVERRIDE_SHA" node "$LAUNCHER" --orchestrator codex --review-kind plan --context-root "$REPO_POST" --phase-binding "$TMP/binding-post.json" --phase-override-file "$PHASE_OVERRIDE" --artifacts-dir "$TMP/out/phase-override" > "$TMP/phase-override.summary" 2> "$TMP/phase-override.err"
+printf override-plan | SVC_EXTERNAL_REVIEW_PHASE_OVERRIDE_SHA256="$PHASE_OVERRIDE_SHA" node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --context-root "$REPO_POST" --phase-binding "$TMP/binding-post.json" --phase-override-file "$PHASE_OVERRIDE" --artifacts-dir "$TMP/out/phase-override" > "$TMP/phase-override.summary" 2> "$TMP/phase-override.err"
 expect "receipted repository-owner retro-plan override permits the plan review and is recorded" node -e 'const fs=require("fs"),s=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(!s.ok)process.exit(1);const r=JSON.parse(fs.readFileSync(s.receipt,"utf8"));if(r.classification!=="success"||r.phase_guard.decision!=="allow-override"||r.phase_guard.override.used!==true||r.phase_guard.override.authority!=="repository-owner"||r.phase_guard.override.actual_sha256!==r.phase_guard.override.expected_sha256||r.phase_guard.override.kind!=="retro-plan-review")process.exit(1);' "$TMP/phase-override.summary"
 
 # F7 — an unresolvable pre-execution base refuses the plan review before spawn
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 printf '{"wi":"WI-904","pre_execution_base":"0000000000000000000000000000000000000000","plan_manifest_sha256":"%s"}\n' "$PLANSHA" > "$TMP/binding-badbase.json"
 set +e
-printf bad-base | node "$LAUNCHER" --orchestrator codex --review-kind plan --context-root "$REPO_PRE" --phase-binding "$TMP/binding-badbase.json" --artifacts-dir "$TMP/out/phase-badbase" > "$TMP/phase-badbase.summary" 2>&1
+printf bad-base | node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --context-root "$REPO_PRE" --phase-binding "$TMP/binding-badbase.json" --artifacts-dir "$TMP/out/phase-badbase" > "$TMP/phase-badbase.summary" 2>&1
 PHASE_BADBASE_RC=$?
 set -e
 expect "an unresolvable pre-execution base refuses the plan review before spawn" node -e 'const fs=require("fs");if(process.argv[2]==="0")process.exit(1);const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(r.classification!=="phase_violation"||r.phase_guard.reason!=="pre_execution_base_unresolved"||r.attempts.length!==0)process.exit(1);' "$TMP/out/phase-badbase/receipt.json" "$PHASE_BADBASE_RC"
@@ -987,7 +1078,7 @@ expect "an unresolvable pre-execution base refuses the plan review before spawn"
 # F8 — the require-phase-binding switch fail-closes a plan review with no binding
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 set +e
-printf require-flag | SVC_EXTERNAL_REVIEW_REQUIRE_PHASE_BINDING=1 node "$LAUNCHER" --orchestrator codex --review-kind plan --context-root "$REPO_PRE" --artifacts-dir "$TMP/out/phase-require" > "$TMP/phase-require.summary" 2>&1
+printf require-flag | SVC_EXTERNAL_REVIEW_REQUIRE_PHASE_BINDING=1 node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --context-root "$REPO_PRE" --artifacts-dir "$TMP/out/phase-require" > "$TMP/phase-require.summary" 2>&1
 PHASE_REQUIRE_RC=$?
 set -e
 expect "the require-phase-binding switch fail-closes a plan review with no binding" node -e 'const fs=require("fs");if(process.argv[2]==="0")process.exit(1);const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(r.classification!=="phase_violation"||r.phase_guard.reason!=="phase_binding_missing"||r.attempts.length!==0)process.exit(1);if(fs.existsSync(process.argv[3]))process.exit(1);' "$TMP/out/phase-require/receipt.json" "$PHASE_REQUIRE_RC" "$SVC_FAKE_LOG/calls"
@@ -996,7 +1087,7 @@ expect "the require-phase-binding switch fail-closes a plan review with no bindi
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 printf '{"wi":"WI-905","pre_execution_base":"%s"}\n' "$BASE_PRE" > "$TMP/binding-nohash.json"
 set +e
-printf no-hash | node "$LAUNCHER" --orchestrator codex --review-kind plan --context-root "$REPO_PRE" --phase-binding "$TMP/binding-nohash.json" --artifacts-dir "$TMP/out/phase-nohash" > "$TMP/phase-nohash.summary" 2>&1
+printf no-hash | node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --context-root "$REPO_PRE" --phase-binding "$TMP/binding-nohash.json" --artifacts-dir "$TMP/out/phase-nohash" > "$TMP/phase-nohash.summary" 2>&1
 PHASE_NOHASH_RC=$?
 set -e
 expect "a plan binding without plan_manifest_sha256 is refused before spawn" node -e 'const fs=require("fs");if(process.argv[3]==="0")process.exit(1);const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(r.classification!=="phase_violation"||r.attempts.length!==0)process.exit(1);if(fs.existsSync(process.argv[2]))process.exit(1);' "$TMP/out/phase-nohash/receipt.json" "$SVC_FAKE_LOG/calls" "$PHASE_NOHASH_RC"
@@ -1007,7 +1098,7 @@ FUTURE_OVERRIDE="$TMP/phase-override-future.json"
 node -e 'require("fs").writeFileSync(process.argv[1],JSON.stringify({authority:"repository-owner",source:"owner-console",reason:"future replay attempt",kind:"retro-plan-review",wi:"WI-902",timestamp:new Date(Date.now()+3600*1000).toISOString()}))' "$FUTURE_OVERRIDE"
 FUTURE_OVERRIDE_SHA="$(sha256sum "$FUTURE_OVERRIDE" | awk '{print $1}')"
 set +e
-printf future-override | SVC_EXTERNAL_REVIEW_PHASE_OVERRIDE_SHA256="$FUTURE_OVERRIDE_SHA" node "$LAUNCHER" --orchestrator codex --review-kind plan --context-root "$REPO_POST" --phase-binding "$TMP/binding-post.json" --phase-override-file "$FUTURE_OVERRIDE" --artifacts-dir "$TMP/out/phase-future-override" > "$TMP/phase-future-override.summary" 2>&1
+printf future-override | SVC_EXTERNAL_REVIEW_PHASE_OVERRIDE_SHA256="$FUTURE_OVERRIDE_SHA" node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --context-root "$REPO_POST" --phase-binding "$TMP/binding-post.json" --phase-override-file "$FUTURE_OVERRIDE" --artifacts-dir "$TMP/out/phase-future-override" > "$TMP/phase-future-override.summary" 2>&1
 PHASE_FUTURE_RC=$?
 set -e
 expect "a future-dated retro-plan override is rejected before any provider spawn" node -e 'const fs=require("fs");if(process.argv[3]==="0")process.exit(1);const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(r.classification!=="override_invalid"||r.attempts.length!==0)process.exit(1);if(fs.existsSync(process.argv[2]))process.exit(1);' "$TMP/out/phase-future-override/receipt.json" "$SVC_FAKE_LOG/calls" "$PHASE_FUTURE_RC"
@@ -1031,7 +1122,7 @@ NODE
   INVALID_OVERRIDE_SHA="$(sha256sum "$INVALID_OVERRIDE" | awk '{print $1}')"
   if [[ "$INVALID_OVERRIDE_CASE" == wrong-sha ]]; then INVALID_OVERRIDE_SHA="$(printf '%064d' 0)"; fi
   set +e
-  printf invalid-override | SVC_EXTERNAL_REVIEW_PHASE_OVERRIDE_SHA256="$INVALID_OVERRIDE_SHA" node "$LAUNCHER" --orchestrator codex --review-kind plan --context-root "$REPO_POST" --phase-binding "$TMP/binding-post.json" --phase-override-file "$INVALID_OVERRIDE" --artifacts-dir "$TMP/out/phase-invalid-$INVALID_OVERRIDE_CASE" > "$TMP/phase-invalid-$INVALID_OVERRIDE_CASE.summary" 2>&1
+  printf invalid-override | SVC_EXTERNAL_REVIEW_PHASE_OVERRIDE_SHA256="$INVALID_OVERRIDE_SHA" node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --context-root "$REPO_POST" --phase-binding "$TMP/binding-post.json" --phase-override-file "$INVALID_OVERRIDE" --artifacts-dir "$TMP/out/phase-invalid-$INVALID_OVERRIDE_CASE" > "$TMP/phase-invalid-$INVALID_OVERRIDE_CASE.summary" 2>&1
   INVALID_OVERRIDE_RC=$?
   set -e
   expect "retro-plan override rejects $INVALID_OVERRIDE_CASE before provider spawn" node -e 'const fs=require("fs");if(process.argv[3]==="0")process.exit(1);const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(r.classification!=="override_invalid"||r.attempts.length!==0)process.exit(1);if(fs.existsSync(process.argv[2]))process.exit(1);' "$TMP/out/phase-invalid-$INVALID_OVERRIDE_CASE/receipt.json" "$SVC_FAKE_LOG/calls" "$INVALID_OVERRIDE_RC"
@@ -1051,7 +1142,7 @@ printf '# after\n' > "$REPO_ANC/docs/after.md"
 fxgit "$REPO_ANC" add -A; fxgit "$REPO_ANC" commit -q -m revert-and-docs
 printf '{"wi":"WI-906","pre_execution_base":"%s","plan_manifest_sha256":"%s"}\n' "$BASE_ANC" "$PLANSHA" > "$TMP/binding-anc.json"
 set +e
-printf ancestor-note | node "$LAUNCHER" --orchestrator codex --review-kind plan --context-root "$REPO_ANC" --phase-binding "$TMP/binding-anc.json" --artifacts-dir "$TMP/out/phase-anc" > "$TMP/phase-anc.summary" 2>&1
+printf ancestor-note | node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --context-root "$REPO_ANC" --phase-binding "$TMP/binding-anc.json" --artifacts-dir "$TMP/out/phase-anc" > "$TMP/phase-anc.summary" 2>&1
 PHASE_ANC_RC=$?
 set -e
 expect "an exec-record note on an ancestor commit refuses the plan review (durable note beats HEAD-only + no divergence)" node -e 'const fs=require("fs");if(process.argv[3]==="0")process.exit(1);const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(r.classification!=="phase_violation"||r.phase_guard.reason!=="exec_record_present"||r.phase_guard.exec_record_present!==true||r.attempts.length!==0)process.exit(1);if(fs.existsSync(process.argv[2]))process.exit(1);' "$TMP/out/phase-anc/receipt.json" "$SVC_FAKE_LOG/calls" "$PHASE_ANC_RC"

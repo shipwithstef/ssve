@@ -36,7 +36,7 @@ node -e 'const fs=require("fs");const p=process.argv[1],c=require(p);c.base_sha=
 node "$ROOT/scripts/validate-plan-contract.mjs" "$WRITER_CONTRACT" "$WRITER" >/dev/null
 node -e 'const fs=require("fs");const p=process.argv[1],c=require(p);c.base_sha="missing-base";fs.writeFileSync(p,JSON.stringify(c))' "$WRITER_CONTRACT"
 if node "$ROOT/scripts/validate-plan-contract.mjs" "$WRITER_CONTRACT" "$WRITER" >/dev/null 2>&1; then echo "unresolvable plan base accepted" >&2; exit 1; fi
-node scripts/validate-plan-contract.mjs docs/plans/2026-08-15-wi541-full-framework-transition/plan-contract.json "$ROOT"
+node scripts/validate-plan-contract.mjs docs/plans/2026-08-23-wi558-tier1-regressions/plan-contract.json "$ROOT"
 node scripts/find-callers.mjs --identifier validate-plan-contract.mjs --root "$ROOT" > "$TMP/callers.json"
 node -e 'const r=require(process.argv[1]); if(r.scanned_files<1||r.denominator!==r.scanned_files||r.queries.length<5||r.matched_files<2)process.exit(1)' "$TMP/callers.json"
 mkdir -p "$TMP/census"; printf 'invokeValidatePlanContract();\n' > "$TMP/census/caller.mjs"

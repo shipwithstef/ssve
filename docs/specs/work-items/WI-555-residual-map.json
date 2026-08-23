@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "wi": "WI-555",
+  "source_proposal": "proposals/done/2026-08-21-framework-improvement-consumer-retroactive-attestation.md",
+  "status": "implemented",
+  "coverage": [
+    {
+      "proposal_item": "Consumer-local retroactive attestation authority",
+      "status": "covered",
+      "evidence": [
+        "scripts/check-chain-receipts.mjs"
+      ],
+      "note": "Landed as 9a6480f (WI-555)."
+    }
+  ]
+}

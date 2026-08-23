@@ -161,10 +161,19 @@ assert.equal(
   false,
   'SOL-HARNESS-005: ancestor of cutoff stays grandfathered',
 );
+// WI-558: the historical WI-553 tip pin (f57d1a93) was garbage-collected after
+// squash-merges, so a hardcoded SHA rots. Resolve a LIVE descendant of the
+// cutoff instead: the newest commit reachable from HEAD that the cutoff is NOT
+// an ancestor of. Deterministic for a given checkout and never GC-prone while
+// HEAD points at it.
+const liveDescendant = execFileSync('git', ['rev-list', '-1', 'HEAD', '--not', '30381c5c5e6635a102944834e04319063824dc53'], {
+  cwd: ROOT, encoding: 'utf8',
+}).trim();
+assert.match(liveDescendant, /^[0-9a-f]{40}$/, 'SOL-HARNESS-005: expected a live post-cutoff commit in this checkout');
 assert.equal(
-  reviewEnvelopeRequiresSchemaV3('f57d1a93'),
+  reviewEnvelopeRequiresSchemaV3(liveDescendant),
   true,
-  'SOL-HARNESS-005: 553 tip is not an ancestor of the cutoff and must require schema v3',
+  'SOL-HARNESS-005: live descendant of HEAD beyond the cutoff must require schema v3',
 );
 assert.equal(
   reviewEnvelopeRequiresSchemaV3(sha),

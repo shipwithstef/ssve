@@ -87,3 +87,10 @@ its residual map, not the proposal file.
 | `2026-08-10-framework-improvement-skills-package-layout.md` | WI-530 | Packaged source layout and preserved-worktree recovery; residual map `WI-530-residual-map.json` |
 | `2026-08-15-evolution-hoursHub-transition.md` | WI-541 | Content-deduplicated transition program; residual map `WI-541-residual-map.json` |
 | `2026-08-15-framework-improvement-mandatory-chain-graph-parity.md` | WI-541 | Exact mandatory chain compiler/validator repair; residual map `WI-541-residual-map.json` |
+| `2026-08-02-one-lane-framework.md` | WI-512 | One-lane batches B1-B4 landed; product-repo skill promotion deferred; residual map `WI-512-residual-map.json` |
+| `2026-07-24-session-019f8cd3-audit-and-svc-framework-fixes.md` | WI-512 | OPT items executed via WI-512 batch B3; stale/false-premise OPTs documented; residual map `WI-512-residual-map.json` |
+| `2026-08-17-framework-improvement-native-host-dispatch-policy.md` | WI-551 | Native dispatch policy resolver; residual map `WI-551-residual-map.json` |
+| `2026-08-17-framework-improvement-autonomous-restart-boundary-continuation.md` | WI-552 | Restart-boundary hardening in 50a3440; live fixtures follow-up WI-546; residual map `WI-552-residual-map.json` |
+| `2026-08-17-framework-improvement-risk-triggered-plan-exec-contracts.md` | WI-553 | Risk-triggered contracts b0e2e9b; residual map `WI-553-residual-map.json` |
+| `2026-08-21-framework-improvement-consumer-retroactive-attestation.md` | WI-555 | Consumer-local retroactive attestation 9a6480f; residual map `WI-555-residual-map.json` |
+| `2026-08-21-framework-improvement-final-sha-mandatory-skill-coverage.md` | WI-556 | Final-SHA skill coverage e0cf025; residual map `WI-556-residual-map.json` |

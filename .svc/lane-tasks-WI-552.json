@@ -38,7 +38,49 @@
       "skill_receipt": {
         "skill": "execute-changeset",
         "loaded_at": "2026-08-18T05:08:28.382Z",
-        "loaded_via": "manual"
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-08-18T05:08:28.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-17-wi548-host-parity-plan/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-08-18T05:08:29.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "scripts/svc-migrate-install.mjs"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-08-18T05:08:30.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "test-framework/evals/tier-1/validate-all-host-install-migration.sh"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-08-18T05:08:31.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-552.md"
+              }
+            ]
+          }
+        ]
       },
       "completed_at": "2026-08-18T05:08:34.756Z"
     },

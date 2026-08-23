@@ -244,7 +244,7 @@
     },
     "2026-05-25-evolution.md": {
       "deferred_until": "2026-08-25",
-      "reason": "Imported evolution survey; its gitignore-hygiene slice (WI-FRAMEWORK-EVOLVE-GITIGNORE-HYGIENE) has landed/archived, the remainder is un-triaged. Re-triaged 2026-06-29 — needs per-item closure/triage by 2026-07-29.",
+      "reason": "Imported evolution survey; its gitignore-hygiene slice (WI-FRAMEWORK-EVOLVE-GITIGNORE-HYGIENE) has landed/archived, the remainder is un-triaged. Re-triaged 2026-06-29 \u2014 needs per-item closure/triage by 2026-07-29.",
       "blocked_reason": "Beyond the 14-day defer window: imported/backlog evolution proposal awaiting a dedicated triage pass (re-deferred 2026-06-29, not abandoned)."
     },
     "2026-05-29-framework-improvement-parallel-session-isolation.md": {
@@ -252,7 +252,7 @@
     },
     "2026-06-01-framework-improvement-feature-like-bugfix-product-questions.md": {
       "deferred_until": "2026-08-25",
-      "reason": "Backlog: needs a dedicated framework-lane triage pass. Re-triaged 2026-06-29 — revisit by 2026-07-29.",
+      "reason": "Backlog: needs a dedicated framework-lane triage pass. Re-triaged 2026-06-29 \u2014 revisit by 2026-07-29.",
       "blocked_reason": "Beyond the 14-day defer window: imported/backlog evolution proposal awaiting a dedicated triage pass (re-deferred 2026-06-29, not abandoned)."
     },
     "2026-06-04-framework-improvement-interactive-control-contract-gate.md": {
@@ -271,8 +271,8 @@
     },
     "2026-06-07-port-headless-claude-p-to-subagent-transport.md": {
       "deferred_until": "2026-08-25",
-      "reason": "Filed as WI-374 (frozen — do-not-auto-dispatch by user directive); deferred 2026-06-29, tracked by that WI pending its unfreeze or a reject decision — NOT loose/un-triaged backlog.",
-      "blocked_reason": "Beyond the 14-day defer window: tracked by a WI, pending formal proposal closeout — re-deferred 2026-06-29."
+      "reason": "Filed as WI-374 (frozen \u2014 do-not-auto-dispatch by user directive); deferred 2026-06-29, tracked by that WI pending its unfreeze or a reject decision \u2014 NOT loose/un-triaged backlog.",
+      "blocked_reason": "Beyond the 14-day defer window: tracked by a WI, pending formal proposal closeout \u2014 re-deferred 2026-06-29."
     },
     "2026-07-14-change-impact-triad-universal-gate.md": {
       "deferred_until": "2026-08-25",
@@ -287,14 +287,14 @@
       "reason": "Evidence feeds WI-484 and WI-485; defer formal archive and residual mapping until the dependent WI-481 program closes."
     },
     "2026-08-02-one-lane-framework.md": {
-      "deferred_until": "2026-08-18",
+      "accepted_wi": "WI-512",
       "reason": "ACCEPTED and in flight: implemented as WI-512 (batches B1-B4) on branch wi512-one-lane-batch. Sections 3e, 4c hook enforcement and physical quick-fix deletion are explicitly NOT built with reasons recorded in WI-512.",
-      "blocked_reason": "Formal archive deferred until WI-512 merges and its promotion is verified."
+      "residual_map": "docs/specs/work-items/WI-512-residual-map.json"
     },
     "2026-07-24-session-019f8cd3-audit-and-svc-framework-fixes.md": {
-      "deferred_until": "2026-08-18",
+      "accepted_wi": "WI-512",
       "reason": "Source of docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md (PR #182). The 11 genuinely-unimplemented OPT items are being executed as WI-512 batch B3; OPT-06/09/10/15 already landed or carry stale premises and OPT-14 has a false premise (target script does not exist under that name).",
-      "blocked_reason": "Archive deferred until WI-512 B3 lands and each OPT item has a recorded done/stale-premise disposition."
+      "residual_map": "docs/specs/work-items/WI-512-residual-map.json"
     },
     "2026-08-10-framework-improvement-agy-chain-receipts.md": {
       "accepted_wi": "WI-529",
@@ -336,6 +336,26 @@
     "2026-08-22-framework-improvement-capability-scoped-plugin-mcp-startup.md": {
       "deferred_until": "2026-09-05",
       "reason": "Triage with WI-551's single dispatch resolver before deciding whether to fold it in or promote a focused follow-up."
+    },
+    "2026-08-17-framework-improvement-autonomous-restart-boundary-continuation.md": {
+      "accepted_wi": "WI-552",
+      "residual_map": "docs/specs/work-items/WI-552-residual-map.json"
+    },
+    "2026-08-17-framework-improvement-native-host-dispatch-policy.md": {
+      "accepted_wi": "WI-551",
+      "residual_map": "docs/specs/work-items/WI-551-residual-map.json"
+    },
+    "2026-08-17-framework-improvement-risk-triggered-plan-exec-contracts.md": {
+      "accepted_wi": "WI-553",
+      "residual_map": "docs/specs/work-items/WI-553-residual-map.json"
+    },
+    "2026-08-21-framework-improvement-final-sha-mandatory-skill-coverage.md": {
+      "accepted_wi": "WI-556",
+      "residual_map": "docs/specs/work-items/WI-556-residual-map.json"
+    },
+    "2026-08-21-framework-improvement-consumer-retroactive-attestation.md": {
+      "accepted_wi": "WI-555",
+      "residual_map": "docs/specs/work-items/WI-555-residual-map.json"
     }
   }
 }

@@ -26,6 +26,7 @@ write_fixture() {
   rm -rf "$TMP_DIR"/*
   mkdir -p "$TMP_DIR/scripts/lib" "$TMP_DIR/references" "$TMP_DIR/.svc"
   cp "$REPO_ROOT/scripts/lib/post-task-trigger-router.mjs" "$TMP_DIR/scripts/lib/post-task-trigger-router.mjs"
+  cp "$REPO_ROOT/scripts/state-io.mjs" "$TMP_DIR/scripts/state-io.mjs"
   printf '{ malformed registry json\n' > "$TMP_DIR/references/sdkg-registry.json"
   cat > "$TMP_DIR/.svc/lane-tasks-WI-999.json" <<'JSON'
 {

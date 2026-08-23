@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "wi": "WI-558",
+  "lane": "bugfix",
+  "status": "in_progress",
+  "created": "2026-08-23T15:25:01.756Z",
+  "tasks": [
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "execute-changeset",
+      "subject": "repair 25 failing tier-1 validators (code, fixtures, honest state)",
+      "blocked_by": [],
+      "completed_at": "2026-08-23T16:20:00.000Z",
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-08-23T15:26:00.000Z",
+        "loaded_via": "manual",
+        "evidence": "Adversarial plan review (Cursor APPROVE-WITH-FINDINGS, Grok 4.6 High REJECT-on-C2 accepted); fixes applied in .worktrees/bugfix-tier1-regressions",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-08-23T15:26:00.000Z",
+            "evidence_artifacts": [
+              {"type": "file", "path": "docs/specs/work-items/WI-558.md"}
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-08-23T16:10:00.000Z",
+            "evidence_artifacts": [
+              {"type": "file", "path": "scripts/lib/reviewer-evidence.mjs"},
+              {"type": "file", "path": "setup"},
+              {"type": "file", "path": "bin/svc-enforce.mjs"}
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-08-23T16:19:00.000Z",
+            "evidence_artifacts": [
+              {"type": "file", "path": "test-framework/evals/run-all-evals.sh"}
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-08-23T16:20:00.000Z",
+            "evidence_artifacts": [
+              {"type": "file", "path": "docs/specs/work-items/WI-558.md"}
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "status": "pending",
+      "skill": "review-exec",
+      "subject": "external adversarial review of the repair (Codex/Sol + Cursor)",
+      "blocked_by": [1]
+    },
+    {
+      "id": 3,
+      "status": "pending",
+      "skill": "land-changeset",
+      "subject": "merge to main, converge hosts, post-commit re-verify",
+      "blocked_by": [2]
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 # Framework Improvement — consumer-local retroactive attestation (WI-555)
 
 **Date:** 2026-08-21
-**accepted_wi:** WI-555
+accepted_wi: WI-555
 **Category:** bugfix / receipt enforcement
 **Severity:** high
 

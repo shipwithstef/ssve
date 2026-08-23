@@ -61,10 +61,20 @@ set +e
 WT_OUT="$(./setup --host grok 2>&1)"
 WT_RC=$?
 set -uo pipefail
-if [[ "$WT_RC" -ne 0 ]] && echo "$WT_OUT" | grep -q 'Refusing to install'; then
-  pass "worktree ./setup --host grok refuses (AP-30)"
+# AP-30 refusal only triggers when the SOURCE checkout lives under .worktrees/
+# (WI-558 hermeticity fix); from the canonical main checkout it must succeed.
+if [[ "$ROOT" == *"/.worktrees/"* ]]; then
+  if [[ "$WT_RC" -ne 0 ]] && echo "$WT_OUT" | grep -q 'Refusing to install'; then
+    pass "worktree ./setup --host grok refuses (AP-30)"
+  else
+    fail "worktree ./setup --host grok should refuse (rc=$WT_RC)"
+  fi
 else
-  fail "worktree ./setup --host grok should refuse (rc=$WT_RC)"
+  if [[ "$WT_RC" -eq 0 ]]; then
+    pass "main-checkout ./setup --host grok succeeds (AP-30 N/A outside .worktrees/)"
+  else
+    fail "main-checkout ./setup --host grok should not refuse (rc=$WT_RC): $WT_OUT"
+  fi
 fi
 
 ISO_HOME="$(mktemp -d)"
@@ -141,24 +151,31 @@ else
 fi
 
 # Live EXEC default: Grok 4.6 high, no Sonnet, no Cursor fast variant.
+# Operator-HOME pins are machine state, not repo state (WI-558 hermeticity):
+# SKIP with a notice when absent — tier-1 must not fail on machines that never
+# pinned the operator's personal EXEC default.
 if [[ -f "$HOME/.svc/cursor-exec-default.json" ]] \
   && grep -q 'cursor-grok-4.6-high' "$HOME/.svc/cursor-exec-default.json" \
   && grep -q '"fast": false' "$HOME/.svc/cursor-exec-default.json"; then
   pass "Cursor EXEC default is cursor-grok-4.6-high with fast=false"
 else
-  fail "missing ~/.svc/cursor-exec-default.json (fast-off Grok EXEC pin)"
+  echo "  ! SKIP live EXEC pin check — ~/.svc/cursor-exec-default.json absent or unpinned (operator-machine state; isolated coverage below still applies)"
 fi
 
-set +e
-LIVE_RESOLVE="$(env -u SVC_DISPATCH_POLICY SVC_HOST=grok bash scripts/resolve-model.sh EXEC --json 2>&1)"
-LIVE_RESOLVE_RC=$?
-set -uo pipefail
-if echo "$LIVE_RESOLVE" | grep -qi 'claude-sonnet\|-fast'; then
-  fail "live EXEC remapped to Sonnet or a fast Grok variant: $LIVE_RESOLVE"
-elif [[ "$LIVE_RESOLVE_RC" -eq 0 ]] && echo "$LIVE_RESOLVE" | grep -Eq 'grok-4.6'; then
-  pass "AC-546-6: live resolve-model EXEC is grok-4.6 (no Sonnet/fast remap)"
+if [[ -f "$HOME/.svc/dispatch-policy.json" ]]; then
+  set +e
+  LIVE_RESOLVE="$(env -u SVC_DISPATCH_POLICY SVC_HOST=grok bash scripts/resolve-model.sh EXEC --json 2>&1)"
+  LIVE_RESOLVE_RC=$?
+  set -uo pipefail
+  if echo "$LIVE_RESOLVE" | grep -qi 'claude-sonnet\|-fast'; then
+    fail "live EXEC remapped to Sonnet or a fast Grok variant: $LIVE_RESOLVE"
+  elif [[ "$LIVE_RESOLVE_RC" -eq 0 ]] && echo "$LIVE_RESOLVE" | grep -Eq 'grok-4.6'; then
+    pass "AC-546-6: live resolve-model EXEC is grok-4.6 (no Sonnet/fast remap)"
+  else
+    fail "live resolve-model EXEC unexpected: rc=$LIVE_RESOLVE_RC $LIVE_RESOLVE"
+  fi
 else
-  fail "live resolve-model EXEC unexpected: rc=$LIVE_RESOLVE_RC $LIVE_RESOLVE"
+  echo "  ! SKIP live dispatch-policy resolve — ~/.svc/dispatch-policy.json absent (owner policy is external state; fixture resolve coverage below still applies)"
 fi
 
 DETECTED="$(bash scripts/detect-host.sh 2>/dev/null || true)"

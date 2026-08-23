@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "wi": "WI-553",
+  "source_proposal": "proposals/done/2026-08-17-framework-improvement-risk-triggered-plan-exec-contracts.md",
+  "status": "implemented",
+  "coverage": [
+    {
+      "proposal_item": "Risk-triggered plan/exec contracts",
+      "status": "covered",
+      "evidence": [
+        "scripts/check-chain-receipts.mjs",
+        "docs/specs/audit/wi553-analysis.md"
+      ],
+      "note": "Landed as b0e2e9b (WI-553)."
+    }
+  ]
+}

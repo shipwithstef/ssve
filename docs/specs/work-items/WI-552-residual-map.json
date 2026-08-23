@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "wi": "WI-552",
+  "source_proposal": "proposals/done/2026-08-17-framework-improvement-autonomous-restart-boundary-continuation.md",
+  "status": "implemented",
+  "coverage": [
+    {
+      "proposal_item": "Autonomous restart-boundary continuation with hash-bound baton",
+      "status": "covered",
+      "evidence": [
+        "scripts/svc-migrate-install.mjs",
+        "hooks/lib/enforcement-core.mjs"
+      ],
+      "note": "Restart-surface hardening landed in 50a3440; live restart fixtures remain WI-546 follow-up."
+    }
+  ]
+}

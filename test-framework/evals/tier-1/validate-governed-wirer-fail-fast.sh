@@ -34,6 +34,7 @@ pass() { PASS=$((PASS+1)); echo "  ok $1"; }
 fail() { FAIL=$((FAIL+1)); echo "  FAIL $1"; }
 
 REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+. "$REPO_ROOT/test-framework/evals/tier-1/lib/stage-governed-hooks.sh"; STAGE_HOOKS_REPO="$REPO_ROOT"
 echo "=== Tier 1: governed hook wirer FAIL-FAST in setup (WI-487 R3-F001) ==="
 
 command -v node >/dev/null 2>&1 || { echo "  SKIP — node unavailable"; echo "  PASS — 0 assertions (skipped)"; exit 0; }
@@ -65,6 +66,9 @@ cp "$REPO_ROOT/hooks/lib/enforcement-core.mjs" "$SRC/hooks/lib/"
 cp "$REPO_ROOT/scripts/svc-migrate-install.mjs" "$SRC/scripts/"
 cp "$REPO_ROOT/scripts/verify-governed-routing.mjs" "$SRC/scripts/"
 cp "$REPO_ROOT/scripts/lib/governed-routing.mjs" "$SRC/scripts/lib/"
+# Synthetic governed hosts still hit the global MATERIALIZE_REGISTRY check;
+# stage every governed bash adapter or setup aborts before the wirer runs.
+stage_governed_bash_hooks "$SRC"
 printf '# route-workflow (fixture)\n' > "$SRC/skills/route-workflow/SKILL.md"
 printf '{"includedSkills":["route-workflow"]}\n' > "$SRC/skills-manifest.json"
 
