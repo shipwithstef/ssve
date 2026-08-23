@@ -84,7 +84,8 @@
       "skill": "land-changeset",
       "subject": "merge to main, converge hosts, post-commit re-verify",
       "blocked_by": [
-        2
+        2,
+        4
       ]
     },
     {
