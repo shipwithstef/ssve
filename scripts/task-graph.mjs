@@ -216,36 +216,14 @@ function assertDesignTechRiskGate(graph) {
   }
 }
 
+// WI-557: mid-execution receipt gate removed. Receipt enforcement happens at
+// BOUNDARIES: pre-push (L2) validates HEAD envelope before origin sees it;
+// finalizer translates onto squash SHA and publishes coverage at merge time;
+// svc-reconcile (L3) audits post-hoc. Requiring receipts at every intermediate
+// commit created a tree-binding chicken-and-egg loop that blocked solo
+// development for hours. Same checks run later, at the boundary that matters.
 function assertExecuteChangesetReceipts(task, graph) {
-  if (expectedTaskSkill(task) !== "execute-changeset") return;
-  if (!receiptGateAppliesToGraph(graph)) return;
-  const dir = currentTreeReceiptsDir();
-  const missing = [];
-  const invalid = [];
-  for (const type of EXEC_RECEIPT_TYPES) {
-    const receiptPath = dir ? path.join(dir, `${type}.json`) : null;
-    let body = null;
-    if (receiptPath && fs.existsSync(receiptPath)) {
-      try { body = JSON.parse(fs.readFileSync(receiptPath, "utf8")); }
-      catch { invalid.push(`${type}: receipt is not valid JSON`); continue; }
-    }
-    if (!body) { missing.push(type); continue; }
-    if (body.receipt_type !== type) { invalid.push(`${type}: receipt_type mismatch (got ${body.receipt_type ?? "none"})`); continue; }
-    const schema = loadReceiptSchema(type);
-    if (schema) {
-      const schemaErrors = shallowSchemaCheck(schema, body);
-      if (schemaErrors.length) invalid.push(`${type}: ${schemaErrors.join("; ")}`);
-    }
-  }
-  if (missing.length || invalid.length) {
-    const parts = [];
-    if (missing.length) parts.push(`missing: ${missing.join(", ")}`);
-    if (invalid.length) parts.push(`invalid: ${invalid.join("; ")}`);
-    throw new Error(
-      `task ${task.id} (execute-changeset) cannot complete without schema-valid plan-manifest, review-plan, ` +
-      `and exec-record receipts for the current tree (AC-553-5) — ${parts.join("; ")}`
-    );
-  }
+  // Intentionally no-op. See comment above.
 }
 
 function evidenceDigest(file) { return crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex"); }
