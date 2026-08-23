@@ -478,7 +478,7 @@ if want cursor; then
   ' "$RECEIPT_SOL"
 
   reset_log
-  SVC_FAKE_CURSOR_FENCE=1
+  export SVC_FAKE_CURSOR_FENCE=1
   set +e
   SVC_HOST=codex SVC_DISPATCH_POLICY="$POLICY_JSON" SVC_REVIEWER_STATION=fable SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR="$TMP/out/cursor-fence" \
     bash "$ADAPTER" "$SCOUT/docs/plans/active/manifest.md" > "$TMP/cursor-fence.findings" 2> "$TMP/cursor-fence.err"
