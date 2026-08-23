@@ -115,6 +115,13 @@ check("protected authority-file primitive selects every policy and review consum
   ]);
 });
 
+check("policy-status shell selects the launcher fixture that proves canonical delegation", () => {
+  const result = selectTier1Validators(["scripts/resolve-adversarial-reviewer.sh"]);
+  assert.equal(result.fallback_full, false);
+  assert(result.selected.includes("validate-external-review-launcher.sh"));
+  assert(result.selected.includes("validate-dispatch-resolver-wi551.mjs"));
+});
+
 check("WI-559 execution adapters retain convergence proof across transitive inputs", () => {
   for (const input of [
     "hooks/lib/wi-id.mjs",

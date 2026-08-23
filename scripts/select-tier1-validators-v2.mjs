@@ -153,7 +153,7 @@ const CONTRACTS = [
   },
   {
     validator: "validate-external-review-launcher.sh",
-    inputs: ["schemas/external-review-findings.schema.json", "schemas/external-review-receipt.schema.json", "schemas/reviewer-policy-v2.schema.json", "scripts/lib/protected-file.mjs", "scripts/review-topology-v2.mjs", "scripts/run-external-review.mjs", "test-framework/evals/tier-1/validate-external-review-launcher.sh"]
+    inputs: ["schemas/external-review-findings.schema.json", "schemas/external-review-receipt.schema.json", "schemas/reviewer-policy-v2.schema.json", "scripts/lib/protected-file.mjs", "scripts/resolve-adversarial-reviewer.sh", "scripts/review-topology-v2.mjs", "scripts/run-external-review.mjs", "test-framework/evals/tier-1/validate-external-review-launcher.sh"]
   },
   {
     validator: "validate-parallel-wi-dispatch.sh",

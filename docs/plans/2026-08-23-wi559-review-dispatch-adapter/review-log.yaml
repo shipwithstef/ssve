@@ -59,6 +59,14 @@ execution_review_attempts:
       - F-559-R8-3 owner override, phase binding, and phase override parents were not pinned
       - F-559-R8-4 selector named delegated containment inputs without running them in convergence
     disposition: all accepted and remediated; r9 exact-tree recheck required
+  - round: r9
+    candidate_commit: e47d2ffe2b587ee11ff09c28336273cf44bd794e
+    candidate_digest: 912d0125341825daad99a3c3ce27fc9dfdd9a37d9fce74ff4f4267af9ed67f42
+    reviewer: grok-4.6-build-high
+    verdict: pass-with-findings
+    findings:
+      - F-559-R9-1 policy-status shell did not select the launcher fixture that proves canonical delegation
+    disposition: accepted and remediated; r10 exact-tree recheck required
 bootstrap_adversarial_review:
   transport: cursor-agent
   model: claude-fable-5-thinking-high
