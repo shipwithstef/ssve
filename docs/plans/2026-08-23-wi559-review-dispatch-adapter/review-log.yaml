@@ -2,7 +2,7 @@ review_kind: plan
 wi: WI-559
 plan: docs/plans/2026-08-23-wi559-review-dispatch-adapter/manifest.md
 manifest: docs/plans/2026-08-23-wi559-review-dispatch-adapter/manifest.md
-manifest_sha256: db1731da939ba2faa458c0015f49140539e223912749f147f25b4e9b9eeab37f
+manifest_sha256: ddae181414bb0f398bea0f390f9df28ba08bb1e6c8a21b5b269502a46b613ba1
 rounds_run: 3
 unresolved_critical: 0
 remaining_high: 0
@@ -48,6 +48,17 @@ execution_review_attempts:
     classification: unknown_provider
     evidence: /tmp/wi559-final-fable-r7/receipt.json
     reason: Cursor account usage limit; no substitution or retry
+  - round: r8
+    candidate_commit: 6fb350c83ec6e80a62a8c1e8dff6b28525a4f307
+    candidate_digest: 4237b01e40f7e1ff314938b1a19588b69e60ea152269a42a7e75dc08cdb4b2d2
+    reviewer: grok-4.6-build-high
+    verdict: fail
+    findings:
+      - F-559-R8-1 owner policy parent was not pinned before its O_NOFOLLOW leaf read
+      - F-559-R8-2 compatibility adapter still schema-sniffed and reopened owner policy
+      - F-559-R8-3 owner override, phase binding, and phase override parents were not pinned
+      - F-559-R8-4 selector named delegated containment inputs without running them in convergence
+    disposition: all accepted and remediated; r9 exact-tree recheck required
 bootstrap_adversarial_review:
   transport: cursor-agent
   model: claude-fable-5-thinking-high

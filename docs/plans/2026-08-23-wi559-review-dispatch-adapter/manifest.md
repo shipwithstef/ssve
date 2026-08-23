@@ -75,6 +75,7 @@ stations; their authority and model choices do not change.
 | `schemas/external-review-findings.schema.json` | MODIFY | T2 | Admit exact Cursor and direct Grok/xAI reviewer tuples while retaining family validation |
 | `scripts/run-external-review.mjs` | MODIFY | T2 | Preserve canonical schema/receipt authority while transporting selected Cursor stations read-only |
 | `scripts/resolve-adversarial-reviewer.sh` | MODIFY | T2 | Route schema-1 owner dispatch policy status through the canonical review launcher instead of the legacy scheduled-policy resolver |
+| `scripts/lib/protected-file.mjs` | CREATE | T2 | Pin authority-file parents and leaf reads through owner-checked directory/file descriptors |
 | `scripts/resolve-dispatch.mjs` | MODIFY | T2 | Read owner policy once through an owner-checked O_NOFOLLOW descriptor and reuse that exact snapshot for selection |
 | scripts/resolve-execute-dispatch.mjs | CREATE | T2 | Shared bind-plan, preflight, and verify-receipt authority helper |
 | `scripts/review-topology-v2.mjs` | MODIFY | T2 | Reuse the single protected owner-policy snapshot across topology and station resolution |
@@ -116,7 +117,7 @@ this census and `plan-contract.json` to the complete executed diff before G5.
 |---|---|---|---|
 | T0 | Planning and G4 artifacts | .svc/skill-outcome-design-tech-WI-559.json;docs/plans/2026-08-23-wi559-review-dispatch-adapter/grok-build-prompt.md;docs/plans/2026-08-23-wi559-review-dispatch-adapter/manifest.md;docs/plans/2026-08-23-wi559-review-dispatch-adapter/plan-contract.json;docs/plans/2026-08-23-wi559-review-dispatch-adapter/review-log.yaml;docs/specs/bugfix/wi-559-review-dispatch-adapter-brief.md;docs/specs/contract-maps/review-to-execute-dispatch.md;docs/specs/decisions/WI-559.md;docs/specs/tech/WI-559.md;docs/specs/test-evidence/WI-559/design-capability-probes.json | changed |
 | T1 | Fail-first contract evidence | docs/specs/test-evidence/WI-559/t1-red-bind-review-cursor-helper.log;test-framework/evals/tier-1/validate-review-dispatch-adapter-convergence.sh | changed |
-| T2 | Review adapter convergence | schemas/external-review-findings.schema.json;schemas/external-review-receipt.schema.json;scripts/resolve-adversarial-reviewer.sh;scripts/resolve-dispatch.mjs;scripts/resolve-execute-dispatch.mjs;scripts/review-plan-codex.sh;scripts/review-topology-v2.mjs;scripts/run-external-review.mjs;test-framework/evals/tier-1/validate-external-review-launcher.sh;test-framework/evals/tier-1/validate-persistent-review-contract-v2.mjs | changed |
+| T2 | Review adapter convergence | schemas/external-review-findings.schema.json;schemas/external-review-receipt.schema.json;scripts/lib/protected-file.mjs;scripts/resolve-adversarial-reviewer.sh;scripts/resolve-dispatch.mjs;scripts/resolve-execute-dispatch.mjs;scripts/review-plan-codex.sh;scripts/review-topology-v2.mjs;scripts/run-external-review.mjs;test-framework/evals/tier-1/validate-external-review-launcher.sh;test-framework/evals/tier-1/validate-persistent-review-contract-v2.mjs | changed |
 | T3 | Exact execution adapter convergence | hooks/svc-execute-dispatch-guard.sh;scripts/auto-receipt.mjs;scripts/dispatch-log.sh;scripts/dispatch-worker.sh;scripts/execute-dispatch-preflight.sh;scripts/state-io.mjs;skills/execute-changeset/references/dispatch-preflight.md;skills/execute-changeset/references/subagent-dispatch.md | changed |
 | T4 | Focused validator closure | scripts/select-tier1-validators-v2.mjs;test-framework/evals/tier-1/validate-parallel-wi-dispatch.sh;test-framework/evals/tier-1/validate-tier1-selector-v2.mjs | changed |
 | T5 | WI, knowledge, and preserved local audit state | .svc/authorization-events.jsonl;.svc/dispatch/WI-559.edits.json;.svc/dispatch/WI-559.log;.svc/dispatch/WI-559.result.json;.svc/dispatch/wave-progress.jsonl;.svc/lane-tasks-WI-559.json;.svc/learning-fires.jsonl;.svc/learning-lifecycle.jsonl;.svc/review-cross-model-package-r6.md;FRAMEWORK-STATE.md;docs/specs/research-log.md;docs/specs/work-items/INDEX.md;docs/specs/work-items/WI-559.md;proposals/2026-08-23-framework-improvement-review-dispatch-adapter-convergence.md;references/knowledge/svc/CAPABILITIES.md | changed |
@@ -195,9 +196,14 @@ semantics remain unchanged.
 
 ### B2 — shared authorization helper
 
-Create executable ESM scripts/resolve-execute-dispatch.mjs using Node built-ins
-and imports of `WI_ID_BODY`/`WI_ID_RE` from `hooks/lib/wi-id.mjs`. Export pure
-functions for direct fixture use and implement three CLI subcommands:
+Create executable ESM scripts/resolve-execute-dispatch.mjs using Node built-ins,
+the shared `scripts/lib/protected-file.mjs` directory-descriptor-pinned reader,
+and imports of `WI_ID_BODY`/`WI_ID_RE` from `hooks/lib/wi-id.mjs`. Authority
+files are opened through an owner-checked, non-writable parent directory
+descriptor plus an `O_NOFOLLOW` leaf descriptor; a symlinked or replaced parent
+therefore cannot redirect policy, manifest, review-log, binding, or override
+bytes. Export pure functions for direct fixture use and implement three CLI
+subcommands:
 
 1. `bind-plan --repo <root> --manifest <path> [--snapshot-out <path>]` rejects
    symlink components and returns compact JSON with
@@ -257,11 +263,12 @@ In `review-plan-codex.sh`:
 - pass `SVC_WI=<bound WI>` to the launcher so scoped policy overlays resolve for
   the exact work item.
 
-`resolve-adversarial-reviewer.sh` must recognize protected dispatch-policy
-schema 1 as an owner-configured review policy and delegate its status view to
-`run-external-review.mjs --policy-status --reviewer-config ...`. This keeps the
-shell adapter from silently falling back to the unrelated scheduled-profile
-policy before the canonical launcher sees the owner configuration.
+`resolve-adversarial-reviewer.sh` delegates every supported orchestrator's
+policy status directly to `run-external-review.mjs --policy-status
+--reviewer-config ...`; it does not schema-sniff or reopen policy bytes before
+the canonical launcher. `review-plan-codex.sh` identifies its orchestrator from
+the explicit host/session context and likewise performs no preliminary policy
+read. This keeps one protected launcher snapshot as the policy authority.
 
 ### B4 — execution preflight, transport, evidence, and guard
 
@@ -318,8 +325,10 @@ imports, five adapter/guard scripts, shared state I/O, two execute references,
 and the new fixture to `validate-review-dispatch-adapter-convergence.sh`.
 Changes to shared worker/state primitives must additionally select the existing
 parallel-dispatch, child-transport, state-I/O-discipline, and atomic-write
-validators. Update their fixtures for the non-downgradable mutation and atomic
-receipt contracts.
+validators. The convergence suite must execute the host-authority and child
+transport/contained-exec validators rather than only name their source paths.
+Update their fixtures for the non-downgradable mutation and atomic receipt
+contracts.
 
 After focused and full Tier-1 pass, update framework state, capability registry,
 WI, and index with local evidence only. After PR land + central install + exact

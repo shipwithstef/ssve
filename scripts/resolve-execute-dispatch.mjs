@@ -12,6 +12,7 @@ import { execFileSync } from "node:child_process";
 import { WI_ID_BODY, WI_ID_RE, isValidWiId } from "../hooks/lib/wi-id.mjs";
 import { resolveDispatchModel } from "./resolve-dispatch.mjs";
 import { appendJsonlLine } from "./state-io.mjs";
+import { readProtectedFileSync } from "./lib/protected-file.mjs";
 
 const AUTHORIZED_STATES = new Set(["PROMOTED", "PROMOTED_WITH_DISPUTES", "REVISED_AND_REVIEWED"]);
 const WI_LOCATOR = new RegExp(`(?:^|[^A-Za-z0-9])(${WI_ID_BODY})(?![A-Za-z0-9])`, "g");
@@ -32,23 +33,11 @@ function sha256(value) {
 }
 
 function readRegularNoFollow(file, label, { ownerOnly = false, privateOnly = false } = {}) {
-  let fd;
   try {
-    fd = fs.openSync(file, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
-    const stat = fs.fstatSync(fd);
-    if (!stat.isFile()) fail(`${label} must be a regular non-symlink file: ${file}`, 1);
-    if (ownerOnly && typeof process.getuid === "function" && stat.uid !== process.getuid()) {
-      fail(`${label} must be owned by the current principal: ${file}`, 1);
-    }
-    if (privateOnly && (stat.mode & 0o077) !== 0) {
-      fail(`${label} must be mode 0600 or stricter: ${file}`, 1);
-    }
-    return fs.readFileSync(fd);
+    return readProtectedFileSync(file, { label, ownerOnly, privateOnly, protectParent: true }).bytes;
   } catch (error) {
     if (error?.exitCode) throw error;
-    fail(`${label} is unreadable or ineligible: ${file}`, 1);
-  } finally {
-    if (fd !== undefined) fs.closeSync(fd);
+    fail(error?.message || `${label} is unreadable or ineligible: ${file}`, 1);
   }
 }
 

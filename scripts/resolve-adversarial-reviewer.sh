@@ -20,28 +20,15 @@ detect_orchestrator() {
   printf '%s\n' claude
 }
 
-policy_schema_version() {
-  local file="$1"
-  if [[ ! -f "$file" ]]; then
-    printf '%s\n' "missing"
-    return 0
-  fi
-  node -e 'const fs=require("fs");try{const d=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));process.stdout.write(String(d?.schema_version ?? "unknown"));}catch{process.stdout.write("invalid");}' "$file"
-}
-
 ORCHESTRATOR="$(detect_orchestrator)"
 POLICY_PATH="${SVC_DISPATCH_POLICY:-${SVC_REVIEWER_POLICY:-$HOME/.svc/dispatch-policy.json}}"
-POLICY_SCHEMA="$(policy_schema_version "$POLICY_PATH")"
 case "$ORCHESTRATOR" in
   agy)
     printf 'resolve-adversarial-reviewer: AGY is reviewer transport only and cannot orchestrate review routing\n' >&2
     exit 1
     ;;
   claude|codex|grok|cursor|gemini|kimi|opencode|antigravity|mimo-code)
-    if [[ "$POLICY_SCHEMA" == "1" || "$POLICY_SCHEMA" == "2" ]]; then
-      exec node "$SCRIPT_DIR/run-external-review.mjs" --policy-status --orchestrator "$ORCHESTRATOR" --reviewer-config "$POLICY_PATH" --reviewer-phase plan
-    fi
-    exec node "$SCRIPT_DIR/resolve-dispatch.mjs" policy-status --orchestrator "$ORCHESTRATOR" --phase plan --config "$POLICY_PATH"
+    exec node "$SCRIPT_DIR/run-external-review.mjs" --policy-status --orchestrator "$ORCHESTRATOR" --reviewer-config "$POLICY_PATH" --reviewer-phase plan
     ;;
   *)
     printf 'resolve-adversarial-reviewer: unsupported orchestrator %q\n' "$ORCHESTRATOR" >&2

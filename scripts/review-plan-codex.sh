@@ -33,7 +33,14 @@ fi
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LAUNCHER="$ROOT/scripts/run-external-review.mjs"
 PROTOCOL_REF="$ROOT/references/plan-review-protocol.md"
-ORCHESTRATOR="$(bash "$ROOT/scripts/resolve-adversarial-reviewer.sh" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s).orchestrator))')"
+if [[ -n "${SVC_HOST:-}" ]]; then
+  ORCHESTRATOR="$SVC_HOST"
+elif [[ -n "${CODEX_THREAD_ID:-}" || -n "${CODEX_HOME:-}" || -n "${CODEX_CLI:-}" ]]; then
+  ORCHESTRATOR="codex"
+else
+  ORCHESTRATOR="$(bash "$ROOT/scripts/detect-host.sh" 2>/dev/null || true)"
+  if [[ -z "$ORCHESTRATOR" || "$ORCHESTRATOR" == "unknown" ]]; then ORCHESTRATOR="claude"; fi
+fi
 if [[ -z "$ORCHESTRATOR" || "$ORCHESTRATOR" == "agy" ]]; then
   printf 'review-plan-codex: unsupported orchestrator %q\n' "$ORCHESTRATOR" >&2
   exit 3

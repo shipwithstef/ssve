@@ -652,6 +652,18 @@ SYMLINK_OVERRIDE_RC=$?
 set -e
 expect "symlinked owner override hard-fails before provider invocation" bash -c "test '$SYMLINK_OVERRIDE_RC' -ne 0 && test ! -e '$SVC_FAKE_LOG/calls' && test \"\$(node -e 'process.stdout.write(require(process.argv[1]).classification)' '$TMP/out/symlink-override/receipt.json')\" = override_invalid"
 
+OVERRIDE_PARENT_REAL="$TMP/owner-override-parent-real"
+mkdir -p "$OVERRIDE_PARENT_REAL"
+chmod 700 "$OVERRIDE_PARENT_REAL"
+cp "$OVERRIDE" "$OVERRIDE_PARENT_REAL/override.json"
+ln -s "$OVERRIDE_PARENT_REAL" "$TMP/owner-override-parent-link"
+rm -rf "$SVC_FAKE_LOG"; mkdir -p "$SVC_FAKE_LOG"
+set +e
+printf parent-symlink-override | SVC_EXTERNAL_REVIEW_OWNER_OVERRIDE_SHA256="$OVERRIDE_SHA" node "$LAUNCHER" --orchestrator codex --review-kind plan --owner-override-file "$TMP/owner-override-parent-link/override.json" --artifacts-dir "$TMP/out/parent-symlink-override" > "$TMP/parent-symlink-override.summary" 2> "$TMP/parent-symlink-override.err"
+PARENT_SYMLINK_OVERRIDE_RC=$?
+set -e
+expect "owner override under a symlinked parent hard-fails before provider invocation" bash -c "test '$PARENT_SYMLINK_OVERRIDE_RC' -ne 0 && test ! -e '$SVC_FAKE_LOG/calls' && test \"\$(node -e 'process.stdout.write(require(process.argv[1]).classification)' '$TMP/out/parent-symlink-override/receipt.json')\" = override_invalid"
+
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 set +e
 printf bad-override | SVC_EXTERNAL_REVIEW_OWNER_OVERRIDE_SHA256=deadbeef node "$LAUNCHER" --orchestrator codex --review-kind plan --owner-override-file "$OVERRIDE" --artifacts-dir "$TMP/out/bad-override" > "$TMP/bad-override.summary" 2> "$TMP/bad-override.err"
@@ -696,7 +708,7 @@ rm -rf "$SVC_FAKE_LOG" "$TMP/cache" "$TMP/runtime-copy"; mkdir -p "$SVC_FAKE_LOG
 cp "$LAUNCHER" "$TMP/runtime-copy/scripts/run-external-review.mjs"
 cp "$ROOT/scripts/review-topology-v2.mjs" "$TMP/runtime-copy/scripts/review-topology-v2.mjs"
 cp "$ROOT/scripts/resolve-dispatch.mjs" "$TMP/runtime-copy/scripts/resolve-dispatch.mjs"
-cp "$ROOT/scripts/lib/json-schema-validator.mjs" "$ROOT/scripts/lib/external-review-provenance.mjs" "$ROOT/scripts/lib/review-evidence-store.mjs" "$TMP/runtime-copy/scripts/lib/"
+cp "$ROOT/scripts/lib/json-schema-validator.mjs" "$ROOT/scripts/lib/external-review-provenance.mjs" "$ROOT/scripts/lib/review-evidence-store.mjs" "$ROOT/scripts/lib/protected-file.mjs" "$TMP/runtime-copy/scripts/lib/"
 cp "$ROOT/skills/research/scripts/dispatch-agy.mjs" "$TMP/runtime-copy/skills/research/scripts/dispatch-agy.mjs"
 cp "$ROOT/hooks/lib/wi-id.mjs" "$TMP/runtime-copy/hooks/lib/wi-id.mjs"
 cp "$ROOT/schemas/external-review-findings.schema.json" "$ROOT/schemas/external-review-receipt.schema.json" "$ROOT/schemas/review-station-receipt-v2.schema.json" "$ROOT/schemas/dispatch-policy.schema.json" "$TMP/runtime-copy/schemas/"
@@ -916,6 +928,18 @@ printf '{"wi":"WI-901","pre_execution_base":"%s","plan_manifest_sha256":"%s"}\n'
 printf pre-exec-plan | node "$LAUNCHER" --orchestrator codex --review-kind plan --context-root "$REPO_PRE" --phase-binding "$TMP/binding-pre.json" --artifacts-dir "$TMP/out/phase-pre" > "$TMP/phase-pre.summary" 2> "$TMP/phase-pre.err"
 expect "pre-execution plan review is allowed and invokes the provider once" node -e 'const fs=require("fs"),s=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(!s.ok)process.exit(1);const r=JSON.parse(fs.readFileSync(s.receipt,"utf8"));if(r.classification!=="success"||r.phase_guard.applicable!==true||r.phase_guard.decision!=="allow"||r.phase_guard.wi!=="WI-901"||r.phase_guard.implementation_diverged!==false)process.exit(1);if(fs.readFileSync(process.argv[2],"utf8").split("\n").filter(Boolean).length!==1)process.exit(1);' "$TMP/phase-pre.summary" "$SVC_FAKE_LOG/calls"
 
+PHASE_BINDING_PARENT_REAL="$TMP/phase-binding-parent-real"
+mkdir -p "$PHASE_BINDING_PARENT_REAL"
+chmod 700 "$PHASE_BINDING_PARENT_REAL"
+cp "$TMP/binding-pre.json" "$PHASE_BINDING_PARENT_REAL/binding.json"
+ln -s "$PHASE_BINDING_PARENT_REAL" "$TMP/phase-binding-parent-link"
+rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
+set +e
+printf parent-symlink-binding | node "$LAUNCHER" --orchestrator codex --review-kind plan --context-root "$REPO_PRE" --phase-binding "$TMP/phase-binding-parent-link/binding.json" --artifacts-dir "$TMP/out/phase-parent-symlink" > "$TMP/phase-parent-symlink.summary" 2> "$TMP/phase-parent-symlink.err"
+PHASE_PARENT_SYMLINK_RC=$?
+set -e
+expect "phase binding under a symlinked parent fails before provider invocation" node -e 'const fs=require("fs");if(process.argv[3]==="0")process.exit(1);const r=require(process.argv[1]);if(r.classification!=="phase_violation"||r.attempts.length!==0||fs.existsSync(process.argv[2]))process.exit(1);' "$TMP/out/phase-parent-symlink/receipt.json" "$SVC_FAKE_LOG/calls" "$PHASE_PARENT_SYMLINK_RC"
+
 # F1b — exact mandatory blend-external outputs remain planning evidence
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 REPO_BLEND="$TMP/phase-blend-repo"; make_phase_repo "$REPO_BLEND"
@@ -1034,9 +1058,22 @@ expect "a durable exec-record refuses a plan review even when the lane graph cla
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 PHASE_OVERRIDE="$TMP/phase-override.json"
 node -e 'require("fs").writeFileSync(process.argv[1],JSON.stringify({authority:"repository-owner",source:"owner-console",reason:"retro documentation correction reopen",kind:"retro-plan-review",wi:"WI-902",timestamp:new Date().toISOString()}))' "$PHASE_OVERRIDE"
+chmod 600 "$PHASE_OVERRIDE"
 PHASE_OVERRIDE_SHA="$(sha256sum "$PHASE_OVERRIDE" | awk '{print $1}')"
 printf override-plan | SVC_EXTERNAL_REVIEW_PHASE_OVERRIDE_SHA256="$PHASE_OVERRIDE_SHA" node "$LAUNCHER" --orchestrator codex --review-kind plan --context-root "$REPO_POST" --phase-binding "$TMP/binding-post.json" --phase-override-file "$PHASE_OVERRIDE" --artifacts-dir "$TMP/out/phase-override" > "$TMP/phase-override.summary" 2> "$TMP/phase-override.err"
 expect "receipted repository-owner retro-plan override permits the plan review and is recorded" node -e 'const fs=require("fs"),s=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(!s.ok)process.exit(1);const r=JSON.parse(fs.readFileSync(s.receipt,"utf8"));if(r.classification!=="success"||r.phase_guard.decision!=="allow-override"||r.phase_guard.override.used!==true||r.phase_guard.override.authority!=="repository-owner"||r.phase_guard.override.actual_sha256!==r.phase_guard.override.expected_sha256||r.phase_guard.override.kind!=="retro-plan-review")process.exit(1);' "$TMP/phase-override.summary"
+
+PHASE_OVERRIDE_PARENT_REAL="$TMP/phase-override-parent-real"
+mkdir -p "$PHASE_OVERRIDE_PARENT_REAL"
+chmod 700 "$PHASE_OVERRIDE_PARENT_REAL"
+cp "$PHASE_OVERRIDE" "$PHASE_OVERRIDE_PARENT_REAL/override.json"
+ln -s "$PHASE_OVERRIDE_PARENT_REAL" "$TMP/phase-override-parent-link"
+rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
+set +e
+printf parent-symlink-phase-override | SVC_EXTERNAL_REVIEW_PHASE_OVERRIDE_SHA256="$PHASE_OVERRIDE_SHA" node "$LAUNCHER" --orchestrator codex --review-kind plan --context-root "$REPO_POST" --phase-binding "$TMP/binding-post.json" --phase-override-file "$TMP/phase-override-parent-link/override.json" --artifacts-dir "$TMP/out/phase-override-parent-symlink" > "$TMP/phase-override-parent-symlink.summary" 2>&1
+PHASE_OVERRIDE_PARENT_SYMLINK_RC=$?
+set -e
+expect "phase override under a symlinked parent fails before provider invocation" node -e 'const fs=require("fs");if(process.argv[3]==="0")process.exit(1);const r=require(process.argv[1]);if(r.classification!=="override_invalid"||r.attempts.length!==0||fs.existsSync(process.argv[2]))process.exit(1);' "$TMP/out/phase-override-parent-symlink/receipt.json" "$SVC_FAKE_LOG/calls" "$PHASE_OVERRIDE_PARENT_SYMLINK_RC"
 
 # F7 — an unresolvable pre-execution base refuses the plan review before spawn
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
@@ -1068,6 +1105,7 @@ expect "a plan binding without plan_manifest_sha256 is refused before spawn" nod
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 FUTURE_OVERRIDE="$TMP/phase-override-future.json"
 node -e 'require("fs").writeFileSync(process.argv[1],JSON.stringify({authority:"repository-owner",source:"owner-console",reason:"future replay attempt",kind:"retro-plan-review",wi:"WI-902",timestamp:new Date(Date.now()+3600*1000).toISOString()}))' "$FUTURE_OVERRIDE"
+chmod 600 "$FUTURE_OVERRIDE"
 FUTURE_OVERRIDE_SHA="$(sha256sum "$FUTURE_OVERRIDE" | awk '{print $1}')"
 set +e
 printf future-override | SVC_EXTERNAL_REVIEW_PHASE_OVERRIDE_SHA256="$FUTURE_OVERRIDE_SHA" node "$LAUNCHER" --orchestrator codex --review-kind plan --context-root "$REPO_POST" --phase-binding "$TMP/binding-post.json" --phase-override-file "$FUTURE_OVERRIDE" --artifacts-dir "$TMP/out/phase-future-override" > "$TMP/phase-future-override.summary" 2>&1
@@ -1091,6 +1129,7 @@ if (kind === 'empty-source') value.source = '';
 if (kind === 'empty-reason') value.reason = '';
 fs.writeFileSync(file, JSON.stringify(value));
 NODE
+  chmod 600 "$INVALID_OVERRIDE"
   INVALID_OVERRIDE_SHA="$(sha256sum "$INVALID_OVERRIDE" | awk '{print $1}')"
   if [[ "$INVALID_OVERRIDE_CASE" == wrong-sha ]]; then INVALID_OVERRIDE_SHA="$(printf '%064d' 0)"; fi
   set +e

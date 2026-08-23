@@ -149,11 +149,11 @@ const CONTRACTS = [
   },
   {
     validator: "validate-review-topology-v2.mjs",
-    inputs: ["schemas/reviewer-policy-v2.schema.json", "schemas/review-topology-v2.schema.json", "scripts/review-topology-v2.mjs", "skills/review-exec/SKILL.md", "test-framework/evals/tier-1/validate-review-topology-v2.mjs"]
+    inputs: ["schemas/reviewer-policy-v2.schema.json", "schemas/review-topology-v2.schema.json", "scripts/lib/protected-file.mjs", "scripts/review-topology-v2.mjs", "skills/review-exec/SKILL.md", "test-framework/evals/tier-1/validate-review-topology-v2.mjs"]
   },
   {
     validator: "validate-external-review-launcher.sh",
-    inputs: ["schemas/external-review-findings.schema.json", "schemas/external-review-receipt.schema.json", "schemas/reviewer-policy-v2.schema.json", "scripts/review-topology-v2.mjs", "scripts/run-external-review.mjs", "test-framework/evals/tier-1/validate-external-review-launcher.sh"]
+    inputs: ["schemas/external-review-findings.schema.json", "schemas/external-review-receipt.schema.json", "schemas/reviewer-policy-v2.schema.json", "scripts/lib/protected-file.mjs", "scripts/review-topology-v2.mjs", "scripts/run-external-review.mjs", "test-framework/evals/tier-1/validate-external-review-launcher.sh"]
   },
   {
     validator: "validate-parallel-wi-dispatch.sh",
@@ -175,6 +175,7 @@ const CONTRACTS = [
     validator: "validate-review-dispatch-adapter-convergence.sh",
     inputs: [
       "hooks/lib/wi-id.mjs",
+      "scripts/lib/protected-file.mjs",
       "scripts/resolve-execute-dispatch.mjs",
       "scripts/resolve-dispatch.mjs",
       "scripts/review-plan-codex.sh",
@@ -197,6 +198,7 @@ const CONTRACTS = [
     inputs: [
       "schemas/dispatch-policy.schema.json",
       "examples/dispatch-policy.example.json",
+      "scripts/lib/protected-file.mjs",
       "scripts/resolve-dispatch.mjs",
       "scripts/resolve-model.sh",
       "scripts/review-topology-v2.mjs",

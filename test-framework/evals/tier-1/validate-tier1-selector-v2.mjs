@@ -104,6 +104,17 @@ check("reviewer owner config support selects exact topology and launcher validat
   assert.deepEqual(result.selected, ["validate-dispatch-resolver-wi551.mjs", "validate-external-review-launcher.sh", "validate-review-topology-v2.mjs"]);
 });
 
+check("protected authority-file primitive selects every policy and review consumer", () => {
+  const result = selectTier1Validators(["scripts/lib/protected-file.mjs"]);
+  assert.equal(result.fallback_full, false);
+  assert.deepEqual(result.selected, [
+    "validate-dispatch-resolver-wi551.mjs",
+    "validate-external-review-launcher.sh",
+    "validate-review-dispatch-adapter-convergence.sh",
+    "validate-review-topology-v2.mjs",
+  ]);
+});
+
 check("WI-559 execution adapters retain convergence proof across transitive inputs", () => {
   for (const input of [
     "hooks/lib/wi-id.mjs",

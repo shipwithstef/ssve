@@ -7,6 +7,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { validate } from './lib/json-schema-validator.mjs';
+import { readProtectedFileSync } from './lib/protected-file.mjs';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DISPATCH_SCHEMA = JSON.parse(fs.readFileSync(path.join(ROOT, 'schemas/dispatch-policy.schema.json'), 'utf8'));
@@ -82,33 +83,14 @@ function deepMerge(base, overlay) {
 
 export function readProtectedJson(file, purpose) {
   const absolute = path.resolve(file);
-  let parent;
+  let protectedFile;
   try {
-    parent = fs.lstatSync(path.dirname(absolute));
+    protectedFile = readProtectedFileSync(absolute, { label: purpose, ownerOnly: true, protectParent: true });
   } catch (error) {
-    if (error.code === 'ENOENT') fail(`${purpose} is missing: ${absolute}`, 'dispatch_missing_global_file');
-    fail(`${purpose} is unreadable: ${absolute} (${error.code || error.message})`, 'dispatch_io_error');
+    const code = error?.code === 'ENOENT' ? 'dispatch_missing_global_file' : 'dispatch_policy_invalid';
+    fail(error.message, code);
   }
-  if (!parent.isDirectory() || parent.isSymbolicLink()) fail(`${purpose} directory must be a regular non-symlink directory: ${path.dirname(absolute)}`, 'dispatch_policy_invalid');
-  if (typeof process.getuid === 'function' && parent.uid !== process.getuid()) fail(`${purpose} directory must be owned by the current principal: ${path.dirname(absolute)}`, 'dispatch_policy_invalid');
-  if ((parent.mode & 0o022) !== 0) fail(`${purpose} directory must not be group/world writable: ${path.dirname(absolute)}`, 'dispatch_policy_invalid');
-  let fd;
-  let info;
-  let bytes;
-  try {
-    fd = fs.openSync(absolute, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
-    info = fs.fstatSync(fd);
-    if (!info.isFile()) fail(`${purpose} must be a regular non-symlink file: ${absolute}`, 'dispatch_policy_invalid');
-    if (typeof process.getuid === 'function' && info.uid !== process.getuid()) fail(`${purpose} must be owned by the current principal: ${absolute}`, 'dispatch_policy_invalid');
-    if ((info.mode & 0o022) !== 0) fail(`${purpose} must not be group/world writable: ${absolute}`, 'dispatch_policy_invalid');
-    bytes = fs.readFileSync(fd);
-  } catch (error) {
-    if (error?.code?.startsWith('dispatch_')) throw error;
-    if (error?.code === 'ELOOP') fail(`${purpose} must not be a symlink and must be a regular file: ${absolute}`, 'dispatch_policy_invalid');
-    fail(`${purpose} is unreadable or ineligible: ${absolute} (${error.code || error.message})`, error.code === 'ENOENT' ? 'dispatch_missing_global_file' : 'dispatch_policy_invalid');
-  } finally {
-    if (fd !== undefined) fs.closeSync(fd);
-  }
+  const bytes = protectedFile.bytes;
   let document;
   try {
     document = JSON.parse(bytes.toString('utf8'));

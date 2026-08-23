@@ -24,6 +24,7 @@ import { WI_ID_RE } from "../hooks/lib/wi-id.mjs";
 import { resolveExternalReviewer } from './review-topology-v2.mjs';
 import { candidateTreeIdentity, issueExternalReviewProvenance } from './lib/external-review-provenance.mjs';
 import { relocateTree } from './lib/review-evidence-store.mjs';
+import { readProtectedFileSync } from './lib/protected-file.mjs';
 
 const LAUNCHER_VERSION = '2.6.0';
 export const EXTERNAL_REVIEW_LAUNCHER_VERSION = LAUNCHER_VERSION;
@@ -620,18 +621,10 @@ async function parseOwnerOverride(file, primary) {
   const absolute = path.resolve(file);
   const expected = process.env.SVC_EXTERNAL_REVIEW_OWNER_OVERRIDE_SHA256 || null;
   let bytes;
-  let handle;
   try {
-    handle = await open(absolute, fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW);
-    const info = await handle.stat();
-    if (!info.isFile() || (typeof process.getuid === 'function' && info.uid !== process.getuid()) || (info.mode & 0o077) !== 0) {
-      throw new Error('owner override must be an owner-controlled mode-0600 regular file');
-    }
-    bytes = await handle.readFile();
+    bytes = readProtectedFileSync(absolute, { label: 'owner override', ownerOnly: true, privateOnly: true, protectParent: true }).bytes;
   } catch {
     throw Object.assign(new Error('owner override is unreadable or ineligible'), { classification: 'override_invalid', overrideEvidence: { ...empty, used: true, path: absolute, expected_sha256: expected } });
-  } finally {
-    await handle?.close().catch(() => {});
   }
   const actual = sha256(bytes);
   let document;
@@ -771,7 +764,7 @@ async function implementationDivergedFromBase(root, base) {
 async function parsePhaseBinding(file) {
   const absolute = path.resolve(file);
   let bytes;
-  try { bytes = await readFile(absolute); }
+  try { bytes = readProtectedFileSync(absolute, { label: 'phase binding', ownerOnly: true, protectParent: true }).bytes; }
   catch { throw Object.assign(new Error('phase binding is unreadable'), { classification: 'phase_violation' }); }
   let document;
   try { document = JSON.parse(bytes.toString('utf8')); }
@@ -792,7 +785,7 @@ async function parsePhaseOverride(file, wi) {
   const absolute = path.resolve(file);
   const expected = process.env.SVC_EXTERNAL_REVIEW_PHASE_OVERRIDE_SHA256 || null;
   let bytes;
-  try { bytes = await readFile(absolute); }
+  try { bytes = readProtectedFileSync(absolute, { label: 'phase override', ownerOnly: true, privateOnly: true, protectParent: true }).bytes; }
   catch { throw Object.assign(new Error('phase override is unreadable'), { classification: 'override_invalid', overrideEvidence: { ...empty, used: true, path: absolute, expected_sha256: expected } }); }
   const actual = sha256(bytes);
   let document;

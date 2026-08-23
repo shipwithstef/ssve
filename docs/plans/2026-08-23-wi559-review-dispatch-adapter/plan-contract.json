@@ -34,6 +34,7 @@
         "schemas/external-review-findings.schema.json",
         "schemas/external-review-receipt.schema.json",
         "scripts/resolve-adversarial-reviewer.sh",
+        "scripts/lib/protected-file.mjs",
         "scripts/resolve-dispatch.mjs",
         "scripts/resolve-execute-dispatch.mjs",
         "scripts/review-topology-v2.mjs",
@@ -87,9 +88,9 @@
   ],
   "resource_review": {
     "verification": "changed-executable-census",
-    "denominator": 18,
+    "denominator": 19,
     "disposition": "no-risky-resource-writers",
-    "evidence": "The origin/main-to-candidate census contains 18 changed shell, JavaScript, or TypeScript executables including focused tests. Inspection and the convergence matrix show no money, ledger, subscription, entitlement, quota, counter, inventory, identity, or notification resource mutation."
+    "evidence": "The origin/main-to-candidate census contains 19 changed shell, JavaScript, or TypeScript executables including focused tests. Inspection and the convergence matrix show no money, ledger, subscription, entitlement, quota, counter, inventory, identity, or notification resource mutation."
   },
   "resource_writers": [],
   "claims": [

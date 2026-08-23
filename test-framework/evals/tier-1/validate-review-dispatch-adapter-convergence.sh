@@ -439,6 +439,19 @@ if want review; then
   set -e
   expect "ineligible symlink owner policy fails closed with zero provider calls" bash -c "test '$SYMLINK_POLICY_RC' -ne 0 && test \"\$(call_count)\" = 0 && grep -Eq 'regular non-symlink file|not an eligible regular non-symlink file' '$TMP/symlink-policy.err'"
 
+  POLICY_PARENT_REAL="$TMP/policy-parent-real"
+  mkdir -p "$POLICY_PARENT_REAL"
+  chmod 700 "$POLICY_PARENT_REAL"
+  cp "$POLICY_JSON" "$POLICY_PARENT_REAL/dispatch-policy.json"
+  ln -s "$POLICY_PARENT_REAL" "$TMP/policy-parent-link"
+  reset_log
+  set +e
+  env -u SVC_REVIEWER_MODE -u SVC_REVIEWER_STATION SVC_HOST=codex SVC_DISPATCH_POLICY="$TMP/policy-parent-link/dispatch-policy.json" SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR="$TMP/out/symlink-policy-parent" \
+    bash "$ADAPTER" "$SCOUT/docs/plans/active/manifest.md" > "$TMP/symlink-policy-parent.out" 2> "$TMP/symlink-policy-parent.err"
+  SYMLINK_POLICY_PARENT_RC=$?
+  set -e
+  expect "owner policy under a symlinked parent fails closed with zero provider calls" bash -c "test '$SYMLINK_POLICY_PARENT_RC' -ne 0 && test \"\$(call_count)\" = 0"
+
   reset_log
   set +e
   env -u SVC_REVIEWER_MODE -u SVC_REVIEWER_STATION -u SVC_REVIEWER_POLICY SVC_HOST=codex SVC_DISPATCH_POLICY="$TMP/policy/missing-owner-policy.json" SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR="$TMP/out/missing-policy" \
@@ -905,6 +918,17 @@ NODE
   set -e
   expect "symlinked execute owner override is denied before dispatch" test "$OVERRIDE_LINK_RC" -ne 0
 
+  OVERRIDE_PARENT_REAL="$TMP/override-parent-real"
+  mkdir -p "$OVERRIDE_PARENT_REAL"
+  chmod 700 "$OVERRIDE_PARENT_REAL"
+  cp "$OVERRIDE" "$OVERRIDE_PARENT_REAL/override.json"
+  ln -s "$OVERRIDE_PARENT_REAL" "$TMP/override-parent-link"
+  set +e
+  node "$HELPER" preflight --repo "$EXEC_REPO" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex --allow-override-file "$TMP/override-parent-link/override.json" > "$TMP/override-parent-link.out" 2> "$TMP/override-parent-link.err"
+  OVERRIDE_PARENT_LINK_RC=$?
+  set -e
+  expect "execute owner override under a symlinked parent is denied before dispatch" test "$OVERRIDE_PARENT_LINK_RC" -ne 0
+
   set +e
   node "$HELPER" preflight --repo "$DRAFT_REPO" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex --allow-override-file "$OVERRIDE" > "$TMP/override-draft.out" 2> "$TMP/override-draft.err"
   OVERRIDE_DRAFT_RC=$?
@@ -1092,6 +1116,12 @@ fi
 if want execute; then
   set +e
   printf '\n=== execute adapters / guard / grok transport ===\n'
+  node "$ROOT/scripts/validate-host-authority-capabilities.mjs" --root "$ROOT" > "$TMP/host-authority-capabilities.out" 2>&1
+  HOST_AUTHORITY_RC=$?
+  expect "delegated execution validates the installed host authority capability contract" test "$HOST_AUTHORITY_RC" -eq 0
+  node "$ROOT/test-framework/evals/tier-1/validate-child-transport-resolver.mjs" > "$TMP/child-transport-resolver.out" 2>&1
+  CHILD_TRANSPORT_RC=$?
+  expect "delegated transport and contained-exec sources run inside the convergence proof" test "$CHILD_TRANSPORT_RC" -eq 0
   if [[ -z "${OVERRIDE:-}" ]]; then
     OVERRIDE="$TMP/execute-override.json"
     OVERRIDE="$OVERRIDE" node <<'NODE'
