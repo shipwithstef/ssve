@@ -23,7 +23,7 @@ reset_case() {
 }
 
 TMP="$(mktemp -d)"
-trap 'rm -rf "$TMP"' EXIT
+trap 'rm -rf "$TMP" "${AR_TMP:-}"' EXIT
 G() { git -C "$TMP" "$@"; }
 cd "$TMP"
 G init -q
@@ -245,8 +245,82 @@ import sys
 s=open(sys.argv[1]).read()
 raise SystemExit(0 if s.index('svc-skill-load-enforcer') < s.index('svc-impact-triad-guard') < s.index('entries.SessionStart') else 1)
 PY
-[[ -x hooks/git/pre-commit.d/25-impact-triad ]] && ok "executable pre-commit impact slot exists" || bad "executable pre-commit impact slot exists"
-grep -q 'REQUIRED_SLOTS.*25-impact-triad' scripts/install-git-hooks.mjs && ok "git hook installer requires impact slot" || bad "git hook installer requires impact slot"
+# WI-557-v2: the mid-execution git hook slot is retired BY DESIGN — triad bodies are
+# generated via scripts/auto-receipt.mjs and enforced at boundaries (pre-push L2,
+# finalizer, reconcile L3). The module (hooks/svc-impact-triad-guard.mjs) survives.
+[[ ! -e hooks/git/pre-commit.d/25-impact-triad ]] && ok "retired mid-execution impact slot stays removed (WI-557 boundary model)" || bad "retired mid-execution impact slot stays removed (WI-557 boundary model)"
+# Operator-invocation contract: auto-receipt.mjs is run manually per task
+# (node scripts/auto-receipt.mjs --wi WI-NNN) BEFORE commit; it is deliberately
+# NOT wired into git hooks (WI-557 removed mid-execution gates).
+# Functional contract (stronger than any grep): execute auto-receipt end-to-end
+# in a hermetic scratch repo and require a schema-valid triad receipt on disk,
+# written THROUGH state-io (marker double), for both the cosmetic/logic path
+# and the HIGH-risk schema-v2 final-review deferral path.
+AR_TMP="$(mktemp -d)"
+mkdir -p "$AR_TMP/scripts" "$AR_TMP/.svc"
+cp scripts/auto-receipt.mjs scripts/state-io.mjs scripts/classify-change-risk.mjs "$AR_TMP/scripts/"
+# Test double: local export shadows the star export (ESM rule), records every
+# writeJsonAtomic invocation to a marker file, then delegates to the REAL impl.
+cat > "$AR_TMP/scripts/state-io.mjs" <<AREOF
+import { appendFileSync } from "node:fs";
+import { writeJsonAtomic as _realWriteJsonAtomic } from "$ROOT/scripts/state-io.mjs";
+export * from "$ROOT/scripts/state-io.mjs";
+export function writeJsonAtomic(filePath, obj, opts) {
+  if (process.env.AR_MARKER) appendFileSync(process.env.AR_MARKER, "writeJsonAtomic " + filePath + "\\n");
+  return _realWriteJsonAtomic(filePath, obj, opts);
+}
+AREOF
+# LF-001 isolation: every scratch git op goes through env-sanitized wrappers so
+# a leaked GIT_DIR can never redirect them at THIS repo.
+ARG() { env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE git -C "$AR_TMP" "$@"; }
+ARG init -q
+ARG config user.email t@t
+ARG config user.name t
+printf 'x\n' > "$AR_TMP/seed.txt"
+ARG add -A
+ARG -c commit.gpgsign=false commit -qm seed
+printf 'y\n' > "$AR_TMP/staged.txt"
+ARG add staged.txt
+cat > "$AR_TMP/.svc/lane-tasks-WI-AUTOTEST.json" <<'ARJSON'
+{"wi":"WI-AUTOTEST","lane":"framework","created":"2026-01-01T00:00:00.000Z","tasks":[{"id":1,"subject":"t","status":"completed","blocked_by":[],"metadata":{"skill":"execute-changeset"}},{"id":2,"subject":"final review","status":"pending","blocked_by":[],"metadata":{"skill":"review-exec"}}]}
+ARJSON
+node --check scripts/auto-receipt.mjs
+# ── cosmetic/logic path ──
+( cd "$AR_TMP" && env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE env SVC_SESSION_ID=ar-selftest AR_MARKER="marker.log" node scripts/auto-receipt.mjs --wi WI-AUTOTEST >/dev/null 2>&1 ) \
+  && grep -q "^writeJsonAtomic .*task-1.json$" "$AR_TMP/marker.log" \
+  && cp "$ROOT/scripts/lib/json-schema-validator.mjs" "$AR_TMP/scripts/" \
+  && cp "$ROOT/schemas/change-impact-triad.schema.json" "$AR_TMP/scripts/" \
+  && ( cd "$AR_TMP" && AR_OUT=".svc/impact-triad/WI-AUTOTEST/task-1.json" node --input-type=module <<'ARVAL'
+import { validate } from "./scripts/json-schema-validator.mjs";
+import fs from "node:fs";
+const schema = JSON.parse(fs.readFileSync("./scripts/change-impact-triad.schema.json", "utf8"));
+const receipt = JSON.parse(fs.readFileSync(process.env.AR_OUT, "utf8"));
+const { valid, errors } = validate(schema, receipt);
+if (!valid) { console.error(errors.join("; ")); process.exit(1); }
+ARVAL
+  ) 2>/dev/null \
+  && ok "auto-receipt executes end-to-end via the state-io writeJsonAtomic path and emits a schema-valid triad" \
+  || bad "auto-receipt executes end-to-end via the state-io writeJsonAtomic path and emits a schema-valid triad"
+
+# ── HIGH-risk path: binary staged file -> schema-v2 final-review deferral ──
+head -c 32 /dev/zero > "$AR_TMP/blob.bin"
+printf '{"plan":"bytes"}' > "$AR_TMP/.svc/plan-manifest.json"
+ARG add blob.bin
+if ( cd "$AR_TMP" && env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE env SVC_SESSION_ID=ar-selftest node scripts/auto-receipt.mjs --wi WI-AUTOTEST >/dev/null 2>&1 ); then
+  bad "HIGH risk without SVC_EXECUTOR_FAMILY fails closed"
+else
+  ok "HIGH risk without SVC_EXECUTOR_FAMILY fails closed"
+fi
+AR_V2_RC="$( cd "$AR_TMP" && env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE env SVC_SESSION_ID=ar-selftest SVC_EXECUTOR_FAMILY=anthropic node scripts/auto-receipt.mjs --wi WI-AUTOTEST >/dev/null 2>&1; echo $? )"
+if [ "$AR_V2_RC" = "0" ] \
+  && grep -q "^writeJsonAtomic .*task-1.json$" "$AR_TMP/marker.log" \
+  && AR_OUT="$AR_TMP/.svc/impact-triad/WI-AUTOTEST/task-1.json" node -e 'const r=require(process.env.AR_OUT);if(r.schema_version!==2||r.independent_review.status!=="deferred-to-final"||r.independent_review.executor_family!=="anthropic"||r.independent_review.reviewer_family!=="n/a"||!/^[0-9a-f]{64}$/.test(r.independent_review.plan_digest||"")||String(r.independent_review.final_review_task_id)!=="2")process.exit(1)' 2>/dev/null; then
+  ok "HIGH risk emits schema-v2 deferral bound to the single review-exec task via state-io"
+else
+  bad "HIGH risk emits schema-v2 deferral bound to the single review-exec task via state-io"
+fi
+
+grep -qE 'REQUIRED_SLOTS.*25-impact-triad' scripts/install-git-hooks.mjs && bad "installer still pins retired impact slot" || ok "installer no longer pins retired impact slot"
 grep -q 'Universal Assurance Floor: Change Impact Triad' DOCTRINE.md && ok "doctrine carries universal assurance floor" || bad "doctrine carries universal assurance floor"
 grep -q 'Universal change-impact routing' skills/route-workflow/SKILL.md && ok "router carries impact classification" || bad "router carries impact classification"
 grep -q 'impact-triad subsumption receipt' skills/diagnose-bug/SKILL.md && ok "diagnose-bug carries subsumption" || bad "diagnose-bug carries subsumption"

@@ -271,6 +271,46 @@ export function selectTier1Validators(changedPaths) {
   };
 }
 
+// FP-030: surface-scoped selection — pick only the validators whose contract
+// inputs fall under one of the given path prefixes. A surface matches a
+// contract input EXACTLY or as a DIRECTORY PREFIX (input === surf ||
+// input.startsWith(surf + "/")); pass directory prefixes ("scripts/") rather
+// than leaf files when you want every contract under a tree. Unlike
+// changed-path mode, an unmatched surface is NOT a full-sweep trigger — it is
+// a loud zero-match failure in run-all-evals.sh; the full tier-1 suite remains
+// reserved for CP-PRELAND (run-all-evals.sh without --surface).
+export function selectTier1ValidatorsForSurfaces(surfacePaths) {
+  if (!Array.isArray(surfacePaths)) return { valid: false, errors: ["surface_paths must be an array"] };
+  let surfaces;
+  try {
+    // path.posix.normalize PRESERVES a trailing slash ("schemas/" stays
+    // "schemas/"), which would break the surf + "/" prefix test. Strip it.
+    surfaces = [...new Set(surfacePaths.map((candidate) => {
+      const normalized = normalize(candidate);
+      return normalized.length > 1 ? normalized.replace(/\/+$/, "") : normalized;
+    }))];
+  } catch (error) {
+    return { valid: false, errors: [error.message] };
+  }
+  const selected = new Set();
+  for (const contract of CONTRACTS) {
+    if (contract.inputs.some((input) => surfaces.some((surf) => input === surf || input.startsWith(surf + "/")))) {
+      selected.add(contract.validator);
+    }
+  }
+  // NOTE: this function returns PURE contract matches — an empty array means
+  // "no contract covers these surfaces". The RUNNER owns adding
+  // validate-tier1-selector-v2.mjs and deciding that an empty surface scope is
+  // a loud failure rather than a silent pass.
+  return {
+    valid: true,
+    surfaces,
+    selected: [...selected].sort(),
+    fallback_full: false,
+    reason: "surface-scope"
+  };
+}
+
 function parseArgs(argv) {
   const args = {};
   for (let index = 0; index < argv.length; index += 1) {
@@ -286,6 +326,13 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   try {
     const args = parseArgs(process.argv.slice(2));
     const repoRoot = path.resolve(args["repo-root"] ?? process.cwd());
+    if (args.surface !== undefined) {
+      const surfaces = args.surface.split(",").map((entry) => entry.trim()).filter(Boolean);
+      const result = selectTier1ValidatorsForSurfaces(surfaces);
+      if (args.format === "lines" && result.valid) process.stdout.write(result.selected.length > 0 ? result.selected.join("\n") + "\n" : "");
+      else (result.valid ? process.stdout : process.stderr).write(JSON.stringify(result) + "\n");
+      process.exitCode = result.valid ? 0 : 1;
+    } else {
     const changed = args["changed-json"] ? JSON.parse(args["changed-json"]) : currentChanges(repoRoot);
     const result = selectTier1Validators(changed);
     if (args.format === "lines" && result.valid) {
@@ -295,6 +342,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       (result.valid ? process.stdout : process.stderr).write(`${JSON.stringify(result)}\n`);
     }
     process.exitCode = result.valid ? 0 : 1;
+    }
   } catch (error) {
     process.stderr.write(`${JSON.stringify({ valid: false, errors: [error.message] })}\n`);
     process.exitCode = 2;

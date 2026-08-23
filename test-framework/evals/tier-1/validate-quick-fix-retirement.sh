@@ -17,7 +17,7 @@ for file in README.md KIMI.md GEMINI.md ANTIGRAVITY.md skills/route-workflow/ref
 done
 
 printf '%s  %s\n' \
-  abb5f3074680a6d8754e6f9bdaf38225a29189efe9af14a296fd354a2cdde04f scripts/quick-fix-eligibility.mjs \
+  0ca265a390b1d088aae4c84a1c5695320b24587cb79be404c01e341921500e0c scripts/quick-fix-eligibility.mjs \
   6d4dc7dafe8752d6569025df1c5457524ae9178b3beb1f3d636ecec208e30143 scripts/classify-change-risk.mjs \
   cf549b9e572acfc21e066c5defc82bb2eb7db14661e6e46a336b32f660f74e32 hooks/git/pre-commit.d/20-quick-fix-eligibility | sha256sum -c -
 

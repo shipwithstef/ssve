@@ -27,9 +27,12 @@ const perSha = [
 ].flatMap(missingFromReceiptResult);
 const batched = missingFromReceiptResult({ ok: false, results: [{ sha: "a", ok: true, missing: [] }, { sha: "b", ok: false, missing: ["review-plan"] }] });
 assert.deepEqual(batched, perSha);
+// WI-557-v2: pre-push receipts check is HEAD-only — exactly one
+// check-chain-receipts invocation per pushed ref, bound to --sha (the squash
+// tip is what ships; intermediate commits are implementation detail).
 const prePush = fs.readFileSync("hooks/git/pre-push.d/10-receipts-complete", "utf8");
-assert.equal((prePush.match(/check-chain-receipts\.mjs --range/g) || []).length, 1);
-assert.equal(/for\s+sha\s+in/.test(prePush), false);
+assert.equal((prePush.match(/check-chain-receipts\.mjs --sha/g) || []).length, 1);
+assert.equal(prePush.includes("--range"), false);
 const driveRoot = fs.mkdtempSync(path.join(os.tmpdir(), "wi472-drive-"));
 const noop = path.join(driveRoot, "noop.mjs");
 fs.writeFileSync(noop, "setTimeout(() => process.exit(0), 500);\n");

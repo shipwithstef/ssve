@@ -447,12 +447,13 @@ G553 add -A
 G553 -c commit.gpgsign=false commit -q -m baseline
 
 GRAPH_REL=".svc/lane-tasks-WI-553-EXEC.json"
+# WI-557-v2: the mid-execution receipt gate is retired BY DESIGN — completion
+# succeeds without intermediate receipts; enforcement lives at BOUNDARIES
+# (pre-push L2 10-receipts-complete, finalizer, reconcile L3).
 if (cd "$GIT_REPO" && node "$ROOT/scripts/task-graph.mjs" set-status "$GRAPH_REL" 1 completed) >"$TMP/ac553-5-missing.out" 2>&1; then
-  fail "AC-553-5: execute-changeset completed without chain receipts unexpectedly PASSED"
-elif grep -q "AC-553-5" "$TMP/ac553-5-missing.out"; then
-  pass "AC-553-5: execute-changeset without plan-manifest/review-plan/exec-record receipts is blocked"
+  pass "AC-553-5: execute-changeset completes without receipts mid-execution (WI-557 boundary model)"
 else
-  fail "AC-553-5: missing-receipts rejection message drifted: $(cat "$TMP/ac553-5-missing.out")"
+  fail "AC-553-5: mid-execution completion was rejected but the gate is retired: $(cat "$TMP/ac553-5-missing.out")"
 fi
 
 HEAD_SHA_SHORT="$(G553 rev-parse HEAD | cut -c1-7)"
@@ -557,12 +558,12 @@ cat > "$GIT_REPO2/.svc/lane-tasks-WI-553-LEGACY.json" <<'JSON'
 JSON
 G553L add -A
 G553L -c commit.gpgsign=false commit -q -m baseline
+# WI-557-v2: omit-created graphs follow the same boundary model — completion
+# succeeds mid-execution; boundary gates own receipt enforcement for all graphs.
 if (cd "$GIT_REPO2" && node "$ROOT/scripts/task-graph.mjs" set-status ".svc/lane-tasks-WI-553-LEGACY.json" 1 completed) >"$TMP/ac553-5-legacy.out" 2>&1; then
-  fail "AC-553-5: graph with no created field completed without receipts unexpectedly PASSED"
-elif grep -q "AC-553-5" "$TMP/ac553-5-legacy.out"; then
-  pass "AC-553-5: omit-created graph is gated on execute-changeset completion"
+  pass "AC-553-5: omit-created graph completes mid-execution (boundary model applies uniformly)"
 else
-  fail "AC-553-5: omit-created rejection message drifted: $(cat "$TMP/ac553-5-legacy.out")"
+  fail "AC-553-5: omit-created completion was rejected but the gate is retired: $(cat "$TMP/ac553-5-legacy.out")"
 fi
 
 echo ""
