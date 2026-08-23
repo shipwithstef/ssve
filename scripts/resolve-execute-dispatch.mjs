@@ -181,10 +181,16 @@ function parseTerminalState(reviewLogPath) {
   return { state, bytes: fs.readFileSync(reviewLogPath), text };
 }
 
+// This emergency file can override only the dispatch tuple decision after a
+// review log is independently authorized; it never bypasses review authority.
 function parseOverrideFile(file, expectedWi) {
   if (!file) return null;
   const absolute = path.resolve(file);
-  if (!fs.existsSync(absolute) || fs.lstatSync(absolute).isSymbolicLink() || !fs.statSync(absolute).isFile()) fail(`override file is unreadable or ineligible: ${file}`, 1);
+  if (!fs.existsSync(absolute) || fs.lstatSync(absolute).isSymbolicLink()) fail(`override file is unreadable or ineligible: ${file}`, 1);
+  const stat = fs.statSync(absolute);
+  if (!stat.isFile() || (typeof process.getuid === "function" && stat.uid !== process.getuid()) || (stat.mode & 0o077) !== 0) {
+    fail(`override file must be an owner-controlled mode-0600 regular file: ${file}`, 1);
+  }
   const bytes = fs.readFileSync(absolute);
   const text = bytes.toString("utf8");
   let accept = false;
@@ -192,6 +198,7 @@ function parseOverrideFile(file, expectedWi) {
   let authority = "";
   let wi = "";
   let timestamp = "";
+  let source = "";
   try {
     const json = JSON.parse(text);
     accept = json.accept === true || json.accepted === true;
@@ -199,6 +206,7 @@ function parseOverrideFile(file, expectedWi) {
     authority = String(json.authority || "");
     wi = String(json.wi || "");
     timestamp = String(json.timestamp || json.ts || "");
+    source = String(json.source || "");
   } catch {
     accept = /^\s*accept\s*:\s*true\s*$/im.test(text);
     const field = (name) => {
@@ -209,15 +217,16 @@ function parseOverrideFile(file, expectedWi) {
     authority = field("authority");
     wi = field("wi");
     timestamp = field("timestamp") || field("ts");
+    source = field("source");
   }
   if (!accept) fail("override file is present but not accepted", 1);
   if (!reason) fail("accepted override requires a reason", 1);
   const timestampMs = Date.parse(timestamp);
   const ageMs = Date.now() - timestampMs;
-  if (authority !== "repository-owner" || !expectedWi || wi !== expectedWi || !Number.isFinite(timestampMs) || ageMs > OWNER_OVERRIDE_MAX_AGE_MS || ageMs < -OWNER_OVERRIDE_CLOCK_SKEW_MS) {
-    fail("accepted override failed authority, WI binding, or freshness validation", 1);
+  if (authority !== "repository-owner" || !source || !expectedWi || wi !== expectedWi || !Number.isFinite(timestampMs) || ageMs > OWNER_OVERRIDE_MAX_AGE_MS || ageMs < -OWNER_OVERRIDE_CLOCK_SKEW_MS) {
+    fail("accepted override failed authority, source, WI binding, or freshness validation", 1);
   }
-  return { path: absolute, reason, authority, wi, timestamp, sha256: sha256(bytes) };
+  return { path: absolute, reason, authority, source, wi, timestamp, sha256: sha256(bytes) };
 }
 
 function compactDispatch({ wi, reviewLog, reviewLogSha, policyPath, policySha, mode, tuple }) {

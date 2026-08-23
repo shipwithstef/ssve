@@ -156,6 +156,10 @@ if [[ "${SVC_FAKE_OUTPUT:-valid}" == malformed ]]; then
   printf '%s\n' '{"type":"result","is_error":false,"result":"{bad"}'
   exit 0
 fi
+if [[ "${SVC_FAKE_CURSOR_IS_ERROR:-0}" == 1 ]]; then
+  printf '%s\n' '{"type":"result","is_error":true,"result":"provider rejected request"}'
+  exit 0
+fi
 python3 -c 'import json,os,sys; print(json.dumps({"type":"result","is_error":False,"result":sys.argv[1]}))' "$result"
 FAKE
   cat > "$TMP/bin/grok" <<'FAKE'
@@ -493,6 +497,21 @@ if want cursor; then
   unset SVC_FAKE_FINDINGS_HOST
   expect "mismatched findings host fail-closed with no review authorization" bash -c "test '$MISMATCH_FINDINGS_RC' -ne 0"
 
+  for ENVELOPE_KIND in malformed is-error; do
+    reset_log
+    set +e
+    if [[ "$ENVELOPE_KIND" == malformed ]]; then
+      SVC_FAKE_OUTPUT=malformed SVC_HOST=codex SVC_DISPATCH_POLICY="$POLICY_JSON" SVC_REVIEWER_STATION=fable SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR="$TMP/out/cursor-$ENVELOPE_KIND" \
+        bash "$ADAPTER" "$SCOUT/docs/plans/active/manifest.md" > "$TMP/cursor-$ENVELOPE_KIND.out" 2> "$TMP/cursor-$ENVELOPE_KIND.err"
+    else
+      SVC_FAKE_CURSOR_IS_ERROR=1 SVC_HOST=codex SVC_DISPATCH_POLICY="$POLICY_JSON" SVC_REVIEWER_STATION=fable SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR="$TMP/out/cursor-$ENVELOPE_KIND" \
+        bash "$ADAPTER" "$SCOUT/docs/plans/active/manifest.md" > "$TMP/cursor-$ENVELOPE_KIND.out" 2> "$TMP/cursor-$ENVELOPE_KIND.err"
+    fi
+    ENVELOPE_RC=$?
+    set -e
+    expect "Cursor $ENVELOPE_KIND envelope fails closed without findings authorization" bash -c "test '$ENVELOPE_RC' -ne 0 && test ! -s '$TMP/cursor-$ENVELOPE_KIND.out'"
+  done
+
   expect "receipt schema admits cursor host" node -e 'const s=require(process.argv[1]); if(!s.definitions.tuple.properties.host.enum.includes("cursor")) process.exit(1); if(s.definitions.tuple.properties.orchestrator.enum.join(",")!=="claude,codex") process.exit(1);' "$ROOT/schemas/external-review-receipt.schema.json"
   expect "findings schema admits cursor host" node -e 'const s=require(process.argv[1]); if(!s.properties.reviewer.properties.host.enum.includes("cursor")) process.exit(1);' "$ROOT/schemas/external-review-findings.schema.json"
 
@@ -641,6 +660,7 @@ if want helper; then
 const fs = require('fs');
 fs.writeFileSync(process.env.OVERRIDE, JSON.stringify({
   authority: 'repository-owner',
+  source: 'owner-console',
   wi: 'WI-559',
   timestamp: new Date().toISOString(),
   accept: true,
@@ -655,13 +675,20 @@ NODE
     if(j.host||j.model||j.family||j.effort) process.exit(1);
   ' "$OV_JSON"
 
-  for BAD_KIND in missing-authority wrong-wi stale; do
+  set +e
+  node "$HELPER" preflight --repo "$DRAFT_REPO" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex --allow-override-file "$OVERRIDE" > "$TMP/override-draft.out" 2> "$TMP/override-draft.err"
+  OVERRIDE_DRAFT_RC=$?
+  set -e
+  expect "owner override never bypasses a non-authorized review log" test "$OVERRIDE_DRAFT_RC" -ne 0
+
+  for BAD_KIND in missing-authority missing-source wrong-wi stale; do
     BAD_OVERRIDE="$TMP/override-$BAD_KIND.json"
     BAD_OVERRIDE="$BAD_OVERRIDE" BAD_KIND="$BAD_KIND" node <<'NODE'
 const fs = require('fs');
 const kind = process.env.BAD_KIND;
 const row = {
   authority: kind === 'missing-authority' ? undefined : 'repository-owner',
+  source: kind === 'missing-source' ? undefined : 'owner-console',
   wi: kind === 'wrong-wi' ? 'WI-100' : 'WI-559',
   timestamp: kind === 'stale' ? new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString() : new Date().toISOString(),
   accept: true,

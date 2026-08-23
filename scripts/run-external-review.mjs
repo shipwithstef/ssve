@@ -592,6 +592,9 @@ async function capabilityCheck(tuple, binary, timeoutMs) {
     : tuple.host === 'agy'
       ? ['--version']
       : tuple.host === 'cursor'
+        // Cursor Agent does not accept --version combined with headless review
+        // flags. Validate the exact flag vocabulary from --help, then use the
+        // documented standalone version probe; invocation remains fail-closed.
         ? ['--version']
         : ['--print', '--model', tuple.model, '--effort', tuple.effort, '--safe-mode', '--tools', '', '--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}', '--permission-mode', 'plan', '--no-session-persistence', '--max-turns', '4', '--disable-slash-commands', '--no-chrome', ...(tuple.model === 'claude-fable-5' ? ['--settings', '{"switchModelsOnFlag":true}'] : []), '--json-schema', '{"type":"object"}', '--output-format', 'json', '--max-budget-usd', '1', '--version'];
   const parser = await runProcess(binary, parserArgs, Buffer.alloc(0), Math.min(timeoutMs, 30_000));
@@ -1148,7 +1151,9 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
               try { outer = JSON.parse(line); break; } catch {}
             }
           }
-          if (!outer || typeof outer !== 'object' || outer.is_error === true) throw new Error('cursor envelope is not a successful JSON result');
+          if (!outer || typeof outer !== 'object' || outer.type !== 'result' || outer.is_error === true || !Object.prototype.hasOwnProperty.call(outer, 'result')) {
+            throw new Error('cursor envelope is not a successful JSON result');
+          }
           if (typeof outer.model === 'string' && outer.model !== tuple.model) {
             classification = 'model_mismatch';
           } else {
