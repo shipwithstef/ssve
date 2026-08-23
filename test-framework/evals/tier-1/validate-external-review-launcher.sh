@@ -149,13 +149,14 @@ while [[ $# -gt 0 ]]; do
   if [[ "$1" == "--model" ]]; then model="$2"; shift 2
   else shift; fi
 done
+base_model="${model%%\[*}"
 family="${SVC_FAKE_CURSOR_FAMILY:-}"
 if [[ -z "$family" ]]; then
   if [[ "$model" == gpt-5.6-sol* ]]; then family=openai; else family=anthropic; fi
 fi
 host="${SVC_FAKE_FINDINGS_HOST:-cursor}"
 effort="${SVC_FAKE_FINDINGS_EFFORT:-high}"
-finding="$(H="$host" F="$family" M="${SVC_FAKE_FINDINGS_MODEL:-$model}" E="$effort" python3 -c "import json,os; print(json.dumps({\"schema_version\":1,\"review_kind\":os.environ.get(\"SVC_REVIEW_KIND\",\"plan\"),\"rubric_score\":10,\"rubric_failures\":None,\"dependencies_needing_read\":None,\"reviewer\":{\"host\":os.environ[\"H\"],\"family\":os.environ[\"F\"],\"model\":os.environ[\"M\"],\"effort\":os.environ[\"E\"]},\"verdict\":\"pass\",\"summary\":\"fixture pass\",\"findings\":[],\"certifications\":[]}))")"
+finding="$(H="$host" F="$family" M="${SVC_FAKE_FINDINGS_MODEL:-$base_model}" E="$effort" python3 -c "import json,os; print(json.dumps({\"schema_version\":1,\"review_kind\":os.environ.get(\"SVC_REVIEW_KIND\",\"plan\"),\"rubric_score\":10,\"rubric_failures\":None,\"dependencies_needing_read\":None,\"reviewer\":{\"host\":os.environ[\"H\"],\"family\":os.environ[\"F\"],\"model\":os.environ[\"M\"],\"effort\":os.environ[\"E\"]},\"verdict\":\"pass\",\"summary\":\"fixture pass\",\"findings\":[],\"certifications\":[]}))")"
 if [[ "${SVC_FAKE_MODE:-success}" != "success" ]]; then printf "%s\n" "${SVC_FAKE_DIAGNOSTIC:-authentication failed}" >&2; exit 1; fi
 result="$finding"
 if [[ "${SVC_FAKE_CURSOR_FENCE:-0}" == 1 ]]; then result="```json
@@ -1194,11 +1195,11 @@ expect "default Cursor receipt is schema-valid with equal exact tuples and reque
   if(JSON.stringify(t)!==JSON.stringify(r.invocation_tuple)||JSON.stringify(t)!==JSON.stringify(r.effective_tuple)) process.exit(1);
   if(!["requested_accepted","server_observed"].includes(r.model_attestation.level)) process.exit(1);
   const argv=r.attempts[0].command.argv||[];
-  const expected=["--print","--output-format","json","--mode","plan","--sandbox","enabled","--model",t.model];
+  const expected=["--print","--output-format","json","--mode","plan","--sandbox","enabled","--model",`${t.model}[effort=${t.effort}]`,"--workspace",process.argv[2]];
   if(JSON.stringify(argv)!==JSON.stringify(expected)) process.exit(1);
   const joined=argv.join(" ");
   if(/bypassPermissions|--yolo|--dangerously-skip-permissions/.test(joined)) process.exit(1);
-' "$NAMED_DEFAULT_RECEIPT"
+' "$NAMED_DEFAULT_RECEIPT" "$REPO_SCOUT"
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 set +e

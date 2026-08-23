@@ -137,13 +137,14 @@ model=""
 while [[ $# -gt 0 ]]; do
   if [[ "$1" == "--model" ]]; then model="$2"; shift 2; else shift; fi
 done
+base_model="${model%%\[*}"
 family="${SVC_FAKE_CURSOR_FAMILY:-}"
 if [[ -z "$family" ]]; then
   if [[ "$model" == gpt-5.6-sol* ]]; then family=openai; else family=anthropic; fi
 fi
 host="${SVC_FAKE_FINDINGS_HOST:-cursor}"
 effort="${SVC_FAKE_FINDINGS_EFFORT:-high}"
-finding="$(H="$host" F="$family" M="${SVC_FAKE_FINDINGS_MODEL:-$model}" E="$effort" python3 -c 'import json,os; print(json.dumps({"schema_version":1,"review_kind":os.environ.get("SVC_REVIEW_KIND","plan"),"rubric_score":10,"rubric_failures":None,"dependencies_needing_read":None,"reviewer":{"host":os.environ["H"],"family":os.environ["F"],"model":os.environ["M"],"effort":os.environ["E"]},"verdict":"pass","summary":"fixture pass","findings":[],"certifications":[]}))')"
+finding="$(H="$host" F="$family" M="${SVC_FAKE_FINDINGS_MODEL:-$base_model}" E="$effort" python3 -c 'import json,os; print(json.dumps({"schema_version":1,"review_kind":os.environ.get("SVC_REVIEW_KIND","plan"),"rubric_score":10,"rubric_failures":None,"dependencies_needing_read":None,"reviewer":{"host":os.environ["H"],"family":os.environ["F"],"model":os.environ["M"],"effort":os.environ["E"]},"verdict":"pass","summary":"fixture pass","findings":[],"certifications":[]}))')"
 if [[ "${SVC_FAKE_MODE:-success}" != "success" ]]; then
   printf '%s\n' "${SVC_FAKE_DIAGNOSTIC:-authentication failed}" >&2
   exit 1
@@ -355,6 +356,13 @@ if want review; then
 
   reset_log
   set +e
+  printf 'owner default without candidate binding' | SVC_HOST=codex node "$LAUNCHER" --orchestrator codex --review-kind plan --reviewer-config "$POLICY_JSON" --reviewer-phase plan --artifacts-dir "$TMP/out/default-no-candidate" > "$TMP/default-no-candidate.out" 2> "$TMP/default-no-candidate.err"
+  DEFAULT_NO_CANDIDATE_RC=$?
+  set -e
+  expect "omitted owner-config station still requires exact candidate binding before provider spawn" bash -c "test '$DEFAULT_NO_CANDIDATE_RC' -ne 0 && test \"\$(call_count)\" = 0"
+
+  reset_log
+  set +e
   SVC_HOST=codex SVC_DISPATCH_POLICY="$POLICY_JSON" SVC_REVIEWER_MODE=mixed-grok-cursor SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR="$TMP/out/explicit-mode" \
     bash "$ADAPTER" "$SCOUT/docs/plans/active/manifest.md" > "$TMP/explicit-mode.findings" 2> "$TMP/explicit-mode.err"
   EXPLICIT_MODE_RC=$?
@@ -453,12 +461,12 @@ if want cursor; then
     if(!["requested_accepted","server_observed"].includes(r.model_attestation.level)||r.model_attestation.level==="none") process.exit(1);
     if(!Array.isArray(r.attempts[0]?.command?.argv)) process.exit(1);
     const argv=r.attempts[0].command.argv;
-    const expected=["--print","--output-format","json","--mode","plan","--sandbox","enabled","--model",t.model];
+    const expected=["--print","--output-format","json","--mode","plan","--sandbox","enabled","--model",`${t.model}[effort=${t.effort}]`,"--workspace",process.argv[2]];
     if(JSON.stringify(argv)!==JSON.stringify(expected)) process.exit(1);
     const joined=argv.join(" ");
     if(!argv.includes("--print")||!argv.includes("--output-format")||!argv.includes("json")||!argv.includes("--mode")||!argv.includes("plan")||!argv.includes("--sandbox")||!argv.includes("enabled")||!argv.includes("--model")) process.exit(1);
     if(/bypassPermissions|--yolo|--force\b|--dangerously-skip-permissions/.test(joined)) process.exit(1);
-  ' "$RECEIPT_FABLE"
+  ' "$RECEIPT_FABLE" "$SCOUT"
 
   reset_log
   set +e
@@ -547,6 +555,20 @@ if want cursor; then
     if(!errors.some((e)=>/family|host/.test(e))) process.exit(1);
   "
 
+  BAD_CURSOR_POLICY="$TMP/policy/cursor-google-policy.json"
+  POLICY_IN="$POLICY_JSON" POLICY_OUT="$BAD_CURSOR_POLICY" node <<'NODE'
+const fs = require('fs');
+const policy = JSON.parse(fs.readFileSync(process.env.POLICY_IN, 'utf8'));
+policy.modes['mixed-grok-cursor'].review.plan.stations.find((row) => row.id === 'fable').tuple.family = 'google';
+fs.writeFileSync(process.env.POLICY_OUT, JSON.stringify(policy) + '\n', { mode: 0o600 });
+NODE
+  reset_log
+  set +e
+  printf 'candidate_digest=%s\n' "$PLANSHA" | SVC_HOST=codex node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$PLANSHA" --reviewer-config "$BAD_CURSOR_POLICY" --reviewer-phase plan --reviewer-station fable --artifacts-dir "$TMP/out/cursor-google-preflight" > "$TMP/cursor-google-preflight.out" 2> "$TMP/cursor-google-preflight.err"
+  CURSOR_GOOGLE_RC=$?
+  set -e
+  expect "ineligible Cursor family fails before capability or provider spawn" bash -c "test '$CURSOR_GOOGLE_RC' -ne 0 && test \"\$(call_count)\" = 0"
+
   LARGE="$TMP/cursor-large-repo"
   make_plan_repo "$LARGE" bugfix-WI-SCOUT-CAPTURE-DURABILITY-01 WI-SCOUT-CAPTURE-DURABILITY-01
   python3 - "$LARGE" <<'PY'
@@ -589,11 +611,11 @@ PY
     if (!fs.existsSync(stdinPath) || !packageBytes.equals(fs.readFileSync(stdinPath))) process.exit(1);
     const argv = r.attempts[0]?.command?.argv;
     if (!Array.isArray(argv)) process.exit(1);
-    const prefix = ['--print', '--output-format', 'json', '--mode', 'plan', '--sandbox', 'enabled', '--model', t.model];
+    const prefix = ['--print', '--output-format', 'json', '--mode', 'plan', '--sandbox', 'enabled', '--model', t.model + '[effort=' + t.effort + ']', '--workspace', process.argv[3]];
     if (JSON.stringify(argv) !== JSON.stringify(prefix)) process.exit(1);
     const joinedFlags = prefix.join(' ');
     if (/bypassPermissions|--yolo|--force\\b|--dangerously-skip-permissions/.test(joinedFlags)) process.exit(1);
-  " "$RECEIPT_LARGE" "$SVC_FAKE_LOG/cursor.stdin"
+  " "$RECEIPT_LARGE" "$SVC_FAKE_LOG/cursor.stdin" "$LARGE"
   set -e
 fi
 
@@ -625,6 +647,45 @@ if want helper; then
   ' "$PRE_JSON"
   PRE_JSON2="$(node "$HELPER" preflight --repo "$EXEC_REPO" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex)"
   expect "preflight is deterministic" test "$PRE_JSON" = "$PRE_JSON2"
+
+  NOTES_ONLY="$TMP/notes-only-repo"
+  make_plan_repo "$NOTES_ONLY" bugfix-WI-559-notes WI-100
+  printf '# notes\n\n**Work item:** WI-559\n' > "$NOTES_ONLY/docs/plans/active/notes.md"
+  write_review_log "$NOTES_ONLY/docs/plans/active/review-log.yaml" PROMOTED WI-559
+  set +e
+  node "$HELPER" preflight --repo "$NOTES_ONLY" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex > "$TMP/pre-notes-only.out" 2> "$TMP/pre-notes-only.err"
+  NOTES_ONLY_RC=$?
+  set -e
+  expect "arbitrary Markdown cannot impersonate a canonical plan manifest" test "$NOTES_ONLY_RC" -ne 0
+
+  WRONG_LOG_WI="$TMP/wrong-log-wi-repo"
+  make_plan_repo "$WRONG_LOG_WI" bugfix-WI-559-wrong-log WI-559
+  write_review_log "$WRONG_LOG_WI/docs/plans/active/review-log.yaml" PROMOTED WI-100
+  set +e
+  node "$HELPER" preflight --repo "$WRONG_LOG_WI" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex > "$TMP/pre-wrong-log-wi.out" 2> "$TMP/pre-wrong-log-wi.err"
+  WRONG_LOG_WI_RC=$?
+  set -e
+  expect "review log must bind its own WI to the requested WI" bash -c "test '$WRONG_LOG_WI_RC' -ne 0 && grep -q 'does not match requested WI-559' '$TMP/pre-wrong-log-wi.err'"
+
+  DUAL_MANIFEST="$TMP/dual-manifest-repo"
+  make_plan_repo "$DUAL_MANIFEST" bugfix-WI-559-dual-manifest WI-559
+  printf '# duplicate canonical plan\n\n**Work item:** WI-559\n' > "$DUAL_MANIFEST/docs/plans/active/plan.md"
+  write_review_log "$DUAL_MANIFEST/docs/plans/active/review-log.yaml" PROMOTED WI-559
+  set +e
+  node "$HELPER" preflight --repo "$DUAL_MANIFEST" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex > "$TMP/pre-dual-manifest.out" 2> "$TMP/pre-dual-manifest.err"
+  DUAL_MANIFEST_RC=$?
+  set -e
+  expect "multiple canonical manifests cannot share one execution authority log" bash -c "test '$DUAL_MANIFEST_RC' -ne 0 && grep -q 'exactly one canonical manifest' '$TMP/pre-dual-manifest.err'"
+
+  SYMLINK_LOG="$TMP/symlink-log-repo"
+  make_plan_repo "$SYMLINK_LOG" bugfix-WI-559-symlink-log WI-559
+  write_review_log "$TMP/symlink-review-log.yaml" PROMOTED WI-559
+  ln -s "$TMP/symlink-review-log.yaml" "$SYMLINK_LOG/docs/plans/active/review-log.yaml"
+  set +e
+  node "$HELPER" preflight --repo "$SYMLINK_LOG" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex > "$TMP/pre-symlink-log.out" 2> "$TMP/pre-symlink-log.err"
+  SYMLINK_LOG_RC=$?
+  set -e
+  expect "symlink review logs cannot authorize execution" test "$SYMLINK_LOG_RC" -ne 0
 
   DRAFT_REPO="$TMP/draft-repo"
   make_plan_repo "$DRAFT_REPO" bugfix-WI-559-draft WI-559
@@ -723,6 +784,14 @@ NODE
   VERIFY="$(node "$HELPER" verify-receipt --repo "$EXEC_REPO" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex --max-age-seconds 21600)"
   expect "verify-receipt accepts recent exact schema-2 Grok row and ignores malformed/legacy/other-WI" node -e 'const j=JSON.parse(process.argv[1]); if(j.ok!==true&&j.decision!=="dispatch") process.exit(1);' "$VERIFY"
 
+  for INVALID_AGE in NaN Infinity 21601 0 -1; do
+    set +e
+    node "$HELPER" verify-receipt --repo "$EXEC_REPO" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex --max-age-seconds "$INVALID_AGE" > "$TMP/verify-age-$INVALID_AGE.out" 2> "$TMP/verify-age-$INVALID_AGE.err"
+    INVALID_AGE_RC=$?
+    set -e
+    expect "invalid receipt max age $INVALID_AGE fails closed" bash -c "test '$INVALID_AGE_RC' -eq 2 && grep -q 'integer from 1 through 21600' '$TMP/verify-age-$INVALID_AGE.err'"
+  done
+
   LOG_FILE="$EXEC_REPO/.svc/dispatch-log.jsonl" POLICY_SHA="$POLICY_SHA" REVIEW_SHA="$REVIEW_SHA" HOST="$HOST" FAMILY="$FAMILY" MODEL="$MODEL" EFFORT="$EFFORT" MODE="$MODE" node <<'NODE'
 const fs = require('fs');
 const file = process.env.LOG_FILE;
@@ -818,6 +887,36 @@ if want execute; then
   GUARD_RC=$?
   set -e
   expect "legacy MiMo/Sonnet/Opus rows cannot authorize the current Grok tuple" test "$GUARD_RC" -ne 0
+
+  reset_log
+  set +e
+  SVC_WORKER_MUTATION=false SVC_WORKER_WI=WI-559 SVC_WORKER_EFFORT=xhigh SVC_HOST=codex SVC_DISPATCH_POLICY="$POLICY_JSON" \
+    bash -c 'cd "$1" && bash "$2" grok execute-changeset "mismatched effort must not launch"' _ "$EXEC_SHELL" "$DISPATCH_LOG" > "$TMP/dispatch-mismatch.out" 2> "$TMP/dispatch-mismatch.err"
+  DISPATCH_MISMATCH_RC=$?
+  set -e
+  expect "dispatch logger rejects requested effort drift before worker launch" bash -c "test '$DISPATCH_MISMATCH_RC' -ne 0 && test \"\$(call_count grok)\" = 0"
+
+  reset_log
+  set +e
+  SVC_WORKER_MUTATION=false SVC_WORKER_WI=WI-559 SVC_HOST=codex SVC_DISPATCH_POLICY="$POLICY_JSON" \
+    bash -c 'cd "$1" && bash "$2" grok execute-changeset "execute exact reviewed tuple"' _ "$EXEC_SHELL" "$DISPATCH_LOG" > "$TMP/dispatch-exact.out" 2> "$TMP/dispatch-exact.err"
+  DISPATCH_EXACT_RC=$?
+  set -e
+  expect "dispatch logger launches exactly one resolved Grok worker" bash -c "test '$DISPATCH_EXACT_RC' -eq 0 && test \"\$(call_count grok)\" = 1"
+  expect "dispatch logger appends schema-2 exact tuple and review-policy digests" node -e '
+    const fs=require("fs");
+    const rows=fs.readFileSync(process.argv[1],"utf8").trim().split(/\n/).map(JSON.parse);
+    const row=rows.at(-1);
+    if(row.schema_version!==2||row.wi!=="WI-559"||row.decision!=="dispatch"||row.skill!=="execute-changeset")process.exit(1);
+    if(row.host!=="grok"||row.family!=="xai"||row.model!=="grok-4.6"||row.effort!=="high"||row.exit_code!==0)process.exit(1);
+    if(!/^[a-f0-9]{64}$/.test(row.policy_sha256)||!/^[a-f0-9]{64}$/.test(row.review_log_sha256)||!Number.isInteger(row.duration_ms)||!row.log_path)process.exit(1);
+  ' "$EXEC_SHELL/.svc/dispatch-log.jsonl"
+
+  set +e
+  SVC_DISPATCH_POLICY="$POLICY_JSON" SVC_HOST=codex bash -c 'cd "$1" && bash "$2"' _ "$EXEC_SHELL" "$GUARD" > "$TMP/guard-exact.out" 2> "$TMP/guard-exact.err"
+  GUARD_EXACT_RC=$?
+  set -e
+  expect "commit guard accepts only the recent exact current tuple receipt" test "$GUARD_EXACT_RC" -eq 0
 fi
 
 printf '\n  %s failed, %s passed\n' "$FAIL" "$PASS"

@@ -44,6 +44,7 @@ check("proposal selects complete v2 focused closure", () => {
     "validate-product-improvement-protocol-v2.mjs",
     "validate-product-proof-compiler-v2.mjs",
     "validate-release-lifecycle-v2.mjs",
+    "validate-review-dispatch-adapter-convergence.sh",
     "validate-review-topology-v2.mjs",
     "validate-runtime-assurance-mutations-v2.mjs",
     "validate-runtime-cutover-v2.mjs",
@@ -97,6 +98,27 @@ check("reviewer owner config support selects exact topology and launcher validat
   const result = selectTier1Validators(["scripts/review-topology-v2.mjs"]);
   assert.equal(result.fallback_full, false);
   assert.deepEqual(result.selected, ["validate-dispatch-resolver-wi551.mjs", "validate-external-review-launcher.sh", "validate-review-topology-v2.mjs"]);
+});
+
+check("WI-559 execution adapters select the exact convergence validator", () => {
+  for (const input of [
+    "scripts/resolve-execute-dispatch.mjs",
+    "scripts/execute-dispatch-preflight.sh",
+    "scripts/dispatch-worker.sh",
+    "scripts/dispatch-log.sh",
+    "hooks/svc-execute-dispatch-guard.sh",
+    "skills/execute-changeset/references/dispatch-preflight.md",
+    "skills/execute-changeset/references/subagent-dispatch.md",
+  ]) {
+    const result = selectTier1Validators([input]);
+    assert.equal(result.fallback_full, false, input);
+    assert.deepEqual(result.selected, ["validate-review-dispatch-adapter-convergence.sh"], input);
+  }
+});
+
+check("review adapter retains resolver proof and adds convergence proof", () => {
+  const result = selectTier1Validators(["scripts/review-plan-codex.sh"]);
+  assert.deepEqual(result.selected, ["validate-dispatch-resolver-wi551.mjs", "validate-review-dispatch-adapter-convergence.sh"]);
 });
 
 check("story projection selects its focused receipt validator", () => {

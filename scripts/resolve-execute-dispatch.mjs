@@ -153,15 +153,11 @@ function findManifestsInDir(dir) {
   const found = [];
   for (const name of names) {
     const candidate = path.join(dir, name);
-    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) found.push(candidate);
+    try {
+      const stat = fs.lstatSync(candidate);
+      if (stat.isFile() && !stat.isSymbolicLink()) found.push(candidate);
+    } catch {}
   }
-  try {
-    for (const entry of fs.readdirSync(dir)) {
-      if (!entry.endsWith(".md")) continue;
-      const candidate = path.join(dir, entry);
-      if (fs.statSync(candidate).isFile() && !found.includes(candidate)) found.push(candidate);
-    }
-  } catch {}
   return found;
 }
 
@@ -173,12 +169,27 @@ function manifestBoundToWi(manifestPath, wi) {
   return fallback.length === 1 && fallback[0] === wi;
 }
 
-function parseTerminalState(reviewLogPath) {
+function parseTerminalState(reviewLogPath, expectedWi) {
+  let stat;
+  try {
+    stat = fs.lstatSync(reviewLogPath);
+  } catch {
+    fail(`preflight: review log is unreadable: ${reviewLogPath}`, 1);
+  }
+  if (!stat.isFile() || stat.isSymbolicLink()) {
+    fail(`preflight: review log must be a regular non-symlink file: ${reviewLogPath}`, 1);
+  }
   const text = fs.readFileSync(reviewLogPath, "utf8");
   const lines = text.split(/\r?\n/).filter((line) => /^\s*terminal_state\s*:/.test(line));
   if (lines.length !== 1) fail(`preflight: review log must contain exactly one terminal_state line: ${reviewLogPath}`, 1);
+  const wiLines = text.split(/\r?\n/).filter((line) => /^\s*wi\s*:/i.test(line));
+  if (wiLines.length !== 1) fail(`preflight: review log must contain exactly one wi line: ${reviewLogPath}`, 1);
+  const reviewWi = wiLines[0].replace(/^\s*wi\s*:\s*/i, "").trim().replace(/^["']|["']$/g, "");
+  if (reviewWi !== expectedWi || !isValidWiId(reviewWi)) {
+    fail(`preflight: review log WI ${reviewWi || "<missing>"} does not match requested ${expectedWi}: ${reviewLogPath}`, 1);
+  }
   const state = lines[0].replace(/^\s*terminal_state\s*:\s*/, "").trim().replace(/^["']|["']$/g, "");
-  return { state, bytes: fs.readFileSync(reviewLogPath), text };
+  return { state, wi: reviewWi, bytes: fs.readFileSync(reviewLogPath), text };
 }
 
 // This emergency file can override only the dispatch tuple decision after a
@@ -263,7 +274,12 @@ export function preflight({
     const manifests = findManifestsInDir(dir).filter((file) => manifestBoundToWi(file, wi));
     if (!manifests.length) continue;
     const reviewLog = path.join(dir, "review-log.yaml");
-    if (!fs.existsSync(reviewLog) || !fs.statSync(reviewLog).isFile()) continue;
+    try {
+      const stat = fs.lstatSync(reviewLog);
+      if (!stat.isFile() || stat.isSymbolicLink()) continue;
+    } catch {
+      continue;
+    }
     matches.push({ dir, manifests, reviewLog });
   }
   if (matches.length === 0) fail(`preflight: no active review log structured-bound to ${wi}`, 1);
@@ -271,7 +287,10 @@ export function preflight({
     fail(`preflight: two matching active logs for ${wi}: ${matches.map((row) => repoRelative(repoRoot, row.reviewLog)).join(" ")}`, 1);
   }
   const selected = matches[0];
-  const parsed = parseTerminalState(selected.reviewLog);
+  if (selected.manifests.length !== 1) {
+    fail(`preflight: active review log must have exactly one canonical manifest for ${wi}: ${repoRelative(repoRoot, selected.reviewLog)}`, 1);
+  }
+  const parsed = parseTerminalState(selected.reviewLog, wi);
   if (!AUTHORIZED_STATES.has(parsed.state)) {
     fail(`preflight: review log terminal_state ${parsed.state} is not execution-authorized for ${wi}`, 1);
   }
@@ -331,10 +350,14 @@ export function verifyReceipt({
   allowOverrideFile = null,
 } = {}) {
   if (!repo || !wi) fail("usage: resolve-execute-dispatch.mjs verify-receipt --repo <root> --wi <WI> [--max-age-seconds 21600]", 2);
+  const boundedMaxAgeSeconds = Number(maxAgeSeconds);
+  if (!Number.isInteger(boundedMaxAgeSeconds) || boundedMaxAgeSeconds <= 0 || boundedMaxAgeSeconds > DEFAULT_MAX_AGE_SECONDS) {
+    fail(`verify-receipt: max-age-seconds must be an integer from 1 through ${DEFAULT_MAX_AGE_SECONDS}`, 2);
+  }
   const repoRoot = realpathOrResolve(repo);
   const expected = preflight({ repo: repoRoot, wi, policy, orchestrator });
   const logPath = path.join(repoRoot, ".svc", "dispatch-log.jsonl");
-  const cutoff = Date.now() - Number(maxAgeSeconds) * 1000;
+  const cutoff = Date.now() - boundedMaxAgeSeconds * 1000;
   const rows = readDispatchRows(logPath);
   const override = allowOverrideFile ? parseOverrideFile(allowOverrideFile, wi) : null;
   for (const row of rows.slice().reverse()) {

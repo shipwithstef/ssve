@@ -6,18 +6,17 @@
 
 | Role | Model | Effort | What it does |
 |------|-------|--------|-------------|
-| **Orchestrator** | Opus 4.8 | medium | Reads manifest, identifies groups, spawns subagents via `scripts/dispatch-worker.sh`, runs holistic review |
-| **Implementor** | resolver-routed (`resolve-model.sh EXEC` — Sonnet 4.6 under svc-default per WI-357) | high | Receives task + file constraints, writes test → writes code → runs test → commits |
+| **Orchestrator** | current controller | owner policy | Reads manifest, identifies groups, persists delegation, and runs holistic review |
+| **Implementor** | repository-owner EXEC tuple | resolved effort | Receives task + file constraints, writes test → writes code → runs test → commits |
 
-The orchestrator does NOT write code. It coordinates. Implementor subagents
-write code. This separation means the orchestrator (Opus) spends tokens
-on decisions, and the EXEC-resolved model (Sonnet under svc-default per WI-357; MiMo under keyed profiles) spends tokens on generation.
+The orchestrator coordinates governed delegated work. The implementor tuple is
+resolved at invocation time; adapters do not remap it to a historical model.
 
 **CRITICAL ORCHESTRATOR CONSTRAINT:** Mutating children MUST be launched through the durable delegation and containment path. Persist the parent-to-child edge before launch, use a stable child principal and one-time acceptance token, and explicitly pass the file scope. If host capability validation denies child mutation, execute under the controller.
 
 Example invocation:
 ```bash
-SVC_WORKER_MUTATION=true SVC_WORKER_WI="$wi" SVC_DELEGATION_ID="$delegation_id" SVC_DELEGATION_STATE_ROOT="$state_root" SVC_DELEGATION_CHILD_PRINCIPAL="$child_principal" SVC_DELEGATION_TOKEN="$one_time_token" SVC_EXECUTION_GRAPH="$execution_graph" SVC_HOST="$host" SVC_DELEGATION_VALIDATION="$validation_command" SVC_DELEGATION_COMPLETION_OUT="$completion_receipt" SVC_WORKER_SKILL="execute-changeset" SVC_WORKER_MODEL="claude-sonnet-4-6" bash scripts/dispatch-worker.sh "Execute Task 3. Target ONLY these files: src/app/auth.tsx. Task details: [insert task intent from manifest]"
+SVC_WORKER_MUTATION=true SVC_WORKER_WI="$wi" SVC_DELEGATION_ID="$delegation_id" SVC_DELEGATION_STATE_ROOT="$state_root" SVC_DELEGATION_CHILD_PRINCIPAL="$child_principal" SVC_DELEGATION_TOKEN="$one_time_token" SVC_EXECUTION_GRAPH="$execution_graph" SVC_HOST="$orchestrator" SVC_DELEGATION_VALIDATION="$validation_command" SVC_DELEGATION_COMPLETION_OUT="$completion_receipt" bash scripts/dispatch-log.sh "$resolved_host" execute-changeset @"$payload_file"
 ```
 
 The dispatcher refuses a mutation-bearing launch before selecting a harness or reading provider credentials when any persisted-delegation field is absent. Set `SVC_WORKER_MUTATION=false` only for an explicitly read-only worker. If a complete tuple cannot be issued, run the task in the controller session.

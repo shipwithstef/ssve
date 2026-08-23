@@ -39,6 +39,7 @@ const REVIEW_HOST_TRANSPORTS = Object.freeze({
   cursor: { env: 'SVC_EXTERNAL_REVIEW_CURSOR_BIN', binary: 'cursor-agent' },
 });
 const CURSOR_FAMILIES = new Set(['anthropic', 'openai']);
+const CURSOR_EFFORTS = new Set(['low', 'medium', 'high', 'xhigh', 'max']);
 
 function reviewTransport(host) {
   return REVIEW_HOST_TRANSPORTS[host] || null;
@@ -575,7 +576,7 @@ async function capabilityCheck(tuple, binary, timeoutMs) {
     : tuple.host === 'agy'
       ? ['--sandbox', '--mode', '--model', '--effort', '--add-dir', '--json-schema', '--output-format', '--print-timeout', '--print']
       : tuple.host === 'cursor'
-        ? ['--print', '--output-format', '--mode', '--sandbox', '--model']
+        ? ['--print', '--output-format', '--mode', '--sandbox', '--model', '--workspace']
         : ['--print', '--model', '--effort', '--safe-mode', '--tools', '--strict-mcp-config', '--mcp-config', '--permission-mode', '--no-session-persistence', '--disable-slash-commands', '--no-chrome', '--settings', '--json-schema', '--output-format', '--max-budget-usd'];
   let result;
   try {
@@ -1041,7 +1042,14 @@ async function gcCache(cacheRoot, ttlDays, staleSeconds, fixture) {
   return removed;
 }
 
-async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, artifactsDir, attemptIndex, timeoutMs, budgetUsd) {
+function cursorModelSelector(tuple) {
+  if (!CURSOR_FAMILIES.has(tuple.family) || !CURSOR_EFFORTS.has(tuple.effort) || /[\[\]]/.test(tuple.model)) {
+    throw Object.assign(new Error('Cursor tuple requires an anthropic/openai family, an explicit supported effort, and an unparameterized model id'), { classification: 'config_invalid' });
+  }
+  return `${tuple.model}[effort=${tuple.effort}]`;
+}
+
+async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, artifactsDir, attemptIndex, timeoutMs, budgetUsd, contextRoot) {
   const prefix = `attempt-${attemptIndex}`;
   const finalFile = path.join(artifactsDir, `${prefix}-findings.json`);
   const eventsFile = path.join(artifactsDir, `${prefix}-events.jsonl`);
@@ -1069,7 +1077,7 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
     // Cursor Agent reads stdin in headless print mode when no positional prompt is
     // supplied. Keep the package on this one byte-exact channel so neither Linux
     // MAX_ARG_STRLEN nor aggregate ARG_MAX can truncate or reject large reviews.
-    args = ['--print', '--output-format', 'json', '--mode', 'plan', '--sandbox', 'enabled', '--model', tuple.model];
+    args = ['--print', '--output-format', 'json', '--mode', 'plan', '--sandbox', 'enabled', '--model', cursorModelSelector(tuple), '--workspace', contextRoot];
   } else {
     args = [];
     result = { code: null, signal: null, timedOut: false, stdout: Buffer.alloc(0), stderr: Buffer.from(`no review transport for host ${tuple.host}`), spawnError: true };
@@ -1140,9 +1148,7 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
           if (findings) await writeJson(finalFile, findings);
         }
       } else if (tuple.host === 'cursor') {
-        if (!CURSOR_FAMILIES.has(tuple.family)) {
-          classification = 'model_mismatch';
-        } else if (result.code === 0) {
+        if (result.code === 0) {
           const stdoutText = result.stdout.toString('utf8').trim();
           let outer = null;
           try { outer = JSON.parse(stdoutText); }
@@ -1154,7 +1160,8 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
           if (!outer || typeof outer !== 'object' || outer.type !== 'result' || outer.is_error === true || !Object.prototype.hasOwnProperty.call(outer, 'result')) {
             throw new Error('cursor envelope is not a successful JSON result');
           }
-          if (typeof outer.model === 'string' && outer.model !== tuple.model) {
+          const requestedCursorSelector = cursorModelSelector(tuple);
+          if (typeof outer.model === 'string' && outer.model !== tuple.model && outer.model !== requestedCursorSelector) {
             classification = 'model_mismatch';
           } else {
             let raw = outer.result;
@@ -1493,11 +1500,11 @@ async function main() {
     await finishFailure('input_invalid');
     return;
   }
-  if (options.reviewerStation && !options.validateCapabilities && (!/^[a-f0-9]{64}$/.test(options.candidateDigest ?? '') || !rawPackageBytes.includes(Buffer.from(options.candidateDigest)))) {
+  if (options.reviewerConfig && !options.validateCapabilities && (!/^[a-f0-9]{64}$/.test(options.candidateDigest ?? '') || !rawPackageBytes.includes(Buffer.from(options.candidateDigest)))) {
     await finishFailure('input_invalid', { detail: 'owner-configured review requires --candidate-digest and the exact digest in the review package' });
     return;
   }
-  if (options.reviewerStation && !options.validateCapabilities && options.reviewKind === 'exec') {
+  if (options.reviewerConfig && !options.validateCapabilities && options.reviewKind === 'exec') {
     try {
       const identity=candidateTreeIdentity(contextRoot);
       if (identity.candidate_digest!==options.candidateDigest) { await finishFailure('input_invalid',{detail:`candidate digest must bind current git tree ${identity.tree_hash}`}); return; }
@@ -1527,6 +1534,14 @@ async function main() {
     if (error.overrideEvidence) override = error.overrideEvidence;
     await finishFailure(error.classification || 'override_invalid');
     return;
+  }
+  if (requestedTuple?.host === 'cursor') {
+    try {
+      cursorModelSelector(requestedTuple);
+    } catch (error) {
+      await finishFailure(error.classification || 'config_invalid', { detail: error.message });
+      return;
+    }
   }
 
   // Phase-to-review-kind guard (WI-489): refuse a paid plan review once
@@ -1661,7 +1676,7 @@ async function main() {
     }
 
     const attempts = [];
-    const primaryResult = await invoke(requestedTuple, binary, packageBytes, reviewKind, schemaBytes, artifactsDir, 1, timeoutSeconds * 1000, reviewBudgetUsd);
+    const primaryResult = await invoke(requestedTuple, binary, packageBytes, reviewKind, schemaBytes, artifactsDir, 1, timeoutSeconds * 1000, reviewBudgetUsd, contextRoot);
     attempts.push(primaryResult.attempt);
     if (primaryResult.attempt.classification === 'success') {
       const validationErrors = validateFindings(primaryResult.findings, primaryResult.effectiveTuple, reviewKind, findingsSchema);

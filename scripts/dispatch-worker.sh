@@ -17,9 +17,14 @@
 #       and kimi-orchestrator-mixed profiles where EXEC/SENSE delegate to MiMo.
 
 # Configuration: Harness, Skill, and Model
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HARNESS=${SVC_HARNESS:-"claude"}
 SKILL=${SVC_WORKER_SKILL:-"execute-changeset"}
 WORKER_WI=${SVC_WORKER_WI:-""}
+WORKER_EFFORT=${SVC_WORKER_EFFORT:-""}
+WORKER_FAMILY=${SVC_WORKER_FAMILY:-""}
+WORKER_POLICY_SHA256=${SVC_WORKER_POLICY_SHA256:-""}
+WORKER_REVIEW_LOG_SHA256=${SVC_WORKER_REVIEW_LOG_SHA256:-""}
 DISPATCH_DIR=${SVC_DISPATCH_DIR:-".svc/dispatch"}
 WORKER_TIMEOUT_SEC=${SVC_WORKER_TIMEOUT_SEC:-"0"}
 DELEGATION_ID=${SVC_DELEGATION_ID:-""}
@@ -149,6 +154,38 @@ elif [[ "$HARNESS" == "opencode" ]]; then
     #   --pure                          skip plugin loading (trimmer context)
     # Prompt goes as positional arg at the end.
     EXEC_ARGV=(opencode run --model "$FULL_MODEL" --dangerously-skip-permissions --pure)
+
+elif [[ "$HARNESS" == "grok" ]]; then
+    [[ -n "$WORKER_WI" && -n "$WORKER_EFFORT" ]] || {
+      echo "ERROR: grok harness requires SVC_WORKER_WI and SVC_WORKER_EFFORT" >&2
+      exit 2
+    }
+    command -v grok >/dev/null 2>&1 || {
+      echo "ERROR: grok harness requested but 'grok' is not installed" >&2
+      exit 2
+    }
+    RESOLVE_ARGS=(model --label EXEC --orchestrator "${SVC_HOST:-}" --wi "$WORKER_WI" --format json)
+    if [[ -n "${SVC_DISPATCH_POLICY:-}" ]]; then RESOLVE_ARGS+=(--config "$SVC_DISPATCH_POLICY"); fi
+    RESOLVED_EXEC="$(node "$SCRIPT_DIR/resolve-dispatch.mjs" "${RESOLVE_ARGS[@]}")" || exit 2
+    IFS=$'\t' read -r RESOLVED_HOST RESOLVED_FAMILY RESOLVED_MODEL RESOLVED_EFFORT RESOLVED_POLICY_SHA <<<"$(node -e '
+const value=JSON.parse(process.argv[1]);
+process.stdout.write([value.tuple.host,value.tuple.family,value.tuple.model,value.tuple.effort,value.config_sha256].join("\t"));
+' "$RESOLVED_EXEC")"
+    if [[ "$RESOLVED_HOST" != "grok" || "$MODEL" != "$RESOLVED_MODEL" || "$WORKER_EFFORT" != "$RESOLVED_EFFORT" ]]; then
+      echo "ERROR: requested worker tuple $HARNESS/$MODEL/$WORKER_EFFORT does not match current EXEC $RESOLVED_HOST/$RESOLVED_MODEL/$RESOLVED_EFFORT" >&2
+      exit 2
+    fi
+    if [[ -n "$WORKER_FAMILY" && "$WORKER_FAMILY" != "$RESOLVED_FAMILY" ]]; then
+      echo "ERROR: requested worker family $WORKER_FAMILY does not match current EXEC $RESOLVED_FAMILY" >&2
+      exit 2
+    fi
+    if [[ -n "$WORKER_POLICY_SHA256" && "$WORKER_POLICY_SHA256" != "$RESOLVED_POLICY_SHA" ]]; then
+      echo "ERROR: requested worker policy digest does not match current EXEC policy" >&2
+      exit 2
+    fi
+    WORKER_FAMILY="$RESOLVED_FAMILY"
+    WORKER_POLICY_SHA256="$RESOLVED_POLICY_SHA"
+    EXEC_ARGV=(grok --cwd "$(pwd -P)" --model "$MODEL" --reasoning-effort "$WORKER_EFFORT" --permission-mode auto --no-subagents --disable-web-search --single)
 else
     echo "ERROR: unsupported harness: $HARNESS" >&2
     exit 2
@@ -166,6 +203,13 @@ echo "🛠️  Harness: $HARNESS"
 echo "🤖 Model:   $MODEL"
 echo "🎯 Skill:   $SKILL"
 echo "🧠 Context: FRESH SESSION (0 tokens copied from parent)"
+echo "SVC_EXEC_HOST=$HARNESS"
+echo "SVC_EXEC_FAMILY=${WORKER_FAMILY:-unknown}"
+echo "SVC_EXEC_MODEL=$MODEL"
+echo "SVC_EXEC_EFFORT=${WORKER_EFFORT:-provider-managed}"
+echo "SVC_EXEC_WI=${WORKER_WI:-unbound}"
+echo "SVC_EXEC_POLICY_SHA256=${WORKER_POLICY_SHA256:-unbound}"
+echo "SVC_EXEC_REVIEW_LOG_SHA256=${WORKER_REVIEW_LOG_SHA256:-unbound}"
 echo "============================================================"
 
 write_worker_progress() {
