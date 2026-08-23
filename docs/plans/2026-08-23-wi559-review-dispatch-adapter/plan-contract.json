@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "manifest": "docs/plans/2026-08-23-wi559-review-dispatch-adapter/manifest.md",
-  "base_sha": "124cf8a4e1144d50c0c9ae7c45ed821ab4309609",
+  "base_sha": "fbafdf6ce084edf6b07b4d1cfcdf7bbc852b2644",
   "risk_flags": [
     "cross_runtime_integration"
   ],
@@ -31,7 +31,6 @@
     {
       "task": "T2",
       "paths": [
-        ".gitignore",
         "schemas/external-review-findings.schema.json",
         "schemas/external-review-receipt.schema.json",
         "scripts/resolve-adversarial-reviewer.sh",

@@ -145,6 +145,27 @@ check("WI-559 execution adapters retain convergence proof across transitive inpu
   }
 });
 
+check("WI-559 governed artifacts select convergence proof without widening to historical debt", () => {
+  for (const input of [
+    ".svc/authorization-events.jsonl",
+    ".svc/lane-tasks-WI-559.json",
+    ".svc/skill-outcome-design-tech-WI-559.json",
+    "FRAMEWORK-STATE.md",
+    "docs/plans/2026-08-23-wi559-review-dispatch-adapter/manifest.md",
+    "docs/plans/2026-08-23-wi559-review-dispatch-adapter/plan-contract.json",
+    "docs/plans/2026-08-23-wi559-review-dispatch-adapter/review-log.yaml",
+    "docs/specs/contract-maps/review-to-execute-dispatch.md",
+    "docs/specs/work-items/WI-559.md",
+    "docs/specs/work-items/INDEX.md",
+    "proposals/2026-08-23-framework-improvement-review-dispatch-adapter-convergence.md",
+    "references/knowledge/svc/CAPABILITIES.md",
+  ]) {
+    const result = selectTier1Validators([input]);
+    assert.equal(result.fallback_full, false, input);
+    assert(result.selected.includes("validate-review-dispatch-adapter-convergence.sh"), input);
+  }
+});
+
 check("shared dispatch and state I/O inputs select every established direct validator", () => {
   const worker = selectTier1Validators(["scripts/dispatch-worker.sh"]);
   for (const validator of ["validate-child-transport-resolver.mjs", "validate-parallel-wi-dispatch.sh", "validate-review-dispatch-adapter-convergence.sh"]) {

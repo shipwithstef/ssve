@@ -2,8 +2,8 @@ review_kind: plan
 wi: WI-559
 plan: docs/plans/2026-08-23-wi559-review-dispatch-adapter/manifest.md
 manifest: docs/plans/2026-08-23-wi559-review-dispatch-adapter/manifest.md
-manifest_sha256: 21c8493adf91838c081dc5140972408c00c199bb05679c555713414211b3ec2a
-rounds_run: 6
+manifest_sha256: 1c32e8558a22030342292bacebe39b8141dbea9b12eb192f667795883f6347b1
+rounds_run: 7
 unresolved_critical: 0
 remaining_high: 0
 terminal_state: REVISED_AND_REVIEWED
@@ -52,6 +52,15 @@ retro_plan_review_attempts:
     receipt: .svc/external-review-artifacts/plan/wi559-retro-plan-agy-r3-20260823T1045/receipt.json
     findings: []
     disposition: exact final manifest and dual-binding repair ownership passed with zero findings
+  - round: agy-r4
+    candidate_manifest_sha256: 1c32e8558a22030342292bacebe39b8141dbea9b12eb192f667795883f6347b1
+    reviewer: agy-gemini-3.7-high
+    verdict: pass
+    rubric_score: 10
+    override_sha256: a647f9dc2c1f3244f9c09d4c487e15329e9dabd36eea8278efe340a395c482ec
+    receipt: .svc/external-review-artifacts/plan/wi559-retro-plan-agy-r4-selector-20260823T114512/receipt.json
+    findings: []
+    disposition: exact post-main manifest and focused selector ownership passed with zero findings
 execution_review_attempts:
   - round: r7
     candidate_commit: 82ed6bc274334ae9706cb4334a55946f47b0a4ef
