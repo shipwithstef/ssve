@@ -172,6 +172,10 @@ const CONTRACTS = [
     inputs: ["scripts/state-io.mjs", "test-framework/evals/tier-1/validate-atomic-state-writes.sh"]
   },
   {
+    validator: "validate-reviewer-run-evidence.sh",
+    inputs: ["scripts/lib/reviewer-evidence.mjs", "test-framework/evals/tier-1/validate-reviewer-run-evidence.sh"]
+  },
+  {
     validator: "validate-review-dispatch-adapter-convergence.sh",
     inputs: [
       "hooks/lib/wi-id.mjs",

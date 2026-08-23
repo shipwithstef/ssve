@@ -49,6 +49,7 @@ check("proposal selects complete v2 focused closure", () => {
     "validate-release-lifecycle-v2.mjs",
     "validate-review-dispatch-adapter-convergence.sh",
     "validate-review-topology-v2.mjs",
+    "validate-reviewer-run-evidence.sh",
     "validate-runtime-assurance-mutations-v2.mjs",
     "validate-runtime-cutover-v2.mjs",
     "validate-runtime-evidence-consumption-v2.mjs",
@@ -165,6 +166,14 @@ check("persistent review validator follows every consumed launcher/schema input"
     const result = selectTier1Validators([input]);
     assert.equal(result.fallback_full, false, input);
     assert(result.selected.includes("validate-persistent-review-contract-v2.mjs"), input);
+  }
+});
+
+check("v3 reviewer evidence inputs select the dual plan/tree binding proof", () => {
+  for (const input of ["scripts/lib/reviewer-evidence.mjs", "test-framework/evals/tier-1/validate-reviewer-run-evidence.sh"]) {
+    const result = selectTier1Validators([input]);
+    assert.equal(result.fallback_full, false, input);
+    assert(result.selected.includes("validate-reviewer-run-evidence.sh"), input);
   }
 });
 
