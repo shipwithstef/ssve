@@ -218,13 +218,64 @@
     },
     {
       "id": 5,
-      "status": "pending",
+      "status": "completed",
       "skill": "verify-promotion",
       "subject": "push main, post-push tier-1 green, closeout",
       "blocked_by": [
         2,
         4
-      ]
+      ],
+      "completed_at": "2026-08-23T19:20:00Z",
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-08-23T19:15:00Z",
+        "loaded_via": "manual",
+        "p3_target_type": "install-validation",
+        "verdict": "pass",
+        "evidence": "origin/main=3950887 aligned; post-push tier-1 335/0 (run after 3950887); install-drift OK x8 hosts (kimi CLI absent on machine)",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-08-23T19:20:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-wi558.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-08-23T19:20:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-558.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-08-23T19:20:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "test-framework/evals/run-all-evals.sh"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-08-23T19:20:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-558.json"
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }
