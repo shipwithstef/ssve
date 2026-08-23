@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { execFileSync } from "node:child_process";
 import { familyOf } from "./cognitive-family.mjs";
 import { EXTERNAL_REVIEW_LAUNCHER_VERSION, validateExternalReviewReceiptSemantics } from "../run-external-review.mjs";
 import { candidateTreeIdentity, verifyExternalReviewProvenance } from "./external-review-provenance.mjs";
@@ -12,6 +13,10 @@ const sameJson = (left, right) => JSON.stringify(left) === JSON.stringify(right)
 const SCHEMA_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../schemas");
 const EXTERNAL_RECEIPT_SCHEMA = JSON.parse(fs.readFileSync(path.join(SCHEMA_DIR, "external-review-receipt.schema.json"), "utf8"));
 const EXTERNAL_FINDINGS_SCHEMA = JSON.parse(fs.readFileSync(path.join(SCHEMA_DIR, "external-review-findings.schema.json"), "utf8"));
+const DUAL_BINDING_CUTOVER_MS = Date.parse("2026-08-23T00:00:00.000Z");
+const LEGACY_LAUNCHER_CONTRACTS = new Map([
+  ["2.4.0", "c53006becb41df17e49ba913ddffa9b9fa70c0e1f2039fb9b86457446191774b"],
+]);
 
 function canonical(value) {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
@@ -106,6 +111,17 @@ function selfBindHolds(repository, entry, receipt, receiptBytes) {
   return false;
 }
 
+function legacyLauncherContract(repository, body, receipt) {
+  const expectedFindingsSchema = LEGACY_LAUNCHER_CONTRACTS.get(receipt.launcher_version);
+  if (!expectedFindingsSchema || receipt.findings_schema_sha256 !== expectedFindingsSchema) return false;
+  const startedAt = Date.parse(receipt.started_at); const finishedAt = Date.parse(receipt.finished_at);
+  if (!Number.isFinite(startedAt) || !Number.isFinite(finishedAt) || startedAt >= DUAL_BINDING_CUTOVER_MS || finishedAt >= DUAL_BINDING_CUTOVER_MS) return false;
+  try {
+    const committedAt = Date.parse(execFileSync("git", ["-C", repository, "show", "-s", "--format=%cI", "--end-of-options", body.candidate_sha], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim());
+    return Number.isFinite(committedAt) && committedAt < DUAL_BINDING_CUTOVER_MS;
+  } catch { return false; }
+}
+
 export function verifyReviewerEvidence({ root = process.cwd(), reviewKind, body }) {
   const reasons = []; const repository = fs.realpathSync(path.resolve(root));
   const evidence = body?.reviewer_evidence;
@@ -126,13 +142,14 @@ export function verifyReviewerEvidence({ root = process.cwd(), reviewKind, body 
       if (schemaErrors.length) throw new Error(`launcher receipt schema invalid: ${schemaErrors.slice(0, 3).join("; ")}`);
       const semanticErrors = validateExternalReviewReceiptSemantics(receipt);
       if (semanticErrors.length) throw new Error(`launcher receipt semantics invalid: ${semanticErrors.slice(0, 3).join("; ")}`);
-      if (receipt.launcher_version !== EXTERNAL_REVIEW_LAUNCHER_VERSION) reasons.push(`launcher version is not current: ${entry.path}`);
+      const legacyContract = legacyLauncherContract(repository, body, receipt);
+      if (receipt.launcher_version !== EXTERNAL_REVIEW_LAUNCHER_VERSION && !legacyContract) reasons.push(`launcher version is not current: ${entry.path}`);
       if (receipt.fixture_mode !== false || !Array.isArray(receipt.attempts) || receipt.attempts.length === 0) reasons.push(`launcher receipt is not a real external attempt: ${entry.path}`);
       if (!selfBindHolds(repository, entry, receipt, bytes)) reasons.push(`launcher receipt does not self-bind its canonical path: ${entry.path}`);
-      if (receipt.findings_schema_sha256 !== digest(fs.readFileSync(path.join(SCHEMA_DIR, "external-review-findings.schema.json")))) reasons.push(`launcher findings schema digest mismatch: ${entry.path}`);
+      if (receipt.findings_schema_sha256 !== digest(fs.readFileSync(path.join(SCHEMA_DIR, "external-review-findings.schema.json"))) && !legacyContract) reasons.push(`launcher findings schema digest mismatch: ${entry.path}`);
       if (receipt.status !== "success" || !["success", "cache_hit"].includes(receipt.classification)) reasons.push(`launcher receipt is not a successful review: ${entry.path}`);
       if (receipt.review_kind !== reviewKind) reasons.push(`launcher review_kind=${receipt.review_kind} expected ${reviewKind}`);
-      const launcherCandidateDigest = reviewKind === "plan"
+      const launcherCandidateDigest = reviewKind === "plan" && !legacyContract
         ? receipt.phase_guard?.plan_manifest_sha256
         : body.candidate_digest;
       if (!/^[0-9a-f]{64}$/.test(String(launcherCandidateDigest || ""))) {
@@ -164,7 +181,7 @@ export function verifyReviewerEvidence({ root = process.cwd(), reviewKind, body 
       launcherCommands.push(...(receipt.reviewer_run?.commands || []));
       launcherOutputs.push(...(receipt.reviewer_run?.output_artifacts || []).map((value) => artifactDigest(repository, value)));
       const receiptFile = bytes ? { absolute: entry.path, bytes } : null;
-      verifyExternalReviewProvenance({
+      const provenance = verifyExternalReviewProvenance({
         receiptPath: receiptFile,
         receiptBytes: bytes,
         packagePath: packageArtifact.absolute,
@@ -172,6 +189,7 @@ export function verifyReviewerEvidence({ root = process.cwd(), reviewKind, body 
         findingsPath: findingsBytes.absolute,
         findingsBytes: findingsBytes.bytes,
       });
+      if (legacyContract && (!Number.isFinite(Date.parse(provenance.issued_at)) || Date.parse(provenance.issued_at) >= DUAL_BINDING_CUTOVER_MS)) reasons.push(`legacy launcher receipt was issued after the dual-binding cutover: ${entry.path}`);
     } catch (error) { reasons.push(`cannot verify launcher receipt ${entry?.path || "<missing>"}: ${error.message}`); }
   }
   if (!sameJson(evidence.commands, launcherCommands)) reasons.push("declared reviewer commands do not exactly match launcher reviewer_run commands");
