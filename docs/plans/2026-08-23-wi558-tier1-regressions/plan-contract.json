@@ -1,5 +1,6 @@
 {
   "schema_version": 1,
+  "base_sha": "65717d8c557db80166b6b73dd619984ea7b2ef78",
   "manifest": "docs/plans/2026-08-23-wi558-tier1-regressions/manifest.md",
   "ownership": [
     {
@@ -73,7 +74,6 @@
         "docs/specs/work-items/WI-555-residual-map.json",
         "docs/specs/work-items/WI-556-residual-map.json",
         "docs/specs/work-items/WI-556.md",
-        "docs/specs/work-items/WI-558.md",
         "proposals/2026-07-24-session-019f8cd3-audit-and-svc-framework-fixes.md",
         "proposals/2026-08-02-one-lane-framework.md",
         "proposals/2026-08-17-framework-improvement-autonomous-restart-boundary-continuation.md",
@@ -95,7 +95,8 @@
       "task": "T07",
       "paths": [
         "docs/plans/2026-08-23-wi558-tier1-regressions/manifest.md",
-        "docs/plans/2026-08-23-wi558-tier1-regressions/plan-contract.json"
+        "docs/plans/2026-08-23-wi558-tier1-regressions/plan-contract.json",
+        "docs/specs/work-items/WI-558.md"
       ]
     }
   ],
@@ -103,7 +104,7 @@
     "verification": "changed-executable-census",
     "denominator": 22,
     "disposition": "no-risky-resource-writers",
-    "evidence": "changed-executable-census over git diff HEAD + untracked; no money/ledger/quota/identity writer patterns introduced (enforcement audit append uses plain writeFileSync without ledger/journal vocabulary; floor judges only gained a content-digest flag)"
+    "evidence": "changed-executable-census over git diff 65717d8..HEAD; no money/ledger/quota/identity writer vocabulary introduced (enforcement audit uses plain writeFileSync; floor judges gained only a content-digest flag)"
   },
   "resource_writers": [],
   "claims": [
