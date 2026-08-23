@@ -250,6 +250,17 @@ export function validatePlanContract(contract, { root = process.cwd() } = {}) {
     for (const owner of ownerScopes) if (![...planned.keys()].some((plannedPath) => { try { return scopeMatches(owner.scope, normalizedScope(plannedPath)); } catch { return false; } })) errors.push(`contract ownership scope has no manifest path: ${owner.task}:${owner.scope}`);
     try {
       const changed = diffPaths(root, diffBase); changedForSafety = changed;
+      // WI-558: session-owned state (hooks append to .svc ledgers between and
+      // during runs) is not plan-scoped. A contract may declare volatile path
+      // prefixes; matching paths are excluded from parity in BOTH directions so
+      // the gate stays deterministic while session state evolves.
+      const volatilePrefixes = Array.isArray(contract.volatile_paths) ? contract.volatile_paths.filter(hasText) : [];
+      const isVolatile = (relativePath) => volatilePrefixes.some((prefix) => {
+        const scope = normalizedScope(prefix);
+        return relativePath === scope || relativePath.startsWith(scope.endsWith("/") ? scope : `${scope}/`);
+      });
+      for (const changedPath of [...changed]) if (isVolatile(changedPath)) changed.delete(changedPath);
+      for (const plannedPath of [...planned.keys()]) if (isVolatile(plannedPath)) planned.delete(plannedPath);
       const undeclared = [...changed].filter((changedPath) => !planned.has(changedPath)).sort();
       const unchanged = [...planned.keys()].filter((plannedPath) => !changed.has(plannedPath)).sort();
       parityFailures = undeclared.length + unchanged.length;

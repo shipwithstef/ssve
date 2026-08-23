@@ -2,6 +2,9 @@
   "schema_version": 1,
   "base_sha": "65717d8c557db80166b6b73dd619984ea7b2ef78",
   "manifest": "docs/plans/2026-08-23-wi558-tier1-regressions/manifest.md",
+  "volatile_paths": [
+    ".svc/"
+  ],
   "ownership": [
     {
       "task": "T01",
@@ -47,17 +50,6 @@
       ]
     },
     {
-      "task": "T05",
-      "paths": [
-        ".svc/lane-tasks-WI-552.json",
-        ".svc/lane-tasks-WI-555.json",
-        ".svc/lane-tasks-WI-556.json",
-        ".svc/lane-tasks-WI-558.json",
-        ".svc/pipeline-decisions.jsonl",
-        ".svc/session-contract.jsonl"
-      ]
-    },
-    {
       "task": "T06",
       "paths": [
         "docs/specs/work-items/PROPOSAL-PROMOTION-LEDGER.md",
@@ -98,13 +90,19 @@
         "docs/plans/2026-08-23-wi558-tier1-regressions/plan-contract.json",
         "docs/specs/work-items/WI-558.md"
       ]
+    },
+    {
+      "task": "T08",
+      "paths": [
+        "scripts/validate-plan-contract.mjs"
+      ]
     }
   ],
   "resource_review": {
     "verification": "changed-executable-census",
-    "denominator": 22,
+    "denominator": 23,
     "disposition": "no-risky-resource-writers",
-    "evidence": "changed-executable-census over git diff 65717d8..HEAD; no money/ledger/quota/identity writer vocabulary introduced (enforcement audit uses plain writeFileSync; floor judges gained only a content-digest flag)"
+    "evidence": "changed-executable-census over git diff 65717d8..HEAD excluding volatile .svc/; no money/ledger/quota/identity writer vocabulary introduced (enforcement audit uses plain writeFileSync; floor judges gained only a content-digest flag)"
   },
   "resource_writers": [],
   "claims": [
