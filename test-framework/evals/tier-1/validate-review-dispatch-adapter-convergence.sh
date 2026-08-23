@@ -124,6 +124,7 @@ for arg in "$@"; do
   if [[ "$arg" == "--version" ]]; then printf '%s\n' '2026.08.11-e8db854'; exit 0; fi
 done
 mkdir -p "$SVC_FAKE_LOG"
+dd of="$SVC_FAKE_LOG/cursor.stdin" status=none
 printf '%s\n' "$*" >> "$SVC_FAKE_LOG/cursor.argv"
 GROK_ARGV_JSON="$SVC_FAKE_LOG/cursor.argv.json" python3 -c 'import json,os,sys; p=os.environ["GROK_ARGV_JSON"]; json.dump(sys.argv[1:], open(p,"w"), separators=(",",":")); open(p,"a").write("\n")' -- "$@"
 printf '%s\n' cursor >> "$SVC_FAKE_LOG/calls"
@@ -364,6 +365,16 @@ if want review; then
   set -e
   expect "unknown explicit mode fails closed with zero provider calls" bash -c "test '$UNKNOWN_RC' -ne 0 && test \"\$(call_count)\" = 0"
 
+  POLICY_LINK="$TMP/policy/dispatch-policy-link.json"
+  ln -s "$POLICY_JSON" "$POLICY_LINK"
+  reset_log
+  set +e
+  env -u SVC_REVIEWER_MODE -u SVC_REVIEWER_STATION SVC_HOST=codex SVC_DISPATCH_POLICY="$POLICY_LINK" SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR="$TMP/out/symlink-policy" \
+    bash "$ADAPTER" "$SCOUT/docs/plans/active/manifest.md" > "$TMP/symlink-policy.out" 2> "$TMP/symlink-policy.err"
+  SYMLINK_POLICY_RC=$?
+  set -e
+  expect "ineligible symlink owner policy fails closed with zero provider calls" bash -c "test '$SYMLINK_POLICY_RC' -ne 0 && test \"\$(call_count)\" = 0 && grep -Eq 'regular non-symlink file|not an eligible regular non-symlink file' '$TMP/symlink-policy.err'"
+
   reset_log
   set +e
   SVC_HOST=codex SVC_DISPATCH_POLICY="$POLICY_JSON" SVC_REVIEWER_MODE=mixed-grok-cursor SVC_REVIEWER_STATION=fable SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR="$TMP/out/explicit-fable" \
@@ -437,7 +448,9 @@ if want cursor; then
     if(JSON.stringify(t)!==JSON.stringify(r.invocation_tuple)||JSON.stringify(t)!==JSON.stringify(r.effective_tuple)) process.exit(1);
     if(!["requested_accepted","server_observed"].includes(r.model_attestation.level)||r.model_attestation.level==="none") process.exit(1);
     if(!Array.isArray(r.attempts[0]?.command?.argv)) process.exit(1);
-    const argv=r.attempts[0].command.argv.slice(0,-1);
+    const argv=r.attempts[0].command.argv;
+    const expected=["--print","--output-format","json","--mode","plan","--sandbox","enabled","--model",t.model];
+    if(JSON.stringify(argv)!==JSON.stringify(expected)) process.exit(1);
     const joined=argv.join(" ");
     if(!argv.includes("--print")||!argv.includes("--output-format")||!argv.includes("json")||!argv.includes("--mode")||!argv.includes("plan")||!argv.includes("--sandbox")||!argv.includes("enabled")||!argv.includes("--model")) process.exit(1);
     if(/bypassPermissions|--yolo|--force\b|--dangerously-skip-permissions/.test(joined)) process.exit(1);
@@ -515,29 +528,15 @@ if want cursor; then
     if(!errors.some((e)=>/family|host/.test(e))) process.exit(1);
   "
 
-  expect "splitCursorPromptArgs keeps small UTF-8 prompts as one argv and reconstructs spaced chunks under the bound" node --input-type=module -e "
-    import { splitCursorPromptArgs, CURSOR_PROMPT_ARG_MAX, LINUX_MAX_ARG_STRLEN } from 'file://${LAUNCHER}';
-    if (CURSOR_PROMPT_ARG_MAX !== 120 * 1024 || CURSOR_PROMPT_ARG_MAX >= LINUX_MAX_ARG_STRLEN) process.exit(1);
-    const small = 'review this plan';
-    const smallChunks = splitCursorPromptArgs(small);
-    if (smallChunks.length !== 1 || smallChunks[0] !== small) process.exit(1);
-    const token = 'ctx ';
-    const oversized = token.repeat(Math.ceil((CURSOR_PROMPT_ARG_MAX + 4096) / token.length));
-    const chunks = splitCursorPromptArgs(oversized);
-    if (chunks.length < 2 || chunks.join(' ') !== oversized) process.exit(1);
-    if (chunks.some((chunk) => Buffer.byteLength(chunk, 'utf8') > CURSOR_PROMPT_ARG_MAX)) process.exit(1);
-    const unsplittable = 'α'.repeat(CURSOR_PROMPT_ARG_MAX + 16);
-    if (splitCursorPromptArgs(unsplittable).length !== 0) process.exit(1);
-  "
-
   LARGE="$TMP/cursor-large-repo"
   make_plan_repo "$LARGE" bugfix-WI-SCOUT-CAPTURE-DURABILITY-01 WI-SCOUT-CAPTURE-DURABILITY-01
   python3 - "$LARGE" <<'PY'
 from pathlib import Path
 import sys
 root = Path(sys.argv[1])
-# 140 KiB of spaced tokens so the assembled Cursor package exceeds Linux MAX_ARG_STRLEN.
-pad = ('context-token ' * 10000)
+# More than 3 MiB with no interior spaces proves stdin avoids both MAX_ARG_STRLEN
+# and aggregate ARG_MAX; the fake captures the exact bytes it receives.
+pad = ('x' * (3 * 1024 * 1024 + 257))
 (root / 'CLAUDE.md').write_text('# ctx\n' + pad + '\n', encoding='utf8')
 PY
   fxgit "$LARGE" add CLAUDE.md
@@ -552,12 +551,12 @@ PY
   CURSOR_LARGE_RC=$?
   set -e
   RECEIPT_LARGE="$(grep -oE 'receipt=\S+' "$TMP/cursor-large.err" | tail -1 | sed 's/^receipt=//')"
-  expect "Cursor package larger than 128 KiB still reaches exactly one fake Cursor call" bash -c "test '$CURSOR_LARGE_RC' -eq 0 && test -n '$RECEIPT_LARGE' && test \"\$(call_count cursor)\" = 1"
+  expect "multi-MiB unsplittable Cursor package reaches exactly one fake Cursor call" bash -c "test '$CURSOR_LARGE_RC' -eq 0 && test -n '$RECEIPT_LARGE' && test \"\$(call_count cursor)\" = 1"
   expect "large Cursor findings stay schema-valid with the owner Cursor tuple" node -e 'const fs=require("fs"); const f=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); if(f.review_kind!=="plan"||f.reviewer.host!=="cursor"||f.reviewer.family!=="anthropic"||f.reviewer.model!=="claude-fable-5") process.exit(1)' "$TMP/cursor-large.findings"
-  expect "large Cursor receipt stays exact and no argv chunk exceeds the safe bound" node --input-type=module -e "
+  expect "large Cursor receipt uses prompt-free argv and exact stdin bytes" node --input-type=module -e "
     import fs from 'node:fs';
-    import { CURSOR_PROMPT_ARG_MAX, LINUX_MAX_ARG_STRLEN, splitCursorPromptArgs } from 'file://${LAUNCHER}';
     const receiptPath = process.argv[1];
+    const stdinPath = process.argv[2];
     const r = JSON.parse(fs.readFileSync(receiptPath, 'utf8'));
     const t = r.requested_tuple;
     if (r.status !== 'success' || r.classification !== 'success') process.exit(1);
@@ -567,21 +566,15 @@ PY
     const pkgPath = r.artifacts?.package;
     if (!pkgPath || !fs.existsSync(pkgPath)) process.exit(1);
     const packageBytes = fs.readFileSync(pkgPath);
-    if (packageBytes.length <= 128 * 1024) process.exit(1);
+    if (packageBytes.length <= 3 * 1024 * 1024) process.exit(1);
+    if (!fs.existsSync(stdinPath) || !packageBytes.equals(fs.readFileSync(stdinPath))) process.exit(1);
     const argv = r.attempts[0]?.command?.argv;
     if (!Array.isArray(argv)) process.exit(1);
     const prefix = ['--print', '--output-format', 'json', '--mode', 'plan', '--sandbox', 'enabled', '--model', t.model];
-    if (argv.slice(0, prefix.length).join('\\0') !== prefix.join('\\0')) process.exit(1);
-    const chunks = argv.slice(prefix.length);
-    if (chunks.length < 2) process.exit(1);
-    if (chunks.some((chunk) => Buffer.byteLength(chunk, 'utf8') > CURSOR_PROMPT_ARG_MAX)) process.exit(1);
-    if (argv.some((arg) => Buffer.byteLength(String(arg), 'utf8') >= LINUX_MAX_ARG_STRLEN)) process.exit(1);
-    const reconstructed = chunks.join(' ');
-    if (reconstructed !== packageBytes.toString('utf8')) process.exit(1);
-    if (JSON.stringify(chunks) !== JSON.stringify(splitCursorPromptArgs(packageBytes.toString('utf8')))) process.exit(1);
+    if (JSON.stringify(argv) !== JSON.stringify(prefix)) process.exit(1);
     const joinedFlags = prefix.join(' ');
     if (/bypassPermissions|--yolo|--force\\b|--dangerously-skip-permissions/.test(joinedFlags)) process.exit(1);
-  " "$RECEIPT_LARGE"
+  " "$RECEIPT_LARGE" "$SVC_FAKE_LOG/cursor.stdin"
   set -e
 fi
 
@@ -643,8 +636,17 @@ if want helper; then
   set -e
   expect "two matching active logs deny preflight" test "$DUP_RC" -ne 0
 
-  OVERRIDE="$TMP/override.yaml"
-  printf 'accept: true\nreason: bounded owner override for WI-559 fixture\n' > "$OVERRIDE"
+  OVERRIDE="$TMP/override.json"
+  OVERRIDE="$OVERRIDE" node <<'NODE'
+const fs = require('fs');
+fs.writeFileSync(process.env.OVERRIDE, JSON.stringify({
+  authority: 'repository-owner',
+  wi: 'WI-559',
+  timestamp: new Date().toISOString(),
+  accept: true,
+  reason: 'bounded owner override for WI-559 fixture'
+}) + '\n');
+NODE
   chmod 600 "$OVERRIDE"
   OV_JSON="$(node "$HELPER" preflight --repo "$EXEC_REPO" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex --allow-override-file "$OVERRIDE")"
   expect "accepted override prints owner-override without inventing a tuple" node -e '
@@ -652,6 +654,27 @@ if want helper; then
     if(j.decision!=="owner-override"||j.wi!=="WI-559"||!j.override_sha256||!j.reason||!j.review_log_sha256) process.exit(1);
     if(j.host||j.model||j.family||j.effort) process.exit(1);
   ' "$OV_JSON"
+
+  for BAD_KIND in missing-authority wrong-wi stale; do
+    BAD_OVERRIDE="$TMP/override-$BAD_KIND.json"
+    BAD_OVERRIDE="$BAD_OVERRIDE" BAD_KIND="$BAD_KIND" node <<'NODE'
+const fs = require('fs');
+const kind = process.env.BAD_KIND;
+const row = {
+  authority: kind === 'missing-authority' ? undefined : 'repository-owner',
+  wi: kind === 'wrong-wi' ? 'WI-100' : 'WI-559',
+  timestamp: kind === 'stale' ? new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString() : new Date().toISOString(),
+  accept: true,
+  reason: 'must not authorize'
+};
+fs.writeFileSync(process.env.BAD_OVERRIDE, JSON.stringify(row) + '\n');
+NODE
+    set +e
+    node "$HELPER" preflight --repo "$EXEC_REPO" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex --allow-override-file "$BAD_OVERRIDE" > "$TMP/override-$BAD_KIND.out" 2> "$TMP/override-$BAD_KIND.err"
+    BAD_OVERRIDE_RC=$?
+    set -e
+    expect "owner override rejects $BAD_KIND before dispatch" test "$BAD_OVERRIDE_RC" -ne 0
+  done
 
   HASHES="$(node -e 'const j=JSON.parse(process.argv[1]); process.stdout.write([j.policy_sha256,j.review_log_sha256,j.host,j.family,j.model,j.effort,j.mode].join(" "))' "$PRE_JSON")"
   read -r POLICY_SHA REVIEW_SHA HOST FAMILY MODEL EFFORT MODE <<<"$HASHES"

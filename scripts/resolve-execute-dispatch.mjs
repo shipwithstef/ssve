@@ -16,6 +16,8 @@ const AUTHORIZED_STATES = new Set(["PROMOTED", "PROMOTED_WITH_DISPUTES", "REVISE
 const WI_LOCATOR = new RegExp(`(?:^|[^A-Za-z0-9])(${WI_ID_BODY})(?![A-Za-z0-9])`, "g");
 const STRUCTURED_FIELD = /^\s*(?:\|\s*)?(?:\*{0,2}|_{0,2})(Work item|WI)(?:\*{0,2}|_{0,2})\s*[:|]\s*(.*)$/i;
 const DEFAULT_MAX_AGE_SECONDS = 21600;
+const OWNER_OVERRIDE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const OWNER_OVERRIDE_CLOCK_SKEW_MS = 5 * 60 * 1000;
 
 function fail(message, code = 1) {
   const error = new Error(message);
@@ -179,26 +181,43 @@ function parseTerminalState(reviewLogPath) {
   return { state, bytes: fs.readFileSync(reviewLogPath), text };
 }
 
-function parseOverrideFile(file) {
+function parseOverrideFile(file, expectedWi) {
   if (!file) return null;
   const absolute = path.resolve(file);
-  if (!fs.existsSync(absolute) || !fs.statSync(absolute).isFile()) fail(`override file is unreadable: ${file}`, 1);
+  if (!fs.existsSync(absolute) || fs.lstatSync(absolute).isSymbolicLink() || !fs.statSync(absolute).isFile()) fail(`override file is unreadable or ineligible: ${file}`, 1);
   const bytes = fs.readFileSync(absolute);
   const text = bytes.toString("utf8");
   let accept = false;
   let reason = "";
+  let authority = "";
+  let wi = "";
+  let timestamp = "";
   try {
     const json = JSON.parse(text);
     accept = json.accept === true || json.accepted === true;
     reason = String(json.reason || "");
+    authority = String(json.authority || "");
+    wi = String(json.wi || "");
+    timestamp = String(json.timestamp || json.ts || "");
   } catch {
     accept = /^\s*accept\s*:\s*true\s*$/im.test(text);
-    const reasonLine = text.split(/\r?\n/).find((line) => /^\s*reason\s*:/.test(line));
-    reason = reasonLine ? reasonLine.replace(/^\s*reason\s*:\s*/, "").trim() : "";
+    const field = (name) => {
+      const line = text.split(/\r?\n/).find((candidate) => new RegExp(`^\\s*${name}\\s*:`).test(candidate));
+      return line ? line.replace(new RegExp(`^\\s*${name}\\s*:\\s*`), "").trim().replace(/^["']|["']$/g, "") : "";
+    };
+    reason = field("reason");
+    authority = field("authority");
+    wi = field("wi");
+    timestamp = field("timestamp") || field("ts");
   }
   if (!accept) fail("override file is present but not accepted", 1);
   if (!reason) fail("accepted override requires a reason", 1);
-  return { path: absolute, reason, sha256: sha256(bytes) };
+  const timestampMs = Date.parse(timestamp);
+  const ageMs = Date.now() - timestampMs;
+  if (authority !== "repository-owner" || !expectedWi || wi !== expectedWi || !Number.isFinite(timestampMs) || ageMs > OWNER_OVERRIDE_MAX_AGE_MS || ageMs < -OWNER_OVERRIDE_CLOCK_SKEW_MS) {
+    fail("accepted override failed authority, WI binding, or freshness validation", 1);
+  }
+  return { path: absolute, reason, authority, wi, timestamp, sha256: sha256(bytes) };
 }
 
 function compactDispatch({ wi, reviewLog, reviewLogSha, policyPath, policySha, mode, tuple }) {
@@ -250,7 +269,7 @@ export function preflight({
   const reviewRel = repoRelative(repoRoot, selected.reviewLog);
   const reviewSha = sha256(parsed.bytes);
   if (allowOverrideFile) {
-    const override = parseOverrideFile(allowOverrideFile);
+    const override = parseOverrideFile(allowOverrideFile, wi);
     return {
       schema_version: 2,
       decision: "owner-override",
@@ -308,7 +327,7 @@ export function verifyReceipt({
   const logPath = path.join(repoRoot, ".svc", "dispatch-log.jsonl");
   const cutoff = Date.now() - Number(maxAgeSeconds) * 1000;
   const rows = readDispatchRows(logPath);
-  const override = allowOverrideFile ? parseOverrideFile(allowOverrideFile) : null;
+  const override = allowOverrideFile ? parseOverrideFile(allowOverrideFile, wi) : null;
   for (const row of rows.slice().reverse()) {
     if (!row || typeof row !== "object") continue;
     if (row.wi !== wi) continue;
@@ -321,7 +340,7 @@ export function verifyReceipt({
       if (!override) continue;
       if (row.override_sha256 !== override.sha256) continue;
       if (row.review_log_sha256 !== expected.review_log_sha256) continue;
-      if (typeof row.reason !== "string" || !row.reason) continue;
+      if (row.reason !== override.reason) continue;
       return { ok: true, decision: "owner-override", wi, review_log_sha256: expected.review_log_sha256, override_sha256: override.sha256 };
     }
     if (row.decision !== "dispatch") continue;

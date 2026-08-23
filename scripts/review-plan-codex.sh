@@ -42,7 +42,11 @@ SUMMARY="$ARTIFACTS/summary.json"
 PHASE_ARGS=()
 REVIEWER_ARGS=()
 REVIEWER_CONFIG="${SVC_DISPATCH_POLICY:-${SVC_REVIEWER_POLICY:-$HOME/.svc/dispatch-policy.json}}"
-if [[ -f "$REVIEWER_CONFIG" && ! -L "$REVIEWER_CONFIG" ]]; then
+if [[ -e "$REVIEWER_CONFIG" || -L "$REVIEWER_CONFIG" ]]; then
+  if [[ ! -f "$REVIEWER_CONFIG" || -L "$REVIEWER_CONFIG" ]]; then
+    printf 'review-plan-codex: owner reviewer policy exists but is not an eligible regular non-symlink file: %s\n' "$REVIEWER_CONFIG" >&2
+    exit 1
+  fi
   REVIEWER_STATION="${SVC_REVIEWER_STATION:-}"
   REVIEWER_ARGS+=(--reviewer-config "$REVIEWER_CONFIG" --reviewer-phase plan)
   if [[ -n "${SVC_REVIEWER_MODE:-}" ]]; then

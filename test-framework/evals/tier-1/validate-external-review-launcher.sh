@@ -136,6 +136,7 @@ if [[ "${1:-}" == "--help" ]]; then
 fi
 for arg in "$@"; do if [[ "$arg" == "--version" ]]; then printf "%s\n" "2026.08.11-e8db854"; exit 0; fi; done
 mkdir -p "$SVC_FAKE_LOG"
+dd of="$SVC_FAKE_LOG/cursor.stdin" status=none
 printf "%s\n" "$*" >> "$SVC_FAKE_LOG/cursor.argv"
 printf "%s\n" "cursor" >> "$SVC_FAKE_LOG/calls"
 joined=" $* "
