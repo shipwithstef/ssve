@@ -240,44 +240,11 @@ function die(message) {
   process.exit(1);
 }
 
+// WI-557: mid-execution canonical receipt gate removed. Same rationale as
+// assertExecuteChangesetReceipts above: enforcement happens at BOUNDARIES
+// (pre-push L2, finalizer, reconcile L3), not at intermediate task completion.
 function assertCanonicalReceiptCompletion({ wi, skill }) {
-  const consumer = CHAIN_COMPLETION_CONSUMER.get(skill);
-  if (!consumer) return;
-  if (!WI_ID_RE.test(String(wi || ""))) {
-    throw new Error(`cannot verify canonical receipts for ${skill}: graph WI is missing or invalid`);
-  }
-  let sha;
-  try {
-    sha = execFileSync("git", ["rev-parse", "--verify", "HEAD"], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
-  } catch {
-    throw new Error(`cannot resolve HEAD while validating canonical receipts for ${skill}`);
-  }
-  if (!/^[0-9a-f]{40}$/.test(sha)) {
-    throw new Error(`invalid HEAD '${sha}' while validating canonical receipts for ${skill}`);
-  }
-  let output;
-  try {
-    output = execFileSync(process.execPath, [
-      path.join(SCRIPT_DIR, "check-chain-receipts.mjs"),
-      "--sha", sha,
-      "--wi", wi,
-      "--consumer", consumer,
-    ], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
-  } catch (error) {
-    const detail = [error?.stdout, error?.stderr].filter(Boolean).map(String).join("\n").trim();
-    throw new Error(`canonical receipt check failed for ${skill} (${wi}@${sha}): ${detail || "missing required receipt identities"}`);
-  }
-  try {
-    const parsed = JSON.parse(output);
-    const row = Array.isArray(parsed.results) ? parsed.results[0] : null;
-    if (!parsed.ok || !row || row.ok !== true) {
-      const missing = row && Array.isArray(row.missing) ? row.missing.join("; ") : "missing required receipt identities";
-      throw new Error(`canonical receipt check failed for ${skill} (${wi}@${sha}): ${missing}`);
-    }
-  } catch (error) {
-    if (error instanceof Error && error.message.startsWith("canonical receipt check failed")) throw error;
-    throw new Error(`canonical receipt check returned malformed output for ${skill} (${wi}@${sha})`);
-  }
+  // Intentionally no-op.
 }
 
 function parseFlags(argv) {
