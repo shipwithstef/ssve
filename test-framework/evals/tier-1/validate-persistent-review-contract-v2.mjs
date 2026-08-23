@@ -21,6 +21,7 @@ const files = Object.fromEntries([
   "schemas/external-review-receipt.schema.json",
   "schemas/external-review-findings.schema.json"
 ].map((relative) => [relative, fs.readFileSync(path.join(root, relative), "utf8")]));
+const receiptSchema = JSON.parse(files["schemas/external-review-receipt.schema.json"]);
 
 const checks = [
   [files["skills/execute-changeset/SKILL.md"].includes("independent_review.status: deferred-to-final"), "execute contract binds high task to final review"],
@@ -60,7 +61,7 @@ const checks = [
   [files["scripts/review-plan-codex.sh"].includes('fs.readFileSync(process.argv[1],"utf8")'), "plan review reads relative summary paths as files rather than module identifiers"],
   [files["scripts/review-plan-codex.sh"].includes("receipt missing from launcher summary"), "plan review fails closed when the launcher receipt path is absent"],
   [files["scripts/run-external-review.mjs"].includes("cursor-agent") && files["scripts/run-external-review.mjs"].includes("--sandbox") && files["scripts/run-external-review.mjs"].includes("enabled"), "canonical launcher owns Cursor read-only transport"],
-  [files["schemas/external-review-receipt.schema.json"].includes('"cursor"'), "receipt schema admits the owner-policy Cursor host"],
+  [receiptSchema.definitions.tuple.properties.host.type === "string" && receiptSchema.definitions.tuple.properties.host.minLength === 1, "receipt schema admits the owner-policy Cursor host through the generalized non-empty host contract"],
   [files["schemas/external-review-findings.schema.json"].includes('"cursor"'), "findings schema admits the owner-policy Cursor host"],
   [!files["references/plan-review-protocol.md"].includes("### Tier 3"), "canonical protocol removes standalone Tier 3"],
   [files["references/plan-review-protocol.md"].includes("owner/founder"), "product/security disagreement routes to owner authority"]

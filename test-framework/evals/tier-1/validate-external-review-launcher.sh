@@ -1229,11 +1229,11 @@ set -e
 unset SVC_FAKE_FINDINGS_HOST
 expect "Cursor findings host mismatch fail-closes without review authorization" test "$CURSOR_MISMATCH_RC" -ne 0
 
-expect "receipt and findings schemas admit cursor while retaining family enums" node -e '
+expect "general receipt tuples and strict findings schema both admit cursor" node -e '
   const receipt=require(process.argv[1]); const findings=require(process.argv[2]);
-  if(!receipt.definitions.tuple.properties.host.enum.includes("cursor")) process.exit(1);
+  const tuple=receipt.definitions.tuple.properties;
+  if(tuple.host.type!=="string"||tuple.host.minLength!==1||tuple.orchestrator.type!=="string"||tuple.orchestrator.minLength!==1) process.exit(1);
   if(!findings.properties.reviewer.properties.host.enum.includes("cursor")) process.exit(1);
-  if(receipt.definitions.tuple.properties.orchestrator.enum.join(",")!=="claude,codex") process.exit(1);
 ' "$ROOT/schemas/external-review-receipt.schema.json" "$ROOT/schemas/external-review-findings.schema.json"
 
 expect "Cursor success with attestation none remains semantically unauthorized" node --input-type=module -e "

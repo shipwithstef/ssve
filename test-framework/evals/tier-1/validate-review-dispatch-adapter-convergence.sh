@@ -512,7 +512,7 @@ if want cursor; then
     expect "Cursor $ENVELOPE_KIND envelope fails closed without findings authorization" bash -c "test '$ENVELOPE_RC' -ne 0 && test ! -s '$TMP/cursor-$ENVELOPE_KIND.out'"
   done
 
-  expect "receipt schema admits cursor host" node -e 'const s=require(process.argv[1]); if(!s.definitions.tuple.properties.host.enum.includes("cursor")) process.exit(1); if(s.definitions.tuple.properties.orchestrator.enum.join(",")!=="claude,codex") process.exit(1);' "$ROOT/schemas/external-review-receipt.schema.json"
+  expect "generalized receipt schema admits cursor host without weakening non-empty tuples" node -e 'const s=require(process.argv[1]),t=s.definitions.tuple.properties; if(t.host.type!=="string"||t.host.minLength!==1||t.orchestrator.type!=="string"||t.orchestrator.minLength!==1) process.exit(1);' "$ROOT/schemas/external-review-receipt.schema.json"
   expect "findings schema admits cursor host" node -e 'const s=require(process.argv[1]); if(!s.properties.reviewer.properties.host.enum.includes("cursor")) process.exit(1);' "$ROOT/schemas/external-review-findings.schema.json"
 
   expect "Cursor success with attestation none is semantically invalid" node --input-type=module -e "
