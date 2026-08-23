@@ -137,7 +137,8 @@ model=""
 while [[ $# -gt 0 ]]; do
   if [[ "$1" == "--model" ]]; then model="$2"; shift 2; else shift; fi
 done
-base_model="${model%%\[*}"
+base_model="$model"
+for suffix in low medium high xhigh max; do base_model="${base_model%-$suffix}"; done
 family="${SVC_FAKE_CURSOR_FAMILY:-}"
 if [[ -z "$family" ]]; then
   if [[ "$model" == gpt-5.6-sol* ]]; then family=openai; else family=anthropic; fi
@@ -461,7 +462,7 @@ if want cursor; then
     if(!["requested_accepted","server_observed"].includes(r.model_attestation.level)||r.model_attestation.level==="none") process.exit(1);
     if(!Array.isArray(r.attempts[0]?.command?.argv)) process.exit(1);
     const argv=r.attempts[0].command.argv;
-    const expected=["--print","--output-format","json","--mode","plan","--sandbox","enabled","--model",`${t.model}[effort=${t.effort}]`,"--workspace",process.argv[2]];
+    const expected=["--print","--output-format","json","--mode","plan","--sandbox","enabled","--model",`${t.model}-${t.effort}`,"--workspace",process.argv[2]];
     if(JSON.stringify(argv)!==JSON.stringify(expected)) process.exit(1);
     const joined=argv.join(" ");
     if(!argv.includes("--print")||!argv.includes("--output-format")||!argv.includes("json")||!argv.includes("--mode")||!argv.includes("plan")||!argv.includes("--sandbox")||!argv.includes("enabled")||!argv.includes("--model")) process.exit(1);
@@ -611,7 +612,7 @@ PY
     if (!fs.existsSync(stdinPath) || !packageBytes.equals(fs.readFileSync(stdinPath))) process.exit(1);
     const argv = r.attempts[0]?.command?.argv;
     if (!Array.isArray(argv)) process.exit(1);
-    const prefix = ['--print', '--output-format', 'json', '--mode', 'plan', '--sandbox', 'enabled', '--model', t.model + '[effort=' + t.effort + ']', '--workspace', process.argv[3]];
+    const prefix = ['--print', '--output-format', 'json', '--mode', 'plan', '--sandbox', 'enabled', '--model', t.model + '-' + t.effort, '--workspace', process.argv[3]];
     if (JSON.stringify(argv) !== JSON.stringify(prefix)) process.exit(1);
     const joinedFlags = prefix.join(' ');
     if (/bypassPermissions|--yolo|--force\\b|--dangerously-skip-permissions/.test(joinedFlags)) process.exit(1);

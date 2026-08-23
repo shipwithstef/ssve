@@ -378,12 +378,15 @@ only copied `effort: high` into receipts and inherited the caller's working
 directory.
 
 **Finding:** The installed `cursor-agent --help` documents parameterized models
-such as `model[effort=high]` and an explicit `--workspace <path-or-name>` flag.
-The canonical transport must therefore invoke
-`--model <base-model>[effort=<resolved-effort>] --workspace <context-root>`.
+and an explicit `--workspace <path-or-name>` flag, but a live exact-tree attempt
+proved that the owner-policy aliases do not accept bracket syntax: both
+`claude-fable-5[effort=high]` and `gpt-5.6-sol[effort=high]` were rejected before
+review. The same diagnostic listed the installed concrete aliases
+`claude-fable-5-high` and `gpt-5.6-sol-high`. The canonical transport therefore
+invokes `--model <base-model>-<resolved-effort> --workspace <context-root>`.
 Recording the effort without passing it is not exact tuple enforcement. The
-same local capability surface retains `--print`, JSON output, plan mode, and the
-enabled sandbox, so the review package remains stdin-only and read-only.
+remaining surface retains `--print`, JSON output, plan mode, and the enabled
+sandbox, so the review package remains stdin-only and read-only.
 
 **Source(s):**
 

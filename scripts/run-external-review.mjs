@@ -1046,7 +1046,7 @@ function cursorModelSelector(tuple) {
   if (!CURSOR_FAMILIES.has(tuple.family) || !CURSOR_EFFORTS.has(tuple.effort) || /[\[\]]/.test(tuple.model)) {
     throw Object.assign(new Error('Cursor tuple requires an anthropic/openai family, an explicit supported effort, and an unparameterized model id'), { classification: 'config_invalid' });
   }
-  return `${tuple.model}[effort=${tuple.effort}]`;
+  return `${tuple.model}-${tuple.effort}`;
 }
 
 async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, artifactsDir, attemptIndex, timeoutMs, budgetUsd, contextRoot) {
