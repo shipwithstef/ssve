@@ -26,9 +26,9 @@ if [[ -n "${SVC_DISPATCH_MODE:-}" ]]; then PREFLIGHT_ARGS+=(--mode "$SVC_DISPATC
 if [[ -n "${SVC_HOST:-}" ]]; then PREFLIGHT_ARGS+=(--orchestrator "$SVC_HOST"); fi
 PREFLIGHT_JSON="$(node "$SCRIPT_DIR/resolve-execute-dispatch.mjs" "${PREFLIGHT_ARGS[@]}")" || exit $?
 
-IFS=$'\t' read -r DECISION MODE HOST FAMILY MODEL EFFORT POLICY_SHA REVIEW_SHA <<<"$(node -e '
+IFS=$'\t' read -r DECISION MODE HOST FAMILY MODEL EFFORT ORCHESTRATOR POLICY_SHA REVIEW_SHA MANIFEST MANIFEST_SHA <<<"$(node -e '
 const value=JSON.parse(process.argv[1]);
-process.stdout.write([value.decision,value.mode,value.host,value.family,value.model,value.effort,value.policy_sha256,value.review_log_sha256].join("\t"));
+process.stdout.write([value.decision,value.mode,value.host,value.family,value.model,value.effort,value.orchestrator,value.policy_sha256,value.review_log_sha256,value.manifest,value.manifest_sha256].join("\t"));
 ' "$PREFLIGHT_JSON")"
 
 if [[ "$DECISION" != "dispatch" || "$HARNESS" != "$HOST" ]]; then
@@ -56,6 +56,9 @@ SVC_WORKER_EFFORT="$EFFORT" \
 SVC_WORKER_FAMILY="$FAMILY" \
 SVC_WORKER_POLICY_SHA256="$POLICY_SHA" \
 SVC_WORKER_REVIEW_LOG_SHA256="$REVIEW_SHA" \
+SVC_WORKER_MODE="$MODE" \
+SVC_WORKER_ORCHESTRATOR="$ORCHESTRATOR" \
+SVC_WORKER_CWD="$CONTEXT_ROOT" \
   bash "$SCRIPT_DIR/dispatch-worker.sh" "$PAYLOAD" >"$RUN_LOG" 2>&1
 EXIT_CODE=$?
 
@@ -63,9 +66,10 @@ END_MS="$(date +%s%3N)"
 DURATION_MS=$((END_MS - START_MS))
 DISPATCH_JSONL="$CONTEXT_ROOT/.svc/dispatch-log.jsonl"
 
-node --input-type=module - "$SCRIPT_DIR/state-io.mjs" "$DISPATCH_JSONL" "$WI_ID" "$DECISION" "$SKILL" "$MODE" "$HOST" "$FAMILY" "$MODEL" "$EFFORT" "$POLICY_SHA" "$REVIEW_SHA" "$DURATION_MS" "$EXIT_CODE" "$RUN_LOG" <<'NODE'
+set +e
+node --input-type=module - "$SCRIPT_DIR/state-io.mjs" "$DISPATCH_JSONL" "$WI_ID" "$DECISION" "$SKILL" "$MODE" "$HOST" "$FAMILY" "$MODEL" "$EFFORT" "$ORCHESTRATOR" "$POLICY_SHA" "$REVIEW_SHA" "$MANIFEST" "$MANIFEST_SHA" "$DURATION_MS" "$EXIT_CODE" "$RUN_LOG" <<'NODE'
 import { pathToFileURL } from 'node:url';
-const [stateIoPath, logPath, wi, decision, skill, mode, host, family, model, effort, policySha, reviewSha, durationMs, exitCode, runLog] = process.argv.slice(2);
+const [stateIoPath, logPath, wi, decision, skill, mode, host, family, model, effort, orchestrator, policySha, reviewSha, manifest, manifestSha, durationMs, exitCode, runLog] = process.argv.slice(2);
 const { appendJsonlLine } = await import(pathToFileURL(stateIoPath).href);
 appendJsonlLine(logPath, {
   schema_version: 2,
@@ -78,13 +82,22 @@ appendJsonlLine(logPath, {
   family,
   model,
   effort,
+  orchestrator,
   policy_sha256: policySha,
   review_log_sha256: reviewSha,
+  manifest,
+  manifest_sha256: manifestSha,
   duration_ms: Number(durationMs),
   exit_code: Number(exitCode),
   log_path: runLog,
 });
 NODE
+APPEND_RC=$?
+set -e
 
 cat "$RUN_LOG"
+if [[ "$APPEND_RC" -ne 0 ]]; then
+  echo "dispatch-log: durable dispatch evidence append failed (exit $APPEND_RC)" >&2
+  exit "$APPEND_RC"
+fi
 exit "$EXIT_CODE"

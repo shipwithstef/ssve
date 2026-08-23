@@ -10,9 +10,10 @@ model="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).model)' "$dis
 effort="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).effort)' "$dispatch_json")"
 ```
 
-The one-line schema-v2 JSON also binds `wi`, `review_log_sha256`,
-`policy_sha256`, `mode`, and `family`. Missing, ambiguous, unreviewed, or stale
-authority exits nonzero; there is no permissive `not-required` result.
+The one-line schema-v2 JSON also binds `wi`, `manifest`, `manifest_sha256`,
+`review_log_sha256`, `policy_sha256`, `mode`, `orchestrator`, and `family`.
+Missing, ambiguous, unreviewed, stale, or post-review-mutated authority exits
+nonzero; there is no permissive `not-required` result.
 
 Dispatch the exact returned host through the evidence writer:
 
@@ -24,14 +25,17 @@ SVC_WORKER_WI="<wi-id>" \
 For the current owner policy this may be Grok 4.6 High, but adapters never
 hardcode that choice. The Grok transport uses `--permission-mode auto`,
 `--no-subagents`, `--disable-web-search`, and `--single`; it never uses an
-approval bypass. The logger appends the exact policy/review/tuple/exit receipt,
-and the commit guard re-resolves those values before allowing staged `src/`
-changes.
+approval bypass. `execute-changeset` is always mutating: the logger refuses to
+launch without a persisted delegation, containment policy, one-time child token,
+and completion receipt path. The logger fsyncs the exact manifest/policy/review/
+mode/orchestrator/tuple/exit receipt, and the commit guard re-resolves those
+values before allowing staged `src/` changes.
 
 A repository-owner emergency override remains explicit and WI-bound:
 
 ```bash
-bash scripts/execute-dispatch-preflight.sh "$PWD" "<wi-id>" \
+node scripts/resolve-execute-dispatch.mjs record-override \
+  --repo "$PWD" --wi "<wi-id>" \
   --allow-override-file /secure/path/override.json
 ```
 

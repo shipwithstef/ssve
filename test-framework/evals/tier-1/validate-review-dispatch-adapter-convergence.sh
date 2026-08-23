@@ -155,14 +155,22 @@ if [[ "${SVC_FAKE_CURSOR_FENCE:-0}" == 1 ]]; then
   result=$'```json\n'"$finding"$'\n```'
 fi
 if [[ "${SVC_FAKE_OUTPUT:-valid}" == malformed ]]; then
-  printf '%s\n' '{"type":"result","is_error":false,"result":"{bad"}'
+  printf '%s\n' '{"type":"result","subtype":"success","is_error":false,"result":"{bad"}'
   exit 0
 fi
 if [[ "${SVC_FAKE_CURSOR_IS_ERROR:-0}" == 1 ]]; then
   printf '%s\n' '{"type":"result","is_error":true,"result":"provider rejected request"}'
   exit 0
 fi
-python3 -c 'import json,os,sys; print(json.dumps({"type":"result","is_error":False,"result":sys.argv[1]}))' "$result"
+if [[ "${SVC_FAKE_CURSOR_ENVELOPE:-}" == missing-error ]]; then
+  python3 -c 'import json,sys; print(json.dumps({"type":"result","subtype":"success","result":sys.argv[1]}))' "$result"
+  exit 0
+fi
+if [[ "${SVC_FAKE_CURSOR_ENVELOPE:-}" == wrong-subtype ]]; then
+  python3 -c 'import json,sys; print(json.dumps({"type":"result","subtype":"partial","is_error":False,"result":sys.argv[1]}))' "$result"
+  exit 0
+fi
+python3 -c 'import json,os,sys; print(json.dumps({"type":"result","subtype":"success","is_error":False,"result":sys.argv[1]}))' "$result"
 FAKE
   cat > "$TMP/bin/grok" <<'FAKE'
 #!/usr/bin/env bash
@@ -249,9 +257,22 @@ EOF
 
 write_review_log() {
   local file="$1" state="$2" wi="${3:-}"
+  local plan_dir manifest repo_root manifest_rel manifest_sha
+  plan_dir="$(dirname "$file")"
+  manifest="$plan_dir/manifest.md"
+  if [[ -f "$manifest" ]]; then
+    repo_root="$(git -C "$plan_dir" rev-parse --show-toplevel 2>/dev/null || printf '%s' "$plan_dir")"
+    manifest_rel="${manifest#"$repo_root"/}"
+    manifest_sha="$(sha256sum "$manifest" | awk '{print $1}')"
+  else
+    manifest_rel="docs/plans/active/manifest.md"
+    manifest_sha="$(printf 'ineligible-placeholder' | sha256sum | awk '{print $1}')"
+  fi
   cat > "$file" <<EOF
 review_kind: plan
 wi: ${wi}
+manifest: ${manifest_rel}
+manifest_sha256: ${manifest_sha}
 terminal_state: ${state}
 unresolved_critical: 0
 remaining_high: 0
@@ -335,6 +356,23 @@ if want bind; then
   BIND_TWOBRANCH_RC=$?
   set -e
   expect "two branch WI candidates exit 4" bash -c "test '$BIND_TWOBRANCH_RC' -eq 4 && grep -q 'WI-100' '$TMP/bind-twobranch.err' && grep -q 'WI-200' '$TMP/bind-twobranch.err'"
+
+  SYMLINK_MANIFEST="$NUMERIC/docs/plans/active/symlink-manifest.md"
+  ln -s manifest.md "$SYMLINK_MANIFEST"
+  set +e
+  bind "$NUMERIC" "$SYMLINK_MANIFEST" > "$TMP/bind-symlink.out" 2> "$TMP/bind-symlink.err"
+  BIND_SYMLINK_RC=$?
+  set -e
+  expect "bind-plan rejects a symlinked authority manifest before provider use" bash -c "test '$BIND_SYMLINK_RC' -eq 4 && grep -q 'symlink' '$TMP/bind-symlink.err' && test \"\$(call_count)\" = 0"
+
+  SNAPSHOT="$NUMERIC/.svc/review-plan-snapshots/test.manifest.md"
+  mkdir -p "$(dirname "$SNAPSHOT")"
+  SNAPSHOT_BIND="$(node "$HELPER" bind-plan --repo "$NUMERIC" --manifest "$NUMERIC/docs/plans/active/manifest.md" --snapshot-out "$SNAPSHOT")"
+  expect "bind-plan snapshots exactly the bytes whose digest it returns" node -e '
+    const fs=require("fs"),crypto=require("crypto"); const j=JSON.parse(process.argv[1]);
+    const digest=crypto.createHash("sha256").update(fs.readFileSync(process.argv[2])).digest("hex");
+    if(j.manifest_sha256!==digest||j.snapshot!==".svc/review-plan-snapshots/test.manifest.md")process.exit(1);
+  ' "$SNAPSHOT_BIND" "$SNAPSHOT"
   set -e
 fi
 
@@ -387,6 +425,14 @@ if want review; then
   SYMLINK_POLICY_RC=$?
   set -e
   expect "ineligible symlink owner policy fails closed with zero provider calls" bash -c "test '$SYMLINK_POLICY_RC' -ne 0 && test \"\$(call_count)\" = 0 && grep -Eq 'regular non-symlink file|not an eligible regular non-symlink file' '$TMP/symlink-policy.err'"
+
+  reset_log
+  set +e
+  env -u SVC_REVIEWER_MODE -u SVC_REVIEWER_STATION -u SVC_REVIEWER_POLICY SVC_HOST=codex SVC_DISPATCH_POLICY="$TMP/policy/missing-owner-policy.json" SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR="$TMP/out/missing-policy" \
+    bash "$ADAPTER" "$SCOUT/docs/plans/active/manifest.md" > "$TMP/missing-policy.out" 2> "$TMP/missing-policy.err"
+  MISSING_POLICY_RC=$?
+  set -e
+  expect "explicitly configured missing owner policy denies before provider use" bash -c "test '$MISSING_POLICY_RC' -ne 0 && test \"\$(call_count)\" = 0 && grep -q 'explicitly configured owner reviewer policy is missing' '$TMP/missing-policy.err'"
 
   reset_log
   set +e
@@ -506,14 +552,32 @@ if want cursor; then
   unset SVC_FAKE_FINDINGS_HOST
   expect "mismatched findings host fail-closed with no review authorization" bash -c "test '$MISMATCH_FINDINGS_RC' -ne 0"
 
-  for ENVELOPE_KIND in malformed is-error; do
+  for TUPLE_FIELD in model effort; do
+    reset_log
+    set +e
+    if [[ "$TUPLE_FIELD" == model ]]; then
+      SVC_FAKE_FINDINGS_MODEL=gpt-5.6-sol SVC_HOST=codex SVC_DISPATCH_POLICY="$POLICY_JSON" SVC_REVIEWER_STATION=fable SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR="$TMP/out/cursor-wrong-$TUPLE_FIELD" \
+        bash "$ADAPTER" "$SCOUT/docs/plans/active/manifest.md" > "$TMP/cursor-wrong-$TUPLE_FIELD.out" 2> "$TMP/cursor-wrong-$TUPLE_FIELD.err"
+    else
+      SVC_FAKE_FINDINGS_EFFORT=medium SVC_HOST=codex SVC_DISPATCH_POLICY="$POLICY_JSON" SVC_REVIEWER_STATION=fable SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR="$TMP/out/cursor-wrong-$TUPLE_FIELD" \
+        bash "$ADAPTER" "$SCOUT/docs/plans/active/manifest.md" > "$TMP/cursor-wrong-$TUPLE_FIELD.out" 2> "$TMP/cursor-wrong-$TUPLE_FIELD.err"
+    fi
+    WRONG_TUPLE_RC=$?
+    set -e
+    expect "mismatched findings $TUPLE_FIELD fails closed" test "$WRONG_TUPLE_RC" -ne 0
+  done
+
+  for ENVELOPE_KIND in malformed is-error missing-error wrong-subtype; do
     reset_log
     set +e
     if [[ "$ENVELOPE_KIND" == malformed ]]; then
       SVC_FAKE_OUTPUT=malformed SVC_HOST=codex SVC_DISPATCH_POLICY="$POLICY_JSON" SVC_REVIEWER_STATION=fable SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR="$TMP/out/cursor-$ENVELOPE_KIND" \
         bash "$ADAPTER" "$SCOUT/docs/plans/active/manifest.md" > "$TMP/cursor-$ENVELOPE_KIND.out" 2> "$TMP/cursor-$ENVELOPE_KIND.err"
-    else
+    elif [[ "$ENVELOPE_KIND" == is-error ]]; then
       SVC_FAKE_CURSOR_IS_ERROR=1 SVC_HOST=codex SVC_DISPATCH_POLICY="$POLICY_JSON" SVC_REVIEWER_STATION=fable SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR="$TMP/out/cursor-$ENVELOPE_KIND" \
+        bash "$ADAPTER" "$SCOUT/docs/plans/active/manifest.md" > "$TMP/cursor-$ENVELOPE_KIND.out" 2> "$TMP/cursor-$ENVELOPE_KIND.err"
+    else
+      SVC_FAKE_CURSOR_ENVELOPE="$ENVELOPE_KIND" SVC_HOST=codex SVC_DISPATCH_POLICY="$POLICY_JSON" SVC_REVIEWER_STATION=fable SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR="$TMP/out/cursor-$ENVELOPE_KIND" \
         bash "$ADAPTER" "$SCOUT/docs/plans/active/manifest.md" > "$TMP/cursor-$ENVELOPE_KIND.out" 2> "$TMP/cursor-$ENVELOPE_KIND.err"
     fi
     ENVELOPE_RC=$?
@@ -569,6 +633,20 @@ NODE
   CURSOR_GOOGLE_RC=$?
   set -e
   expect "ineligible Cursor family fails before capability or provider spawn" bash -c "test '$CURSOR_GOOGLE_RC' -ne 0 && test \"\$(call_count)\" = 0"
+
+  CROSSED_CURSOR_POLICY="$TMP/policy/cursor-crossed-family-policy.json"
+  POLICY_IN="$POLICY_JSON" POLICY_OUT="$CROSSED_CURSOR_POLICY" node <<'NODE'
+const fs = require('fs');
+const policy = JSON.parse(fs.readFileSync(process.env.POLICY_IN, 'utf8'));
+policy.modes['mixed-grok-cursor'].review.plan.stations.find((row) => row.id === 'fable').tuple.family = 'openai';
+fs.writeFileSync(process.env.POLICY_OUT, JSON.stringify(policy) + '\n', { mode: 0o600 });
+NODE
+  reset_log
+  set +e
+  printf 'candidate_digest=%s\n' "$PLANSHA" | SVC_HOST=codex node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$PLANSHA" --reviewer-config "$CROSSED_CURSOR_POLICY" --reviewer-phase plan --reviewer-station fable --artifacts-dir "$TMP/out/cursor-crossed-preflight" > "$TMP/cursor-crossed-preflight.out" 2> "$TMP/cursor-crossed-preflight.err"
+  CURSOR_CROSSED_RC=$?
+  set -e
+  expect "crossed Cursor model-family pair fails before provider spawn" bash -c "test '$CURSOR_CROSSED_RC' -ne 0 && test \"\$(call_count)\" = 0"
 
   LARGE="$TMP/cursor-large-repo"
   make_plan_repo "$LARGE" bugfix-WI-SCOUT-CAPTURE-DURABILITY-01 WI-SCOUT-CAPTURE-DURABILITY-01
@@ -648,6 +726,33 @@ if want helper; then
   ' "$PRE_JSON"
   PRE_JSON2="$(node "$HELPER" preflight --repo "$EXEC_REPO" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex)"
   expect "preflight is deterministic" test "$PRE_JSON" = "$PRE_JSON2"
+
+  MUTATED_MANIFEST="$TMP/mutated-manifest-repo"
+  make_plan_repo "$MUTATED_MANIFEST" bugfix-WI-559-mutated-manifest WI-559
+  write_review_log "$MUTATED_MANIFEST/docs/plans/active/review-log.yaml" PROMOTED WI-559
+  printf '\npost-review mutation\n' >> "$MUTATED_MANIFEST/docs/plans/active/manifest.md"
+  set +e
+  node "$HELPER" preflight --repo "$MUTATED_MANIFEST" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex > "$TMP/pre-mutated-manifest.out" 2> "$TMP/pre-mutated-manifest.err"
+  MUTATED_MANIFEST_RC=$?
+  set -e
+  expect "post-review manifest mutation invalidates execution authority" bash -c "test '$MUTATED_MANIFEST_RC' -ne 0 && grep -q 'does not bind current manifest' '$TMP/pre-mutated-manifest.err'"
+
+  NESTED_STATE="$TMP/nested-state-repo"
+  make_plan_repo "$NESTED_STATE" bugfix-WI-559-nested-state WI-559
+  NESTED_MANIFEST_SHA="$(sha256sum "$NESTED_STATE/docs/plans/active/manifest.md" | awk '{print $1}')"
+  cat > "$NESTED_STATE/docs/plans/active/review-log.yaml" <<EOF
+review_kind: plan
+wi: WI-559
+manifest: docs/plans/active/manifest.md
+manifest_sha256: $NESTED_MANIFEST_SHA
+findings:
+  terminal_state: PROMOTED
+EOF
+  set +e
+  node "$HELPER" preflight --repo "$NESTED_STATE" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex > "$TMP/pre-nested-state.out" 2> "$TMP/pre-nested-state.err"
+  NESTED_STATE_RC=$?
+  set -e
+  expect "nested YAML terminal_state cannot impersonate root review authority" bash -c "test '$NESTED_STATE_RC' -ne 0 && grep -q 'root-level terminal_state' '$TMP/pre-nested-state.err'"
 
   NOTES_ONLY="$TMP/notes-only-repo"
   make_plan_repo "$NOTES_ONLY" bugfix-WI-559-notes WI-100
@@ -765,20 +870,20 @@ NODE
     expect "owner override rejects $BAD_KIND before dispatch" test "$BAD_OVERRIDE_RC" -ne 0
   done
 
-  HASHES="$(node -e 'const j=JSON.parse(process.argv[1]); process.stdout.write([j.policy_sha256,j.review_log_sha256,j.host,j.family,j.model,j.effort,j.mode].join(" "))' "$PRE_JSON")"
-  read -r POLICY_SHA REVIEW_SHA HOST FAMILY MODEL EFFORT MODE <<<"$HASHES"
+  HASHES="$(node -e 'const j=JSON.parse(process.argv[1]); process.stdout.write([j.policy_sha256,j.review_log_sha256,j.host,j.family,j.model,j.effort,j.mode,j.orchestrator,j.manifest,j.manifest_sha256].join(" "))' "$PRE_JSON")"
+  read -r POLICY_SHA REVIEW_SHA HOST FAMILY MODEL EFFORT MODE ORCHESTRATOR MANIFEST MANIFEST_SHA <<<"$HASHES"
   mkdir -p "$EXEC_REPO/.svc"
-  LOG_FILE="$EXEC_REPO/.svc/dispatch-log.jsonl" POLICY_SHA="$POLICY_SHA" REVIEW_SHA="$REVIEW_SHA" HOST="$HOST" FAMILY="$FAMILY" MODEL="$MODEL" EFFORT="$EFFORT" MODE="$MODE" node <<'NODE'
+  LOG_FILE="$EXEC_REPO/.svc/dispatch-log.jsonl" POLICY_SHA="$POLICY_SHA" REVIEW_SHA="$REVIEW_SHA" HOST="$HOST" FAMILY="$FAMILY" MODEL="$MODEL" EFFORT="$EFFORT" MODE="$MODE" ORCHESTRATOR="$ORCHESTRATOR" MANIFEST="$MANIFEST" MANIFEST_SHA="$MANIFEST_SHA" node <<'NODE'
 const fs = require('fs');
 const file = process.env.LOG_FILE;
-const { POLICY_SHA: policy, REVIEW_SHA: review, HOST: host, FAMILY: family, MODEL: model, EFFORT: effort, MODE: mode } = process.env;
+const { POLICY_SHA: policy, REVIEW_SHA: review, HOST: host, FAMILY: family, MODEL: model, EFFORT: effort, MODE: mode, ORCHESTRATOR: orchestrator, MANIFEST: manifest, MANIFEST_SHA: manifest_sha256 } = process.env;
 const now = new Date().toISOString();
 const rows = [
   '{not-json',
   JSON.stringify({ schema_version: 2, ts: now, wi: 'WI-100', decision: 'dispatch', skill: 'execute-changeset', mode, host, family, model, effort, policy_sha256: policy, review_log_sha256: review, duration_ms: 1, exit_code: 0 }),
   JSON.stringify({ schema_version: 2, ts: now, wi: 'WI-559', decision: 'dispatch', skill: 'review-plan', mode, host, family, model, effort, policy_sha256: policy, review_log_sha256: review, duration_ms: 1, exit_code: 0 }),
   JSON.stringify({ ts: now, harness: 'opencode', model: 'mimo-v2-pro', skill: 'execute-changeset', exit_code: 0 }),
-  JSON.stringify({ schema_version: 2, ts: now, wi: 'WI-559', decision: 'dispatch', skill: 'execute-changeset', mode, host, family, model, effort, policy_sha256: policy, review_log_sha256: review, duration_ms: 9, exit_code: 0, log_path: '/tmp/x' })
+  JSON.stringify({ schema_version: 2, ts: now, wi: 'WI-559', decision: 'dispatch', skill: 'execute-changeset', mode, orchestrator, host, family, model, effort, policy_sha256: policy, review_log_sha256: review, manifest, manifest_sha256, duration_ms: 9, exit_code: 0, log_path: '/tmp/x' })
 ];
 fs.writeFileSync(file, rows.join('\n') + '\n');
 NODE
@@ -806,6 +911,32 @@ NODE
   set -e
   expect "stale receipt is denied" test "$STALE_RC" -ne 0
 
+  LOG_FILE="$EXEC_REPO/.svc/dispatch-log.jsonl" POLICY_SHA="$POLICY_SHA" REVIEW_SHA="$REVIEW_SHA" HOST="$HOST" FAMILY="$FAMILY" MODEL="$MODEL" EFFORT="$EFFORT" MODE="$MODE" ORCHESTRATOR="$ORCHESTRATOR" MANIFEST="$MANIFEST" MANIFEST_SHA="$MANIFEST_SHA" node <<'NODE'
+const fs = require('fs');
+const { POLICY_SHA: policy_sha256, REVIEW_SHA: review_log_sha256, HOST: host, FAMILY: family, MODEL: model, EFFORT: effort, MODE: mode, ORCHESTRATOR: orchestrator, MANIFEST: manifest, MANIFEST_SHA: manifest_sha256 } = process.env;
+const ts = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+fs.writeFileSync(process.env.LOG_FILE, JSON.stringify({ schema_version: 2, ts, wi: 'WI-559', decision: 'dispatch', skill: 'execute-changeset', mode, orchestrator, host, family, model, effort, policy_sha256, review_log_sha256, manifest, manifest_sha256, duration_ms: 1, exit_code: 0 }) + '\n');
+NODE
+  set +e
+  node "$HELPER" verify-receipt --repo "$EXEC_REPO" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex > "$TMP/verify-future.out" 2> "$TMP/verify-future.err"
+  FUTURE_RC=$?
+  set -e
+  expect "future-dated receipt beyond clock skew is denied" test "$FUTURE_RC" -ne 0
+
+  for AUTH_FIELD in mode orchestrator; do
+    LOG_FILE="$EXEC_REPO/.svc/dispatch-log.jsonl" POLICY_SHA="$POLICY_SHA" REVIEW_SHA="$REVIEW_SHA" HOST="$HOST" FAMILY="$FAMILY" MODEL="$MODEL" EFFORT="$EFFORT" MODE="$MODE" ORCHESTRATOR="$ORCHESTRATOR" MANIFEST="$MANIFEST" MANIFEST_SHA="$MANIFEST_SHA" AUTH_FIELD="$AUTH_FIELD" node <<'NODE'
+const fs = require('fs');
+let { POLICY_SHA: policy_sha256, REVIEW_SHA: review_log_sha256, HOST: host, FAMILY: family, MODEL: model, EFFORT: effort, MODE: mode, ORCHESTRATOR: orchestrator, MANIFEST: manifest, MANIFEST_SHA: manifest_sha256 } = process.env;
+if (process.env.AUTH_FIELD === 'mode') mode = 'wrong-mode'; else orchestrator = 'wrong-orchestrator';
+fs.writeFileSync(process.env.LOG_FILE, JSON.stringify({ schema_version: 2, ts: new Date().toISOString(), wi: 'WI-559', decision: 'dispatch', skill: 'execute-changeset', mode, orchestrator, host, family, model, effort, policy_sha256, review_log_sha256, manifest, manifest_sha256, duration_ms: 1, exit_code: 0 }) + '\n');
+NODE
+    set +e
+    node "$HELPER" verify-receipt --repo "$EXEC_REPO" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex > "$TMP/verify-wrong-$AUTH_FIELD.out" 2> "$TMP/verify-wrong-$AUTH_FIELD.err"
+    WRONG_AUTH_RC=$?
+    set -e
+    expect "wrong receipt $AUTH_FIELD is denied" test "$WRONG_AUTH_RC" -ne 0
+  done
+
   LOG_FILE="$EXEC_REPO/.svc/dispatch-log.jsonl" POLICY_SHA="$POLICY_SHA" REVIEW_SHA="$REVIEW_SHA" HOST="$HOST" FAMILY="$FAMILY" MODEL="$MODEL" EFFORT="$EFFORT" MODE="$MODE" node <<'NODE'
 const fs = require('fs');
 const file = process.env.LOG_FILE;
@@ -832,15 +963,17 @@ NODE
   set -e
   expect "wrong host/family/model/effort receipt is denied" test "$WRONG_RC" -ne 0
 
-  OV_SHA="$(node -e 'const j=JSON.parse(process.argv[1]); process.stdout.write(j.override_sha256)' "$OV_JSON")"
-  LOG_FILE="$EXEC_REPO/.svc/dispatch-log.jsonl" OV_SHA="$OV_SHA" REVIEW_SHA="$REVIEW_SHA" node <<'NODE'
-const fs = require('fs');
-const file = process.env.LOG_FILE;
-const now = new Date().toISOString();
-fs.writeFileSync(file, JSON.stringify({ schema_version: 2, ts: now, wi: 'WI-559', decision: 'owner-override', skill: 'execute-changeset', override_sha256: process.env.OV_SHA, reason: 'bounded owner override for WI-559 fixture', review_log_sha256: process.env.REVIEW_SHA, exit_code: 0 }) + '\n');
-NODE
+  node "$HELPER" record-override --repo "$EXEC_REPO" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex --allow-override-file "$OVERRIDE" > "$TMP/record-override.json"
   OV_VERIFY="$(node "$HELPER" verify-receipt --repo "$EXEC_REPO" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex --allow-override-file "$OVERRIDE")"
   expect "schema-2 exact-WI owner-override receipt is accepted" node -e 'const j=JSON.parse(process.argv[1]); if(!(j.ok===true||j.decision==="owner-override")) process.exit(1);' "$OV_VERIFY"
+  rm -f "$EXEC_REPO/.svc/dispatch-log.jsonl"
+  : > "$TMP/dispatch-log-target.jsonl"
+  ln -s "$TMP/dispatch-log-target.jsonl" "$EXEC_REPO/.svc/dispatch-log.jsonl"
+  set +e
+  node "$HELPER" record-override --repo "$EXEC_REPO" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex --allow-override-file "$OVERRIDE" > "$TMP/record-override-symlink.out" 2> "$TMP/record-override-symlink.err"
+  RECORD_SYMLINK_RC=$?
+  set -e
+  expect "dispatch evidence writer refuses a symlink target" test "$RECORD_SYMLINK_RC" -ne 0
   set -e
 fi
 
@@ -850,9 +983,19 @@ fi
 if want execute; then
   set +e
   printf '\n=== execute adapters / guard / grok transport ===\n'
+  if [[ -z "${OVERRIDE:-}" ]]; then
+    OVERRIDE="$TMP/execute-override.json"
+    OVERRIDE="$OVERRIDE" node <<'NODE'
+const fs = require('fs');
+fs.writeFileSync(process.env.OVERRIDE, JSON.stringify({ authority: 'repository-owner', source: 'owner-console', wi: 'WI-559', timestamp: new Date().toISOString(), accept: true, reason: 'bounded owner override for WI-559 fixture' }) + '\n');
+NODE
+    chmod 600 "$OVERRIDE"
+  fi
   EXEC_SHELL="$TMP/exec-shell-repo"
   make_plan_repo "$EXEC_SHELL" bugfix-WI-559-shell WI-559
   write_review_log "$EXEC_SHELL/docs/plans/active/review-log.yaml" PROMOTED WI-559
+  fxgit "$EXEC_SHELL" add docs/plans/active/review-log.yaml
+  fxgit "$EXEC_SHELL" commit -q -m reviewed-plan
   reset_log
   set +e
   SVC_HOST=codex SVC_DISPATCH_POLICY="$POLICY_JSON" bash "$PREFLIGHT" "$EXEC_SHELL" WI-559 > "$TMP/preflight-shell.out" 2> "$TMP/preflight-shell.err"
@@ -862,8 +1005,8 @@ if want execute; then
 
   reset_log
   set +e
-  SVC_HARNESS=grok SVC_WORKER_MUTATION=false SVC_WORKER_MODEL=grok-4.6 SVC_WORKER_EFFORT=high SVC_HOST=codex SVC_DISPATCH_POLICY="$POLICY_JSON" SVC_WORKER_WI=WI-559 \
-    bash "$WORKER" 'implement the reviewed plan' > "$TMP/worker.out" 2> "$TMP/worker.err"
+  SVC_HARNESS=grok SVC_WORKER_SKILL=review-exec SVC_WORKER_MUTATION=false SVC_WORKER_MODEL=grok-4.6 SVC_WORKER_EFFORT=high SVC_WORKER_FAMILY=xai SVC_WORKER_POLICY_SHA256="$(sha256sum "$POLICY_JSON" | awk '{print $1}')" SVC_WORKER_MODE=mixed-grok-cursor SVC_WORKER_ORCHESTRATOR=codex SVC_WORKER_CWD="$EXEC_SHELL" SVC_DISPATCH_DIR="$TMP/worker-dispatch" SVC_HOST=codex SVC_DISPATCH_POLICY="$POLICY_JSON" SVC_WORKER_WI=WI-559 \
+    bash -c 'cd "$1" && bash "$2" "implement the reviewed plan"' _ "$EXEC_SHELL" "$WORKER" > "$TMP/worker.out" 2> "$TMP/worker.err"
   WORKER_RC=$?
   set -e
   expect "fake Grok argv contains required bounded flags and no bypass" node -e '
@@ -874,9 +1017,36 @@ if want execute; then
     for (const flag of ["--cwd","--model","grok-4.6","--reasoning-effort","high","--permission-mode","auto","--no-subagents","--disable-web-search","--single"]) {
       if(!argv.includes(flag) && !joined.includes(flag)) process.exit(1);
     }
+    if(argv[argv.indexOf("--cwd")+1]!==process.argv[2])process.exit(1);
     if(/bypassPermissions|--yolo|--dangerously-skip-permissions/.test(joined)) process.exit(1);
-  ' "$SVC_FAKE_LOG/grok.argv.json"
+  ' "$SVC_FAKE_LOG/grok.argv.json" "$EXEC_SHELL"
   expect "Grok worker fixture exited successfully" test "$WORKER_RC" -eq 0
+
+  printf 'dirty before worker\n' > "$EXEC_SHELL/untracked.txt"
+  set +e
+  SVC_HARNESS=grok SVC_WORKER_SKILL=review-exec SVC_WORKER_MUTATION=false SVC_WORKER_MODEL=grok-4.6 SVC_WORKER_EFFORT=high SVC_WORKER_FAMILY=xai SVC_WORKER_POLICY_SHA256="$(sha256sum "$POLICY_JSON" | awk '{print $1}')" SVC_WORKER_MODE=mixed-grok-cursor SVC_WORKER_ORCHESTRATOR=codex SVC_WORKER_CWD="$EXEC_SHELL" SVC_DISPATCH_DIR="$TMP/dirty-worker-dispatch" SVC_HOST=codex SVC_DISPATCH_POLICY="$POLICY_JSON" SVC_WORKER_WI=WI-559 \
+    bash -c 'cd "$1" && bash "$2" "detect dirty result"' _ "$EXEC_SHELL" "$WORKER" > "$TMP/worker-dirty.out" 2> "$TMP/worker-dirty.err"
+  WORKER_DIRTY_RC=$?
+  set -e
+  expect "dirty-tree worker result returns nonzero instead of authorizing success" bash -c "test '$WORKER_DIRTY_RC' -ne 0 && grep -q 'failed:dirty-tree' '$TMP/dirty-worker-dispatch/WI-559.result.json'"
+  rm -f "$EXEC_SHELL/untracked.txt"
+
+  set +e
+  SVC_HARNESS=grok SVC_WORKER_MUTATION=false SVC_WORKER_SKILL=execute-changeset SVC_WORKER_WI=WI-559 bash "$WORKER" 'must deny mutation downgrade' > "$TMP/worker-downgrade.out" 2> "$TMP/worker-downgrade.err"
+  WORKER_DOWNGRADE_RC=$?
+  set -e
+  expect "execute-changeset mutation classification cannot be downgraded" bash -c "test '$WORKER_DOWNGRADE_RC' -ne 0 && grep -q 'cannot be downgraded' '$TMP/worker-downgrade.err'"
+
+  NOLOG_GUARD="$TMP/no-log-guard-repo"
+  make_plan_repo "$NOLOG_GUARD" bugfix-WI-559-no-log-guard WI-559
+  mkdir -p "$NOLOG_GUARD/src"
+  printf 'export const blocked=true;\n' > "$NOLOG_GUARD/src/blocked.js"
+  fxgit "$NOLOG_GUARD" add src/blocked.js
+  set +e
+  SVC_DISPATCH_POLICY="$POLICY_JSON" SVC_HOST=codex bash -c 'cd "$1" && bash "$2"' _ "$NOLOG_GUARD" "$GUARD" > "$TMP/guard-no-log.out" 2> "$TMP/guard-no-log.err"
+  GUARD_NO_LOG_RC=$?
+  set -e
+  expect "staged src activation with zero review logs fails closed" bash -c "test '$GUARD_NO_LOG_RC' -ne 0 && grep -q 'found no active review log' '$TMP/guard-no-log.err'"
 
   mkdir -p "$EXEC_SHELL/src" "$EXEC_SHELL/.svc"
   printf 'export const x=1;\n' > "$EXEC_SHELL/src/app.js"
@@ -899,25 +1069,19 @@ if want execute; then
 
   reset_log
   set +e
-  SVC_WORKER_MUTATION=false SVC_WORKER_WI=WI-559 SVC_HOST=codex SVC_DISPATCH_POLICY="$POLICY_JSON" \
+  SVC_WORKER_WI=WI-559 SVC_HOST=codex SVC_DISPATCH_POLICY="$POLICY_JSON" \
     bash -c 'cd "$1" && bash "$2" grok execute-changeset "execute exact reviewed tuple"' _ "$EXEC_SHELL" "$DISPATCH_LOG" > "$TMP/dispatch-exact.out" 2> "$TMP/dispatch-exact.err"
   DISPATCH_EXACT_RC=$?
   set -e
-  expect "dispatch logger launches exactly one resolved Grok worker" bash -c "test '$DISPATCH_EXACT_RC' -eq 0 && test \"\$(call_count grok)\" = 1"
-  expect "dispatch logger appends schema-2 exact tuple and review-policy digests" node -e '
-    const fs=require("fs");
-    const rows=fs.readFileSync(process.argv[1],"utf8").trim().split(/\n/).map(JSON.parse);
-    const row=rows.at(-1);
-    if(row.schema_version!==2||row.wi!=="WI-559"||row.decision!=="dispatch"||row.skill!=="execute-changeset")process.exit(1);
-    if(row.host!=="grok"||row.family!=="xai"||row.model!=="grok-4.6"||row.effort!=="high"||row.exit_code!==0)process.exit(1);
-    if(!/^[a-f0-9]{64}$/.test(row.policy_sha256)||!/^[a-f0-9]{64}$/.test(row.review_log_sha256)||!Number.isInteger(row.duration_ms)||!row.log_path)process.exit(1);
-  ' "$EXEC_SHELL/.svc/dispatch-log.jsonl"
+  expect "execute dispatch without a persisted delegation is denied before Grok launch" bash -c "test '$DISPATCH_EXACT_RC' -ne 0 && test \"\$(call_count grok)\" = 0 && grep -q 'persisted SVC_DELEGATION_ID' '$TMP/dispatch-exact.out'"
+
+  node "$HELPER" record-override --repo "$EXEC_SHELL" --wi WI-559 --policy "$POLICY_JSON" --orchestrator codex --allow-override-file "$OVERRIDE" > "$TMP/shell-record-override.json"
 
   set +e
-  SVC_DISPATCH_POLICY="$POLICY_JSON" SVC_HOST=codex bash -c 'cd "$1" && bash "$2"' _ "$EXEC_SHELL" "$GUARD" > "$TMP/guard-exact.out" 2> "$TMP/guard-exact.err"
+  SVC_DISPATCH_POLICY="$POLICY_JSON" SVC_HOST=codex SVC_EXECUTE_DISPATCH_OVERRIDE_FILE="$OVERRIDE" bash -c 'cd "$1" && bash "$2"' _ "$EXEC_SHELL" "$GUARD" > "$TMP/guard-exact.out" 2> "$TMP/guard-exact.err"
   GUARD_EXACT_RC=$?
   set -e
-  expect "commit guard accepts only the recent exact current tuple receipt" test "$GUARD_EXACT_RC" -eq 0
+  expect "commit guard accepts only a recent exact current owner-override receipt" test "$GUARD_EXACT_RC" -eq 0
 fi
 
 printf '\n  %s failed, %s passed\n' "$FAIL" "$PASS"

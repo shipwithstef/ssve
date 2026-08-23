@@ -19,7 +19,7 @@ Example invocation:
 SVC_WORKER_MUTATION=true SVC_WORKER_WI="$wi" SVC_DELEGATION_ID="$delegation_id" SVC_DELEGATION_STATE_ROOT="$state_root" SVC_DELEGATION_CHILD_PRINCIPAL="$child_principal" SVC_DELEGATION_TOKEN="$one_time_token" SVC_EXECUTION_GRAPH="$execution_graph" SVC_HOST="$orchestrator" SVC_DELEGATION_VALIDATION="$validation_command" SVC_DELEGATION_COMPLETION_OUT="$completion_receipt" bash scripts/dispatch-log.sh "$resolved_host" execute-changeset @"$payload_file"
 ```
 
-The dispatcher refuses a mutation-bearing launch before selecting a harness or reading provider credentials when any persisted-delegation field is absent. Set `SVC_WORKER_MUTATION=false` only for an explicitly read-only worker. If a complete tuple cannot be issued, run the task in the controller session.
+The dispatcher refuses a mutation-bearing launch before selecting a harness or reading provider credentials when any persisted-delegation field is absent. `execute-changeset` and `dispatch-waves` are always mutating and reject `SVC_WORKER_MUTATION=false`; that flag is valid only with an explicitly read-only skill. The logger passes the preflight-bound mode, orchestrator, family, policy digest, and real repo root, and the worker must re-resolve and match all of them before Grok starts. If a complete tuple cannot be issued, run the task in the controller session.
 
 Delegated write grants are directory-scoped (`path/**`). Exact-file CREATE,
 MODIFY, and DELETE tasks stay controller-owned: ordinary editors create sibling

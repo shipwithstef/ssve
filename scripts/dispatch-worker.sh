@@ -25,13 +25,23 @@ WORKER_EFFORT=${SVC_WORKER_EFFORT:-""}
 WORKER_FAMILY=${SVC_WORKER_FAMILY:-""}
 WORKER_POLICY_SHA256=${SVC_WORKER_POLICY_SHA256:-""}
 WORKER_REVIEW_LOG_SHA256=${SVC_WORKER_REVIEW_LOG_SHA256:-""}
+WORKER_MODE=${SVC_WORKER_MODE:-""}
+WORKER_ORCHESTRATOR=${SVC_WORKER_ORCHESTRATOR:-""}
+WORKER_CWD=${SVC_WORKER_CWD:-""}
 DISPATCH_DIR=${SVC_DISPATCH_DIR:-".svc/dispatch"}
 WORKER_TIMEOUT_SEC=${SVC_WORKER_TIMEOUT_SEC:-"0"}
 DELEGATION_ID=${SVC_DELEGATION_ID:-""}
 WORKER_MUTATION=${SVC_WORKER_MUTATION:-""}
-if [[ -z "$WORKER_MUTATION" ]]; then
-  case "$SKILL" in execute-changeset|dispatch-waves) WORKER_MUTATION="true" ;; *) WORKER_MUTATION="false" ;; esac
-fi
+case "$SKILL" in
+  execute-changeset|dispatch-waves)
+    if [[ "$WORKER_MUTATION" == "false" ]]; then
+      echo "REFUSED: $SKILL is always mutating and cannot be downgraded with SVC_WORKER_MUTATION=false" >&2
+      exit 2
+    fi
+    WORKER_MUTATION="true"
+    ;;
+  *) [[ -n "$WORKER_MUTATION" ]] || WORKER_MUTATION="false" ;;
+esac
 if [[ "$WORKER_MUTATION" == "true" && -z "$DELEGATION_ID" ]]; then
   echo "REFUSED: mutating worker launch requires a persisted SVC_DELEGATION_ID and the full delegation preflight; execute under the controller if unavailable" >&2
   exit 2
@@ -156,36 +166,43 @@ elif [[ "$HARNESS" == "opencode" ]]; then
     EXEC_ARGV=(opencode run --model "$FULL_MODEL" --dangerously-skip-permissions --pure)
 
 elif [[ "$HARNESS" == "grok" ]]; then
-    [[ -n "$WORKER_WI" && -n "$WORKER_EFFORT" ]] || {
-      echo "ERROR: grok harness requires SVC_WORKER_WI and SVC_WORKER_EFFORT" >&2
+    [[ -n "$WORKER_WI" && -n "$WORKER_EFFORT" && -n "$WORKER_FAMILY" && -n "$WORKER_POLICY_SHA256" && -n "$WORKER_MODE" && -n "$WORKER_ORCHESTRATOR" && -n "$WORKER_CWD" ]] || {
+      echo "ERROR: grok harness requires exact WI, family, effort, policy digest, mode, orchestrator, and authorized cwd" >&2
       exit 2
     }
     command -v grok >/dev/null 2>&1 || {
       echo "ERROR: grok harness requested but 'grok' is not installed" >&2
       exit 2
     }
-    RESOLVE_ARGS=(model --label EXEC --orchestrator "${SVC_HOST:-}" --wi "$WORKER_WI" --format json)
+    AUTHORIZED_CWD="$(realpath "$WORKER_CWD")" || exit 2
+    CURRENT_REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 2
+    CURRENT_REPO_ROOT="$(realpath "$CURRENT_REPO_ROOT")" || exit 2
+    [[ "$AUTHORIZED_CWD" == "$CURRENT_REPO_ROOT" ]] || {
+      echo "ERROR: authorized worker cwd $AUTHORIZED_CWD does not match current worktree root $CURRENT_REPO_ROOT" >&2
+      exit 2
+    }
+    RESOLVE_ARGS=(model --label EXEC --orchestrator "$WORKER_ORCHESTRATOR" --mode "$WORKER_MODE" --wi "$WORKER_WI" --format json)
     if [[ -n "${SVC_DISPATCH_POLICY:-}" ]]; then RESOLVE_ARGS+=(--config "$SVC_DISPATCH_POLICY"); fi
     RESOLVED_EXEC="$(node "$SCRIPT_DIR/resolve-dispatch.mjs" "${RESOLVE_ARGS[@]}")" || exit 2
-    IFS=$'\t' read -r RESOLVED_HOST RESOLVED_FAMILY RESOLVED_MODEL RESOLVED_EFFORT RESOLVED_POLICY_SHA <<<"$(node -e '
+    IFS=$'\t' read -r RESOLVED_HOST RESOLVED_FAMILY RESOLVED_MODEL RESOLVED_EFFORT RESOLVED_ORCHESTRATOR RESOLVED_POLICY_SHA <<<"$(node -e '
 const value=JSON.parse(process.argv[1]);
-process.stdout.write([value.tuple.host,value.tuple.family,value.tuple.model,value.tuple.effort,value.config_sha256].join("\t"));
+process.stdout.write([value.tuple.host,value.tuple.family,value.tuple.model,value.tuple.effort,value.tuple.orchestrator,value.config_sha256].join("\t"));
 ' "$RESOLVED_EXEC")"
-    if [[ "$RESOLVED_HOST" != "grok" || "$MODEL" != "$RESOLVED_MODEL" || "$WORKER_EFFORT" != "$RESOLVED_EFFORT" ]]; then
+    if [[ "$RESOLVED_HOST" != "grok" || "$MODEL" != "$RESOLVED_MODEL" || "$WORKER_EFFORT" != "$RESOLVED_EFFORT" || "$WORKER_ORCHESTRATOR" != "$RESOLVED_ORCHESTRATOR" ]]; then
       echo "ERROR: requested worker tuple $HARNESS/$MODEL/$WORKER_EFFORT does not match current EXEC $RESOLVED_HOST/$RESOLVED_MODEL/$RESOLVED_EFFORT" >&2
       exit 2
     fi
-    if [[ -n "$WORKER_FAMILY" && "$WORKER_FAMILY" != "$RESOLVED_FAMILY" ]]; then
+    if [[ "$WORKER_FAMILY" != "$RESOLVED_FAMILY" ]]; then
       echo "ERROR: requested worker family $WORKER_FAMILY does not match current EXEC $RESOLVED_FAMILY" >&2
       exit 2
     fi
-    if [[ -n "$WORKER_POLICY_SHA256" && "$WORKER_POLICY_SHA256" != "$RESOLVED_POLICY_SHA" ]]; then
+    if [[ "$WORKER_POLICY_SHA256" != "$RESOLVED_POLICY_SHA" ]]; then
       echo "ERROR: requested worker policy digest does not match current EXEC policy" >&2
       exit 2
     fi
     WORKER_FAMILY="$RESOLVED_FAMILY"
     WORKER_POLICY_SHA256="$RESOLVED_POLICY_SHA"
-    EXEC_ARGV=(grok --cwd "$(pwd -P)" --model "$MODEL" --reasoning-effort "$WORKER_EFFORT" --permission-mode auto --no-subagents --disable-web-search --single)
+    EXEC_ARGV=(grok --cwd "$AUTHORIZED_CWD" --model "$MODEL" --reasoning-effort "$WORKER_EFFORT" --permission-mode auto --no-subagents --disable-web-search --single)
 else
     echo "ERROR: unsupported harness: $HARNESS" >&2
     exit 2
@@ -331,6 +348,7 @@ if [ -n "$WORKER_WI" ]; then
     if [ -n "$DELEGATION_ID" ]; then node "$FRAMEWORK_ROOT/scripts/dispatch-execution-task.mjs" fail --state-root "$SVC_DELEGATION_STATE_ROOT" --delegation "$DELEGATION_ID" --graph "$SVC_EXECUTION_GRAPH" --reason "worker exit $EXIT_CODE" >/dev/null || true; fi
   elif [ -n "$(git status --porcelain 2>/dev/null || true)" ]; then
     RESULT_STATUS="failed:dirty-tree"
+    EXIT_CODE=2
     if [ -n "$DELEGATION_ID" ]; then node "$FRAMEWORK_ROOT/scripts/dispatch-execution-task.mjs" fail --state-root "$SVC_DELEGATION_STATE_ROOT" --delegation "$DELEGATION_ID" --graph "$SVC_EXECUTION_GRAPH" --reason dirty-worktree >/dev/null || true; fi
   else
     RESULT_STATUS="success"

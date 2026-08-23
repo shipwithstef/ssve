@@ -17,6 +17,19 @@ if [[ -z "$PLAN" || ! -r "$PLAN" ]]; then
   exit 2
 fi
 
+# An explicitly selected owner policy is authority, not a hint. Validate it
+# before even resolving the reviewer orchestrator so a typo cannot trigger any
+# resolver/provider side effect or silently fall back to the legacy schedule.
+EXPLICIT_POLICY="${SVC_DISPATCH_POLICY:-${SVC_REVIEWER_POLICY:-}}"
+if [[ -n "$EXPLICIT_POLICY" && ! -e "$EXPLICIT_POLICY" && ! -L "$EXPLICIT_POLICY" ]]; then
+  printf 'review-plan-codex: explicitly configured owner reviewer policy is missing: %s\n' "$EXPLICIT_POLICY" >&2
+  exit 1
+fi
+if [[ -n "$EXPLICIT_POLICY" && ( ! -f "$EXPLICIT_POLICY" || -L "$EXPLICIT_POLICY" ) ]]; then
+  printf 'review-plan-codex: owner reviewer policy exists but is not an eligible regular non-symlink file: %s\n' "$EXPLICIT_POLICY" >&2
+  exit 1
+fi
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LAUNCHER="$ROOT/scripts/run-external-review.mjs"
 PROTOCOL_REF="$ROOT/references/plan-review-protocol.md"
@@ -27,12 +40,14 @@ if [[ -z "$ORCHESTRATOR" || "$ORCHESTRATOR" == "agy" ]]; then
 fi
 
 PLAN_ABS="$(node -e 'const path=require("path"); process.stdout.write(path.resolve(process.argv[1]))' "$PLAN")"
-PLAN_SHA="$(sha256sum "$PLAN_ABS" | awk '{print $1}')"
 PLAN_DIR="$(cd "$(dirname "$PLAN_ABS")" && pwd -P)"
 CONTEXT_ROOT="$(git -C "$PLAN_DIR" rev-parse --show-toplevel 2>/dev/null || printf '%s' "$PLAN_DIR")"
-ARTIFACTS="${SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR:-$ROOT/.svc/external-review-artifacts/plan/$PLAN_SHA/$(date -u +%Y%m%dT%H%M%SZ)-$$}"
+ARTIFACTS="${SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR:-$ROOT/.svc/external-review-artifacts/plan/pending/$(date -u +%Y%m%dT%H%M%SZ)-$$}"
 mkdir -p "$ARTIFACTS"
 SUMMARY="$ARTIFACTS/summary.json"
+SNAPSHOT_DIR="$CONTEXT_ROOT/.svc/review-plan-snapshots"
+mkdir -p "$SNAPSHOT_DIR"
+PLAN_SNAPSHOT="$SNAPSHOT_DIR/$(date -u +%Y%m%dT%H%M%SZ)-$$.manifest.md"
 
 # WI-489 phase-to-review-kind binding: prove this paid plan review runs BEFORE
 # execute-changeset. The launcher refuses the plan review (zero provider calls)
@@ -42,6 +57,8 @@ SUMMARY="$ARTIFACTS/summary.json"
 PHASE_ARGS=()
 REVIEWER_ARGS=()
 REVIEWER_CONFIG="${SVC_DISPATCH_POLICY:-${SVC_REVIEWER_POLICY:-$HOME/.svc/dispatch-policy.json}}"
+EXPLICIT_REVIEWER_CONFIG="false"
+if [[ -n "${SVC_DISPATCH_POLICY:-}" || -n "${SVC_REVIEWER_POLICY:-}" ]]; then EXPLICIT_REVIEWER_CONFIG="true"; fi
 if [[ -e "$REVIEWER_CONFIG" || -L "$REVIEWER_CONFIG" ]]; then
   if [[ ! -f "$REVIEWER_CONFIG" || -L "$REVIEWER_CONFIG" ]]; then
     printf 'review-plan-codex: owner reviewer policy exists but is not an eligible regular non-symlink file: %s\n' "$REVIEWER_CONFIG" >&2
@@ -55,12 +72,15 @@ if [[ -e "$REVIEWER_CONFIG" || -L "$REVIEWER_CONFIG" ]]; then
   if [[ -n "$REVIEWER_STATION" ]]; then
     REVIEWER_ARGS+=(--reviewer-station "$REVIEWER_STATION")
   fi
+elif [[ "$EXPLICIT_REVIEWER_CONFIG" == "true" ]]; then
+  printf 'review-plan-codex: explicitly configured owner reviewer policy is missing: %s\n' "$REVIEWER_CONFIG" >&2
+  exit 1
 fi
 # Derive EXACTLY ONE authoritative WI through the shared binder. Ambiguity
 # (multiple distinct WIs) or absence is FAIL-CLOSED: refuse before any provider
 # call rather than silently restoring the original unguarded paid-plan path.
 set +e
-BIND_JSON="$(node "$ROOT/scripts/resolve-execute-dispatch.mjs" bind-plan --repo "$CONTEXT_ROOT" --manifest "$PLAN_ABS" 2>"$ARTIFACTS/bind-plan.err")"
+BIND_JSON="$(node "$ROOT/scripts/resolve-execute-dispatch.mjs" bind-plan --repo "$CONTEXT_ROOT" --manifest "$PLAN_ABS" --snapshot-out "$PLAN_SNAPSHOT" 2>"$ARTIFACTS/bind-plan.err")"
 BIND_RC=$?
 set -e
 if [[ "$BIND_RC" -ne 0 ]]; then
@@ -69,6 +89,7 @@ if [[ "$BIND_RC" -ne 0 ]]; then
   exit 4
 fi
 WI="$(printf '%s' "$BIND_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s); if(!j.wi) process.exit(4); process.stdout.write(j.wi);})')"
+PLAN_SHA="$(printf '%s' "$BIND_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s); if(!/^[a-f0-9]{64}$/.test(j.manifest_sha256||"")) process.exit(4); process.stdout.write(j.manifest_sha256);})')"
 if [[ -z "$WI" ]]; then
   printf 'review-plan-codex: cannot derive exactly one authoritative WI (found 0: ); refusing plan review before any provider call. Use an unambiguous WI branch or plan, or run review-exec if implementation has begun.\n' >&2
   exit 4
@@ -108,7 +129,7 @@ PROTOCOL REFERENCE:
 EOF
   cat "$PROTOCOL_REF"
   printf '\nPLAN TO REVIEW:\n'
-  cat "$PLAN"
+  cat "$PLAN_SNAPSHOT"
 } | SVC_WI="$WI" node "$LAUNCHER" --orchestrator "$ORCHESTRATOR" --review-kind plan --candidate-digest "$PLAN_SHA" --context-root "$CONTEXT_ROOT" ${REVIEWER_ARGS[@]+"${REVIEWER_ARGS[@]}"} ${PHASE_ARGS[@]+"${PHASE_ARGS[@]}"} --artifacts-dir "$ARTIFACTS" > "$SUMMARY" || exit 1
 
 FINDINGS="$(node -e 'const fs=require("fs");const s=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(!s.ok||!s.findings)process.exit(2);process.stdout.write(s.findings)' "$SUMMARY")" || {

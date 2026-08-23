@@ -163,8 +163,8 @@ result="$finding"
 if [[ "${SVC_FAKE_CURSOR_FENCE:-0}" == 1 ]]; then result="```json
 $finding
 ```"; fi
-if [[ "${SVC_FAKE_OUTPUT:-valid}" == malformed ]]; then printf "%s\n" "{\"type\":\"result\",\"is_error\":false,\"result\":\"{bad\"}"; exit 0; fi
-python3 -c "import json,sys; print(json.dumps({\"type\":\"result\",\"is_error\":False,\"result\":sys.argv[1]}))" "$result"
+if [[ "${SVC_FAKE_OUTPUT:-valid}" == malformed ]]; then printf "%s\n" "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":false,\"result\":\"{bad\"}"; exit 0; fi
+python3 -c "import json,sys; print(json.dumps({\"type\":\"result\",\"subtype\":\"success\",\"is_error\":False,\"result\":sys.argv[1]}))" "$result"
 ' > "$TMP/bin/cursor-agent"
 chmod 700 "$TMP/bin/codex" "$TMP/bin/claude" "$TMP/bin/agy" "$TMP/bin/cursor-agent"
 
@@ -684,7 +684,7 @@ cp "$ROOT/skills/review-cross-model/SKILL.md" "$TMP/runtime-copy/skills/review-c
 printf schema-version-key | node "$TMP/runtime-copy/scripts/run-external-review.mjs" --orchestrator claude --review-kind exec --artifacts-dir "$TMP/out/key-schema-1" > "$TMP/key-schema-1.summary"
 printf '\n' >> "$TMP/runtime-copy/schemas/external-review-findings.schema.json"
 printf schema-version-key | node "$TMP/runtime-copy/scripts/run-external-review.mjs" --orchestrator claude --review-kind exec --artifacts-dir "$TMP/out/key-schema-2" > "$TMP/key-schema-2.summary"
-sed -i 's/const LAUNCHER_VERSION = '\''2.4.0'\''/const LAUNCHER_VERSION = '\''2.4.1'\''/' "$TMP/runtime-copy/scripts/run-external-review.mjs"
+sed -i 's/const LAUNCHER_VERSION = '\''2.5.0'\''/const LAUNCHER_VERSION = '\''2.5.1'\''/' "$TMP/runtime-copy/scripts/run-external-review.mjs"
 printf schema-version-key | node "$TMP/runtime-copy/scripts/run-external-review.mjs" --orchestrator claude --review-kind exec --artifacts-dir "$TMP/out/key-launcher-2" > "$TMP/key-launcher-2.summary"
 expect "changed findings schema and launcher version each force a fresh cache key" test "$(grep -c '^codex$' "$SVC_FAKE_LOG/calls")" -eq 3
 

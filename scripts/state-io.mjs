@@ -186,7 +186,19 @@ export function writeJsonlAtomic(filePath, entries, opts = {}) {
 export function appendJsonlLine(filePath, obj, opts = {}) {
   return withStateLock(filePath, () => {
     mkdirSync(dirname(filePath), { recursive: true });
-    appendFileSync(filePath, `${JSON.stringify(obj)}\n`, "utf8");
+    const fd = openSync(filePath, constants.O_WRONLY | constants.O_APPEND | constants.O_CREAT | constants.O_NOFOLLOW, 0o600);
+    try {
+      appendFileSync(fd, `${JSON.stringify(obj)}\n`, "utf8");
+      fsyncSync(fd);
+    } finally {
+      closeSync(fd);
+    }
+    const dirFd = openSync(dirname(filePath), "r");
+    try {
+      fsyncSync(dirFd);
+    } finally {
+      closeSync(dirFd);
+    }
   }, opts);
 }
 

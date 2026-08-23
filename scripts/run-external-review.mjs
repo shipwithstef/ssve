@@ -25,7 +25,7 @@ import { resolveExternalReviewer } from './review-topology-v2.mjs';
 import { candidateTreeIdentity, issueExternalReviewProvenance } from './lib/external-review-provenance.mjs';
 import { relocateTree } from './lib/review-evidence-store.mjs';
 
-const LAUNCHER_VERSION = '2.4.0';
+const LAUNCHER_VERSION = '2.5.0';
 export const EXTERNAL_REVIEW_LAUNCHER_VERSION = LAUNCHER_VERSION;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FINDINGS_SCHEMA = path.join(ROOT, 'schemas/external-review-findings.schema.json');
@@ -40,6 +40,12 @@ const REVIEW_HOST_TRANSPORTS = Object.freeze({
 });
 const CURSOR_FAMILIES = new Set(['anthropic', 'openai']);
 const CURSOR_EFFORTS = new Set(['low', 'medium', 'high', 'xhigh', 'max']);
+
+function cursorFamilyForModel(model) {
+  if (/^claude-/.test(model || '')) return 'anthropic';
+  if (/^(?:gpt-|o[1-9](?:-|$))/.test(model || '')) return 'openai';
+  return null;
+}
 
 function reviewTransport(host) {
   return REVIEW_HOST_TRANSPORTS[host] || null;
@@ -352,16 +358,8 @@ function validateFindings(findings, tuple, reviewKind, schema) {
   const errors = validateSchema(findings, schema);
   if (findings?.review_kind !== reviewKind) errors.push('$.review_kind: does not match request');
   if (reviewKind === 'plan' && !Number.isInteger(findings?.rubric_score)) errors.push('$.rubric_score: plan review requires an integer score from 0 through 10');
-  if (findings?.reviewer) {
-    // WI-489: host + family are the real trust boundary — a codex/openai request
-    // must never be satisfied by an anthropic-family response, and vice versa;
-    // these hard-fail. model + effort are MODEL-AUTHORED self-reports: a model
-    // reliably knows neither its exact deployment alias (gpt-5.6-sol self-reports
-    // "gpt-5") nor the effort level it was launched at, so matching them exactly
-    // rejected every real gpt-5.6-sol review. The authoritative model routing
-    // evidence is the process-level model_attestation (argv + auth + runtime
-    // modelUsage), NOT this self-report. So model/effort are advisory here.
-    for (const key of ['host', 'family']) if (findings.reviewer[key] !== tuple[key]) errors.push(`$.reviewer.${key}: does not match invoked tuple`);
+  if (findings?.reviewer) for (const key of ['host', 'family', 'model', 'effort']) {
+    if (findings.reviewer[key] !== tuple[key]) errors.push(`$.reviewer.${key}: does not match invoked tuple`);
   }
   return errors;
 }
@@ -396,7 +394,7 @@ export function validateExternalReviewReceiptSemantics(receipt) {
     if (receipt.model_attestation?.requested_model !== receipt.invocation_tuple?.model) errors.push('$.model_attestation.requested_model: must match invocation tuple');
     if (receipt.invocation_tuple?.host === 'claude' && receipt.model_attestation?.level !== 'server_observed') errors.push('$.model_attestation.level: Claude success requires server_observed');
     if (['codex', 'agy', 'cursor'].includes(receipt.invocation_tuple?.host) && !['requested_accepted', 'server_observed'].includes(receipt.model_attestation?.level)) errors.push('$.model_attestation.level: Codex/AGY/Cursor success requires requested_accepted or server_observed');
-    if (receipt.invocation_tuple?.host === 'cursor' && !CURSOR_FAMILIES.has(receipt.invocation_tuple?.family)) errors.push('$.invocation_tuple.family: Cursor success accepts only anthropic or openai family pairs');
+    if (receipt.invocation_tuple?.host === 'cursor' && receipt.invocation_tuple?.family !== cursorFamilyForModel(receipt.invocation_tuple?.model)) errors.push('$.invocation_tuple: Cursor success requires an approved model/family pair');
     if (receipt.invocation_tuple?.host === 'cursor' && receipt.model_attestation?.level === 'none') errors.push('$.model_attestation.level: Cursor success cannot use attestation none');
   }
   if (receipt.policy?.source === 'schedule' && receipt.route?.kind === 'explicit_profile_primary') errors.push('$.route.kind: scheduled policy cannot be explicit primary');
@@ -621,7 +619,7 @@ async function parseOwnerOverride(file, primary) {
   const evidence = { used: true, authority: document.authority || null, source: document.source || null, path: absolute, expected_sha256: expected, actual_sha256: actual };
   const expectedFamily = primary.family;
   const tupleKeys = requested && typeof requested === 'object' ? Object.keys(requested).sort().join(',') : '';
-  const validHostFamily = (requested?.host === 'codex' && requested?.family === 'openai') || (requested?.host === 'claude' && requested?.family === 'anthropic') || (requested?.host === 'agy' && requested?.family === 'google') || (requested?.host === 'cursor' && CURSOR_FAMILIES.has(requested?.family));
+  const validHostFamily = (requested?.host === 'codex' && requested?.family === 'openai') || (requested?.host === 'claude' && requested?.family === 'anthropic') || (requested?.host === 'agy' && requested?.family === 'google') || (requested?.host === 'cursor' && requested?.family === cursorFamilyForModel(requested?.model));
   const validTuple = requested && tupleKeys === 'effort,family,host,model,orchestrator' && requested.orchestrator === primary.orchestrator && requested.host === primary.host && requested.family === expectedFamily && requested.model === primary.model && validHostFamily && ['low', 'medium', 'high', 'xhigh', 'max'].includes(requested.effort);
   if (!expected || expected !== actual || document.authority !== 'repository-owner' || typeof document.source !== 'string' || !document.source || typeof document.reason !== 'string' || !document.reason || !Number.isFinite(timestamp) || Math.abs(Date.now() - timestamp) > MAX_OWNER_OVERRIDE_AGE_MS || !validTuple) {
     throw Object.assign(new Error('owner override failed trust, freshness, provenance, or tuple validation'), { classification: 'override_invalid', overrideEvidence: evidence });
@@ -1043,8 +1041,9 @@ async function gcCache(cacheRoot, ttlDays, staleSeconds, fixture) {
 }
 
 function cursorModelSelector(tuple) {
-  if (!CURSOR_FAMILIES.has(tuple.family) || !CURSOR_EFFORTS.has(tuple.effort) || /[\[\]]/.test(tuple.model)) {
-    throw Object.assign(new Error('Cursor tuple requires an anthropic/openai family, an explicit supported effort, and an unparameterized model id'), { classification: 'config_invalid' });
+  const expectedFamily = cursorFamilyForModel(tuple.model);
+  if (!CURSOR_FAMILIES.has(tuple.family) || tuple.family !== expectedFamily || !CURSOR_EFFORTS.has(tuple.effort) || /[\[\]]/.test(tuple.model)) {
+    throw Object.assign(new Error('Cursor tuple requires an approved model/family pair, an explicit supported effort, and an unparameterized model id'), { classification: 'config_invalid' });
   }
   return `${tuple.model}-${tuple.effort}`;
 }
@@ -1157,7 +1156,7 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
               try { outer = JSON.parse(line); break; } catch {}
             }
           }
-          if (!outer || typeof outer !== 'object' || outer.type !== 'result' || outer.is_error === true || !Object.prototype.hasOwnProperty.call(outer, 'result')) {
+          if (!outer || typeof outer !== 'object' || outer.type !== 'result' || outer.subtype !== 'success' || outer.is_error !== false || !Object.prototype.hasOwnProperty.call(outer, 'result')) {
             throw new Error('cursor envelope is not a successful JSON result');
           }
           const requestedCursorSelector = cursorModelSelector(tuple);
@@ -1770,7 +1769,7 @@ async function main() {
       await finishFailure('budget_exhausted', { cacheKey, attempts, fallback: { eligible: true, used: false, reason: classification }, protocol: { ...primaryResult.protocol, configured_budget_usd: reviewBudgetUsd }, cache: { disposition: 'not_reusable', reusable: false, entry: entryDir } });
       return;
     }
-    const fallbackResult = await invoke(fallbackTuple, binary, packageBytes, reviewKind, schemaBytes, artifactsDir, 2, timeoutSeconds * 1000, fallbackBudgetUsd);
+    const fallbackResult = await invoke(fallbackTuple, binary, packageBytes, reviewKind, schemaBytes, artifactsDir, 2, timeoutSeconds * 1000, fallbackBudgetUsd, contextRoot);
     attempts.push(fallbackResult.attempt);
     const fallbackProtocol = { ...fallbackResult.protocol, process_invocations: attempts.length, configured_budget_usd: reviewBudgetUsd };
     if (fallbackResult.attempt.classification !== 'success') {

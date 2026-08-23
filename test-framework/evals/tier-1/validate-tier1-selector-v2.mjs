@@ -106,6 +106,7 @@ check("WI-559 execution adapters select the exact convergence validator", () => 
     "scripts/execute-dispatch-preflight.sh",
     "scripts/dispatch-worker.sh",
     "scripts/dispatch-log.sh",
+    "scripts/state-io.mjs",
     "hooks/svc-execute-dispatch-guard.sh",
     "skills/execute-changeset/references/dispatch-preflight.md",
     "skills/execute-changeset/references/subagent-dispatch.md",
@@ -118,7 +119,15 @@ check("WI-559 execution adapters select the exact convergence validator", () => 
 
 check("review adapter retains resolver proof and adds convergence proof", () => {
   const result = selectTier1Validators(["scripts/review-plan-codex.sh"]);
-  assert.deepEqual(result.selected, ["validate-dispatch-resolver-wi551.mjs", "validate-review-dispatch-adapter-convergence.sh"]);
+  assert.deepEqual(result.selected, ["validate-dispatch-resolver-wi551.mjs", "validate-persistent-review-contract-v2.mjs", "validate-review-dispatch-adapter-convergence.sh"]);
+});
+
+check("persistent review validator follows every consumed launcher/schema input", () => {
+  for (const input of ["scripts/run-external-review.mjs", "schemas/external-review-findings.schema.json", "schemas/external-review-receipt.schema.json"]) {
+    const result = selectTier1Validators([input]);
+    assert.equal(result.fallback_full, false, input);
+    assert(result.selected.includes("validate-persistent-review-contract-v2.mjs"), input);
+  }
 });
 
 check("story projection selects its focused receipt validator", () => {

@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 import { WI_ID_BODY, WI_ID_RE, isValidWiId } from "../hooks/lib/wi-id.mjs";
 import { resolveDispatchModel } from "./resolve-dispatch.mjs";
+import { appendJsonlLine } from "./state-io.mjs";
 
 const AUTHORIZED_STATES = new Set(["PROMOTED", "PROMOTED_WITH_DISPUTES", "REVISED_AND_REVIEWED"]);
 const WI_LOCATOR = new RegExp(`(?:^|[^A-Za-z0-9])(${WI_ID_BODY})(?![A-Za-z0-9])`, "g");
@@ -18,6 +19,7 @@ const STRUCTURED_FIELD = /^\s*(?:\|\s*)?(?:\*{0,2}|_{0,2})(Work item|WI)(?:\*{0,
 const DEFAULT_MAX_AGE_SECONDS = 21600;
 const OWNER_OVERRIDE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const OWNER_OVERRIDE_CLOCK_SKEW_MS = 5 * 60 * 1000;
+const RECEIPT_CLOCK_SKEW_MS = 5 * 60 * 1000;
 
 function fail(message, code = 1) {
   const error = new Error(message);
@@ -70,6 +72,27 @@ function containedPath(root, target, label) {
   return real;
 }
 
+function containedAuthorityPath(root, target, label) {
+  const realRoot = realpathOrResolve(root);
+  const resolved = path.isAbsolute(target) ? path.resolve(target) : path.resolve(realRoot, target);
+  if (resolved !== realRoot && !resolved.startsWith(`${realRoot}${path.sep}`)) {
+    fail(`${label} escapes repo root ${realRoot}: ${target}`, 4);
+  }
+  const relative = path.relative(realRoot, resolved);
+  let cursor = realRoot;
+  for (const segment of relative.split(path.sep).filter(Boolean)) {
+    cursor = path.join(cursor, segment);
+    let stat;
+    try {
+      stat = fs.lstatSync(cursor);
+    } catch {
+      fail(`${label} is unreadable: ${target}`, 2);
+    }
+    if (stat.isSymbolicLink()) fail(`${label} must not contain symlink components: ${target}`, 4);
+  }
+  return resolved;
+}
+
 function repoRelative(root, target) {
   const realRoot = realpathOrResolve(root);
   const real = containedPath(root, target, "path");
@@ -88,12 +111,30 @@ function formatCandidates(values) {
   return values.join(" ");
 }
 
-export function bindPlan({ repo, manifest } = {}) {
+function writeManifestSnapshot(repoRoot, snapshotOut, bytes) {
+  if (!snapshotOut) return null;
+  const output = path.isAbsolute(snapshotOut) ? path.resolve(snapshotOut) : path.resolve(repoRoot, snapshotOut);
+  if (output !== repoRoot && !output.startsWith(`${repoRoot}${path.sep}`)) fail(`snapshot escapes repo root ${repoRoot}: ${snapshotOut}`, 4);
+  const parent = path.dirname(output);
+  containedAuthorityPath(repoRoot, parent, "snapshot parent");
+  let fd;
+  try {
+    fd = fs.openSync(output, fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_WRONLY | fs.constants.O_NOFOLLOW, 0o600);
+    fs.writeFileSync(fd, bytes);
+    fs.fsyncSync(fd);
+  } finally {
+    if (fd !== undefined) fs.closeSync(fd);
+  }
+  return repoRelative(repoRoot, output);
+}
+
+export function bindPlan({ repo, manifest, snapshotOut = null } = {}) {
   if (!repo || !manifest) fail("usage: resolve-execute-dispatch.mjs bind-plan --repo <root> --manifest <path>", 2);
   const repoRoot = realpathOrResolve(repo);
   if (!fs.existsSync(repoRoot) || !fs.statSync(repoRoot).isDirectory()) fail(`repo is unreadable: ${repo}`, 2);
-  const manifestPath = containedPath(repoRoot, manifest, "manifest");
-  if (!fs.existsSync(manifestPath) || !fs.statSync(manifestPath).isFile()) fail(`manifest is unreadable: ${manifest}`, 2);
+  const manifestPath = containedAuthorityPath(repoRoot, manifest, "manifest");
+  const manifestStat = fs.lstatSync(manifestPath);
+  if (!manifestStat.isFile() || manifestStat.isSymbolicLink()) fail(`manifest must be a regular non-symlink file: ${manifest}`, 2);
   const manifestBytes = fs.readFileSync(manifestPath);
   const manifestText = manifestBytes.toString("utf8");
   const branch = currentBranch(repoRoot);
@@ -115,11 +156,13 @@ export function bindPlan({ repo, manifest } = {}) {
   if (!wi || !isValidWiId(wi)) {
     fail(`bind-plan: cannot derive exactly one authoritative WI (found 0: ); refusing plan review before any provider call. Use an unambiguous WI branch or plan, or run review-exec if implementation has begun.`, 4);
   }
+  const snapshot = writeManifestSnapshot(repoRoot, snapshotOut, manifestBytes);
   return {
     schema_version: 1,
     wi,
     manifest: repoRelative(repoRoot, manifestPath),
     manifest_sha256: sha256(manifestBytes),
+    snapshot,
     branch,
   };
 }
@@ -161,12 +204,23 @@ function findManifestsInDir(dir) {
   return found;
 }
 
-function manifestBoundToWi(manifestPath, wi) {
-  const text = fs.readFileSync(manifestPath, "utf8");
+function readManifestAuthority(manifestPath, wi) {
+  let stat;
+  try { stat = fs.lstatSync(manifestPath); } catch { return null; }
+  if (!stat.isFile() || stat.isSymbolicLink()) return null;
+  const bytes = fs.readFileSync(manifestPath);
+  const text = bytes.toString("utf8");
   const structured = extractStructuredTokens(text);
-  if (structured.length) return structured.length === 1 && structured[0] === wi;
+  if (structured.length) return structured.length === 1 && structured[0] === wi ? { path: manifestPath, bytes } : null;
   const fallback = extractTokens(text);
-  return fallback.length === 1 && fallback[0] === wi;
+  return fallback.length === 1 && fallback[0] === wi ? { path: manifestPath, bytes } : null;
+}
+
+function rootScalar(text, name, reviewLogPath) {
+  const pattern = new RegExp(`^${name}\\s*:\\s*(.*)$`, "i");
+  const matches = String(text || "").split(/\r?\n/).map((line) => line.match(pattern)).filter(Boolean);
+  if (matches.length !== 1) fail(`preflight: review log must contain exactly one root-level ${name} field: ${reviewLogPath}`, 1);
+  return matches[0][1].trim().replace(/^['"]|['"]$/g, "");
 }
 
 function parseTerminalState(reviewLogPath, expectedWi) {
@@ -179,17 +233,17 @@ function parseTerminalState(reviewLogPath, expectedWi) {
   if (!stat.isFile() || stat.isSymbolicLink()) {
     fail(`preflight: review log must be a regular non-symlink file: ${reviewLogPath}`, 1);
   }
-  const text = fs.readFileSync(reviewLogPath, "utf8");
-  const lines = text.split(/\r?\n/).filter((line) => /^\s*terminal_state\s*:/.test(line));
-  if (lines.length !== 1) fail(`preflight: review log must contain exactly one terminal_state line: ${reviewLogPath}`, 1);
-  const wiLines = text.split(/\r?\n/).filter((line) => /^\s*wi\s*:/i.test(line));
-  if (wiLines.length !== 1) fail(`preflight: review log must contain exactly one wi line: ${reviewLogPath}`, 1);
-  const reviewWi = wiLines[0].replace(/^\s*wi\s*:\s*/i, "").trim().replace(/^["']|["']$/g, "");
+  const bytes = fs.readFileSync(reviewLogPath);
+  const text = bytes.toString("utf8");
+  const reviewWi = rootScalar(text, "wi", reviewLogPath);
   if (reviewWi !== expectedWi || !isValidWiId(reviewWi)) {
     fail(`preflight: review log WI ${reviewWi || "<missing>"} does not match requested ${expectedWi}: ${reviewLogPath}`, 1);
   }
-  const state = lines[0].replace(/^\s*terminal_state\s*:\s*/, "").trim().replace(/^["']|["']$/g, "");
-  return { state, wi: reviewWi, bytes: fs.readFileSync(reviewLogPath), text };
+  const state = rootScalar(text, "terminal_state", reviewLogPath);
+  const manifest = rootScalar(text, "manifest", reviewLogPath);
+  const manifestSha256 = rootScalar(text, "manifest_sha256", reviewLogPath);
+  if (!/^[a-f0-9]{64}$/.test(manifestSha256)) fail(`preflight: review log manifest_sha256 is invalid: ${reviewLogPath}`, 1);
+  return { state, wi: reviewWi, manifest, manifestSha256, bytes, text };
 }
 
 // This emergency file can override only the dispatch tuple decision after a
@@ -240,11 +294,13 @@ function parseOverrideFile(file, expectedWi) {
   return { path: absolute, reason, authority, source, wi, timestamp, sha256: sha256(bytes) };
 }
 
-function compactDispatch({ wi, reviewLog, reviewLogSha, policyPath, policySha, mode, tuple }) {
+function compactDispatch({ wi, manifest, manifestSha, reviewLog, reviewLogSha, policyPath, policySha, mode, tuple }) {
   return {
     schema_version: 2,
     decision: "dispatch",
     wi,
+    manifest,
+    manifest_sha256: manifestSha,
     review_log: reviewLog,
     review_log_sha256: reviewLogSha,
     policy: policyPath,
@@ -271,7 +327,7 @@ export function preflight({
   const repoRoot = realpathOrResolve(repo);
   const matches = [];
   for (const dir of listActivePlanDirs(repoRoot)) {
-    const manifests = findManifestsInDir(dir).filter((file) => manifestBoundToWi(file, wi));
+    const manifests = findManifestsInDir(dir).map((file) => readManifestAuthority(file, wi)).filter(Boolean);
     if (!manifests.length) continue;
     const reviewLog = path.join(dir, "review-log.yaml");
     try {
@@ -296,12 +352,21 @@ export function preflight({
   }
   const reviewRel = repoRelative(repoRoot, selected.reviewLog);
   const reviewSha = sha256(parsed.bytes);
+  const manifestPath = selected.manifests[0].path;
+  const manifestRel = repoRelative(repoRoot, manifestPath);
+  const manifestBytes = selected.manifests[0].bytes;
+  const manifestSha = sha256(manifestBytes);
+  if (parsed.manifest !== manifestRel || parsed.manifestSha256 !== manifestSha) {
+    fail(`preflight: review log does not bind current manifest ${manifestRel} at ${manifestSha}`, 1);
+  }
   if (allowOverrideFile) {
     const override = parseOverrideFile(allowOverrideFile, wi);
     return {
       schema_version: 2,
       decision: "owner-override",
       wi,
+      manifest: manifestRel,
+      manifest_sha256: manifestSha,
       override_sha256: override.sha256,
       reason: override.reason,
       review_log: reviewRel,
@@ -318,6 +383,8 @@ export function preflight({
   });
   return compactDispatch({
     wi,
+    manifest: manifestRel,
+    manifestSha,
     reviewLog: reviewRel,
     reviewLogSha: reviewSha,
     policyPath: resolved.config_path,
@@ -345,6 +412,7 @@ export function verifyReceipt({
   repo,
   wi,
   policy = null,
+  mode = null,
   orchestrator = null,
   maxAgeSeconds = DEFAULT_MAX_AGE_SECONDS,
   allowOverrideFile = null,
@@ -355,7 +423,7 @@ export function verifyReceipt({
     fail(`verify-receipt: max-age-seconds must be an integer from 1 through ${DEFAULT_MAX_AGE_SECONDS}`, 2);
   }
   const repoRoot = realpathOrResolve(repo);
-  const expected = preflight({ repo: repoRoot, wi, policy, orchestrator });
+  const expected = preflight({ repo: repoRoot, wi, policy, mode, orchestrator });
   const logPath = path.join(repoRoot, ".svc", "dispatch-log.jsonl");
   const cutoff = Date.now() - boundedMaxAgeSeconds * 1000;
   const rows = readDispatchRows(logPath);
@@ -365,23 +433,48 @@ export function verifyReceipt({
     if (row.wi !== wi) continue;
     if (row.skill !== "execute-changeset") continue;
     const ts = Date.parse(row.ts || "");
-    if (!Number.isFinite(ts) || ts < cutoff) continue;
+    if (!Number.isFinite(ts) || ts < cutoff || ts > Date.now() + RECEIPT_CLOCK_SKEW_MS) continue;
     if (row.exit_code !== 0) continue;
     if (row.schema_version !== 2) continue;
     if (row.decision === "owner-override") {
       if (!override) continue;
       if (row.override_sha256 !== override.sha256) continue;
       if (row.review_log_sha256 !== expected.review_log_sha256) continue;
+      if (row.manifest !== expected.manifest || row.manifest_sha256 !== expected.manifest_sha256) continue;
       if (row.reason !== override.reason) continue;
       return { ok: true, decision: "owner-override", wi, review_log_sha256: expected.review_log_sha256, override_sha256: override.sha256 };
     }
     if (row.decision !== "dispatch") continue;
     if (row.policy_sha256 !== expected.policy_sha256) continue;
     if (row.review_log_sha256 !== expected.review_log_sha256) continue;
+    if (row.manifest !== expected.manifest || row.manifest_sha256 !== expected.manifest_sha256) continue;
+    if (row.mode !== expected.mode || row.orchestrator !== expected.orchestrator) continue;
     if (row.host !== expected.host || row.family !== expected.family || row.model !== expected.model || row.effort !== expected.effort) continue;
-    return { ok: true, decision: "dispatch", wi, host: expected.host, family: expected.family, model: expected.model, effort: expected.effort };
+    return { ok: true, decision: "dispatch", wi, mode: expected.mode, orchestrator: expected.orchestrator, host: expected.host, family: expected.family, model: expected.model, effort: expected.effort };
   }
   fail(`verify-receipt: no recent exact dispatch evidence for ${wi} (expected ${expected.host}/${expected.family}/${expected.model}/${expected.effort} policy=${expected.policy_sha256.slice(0, 12)} review=${expected.review_log_sha256.slice(0, 12)})`, 1);
+}
+
+export function recordOverride({ repo, wi, policy = null, mode = null, orchestrator = null, allowOverrideFile = null } = {}) {
+  if (!allowOverrideFile) fail("record-override requires --allow-override-file", 2);
+  const repoRoot = realpathOrResolve(repo);
+  const decision = preflight({ repo: repoRoot, wi, policy, mode, orchestrator, allowOverrideFile });
+  if (decision.decision !== "owner-override") fail("record-override requires an authorized owner override decision", 1);
+  const row = {
+    schema_version: 2,
+    ts: new Date().toISOString(),
+    wi,
+    decision: "owner-override",
+    skill: "execute-changeset",
+    manifest: decision.manifest,
+    manifest_sha256: decision.manifest_sha256,
+    review_log_sha256: decision.review_log_sha256,
+    override_sha256: decision.override_sha256,
+    reason: decision.reason,
+    exit_code: 0,
+  };
+  appendJsonlLine(path.join(repoRoot, ".svc", "dispatch-log.jsonl"), row);
+  return row;
 }
 
 function parseArgs(argv) {
@@ -409,11 +502,22 @@ function printJson(value) {
 function cli() {
   const { command, options } = parseArgs(process.argv.slice(2));
   if (command === "bind-plan") {
-    printJson(bindPlan({ repo: options.repo, manifest: options.manifest }));
+    printJson(bindPlan({ repo: options.repo, manifest: options.manifest, snapshotOut: options["snapshot-out"] || null }));
     return;
   }
   if (command === "preflight") {
     printJson(preflight({
+      repo: options.repo,
+      wi: options.wi,
+      policy: options.policy || null,
+      mode: options.mode || null,
+      orchestrator: options.orchestrator || null,
+      allowOverrideFile: options["allow-override-file"] || null,
+    }));
+    return;
+  }
+  if (command === "record-override") {
+    printJson(recordOverride({
       repo: options.repo,
       wi: options.wi,
       policy: options.policy || null,
@@ -428,13 +532,14 @@ function cli() {
       repo: options.repo,
       wi: options.wi,
       policy: options.policy || null,
+      mode: options.mode || null,
       orchestrator: options.orchestrator || null,
       maxAgeSeconds: options["max-age-seconds"] || DEFAULT_MAX_AGE_SECONDS,
       allowOverrideFile: options["allow-override-file"] || null,
     }));
     return;
   }
-  fail("usage: resolve-execute-dispatch.mjs bind-plan|preflight|verify-receipt ...", 2);
+  fail("usage: resolve-execute-dispatch.mjs bind-plan|preflight|record-override|verify-receipt ...", 2);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

@@ -48,6 +48,7 @@
         "scripts/dispatch-log.sh",
         "scripts/dispatch-worker.sh",
         "scripts/execute-dispatch-preflight.sh",
+        "scripts/state-io.mjs",
         "skills/execute-changeset/references/dispatch-preflight.md",
         "skills/execute-changeset/references/subagent-dispatch.md"
       ]
@@ -62,6 +63,7 @@
     {
       "task": "T5",
       "paths": [
+        ".svc/authorization-events.jsonl",
         ".svc/dispatch/WI-559.edits.json",
         ".svc/dispatch/WI-559.log",
         ".svc/dispatch/WI-559.result.json",
@@ -80,9 +82,9 @@
   ],
   "resource_review": {
     "verification": "changed-executable-census",
-    "denominator": 13,
+    "denominator": 14,
     "disposition": "no-risky-resource-writers",
-    "evidence": "The origin/main-to-candidate census contains 13 changed shell, JavaScript, or TypeScript executables including focused tests. Inspection and the convergence matrix show no money, ledger, subscription, entitlement, quota, counter, inventory, identity, or notification resource mutation."
+    "evidence": "The origin/main-to-candidate census contains 14 changed shell, JavaScript, or TypeScript executables including focused tests. Inspection and the convergence matrix show no money, ledger, subscription, entitlement, quota, counter, inventory, identity, or notification resource mutation."
   },
   "resource_writers": [],
   "claims": [
