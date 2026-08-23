@@ -42,7 +42,7 @@
         "phases_executed": [
           {
             "id": "P1-DispatchPreflight",
-            "ts": "2026-08-18T05:08:28.000Z",
+            "ts": "2026-08-18T08:31:54Z",
             "evidence_artifacts": [
               {
                 "type": "file",
@@ -52,7 +52,7 @@
           },
           {
             "id": "P2-ApplyPlan",
-            "ts": "2026-08-18T05:08:29.000Z",
+            "ts": "2026-08-18T08:31:54Z",
             "evidence_artifacts": [
               {
                 "type": "file",
@@ -62,7 +62,7 @@
           },
           {
             "id": "P3-Verification",
-            "ts": "2026-08-18T05:08:30.000Z",
+            "ts": "2026-08-18T08:31:54Z",
             "evidence_artifacts": [
               {
                 "type": "file",
@@ -72,7 +72,7 @@
           },
           {
             "id": "P4-Checkpoint",
-            "ts": "2026-08-18T05:08:31.000Z",
+            "ts": "2026-08-18T08:31:54Z",
             "evidence_artifacts": [
               {
                 "type": "file",
@@ -80,7 +80,8 @@
               }
             ]
           }
-        ]
+        ],
+        "evidence": "(phase ts = landing commit 50a3440 time approximation, not per-phase instrumentation)"
       },
       "completed_at": "2026-08-18T05:08:34.756Z"
     },

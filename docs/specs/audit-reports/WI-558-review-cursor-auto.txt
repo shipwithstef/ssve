@@ -1,0 +1,36 @@
+## Findings
+
+**[severity: major] Session-contract freshness fix is validator-only; the enforcement hook still age-blocks terminal/unbound closeout rows.** `validate-session-contract-freshness.sh` exempts the last row when `bound_to != "wi"` or `wi` is empty (lines 51–60), treating an explicit closeout as non-active. `hooks/svc-session-contract-freshness.mjs` still calls `checkFreshness()` on the last line with no `bound_to` guard (lines 117–128, 248–262). On current `main`, the last row is a `user-request` closeout at `2026-08-23T12:45:00Z`; the tier-1 validator passes indefinitely, but the hook will hard-block edits once that row is older than 4h. That recreates the “validator green / operator blocked” split the WI narrative says it fixed, and judgment call **D** is only half-landed.
+
+**[severity: minor] WI-558 closure bookkeeping is incomplete.** `docs/specs/work-items/WI-558.md` still shows `Status: in-progress` while the work is described as merged and tier-1-green. Consumers scanning WI headers will treat the repair as unfinished.
+
+**[severity: minor] AC-546-4 live envelope consume coverage is intentionally skipped on this clone.** `validate-wi546-cursor-live-acceptance.sh` skips the note-sourced consume probe when `refs/notes/svc-receipts` is empty (lines 220–242). The skip is loud and the rationale (forging beats skipping) is sound; alternate coverage is cited (SOL-R2-005, fleet indexer, provenance validators). Still, this clone no longer mechanically proves end-to-end note consumption for a real envelope.
+
+**[severity: minor] `validate-sol-r2-fail-closed.mjs` now depends on checkout topology.** The `f57d1a93` pin replacement uses `git rev-list -1 HEAD --not <cutoff>` (lines 169–177). That is better than a GC-rotted hard pin, but it fails on checkouts where every reachable commit is grandfathered (old tags, shallow history). Hermetic for normal `main`, fragile for archaeology.
+
+**[severity: minor] `phases_executed` backfills use artifact-backed paths but synthetic staggered timestamps.** WI-556 lane-task receipts list real files (plans, manifests, WI docs) but phase timestamps like `2026-08-22T07:45:01.000Z` are clearly fabricated sequencing, not recorded execution instants. Honest enough for “what ran,” misleading if consumers treat `ts` as audit truth.
+
+**[severity: minor] `volatile_paths` is a reasonable mechanism with bounded blast radius today.** Adding optional `volatile_paths` to `validate-plan-contract.mjs` (lines 253–263) and declaring `.svc/` in WI-558’s plan-contract is the right fix vs either committing session noise into plan parity or weakening the gate globally. Only one contract uses it so far; future abuse would require an approved plan-contract, not silent bypass.
+
+## What holds up (production + security)
+
+- **`reviewer-evidence.mjs` regression fix is correct.** `receiptPath` is again an absolute string; `externalReviewProvenanceRoot()` can derive fixture issuance roots instead of silently falling back to `~/.svc` and ENOENTing (lines 160–171).
+- **Break-glass and setup state-home hardening are fail-closed, not heal-open.** `bin/svc-enforce.mjs` creates `~/.svc` at `0o700` and refuses pre-existing group/other-writable dirs without chmod-healing the directory (lines 105–118). `setup` secures `SVC_STATE_HOME` on first creation and refuses insecure pre-existing homes; symlinked homes defer to the ancestry walk (lines 324–341).
+- **`writeSelection` read/write parity is sound.** Symlinked or non-`0600` existing selection stores are refused before write (lines 265–270), matching the `O_NOFOLLOW` read path.
+- **PHASE_ENFORCEMENT_ANCHOR repoint was correctly rejected.** Keeping the externalized legacy authority path avoids grandfathering phase-free receipts (WI-510 fail-open class).
+- **WI-555 ghost completion reverted honestly.** Task 3 is `pending` with an explicit note; no fabricated receipts.
+- **Company-fleet mirror indexing now asserts fail-closed note authority**, aligned with WI-546.
+- **`stage-governed-hooks.sh` fixes a real fixture gap** against WI-545’s full bash hook registry without weakening enforcement semantics.
+- **External-review launcher tier-1 rewrite is hermetic and contract-faithful.** Fixture `SVC_REVIEWER_POLICY` mirrors retired station tuples; frozen `candidate_digest` binding is enforced; dead fixed-schedule/fallback-engine assertions were replaced rather than deleted wholesale (judgment call **C** — acceptable).
+
+## Judgment calls
+
+| Call | Verdict |
+|------|---------|
+| **A** `volatile_paths` | Justified vs alternatives |
+| **B** f27a143a SKIP-with-notice | Correct; forging note evidence would be worse |
+| **C** Launcher rewrite scope | Sound hermetic substitution |
+| **D** Terminal/unbound freshness | Intent correct, **hook not updated** → major gap |
+| **E** Deferred proposals → WI-512 | Defensible; triage reasons + residual maps match recorded executor |
+
+VERDICT: APPROVE-WITH-FINDINGS

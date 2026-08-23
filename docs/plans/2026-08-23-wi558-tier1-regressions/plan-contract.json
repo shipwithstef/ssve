@@ -10,6 +10,8 @@
       "task": "T01",
       "paths": [
         "bin/svc-enforce.mjs",
+        "hooks/opencode/svc-opencode-plugin.ts",
+        "hooks/svc-session-contract-freshness.mjs",
         "setup"
       ]
     },
@@ -28,6 +30,7 @@
         "test-framework/evals/tier-1/lib/stage-governed-hooks.sh",
         "test-framework/evals/tier-1/validate-actionable-hook-denial.sh",
         "test-framework/evals/tier-1/validate-all-host-install-migration.sh",
+        "test-framework/evals/tier-1/validate-chain-references.sh",
         "test-framework/evals/tier-1/validate-codex-execution-integrity.sh",
         "test-framework/evals/tier-1/validate-company-fleet-integration.sh",
         "test-framework/evals/tier-1/validate-enforcement-escape-and-readonly.sh",
@@ -52,6 +55,9 @@
     {
       "task": "T06",
       "paths": [
+        "docs/specs/audit-reports/WI-558-review-brief.md",
+        "docs/specs/audit-reports/WI-558-review-codex-sol-high.txt",
+        "docs/specs/audit-reports/WI-558-review-cursor-auto.txt",
         "docs/specs/work-items/PROPOSAL-PROMOTION-LEDGER.md",
         "docs/specs/work-items/WI-512-residual-map.json",
         "docs/specs/work-items/WI-548.md",
@@ -100,7 +106,7 @@
   ],
   "resource_review": {
     "verification": "changed-executable-census",
-    "denominator": 23,
+    "denominator": 26,
     "disposition": "no-risky-resource-writers",
     "evidence": "changed-executable-census over git diff 65717d8..HEAD excluding volatile .svc/; no money/ledger/quota/identity writer vocabulary introduced (enforcement audit uses plain writeFileSync; floor judges gained only a content-digest flag)"
   },

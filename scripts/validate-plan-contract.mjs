@@ -249,13 +249,23 @@ export function validatePlanContract(contract, { root = process.cwd() } = {}) {
     }
     for (const owner of ownerScopes) if (![...planned.keys()].some((plannedPath) => { try { return scopeMatches(owner.scope, normalizedScope(plannedPath)); } catch { return false; } })) errors.push(`contract ownership scope has no manifest path: ${owner.task}:${owner.scope}`);
     try {
-      const changed = diffPaths(root, diffBase); changedForSafety = changed;
+      const changed = diffPaths(root, diffBase);
+      // Census/writer detection must see the FULL changeset even when parity
+      // excludes volatile session state — filter a COPY for parity only.
+      changedForSafety = new Set(changed);
       // WI-558: session-owned state (hooks append to .svc ledgers between and
-      // during runs) is not plan-scoped. A contract may declare volatile path
-      // prefixes; matching paths are excluded from parity in BOTH directions so
-      // the gate stays deterministic while session state evolves.
-      const volatilePrefixes = Array.isArray(contract.volatile_paths) ? contract.volatile_paths.filter(hasText) : [];
-      const isVolatile = (relativePath) => volatilePrefixes.some((prefix) => {
+      // during runs) is not plan-scoped. For fail-closedness the mechanism is
+      // hard-restricted to the session state root: entries outside .svc/ are
+      // rejected, so volatile_paths can never silence code parity, census, or
+      // risky-writer detection.
+      const volatilePrefixes = (Array.isArray(contract.volatile_paths) ? contract.volatile_paths.filter(hasText) : []);
+      const badVolatile = volatilePrefixes.filter((prefix) => {
+        const scope = normalizedScope(prefix);
+        return scope !== ".svc" && !scope.startsWith(".svc/");
+      });
+      for (const prefix of badVolatile) errors.push(`volatile_paths entry outside the .svc/ session state root is not allowed: ${prefix}`);
+      const allowedVolatile = volatilePrefixes.filter((prefix) => !badVolatile.includes(prefix));
+      const isVolatile = (relativePath) => allowedVolatile.some((prefix) => {
         const scope = normalizedScope(prefix);
         return relativePath === scope || relativePath.startsWith(scope.endsWith("/") ? scope : `${scope}/`);
       });

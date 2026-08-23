@@ -1,0 +1,23 @@
+# WI-558 post-implementation adversarial review — Codex CLI (gpt-5.6-sol, reasoning effort high)
+# Reviewer session: 01a02ff1-4fcc-7ce2-9ee6-443db43ca25f; sandbox read-only; no repo writes.
+# Trimmed to the findings/verdict section; full stdout retained in session logs.
+
+[severity: critical] `volatile_paths` is an unrestricted fail-open in [validate-plan-contract.mjs](/home/dianast/app-workspaces/seriousvibecoding/scripts/validate-plan-contract.mjs:252). Deletions from `changed` also delete from the aliased `changedForSafety`, so declaring `scripts/` volatile suppresses parity, executable census, and risky-resource detection. There is no allowlist or negative test.
+
+[severity: major] [validate-session-contract-freshness.sh](/home/dianast/app-workspaces/seriousvibecoding/test-framework/evals/tier-1/validate-session-contract-freshness.sh:51) checks for `bound_to == "wi"`, but canonical values are `wi-backlog`, `user-request`, and `framework-evolution`. Consequently, canonical active contracts—including ones with a WI—bypass the repository freshness check.
+
+[severity: major] The changed Cursor and Grok “hermetic” validators invoke `./setup` with the operator’s real `HOME` before creating `ISO_HOME` ([Cursor](/home/dianast/app-workspaces/seriousvibecoding/test-framework/evals/tier-1/validate-wi546-cursor-live-acceptance.sh:83), [Grok](/home/dianast/app-workspaces/seriousvibecoding/test-framework/evals/tier-1/validate-wi546-grok-live-acceptance.sh:60)). On main they now require that stateful host installation to succeed, contradicting the explicit hermetic-tier-1 constraint.
+
+[severity: major] WI-558 was landed before its mandatory gates. [.svc/lane-tasks-WI-558.json](/home/dianast/app-workspaces/seriousvibecoding/.svc/lane-tasks-WI-558.json:54) still has `review-exec` and `land-changeset` pending, omits `audit-implementation` and `verify-promotion`, and remains `in_progress`. None of the four commits has a `refs/notes/svc-receipts` envelope.
+
+[severity: major] The “pushed/completed” claim is false in live state: `main` is four commits ahead of `origin/main`, the working tree is dirty, and WI-558 itself remains in progress. This is not a landed-and-verified closeout.
+
+[severity: major] The phase backfills are not honest execution evidence. WI-556 task 6 says it completed at `17:27:40`, but its receipt says the skill loaded at `17:30:00` and all newly asserted phases ran afterward in synthetic one-second increments. Artifact existence does not prove those phases executed.
+
+[severity: major] The new setup hardening can mutate through a nested symlink before rejecting it. [setup](/home/dianast/app-workspaces/seriousvibecoding/setup:338) runs `mkdir -p` on a missing immediate parent before the ancestry walk; a symlink in an earlier component is followed and creates directories outside the intended path. The fixture covers only an immediate-parent symlink.
+
+[severity: major] The WI-546 note-consumption acceptance check now skips when the note store is empty—which is the current state—so the advertised green sweep contains no successful live consume assertion. A scratch repository could test this without fabricating evidence in the real note store.
+
+[severity: minor] Selection-write hardening is not actually at parity with the read path: [run-external-review.mjs](/home/dianast/app-workspaces/seriousvibecoding/scripts/run-external-review.mjs:267) checks only symlink status and mode, but not regular-file type or ownership as `readSelection` does.
+
+VERDICT: REJECT

@@ -149,6 +149,19 @@ function isWorktreeBootstrap(repo, contractFile) {
 }
 
 function checkFreshness(contract) {
+  // WI-558: freshness guards a stale WI BINDING drifting into edits.
+  //  - Any row carrying a wi id is ACTIVE (governed), whatever bound_to says.
+  //  - A row with NO wi is TERMINAL only when it carries a recognized
+  //    non-wi boundary marker (user-request | framework-evolution); those are
+  //    session closeouts and cannot go stale.
+  //  - Legacy/ambiguous rows (no wi, unknown or absent bound_to) stay ACTIVE —
+  //    fail closed rather than inventing an exemption.
+  const boundTo = String(contract.bound_to || "");
+  const boundWi = typeof contract.wi === "string" ? contract.wi.trim() : "";
+  const isTerminalUnbound = !boundWi && (boundTo === "user-request" || boundTo === "framework-evolution");
+  if (isTerminalUnbound) {
+    return null;
+  }
   const maxAgeHours = parseInt(process.env.SVC_CONTRACT_MAX_AGE_HOURS || "4", 10);
   if (maxAgeHours === 0) {
     return null; // bypass age check

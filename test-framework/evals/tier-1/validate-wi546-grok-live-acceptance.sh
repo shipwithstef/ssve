@@ -58,23 +58,17 @@ grep -q 'SessionStart' scripts/wire-grok-hooks.mjs \
   || fail "wirer missing declared SessionStart/Stop adapters"
 
 set +e
-WT_OUT="$(./setup --host grok 2>&1)"
-WT_RC=$?
-set -uo pipefail
-# AP-30 refusal only triggers when the SOURCE checkout lives under .worktrees/
-# (WI-558 hermeticity fix); from the canonical main checkout it must succeed.
+# WI-558 (post-review): hermeticity + no operator-side effects — see the twin
+# probe in validate-wi546-cursor-live-acceptance.sh.
 if [[ "$ROOT" == *"/.worktrees/"* ]]; then
+  WT_OUT="$(./setup --host grok 2>&1)"; WT_RC=$?
   if [[ "$WT_RC" -ne 0 ]] && echo "$WT_OUT" | grep -q 'Refusing to install'; then
     pass "worktree ./setup --host grok refuses (AP-30)"
   else
     fail "worktree ./setup --host grok should refuse (rc=$WT_RC)"
   fi
 else
-  if [[ "$WT_RC" -eq 0 ]]; then
-    pass "main-checkout ./setup --host grok succeeds (AP-30 N/A outside .worktrees/)"
-  else
-    fail "main-checkout ./setup --host grok should not refuse (rc=$WT_RC): $WT_OUT"
-  fi
+  echo "  ! SKIP live ./setup grok probe — main checkout (hermeticity); AP-30 covered by setup-canonical-resolution fixtures"
 fi
 
 ISO_HOME="$(mktemp -d)"

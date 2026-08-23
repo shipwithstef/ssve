@@ -281,6 +281,16 @@ function checkSessionContractFreshness(cwd: string): string | null {
   if (maxAgeHours === 0) {
     return null; // bypass age check
   }
+
+  // WI-558: parity with hooks/svc-session-contract-freshness.mjs — freshness
+  // governs a stale WI BINDING. Terminal unbound rows (no wi + an explicit
+  // user-request | framework-evolution boundary marker) carry no edit authority
+  // and cannot go stale; rows with a wi are always governed.
+  const boundTo = typeof contract.bound_to === "string" ? contract.bound_to : "";
+  const boundWi = typeof contract.wi === "string" ? contract.wi.trim() : "";
+  if (!boundWi && (boundTo === "user-request" || boundTo === "framework-evolution")) {
+    return null;
+  }
   const maxAgeMs = maxAgeHours * 60 * 60 * 1000;
 
   const ts = parseTs(contract.ts);

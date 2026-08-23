@@ -81,24 +81,20 @@ grep -q 'sessionStart' scripts/wire-cursor-hooks.mjs \
 # AC-546-1: worktree setup refuses (AP-30); isolated non-worktree source succeeds
 # ---------------------------------------------------------------------------
 set +e
-WT_OUT="$(./setup --host cursor 2>&1)"
-WT_RC=$?
-set -uo pipefail
-# AP-30 refusal only triggers when the SOURCE checkout lives under .worktrees/.
-# From the canonical main checkout setup legitimately succeeds — assert the
-# refusal only where it applies (WI-558 hermeticity fix).
+# WI-558 (post-review): tier-1 must be hermetic AND side-effect free. The AP-30
+# refusal contract is exercised by validate-setup-worktree-canonical-resolution
+# and validate-all-host-setup against fixture sources; running the REAL
+# ./setup here would mutate the operator's host surface from the main
+# checkout, so outside .worktrees/ this assertion skips without executing it.
 if [[ "$ROOT" == *"/.worktrees/"* ]]; then
+  WT_OUT="$(./setup --host cursor 2>&1)"; WT_RC=$?
   if [[ "$WT_RC" -ne 0 ]] && echo "$WT_OUT" | grep -q 'Refusing to install'; then
     pass "AC-546-7 #6: ./setup --host cursor from this worktree refuses (AP-30)"
   else
     fail "worktree ./setup --host cursor should refuse without canonical override (rc=$WT_RC)"
   fi
 else
-  if [[ "$WT_RC" -eq 0 ]]; then
-    pass "AC-546-7 #6: ./setup --host cursor from the main checkout succeeds (AP-30 N/A outside .worktrees/)"
-  else
-    fail "main-checkout ./setup --host cursor should not refuse (rc=$WT_RC): $WT_OUT"
-  fi
+  echo "  ! SKIP AC-546-7 #6 live ./setup probe — main checkout (hermeticity); AP-30 covered by setup-canonical-resolution fixtures"
 fi
 
 ISO_HOME="$(mktemp -d)"
@@ -238,7 +234,31 @@ if [ -n "$LIVE_NOTE_SHA" ]; then
     cat "$AGY_LOG" || true
   fi
 else
-  echo "  ! SKIP AC-546-4 live-consume probe — refs/notes/svc-receipts has no live envelope in this clone (f27a143a chain lost to history externalization; restore from durable backup to re-enable)"
+  # WI-558 (post-review): the real store is empty in this clone, but the
+  # consume MECHANICS must still be proven live. A scratch repo carries a real
+  # (incomplete) note-sourced envelope; asserting receipt_source:"note" proves
+  # checker→common-git-dir note consumption without forging pass evidence in
+  # the shared store. The strict ok:true chain variant re-enables automatically
+  # once the historical store is restored.
+  SCRATCH="$(mktemp -d)"
+  git -C "$SCRATCH" init -q; git -C "$SCRATCH" config user.email t@t.invalid; git -C "$SCRATCH" config user.name t
+  printf 'seed\n' > "$SCRATCH/seed.txt"; git -C "$SCRATCH" add seed.txt; git -C "$SCRATCH" commit -qm seed
+  SCRATCH_SHA="$(git -C "$SCRATCH" rev-parse HEAD)"
+  SCRATCH_TS="2026-08-23T00:00:00.000Z"
+  SCRATCH_NOTE="{\"verify-promotion\":{\"receipt_type\":\"verify-promotion\",\"schema_version\":1,\"wi\":\"WI-558\",\"passes\":{\"p1_promotion_evidence\":\"pass\",\"p2_spec_ac_verification\":\"pass\",\"p3_runtime_validation\":\"pass\",\"p4_state_closeout\":\"pass\"},\"p3_target_type\":\"install-validation\",\"p3_outcome\":\"pass\",\"verdict\":\"pass\",\"sha\":\"$SCRATCH_SHA\",\"timestamp\":\"$SCRATCH_TS\"}}"
+  git -C "$SCRATCH" notes --ref=svc-receipts add -f -m "$SCRATCH_NOTE" "$SCRATCH_SHA"
+  CONSUME_NOTE=0
+  # The checker exits non-zero on an intentionally incomplete chain; the JSON
+  # body is still authoritative — grep receipt_source regardless of exit code.
+  ( cd "$SCRATCH" && node "$ROOT/scripts/check-chain-receipts.mjs" --sha "$SCRATCH_SHA" --wi WI-558 --json >"$AGY_LOG" 2>&1 ) || true
+  grep -q '"receipt_source": "note"' "$AGY_LOG" && CONSUME_NOTE=1
+  if [ "$CONSUME_NOTE" -eq 1 ]; then
+    pass "AC-546-4: check-chain-receipts consumes note-sourced envelopes from a repo's common git dir (scratch-store live probe)"
+  else
+    fail "AC-546-4: scratch-store note consumption failed"
+    cat "$AGY_LOG" || true
+  fi
+  rm -rf "$SCRATCH"
 fi
 rm -f "$AGY_LOG"
 

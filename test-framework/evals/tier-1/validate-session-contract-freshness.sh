@@ -48,15 +48,17 @@ if [[ -z "$TS" ]]; then
   exit 1
 fi
 
-# WI-558: a terminal, unbound row (bound_to != "wi", e.g. an explicit closeout
-# or user-request row with wi:null) is not an ACTIVE contract. Freshness guards
-# against a stale WI binding drifting into edits; a closed contract is the good
-# end state and must not fail the gate forever. Only wi-bound rows age-check.
+# WI-558: mirrored from hooks/svc-session-contract-freshness.mjs checkFreshness().
+# TERMINAL rows = no wi AND an explicit non-wi boundary marker (user-request |
+# framework-evolution). Any row carrying a wi is ACTIVE; legacy/ambiguous rows
+# stay ACTIVE (fail closed).
+# NOTE: this branch only short-circuits the LIVE-repo age computation — the
+# hook-behavior fixtures below still run in every sweep (Codex re-review).
 BOUND_TO=$(echo "$LAST_LINE" | grep -oE '"bound_to":"[^"]+"' | cut -d'"' -f4 || true)
 BOUND_WI=$(echo "$LAST_LINE" | grep -oE '"wi":"[^"]+"' | cut -d'"' -f4 || true)
-if [[ "$BOUND_TO" != "wi" || -z "$BOUND_WI" ]]; then
-  echo "  PASS — last contract row is terminal/unbound (no active WI binding to go stale)"
-  exit 0
+LIVE_ROW_TERMINAL=0
+if [[ -z "$BOUND_WI" && ( "$BOUND_TO" == "user-request" || "$BOUND_TO" == "framework-evolution" ) ]]; then
+  LIVE_ROW_TERMINAL=1
 fi
 
 # Convert to epoch seconds (handle both +03:00 and Z formats)
@@ -71,14 +73,17 @@ fi
 NOW=$(date +%s)
 AGE=$((NOW - TS_EPOCH))
 
-if [[ $AGE -gt $MAX_AGE_SEC ]]; then
+if [[ "$LIVE_ROW_TERMINAL" -eq 1 ]]; then
+  echo "  PASS — live last row is a terminal unbound boundary (no active WI binding to go stale)"
+elif [[ $AGE -gt $MAX_AGE_SEC ]]; then
   AGE_HOURS=$((AGE / 3600))
   echo "  FAIL — session contract is ${AGE_HOURS}h old (max ${MAX_AGE_HOURS}h)"
   echo "    Last entry: $LAST_LINE"
   exit 1
+else
+  AGE_HOURS=$((AGE / 3600))
+  echo "  PASS — session contract is ${AGE_HOURS}h old (fresh)"
 fi
-AGE_HOURS=$((AGE / 3600))
-echo "  PASS — session contract is ${AGE_HOURS}h old (fresh)"
 
 # --- WI-399 A3: hook scope-behavior fixtures (hermetic, <3s) -----------------
 # The hook gates the TARGET FILE's repo, only when svc-governed (.svc dir),

@@ -266,7 +266,10 @@ async function writeSelection(file, profile, reason, expiresAt, policy, now) {
   // is evidence tampering — refuse it instead of atomically replacing it.
   try {
     const existing = await lstat(file);
-    if (existing.isSymbolicLink()) rejectSelection('selection must not be a symlink');
+    // Parity with the read path: regular file, owner, 0600 — a symlinked,
+    // foreign, or loosely-stored selection is evidence tampering.
+    if (!existing.isFile()) rejectSelection('selection must be a regular file');
+    if (typeof process.getuid === 'function' && existing.uid !== process.getuid()) rejectSelection('selection owner does not match current user');
     if ((existing.mode & 0o077) !== 0) rejectSelection('selection mode must be 0600');
   } catch (error) {
     if (error.code !== 'ENOENT') throw error;

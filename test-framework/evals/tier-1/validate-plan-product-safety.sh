@@ -37,6 +37,17 @@ node "$ROOT/scripts/validate-plan-contract.mjs" "$WRITER_CONTRACT" "$WRITER" >/d
 node -e 'const fs=require("fs");const p=process.argv[1],c=require(p);c.base_sha="missing-base";fs.writeFileSync(p,JSON.stringify(c))' "$WRITER_CONTRACT"
 if node "$ROOT/scripts/validate-plan-contract.mjs" "$WRITER_CONTRACT" "$WRITER" >/dev/null 2>&1; then echo "unresolvable plan base accepted" >&2; exit 1; fi
 node scripts/validate-plan-contract.mjs docs/plans/2026-08-23-wi558-tier1-regressions/plan-contract.json "$ROOT"
+# WI-558 negative: volatile_paths is fail-closed — entries outside .svc/ are
+# rejected and can never silence code parity or the executable census.
+VOL_CONTRACT="$TMP/volatile-contract.json"; VOL_ROOT="$TMP/vol-root"; mkdir -p "$VOL_ROOT/scripts" "$VOL_ROOT/docs"
+git -C "$VOL_ROOT" init -q; git -C "$VOL_ROOT" config user.name t; git -C "$VOL_ROOT" config user.email t@t.invalid
+printf 'base\n' > "$VOL_ROOT/base"; git -C "$VOL_ROOT" add base; git -C "$VOL_ROOT" commit -qm base
+printf '%s\n' '## Files Planned' '' '| Task | Action | File(s) | Purpose |' '|---|---|---|---|' '| T01 | CREATE | planned-only | x |' '' '## Task Graph' > "$VOL_ROOT/manifest.md"
+printf '%s\n' '{"schema_version":1,"base_sha":"'$(git -C "$VOL_ROOT" rev-parse HEAD)'","manifest":"manifest.md","volatile_paths":["scripts"],"ownership":[{"task":"T01","paths":["planned-only"]}],"resource_review":{"verification":"changed-executable-census","denominator":0,"disposition":"no-risky-resource-writers","evidence":"reviewed"},"resource_writers":[],"claims":[],"executables":[]}' > "$VOL_CONTRACT"
+printf 'runtime code\n' > "$VOL_ROOT/scripts/runtime.mjs"
+if node scripts/validate-plan-contract.mjs "$VOL_CONTRACT" "$VOL_ROOT" >"$TMP/vol.out" 2>&1; then echo "FAIL: out-of-scope volatile_paths accepted" >&2; exit 1; fi
+grep -q 'volatile_paths entry outside the .svc/ session state root is not allowed: scripts' "$TMP/vol.out"
+grep -q 'changed path is undeclared in manifest ownership table: scripts/runtime.mjs' "$TMP/vol.out"
 node scripts/find-callers.mjs --identifier validate-plan-contract.mjs --root "$ROOT" > "$TMP/callers.json"
 node -e 'const r=require(process.argv[1]); if(r.scanned_files<1||r.denominator!==r.scanned_files||r.queries.length<5||r.matched_files<2)process.exit(1)' "$TMP/callers.json"
 mkdir -p "$TMP/census"; printf 'invokeValidatePlanContract();\n' > "$TMP/census/caller.mjs"

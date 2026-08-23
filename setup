@@ -329,31 +329,46 @@ SETUP_STATE_ROOT="${SVC_SETUP_STATE_ROOT:-$HOME/.svc/setup-state}"
 SVC_STATE_HOME="$(dirname "$SETUP_STATE_ROOT")"
 # A symlinked state home is left for the canonical ancestry walk below to
 # reject with its own diagnostic ('state ancestry must not contain symlinks').
-if [ ! -L "$SVC_STATE_HOME" ]; then
-  if [ -d "$SVC_STATE_HOME" ]; then
-    SVC_STATE_HOME_MODE="$(stat -c %a "$SVC_STATE_HOME" 2>/dev/null || stat -f %Lp "$SVC_STATE_HOME")"
-    case "$SVC_STATE_HOME_MODE" in
-      *[2367]) echo "ERROR: svc state home is group/other-writable (mode $SVC_STATE_HOME_MODE): $SVC_STATE_HOME" >&2; exit 1 ;;
-    esac
-  elif [ ! -e "$SVC_STATE_HOME" ]; then
-    mkdir -p "$SVC_STATE_HOME"
-    chmod 700 "$SVC_STATE_HOME"
-  fi
+if [ ! -L "$SVC_STATE_HOME" ] && [ -d "$SVC_STATE_HOME" ]; then
+  SVC_STATE_HOME_MODE="$(stat -c %a "$SVC_STATE_HOME" 2>/dev/null || stat -f %Lp "$SVC_STATE_HOME")"
+  case "$SVC_STATE_HOME_MODE" in
+    *[2367]) echo "ERROR: svc state home is group/other-writable (mode $SVC_STATE_HOME_MODE): $SVC_STATE_HOME" >&2; exit 1 ;;
+  esac
 fi
 python3 - "$HOME" "$SETUP_STATE_ROOT" <<'PY_SECURE_STATE_ROOT'
 import os, pathlib, stat, sys
-home, target = pathlib.Path(sys.argv[1]).resolve(), pathlib.Path(sys.argv[2])
-if not target.is_absolute(): raise SystemExit(f"ERROR: setup state root must be absolute: {target}")
+home = pathlib.Path(sys.argv[1]).resolve()
+# Lexical normalization ONLY — resolve() would silently follow symlinked
+# components and defeat the ancestry walk below. normpath collapses ../
+# lexically so an escaping root ($HOME/../../tmp) is rejected here.
+raw_target = pathlib.Path(sys.argv[2])
+if not raw_target.is_absolute(): raise SystemExit(f"ERROR: setup state root must be absolute: {raw_target}")
+target = pathlib.Path(os.path.normpath(str(raw_target)))
 try: parts = target.relative_to(home).parts
 except ValueError: raise SystemExit(f"ERROR: setup state root escapes HOME: {target}")
 if not parts: raise SystemExit("ERROR: setup state root may not equal HOME")
 current = home
+missing_from = None
 for part in parts:
     current /= part
     try: mode = os.lstat(current).st_mode
-    except FileNotFoundError: break
+    except FileNotFoundError:
+        missing_from = current; break
     if stat.S_ISLNK(mode): raise SystemExit(f"ERROR: setup state ancestry must not contain symlinks: {current}")
     if current != target and not stat.S_ISDIR(mode): raise SystemExit(f"ERROR: setup state ancestor is not a directory: {current}")
+# WI-558: creation happens HERE — after the full symlink-free ancestry walk —
+# so a hostile symlink in any component can never be followed into a mutation
+# outside the intended path. Each created component is owner-private 0700,
+# which also keeps the enforcement state root (~/.svc) from being created
+# group-writable under umask 0002 (svc-migrate-install would refuse it).
+if missing_from is not None:
+    to_create = []
+    cursor = target
+    while cursor != home and not cursor.exists():
+        to_create.append(cursor)
+        cursor = cursor.parent
+    for directory in reversed(to_create):
+        os.mkdir(directory, mode=0o700)
 PY_SECURE_STATE_ROOT
 mkdir -p "$SETUP_STATE_ROOT/locks" "$SETUP_STATE_ROOT/digests"
 chmod 700 "$SETUP_STATE_ROOT" "$SETUP_STATE_ROOT/locks" "$SETUP_STATE_ROOT/digests" 2>/dev/null || true
