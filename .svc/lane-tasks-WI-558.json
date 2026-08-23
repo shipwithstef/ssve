@@ -71,12 +71,72 @@
     },
     {
       "id": 2,
-      "status": "in_progress",
+      "status": "completed",
       "skill": "review-exec",
       "subject": "external adversarial review of the repair (Codex/Sol + Cursor) + finding remediation",
       "blocked_by": [
         1
-      ]
+      ],
+      "completed_at": "2026-08-23T19:05:00Z",
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-08-23T17:40:00Z",
+        "loaded_via": "manual",
+        "evidence": "Round-1: Codex/Sol REJECT -> remediated; Cursor APPROVE-WITH-FINDINGS. Round-3 confirmation: Codex/Sol VERDICT APPROVE (docs/specs/audit-reports/WI-558-review-codex-sol-final.txt); prior rounds in WI-558-review-codex-sol-high.txt / -cursor-auto.txt",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-08-23T18:07:07Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-558-review-brief.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-08-23T18:07:07Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-558-review-cursor-auto.txt"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-08-23T18:07:07Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-558-review-codex-sol-high.txt"
+              }
+            ]
+          },
+          {
+            "id": "P4-IterationLoop",
+            "ts": "2026-08-23T18:07:07Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-558-review-codex-sol-final.txt"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerdictAndReceiptFinalize",
+            "ts": "2026-08-23T18:07:07Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-558-review-codex-sol-final.txt"
+              }
+            ]
+          }
+        ],
+        "note": "(phase ts = merge commit dc908bf time approximation)"
+      }
     },
     {
       "id": 3,
@@ -90,7 +150,7 @@
     },
     {
       "id": 4,
-      "status": "pending",
+      "status": "completed",
       "skill": "audit-implementation",
       "subject": "session audit: dual external reviews + landing-state evidence",
       "blocked_by": [
@@ -153,7 +213,8 @@
             ]
           }
         ]
-      }
+      },
+      "completed_at": "2026-08-23T19:05:00Z"
     },
     {
       "id": 5,

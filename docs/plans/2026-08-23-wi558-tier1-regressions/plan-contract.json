@@ -94,6 +94,7 @@
       "paths": [
         "docs/plans/2026-08-23-wi558-tier1-regressions/manifest.md",
         "docs/plans/2026-08-23-wi558-tier1-regressions/plan-contract.json",
+        "docs/specs/audit-reports/WI-558-review-codex-sol-final.txt",
         "docs/specs/work-items/WI-558.md"
       ]
     },

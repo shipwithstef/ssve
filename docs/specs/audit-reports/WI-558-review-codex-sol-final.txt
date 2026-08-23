@@ -1,0 +1,23 @@
+# WI-558 round-3 confirmation — Codex CLI (gpt-5.6-sol high), VERDICT: APPROVE
+# Scope: F1/F3/F6/F7/F8/F9 regression checks + round-2 residuals (opencode plugin 4h freshness parity; land-changeset blocked_by audit).
+
+F6: PASS — phase timestamps remain honestly labeled as approximations.
+F7: PASS — setup rejects symlinked ancestry before mutation.
+F8: PASS — note-consumption scratch-store coverage remains present.
+F9: PASS — selection-write validation retains regular-file, owner, and mode checks.
+Commit: PASS — HEAD is `26781f32facdbd3f858ab1f7a48698a11dc9186a`.
+Working tree: PASS — clean, including no untracked files.
+VERDICT: APPROVE
+tokens used
+88,242
+Residual 1: PASS — OpenCode freshness default is 4h with parity comment.
+Residual 2: PASS — `land-changeset` has `blocked_by: [2,4]`, including `audit-implementation`.
+F1: PASS — fail-closed `volatile_paths` fix unchanged.
+F3: PASS — hermetic WI-546 validators unchanged.
+F6: PASS — phase timestamps remain honestly labeled as approximations.
+F7: PASS — setup rejects symlinked ancestry before mutation.
+F8: PASS — note-consumption scratch-store coverage remains present.
+F9: PASS — selection-write validation retains regular-file, owner, and mode checks.
+Commit: PASS — HEAD is `26781f32facdbd3f858ab1f7a48698a11dc9186a`.
+Working tree: PASS — clean, including no untracked files.
+VERDICT: APPROVE
