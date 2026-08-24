@@ -51,21 +51,8 @@ grep -qi "invalid SVC_FANOUT_MAX_PARALLEL" "$TMP/warn.out" && check "invalid env
 # --- V-2: branch claims ---
 CLAIMS_DIR="$FIX/.git/svc-wave-branch-claims"
 export CLAIMS_DIR FIX FAKEBIN
-cat >"$TMP/claim-probe.mjs" <<'EOF'
-import fs from "node:fs";
-import path from "node:path";
-import { execFileSync } from "node:child_process";
-const { CLAIMS_DIR } = process.env;
-const branchHash = (b) => require("node:crypto").createHash("sha256").update(b).digest("hex");
-void branchHash;
-// Slash-bearing branch identity must hash safely.
-const b = "feature/with/slashes";
-const id = execFileSync("sha256sum", []).length >= 0 ? null : null;
-process.exit(0);
-EOF
-# Direct drill of the claim mechanics via dispatch-worker's own code path is
-# covered by its syntax + this behavioral probe of mkdir-exclusivity:
-mkdir -p "$CLAIMS_DIR/$(printf 'feat/x' | sha256sum | cut -d' ' -f1)/owner" 2>/dev/null || true
+# V-2 claim-mechanics drills live in validate-v2-branch-claims-live.sh (real
+# dispatch-worker integration); this file keeps the structural assertions.
 FIRST="$(printf '%s\n%s\n%s\n%s\n' "999999" "$(hostname)" "11111" "$(date -u +%FT%TZ)")"
 mkdir -p "$CLAIMS_DIR/probe"
 printf '%s' "$FIRST" >"$CLAIMS_DIR/probe/owner"
@@ -77,9 +64,8 @@ else
   check "dead-owner stale claim stealable (death proof)" false
 fi
 
-# Slash-safe hashed claim dirs exist and are flat
-N=$(find "$CLAIMS_DIR" -mindepth 1 -maxdepth 1 -type d | wc -l)
-[[ "$N" -ge 1 ]] && check "claim directories are hash-flat (slash-safe)" true || check "claim dirs" false
+# Slash-safe hashed claim dirs + live/busy/steal behavior: covered by the real
+# dispatch-worker integration drill in validate-v2-branch-claims-live.sh.
 
 # --- IP-H7: freeze verb gate ---
 mkdir -p "$FIX/.worktrees/feature-frozen"

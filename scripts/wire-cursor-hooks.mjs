@@ -18,7 +18,6 @@
 import fs from "node:fs";
 import path from "node:path";
 import { isUserOwnedCommand } from "../hooks/lib/svc-ownership.mjs"; // WI-562 IP-W2
-import { renderCommand } from "../hooks/lib/hook-catalog.mjs"; // WI-562 IP-W3/W-D
 import os from "node:os";
 import { fileURLToPath } from "node:url";
 import { MIGRATION_VERSION, resolveStateRoot, launcherRunnable } from "../hooks/lib/enforcement-core.mjs";
@@ -68,8 +67,9 @@ export function buildCursorHookEntries(skillsPath) {
     entries.beforeShellExecution.push({ command: `${NODE_CMD} ${q(`${hooksDir}/svc-worktree-isolation-guard.mjs`)}` });
   }
   if (!DISABLED.has("svc-bash-guard")) {
-    // Canonical command from the catalog template, rendered with QUOTED paths.
-    entries.beforeShellExecution.push({ command: `${renderCommand("node {NODE_CMD} {HOOKS_DIR}/svc-workflow-guard.mjs --bash-guard", { hooksDir, nodeCmd: NODE_CMD }).replace(`"${NODE_CMD}"`, NODE_CMD)}` });
+    // Byte-equivalent to origin/main's entry (round-3 review): NODE_CMD is
+    // already shell-quoted; only the script path needs quoting (W-D).
+    entries.beforeShellExecution.push({ command: `${NODE_CMD} ${q(`${hooksDir}/svc-workflow-guard.mjs`)} --bash-guard` });
   }
   if (!DISABLED.has("svc-impact-triad-guard")) {
     entries.beforeShellExecution.push({ command: `${NODE_CMD} ${q(`${hooksDir}/svc-impact-triad-guard.mjs`)}` });

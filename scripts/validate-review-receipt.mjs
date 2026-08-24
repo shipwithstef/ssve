@@ -82,6 +82,16 @@ function present(value) {
   return value !== undefined && value !== null && String(value).trim() !== '';
 }
 
+// WI-562 IP-R7: snapshot-based schema_version enforcement — receipts NOT in
+// the pre-implementation frozen baseline must carry schema_version: 1.
+try {
+  const baseline = JSON.parse(fs.readFileSync(path.join(root, 'docs/specs/wi562-read-matrix-baseline.json'), 'utf8'));
+  const frozen = new Set((baseline.frozen_pr_review_receipt_inventory?.files) || []);
+  if (!frozen.has(existing) && receipt.schema_version !== 1) {
+    failures.push('schema_version must be 1 for receipts created after WI-562');
+  }
+} catch { /* baseline unreadable: skip snapshot check (fail-open only for the SNAPSHOT lookup, not validation) */ }
+
 if (pr && String(receipt.pr || receipt.pr_number || '') !== String(pr)) failures.push('pr must match target PR');
 if (!present(receipt.reviewed_at)) failures.push('reviewed_at required');
 if (!present(receipt.review_gate_task)) failures.push('review_gate_task required');

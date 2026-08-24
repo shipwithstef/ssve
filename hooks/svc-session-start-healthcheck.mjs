@@ -487,8 +487,16 @@ try {
 // fail-closed, never silently accepted.
 try {
   const fsMod = await import("node:fs");
+  // Resolve the REPOSITORY-shared state root via the common git dir (correct
+  // for linked worktrees), falling back to the hook repo's .git.
+  let commonDir = "";
+  try {
+    const { execFileSync: efsHC } = await import("node:child_process");
+    commonDir = efsHC("git", ["-C", HOOK_REPO_ROOT, "rev-parse", "--git-common-dir"], { encoding: "utf8" }).trim();
+    if (commonDir && !commonDir.startsWith("/")) commonDir = join(HOOK_REPO_ROOT, commonDir);
+  } catch { commonDir = join(HOOK_REPO_ROOT, ".git"); }
   const stateRoot = process.env.SVC_AUTHORITY_STATE_ROOT ||
-    join(HOOK_REPO_ROOT, ".git", "svc-authority-v2");
+    join(realpathSync(commonDir || join(HOOK_REPO_ROOT, ".git")), "svc-authority-v2");
   const handoversDir = stateRoot ? join(stateRoot, "handovers") : null;
   if (stateRoot && handoversDir && fsMod.existsSync(handoversDir)) {
     const { finalizeHandover } = await import("../hooks/lib/authority-store.mjs");

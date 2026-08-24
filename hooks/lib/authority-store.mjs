@@ -264,6 +264,8 @@ function verifyLatestHandoffRecord(paths, lease) {
     }
     stamped.push({ f, ts: Date.parse(parsed.ts), record: parsed });
   }
+  if (stamped.length === 0) return null; // no own records: nothing to verify
+  stamped.sort((a, b) => a.ts - b.ts);
   const latestPath = path.join(dir, stamped[stamped.length - 1].f);
   let record;
   try { record = JSON.parse(fs.readFileSync(latestPath, "utf8")); }

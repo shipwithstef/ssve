@@ -130,8 +130,8 @@ if [[ -n "$SVC_WORKER_BRANCH_CLAIM" ]]; then
     # WI-562 round-5: ONLY positive same-host death proof authorizes a steal.
     # Live (0) AND undecidable (malformed body, foreign host, missing /proc)
     # all fast-exit branch_busy — never rm an ambiguous claim.
-    claim_owner_alive
-    alive_rc=$?
+    alive_rc=0
+    claim_owner_alive || alive_rc=$?
     if [[ $alive_rc -eq 1 ]]; then
       rm -rf "$CLAIM_PATH" && claim_try_acquire || branch_busy_exit
     else
@@ -145,10 +145,16 @@ fi
 # ── WI-562 IP-H5 E2: claim heartbeat loop for pid-less claims ──
 # If this WI has a heartbeat-contract claim, renew it on an interval for the
 # worker's lifetime so a live silent owner is never TTL-preempted.
-if [[ -n "$SVC_WORKER_WI" && -f ".svc/claims/$SVC_WORKER_WI.claim.json" ]]    && grep -q '"heartbeat_required": *true' ".svc/claims/$SVC_WORKER_WI.claim.json" 2>/dev/null; then
+CLAIM_FILE=".svc/claims/$SVC_WORKER_WI.claim.json"
+if [[ -n "$SVC_WORKER_WI" && -f "$CLAIM_FILE" ]] && grep -q '"heartbeat_required": *true' "$CLAIM_FILE" 2>/dev/null; then
+  # Cadence honors the claim's own heartbeat_contract (minutes), floor 60s.
+  HB_SECONDS=$(node -e '
+    try { const c=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));
+      console.log(Math.max(60, Number(c?.heartbeat_contract?.interval_minutes||5)*60)); }
+    catch { console.log(300); }' "$CLAIM_FILE")
   ( 
     while true; do
-      sleep 300
+      sleep "$HB_SECONDS"
       node "$(git rev-parse --show-toplevel 2>/dev/null || pwd)/hooks/lib/wi-claim.mjs" claim renew --wi "$SVC_WORKER_WI" --svc-dir .svc >/dev/null 2>&1 || break
     done
   ) &

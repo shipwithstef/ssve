@@ -21,7 +21,7 @@ let fail = 0;
 function problem(m) { console.error(`  ✗ ${m}`); fail++; }
 
 // (a) zero regressions anywhere
-const baselineMap = new Map(BASELINE.kinds.map((k) => [k.kind, k.read_validated]));
+const baselineMap = new Map(BASELINE.kinds.map((k) => [k.kind, k.read_validated ?? k.validated_on_read]));
 for (const { kind, read_validated } of current) {
   const was = baselineMap.get(kind);
   if (was === undefined) continue; // new kind introduced post-baseline

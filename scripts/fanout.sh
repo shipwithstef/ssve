@@ -106,11 +106,15 @@ launch_worker() {
 
   PAYLOAD="$(cat "$PAYLOAD_FILE")"
   # WI-562 IP-H1/V-2: plan-declared validation commands flow to the worker
-  # (-separated) so emitted evidence rows are replayable by the parent.
+  # (unit-separator-separated) so evidence rows are replayable; the branch
+  # CLAIM key is the BRANCH (workers on the same branch contend), not the id.
   DECLARED="$(echo "$line" | jq -r '(.validation_commands // []) | join("\u001f")')"
+  WORKER_WI="$(echo "$line" | jq -r '.wi // .id')"
+  WORKER_BRANCH="$(echo "$line" | jq -r '.branch // "branch"')"
   SVC_HARNESS="$HARNESS" SVC_WORKER_SKILL="$SKILL" \
+    SVC_WORKER_WI="$WORKER_WI" \
     SVC_WORKER_DECLARED_COMMANDS="$DECLARED" \
-    SVC_WORKER_BRANCH_CLAIM="${SVC_WORKER_BRANCH_CLAIM_PREFIX:-}${ID}" \
+    SVC_WORKER_BRANCH_CLAIM="${SVC_WORKER_BRANCH_CLAIM_PREFIX:-}${WORKER_BRANCH}" \
     bash "$DISPATCH" "$PAYLOAD" > "$LOG" 2>&1 &
   PIDS+=("$!")
 }

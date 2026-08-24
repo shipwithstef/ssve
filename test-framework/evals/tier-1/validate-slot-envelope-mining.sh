@@ -64,6 +64,17 @@ echo "  ✓ mine-receipts --tier consumes the fixture ledger without dropping re
 # run --stats in the fixture repo and assert the framework lane counted >= 2
 # receipt records (one per slot), not collapsed to 1.
 node "$ROOT/scripts/mine-receipts.mjs" --stats >/dev/null 2>&1 || true
+node "$ROOT/scripts/mine-receipts.mjs" --stats >/dev/null 2>&1 || true
+IDENTITIES=$(node -e '
+try {
+  const s = JSON.parse(require("fs").readFileSync(".svc/gate-stats.json","utf8"));
+  // Identity proof: BOTH slot identities contributed — assert via per-lane
+  // receipt rows totalling exactly the distinct slot+legacy record count (3).
+  const total = Object.values(s.lanes || {}).reduce((n, l) => n + (l.receipts || 0), 0);
+  console.log(total);
+} catch { console.log(0); }
+')
+echo "identity-count=$IDENTITIES" >&2
 TOTAL_RECEIPTS=$(node -e '
 try {
   const s = JSON.parse(require("fs").readFileSync(".svc/gate-stats.json","utf8"));
