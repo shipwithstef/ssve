@@ -30,7 +30,7 @@
 | Atomic receipt writes | `scripts/quick-fix-eligibility.mjs` (routed through `emit-receipt.mjs` core writer), grep gate `validate-atomic-receipt-writes.sh` |
 | Uniform wirer write policy + catalog | `scripts/wire-hooks.mjs`, `scripts/wire-cursor-hooks.mjs`, `scripts/wire-grok-hooks.mjs`, `hooks/lib/svc-ownership.mjs` (new), `references/host-hook-catalog.json` (new) |
 | Concurrency-safe worktree verbs | `scripts/worktree.sh` (Git-CAS verb locks + quarantine) |
-| Swarm DAG velocity | `scripts/fanout.sh`, `scripts/dispatch-worker.sh`, `schemas/dispatch-policy.schema.json` (branch_busy vocabulary) |
+| Swarm DAG velocity | `scripts/fanout.sh`, `scripts/dispatch-worker.sh` (worker-summary status vocabulary; no phantom schema) |
 
 Note: lane-task T04's literal strings `scripts/lib/authority-store.mjs` / `scripts/auto-receipt.mjs` were authored with approximate paths; the authoritative mapping is this table (`auto-receipt.mjs` is triad tooling, out of scope).
 
@@ -75,7 +75,7 @@ Follow-up WI registration: WI-563 and WI-564 are recorded in `docs/specs/wi-foll
   - worker result MUST carry `worktree` realpath + `base_sha`; validator recomputes ground truth from git;
   - recomputed `changed_files` override worker-authored arrays (worker array may only be a SUBSET hint — mismatch ⇒ finding, superset ⇒ failure);
   - success requires `committed === true` (clean tree + ≥1 commit vs base) — a PASS with a dirty tree exits nonzero;
-  - `validation_evidence[].result` accepted only from re-executed commands when `evidence.replay: true`, else evidence entries must reference exit-code files written by the worker sandbox (`evidence.exit_code_file`), never bare `"PASS"` literals;
+  - **validation_evidence carries NO worker-authoritative verdicts at all** (round-2 Codex C1): each evidence entry names `{command, cwd}` and the VALIDATOR RE-EXECUTES it in the worker worktree, comparing exit codes itself; worker-authored result strings/exit-code files are never read as proof (a worker-writable file proves nothing about who wrote it);
   - `dispatch-worker.sh` stops manufacturing `parent_graph_mutation.updated=true` (:211): the orchestrator sets mutation flags AFTER validators pass, workers only report observations.
 - `dispatch-worker.sh`: worker commits its own work before summary emission; summary gains `head_sha`, `base_sha`, `diff_digest` (recomputed values the parent verifies).
 
@@ -92,13 +92,13 @@ As v1, plus round-1 fixes:
 
 ### H-C · IP-H3 Concurrency-safe promote/remove/cleanup (P0, Wave 2)
 
-**Lock substrate: the existing Git-CAS family, not a new mkdir lock** (round-1 unanimous).
-- Reuse the `withExclusiveLock` Git-ref CAS primitives used by `svc-ensure-worktree.mjs:76` / `wi-claim.mjs:326-331` (refs under `refs/svc/locks/…`, update-ref compare-and-swap, generation-stamped, crash-safe by construction).
-- `cmd_promote`/`cmd_remove`: branch-scoped CAS lock `refs/svc/locks/worktree-verb/<sha256(branch)>` held across push/PR/state mutation.
-- `cmd_cleanup`: REPO-WIDE CAS lock `refs/svc/locks/worktree-verb/_global` (it has no branch argument and mutates shared metadata). **Deadlock safety:** a verb holding `_global` never acquires a branch lock; verbs holding a branch lock never acquire `_global`. One-directional ordering; documented in-line.
-- Lock-held-then-refuse determinism for tests: fixture acquires the CAS ref itself, runs promote once, asserts nonzero + no push; releases. No real races in tier-1. (Codex F-12)
+**Lock substrate: the existing Git-CAS family; SINGLE repo-wide verb mutex** (round-2 Codex C6: independent branch refs never contend with `_global`, so cleanup would still race promote/remove).
+
+- Reuse the `withExclusiveLock` Git-ref CAS primitives used by `svc-ensure-worktree.mjs:76` / `wi-claim.mjs:326-331`.
+- **One lock, one ref:** `refs/svc/locks/worktree-verb/_global` — ALL THREE mutating verbs (promote, remove, cleanup) take this single repo-wide mutex for their full critical section. These verbs are infrequent operator actions; serializing them costs nothing and makes deadlock impossible by construction (one lock, no ordering to reason about). Branch-scoped locking was evaluated and REJECTED in round 2 precisely because partial coverage is worse than coarse coverage.
+- Lock-held-then-refuse determinism for tests: fixture acquires the CAS ref itself, runs each verb once, asserts nonzero + no side effects; releases. No real races in tier-1. (Codex F-12)
 - Quarantine: unregistered dirs move to `.worktrees/.quarantine/<ts>/<dir>`; **`validate-worktree-safety.sh` orphan-check excludes the `.quarantine/` segment** (same commit). (Grok F-8)
-- Stale CAS refs self-expire via the same generation/TTL semantics ensure-worktree already uses — no new staleness code.
+- Stale CAS locks self-expire via the same generation/TTL semantics ensure-worktree already uses — no new staleness code.
 
 **Verification.** Extend `validate-worktree-safety.sh`: lock-held-then-refuse promote; cleanup quarantine preserves bytes; `.quarantine` excluded from orphan FAIL.
 
@@ -112,14 +112,24 @@ Two DISJOINT cases, one function:
 finalizeHandover({stateRoot, repoId, wi})            // case A only
   under withLock:
     handover.status !== "prepared"                    -> idempotent no-op (already consumed)
+    handover.lease_id     !== lease.lease_id          -> REFUSE (cross-lease stranding; operator recovery)
     lease.generation      !== expected_generation + 1 \
     lease.backend_revision!== expected_revision + 1    >-> REFUSE (case B: token still
-    controller_principal  !== intended_principal      /     unconsumed; acceptHandover
+                                                           unconsumed; acceptHandover
                                                            owns that path with the token)
+    principal guard: IF handover.intended_principal is set,
+                     it MUST equal lease.controller_principal;
+                     IF null (unbound handover — prepareHandover permits it),
+                     the requirement is lease.controller_principal !== old
+                     controller_principal recorded in the handover (i.e., a real
+                     acceptance happened), which generation/revision+1 already prove.
     else: mark consumed {consumed_at}, emit lifecycle receipt (kind:"handover",
-          completed:true), freeze old-generation delegations. NO lease mutation.
+          completed:true) + normalized record carrying token_hash binding,
+          freeze old-generation delegations. NO lease mutation.
           Second call: no-op (idempotent).
 ```
+
+Authorization rationale: `acceptHandover`'s CAS (:301-303) guarantees the lease could only advance past `expected_generation` via a valid secret token; the stranded tuple {prepared, lease_id match, generation+1, revision+1} is therefore proof-positive that token acceptance succeeded and only bookkeeping died. The `token_hash` from the prepared handover is copied into the emitted normalized record for audit binding (IP-H6 field), not re-challenged.
 
 - Case B (lease NOT yet advanced) is NEVER completed without the secret token — no tokenless takeover. (Grok F-2)
 - SessionStart healthcheck: detects stranded case-A tuples and invokes `finalizeHandover`; on finalize ERROR it reports an actionable, blocking-grade warning (fail-closed: operator learns authority state is ambiguous; it never silently accepts case B). (Grok F-2)
@@ -136,11 +146,13 @@ finalizeHandover({stateRoot, repoId, wi})            // case A only
   - pid-less/foreign-host/unparseable locks: legacy mtime path preserved — these are PRE-WI-562 bytes or cross-host unknowns; version-gated by the presence of `start_token` in the body (explicit legacy class, documented). (Codex F-2 version-gating)
 - New locks always write identity ⇒ the legacy class only shrinks.
 
-**E2 — `wi-claim.mjs` pid-less claims / HD-7 (Wave 2).**
-- Claims persist `owner_process` identity at creation (available wherever node runs). Same-host claim reclaim (TTL path :176-188) additionally requires positive death proof — a live silent owner survives past 24 h. Foreign-host or identity-less (legacy) claims keep expiry-based reclaim (cross-host liveness is unprovable — same posture as delegation/lease locks).
-- Heartbeat: `resumeController`/renewal refreshes `owner_process` + `renewed_at`; a claim renewed by its live owner never expires mid-work.
+**E2 — `wi-claim.mjs` claims / HD-7 (Wave 2). Builds ON the WI-486 heartbeat semantics — does not regress them** (round-2 Grok G5: WI-486 EXEC-004 deliberately refuses ephemeral CLI pids as false-dead; `isClaimStale` already runs identity-governed for pid-bearing claims and renewal-heartbeat-TTL for pid-less same-host claims).
+- **Durable-owner class (existing, kept):** claim created with `SVC_OWNER_PID` records `{pid, process_start_token}` → TTL IGNORED while that exact process is live (death-proof reclaim only) — `wi-claim.mjs:172-176` today. No change; covered by regression test.
+- **Heartbeat class (existing, kept):** pid-less same-host claims renew `renewed_at` on every claim write; live renewing owner never preempted, dead owner reclaimable after TTL (`wi-claim.mjs:178-193`). E2 makes the heartbeat EXPLICIT and scheduled: renewal refresh also available via a lightweight `renewClaim` op invoked by long-running executors (dispatch-worker trap/interval), so silent-but-alive owners survive past 24 h by renewing rather than by accident.
+- **Refuse-to-persist (NEW, audit's demand):** a NEW claim carrying NEITHER `hostname` NOR any identity AND not created with explicit `ephemeral: true` acknowledgment is REFUSED (exit nonzero, actionable error) instead of silently persisting an unreclaimable orphan. (Cursor U3)
+- Foreign-host claims keep expiry-based reclaim (cross-host liveness unprovable — unchanged posture).
 
-**Verification.** Tier-1 `validate-process-liveness-lock.sh` (E1: alive-past-TTL kept, dead-pid fresh-mtime reclaimed, start_token mismatch ⇒ dead, legacy no-pid expires) + `validate-claim-liveness.sh` (E2: same-host live-owner claim survives past TTL; dead-owner reclaimable; foreign-host falls back to expiry). Budgets <5s each.
+**Verification.** Tier-1 `validate-process-liveness-lock.sh` (E1) + `validate-claim-liveness.sh` (E2: durable-owner survives past TTL while alive; heartbeat-class renewed claim survives; unrenewed expires; identity-less non-ephemeral creation REFUSED; ephemeral acknowledged creation persists). Budgets <5s each.
 
 ### H-F · IP-H6 Machine-checkable handoff record (P1, Wave 2)
 
@@ -172,8 +184,8 @@ required: schema_version(const 1), record_id(uuid), kind(enum handover|explicit_
 ### H-G · IP-H7 Silent-state hygiene (P2, Wave 3, scoped honestly)
 
 - `orchestrator-state.mjs loadState`: parse failure quarantines to `.corrupt-<ts>` + stderr warning + returns null (bytes preserved, no silent reset).
-- **Freeze enforce-or-delete — chose ENFORCE, implemented at the guard layer, not just worktree verbs** (round-1 Grok F-6 / Codex F-5): the isolation/mutation guards that already intercept Edit/Write/Bash on protected paths gain a `.worktree-freeze` check for the affected worktree (marker read from worktree root; mutation refused with pointer to `--ignore-freeze`-equivalent env-documented waiver used ONLY by `worktree.sh` verbs). If guard-layer enforcement proves impossible on any given host, the fallback is DELETION of the marker feature — decided at implementation time and recorded; either terminal state satisfies the audit.
-- **Lane-tasks Bash-path validation** (HD-9 slice): pre-commit hook check — any staged/committed change touching `.svc/lane-tasks-*.json` runs `task-graph.mjs validate` (same validator as PostToolUse), closing the Bash-write bypass for committed graphs. In-session Bash writes remain a documented residual (PostToolUse cannot see them; pre-commit catches them at the next commit boundary) — recorded as accepted residual with rationale. (Codex F-5 partial-by-design)
+- **Freeze enforce-or-delete — DECISION: ENFORCE** (round-2 Codex C5 demanded the decision now, not at implementation). Exact surfaces: `hooks/svc-worktree-isolation-guard.mjs` gains a `.worktree-freeze` check (marker read from the target worktree root; mutation of ANY in-worktree path refused with pointer to the documented waiver), wired for every host that already wires this guard via the catalog; `worktree.sh` verbs additionally honor the marker directly. Waiver: freeze is lifted by deleting the marker file itself (a deliberate, visible act) — no hidden env bypass. If any wired host's guard cannot read the worktree root reliably, THAT HOST falls back to verb-level enforcement only, recorded per-host in the catalog (`freeze_enforcement: "guard"|"verbs-only"`). Deletion fallback is OFF the table unless guard-layer enforcement proves impossible on ALL hosts — recorded decision, not an open question.
+- **Lane-tasks Bash-path validation** (HD-9 slice): new pre-commit slot `hooks/git/pre-commit.d/15-lane-tasks-validate` — any staged change touching `.svc/lane-tasks-*.json` runs `task-graph.mjs validate` (same validator as PostToolUse), closing the Bash-write bypass at the commit boundary. In-session pre-commit Bash writes remain a documented residual (PostToolUse cannot see them) — accepted residual with rationale. (Codex C5 partial-by-design, Cursor U8 satisfied)
 - AP-30 repoint-despite-failed-healing: gated behind the single `--skip-healing-gate` waiver (§H-B).
 
 ---
@@ -207,8 +219,8 @@ Exact-parity conformance (not one-directional subset) per registry rows: install
 ### R-F · IP-R7 Validate-on-read closure (P1, Wave 3, scoped)
 
 - `pipeline-log.mjs` **dual-writes** canonical (`kind`,`ts`,`schema_version:1`) ALONGSIDE legacy (`type`,`timestamp`) so every existing consumer (incl. `svc-skill-artifact-authenticity.mjs:122-129` requiring `timestamp`) keeps working; new schema `schemas/pipeline-decision-entry.schema.json` validates canonical fields on entries carrying `schema_version`. (Codex F-7)
-- PR-review receipts: writer adds `schema_version:1` + `created_at`; validator enforces presence for receipts dated ≥ the migration cutoff recorded in `.svc/receipt-migration-WI562.json` (written at implementation time) — explicit cutoff grandfathering, not absence-heuristics. (Codex F-7)
-- Read-side matrix: `scripts/receipt-read-matrix.mjs` regenerates the §4.1 table from the kind-registry. **Baseline captured NOW, pre-implementation**, pinned at `docs/specs/wi562-read-matrix-baseline.json`. Gate semantics: (a) ZERO regressions anywhere; (b) the WI-562-upgraded subset {chain, quick-fix, pipeline-decisions, pr-review, authority, handoff} must reach YES/PARTIAL→documented-YES; (c) remaining PARTIAL/NO cells (denial-body, story, runtime-projection…) are enumerated as ACCEPTED DEBT rows bound to **WI-563** in `docs/specs/wi-followups.md`. Honest scoping: full zero is WI-563's exit criterion. (Grok F-7 option b)
+- PR-review receipts: writer adds `schema_version:1`. Grandfathering is SNAPSHOT-based, not date-trust-based (round-2 Codex C7 rejected self-reported dates as backdateable): the set of existing receipt files WITHOUT `schema_version` is frozen in `docs/specs/wi562-read-matrix-baseline.json` (captured at plan approval, pre-implementation); the validator enforces `schema_version` on any `.svc/review-receipts/` file NOT in that frozen set. A newly malformed receipt cannot masquerade as legacy — it isn't in the snapshot.
+- Read-side matrix: `scripts/receipt-read-matrix.mjs` regenerates the §4.1 table from the kind-registry. **Baseline captured at plan approval, pre-implementation** (already committed alongside this plan as `docs/specs/wi562-read-matrix-baseline.json`). Gate semantics: (a) ZERO regressions anywhere; (b) the WI-562-upgraded subset {chain, quick-fix, pipeline-decisions, pr-review, authority, handoff} must reach YES/PARTIAL→documented-YES; (c) remaining PARTIAL/NO cells (denial-body, story, runtime-projection…) are enumerated as ACCEPTED DEBT rows bound to **WI-563** in `docs/specs/wi-followups.md`. Honest scoping: full zero is WI-563's exit criterion. (Grok F-7 option b)
 
 ### R-G · IP-R9 Receipt integrity binding (P2, Wave 4)
 
@@ -256,31 +268,44 @@ Quote interpolated NODE_CMD/hooksDir paths in cursor/grok generated commands. Sn
 ### V-2 Non-blocking branch claims — dispatch-worker.sh (Wave 3, hardened per reviews)
 
 - Claim dir: `$(git-common-dir)/svc-wave-branch-claims/<sha256(branch)>` — HASHED identity (slash-bearing branches safe), body `{hostname, pid, start_token, claimed_at, wi}`.
-- Acquisition: `mkdir` O_EXCL semantics; EEXIST ⇒ read owner: positive death proof (via process-liveness) ⇒ steal stale claim; live owner ⇒ worker exits IMMEDIATELY with structured summary `status: branch_busy` (added to the worker-summary status vocabulary + `schemas/dispatch-policy.schema.json` result enums) — no lock waits.
+- Acquisition: `mkdir` O_EXCL semantics; EEXIST ⇒ read owner: positive death proof (via process-liveness) ⇒ steal stale claim; live owner ⇒ worker exits IMMEDIATELY with structured summary `status: branch_busy` (added to the worker-summary status vocabulary emitted by dispatch-worker.sh / parsed by extract-summary.sh) — no lock waits.
 - Release: EXIT trap (normal + signal); SIGKILL leaves a reclaimable stale claim (death-proof steal covers it; PID-reuse covered by start_token).
-- Retry policy (consumer contract): orchestrator/dispatch-waves treats `branch_busy` as retryable — max 2 redispatch attempts, then surfaces as blocked in the wave report. Documented in `skills/dispatch-waves/SKILL.md` appendix line. (Cursor F-15)
+- Retry policy (consumer contract, named executables — round-2 Codex C12): `branch_busy` enters the worker-summary status vocabulary emitted by `dispatch-worker.sh` and parsed by `scripts/extract-summary.sh`; the RETRY CONSUMER is `scripts/fanout.sh` (re-queues `branch_busy` workers up to 2 attempts within the same run) and the documented orchestrator behavior in `skills/dispatch-waves/SKILL.md` appendix (redispatch max 2 across runs, then blocked in wave report). No schema file is claimed where none exists today; the summary contract is the source of truth.
 - Tests: slash-bearing branch claim; stale-claim steal; live-claim fast-exit; SIGKILL leftover reclaim. All hermetic (<5s total).
 
 ---
 
 ## Implementation Contract (execution-ready governance)
 
-**Write-set ownership (disjoint per wave; no file appears in two waves' primary sets).**
+**Machine-readable contract:** the adjacent `plan-contract.json` (committed with this plan) carries the task DAG, per-task write sets, risk flags, and external-state inventory in the canonical plan-contract shape; this section is its human summary. The two are kept in sync; the contract file is authoritative for mechanical checks.
 
-| Wave | Primary write sets (exclusive owner: WI-562 executor) |
+**Ownership model (corrected — round-2 Codex C11):** waves are STRICTLY SEQUENTIAL with one executor (WI-562 session); ownership exclusivity is therefore *temporal*, not per-wave-static. A file touched in waves 1 and 4 (e.g. `dispatch-worker.sh`, `emit-receipt.mjs`) is owned by the same single executor across both touches — no concurrent-writer hazard exists. Within any wave there is exactly one writer. The earlier "disjoint write sets" claim is corrected: disjointness holds *per wave commit*, and cross-wave re-touch by the same owner is expected and listed.
+
+**Write-set map (primary surface per item).**
+
+| Wave | Items → primary files |
 |---|---|
-| 1 | `hooks/lib/process-liveness.mjs`(+) `hooks/lib/authority-store.mjs`(imports only) `scripts/state-io.mjs` `scripts/lib/merge-back-core.mjs`(+) `scripts/validate-parallel-merge-back.mjs` `scripts/validate-execution-merge-back.mjs` `scripts/dispatch-worker.sh` `scripts/check-chain-receipts.mjs` `scripts/mine-receipts.mjs` `scripts/quick-fix-eligibility.mjs` `scripts/emit-receipt.mjs`(export) `scripts/worktree.sh`(push/PR honesty only) `scripts/wire-hooks.mjs`(write path only) `scripts/wire-cursor-hooks.mjs`(write policy only) `test-framework/evals/tier-1/validate-{parallel-ground-truth,process-liveness-lock,rename-schema-drill,slot-envelope-mining,atomic-receipt-writes,wirer-corrupt-config}.sh`(+) |
-| 2 | `scripts/worktree.sh`(CAS locks+quarantine) `test-framework/evals/tier-1/validate-worktree-safety.sh` `hooks/lib/wi-claim.mjs` `schemas/handoff-record.schema.json`(+ ) `schemas/authority-handover-receipt.schema.json` `hooks/lib/authority-store.mjs`(finalize+records) `references/receipt-format-charter.md`(+ ) `references/receipt-kind-registry.json`(+ ) `references/receipt-format-exceptions.json`(+ ) `scripts/lint-receipt-formats.mjs`(+ ) `hooks/lib/svc-ownership.mjs`(+ ) `test-framework/evals/tier-1/validate-{handoff-forward-completion,claim-liveness,handoff-record-schema,schema-code-conformance,ownership-predicate-parity}.sh`(+) |
-| 3 | `scripts/orchestrator-state.mjs` `hooks/*`(freeze guard) `hooks/git/pre-commit.d/`(lane-tasks validator slot) `scripts/fanout.sh` `scripts/dispatch-worker.sh`(claims) `schemas/dispatch-policy.schema.json` `scripts/pipeline-log.mjs` `schemas/pipeline-decision-entry.schema.json`(+ ) `.svc/receipt-migration-WI562.json` `scripts/review-receipt-validator path` `scripts/receipt-read-matrix.mjs`(+ ) `docs/specs/wi562-read-matrix-baseline.json`(+ ) `skills/dispatch-waves/SKILL.md`(appendix) |
-| 4 | `scripts/emit-receipt.mjs`(digests) `scripts/check-chain-receipts.mjs`(meta passthrough) `scripts/gc-stale-receipts.mjs` `scripts/mine-receipts.mjs`(tolerant) `references/host-hook-catalog.json`(+ ) `scripts/wire-{hooks,cursor,grok}-hooks.mjs`(catalog gen + quoting) `test-framework/evals/tier-1/validate-{receipt-integrity,catalog-generation,path-quoting,fanout-concurrency,branch-claims}.sh`(+) |
+| 1 | H-A: `scripts/lib/merge-back-core.mjs`(+), `validate-parallel-merge-back.mjs`, `validate-execution-merge-back.mjs`, `dispatch-worker.sh`; H-B: `worktree.sh` (push/PR honesty); H-E1: `hooks/lib/process-liveness.mjs`(+), `state-io.mjs`, `authority-store.mjs`(import swap); R-B: `check-chain-receipts.mjs`; R-C: `mine-receipts.mjs`; R-D: `quick-fix-eligibility.mjs`, `emit-receipt.mjs`(export writer); W-A: `wire-hooks.mjs`, `wire-cursor-hooks.mjs`; new evals (+) |
+| 2 | H-C: `worktree.sh`(CAS mutex+quarantine), `validate-worktree-safety.sh`; H-D/H-F/F1: `authority-store.mjs`, `schemas/handoff-record.schema.json`(+), `authority-handover-receipt.schema.json`; H-E2: `wi-claim.mjs`; R-A: charter(+), registry(+), lint(+), exceptions(+); R-E: conformance eval(+); W-B: `svc-ownership.mjs`(+), wirers(import) |
+| 3 | H-G: `orchestrator-state.mjs`, `svc-worktree-isolation-guard.mjs`, pre-commit slot(+); V-1: `fanout.sh`; V-2: `dispatch-worker.sh`, `extract-summary.sh`; R-F: `pipeline-log.mjs`, schema(+), review-receipt validator, matrix script(+); docs |
+| 4 | R-G: `emit-receipt.mjs`, `check-chain-receipts.mjs`, `gc-stale-receipts.mjs`, `mine-receipts.mjs`; W-C/W-D: catalog(+), three wirers, snapshots |
 
-(+) = new file. Docs/receipts under `docs/` may be appended in any wave (no exclusive claim conflicts).
+(+) = new file.
 
-**Compensation / rollback ordering.** Each wave is one or more commits, independently revertible in reverse wave order. State-format changes (lock bodies, envelope meta, pipeline-decision aliases) are additive readers-first: deploy reader tolerance in wave N, writer strictness in wave N+1 commit of the same wave series — a revert of the writer leaves tolerant readers intact. Host-config mutations (wirers) run ONLY via the wirers' own backup+rollback primitives; hermetic tests use temp HOME, never the developer's real configs.
+**Compensation / rollback ordering.** Sequential commits in reverse-wave revert order. Format changes are additive-readers-first within the same series: reader tolerance lands in the earlier commit, writer strictness in a later one — reverting the writer leaves tolerant readers intact. Host-config mutations run ONLY via wirers' own backup+rollback primitives under hermetic temp-HOME tests.
 
-**External state touched.** Host config files (~/.claude/settings.json, ~/.cursor/hooks.json, ~/.grok config) ONLY through wirers under test with backup/rollback; git refs `refs/svc/locks/**` (ephemeral, self-expiring); git notes `refs/notes/svc-receipts` (append-only via existing emit path). No network services. No store deployments.
+**External State (canonical section).**
 
-**Lock ordering.** Global worktree-verb CAS lock NEVER nests inside branch verb locks and vice versa (one-directional: verbs take exactly one). Authority ops keep their existing per-key withLock. Merge integration lock unchanged.
+| External state | Touch mode | Compensation |
+|---|---|---|
+| `~/.claude/settings.json`, `~/.cursor/hooks.json`, grok config | Only via wirers (backup + rollback built in); never hand-edited | Wirer rollback primitive / timestamped backup restore |
+| Git refs `refs/svc/locks/worktree-verb/_global` | Ephemeral CAS lock, self-expiring TTL | Automatic expiry; no manual cleanup |
+| Git notes `refs/notes/svc-receipts` | Append-only through existing emit path | Notes are append-only; no rewrite |
+| `.worktrees/.quarantine/**` | Move-in only, never auto-delete | Manual inspection; bytes preserved |
+
+No network services, no store deployments, no CI mutation.
+
+**Lock ordering.** Single repo-wide verb mutex (H-C) — no nesting, no hierarchy. Authority ops keep existing per-key locks. Merge integration lock unchanged. No lock acquires another while held except the pre-existing authority internal pattern.
 
 ---
 

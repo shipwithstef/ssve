@@ -62,3 +62,26 @@ Each round-1 reviewer re-reviews plan v2 restricted to their own findings' resol
 | 1 | Every round-1 finding has a resolution row | Tables above (13+12+15 rows) | PASS |
 | 2 | No finding resolved by silent scope-drop | Deferrals carry named WI ids; residuals named | PASS |
 | 3 | Resolutions cite plan sections that exist in v2 | Spot-check §anchors | PASS |
+
+---
+
+## Round 2 → Round 3 remediation
+
+**Round-2 verdicts:** Codex NEEDS_FIX (4.5 — C1/C2/C5/C7/C9/C12 partial, C3/C6/C11 rejected-unresolved), Grok NEEDS_FIX (6 — G5 partial only), Cursor NEEDS_FIX (7.5 — U3/U10 partial only).
+
+| Finding | Round-2 status | v3 resolution |
+|---|---|---|
+| Codex C1 | PARTIAL | Evidence entries are now REPLAY-ONLY: validator re-executes each `{command,cwd}` itself; no worker-authored exit-code files accepted (§H-A) |
+| Codex C2 / Grok G5 / Cursor U3 | PARTIAL | H-E2 rewritten to build ON WI-486 semantics: durable-owner class kept, heartbeat made explicit + schedulable via renewClaim; identity-less non-ephemeral creation REFUSED (§H-E2); no ephemeral CLI pid recorded as authority |
+| Codex C3 | REJECTED | finalizeHandover now binds handover.lease_id == lease.lease_id; unbound `intended_principal:null` case handled explicitly; token_hash copied into normalized record; authorization rationale documented (§H-D) |
+| Codex C6 | REJECTED | Single repo-wide verb mutex for promote/remove/cleanup — branch-scoped locking evaluated and rejected (independent refs never contend) (§H-C) |
+| Codex C5 | PARTIAL | Freeze decision made NOW: ENFORCE at `hooks/svc-worktree-isolation-guard.mjs` + verb-level fallback per host recorded in catalog; pre-commit slot named `hooks/git/pre-commit.d/15-lane-tasks-validate`; marker deletion is the only waiver (§H-G) |
+| Codex C7 | PARTIAL | Grandfathering now SNAPSHOT-based (frozen legacy set in baseline JSON), not date-trust-based; backdating impossible (§R-F) |
+| Codex C9 | PARTIAL | `docs/specs/wi-followups.md` created with WI-563/WI-564 problem statements + exit criteria |
+| Codex C11 | REJECTED | Adjacent machine-readable contract added (`docs/plans/2026-08-24-wi562-plan-contract.json`: task DAG, risk flags, external state, lock ordering); disjointness claim corrected to temporal single-executor ownership; External State canonical section added (§Impl Contract) |
+| Codex C12 | PARTIAL | branch_busy vocabulary pinned to real summary contract (dispatch-worker.sh + extract-summary.sh); retry consumer named: fanout.sh in-run requeue ×2 + dispatch-waves appendix; phantom schema reference removed (§V-2) |
+| Cursor U10 | PARTIAL | Baseline captured at plan approval and committed pre-implementation (`docs/specs/wi562-read-matrix-baseline.json`) |
+
+## Round-3 verification
+
+Same protocol as round 2: each reviewer verifies ONLY their outstanding items on plan v3. Consensus target unchanged.
