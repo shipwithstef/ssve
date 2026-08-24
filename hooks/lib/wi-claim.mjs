@@ -962,6 +962,9 @@ function claimWIUnlocked(wi, opts = {}) {
       claim.ephemeral = true;
     } else {
       const ttlHours = Number(claim.ttl_hours || DEFAULT_TTL_HOURS);
+      // Floor of 1 minute is a DELIBERATE invariant (WI-562 exec-review R4):
+      // sub-minute renewal loops are pathological spin risk; the contract
+      // interval is minutes by definition.
       const requestedInterval = Number(opts.heartbeat_interval_minutes || Math.max(5, Math.floor((ttlHours * 60) / 4)));
       // Invariant (WI-562 round-4 review): interval*2 <= TTL, else the
       // contract cannot keep a live owner ahead of expiry.

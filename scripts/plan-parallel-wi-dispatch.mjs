@@ -340,7 +340,34 @@ for (const [waveIndex, wave] of waves.entries()) {
     task.ownership = {
       write_scope: task.blocked_reason || task.missing ? [] : [...new Set([...task.affected_files, ...task.dependency_files])].sort(),
     };
+    // WI-562 IP-H1/V-2: every dispatchable task declares its branch (workers
+    // claim per-branch) and its validation_commands (derived from the WI file's
+    // "## Validation" fenced block when present, else repo test script) so
+    // merge-back can REPLAY declared evidence fail-closed.
+    task.branch = `parallel/${task.wi}`;
+    if (!task.blocked_reason && !task.missing) {
+      task.validation_commands = deriveValidationCommands(root, task);
+    }
   }
+}
+
+// WI-562: declared validation source — WI markdown "## Validation" lines first,
+// then a repo test script; otherwise omitted (merge-back refuses until declared).
+function deriveValidationCommands(root, task) {
+  const cmds = [];
+  try {
+    const md = fs.readFileSync(path.join(root, 'docs/specs/work-items', `${task.wi}.md`), 'utf8');
+    const section = md.match(/## Validation\n([\s\S]*?)(\n## |$)/)?.[1] || '';
+    for (const m of section.matchAll(/^\s*[-*]\s+`([^`]+)`/gm)) cmds.push(m[1]);
+  } catch { /* no WI body */ }
+  if (cmds.length === 0) {
+    // Fallback: the repo's own test script — universally replayable when present.
+    try {
+      const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+      if (pkg.scripts?.test) cmds.push('npm test');
+    } catch { /* no package.json */ }
+  }
+  return cmds;
 }
 
 const plan = {

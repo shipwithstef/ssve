@@ -43,6 +43,13 @@ else
   echo "  ✗ tampered mirror validated — integrity hole"; exit 1
 fi
 
+# 4b. Original-WI check after tamper: authority stays note-sourced — the
+# forged on-disk bytes are NEVER served (validation reads the note envelope);
+# disk repair is lazy via regenerateMirror on full mirror-miss paths.
+node "$ROOT/scripts/check-chain-receipts.mjs" --sha "$SHA" --wi WI-950 --consumer verify-promotion >/dev/null 2>&1 \
+  && echo "  ✓ original WI continues validating from authoritative notes" \
+  || { echo "  ✗ original WI failed after tamper"; exit 1; }
+
 # 4. GC must not destroy the tampered mirror while it exists — the observable
 # invariant at fixture scale (full unreachable-object drill needs reflog expiry;
 # covered by gc-stale-receipts mirrorIntegrityUnknown logic reviewed in-exec).

@@ -930,7 +930,7 @@ function checkPrMergeReviewReceipt(command) {
 
   return (
     `[svc-pr-merge-review-receipt] BLOCKED: PR ${pr} is missing a valid review-gate receipt.\n` +
-    `Create .svc/review-receipts/pr-${pr}.json or docs/specs/reviews/pr-${pr}-review-gate.json with review_gate_required=true, result=PASS, reviewer, reviewed_at, review_gate_task, and evidence[].\n` +
+    `Create .svc/review-receipts/pr-${pr}.json or docs/specs/reviews/pr-${pr}-review-gate.json with schema_version=1 (WI-562), review_gate_required=true, result=PASS, reviewer, reviewed_at, review_gate_task, and evidence[].\n` +
     `Emergency bypass requires a .svc/pipeline-decisions.jsonl entry with review_gate_bypass=true, pr=${pr}, reasoning, and approved_by.\n` +
     `Codex shell/API sessions must use: node scripts/merge-pr-with-review-receipt.mjs --pr ${pr} --squash --delete-branch`
   );

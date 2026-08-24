@@ -65,7 +65,16 @@ echo "  ✓ mine-receipts --tier consumes the fixture ledger without dropping re
 # receipt records (one per slot), not collapsed to 1.
 node "$ROOT/scripts/mine-receipts.mjs" --stats >/dev/null 2>&1 || true
 node "$ROOT/scripts/mine-receipts.mjs" --stats >/dev/null 2>&1 || true
-IDENTITIES=$(node -e '
+# ANSI-proof capture (some environments set FORCE_COLOR on node output).
+strip_ansi() { sed 's/\x1b\[[0-9;]*m//g'; }
+IDENTITIES=$(node "$ROOT/scripts/mine-receipts.mjs" --tier framework 2>/dev/null | strip_ansi | grep -c '"tier"') || IDENTITIES=0
+# Identity proof: the fixture's two DISTINCT slot identities (WI-801, WI-802)
+# were both expanded — asserted by the probe above (slotCount==2, sameType==2);
+# here we additionally require BOTH WI ids to appear in the raw note envelope.
+grep -q "WI-801" <(git -C "$FIX" notes --ref=svc-receipts show "$SHA") && grep -q "WI-802" <(git -C "$FIX" notes --ref=svc-receipts show "$SHA") \
+  && echo "  ✓ both slot identities (WI-801 + WI-802) present and independently counted" \
+  || { echo "  ✗ a slot identity is missing from the note"; exit 1; }
+TOTAL_RECEIPTS=$(node -e '
 try {
   const s = JSON.parse(require("fs").readFileSync(".svc/gate-stats.json","utf8"));
   // Identity proof: BOTH slot identities contributed — assert via per-lane

@@ -110,7 +110,7 @@ launch_worker() {
   # CLAIM key is the BRANCH (workers on the same branch contend), not the id.
   DECLARED="$(echo "$line" | jq -r '(.validation_commands // []) | join("\u001f")')"
   WORKER_WI="$(echo "$line" | jq -r '.wi // .id')"
-  WORKER_BRANCH="$(echo "$line" | jq -r '.branch // "branch"')"
+  WORKER_BRANCH="$(echo "$line" | jq -r '.branch // .id // "unknown"')"
   SVC_HARNESS="$HARNESS" SVC_WORKER_SKILL="$SKILL" \
     SVC_WORKER_WI="$WORKER_WI" \
     SVC_WORKER_DECLARED_COMMANDS="$DECLARED" \
@@ -158,6 +158,15 @@ PIDS=()
 # WI-562 V-2: branch_busy retry — requeue up to 2 attempts per the documented
 # consumer contract. A summary whose status is branch_busy goes back through
 # the bounded pool; anything else is final for this run.
+drain_pool() {
+  for pid in "${PIDS[@]}"; do
+    wait "$pid" 2>/dev/null || true
+  done
+  PIDS=()
+}
+
+drain_pool
+
 for round_i in 1 2; do
   declare -a NEXT=()
   for i in "${!IDS[@]}"; do
@@ -175,11 +184,7 @@ for round_i in 1 2; do
   PIDS=(); IDS=(); LOGS=()
   QUEUE_LINES=("${NEXT[@]}")
   run_queue
-done
-
-# Drain remaining workers
-for pid in "${PIDS[@]}"; do
-  wait "$pid" 2>/dev/null || true
+  drain_pool
 done
 
 # Render table header
