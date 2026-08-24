@@ -98,3 +98,22 @@ Same protocol as round 2: each reviewer verifies ONLY their outstanding items on
 | Cursor U10 | PARTIAL | Baseline removed from W3 write set; declared pre-approved immutable artifact in plan-contract.json |
 
 Round-2 items already RESOLVED and not re-litigated: Codex C6/C9/C13, Grok G1–G4/G6–G12, Cursor U1/U2/U4–U9/U11–U15.
+
+## Round 4 → Round 5 remediation
+
+| Finding | R4 status | v5 resolution |
+|---|---|---|
+| Cursor R4-HIGH | NEW | H-D pseudocode block now includes accepted_handover_id/accepted_token_hash guards — prose and pseudocode are consistent |
+| Codex C1 | PARTIAL | `validation_commands` declared per task in plan-contract.json + wave-plan graphs; undeclared-command rejection fixture added as verification (e) |
+| Codex C2 | PARTIAL | Renewal caller paths added to W2 write set; creation invariant `interval*2 <= ttl` enforced, violation refuses persist |
+| Codex C5 | REJECTED | Freeze is enforce-or-UNAVAILABLE: hosts that cannot enforce get `freeze_enforcement:"none"` AND the freeze verb refuses marker creation there — no unenforceable frozen state can exist; catalog moved to Wave 3 with the guard change |
+| Codex C7 | PARTIAL | Activation is atomic with writer upgrade in the same merged changeset — no intermediate gated state on main exists |
+
+## Round 5 → Round 6 remediation
+
+| Finding | R5 status | v6 resolution |
+|---|---|---|
+| Cursor R5-HIGH ×2 | NEW | plan-contract.json synced: W3 gains host-hook-catalog.json (freeze rows ship atomically with guard change); W2 gains svc-ensure-worktree.mjs / worktree.sh / dispatch-worker.sh (renewClaim wiring) |
+| Codex C1 | PARTIAL | Evidence set must COVER the full declared required command set; empty declared set ⇒ merge-back refuses (§H-A e/f) |
+| Codex C2 | PARTIAL | Authoritative contract W2 now lists all three renewal callers |
+| Codex C5 | REJECTED | Catalog moved to Wave 3 in BOTH the plan table and contract JSON — freeze capability truth ships atomically |
