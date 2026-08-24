@@ -127,15 +127,35 @@ if [[ -n "$SVC_WORKER_BRANCH_CLAIM" ]]; then
     exit 0
   }
   if ! claim_try_acquire; then
-    if claim_owner_alive; then
-      branch_busy_exit   # live owner: immediate structured skip — no waiting
+    # WI-562 round-5: ONLY positive same-host death proof authorizes a steal.
+    # Live (0) AND undecidable (malformed body, foreign host, missing /proc)
+    # all fast-exit branch_busy — never rm an ambiguous claim.
+    claim_owner_alive
+    alive_rc=$?
+    if [[ $alive_rc -eq 1 ]]; then
+      rm -rf "$CLAIM_PATH" && claim_try_acquire || branch_busy_exit
     else
-      rm -rf "$CLAIM_PATH"   # provably-dead owner: steal stale claim
-      claim_try_acquire || branch_busy_exit
+      branch_busy_exit
     fi
   fi
   claim_release() { rm -rf "$CLAIM_PATH" 2>/dev/null || true; }
   trap claim_release EXIT INT TERM
+fi
+
+# ── WI-562 IP-H5 E2: claim heartbeat loop for pid-less claims ──
+# If this WI has a heartbeat-contract claim, renew it on an interval for the
+# worker's lifetime so a live silent owner is never TTL-preempted.
+if [[ -n "$SVC_WORKER_WI" && -f ".svc/claims/$SVC_WORKER_WI.claim.json" ]]    && grep -q '"heartbeat_required": *true' ".svc/claims/$SVC_WORKER_WI.claim.json" 2>/dev/null; then
+  ( 
+    while true; do
+      sleep 300
+      node "$(git rev-parse --show-toplevel 2>/dev/null || pwd)/hooks/lib/wi-claim.mjs" claim renew --wi "$SVC_WORKER_WI" --svc-dir .svc >/dev/null 2>&1 || break
+    done
+  ) &
+  RENEW_PID=$!
+  trap 'kill "$RENEW_PID" 2>/dev/null; rm -rf "$CLAIM_PATH" 2>/dev/null' EXIT INT TERM
+else
+  trap 'rm -rf "$CLAIM_PATH" 2>/dev/null' EXIT INT TERM
 fi
 
 # ── WI-562 IP-H1: capture the PRE-DISPATCH base SHA ──

@@ -105,8 +105,11 @@ launch_worker() {
   IDS+=("$ID")
 
   PAYLOAD="$(cat "$PAYLOAD_FILE")"
-  # WI-562 V-2: non-blocking branch claim + plan-declared validation commands
+  # WI-562 IP-H1/V-2: plan-declared validation commands flow to the worker
+  # (-separated) so emitted evidence rows are replayable by the parent.
+  DECLARED="$(echo "$line" | jq -r '(.validation_commands // []) | join("\u001f")')"
   SVC_HARNESS="$HARNESS" SVC_WORKER_SKILL="$SKILL" \
+    SVC_WORKER_DECLARED_COMMANDS="$DECLARED" \
     SVC_WORKER_BRANCH_CLAIM="${SVC_WORKER_BRANCH_CLAIM_PREFIX:-}${ID}" \
     bash "$DISPATCH" "$PAYLOAD" > "$LOG" 2>&1 &
   PIDS+=("$!")
@@ -141,6 +144,12 @@ run_queue() {
 }
 
 run_queue
+
+# Drain: wait out every in-flight worker BEFORE inspecting summaries.
+for pid in "${PIDS[@]}"; do
+  wait "$pid" 2>/dev/null || true
+done
+PIDS=()
 
 # WI-562 V-2: branch_busy retry — requeue up to 2 attempts per the documented
 # consumer contract. A summary whose status is branch_busy goes back through

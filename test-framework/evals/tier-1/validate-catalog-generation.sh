@@ -12,6 +12,24 @@ check() { local label="$1"; shift; if "$@" >"$TMP/out" 2>&1; then echo "  ✓ $l
 
 echo "=== Tier 1: hook catalog parity + path quoting ==="
 
+# WI-562 round-5: the catalog GENERATOR must produce quoted, template-faithful
+# commands — the API cursor/grok generation consumes (full wirer cutover WI-563).
+SVC_HOOKS_DIR="$ROOT/hooks" node --input-type=module - "$ROOT" <<'NODEEOF'
+import path from "node:path";
+const root = process.argv[2];
+const lib = await import(new URL(`file://${path.join(root, "hooks/lib/hook-catalog.mjs")}`));
+const out = lib.generateHostEntries("cursor", { PreToolUse: "before" }, { hooksDir: "/opt/svc hooks/hooks", nodeCmd: "node" }, new Set());
+const cmds = (out.before || []).map((e) => e.command);
+if (!cmds.length) throw new Error("generator produced no entries for cursor");
+for (const c of cmds) {
+  if (!c.includes('"/opt/svc hooks/hooks/')) throw new Error(`unquoted path in generated command: ${c}`);
+}
+const rendered = lib.renderCommand("node {HOOKS_DIR}/svc-drill-probe.mjs", { hooksDir: "/x y/z" });
+if (!rendered.includes('"/x y/z/svc-drill-probe.mjs"')) throw new Error("renderCommand quoting broken");
+console.log(`ok: ${cmds.length} generated entries all quoted; template rendering faithful`);
+NODEEOF
+check "generateHostEntries produces quoted entries for registered host hooks" true
+
 # 1. Capability truth for all 7 hook-capable hosts.
 node -e '
 const c = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));

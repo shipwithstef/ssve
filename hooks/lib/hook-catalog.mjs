@@ -32,8 +32,14 @@ export function hostCapability(host) {
  * double-quoted (W-D): `node {HOOKS_DIR}/x.mjs` → `node "<dir>/x.mjs"`.
  */
 export function renderCommand(template, { hooksDir, nodeCmd = "node" }) {
-  const quotedDir = `"${String(hooksDir).replace(/"/g, '\\"')}"`;
-  return template.replaceAll("{HOOKS_DIR}", quotedDir).replaceAll("{NODE_CMD}", nodeCmd);
+  // WI-562 round-5: quote the WHOLE interpolated path (dir + script name) —
+  // quoting only the directory leaves the trailing /script outside the quotes
+  // and breaks on space-bearing prefixes.
+  const q = (v) => `"${String(v).replace(/"/g, '\\"')}"`;
+  return template
+    .replaceAll(/\{HOOKS_DIR\}\/([^\s"]+)/g, (_, rest) => q(`${hooksDir}/${rest}`))
+    .replaceAll("{HOOKS_DIR}", q(hooksDir))
+    .replaceAll("{NODE_CMD}", nodeCmd);
 }
 
 /**

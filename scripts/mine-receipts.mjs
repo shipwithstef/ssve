@@ -106,28 +106,29 @@ function readEnvelopes() {
 // type they expect.
 function expandEnvelope(env, sha) {
   const records = [];
-  const seenSlots = new Set();
+  const legacyTypes = ["review-plan", "review-exec", "exec-record", "plan-manifest", "audit-implementation"];
+  let slotCount = 0;
   for (const key of Object.keys(env || {})) {
     if (!key.startsWith("slot::")) continue;
     const segs = key.split("::");
     // slot::<type>::<wi>::<sha>[::<phase>]
     const type = segs[1];
-    const wi = segs[2] || null;
-    const phase = segs.length > 4 ? segs.slice(4).join("::") : null;
     if (!type) continue;
-    seenSlots.add(key);
+    slotCount++;
     const slotEnv = env[key];
     if (slotEnv && typeof slotEnv === "object") {
-      records.push({ sha, env: { [type]: slotEnv }, slot: { key, type, wi, phase } });
+      // Round-5 review: carry the WHOLE envelope as lane-context fallback —
+      // slot records alone lose plan-manifest/exec-record lane attribution.
+      records.push({ sha, env: { [type]: slotEnv }, slot: { key, type, wi: segs[2] || null, phase: segs.length > 4 ? segs.slice(4).join("::") : null }, envelope: env });
     }
   }
-  if (records.length > 0) return records;
-  // Legacy fallback: type-keyed envelope (pre-WI-550).
-  const legacyTypes = ["review-plan", "review-exec", "exec-record", "plan-manifest", "audit-implementation"];
+  // Mixed envelopes: legacy type-keyed entries are ALSO emitted so they are
+  // never dropped just because newer slot:: keys coexist. Slot identities stay
+  // distinct (WI-550); the legacy view adds whole-envelope context.
   if (legacyTypes.some((t) => env && typeof env === "object" && env[t])) {
-    return [{ sha, env, slot: null }];
+    records.push({ sha, env, slot: null });
   }
-  return [];
+  return records;
 }
 
 // A receipt's "accepted finding" count — AC1: key on ACTIONED findings, never raw
@@ -183,13 +184,18 @@ function corpusOf(env) {
 function aggregate(envelopes) {
   const byLane = {};
   let maxTs = 0;
-  for (const { env } of envelopes) {
-    const lane = laneOf(env);
-    const ts = tsOf(env);
+  for (const rec of envelopes) {
+    const env = rec.env || rec;
+    // Slot records fall back to their whole-envelope context for attribution.
+    const ctx = rec.envelope ? { ...rec.envelope, ...env } : env;
+    const lane = laneOf(ctx);
+    const ts = tsOf(ctx);
     const epoch = ts ? Date.parse(ts) : NaN;
     if (!Number.isNaN(epoch)) maxTs = Math.max(maxTs, epoch);
-    const rec = { ts, epoch, actioned: actionedFindings(env), iter: iterationCount(env), infra: filesOf(env).some((f) => INFRA_RE.test(f)), corpus: corpusOf(env) };
-    (byLane[lane] = byLane[lane] || []).push(rec);
+    // Attribution reads the CONTEXT (slot body first via spread order), so
+    // per-slot review records inherit plan/exec lane metadata when present.
+    const row = { ts, epoch, actioned: actionedFindings(ctx), iter: iterationCount(ctx), infra: filesOf(ctx).some((f) => INFRA_RE.test(f)), corpus: corpusOf(ctx) };
+    (byLane[lane] = byLane[lane] || []).push(row);
   }
   for (const lane of Object.keys(byLane)) byLane[lane].sort((a, b) => (a.epoch || 0) - (b.epoch || 0));
   return { byLane, ledgerNow: maxTs || 0, corpus_hash: corpusHash() };

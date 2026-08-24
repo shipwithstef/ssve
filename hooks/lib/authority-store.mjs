@@ -250,10 +250,20 @@ function verifyLatestHandoffRecord(paths, lease) {
   if (files.length === 0) return null;
   // WI-562 round-5 review: order by the record's OWN ts (UUID filenames are
   // unordered); unreadable records refuse loudly rather than being skipped.
-  const stamped = files.map((f) => {
-    try { return { f, ts: Date.parse(JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")).ts) }; }
+  const stamped = [];
+  for (const f of files) {
+    let parsed;
+    try { parsed = JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")); }
     catch (e) { throw new Error(`resume refused: handoff record unreadable (${f}: ${e.message})`); }
-  }).sort((a, b) => a.ts - b.ts);
+    // WI-562 round-5: records are namespaced per lease — only THIS repo+wi's
+    // records participate in the latest-check; unrelated/corrupt-for-other-WI
+    // records cannot block an unrelated resume.
+    if (parsed.repo_id !== lease.repo_id || parsed.wi !== lease.wi) continue;
+    if (!Number.isFinite(Date.parse(parsed.ts))) {
+      throw new Error(`resume refused: own handoff record has invalid ts (${f})`);
+    }
+    stamped.push({ f, ts: Date.parse(parsed.ts), record: parsed });
+  }
   const latestPath = path.join(dir, stamped[stamped.length - 1].f);
   let record;
   try { record = JSON.parse(fs.readFileSync(latestPath, "utf8")); }

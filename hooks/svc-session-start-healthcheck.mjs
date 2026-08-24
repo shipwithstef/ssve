@@ -480,6 +480,37 @@ try {
 
   const host = activeHost(HOOK_REPO_ROOT, home);
   const sessionId = sessionIdFromEnv();
+// ── WI-562 IP-H4: forward-complete stranded half-consumed handovers ──
+// Case A only (lease advanced by token acceptance, consumed marker missing):
+// finalize is idempotent and never touches the lease. Refusals (case B,
+// takeover-advanced) are reported as actionable blocking-grade warnings —
+// fail-closed, never silently accepted.
+try {
+  const fsMod = await import("node:fs");
+  const stateRoot = process.env.SVC_AUTHORITY_STATE_ROOT ||
+    join(HOOK_REPO_ROOT, ".git", "svc-authority-v2");
+  const handoversDir = stateRoot ? join(stateRoot, "handovers") : null;
+  if (stateRoot && handoversDir && fsMod.existsSync(handoversDir)) {
+    const { finalizeHandover } = await import("../hooks/lib/authority-store.mjs");
+    for (const f of fsMod.readdirSync(handoversDir).filter((x) => x.endsWith(".json"))) {
+      let rec = null;
+      try { rec = JSON.parse(fsMod.readFileSync(join(handoversDir, f), "utf8")); } catch { continue; }
+      if (rec?.status !== "prepared" || !rec.repo_id || !rec.wi) continue;
+      try {
+        const r = finalizeHandover({ stateRoot, repoId: rec.repo_id, wi: rec.wi });
+        if (r.completed) process.stderr.write(`[svc-session-start:${host}] handover forward-completed for ${rec.wi}\n`);
+      } catch (err) {
+        process.stderr.write(
+          `[svc-session-start:${host}] ACTION REQUIRED: stranded handover for ${rec.wi} could not be finalized (${err.message}). ` +
+          `Authority is ambiguous — run recovery or acceptHandover explicitly before mutating.\n`
+        );
+      }
+    }
+  }
+} catch {}
+
+process.exit(0);
+
   if (claimSameSession(host, sessionId, home) === "skip") process.exit(0);
 
   const hostPaths = resolveHostPaths(host, { repoRoot: HOOK_REPO_ROOT, home });
@@ -535,33 +566,3 @@ try {
   } catch {}
 }
 
-// ── WI-562 IP-H4: forward-complete stranded half-consumed handovers ──
-// Case A only (lease advanced by token acceptance, consumed marker missing):
-// finalize is idempotent and never touches the lease. Refusals (case B,
-// takeover-advanced) are reported as actionable blocking-grade warnings —
-// fail-closed, never silently accepted.
-try {
-  const fsMod = await import("node:fs");
-  const stateRoot = process.env.SVC_AUTHORITY_STATE_ROOT ||
-    (repoRoot ? join(realpathSync(repoRoot), ".git", "svc-authority-v2") : null);
-  const handoversDir = stateRoot ? join(stateRoot, "handovers") : null;
-  if (stateRoot && handoversDir && fsMod.existsSync(handoversDir)) {
-    const { finalizeHandover } = await import("../hooks/lib/authority-store.mjs");
-    for (const f of fsMod.readdirSync(handoversDir).filter((x) => x.endsWith(".json"))) {
-      let rec = null;
-      try { rec = JSON.parse(fsMod.readFileSync(join(handoversDir, f), "utf8")); } catch { continue; }
-      if (rec?.status !== "prepared" || !rec.repo_id || !rec.wi) continue;
-      try {
-        const r = finalizeHandover({ stateRoot, repoId: rec.repo_id, wi: rec.wi });
-        if (r.completed) process.stderr.write(`[svc-session-start:${host}] handover forward-completed for ${rec.wi}\n`);
-      } catch (err) {
-        process.stderr.write(
-          `[svc-session-start:${host}] ACTION REQUIRED: stranded handover for ${rec.wi} could not be finalized (${err.message}). ` +
-          `Authority is ambiguous — run recovery or acceptHandover explicitly before mutating.\n`
-        );
-      }
-    }
-  }
-} catch {}
-
-process.exit(0);
