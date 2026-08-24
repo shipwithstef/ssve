@@ -43,6 +43,15 @@ TIER1_PASS=0
 TIER1_FAIL=0
 TIER1_TIMEOUT=0
 
+# WI-559: FLAKE_CHECK=1 runs the double-sweep flake detector (two sweeps under
+# different parallelism, diffing per-validator outcomes) instead of a single
+# sweep. Intended for nightly/cron use and pre-release verification; the
+# ready-to-paste CI workflow sketch lives at
+# docs/plans/2026-08-23-wi559-hardening-velocity/ci-workflow-sketch.yml.
+if [[ "${FLAKE_CHECK:-0}" == "1" && "${_IN_FLAKE_CHECK:-0}" != "1" ]]; then
+  exec bash "$SCRIPT_DIR/_IN_FLAKE_CHECK=1 run-double-sweep-flake-check.sh"
+fi
+
 # WI-110: per-validator timeout. Without it, a single hanging validator stalls
 # the whole sweep silently (observed 2026-04-25 + reproduced 2026-04-26).
 # Override: VALIDATOR_TIMEOUT_SEC=<n> bash run-all-evals.sh
