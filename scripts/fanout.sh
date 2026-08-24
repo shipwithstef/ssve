@@ -87,8 +87,12 @@ echo "fanout: queue=$QUEUE max_parallel=$MAX_PARALLEL (nproc=$NPROC)" >&2
 
 # WI-562 V-1: bounded job-slot pool — launch up to MAX_PARALLEL, then
 # launch-next-as-one-finishes. Streaming wait replaces the thundering herd.
+# WI-562 V-2 retry bookkeeping: attempt counts per worker id.
+declare -A ATTEMPTS
+
 launch_worker() {
   local line="$1"
+  local attempt="${ATTEMPTS[$(echo "$line" | jq -r '.id')]:-0}"
   ID="$(echo "$line" | jq -r '.id')"
   HARNESS="$(echo "$line" | jq -r '.harness // "claude"')"
   SKILL="$(echo "$line" | jq -r '.skill // "execute-changeset"')"
@@ -101,30 +105,64 @@ launch_worker() {
   IDS+=("$ID")
 
   PAYLOAD="$(cat "$PAYLOAD_FILE")"
+  # WI-562 V-2: non-blocking branch claim + plan-declared validation commands
   SVC_HARNESS="$HARNESS" SVC_WORKER_SKILL="$SKILL" \
+    SVC_WORKER_BRANCH_CLAIM="${SVC_WORKER_BRANCH_CLAIM_PREFIX:-}${ID}" \
     bash "$DISPATCH" "$PAYLOAD" > "$LOG" 2>&1 &
   PIDS+=("$!")
 }
 
+QUEUE_LINES=()
 while IFS= read -r line; do
   [ -z "$line" ] && continue
-  # Slot free? Reap every finished worker before considering a new launch.
-  while [[ ${#PIDS[@]} -ge $MAX_PARALLEL ]]; do
-    local_done=0
-    alive=()
-    for pid in "${PIDS[@]}"; do
-      if kill -0 "$pid" 2>/dev/null; then
-        alive+=("$pid")
-      else
-        wait "$pid" 2>/dev/null || true
-        local_done=1
-      fi
-    done
-    PIDS=("${alive[@]}")
-    [[ $local_done -eq 0 ]] && sleep 0.2
-  done
-  launch_worker "$line"
+  QUEUE_LINES+=("$line")
 done < "$SPEC"
+
+run_queue() {
+  for line in "${QUEUE_LINES[@]}"; do
+    [ -z "$line" ] && continue
+    # Slot free? Reap every finished worker before considering a new launch.
+    while [[ ${#PIDS[@]} -ge $MAX_PARALLEL ]]; do
+      local_done=0
+      alive=()
+      for pid in "${PIDS[@]}"; do
+        if kill -0 "$pid" 2>/dev/null; then
+          alive+=("$pid")
+        else
+          wait "$pid" 2>/dev/null || true
+          local_done=1
+        fi
+      done
+      PIDS=("${alive[@]}")
+      [[ $local_done -eq 0 ]] && sleep 0.2
+    done
+    launch_worker "$line"
+  done
+}
+
+run_queue
+
+# WI-562 V-2: branch_busy retry — requeue up to 2 attempts per the documented
+# consumer contract. A summary whose status is branch_busy goes back through
+# the bounded pool; anything else is final for this run.
+for round_i in 1 2; do
+  declare -a NEXT=()
+  for i in "${!IDS[@]}"; do
+    grep -q "^status: branch_busy" "${LOGS[$i]}" 2>/dev/null || continue
+    ID="${IDS[$i]}"
+    ATT=$(( ${ATTEMPTS[$ID]:-0} + 1 ))
+    if [[ $ATT -le 2 ]]; then
+      ATTEMPTS[$ID]=$ATT
+      LINE=$(grep ""$ID"" "$SPEC" | head -1)
+      [[ -n "$LINE" ]] && NEXT+=("$LINE")
+      echo "fanout: $ID branch_busy — redispatch attempt $ATT/2" >&2
+    fi
+  done
+  [[ ${#NEXT[@]} -eq 0 ]] && break
+  PIDS=(); IDS=(); LOGS=()
+  QUEUE_LINES=("${NEXT[@]}")
+  run_queue
+done
 
 # Drain remaining workers
 for pid in "${PIDS[@]}"; do

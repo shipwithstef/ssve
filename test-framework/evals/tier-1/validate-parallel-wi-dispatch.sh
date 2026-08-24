@@ -267,7 +267,7 @@ cat >"$FIX/.svc/dispatch/WI-004.result.json" <<EOF
 }
 EOF
 
-check "valid merge-back results pass (ground-truth recomputed)" node "$ROOT/scripts/validate-parallel-merge-back.mjs" --plan "$FIX/.svc/parallel-dispatch-test.json" --results "$FIX/.svc/dispatch" --no-replay --worktree-root "$FIX"
+SVC_PARALLEL_LEGACY_VALIDATION=1 check "valid merge-back results pass (ground-truth recomputed)" node "$ROOT/scripts/validate-parallel-merge-back.mjs" --plan "$FIX/.svc/parallel-dispatch-test.json" --results "$FIX/.svc/dispatch" --no-replay --worktree-root "$FIX"
 
 # Forged PASS with a dirty tree must FAIL (IP-H1 core scenario).
 printf 'dirty\n' >"$FIX/docs/dirty.txt"

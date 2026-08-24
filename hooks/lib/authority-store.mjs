@@ -246,9 +246,15 @@ export function resumeController({ stateRoot, repoId, wi, worktreeRoot, principa
 function verifyLatestHandoffRecord(paths, lease) {
   const dir = path.join(paths.receipts, "handoff");
   let files = [];
-  try { files = fs.readdirSync(dir).filter((f) => f.endsWith(".json")).sort(); } catch { return null; }
+  try { files = fs.readdirSync(dir).filter((f) => f.endsWith(".json")); } catch { return null; }
   if (files.length === 0) return null;
-  const latestPath = path.join(dir, files[files.length - 1]);
+  // WI-562 round-5 review: order by the record's OWN ts (UUID filenames are
+  // unordered); unreadable records refuse loudly rather than being skipped.
+  const stamped = files.map((f) => {
+    try { return { f, ts: Date.parse(JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")).ts) }; }
+    catch (e) { throw new Error(`resume refused: handoff record unreadable (${f}: ${e.message})`); }
+  }).sort((a, b) => a.ts - b.ts);
+  const latestPath = path.join(dir, stamped[stamped.length - 1].f);
   let record;
   try { record = JSON.parse(fs.readFileSync(latestPath, "utf8")); }
   catch (e) { throw new Error(`resume refused: latest handoff record unreadable (${latestPath}: ${e.message})`); }

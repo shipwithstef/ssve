@@ -1306,8 +1306,11 @@ async function main() {
     result = { ok: Boolean(binding), binding };
   } else if (kind === "claim" && action === "transfer") {
     result = transferClaim(args.wi, Number(args.expected_generation), args);
+  } else if (kind === "claim" && action === "renew") {
+    // WI-562 IP-H5 E2: CLI renewal touch for long silent sections.
+    result = await renewClaim(args.wi, args);
   } else {
-    console.error("Usage: wi-claim.mjs binding <write|status|release> --worktree-root ABS --session-id ID [--wi WI-N --role mutating]");
+    console.error("Usage: wi-claim.mjs binding <write|status|release> --worktree-root ABS --session-id ID [--wi WI-N --role mutating]\n       wi-claim.mjs claim renew --wi WI-N [--svc-dir DIR]");
     process.exit(2);
   }
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);

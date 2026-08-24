@@ -71,6 +71,16 @@ export function lockPathFor(repoRoot, wi, env = process.env) {
   return authorityLockRef(bootstrapLockIdentity(repoRoot, wi));
 }
 
+// WI-562 IP-H5 E2: resume/attach refreshes the WI claim heartbeat so
+// heartbeat-contract claims (pid-less owners) never expire mid-session.
+async function renewClaimHeartbeat(repoRoot, wi) {
+  try {
+    const { renewClaim } = await import("../hooks/lib/wi-claim.mjs");
+    const r = await renewClaim(wi, { svcDir: `${repoRoot}/.svc` });
+    return Boolean(r?.ok);
+  } catch { return false; }
+}
+
 function withLock(repoRoot, wi, env, operation) {
   void env;
   const result = withExclusiveLock(bootstrapLockIdentity(repoRoot, wi), operation, repoRoot);
@@ -588,6 +598,8 @@ function resumeExisting({ repo, wi, branch, from, owner, env, worktree, markerPa
     const sameMarker = existingMarker && String(existingMarker.session_id) === owner ? existingMarker : null;
     const verified = verifyCompleteTuple({ repo, wi, branch, owner, worktree, graphP: graph.path, marker: sameMarker, env });
     if (!verified.ok) throw new Error(`resume tuple verification failed; ownership retained (${verified.reason})`);
+    // WI-562 IP-H5 E2: resume is a heartbeat touch for the WI claim.
+    renewClaimHeartbeat(repo.root, wi).catch(() => {});
     if (sameMarker) renewMarker(markerPath, existingMarker, repo.root);
     return result({ wi, branch, baseSha, worktree, owner, graphPath: graph.path, generation: Number(verified.tuple.claim_generation || myBinding.generation), created: false, resumed: true });
   }

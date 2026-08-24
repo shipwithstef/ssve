@@ -104,6 +104,11 @@ _write_binding() {
     return 1
   fi
   info "Bound session $session_id to ${wi:-read-only} at $wt_path"
+  # WI-562 IP-H5 E2: heartbeat touch — every binding write renews the WI claim
+  # so pid-less heartbeat-contract claims stay fresh through long sessions.
+  if [[ -n "$wi" && -f "$wt_path/.svc/claims/$wi.claim.json" ]]; then
+    node "$wt_path/hooks/lib/wi-claim.mjs" claim renew --wi "$wi" --svc-dir "$wt_path/.svc" >/dev/null 2>&1 || true
+  fi
 }
 
 # WI-549 (AC-549-4): this manager NEVER writes a per-worktree

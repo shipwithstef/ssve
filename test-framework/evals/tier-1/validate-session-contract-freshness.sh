@@ -42,7 +42,7 @@ if [[ -z "$LAST_LINE" ]]; then
 fi
 
 # Extract timestamp
-TS=$(echo "$LAST_LINE" | grep -oE '"ts":"[^"]+"' | cut -d'"' -f4 || true)
+TS=$(echo "$LAST_LINE" | grep -oE '"ts": ?"[^"]+"' | cut -d'"' -f4 || true)
 if [[ -z "$TS" ]]; then
   echo "  FAIL — cannot parse timestamp from session contract"
   exit 1

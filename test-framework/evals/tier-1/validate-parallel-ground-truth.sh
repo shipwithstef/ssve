@@ -38,7 +38,7 @@ cat >"$FIX/.svc/dispatch/WI-900.result.json" <<EOF
 EOF
 }
 
-V() { node "$ROOT/scripts/validate-parallel-merge-back.mjs" --plan "$FIX/.svc/wave-plan.json" --results "$FIX/.svc/dispatch/WI-900.result.json" --no-replay; }
+V() { SVC_PARALLEL_LEGACY_VALIDATION=1 node "$ROOT/scripts/validate-parallel-merge-back.mjs" --plan "$FIX/.svc/wave-plan.json" --results "$FIX/.svc/dispatch/WI-900.result.json" --no-replay; }
 
 # Committed work in scope passes.
 printf 'export const b = 2;\n' >"$FIX/src/b.ts"

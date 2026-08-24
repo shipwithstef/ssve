@@ -138,6 +138,11 @@ if [[ -n "$SVC_WORKER_BRANCH_CLAIM" ]]; then
   trap claim_release EXIT INT TERM
 fi
 
+# ── WI-562 IP-H1: capture the PRE-DISPATCH base SHA ──
+# Ground truth for the worker's diff window must be the tree state BEFORE any
+# worker work, so a worker-created commit is head-vs-base — never both.
+SVC_WORKER_BASE_SHA="$(git rev-parse HEAD 2>/dev/null || true)"
+
 # Cognitive Routing: Select model based on skill if not explicitly overridden
 if [[ -z "$SVC_WORKER_MODEL" ]]; then
   case "$SKILL" in
@@ -251,9 +256,10 @@ write_worker_result() {
 
   # WI-562 IP-H1: workers COMMIT their own work before reporting; the parent
   # recomputes ground truth from git and never trusts these self-reported
-  # fields — they exist so the validator knows which window to diff.
-  local base_sha head_sha diff_digest committed="false"
-  base_sha="$(git rev-parse HEAD 2>/dev/null || true)"
+  # fields. base_sha = PRE-dispatch capture (SVC_WORKER_BASE_SHA), so a
+  # worker-created commit forms a real diff window instead of an empty one.
+  local base_sha="${SVC_WORKER_BASE_SHA:-}" head_sha diff_digest committed="false"
+  if [ -z "$base_sha" ]; then base_sha="$(git rev-parse HEAD 2>/dev/null || true)"; fi
   if [ "$status" = "success" ] && [ -n "$(git status --porcelain 2>/dev/null || true)" ]; then
     git add -A >/dev/null 2>&1 || true
     git commit -m "worker($WORKER_WI): dispatch result commit (auto)" >/dev/null 2>&1 || true
@@ -276,13 +282,17 @@ write_worker_result() {
   fi
 
   BASE_SHA="$base_sha" HEAD_SHA="$head_sha" DIFF_DIGEST="$diff_digest" COMMITTED="$committed" WORKTREE_REALPATH="$(pwd -P)" \
+  SVC_WORKER_DECLARED_COMMANDS="${SVC_WORKER_DECLARED_COMMANDS:-}" \
   CHANGED_FILES="$changed" node - "$DISPATCH_DIR/$WORKER_WI.result.json" "$DISPATCH_DIR/$WORKER_WI.edits.json" "$WORKER_WI" "$status" "$exit_code" "$log_path" "$DELEGATION_ID" <<'NODE_RESULT'
 const fs = require("fs");
 const [resultFile, editsFile, wi, status, exitCode, logPath, delegationId] = process.argv.slice(2);
 const files = (process.env.CHANGED_FILES || "").split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
 // WI-562 IP-H1: no worker-authored PASS verdicts and no parent_graph_mutation
-// fabrication. Evidence rows name replayable commands only; mutation flags are
-// set by the orchestrator AFTER validate-parallel-merge-back passes.
+// fabrication. Evidence rows name the PLAN-DECLARED validation commands so the
+// validator can REPLAY them; mutation flags are set by the orchestrator AFTER
+// validate-parallel-merge-back passes.
+const declaredCommands = (process.env.SVC_WORKER_DECLARED_COMMANDS || "")
+  .split("\u001f").map((s) => s.trim()).filter(Boolean);
 const result = {
   wi,
   status,
@@ -294,7 +304,7 @@ const result = {
   committed: process.env.COMMITTED === "true",
   changed_files: files,
   validation_evidence: [
-    { command: "dispatch-worker exit", exit_code: Number(exitCode), log_path: logPath }
+    ...declaredCommands.map((command) => ({ command })),
   ],
   clean_worktree: undefined,
   parent_graph_mutation: { updated: false, forbidden: true, path: `.svc/lane-tasks-${wi}.json` },

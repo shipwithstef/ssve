@@ -138,10 +138,12 @@ for (const result of results) {
       if (truth.files.length === 0) {
         failures.push(`${result.wi}: successful result has an empty recomputed diff over the base window`);
       }
-      const allowed = new Set(task.ownership?.write_scope || []);
-      for (const file of truth.files) {
-        if (allowed.size > 0 && !allowed.has(file)) failures.push(`${result.wi}: changed file outside ownership scope: ${file}`);
-      }
+      // WI-562 round-5 review: scope via the SHARED glob matcher (same
+      // semantics as the delegated path), not exact string membership.
+      const allowed = task.ownership?.write_scope || [];
+      const denied = task.ownership?.denied_paths || [];
+      const scope = verifyScope(truth.files, { matchesAny, allowed, denied });
+      if (!scope.ok) for (const f of scope.failures) failures.push(`${result.wi}: ${f}`);
     }
     if (!result.parent_graph_mutation || !present(result.parent_graph_mutation.path)) {
       failures.push(`${result.wi}: parent_graph_mutation.path required (mutation flags are set by the orchestrator AFTER validation, never by the worker)`);
@@ -161,12 +163,14 @@ for (const result of results) {
 // declared `validation_commands` set must be present and fully covered.
 function validateEvidence(result, task) {
   const entries = Array.isArray(result.validation_evidence) ? result.validation_evidence : [];
-  const declared = Array.isArray(task.validation_commands) ? task.validation_commands : null;
-  if (declared === null) {
-    // Legacy plans predate declaration; shape-only check keeps them moving but
-    // they no longer carry PASS literals as proof (field ignored).
+  const declaredRaw = Array.isArray(task.validation_commands) ? task.validation_commands : null;
+  const legacyAllowed = process.env.SVC_PARALLEL_LEGACY_VALIDATION === "1";
+  if (declaredRaw === null) {
+    if (legacyAllowed) return; // explicit grandfather flag for pre-WI-562 fixtures
+    failures.push(`${result.wi}: plan task omits validation_commands — declare a command set or set SVC_PARALLEL_LEGACY_VALIDATION=1 for legacy fixtures`);
     return;
   }
+  const declared = declaredRaw;
   if (declared.length === 0) {
     failures.push(`${result.wi}: declared_validation_missing — task declares an empty validation_commands set`);
     return;

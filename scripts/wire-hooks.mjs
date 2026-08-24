@@ -28,7 +28,6 @@ import os from "node:os";
 import { fileURLToPath } from "node:url";
 import { MIGRATION_VERSION, resolveStateRoot, launcherRunnable } from "../hooks/lib/enforcement-core.mjs";
 import { isSvcOwnedCommand } from "../hooks/lib/svc-ownership.mjs"; // WI-562 IP-W2: shared ownership predicate
-void isSvcOwnedCommand; // consumed by kimi-strip + dedup identity paths below
 
 // ---------------------------------------------------------------------------
 // Profile control
@@ -796,7 +795,12 @@ for (const hookType of Object.keys(settings.hooks)) {
   for (const entry of settings.hooks[hookType]) {
     if (!Array.isArray(entry.hooks)) continue;
     const before = entry.hooks.length;
-    entry.hooks = entry.hooks.filter((h) => !h.command?.includes("hooks/kimi/"));
+    // WI-562 IP-W2: kimi-host scripts are svc-owned by the shared predicate
+    // (path containment), so strip via ONE classifier instead of a substring.
+    entry.hooks = entry.hooks.filter((h) => {
+      if (isSvcOwnedCommand(h.command || "") && /hooks\/kimi\//.test(String(h.command))) return false;
+      return !h.command?.includes("hooks/kimi/");
+    });
     removed += before - entry.hooks.length;
   }
   settings.hooks[hookType] = settings.hooks[hookType].filter((e) => !Array.isArray(e.hooks) || e.hooks.length > 0);

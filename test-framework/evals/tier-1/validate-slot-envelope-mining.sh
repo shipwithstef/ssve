@@ -60,4 +60,22 @@ OUT2=$(node "$ROOT/scripts/mine-receipts.mjs" --tier framework --now 2026-09-01T
 grep -q '"tier"' <<<"$OUT2"
 echo "  ✓ mine-receipts --tier consumes the fixture ledger without dropping receipts"
 
+# WI-562 round-5 test honesty: BOTH same-type slots must contribute to stats —
+# run --stats in the fixture repo and assert the framework lane counted >= 2
+# receipt records (one per slot), not collapsed to 1.
+node "$ROOT/scripts/mine-receipts.mjs" --stats >/dev/null 2>&1 || true
+TOTAL_RECEIPTS=$(node -e '
+try {
+  const s = JSON.parse(require("fs").readFileSync(".svc/gate-stats.json","utf8"));
+  const total = Object.values(s.lanes || {}).reduce((n, l) => n + (l.receipts || 0), 0);
+  console.log(total);
+} catch { console.log(0); }
+')
+if [[ "$TOTAL_RECEIPTS" -ge 2 ]]; then
+  echo "  ✓ both same-type slots counted as separate records in stats (total=$TOTAL_RECEIPTS)"
+else
+  echo "  ✗ same-type slots collapsed or dropped (total=$TOTAL_RECEIPTS, need >=2)"
+  exit 1
+fi
+
 echo "validate-slot-envelope-mining: PASS"

@@ -258,7 +258,7 @@ export function classifyMutation(call, env = process.env, now = Date.now()) {
   // directory, the mutation is refused here at the guard layer. The sole
   // waiver is unfreeze (deleting the marker). Hosts that never wire this guard
   // fall back to verb-level enforcement only in worktree.sh.
-  const frozenRoot = process.env.SVC_DISABLE_FREEZE_GUARD ? null : readFreezeMarker([...(operationGit ? [operationGit.current, operationGit.defaultRoot] : []), normalized.cwd]);
+  const frozenRoot = readFreezeMarker([...(operationGit ? [operationGit.current, operationGit.defaultRoot] : []), normalized.cwd]);
   if (frozenRoot) {
     const insideAllowed = (t) => {
       const rel = path.relative(frozenRoot.allowedDir, t);
