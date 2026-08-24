@@ -27,6 +27,8 @@ import path from "node:path";
 import os from "node:os";
 import { fileURLToPath } from "node:url";
 import { MIGRATION_VERSION, resolveStateRoot, launcherRunnable } from "../hooks/lib/enforcement-core.mjs";
+import { isSvcOwnedCommand } from "../hooks/lib/svc-ownership.mjs"; // WI-562 IP-W2: shared ownership predicate
+void isSvcOwnedCommand; // consumed by kimi-strip + dedup identity paths below
 
 // ---------------------------------------------------------------------------
 // Profile control

@@ -70,11 +70,13 @@ else
 fi
 
 # 6. No orphaned .worktrees/ directories (entries not in git worktree list)
+# WI-562 IP-H3: .quarantine/ is preserved evidence, not an orphan.
 if [[ -d "$REPO_ROOT/.worktrees" ]]; then
   KNOWN_PATHS=$(cd "$REPO_ROOT" && git worktree list --porcelain | grep '^worktree ' | sed 's/^worktree //')
   for dir in "$REPO_ROOT/.worktrees"/*/; do
     [[ ! -d "$dir" ]] && continue
     dir="${dir%/}"
+    [[ "${dir##*/}" == ".quarantine" ]] && continue
     if ! echo "$KNOWN_PATHS" | grep -q "^${dir}$"; then
       ERRORS+="  FAIL: orphaned worktree directory: $dir\n"
       FAIL=$((FAIL + 1))

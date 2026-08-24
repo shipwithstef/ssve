@@ -17,6 +17,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { isUserOwnedCommand } from "../hooks/lib/svc-ownership.mjs"; // WI-562 IP-W2
 import os from "node:os";
 import { fileURLToPath } from "node:url";
 import { MIGRATION_VERSION, resolveStateRoot, launcherRunnable } from "../hooks/lib/enforcement-core.mjs";
@@ -144,7 +145,7 @@ export function mergeCursorConfig(existingConfig, newEntries) {
       const cmd = typeof item === "string"
         ? item
         : item?.command || item?.hooks?.[0]?.command || "";
-      return !cmd.includes("svc-") && !cmd.includes("/skills/hooks/") && !cmd.includes("svc-enforce");
+      return isUserOwnedCommand(cmd); // WI-562 IP-W2: shared predicate
     });
 
     // Format new entries with standard hooks wrapper

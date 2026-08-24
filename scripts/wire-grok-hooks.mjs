@@ -15,6 +15,7 @@
  */
 
 import fs from "node:fs";
+import { isSvcOwnedCommand } from "../hooks/lib/svc-ownership.mjs"; // WI-562 IP-W2
 import path from "node:path";
 import os from "node:os";
 import { fileURLToPath } from "node:url";
@@ -380,12 +381,9 @@ function isHookTableHeader(trimmed) {
 }
 
 function isSvcOwnedText(text) {
-  // Drop governed SVC hook scripts and the svc-enforce launcher.
-  // Keep user hooks under ~/.grok/skills/hooks/user-keep.mjs and
-  // comments that mention "svc-" without a governed command.
-  return /(?:^|[^\w.-])svc-[A-Za-z0-9._-]+\.(?:mjs|js|sh)\b/.test(text)
-    || /(?:^|[^\w.-])svc-enforce(?:\s|$)/.test(text)
-    || text.includes("/skills/hooks/svc-");
+  // WI-562 IP-W2: delegated to the ONE shared predicate so grok, cursor, and
+  // claude classifiers always agree on identical fixtures.
+  return isSvcOwnedCommand(text);
 }
 
 // Split TOML into ordered text/hook-table regions so non-SVC hooks (HTTP, env,

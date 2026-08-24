@@ -951,8 +951,51 @@ function claimWIUnlocked(wi, opts = {}) {
       : {}),
     ...(opts.pid ? { pid: Number(opts.pid), process_start_token: processStartToken(Number(opts.pid)) } : {}),
   };
+  // WI-562 IP-H5 (E2): a NEW claim without a durable owner pid MUST carry an
+  // explicit heartbeat contract — interval bounded to half the TTL so a live
+  // owner that renews on schedule is never preempted by TTL expiry. Claims
+  // with NEITHER identity NOR an acknowledged ephemeral posture are REFUSED:
+  // silently persisting an unreclaimable orphan is exactly the HD-7 hole.
+  if (!claim.pid) {
+    if (opts.ephemeral === true) {
+      claim.heartbeat_required = false;
+      claim.ephemeral = true;
+    } else {
+      const ttlHours = Number(claim.ttl_hours || DEFAULT_TTL_HOURS);
+      const requestedInterval = Number(opts.heartbeat_interval_minutes || Math.max(5, Math.floor((ttlHours * 60) / 4)));
+      // Invariant (WI-562 round-4 review): interval*2 <= TTL, else the
+      // contract cannot keep a live owner ahead of expiry.
+      if (!(requestedInterval > 0) || requestedInterval * 2 > ttlHours * 60) {
+        return { ok: false, warning: `heartbeat_interval_minutes ${requestedInterval} violates invariant interval*2 <= TTL (${ttlHours}h)` };
+      }
+      claim.heartbeat_required = true;
+      claim.heartbeat_contract = { interval_minutes: requestedInterval };
+    }
+  }
   if (!opts.defer_write) atomicWriteJson(claimPath, claim);
   return { ok: true, claim, claim_path: claimPath };
+}
+
+// WI-562 IP-H5 (E2): explicit renewal op for long silent sections. Refreshes
+// renewed_at (+ optional durable-owner identity upgrade). Callers: ensure-worktree
+// resume/attach, worktree.sh binding guard, dispatch-worker exec loop.
+export function renewClaim(wi, opts = {}) {
+  const svcDir = opts.svcDir ? path.resolve(opts.svcDir) : findSvcDir(opts.worktree_root || opts.cwd);
+  if (!svcDir) return { ok: false, warning: "No .svc/ directory found" };
+  const claimPath = path.resolve(opts.claim_path || path.join(svcDir, "claims", `${wi}.claim.json`));
+  return withExclusiveLock(`claim:${claimPath}`, () => {
+    let existing = null;
+    try { existing = JSON.parse(fs.readFileSync(claimPath, "utf8")); } catch {}
+    if (!existing || existing.released_at) return { ok: false, warning: "no live claim to renew" };
+    const now = new Date().toISOString();
+    const next = {
+      ...existing,
+      renewed_at: now,
+      ...(opts.pid ? { pid: Number(opts.pid), process_start_token: processStartToken(Number(opts.pid)), heartbeat_required: false, heartbeat_contract: undefined } : {}),
+    };
+    atomicWriteJson(claimPath, JSON.parse(JSON.stringify(next)));
+    return { ok: true, claim: next, claim_path: claimPath };
+  }, svcDir);
 }
 
 export function claimWI(wi, opts = {}) {

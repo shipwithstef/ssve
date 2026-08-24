@@ -45,6 +45,24 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 ok()   { echo -e "  ${GREEN}[OK]${NC} $1"; }
+
+# WI-562 IP-H7: .worktree-freeze is ENFORCED at the verb level. The marker holds
+# the one directory path edits are restricted to; mutating any OTHER worktree is
+# refused. The sole waiver is unfreeze (deleting the marker) — a deliberate,
+# visible act with no hidden env bypass.
+assert_not_frozen() {
+  local target="$1"
+  local marker="$REPO_ROOT/.worktree-freeze"
+  [[ -f "$marker" ]] || return 0
+  local allowed
+  allowed="$(cat "$marker" 2>/dev/null || true)"
+  if [[ "${target#/}" != "${allowed%/}" && "$target" != "$allowed" ]]; then
+    fail "Worktree freeze active: edits restricted to '$allowed' (.worktree-freeze)."
+    info "Unfreeze first: scripts/worktree.sh unfreeze"
+    exit 1
+  fi
+}
+
 warn() { echo -e "  ${YELLOW}[WARN]${NC} $1"; }
 fail() { echo -e "  ${RED}[FAIL]${NC} $1"; }
 info() { echo -e "  ${CYAN}[INFO]${NC} $1"; }
@@ -683,11 +701,16 @@ $(git diff --stat "main...$branch_name" 2>/dev/null)" 2>&1 || pr_rc=$?
 cmd_remove() {
   local branch_name=""
   local force=false
+  local skip_healing_gate=false
   local session_id="$(_host_session_id)"
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --force) force=true; shift ;;
+      # WI-562 IP-H2/H-G: THE single AP-30 healing waiver channel. The legacy
+      # SVC_WORKTREE_SKIP_AP30_CHECK=1 env is deprecated: still honored with a
+      # loud warning, refused entirely after the next release.
+      --skip-healing-gate) skip_healing_gate=true; shift ;;
       --session) session_id="$2"; shift 2 ;;
       *) branch_name="$1"; shift ;;
     esac
@@ -813,9 +836,22 @@ NODE_BINDING_REMOVE
         info "Re-pointing $host symlinks via canonical setup..."
         (cd "$REPO_ROOT" && ./setup --host "$host") >/dev/null 2>&1 \
           && ok "  $host: re-pointed at $REPO_ROOT" \
-          || warn "  $host: setup returned non-zero — proceed with caution"
+          || { warn "  $host: setup returned non-zero — healing FAILED"; export SVC_AP30_HEALING_FAILED=1; }
       done <<< "$unique_hosts"
     fi
+  fi
+
+  # WI-562 IP-H2: healing FAILURE must block removal unless explicitly waived.
+  if [[ "${SVC_WORKTREE_SKIP_AP30_CHECK:-0}" == "1" ]] && [[ $skip_healing_gate != true ]]; then
+    warn "SVC_WORKTREE_SKIP_AP30_CHECK=1 env bypass is deprecated (WI-562): use --skip-healing-gate."
+    warn "This run proceeds via the deprecated env; it will be REFUSED in a future release."
+  fi
+  if [[ $skip_healing_gate == true ]]; then
+    info "Waiver honored and echoed: --skip-healing-gate (AP-30 healing check bypassed for this removal)"
+  fi
+  if [[ "${SVC_AP30_HEALING_FAILED:-0}" == "1" && $skip_healing_gate != true && "${SVC_WORKTREE_SKIP_AP30_CHECK:-0}" != "1" ]]; then
+    fail "AP-30 healing failed — removal BLOCKED. Re-run with --skip-healing-gate to waive explicitly."
+    exit 1
   fi
 
   if $force; then
@@ -915,10 +951,17 @@ cmd_cleanup() {
       [[ ! -d "$dir" ]] && continue
       dir="${dir%/}"
 
+      # WI-562 IP-H3: quarantine is not an orphan — it is preserved evidence.
+      [[ "$dir" == *"/.quarantine" || "$dir" == *"/.quarantine/"* ]] && continue
+
       if ! echo "$known_paths" | grep -q "^${dir}$"; then
         warn "Orphaned directory: $dir"
-        rm -rf "$dir"
-        ok "Removed $dir"
+        # WI-562 IP-H3: quarantine instead of bare rm -rf — bytes are preserved
+        # under .worktrees/.quarantine/<ts>/ for inspection and manual disposal.
+        local qdir="$WORKTREE_DIR/.quarantine/$(date +%Y%m%dT%H%M%S)"
+        mkdir -p "$qdir"
+        mv "$dir" "$qdir/"
+        ok "Quarantined $dir -> $qdir"
         cleaned=$((cleaned + 1))
       fi
     done
@@ -1068,10 +1111,33 @@ case "${1:-}" in
   create)   shift; cmd_create "$@" ;;
   enter)    shift; cmd_enter "$@" ;;
   status)   cmd_status ;;
-  promote)  shift; cmd_promote "$@" ;;
-  remove)   shift; cmd_remove "$@" ;;
+  # WI-562 IP-H3: mutating verbs re-enter under the repo-wide Git-CAS verb lock.
+  __inner_promote)
+    shift
+    assert_not_frozen "main"
+    cmd_promote "$@"
+    ;;
+  __inner_remove)
+    shift
+    assert_not_frozen "$WORKTREE_DIR/$1"
+    cmd_remove "$@"
+    ;;
+  __inner_cleanup)
+    assert_not_frozen "__cleanup_all__"
+    cmd_cleanup
+    ;;
+  promote)
+    shift
+    exec node "$REPO_ROOT/hooks/lib/worktree-verb-lock.mjs" --verb promote --repo-root "$REPO_ROOT" -- bash "$0" __inner_promote "$@"
+    ;;
+  remove)
+    shift
+    exec node "$REPO_ROOT/hooks/lib/worktree-verb-lock.mjs" --verb remove --repo-root "$REPO_ROOT" -- bash "$0" __inner_remove "$@"
+    ;;
   list)     cmd_list ;;
-  cleanup)  cmd_cleanup ;;
+  cleanup)
+    exec node "$REPO_ROOT/hooks/lib/worktree-verb-lock.mjs" --verb cleanup --repo-root "$REPO_ROOT" -- bash "$0" __inner_cleanup
+    ;;
   preflight) preflight ;;
   -h|--help|help) usage ;;
   *)

@@ -1,0 +1,50 @@
+{
+  "$comment": "WI-562 IP-R1: dated exception list for receipt-format charter violations. The lint fails on any violation NOT listed here. Every entry carries owner WI + revisit date.",
+  "exceptions": [
+    {
+      "id": "runtime-projection-string-version",
+      "kind": "runtime-projections",
+      "rule": 1,
+      "detail": "schema_version is the string 'runtime-projection-v2' instead of an integer",
+      "owner_wi": "WI-563",
+      "reason": "grandfathered deployed format; migration touches host runtime adapters",
+      "revisit_by": "2026-12-31"
+    },
+    {
+      "id": "legacy-timestamp-aliases",
+      "kind": "*",
+      "rule": 2,
+      "detail": "chain/quick-fix/authority/install kinds write timestamp/completed_at/installed_at instead of ts",
+      "owner_wi": "WI-563",
+      "reason": "read-side aliases tolerated for backwards compatibility; new kinds must use ts",
+      "revisit_by": "2026-12-31"
+    },
+    {
+      "id": "draft-07-schemas",
+      "kind": "*",
+      "rule": 5,
+      "detail": "schemas/receipts/* + hook-denial + install-state are draft-07, not 2020-12",
+      "owner_wi": "WI-563",
+      "reason": "migrating draft breaks historical validators; batch migration planned",
+      "revisit_by": "2026-12-31"
+    },
+    {
+      "id": "open-additional-properties",
+      "kind": "denial-receipts|install-receipts|gate-receipts-pipeline-decisions",
+      "rule": 6,
+      "detail": "additionalProperties not false",
+      "owner_wi": "WI-563",
+      "reason": "closing properties requires consumer audit across hosts",
+      "revisit_by": "2026-12-31"
+    },
+    {
+      "id": "story-template-no-version",
+      "kind": "story-receipts",
+      "rule": 1,
+      "detail": "story receipts carry no schema_version (template-driven class)",
+      "owner_wi": "WI-564",
+      "reason": "registry-parameterized auditor owns shape; versioning belongs to its registry",
+      "revisit_by": "2027-06-30"
+    }
+  ]
+}

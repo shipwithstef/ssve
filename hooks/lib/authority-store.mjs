@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { freezeDelegations } from "./delegation-authority.mjs";
 import { normalizeClaimOwner } from "./claim-owner.mjs";
 // WI-562 IP-H5: liveness primitives unified into one source.
@@ -232,10 +233,32 @@ export function resumeController({ stateRoot, repoId, wi, worktreeRoot, principa
     if (lease.state !== "active") throw new Error("controller lease is not active");
     if (lease.controller_principal !== principal) throw new Error("controller principal mismatch");
     if (fs.realpathSync(worktreeRoot) !== fs.realpathSync(lease.worktree_root)) throw new Error("controller worktree mismatch");
+    // WI-562 IP-H6: resume consumes handoff RECORDS, not prose. The newest
+    // normalized record must agree with the live lease; disagreement means the
+    // on-disk authority state is ambiguous — refuse with actionable detail.
+    verifyLatestHandoffRecord(paths, lease);
     const renewed = { ...lease, owner_process: ownerProcessIdentity(), renewed_at: iso(now), expires_at: iso(now + ttlMs), backend_revision: lease.backend_revision + 1 };
     atomicWrite(paths.lease, renewed);
     return renewed;
   });
+}
+
+function verifyLatestHandoffRecord(paths, lease) {
+  const dir = path.join(paths.receipts, "handoff");
+  let files = [];
+  try { files = fs.readdirSync(dir).filter((f) => f.endsWith(".json")).sort(); } catch { return null; }
+  if (files.length === 0) return null;
+  const latestPath = path.join(dir, files[files.length - 1]);
+  let record;
+  try { record = JSON.parse(fs.readFileSync(latestPath, "utf8")); }
+  catch (e) { throw new Error(`resume refused: latest handoff record unreadable (${latestPath}: ${e.message})`); }
+  if (Number(record.generation) !== Number(lease.generation)) {
+    throw new Error(`resume refused: handoff record generation ${record.generation} != lease generation ${lease.generation} (${latestPath})`);
+  }
+  if (String(record.principal) !== String(lease.controller_principal)) {
+    throw new Error(`resume refused: handoff record principal differs from live controller principal (${latestPath})`);
+  }
+  return record;
 }
 
 export function prepareHandover({ stateRoot, repoId, wi, principal, intendedPrincipal = null, ttlMs = 15 * 60_000, now = Date.now() }) {
@@ -268,6 +291,46 @@ function writeLifecycleReceipt(paths, receipt) {
   return file;
 }
 
+// WI-562 IP-H6: normalized handoff records — a SEPARATE object from lifecycle
+// receipts (never dual-validated), one atomic file per record under
+// <receipts>/handoff/, validated against schemas/handoff-record.schema.json.
+const HANDOFF_RECORD_SCHEMA_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "schemas", "handoff-record.schema.json");
+
+function validateHandoffRecord(record) {
+  let schema;
+  try { schema = JSON.parse(fs.readFileSync(HANDOFF_RECORD_SCHEMA_PATH, "utf8")); }
+  catch (e) { throw new Error(`handoff-record schema unavailable (${e.message})`); }
+  const required = schema.required || [];
+  const missing = required.filter((k) => record[k] === undefined || record[k] === null);
+  if (missing.length > 0) throw new Error(`handoff-record invalid: missing ${missing.join(", ")}`);
+  if (!schema.properties.kind.enum.includes(record.kind)) throw new Error(`handoff-record invalid: unknown kind ${record.kind}`);
+  if (!/^sha256:[0-9a-f]{64}$/.test(String(record.token_hash || "sha256:" + "0".repeat(64)))) {
+    // token_hash is optional; when present it must be digest-shaped.
+    if (record.token_hash !== undefined) throw new Error("handoff-record invalid: token_hash not sha256:<hex>");
+  }
+  if (!Number.isInteger(record.generation) || record.generation < 1) throw new Error("handoff-record invalid: generation");
+  for (const [label, d] of Object.entries(record.evidence_digests || {})) {
+    if (!/^sha256:[0-9a-f]{64}$/.test(d)) throw new Error(`handoff-record invalid: evidence_digests[${label}]`);
+  }
+}
+
+function writeHandoffRecord(paths, partial) {
+  const record = { schema_version: 1, record_id: crypto.randomUUID(), allowed_paths: [], ...partial };
+  validateHandoffRecord(record);
+  ensureDir(path.join(paths.receipts, "handoff"));
+  const file = path.join(paths.receipts, "handoff", `${record.record_id}.json`);
+  atomicWrite(file, record);
+  return file;
+}
+
+function digestEvidence(evidence) {
+  const digests = {};
+  for (const [label, value] of Object.entries(evidence)) {
+    digests[label] = sha256(Buffer.from(JSON.stringify(value)));
+  }
+  return digests;
+}
+
 export function acceptHandover({ stateRoot, repoId, wi, principal, token, ttlMs = DEFAULT_TTL_MS, now = Date.now() }) {
   const paths = pathsFor(stateRoot, repoId, wi);
   return withLock(paths.root, paths.key, () => {
@@ -282,11 +345,15 @@ export function acceptHandover({ stateRoot, repoId, wi, principal, token, ttlMs 
     }
     const next = {
       ...lease, controller_principal: principal, generation: lease.generation + 1,
+      // WI-562 IP-H6/HD-4: token-proof lives INSIDE the lease. Only token-gated
+      // acceptHandover writes these fields — takeover/recovery never do — so a
+      // stranded post-crash tuple is positive proof of token acceptance.
+      accepted_handover_id: handover.handover_id,
+      accepted_token_hash: handover.token_hash,
       owner_process: ownerProcessIdentity(),
       renewed_at: iso(now), expires_at: iso(now + ttlMs), backend_revision: lease.backend_revision + 1,
     };
     atomicWrite(paths.lease, next);
-    atomicWrite(paths.handover, { ...handover, status: "consumed", consumed_at: iso(now) });
     const frozen_delegations = freezeOldGenerationDelegations(paths.root, lease.lease_id, lease.generation, now);
     const receipt = {
       schema_version: 1, receipt_id: crypto.randomUUID(), kind: "handover", lease_id: lease.lease_id,
@@ -295,7 +362,74 @@ export function acceptHandover({ stateRoot, repoId, wi, principal, token, ttlMs 
       new_generation: next.generation, evidence: { handover_id: handover.handover_id, frozen_delegations }, completed_at: iso(now),
     };
     const receipt_path = writeLifecycleReceipt(paths, receipt);
+    writeHandoffRecord(paths, {
+      kind: "handover", wi, repo_id: repoId, lease_id: lease.lease_id,
+      generation: next.generation, old_generation: lease.generation,
+      principal, predecessor_principal: lease.controller_principal,
+      worktree_realpath: lease.worktree_root || "",
+      base_sha: typeof lease.base_sha === "string" ? lease.base_sha : "",
+      token_hash: handover.token_hash,
+      ttl_ms: ttlMs,
+      evidence_digests: digestEvidence({ handover_id: handover.handover_id, frozen_delegations }),
+      ts: iso(now),
+    });
+    // Consumed marker is written LAST on purpose: crash-before-consumed leaves
+    // the verifiable stranded tuple {prepared, lease.accepted_handover_id match}
+    // that finalizeHandover completes idempotently.
+    atomicWrite(paths.handover, { ...handover, status: "consumed", consumed_at: iso(now) });
     return { lease: next, receipt, receipt_path };
+  });
+}
+
+// WI-562 IP-H4/HD-4: forward-completion for HALF-CONSUMED handovers.
+// Case A only (crash between the advanced lease write and the consumed marker):
+//   prepared AND lease.accepted_handover_id === handover.handover_id AND
+//   lease.accepted_token_hash === handover.token_hash AND lease_id match AND
+//   (intended_principal unset OR equals current controller).
+// Completes bookkeeping WITHOUT touching the lease (no second generation bump),
+// emits the lifecycle receipt + normalized record, freezes old delegations, and
+// is idempotent. Case B (token still unconsumed) REFUSES here — that path
+// belongs to acceptHandover and requires the secret token.
+export function finalizeHandover({ stateRoot, repoId, wi, now = Date.now() }) {
+  const paths = pathsFor(stateRoot, repoId, wi);
+  return withLock(paths.root, paths.key, () => {
+    const lease = assertLease(readJson(paths.lease, { required: true }), { repoId, wi });
+    let handover;
+    try { handover = readJson(paths.handover, { required: true }); }
+    catch (e) { throw new Error(`finalizeHandover: no handover record (${e.message})`); }
+    if (handover.status !== "prepared") return { completed: false, reason: "handover already consumed" };
+    if (handover.lease_id !== lease.lease_id) throw new Error("finalizeHandover refused: cross-lease stranding (operator recovery required)");
+    if (lease.accepted_handover_id !== handover.handover_id || lease.accepted_token_hash !== handover.token_hash) {
+      throw new Error("finalizeHandover refused: lease was advanced by takeover/recovery, not by token acceptance");
+    }
+    if (Number(lease.backend_revision) !== Number(handover.expected_revision) + 1) {
+      throw new Error("finalizeHandover refused: backend revision does not match acceptance");
+    }
+    if (handover.intended_principal && handover.intended_principal !== lease.controller_principal) {
+      throw new Error("finalizeHandover refused: controller principal differs from intended successor");
+    }
+    const frozen_delegations = freezeOldGenerationDelegations(paths.root, lease.lease_id, Number(handover.expected_generation), now);
+    const receipt = {
+      schema_version: 1, receipt_id: crypto.randomUUID(), kind: "handover", lease_id: lease.lease_id,
+      repo_id: repoId, wi, old_controller_principal: String(handover.source_principal || ""),
+      new_controller_principal: lease.controller_principal,
+      old_generation: Number(handover.expected_generation), new_generation: lease.generation,
+      evidence: { handover_id: handover.handover_id, finalized_forward: true, frozen_delegations }, completed_at: iso(now),
+    };
+    const receipt_path = writeLifecycleReceipt(paths, receipt);
+    writeHandoffRecord(paths, {
+      kind: "handover", wi, repo_id: repoId, lease_id: lease.lease_id,
+      generation: lease.generation, old_generation: Number(handover.expected_generation),
+      principal: lease.controller_principal, predecessor_principal: String(handover.source_principal || ""),
+      worktree_realpath: lease.worktree_root || "",
+      base_sha: typeof lease.base_sha === "string" ? lease.base_sha : "",
+      token_hash: handover.token_hash,
+      ttl_ms: Math.max(1, Date.parse(lease.expires_at) - now),
+      evidence_digests: digestEvidence({ handover_id: handover.handover_id, finalized_forward: true, frozen_delegations }),
+      ts: iso(now),
+    });
+    atomicWrite(paths.handover, { ...handover, status: "consumed", consumed_at: iso(now), finalized_forward: true });
+    return { completed: true, receipt, receipt_path, frozen_delegations };
   });
 }
 
@@ -319,6 +453,16 @@ export function takeoverController({ stateRoot, repoId, wi, principal, expectedP
       old_generation: lease.generation, new_generation: next.generation,
       evidence: { reason: String(reason).trim(), frozen_delegations }, completed_at: iso(now) };
     const receipt_path = writeLifecycleReceipt(paths, receipt);
+    writeHandoffRecord(paths, {
+      kind: "explicit_takeover", wi, repo_id: repoId, lease_id: lease.lease_id,
+      generation: next.generation, old_generation: lease.generation,
+      principal, predecessor_principal: lease.controller_principal,
+      worktree_realpath: lease.worktree_root || "",
+      base_sha: typeof lease.base_sha === "string" ? lease.base_sha : "",
+      ttl_ms: ttlMs,
+      evidence_digests: digestEvidence({ reason: String(reason).trim(), frozen_delegations }),
+      ts: iso(now),
+    });
     return { lease: next, receipt, receipt_path };
   });
 }
@@ -347,6 +491,16 @@ export function recoverController({ stateRoot, repoId, wi, principal, reason, ev
       new_generation: next.generation, evidence: { ...evidence, reason: requireString(reason, "recovery reason"), frozen_delegations }, completed_at: iso(now),
     };
     const receipt_path = writeLifecycleReceipt(paths, receipt);
+    writeHandoffRecord(paths, {
+      kind: "recovery", wi, repo_id: repoId, lease_id: lease.lease_id,
+      generation: next.generation, old_generation: lease.generation,
+      principal, predecessor_principal: lease.controller_principal,
+      worktree_realpath: lease.worktree_root || "",
+      base_sha: typeof lease.base_sha === "string" ? lease.base_sha : "",
+      ttl_ms: ttlMs,
+      evidence_digests: digestEvidence({ ...evidence, reason: requireString(reason, "recovery reason"), frozen_delegations }),
+      ts: iso(now),
+    });
     return { lease: next, receipt, receipt_path };
   });
 }
@@ -359,6 +513,18 @@ export function releaseController({ stateRoot, repoId, wi, principal, now = Date
     const released = { ...lease, state: "released", renewed_at: iso(now), expires_at: iso(now), backend_revision: lease.backend_revision + 1 };
     atomicWrite(paths.lease, released);
     freezeOldGenerationDelegations(paths.root, lease.lease_id, lease.generation, now);
+    // WI-562 IP-H6: release transitions were previously invisible to the record
+    // stream (no lifecycle receipt existed); the normalized record closes that.
+    writeHandoffRecord(paths, {
+      kind: "release", wi, repo_id: repoId, lease_id: lease.lease_id,
+      generation: lease.generation, old_generation: lease.generation,
+      principal, predecessor_principal: lease.controller_principal,
+      worktree_realpath: lease.worktree_root || "",
+      base_sha: typeof lease.base_sha === "string" ? lease.base_sha : "",
+      ttl_ms: Math.max(1, Date.parse(lease.expires_at) - now),
+      evidence_digests: digestEvidence({ released: true }),
+      ts: iso(now),
+    });
     return released;
   });
 }

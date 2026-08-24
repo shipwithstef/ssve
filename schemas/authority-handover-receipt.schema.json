@@ -12,7 +12,7 @@
   "properties": {
     "schema_version": { "const": 1 },
     "receipt_id": { "type": "string", "format": "uuid" },
-    "kind": { "enum": ["handover", "recovery"] },
+    "kind": { "enum": ["handover", "explicit_takeover", "recovery"] },
     "lease_id": { "type": "string", "format": "uuid" },
     "repo_id": { "type": "string" },
     "wi": { "type": "string" },

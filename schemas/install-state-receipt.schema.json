@@ -13,34 +13,83 @@
     "source_classification",
     "launcher_path",
     "launcher_version",
-    "installed_at"
+    "installed_at",
+    "hooks_installed",
+    "skills_installed",
+    "host_config_path",
+    "after"
   ],
   "additionalProperties": true,
   "properties": {
-    "schema_version": { "type": "integer", "minimum": 1 },
-    "migration_version": { "type": "string" },
-    "host": { "type": "string" },
-    "skills_path": { "type": "string" },
-    "effective_source": { "type": "string" },
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "migration_version": {
+      "type": "string"
+    },
+    "host": {
+      "type": "string"
+    },
+    "skills_path": {
+      "type": "string"
+    },
+    "effective_source": {
+      "type": "string"
+    },
     "source_classification": {
       "type": "string",
-      "enum": ["durable-canonical", "ephemeral", "worktree-bound", "dangling"]
+      "enum": [
+        "durable-canonical",
+        "ephemeral",
+        "worktree-bound",
+        "dangling"
+      ]
     },
-    "launcher_path": { "type": "string" },
-    "launcher_version": { "type": "string" },
-    "framework_commit": { "type": ["string", "null"] },
-    "hooks_installed": { "type": "boolean" },
-    "skills_installed": { "type": "boolean" },
-    "installed_at": { "type": "string" },
+    "launcher_path": {
+      "type": "string"
+    },
+    "launcher_version": {
+      "type": "string"
+    },
+    "framework_commit": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "hooks_installed": {
+      "type": "boolean"
+    },
+    "skills_installed": {
+      "type": "boolean"
+    },
+    "installed_at": {
+      "type": "string"
+    },
     "before": {
-      "type": ["object", "null"],
+      "type": [
+        "object",
+        "null"
+      ],
       "description": "Per-host pre-migration state snapshot (AC-487-10).",
       "additionalProperties": true
     },
     "after": {
-      "type": ["object", "null"],
+      "type": [
+        "object",
+        "null"
+      ],
       "description": "Per-host post-migration state snapshot (AC-487-10).",
       "additionalProperties": true
+    },
+    "host_config_path": {
+      "type": [
+        "string",
+        "number",
+        "boolean",
+        "array"
+      ]
     }
   }
 }
