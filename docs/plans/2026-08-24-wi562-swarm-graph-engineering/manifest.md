@@ -74,6 +74,11 @@
 | T04 | MODIFY | scripts/wire-grok-hooks.mjs | WI-562 T04 |
 
 | T01 | MODIFY | test-framework/evals/tier-1/validate-plan-product-safety.sh | WI-562 T01 |
+| T01 | CREATE | test-framework/evals/tier-1/validate-v2-branch-claims-live.sh | WI-562 T01 |
+| T01 | CREATE | test-framework/evals/tier-1/validate-promote-honesty-fake-origin.sh | WI-562 T01 |
+| T01 | MODIFY | test-framework/evals/tier-1/validate-session-contract-freshness.sh | WI-562 ts-whitespace tolerance |
+| T01 | MODIFY | hooks/svc-session-start-healthcheck.mjs | WI-562 T01 |
+| T01 | MODIFY | scripts/svc-ensure-worktree.mjs | WI-562 T01 |
 ## Task Graph
 
 T01 -> T02 -> T03 -> T04 (sequential waves; see plan doc §Implementation Contract)

@@ -12,8 +12,8 @@ echo "=== Tier 1: promote exit honesty + verb lock (fake origin) ==="
 
 # Bare "origin" that REFUSES pushes via pre-push hook.
 ORIGIN="$TMP/origin.git"
-git init --quiet --bare "$ORIGIN"
-git -C "$ORIGIN" config core.hooksPath "$TMP/originhooks"
+env -u GIT_DIR -u GIT_WORK_TREE git init --quiet --bare "$ORIGIN"
+env -u GIT_DIR -u GIT_WORK_TREE git -C "$ORIGIN" config core.hooksPath "$TMP/originhooks"
 mkdir -p "$TMP/originhooks"
 printf '#!/usr/bin/env bash\necho "push denied by fixture" >&2\nexit 1\n' >"$TMP/originhooks/pre-push"
 chmod +x "$TMP/originhooks/pre-push"
@@ -32,7 +32,7 @@ git -C "$FIX" config user.email t@i; git -C "$FIX" config user.name t
 git -C "$FIX" remote set-url origin "$ORIGIN" 2>/dev/null || true
 mkdir -p "$FIX/.worktrees/promote-me"
 cd "$FIX"
-git checkout --quiet -b promote-me 2>/dev/null || git checkout --quiet promote-me
+env -u GIT_DIR -u GIT_WORK_TREE git -C "$FIX" checkout --quiet -b promote-me 2>/dev/null || env -u GIT_DIR -u GIT_WORK_TREE git -C "$FIX" checkout --quiet promote-me
 echo change >"$FIX/feature.txt"
 env -u GIT_DIR -u GIT_WORK_TREE git add -A
 env -u GIT_DIR -u GIT_WORK_TREE git commit --quiet -m "feature work"
@@ -56,19 +56,19 @@ fi
 
 # 2. Lock-held-then-refuse: acquire the verb CAS, then run promote.
 LOCK_REF="refs/svc/locks/worktree-verb/_global"
-HOLDER_OID="$(git hash-object -w --stdin <<<"holder: $$ $(hostname)")"
-git update-ref "$LOCK_REF" "$HOLDER_OID" 0000000000000000000000000000000000000000 2>/dev/null \
-  || git update-ref "$LOCK_REF" "$HOLDER_OID" 2>/dev/null || true
+HOLDER_OID="$(env -u GIT_DIR -u GIT_WORK_TREE git -C "$FIX" hash-object -w --stdin <<<"holder: $$ $(hostname)")"
+env -u GIT_DIR -u GIT_WORK_TREE git -C "$FIX" update-ref "$LOCK_REF" "$HOLDER_OID" 0000000000000000000000000000000000000000 2>/dev/null \
+  || env -u GIT_DIR -u GIT_WORK_TREE git -C "$FIX" update-ref "$LOCK_REF" "$HOLDER_OID" 2>/dev/null || true
 # Write the holder payload the CAS reader expects (pid/host/start-token lines).
 printf '%s\n%s\n%s\n%s\n' "$$" "$(hostname)" "" "$(date -u +%FT%TZ)" >"$TMP/holder.txt"
-BLOB="$(git hash-object -w "$TMP/holder.txt")"
-git update-ref -d "$LOCK_REF" 2>/dev/null || true
-git update-ref "$LOCK_REF" "$BLOB" 2>/dev/null || true
+BLOB="$(env -u GIT_DIR -u GIT_WORK_TREE git -C "$FIX" hash-object -w "$TMP/holder.txt")"
+env -u GIT_DIR -u GIT_WORK_TREE git -C "$FIX" update-ref -d "$LOCK_REF" 2>/dev/null || true
+env -u GIT_DIR -u GIT_WORK_TREE git -C "$FIX" update-ref "$LOCK_REF" "$BLOB" 2>/dev/null || true
 set +e
 OUT2=$(timeout 30 bash scripts/worktree.sh __inner_promote promote-me 2>&1)
 RC2=$?
 set -e
-git update-ref -d "$LOCK_REF" 2>/dev/null || true
+env -u GIT_DIR -u GIT_WORK_TREE git -C "$FIX" update-ref -d "$LOCK_REF" 2>/dev/null || true
 if [[ $RC2 -ne 0 ]] && grep -qiE "verb lock|lock_busy|cannot acquire" <<<"$OUT2"; then
   check "held verb CAS lock ⇒ promote refuses (lock-held-then-refuse)" true
 elif [[ $RC2 -ne 0 ]]; then

@@ -52,7 +52,12 @@
         "test-framework/evals/tier-1/validate-wirer-corrupt-config.sh",
         "test-framework/evals/tier-1/validate-worktree-safety.sh",
         "docs/plans/2026-08-24-wi562-swarm-graph-engineering/manifest.md",
-        "test-framework/evals/tier-1/validate-plan-product-safety.sh"
+        "test-framework/evals/tier-1/validate-plan-product-safety.sh",
+        "test-framework/evals/tier-1/validate-v2-branch-claims-live.sh",
+        "test-framework/evals/tier-1/validate-promote-honesty-fake-origin.sh",
+        "test-framework/evals/tier-1/validate-session-contract-freshness.sh",
+        "hooks/svc-session-start-healthcheck.mjs",
+        "scripts/svc-ensure-worktree.mjs"
       ]
     },
     {
@@ -97,7 +102,7 @@
   ],
   "resource_review": {
     "verification": "changed-executable-census",
-    "denominator": 51,
+    "denominator": 56,
     "disposition": "no-risky-resource-writers",
     "evidence": "changed-executable-census over git diff origin/main --diff-filter=ACMR excluding volatile .svc/; no money/ledger/quota/identity writer vocabulary introduced (receipt writers go through emit-receipt atomic primitives)"
   },
