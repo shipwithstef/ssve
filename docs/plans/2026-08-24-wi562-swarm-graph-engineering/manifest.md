@@ -80,6 +80,8 @@
 | T01 | MODIFY | hooks/svc-session-start-healthcheck.mjs | WI-562 T01 |
 | T01 | MODIFY | scripts/svc-ensure-worktree.mjs | WI-562 T01 |
 | T01 | MODIFY | scripts/validate-review-receipt.mjs | WI-562 snapshot schema_version gate |
+| T01 | MODIFY | hooks/svc-workflow-guard.mjs | WI-562 T01 |
+| T01 | MODIFY | scripts/plan-parallel-wi-dispatch.mjs | WI-562 T01 |
 ## Task Graph
 
 T01 -> T02 -> T03 -> T04 (sequential waves; see plan doc §Implementation Contract)

@@ -58,7 +58,9 @@
         "test-framework/evals/tier-1/validate-session-contract-freshness.sh",
         "hooks/svc-session-start-healthcheck.mjs",
         "scripts/svc-ensure-worktree.mjs",
-        "scripts/validate-review-receipt.mjs"
+        "scripts/validate-review-receipt.mjs",
+        "hooks/svc-workflow-guard.mjs",
+        "scripts/plan-parallel-wi-dispatch.mjs"
       ]
     },
     {
