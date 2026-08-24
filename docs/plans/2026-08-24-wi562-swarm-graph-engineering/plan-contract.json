@@ -61,7 +61,9 @@
         "scripts/validate-review-receipt.mjs",
         "hooks/svc-workflow-guard.mjs",
         "scripts/plan-parallel-wi-dispatch.mjs",
-        "docs/specs/reviews/wi562-exec-triple-review.md"
+        "docs/specs/reviews/wi562-exec-triple-review.md",
+        "docs/specs/reviews/wi562-promotion-delivery-receipt.md",
+        ".svc/session-contract.jsonl"
       ]
     },
     {

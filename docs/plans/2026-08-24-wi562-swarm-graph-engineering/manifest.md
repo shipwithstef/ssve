@@ -83,6 +83,7 @@
 | T01 | MODIFY | hooks/svc-workflow-guard.mjs | WI-562 T01 |
 | T01 | MODIFY | scripts/plan-parallel-wi-dispatch.mjs | WI-562 T01 |
 | T01 | CREATE | docs/specs/reviews/wi562-exec-triple-review.md | consolidated exec review log |
+| T01 | CREATE | docs/specs/reviews/wi562-promotion-delivery-receipt.md | promotion receipt |
 ## Task Graph
 
 T01 -> T02 -> T03 -> T04 (sequential waves; see plan doc §Implementation Contract)
