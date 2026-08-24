@@ -22,10 +22,12 @@
  */
 
 import { execFileSync, execSync } from "node:child_process";
-import { writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { classifyFromGit } from "./classify-change-risk.mjs";
 import { evaluateImpactTriad } from "../hooks/svc-impact-triad-guard.mjs";
+// WI-562 IP-R4: single sanctioned emitter — no direct receipt writes here.
+import { writeReceiptMirror } from "./emit-receipt.mjs";
 
 const DENY_PATH_PATTERNS = [
   /^package\.json$/,
@@ -303,8 +305,6 @@ function classifyDiff(diff, files) {
 }
 
 function writeReceipt(treeHash, verdict, files) {
-  const dir = join(".svc", "receipts", "staging", treeHash);
-  mkdirSync(dir, { recursive: true });
   const wi = process.env.SVC_WI || null;
   const receipt = {
     receipt_type: "quick-fix",
@@ -319,7 +319,10 @@ function writeReceipt(treeHash, verdict, files) {
     timestamp: new Date().toISOString(),
     git_user: execSync("git config user.name", { encoding: "utf8" }).trim(),
   };
-  writeFileSync(join(dir, "quick-fix.json"), JSON.stringify(receipt, null, 2));
+  // WI-562 IP-R4: the ONLY sanctioned write path for receipt JSON. The staging
+  // placement (tree-hash keyed, schema-validated, tmp+fsync+rename atomic) is
+  // owned by emit-receipt's core writer — a crash here leaves no partial file.
+  writeReceiptMirror({ type: "quick-fix", wi: wi || "unknown", body: receipt });
   return receipt;
 }
 

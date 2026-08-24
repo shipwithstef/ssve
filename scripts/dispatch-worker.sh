@@ -185,30 +185,56 @@ write_worker_result() {
   local exit_code="$2"
   local log_path="$3"
   mkdir -p "$DISPATCH_DIR"
+
+  # WI-562 IP-H1: workers COMMIT their own work before reporting; the parent
+  # recomputes ground truth from git and never trusts these self-reported
+  # fields — they exist so the validator knows which window to diff.
+  local base_sha head_sha diff_digest committed="false"
+  base_sha="$(git rev-parse HEAD 2>/dev/null || true)"
+  if [ "$status" = "success" ] && [ -n "$(git status --porcelain 2>/dev/null || true)" ]; then
+    git add -A >/dev/null 2>&1 || true
+    git commit -m "worker($WORKER_WI): dispatch result commit (auto)" >/dev/null 2>&1 || true
+  fi
+  head_sha="$(git rev-parse HEAD 2>/dev/null || true)"
+  if [ -n "$base_sha" ] && [ -n "$head_sha" ] && [ "$base_sha" != "$head_sha" ] && [ -z "$(git status --porcelain 2>/dev/null || true)" ]; then
+    committed="true"
+  fi
+  if [ -n "$base_sha" ] && [ -n "$head_sha" ] && [ "$base_sha" != "$head_sha" ]; then
+    diff_digest="$(git diff --binary "$base_sha..$head_sha" 2>/dev/null | sha256sum | cut -d' ' -f1)"
+    diff_digest="sha256:$diff_digest"
+  else
+    diff_digest="sha256:$(printf '' | sha256sum | cut -d' ' -f1)"
+  fi
+
   local changed
-  changed="$(git diff --name-only HEAD 2>/dev/null || true)"
-  if [ -z "$changed" ]; then
-    changed="$(git diff --cached --name-only 2>/dev/null || true)"
+  changed="$(git diff --name-only "${base_sha:-HEAD}" "${head_sha:-HEAD}" 2>/dev/null || true)"
+  if [ -z "$changed" ] && [ -n "$(git status --porcelain 2>/dev/null || true)" ]; then
+    changed="$(git status --porcelain 2>/dev/null | awk '{print $2}')"
   fi
-  local clean="false"
-  if [ -z "$(git status --porcelain 2>/dev/null || true)" ]; then
-    clean="true"
-  fi
-  CHANGED_FILES="$changed" node - "$DISPATCH_DIR/$WORKER_WI.result.json" "$DISPATCH_DIR/$WORKER_WI.edits.json" "$WORKER_WI" "$status" "$exit_code" "$log_path" "$clean" "$DELEGATION_ID" <<'NODE_RESULT'
+
+  BASE_SHA="$base_sha" HEAD_SHA="$head_sha" DIFF_DIGEST="$diff_digest" COMMITTED="$committed" WORKTREE_REALPATH="$(pwd -P)" \
+  CHANGED_FILES="$changed" node - "$DISPATCH_DIR/$WORKER_WI.result.json" "$DISPATCH_DIR/$WORKER_WI.edits.json" "$WORKER_WI" "$status" "$exit_code" "$log_path" "$DELEGATION_ID" <<'NODE_RESULT'
 const fs = require("fs");
-const [resultFile, editsFile, wi, status, exitCode, logPath, cleanRaw, delegationId] = process.argv.slice(2);
+const [resultFile, editsFile, wi, status, exitCode, logPath, delegationId] = process.argv.slice(2);
 const files = (process.env.CHANGED_FILES || "").split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
-const clean = cleanRaw === "true";
+// WI-562 IP-H1: no worker-authored PASS verdicts and no parent_graph_mutation
+// fabrication. Evidence rows name replayable commands only; mutation flags are
+// set by the orchestrator AFTER validate-parallel-merge-back passes.
 const result = {
   wi,
   status,
   worker_summary: status === "success" ? "Worker completed and emitted dispatch result." : `Worker ended with ${status}.`,
+  worktree: process.env.WORKTREE_REALPATH || null,
+  base_sha: process.env.BASE_SHA || null,
+  head_sha: process.env.HEAD_SHA || null,
+  diff_digest: process.env.DIFF_DIGEST || null,
+  committed: process.env.COMMITTED === "true",
   changed_files: files,
   validation_evidence: [
-    { command: "dispatch-worker exit", result: status === "success" ? "PASS" : "FAIL", exit_code: Number(exitCode), log_path: logPath }
+    { command: "dispatch-worker exit", exit_code: Number(exitCode), log_path: logPath }
   ],
-  clean_worktree: clean,
-  parent_graph_mutation: delegationId ? { updated: false, forbidden: true } : { updated: true, path: `.svc/lane-tasks-${wi}.json` },
+  clean_worktree: undefined,
+  parent_graph_mutation: { updated: false, forbidden: true, path: `.svc/lane-tasks-${wi}.json` },
   delegation_id: delegationId || null,
   quality: {
     per_worker_quality: process.env.SVC_SKIP_WORKER_QUALITY === "1" ? "skipped" : "required",

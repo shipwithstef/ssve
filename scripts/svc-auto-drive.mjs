@@ -20,6 +20,8 @@ import { tmpdir } from "node:os";
 import { createHash } from "node:crypto";
 import { acquireLock } from "./state-lock.mjs";
 import { writeJsonAtomic } from "./state-io.mjs";
+// WI-562 IP-R4: single sanctioned receipt emitter.
+import { writeReceiptMirror } from "./emit-receipt.mjs";
 import { finalizeDriveOutcome } from "./lib/reconcile-core.mjs";
 
 const DECISIONS_LOG = ".svc/pipeline-decisions.jsonl";
@@ -134,8 +136,6 @@ function runVerifyPromotion(sha, target) {
 
   // Build receipt
   const shortSha = sha.substring(0, 7);
-  const receiptDir = `.svc/receipts/${shortSha}`;
-  mkdirSync(receiptDir, { recursive: true });
   const receipt = {
     receipt_type: "verify-promotion",
     schema_version: 1,
@@ -150,7 +150,10 @@ function runVerifyPromotion(sha, target) {
   };
   const storyReceiptSha256 = findStoryReceiptSha256(sha);
   if (storyReceiptSha256) receipt.story_receipt_sha256 = storyReceiptSha256;
-  writeFileSync(`${receiptDir}/verify-promotion.json`, JSON.stringify(receipt, null, 2));
+  // WI-562 IP-R4: single sanctioned emitter — placement + schema validation +
+  // atomic tmp+rename live in emit-receipt's core writer.
+  const receiptDir = writeReceiptMirror({ type: "verify-promotion", wi: receipt.wi || "auto-drive", body: receipt }).mirror_path.replace(/\/[^/]+$/, "");
+  mkdirSync(receiptDir, { recursive: true });
 
   // Per codex P1 review: seed envelope from durable git note FIRST, then
   // overlay mirror union, then current receipt. Lock the read+merge+write

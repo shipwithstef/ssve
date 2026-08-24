@@ -572,7 +572,23 @@ function backupSettingsOnce() {
   backupDone = true;
 }
 function writeSettingsDocument(target, value) {
-  fs.writeFileSync(target, `${JSON.stringify(value, null, 2)}\n`);
+  // WI-562 IP-W1: uniform atomic write policy — tmp + fsync + rename. A crash
+  // mid-write leaves the prior settings intact instead of a truncated file.
+  const tmp = `${target}.svc-wire-${process.pid}.tmp`;
+  const payload = `${JSON.stringify(value, null, 2)}\n`;
+  const fd = fs.openSync(tmp, "w", 0o644);
+  try {
+    fs.writeFileSync(fd, payload);
+    try { fs.fsyncSync(fd); } catch { /* tmpfs may reject fsync; rename is still atomic */ }
+  } finally {
+    fs.closeSync(fd);
+  }
+  try {
+    fs.renameSync(tmp, target);
+  } catch (err) {
+    try { fs.unlinkSync(tmp); } catch {}
+    throw err;
+  }
 }
 
 if (!settings.hooks) settings.hooks = {};
@@ -870,7 +886,7 @@ if (added.length === 0 && migrated.length === 0 && (totalDeduped > 0 || totalDed
   try {
     fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
     backupSettingsOnce();
-    fs.writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
+    writeSettingsDocument(settingsPath, settings);
     process.stdout.write(`  ✓ settings written after dedup to ${settingsPath}\n`);
   } catch (err) {
     process.stderr.write(`Failed to write ${settingsPath}: ${err.message}\n`);
@@ -884,7 +900,7 @@ if (added.length === 0 && migrated.length > 0 && !dryRun) {
   try {
     fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
     backupSettingsOnce();
-    fs.writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
+    writeSettingsDocument(settingsPath, settings);
     process.stdout.write(`  ✓ settings written with migrations to ${settingsPath}\n`);
   } catch (err) {
     process.stderr.write(`Failed to write ${settingsPath}: ${err.message}\n`);
@@ -917,7 +933,7 @@ if (dryRun) {
 try {
   fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
   backupSettingsOnce();
-  fs.writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
+  writeSettingsDocument(settingsPath, settings);
 } catch (err) {
   process.stderr.write(`Failed to write ${settingsPath}: ${err.message}\n`);
   process.exit(1);

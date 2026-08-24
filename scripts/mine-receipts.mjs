@@ -75,20 +75,59 @@ function corpusHash() {
 }
 
 // Walk every receipt envelope on refs/notes/svc-receipts.
+// WI-562 IP-R3: notes are SLOT-KEYED since WI-550 — `slot::<type>::<wi>::<sha>[::<phase>]`
+// — and one note (one commit sha) can carry MANY slots. The legacy reader here
+// assumed type-keyed envelopes (`env["review-plan"]`), so every post-WI-550
+// receipt was invisible to stats/tier telemetry. We now expand each envelope
+// into one aggregate record PER SLOT, keeping legacy type-keyed envelopes as a
+// fallback reader. Slots of the same type on the same sha are NEVER collapsed
+// last-write-wins (that collision is exactly what WI-550's slot keys removed).
 function readEnvelopes() {
   let raw = "";
   try { raw = execSync("git notes --ref=svc-receipts list", { encoding: "utf8", cwd: REPO_ROOT }); }
   catch { return []; }
   const out = [];
   for (const line of raw.split("\n").filter(Boolean)) {
-    const sha = line.trim().split(/\s+/)[1];
+    const parts = line.trim().split(/\s+/);
+    const noteHash = parts[0];
+    const sha = parts[1];
     if (!sha) continue;
     try {
       const env = JSON.parse(execSync(`git notes --ref=svc-receipts show ${sha}`, { encoding: "utf8", cwd: REPO_ROOT, stdio: ["pipe", "pipe", "ignore"] }));
-      out.push({ sha, env });
+      for (const expanded of expandEnvelope(env, sha)) out.push(expanded);
     } catch { /* skip unreadable */ }
+    void noteHash;
   }
   return out;
+}
+
+// Expand one envelope into per-slot records. A record is the envelope scoped to
+// ONE slot so downstream laneOf/actionedFindings/tsOf readers see exactly the
+// type they expect.
+function expandEnvelope(env, sha) {
+  const records = [];
+  const seenSlots = new Set();
+  for (const key of Object.keys(env || {})) {
+    if (!key.startsWith("slot::")) continue;
+    const segs = key.split("::");
+    // slot::<type>::<wi>::<sha>[::<phase>]
+    const type = segs[1];
+    const wi = segs[2] || null;
+    const phase = segs.length > 4 ? segs.slice(4).join("::") : null;
+    if (!type) continue;
+    seenSlots.add(key);
+    const slotEnv = env[key];
+    if (slotEnv && typeof slotEnv === "object") {
+      records.push({ sha, env: { [type]: slotEnv }, slot: { key, type, wi, phase } });
+    }
+  }
+  if (records.length > 0) return records;
+  // Legacy fallback: type-keyed envelope (pre-WI-550).
+  const legacyTypes = ["review-plan", "review-exec", "exec-record", "plan-manifest", "audit-implementation"];
+  if (legacyTypes.some((t) => env && typeof env === "object" && env[t])) {
+    return [{ sha, env, slot: null }];
+  }
+  return [];
 }
 
 // A receipt's "accepted finding" count — AC1: key on ACTIONED findings, never raw

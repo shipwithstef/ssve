@@ -6,12 +6,12 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { matchesAny, readDelegation, validateCompletionReceiptShape, updateDelegationStatus } from "../hooks/lib/delegation-authority.mjs";
 import { withStateLock } from "./state-io.mjs";
+// WI-562 IP-H1: recompute primitives unified with the parallel-wave path.
+import { git, digest, normalize } from "./lib/merge-back-core.mjs";
+export { git, digest, normalize };
 
 function parse(argv) { const flags = {}; for (let i = 0; i < argv.length; i += 1) { const key = argv[i]; if (!key.startsWith("--")) throw new Error(`unexpected argument: ${key}`); const next = argv[i + 1]; if (next !== undefined && !next.startsWith("--")) { flags[key] = next; i += 1; } else flags[key] = true; } return flags; }
 function required(flags, key) { if (!flags[key] || flags[key] === true) throw new Error(`missing ${key}`); return String(flags[key]); }
-function git(cwd, args, options = {}) { return execFileSync("git", ["-C", cwd, ...args], { encoding: options.binary ? undefined : "utf8", stdio: ["ignore", "pipe", "pipe"] }); }
-function digest(buffer) { return `sha256:${crypto.createHash("sha256").update(buffer).digest("hex")}`; }
-function normalize(value) { const text = String(value).replaceAll("\\", "/").replace(/^\.\//, ""); if (!text || text.startsWith("/") || text.split("/").includes("..")) throw new Error(`unsafe changed path: ${value}`); return path.posix.normalize(text); }
 
 export function validateMergeBack({ stateRoot, delegationId, lease, receipt, expectedIntegrationHead = null }) {
   const capability = readDelegation({ stateRoot, delegationId });

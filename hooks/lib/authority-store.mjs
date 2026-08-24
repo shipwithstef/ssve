@@ -5,6 +5,9 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { freezeDelegations } from "./delegation-authority.mjs";
 import { normalizeClaimOwner } from "./claim-owner.mjs";
+// WI-562 IP-H5: liveness primitives unified into one source.
+import { processStartToken, ownerProcessIdentity, processIsAlive } from "./process-liveness.mjs";
+export { processStartToken, ownerProcessIdentity, processIsAlive };
 
 const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -23,30 +26,6 @@ function requireString(value, label) {
 
 function safeKey(repoId, wi) {
   return crypto.createHash("sha256").update(`${repoId}\0${wi}`).digest("hex");
-}
-
-function processStartToken(pid = process.pid) {
-  try {
-    const stat = fs.readFileSync(`/proc/${pid}/stat`, "utf8");
-    const close = stat.lastIndexOf(")");
-    return stat.slice(close + 2).trim().split(/\s+/)[19] || null;
-  } catch { return null; }
-}
-
-function ownerProcessIdentity() {
-  return { hostname: os.hostname(), pid: process.pid, start_token: processStartToken() };
-}
-
-function processIsAlive(identity) {
-  if (!identity || identity.hostname !== os.hostname() || !Number.isInteger(identity.pid) || identity.pid < 1) return null;
-  try { process.kill(identity.pid, 0); }
-  catch (error) { return error.code === "ESRCH" ? false : null; }
-  if (identity.start_token) {
-    const current = processStartToken(identity.pid);
-    if (!current) return null;
-    return current === identity.start_token;
-  }
-  return true;
 }
 
 function reclaimProvablyDeadLock(lock) {

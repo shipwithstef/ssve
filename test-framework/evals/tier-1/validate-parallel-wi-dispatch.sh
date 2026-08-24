@@ -153,8 +153,19 @@ EOF
 
 echo "=== Tier 1: Parallel WI Dispatch ==="
 
+# WI-562 IP-H1: merge-back ground truth is recomputed from git, so the fixture
+# must BE a git checkout with a committed baseline (models real dispatch).
+git -C "$FIX" init --quiet -b main 2>/dev/null || git -C "$FIX" init --quiet
+git -C "$FIX" config user.email "tier1@example.invalid"
+git -C "$FIX" config user.name "tier1"
+git -C "$FIX" add -A
+git -C "$FIX" commit --quiet -m "fixture baseline"
+FIX_BASE="$(git -C "$FIX" rev-parse HEAD)"
+W3_CLONE="$TMP/w3-clone"
+
 check "planner syntax valid" node --check "$ROOT/scripts/plan-parallel-wi-dispatch.mjs"
 check "merge-back validator syntax valid" node --check "$ROOT/scripts/validate-parallel-merge-back.mjs"
+check "merge-back core lib syntax valid" node --check "$ROOT/scripts/lib/merge-back-core.mjs"
 
 check "planner creates fixture wave plan" node "$ROOT/scripts/plan-parallel-wi-dispatch.mjs" --root "$FIX" --wis WI-003,WI-004 --out .svc/parallel-dispatch-test.json
 check "non-conflicting WIs share a parallel wave" node -e '
@@ -210,45 +221,86 @@ if (!t.dependency_files.includes("src/pages/E.ts")) throw new Error(`missing rev
 if (!t.dependency_confidence) throw new Error("missing dependency confidence");
 ' "$FIX/.svc/parallel-dispatch-model.json"
 
-cat >"$FIX/.svc/dispatch/WI-003.result.json" <<'EOF'
+# WI-562 IP-H1: workers commit their own work; results carry the git window
+# (worktree + base_sha) the validator recomputes from. Each worker gets a
+# DISJOINT window: WI-003 validates in a clone pinned at its own head.
+commit_worker_change() {
+  local path="$1" content="$2" msg="$3"
+  printf '%s\n' "$content" >"$FIX/$path"
+  git -C "$FIX" add "$path"
+  git -C "$FIX" commit --quiet -m "$msg"
+}
+
+commit_worker_change "docs/a.md" "# A — updated by WI-003" "worker(WI-003): docs/a.md"
+W3_END="$(git -C "$FIX" rev-parse HEAD)"
+commit_worker_change "src/pages/C.ts" "export const c = 2;" "worker(WI-004): src/pages/C.ts"
+
+W3_CLONE="$TMP/w3-clone"
+git clone --quiet "$FIX" "$W3_CLONE"
+git -C "$W3_CLONE" checkout --quiet "$W3_END"
+git -C "$W3_CLONE" config user.email "tier1@example.invalid"
+git -C "$W3_CLONE" config user.name "tier1"
+
+cat >"$FIX/.svc/dispatch/WI-003.result.json" <<EOF
 {
   "wi": "WI-003",
   "status": "success",
   "worker_summary": "Updated doc A.",
+  "worktree": "$W3_CLONE",
+  "base_sha": "$FIX_BASE",
   "changed_files": ["docs/a.md"],
-  "validation_evidence": [{"command": "npm test", "result": "PASS"}],
-  "clean_worktree": true,
-  "parent_graph_mutation": {"updated": true, "path": ".svc/lane-tasks-WI-003.json"}
+  "validation_evidence": [{"command": "npm test"}],
+  "parent_graph_mutation": {"updated": false, "forbidden": true, "path": ".svc/lane-tasks-WI-003.json"}
 }
 EOF
 
-cat >"$FIX/.svc/dispatch/WI-004.result.json" <<'EOF'
+cat >"$FIX/.svc/dispatch/WI-004.result.json" <<EOF
 {
   "wi": "WI-004",
   "status": "success",
   "worker_summary": "Updated page C.",
+  "worktree": "$FIX",
+  "base_sha": "$W3_END",
   "changed_files": ["src/pages/C.ts"],
-  "validation_evidence": [{"command": "npm test", "result": "PASS"}],
-  "clean_worktree": true,
-  "parent_graph_mutation": {"updated": true, "path": ".svc/lane-tasks-WI-004.json"}
+  "validation_evidence": [{"command": "npm test"}],
+  "parent_graph_mutation": {"updated": false, "forbidden": true, "path": ".svc/lane-tasks-WI-004.json"}
 }
 EOF
 
-check "valid merge-back results pass" node "$ROOT/scripts/validate-parallel-merge-back.mjs" --plan "$FIX/.svc/parallel-dispatch-test.json" --results "$FIX/.svc/dispatch"
+check "valid merge-back results pass (ground-truth recomputed)" node "$ROOT/scripts/validate-parallel-merge-back.mjs" --plan "$FIX/.svc/parallel-dispatch-test.json" --results "$FIX/.svc/dispatch" --no-replay --worktree-root "$FIX"
 
-cat >"$FIX/.svc/dispatch/WI-004.result.json" <<'EOF'
+# Forged PASS with a dirty tree must FAIL (IP-H1 core scenario).
+printf 'dirty\n' >"$FIX/docs/dirty.txt"
+check_fail "merge-back rejects PASS with dirty/uncommitted tree" node "$ROOT/scripts/validate-parallel-merge-back.mjs" --plan "$FIX/.svc/parallel-dispatch-test.json" --results "$FIX/.svc/dispatch" --no-replay --worktree-root "$FIX"
+rm -f "$FIX/docs/dirty.txt"
+
+# Worker claiming files absent from the actual diff must FAIL.
+cat >"$FIX/.svc/dispatch/WI-004.result.json" <<EOF
 {
   "wi": "WI-004",
   "status": "success",
   "worker_summary": "Bad scope update.",
-  "changed_files": ["src/pages/A.ts"],
-  "validation_evidence": [{"command": "npm test", "result": "PASS"}],
-  "clean_worktree": true,
-  "parent_graph_mutation": {"updated": true, "path": ".svc/lane-tasks-WI-004.json"}
+  "worktree": "$FIX",
+  "base_sha": "$W3_END",
+  "changed_files": ["src/pages/A.ts", "src/pages/C.ts"],
+  "validation_evidence": [{"command": "npm test"}],
+  "parent_graph_mutation": {"updated": false, "forbidden": true, "path": ".svc/lane-tasks-WI-004.json"}
 }
 EOF
+check_fail "merge-back rejects changed-file superset claim" node "$ROOT/scripts/validate-parallel-merge-back.mjs" --plan "$FIX/.svc/parallel-dispatch-test.json" --results "$FIX/.svc/dispatch" --no-replay --worktree-root "$FIX"
 
-check_fail "merge-back rejects out-of-scope changed file" node "$ROOT/scripts/validate-parallel-merge-back.mjs" --plan "$FIX/.svc/parallel-dispatch-test.json" --results "$FIX/.svc/dispatch"
+cat >"$FIX/.svc/dispatch/WI-004.result.json" <<EOF
+{
+  "wi": "WI-004",
+  "status": "success",
+  "worker_summary": "Updated page C.",
+  "worktree": "$FIX",
+  "base_sha": "$W3_END",
+  "changed_files": ["src/pages/C.ts"],
+  "validation_evidence": [{"command": "npm test"}],
+  "parent_graph_mutation": {"updated": false, "forbidden": true, "path": ".svc/lane-tasks-WI-004.json"}
+}
+EOF
 
 FAKEBIN="$TMP/fakebin"
 mkdir -p "$FAKEBIN"
@@ -273,9 +325,12 @@ check "worker result artifact has required fields" node -e '
 const fs=require("fs");
 const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));
 if (r.wi !== "WI-003") throw new Error("wrong wi");
-for (const k of ["status","worker_summary","changed_files","validation_evidence","clean_worktree","parent_graph_mutation","quality"]) {
+for (const k of ["status","worker_summary","worktree","base_sha","head_sha","diff_digest","committed","changed_files","validation_evidence","parent_graph_mutation","quality"]) {
   if (!(k in r)) throw new Error(`missing ${k}`);
 }
+// WI-562 IP-H1: worker results must NOT carry authorititative verdicts.
+const s=JSON.stringify(r);
+if (/\"result\"\s*:\s*\"PASS\"/i.test(s)) throw new Error("worker result carries a PASS literal");
 ' "$FIX/.svc/dispatch/WI-003.result.json"
 check "worker edit rollup and progress stream exist" bash -c "test -f '$FIX/.svc/dispatch/WI-003.edits.json' && test -f '$FIX/.svc/dispatch/wave-progress.jsonl'"
 

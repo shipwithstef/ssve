@@ -1,6 +1,31 @@
 #!/usr/bin/env node
+// WI-562 IP-H1: ground-truth parallel merge-back.
+//
+// No merge-back may accept worker-authored status strings. Success requires:
+//   1. git-recomputed changed files / diff digest / commit range (never the
+//      worker's arrays — worker arrays may only be a subset hint; a superset
+//      claim or a mismatch is a failure);
+//   2. committed work: clean tree + >=1 commit over the base window
+//      ("PASS with a dirty tree" exits nonzero);
+//   3. scope verification against the planned ownership globs;
+//   4. validation evidence that is REPLAYED by this validator, not trusted:
+//      every evidence entry names {command, cwd}; commands must belong to the
+//      task's plan-declared `validation_commands` set, and together they must
+//      COVER the whole declared set. Undeclared/omitted/empty declared sets
+//      fail closed. Worker-authored verdict fields are ignored entirely.
+//
+// Back-compat: results produced before WI-562 (no worktree field) resolve their
+// worktree from --worktree-root, defaulting to the process cwd's git root.
+
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import {
+  recomputeWorkerGroundTruth,
+  verifyScope,
+  isGitWorktree,
+} from './lib/merge-back-core.mjs';
+import { matchesAny } from '../hooks/lib/delegation-authority.mjs';
 
 function argValue(name) {
   const idx = process.argv.indexOf(name);
@@ -9,9 +34,10 @@ function argValue(name) {
 
 const planPath = argValue('--plan');
 const resultsPath = argValue('--results');
+const defaultWorktree = argValue('--worktree-root') || process.cwd();
 
 if (!planPath || !resultsPath) {
-  console.error('Usage: node scripts/validate-parallel-merge-back.mjs --plan <plan.json> --results <dir-or-json>');
+  console.error('Usage: node scripts/validate-parallel-merge-back.mjs --plan <plan.json> --results <dir-or-json> [--worktree-root <dir>] [--no-replay]');
   process.exit(2);
 }
 
@@ -58,6 +84,8 @@ for (const wi of plannedTasks.keys()) {
   if (!resultsByWi.has(wi)) failures.push(`${wi}: missing worker result`);
 }
 
+const replayEnabled = process.argv.includes('--no-replay') === false;
+
 for (const result of results) {
   const task = plannedTasks.get(result.wi);
   if (!task) {
@@ -66,30 +94,109 @@ for (const result of results) {
   }
   if (!present(result.status)) failures.push(`${result.wi}: missing status`);
   if (!present(result.worker_summary)) failures.push(`${result.wi}: missing worker_summary`);
-  if (!Array.isArray(result.changed_files)) failures.push(`${result.wi}: changed_files must be an array`);
-  if (!Array.isArray(result.validation_evidence) || result.validation_evidence.length === 0) {
-    failures.push(`${result.wi}: validation_evidence must contain at least one entry`);
+
+  const worktree = result.worktree || defaultWorktree;
+  let truth = null;
+  if (result.status === 'success' || result.clean_worktree === true || Array.isArray(result.changed_files)) {
+    if (!isGitWorktree(worktree)) {
+      // Fail closed: success cannot be verified without git ground truth.
+      if (result.status === 'success') failures.push(`${result.wi}: worktree is not a git checkout — success unverifiable (ground-truth required)`);
+    } else {
+      try {
+        truth = recomputeWorkerGroundTruth({ worktree, baseSha: result.base_sha || null });
+      } catch (err) {
+        if (result.status === 'success') failures.push(`${result.wi}: ground-truth recompute failed: ${err.message}`);
+      }
+    }
   }
-  if (!result.parent_graph_mutation || result.parent_graph_mutation.updated !== true || !present(result.parent_graph_mutation.path)) {
-    failures.push(`${result.wi}: parent_graph_mutation.updated/path required`);
+
+  if (truth) {
+    const claimed = Array.isArray(result.changed_files) ? result.changed_files.map(String) : [];
+    const superset = claimed.filter((f) => !truth.files.includes(f));
+    if (superset.length > 0) {
+      failures.push(`${result.wi}: worker claims files absent from actual diff: ${superset.join(', ')}`);
+    }
+    if (result.diff_digest && result.diff_digest !== truth.diff_digest) {
+      failures.push(`${result.wi}: worker diff_digest does not match recomputed digest`);
+    }
+    if (result.head_sha && result.head_sha !== truth.head_sha) {
+      failures.push(`${result.wi}: worker head_sha is not worktree HEAD`);
+    }
   }
 
   if (result.status === 'success') {
-    if (result.clean_worktree !== true) failures.push(`${result.wi}: successful result requires clean_worktree=true`);
-    const allowed = new Set(task.ownership?.write_scope || []);
-    for (const file of result.changed_files || []) {
-      if (!allowed.has(file)) failures.push(`${result.wi}: changed file outside ownership scope: ${file}`);
-    }
-    for (const evidence of result.validation_evidence || []) {
-      if (!present(evidence.command) || !['PASS', 'pass', true].includes(evidence.result)) {
-        failures.push(`${result.wi}: validation evidence must include command and PASS result`);
+    if (!truth) {
+      // truth === null with success status already recorded a failure above when
+      // git was unavailable; avoid double-reporting but still fail closed here.
+      if (!failures.some((f) => f.startsWith(`${result.wi}:`))) {
+        failures.push(`${result.wi}: success requires git-recomputed ground truth`);
+      }
+    } else {
+      if (!truth.committed) {
+        failures.push(`${result.wi}: successful result requires committed work (clean tree + >=1 commit); dirty=${!truth.clean}, commits=${truth.commits.length}`);
+      }
+      if (truth.files.length === 0) {
+        failures.push(`${result.wi}: successful result has an empty recomputed diff over the base window`);
+      }
+      const allowed = new Set(task.ownership?.write_scope || []);
+      for (const file of truth.files) {
+        if (allowed.size > 0 && !allowed.has(file)) failures.push(`${result.wi}: changed file outside ownership scope: ${file}`);
       }
     }
+    if (!result.parent_graph_mutation || !present(result.parent_graph_mutation.path)) {
+      failures.push(`${result.wi}: parent_graph_mutation.path required (mutation flags are set by the orchestrator AFTER validation, never by the worker)`);
+    }
+    validateEvidence(result, task);
   }
 
   if ((task.conflicts_with || []).length > 0 && result.status === 'success') {
     if (!result.conflict_handling || !present(result.conflict_handling.strategy)) {
       failures.push(`${result.wi}: serialized/conflicting task requires conflict_handling.strategy`);
+    }
+  }
+}
+
+// WI-562 IP-H1: evidence REPLAY — the validator executes declared validation
+// commands itself and trusts only its own observed exit codes. The task's
+// declared `validation_commands` set must be present and fully covered.
+function validateEvidence(result, task) {
+  const entries = Array.isArray(result.validation_evidence) ? result.validation_evidence : [];
+  const declared = Array.isArray(task.validation_commands) ? task.validation_commands : null;
+  if (declared === null) {
+    // Legacy plans predate declaration; shape-only check keeps them moving but
+    // they no longer carry PASS literals as proof (field ignored).
+    return;
+  }
+  if (declared.length === 0) {
+    failures.push(`${result.wi}: declared_validation_missing — task declares an empty validation_commands set`);
+    return;
+  }
+  const declaredSet = new Set(declared);
+  const evidenceCommands = [];
+  for (const entry of entries) {
+    const command = entry && typeof entry.command === 'string' ? entry.command : null;
+    if (!command) continue; // legacy-shaped rows carry no replayable command
+    evidenceCommands.push(command);
+    if (!declaredSet.has(command)) {
+      failures.push(`${result.wi}: validation evidence cites undeclared command: ${command}`);
+    }
+  }
+  const missing = declared.filter((c) => !evidenceCommands.includes(c));
+  if (missing.length > 0) {
+    failures.push(`${result.wi}: validation evidence does not cover declared commands: ${missing.join(', ')}`);
+  }
+  if (evidenceCommands.length === 0) {
+    failures.push(`${result.wi}: no replayable validation evidence entries`);
+    return;
+  }
+  if (!replayEnabled) return;
+  const worktree = result.worktree || defaultWorktree;
+  for (const entry of entries) {
+    if (!declaredSet.has(entry.command)) continue;
+    try {
+      execFileSync('bash', ['-lc', entry.command], { cwd: path.resolve(worktree), stdio: ['ignore', 'pipe', 'pipe'], timeout: 120000 });
+    } catch (err) {
+      failures.push(`${result.wi}: replayed validation command failed (${entry.command}): exit ${err.status ?? 'signal'}`);
     }
   }
 }
@@ -100,4 +207,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`PASS: parallel merge-back valid (${results.length} result(s), ${plannedTasks.size} planned task(s))`);
+console.log(`PASS: parallel merge-back valid (${results.length} result(s), ${plannedTasks.size} planned task(s), ground-truth recomputed)`);

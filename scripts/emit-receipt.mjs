@@ -154,15 +154,24 @@ function readBody(args) {
 }
 
 function loadSchema(type) {
+  // WI-562 IP-R2/IP-R1: fail CLOSED on missing/unreadable schema — a renamed
+  // or deleted schema must disable the EMITTER loudly, never validate as
+  // "anything goes". Charter rule: no schema file ⇒ no emitter may run.
   const p = join(SCHEMA_DIR, `${type}.schema.json`);
-  if (!existsSync(p)) return null;
+  if (!existsSync(p)) {
+    throw new Error(`schema unavailable: ${type} (${p} missing)`);
+  }
   try { return JSON.parse(readFileSync(p, "utf8")); }
-  catch (e) { return null; }
+  catch (e) { throw new Error(`schema unavailable: ${type} (${e.message})`); }
 }
 
 function validateReceipt(type, body) {
-  const schema = loadSchema(type);
-  if (!schema) return { valid: true, reasons: [] };
+  let schema;
+  try {
+    schema = loadSchema(type);
+  } catch (error) {
+    return { valid: false, reasons: [error.message] };
+  }
   if (typeof body !== "object" || body === null) {
     return { valid: false, reasons: ["not an object"] };
   }
@@ -300,6 +309,46 @@ function writeNote(sha, type, wi, phase, receipt) {
   }
 }
 
+// WI-562 IP-R4: THE single sanctioned receipt-mirror writer. Every receipt JSON
+// placed under .svc/receipts/** goes through here — tmp+fsync+rename via
+// state-io's writeJsonAtomic, schema-validated BEFORE placement. Direct
+// writeFileSync of receipt payloads outside this path is banned (tier-1 grep
+// gate validate-atomic-receipt-writes.sh).
+export function resolveMirrorPaths({ type, wi, phase = null }) {
+  const treeHash = git(["write-tree"]);
+  const head = git(["rev-parse", "--verify", "HEAD"]);
+  const headTree = head ? git(["rev-parse", `${head}^{tree}`]) : null;
+  const writeStaging = !head || !treeHash || treeHash !== headTree;
+  const targetSha = writeStaging ? null : head;
+  const dir = writeStaging
+    ? join(".svc", "receipts", "staging", treeHash || "no-tree")
+    : join(".svc", "receipts", targetSha.substring(0, 7));
+  mkdirSync(dir, { recursive: true });
+  const slotName = `${type}--${wi}${phase ? `--${phase}` : ""}`;
+  return {
+    mirror_path: join(dir, `${slotName}.json`),
+    mirror_alias_path: join(dir, `${type}.json`),
+    staging: writeStaging,
+    target_sha: targetSha,
+    tree_hash: treeHash,
+  };
+}
+
+export function writeReceiptMirror({ type, wi, body, phase = null }) {
+  const v = validateReceipt(type, body);
+  if (!v.valid) throw new Error(`receipt invalid: ${v.reasons.join("; ")}`);
+  const resolved = resolveMirrorPaths({ type, wi, phase });
+  writeJsonAtomic(resolved.mirror_path, body);
+  // Compatibility alias: preserve historical <type>.json readers only when this
+  // does not clobber a different WI's receipt.
+  const existingAlias = readJsonFileIfExists(resolved.mirror_alias_path);
+  const aliasOwnedBySameWi = existingAlias && String(existingAlias.wi || "") === String(body.wi || "");
+  if (!existingAlias || aliasOwnedBySameWi) {
+    writeJsonAtomic(resolved.mirror_alias_path, body);
+  }
+  return resolved;
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   if (!args.type) fail("--type <receipt-type> required");
@@ -417,16 +466,9 @@ function main() {
     }
   }
 
-  writeJsonAtomic(mirrorPath, body);
-  // Compatibility alias: preserve historical <type>.json readers only when this
-  // does not clobber a different WI's receipt.
-  if (mirrorAliasPath) {
-    const existingAlias = readJsonFileIfExists(mirrorAliasPath);
-    const aliasOwnedBySameWi = existingAlias && String(existingAlias.wi || "") === String(body.wi || "");
-    if (!existingAlias || aliasOwnedBySameWi) {
-      writeJsonAtomic(mirrorAliasPath, body);
-    }
-  }
+  const written = writeReceiptMirror({ type: args.type, wi: args.wi, body, phase: phaseIdentity });
+  mirrorPath = written.mirror_path;
+  mirrorAliasPath = written.mirror_alias_path;
 
   console.log(JSON.stringify({
     ok: true,
@@ -441,4 +483,6 @@ function main() {
   }, null, 2));
 }
 
-main();
+import { realpathSync } from "node:fs";
+const __isMain = (() => { try { return process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url)); } catch { return false; } })();
+if (__isMain) main();

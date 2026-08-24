@@ -538,10 +538,12 @@ cmd_enter() {
 cmd_promote() {
   local branch_name=""
   local auto_merge=false
+  local no_pr=false
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --auto-merge) auto_merge=true; shift ;;
+      --no-pr) no_pr=true; shift ;;   # WI-562 IP-H2 waiver: push only, skip PR
       *) branch_name="$1"; shift ;;
     esac
   done
@@ -577,21 +579,32 @@ cmd_promote() {
   echo "  Files changed:"
   git diff --stat "main...$branch_name" 2>/dev/null | sed 's/^/    /'
 
-  # 3. Push the branch
+  # 3. Push the branch — WI-562 IP-H2: exit-status honesty. A failed push must
+  # abort promote BEFORE any state advances or success is claimed.
   echo ""
   echo "=== Push ==="
-  (cd "$wt_path" && git push -u origin "$branch_name" 2>&1) || true
+  local push_rc=0
+  (cd "$wt_path" && git push -u origin "$branch_name" 2>&1) || push_rc=$?
+  if [[ $push_rc -ne 0 ]]; then
+    fail "git push exited $push_rc — branch NOT pushed, promote aborted"
+    exit 1
+  fi
   ok "Branch pushed to origin/$branch_name"
 
   # 4. Open PR
   echo ""
   echo "=== Pull Request ==="
 
-  if ! command -v gh &>/dev/null; then
-    warn "gh CLI not found — create the PR manually"
-    echo "  Branch: $branch_name"
-    echo "  Then: node scripts/merge-pr-with-review-receipt.mjs --pr <number> --squash --delete-branch"
+  if [[ $no_pr == true ]]; then
+    info "--no-pr waiver: skipping PR creation (echoed per WI-562 single-waiver rule)"
     return 0
+  fi
+
+  if ! command -v gh &>/dev/null; then
+    # WI-562 IP-H2: silent success on missing gh hid the un-PR'd branch.
+    fail "gh CLI not found — cannot create the PR. Branch IS pushed to origin/$branch_name."
+    info "Re-run with --no-pr to accept a push-only promote, or install gh."
+    exit 1
   fi
 
   # Check if PR already exists
@@ -603,6 +616,7 @@ cmd_promote() {
     echo "  View: gh pr view $existing_pr"
   else
     echo "  Creating PR..."
+    local pr_rc=0
     gh pr create \
       --head "$branch_name" \
       --title "$branch_name" \
@@ -611,8 +625,19 @@ cmd_promote() {
 Branch: \`$branch_name\`
 Commits: $commit_count
 
-$(git diff --stat "main...$branch_name" 2>/dev/null)" 2>&1 || true
-    ok "PR created"
+$(git diff --stat "main...$branch_name" 2>/dev/null)" 2>&1 || pr_rc=$?
+    # WI-562 IP-H2: only the already-exists race is tolerated; any other PR
+    # failure aborts promote with a nonzero exit.
+    if [[ $pr_rc -ne 0 ]]; then
+      if gh pr list --head "$branch_name" --json number --jq '.[0].number' 2>/dev/null | grep -q '[0-9]'; then
+        info "PR create reported failure but the PR exists (race) — continuing"
+      else
+        fail "gh pr create exited $pr_rc — promote aborted (branch IS pushed)"
+        exit 1
+      fi
+    else
+      ok "PR created"
+    fi
   fi
 
   # Get PR number

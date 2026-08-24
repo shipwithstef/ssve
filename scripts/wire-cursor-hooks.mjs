@@ -169,8 +169,15 @@ export function wireCursor(options = {}) {
   if (fs.existsSync(hooksFile)) {
     try {
       existing = JSON.parse(fs.readFileSync(hooksFile, "utf8"));
-    } catch {
-      existing = {};
+    } catch (err) {
+      // WI-562 IP-W1: a malformed config is NEVER silently reset to {} — that
+      // destroyed user hooks irrecoverably (audit HW-2). Abort loudly; the
+      // original bytes stay on disk for manual recovery.
+      process.stderr.write(
+        `wire-cursor-hooks: refusing to wire — ${hooksFile} is not valid JSON (${err.message}).\n` +
+        `Fix or remove the file manually; your existing hooks were NOT modified.\n`
+      );
+      return 1;
     }
   }
 
@@ -183,9 +190,27 @@ export function wireCursor(options = {}) {
   }
 
   fs.mkdirSync(path.dirname(hooksFile), { recursive: true });
+  // WI-562 IP-W1: immutable pre-mutation backup before the first write of a
+  // run (mirrors the grok wirer posture), then tmp+rename atomic write.
+  const backupPath = `${hooksFile}.pre-migration.bak`;
+  if (fs.existsSync(hooksFile) && !fs.existsSync(backupPath)) {
+    fs.copyFileSync(hooksFile, backupPath);
+  }
   const tmp = `${hooksFile}.${process.pid}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify(merged, null, 2) + "\n", "utf8");
-  fs.renameSync(tmp, hooksFile);
+  const payload = JSON.stringify(merged, null, 2) + "\n";
+  const fd = fs.openSync(tmp, "w", 0o644);
+  try {
+    fs.writeFileSync(fd, payload);
+    try { fs.fsyncSync(fd); } catch { /* tmpfs may reject fsync */ }
+  } finally {
+    fs.closeSync(fd);
+  }
+  try {
+    fs.renameSync(tmp, hooksFile);
+  } catch (err) {
+    try { fs.unlinkSync(tmp); } catch {}
+    throw err;
+  }
   process.stdout.write(`Wired Cursor hooks in ${hooksFile}\n`);
   return 0;
 }

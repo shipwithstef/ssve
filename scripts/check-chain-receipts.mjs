@@ -761,18 +761,29 @@ function loadSchema(receiptType) {
   // returned null from any other directory, turning validateReceipt into a
   // no-op that validated every receipt — the receipt-content gate silently
   // disabled by cwd. Resolve against the script's own location instead.
+  // WI-562 IP-R2: fail CLOSED. A missing/unreadable schema previously returned
+  // null and validateReceipt treated that as valid — a renamed or deleted
+  // schema file silently disabled the receipt gate. Now the caller sees the
+  // failure and refuses the receipt.
   const schemaPath = join(SCRIPT_DIR, "..", "schemas", "receipts", `${receiptType}.schema.json`);
-  if (!existsSync(schemaPath)) return null;
+  if (!existsSync(schemaPath)) {
+    throw new Error(`schema unavailable: ${receiptType} (${schemaPath} missing)`);
+  }
   try { return JSON.parse(readFileSync(schemaPath, "utf8")); }
-  catch (e) { return null; }
+  catch (e) { throw new Error(`schema unavailable: ${receiptType} (${e.message})`);
+  }
 }
 
 function validateReceipt(receiptType, receipt, sha = null) {
   // Minimal in-process validator: checks required keys + receipt_type.
   // Full JSON Schema validation can be plugged in later; for now,
   // verify required fields per the schema's "required" array.
-  const schema = loadSchema(receiptType);
-  if (!schema) return { valid: true, reasons: [] };
+  let schema;
+  try {
+    schema = loadSchema(receiptType);
+  } catch (error) {
+    return { valid: false, reasons: [error.message] };
+  }
   if (typeof receipt !== "object" || receipt === null) {
     return { valid: false, reasons: ["receipt is not an object"] };
   }

@@ -22,6 +22,13 @@ import {
   writeFileSync,
 } from "node:fs";
 import { dirname } from "node:path";
+import os from "node:os";
+// WI-562 IP-H5: process-death-proof lock expiry. A same-host lock whose recorded
+// process is provably alive is NEVER stolen regardless of age; a lock whose
+// process is provably dead (pid gone, or /proc start-token mismatch = PID reuse)
+// is reclaimed immediately. Locks without a usable same-host pid (pre-WI-562
+// bytes, cross-host writers, unreadable /proc) keep the legacy mtime path.
+import { ownerProcessIdentity, processIsAlive } from "../hooks/lib/process-liveness.mjs";
 
 const DEFAULT_LOCK_TIMEOUT_MS = 5000;
 const DEFAULT_STALE_LOCK_MS = 10 * 60 * 1000;
@@ -42,6 +49,14 @@ function readLock(lockPath) {
 function isStaleLock(lockPath, staleMs, now) {
   try {
     const meta = readLock(lockPath);
+    // WI-562 IP-H5: identity-bearing same-host locks are governed by process
+    // liveness, not age. true=alive (never stale), false=dead (stale now),
+    // null=undecidable (fall through to legacy mtime rule).
+    if (meta && Number.isInteger(meta.pid) && meta.pid >= 1 && meta.hostname === os.hostname()) {
+      const verdict = processIsAlive({ hostname: meta.hostname, pid: meta.pid, start_token: meta.start_token ?? null });
+      if (verdict === true) return false;
+      if (verdict === false) return true;
+    }
     const ts = Date.parse(meta?.ts ?? "");
     if (Number.isFinite(ts) && now - ts > staleMs) return true;
     const mtime = statSync(lockPath).mtimeMs;
@@ -62,7 +77,8 @@ function acquireStateLock(filePath, opts = {}) {
   while (true) {
     try {
       const fd = openSync(lockPath, constants.O_CREAT | constants.O_EXCL | constants.O_WRONLY, 0o600);
-      writeFileSync(fd, JSON.stringify({ pid: process.pid, ts: new Date().toISOString(), filePath }));
+      const identity = ownerProcessIdentity();
+      writeFileSync(fd, JSON.stringify({ pid: identity.pid, start_token: identity.start_token, hostname: identity.hostname, ts: new Date().toISOString(), filePath }));
       closeSync(fd);
       return () => {
         try { unlinkSync(lockPath); } catch {}
