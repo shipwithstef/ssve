@@ -29,6 +29,11 @@
         "scripts/emit-receipt.mjs",
         "scripts/wire-hooks.mjs",
         "scripts/wire-cursor-hooks.mjs"
+      ],
+      "validation_commands": [
+        "node scripts/lint-skills-manifest.mjs",
+        "bash test-framework/evals/tier-1/validate-worktree-safety.sh",
+        "bash test-framework/evals/run-all-evals.sh"
       ]
     },
     {
@@ -53,6 +58,11 @@
         "references/receipt-format-exceptions.json",
         "scripts/lint-receipt-formats.mjs",
         "hooks/lib/svc-ownership.mjs"
+      ],
+      "validation_commands": [
+        "node scripts/lint-skills-manifest.mjs",
+        "bash test-framework/evals/tier-1/validate-worktree-safety.sh",
+        "bash test-framework/evals/run-all-evals.sh"
       ]
     },
     {
@@ -74,6 +84,11 @@
         "scripts/extract-summary.sh",
         "scripts/pipeline-log.mjs",
         "schemas/pipeline-decision-entry.schema.json"
+      ],
+      "validation_commands": [
+        "node scripts/lint-skills-manifest.mjs",
+        "bash test-framework/evals/tier-1/validate-worktree-safety.sh",
+        "bash test-framework/evals/run-all-evals.sh"
       ]
     },
     {
@@ -95,6 +110,11 @@
         "scripts/wire-hooks.mjs",
         "scripts/wire-cursor-hooks.mjs",
         "scripts/wire-grok-hooks.mjs"
+      ],
+      "validation_commands": [
+        "node scripts/lint-skills-manifest.mjs",
+        "bash test-framework/evals/tier-1/validate-worktree-safety.sh",
+        "bash test-framework/evals/run-all-evals.sh"
       ]
     }
   ],
