@@ -40,7 +40,7 @@ WT="$FIX/.worktrees/promote-me"
 
 # 1. Push failure aborts promote nonzero BEFORE claiming success.
 set +e
-OUT=$(bash scripts/worktree.sh __inner_promote promote-me 2>&1)
+OUT=$(bash scripts/worktree.sh promote promote-me 2>&1)
 RC=$?
 set -e
 if [[ $RC -ne 0 ]]; then
@@ -54,33 +54,28 @@ else
   check "no 'Branch pushed' success claim on failure" true
 fi
 
-# 2. Lock-held-then-refuse: acquire the verb CAS, then run promote.
-LOCK_REF="refs/svc/locks/worktree-verb/_global"
-HOLDER_OID="$(env -u GIT_DIR -u GIT_WORK_TREE git -C "$FIX" hash-object -w --stdin <<<"holder: $$ $(hostname)")"
-env -u GIT_DIR -u GIT_WORK_TREE git -C "$FIX" update-ref "$LOCK_REF" "$HOLDER_OID" 0000000000000000000000000000000000000000 2>/dev/null \
-  || env -u GIT_DIR -u GIT_WORK_TREE git -C "$FIX" update-ref "$LOCK_REF" "$HOLDER_OID" 2>/dev/null || true
-# Write the holder payload the CAS reader expects (pid/host/start-token lines).
-printf '%s\n%s\n%s\n%s\n' "$$" "$(hostname)" "" "$(date -u +%FT%TZ)" >"$TMP/holder.txt"
-BLOB="$(env -u GIT_DIR -u GIT_WORK_TREE git -C "$FIX" hash-object -w "$TMP/holder.txt")"
-env -u GIT_DIR -u GIT_WORK_TREE git -C "$FIX" update-ref -d "$LOCK_REF" 2>/dev/null || true
-env -u GIT_DIR -u GIT_WORK_TREE git -C "$FIX" update-ref "$LOCK_REF" "$BLOB" 2>/dev/null || true
+# 2. Lock-held-then-refuse: acquire the verb CAS at ITS ACTUAL ref — the same
+# authorityLockRef identity worktree-verb-lock.mjs uses (sha256 of identity) —
+# then run promote and require the lock-specific refusal.
+LOCK_IDENTITY="worktree-verb:_global:$(cd "$FIX" && pwd)"
+LOCK_REF="refs/svc/authority-locks/$(printf '%s' "$LOCK_IDENTITY" | sha256sum | cut -d' ' -f1)"
+# Holder payload is a JSON blob per wi-claim's CAS reader contract:
+# {hostname, pid, process_start_token} — LIVE owner (this eval's own pid).
+printf '{"schema_version":1,"hostname":"%s","pid":%s,"process_start_token":null}\n' "$(hostname)" "$$" >"$TMP/holder.json"
+BLOB="$(env -u GIT_DIR -u GIT_WORK_TREE git -C "$FIX" hash-object -w "$TMP/holder.json")"
+ZERO="$(env -u GIT_DIR -u GIT_WORK_TREE git -C "$FIX" rev-parse --show-object-format >/dev/null 2>&1 && echo 0000000000000000000000000000000000000000 || echo 0000000000000000000000000000000000000000)"
+env -u GIT_DIR -u GIT_WORK_TREE git -C "$FIX" update-ref "$LOCK_REF" "$BLOB" "$ZERO" 2>/dev/null \
+  || env -u GIT_DIR -u GIT_WORK_TREE git -C "$FIX" update-ref "$LOCK_REF" "$BLOB" 2>/dev/null || true
 set +e
-OUT2=$(timeout 30 bash scripts/worktree.sh __inner_promote promote-me 2>&1)
+OUT2=$(timeout 30 bash scripts/worktree.sh promote promote-me 2>&1)
 RC2=$?
 set -e
 env -u GIT_DIR -u GIT_WORK_TREE git -C "$FIX" update-ref -d "$LOCK_REF" 2>/dev/null || true
-if [[ $RC2 -ne 0 ]] && grep -qiE "verb lock|lock_busy|cannot acquire" <<<"$OUT2"; then
-  check "held verb CAS lock ⇒ promote refuses (lock-held-then-refuse)" true
-elif [[ $RC2 -ne 0 ]]; then
-  # Promote may refuse for the earlier push-deny reason after lock release raced;
-  # accept a clean nonzero as long as it did not perform a push.
-  if ! grep -q "Branch pushed to origin" <<<"$OUT2"; then
-    check "held verb CAS lock ⇒ promote refuses (lock-held-then-refuse)" true
-  else
-    check "held verb CAS lock ⇒ promote refuses (lock-held-then-refuse)" false
-  fi
+# Strict: must cite the VERB LOCK specifically — any-nonzero is not proof.
+if [[ $RC2 -ne 0 ]] && grep -qiE "verb holds the global lock|lock_busy|cannot acquire the repository verb lock|authority-locks" <<<"$OUT2"; then
+  check "held verb CAS lock ⇒ promote refuses with lock-specific error" true
 else
-  check "held verb CAS lock ⇒ promote refuses (lock-held-then-refuse)" false
+  check "held verb CAS lock ⇒ promote refuses with lock-specific error" false
 fi
 
 # 3. Quarantine preserves bytes: an orphan dir under .worktrees is MOVED, not deleted.

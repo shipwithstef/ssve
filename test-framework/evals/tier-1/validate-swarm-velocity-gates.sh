@@ -44,23 +44,23 @@ grep -q "max_parallel=2" "$CONC_LOG" && check "fanout respects --max-parallel 2 
 # Measured overlap: each fake worker stamps start/end epochs; max concurrent <=2.
 cat >"$FAKEBIN/claude" <<'EOF'
 #!/usr/bin/env bash
+printf 'S %s\n' "$(date +%s%N)" >> "$MEASURE_FILE"
 sleep 0.5
+printf 'E %s\n' "$(date +%s%N)" >> "$MEASURE_FILE"
 echo done
 EOF
 chmod +x "$FAKEBIN/claude"
 export MEASURE_FILE="$TMP/conc.measure"
 : >"$MEASURE_FILE"
-T0=$(date +%s%3N)
 ( cd "$FIX" && PATH="$FAKEBIN:$PATH" bash "$ROOT/scripts/fanout.sh" --max-parallel 2 "$TMP/workers.jsonl" ) >/dev/null 2>&1
-T1=$(date +%s%3N)
-# 4 workers x ~0.5s serial would need ~2000ms at cap 1; bounded pool of 2 with
-# 0.5s workers must finish well under the serial bound.
-ELAPSED=$(( T1 - T0 ))
-SERIAL_BOUND=3600   # 4 x 0.9s generous per-worker serial estimate
-if [[ $ELAPSED -lt $SERIAL_BOUND ]]; then
-  check "bounded pool finishes under serial bound (${ELAPSED}ms < ${SERIAL_BOUND}ms ⇒ parallelism active, cap enforced by design)" true
+MAXC=$(sort -k2,2n "$MEASURE_FILE" | awk '{if($1=="S")c++; else c--; if(c>m)m=c} END{print m+0}')
+if [[ "$MAXC" -le 2 && "$MAXC" -ge 2 ]]; then
+  check "measured max concurrency == cap (max=$MAXC of cap=2)" true
+elif [[ "$MAXC" -lt 2 && "$MAXC" -ge 1 ]]; then
+  # Workers may serialize on machine load; still proves no unbounded herd.
+  check "measured concurrency bounded (max=$MAXC <= cap)" true
 else
-  check "elapsed ${ELAPSED}ms exceeds serial bound — pool not parallel?" false
+  check "concurrency exceeded cap (max=$MAXC > 2)" false
 fi
 ROWS=$(grep -c '^| W' "$TMP/table.out")
 [[ "$ROWS" == "4" ]] && check "all 4 worker summaries rendered" true || { echo "rows=$ROWS" >&2; check "all 4 worker summaries rendered" false; }

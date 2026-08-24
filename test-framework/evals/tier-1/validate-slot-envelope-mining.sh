@@ -84,13 +84,13 @@ try {
 } catch { console.log(0); }
 ')
 echo "identity-count=$IDENTITIES" >&2
-TOTAL_RECEIPTS=$(node -e '
+TOTAL_RECEIPTS=$(NO_COLOR=1 FORCE_COLOR=0 node -e '
 try {
   const s = JSON.parse(require("fs").readFileSync(".svc/gate-stats.json","utf8"));
   const total = Object.values(s.lanes || {}).reduce((n, l) => n + (l.receipts || 0), 0);
-  console.log(total);
-} catch { console.log(0); }
-')
+  process.stdout.write(String(total));
+} catch { process.stdout.write("0"); }
+' | tr -dc '[:digit:]')
 if [[ "$TOTAL_RECEIPTS" -ge 2 ]]; then
   echo "  ✓ both same-type slots counted as separate records in stats (total=$TOTAL_RECEIPTS)"
 else

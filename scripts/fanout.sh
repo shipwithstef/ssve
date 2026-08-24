@@ -113,6 +113,7 @@ launch_worker() {
   WORKER_BRANCH="$(echo "$line" | jq -r '.branch // .id // "unknown"')"
   SVC_HARNESS="$HARNESS" SVC_WORKER_SKILL="$SKILL" \
     SVC_WORKER_WI="$WORKER_WI" \
+    SVC_WORKER_MUTATION="${SVC_WORKER_MUTATION:-false}" \
     SVC_WORKER_DECLARED_COMMANDS="$DECLARED" \
     SVC_WORKER_BRANCH_CLAIM="${SVC_WORKER_BRANCH_CLAIM_PREFIX:-}${WORKER_BRANCH}" \
     bash "$DISPATCH" "$PAYLOAD" > "$LOG" 2>&1 &
@@ -147,17 +148,6 @@ run_queue() {
   done
 }
 
-run_queue
-
-# Drain: wait out every in-flight worker BEFORE inspecting summaries.
-for pid in "${PIDS[@]}"; do
-  wait "$pid" 2>/dev/null || true
-done
-PIDS=()
-
-# WI-562 V-2: branch_busy retry — requeue up to 2 attempts per the documented
-# consumer contract. A summary whose status is branch_busy goes back through
-# the bounded pool; anything else is final for this run.
 drain_pool() {
   for pid in "${PIDS[@]}"; do
     wait "$pid" 2>/dev/null || true
@@ -165,6 +155,9 @@ drain_pool() {
   PIDS=()
 }
 
+run_queue
+
+# Drain: wait out every in-flight worker BEFORE inspecting summaries.
 drain_pool
 
 for round_i in 1 2; do

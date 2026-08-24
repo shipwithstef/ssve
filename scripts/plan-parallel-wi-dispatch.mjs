@@ -359,6 +359,13 @@ function deriveValidationCommands(root, task) {
     const md = fs.readFileSync(path.join(root, 'docs/specs/work-items', `${task.wi}.md`), 'utf8');
     const section = md.match(/## Validation\n([\s\S]*?)(\n## |$)/)?.[1] || '';
     for (const m of section.matchAll(/^\s*[-*]\s+`([^`]+)`/gm)) cmds.push(m[1]);
+    // Fenced ```bash blocks inside the section are declared commands too.
+    for (const fence of section.matchAll(/```(?:bash|sh)\n([\s\S]*?)```/g)) {
+      for (const line of fence[1].split("\n")) {
+        const t = line.trim();
+        if (t && !t.startsWith("#")) cmds.push(t);
+      }
+    }
   } catch { /* no WI body */ }
   if (cmds.length === 0) {
     // Fallback: the repo's own test script — universally replayable when present.

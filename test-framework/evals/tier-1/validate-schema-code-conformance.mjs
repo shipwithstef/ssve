@@ -19,8 +19,11 @@ async function importRel(rel) {
 {
   const schema = JSON.parse(fs.readFileSync(path.join(ROOT, "schemas/authority-handover-receipt.schema.json"), "utf8"));
   const store = await importRel("hooks/lib/authority-store.mjs");
-  // The store emits exactly these lifecycle receipt kinds.
-  const codeKinds = new Set(["handover", "explicit_takeover", "recovery"]);
+  // Derive emitted kinds from the STORE SOURCE (kind:"<literal>" at receipt
+  // construction) — no hardcoded set to drift.
+  const storeSrc = fs.readFileSync(path.join(ROOT, "hooks/lib/authority-store.mjs"), "utf8");
+  const codeKinds = new Set([...storeSrc.matchAll(/schema_version: 1, receipt_id: crypto\.randomUUID\(\), kind: "(\w+)"/g)].map((m) => m[1]));
+  if (codeKinds.size === 0) throw new Error("no lifecycle receipt kinds found in authority-store source");
   const schemaEnum = new Set(schema.properties.kind.enum);
   for (const k of codeKinds) if (!schemaEnum.has(k)) problem(`authority kind '${k}' emitted by code but missing from schema enum`);
   for (const k of schemaEnum) if (!codeKinds.has(k)) problem(`authority kind '${k}' in schema enum but never emitted by code`);
