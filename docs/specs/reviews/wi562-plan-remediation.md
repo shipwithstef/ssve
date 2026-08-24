@@ -1,0 +1,64 @@
+# WI-562 Plan Remediation — Triple Review Gate Round 1 → Unanimous Consensus
+
+- **Date:** 2026-08-24
+- **Plan under review:** `docs/plans/2026-08-24-wi562-multi-agent-handoff-and-graph-engineering.md` (v2)
+- **Round-1 reviewers:** Codex gpt-5.6-sol (high) — NEEDS_FIX rubric 2.5; Grok grok-4.6 (high) — NEEDS_FIX rubric 4; Cursor Auto — NEEDS_FIX rubric 6.
+- **Review artifacts:** `docs/specs/reviews/wi562-plan-review-grok-high.md`, `/tmp` raw transcripts archived to `docs/specs/reviews/wi562-plan-review-round1-transcripts.md`.
+
+## Finding → Resolution Map
+
+### Codex findings (F-C1…F-C13)
+
+| # | Sev | Finding (abridged) | Resolution | Plan § |
+|---|---|---|---|---|
+| C1 | CRIT | IP-H1 absent; parallel merge-back trusts worker claims | **Accepted.** IP-H1 now Wave 1 H-A: shared `merge-back-core.mjs`, delete accepted-string list, workers commit before report, forged-PASS/dirty-tree/scope/digest fixtures | §H-A |
+| C2 | HIGH | Age-based theft persists when liveness uncertain; identity-less claims unhandled | **Accepted.** Same-host pid-bearing locks: positive death proof only (version-gated legacy class = locks lacking `start_token`). Claims (wi-claim) split into E2 with heartbeat + death-proof reclaim | §H-E1/E2 |
+| C3 | CRIT | finalizeHandover wrong crash state; would advance lease twice / tokenless takeover | **Accepted.** Redesigned to case A only: `expected_generation+1` AND `expected_revision+1` AND successor principal match ⇒ mark consumed, emit receipt, freeze delegations, NO lease mutation, idempotent. Case B refuses without token | §H-D |
+| C4 | HIGH | One object can't satisfy both schemas; release uncovered; evidence digests dropped; JSONL append not atomic enough | **Accepted.** Dual-write (normalized record ≠ lifecycle receipt); release records added; `evidence_digests` preserved; per-record atomic files via writeJsonAtomic | §H-F |
+| C5 | HIGH | H-G doesn't fulfill enforce-or-delete; no Bash-path lane-tasks validation | **Accepted.** Freeze enforced at guard layer with deletion fallback decision recorded at implementation; pre-commit lane-tasks validator added; residual in-session Bash window documented as accepted residual | §H-G |
+| C6 | HIGH | Branch-keyed lock can't serialize cleanup; not Git-CAS family | **Accepted.** Existing Git-ref CAS `withExclusiveLock` family; repo-wide `_global` lock for cleanup; one-directional ordering (no nesting either way) | §H-C |
+| C7 | HIGH | R-F breaks consumers (`timestamp` required by authenticity hook); absence-grandfathering fail-open | **Accepted.** Dual-write aliases for pipeline decisions; cutoff-marker grandfathering via `.svc/receipt-migration-WI562.json`; matrix zero-target scoped to upgraded subset, remainder accepted-debt → WI-563 | §R-F |
+| C8 | HIGH | R-G digest keyed by type collides across slots; digest domain undefined | **Accepted.** Digests keyed by composite `<type>::<wi>[::<phase>]`; canonical-JSON hashing domain defined in charter; normalization/GC/miner consumers updated together; tamper+collision+GC fixtures | §R-G |
+| C9 | HIGH | Deferrals untracked; catalog covers 3 of 7 hosts | **Accepted.** WI-563/WI-564 registered in new `docs/specs/wi-followups.md`; catalog carries capability truth for all 7 hook-capable hosts as WI-563 seed corpus | §0.2/§W-C |
+| C10 | HIGH | Charter denominator unprovable; subset checks allow reverse drift; "single emitter" language inconsistent | **Accepted.** Machine-readable `references/receipt-kind-registry.json` denominator; EXACT parity conformance w/ exception file; quick-fix routed through emit-receipt core writer | §R-A/R-D/R-E |
+| C11 | HIGH | Not execution-ready governance (no task DAG/write sets/lock order/external state) | **Accepted.** Implementation Contract section added: disjoint wave write sets, compensation ordering, external-state inventory, lock ordering | §Impl Contract |
+| C12 | MEDIUM | V-2 branch claims wedge/escape; branch_busy outside vocabulary | **Accepted.** Hashed claim ids, pid+start_token ownership, death-proof steal, SIGKILL/pid-reuse/slash tests; branch_busy added to result vocabulary + retry policy (max 2 redispatches) documented in dispatch-waves appendix | §V-2 |
+| C13 | MEDIUM | W-C preserves the ~35-case table IP-W3 kills | **Accepted (bounded).** Claude canonical identities generated from catalog; bespoke table demoted to explicitly-bounded legacy-migration adapter; drill runs on all three wirers | §W-C |
+
+### Grok findings (F-G1…F-G12)
+
+| # | Sev | Finding | Resolution |
+|---|---|---|---|
+| G1 | CRIT | IP-H1 neither implemented nor deferred; V-2 ships on top of trust hole | Same as C1 — Wave 1 H-A; V-2 dependency ordering respected (velocity lands Wave 3 AFTER ground-truth merge-back Wave 1) |
+| G2 | CRIT | finalizeHandover wrong state/tokenless completion; SessionStart fail-open | Same as C3 + SessionStart fail-closed: detects case-A stranding, invokes finalize, actionable blocking-grade warning on error, never auto-accepts case B |
+| G3 | HIGH | mkdir lock contradicts "same family" claim | Same as C6 — actual CAS family used |
+| G4 | HIGH | H-E unsatisfiable dual validation; bootstrapOrResume fictional | Same as C4 + resume wired into real `resumeController` |
+| G5 | HIGH | H-A inverts IP-H5 pid-less rule; HD-7 open | Same as C2/E2 |
+| G6 | HIGH | H7 freeze wrong verbs; lane-tasks bypass | Same as C5 |
+| G7 | HIGH | R-F freezes today's PARTIAL cells as baseline; R4 reduced to atomic-only | Matrix gate: zero-regression + upgraded-subset-to-zero + accepted-debt rows bound to WI-563 (option b). R4: quick-fix routed through emitter (single sanctioned path) |
+| G8 | HIGH | Quarantine fails worktree-safety orphan glob; promote tests must use scratch clone/fake remote | `.quarantine/` excluded from orphan check same-commit; hermetic fake-remote harness specified, never this repo's origin |
+| G9 | HIGH | gh-missing return 0; env bypass; MAX_PARALLEL=0 silent unbounded | gh-missing ⇒ nonzero unless `--no-pr` waiver; single `--skip-healing-gate` channel, env deprecated loudly; explicit `--unbounded` flag replaces 0-semantics |
+| G10 | MED | Slot parsing must aggregate per-slot, two-slots-same-type test | Adopted verbatim |
+| G11 | MED | Self-verify overclaims; T04 paths wrong; W-C table lives; exceptions under-enumerated | Coverage matrix (§0.2), corrected deliverable mapping (§0.1), bounded legacy adapter (§W-C), full exception enumeration in registry lint (§R-A) |
+| G12 | MED | Concurrency test flaky; snapshots vs quoting interplay; promotion notes missing | Lock-held-then-refuse deterministic pattern; same-commit snapshot+quoting rule (§0 constraint 3); Appendix P promotion notes |
+
+### Cursor findings (F-U1…F-U15)
+
+All 15 dispositioned; unique items beyond Codex/Grok:
+- U9 (hermetic refused-push mechanism): bare-repo origin with denying pre-push hook specified (§H-B).
+- U10 (baseline tautology): baseline pinned PRE-implementation at plan-approval time (§R-F).
+- U11 (--skip-healing-gate vs env equivalence): single-channel convergence + deprecation (§0 constraint 5).
+- U14 ("339 checks" static): dynamic-discovery language adopted (§0 constraint 2).
+- U15 (branch_busy consumer contract): retry policy + result-schema enum + dispatch-waves doc line (§V-2).
+
+## Round-2 verification
+
+Each round-1 reviewer re-reviews plan v2 restricted to their own findings' resolutions. Consensus target: all three ≥ APPROVE_WITH_FINDINGS with zero CRITICAL/HIGH unresolved.
+
+## Self-Verify
+
+| # | Check | How | PASS/FAIL |
+|---|---|---|---|
+| 1 | Every round-1 finding has a resolution row | Tables above (13+12+15 rows) | PASS |
+| 2 | No finding resolved by silent scope-drop | Deferrals carry named WI ids; residuals named | PASS |
+| 3 | Resolutions cite plan sections that exist in v2 | Spot-check §anchors | PASS |
