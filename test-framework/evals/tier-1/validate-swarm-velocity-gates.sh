@@ -11,7 +11,7 @@ echo "=== Tier 1: swarm DAG velocity (fanout pool, branch claims, freeze gate) =
 
 # --- V-1: bounded pool with 4 trivial workers at max_parallel=2 ---
 FIX="$TMP/fix"
-git init --quiet "$FIX"
+git -C "$TMP" init --quiet "$FIX"
 git -C "$FIX" config user.email t1@invalid; git -C "$FIX" config user.name t1
 mkdir -p "$FIX/.svc/dispatch"
 echo x >"$FIX/f.txt"; git -C "$FIX" add -A; git -C "$FIX" commit --quiet -m base

@@ -795,6 +795,8 @@ cp "$ROOT/hooks/lib/resolve-wi.mjs" "$WI494_MUT/marker/hooks/lib/resolve-wi.mjs"
 cp "$ROOT/hooks/lib/operation-scope.mjs" "$WI494_MUT/marker/hooks/lib/operation-scope.mjs"
 cp "$ROOT/hooks/lib/validate-task-graph-shape.mjs" "$WI494_MUT/marker/hooks/lib/validate-task-graph-shape.mjs"
 cp "$ROOT/hooks/lib/wi-claim.mjs" "$WI494_MUT/marker/hooks/lib/wi-claim.mjs"
+# WI-562: wi-claim/authority-store import the shared liveness lib
+cp "$ROOT/hooks/lib/process-liveness.mjs" "$WI494_MUT/marker/hooks/lib/process-liveness.mjs"
 cp "$ROOT/hooks/lib/svc-runtime-root.mjs" "$WI494_MUT/marker/hooks/lib/svc-runtime-root.mjs"
 cp "$ROOT/hooks/lib/authority-store.mjs" "$WI494_MUT/marker/hooks/lib/authority-store.mjs"
 cp "$ROOT/hooks/lib/delegation-authority.mjs" "$WI494_MUT/marker/hooks/lib/delegation-authority.mjs"
