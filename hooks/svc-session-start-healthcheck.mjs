@@ -509,8 +509,6 @@ try {
   }
 } catch {}
 
-process.exit(0);
-
   if (claimSameSession(host, sessionId, home) === "skip") process.exit(0);
 
   const hostPaths = resolveHostPaths(host, { repoRoot: HOOK_REPO_ROOT, home });

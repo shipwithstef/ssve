@@ -20,7 +20,7 @@ cd "$FIX"
 # 1. EMIT through the sanctioned emitter (writes digests meta into the note).
 BODY="{\"receipt_type\":\"verify-promotion\",\"schema_version\":1,\"wi\":\"WI-950\",\"verdict\":\"approved\",\"zero_waivers\":true,\"passes\":{},\"p3_target_type\":\"none\",\"p3_budget_seconds\":0,\"p3_outcome\":\"skip\",\"timestamp\":\"2026-08-20T00:00:00Z\",\"sha\":\"$SHA\"}"
 printf '%s\n' "$BODY" | node "$ROOT/scripts/emit-receipt.mjs" --type verify-promotion --wi WI-950 --sha "$SHA" >/dev/null 2>&1 || { echo "  ✗ emit failed"; exit 1; }
-NOTE=$(git notes --ref=svc-receipts show "$SHA")
+NOTE=$(env -u GIT_DIR -u GIT_WORK_TREE git -C "$FIX" notes --ref=svc-receipts show "$SHA")
 grep -q '"digests"' <<<"$NOTE" && echo "  ✓ emitter wrote digests meta into the note envelope" || { echo "  ✗ no digests meta in note"; exit 1; }
 
 MIRROR=".svc/receipts/${SHA:0:7}/verify-promotion--WI-950.json"
