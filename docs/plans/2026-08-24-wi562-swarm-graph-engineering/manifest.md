@@ -79,6 +79,7 @@
 | T01 | MODIFY | test-framework/evals/tier-1/validate-session-contract-freshness.sh | WI-562 ts-whitespace tolerance |
 | T01 | MODIFY | hooks/svc-session-start-healthcheck.mjs | WI-562 T01 |
 | T01 | MODIFY | scripts/svc-ensure-worktree.mjs | WI-562 T01 |
+| T01 | MODIFY | scripts/validate-review-receipt.mjs | WI-562 snapshot schema_version gate |
 ## Task Graph
 
 T01 -> T02 -> T03 -> T04 (sequential waves; see plan doc §Implementation Contract)

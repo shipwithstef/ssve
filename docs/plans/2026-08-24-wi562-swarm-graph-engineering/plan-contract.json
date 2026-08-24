@@ -57,7 +57,8 @@
         "test-framework/evals/tier-1/validate-promote-honesty-fake-origin.sh",
         "test-framework/evals/tier-1/validate-session-contract-freshness.sh",
         "hooks/svc-session-start-healthcheck.mjs",
-        "scripts/svc-ensure-worktree.mjs"
+        "scripts/svc-ensure-worktree.mjs",
+        "scripts/validate-review-receipt.mjs"
       ]
     },
     {
@@ -102,7 +103,7 @@
   ],
   "resource_review": {
     "verification": "changed-executable-census",
-    "denominator": 56,
+    "denominator": 57,
     "disposition": "no-risky-resource-writers",
     "evidence": "changed-executable-census over git diff origin/main --diff-filter=ACMR excluding volatile .svc/; no money/ledger/quota/identity writer vocabulary introduced (receipt writers go through emit-receipt atomic primitives)"
   },
