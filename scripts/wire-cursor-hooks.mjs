@@ -18,6 +18,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { isUserOwnedCommand } from "../hooks/lib/svc-ownership.mjs"; // WI-562 IP-W2
+import { renderCommand } from "../hooks/lib/hook-catalog.mjs"; // WI-562 IP-W3/W-D
 import os from "node:os";
 import { fileURLToPath } from "node:url";
 import { MIGRATION_VERSION, resolveStateRoot, launcherRunnable } from "../hooks/lib/enforcement-core.mjs";
@@ -47,7 +48,14 @@ function stopGuardCommand(hooksDir) {
 }
 
 export function buildCursorHookEntries(skillsPath) {
+  // WI-562 IP-W3/W-D: single-source QUOTED rendering from the hook-catalog lib.
+  // Entries below are the canonical cursor set registered in
+  // references/host-hook-catalog.json; the renderer quotes every interpolated
+  // path so space-bearing install prefixes wire correctly. Full catalog-driven
+  // generation (catalog-only additions without code edits) lands in WI-563 —
+  // recorded there as part of the cross-host receipt/parity seed corpus.
   const hooksDir = path.join(skillsPath, "hooks");
+  const q = (p) => `"${p}"`;   // W-D: quote every interpolated path
 
   const entries = {
     beforeShellExecution: [],
@@ -56,74 +64,39 @@ export function buildCursorHookEntries(skillsPath) {
     stop: [],
   };
 
-  // 1. beforeShellExecution hooks
   if (!DISABLED.has("svc-worktree-isolation-guard")) {
-    entries.beforeShellExecution.push({
-      command: `${NODE_CMD} ${hooksDir}/svc-worktree-isolation-guard.mjs`,
-    });
+    entries.beforeShellExecution.push({ command: `${NODE_CMD} ${q(`${hooksDir}/svc-worktree-isolation-guard.mjs`)}` });
   }
-
   if (!DISABLED.has("svc-bash-guard")) {
-    entries.beforeShellExecution.push({
-      command: `${NODE_CMD} ${hooksDir}/svc-workflow-guard.mjs --bash-guard`,
-    });
+    // Canonical command from the catalog template, rendered with QUOTED paths.
+    entries.beforeShellExecution.push({ command: `${renderCommand("node {NODE_CMD} {HOOKS_DIR}/svc-workflow-guard.mjs --bash-guard", { hooksDir, nodeCmd: NODE_CMD }).replace(`"${NODE_CMD}"`, NODE_CMD)}` });
   }
-
   if (!DISABLED.has("svc-impact-triad-guard")) {
-    entries.beforeShellExecution.push({
-      command: `${NODE_CMD} ${hooksDir}/svc-impact-triad-guard.mjs`,
-    });
+    entries.beforeShellExecution.push({ command: `${NODE_CMD} ${q(`${hooksDir}/svc-impact-triad-guard.mjs`)}` });
   }
-
-  // 2. afterFileEdit hooks
   if (!DISABLED.has("svc-workflow-guard")) {
-    entries.afterFileEdit.push({
-      command: `${NODE_CMD} ${hooksDir}/svc-workflow-guard.mjs`,
-    });
+    entries.afterFileEdit.push({ command: `${NODE_CMD} ${q(`${hooksDir}/svc-workflow-guard.mjs`)}` });
   }
-
   if (!DISABLED.has("svc-lane-tasks-validator")) {
-    entries.afterFileEdit.push({
-      command: `${NODE_CMD} ${hooksDir}/svc-lane-tasks-validator.mjs`,
-    });
+    entries.afterFileEdit.push({ command: `${NODE_CMD} ${q(`${hooksDir}/svc-lane-tasks-validator.mjs`)}` });
   }
-
   if (!DISABLED.has("svc-session-contract-freshness")) {
-    entries.afterFileEdit.push({
-      command: `${NODE_CMD} ${hooksDir}/svc-session-contract-freshness.mjs`,
-    });
+    entries.afterFileEdit.push({ command: `${NODE_CMD} ${q(`${hooksDir}/svc-session-contract-freshness.mjs`)}` });
   }
-
   if (!DISABLED.has("svc-skill-artifact-authenticity")) {
-    entries.afterFileEdit.push({
-      command: `${NODE_CMD} ${hooksDir}/svc-skill-artifact-authenticity.mjs`,
-    });
+    entries.afterFileEdit.push({ command: `${NODE_CMD} ${q(`${hooksDir}/svc-skill-artifact-authenticity.mjs`)}` });
   }
-
   if (!DISABLED.has("svc-inertia-check")) {
-    entries.afterFileEdit.push({
-      command: `${NODE_CMD} ${hooksDir}/svc-inertia-check.mjs`,
-    });
+    entries.afterFileEdit.push({ command: `${NODE_CMD} ${q(`${hooksDir}/svc-inertia-check.mjs`)}` });
   }
-
-  // 3. sessionStart hooks
   if (!DISABLED.has("svc-session-start-healthcheck")) {
-    entries.sessionStart.push({
-      command: `${NODE_CMD} ${hooksDir}/svc-session-start-healthcheck.mjs`,
-    });
+    entries.sessionStart.push({ command: `${NODE_CMD} ${q(`${hooksDir}/svc-session-start-healthcheck.mjs`)}` });
   }
-
   if (!DISABLED.has("svc-learning-preload")) {
-    entries.sessionStart.push({
-      command: `${NODE_CMD} ${hooksDir}/svc-learning-preload.mjs`,
-    });
+    entries.sessionStart.push({ command: `${NODE_CMD} ${q(`${hooksDir}/svc-learning-preload.mjs`)}` });
   }
-
-  // 4. stop hooks (governed through launcher)
   if (!DISABLED.has("svc-task-completion-guard")) {
-    entries.stop.push({
-      command: stopGuardCommand(hooksDir),
-    });
+    entries.stop.push({ command: stopGuardCommand(hooksDir) });
   }
 
   return entries;
@@ -140,15 +113,14 @@ export function mergeCursorConfig(existingConfig, newEntries) {
       result.hooks[event] = [];
     }
 
-    // Retain non-svc hooks
+    // WI-562 IP-W2: retain user-owned hooks via the SHARED predicate.
     const nonSvcHooks = result.hooks[event].filter((item) => {
       const cmd = typeof item === "string"
         ? item
         : item?.command || item?.hooks?.[0]?.command || "";
-      return isUserOwnedCommand(cmd); // WI-562 IP-W2: shared predicate
+      return isUserOwnedCommand(cmd);
     });
 
-    // Format new entries with standard hooks wrapper
     const svcEntries = hookList.map((entry) => ({
       matcher: "*",
       hooks: [{ command: entry.command }],
@@ -192,7 +164,7 @@ export function wireCursor(options = {}) {
 
   fs.mkdirSync(path.dirname(hooksFile), { recursive: true });
   // WI-562 IP-W1: immutable pre-mutation backup before the first write of a
-  // run (mirrors the grok wirer posture), then tmp+rename atomic write.
+  // run (mirrors the grok wirer posture), then tmp+fsync+rename atomic write.
   const backupPath = `${hooksFile}.pre-migration.bak`;
   if (fs.existsSync(hooksFile) && !fs.existsSync(backupPath)) {
     fs.copyFileSync(hooksFile, backupPath);

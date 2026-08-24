@@ -465,13 +465,35 @@ function regenerateMirror(sha, envelope) {
 // caller (the OPT-07 cache) can refuse to cache anything sourced from the
 // gitignored, routinely-deleted mirror — only a note-sourced green result is
 // durable enough to trust across invocations.
+
+// WI-562 IP-R9: verify mirror slots against the note envelope's digests meta
+// ({ "<type>::<wi>[::<phase>]": "sha256:<hex>" }). Unknown/missing digests are
+// tolerated (pre-charter envelopes); PRESENT digest + mismatched bytes = tamper.
+function mirrorDigestMismatch(mirror, envelope) {
+  const digests = envelope && typeof envelope === "object" ? envelope.digests : null;
+  if (!digests || typeof digests !== "object") return false;
+  for (const [identity, expected] of Object.entries(digests)) {
+    if (!/^sha256:[0-9a-f]{64}$/.test(String(expected))) continue;
+    const slotKey = `slot::${identity}`;
+    const receipt = mirror[slotKey];
+    if (!receipt) return true;   // slot present in note, missing in mirror
+    try {
+      const actual = createHash("sha256").update(JSON.stringify(receipt)).digest("hex");
+      if (`sha256:${actual}` !== expected) return true;
+    } catch { return true; }
+  }
+  return false;
+}
+
 function getReceiptsForSha(sha) {
   // Try notes first (authoritative)
   let envelope = readNoteForSha(sha);
   if (envelope) {
-    // Regenerate mirror if missing
+    // Regenerate mirror if missing OR tampered (WI-562 IP-R9): a mirror whose
+    // slot content no longer matches the note envelope's digests is NEVER
+    // served — regenerate from the authoritative notes instead.
     const mirror = readMirrorForSha(sha);
-    if (!mirror) regenerateMirror(sha, envelope);
+    if (!mirror || mirrorDigestMismatch(mirror, envelope)) regenerateMirror(sha, envelope);
     return { envelope, source: "note" };
   }
   // Fall back to mirror only (development mode where notes haven't synced)

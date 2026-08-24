@@ -213,6 +213,14 @@ function candidateHasDeletions(targetSha = null) {
   return output.split(/\r?\n/).some((line) => /^(?:D|R\d*|C\d*)\t/.test(line));
 }
 
+
+// WI-562 IP-R9: composite identity for envelope digest keys — same shape as the
+// slot key minus the target sha (implicit per note).
+function slotKeyDigestIdentity({ type, wi, phase }) {
+  return `${type}::${wi}${phase ? `::${phase}` : ""}`;
+}
+export { slotKeyDigestIdentity };
+
 function writeNote(sha, type, wi, phase, receipt) {
   // WI-550:
   // - Canonical identity key: {receipt_type, wi, target_sha, phase?}
@@ -273,6 +281,11 @@ function writeNote(sha, type, wi, phase, receipt) {
       }
 
       envelope[noteSlotKey] = receipt;
+      // WI-562 IP-R9: per-slot content digest bound to the FULL composite
+      // identity "<type>::<wi>[::<phase>]" (the note target supplies the sha).
+      // Canonical-object hashing domain defined in the Receipt Format Charter.
+      envelope.digests = { ...(envelope.digests || {}) };
+      envelope.digests[slotKeyDigestIdentity({ type, wi, phase })] = receiptDigest(receipt);
 
       const tmpPath = join(tmpdir(), `svc-note-${process.pid}-${Date.now()}-${attempt}.json`);
       writeFileSync(tmpPath, JSON.stringify(envelope));
