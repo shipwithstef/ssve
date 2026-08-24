@@ -26,7 +26,6 @@
 #   - scripts/haiku-extract.sh (optional; only used when Tier A fails)
 set -eu
 
-SPEC="${1:-/dev/stdin}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DISPATCH="$SCRIPT_DIR/dispatch-worker.sh"
 EXTRACT="$SCRIPT_DIR/extract-summary.sh"
@@ -41,9 +40,55 @@ declare -a PIDS=()
 declare -a IDS=()
 declare -a LOGS=()
 
-# Launch workers
-while IFS= read -r line; do
-  [ -z "$line" ] && continue
+# WI-562 Swarm DAG Velocity (V-1): adaptive bounded concurrency.
+# Resolution order: --max-parallel N > SVC_FANOUT_MAX_PARALLEL > adaptive
+# default min(queue, max(2, nproc/2)). Invalid/zero env values fall back to the
+# adaptive default with a warning; UNBOUNDED requires the explicit --unbounded
+# flag so callers can never "accidentally" disable the cap.
+MAX_PARALLEL=""
+UNBOUNDED=false
+ARGS=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --max-parallel) MAX_PARALLEL="$2"; shift 2 ;;
+    --unbounded)    UNBOUNDED=true; shift ;;
+    *) ARGS+=("$1"); shift ;;
+  esac
+done
+
+SPEC="${ARGS[0]:-/dev/stdin}"
+QUEUE=$(grep -c . "$SPEC" 2>/dev/null || echo 0)
+NPROC=$(nproc 2>/dev/null || echo 4)
+
+if [[ $UNBOUNDED == true ]]; then
+  MAX_PARALLEL=$(( QUEUE > 0 ? QUEUE : 1 ))
+  echo "fanout: --unbounded requested — launching all $QUEUE workers at once (loudly logged per WI-562 V-1)" >&2
+elif [[ -z "$MAX_PARALLEL" ]]; then
+  ENV_VAL="${SVC_FANOUT_MAX_PARALLEL:-}"
+  if [[ -n "$ENV_VAL" ]] && [[ "$ENV_VAL" =~ ^[1-9][0-9]*$ ]]; then
+    MAX_PARALLEL="$ENV_VAL"
+  else
+    if [[ -n "$ENV_VAL" ]]; then
+      echo "fanout: ignoring invalid SVC_FANOUT_MAX_PARALLEL='$ENV_VAL' — using adaptive default" >&2
+    fi
+    ADAPTIVE=$(( NPROC / 2 )); (( ADAPTIVE < 2 )) && ADAPTIVE=2
+    (( ADAPTIVE > QUEUE && QUEUE > 0 )) && ADAPTIVE=$QUEUE
+    MAX_PARALLEL=$ADAPTIVE
+  fi
+elif ! [[ "$MAX_PARALLEL" =~ ^[1-9][0-9]*$ ]]; then
+  echo "fanout: ignoring invalid --max-parallel '$MAX_PARALLEL' — using adaptive default" >&2
+  ADAPTIVE=$(( NPROC / 2 )); (( ADAPTIVE < 2 )) && ADAPTIVE=2
+  (( ADAPTIVE > QUEUE && QUEUE > 0 )) && ADAPTIVE=$QUEUE
+  MAX_PARALLEL=$ADAPTIVE
+fi
+(( MAX_PARALLEL > QUEUE && QUEUE > 0 )) && MAX_PARALLEL=$QUEUE
+
+echo "fanout: queue=$QUEUE max_parallel=$MAX_PARALLEL (nproc=$NPROC)" >&2
+
+# WI-562 V-1: bounded job-slot pool — launch up to MAX_PARALLEL, then
+# launch-next-as-one-finishes. Streaming wait replaces the thundering herd.
+launch_worker() {
+  local line="$1"
   ID="$(echo "$line" | jq -r '.id')"
   HARNESS="$(echo "$line" | jq -r '.harness // "claude"')"
   SKILL="$(echo "$line" | jq -r '.skill // "execute-changeset"')"
@@ -59,9 +104,29 @@ while IFS= read -r line; do
   SVC_HARNESS="$HARNESS" SVC_WORKER_SKILL="$SKILL" \
     bash "$DISPATCH" "$PAYLOAD" > "$LOG" 2>&1 &
   PIDS+=("$!")
+}
+
+while IFS= read -r line; do
+  [ -z "$line" ] && continue
+  # Slot free? Reap every finished worker before considering a new launch.
+  while [[ ${#PIDS[@]} -ge $MAX_PARALLEL ]]; do
+    local_done=0
+    alive=()
+    for pid in "${PIDS[@]}"; do
+      if kill -0 "$pid" 2>/dev/null; then
+        alive+=("$pid")
+      else
+        wait "$pid" 2>/dev/null || true
+        local_done=1
+      fi
+    done
+    PIDS=("${alive[@]}")
+    [[ $local_done -eq 0 ]] && sleep 0.2
+  done
+  launch_worker "$line"
 done < "$SPEC"
 
-# Wait for all
+# Drain remaining workers
 for pid in "${PIDS[@]}"; do
   wait "$pid" 2>/dev/null || true
 done

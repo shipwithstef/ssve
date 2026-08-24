@@ -19,6 +19,7 @@
  */
 
 import { join, resolve } from "path";
+import { renameSync } from "fs";
 import { readJsonAtomic, writeJsonAtomic } from "./state-io.mjs";
 
 const STATE_FILE = ".svc/orchestrator-state.json";
@@ -27,7 +28,18 @@ function loadState(projectRoot) {
   const path = join(resolve(projectRoot), STATE_FILE);
   try {
     return readJsonAtomic(path);
-  } catch {
+  } catch (error) {
+    // WI-562 IP-H7: a corrupt state file used to be silently swallowed and a
+    // fresh default written over it — destroying active-WI resume state. Now
+    // the corrupt bytes are QUARANTINED next to the original and the caller
+    // gets null (clean start) with a loud warning; prior state is preserved.
+    try {
+      const quarantine = `${path}.corrupt-${new Date().toISOString().replace(/[:.]/g, "-")}`;
+      renameSync(path, quarantine);
+      process.stderr.write(`[orchestrator-state] corrupt state quarantined: ${quarantine} (${error.message})\n`);
+    } catch {
+      process.stderr.write(`[orchestrator-state] corrupt state could not be quarantined: ${error.message}\n`);
+    }
     return null;
   }
 }

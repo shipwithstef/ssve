@@ -75,6 +75,69 @@ if (!manifest.authority_capabilities?.mutating_child_execution) throw new Error(
   unset SVC_DELEGATION_TOKEN
 fi
 
+# ── WI-562 V-2: non-blocking branch claim ──────────────────────────────────
+# Advisory claim on this branch so parallel workers fast-fail instead of
+# blocking on locks. Hashed identity (slash-safe), pid+start_token ownership,
+# positive-death-proof steal of stale claims, EXIT-trap release. branch_busy is
+# a retryable status (fanout requeues up to 2x; dispatch-waves documents the
+# cross-run policy).
+if [[ -n "$SVC_WORKER_BRANCH_CLAIM" ]]; then
+  CLAIM_DIR="$(git rev-parse --git-common-dir 2>/dev/null)/svc-wave-branch-claims"
+  CLAIM_ID="$(printf '%s' "$SVC_WORKER_BRANCH_CLAIM" | sha256sum | cut -d' ' -f1)"
+  CLAIM_PATH="$CLAIM_DIR/$CLAIM_ID"
+  mkdir -p "$CLAIM_DIR"
+  START_TOKEN=""
+  if [[ -r "/proc/$$/stat" ]]; then
+    START_TOKEN="$(sed 's/.*) //' "/proc/$$/stat" | awk '{print $20}')"
+  fi
+  claim_try_acquire() {
+    if mkdir "$CLAIM_PATH" 2>/dev/null; then
+      printf '%s\n%s\n%s\n%s\n' "$$" "$(hostname)" "$START_TOKEN" "$(date -u +%FT%TZ)" >"$CLAIM_PATH/owner"
+      return 0
+    fi
+    return 1
+  }
+  claim_owner_alive() {
+    local owner_file="$CLAIM_PATH/owner"
+    [[ -r "$owner_file" ]] || return 2   # malformed claim: treat as dead
+    local o_pid o_host o_tok
+    read -r o_pid < <(sed -n 1p "$owner_file")
+    read -r o_host < <(sed -n 2p "$owner_file")
+    read -r o_tok  < <(sed -n 3p "$owner_file")
+    [[ "$o_host" == "$(hostname)" ]] || return 2
+    kill -0 "$o_pid" 2>/dev/null || return 1
+    # PID reuse guard: compare start tokens when both sides have one.
+    if [[ -n "$o_tok" && -r "/proc/$o_pid/stat" ]]; then
+      local cur; cur="$(sed 's/.*) //' "/proc/$o_pid/stat" | awk '{print $20}')"
+      [[ "$cur" == "$o_tok" ]] || return 1
+    fi
+    return 0
+  }
+  branch_busy_exit() {
+    echo "=== SVC_WORKER_SUMMARY ==="
+    echo "status: branch_busy"
+    echo "worker_summary: branch $SVC_WORKER_BRANCH_CLAIM is claimed by another worker"
+    echo "files_changed:"
+    echo "commits: none"
+    echo "notable_decisions:"
+    echo "blockers:"
+    echo "  - branch_busy (retryable; orchestrator re-dispatches max 2 attempts)"
+    echo "next_action: redispatch this WI after the claim holder finishes"
+    echo "=== END_SVC_WORKER_SUMMARY ==="
+    exit 0
+  }
+  if ! claim_try_acquire; then
+    if claim_owner_alive; then
+      branch_busy_exit   # live owner: immediate structured skip — no waiting
+    else
+      rm -rf "$CLAIM_PATH"   # provably-dead owner: steal stale claim
+      claim_try_acquire || branch_busy_exit
+    fi
+  fi
+  claim_release() { rm -rf "$CLAIM_PATH" 2>/dev/null || true; }
+  trap claim_release EXIT INT TERM
+fi
+
 # Cognitive Routing: Select model based on skill if not explicitly overridden
 if [[ -z "$SVC_WORKER_MODEL" ]]; then
   case "$SKILL" in

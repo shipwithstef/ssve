@@ -171,3 +171,16 @@ After merge-back validation passes, update the parent `.svc/lane-tasks-<WI>.json
 sequentially, then refresh the host mirror from file state. If any worker fails,
 leave that WI failed or blocked with the result path and continue only with
 independent successful WIs.
+
+## Appendix: WI-562 branch-claim retry policy (V-2)
+
+Workers dispatched with `SVC_WORKER_BRANCH_CLAIM=<branch>` acquire an advisory
+Git-claims directory lock (`$(git rev-parse --git-common-dir)/svc-wave-branch-claims/<sha256(branch)>`).
+A worker whose branch is claimed by a LIVE process exits immediately with
+`status: branch_busy` in its `SVC_WORKER_SUMMARY`. Retry contract:
+
+| Consumer | Behavior |
+|---|---|
+| `scripts/fanout.sh` | re-queues `branch_busy` workers up to **2** attempts within the same run |
+| orchestrator (dispatch-waves) | across runs: max **2** redispatches, then the task is reported `blocked` in the wave report |
+| stale claims | reclaimed only on positive death proof (pid + start-token); SIGKILL leftovers are safe to steal |

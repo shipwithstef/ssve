@@ -186,6 +186,29 @@ function delegatedDecision({ env, operationGit, targets, now }) {
   } catch (error) { return { allow: false, reason: `delegated mutation denied: ${error.message}` }; }
 }
 
+
+// WI-562 IP-H7: locate an effective .worktree-freeze marker for the mutation's
+// worktree chain. Marker content names the ONE directory edits are allowed in.
+function readFreezeMarker(candidateRoots) {
+  for (const root of candidateRoots) {
+    if (!root) continue;
+    let dir = path.resolve(root);
+    while (true) {
+      const marker = path.join(dir, ".worktree-freeze");
+      try {
+        if (fs.existsSync(marker)) {
+          const allowedDir = path.resolve(dir, fs.readFileSync(marker, "utf8").trim() || dir);
+          return { markerDir: dir, allowedDir };
+        }
+      } catch { /* unreadable marker: treat as absent */ }
+      const parent = path.dirname(dir);
+      if (parent === dir) break;
+      dir = parent;
+    }
+  }
+  return null;
+}
+
 export function classifyMutation(call, env = process.env, now = Date.now()) {
   const normalized = {
     toolName: String(call?.toolName || ""),
@@ -229,6 +252,28 @@ export function classifyMutation(call, env = process.env, now = Date.now()) {
     ...scope.targets.map((target) => target.canonical),
     ...(scope.shell_boundary?.targets || []),
   ])];
+
+  // WI-562 IP-H7 (enforce-or-unavailable): when a worktree freeze marker is
+  // present and the mutation targets a path OUTSIDE the frozen-permitted
+  // directory, the mutation is refused here at the guard layer. The sole
+  // waiver is unfreeze (deleting the marker). Hosts that never wire this guard
+  // fall back to verb-level enforcement only in worktree.sh.
+  const frozenRoot = readFreezeMarker([...(operationGit ? [operationGit.current, operationGit.defaultRoot] : []), normalized.cwd]);
+  if (frozenRoot) {
+    const insideAllowed = (t) => {
+      const rel = path.relative(frozenRoot.allowedDir, t);
+      return !rel.startsWith("..") && rel !== "";
+    };
+    if (!targets.every(insideAllowed)) {
+      return {
+        classification: "repo-mutation",
+        allow: false,
+        reason: `worktree freeze active (.worktree-freeze in ${frozenRoot.markerDir}): edits restricted to ${frozenRoot.allowedDir}. Unfreeze with scripts/worktree.sh unfreeze.`,
+        targets,
+        operation_scope: scope,
+      };
+    }
+  }
   if (scopeHost === "codex" && operationGit && normalized.sessionId) {
     const lease = readOwnerLease(operationGit.current, normalized.sessionId, env) ||
       readOwnerLease(operationGit.defaultRoot, normalized.sessionId, env);

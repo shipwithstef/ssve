@@ -127,8 +127,18 @@ try {
   usage();
 }
 
+const ts = args.timestamp ?? new Date().toISOString();
 const event = {
-  timestamp: args.timestamp ?? new Date().toISOString(),
+  // WI-562 IP-R7 canonical fields (schema_version >= 1 entries validate
+  // against schemas/pipeline-decision-entry.schema.json)...
+  schema_version: 1,
+  kind: args.type,
+  ts,
+  // ...written ALONGSIDE the legacy alias keys so every historical consumer
+  // (e.g. svc-skill-artifact-authenticity requiring `timestamp`) keeps working.
+  timestamp: ts,
+  legacy_type: args.type,
+  legacy_timestamp: ts,
   run_id: args["run-id"],
   skill: args.skill,
   phase: Number(args.phase),
