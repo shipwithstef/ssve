@@ -85,3 +85,16 @@ Each round-1 reviewer re-reviews plan v2 restricted to their own findings' resol
 ## Round-3 verification
 
 Same protocol as round 2: each reviewer verifies ONLY their outstanding items on plan v3. Consensus target unchanged.
+
+## Round 3 → Round 4 remediation
+
+| Finding | R3 status | v4 resolution |
+|---|---|---|
+| Codex C3 | REJECTED | Token-proof moved INSIDE the lease: acceptHandover embeds `accepted_handover_id` + `accepted_token_hash` in its first atomic write; takeover/recovery never write these fields ⇒ stranded tuple is token-gated proof (§H-D) |
+| Codex C1 | PARTIAL | Evidence commands must ∈ plan-declared `validation_commands`; undeclared command = failure — no worker-selected tautologies (§H-A) |
+| Codex C2 / Grok G5 | PARTIAL | Mandatory heartbeat contract: pid-less claims record `heartbeat_contract{interval}` at creation; renewClaim wired at ensure-worktree resume + worktree.sh guard + dispatch-worker exec loop (real callers) (§H-E2) |
+| Codex C5 | PARTIAL | Per-host freeze depth explicit in catalog (`freeze_enforcement: guard\|verbs-only`); residuals bounded by capability truth; marker deletion remains sole waiver (§H-G) |
+| Codex C7 | PARTIAL | Baseline extended with frozen PR-review inventory (currently EMPTY set recorded; identity = path+content-hash) (§R-F) |
+| Cursor U10 | PARTIAL | Baseline removed from W3 write set; declared pre-approved immutable artifact in plan-contract.json |
+
+Round-2 items already RESOLVED and not re-litigated: Codex C6/C9/C13, Grok G1–G4/G6–G12, Cursor U1/U2/U4–U9/U11–U15.

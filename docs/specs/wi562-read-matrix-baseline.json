@@ -3,19 +3,90 @@
   "captured_by": "WI-562 plan approval (pre-implementation, per round-2 Cursor U10)",
   "source": "docs/specs/audits/2026-08-23-improvement-protocol-multi-agent-handoff-and-verification-receipts.md section 4.1 (verbatim assessment, file:line evidence therein)",
   "kinds": [
-    {"kind": "chain-receipts", "schema_version": "int const 1", "validated_on_read": "YES", "notes": "check-chain-receipts schema+blueprint; WI-562 upgrades fail-closed loading"},
-    {"kind": "install-receipts", "schema_version": "int version-bound", "validated_on_read": "YES", "notes": "identity-bound validateInstallReceipt; triplication -> R-E conformance"},
-    {"kind": "denial-receipts", "schema_version": "minimum 1", "validated_on_read": "PARTIAL", "notes": "digest/dedup only; body never re-validated"},
-    {"kind": "authority-lifecycle", "schema_version": "int const 1", "validated_on_read": "PARTIAL", "notes": "hand-rolled resume match; RC-1 enum mismatch; WI-562 adds explicit_takeover + normalized records"},
-    {"kind": "delegation-completion", "schema_version": "int const 1", "validated_on_read": "YES", "notes": "shape check; duplication -> R-E"},
-    {"kind": "gate-receipts-pipeline-decisions", "schema_version": "absent", "validated_on_read": "NO", "notes": "ad-hoc greps; WI-562 adds canonical aliases + schema"},
-    {"kind": "pr-review-receipts", "schema_version": "absent", "validated_on_read": "PARTIAL", "notes": "hand-rolled fields; WI-562 adds snapshot-based schema_version enforcement"},
-    {"kind": "story-receipts", "schema_version": "absent template-driven", "validated_on_read": "YES", "notes": "registry-parameterized auditor exit-2"},
-    {"kind": "quick-fix-staging", "schema_version": "int const 1", "validated_on_read": "PARTIAL", "notes": "tree-hash cross-check in reconcile only; non-atomic writer fixed by R-D"},
-    {"kind": "external-review-cache", "schema_version": "int enum [2]", "validated_on_read": "YES", "notes": "write AND cache-hit"},
-    {"kind": "migration-receipts", "schema_version": "int const 1", "validated_on_read": "YES", "notes": "digest-checked reversible"},
-    {"kind": "runtime-projections", "schema_version": "string runtime-projection-v2", "validated_on_read": "NO", "notes": "ad-hoc; charter exception-listed"}
+    {
+      "kind": "chain-receipts",
+      "schema_version": "int const 1",
+      "validated_on_read": "YES",
+      "notes": "check-chain-receipts schema+blueprint; WI-562 upgrades fail-closed loading"
+    },
+    {
+      "kind": "install-receipts",
+      "schema_version": "int version-bound",
+      "validated_on_read": "YES",
+      "notes": "identity-bound validateInstallReceipt; triplication -> R-E conformance"
+    },
+    {
+      "kind": "denial-receipts",
+      "schema_version": "minimum 1",
+      "validated_on_read": "PARTIAL",
+      "notes": "digest/dedup only; body never re-validated"
+    },
+    {
+      "kind": "authority-lifecycle",
+      "schema_version": "int const 1",
+      "validated_on_read": "PARTIAL",
+      "notes": "hand-rolled resume match; RC-1 enum mismatch; WI-562 adds explicit_takeover + normalized records"
+    },
+    {
+      "kind": "delegation-completion",
+      "schema_version": "int const 1",
+      "validated_on_read": "YES",
+      "notes": "shape check; duplication -> R-E"
+    },
+    {
+      "kind": "gate-receipts-pipeline-decisions",
+      "schema_version": "absent",
+      "validated_on_read": "NO",
+      "notes": "ad-hoc greps; WI-562 adds canonical aliases + schema"
+    },
+    {
+      "kind": "pr-review-receipts",
+      "schema_version": "absent",
+      "validated_on_read": "PARTIAL",
+      "notes": "hand-rolled fields; WI-562 adds snapshot-based schema_version enforcement"
+    },
+    {
+      "kind": "story-receipts",
+      "schema_version": "absent template-driven",
+      "validated_on_read": "YES",
+      "notes": "registry-parameterized auditor exit-2"
+    },
+    {
+      "kind": "quick-fix-staging",
+      "schema_version": "int const 1",
+      "validated_on_read": "PARTIAL",
+      "notes": "tree-hash cross-check in reconcile only; non-atomic writer fixed by R-D"
+    },
+    {
+      "kind": "external-review-cache",
+      "schema_version": "int enum [2]",
+      "validated_on_read": "YES",
+      "notes": "write AND cache-hit"
+    },
+    {
+      "kind": "migration-receipts",
+      "schema_version": "int const 1",
+      "validated_on_read": "YES",
+      "notes": "digest-checked reversible"
+    },
+    {
+      "kind": "runtime-projections",
+      "schema_version": "string runtime-projection-v2",
+      "validated_on_read": "NO",
+      "notes": "ad-hoc; charter exception-listed"
+    }
   ],
   "accepted_debt_bound_to": "WI-563",
-  "wi562_upgraded_subset": ["chain-receipts", "quick-fix-staging", "gate-receipts-pipeline-decisions", "pr-review-receipts", "authority-lifecycle"]
+  "wi562_upgraded_subset": [
+    "chain-receipts",
+    "quick-fix-staging",
+    "gate-receipts-pipeline-decisions",
+    "pr-review-receipts",
+    "authority-lifecycle"
+  ],
+  "frozen_pr_review_receipt_inventory": {
+    "path": ".svc/review-receipts/",
+    "files": [],
+    "note": "inventory at plan approval is EMPTY; every future file is schema_version-enforced (identity = path + content hash, extended by the validator at implementation)"
+  }
 }
