@@ -737,6 +737,8 @@ cp "$ROOT/hooks/lib/validate-task-graph-shape.mjs" "$WI494_MUT/boot/hooks/lib/va
 cp "$ROOT/hooks/lib/wi-claim.mjs" "$WI494_MUT/boot/hooks/lib/wi-claim.mjs"
 cp "$ROOT/hooks/lib/svc-runtime-root.mjs" "$WI494_MUT/boot/hooks/lib/svc-runtime-root.mjs"
 cp "$ROOT/hooks/lib/authority-store.mjs" "$WI494_MUT/boot/hooks/lib/authority-store.mjs"
+# WI-562: authority-store now imports the shared liveness lib
+cp "$ROOT/hooks/lib/process-liveness.mjs" "$WI494_MUT/boot/hooks/lib/process-liveness.mjs"
 cp "$ROOT/hooks/lib/delegation-authority.mjs" "$WI494_MUT/boot/hooks/lib/delegation-authority.mjs"
 cp "$ROOT/hooks/lib/claim-owner.mjs" "$WI494_MUT/boot/hooks/lib/claim-owner.mjs"
 cp "$ROOT/hooks/lib/wi-id.mjs" "$WI494_MUT/boot/hooks/lib/wi-id.mjs"  # WI-497 canonical dep

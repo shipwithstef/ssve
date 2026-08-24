@@ -327,12 +327,18 @@ function writeNote(sha, type, wi, phase, receipt) {
 // state-io's writeJsonAtomic, schema-validated BEFORE placement. Direct
 // writeFileSync of receipt payloads outside this path is banned (tier-1 grep
 // gate validate-atomic-receipt-writes.sh).
-export function resolveMirrorPaths({ type, wi, phase = null }) {
+export function resolveMirrorPaths({ type, wi, phase = null, targetShaOverride = null }) {
   const treeHash = git(["write-tree"]);
   const head = git(["rev-parse", "--verify", "HEAD"]);
   const headTree = head ? git(["rev-parse", `${head}^{tree}`]) : null;
-  const writeStaging = !head || !treeHash || treeHash !== headTree;
-  const targetSha = writeStaging ? null : head;
+  let writeStaging = !head || !treeHash || treeHash !== headTree;
+  let targetSha = writeStaging ? null : head;
+  if (targetShaOverride) {
+    // Explicit --sha emission: mirror belongs to the TARGET commit directory
+    // regardless of working-tree state (WI-550 identity semantics preserved).
+    targetSha = targetShaOverride;
+    writeStaging = false;
+  }
   const dir = writeStaging
     ? join(".svc", "receipts", "staging", treeHash || "no-tree")
     : join(".svc", "receipts", targetSha.substring(0, 7));
@@ -347,10 +353,10 @@ export function resolveMirrorPaths({ type, wi, phase = null }) {
   };
 }
 
-export function writeReceiptMirror({ type, wi, body, phase = null }) {
+export function writeReceiptMirror({ type, wi, body, phase = null, targetShaOverride = null }) {
   const v = validateReceipt(type, body);
   if (!v.valid) throw new Error(`receipt invalid: ${v.reasons.join("; ")}`);
-  const resolved = resolveMirrorPaths({ type, wi, phase });
+  const resolved = resolveMirrorPaths({ type, wi, phase, targetShaOverride });
   writeJsonAtomic(resolved.mirror_path, body);
   // Compatibility alias: preserve historical <type>.json readers only when this
   // does not clobber a different WI's receipt.
@@ -479,7 +485,7 @@ function main() {
     }
   }
 
-  const written = writeReceiptMirror({ type: args.type, wi: args.wi, body, phase: phaseIdentity });
+  const written = writeReceiptMirror({ type: args.type, wi: args.wi, body, phase: phaseIdentity, targetShaOverride: explicitTargetSha });
   mirrorPath = written.mirror_path;
   mirrorAliasPath = written.mirror_alias_path;
 

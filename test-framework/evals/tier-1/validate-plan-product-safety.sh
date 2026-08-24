@@ -36,7 +36,12 @@ node -e 'const fs=require("fs");const p=process.argv[1],c=require(p);c.base_sha=
 node "$ROOT/scripts/validate-plan-contract.mjs" "$WRITER_CONTRACT" "$WRITER" >/dev/null
 node -e 'const fs=require("fs");const p=process.argv[1],c=require(p);c.base_sha="missing-base";fs.writeFileSync(p,JSON.stringify(c))' "$WRITER_CONTRACT"
 if node "$ROOT/scripts/validate-plan-contract.mjs" "$WRITER_CONTRACT" "$WRITER" >/dev/null 2>&1; then echo "unresolvable plan base accepted" >&2; exit 1; fi
-node scripts/validate-plan-contract.mjs docs/plans/2026-08-23-wi558-tier1-regressions/plan-contract.json "$ROOT"
+# WI-562: validate the ACTIVE plan contract (latest dated docs/plans/*/plan-contract.json)
+# rather than a hardcoded WI-558 path — any landed branch's newest contract must
+# be internally consistent against its own changeset.
+ACTIVE_CONTRACT="$(ls -1d docs/plans/*/plan-contract.json 2>/dev/null | sort | tail -1)"
+if [[ -z "$ACTIVE_CONTRACT" ]]; then echo "FAIL: no docs/plans/*/plan-contract.json found" >&2; exit 1; fi
+node scripts/validate-plan-contract.mjs "$ACTIVE_CONTRACT" "$ROOT"
 # WI-558 negative: volatile_paths is fail-closed — entries outside .svc/ are
 # rejected and can never silence code parity or the executable census.
 VOL_CONTRACT="$TMP/volatile-contract.json"; VOL_ROOT="$TMP/vol-root"; mkdir -p "$VOL_ROOT/scripts" "$VOL_ROOT/docs"

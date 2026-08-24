@@ -64,7 +64,13 @@ check "user embedded-token hook untouched" test "$(q Stop "sum('--payload=\$TOOL
 check "kimi-host entry stripped from claude settings (WI-370)" test "$(q PreToolUse "sum('hooks/kimi/' in h.get('command','') for _,h in cmds)")" = "0"
 check "emission contains no kimi scripts (WI-370)" bash -c "! env -u GIT_DIR -u GIT_WORK_TREE node '$WIRER' --skills-path '$REPO_ROOT' --list-all | grep -q 'hooks/kimi/'"
 check "user hooks with same basename both survive (no fuzzy collapse)" test "$(q Stop "sum('deploy.js' in h.get('command','') for _,h in cmds)")" = "2"
-check "all 3 write sites are backup-guarded (static)" bash -c "test \"\$(grep -B1 'fs.writeFileSync(settingsPath' '$WIRER' | grep -c 'backupSettingsOnce();')\" = \"3\""
+# WI-562 IP-W1: the 3 direct write sites were unified into ONE atomic
+# primitive (tmp+fsync+rename). The invariant is now: zero direct
+# fs.writeFileSync(settingsPath) calls, writeSettingsDocument used, and every
+# write path still preceded by backupSettingsOnce().
+check "no direct settings writes remain (atomic primitive only)" bash -c "! grep -q 'fs.writeFileSync(settingsPath' '$WIRER'"
+check "atomic writeSettingsDocument primitive present" bash -c "grep -q 'renameSync(tmp, target)' '$WIRER'"
+check "all write sites are backup-guarded (static)" bash -c "test \"\$(grep -B1 'writeSettingsDocument(settingsPath' '$WIRER' | grep -c 'backupSettingsOnce();')\" = \"4\""
 
 cp "$S1" "$TMP/snap1.json"
 env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE \

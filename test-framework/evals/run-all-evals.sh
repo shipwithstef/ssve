@@ -226,7 +226,7 @@ for script in "${TIER1_ALL[@]}"; do
   fi
   echo ""
 done
-rm -rf "$TIER1_RESULTS_DIR"
+[[ ${KEEP_TIER1_RESULTS:-0} == 1 ]] || rm -rf "$TIER1_RESULTS_DIR"
 
 echo ">>> Tier 1 Result: $TIER1_PASS scripts passed, $TIER1_FAIL failed ($TIER1_TIMEOUT timed out)"
 echo ""

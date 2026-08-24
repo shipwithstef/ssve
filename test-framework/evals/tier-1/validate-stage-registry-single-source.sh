@@ -23,8 +23,10 @@ for(const consumer of ['scripts/audit-story-receipts.mjs','scripts/stage-activat
 }
 NODE
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
-mkdir -p "$TMP/scripts/lib" "$TMP/references" "$TMP/.svc"
+mkdir -p "$TMP/scripts/lib" "$TMP/references" "$TMP/.svc" "$TMP/hooks/lib"
 cp "$ROOT/scripts/task-graph.mjs" "$ROOT/scripts/state-io.mjs" "$TMP/scripts/"
+# WI-562: state-io imports the shared liveness lib — copy its dependency chain.
+cp "$ROOT/hooks/lib/process-liveness.mjs" "$TMP/hooks/lib/"
 cp "$ROOT/scripts/lib/stage-registry.mjs" "$TMP/scripts/lib/"
 cp "$ROOT/references/stage-registry.json" "$TMP/references/"
 printf '%s\n' '{"wi":"WI-T","lane":"framework","status":"pending","tasks":[{"id":1,"subject":"fixture","status":"pending","metadata":{"skill":"improve-framework"}}]}' > "$TMP/.svc/lane-tasks-WI-T.json"

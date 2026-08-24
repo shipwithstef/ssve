@@ -529,7 +529,9 @@ function normalizeEnvelopeEntries(sha, envelope) {
     return { entries, explicitWIs, issues };
   }
 
+  const RESERVED_ENVELOPE_META = new Set(["digests"]); // WI-562 IP-R9: integrity meta, never a receipt slot
   for (const [key, rawReceipt] of Object.entries(envelope)) {
+    if (RESERVED_ENVELOPE_META.has(key)) continue;
     if (!rawReceipt || typeof rawReceipt !== "object" || Array.isArray(rawReceipt)) continue;
     const slot = parseCompositeSlotKey(key);
     const receiptType = typeof rawReceipt.receipt_type === "string"

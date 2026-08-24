@@ -6,7 +6,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 TMP="$(mktemp -d)"
-trap 'rm -rf "$TMP"' EXIT
+trap '[[ ${KEEP_TMP:-0} == 1 ]] || rm -rf "$TMP"' EXIT
 pass=0; fail=0
 check() { local label="$1"; shift; if "$@" >"$TMP/out" 2>&1; then echo "  ✓ $label"; pass=$((pass+1)); else echo "  ✗ $label"; cat "$TMP/out"; fail=$((fail+1)); fi; }
 check_fail() { local label="$1"; shift; if "$@" >"$TMP/out" 2>&1; then echo "  ✗ $label"; cat "$TMP/out"; fail=$((fail+1)); else echo "  ✓ $label"; pass=$((pass+1)); fi; }
@@ -43,7 +43,8 @@ V() { node "$ROOT/scripts/validate-parallel-merge-back.mjs" --plan "$FIX/.svc/wa
 # Committed work in scope passes.
 printf 'export const b = 2;\n' >"$FIX/src/b.ts"
 git -C "$FIX" add src/b.ts && git -C "$FIX" commit --quiet -m "worker(WI-900): src/b.ts"
-result success '"changed_files":["src/b.ts"]'
+result success ',"changed_files":["src/b.ts"]'
+[[ ${KEEP_TMP:-0} == 1 ]] && cp "$FIX/.svc/dispatch/WI-900.result.json" "$TMP/first-result.json"
 check "committed in-scope worker result passes" V
 
 # Forged PASS with a dirty tree fails.
@@ -52,15 +53,15 @@ check_fail "PASS with dirty tree rejected" V
 rm -f "$FIX/src/dirty.txt"
 
 # Worker claiming a file absent from the diff fails.
-result success '"changed_files":["src/b.ts","src/ghost.ts"]'
+result success ',"changed_files":["src/b.ts","src/ghost.ts"]'
 check_fail "superset file claim rejected" V
 
 # Undeclared validation command fails.
-result success '"changed_files":["src/b.ts"],"validation_evidence":[{"command":"echo ok"}]'
+result success ',"changed_files":["src/b.ts"],"validation_evidence":[{"command":"echo ok"}]'
 check_fail "undeclared evidence command rejected" V
 
 # Declared command coverage: omitting the declared command fails.
-result success '"changed_files":["src/b.ts"],"validation_evidence":[]'
+result success ',"changed_files":["src/b.ts"],"validation_evidence":[]'
 check_fail "missing declared-command coverage rejected" V
 
 # Non-git worktree cannot verify success.

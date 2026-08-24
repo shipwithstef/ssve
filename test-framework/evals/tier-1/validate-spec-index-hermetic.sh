@@ -7,6 +7,8 @@ trap 'rm -rf "$TMP"' EXIT
 
 mkdir -p "$TMP/scripts" "$TMP/docs/specs" "$TMP/.svc"
 cp "$ROOT/scripts/build-spec-index.mjs" "$ROOT/scripts/state-io.mjs" "$TMP/scripts/"
+# WI-562: state-io imports the shared liveness lib — copy the dependency.
+mkdir -p "$TMP/hooks/lib" && cp "$ROOT/hooks/lib/process-liveness.mjs" "$TMP/hooks/lib/"
 printf '# Example\n\n## Stable section\n\nContent.\n' > "$TMP/docs/specs/example.md"
 
 (

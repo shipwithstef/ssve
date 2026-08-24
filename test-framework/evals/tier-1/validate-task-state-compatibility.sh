@@ -161,6 +161,8 @@ MREPO="$TMP/mrepo"
 mkdir -p "$MREPO/scripts" "$MREPO/hooks/lib" "$MREPO/schemas" "$MREPO/.svc"
 cp "$ROOT/scripts/svc-migrate-task-state.mjs" "$MREPO/scripts/"
 cp "$ROOT/scripts/state-io.mjs" "$MREPO/scripts/"
+# WI-562: state-io imports the shared liveness lib — copy the dependency.
+mkdir -p "$MREPO/hooks/lib" && cp "$ROOT/hooks/lib/process-liveness.mjs" "$MREPO/hooks/lib/"
 cp "$ROOT/hooks/lib/wi-claim.mjs" "$MREPO/hooks/lib/"
 cp "$ROOT/hooks/lib/svc-runtime-root.mjs" "$MREPO/hooks/lib/"
 cp "$ROOT/hooks/lib/authority-store.mjs" "$MREPO/hooks/lib/"
