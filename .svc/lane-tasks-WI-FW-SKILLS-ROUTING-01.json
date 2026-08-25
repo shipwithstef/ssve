@@ -1,0 +1,134 @@
+{
+  "wi": "WI-FW-SKILLS-ROUTING-01",
+  "lane": "framework",
+  "story_type": "framework",
+  "change_type": "framework",
+  "created": "2026-08-25T22:34:51.933Z",
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "write-spec",
+      "subject": "spec covered by WI product plan docs/specs/plans/wi-framework-skills-routing-plan.md",
+      "status": "skipped",
+      "blocked_by": [],
+      "skip_reason": "docs/specs/plans/wi-framework-skills-routing-plan.md (Proposed) sections 1/3/7 are the authoritative outcome/scope/verification contract",
+      "metadata": {
+        "skill": "write-spec",
+        "wi": "WI-FW-SKILLS-ROUTING-01"
+      }
+    },
+    {
+      "id": 2,
+      "skill": "plan-changeset",
+      "subject": "Produce changeset manifest (Waves 1-2 core scope), inline mode",
+      "status": "pending",
+      "blocked_by": [],
+      "metadata": {
+        "skill": "plan-changeset",
+        "wi": "WI-FW-SKILLS-ROUTING-01"
+      }
+    },
+    {
+      "id": 3,
+      "skill": "review-plan",
+      "subject": "Mechanical checks + external adversarial review of manifest",
+      "status": "pending",
+      "blocked_by": [
+        2
+      ],
+      "metadata": {
+        "skill": "review-plan",
+        "wi": "WI-FW-SKILLS-ROUTING-01"
+      }
+    },
+    {
+      "id": 4,
+      "skill": "execute-changeset",
+      "subject": "Implement routing index compiler, router CLI, receipts, fixtures, tier-1 validator",
+      "status": "pending",
+      "blocked_by": [
+        3
+      ],
+      "metadata": {
+        "skill": "execute-changeset",
+        "wi": "WI-FW-SKILLS-ROUTING-01",
+        "required_process_steps": [
+          {
+            "skill": "test-journeys",
+            "mode": "tier-1-corpus"
+          },
+          {
+            "skill": "sync-spec-code",
+            "mode": "implementation-notes"
+          }
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "skill": "review-gate",
+      "subject": "G5 review of executed changes vs manifest",
+      "status": "pending",
+      "blocked_by": [
+        4
+      ],
+      "metadata": {
+        "skill": "review-gate",
+        "wi": "WI-FW-SKILLS-ROUTING-01"
+      }
+    },
+    {
+      "id": 6,
+      "skill": "review-exec",
+      "subject": "G6 self-review + external adversarial exec review",
+      "status": "pending",
+      "blocked_by": [
+        5
+      ],
+      "metadata": {
+        "skill": "review-exec",
+        "wi": "WI-FW-SKILLS-ROUTING-01"
+      }
+    },
+    {
+      "id": 7,
+      "skill": "audit-implementation",
+      "subject": "Correctness audit vs verification contract section 7",
+      "status": "pending",
+      "blocked_by": [
+        6
+      ],
+      "metadata": {
+        "skill": "audit-implementation",
+        "wi": "WI-FW-SKILLS-ROUTING-01"
+      }
+    },
+    {
+      "id": 8,
+      "skill": "land-changeset",
+      "subject": "Push branch, PR, squash-merge",
+      "status": "pending",
+      "blocked_by": [
+        7
+      ],
+      "metadata": {
+        "skill": "land-changeset",
+        "wi": "WI-FW-SKILLS-ROUTING-01"
+      }
+    },
+    {
+      "id": 9,
+      "skill": "verify-promotion",
+      "subject": "Post-merge G7 verification",
+      "status": "pending",
+      "blocked_by": [
+        8
+      ],
+      "metadata": {
+        "skill": "verify-promotion",
+        "wi": "WI-FW-SKILLS-ROUTING-01"
+      }
+    }
+  ],
+  "status": "in_progress"
+}

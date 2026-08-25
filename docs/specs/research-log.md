@@ -369,3 +369,24 @@ The best-fit design is therefore one pure classifier for completed registry-skil
 **As-of date:** 2026-08-15
 **Re-verify after:** any Codex collaboration tool-schema, hook API, or contained-child transport change.
 **Version-specific:** Codex CLI 0.147.0 and the active 2026-08-15 collaboration tool schema.
+++ b/docs/specs/research-log.md
+
+### 2026-08-25 — Just-in-time skill discovery and critical-rule enforcement (WI-FW-SKILLS-ROUTING-01)
+
+**Asked by:** svc owner (`research` supporting a framework plan)
+
+**Question:** How should svc discover and invoke skills just in time without prompt bloat while guaranteeing that critical domain rules are enforced?
+
+**Finding:** Use a hybrid router. Keep a small invariant kernel; retrieve compact candidate cards; load one selected skill body; then load references on demand. Resolve explicit requests, active workflow state, repository concerns, and critical rules deterministically before optional exact/lexical/semantic ranking. Semantic retrieval may improve optional discovery in shadow mode, but embeddings remain disposable derived data and must never gate required rules. Enforce critical matches with content-hash load receipts, executable twins, and pre-mutation plus post-diff checks. Initial budgets are D0 ≤1,500 tokens, D1 ≤1,200 tokens/8 cards, D2 ≤5,000 recommended, and D3 ≤8,000 per decision burst; validate these against real svc sessions.
+
+**Sources:** T1 [OpenAI Codex skills](https://developers.openai.com/codex/skills); T1 [OpenAI latest-model guidance](https://developers.openai.com/api/docs/guides/latest-model); T1 [Agent Skills specification](https://agentskills.io/specification); T1 [Anthropic Agent Skills engineering](https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills); T1 [BiasBusters, ICLR 2026](https://proceedings.iclr.cc/paper_files/paper/2026/hash/a79875cc0d046ce7ce65f03f3affaa9e-Abstract-Conference.html); T2 [Semantic Tool Discovery preprint](https://arxiv.org/abs/2603.20313); T1 local framework artifacts `skills-manifest.json`, `concerns/REGISTRY.json`, rule/skill enforcement hooks, WI-365, WI-377, and 2026-06-06 catalog research.
+
+**Triangulation:** official host/spec guidance + peer-reviewed selection-bias evidence + local framework behavior; the semantic-retrieval paper is used only to justify a shadow experiment.
+
+**Confidence:** high for progressive disclosure and deterministic enforcement; medium for semantic lift until measured on the svc corpus.
+
+**Volatility:** host context allowances, implicit-invocation controls, and embedding behavior are version-specific.
+
+**As-of date:** 2026-08-25
+
+**Re-verify after:** 90 days, or on a supported-host/model major change.
