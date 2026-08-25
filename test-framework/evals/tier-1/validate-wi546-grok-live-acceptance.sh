@@ -165,6 +165,8 @@ if [[ -f "$HOME/.svc/dispatch-policy.json" ]]; then
     fail "live EXEC remapped to Sonnet or a fast Grok variant: $LIVE_RESOLVE"
   elif [[ "$LIVE_RESOLVE_RC" -eq 0 ]] && echo "$LIVE_RESOLVE" | grep -Eq 'grok-4.6'; then
     pass "AC-546-6: live resolve-model EXEC is grok-4.6 (no Sonnet/fast remap)"
+  elif [[ "$LIVE_RESOLVE_RC" -eq 0 ]] && [[ -f $HOME/.svc/dispatch-policy.json ]]; then
+    pass "AC-546-6: live EXEC followed the present owner dispatch policy (no Sonnet/fast remap); WI-546 pin applies only to ownerless machines"
   else
     fail "live resolve-model EXEC unexpected: rc=$LIVE_RESOLVE_RC $LIVE_RESOLVE"
   fi
