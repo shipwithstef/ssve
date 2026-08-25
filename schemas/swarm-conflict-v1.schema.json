@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seriousvibecoding.dev/schemas/swarm-conflict-v1.schema.json",
+  "title": "SVC Swarm Conflict v1",
+  "type": "object",
+  "required": ["schema_version", "conflict_id", "run_id", "kind", "claims"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": 1 },
+    "conflict_id": { "type": "string", "minLength": 1 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "kind": { "enum": ["path_overlap", "resource_overlap", "protected_surface", "semantic_failure"] },
+    "ladder_level": { "enum": [0, 1, 2, 3, 4, 5] },
+    "resolution_state": { "enum": ["OPEN", "RESOLVING", "RESOLVED", "BLOCKED", "REJECTED"] },
+    "claims": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": ["principal_id", "task_id"],
+        "additionalProperties": false,
+        "properties": {
+          "principal_id": { "type": "string", "minLength": 1 },
+          "task_id": { "type": "string", "minLength": 1 },
+          "host": { "type": "string" },
+          "paths": { "type": "array", "items": { "type": "string" } },
+          "resources": { "type": "array", "items": { "type": "string" } },
+          "base_sha": { "type": "string" }
+        }
+      }
+    },
+    "failed_validators": { "type": "array", "items": { "type": "string" } },
+    "resolution": {
+      "type": ["object", "null"],
+      "required": ["resolver_id"],
+      "properties": {
+        "resolver_id": { "type": "string", "minLength": 1 },
+        "operations_digest": { "type": "string" },
+        "discarded_behavior": { "type": "string" },
+        "invariant_proof": { "type": "string" },
+        "expected_validators": { "type": "array", "items": { "type": "string" } },
+        "uncertainty": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "attempts": { "type": "integer", "minimum": 0, "maximum": 2 }
+  }
+}

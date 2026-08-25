@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seriousvibecoding.dev/schemas/swarm-receipt-payload-v1.schema.json",
+  "title": "SVC Swarm Receipt Payload v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "receipt_id",
+    "receipt_kind",
+    "command_id",
+    "run_id",
+    "actor_principal",
+    "signer_principal",
+    "authority_generation",
+    "coordinator_epoch",
+    "sequence_before",
+    "sequence_after",
+    "verdict",
+    "reason_code",
+    "issued_at"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": 1 },
+    "receipt_id": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" },
+    "receipt_kind": {
+      "enum": [
+        "submission_receipt",
+        "acceptance_receipt",
+        "rejection_receipt",
+        "synchronization_receipt",
+        "resolution_receipt",
+        "checkpoint_receipt"
+      ]
+    },
+    "command_id": { "type": ["string", "null"] },
+    "run_id": { "type": "string", "minLength": 1 },
+    "wi": { "type": ["string", "null"] },
+    "task_id": { "type": ["string", "null"] },
+    "attempt_id": { "type": ["string", "null"] },
+    "actor_principal": { "type": "string", "minLength": 1 },
+    "signer_principal": { "type": "string", "minLength": 1 },
+    "lease_id": { "type": ["string", "null"] },
+    "authority_generation": { "type": "integer", "minimum": 0 },
+    "coordinator_epoch": { "type": "integer", "minimum": 1 },
+    "sequence_before": { "type": "integer", "minimum": 0 },
+    "sequence_after": { "type": "integer", "minimum": 0 },
+    "base_sha": { "type": ["string", "null"], "pattern": "^([0-9a-f]{40}|null)$" },
+    "head_sha": { "type": ["string", "null"], "pattern": "^([0-9a-f]{40}|null)$" },
+    "candidate_digest": { "type": ["string", "null"], "pattern": "^(sha256:[0-9a-f]{64}|null)$" },
+    "submission_digest": { "type": ["string", "null"], "pattern": "^(sha256:[0-9a-f]{64}|null)$" },
+    "changed_paths_digest": { "type": ["string", "null"] },
+    "evidence_digests": { "type": "array", "items": { "type": "string" } },
+    "prior_receipt_digest": { "type": ["string", "null"] },
+    "event_digest": { "type": ["string", "null"] },
+    "verdict": { "enum": ["ACCEPTED", "REJECTED", "SYNCED", "RESOLVED", "CHECKPOINTED"] },
+    "reason_code": {
+      "enum": [
+        "ok",
+        "stale_generation",
+        "sequence_mismatch",
+        "lease_expired",
+        "lease_missing",
+        "unknown_session",
+        "capability_denied",
+        "idempotency_conflict",
+        "schema_invalid",
+        "protected_surface",
+        "conflict_block",
+        "key_revoked",
+        "key_expired",
+        "signature_invalid"
+      ]
+    },
+    "issued_at": { "type": "string", "format": "date-time" },
+    "traceparent": { "type": "string" }
+  }
+}

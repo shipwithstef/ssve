@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seriousvibecoding.dev/schemas/swarm-command-v1.schema.json",
+  "title": "SVC Swarm Command v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "command_id",
+    "run_id",
+    "command_type",
+    "actor",
+    "authority_generation",
+    "expected_sequence",
+    "idempotency_key",
+    "payload"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": 1 },
+    "command_id": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" },
+    "run_id": { "type": "string", "minLength": 1 },
+    "wi": { "type": ["string", "null"] },
+    "task_id": { "type": ["string", "null"] },
+    "attempt_id": { "type": ["string", "null"] },
+    "command_type": {
+      "enum": [
+        "register_session",
+        "acquire_task",
+        "heartbeat_task",
+        "report_progress",
+        "submit_candidate",
+        "request_handoff",
+        "accept_handoff",
+        "request_cancel",
+        "propose_resolution",
+        "ack_state"
+      ]
+    },
+    "actor": {
+      "type": "object",
+      "required": ["principal_id", "host", "model_family", "session_id"],
+      "additionalProperties": false,
+      "properties": {
+        "principal_id": { "type": "string", "minLength": 1 },
+        "host": { "enum": ["codex", "grok", "cursor", "claude", "opencode", "agy"] },
+        "model_family": { "type": "string", "minLength": 1 },
+        "session_id": { "type": "string", "minLength": 1 }
+      }
+    },
+    "lease_id": { "type": ["string", "null"] },
+    "authority_generation": { "type": "integer", "minimum": 0 },
+    "expected_sequence": { "type": "integer", "minimum": 0 },
+    "observed_sequence": { "type": "integer", "minimum": 0 },
+    "idempotency_key": { "type": "string", "minLength": 1 },
+    "traceparent": { "type": "string" },
+    "submitted_at": { "type": "string", "format": "date-time" },
+    "payload": { "type": "object" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "command_type": { "const": "acquire_task" } }, "required": ["command_type"] },
+      "then": { "properties": { "task_id": { "type": "string", "minLength": 1 } }, "required": ["task_id"] }
+    },
+    {
+      "if": { "properties": { "command_type": { "enum": ["heartbeat_task", "report_progress", "submit_candidate", "propose_resolution"] } }, "required": ["command_type"] },
+      "then": { "properties": { "lease_id": { "type": "string", "minLength": 1 } }, "required": ["lease_id"] }
+    },
+    {
+      "if": { "properties": { "command_type": { "const": "accept_handoff" } }, "required": ["command_type"] },
+      "then": { "properties": { "payload": { "type": "object", "required": ["handoff_token"], "properties": { "handoff_token": { "type": "string", "minLength": 1 } } } } }
+    }
+  ]
+}
