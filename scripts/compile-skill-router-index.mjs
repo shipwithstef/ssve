@@ -136,6 +136,7 @@ export function compile(root) {
   }
 
   const records = [];
+  const aliasOwners = new Map();
   for (const name of [...included].sort()) {
     const rel = path.join("skills", name, "SKILL.md");
     const abs = path.join(root, rel);
@@ -152,6 +153,15 @@ export function compile(root) {
       fail(`${name}: ${e.message}`);
     }
     const o = overrides.entries[name] || {};
+    for (const alias of o.aliases || []) {
+      const key = alias.trim().toLowerCase();
+      if (!key) fail(`${name}: empty alias`);
+      const owner = aliasOwners.get(key);
+      if (owner && owner !== name) {
+        fail(`alias collision: "${alias}" declared by both ${owner} and ${name}; explicit resolution would be ambiguous`);
+      }
+      aliasOwners.set(key, name);
+    }
     records.push({
       skill: name,
       path: rel.split(path.sep).join("/"),

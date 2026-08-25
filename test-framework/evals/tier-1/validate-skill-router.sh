@@ -47,6 +47,38 @@ if node scripts/compile-skill-router-index.mjs --root "$BAD" >/dev/null 2>"$TMP/
 fi
 grep -q "duplicate skill name" "$TMP/dup.log" || fail "duplicate-name failure lacks a named reason"
 
+# ── 2b. Glob matcher conformance vs rule-injector semantics ─────────────────
+node --input-type=module - "$ROOT" <<'GLOBS' || fail "glob matcher conformance failed"
+import process from "node:process";
+const root = process.argv[2];
+const { globToRe, matchConcern } = await import(root + "/scripts/lib/skill-router.mjs");
+// Labeled expectations mirroring hooks/svc-rule-injector.mjs globToRe semantics:
+// anchored globs with zero-dir `**/` support; bare substrings match anywhere.
+const cases = [
+  ["**/aup*", "docs/aup.md", true],
+  ["**/aup*", "aup.md", true],
+  ["**/aup*", "src/deep/nested/aup-2026.md", true],
+  ["**/auth/**", "src/auth/login.ts", true],
+  ["**/auth/**", "src/authorize/x.ts", false],
+  ["**/login*", "pages/login.tsx", true],
+  ["*.sql", "001_init.sql", true],
+  ["*.sql", "migrations/002.sql", false],
+];
+for (const [pattern, candidate, expected] of cases) {
+  const got = globToRe(pattern).test(candidate);
+  if (got !== expected) {
+    process.stderr.write(`glob conformance: ${pattern} vs ${candidate} => ${got}, expected ${expected}\n`);
+    process.exit(1);
+  }
+}
+// Concern-level matching must accept both dialects (globs + bare substrings).
+const concern = { signals: { file_path_patterns: ["base44", "**/oauth*"] } };
+if (!matchConcern(concern, { files: ["src/.base44/client.js"], packages: [], env: [] })) process.exit(1);
+if (!matchConcern(concern, { files: ["lib/oauth-flow.ts"], packages: [], env: [] })) process.exit(1);
+if (matchConcern(concern, { files: ["src/nothing.js"], packages: [], env: [] })) process.exit(1);
+console.log("glob+conformance OK");
+GLOBS
+
 # ── 3+4. Corpus assertions via a single node runner ──────────────────────────
 node --input-type=module - "$ROOT" "$CORPUS" <<'RUNNER' >"$TMP/corpus-report.txt"
 import fs from "node:fs";
