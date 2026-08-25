@@ -243,6 +243,57 @@ export function resumeController({ stateRoot, repoId, wi, worktreeRoot, principa
   });
 }
 
+// WI-FW-HOOKS-SAFETY-01 T04/AC-4: generation-aware compare-and-swap renewal.
+// Continuity, never escalation: the caller must present the EXACT live tuple
+// (lease id + generation + principal + canonical worktree). Any drift returns
+// a typed stale decision and writes NOTHING — a stale renewal can never
+// resurrect released authority, extend a foreign principal, or advance an old
+// generation. Owner override, break-glass markers, handover tokens,
+// delegation and promotion capabilities are separate authority objects this
+// function never touches; they stay non-renewable by construction.
+export function renewControllerIfCurrent({ stateRoot, repoId, wi, worktreeRoot, principal, leaseId, generation, ttlMs = DEFAULT_TTL_MS, now = Date.now() }) {
+  requireString(repoId, "repo id");
+  requireString(wi, "WI");
+  requireString(principal, "principal");
+  if (!Number.isInteger(generation) || generation < 1) return { status: "stale_decision", reason: "invalid expected generation" };
+  const paths = pathsFor(stateRoot, repoId, wi);
+  return withLock(paths.root, paths.key, () => {
+    let lease;
+    try { lease = assertLease(readJson(paths.lease, { required: true }), { repoId, wi }); }
+    catch (error) { return { status: "stale_decision", reason: `unreadable or corrupt lease (${error.message})` }; }
+    if (String(lease.lease_id) !== String(leaseId)) return { status: "stale_decision", reason: "lease id is not current" };
+    if (Number(lease.generation) !== Number(generation)) return { status: "stale_decision", reason: "generation changed" };
+    if (String(lease.controller_principal) !== String(principal)) return { status: "stale_decision", reason: "principal is not the controller" };
+    try {
+      if (fs.realpathSync(worktreeRoot) !== fs.realpathSync(lease.worktree_root)) return { status: "stale_decision", reason: "canonical worktree changed" };
+    } catch { return { status: "stale_decision", reason: "worktree path unresolved" }; }
+    if (lease.state !== "active") return { status: "not_renewable", reason: `lease state is ${lease.state}` };
+    try { verifyLatestHandoffRecord(paths, lease); }
+    catch (error) { return { status: "stale_decision", reason: error.message }; }
+    const renewed = { ...lease, owner_process: ownerProcessIdentity(), renewed_at: iso(now), expires_at: iso(now + ttlMs), backend_revision: lease.backend_revision + 1 };
+    atomicWrite(paths.lease, renewed);
+    return { status: "renewed", lease: renewed };
+  });
+}
+
+// Renewal due-threshold: renew when remaining TTL falls below the greater of
+// the safety window and the declared tool timeout plus margin. Rate limiting:
+// at most one renewal write per minimum interval per lease in normal
+// sequential use — EXCEPT genuine emergencies (the remaining life is shorter
+// than one interval), where blocking on the limiter would let authority die.
+const RENEW_SAFETY_WINDOW_MS_DEFAULT = 5 * 60_000;
+export function renewalDue(lease, { timeoutMs = 0, safetyWindowMs = RENEW_SAFETY_WINDOW_MS_DEFAULT, minIntervalMs = 60_000, now = Date.now() } = {}) {
+  const expires = Date.parse(lease?.expires_at || "");
+  if (!Number.isFinite(expires)) return false;
+  const remaining = expires - now;
+  const threshold = Math.max(safetyWindowMs, Number(timeoutMs || 0) + 60_000);
+  if (remaining >= threshold) return false;
+  const renewedAt = Date.parse(lease?.renewed_at || "");
+  const sinceRenewal = Number.isFinite(renewedAt) ? now - renewedAt : Infinity;
+  const emergencyFloorMs = Math.min(Math.max(1, safetyWindowMs) / 2, Math.max(1, minIntervalMs));
+  return sinceRenewal >= minIntervalMs || remaining <= emergencyFloorMs;
+}
+
 function verifyLatestHandoffRecord(paths, lease) {
   const dir = path.join(paths.receipts, "handoff");
   let files = [];

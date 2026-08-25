@@ -19,6 +19,8 @@ if(lightRead(payload)){allow();process.exit(0);}
 async function governed() {
 const { parseHookInput, operationHookContext, isReadOnlyTool, mutationPayload, toolName } = await import("./lib/codex-hook-context.mjs");
 const { evaluatePreToolObservation, evaluateSelfHealAuthority } = await import("../lib/pretool-decision-engine.mjs");
+const { renewControllerIfCurrent, renewalDue, readController, repositoryId, authorityStateRoot, principalId } = await import("../lib/authority-store.mjs");
+const { writeToolCallReceipt } = await import("../lib/tool-call-receipt.mjs");
 const { resolveOperationScope } = await import("../lib/operation-scope.mjs");
 const { resolveWI } = await import("../lib/resolve-wi.mjs");
 const { parseBootstrapCommand } = await import("./lib/bootstrap-command.mjs");
@@ -47,6 +49,35 @@ const observation=evaluatePreToolObservation(payload);if(observation&&observatio
 const bootstrapScope=scope.explicit_workdir&&scope.explicit_workdir.present?scope.operation_repository:scope.session_repository;if(!repo||!bootstrapScope||!bootstrapScope.default_worktree_root||bootstrapScope.worktree_root!==bootstrapScope.default_worktree_root)deny("bootstrap must start from the repository default checkout");const base=boot.from==="origin/main"?(spawnSync("git",["-C",repo,"rev-parse","origin/main"],{encoding:"utf8"}).stdout||"").trim():boot.from;const handoff=createBootstrapHandoff({session_id:sid,repo_root:repo,wi:boot.wi,branch:boot.branch,base,command_digest:`sha256:${crypto.createHash("sha256").update(command).digest("hex")}`});const ensure=path.resolve(HERE,"..","..","scripts","svc-ensure-worktree.mjs");effective={...effective,[key]:{...effective[key],command:`node ${ensure} --wi ${boot.wi} --branch ${boot.branch} --from ${boot.from} --authority-v2${boot.json?" --json":""}${boot.print_cd?" --print-cd":""} --handoff ${handoff.nonce}`,workdir:repo}};}
 const finalScope=resolveOperationScope(effective,{host:"codex",env:process.env});if(!finalScope.ok)deny(`invalid bound mutation scope (${finalScope.contradictions[0]?.code||"scope contradiction"})`);const finalRepo=finalScope.operation_repository?.worktree_root||repo;const explicitAuth=effective[key]?.svc_authorization;const auth=authorizeObservedAction({root:finalRepo,command:mutationPayload(effective),annotation:explicitAuth});if(!auth.allow)deny(auth.reason);const lease=readOwnerLease(finalRepo,sid,process.env);const defaultRoot=finalScope.operation_repository?.default_worktree_root||"";if(lease&&(!b?.worktree||lease.worktree_root===b.worktree)&&(!defaultRoot||lease.worktree_root!==defaultRoot||finalScope.framework_maintenance)){allow(effective!==payload?effective[key]:null);process.exit(0);}if(!b?.worktree&&!boot){
 // WI-FW-HOOKS-SAFETY-01 (FP-05/AC-3): ONE exact self-heal attempt when fresh positive prompt authority agrees; otherwise an actionable denial that never prescribes a command this same policy path would block.
-const gate=evaluateSelfHealAuthority(payload,process.env);if(!gate.eligible)deny(`mutation requires a bound WI worktree (AUTH_BINDING_MISSING_SELF_HEAL_INELIGIBLE: ${gate.reason_code}); recovery: say ‘work on <WI>’ from the worktree or arm SVC OWNER OVERRIDE.`);let adopted=null;try{const ensureModule=await import("../../scripts/svc-ensure-worktree.mjs");adopted=ensureModule.adoptExistingWorktree({wi:gate.wi,cwd:repo},{...process.env,SVC_SESSION_ID:sid});}catch(error){deny(`self-heal refused without mutation (${error.message})`);}if(adopted){b=baton(repo,sid,payload);if(b?.conflict)deny("multiple active bindings for this session after self-heal; recovery: select one WI explicitly.");if(b?.worktree&&input&&typeof input==="object"&&!scope.explicit_workdir.present)effective={...payload,[key]:{...input,workdir:b.worktree}};}if(!b?.worktree)deny("self-heal completed but the binding did not resolve; recovery: re-run the operation from the worktree.");}for(const spec of CHILDREN){const reason=child(spec,effective);if(reason)deny(reason);}allow(effective!==payload?effective[key]:null);}catch(e){deny(`Codex preflight failed closed: ${e.message}`);}
+const gate=evaluateSelfHealAuthority(payload,process.env);if(!gate.eligible)deny(`mutation requires a bound WI worktree (AUTH_BINDING_MISSING_SELF_HEAL_INELIGIBLE: ${gate.reason_code}); recovery: say ‘work on <WI>’ from the worktree or arm SVC OWNER OVERRIDE.`);let adopted=null;try{const ensureModule=await import("../../scripts/svc-ensure-worktree.mjs");adopted=ensureModule.adoptExistingWorktree({wi:gate.wi,cwd:repo},{...process.env,SVC_SESSION_ID:sid});}catch(error){deny(`self-heal refused without mutation (${error.message})`);}if(adopted){b=baton(repo,sid,payload);if(b?.conflict)deny("multiple active bindings for this session after self-heal; recovery: select one WI explicitly.");if(b?.worktree&&input&&typeof input==="object"&&!scope.explicit_workdir.present)effective={...payload,[key]:{...input,workdir:b.worktree}};}if(!b?.worktree)deny("self-heal completed but the binding did not resolve; recovery: re-run the operation from the worktree.");}
+// WI-FW-HOOKS-SAFETY-01 (T04/AC-4): due lease renewal is part of the SAME
+// authorization check for bound mutations — continuity without escalation.
+// A stale or failed renewal denies the mutation instead of allowing work on
+// expired authority. Reads never reach this path.
+let currentLease=null;
+if(b?.worktree&&b.binding&&b.binding.wi){
+try{
+const stateRoot=authorityStateRoot(b.worktree,process.env);
+const repoId=repositoryId(b.worktree);
+const principal=principalId({host:"codex",session_id:sid});
+currentLease=readController({stateRoot,repoId,wi:b.binding.wi});
+if(currentLease&&currentLease.state==="active"&&String(currentLease.controller_principal)===principal&&renewalDue(currentLease)){
+const renewed=renewControllerIfCurrent({stateRoot,repoId,wi:b.binding.wi,worktreeRoot:b.worktree,principal:currentLease.controller_principal,leaseId:currentLease.lease_id,generation:Number(currentLease.generation)});
+if(renewed.status!=="renewed")deny(`lease renewal refused (${renewed.status}: ${renewed.reason}); recovery: re-arm authority with ‘work on ${b.binding.wi}’.`);
+currentLease=renewed.lease||currentLease;
+}
+}catch{currentLease=null;}
+}
+for(const spec of CHILDREN){const reason=child(spec,effective);if(reason)deny(reason);}
+// T04/AC-5: private one-time receipt enabling the successful PostToolUse call
+// to heartbeat this EXACT authorized tuple. Identifiers only, never content.
+try{
+const toolUseId=String(payload.tool_use_id||payload.toolUseId||"");
+if(toolUseId&&b?.worktree&&b?.binding?.wi){
+const originalDigest=`sha256:${crypto.createHash("sha256").update(mutationPayload(effective)).digest("hex")}`;
+writeToolCallReceipt({session_id:sid,tool_use_id:toolUseId,host:"codex",original_digest,classification:"mutation",lease:{repo_id:repositoryId(b.worktree),wi:b.binding.wi,worktree_root:b.worktree,principal:principalId({host:"codex",session_id:sid}),lease_id:currentLease?String(currentLease.lease_id):null,generation:currentLease?Number(currentLease.generation):null},env:process.env});
+}
+}catch{}
+allow(effective!==payload?effective[key]:null);}catch(e){deny(`Codex preflight failed closed: ${e.message}`);}
 }
 governed().catch((error) => deny(`Codex preflight failed closed: ${error.message}`));
