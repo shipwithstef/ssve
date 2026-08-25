@@ -39,3 +39,29 @@ The following events are part of the Claude Code host surface but svc has not ch
 1. Add a row above (or move from the "documented but not yet wired" list).
 2. If `Wired? = Yes` and posture is `block` or `warn`, add a corresponding entry to `hooks/hooks.json` with the hook's id matching `svc-<event-kebab>-<purpose>`.
 3. Run `bash test-framework/evals/tier-1/validate-hook-coverage.sh` to confirm the spec → wiring contract.
+
+## WI-FW-HOOKS-SAFETY-01 — consolidated decision engine (2026-08-25)
+
+PreToolUse posture is now **one deny-capable decision engine per host event**
+(`svc-pretool-decision-engine` → `hooks/codex/svc-codex-pretool-dispatcher.mjs`).
+The engine classifies observation vs mutation ONCE against the immutable
+original input, emits the typed reason codes below, and runs every policy guard
+as a child on the governed path only. Sibling hooks can never re-classify a
+rewritten read as a mutation, and hook order no longer affects decisions.
+
+| Surface | Reason codes / contract |
+|---|---|
+| Observation | `OBSERVATION_PROVEN`, `OBSERVATION_PROVEN_GIT_NORMALIZED` — reads need no WI/session; Git optional-lock suppression is per-argv `--no-optional-locks`, never an `export` prefix |
+| Branch refs | `BRANCH_REF_INVALID` — Git-valid literal refs incl. slash branches; worktree paths hash-derived |
+| Self-heal | `AUTH_BINDING_MISSING_SELF_HEAL_INELIGIBLE:<reason>` — one exact adoption attempt behind fresh positive prompt intent; foreign/ambiguous state is immutable on denial |
+| Roots | `WORKTREE_ROOT_UNAPPROVED` — external registered worktrees adopt only beneath owner-approved canonical roots |
+| Lease renewal | due threshold + min-interval; stale renewals are typed no-ops that write nothing; override/break-glass/handover/delegation/promotion never auto-renew |
+| PostToolUse | `svc-posttool-heartbeat` consumes a one-time mode-0600 receipt bound to host/session/tool-use/digest/lease/generation; replays and mismatches are no-ops; failed calls extend nothing |
+
+Consolidated child guards (individually disableable via `SVC_DISABLED_HOOKS`):
+svc-worktree-isolation-guard, svc-workflow-guard (+ --bash-guard/--phase-boundary),
+svc-loop-guard (Bash/Edit/Write side), svc-skill-artifact-authenticity,
+svc-session-contract-freshness, svc-inertia-check, svc-codex-skill-load-enforcer,
+svc-impact-triad-guard (Bash side). Tool-specific gates outside the mutation
+tool set stay directly wired: svc-eval-gate-pre (TaskUpdate), svc-preflight-skill
+(Skill), svc-continuation-phase-guard (Skill), svc-loop-guard-agent (Agent).

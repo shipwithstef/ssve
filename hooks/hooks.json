@@ -4,14 +4,20 @@
   "hooks": {
     "PreToolUse": [
       {
+        "id": "svc-pretool-decision-engine",
+        "description": "WI-FW-HOOKS-SAFETY-01: ONE deny-capable pre-tool decision engine per host event. Classifies observation vs mutation once against the immutable original input (typed envelope; reason codes OBSERVATION_PROVEN, AUTH_BINDING_MISSING_SELF_HEAL_INELIGIBLE, BRANCH_REF_INVALID, WORKTREE_ROOT_UNAPPROVED), normalizes Git optional-lock reads via per-argv --no-optional-locks (never an export prefix), performs exact existing-worktree self-heal behind fresh positive prompt intent, renews due controller leases as part of authorization, and writes the one-time post-tool correlation receipt. Runs every policy guard (worktree isolation, workflow/bash guard, loop guard, skill-artifact authenticity, session-contract freshness, inertia check, skill-load enforcer, impact triad) as children on the governed path only.",
+        "matcher": "Bash|Edit|Write|MultiEdit|StrReplaceFile|NotebookEdit|apply_patch",
+        "command": "node hooks/codex/svc-codex-pretool-dispatcher.mjs"
+      },
+      {
         "id": "svc-workflow-guard",
-        "description": "HARD BLOCK (full profile): Blocks Write/Edit to linter, formatter, type-checker, test runner configs, and lock files — agent must fix the code, not the config. HARD BLOCK: dynamic phase gate (prerequisite skills incomplete). SOFT WARNING: out-of-scope writes + planning-file edits during execution. WI-399 A1: the former svc-phase-boundary-detector entry is merged into this single spawn (one process per Edit/Write instead of two; --phase-boundary stays valid for old wirings). Disable config-protection only: SVC_DISABLED_HOOKS=svc-config-protection.",
+        "description": "CONSOLIDATED into svc-pretool-decision-engine (WI-FW-HOOKS-SAFETY-01): runs as an engine child on the governed path only. HARD BLOCK (full profile): Blocks Write/Edit to linter, formatter, type-checker, test runner configs, and lock files — agent must fix the code, not the config. HARD BLOCK: dynamic phase gate (prerequisite skills incomplete). SOFT WARNING: out-of-scope writes + planning-file edits during execution. WI-399 A1: the former svc-phase-boundary-detector entry is merged into this single spawn (one process per Edit/Write instead of two; --phase-boundary stays valid for old wirings). Disable config-protection only: SVC_DISABLED_HOOKS=svc-config-protection.",
         "matcher": "Edit|Write",
         "command": "node hooks/svc-workflow-guard.mjs"
       },
       {
         "id": "svc-bash-guard",
-        "description": "HARD BLOCK (all profiles): blocks --no-verify / --no-gpg-sign git bypass. HARD BLOCK (full profile): blocks git commit missing Co-Authored-By trailer. SOFT WARN (full profile): warns on vague commit messages. Disable individually: SVC_DISABLED_HOOKS=svc-block-no-verify or svc-commit-quality.",
+        "description": "CONSOLIDATED into svc-pretool-decision-engine (WI-FW-HOOKS-SAFETY-01): runs as an engine child on the governed path only. HARD BLOCK (all profiles): blocks --no-verify / --no-gpg-sign git bypass. HARD BLOCK (full profile): blocks git commit missing Co-Authored-By trailer. SOFT WARN (full profile): warns on vague commit messages. Disable individually: SVC_DISABLED_HOOKS=svc-block-no-verify or svc-commit-quality.",
         "matcher": "Bash",
         "command": "node hooks/svc-workflow-guard.mjs --bash-guard"
       },
@@ -35,19 +41,19 @@
       },
       {
         "id": "svc-skill-artifact-authenticity",
-        "description": "HARD BLOCK (G-4 / WI-114): blocks Edit/Write to canonical skill-output paths (docs/specs/features/, design-tech/, plans/, decisions/, capability-plan.md, etc.) when no recent invocation of the responsible skill exists in .svc/pipeline-decisions.jsonl. Recency window: SVC_SKILL_RECEIPT_WINDOW_MIN (default 90 min). Bypass: SVC_SKILL_ARTIFACT_ALLOW=1.",
+        "description": "CONSOLIDATED into svc-pretool-decision-engine (WI-FW-HOOKS-SAFETY-01): runs as an engine child on the governed path only. HARD BLOCK (G-4 / WI-114): blocks Edit/Write to canonical skill-output paths (docs/specs/features/, design-tech/, plans/, decisions/, capability-plan.md, etc.) when no recent invocation of the responsible skill exists in .svc/pipeline-decisions.jsonl. Recency window: SVC_SKILL_RECEIPT_WINDOW_MIN (default 90 min). Bypass: SVC_SKILL_ARTIFACT_ALLOW=1.",
         "matcher": "Edit|Write|Bash",
         "command": "node hooks/svc-skill-artifact-authenticity.mjs"
       },
       {
         "id": "svc-session-contract-freshness",
-        "description": "HARD BLOCK: blocks direct file tools and concrete Bash mutation targets when the session contract (.svc/session-contract.jsonl) is stale or mismatched. Read-only Bash remains on the fast path.",
+        "description": "CONSOLIDATED into svc-pretool-decision-engine (WI-FW-HOOKS-SAFETY-01): runs as an engine child on the governed path only. HARD BLOCK: blocks direct file tools and concrete Bash mutation targets when the session contract (.svc/session-contract.jsonl) is stale or mismatched. Read-only Bash remains on the fast path.",
         "matcher": "Edit|Write|Bash",
         "command": "node hooks/svc-session-contract-freshness.mjs"
       },
       {
         "id": "svc-inertia-check",
-        "description": "HARD BLOCK: blocks Edit/Write content that adds APIs or framework patterns listed in references/deprecated-foundations.json unless SVC_INERTIA_ACK records an explicit migrate-vs-extend decision.",
+        "description": "CONSOLIDATED into svc-pretool-decision-engine (WI-FW-HOOKS-SAFETY-01): runs as an engine child on the governed path only. HARD BLOCK: blocks Edit/Write content that adds APIs or framework patterns listed in references/deprecated-foundations.json unless SVC_INERTIA_ACK records an explicit migrate-vs-extend decision.",
         "matcher": "Edit|Write",
         "command": "node hooks/svc-inertia-check.mjs"
       },
@@ -77,6 +83,12 @@
       }
     ],
     "PostToolUse": [
+      {
+        "id": "svc-posttool-heartbeat",
+        "description": "WI-FW-HOOKS-SAFETY-01: replay-safe post-tool correlation. A successful call may heartbeat only by consuming the one-time mode-0600 pre-tool receipt bound to host/session/tool-use/original-digest/lease/generation; threshold-renews that exact authorized tuple and mirrors the v1 claim only after v2 success. Replays and mismatches are typed no-ops; failed calls extend nothing. Never grants authority.",
+        "matcher": "Bash|Edit|Write|MultiEdit|StrReplaceFile|NotebookEdit|apply_patch",
+        "command": "node hooks/codex/svc-codex-posttool-heartbeat.mjs"
+      },
       {
         "id": "svc-eval-gate-post",
         "description": "Injects eval matrix reminder after TaskUpdate(in_progress). For diagnose-bug tasks: auto-initializes the 8-pillar matrix in lane-tasks.json if not already present, then prints the checklist so the agent sees exactly which pillars need assessment. Scoped to TaskUpdate only — zero overhead on other tools.",
@@ -108,8 +120,8 @@
         "matcher": "Edit|Write",
         "command": "bash hooks/svc-wi-pillars-check.sh"
       },
-    {
-      "id": "svc-auto-capture-learnings",
+      {
+        "id": "svc-auto-capture-learnings",
         "description": "OBSERVE: detects high-signal learning candidates after edits and appends only to gitignored .svc/auto-learnings.jsonl. Never writes tracked learning files and never blocks.",
         "matcher": "Edit|Write",
         "command": "node hooks/svc-auto-capture-learnings.mjs --trigger post-tool-use",
@@ -210,8 +222,8 @@
         "description": "OBSERVE: captures high-signal learning candidates at session stop into gitignored .svc/auto-learnings.jsonl. Default silent; summary mode is opt-in.",
         "matcher": "*",
         "command": "node hooks/svc-auto-capture-learnings.mjs --trigger stop",
-      "async": true
-    }
+        "async": true
+      }
     ],
     "SubagentStart": [
       {

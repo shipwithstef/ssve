@@ -99,45 +99,43 @@ function buildHookEntries(skillsPath) {
 
   // ── PreToolUse guards ─────────────────────────────────────────────────────
 
-  if (!DISABLED.has("svc-worktree-isolation-guard")) {
+  // WI-FW-HOOKS-SAFETY-01 (AC-6/FP-07): ONE deny-capable pre-tool decision
+  // engine per host event. The engine classifies observation vs mutation once
+  // against the immutable original input, then runs every policy guard as an
+  // in-process child on the governed path ONLY — a rewritten read can never be
+  // re-classified as an unbound mutation by a sibling hook, and hook ordering
+  // no longer affects any security decision. The former direct wirings for
+  // svc-worktree-isolation-guard / svc-workflow-guard (+ --bash-guard /
+  // --phase-boundary) / svc-loop-guard (Bash|Edit|Write side) /
+  // svc-skill-artifact-authenticity / svc-session-contract-freshness /
+  // svc-inertia-check are consolidated here; their ids live on in the engine's
+  // child registry and remain individually disableable via SVC_DISABLED_HOOKS.
+  if (!DISABLED.has("svc-codex-pretool-dispatcher")) {
     entries.PreToolUse.push({
-      id: "svc-worktree-isolation-guard",
-      matcher: "Bash|Edit|Write",
-      hooks: [{ type: "command", command: `node ${hooksDir}/svc-worktree-isolation-guard.mjs` }],
+      id: "svc-pretool-decision-engine",
+      matcher: "Bash|Edit|Write|MultiEdit|StrReplaceFile|NotebookEdit|apply_patch",
+      hooks: [{ type: "command", command: `node ${hooksDir}/codex/svc-codex-pretool-dispatcher.mjs` }],
     });
   }
 
-  // WI-481: early feedback at task-completion/commit commands. The guard
-  // ignores arbitrary reads and edits; the git pre-commit slot is authoritative.
+  // WI-481: early feedback at task-completion/commit commands via TaskUpdate.
+  // The Bash side of this guard runs inside the decision engine's child list;
+  // only the tool-specific TaskUpdate matcher stays separately wired.
   if (!DISABLED.has("svc-impact-triad-guard")) {
     entries.PreToolUse.push({
       id: "svc-impact-triad-guard",
-      matcher: "TaskUpdate|Bash",
+      matcher: "TaskUpdate",
       hooks: [{ type: "command", command: `node ${hooksDir}/svc-impact-triad-guard.mjs` }],
     });
   }
 
-  if (PROFILE !== "minimal" && !DISABLED.has("svc-workflow-guard")) {
+  // Loop guard keeps ONLY its Agent-tool coverage here; Bash/Edit/Write loop
+  // detection runs inside the engine's child list.
+  if (!DISABLED.has("svc-loop-guard")) {
     entries.PreToolUse.push({
-      id: "svc-workflow-guard",
-      matcher: "Edit|Write",
-      hooks: [{ type: "command", command: `node ${hooksDir}/svc-workflow-guard.mjs` }],
-    });
-  }
-
-  if (PROFILE !== "minimal" && !DISABLED.has("svc-phase-boundary-detector")) {
-    entries.PreToolUse.push({
-      id: "svc-phase-boundary-detector",
-      matcher: "Edit|Write",
-      hooks: [{ type: "command", command: `node ${hooksDir}/svc-workflow-guard.mjs --phase-boundary` }],
-    });
-  }
-
-  if (!DISABLED.has("svc-bash-guard")) {
-    entries.PreToolUse.push({
-      id: "svc-bash-guard",
-      matcher: "Bash",
-      hooks: [{ type: "command", command: `node ${hooksDir}/svc-workflow-guard.mjs --bash-guard` }],
+      id: "svc-loop-guard-agent",
+      matcher: "Agent",
+      hooks: [{ type: "command", command: `node ${hooksDir}/svc-loop-guard.mjs` }],
     });
   }
 
@@ -157,15 +155,21 @@ function buildHookEntries(skillsPath) {
     });
   }
 
-  if (!DISABLED.has("svc-loop-guard")) {
-    entries.PreToolUse.push({
-      id: "svc-loop-guard",
-      matcher: "Bash|Edit|Write|StrReplaceFile|Agent",
-      hooks: [{ type: "command", command: `node ${hooksDir}/svc-loop-guard.mjs` }],
-    });
-  }
+  // (WI-FW-HOOKS-SAFETY-01) The legacy Bash|Edit|Write loop-guard wiring is
+  // consolidated into the decision engine above; only the Agent matcher stays.
 
   // ── PostToolUse validators ────────────────────────────────────────────────
+
+  // WI-FW-HOOKS-SAFETY-01 (AC-5): replay-safe post-tool correlation — a
+  // successful call may heartbeat only through the one-time pre-tool receipt
+  // for the exact authorized tuple. Never grants authority.
+  if (!DISABLED.has("svc-posttool-heartbeat")) {
+    entries.PostToolUse.push({
+      id: "svc-posttool-heartbeat",
+      matcher: "Bash|Edit|Write|MultiEdit|StrReplaceFile|NotebookEdit|apply_patch",
+      hooks: [{ type: "command", command: `node ${hooksDir}/codex/svc-codex-posttool-heartbeat.mjs` }],
+    });
+  }
 
   if (!DISABLED.has("svc-eval-gate-post")) {
     entries.PostToolUse.push({
@@ -361,33 +365,18 @@ function buildHookEntries(skillsPath) {
   // ── Notification context surfacing ────────────────────────────────────────
 
   // ── G-4 skill-artifact-authenticity (WI-114) ──────────────────────────────
-  // HARD BLOCK on writes to canonical skill-output paths without recent skill
-  // receipt. Lives primarily in hooks/hooks.json; enumerated here so the
-  // cross-host gate validator (validate-cross-host-hook-conformance.sh)
-  // recognizes Claude as the MUST host for this gate.
-  if (!DISABLED.has("svc-skill-artifact-authenticity")) {
-    entries.PreToolUse.push({
-      id: "svc-skill-artifact-authenticity",
-      matcher: "Edit|Write",
-      hooks: [{ type: "command", command: `node ${hooksDir}/svc-skill-artifact-authenticity.mjs` }],
-    });
-  }
-
-  if (!DISABLED.has("svc-session-contract-freshness")) {
-    entries.PreToolUse.push({
-      id: "svc-session-contract-freshness",
-      matcher: "Edit|Write",
-      hooks: [{ type: "command", command: `node ${hooksDir}/svc-session-contract-freshness.mjs` }],
-    });
-  }
-
-  if (!DISABLED.has("svc-inertia-check")) {
-    entries.PreToolUse.push({
-      id: "svc-inertia-check",
-      matcher: "Edit|Write",
-      hooks: [{ type: "command", command: `node ${hooksDir}/svc-inertia-check.mjs` }],
-    });
-  }
+  // WI-FW-HOOKS-SAFETY-01: svc-skill-artifact-authenticity,
+  // svc-session-contract-freshness, and svc-inertia-check are deny-capable
+  // children INSIDE the single decision engine above — no direct Edit|Write
+  // wiring remains, so no request is ever classified twice. The ids stay
+  // enumerated here for the cross-host gate validator and remain recognized
+  // as MUST gates via the engine's child registry.
+  const CONSOLIDATED_INTO_ENGINE = new Set([
+    "svc-skill-artifact-authenticity",
+    "svc-session-contract-freshness",
+    "svc-inertia-check",
+  ]);
+  void CONSOLIDATED_INTO_ENGINE;
 
   // ── R-1 lifecycle hooks (WI-116) — host-agnostic observability ────────────
   // Soft warn / observe-only. Wired here so all four cross-host gate IDs

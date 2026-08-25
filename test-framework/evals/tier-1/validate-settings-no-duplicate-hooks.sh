@@ -50,6 +50,52 @@ if diff -q "$SCRATCH/settings1.json" "$SCRATCH/settings2.json" >/dev/null 2>&1; 
 else
   fail "NOT idempotent: 2nd run differs from 1st"
 fi
+# WI-FW-HOOKS-SAFETY-01 (AC-6): ONE deny-capable pre-tool decision engine per
+# event, and no two deny-capable PreToolUse entries may share an effective
+# mutation tool — double classification of one request is the FP-03/FP-07 hazard.
+SCRATCH_SETTINGS="$SCRATCH/settings1.json"
+export SCRATCH_SETTINGS
+ONE_ENGINE=$(python3 -c "
+import json,sys,os
+s=json.load(open(os.environ.get('SCRATCH_SETTINGS','settings1.json')))
+pre=s.get('hooks',{}).get('PreToolUse',[])
+engine=[e for e in pre if any('svc-codex-pretool-dispatcher' in h.get('command','') for h in e.get('hooks',[]))]
+print(1 if len(engine)==1 else 0)
+")
+if [ "$ONE_ENGINE" = "1" ]; then
+  pass "exactly one deny-capable pre-tool decision engine wired"
+else
+  fail "expected exactly 1 svc-codex-pretool-dispatcher PreToolUse entry"
+fi
+
+OVERLAP=$(python3 -c "
+import json,sys,os
+s=json.load(open(os.environ.get('SCRATCH_SETTINGS','settings1.json')))
+ADVISORY=('svc-rule-injector-edit','svc-learning-inject','svc-owner-inject')
+def advisory(eid):
+    return any(a in eid for a in ('rule-injector','learning-inject','owner-inject'))
+pre=s.get('hooks',{}).get('PreToolUse',[])
+tools=lambda m:set(filter(None,m.split('|')))
+seen={}
+for e in pre:
+    eid=e.get('id') or ''
+    if advisory(eid): continue
+    for t in tools(e.get('matcher','')):
+        seen.setdefault(t,set()).add(eid or 'cmd')
+overlap=0
+MUT={'Bash','Edit','Write','MultiEdit','StrReplaceFile','NotebookEdit','apply_patch'}
+for t,ids in seen.items():
+    if t in MUT and len(ids)>1:
+        non_engine=[i for i in ids if i!='svc-pretool-decision-engine']
+        if non_engine: overlap+=1; print(t, non_engine, file=sys.stderr)
+print(overlap)
+")
+if [ "$OVERLAP" = "0" ]; then
+  pass "no deny-capable overlap on mutation tools outside the single engine"
+else
+  fail "deny-capable PreToolUse overlap on mutation tools ($OVERLAP)"
+fi
+
 rm -rf "$SCRATCH"
 
 # Duplicate-hook check on real settings (if present)
