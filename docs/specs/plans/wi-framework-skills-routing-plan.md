@@ -487,3 +487,11 @@ This plan introduces a derived index/cache, a shared routing service boundary, h
 4. run `plan-changeset`, followed by `review-plan`, before dispatching implementation.
 
 The design phase must preserve the principal invariant of this plan: optional capability discovery may be probabilistic; critical domain governance may not be.
+
+## Implementation Notes
+
+**Status:** PARTIALLY-LANDED (Waves 1-2 core) — 2026-08-25, branch feat-fw-skills-routing.
+
+Landed in this changeset: routing-index + decision schemas (schemas/skill-routing-index.schema.json, schemas/skill-router-decision.schema.json), deterministic compiler (scripts/compile-skill-router-index.mjs) with committed byte-stable artifact (references/skill-routing-index.json), shared router library (scripts/lib/skill-router.mjs), CLI (scripts/skill-router.mjs), conservative suggest-only invocation defaults via references/skill-routing-overrides.json, privacy-safe receipts (.svc/skill-router/, gitignored), labeled corpus (test-framework/fixtures/skill-router/corpus.json) + hermetic tier-1 validator (test-framework/evals/tier-1/validate-skill-router.sh).
+
+Still open per plan §5: Wave 0 baseline capture; Wave 3 semantic shadow; Wave 4 auto-invocation canary; Wave 5 mutation-gate rollout (severity/enforcement metadata on concerns REGISTRY); Wave 6 nine-host adapters + catalog diet. These remain governed by this document's exit criteria and must not be re-scoped silently.

@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "_comment": "Framework-owned routing enrichment registry consumed ONLY by scripts/compile-skill-router-index.mjs. invocation_policy defaults to suggest-only for every skill in skills-manifest.json; entries here may add aliases, trigger fixtures, domains/actions/objects, repo_signals, lane_roles, risk, requires and required_rules. Loosening a policy away from suggest-only is a reviewed framework change, never an inline edit. Unknown skill names fail compilation.",
+  "entries": {
+    "route-workflow": {
+      "aliases": ["what should I do next", "which skill", "route this work"],
+      "positive_triggers": ["start any work session", "decide what to run next"],
+      "negative_triggers": [],
+      "domains": ["workflow-orchestration"],
+      "actions": ["route"],
+      "objects": ["workflow"],
+      "risk": "low"
+    },
+    "write-spec": {
+      "aliases": ["specify feature", "feature spec", "define acceptance criteria"],
+      "positive_triggers": ["new feature definition needed"],
+      "negative_triggers": ["implement the approved spec"],
+      "domains": ["product-definition"],
+      "actions": ["specify", "define"],
+      "objects": ["features", "acceptance criteria", "user stories"],
+      "lane_roles": ["product-definition"],
+      "risk": "low"
+    },
+    "design-tech": {
+      "aliases": ["technical design", "architecture design", "component design"],
+      "positive_triggers": ["design the implementation approach"],
+      "negative_triggers": ["implement the approved design"],
+      "domains": ["software-architecture"],
+      "actions": ["design", "compare"],
+      "objects": ["architecture", "components", "interfaces", "data models"],
+      "repo_signals": ["feature spec is UX-REVIEWED"],
+      "lane_roles": ["technical-design"],
+      "requires": ["recall-stack-knowledge"],
+      "risk": "medium"
+    },
+    "diagnose-bug": {
+      "aliases": ["root cause", "debug regression", "find the bug"],
+      "positive_triggers": ["broken behavior reported"],
+      "negative_triggers": ["add new feature"],
+      "domains": ["debugging"],
+      "actions": ["diagnose", "bisect"],
+      "objects": ["regressions", "bugs"],
+      "lane_roles": ["bugfix-entry"],
+      "risk": "low"
+    },
+    "review-security": {
+      "aliases": ["threat model", "owasp review", "security audit"],
+      "positive_triggers": ["auth payments sensitive data or integrations changed"],
+      "domains": ["security"],
+      "actions": ["review"],
+      "objects": ["threats", "vulnerabilities"],
+      "risk": "high"
+    },
+    "manage-finops": {
+      "aliases": ["hosting cost", "provider pricing", "cloud budget"],
+      "positive_triggers": ["hosting or provider pricing comparison requested"],
+      "domains": ["finops"],
+      "actions": ["estimate", "compare"],
+      "objects": ["hosting", "api pricing", "budgets"],
+      "risk": "low"
+    },
+    "strategic-decision": {
+      "aliases": ["trade study", "build vs buy", "vendor selection"],
+      "positive_triggers": ["multi-option long-horizon choice with reversibility cost"],
+      "negative_triggers": ["within-feature architecture detail"],
+      "domains": ["strategy"],
+      "actions": ["compare", "decide"],
+      "objects": ["vendors", "frameworks", "pricing models"],
+      "risk": "medium"
+    },
+    "research": {
+      "aliases": ["look up", "how does X work", "best practice for"],
+      "positive_triggers": ["skill declared uncertainty about api library or pattern"],
+      "domains": ["research"],
+      "actions": ["search", "triangulate"],
+      "objects": ["apis", "libraries", "docs"],
+      "risk": "low"
+    }
+  }
+}

@@ -149,3 +149,4 @@ docs/specs/candidates/*.tmp.*
 # runtime state (the hash-bound baton is the fold of this ledger, not a
 # committed artifact).
 .svc/continuation/
+.svc/skill-router/

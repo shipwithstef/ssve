@@ -21,12 +21,70 @@
       "id": 2,
       "skill": "plan-changeset",
       "subject": "Produce changeset manifest (Waves 1-2 core scope), inline mode",
-      "status": "pending",
+      "status": "completed",
       "blocked_by": [],
       "metadata": {
         "skill": "plan-changeset",
         "wi": "WI-FW-SKILLS-ROUTING-01"
-      }
+      },
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-08-25T22:45:30.903Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-08-25T22:45:43.544Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-archetype.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-08-25T22:45:43.703Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-scope.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-08-25T22:45:43.861Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-25-wifw-skills-routing/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-08-25T22:45:44.009Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-25-wifw-skills-routing/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-08-25T22:45:44.149Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-25T22:45:44.292Z"
     },
     {
       "id": 3,
@@ -62,7 +120,29 @@
             "mode": "implementation-notes"
           }
         ]
-      }
+      },
+      "process_receipts": [
+        {
+          "skill": "test-journeys",
+          "mode": "tier-1-corpus",
+          "recorded_at": "2026-08-25T22:57:04.212Z",
+          "evidence": {
+            "type": "file",
+            "path": ".svc/skill-router-validator-run.log",
+            "sha256": "a3ecdbd8f840db505e9629b58a921586aa47c31f9b62caa9383905987b0a94ea"
+          }
+        },
+        {
+          "skill": "sync-spec-code",
+          "mode": "implementation-notes",
+          "recorded_at": "2026-08-25T22:57:04.452Z",
+          "evidence": {
+            "type": "file",
+            "path": "docs/specs/plans/wi-framework-skills-routing-plan.md",
+            "sha256": "6406341bdba041e008e51833c14b1d4f5702fe3c2d0c0f60b61b806bf549b794"
+          }
+        }
+      ]
     },
     {
       "id": 5,
@@ -130,5 +210,5 @@
       }
     }
   ],
-  "status": "in_progress"
+  "status": "pending"
 }

@@ -46,10 +46,15 @@ Constraints:
 | T02 | CREATE | references/skill-routing-index.json | Generated, committed, content-addressed index artifact |
 | T03 | CREATE | scripts/lib/skill-router.mjs | Shared library: load/pins/exact/lexical/policy-rerank/budget-cut/receipt/offline-degraded |
 | T03 | CREATE | scripts/skill-router.mjs | CLI: compile / route / validate subcommands emitting normalized decision JSON |
+| T03 | MODIFY | .gitignore | Ignore runtime receipts stream .svc/skill-router/ |
 | T04 | CREATE | test-framework/fixtures/skill-router/corpus.json | Labeled evaluation corpus (pins, optional recall, ambiguity, negative triggers, budgets) |
 | T04 | CREATE | test-framework/evals/tier-1/validate-skill-router.sh | Hermetic tier-1 validator: byte-stability, schema conformance, corpus assertions, offline mode, receipt redaction |
 | T05 | MODIFY | FRAMEWORK-STATE.md | Framework self-knowledge row for the router surface |
 | T05 | MODIFY | docs/specs/plans/wi-framework-skills-routing-plan.md | Implementation Notes annotation (status + landed-scope pointer) |
+| T05 | MODIFY | docs/plans/2026-08-25-wifw-skills-routing/manifest.md | Planning artifact self-ownership (parity closure per WI-562 precedent) |
+| T05 | MODIFY | docs/plans/2026-08-25-wifw-skills-routing/plan-contract.json | Planning artifact self-ownership |
+| T05 | MODIFY | docs/specs/receipts/WI-FW-SKILLS-ROUTING-01.receipts.json | Story-receipts seed for this WI |
+| T05 | MODIFY | docs/specs/research-log.md | Research entry preserved from prior session |
 
 ## Task Graph
 

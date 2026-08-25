@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "_comment": "WI-FW-SKILLS-ROUTING-01 labeled routing corpus. Each case feeds inputs to scripts/skill-router.mjs route and asserts expectations per plan section 7. Labels are the reviewed contract: fix the router, never loosen a label.",
+  "cases": [
+    {
+      "id": "explicit-canonical-name",
+      "expectation": "pin",
+      "input": { "intent": "diagnose-bug", "mode": "suggest" },
+      "assert": { "required_contains": ["diagnose-bug"] }
+    },
+    {
+      "id": "explicit-alias",
+      "expectation": "pin",
+      "input": { "intent": "root cause", "mode": "suggest" },
+      "assert": { "required_contains": ["diagnose-bug"] }
+    },
+    {
+      "id": "task-graph-active-skill-pin",
+      "expectation": "pin-with-prerequisites",
+      "input": { "intent": "continue current work", "active_skill": "design-tech", "mode": "suggest" },
+      "assert": { "required_contains": ["design-tech", "recall-stack-knowledge"] }
+    },
+    {
+      "id": "lane-next-transition-pin",
+      "expectation": "pin",
+      "input": { "intent": "what comes next", "next_skill": "write-spec", "mode": "suggest" },
+      "assert": { "required_contains": ["write-spec"] }
+    },
+    {
+      "id": "critical-concern-recall-auth-surface",
+      "expectation": "required-skills-and-rules",
+      "input": {
+        "intent": "adjust the login page copy",
+        "files": ["src/pages/login.tsx"],
+        "mode": "suggest"
+      },
+      "assert": {
+        "required_contains": ["review-security"],
+        "rules_nonempty": true,
+        "pins_evidence_contains_concern": ["auth-surface"]
+      }
+    },
+    {
+      "id": "zero-forbidden-auto-invocations-all-policies-conservative",
+      "expectation": "no-selection",
+      "input": { "intent": "technical design for the new component architecture", "mode": "active" },
+      "assert": { "selected": null }
+    },
+    {
+      "id": "zero-forbidden-auto-invocations-destructive-vocabulary",
+      "expectation": "no-selection",
+      "input": { "intent": "delete production database credentials and redeploy", "mode": "active" },
+      "assert": { "selected": null }
+    },
+    {
+      "id": "ambiguity-vague-intent-falls-back",
+      "expectation": "approved-fallback",
+      "input": { "intent": "zzz qqq xyzzy", "mode": "active" },
+      "assert": { "selected": null, "head_suggestion_is_route_workflow_fallback": true }
+    },
+    {
+      "id": "negative-trigger-suppresses-target",
+      "expectation": "no-top-invocation",
+      "input": { "intent": "implement the approved design", "mode": "suggest" },
+      "assert": { "head_suggestion_not": "design-tech" }
+    },
+    {
+      "id": "budget-cut-eight-cards-maximum",
+      "expectation": "budget-respected",
+      "input": {
+        "intent": "spec design architecture components pricing marketing landing research security cost budget vendor compare decide search estimate api docs",
+        "mode": "suggest"
+      },
+      "assert": { "suggestions_max_cards": 8, "d1_tokens_within_ceiling": true }
+    },
+    {
+      "id": "optional-lexical-quality-design-intent",
+      "expectation": "top-five-contains",
+      "input": { "intent": "define architecture approach for components and interfaces", "mode": "suggest" },
+      "assert": { "top_five_contains_any": ["design-tech", "explore-solutions"] }
+    },
+    {
+      "id": "optional-lexical-quality-debug-intent",
+      "expectation": "top-five-contains",
+      "input": { "intent": "regression appeared after last merge, need to bisect", "mode": "suggest" },
+      "assert": { "top_five_contains_any": ["diagnose-bug", "test-journeys", "sync-spec-code"] }
+    }
+  ]
+}

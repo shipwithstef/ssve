@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seriousvibecoding.dev/schemas/skill-routing-index.schema.json",
+  "title": "svc skill routing index (generated, content-addressed)",
+  "description": "Derived routing index compiled from skills-manifest.json, SKILL.md frontmatter descriptions, concerns/REGISTRY.json and references/skill-routing-overrides.json. Never hand-edit: recompile.",
+  "type": "object",
+  "required": ["schema_version", "compiled_from", "skills"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": 1 },
+    "compiled_from": {
+      "type": "object",
+      "description": "Content fingerprints of the canonical inputs this artifact was compiled from. Byte-stability contract: identical inputs produce byte-identical output.",
+      "required": ["manifest_sha256", "overrides_sha256", "concern_registry_sha256"],
+      "additionalProperties": false,
+      "properties": {
+        "manifest_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "overrides_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "concern_registry_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "skill",
+          "path",
+          "content_hash",
+          "description",
+          "invocation_policy",
+          "risk"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "skill": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$", "maxLength": 64 },
+          "path": { "type": "string", "pattern": "^skills/.+/SKILL\\.md$" },
+          "content_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "description": { "type": "string" },
+          "aliases": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+          "positive_triggers": { "type": "array", "items": { "type": "string" } },
+          "negative_triggers": { "type": "array", "items": { "type": "string" } },
+          "domains": { "type": "array", "items": { "type": "string" } },
+          "actions": { "type": "array", "items": { "type": "string" } },
+          "objects": { "type": "array", "items": { "type": "string" } },
+          "repo_signals": { "type": "array", "items": { "type": "string" } },
+          "lane_roles": { "type": "array", "items": { "type": "string" } },
+          "invocation_policy": {
+            "enum": ["required", "implicit-allowed", "suggest-only", "explicit-only"]
+          },
+          "risk": { "enum": ["low", "medium", "high", "critical"] },
+          "requires": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+          "required_rules": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+        }
+      }
+    }
+  }
+}

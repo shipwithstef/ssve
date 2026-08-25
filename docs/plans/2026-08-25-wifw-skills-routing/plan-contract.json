@@ -18,7 +18,7 @@
     },
     {
       "task": "T03",
-      "paths": ["scripts/lib/skill-router.mjs", "scripts/skill-router.mjs"]
+      "paths": ["scripts/lib/skill-router.mjs", "scripts/skill-router.mjs", ".gitignore"]
     },
     {
       "task": "T04",
@@ -32,7 +32,10 @@
       "paths": [
         "FRAMEWORK-STATE.md",
         "docs/specs/plans/wi-framework-skills-routing-plan.md",
-        "docs/plans/2026-08-25-wifw-skills-routing/manifest.md"
+        "docs/plans/2026-08-25-wifw-skills-routing/manifest.md",
+        "docs/plans/2026-08-25-wifw-skills-routing/plan-contract.json",
+        "docs/specs/receipts/WI-FW-SKILLS-ROUTING-01.receipts.json",
+        "docs/specs/research-log.md"
       ]
     }
   ],
