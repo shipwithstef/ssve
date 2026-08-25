@@ -2,7 +2,7 @@
 
 > **Company Operating System (COS) Living Ledger of all Swarm Worktrees, Multi-Agent Sessions, Promotions, Vault Secrets, and Deliverables.**
 > *Single Source of Truth across Antigravity, Cursor Auto, Codex, and Grok Swarm Fleet.*
-> *Last Updated: Tuesday, August 25, 2026 at 15:06 UTC+3*
+> *Last Updated: Tuesday, August 25, 2026 at 15:18 UTC+3*
 
 ---
 
@@ -10,6 +10,9 @@
 
 | Work Item ID | Domain / Scope | Worktree / Branch | Lead Model | Status | Verified Delivery SHA / Evidence |
 |---|---|---|---|---|---|
+| **`WI-373` (Mobile Google OAuth Streamline)** | Direct Google login bypassing intermediate web login + native callback return | `wt-lane-google-oauth` -> `feat/auth-streamline` | Codex Sol High | **PROMOTED & LIVE** | `78d480842` & `054c599d7` • Baked directly into `vc125` Play submission |
+| **`WI-PRIVACY-BLUR-01` (Privacy Modal & PII Protection)** | Backdrop-blur privacy consent dialogs & anon owner-PII column sanitization | `wt-lane-privacy-security` | Codex 5.6 Sol High | **PROMOTED & LIVE** | `dbc5760b2` • 7 owner-PII columns protected • Zero leak |
+| **`WI-LOCATION-FLICKER-01` (Location Cache & Anti-Flicker)** | Clean location discovery cache, purge stale cache objects, fix GPS map flicker | `wt-lane-location-flicker` | Codex 5.6 Sol High | **PROMOTED & LIVE** | `980865353` & `ad2c6fd35` • Stale GPS cache objects purged |
 | **`WI-I18N-SWITCH-REACTIVE-01`** | Instant reactive UI language switcher (<16ms sync) & persistent manual choice | `wt-lane-i18n-switch-reactive` -> `feat/i18n-switch-reactive` | Codex 5.6 Sol High | **PROMOTED & LIVE** | `f3f927bc9` • 975/975 tests passed • Staging & Prod 200 OK |
 | **`WI-UI-I18N-WRAP-POLISH-01`** | 30-locale mobile typography, elastic cards, zero-overflow viewports | `wt-lane-ui-i18n-wrap-polish` -> `feat/ui-i18n-wrap-polish` | Codex 5.6 Sol High | **PROMOTED & LIVE** | `dac04466d` • 20/20 mobile geometry tests passed |
 | **`WI-THEME-FIRST-VISIT-SOLAR-01`** | Real-time solar daylight engine (06:00–20:30 Cream vs 20:30–06:00 Dark) | `wt-lane-theme-first-visit-solar` -> `feat/first-visit-daylight-theme` | Codex 5.6 Sol High | **PROMOTED & LIVE** | `821a9741a` • Synchronous bootstrap in `<1ms` |
@@ -17,6 +20,7 @@
 | **`WI-AI-FEATURES-01`** | AI feature availability toggles, Deno edge-gateway fallback | `wt-lane-ai-features` | Codex 5.6 Sol High | **PROMOTED & LIVE** | `3f815192` • Unit & runtime gates passed |
 | **`WI-ANDROID-BETA-01`** | Google Play Production submission (`vc125` signed AAB + release keystore) | `main` / `android/` | Orchestrator & Codex | **SUBMITTED & SIGNED** | `hourshub-release.keystore` in Azure Key Vault `kv-surge-dev-1` |
 | **`IARC-LIVE-RATING-01`** | Official IARC Global Age Rating Certificate (`5d663b18-1c47-8060-89d0-3f827a866ac0`) | `docs/specs/compliance/` | GlobalRatings.com / IARC | **LIVE & ACTIVE** | PEGI 3 / ESRB Everyone / USK 0 certified |
+| **`WI-SCOUT-ECONOMY-01`** | Scout reward acquisition points, QR redemption, Dodo billing integration | `wt-lane-scout-economy` | Codex 5.6 Sol High | **PROMOTED & LIVE** | `7e70c3a0f` & `830b72d1c` • 26/28 receipts green |
 
 ---
 
