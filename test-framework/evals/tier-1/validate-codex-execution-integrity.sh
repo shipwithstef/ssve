@@ -517,13 +517,19 @@ wi494_drive2() { printf '%s' "$1" | SVC_SESSION_ID="$WI494_SESSION" SVC_CODEX_RU
 for bad_cmd in \
   "node scripts/svc-ensure-worktree.mjs --wi WI-1 --branch ../../../etc/evil" \
   "node scripts/svc-ensure-worktree.mjs --wi ../WI-1 --branch ok-branch" \
-  "node scripts/svc-ensure-worktree.mjs --wi WI-1 --branch a/b" \
   "node scripts/task-graph.mjs init --wi WI-1 --branch ok-branch" \
   "node scripts/svc-ensure-worktree.mjs --wi WI-9 --branch b --evil x" \
   "node scripts/svc-ensure-worktree.mjs --wi WI-1 --wi WI-2 --branch ok-branch"; do
   BAD_OUT="$(wi494_drive2 "$(wi494_payload "$WI494_SESSION" "$WI494_REPO2" "$bad_cmd")")"
   expect "zero-state bootstrap shape rejected: $bad_cmd" wi494_is_deny "$BAD_OUT"
 done
+
+# WI-FW-HOOKS-SAFETY-01 (FP-01): a Git-valid SLASH branch is now an accepted
+# bootstrap shape (literal-ref validation replaced the slash-free regex). It is
+# still denied HERE because zero-state bootstrap requires the default checkout;
+# the shape itself must parse, so the denial reason is isolation, not shape.
+SLASH_OUT="$(wi494_drive2 "$(wi494_payload "$WI494_SESSION" "$WI494_REPO2" "node scripts/svc-ensure-worktree.mjs --wi WI-1 --branch feat/slash-shape")")"
+expect "slash-branch bootstrap parses (denied only by zero-state isolation)" wi494_is_deny "$SLASH_OUT"
 
 mkdir -m 700 -p "$WI494_REPO2/.svc/bootstrap-intent"
 

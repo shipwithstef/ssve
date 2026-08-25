@@ -8,6 +8,7 @@ import { validateTaskGraphShape, recoverableId } from "../lib/validate-task-grap
 import { lexSimpleCommand } from "./lib/argv-lex.mjs";
 import { markerPathFor, readMarker, secureAncestors } from "./lib/bootstrap-marker.mjs";
 import { WI_ID_RE } from "../lib/wi-id.mjs";
+import { validateLiteralBranchName } from "../lib/literal-branch.mjs";
 import { resolveWI } from "../lib/resolve-wi.mjs";
 import { inspectBootstrapHandoff } from "./lib/session-handoff.mjs";
 
@@ -339,10 +340,10 @@ function bootstrapShapeInner(payload, ctx, env) {
     flags[key] = value; i += 1;
   }
   if (!flags["--wi"] || !flags["--branch"]) return false;
-  // Mirrors svc-ensure-worktree.mjs WI_RE / BRANCH_RE.
+  // WI-FW-HOOKS-SAFETY-01: mirrors svc-ensure-worktree.mjs — Git-valid literal
+  // refs (including slash branches) via the shared validator, not a name regex.
   if (!WI_ID_RE.test(flags["--wi"])) return false;
-  if (!/^[A-Za-z0-9._-]+$/.test(flags["--branch"])) return false;   // slash-free
-  if (flags["--branch"].includes("..")) return false;
+  if (!validateLiteralBranchName(flags["--branch"]).ok) return false;
   if (flags["--from"] && !/^[A-Za-z0-9._\/-]+$/.test(flags["--from"])) return false;
   if (flags["--from"] && flags["--from"].includes("..")) return false;
 
