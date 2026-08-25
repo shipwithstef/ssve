@@ -17,24 +17,49 @@
   ],
   "additionalProperties": false,
   "properties": {
-    "schema_version": { "const": 1 },
-    "mode": { "enum": ["off", "shadow", "suggest", "active"] },
+    "schema_version": {
+      "const": 1
+    },
+    "mode": {
+      "enum": [
+        "off",
+        "shadow",
+        "suggest",
+        "active"
+      ]
+    },
     "semantic": {
       "type": "object",
-      "required": ["status"],
+      "required": [
+        "status"
+      ],
       "additionalProperties": false,
       "properties": {
-        "status": { "enum": ["unavailable", "degraded", "shadow", "active"] },
-        "reason_code": { "type": "string" }
+        "status": {
+          "enum": [
+            "unavailable",
+            "degraded",
+            "shadow",
+            "active"
+          ]
+        },
+        "reason_code": {
+          "type": "string"
+        }
       }
     },
     "required": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "Deterministically pinned skills; never displaced by rank or budget."
     },
     "selected": {
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "description": "The one optionally selected skill in active mode, else null. Suggest mode never selects."
     },
     "suggestions": {
@@ -42,58 +67,115 @@
       "maxItems": 8,
       "items": {
         "type": "object",
-        "required": ["skill", "score", "reason_codes"],
+        "required": [
+          "skill",
+          "score",
+          "reason_codes"
+        ],
         "additionalProperties": false,
         "properties": {
-          "skill": { "type": "string" },
-          "score": { "type": "number" },
-          "reason_codes": { "type": "array", "items": { "type": "string" } }
+          "skill": {
+            "type": "string"
+          },
+          "score": {
+            "type": "number"
+          },
+          "reason_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
         }
       }
     },
     "rules": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "Concern-matched required rule identifiers."
     },
     "budget": {
       "type": "object",
-      "required": ["d0_tokens", "d1_tokens", "d1_cards", "d1_ceiling_cards", "d1_ceiling_tokens"],
+      "required": [
+        "d0_tokens",
+        "d1_tokens",
+        "d1_cards",
+        "d1_ceiling_cards",
+        "d1_ceiling_tokens"
+      ],
       "additionalProperties": false,
       "properties": {
-        "d0_tokens": { "type": "integer", "minimum": 0 },
-        "d0_ceiling_tokens": { "const": 1500 },
-        "d1_tokens": { "type": "integer", "minimum": 0 },
-        "d1_ceiling_tokens": { "const": 1200 },
-        "d1_cards": { "type": "integer", "minimum": 0 },
-        "d1_ceiling_cards": { "const": 8 }
+        "d0_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "d0_ceiling_tokens": {
+          "const": 1500
+        },
+        "d1_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "d1_ceiling_tokens": {
+          "const": 1200
+        },
+        "d1_cards": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "d1_ceiling_cards": {
+          "const": 8
+        }
       }
     },
     "enforcement": {
       "enum": [
-        "mutation-allowed",
-        "mutation-allowed-degraded",
+        "advisory-no-mutation-gate",
         "read-only-diagnosis"
       ]
     },
     "receipt": {
       "type": "object",
-      "required": ["intent_fingerprint", "ts", "policy_version"],
+      "required": [
+        "intent_fingerprint",
+        "ts",
+        "policy_version"
+      ],
       "additionalProperties": false,
       "properties": {
-        "intent_fingerprint": { "type": "string", "pattern": "^sha256:[0-9a-f]{16}$" },
-        "ts": { "type": "string", "format": "date-time" },
-        "policy_version": { "const": 1 },
-        "truncated_optional_cards": { "type": "integer", "minimum": 0 },
+        "intent_fingerprint": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{16}$"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "policy_version": {
+          "const": 1
+        },
+        "truncated_optional_cards": {
+          "type": "integer",
+          "minimum": 0
+        },
         "pins_evidence": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["pin", "evidence"],
+            "required": [
+              "pin",
+              "evidence"
+            ],
             "additionalProperties": false,
             "properties": {
-              "pin": { "type": "string" },
-              "evidence": { "type": "string" }
+              "pin": {
+                "type": "string"
+              },
+              "evidence": {
+                "type": "string"
+              }
             }
           }
         }

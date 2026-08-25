@@ -70,13 +70,33 @@ export function loadIndex(root) {
   const raw = fs.readFileSync(file, "utf8");
   const index = JSON.parse(raw);
   if (index.schema_version !== 1) fail(`unsupported index schema_version ${index.schema_version}`);
-  const committed = sha256Hex(raw);
   const byName = new Map();
   for (const rec of index.skills) {
     if (byName.has(rec.skill)) fail(`index has duplicate skill ${rec.skill}`);
     byName.set(rec.skill, rec);
   }
-  return { index, byName, artifactHash: committed };
+  return { index, byName, artifactHash: sha256Hex(raw) };
+}
+
+/** Verify the committed index still matches its canonical inputs (plan §4.2:
+ * vectors/derived data are never accepted without matching source hashes).
+ * Returns { fresh, drift[] }; advisory callers degrade, they do not crash. */
+export function verifyIndexFreshness(root, index) {
+  const read = (rel) => {
+    try { return fs.readFileSync(path.join(root, rel)); } catch { return null; }
+  };
+  const pairs = [
+    ["manifest_sha256", "skills-manifest.json"],
+    ["overrides_sha256", path.join("references", "skill-routing-overrides.json")],
+    ["concern_registry_sha256", path.join("concerns", "REGISTRY.json")],
+  ];
+  const drift = [];
+  for (const [key, rel] of pairs) {
+    const bytes = read(rel);
+    const actual = bytes ? sha256Hex(bytes) : "missing";
+    if (actual !== index.compiled_from?.[key]) drift.push(rel.split("\\").join("/"));
+  }
+  return { fresh: drift.length === 0, drift };
 }
 
 export function loadConcerns(root) {
@@ -115,15 +135,17 @@ export function matchConcern(concern, evidence) {
       // Signals come in two dialects (verified against svc-rule-injector):
       // glob patterns ("**/aup*") match anchored; bare substrings ("base44")
       // match anywhere in the path.
-      let hitPath = null;
+      // Evidence records the committed PATTERN that matched, never the
+      // concrete caller path — receipts must not absorb raw user input.
+      let hit = false;
       if (/[*?]/.test(pattern)) {
         let re;
         try { re = globToRe(pattern); } catch { continue; }
-        hitPath = evidence.files.find((f) => re.test(f)) || null;
+        hit = evidence.files.some((f) => re.test(f));
       } else {
-        hitPath = evidence.files.find((f) => f.includes(pattern)) || null;
+        hit = evidence.files.some((f) => f.includes(pattern));
       }
-      if (hitPath) matched = matched || `path:${hitPath}`;
+      if (hit) matched = matched || `pattern:${pattern}`;
     }
   }
   const pkgSignals = sig.packages_imported;
@@ -168,17 +190,24 @@ export function resolvePins({ root, index, byName, intent, evidence, activeSkill
   // (c) next legal lane transition.
   if (nextSkill && byName.has(nextSkill)) addPin(nextSkill, "lane-state:next-transition");
 
-  // (d) repository concerns → required skills + rules.
+  // (d) repository concerns → required skills + rules. Rule identifiers stay
+  // bare/loadable; concern attribution goes to receipt evidence, not the id.
   const concerns = loadConcerns(root);
+  const ruleEvidence = [];
   for (const concern of concerns.concerns || []) {
     const hit = matchConcern(concern, evidence);
     if (!hit) continue;
     const handled = concern.handled_by || {};
     for (const s of handled.required_skills || []) addPin(s, `concern:${concern.name}@${hit}`);
-    for (const r of handled.required_rules || []) rules.push(`${r} (concern:${concern.name})`);
+    for (const r of handled.required_rules || []) {
+      if (!rules.includes(r)) {
+        rules.push(r);
+        ruleEvidence.push({ pin: `rule:${r}`, evidence: `concern:${concern.name}@${hit}` });
+      }
+    }
   }
 
-  return { pins, rules };
+  return { pins, rules, ruleEvidence };
 }
 
 /** Build lexical search documents from an index record. */
@@ -251,20 +280,35 @@ export function route(options) {
 
   if (!MODES.has(mode)) fail(`unknown mode ${mode}`);
   const { index, byName } = loadIndex(root);
+  const freshness = verifyIndexFreshness(root, index);
 
   const evidence = { files, packages, env };
-  const { pins, rules } = resolvePins({ root, index, byName, intent, evidence, activeSkill, nextSkill });
+  const { pins, rules, ruleEvidence } = resolvePins({ root, index, byName, intent, evidence, activeSkill, nextSkill });
+
+  // Stale/tampered index (canonical inputs drifted past compile): degrade.
+  // Concern-required pins were computed live from REGISTRY.json above and
+  // survive; optional discovery is withheld and the reason recorded.
+  let staleReason = null;
+  if (!freshness.fresh) {
+    staleReason = `stale-routing-index:${freshness.drift.join(",")}`;
+  }
 
   const required = [...pins.keys()].sort();
   const pinsEvidence = [];
   for (const [skill, whys] of [...pins.entries()].sort(([a], [b]) => a.localeCompare(b))) {
     for (const w of whys) pinsEvidence.push({ pin: skill, evidence: w });
   }
+  pinsEvidence.push(...ruleEvidence);
 
   // Scope filter: optional candidates must be suggestible in this run.
-  const optional = index.skills.filter(
-    (r) => !pins.has(r.skill) && (r.invocation_policy === "suggest-only" || r.invocation_policy === "implicit-allowed"),
-  );
+  // mode "off" is the emergency rollback position: deterministic required
+  // pins stay active, ALL optional discovery is disabled (plan §9).
+  // A stale index likewise withholds optional discovery while pins survive.
+  const optional = mode === "off" || staleReason
+    ? []
+    : index.skills.filter(
+        (r) => !pins.has(r.skill) && (r.invocation_policy === "suggest-only" || r.invocation_policy === "implicit-allowed"),
+      );
 
   const qTokens = tokenize(intent);
   let ranked = lexicalRank(qTokens, optional).map(({ rec, score }) => ({
@@ -320,17 +364,32 @@ export function route(options) {
     selectionReasons.push("fallback:route-workflow(no-candidates)");
   }
   if (mode === "active" && selected === null) {
-    // Approved ambiguity fallback surfaces route-workflow as the suggestion head.
+    // Approved ambiguity fallback surfaces route-workflow as the suggestion
+    // head. Its cost is accounted BEFORE budget finalization so counters stay
+    // truthful (F-EXEC-009).
     if (byName.has("route-workflow") && !pins.has("route-workflow")) {
-      cards.unshift({ rec: byName.get("route-workflow"), score: 0, reason_codes: ["ambiguity-fallback"] });
+      const fallback = { rec: byName.get("route-workflow"), score: 0, reason_codes: ["ambiguity-fallback"] };
+      const cost = Math.min(estimateTokens(JSON.stringify(cardFor(fallback))), 300);
+      if (cards.length >= BUDGETS.d1CeilingCards || d1Tokens + cost > BUDGETS.d1CeilingTokens) {
+        truncated += 1;
+      } else {
+        cards.unshift(fallback);
+        d1Tokens += cost;
+      }
     }
   }
 
   const d0Tokens = estimateTokens(KERNEL_TEXT);
+  // Honest enforcement semantics (F-EXEC-001): this wave implements no
+  // mutation gate and no required-rule receipt verification, so no decision
+  // may claim mutation authority. Advisory output only.
   const decision = {
     schema_version: 1,
     mode,
-    semantic: { status: semanticStatus, reason_code: semanticReason },
+    semantic: {
+      status: staleReason ? "degraded" : semanticStatus,
+      reason_code: staleReason || semanticReason,
+    },
     required,
     selected,
     suggestions: cards.slice(0, BUDGETS.d1CeilingCards).map(({ rec, score, reason_codes }) => ({
@@ -347,7 +406,7 @@ export function route(options) {
       d1_cards: cards.length,
       d1_ceiling_cards: BUDGETS.d1CeilingCards,
     },
-    enforcement: semanticStatus === "active" ? "mutation-allowed" : "mutation-allowed-degraded",
+    enforcement: "advisory-no-mutation-gate",
     receipt: {
       intent_fingerprint: `sha256:${sha256Hex(normalize(intent)).slice(0, 16)}`,
       ts,
@@ -384,9 +443,19 @@ export function writeReceipt(root, decision) {
 }
 
 /** Structural validation against schemas/skill-router-decision.schema.json
- * without external dependencies (no ajv at repo root). */
+ * without external dependencies (no ajv at repo root). Strict: unknown
+ * top-level keys are rejected so no unreviewed payload (e.g. raw intent)
+ * can ride along into host adapters. */
+const DECISION_KEYS = new Set([
+  "schema_version", "mode", "semantic", "required", "selected", "suggestions",
+  "rules", "budget", "enforcement", "receipt",
+]);
+
 export function validateDecision(decision) {
   const errors = [];
+  for (const key of Object.keys(decision)) {
+    if (!DECISION_KEYS.has(key)) errors.push(`unknown field: ${key}`);
+  }
   const req = ["schema_version", "mode", "semantic", "required", "selected", "suggestions", "rules", "budget", "enforcement"];
   for (const key of req) if (!(key in decision)) errors.push(`missing field: ${key}`);
   if (decision.schema_version !== 1) errors.push("schema_version must be 1");
@@ -396,6 +465,12 @@ export function validateDecision(decision) {
   if (decision.budget.d0_tokens > BUDGETS.d0CeilingTokens) errors.push("d0_tokens above ceiling");
   if (decision.selected !== null && typeof decision.selected !== "string") errors.push("selected must be string|null");
   if (!/^sha256:[0-9a-f]{16}$/.test(decision.receipt?.intent_fingerprint || "")) errors.push("receipt.intent_fingerprint malformed");
+  if (decision.enforcement !== "advisory-no-mutation-gate" && decision.enforcement !== "read-only-diagnosis") {
+    errors.push(`enforcement value ${decision.enforcement} claims authority this wave does not implement`);
+  }
+  for (const s of decision.suggestions) {
+    if (typeof s.score !== "number" || !Array.isArray(s.reason_codes)) errors.push("suggestion card malformed");
+  }
   if (JSON.stringify(decision).includes("RAW_INTENT_MARKER")) errors.push("raw intent leaked into decision");
   return errors;
 }

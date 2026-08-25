@@ -114,6 +114,11 @@ export function compile(root) {
       .filter(Boolean)
   );
 
+  // Path-safety: a skill name becomes a filesystem path segment. Only the
+  // canonical kebab-case form is accepted so a hostile manifest entry can
+  // never escape the skills/ directory (F-EXEC-004).
+  const SKILL_NAME_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
   const knownSkills = new Set(included);
   const entries = Object.entries(overrides.entries || {});
   const overriddenNames = new Set();
@@ -138,6 +143,7 @@ export function compile(root) {
   const records = [];
   const aliasOwners = new Map();
   for (const name of [...included].sort()) {
+    if (!SKILL_NAME_RE.test(name)) fail(`skill name is not canonical kebab-case (path-safety guard): ${name}`);
     const rel = path.join("skills", name, "SKILL.md");
     const abs = path.join(root, rel);
     let raw;
@@ -159,6 +165,11 @@ export function compile(root) {
       const owner = aliasOwners.get(key);
       if (owner && owner !== name) {
         fail(`alias collision: "${alias}" declared by both ${owner} and ${name}; explicit resolution would be ambiguous`);
+      }
+      // An alias must not collide with a DIFFERENT skill's canonical name
+      // either, or explicit resolution would be ambiguous (F-EXEC-006).
+      if (knownSkills.has(key)) {
+        fail(`${name}: alias "${alias}" collides with skill canonical name "${key}"`);
       }
       aliasOwners.set(key, name);
     }

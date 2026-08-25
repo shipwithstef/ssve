@@ -101,6 +101,18 @@ try {
 
   if (command === "route") {
     if (args.intent === undefined) { process.stderr.write("route requires --intent\n"); usage(); }
+    // SVC_SKILL_ROUTER_MODE is the documented safety/rollback knob (plan §9):
+    // off | shadow | suggest | active. It is the DEFAULT; an explicit --mode
+    // flag wins. Unknown env values fail closed to "off" with a diagnostic.
+    let mode = args.mode;
+    if (!mode && process.env.SVC_SKILL_ROUTER_MODE) {
+      const requested = process.env.SVC_SKILL_ROUTER_MODE;
+      if (["off", "shadow", "suggest", "active"].includes(requested)) mode = requested;
+      else {
+        process.stderr.write(`skill-router: unknown SVC_SKILL_ROUTER_MODE "${requested}"; failing closed to "off"\n`);
+        mode = "off";
+      }
+    }
     const decision = route({
       root,
       intent: args.intent,
@@ -109,7 +121,7 @@ try {
       env: args.env || [],
       activeSkill: args.activeSkill || null,
       nextSkill: args.nextSkill || null,
-      mode: args.mode || "suggest",
+      mode: mode || "suggest",
       receipts: !args.noReceipts,
     });
     const errors = validateDecision(decision);

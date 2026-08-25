@@ -71,9 +71,12 @@ for (const [pattern, candidate, expected] of cases) {
     process.exit(1);
   }
 }
-// Concern-level matching must accept both dialects (globs + bare substrings).
+// Concern-level matching must accept both dialects (globs + bare substrings)
+// and must record the committed pattern — never the concrete caller path.
 const concern = { signals: { file_path_patterns: ["base44", "**/oauth*"] } };
-if (!matchConcern(concern, { files: ["src/.base44/client.js"], packages: [], env: [] })) process.exit(1);
+const evidence = matchConcern(concern, { files: ["src/.base44/client.js"], packages: [], env: [] });
+if (!evidence) process.exit(1);
+if (evidence.includes("client.js") || !evidence.startsWith("pattern:")) process.exit(1);
 if (!matchConcern(concern, { files: ["lib/oauth-flow.ts"], packages: [], env: [] })) process.exit(1);
 if (matchConcern(concern, { files: ["src/nothing.js"], packages: [], env: [] })) process.exit(1);
 console.log("glob+conformance OK");
@@ -110,6 +113,30 @@ for (const c of corpus.cases) {
   // Every decision must conform to the normalized contract.
   for (const err of validateDecision(d)) failures.push(`${c.id}: decision invalid: ${err}`);
 
+  // First case additionally cross-checks the hand-rolled validator against the
+  // committed JSON Schema contract itself (F-EXEC-008): key sets and budget
+  // ceiling constants must agree, or the "schema conformance" claim is false.
+  if (ran === 1) {
+    const schema = JSON.parse(fs.readFileSync(path.join(root, "schemas", "skill-router-decision.schema.json"), "utf8"));
+    const schemaKeys = new Set(Object.keys(schema.properties));
+    const decisionKeys = Object.keys(d);
+    for (const k of decisionKeys) {
+      if (!schemaKeys.has(k)) failures.push(`schema-parity: decision emits field ${k} absent from JSON Schema`);
+    }
+    for (const k of schema.required) {
+      if (!decisionKeys.includes(k)) failures.push(`schema-parity: JSON Schema requires ${k} but validator set omits it`);
+    }
+    if (schema.properties.budget.properties.d1_ceiling_tokens.const !== BUDGETS.d1CeilingTokens) {
+      failures.push("schema-parity: d1 ceiling constant diverges from library BUDGETS");
+    }
+    if (schema.properties.budget.properties.d0_ceiling_tokens.const !== BUDGETS.d0CeilingTokens) {
+      failures.push("schema-parity: d0 ceiling constant diverges from library BUDGETS");
+    }
+    if (!schema.properties.enforcement.enum.includes("advisory-no-mutation-gate")) {
+      failures.push("schema-parity: enforcement enum lacks honest advisory value");
+    }
+  }
+
   // Budgets must always hold.
   if (d.budget.d1_tokens > BUDGETS.d1CeilingTokens) failures.push(`${c.id}: d1 budget exceeded`);
   if (d.budget.d0_tokens > BUDGETS.d0CeilingTokens) failures.push(`${c.id}: d0 budget exceeded`);
@@ -140,6 +167,9 @@ for (const c of corpus.cases) {
   }
   if (a.suggestions_max_cards && d.suggestions.length > a.suggestions_max_cards) {
     failures.push(`${c.id}: ${d.suggestions.length} cards exceed max ${a.suggestions_max_cards}`);
+  }
+  if (a.suggestions_zero && d.suggestions.length !== 0) {
+    failures.push(`${c.id}: mode off must disable optional discovery, got ${d.suggestions.length} cards`);
   }
   if (a.d1_tokens_within_ceiling && d.budget.d1_tokens > BUDGETS.d1CeilingTokens) {
     failures.push(`${c.id}: d1_tokens ${d.budget.d1_tokens} above ceiling`);

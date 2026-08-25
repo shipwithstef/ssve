@@ -54,7 +54,7 @@ Constraints:
 | T05 | MODIFY | docs/plans/2026-08-25-wifw-skills-routing/manifest.md | Planning artifact self-ownership (parity closure per WI-562 precedent) |
 | T05 | MODIFY | docs/plans/2026-08-25-wifw-skills-routing/plan-contract.json | Planning artifact self-ownership |
 | T05 | MODIFY | docs/specs/receipts/WI-FW-SKILLS-ROUTING-01.receipts.json | Story-receipts seed for this WI |
-| T05 | MODIFY | docs/specs/research-log.md | Research entry preserved from prior session |
+| T05 | MODIFY | docs/specs/research-log.md;docs/plans/2026-08-25-wifw-skills-routing/review-log.yaml | Research entry preserved from prior session; review-plan gate log (rounds 1-3 + bounded exit) |
 
 ## Task Graph
 

@@ -74,6 +74,12 @@
       "assert": { "suggestions_max_cards": 8, "d1_tokens_within_ceiling": true }
     },
     {
+      "id": "mode-off-disables-optional-discovery-keeps-pins",
+      "expectation": "rollback-control",
+      "input": { "intent": "technical design architecture", "active_skill": "design-tech", "mode": "off" },
+      "assert": { "suggestions_zero": true, "required_contains": ["design-tech"] }
+    },
+    {
       "id": "optional-lexical-quality-design-intent",
       "expectation": "top-five-contains",
       "input": { "intent": "define architecture approach for components and interfaces", "mode": "suggest" },

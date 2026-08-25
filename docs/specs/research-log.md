@@ -369,7 +369,6 @@ The best-fit design is therefore one pure classifier for completed registry-skil
 **As-of date:** 2026-08-15
 **Re-verify after:** any Codex collaboration tool-schema, hook API, or contained-child transport change.
 **Version-specific:** Codex CLI 0.147.0 and the active 2026-08-15 collaboration tool schema.
-++ b/docs/specs/research-log.md
 
 ### 2026-08-25 — Just-in-time skill discovery and critical-rule enforcement (WI-FW-SKILLS-ROUTING-01)
 
