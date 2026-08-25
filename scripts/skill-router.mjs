@@ -22,7 +22,7 @@
 import path from "node:path";
 import process from "node:process";
 import { compile } from "./compile-skill-router-index.mjs";
-import { loadIndex, route, validateDecision, BUDGETS } from "./lib/skill-router.mjs";
+import { loadIndex, verifyIndexFreshness, route, validateDecision, BUDGETS } from "./lib/skill-router.mjs";
 
 function usage() {
   process.stderr.write(`usage:
@@ -79,7 +79,8 @@ try {
   }
 
   if (command === "validate") {
-    const { index } = loadIndex(root);
+    const loaded = loadIndex(root);
+    const { index } = loaded;
     const policies = {};
     let badDescription = 0;
     for (const s of index.skills) {
@@ -88,6 +89,14 @@ try {
     }
     if (badDescription > 0) {
       process.stderr.write(`skill-router validate: ${badDescription} record(s) missing description\n`);
+      process.exit(1);
+    }
+    // A stale index (canonical inputs or any SKILL.md drifted past compile)
+    // must never be reported healthy (F-EXEC-014).
+    const freshness = verifyIndexFreshness(root, index);
+    if (!freshness.fresh) {
+      process.stderr.write(`skill-router validate: STALE index — drift: ${freshness.drift.join(", ")}\n`);
+      process.stderr.write("  run: node scripts/compile-skill-router-index.mjs && commit the regenerated artifact\n");
       process.exit(1);
     }
     process.stdout.write(JSON.stringify({

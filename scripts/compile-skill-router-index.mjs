@@ -132,6 +132,14 @@ export function compile(root) {
     if (entry.risk !== undefined && !RISKS.has(entry.risk)) {
       fail(`${name}: invalid risk ${entry.risk}`);
     }
+    // Structural type checks so the compiler can never emit an index that
+    // violates its own schema's array/string constraints (F-EXEC-016).
+    for (const field of ["aliases", "positive_triggers", "negative_triggers", "domains", "actions", "objects", "repo_signals", "lane_roles", "requires", "required_rules"]) {
+      const v = entry[field];
+      if (v !== undefined && (!Array.isArray(v) || v.some((x) => typeof x !== "string"))) {
+        fail(`${name}: override field ${field} must be an array of strings`);
+      }
+    }
     for (const rule of entry.required_rules || []) {
       if (!knownRules.has(rule)) fail(`${name}: required_rules references unresolvable rule id: ${rule}`);
     }

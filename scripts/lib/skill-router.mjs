@@ -78,12 +78,13 @@ export function loadIndex(root) {
   return { index, byName, artifactHash: sha256Hex(raw) };
 }
 
-/** Verify the committed index still matches its canonical inputs (plan §4.2:
- * vectors/derived data are never accepted without matching source hashes).
- * Returns { fresh, drift[] }; advisory callers degrade, they do not crash. */
+/** Verify the committed index still matches its canonical inputs AND every
+ * recorded SKILL.md content hash (plan §4.2: derived data is never accepted
+ * without matching source hashes — F-EXEC-011). Returns { fresh, drift[] };
+ * advisory callers degrade, they do not crash. */
 export function verifyIndexFreshness(root, index) {
   const read = (rel) => {
-    try { return fs.readFileSync(path.join(root, rel)); } catch { return null; }
+    try { return fs.readFileSync(path.join(root, rel)); } catch { return undefined; }
   };
   const pairs = [
     ["manifest_sha256", "skills-manifest.json"],
@@ -96,12 +97,28 @@ export function verifyIndexFreshness(root, index) {
     const actual = bytes ? sha256Hex(bytes) : "missing";
     if (actual !== index.compiled_from?.[key]) drift.push(rel.split("\\").join("/"));
   }
+  for (const rec of index.skills || []) {
+    const bytes = read(rec.path);
+    if (!bytes || sha256Hex(bytes) !== rec.content_hash) drift.push(rec.path);
+    if (drift.length >= 3) break; // enough evidence to degrade; stay fast
+  }
   return { fresh: drift.length === 0, drift };
 }
 
 export function loadConcerns(root) {
   const file = path.join(root, "concerns", "REGISTRY.json");
   return JSON.parse(fs.readFileSync(file, "utf8"));
+}
+
+/** Non-throwing concern-registry read for the advisory router path. */
+function loadConcernsSafe(root) {
+  try {
+    const parsed = loadConcerns(root);
+    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.concerns)) return { concerns: [], degraded: "malformed-concern-registry" };
+    return parsed;
+  } catch {
+    return { concerns: [], degraded: "unreadable-concern-registry" };
+  }
 }
 
 /** Anchored glob→regex mirroring hooks/svc-rule-injector.mjs semantics. */
@@ -192,7 +209,9 @@ export function resolvePins({ root, index, byName, intent, evidence, activeSkill
 
   // (d) repository concerns → required skills + rules. Rule identifiers stay
   // bare/loadable; concern attribution goes to receipt evidence, not the id.
-  const concerns = loadConcerns(root);
+  // A malformed live registry degrades to read-only diagnosis instead of
+  // aborting the advisory router (F-EXEC-017).
+  const concerns = loadConcernsSafe(root);
   const ruleEvidence = [];
   for (const concern of concerns.concerns || []) {
     const hit = matchConcern(concern, evidence);
@@ -207,7 +226,7 @@ export function resolvePins({ root, index, byName, intent, evidence, activeSkill
     }
   }
 
-  return { pins, rules, ruleEvidence };
+  return { pins, rules, ruleEvidence, registryDegraded: concerns.degraded || null };
 }
 
 /** Build lexical search documents from an index record. */
@@ -283,14 +302,17 @@ export function route(options) {
   const freshness = verifyIndexFreshness(root, index);
 
   const evidence = { files, packages, env };
-  const { pins, rules, ruleEvidence } = resolvePins({ root, index, byName, intent, evidence, activeSkill, nextSkill });
+  const { pins, rules, ruleEvidence, registryDegraded } = resolvePins({ root, index, byName, intent, evidence, activeSkill, nextSkill });
 
   // Stale/tampered index (canonical inputs drifted past compile): degrade.
   // Concern-required pins were computed live from REGISTRY.json above and
-  // survive; optional discovery is withheld and the reason recorded.
+  // survive; optional discovery is withheld and the reason recorded. A
+  // malformed live registry degrades the same way without aborting (F-EXEC-017).
   let staleReason = null;
   if (!freshness.fresh) {
     staleReason = `stale-routing-index:${freshness.drift.join(",")}`;
+  } else if (registryDegraded) {
+    staleReason = registryDegraded;
   }
 
   const required = [...pins.keys()].sort();
@@ -330,10 +352,17 @@ export function route(options) {
   ranked = ranked.filter((i) => i.score > 0);
 
   // Budget cut: smallest fitting candidate set (plan §4.6). Required pins were
-  // already removed from this list and can never be truncated here.
+  // already removed from this list and can never be truncated here. In active
+  // mode the ambiguity-fallback head is RESERVED first so budget pressure can
+  // never evict the approved fallback (F-EXEC-013).
   const cards = [];
   let d1Tokens = 0;
   let truncated = 0;
+  if (mode === "active" && byName.has("route-workflow") && !pins.has("route-workflow")) {
+    const fallback = { rec: byName.get("route-workflow"), score: 0, reason_codes: ["ambiguity-fallback"] };
+    cards.push(fallback);
+    d1Tokens += Math.min(estimateTokens(JSON.stringify(cardFor(fallback))), 300);
+  }
   for (const item of ranked) {
     if (cards.length >= BUDGETS.d1CeilingCards) { truncated += 1; continue; }
     const cost = Math.min(estimateTokens(JSON.stringify(cardFor(item))), 300);
@@ -345,9 +374,9 @@ export function route(options) {
   // Selection: only active mode may auto-load one optional skill, gated.
   let selected = null;
   const selectionReasons = [];
-  if (mode === "active" && cards.length > 0) {
+  if (mode === "active" && cards.length > 0 && cards[0].reason_codes[0] !== "ambiguity-fallback") {
     const top = cards[0];
-    const second = cards[1];
+    const second = cards.find((c) => c !== top);
     const marginOk = !second || top.score - second.score >= GATES.winnerMargin;
     const confident = top.score >= GATES.confidenceFloor;
     const policyOk = top.rec.invocation_policy === "implicit-allowed";
@@ -363,22 +392,6 @@ export function route(options) {
   } else if (mode === "active" && cards.length === 0) {
     selectionReasons.push("fallback:route-workflow(no-candidates)");
   }
-  if (mode === "active" && selected === null) {
-    // Approved ambiguity fallback surfaces route-workflow as the suggestion
-    // head. Its cost is accounted BEFORE budget finalization so counters stay
-    // truthful (F-EXEC-009).
-    if (byName.has("route-workflow") && !pins.has("route-workflow")) {
-      const fallback = { rec: byName.get("route-workflow"), score: 0, reason_codes: ["ambiguity-fallback"] };
-      const cost = Math.min(estimateTokens(JSON.stringify(cardFor(fallback))), 300);
-      if (cards.length >= BUDGETS.d1CeilingCards || d1Tokens + cost > BUDGETS.d1CeilingTokens) {
-        truncated += 1;
-      } else {
-        cards.unshift(fallback);
-        d1Tokens += cost;
-      }
-    }
-  }
-
   const d0Tokens = estimateTokens(KERNEL_TEXT);
   // Honest enforcement semantics (F-EXEC-001): this wave implements no
   // mutation gate and no required-rule receipt verification, so no decision

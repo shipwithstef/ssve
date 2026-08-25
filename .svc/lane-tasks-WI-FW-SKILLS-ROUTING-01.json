@@ -90,20 +90,38 @@
       "id": 3,
       "skill": "review-plan",
       "subject": "Mechanical checks + external adversarial review of manifest",
-      "status": "pending",
+      "status": "completed",
       "blocked_by": [
         2
       ],
       "metadata": {
         "skill": "review-plan",
         "wi": "WI-FW-SKILLS-ROUTING-01"
-      }
+      },
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-08-25T23:35:24.967Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalVerification",
+            "ts": "2026-08-25T23:35:25.265Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-plan-outcome.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-25T23:35:25.114Z"
     },
     {
       "id": 4,
       "skill": "execute-changeset",
       "subject": "Implement routing index compiler, router CLI, receipts, fixtures, tier-1 validator",
-      "status": "pending",
+      "status": "completed",
       "blocked_by": [
         3
       ],
@@ -142,32 +160,71 @@
             "sha256": "6406341bdba041e008e51833c14b1d4f5702fe3c2d0c0f60b61b806bf549b794"
           }
         }
-      ]
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-08-25T23:35:31.681Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-08-25T23:35:31.832Z"
     },
     {
       "id": 5,
       "skill": "review-gate",
       "subject": "G5 review of executed changes vs manifest",
-      "status": "pending",
+      "status": "completed",
       "blocked_by": [
         4
       ],
       "metadata": {
         "skill": "review-gate",
         "wi": "WI-FW-SKILLS-ROUTING-01"
-      }
+      },
+      "skill_receipt": {
+        "skill": "review-gate",
+        "loaded_at": "2026-08-25T23:35:31.983Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DiffVsManifest",
+            "ts": "2026-08-25T23:35:57.153Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-outcome.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-QualityScan",
+            "ts": "2026-08-25T23:35:57.288Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-outcome.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-25T23:35:57.424Z"
     },
     {
       "id": 6,
       "skill": "review-exec",
       "subject": "G6 self-review + external adversarial exec review",
-      "status": "pending",
+      "status": "in_progress",
       "blocked_by": [
         5
       ],
       "metadata": {
         "skill": "review-exec",
         "wi": "WI-FW-SKILLS-ROUTING-01"
+      },
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-08-25T23:35:57.570Z",
+        "loaded_via": "manual"
       }
     },
     {
@@ -210,5 +267,5 @@
       }
     }
   ],
-  "status": "pending"
+  "status": "in_progress"
 }
