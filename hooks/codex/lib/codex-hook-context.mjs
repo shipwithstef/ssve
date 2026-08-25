@@ -251,7 +251,7 @@ function isSafeGit(argv) {
       index += 2;
       continue;
     }
-    if (token.startsWith("--git-dir=") || token.startsWith("--work-tree=") || token === "--no-pager") {
+    if (token.startsWith("--git-dir=") || token.startsWith("--work-tree=") || token === "--no-pager" || token === "--no-optional-locks") {
       if (token.endsWith("=")) return false;
       index += 1;
       continue;
@@ -367,7 +367,10 @@ const TRIVIAL_SAFE_SEGMENTS = new Set(["true", "false", ":"]);
 // WI-501: split a command on shell control operators (&&, ||, |, ;) that appear
 // OUTSIDE single/double quotes. Quoted operators are literal argument text.
 // Returns trimmed, non-empty segments.
-function splitUnquoted(command) {
+// Exported for the shared pre-tool decision engine (WI-FW-HOOKS-SAFETY-01):
+// there must be exactly ONE quote-aware segmentation + one classifier in the
+// framework, never parallel copies that could drift.
+export function splitUnquoted(command) {
   const segments = [];
   let current = "";
   let quote = null; // "'" | '"' | null
@@ -401,7 +404,8 @@ function splitUnquoted(command) {
 // Shell diagnostics commonly end in `2>/dev/null`, `2>&1`, or both. Strip
 // only exact fd duplication and fd-to-/dev/null suffixes before lexing; every
 // file target remains a governed mutation.
-function stripDevNullRedirections(segment) {
+// Exported for the shared pre-tool decision engine (WI-FW-HOOKS-SAFETY-01).
+export function stripDevNullRedirections(segment) {
   let value = segment;
   const suffix = /(?:^|\s)(?:(?:[012]?>|&>)\s*\/dev\/null|[012]?>&[012])\s*$/;
   while (suffix.test(value)) value = value.replace(suffix, "").trim();
