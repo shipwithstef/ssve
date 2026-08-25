@@ -213,20 +213,25 @@ export function explicitWI(text) {
 export function continuationIntent(text) {
   const value = String(text || "");
   const continuationVerb = "(?:continue|continuing|resume|resuming|finish|finishing|complete|completing)";
+  // WI-FW-HOOKS-SAFETY-01: `work on <WI>` is the canonical positive imperative
+  // surfaced by every actionable denial; it is positive work intent for
+  // self-heal, distinct from a bare mention of the WI.
+  const workVerb = "(?:work(?:ing)?\\s+on|implement(?:ing)?|build(?:ing)?)";
   const negativeIntent = [
-    new RegExp(`\\b(?:do\\s+not|don['’]?t|dont)\\s+(?:(?:try(?:ing)?|attempt(?:ing)?|plan(?:ning)?|need|want)\\s+to\\s+|bother\\s+)?${continuationVerb}\\b`, "i"),
-    new RegExp(`\\b(?:never|avoid|without)\\s+${continuationVerb}\\b`, "i"),
-    new RegExp(`\\bno\\s+need\\s+to\\s+${continuationVerb}\\b`, "i"),
-    new RegExp(`\\bstop\\s+trying\\s+to\\s+${continuationVerb}\\b`, "i"),
-    new RegExp(`\\brefrain\\s+from\\s+${continuationVerb}\\b`, "i"),
-    new RegExp(`\\b(?:we\\s+)?should\\s+not\\s+${continuationVerb}\\b`, "i"),
-    new RegExp(`\\b(?:i(?:'d|\\s+would)\\s+rather|let['’]?s)\\s+not\\s+${continuationVerb}\\b`, "i"),
-    new RegExp(`\\bi\\s+don['’]?t\\s+think\\s+we\\s+should\\s+${continuationVerb}\\b`, "i"),
+    new RegExp(`\\b(?:do\\s+not|don['’]?t|dont)\\s+(?:(?:try(?:ing)?|attempt(?:ing)?|plan(?:ning)?|need|want)\\s+to\\s+|bother\\s+)?(?:${continuationVerb}|${workVerb})\\b`, "i"),
+    new RegExp(`\\b(?:never|avoid|without)\\s+(?:${continuationVerb}|${workVerb})\\b`, "i"),
+    new RegExp(`\\bno\\s+need\\s+to\\s+(?:${continuationVerb}|${workVerb})\\b`, "i"),
+    new RegExp(`\\bstop\\s+trying\\s+to\\s+(?:${continuationVerb}|${workVerb})\\b`, "i"),
+    new RegExp(`\\brefrain\\s+from\\s+(?:${continuationVerb}|${workVerb})\\b`, "i"),
+    new RegExp(`\\b(?:we\\s+)?should\\s+not\\s+(?:${continuationVerb}|${workVerb})\\b`, "i"),
+    new RegExp(`\\b(?:i(?:'d|\\s+would)\\s+rather|let['’]?s)\\s+not\\s+(?:${continuationVerb}|${workVerb})\\b`, "i"),
+    new RegExp(`\\bi\\s+don['’]?t\\s+think\\s+we\\s+should\\s+(?:${continuationVerb}|${workVerb})\\b`, "i"),
   ];
   if (negativeIntent.some((pattern) => pattern.test(value))) return "none";
   if (/\bend[_ -]?to[_ -]?end\b/i.test(value)) return "end_to_end";
   if (/\bresume\b/i.test(value)) return "resume";
   if (/\bcontinue\b/i.test(value)) return "continue";
+  if (new RegExp(workVerb, "i").test(value)) return "work_on";
   return "none";
 }
 

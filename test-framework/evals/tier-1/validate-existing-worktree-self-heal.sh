@@ -388,6 +388,86 @@ else
   bad "generation-zero adoption changed residue or failed to converge authority"
 fi
 
+
+# === WI-FW-HOOKS-SAFETY-01 T03/AC-3: dispatcher-level self-heal gate =========
+echo "=== Tier 2: prompt-authority-gated self-heal (dispatcher) ==="
+SH_ROOT="$ROOT"
+
+make_sh_fixture() { # $1 dir-name -> echoes worktree path; fresh unbound single-graph worktree
+  local base="$TMP/$1"
+  make_repo "$base/repo"
+  mkdir -m 700 -p "$base/runtime"
+  local wt="$base/repo/.worktrees/wt-path"
+  git -C "$base/repo" worktree add -q -b br-lane-"$1" "$wt" origin/main
+  mkdir -p "$wt/.svc"
+  node -e 'const fs=require("fs");fs.writeFileSync(process.argv[1],JSON.stringify({schema_version:1,wi:"WI-SH-01",lane:"framework",status:"in_progress",created:new Date().toISOString(),tasks:[{id:1,status:"in_progress",skill:"route-workflow",subject:"route",blocked_by:[]}]},null,2))' "$wt/.svc/lane-tasks-WI-SH-01.json"
+  # route-workflow normally writes this; children guards require it post-binding
+  node -e 'const fs=require("fs");fs.writeFileSync(process.argv[1],JSON.stringify({ts:new Date().toISOString(),bound_to:"user-request",request:"fixture",wi:"WI-SH-01",skill:null,guard_override_count:0}))' "$wt/.svc/session-contract.jsonl"
+  echo "$wt"
+}
+
+sh_authority() { # $1 wt $2 runtime $3 session $4 turn $5 prompt
+  printf '{"prompt":%s,"session_id":"%s","turn_id":"%s","cwd":"%s"}' \
+    "$(node -e 'process.stdout.write(JSON.stringify(process.argv[1]))' "$5")" \
+    "$3" "$4" "$1" |
+    SVC_CODEX_RUNTIME_DIR="$2" node "$ROOT/hooks/codex/svc-codex-prompt-authority.mjs" >/dev/null
+}
+
+sh_drive() { # $1 wt $2 runtime $3 session $4 turn $5 command
+  printf '{"tool_name":"Bash","tool_input":{"command":%s},"session_id":"%s","turn_id":"%s","cwd":"%s"}' \
+    "$(node -e 'process.stdout.write(JSON.stringify(process.argv[1]))' "$5")" \
+    "$3" "$4" "$1" |
+    SVC_CODEX_RUNTIME_DIR="$2" SVC_HOST=codex node "$ROOT/hooks/codex/svc-codex-pretool-dispatcher.mjs"
+}
+SH_SESSION="session-sh-heal-11111111"
+
+# CASE 1: fresh positive intent -> exact adoption + original mutation allowed
+# The mutation runs inside an active skill context produced by the REAL loader,
+# mirroring validate-codex-execution-integrity.sh fixture conventions.
+WT1="$(make_sh_fixture sh-fresh)"
+env NODE_ENV=test SVC_CODEX_TEST_MODE=1 SVC_CODEX_TEST_REPO="$WT1" SVC_CODEX_RUNTIME_DIR="$TMP/sh-fresh/runtime" CODEX_THREAD_ID="$SH_SESSION" CODEX_SKILLS_DIR="$ROOT/skills" \
+  node "$ROOT/scripts/codex-load-skill.mjs" --graph "$WT1/.svc/lane-tasks-WI-SH-01.json" --task 1 --skill route-workflow --turn t1 >/dev/null || true
+sh_authority "$WT1" "$TMP/sh-fresh/runtime" "$SH_SESSION" t1 "work on WI-SH-01 to finish the lane"
+NODE_ENV=test
+SVC_CODEX_TEST_MODE=1
+SVC_CODEX_TEST_REPO="$WT1"
+CODEX_SKILLS_DIR="$ROOT/skills"
+CODEX_THREAD_ID="$SH_SESSION"
+SVC_CODEX_RUNTIME_DIR="$TMP/sh-fresh/runtime"
+export NODE_ENV SVC_CODEX_TEST_MODE SVC_CODEX_TEST_REPO CODEX_SKILLS_DIR CODEX_THREAD_ID SVC_CODEX_RUNTIME_DIR
+SH_OUT="$(sh_drive "$WT1" "$TMP/sh-fresh/runtime" "$SH_SESSION" t1 "touch .svc/self-heal-probe")"
+unset NODE_ENV SVC_CODEX_TEST_MODE SVC_CODEX_TEST_REPO CODEX_SKILLS_DIR CODEX_THREAD_ID
+if printf '%s' "$SH_OUT" | grep -q '"permissionDecision":"allow"'; then
+  ok "fresh positive intent self-heals the exact worktree and allows the original mutation"
+else bad "fresh positive intent did not self-heal ($(printf '%s' "$SH_OUT" | head -c 200))"; fi
+[[ -f "$WT1/.svc/claims/WI-SH-01.claim.json" ]] && ok "self-heal persisted an exact claim for the adopting session" || bad "no claim after self-heal"
+
+# CASE 2: negated intent -> actionable ineligible denial, byte-identical state
+WT2="$(make_sh_fixture sh-neg)"
+NEG_BEFORE="$(find "$WT2/.svc" -type f | sort | xargs sha256sum | sha256sum)"
+sh_authority "$WT2" "$TMP/sh-neg/runtime" "$SH_SESSION" t1 "do not work on WI-SH-01"
+SH_OUT="$(sh_drive "$WT2" "$TMP/sh-neg/runtime" "$SH_SESSION" t1 "touch .svc/self-heal-probe")"
+printf '%s' "$SH_OUT" | grep -q 'AUTH_BINDING_MISSING_SELF_HEAL_INELIGIBLE' && ok "negated intent denies with an actionable reason code" || bad "negated intent wrong denial ($(printf '%s' "$SH_OUT" | head -c 160))"
+NEG_AFTER="$(find "$WT2/.svc" -type f | sort | xargs sha256sum | sha256sum)"
+[[ "$NEG_AFTER" == "$NEG_BEFORE" ]] && ok "negated-intent denial leaves authority state byte-identical" || bad "denial mutated state"
+
+# CASE 3: stale turn id -> not eligible
+WT3="$(make_sh_fixture sh-stale)"
+sh_authority "$WT3" "$TMP/sh-stale/runtime" "$SH_SESSION" t1 "work on WI-SH-01"
+SH_OUT="$(sh_drive "$WT3" "$TMP/sh-stale/runtime" "$SH_SESSION" t9 "touch .svc/self-heal-probe")"
+printf '%s' "$SH_OUT" | grep -q 'STALE_TURN' && ok "stale-turn intent is not eligible for self-heal" || bad "stale turn unexpectedly eligible ($(printf '%s' "$SH_OUT" | head -c 160))"
+
+# CASE 4: foreign live claim -> refused without takeover or repair
+WT4="$(make_sh_fixture sh-foreign)"
+mkdir -p "$WT4/.svc/claims"
+node -e 'const fs=require("fs");fs.writeFileSync(process.argv[1],JSON.stringify({schema_version:1,wi:"WI-SH-01",session_id:"session-foreign-live-9999999",role:"mutating",claimed_at:new Date().toISOString(),renewed_at:new Date().toISOString()}))' "$WT4/.svc/claims/WI-SH-01.claim.json"
+FOREIGN_BEFORE="$(find "$WT4/.svc" -type f | sort | xargs sha256sum | sha256sum)"
+sh_authority "$WT4" "$TMP/sh-foreign/runtime" "$SH_SESSION" t1 "work on WI-SH-01"
+SH_OUT="$(sh_drive "$WT4" "$TMP/sh-foreign/runtime" "$SH_SESSION" t1 "touch .svc/self-heal-probe")"
+printf '%s' "$SH_OUT" | grep -qiE 'self-heal refused|conflict|foreign|owned by' && ok "foreign live claim refuses self-heal without takeover" || bad "foreign claim not refused ($(printf '%s' "$SH_OUT" | head -c 160))"
+FOREIGN_AFTER="$(find "$WT4/.svc" -type f | sort | xargs sha256sum | sha256sum)"
+[[ "$FOREIGN_AFTER" == "$FOREIGN_BEFORE" ]] && ok "foreign-owner refusal leaves state byte-identical" || bad "refusal mutated foreign state"
+
 echo ""
 echo "existing worktree self-heal: $PASS passed, $FAIL failed"
 [[ "$FAIL" -eq 0 ]]

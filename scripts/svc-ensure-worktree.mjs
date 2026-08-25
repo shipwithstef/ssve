@@ -26,6 +26,7 @@ import { authorityJson, resolveAuthorityHost } from "../hooks/lib/resolve-wi.mjs
 import { markerPathFor, readMarker, secureAncestors } from "../hooks/codex/lib/bootstrap-marker.mjs";
 import { consumeBootstrapHandoff } from "../hooks/codex/lib/session-handoff.mjs";
 import { resolveChainPolicy } from "./lib/chain-policy.mjs";
+import { validateTaskGraphShape } from "../hooks/lib/validate-task-graph-shape.mjs";
 
 import { WI_ID_RE as WI_RE } from "../hooks/lib/wi-id.mjs";
 // WI-FW-HOOKS-SAFETY-01 (FP-01/FP-02): Git-valid slash branches validate as
@@ -490,6 +491,71 @@ function result({ wi, branch, baseSha, worktree, owner, graphPath, generation, c
     resumed: Boolean(resumed),
     chain_policy: chainPolicySummary(worktree),
   };
+}
+
+// WI-FW-HOOKS-SAFETY-01 T03/AC-3 (FP-05): exact existing-worktree self-heal.
+// The dispatcher imports and calls this DIRECTLY when a governed mutation has
+// no binding but fresh positive prompt authority names one WI. It adopts the
+// SINGLE registered non-default worktree holding a valid lane graph for that
+// WI — never a foreign owner, never an unapproved root, never the default
+// checkout, never an ambiguous candidate — by running the SAME locked
+// transaction used for ordinary ensure/resume, so every foreign/stale/
+// generation conflict keeps its fail-closed semantics.
+export function adoptExistingWorktree(options = {}, env = process.env) {
+  const wi = String(options.wi || "");
+  if (!WI_RE.test(wi)) throw new Error(`SELF_HEAL_INELIGIBLE: invalid WI identifier (${wi || "empty"})`);
+  const owner = sessionId(env);
+  if (!owner) throw new Error("SELF_HEAL_INELIGIBLE: a host session id is required to adopt a worktree");
+  const repo = repository(options.cwd || process.env.SVC_SELF_HEAL_REPO_ROOT || process.cwd());
+  // The default checkout is NEVER adoptable as a mutation worktree.
+  let defaultRoot = "";
+  try {
+    const commonDir = fs.realpathSync(path.resolve(repo.root, git(["rev-parse", "--git-common-dir"], repo.root)));
+    defaultRoot = path.dirname(commonDir);
+  } catch {}
+  const rows = worktreeRows(repo.root).filter((row) => row.path !== defaultRoot);
+  const graphPathFor = (row) => path.join(row.path, ".svc", `lane-tasks-${wi}.json`);
+  const candidates = rows.filter((row) => {
+    const graphPath = graphPathFor(row);
+    if (!fs.existsSync(graphPath)) return false;
+    try { return validateTaskGraphShape(JSON.parse(fs.readFileSync(graphPath, "utf8"))).ok; }
+    catch { return false; }
+  });
+  if (candidates.length === 0) {
+    throw new Error(`SELF_HEAL_INELIGIBLE: no registered non-default worktree carries a valid lane graph for ${wi}; say ‘work on <WI>’ from that worktree`);
+  }
+  if (candidates.length > 1) {
+    throw new Error(`SELF_HEAL_INELIGIBLE: multiple worktrees carry lane graphs for ${wi} (${candidates.map((row) => row.path).join(", ")}); resolve the ambiguity explicitly`);
+  }
+  const target = candidates[0];
+  const branchCheck = validateLiteralBranchName(target.branch);
+  if (!branchCheck.ok) {
+    throw new Error(`SELF_HEAL_INELIGIBLE: registered branch for ${wi} is not a Git-valid literal ref (BRANCH_REF_INVALID: ${branchCheck.reason})`);
+  }
+  // Approved-root containment + same-UID/no-symlink ancestry, identical to the
+  // bootstrap transaction's authorization surface.
+  const relativeWorktree = path.relative(path.join(repo.root, ".worktrees"), target.path);
+  const insideDefaultRoot = !!relativeWorktree && !relativeWorktree.startsWith("..") && !path.isAbsolute(relativeWorktree);
+  if (!insideDefaultRoot) {
+    const approval = isApprovedExistingWorktreeRoot(target.path, repo.root, env);
+    if (!approval.ok) throw new Error(`SELF_HEAL_INELIGIBLE (${approval.reason_code || "WORKTREE_ROOT_UNAPPROVED"}: ${approval.reason})`);
+    if (!secureAncestors(approval.root, target.path)) {
+      throw new Error("SELF_HEAL_INELIGIBLE: unsafe approved worktree path (symlinked or foreign-owned ancestor)");
+    }
+  } else if (!secureAncestors(repo.root, target.path)) {
+    throw new Error("SELF_HEAL_INELIGIBLE: unsafe worktree path (symlinked or foreign-owned ancestor)");
+  }
+  const stateProbe = path.join(target.path, ".svc", ".svc-state-probe");
+  if (!secureAncestors(target.path, stateProbe)) {
+    throw new Error("SELF_HEAL_INELIGIBLE: unsafe worktree state root (.svc symlinked, foreign-owned, or escaping)");
+  }
+  if (!fs.existsSync(path.join(target.path, ".svc"))) {
+    fs.mkdirSync(path.join(target.path, ".svc"), { recursive: true });
+  }
+  // Run the SAME locked transaction (resume/reclaim/adoption paths). Any live
+  // foreign owner, generation conflict, or ambiguous marker throws here with
+  // its actionable conflict text; nothing is mutated on refusal.
+  return ensureWorktree({ wi, branch: target.branch, cwd: target.path }, env);
 }
 
 export function ensureWorktree(options = {}, env = process.env) {

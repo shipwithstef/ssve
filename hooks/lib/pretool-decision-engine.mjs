@@ -14,9 +14,13 @@
 //     is inserted as a Git top-level option, never as an `export VAR=...;`
 //     prefix that sibling classifiers would re-read as a mutation).
 import { createHash } from "node:crypto";
+import fs from "node:fs";
 import { lexSimpleCommand } from "../codex/lib/argv-lex.mjs";
 import { encodeSimpleCommand, assertArgvRoundTrip } from "../codex/lib/argv-encode.mjs";
-import { isReadOnlyTool, toolName, splitUnquoted, stripDevNullRedirections } from "../codex/lib/codex-hook-context.mjs";
+import {
+  isReadOnlyTool, toolName, splitUnquoted, stripDevNullRedirections,
+  hookContext, authorityPath,
+} from "../codex/lib/codex-hook-context.mjs";
 
 export const DECISION_ENGINE_SCHEMA_VERSION = 1;
 
@@ -115,6 +119,37 @@ export function normalizeObservationCommand(command) {
   }
   if (!replacements) return null;
   return normalized;
+}
+
+// WI-FW-HOOKS-SAFETY-01 T03/AC-3: fresh positive prompt-authority gate for the
+// ONE allowed self-heal attempt. Eligible only when the UserPromptSubmit
+// authority record (a) exists, (b) belongs to THIS session and turn, (c) is
+// fresh within the configured TTL window, (d) carries exactly one explicit WI,
+// and (e) expresses POSITIVE work/resume/continue intent — a bare mention or a
+// negated instruction is never sufficient. Returns { eligible, wi, reason_code }.
+export function evaluateSelfHealAuthority(payload, env = process.env) {
+  const ineligible = (reason_code) => ({ eligible: false, wi: null, reason_code });
+  let ctx;
+  try { ctx = hookContext(payload, env); } catch { return ineligible("PROMPT_AUTHORITY_UNREADABLE"); }
+  if (!ctx.session_id || !ctx.session_dir) return ineligible("PROMPT_AUTHORITY_ABSENT");
+  let document = null;
+  try { document = JSON.parse(fs.readFileSync(authorityPath(ctx), "utf8")); }
+  catch { return ineligible("PROMPT_AUTHORITY_ABSENT"); }
+  if (!document || typeof document !== "object") return ineligible("PROMPT_AUTHORITY_MALFORMED");
+  if (String(document.session_id || "") !== String(ctx.session_id)) return ineligible("PROMPT_AUTHORITY_FOREIGN_SESSION");
+  if (String(ctx.turn_id || "") && String(document.turn_id || "") !== String(ctx.turn_id)) return ineligible("STALE_TURN");
+  const ttlMinutes = Number(env.SVC_CODEX_AUTHORITY_TTL_MIN || 240);
+  const recorded = Date.parse(document.recorded_at || "");
+  if (!Number.isFinite(recorded) || Date.now() - recorded > Math.max(1, ttlMinutes) * 60_000) {
+    return ineligible("PROMPT_AUTHORITY_EXPIRED");
+  }
+  const intent = String(document.continuation_intent || "none");
+  if (!["resume", "continue", "finish", "complete", "end_to_end", "work_on"].includes(intent)) {
+    return ineligible("INTENT_NOT_POSITIVE");
+  }
+  const wi = String(document.explicit_wi || "");
+  if (!wi) return ineligible("NO_EXPLICIT_WI");
+  return { eligible: true, wi, reason_code: "FRESH_POSITIVE_INTENT" };
 }
 
 // Typed decision envelope for the observation fast path. Returns null when the
