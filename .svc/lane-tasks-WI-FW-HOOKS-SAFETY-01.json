@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "wi": "WI-FW-HOOKS-SAFETY-01",
+  "lane": "framework",
+  "status": "in_progress",
+  "created": "2026-08-25T00:00:00.000Z",
+  "tasks": [
+    {
+      "id": 1,
+      "status": "in_progress",
+      "skill": "review-plan",
+      "subject": "gate approved self-healing hooks plan",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-08-25T22:16:19.018Z",
+        "loaded_via": "codex-load-skill"
+      },
+      "note": "mechanical gates PASS (tier1+external-state receipts committed); paid plan review blocked_authentication (fable/sol host=cursor has no launcher transport; agy OAuth expired) — deferred to exec-kind frozen-diff review per launcher phase doctrine; owner policy replaced mid-run (~/.svc/dispatch-policy.json now governed-triple/codex-sol-high)"
+    },
+    {
+      "id": 2,
+      "status": "completed",
+      "skill": "execute-changeset",
+      "subject": "implement unified decision, self-heal, and renewal",
+      "blocked_by": [
+        1
+      ],
+      "receipt": "commits 3327d47..HEAD: T01 literal refs+worktree identity; T02 decision engine+git normalization; T03 exact self-heal; T04 lease renewal+receipts; T05 single-engine wiring; contracts sweep"
+    },
+    {
+      "id": 3,
+      "status": "in_progress",
+      "skill": "review-exec",
+      "subject": "self-review and independent review of frozen diff",
+      "blocked_by": [
+        2
+      ],
+      "note": "self-review complete (docs/specs/audit/wi-fw-hooks-safety-analysis.md); external exec review PENDING transport — see docs/specs/reviews/wi-fw-hooks-safety-exec-cross-model.md"
+    },
+    {
+      "id": 4,
+      "status": "completed",
+      "skill": "audit-implementation",
+      "subject": "deep correctness and security audit",
+      "blocked_by": [
+        3
+      ],
+      "receipt": "docs/specs/audit/wi-fw-hooks-safety-analysis.md (advisory self-audit; F-3 HIGH process finding open: independent review pending)"
+    },
+    {
+      "id": 5,
+      "status": "pending",
+      "skill": "land-changeset",
+      "subject": "push PR, merge, and install all hosts",
+      "blocked_by": [
+        3,
+        4
+      ]
+    },
+    {
+      "id": 6,
+      "status": "pending",
+      "skill": "verify-promotion",
+      "subject": "verify promoted source and installed hooks",
+      "blocked_by": [
+        5
+      ]
+    }
+  ]
+}

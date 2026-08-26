@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "base_sha": "494f0749250c",
+  "manifest": "docs/plans/2026-08-25-wi-fw-hooks-safety/manifest.md",
+  "ownership": [
+    {
+      "task": "T01",
+      "paths": [
+        "hooks/lib/literal-branch.mjs",
+        "hooks/codex/lib/argv-encode.mjs",
+        "hooks/codex/lib/bootstrap-command.mjs",
+        "hooks/codex/svc-codex-skill-load-enforcer.mjs",
+        "scripts/svc-ensure-worktree.mjs",
+        "test-framework/evals/tier-1/validate-literal-branch-worktree.sh",
+        "test-framework/evals/tier-1/validate-codex-execution-integrity.sh"
+      ]
+    },
+    {
+      "task": "T02",
+      "paths": [
+        "hooks/lib/pretool-decision-engine.mjs",
+        "hooks/codex/lib/codex-hook-context.mjs",
+        "hooks/codex/svc-codex-pretool-dispatcher.mjs",
+        "test-framework/evals/tier-1/validate-pretool-decision-engine.sh",
+        "test-framework/evals/tier-1/validate-codex-zero-block-reads.sh"
+      ]
+    },
+    {
+      "task": "T03",
+      "paths": [
+        "scripts/svc-ensure-worktree.mjs",
+        "hooks/codex/svc-codex-prompt-authority.mjs",
+        "hooks/codex/lib/codex-hook-context.mjs",
+        "hooks/lib/pretool-decision-engine.mjs",
+        "hooks/codex/svc-codex-pretool-dispatcher.mjs",
+        "test-framework/evals/tier-1/validate-existing-worktree-self-heal.sh"
+      ]
+    },
+    {
+      "task": "T04",
+      "paths": [
+        "hooks/lib/authority-store.mjs",
+        "hooks/lib/tool-call-receipt.mjs",
+        "hooks/codex/svc-codex-posttool-heartbeat.mjs",
+        "hooks/codex/svc-codex-pretool-dispatcher.mjs",
+        "test-framework/evals/tier-1/validate-controller-lease-handover.sh",
+        "test-framework/evals/tier-1/validate-tool-call-heartbeat.sh"
+      ]
+    },
+    {
+      "task": "T05",
+      "paths": [
+        "scripts/review-plan-codex.sh",
+        "scripts/wire-hooks.mjs",
+        "scripts/wire-codex-hooks.mjs",
+        "hooks/hooks.json",
+        "hooks/hook-coverage-spec.md",
+        "test-framework/evals/tier-1/validate-settings-no-duplicate-hooks.sh",
+        "test-framework/evals/tier-1/validate-cross-host-hook-conformance.sh"
+      ]
+    },
+    {
+      "task": "T06",
+      "paths": [
+        "docs/specs/work-items/WI-FW-HOOKS-SAFETY-01.md",
+        "docs/plans/2026-08-25-wi-fw-hooks-safety/manifest.md",
+        "docs/plans/2026-08-25-wi-fw-hooks-safety/plan-contract.json",
+        "docs/plans/2026-08-25-wi-fw-hooks-safety/review-log.yaml",
+        "docs/specs/reviews/wi-fw-hooks-safety-exec-cross-model.md",
+        "docs/specs/audit/wi-fw-hooks-safety-analysis.md",
+        ".svc/lane-tasks-WI-FW-HOOKS-SAFETY-01.json",
+        "FRAMEWORK-STATE.md"
+      ]
+    }
+  ],
+  "disjoint": true
+}

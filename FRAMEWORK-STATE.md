@@ -158,6 +158,26 @@ Full tier-1 after fixes: 316 passed / 19 failed — every failure present at bas
 
 > Live window: the 8 most recent entries. Older entries: `FRAMEWORK-STATE-ARCHIVE/analysis-history-2026-06-05-and-earlier.md` (107 entries) and `FRAMEWORK-STATE-ARCHIVE/2026-04-13-and-earlier.md`. Per-WI closeout sections (2026-05): `FRAMEWORK-STATE-ARCHIVE/wi-closeouts-2026-05.md`. (WI-362)
 
+### 2026-08-25: One pre-tool decision engine, literal Git-ref branches, exact self-heal, bounded lease renewal (WI-FW-HOOKS-SAFETY-01)
+
+Replaced the multi-hook PreToolUse classification chain with ONE typed
+decision engine (`hooks/lib/pretool-decision-engine.mjs` + dispatcher) wired
+as the single deny-capable mutation gate on Claude and Codex; former guards
+run as governed-path children. Fixes three false-positive classes without
+weakening the boundary: (1) Git-valid slash branches now validate via
+`git check-ref-format` with hash-derived worktree leaves and approved-root
+adoption; (2) proven reads are authority-free and Git optional-lock
+suppression is per-argv `--no-optional-locks` (export-prefix removed);
+(3) exact existing-worktree self-heal runs behind fresh same-turn positive
+prompt intent - foreign/ambiguous state denies byte-identically. Controller
+v2 gained generation-aware CAS renewal (`renewControllerIfCurrent`) with a
+threshold/min-interval/emergency policy, and PostToolUse correlation uses
+one-time mode-0600 receipts so heartbeats renew only the exact authorized
+tuple; overrides/capabilities stay non-renewable. Tier-1: new validators
+validate-literal-branch-worktree / validate-pretool-decision-engine /
+validate-tool-call-heartbeat plus extended duplicate-hook, self-heal,
+execution-integrity, and controller-lease suites.
+
 ### 2026-07-24: Loop-state cleanup stays creator-owned and quality-preserving
 
 WI-511 audited a broad optimization proposal and rejected changes that were
