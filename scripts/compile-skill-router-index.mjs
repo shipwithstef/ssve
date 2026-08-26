@@ -96,7 +96,7 @@ export function compile(root) {
   const registryBytes = readIfExists(registryPath);
   const manifest = JSON.parse(manifestBytes.toString("utf8"));
   const overrides = JSON.parse(overridesBytes.toString("utf8"));
-  JSON.parse(registryBytes.toString("utf8")); // fingerprint input only
+  const registry = JSON.parse(registryBytes.toString("utf8"));
 
   const included = manifest.includedSkills;
   if (!Array.isArray(included) || included.length === 0) fail("skills-manifest.json has no includedSkills array");
@@ -113,6 +113,19 @@ export function compile(root) {
       .map((e) => path.basename(e.path || "").replace(/\.md$/, ""))
       .filter(Boolean)
   );
+
+  // Governance-binding validation (F-EXEC-020): a typo in a critical concern
+  // binding would silently disable that pin forever. Fail compilation instead.
+  const includedSet = new Set(included);
+  for (const concern of registry.concerns || []) {
+    const handled = concern.handled_by || {};
+    for (const s of handled.required_skills || []) {
+      if (!includedSet.has(s)) fail(`concern "${concern.name}" requires unknown skill: ${s}`);
+    }
+    for (const r of handled.required_rules || []) {
+      if (!knownRules.has(r)) fail(`concern "${concern.name}" references unresolvable rule id: ${r}`);
+    }
+  }
 
   // Path-safety: a skill name becomes a filesystem path segment. Only the
   // canonical kebab-case form is accepted so a hostile manifest entry can
@@ -138,6 +151,12 @@ export function compile(root) {
       const v = entry[field];
       if (v !== undefined && (!Array.isArray(v) || v.some((x) => typeof x !== "string"))) {
         fail(`${name}: override field ${field} must be an array of strings`);
+      }
+    }
+    for (const field of ["aliases", "requires", "required_rules"]) {
+      const v = entry[field];
+      if (Array.isArray(v) && new Set(v).size !== v.length) {
+        fail(`${name}: override field ${field} must not contain duplicates (schema uniqueItems)`);
       }
     }
     for (const rule of entry.required_rules || []) {

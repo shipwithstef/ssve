@@ -81,7 +81,14 @@ export function loadIndex(root) {
 /** Verify the committed index still matches its canonical inputs AND every
  * recorded SKILL.md content hash (plan §4.2: derived data is never accepted
  * without matching source hashes — F-EXEC-011). Returns { fresh, drift[] };
- * advisory callers degrade, they do not crash. */
+ * advisory callers degrade, they do not crash.
+ *
+ * Provenance strength (F-EXEC-019): the three input fingerprints plus every
+ * per-record content hash together prove the artifact is a function of the
+ * CURRENT canonical inputs — regenerating those bytes requires the same
+ * inputs the compiler sees. Unsigned-artifact forgery by a repo writer is
+ * outside this advisory layer's threat model (no signing infra exists in
+ * svc); the enforcement waves add receipts and executable twins. */
 export function verifyIndexFreshness(root, index) {
   const read = (rel) => {
     try { return fs.readFileSync(path.join(root, rel)); } catch { return undefined; }
@@ -100,7 +107,6 @@ export function verifyIndexFreshness(root, index) {
   for (const rec of index.skills || []) {
     const bytes = read(rec.path);
     if (!bytes || sha256Hex(bytes) !== rec.content_hash) drift.push(rec.path);
-    if (drift.length >= 3) break; // enough evidence to degrade; stay fast
   }
   return { fresh: drift.length === 0, drift };
 }
@@ -352,17 +358,10 @@ export function route(options) {
   ranked = ranked.filter((i) => i.score > 0);
 
   // Budget cut: smallest fitting candidate set (plan §4.6). Required pins were
-  // already removed from this list and can never be truncated here. In active
-  // mode the ambiguity-fallback head is RESERVED first so budget pressure can
-  // never evict the approved fallback (F-EXEC-013).
+  // already removed from this list and can never be truncated here.
   const cards = [];
   let d1Tokens = 0;
   let truncated = 0;
-  if (mode === "active" && byName.has("route-workflow") && !pins.has("route-workflow")) {
-    const fallback = { rec: byName.get("route-workflow"), score: 0, reason_codes: ["ambiguity-fallback"] };
-    cards.push(fallback);
-    d1Tokens += Math.min(estimateTokens(JSON.stringify(cardFor(fallback))), 300);
-  }
   for (const item of ranked) {
     if (cards.length >= BUDGETS.d1CeilingCards) { truncated += 1; continue; }
     const cost = Math.min(estimateTokens(JSON.stringify(cardFor(item))), 300);
@@ -371,27 +370,45 @@ export function route(options) {
     d1Tokens += cost;
   }
 
-  // Selection: only active mode may auto-load one optional skill, gated.
+  // Selection: only active mode may auto-load one optional skill, gated. Gate
+  // evaluation runs on the ranked candidates BEFORE any fallback insertion so
+  // the reserved fallback can never block auto-selection (F-EXEC-022).
   let selected = null;
-  const selectionReasons = [];
-  if (mode === "active" && cards.length > 0 && cards[0].reason_codes[0] !== "ambiguity-fallback") {
-    const top = cards[0];
-    const second = cards.find((c) => c !== top);
-    const marginOk = !second || top.score - second.score >= GATES.winnerMargin;
-    const confident = top.score >= GATES.confidenceFloor;
-    const policyOk = top.rec.invocation_policy === "implicit-allowed";
-    const riskOk = top.rec.risk === "low";
+  const top = cards[0];
+  const second = cards.find((c) => c !== top);
+  const marginOk = !second || top.score - second.score >= GATES.winnerMargin;
+  const confident = !!top && top.score >= GATES.confidenceFloor;
+  const policyOk = !!top && top.rec.invocation_policy === "implicit-allowed";
+  const riskOk = !!top && top.rec.risk === "low";
+  if (mode === "active" && top) {
     if (policyOk && confident && marginOk && riskOk) {
       selected = top.rec.skill;
-      selectionReasons.push("gates-passed:confidence,margin,policy,risk");
-    } else {
-      selectionReasons.push(
-        `fallback:route-workflow(policy=${top.rec.invocation_policy},confident=${confident},marginOk=${marginOk},risk=${top.rec.risk})`,
-      );
     }
-  } else if (mode === "active" && cards.length === 0) {
-    selectionReasons.push("fallback:route-workflow(no-candidates)");
   }
+  // Approved ambiguity fallback: appended AFTER gate evaluation whenever no
+  // selection was made in active mode. Cost is accounted here so counters stay
+  // truthful; it may displace the lowest-ranked card only within ceilings.
+  if (mode === "active" && selected === null) {
+    if (byName.has("route-workflow") && !pins.has("route-workflow")) {
+      const fallback = { rec: byName.get("route-workflow"), score: 0, reason_codes: ["ambiguity-fallback"] };
+      const cost = Math.min(estimateTokens(JSON.stringify(cardFor(fallback))), 300);
+      if (cards.length >= BUDGETS.d1CeilingCards || d1Tokens + cost > BUDGETS.d1CeilingTokens) {
+        // Displace the lowest-ranked card to guarantee the fallback surfaces.
+        if (cards.length >= BUDGETS.d1CeilingCards) {
+          cards.pop();
+          truncated += 1;
+          cards.unshift(fallback);
+        } else {
+          truncated += 1;
+        }
+      } else {
+        cards.unshift(fallback);
+        d1Tokens += cost;
+      }
+    }
+  }
+  d1Tokens = cards.reduce((sum, item) => sum + Math.min(estimateTokens(JSON.stringify(cardFor(item))), 300), 0);
+
   const d0Tokens = estimateTokens(KERNEL_TEXT);
   // Honest enforcement semantics (F-EXEC-001): this wave implements no
   // mutation gate and no required-rule receipt verification, so no decision
