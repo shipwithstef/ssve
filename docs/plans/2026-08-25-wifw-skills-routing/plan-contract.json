@@ -47,6 +47,26 @@
         "docs/specs/research-log.md",
         "docs/plans/2026-08-25-wifw-skills-routing/review-log.yaml"
       ]
+    },
+    {
+      "task": "T06",
+      "paths": [
+        "concerns/REGISTRY.json",
+        "concerns/cache-strategy-symmetry.md",
+        "concerns/paid-analytics-api.md",
+        "concerns/paid-cdn-egress.md",
+        "concerns/paid-external-api.md",
+        "concerns/paid-geocoding-api.md",
+        "concerns/paid-llm-api.md",
+        "concerns/paid-ml-inference-api.md",
+        "concerns/paid-notification-api.md",
+        "concerns/paid-ocr-vision-api.md",
+        "concerns/paid-payment-api.md",
+        "concerns/paid-search-api.md",
+        "concerns/paid-storage-api.md",
+        "concerns/paid-streaming-api.md",
+        "concerns/paid-translation-api.md"
+      ]
     }
   ],
   "volatile_paths": [
@@ -54,9 +74,9 @@
   ],
   "resource_review": {
     "verification": "changed-executable-census",
-    "denominator": 4,
+    "denominator": 5,
     "disposition": "no-risky-resource-writers",
-    "evidence": "changed executables: scripts/compile-skill-router-index.mjs, scripts/skill-router.mjs, scripts/lib/skill-router.mjs, test-framework/evals/tier-1/validate-skill-router.sh — a deterministic compiler, a suggestion-only CLI, a library, and a hermetic validator; none write money/ledger/quota/identity state; the receipts stream under .svc/ is observational and gitignored"
+    "evidence": "changed executables: scripts/compile-skill-router-index.mjs, scripts/skill-router.mjs, scripts/lib/skill-router.mjs, test-framework/evals/tier-1/validate-skill-router.sh — a deterministic compiler, a suggestion-only CLI, a library, and a hermetic validator; none write money/ledger/quota/identity state; the receipts stream under .svc/ is observational and gitignored; T06 repairs are markdown/json data only, no new executables beyond the census of 4 code files + concerns data"
   },
   "resource_writers": [],
   "claims": [
