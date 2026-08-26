@@ -14,10 +14,12 @@ import { validate } from "./json-schema-validator.mjs";
 import { jcs, canonicalDigest } from "./swarm-canonical-json.mjs";
 import {
   signReceipt,
+  signPayload,
   verifyEnvelope,
   generateKeyPair,
   keyFingerprint,
   RECEIPT_PAYLOAD_TYPE,
+  COMMAND_PAYLOAD_TYPE as COMMAND_PAYLOAD_TYPE_IMPORT,
 } from "./swarm-signing.mjs";
 
 const COMMAND_SCHEMA = JSON.parse(
@@ -27,6 +29,7 @@ const RECEIPT_SCHEMA = JSON.parse(
   fs.readFileSync(fileURLToPath(new URL("../../schemas/swarm-receipt-payload-v1.schema.json", import.meta.url)), "utf8"),
 );
 import { fileURLToPath } from "node:url";
+import { resolvePair } from "./swarm-conflict-resolver.mjs";
 
 const SHA256 = /^[0-9a-f]{64}$/;
 const LEASE_MS_DEFAULT = 15 * 60 * 1000;
@@ -62,6 +65,19 @@ function uuid7(now = Date.now()) {
   bytes[8] = (bytes[8] & 0x3f) | 0x80;
   const hex = bytes.toString("hex");
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+// Final-artifact exclusive create: never overwrites an existing file. Used for
+// bootstrap artifacts where concurrent or repeated init must not clobber keys.
+function writeExclJson(file, value, mode = 0o600) {
+  fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
+  const fd = fs.openSync(file, fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL, mode);
+  try {
+    fs.writeFileSync(fd, `${JSON.stringify(value, null, 2)}\n`);
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
 }
 
 export function atomicWriteJson(file, value, mode = 0o600) {
@@ -103,13 +119,13 @@ export function initStateRoot(stateRoot, options = {}) {
   let coordinator = null;
   if (!fs.existsSync(rootFile)) {
     root = generateKeyPair();
-    atomicWriteJson(rootFile, root);
+    writeExclJson(rootFile, root);
   } else {
     root = JSON.parse(fs.readFileSync(rootFile, "utf8"));
   }
   if (!fs.existsSync(coordFile)) {
     coordinator = generateKeyPair();
-    atomicWriteJson(coordFile, coordinator);
+    writeExclJson(coordFile, coordinator);
   } else {
     coordinator = JSON.parse(fs.readFileSync(coordFile, "utf8"));
   }
@@ -191,6 +207,7 @@ export function replay(events, expectedRunId = null) {
       if (eventDigestOf(event) !== event.event_digest) errors.push(`events[${index}] event digest mismatch`);
       const prior = state.idempotency[event.idempotency_key];
       if (prior && prior.command_digest !== event.command_digest) errors.push(`events[${index}] idempotency key reused across different commands`);
+      if (prior && prior.command_digest === event.command_digest && prior.event_digest !== event.event_digest) errors.push(`events[${index}] idempotent command rebound to a divergent event digest (journal corruption)`);
       if (errors.length) continue;
     } catch (e) {
       errors.push(`events[${index}] ${e.message}`);
@@ -215,12 +232,16 @@ function applyToState(state, event) {
       task.state = "LEASED";
       task.lease = event.payload.lease;
       task.attempt_id = event.payload.attempt_id;
+      task.claim = event.payload.claim ?? { paths: [], resources: [] };
       state.tasks[event.task_id] = task;
       break;
     }
     case "TASK_HEARTBEAT": {
       const task = state.tasks[event.task_id];
-      if (task?.lease) task.lease.renewed_at = event.payload.heartbeat_at;
+      if (task?.lease) {
+        task.lease.renewed_at = event.payload.heartbeat_at;
+        if (event.payload.renewed_until) task.lease.expires_at = event.payload.renewed_until;
+      }
       break;
     }
     case "CAUSAL_PROGRESS_RECORDED":
@@ -232,7 +253,7 @@ function applyToState(state, event) {
     }
     case "HANDOFF_PREPARED": {
       const token = event.payload.handoff_token;
-      state.handoffs[token] = { from_principal: event.actor.principal_id, task_id: event.task_id, consumed: false, target_generation: event.authority_generation + 1 };
+      state.handoffs[token] = { from_principal: event.actor.principal_id, task_id: event.task_id, consumed: false, target_generation: event.authority_generation + 1, for_principal: event.payload.successor_principal ?? null };
       break;
     }
     case "HANDOFF_ACCEPTED": {
@@ -330,6 +351,8 @@ export class SwarmCoordinator {
     this.registryPath = path.join(stateRoot, "trust-registry.json");
     this.keysDir = path.join(stateRoot, "keys");
     this.coordKey = JSON.parse(fs.readFileSync(path.join(this.keysDir, "coordinator.json"), "utf8"));
+    this.rootPublicKey = (() => { try { return JSON.parse(fs.readFileSync(path.join(this.keysDir, "root.json"), "utf8")).public_key; } catch { return null; } })();
+    this._registryCache = null;
     this.receiptsDir = path.join(stateRoot, "receipts");
     fs.mkdirSync(this.receiptsDir, { recursive: true, mode: 0o700 });
     this.validators = [];
@@ -347,7 +370,17 @@ export class SwarmCoordinator {
     return replayed;
   }
 
-  registry() { return JSON.parse(fs.readFileSync(this.registryPath, "utf8")); }
+  registry() {
+    const bytes = fs.readFileSync(this.registryPath, "utf8");
+    if (bytes === this._registryCache) return this._registryParsed;
+    const parsed = JSON.parse(bytes);
+    if (!verifyRegistrySignature(parsed, this.rootPublicKey)) {
+      throw Object.assign(new Error("trust registry root signature invalid"), { code: "REGISTRY_UNTRUSTED" });
+    }
+    this._registryCache = bytes;
+    this._registryParsed = parsed;
+    return parsed;
+  }
 
   // Operator-only: provision an adapter session key. The generated private key is
   // written 0600 under keys/ and never returned through any protocol surface.
@@ -372,10 +405,7 @@ export class SwarmCoordinator {
       expires_at: options.expiresAt ?? null,
       revoked_at_sequence: null,
     });
-    const cryptoMod = crypto;
-    const signature = cryptoMod.sign(null, registryBodyBytes(registry), cryptoMod.createPrivateKey(JSON.parse(fs.readFileSync(path.join(this.keysDir, "root.json"), "utf8")).private_key)).toString("base64");
-    registry.root_signature = signature;
-    atomicWriteJson(this.registryPath, registry);
+    this.signAndPersistRegistry(registry);
     return { created: true, principal_id: principalId, keyid: registry.keys[registry.keys.length - 1].keyid };
   }
 
@@ -384,10 +414,7 @@ export class SwarmCoordinator {
     const row = registry.keys.find(k => k.principal_id === principalId);
     if (!row) throw new Error(`no registry row for ${principalId}`);
     row.revoked_at_sequence = atSequence;
-    delete registry.root_signature;
-    const cryptoMod = crypto;
-    registry.root_signature = cryptoMod.sign(null, registryBodyBytes(registry), cryptoMod.createPrivateKey(JSON.parse(fs.readFileSync(path.join(this.keysDir, "root.json"), "utf8")).private_key)).toString("base64");
-    atomicWriteJson(this.registryPath, registry);
+    this.signAndPersistRegistry(registry);
     return { revoked: true, principal_id: principalId, revoked_at_sequence: atSequence };
   }
 
@@ -403,8 +430,60 @@ export class SwarmCoordinator {
     return { ok: true, reason_code: "ok", rows };
   }
 
+  signAndPersistRegistry(registry) {
+    delete registry.root_signature;
+    const rootPrivate = JSON.parse(fs.readFileSync(path.join(this.keysDir, "root.json"), "utf8")).private_key;
+    registry.root_signature = crypto.sign(null, registryBodyBytes(registry), crypto.createPrivateKey(rootPrivate)).toString("base64");
+    atomicWriteJson(this.registryPath, registry);
+    this._registryCache = null;
+    this._registryParsed = null;
+  }
+
+  // Adapter-signed command envelopes (EXEC-001): every mutating verb must arrive as
+  // a DSSE envelope over the JCS bytes of the command, signed by the principal's
+  // provisioned submission key. Plain JSON objects are never protocol input.
+  static envelopeForCommand(command, privateKeyPem, payloadType = COMMAND_PAYLOAD_TYPE_IMPORT) {
+    return signPayload(privateKeyPem, payloadType, command);
+  }
+
+  verifyCommandEnvelope(envelope, expectedPrincipalId) {
+    let parsed;
+    try {
+      parsed = JSON.parse(Buffer.from(envelope.payload, "base64").toString("utf8"));
+    } catch {
+      return { ok: false, reason_code: "schema_invalid", note: "envelope payload is not JSON" };
+    }
+    const registry = this.registry();
+    const actorPrincipal = parsed?.actor?.principal_id;
+    if (expectedPrincipalId && actorPrincipal !== expectedPrincipalId) {
+      return { ok: false, reason_code: "unknown_session", note: "envelope signer principal does not match command actor" };
+    }
+    const row = registry.keys.find(k => k.principal_id === actorPrincipal && k.purpose === "submit");
+    if (!row) {
+      return { ok: false, reason_code: "unknown_session", note: `no submit-purpose key for ${actorPrincipal}` };
+    }
+    const result = verifyEnvelope(row.public_key, envelope);
+    if (!result.verified) {
+      return { ok: false, reason_code: "signature_invalid", note: "submission signature did not verify against the trust registry" };
+    }
+    return { ok: true, command: parsed };
+  }
+
   handle(command) {
     return withJournalLock(this.journalPath, () => this.handleLocked(command));
+  }
+
+  // Signed-envelope entry point for mutating verbs.
+  handleEnvelope(envelope) {
+    return withJournalLock(this.journalPath, () => {
+      const probe = this.verifyCommandEnvelope(envelope, null);
+      if (!probe.ok) {
+        const events0 = readJournal(this.journalPath);
+        const replayed0 = replay(events0);
+        return this.decide({ run_id: "?", actor: { principal_id: "?" }, authority_generation: -1, expected_sequence: -1 }, replayed0.state, probe.reason_code, probe.note, events0);
+      }
+      return this.handleLocked(probe.command);
+    });
   }
 
   handleLocked(command) {
@@ -417,6 +496,11 @@ export class SwarmCoordinator {
     const state = replayed.state;
     const schemaErrors = validate(COMMAND_SCHEMA, command).errors;
     if (schemaErrors.length) return this.decide(command, state, "schema_invalid", `schema: ${schemaErrors[0]}`, events);
+
+    // run binding: once a journal has events, every command must target its run
+    if (state.sequence > 0 && command.run_id !== state.run_id) {
+      return this.decide(command, state, "schema_invalid", `run_id ${command.run_id} does not bound to journal run ${state.run_id}; refusing to poison the stream`, events);
+    }
 
     const canonical = canonicalDigest(command);
     // exact-retry short circuit (before any other gate)
@@ -468,8 +552,34 @@ export class SwarmCoordinator {
       if (!task?.lease || task.lease.lease_id !== command.lease_id) {
         return this.decide(command, state, "lease_missing", "no active lease bound to this command", events);
       }
+      if (task.lease.principal_id !== command.actor.principal_id) {
+        return this.decide(command, state, "capability_denied", `lease belongs to ${task.lease.principal_id}, not ${command.actor.principal_id}`, events);
+      }
       if (Date.parse(task.lease.expires_at) < Date.now()) {
         return this.decide(command, state, "lease_expired", "lease TTL elapsed without heartbeat renewal", events);
+      }
+    }
+
+    // cancellation is monotonic but owner-scoped: only the lease holder (or a
+    // coordinator-level operator through provision/revoke verbs) may cancel.
+    if (command.command_type === "request_cancel" && command.task_id) {
+      const task = state.tasks[command.task_id];
+      if (task?.lease && task.lease.principal_id !== command.actor.principal_id && !state.tasks[command.task_id]?.terminal) {
+        return this.decide(command, state, "capability_denied", "cancel requires the current lease holder", events);
+      }
+    }
+
+    // handoff preparation is owner-only; acceptance must present the token
+    if (command.command_type === "request_handoff" && command.task_id) {
+      const task = state.tasks[command.task_id];
+      if (!task?.lease || task.lease.principal_id !== command.actor.principal_id) {
+        return this.decide(command, state, "capability_denied", "handoff can only be prepared by the current lease holder", events);
+      }
+    }
+    if (command.command_type === "accept_handoff") {
+      const handoff = state.handoffs[command.payload.handoff_token];
+      if (handoff?.for_principal && handoff.for_principal !== command.actor.principal_id) {
+        return this.decide(command, state, "capability_denied", `handoff token is bound to ${handoff.for_principal}`, events);
       }
     }
 
@@ -499,10 +609,23 @@ export class SwarmCoordinator {
     return this.append(command, state, canonical, events);
   }
 
+  // Receipt identity is DERIVED, never random: sha256(command_digest | event_digest)
+  // rendered as a UUIDv7-shaped id. Combined with issued_at bound to the appended
+  // event's observed_at and Ed25519 determinism, a crash-window re-sign reproduces
+  // the exact original bytes (EXEC-005).
+  derivedReceiptId(commandDigest, eventDigest) {
+    const h = crypto.createHash("sha256").update(`${commandDigest}|${eventDigest}`).digest("hex");
+    const bytes = Buffer.from(h.slice(0, 32), "hex");
+    bytes[6] = (bytes[6] & 0x0f) | 0x70;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = bytes.toString("hex");
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  }
+
   buildAcceptance(command, state, event, reasonCode, seqAfter) {
     const receipt = {
       schema_version: 1,
-      receipt_id: uuid7(),
+      receipt_id: this.derivedReceiptId(event.command_digest ?? canonicalDigest(command), event.event_digest ?? "no-event"),
       receipt_kind: reasonCode === "ok" ? "acceptance_receipt" : "rejection_receipt",
       command_id: command.command_id ?? null,
       run_id: command.run_id,
@@ -526,7 +649,7 @@ export class SwarmCoordinator {
       event_digest: event?.event_digest ?? null,
       verdict: reasonCode === "ok" ? "ACCEPTED" : "REJECTED",
       reason_code: reasonCode,
-      issued_at: new Date().toISOString(),
+      issued_at: event?.observed_at ?? new Date().toISOString(),
       traceparent: command.traceparent ?? "",
     };
     const schemaErrors = validate(RECEIPT_SCHEMA, receipt).errors;
@@ -586,17 +709,32 @@ export class SwarmCoordinator {
         break;
       case "acquire_task":
         type = "TASK_LEASE_ACQUIRED";
-        payload = { lease: { lease_id: uuid7(), principal_id: command.actor.principal_id, acquired_at: now, expires_at: new Date(Date.now() + this.leaseMs).toISOString() }, attempt_id: command.attempt_id ?? uuid7() };
+        payload = { lease: { lease_id: uuid7(), principal_id: command.actor.principal_id, acquired_at: now, expires_at: new Date(Date.now() + this.leaseMs).toISOString() }, attempt_id: command.attempt_id ?? uuid7(), claim: { paths: Array.isArray(command.payload.paths) ? command.payload.paths : [], resources: Array.isArray(command.payload.resources) ? command.payload.resources : [], base_sha: command.payload.base_sha ?? null } };
         break;
       case "heartbeat_task":
         type = "TASK_HEARTBEAT";
-        payload = { heartbeat_at: now, observed_sequence: state.sequence };
+        payload = { heartbeat_at: now, observed_sequence: state.sequence, renewed_until: new Date(Date.now() + this.leaseMs).toISOString() };
         break;
       case "report_progress":
         type = "CAUSAL_PROGRESS_RECORDED";
         payload = { note: String(command.payload.note ?? "") };
         break;
       case "submit_candidate": {
+        // Conflict-ladder integration (EXEC-008): the candidate's claimed paths are
+        // evaluated against every OTHER active lease claim through the deterministic
+        // resolver before any acceptance.
+        const candidatePaths = Array.isArray(command.payload.changed_paths) ? command.payload.changed_paths : [];
+        for (const [otherTaskId, otherTask] of Object.entries(state.tasks)) {
+          if (otherTaskId === command.task_id || !otherTask.claim?.paths?.length || !otherTask.lease) continue;
+          if (state.tasks[command.task_id]?.lease && state.tasks[command.task_id].lease.principal_id === otherTask.lease.principal_id && otherTaskId === command.task_id) continue;
+          const verdict = resolvePair(
+            { principal_id: command.actor.principal_id, task_id: command.task_id ?? "?", paths: candidatePaths, resources: [], authority_generation: state.authority_generation, base_sha: command.payload.base_sha ?? null },
+            { principal_id: otherTask.lease.principal_id, task_id: otherTaskId, paths: otherTask.claim.paths, resources: otherTask.claim.resources ?? [], authority_generation: state.authority_generation, base_sha: otherTask.claim.base_sha ?? null },
+          );
+          if (verdict.outcome !== "INTEGRATE" && verdict.outcome !== "MERGE_WITH_VALIDATORS") {
+            return { accepted: false, conflicted: true, reason_code: verdict.level === 5 ? "protected_surface" : "conflict_block", ladder: verdict, receipt: this.buildRejectionOnly(command, state, verdict.level === 5 ? "protected_surface" : "conflict_block", `ladder L${verdict.level} ${verdict.outcome}: ${verdict.reason}`).envelope };
+          }
+        }
         // independent recomputation happens HERE, not from worker claims
         const candidate = {
           base_sha: command.payload.base_sha ?? null,

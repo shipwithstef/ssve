@@ -81,7 +81,8 @@ Fail-closed rule carried over from the source plan: a model-authored PASS string
 | T01 | CREATE | references/swarm-conflict-policy.json | Resolver registry and protected-surface policy |
 | T08 | CREATE | docs/plans/2026-08-25-wi-fw-swarm-coordination/plan-contract.json | Materializes at T08 closeout byte-exact per the inline contract below (sole owner: T08); scripts/validate-plan-contract.mjs clean-exit on it is a required T08 gate |
 | T08 | CREATE | scripts/extract-inline-plan-contract.mjs | Extracts the inline contract json block from this manifest and writes plan-contract.json; consumed by the Execution Command Sequence |
-| T02 | MODIFY | schemas/runtime-journal-event-v2.schema.json | Append coordination event types to the type enum (additive; existing journals stay valid) |
+| T02 | CREATE | scripts/lib/swarm-canonical-json.mjs | RFC 8785 JCS serializer with embedded test vectors and lone-surrogate rejection |
+| T10 | MODIFY | scripts/lib/json-schema-validator.mjs | Validator contract repair: implement documented allOf/anyOf/oneOf/not/if-then-else plus const support and object-semantics required/properties so strict per-kind schemas are actually enforced |
 | T02 | CREATE | scripts/lib/swarm-canonical-json.mjs | RFC 8785 JCS serializer with embedded test vectors |
 | T03 | CREATE | scripts/lib/swarm-signing.mjs | DSSE/Ed25519 sign/verify over JCS bytes; key generation; tamper rejection |
 | T04 | CREATE | scripts/lib/swarm-command-handler.mjs | Schema/identity/capability/generation/sequence/idempotency validation; attempt state machine; journal appends through svc-runtime-v2 primitives |
@@ -99,7 +100,7 @@ Fail-closed rule carried over from the source plan: a model-authored PASS string
 | T07 | MODIFY | test-framework/evals/tier-1/validate-wi546-cursor-live-acceptance.sh | Environment-robustness repair: live note-consume probe iterates store entries; live EXEC check tolerates a present owner dispatch policy (no-Sonnet invariant preserved) |
 | T07 | MODIFY | test-framework/evals/tier-1/validate-wi546-grok-live-acceptance.sh | Environment-robustness repair: live EXEC check tolerates a present owner dispatch policy (no-Sonnet/fast invariant preserved) |
 
-The single MODIFY of an existing schema is additive enum extension; replay of pre-existing journals is unchanged because unknown-to-state-model types already fall through replay without transition checks, and widening an enum cannot invalidate previously valid documents.
+Journal topology per execution review EXEC-006: the swarm coordination journal is a STANDALONE append-only stream that reuses the runtime-v2 PATTERNS (advisory process-death-proof lock, digest chain, fsync, idempotency binding) but not the runtime-v2 event envelope, because v2 events require sha256 generation_bindings that a coordinator kernel does not possess. The runtime-v2 schema is left untouched by this changeset; legacy compatibility is preserved trivially.
 
 ## Task Graph
 
@@ -211,39 +212,160 @@ The contract artifact content is fixed NOW by this inline block (byte-stable; th
   "schema_version": 1,
   "base_sha": "494f0749250ccf8c3e52e7dbd7a55128a0800b78",
   "manifest": "docs/plans/2026-08-25-wi-fw-swarm-coordination/manifest.md",
-  "risk_flags": ["runtime_concurrency"],
+  "risk_flags": [
+    "runtime_concurrency"
+  ],
   "concurrency": {
     "atomic_primitive": "flock",
     "owner_key": "coordinator journal lock keyed by state-root journal path (withJournalLock pattern inherited from scripts/svc-runtime-v2.mjs)",
-    "concurrent_invoke_behavior": "serialized by the advisory flock held across the whole validate-append-fsync-sign-receipt-write section; a competing process blocks, acquires after release, then re-reads replayed state so its view postdates every committed event",
-    "stale_lock_cleanup": "advisory flocks are kernel-released on process death; startup verifies digest chain and last signed checkpoint and refuses a torn tail",
+    "concurrent_invoke_behavior": "serialized by the advisory mkdir-mutex held across the whole validate-append-fsync-sign-receipt-write section; a competing process blocks, acquires after release, then re-reads replayed state so its view postdates every committed event; process-death reclaim via /proc start tokens",
+    "stale_lock_cleanup": "advisory locks are kernel-released on process death; startup verifies digest chain and last signed checkpoint and refuses a torn tail",
     "concurrency_test": "test-framework/evals/tier-1/validate-swarm-protocol.sh"
   },
   "ownership": [
-    { "task": "T01", "paths": ["schemas/swarm-command-v1.schema.json", "schemas/swarm-receipt-payload-v1.schema.json", "schemas/swarm-dsse-envelope-v1.schema.json", "schemas/swarm-conflict-v1.schema.json", "schemas/swarm-trust-registry-v1.schema.json", "references/swarm-conflict-policy.json"] },
-    { "task": "T02", "paths": ["schemas/runtime-journal-event-v2.schema.json", "scripts/lib/swarm-canonical-json.mjs"] },
-    { "task": "T03", "paths": ["scripts/lib/swarm-signing.mjs"] },
-    { "task": "T04", "paths": ["scripts/lib/swarm-command-handler.mjs"] },
-    { "task": "T05", "paths": ["scripts/lib/swarm-conflict-resolver.mjs"] },
-    { "task": "T06", "paths": ["scripts/svc-swarm.mjs", "references/swarm-protocol.md"] },
-    { "task": "T07", "paths": ["test-framework/evals/tier-1/validate-swarm-protocol.sh", "test-framework/evals/tier-1/validate-swarm-signatures.sh", "test-framework/evals/tier-1/validate-swarm-conflicts.sh", "test-framework/evals/tier-1/validate-swarm-host-parity.sh", "test-framework/evals/tier-1/validate-kimi-host.sh", "test-framework/evals/tier-1/validate-wi546-cursor-live-acceptance.sh", "test-framework/evals/tier-1/validate-wi546-grok-live-acceptance.sh"] },
-    { "task": "T08", "paths": [".svc/lane-tasks-WI-FW-SWARM-COORDINATION-01.json", "docs/plans/2026-08-25-wi-fw-swarm-coordination/plan-contract.json", "scripts/extract-inline-plan-contract.mjs", "docs/plans/2026-08-25-wi-fw-swarm-coordination/manifest.md", "docs/plans/2026-08-25-wi-fw-swarm-coordination/review-log.yaml"] }
+    {
+      "task": "T01",
+      "paths": [
+        "schemas/swarm-command-v1.schema.json",
+        "schemas/swarm-receipt-payload-v1.schema.json",
+        "schemas/swarm-dsse-envelope-v1.schema.json",
+        "schemas/swarm-conflict-v1.schema.json",
+        "schemas/swarm-trust-registry-v1.schema.json",
+        "references/swarm-conflict-policy.json"
+      ]
+    },
+    {
+      "task": "T02",
+      "paths": [
+        "scripts/lib/swarm-canonical-json.mjs"
+      ]
+    },
+    {
+      "task": "T03",
+      "paths": [
+        "scripts/lib/swarm-signing.mjs"
+      ]
+    },
+    {
+      "task": "T04",
+      "paths": [
+        "scripts/lib/swarm-command-handler.mjs"
+      ]
+    },
+    {
+      "task": "T05",
+      "paths": [
+        "scripts/lib/swarm-conflict-resolver.mjs"
+      ]
+    },
+    {
+      "task": "T06",
+      "paths": [
+        "scripts/svc-swarm.mjs",
+        "references/swarm-protocol.md"
+      ]
+    },
+    {
+      "task": "T07",
+      "paths": [
+        "test-framework/evals/tier-1/validate-swarm-protocol.sh",
+        "test-framework/evals/tier-1/validate-swarm-signatures.sh",
+        "test-framework/evals/tier-1/validate-swarm-conflicts.sh",
+        "test-framework/evals/tier-1/validate-swarm-host-parity.sh",
+        "test-framework/evals/tier-1/validate-kimi-host.sh",
+        "test-framework/evals/tier-1/validate-wi546-cursor-live-acceptance.sh",
+        "test-framework/evals/tier-1/validate-wi546-grok-live-acceptance.sh"
+      ]
+    },
+    {
+      "task": "T08",
+      "paths": [
+        ".svc/lane-tasks-WI-FW-SWARM-COORDINATION-01.json",
+        "docs/plans/2026-08-25-wi-fw-swarm-coordination/plan-contract.json",
+        "scripts/extract-inline-plan-contract.mjs",
+        "docs/plans/2026-08-25-wi-fw-swarm-coordination/manifest.md",
+        "docs/plans/2026-08-25-wi-fw-swarm-coordination/review-log.yaml"
+      ]
+    },
+    {
+      "task": "T10",
+      "paths": [
+        "scripts/lib/json-schema-validator.mjs"
+      ]
+    }
   ],
-  "volatile_paths": [".svc"],
   "resource_review": {
     "disposition": "no-risky-resource-writers",
     "verification": "changed-executable-census",
-    "denominator": 13,
-    "evidence": "closeout census counts exactly thirteen executables: four lib modules (swarm-canonical-json, swarm-signing, swarm-command-handler, swarm-conflict-resolver) plus one coordinator CLI (svc-swarm.mjs) plus one manifest extractor (extract-inline-plan-contract.mjs) plus seven tier-1 bash gates (four new validate-swarm-* gates plus three environment-robustness repairs to existing validators: kimi-host owner-policy isolation, wi546 cursor/grok live-check tolerance of a present owner policy); none touch money/ledger/quota/inventory/identity/notification surfaces"
+    "denominator": 14,
+    "evidence": "closeout census counts exactly fourteen executables: four lib modules (swarm-canonical-json, swarm-signing, swarm-command-handler, swarm-conflict-resolver), coordinator CLI (svc-swarm.mjs), manifest extractor (extract-inline-plan-contract.mjs), shared schema validator repair (json-schema-validator.mjs), plus seven tier-1 gates (four new validate-swarm-* and three environment-robustness repairs); none touch money/ledger/quota/inventory/identity/notification surfaces"
   },
   "resource_writers": [],
   "claims": [],
+  "volatile_paths": [
+    ".svc"
+  ],
   "executables": [
-    { "path": "scripts/svc-swarm.mjs", "consumers": [{ "path": "test-framework/evals/tier-1/validate-swarm-protocol.sh" }, { "path": "test-framework/evals/tier-1/validate-swarm-host-parity.sh" }] },
-    { "path": "scripts/lib/swarm-canonical-json.mjs", "consumers": [{ "path": "scripts/lib/swarm-signing.mjs" }, { "path": "test-framework/evals/tier-1/validate-swarm-signatures.sh" }] },
-    { "path": "scripts/lib/swarm-signing.mjs", "consumers": [{ "path": "scripts/lib/swarm-command-handler.mjs" }, { "path": "test-framework/evals/tier-1/validate-swarm-signatures.sh" }] },
-    { "path": "scripts/lib/swarm-command-handler.mjs", "consumers": [{ "path": "scripts/svc-swarm.mjs" }] },
-    { "path": "scripts/lib/swarm-conflict-resolver.mjs", "consumers": [{ "path": "scripts/svc-swarm.mjs" }, { "path": "test-framework/evals/tier-1/validate-swarm-conflicts.sh" }] }
+    {
+      "path": "scripts/svc-swarm.mjs",
+      "consumers": [
+        {
+          "path": "test-framework/evals/tier-1/validate-swarm-protocol.sh"
+        },
+        {
+          "path": "test-framework/evals/tier-1/validate-swarm-host-parity.sh"
+        }
+      ]
+    },
+    {
+      "path": "scripts/lib/swarm-canonical-json.mjs",
+      "consumers": [
+        {
+          "path": "scripts/lib/swarm-signing.mjs"
+        },
+        {
+          "path": "test-framework/evals/tier-1/validate-swarm-signatures.sh"
+        }
+      ]
+    },
+    {
+      "path": "scripts/lib/swarm-signing.mjs",
+      "consumers": [
+        {
+          "path": "scripts/lib/swarm-command-handler.mjs"
+        },
+        {
+          "path": "test-framework/evals/tier-1/validate-swarm-signatures.sh"
+        }
+      ]
+    },
+    {
+      "path": "scripts/lib/swarm-command-handler.mjs",
+      "consumers": [
+        {
+          "path": "scripts/svc-swarm.mjs"
+        }
+      ]
+    },
+    {
+      "path": "scripts/lib/swarm-conflict-resolver.mjs",
+      "consumers": [
+        {
+          "path": "scripts/svc-swarm.mjs"
+        },
+        {
+          "path": "test-framework/evals/tier-1/validate-swarm-conflicts.sh"
+        }
+      ]
+    },
+    {
+      "path": "scripts/lib/json-schema-validator.mjs",
+      "consumers": [
+        {
+          "path": "scripts/lib/swarm-command-handler.mjs"
+        }
+      ]
+    }
   ]
 }
 ```
@@ -278,3 +400,5 @@ Each AC names its owning task and the gate that proves it, so coverage is mechan
 8. The same golden scenario executed under two different host labels yields identical canonical transitions and verdicts (host parity).
 9. Legacy journals remain readable and replayable after the enum extension (regression validator stays green).
 10. Full tier-1 corpus passes with TEST_CONCURRENCY=2.
+
+| T11 | CREATE | docs/specs/work-items/WI-485-residual-map.json | New minimal residual map (see WI-368 row) |

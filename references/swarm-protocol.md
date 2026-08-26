@@ -96,6 +96,14 @@ after that write is durable.
   ignores wall time entirely and applies sequence-aware revocation
   (`revoked_at_sequence`): events below that sequence still verify.
 
+## 6b. Journal topology
+
+The coordination journal (`<state-root>/journal.jsonl`) is a standalone append-only
+stream. It inherits the runtime-v2 MECHANISMS (lock discipline, digest chain,
+fsync-before-respond, idempotency binding) but deliberately does NOT reuse the
+runtime-v2 event envelope, whose `generation_bindings` are sha256 digests owned by
+run compilation. The central runtime-journal-event-v2 schema is untouched.
+
 ## 7. Crash-atomicity and recovery
 
 One advisory mkdir-mutex critical section per append (process-death reclaim via

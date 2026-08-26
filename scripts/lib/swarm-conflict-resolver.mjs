@@ -48,7 +48,7 @@ export function compileClaims(claims = []) {
       base_sha: claim.base_sha ?? null,
       exclusive: claim.exclusive ?? true,
     }))
-    .sort((a, b) => a.principal_id.localeCompare(b.principal_id) || a.task_id.localeCompare(b.task_id));
+    .sort((a, b) => (a.principal_id < b.principal_id ? -1 : a.principal_id > b.principal_id ? 1 : 0) || (a.task_id < b.task_id ? -1 : a.task_id > b.task_id ? 1 : 0));
   return { claims: normalized, claims_digest: canonicalDigest(normalized) };
 }
 
@@ -93,7 +93,7 @@ export function unionAppendOnly(aRows, bRows, idField = "id") {
       byId.set(row[idField], row);
     }
   }
-  const rows = [...byId.values()].sort((x, y) => String(x[idField]).localeCompare(String(y[idField])));
+  const rows = [...byId.values()].sort((x, y) => { const a = String(x[idField]); const b = String(y[idField]); return a < b ? -1 : a > b ? 1 : 0; });
   return { ok: true, rows, result_digest: canonicalDigest(rows) };
 }
 

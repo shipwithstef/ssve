@@ -4,7 +4,7 @@
   "title": "Structured cross-model swarm coordination bus (single-writer event-sourced kernel, signed receipts, deterministic conflict ladder)",
   "lane": "framework",
   "branch": "feature-WI-563-swarm-coordination",
-  "status": "in_progress",
+  "status": "pending",
   "created_at": "2026-08-25T22:10:33.439Z",
   "classification_note": "Bootstrap misclassified this graph as greenfield product work; corrected to framework lane per WI-FW prefix and central-framework implementation authority. Persona gate not applicable to framework-lane changes.",
   "tasks": [
@@ -100,12 +100,30 @@
     },
     {
       "id": 3,
-      "status": "in_progress",
+      "status": "completed",
       "skill": "execute-changeset",
       "subject": "Implement swarm coordination bus in this framework worktree",
       "blocked_by": [
         2
-      ]
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-08-25T23:50:02.442Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-08-25T23:50:08.433Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/opencode/tier1-full-3.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-25T23:50:02.576Z"
     },
     {
       "id": 4,

@@ -26,7 +26,7 @@ grep -q '"accepted":true' "$TMP/reg.json" || fail "register not accepted"
 # CAS: stale expected_sequence must reject with sequence_mismatch and NOT advance sequence
 set +e
 node "$SWARM" acquire --state-root "$SR" --principal sol-a --task-id t9 --run-id r1 \
-  --command-json '{"schema_version":1,"command_id":"018f0000-0000-7000-8000-00000000abcd","run_id":"r1","command_type":"acquire_task","actor":{"principal_id":"sol-a","host":"codex","model_family":"openai","session_id":"s"},"authority_generation":0,"expected_sequence":99,"idempotency_key":"cas-probe","payload":{}}' > "$TMP/cas.json"
+  --command-json '{"schema_version":1,"command_id":"018f0000-0000-7000-8000-00000000abcd","run_id":"r1","command_type":"acquire_task","actor":{"principal_id":"sol-a","host":"codex","model_family":"openai","session_id":"s"},"task_id":"t9","authority_generation":0,"expected_sequence":99,"idempotency_key":"cas-probe","payload":{}}' > "$TMP/cas.json"
 CAS_RC=$?
 set -e
 [[ $CAS_RC -eq 3 ]] || fail "stale-sequence command should exit 3, got $CAS_RC"
@@ -108,4 +108,80 @@ COUNT1=$(wc -l < "$SR4/journal.jsonl")
 node "$SWARM" status --state-root "$SR4" > "$TMP/status-final.json"
 grep -q '"ok":true' "$TMP/status-final.json" || fail "status projection failed"
 
-echo "PASS(validate-swarm-protocol): schema/CAS/idempotency/fail-closed/replay-corruption/checkpoint verified (final seq=$BEFORE_SEQ->$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).sequence)' "$TMP/status-final.json"))"
+# ---- EXEC-review remediation coverage -------------------------------------
+# run_id poisoning rejected
+set +e
+node "$SWARM" register --state-root "$SR4" --principal w1 --host codex --model-family openai --run-id alien-run \
+  --idempotency-key poison-probe > "$TMP/poison.json"
+POISON_RC=$?
+set -e
+[[ $POISON_RC -eq 3 ]] || fail "cross-run command should be rejected"
+grep -q '"reason_code":"schema_invalid"' "$TMP/poison.json" || fail "poison verdict missing"
+
+# ownership: second principal cannot heartbeat the first principal's lease
+SR5="$TMP/state5"
+node "$SWARM" init --state-root "$SR5" > /dev/null
+node "$SWARM" provision --state-root "$SR5" --principal own1 --host codex --model-family openai > /dev/null
+node "$SWARM" provision --state-root "$SR5" --principal other2 --host grok --model-family xai > /dev/null
+node "$SWARM" register --state-root "$SR5" --principal own1 --host codex --model-family openai --run-id o > /dev/null
+node "$SWARM" register --state-root "$SR5" --principal other2 --host grok --model-family xai --run-id o > /dev/null
+node "$SWARM" acquire --state-root "$SR5" --principal own1 --task-id ot --run-id o > "$TMP/own-acq.json"
+LEASE_ID=$(python3 -c "
+import json,sys
+lines=[json.loads(l) for l in open('$SR5/journal.jsonl')]
+ev=[e for e in lines if e['type']=='TASK_LEASE_ACQUIRED'][0]
+print(ev['payload']['lease']['lease_id'])")
+EXPIRES0=$(python3 -c "
+import json
+lines=[json.loads(l) for l in open('$SR5/journal.jsonl')]
+ev=[e for e in lines if e['type']=='TASK_LEASE_ACQUIRED'][0]
+print(ev['payload']['lease']['expires_at'])")
+sleep 1
+node "$SWARM" heartbeat --state-root "$SR5" --principal own1 --task-id ot --lease-id "$LEASE_ID" --run-id o > /dev/null
+EXPIRES1=$(python3 -c "
+import json
+lines=[json.loads(l) for l in open('$SR5/journal.jsonl')]
+hb=[e for e in lines if e['type']=='TASK_HEARTBEAT'][-1]
+print(hb['payload']['renewed_until'])")
+[[ "$EXPIRES1" != "$EXPIRES0" ]] || fail "heartbeat did not renew lease expiry"
+set +e
+node "$SWARM" heartbeat --state-root "$SR5" --principal other2 --task-id ot --lease-id "$LEASE_ID" --run-id o > "$TMP/steal.json"
+STEAL_RC=$?
+set -e
+[[ $STEAL_RC -eq 3 ]] || fail "cross-principal lease use should be rejected"
+grep -q '"reason_code":"capability_denied"' "$TMP/steal.json" || fail "ownership denial verdict missing"
+
+# signed-envelope path: mutating verbs accept envelopes and reject forged signers
+node --input-type=module - "$TMP" <<'JS' || fail "envelope probe failed"
+import fs from "node:fs";
+const signing = await import(new URL("file://" + process.cwd() + "/scripts/lib/swarm-signing.mjs").href);
+const handler = await import(new URL("file://" + process.cwd() + "/scripts/lib/swarm-command-handler.mjs").href);
+const root = process.argv[2] + "/env-state";
+fs.mkdirSync(root, { recursive: true, mode: 0o700 });
+handler.initStateRoot(root);
+const coord = new handler.SwarmCoordinator(root);
+coord.provisionAdapter("sig1", { host: "codex", model_family: "openai" });
+// steal the provisioned adapter key to SIGN legitimately (in production it never leaves keys/)
+const adapterKey = JSON.parse(fs.readFileSync(root + "/keys/sig1.json", "utf8")).private_key;
+const rogue = signing.generateKeyPair();
+const cmd = {
+  schema_version: 1, command_id: "018f0000-0000-7000-8000-00000000e001", run_id: "er",
+  command_type: "register_session",
+  actor: { principal_id: "sig1", host: "codex", model_family: "openai", session_id: "es" },
+  authority_generation: 0, expected_sequence: 0, idempotency_key: "env-1", payload: {},
+};
+const goodEnv = coord.constructor.envelopeForCommand(cmd, adapterKey);
+const goodResult = coord.handleEnvelope(goodEnv);
+if (!goodResult.accepted) { console.error("signed envelope should be accepted:", goodResult.reason_code); process.exit(1); }
+const forged = coord.constructor.envelopeForCommand(cmd, rogue.private_key);
+// same idempotency key would short-circuit; give the forgery its own key but wrong signer key
+const forgedCmd = { ...cmd, idempotency_key: "env-2", command_id: "018f0000-0000-7000-8000-00000000e002", expected_sequence: 1 };
+const forgedEnv = coord.constructor.envelopeForCommand(forgedCmd, rogue.private_key);
+const forgedResult = coord.handleEnvelope(forgedEnv);
+if (forgedResult.accepted) { console.error("forged signature accepted!"); process.exit(1); }
+if (forgedResult.reason_code !== "signature_invalid") { console.error("expected signature_invalid:", forgedResult.reason_code); process.exit(1); }
+process.exit(0);
+JS
+
+echo "PASS(validate-swarm-protocol): schema/CAS/idempotency/fail-closed/replay-corruption/checkpoint + run-binding/ownership/heartbeat-renewal/signed-envelopes verified"
+echo "SCOPE NOTE: adjudication loop capping, remote transport, and multi-host shadow runs are OUT of this gate's scope (follow-up WIs)"

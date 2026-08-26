@@ -21,7 +21,14 @@ const ESCAPE = {
 
 function escapeString(value) {
   let out = '"';
+  // for..of iterates whole code points; a surrogate code point here is BY
+  // DEFINITION unpaired — JSON.parse accepts it but UTF-8 cannot represent it.
   for (const char of value) {
+    const cp = char.codePointAt(0);
+    if (cp >= 0xd800 && cp <= 0xdfff) {
+      throw new TypeError("JCS input contains a lone UTF-16 surrogate");
+    }
+
     if (ESCAPE[char] !== undefined) out += ESCAPE[char];
     else if (char < " ") {
       const hex = char.codePointAt(0).toString(16).padStart(4, "0");
