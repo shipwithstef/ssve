@@ -4,7 +4,7 @@
   "title": "Structured cross-model swarm coordination bus (single-writer event-sourced kernel, signed receipts, deterministic conflict ladder)",
   "lane": "framework",
   "branch": "feature-WI-563-swarm-coordination",
-  "status": "pending",
+  "status": "in_progress",
   "created_at": "2026-08-25T22:10:33.439Z",
   "classification_note": "Bootstrap misclassified this graph as greenfield product work; corrected to framework lane per WI-FW prefix and central-framework implementation authority. Persona gate not applicable to framework-lane changes.",
   "tasks": [
