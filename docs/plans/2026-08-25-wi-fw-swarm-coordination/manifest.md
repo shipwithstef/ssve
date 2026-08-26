@@ -97,10 +97,9 @@ Fail-closed rule carried over from the source plan: a model-authored PASS string
 | T08 | MODIFY | docs/plans/2026-08-25-wi-fw-swarm-coordination/manifest.md | Plan artifact itself: revised in place through bounded review rounds; final digest bound at closeout |
 | T08 | MODIFY | docs/plans/2026-08-25-wi-fw-swarm-coordination/review-log.yaml | Review log persistence: findings, responses, dispositions, terminal state |
 | T08 | MODIFY | docs/plans/2026-08-25-wi-fw-swarm-coordination/exec-review-log.yaml | Execution-review responses and disposition record |
-| T08 | CREATE | docs/specs/work-items/WI-FW-SWARM-JOURNAL-SIGNING-01.md | Follow-up work item: coordinator-signed journal events + anchored checkpoints (EXEC-R3-003 deferral) |
+| T08 | CREATE | docs/specs/work-items/WI-FW-SWARM-JOURNAL-SIGNING-01.md | Follow-up work item: checkpoint anchoring + operator root pinning (residual EXEC-R3-003 scope) |
+| T08 | CREATE | docs/specs/audit-reports/WI-FW-SWARM-COORDINATION-01.md | Implementation audit: AC1-11 coverage matrix with gate evidence; verdict APPROVE for land |
 | T07 | MODIFY | test-framework/evals/tier-1/validate-kimi-host.sh | Environment-robustness repair: fail-closed probe isolates HOME/policy env so it tests no-owner-policy behavior on machines that have one |
-| T07 | MODIFY | test-framework/evals/tier-1/validate-wi546-cursor-live-acceptance.sh | Environment-robustness repair: live note-consume probe iterates store entries; live EXEC check tolerates a present owner dispatch policy (no-Sonnet invariant preserved) |
-| T07 | MODIFY | test-framework/evals/tier-1/validate-wi546-grok-live-acceptance.sh | Environment-robustness repair: live EXEC check tolerates a present owner dispatch policy (no-Sonnet/fast invariant preserved) |
 
 Journal topology per execution review EXEC-006: the swarm coordination journal is a STANDALONE append-only stream that reuses the runtime-v2 PATTERNS (advisory process-death-proof lock, digest chain, fsync, idempotency binding) but not the runtime-v2 event envelope, because v2 events require sha256 generation_bindings that a coordinator kernel does not possess. The runtime-v2 schema is left untouched by this changeset; legacy compatibility is preserved trivially.
 
@@ -212,7 +211,7 @@ The contract artifact content is fixed NOW by this inline block (byte-stable; th
 ```json
 {
   "schema_version": 1,
-  "base_sha": "494f0749250ccf8c3e52e7dbd7a55128a0800b78",
+  "base_sha": "cda76d6267937278e1dd0138cf39bb3bdde9fb29",
   "manifest": "docs/plans/2026-08-25-wi-fw-swarm-coordination/manifest.md",
   "risk_flags": [
     "runtime_concurrency"
@@ -274,9 +273,7 @@ The contract artifact content is fixed NOW by this inline block (byte-stable; th
         "test-framework/evals/tier-1/validate-swarm-signatures.sh",
         "test-framework/evals/tier-1/validate-swarm-conflicts.sh",
         "test-framework/evals/tier-1/validate-swarm-host-parity.sh",
-        "test-framework/evals/tier-1/validate-kimi-host.sh",
-        "test-framework/evals/tier-1/validate-wi546-cursor-live-acceptance.sh",
-        "test-framework/evals/tier-1/validate-wi546-grok-live-acceptance.sh"
+        "test-framework/evals/tier-1/validate-kimi-host.sh"
       ]
     },
     {
@@ -288,7 +285,8 @@ The contract artifact content is fixed NOW by this inline block (byte-stable; th
         "docs/plans/2026-08-25-wi-fw-swarm-coordination/manifest.md",
         "docs/plans/2026-08-25-wi-fw-swarm-coordination/review-log.yaml",
         "docs/plans/2026-08-25-wi-fw-swarm-coordination/exec-review-log.yaml",
-        "docs/specs/work-items/WI-FW-SWARM-JOURNAL-SIGNING-01.md"
+        "docs/specs/work-items/WI-FW-SWARM-JOURNAL-SIGNING-01.md",
+        "docs/specs/audit-reports/WI-FW-SWARM-COORDINATION-01.md"
       ]
     },
     {
@@ -301,8 +299,8 @@ The contract artifact content is fixed NOW by this inline block (byte-stable; th
   "resource_review": {
     "disposition": "no-risky-resource-writers",
     "verification": "changed-executable-census",
-    "denominator": 14,
-    "evidence": "closeout census counts exactly fourteen executables: four lib modules (swarm-canonical-json, swarm-signing, swarm-command-handler, swarm-conflict-resolver), coordinator CLI (svc-swarm.mjs), manifest extractor (extract-inline-plan-contract.mjs), shared schema validator repair (json-schema-validator.mjs), plus seven tier-1 gates (four new validate-swarm-* and three environment-robustness repairs); none touch money/ledger/quota/inventory/identity/notification surfaces"
+    "denominator": 12,
+    "evidence": "landing census counts exactly twelve executables vs base cda76d6: four lib modules (swarm-canonical-json, swarm-signing, swarm-command-handler, swarm-conflict-resolver), coordinator CLI (svc-swarm.mjs), manifest extractor (extract-inline-plan-contract.mjs), shared schema validator repair (json-schema-validator.mjs), plus four new validate-swarm-* tier-1 gates; the wi546 environment repairs were superseded by main at the land merge; none touch money/ledger/quota/inventory/identity/notification surfaces"
   },
   "resource_writers": [],
   "claims": [],
