@@ -20,8 +20,14 @@ phases:
     required_for_completion: true
   - id: P2-KnowledgeIndexLoad
     trigger: always
-    reads: ["references/knowledge/svc/CAPABILITIES.md", "references/knowledge/INDEX.md"]
+    reads: ["references/advisor/framework-knowledge-index.md", "references/knowledge/svc/CAPABILITIES.md", "references/knowledge/INDEX.md"]
     writes: []
+    evidence_kind: command_output
+    required_for_completion: true
+  - id: P2b-MechanicalFactVerification
+    trigger: counts-or-wiring-claims
+    reads: ["references/advisor/framework-knowledge-index.md Verify commands"]
+    writes: [".svc/svc-advisor-fact-verification.log"]
     evidence_kind: command_output
     required_for_completion: true
   - id: P3-RelevantEvidenceLoad
@@ -50,6 +56,7 @@ phases:
     required_for_completion: true
 inputs:
   required:
+    - { path: "references/advisor/framework-knowledge-index.md", artifact: advisor-index }
     - { path: "references/knowledge/svc/CAPABILITIES.md", artifact: svc-capabilities }
   optional:
     - { path: "references/knowledge/svc/details/*.md", artifact: svc-details }
@@ -91,6 +98,9 @@ Reading them first produces grounded, consistent, cross-session answers.
 
 ### Step 1: Classify the question
 
+All question types below resolve through Step 2's canonical advisor index
+first; the CAPABILITIES/detail files named here are the depth layer.
+
 | Question type | What to load |
 |---|---|
 | "Is svc good at X?" / "How does svc handle X?" | `svc/CAPABILITIES.md` → relevant detail file |
@@ -99,9 +109,26 @@ Reading them first produces grounded, consistent, cross-session answers.
 | "Compare svc to gstack/superpowers for X" | `svc/CAPABILITIES.md` + target competitor's CAPABILITIES.md |
 | "What do you think about this scenario?" | `svc/CAPABILITIES.md` + relevant details + competitor if relevant |
 
-### Step 2: Load only what's relevant
+### Step 2: Load the canonical advisor index FIRST
 
-Read `references/knowledge/svc/CAPABILITIES.md` first — it's the index.
+**WI-FW-ADVISOR-KNOWLEDGE-01:** `references/advisor/framework-knowledge-index.md`
+is the canonical first-load surface for framework facts (counts, lanes, gates,
+review topology, host wiring, worktree authority, governors, routing). It
+carries per-block `Derived-at` stamps and a mechanical **Verify** command per
+fact block.
+
+**Cite-before-assert contract:**
+
+1. Any load-bearing count or wiring claim (skill/gate/host/validator counts,
+   hook availability, review stations, lane lists) MUST be re-derived by
+   running that block's Verify command — never quoted from memory, from this
+   skill's prose, or from a stale knowledge pack. Append command + output to
+   `.svc/svc-advisor-fact-verification.log` as phase evidence.
+2. The index supersedes `svc/CAPABILITIES.md` count lines where they disagree;
+   known-stale pack claims are flagged inside the index itself.
+3. Then continue with the domain detail files below for depth.
+
+Read `references/knowledge/svc/CAPABILITIES.md` next — it's the Layer-2 detail index.
 Then read the specific detail file(s) that cover the question's domain:
 
 | Domain | Detail file |
@@ -177,9 +204,11 @@ Never silently improvise when the knowledge is absent — that defeats the purpo
 | # | Check | How | PASS/FAIL |
 |---|---|---|---|
 | 1 | Answer is grounded | Confirm every material claim cites a loaded knowledge file or clearly says the stored knowledge does not cover it. | |
-| 2 | Relevant scope was loaded only | Verify `CAPABILITIES.md` plus only the detail or competitor files needed for the question were read. | |
-| 3 | Staleness was handled | Check each cited capabilities file's last-updated date and disclose if it is older than 30 days. | |
+| 2 | Relevant scope was loaded only | Verify advisor index plus only the detail or competitor files needed for the question were read. | |
+| 3 | Staleness was handled | Check each cited capabilities file's last-updated date AND each used index block's Derived-at date; disclose if stale. | |
 | 4 | Competitive context rule applied | If project competitor data exists, confirm the competitive-context block or stale-data warning was included. | |
+| 5 | Counts mechanically verified | Every asserted count/wiring fact was re-derived via its index Verify command with output logged to `.svc/svc-advisor-fact-verification.log`, not quoted from memory. | |
+| 6 | Citation format respected | Material claims carry `path § section` citations; no "the knowledge says so" without a path. | |
 
 ## Phase Receipt Contract
 
@@ -188,6 +217,7 @@ After loading this skill into the lane task graph, emit receipts for each requir
 ```bash
 node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P1-QuestionClassification --evidence command_output:.svc/svc-advisor-question-classification.log
 node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P2-KnowledgeIndexLoad --evidence command_output:.svc/svc-advisor-knowledge-index.log
+node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P2b-MechanicalFactVerification --evidence command_output:.svc/svc-advisor-fact-verification.log
 node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P3-RelevantEvidenceLoad --evidence command_output:.svc/svc-advisor-evidence-load.log
 node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P4-CitedAnswerComposition --evidence command_output:.svc/svc-advisor-cited-answer.log
 node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P5-StalenessCompetitiveContext --evidence command_output:.svc/svc-advisor-staleness-competitive-context.log
