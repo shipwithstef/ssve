@@ -1,5 +1,5 @@
 {
-  "stamped_at": "a65e9f8b77581f8b508f3e1c852d013a8a0d0f96",
+  "stamped_at": "3c79f6a8744d95f7516fac2bd8a7e292dc23685f",
   "imports": {
     "docs/plans/2026-08-17-wi548-host-parity-plan/manifest.md": [],
     "docs/specs/architecture/wi-548-contract-map.md": [],
@@ -24,6 +24,7 @@
       "./lib/history-epoch.mjs",
       "./lib/normalize-ac-table.mjs",
       "./lib/reviewer-evidence.mjs",
+      "./lib/skill-coverage.mjs",
       "./state-io.mjs",
       "node:child_process",
       "node:crypto",

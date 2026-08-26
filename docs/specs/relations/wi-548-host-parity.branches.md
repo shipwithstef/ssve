@@ -1,6 +1,7 @@
 # Branch index — portable host-parity program
 
-Derived-at: a65e9f8b77581f8b508f3e1c852d013a8a0d0f96
+Derived-at: 3c79f6a8744d95f7516fac2bd8a7e292dc23685f
+Restamped: 2026-08-26 — original Derived-at a65e9f8b unreachable (post-squash artifact, absent from object store); every wi-548 scope path untouched by WI-FW-SKILLS-ROUTING-01 (git diff origin/main..HEAD over scope = empty); cited entry points re-verified present at HEAD.
 Scope-paths:
   - docs/specs/architecture/wi-548-*.md
   - docs/specs/features/framework-portable-host-parity.md
@@ -26,7 +27,7 @@ Scope-paths:
 - IN: `scripts/check-chain-receipts.mjs:1` — receipt checker; WI-547/WI-550
 - IN: `scripts/svc-reconcile.mjs:1` — policy reader; WI-549
 - IN: `hooks/svc-task-completion-guard.sh:1` — Stop barrier; WI-545/WI-550
-- IN: `scripts/resolve-adversarial-reviewer.sh:1` — remap to remove; WI-551
+- IN: `scripts/resolve-adversarial-reviewer.sh:1` — compatibility adapter over run-external-review.mjs --policy-status; WI-551
 
 ## Journeys & tests
 

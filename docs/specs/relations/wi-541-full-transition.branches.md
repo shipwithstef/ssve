@@ -1,4 +1,5 @@
-Derived-at: 01e7021b8b51fea6a11d4ebe5de5a931b7b1acfa
+Derived-at: 3c79f6a8744d95f7516fac2bd8a7e292dc23685f
+Restamped: 2026-08-26 — original Derived-at 01e7021b unreachable (post-squash artifact, absent from object store); all enumerated entry points/callers re-verified present at HEAD; WI-FW-SKILLS-ROUTING-01 added new surfaces (scripts/skill-router*, references/skill-routing-*, schemas/skill-router-decision.schema.json, test-framework skill-router fixtures) without altering any enumerated entry point or caller.
 Scope-paths:
   - scripts/**
   - hooks/**

@@ -1,4 +1,5 @@
-Derived-at: 41ff0c713116d13402c4dd219cd5898d57154678
+Derived-at: 3c79f6a8744d95f7516fac2bd8a7e292dc23685f
+Restamped: 2026-08-26 — original Derived-at 41ff0c71 unreachable (post-squash artifact, absent from object store); scope scripts/branch-index-freshness.mjs re-verified unchanged since last real derivation and untouched by WI-FW-SKILLS-ROUTING-01; anchors branchIndexFresh:59 / importShapeNote:455 re-checked at HEAD.
 Scope-paths:
   - scripts/branch-index-freshness.mjs
 
