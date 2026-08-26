@@ -472,7 +472,7 @@ execute-changeset + review-exec + audit-implementation + land-changeset
 + verify-promotion mandatory for every non-quick-fix change.
 
 Key additions:
-- `skills/review-exec/SKILL.md` — new G6 gate (self-review + adversarial via resolver)
+- `skills/review-exec/SKILL.md` — G5-enforcing gate (self-review + adversarial via resolver)
 - `scripts/quick-fix-eligibility.mjs` — mechanical quick-fix gate
 - `scripts/svc-reconcile.mjs` — local L3 gate (responsibilities A + B)
 - `scripts/run-external-review.mjs` — canonical schema/receipt/cache review launcher

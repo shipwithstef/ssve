@@ -62,12 +62,32 @@ function tryParse(raw) {
   }
 }
 
+/** Additive normalizers for host-specific hook stdin shapes (never narrows Claude). */
+function normalizeHostPayload(payload) {
+  if (!payload || typeof payload !== "object") return payload;
+  const hasToolEnvelope = payload.tool_name || payload.toolName || payload.tool
+    || (payload.event && (payload.event.tool_name || payload.event.tool));
+  if (hasToolEnvelope) return payload;
+  const file = payload.file || payload.file_path || payload.filePath || payload.path;
+  if (typeof file === "string" && file.trim()) {
+    return {
+      ...payload,
+      tool_name: "Edit",
+      tool_input: {
+        file_path: file.trim(),
+        ...(typeof payload.tool_input === "object" && payload.tool_input ? payload.tool_input : {}),
+      },
+    };
+  }
+  return payload;
+}
+
 /**
  * @returns {null | {toolName:string, toolInput:object, sessionId:string, cwd:string, raw:object}}
  */
 export function readHookPayload() {
   const stdinRaw = readStdinSync();
-  const payload = tryParse(stdinRaw) || tryParse(process.argv[2] || "");
+  const payload = normalizeHostPayload(tryParse(stdinRaw) || tryParse(process.argv[2] || ""));
   if (!payload || typeof payload !== "object") return null;
 
   // Tool name — Claude Code uses tool_name; Kimi sometimes uses tool;

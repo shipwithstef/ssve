@@ -30,6 +30,14 @@ else
 fi
 git -C "$FIX" config user.email t@i; git -C "$FIX" config user.name t
 git -C "$FIX" remote set-url origin "$ORIGIN" 2>/dev/null || true
+# Deny pushes CLIENT-side. pre-push is a client hook: installing it in the
+# bare origin's hooksPath (the previous fixture design) never fires, so the
+# deny only worked vacuously while promote crashed earlier for unrelated
+# reasons (WI-FW-SKILLS-ROUTING-01 landing surfaced this latent bug).
+mkdir -p "$TMP/clienthooks"
+printf '#!/usr/bin/env bash\necho "push denied by fixture" >&2\nexit 1\n' >"$TMP/clienthooks/pre-push"
+chmod +x "$TMP/clienthooks/pre-push"
+git -C "$FIX" config core.hooksPath "$TMP/clienthooks"
 mkdir -p "$FIX/.worktrees/promote-me"
 cd "$FIX"
 env -u GIT_DIR -u GIT_WORK_TREE git -C "$FIX" checkout --quiet -b promote-me 2>/dev/null || env -u GIT_DIR -u GIT_WORK_TREE git -C "$FIX" checkout --quiet promote-me

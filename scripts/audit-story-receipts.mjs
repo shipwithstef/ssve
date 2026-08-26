@@ -65,7 +65,7 @@ const STAGES = REGISTRY.stages.filter((s) => s.class !== 'situational').map((s) 
 const CORE_STAGE_SET = new Set(STAGES);
 const REQUIRED = REGISTRY.story_type_profiles;
 
-// Template staleness sentinel (A3): warn (never fail) when references/receipts-TEMPLATE.json
+// Template staleness sentinel (A3): exit 2 when references/receipts-TEMPLATE.json
 // carries a stage key the registry no longer recognizes — this is exactly the example-marketplace
 // 17-vs-28 staleness class the registry-backed port exists to prevent from recurring.
 const TEMPLATE_PATH = 'references/receipts-TEMPLATE.json';
@@ -75,10 +75,12 @@ if (fs.existsSync(TEMPLATE_PATH)) {
     const registryKeys = new Set(REGISTRY.stages.map((s) => s.key));
     const staleKeys = [...new Set((tpl.stages || []).map((s) => s.stage).filter((k) => !registryKeys.has(k)))];
     if (staleKeys.length) {
-      console.error(`WARNING: ${TEMPLATE_PATH} has stage keys not in the registry (stale — regenerate it): ${staleKeys.join(', ')}`);
+      console.error(`FATAL: ${TEMPLATE_PATH} has stage keys not in the registry (stale — regenerate it): ${staleKeys.join(', ')}`);
+      process.exit(2);
     }
   } catch (e) {
-    console.error(`WARNING: ${TEMPLATE_PATH} could not be checked for drift — ${e.message}`);
+    console.error(`FATAL: ${TEMPLATE_PATH} could not be checked for drift — ${e.message}`);
+    process.exit(2);
   }
 }
 

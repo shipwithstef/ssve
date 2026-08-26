@@ -1,0 +1,17 @@
+===== validate-stage-registry-single-source 2026-08-25T22:50:32Z
+PASS: stage registry validation is single-sourced and reduced-copy consumers remain executable
+===== validate-manifest-integrity-stamp 2026-08-25T22:50:32Z
+
+validate-manifest-integrity-stamp: 5 passed, 0 failed
+===== validate-gate-ownership-matrix 2026-08-25T22:50:33Z
+
+validate-gate-ownership-matrix: 1 passed, 0 failed
+===== validate-claude-wirer-cutover 2026-08-25T22:50:33Z
+
+  PASS — all 35 Claude wirer cutover checks passed
+===== validate-catalog-generation 2026-08-25T22:50:34Z
+  ✓ generated commands quote the interpolated path
+validate-catalog-generation: 5 passed, 0 failed
+===== validate-cross-host-hook-conformance 2026-08-25T22:50:34Z
+
+validate-cross-host-hook-conformance: 67 passed, 0 failed (MUST), 0 warned (MAY)

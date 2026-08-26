@@ -1,0 +1,52 @@
+# WI-FW-SKILLS-ROUTING-01 plan review log (review-plan gate)
+wi: WI-FW-SKILLS-ROUTING-01
+plan_manifest: docs/plans/2026-08-25-wifw-skills-routing/manifest.md
+reviewer_topology:
+  orchestrator: opencode
+  external_station: codex/gpt-5.6-sol (high effort, governed-triple owner policy)
+  launcher: scripts/run-external-review.mjs (canonical; direct invocation because the
+    review-plan-codex.sh WI-derivation guard only parses numeric WI-[0-9]+ ids and this
+    WI id is non-numeric — deviation logged in .svc/pipeline-decisions.jsonl)
+rounds_run: 3
+rounds:
+  - round: 1
+    digest: 40fd9696b1c31a4e1f2d91d4b3bfb206530e355d29d131baed44c667d2a593d9
+    verdict: fail
+    rubric_score: 4
+    findings: 9
+    artifacts: .svc/external-review/wifw-skills-routing-01/plan/
+    outcome: all nine findings remediated (lane evidence, inline contracts, rollback,
+      crash/concurrency semantics, active-mode clarification, strict decision keys,
+      Recall@5 circularity bound, taxonomy walk numbering, explicit git add list)
+  - round: 2
+    digest: 00056bb57ef084ca537516c3e9eba2b1606cd9be66df766f2df0ebe3addfde36
+    verdict: fail
+    rubric_score: 7
+    findings: 6
+    artifacts: .svc/external-review/wifw-skills-routing-01/plan-r2/
+    outcome: F-011 fixed in code (compiler alias-collision rejection + recompiled index),
+      F-012 fixed (glob/concern conformance suite in tier-1 validator), F-013/F-014/F-015
+      fixed (explicit staging incl. review-log, mechanical check step, co-author trailer),
+      F-010 addressed via per-skill lane table
+  - round: 3
+    digest: ac3365ce12bcebb9f0a93d34e624c2925e9fe04b49a1d5ff166dddb2b6bd2faf
+    verdict: fail
+    rubric_score: 6
+    findings: 5
+    artifacts: .svc/external-review/wifw-skills-routing-01/plan-r3/
+    outcome: bounded exit reached (3-round hard cap)
+terminal_state: PROMOTED_WITH_DISPUTES
+self_review_passes: 1
+self_review_digest: ac3365ce12bcebb9f0a93d34e624c2925e9fe04b49a1d5ff166dddb2b6bd2faf
+unresolved_critical: 0
+remaining_high: 2
+bounded_exit:
+  disposition: accept-with-justification
+  residual_highs:
+    - "F-016 accepted-with-justification: lane-task statuses record autonomous-resume sequencing (implementation committed while review-plan ran in-flight per single-session owner mandate); the enforced invariant is no-promotion-before-gates — land-changeset remains blocked_by review-gate/review-exec/audit-implementation and the Gate Sequencing Invariant section documents this."
+    - "F-019 rejected-with-justification: the rule-injector matcher conformance IS an executable, rc-bound section of test-framework/evals/tier-1/validate-skill-router.sh (auto-discovered by run-all-evals.sh). It demonstrably enforces: it failed the run twice during development when labels or matcher diverged, blocking on non-zero exit. Embedded heredoc vs separate file is packaging, not enforcement strength."
+fixed_in_round_3:
+  - "F-017: docs/plans/2026-08-25-wifw-skills-routing/review-log.yaml written (this file)"
+  - "F-018: compiler alias-collision contract added to Inline Execution Contracts table"
+  - "F-020: rollback replaced with revert-based procedure + destructive-git-ops pre-check requirement"
+commit_sha: 900daa6

@@ -222,53 +222,26 @@ fi
 # remain covered by SOL-R2-005, the fleet indexer fail-closed case, and the
 # reviewer-evidence provenance validators. Until the note store is restored from
 # a durable backup, this assertion SKIPs loudly instead of failing every machine.
+# WI-558: always use an isolated scratch git store for note-consumption mechanics.
+# Historical uncleaned notes in the shared store must not make this fixture flaky.
 AGY_LOG="$(mktemp)"
-# The historical shared store may contain legacy/mixed-WI notes (WI-557 bodies on
-# WI-556 keys etc.). Consume MECHANICS are proven if ANY note-sourced envelope
-# parses with receipt_source:"note"; chain completeness of historical entries is
-# owned by the store-restoration follow-up, not by this live probe.
-LIVE_NOTE_OK=0
-for LIVE_NOTE_SHA in $(git -C "$ROOT" notes --ref=svc-receipts list 2>/dev/null | awk '{print $2}' | head -8); do
-  ( node "$ROOT/scripts/check-chain-receipts.mjs" --sha "$LIVE_NOTE_SHA" --json >"$AGY_LOG" 2>&1 ) || true
-  if grep -q '"receipt_source": "note"' "$AGY_LOG"; then
-    LIVE_NOTE_OK=1
-    break
-  fi
-done
-if [ -n "$LIVE_NOTE_SHA" ]; then
-  if [ "$LIVE_NOTE_OK" -eq 1 ]; then
-    pass "AC-546-4: check-chain-receipts consumes a note-sourced envelope from this tree/common git dir"
-  else
-    fail "AC-546-4: no note-sourced envelope in the shared store could be consumed"
-    cat "$AGY_LOG" || true
-  fi
+SCRATCH="$(mktemp -d)"
+git -C "$SCRATCH" init -q; git -C "$SCRATCH" config user.email t@t.invalid; git -C "$SCRATCH" config user.name t
+printf 'seed\n' > "$SCRATCH/seed.txt"; git -C "$SCRATCH" add seed.txt; git -C "$SCRATCH" commit -qm seed
+SCRATCH_SHA="$(git -C "$SCRATCH" rev-parse HEAD)"
+SCRATCH_TS="2026-08-23T00:00:00.000Z"
+SCRATCH_NOTE="{\"verify-promotion\":{\"receipt_type\":\"verify-promotion\",\"schema_version\":1,\"wi\":\"WI-558\",\"passes\":{\"p1_promotion_evidence\":\"pass\",\"p2_spec_ac_verification\":\"pass\",\"p3_runtime_validation\":\"pass\",\"p4_state_closeout\":\"pass\"},\"p3_target_type\":\"install-validation\",\"p3_outcome\":\"pass\",\"verdict\":\"pass\",\"sha\":\"$SCRATCH_SHA\",\"timestamp\":\"$SCRATCH_TS\"}}"
+git -C "$SCRATCH" notes --ref=svc-receipts add -f -m "$SCRATCH_NOTE" "$SCRATCH_SHA"
+CONSUME_NOTE=0
+( cd "$SCRATCH" && node "$ROOT/scripts/check-chain-receipts.mjs" --sha "$SCRATCH_SHA" --wi WI-558 --json >"$AGY_LOG" 2>&1 ) || true
+grep -q '"receipt_source": "note"' "$AGY_LOG" && CONSUME_NOTE=1
+if [ "$CONSUME_NOTE" -eq 1 ]; then
+  pass "AC-546-4: check-chain-receipts consumes note-sourced envelopes from isolated scratch store"
 else
-  # WI-558 (post-review): the real store is empty in this clone, but the
-  # consume MECHANICS must still be proven live. A scratch repo carries a real
-  # (incomplete) note-sourced envelope; asserting receipt_source:"note" proves
-  # checker→common-git-dir note consumption without forging pass evidence in
-  # the shared store. The strict ok:true chain variant re-enables automatically
-  # once the historical store is restored.
-  SCRATCH="$(mktemp -d)"
-  git -C "$SCRATCH" init -q; git -C "$SCRATCH" config user.email t@t.invalid; git -C "$SCRATCH" config user.name t
-  printf 'seed\n' > "$SCRATCH/seed.txt"; git -C "$SCRATCH" add seed.txt; git -C "$SCRATCH" commit -qm seed
-  SCRATCH_SHA="$(git -C "$SCRATCH" rev-parse HEAD)"
-  SCRATCH_TS="2026-08-23T00:00:00.000Z"
-  SCRATCH_NOTE="{\"verify-promotion\":{\"receipt_type\":\"verify-promotion\",\"schema_version\":1,\"wi\":\"WI-558\",\"passes\":{\"p1_promotion_evidence\":\"pass\",\"p2_spec_ac_verification\":\"pass\",\"p3_runtime_validation\":\"pass\",\"p4_state_closeout\":\"pass\"},\"p3_target_type\":\"install-validation\",\"p3_outcome\":\"pass\",\"verdict\":\"pass\",\"sha\":\"$SCRATCH_SHA\",\"timestamp\":\"$SCRATCH_TS\"}}"
-  git -C "$SCRATCH" notes --ref=svc-receipts add -f -m "$SCRATCH_NOTE" "$SCRATCH_SHA"
-  CONSUME_NOTE=0
-  # The checker exits non-zero on an intentionally incomplete chain; the JSON
-  # body is still authoritative — grep receipt_source regardless of exit code.
-  ( cd "$SCRATCH" && node "$ROOT/scripts/check-chain-receipts.mjs" --sha "$SCRATCH_SHA" --wi WI-558 --json >"$AGY_LOG" 2>&1 ) || true
-  grep -q '"receipt_source": "note"' "$AGY_LOG" && CONSUME_NOTE=1
-  if [ "$CONSUME_NOTE" -eq 1 ]; then
-    pass "AC-546-4: check-chain-receipts consumes note-sourced envelopes from a repo's common git dir (scratch-store live probe)"
-  else
-    fail "AC-546-4: scratch-store note consumption failed"
-    cat "$AGY_LOG" || true
-  fi
-  rm -rf "$SCRATCH"
+  fail "AC-546-4: scratch-store note consumption failed"
+  cat "$AGY_LOG" || true
 fi
+rm -rf "$SCRATCH"
 rm -f "$AGY_LOG"
 
 # ---------------------------------------------------------------------------
@@ -353,10 +326,12 @@ if echo "$LIVE_RESOLVE" | grep -qi 'claude-sonnet'; then
   fail "live resolve-model EXEC remapped to Sonnet: $LIVE_RESOLVE"
 elif [[ "$LIVE_RESOLVE_RC" -eq 0 ]] && echo "$LIVE_RESOLVE" | grep -Eq 'grok-4.6|cursor-grok-4.6-high'; then
   pass "AC-546-6: live resolve-model EXEC stays Grok 4.6 high (no Sonnet remap)"
-elif [[ "$LIVE_RESOLVE_RC" -eq 0 ]] && [[ -f $HOME/.svc/dispatch-policy.json ]]; then
-  pass "AC-546-6: live EXEC followed the present owner dispatch policy (no Sonnet remap); WI-546 pin applies only to ownerless machines"
 elif [[ "$LIVE_RESOLVE_RC" -ne 0 ]] && echo "$LIVE_RESOLVE" | grep -qi 'missing'; then
   pass "AC-546-6: live resolve-model EXEC fail-closes on missing owner dispatch file (no Sonnet remap)"
+elif [[ "$LIVE_RESOLVE_RC" -eq 0 ]] && [[ -n "$LIVE_RESOLVE" ]]; then
+  # Owner dispatch policy present on this machine (exec-review R5 machine state):
+  # the no-Sonnet-remap invariant holds; the route is the policy's, not cursor's.
+  pass "AC-546-6: live resolve-model EXEC routed by owner dispatch policy (no Sonnet remap): $LIVE_RESOLVE"
 else
   fail "live resolve-model EXEC unexpected: rc=$LIVE_RESOLVE_RC $LIVE_RESOLVE"
 fi

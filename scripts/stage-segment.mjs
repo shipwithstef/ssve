@@ -14,18 +14,22 @@
  * and stage-receipt SHA verification (AC3 — the orchestration VERIFIES the SHA the
  * stage agent emitted; it never re-emits). The actual subagent dispatch is a
  * route-workflow behavior (see references/stage-context-isolation.md).
+ *
+ * Segment vocabulary is single-sourced from references/stage-registry.json
+ * mandatory_chain_segments (WI-SSVE-ARCHITECTURE-EVOLUTION-02 E1).
  */
 
 import { execFileSync } from "node:child_process";   // Gemini G6 #3: no shell → no injection
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { deriveMandatoryChainSegments, loadStageRegistry } from "./lib/stage-registry.mjs";
 
-// AC1: the chain split into ≥3 segments at ALL three human_checkpoint:true seams
-// (plan-changeset, execute-changeset, land-changeset). Workflows take no mid-run
-// input, so each checkpoint is a segment boundary.
-export const SEGMENTS = [
-  { id: "seg-1-plan", stages: ["plan-changeset", "review-plan"], checkpoint_after: "plan-changeset", emits: ["plan-manifest", "review-plan"] },
-  { id: "seg-2-exec", stages: ["execute-changeset", "review-exec", "audit-implementation"], checkpoint_after: "execute-changeset", emits: ["exec-record", "review-exec", "audit-implementation"] },
-  { id: "seg-3-land", stages: ["land-changeset", "verify-promotion"], checkpoint_after: "land-changeset", emits: [] },
-];
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const REGISTRY_PATH = path.join(__dirname, "..", "references", "stage-registry.json");
+const REGISTRY = loadStageRegistry(REGISTRY_PATH);
+
+// AC1: segments derived from the registry — byte-compatible export shape for consumers.
+export const SEGMENTS = deriveMandatoryChainSegments(REGISTRY);
 
 const SEV = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1, INFO: 0 };
 // Gemini G6 #2: an UNRECOGNIZED severity ("FATAL", a typo like "CRITCAL") must

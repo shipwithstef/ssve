@@ -39,7 +39,17 @@ if node "$ROOT/scripts/validate-plan-contract.mjs" "$WRITER_CONTRACT" "$WRITER" 
 # WI-562: validate the ACTIVE plan contract (latest dated docs/plans/*/plan-contract.json)
 # rather than a hardcoded WI-558 path — any landed branch's newest contract must
 # be internally consistent against its own changeset.
-ACTIVE_CONTRACT="$(ls -1d docs/plans/*/plan-contract.json 2>/dev/null | sort | tail -1)"
+# ACTIVE plan contract = the NEWEST-COMMITTED docs/plans/*/plan-contract.json.
+# Lexicographic name order is wrong when a branch carries multiple plans
+# (WI-SSVE-ARCHITECTURE-EVOLUTION-02: "2026-08-24-ssve-*" sorts before
+# "2026-08-24-wi562-*" while being the active changeset). Git commit date is
+# deterministic per checkout and matches "active" semantics.
+ACTIVE_CONTRACT="$(
+  for c in docs/plans/*/plan-contract.json; do
+    [ -f "$c" ] || continue
+    printf '%s %s\n' "$(git log -1 --format=%ct -- "$c" 2>/dev/null || echo 0)" "$c"
+  done | sort -rn | head -1 | cut -d' ' -f2-
+)"
 if [[ -z "$ACTIVE_CONTRACT" ]]; then echo "FAIL: no docs/plans/*/plan-contract.json found" >&2; exit 1; fi
 node scripts/validate-plan-contract.mjs "$ACTIVE_CONTRACT" "$ROOT"
 # WI-558 negative: volatile_paths is fail-closed — entries outside .svc/ are

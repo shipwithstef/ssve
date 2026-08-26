@@ -1,0 +1,156 @@
+{
+  "schema_version": 1,
+  "review_kind": "plan",
+  "rubric_score": 4,
+  "rubric_failures": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "dependencies_needing_read": [
+    "docs/specs/plans/wi-framework-skills-routing-plan.md",
+    ".svc/pipeline-decisions.jsonl",
+    "skills-manifest.json",
+    "docs/plans/2026-08-25-wifw-skills-routing/plan-contract.json"
+  ],
+  "reviewer": {
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6-sol",
+    "effort": "xhigh"
+  },
+  "verdict": "fail",
+  "summary": "The plan has strong scope and AC mappings, but it is not execution-ready. It lacks upstream lane evidence, executable inline implementation detail, rollback and crash-safe rerun contracts, and a mechanically compliant External State section. Its commit command can also stage files outside the declared scope.",
+  "findings": [
+    {
+      "id": "F-001",
+      "severity": "high",
+      "claim": "The plan does not prove framework-lane compliance.",
+      "analysis": "The prerequisite matrix cites a Proposed product-plan artifact but does not enumerate every mandatory upstream framework-lane skill or provide completion artifacts and cited skip decisions. The supplied routing rule explicitly requires write-spec before plan-changeset for this semantic-risk change. The plan also refers to a taste entry for deferred waves, which is not evidence that mandatory upstream skills were completed or validly skipped.",
+      "evidence": [
+        "The header identifies the spec as \"Proposed\" rather than a completed/baselined artifact.",
+        "The Prerequisite Alignment Matrix contains no row for write-spec or any other mandatory framework-lane predecessor.",
+        "The only cited decision is a \".svc/pipeline-decisions.jsonl taste entry\" about deferred waves, not a per-skill completion or skip record.",
+        "The change introduces behavioral scripts and a top-level tier-1 validator, so it matches the semantic-risk triggers in rules/plan-changeset-trigger.md."
+      ],
+      "proposed_fix": "Add a lane-compliance matrix listing every mandatory framework-lane predecessor. For each, cite its completed artifact and state, or cite an exact .svc/pipeline-decisions.jsonl entry containing the skip reason. At minimum, resolve the Proposed status and prove write-spec completion before promotion."
+    },
+    {
+      "id": "F-002",
+      "severity": "high",
+      "claim": "Inline execution is under-specified and cannot deterministically produce the proposed router.",
+      "analysis": "Inline mode may omit blueprints only when the manifest still provides enough implementation detail for the loaded orchestrator. This manifest supplies filenames and purposes but leaves core behavior undefined: schema fields, canonical serialization, content-hash calculation, tokenizer rules, tie-breaking, precedence among conflicting pins, ambiguity fallback, budget accounting, policy reranking, and normalized error/exit behavior. Different conforming executors could produce incompatible indexes and routing decisions while satisfying the prose.",
+      "evidence": [
+        "The Files Planned table gives one-line purposes rather than file contracts or algorithms.",
+        "The Execution Command Sequence contains validation and commit commands but no implementation sequence for T01-T05.",
+        "The plan promises byte-identical output without defining canonical JSON serialization, ordering rules, or whether the envelope hash excludes its own hash field.",
+        "The plan promises an \"approved fallback\" and lexical ranking without naming the fallback or deterministic tie-break rules."
+      ],
+      "proposed_fix": "Add task-level implementation contracts for T01-T04: exact schema fields and enums, canonicalization/hash algorithm, tokenization and scoring formula, stable tie-break keys, pin precedence, ambiguity fallback, budget units, policy behavior, error codes, and receipt shape. Add an ordered inline execution sequence showing how each file is produced and checked."
+    },
+    {
+      "id": "F-003",
+      "severity": "high",
+      "claim": "The plan has no commit-scoped rollback procedure.",
+      "analysis": "RECOVERY_IF_FAIL only describes troubleshooting before commit. It does not define how to revert a landed compiler, generated index, schemas, CLI, runtime receipt path, or documentation changes as one coherent unit. A routing defect can affect governance selection, so rollback must restore the prior tree and identify how generated/runtime state is handled.",
+      "evidence": [
+        "There is no Rollback section.",
+        "RECOVERY_IF_FAIL covers byte-stability and corpus failures only.",
+        "The plan changes executable routing behavior, committed derived data, schemas, .gitignore, and runtime receipt conventions."
+      ],
+      "proposed_fix": "Add a rollback section anchored to the changeset commit: exact non-interactive revert procedure, validation commands after revert, treatment of references/skill-routing-index.json, and compatibility handling for already-written .svc/skill-router receipts."
+    },
+    {
+      "id": "F-004",
+      "severity": "high",
+      "claim": "The idempotent-rewriter and append-only receipt paths lack crash, concurrency, and rerun semantics.",
+      "analysis": "The plan flags idempotent_rewriter risk but tests only two successful compilations. It does not require atomic temp-file replacement, protection against concurrent compilers/routers, cleanup after interruption, or behavior when an existing generated artifact or receipt is truncated. Append-only telemetry can duplicate decisions on retry or interleave writes across processes. These are execution risks not covered by byte-equality alone.",
+      "evidence": [
+        "Risk Flags includes \"idempotent_rewriter\".",
+        "AC-D1 checks only \"compile twice → sha256 equal\".",
+        "External State row 2 calls receipts append-only without specifying a file path, record framing, lock strategy, atomic append method, or idempotency key.",
+        "The Checkpoint Plan has no interrupted-write or concurrent-invocation checkpoint."
+      ],
+      "proposed_fix": "Specify atomic write-then-rename for generated artifacts, stable permissions, interruption cleanup, and a lock or compare-and-swap policy. Define receipt framing and a deterministic decision/idempotency identifier. Add negative tests for interrupted output, truncated existing files, two concurrent compilers, two concurrent routers, and retry duplication."
+    },
+    {
+      "id": "F-005",
+      "severity": "high",
+      "claim": "The advertised active mode conflicts with the invariant that this wave is suggestion-only.",
+      "analysis": "The plan says every skill defaults to suggest-only and nothing is auto-loaded, yet it exposes SVC_SKILL_ROUTER_MODE=active without defining active semantics. Because host adapters are deferred, a corpus assertion that no load occurred cannot establish that the host-facing decision schema is incapable of requesting an invocation later. This leaves AC-F1 dependent on interpretation rather than a structural contract.",
+      "evidence": [
+        "Implementation Summary: \"All skills default to suggest-only invocation policy; nothing is auto-loaded by this changeset.\"",
+        "External State row 3 lists modes \"off/shadow/suggest/active\".",
+        "No schema or task description defines the behavioral difference between suggest and active.",
+        "Host hook surfaces and adapter behavior are explicitly deferred to Wave 6."
+      ],
+      "proposed_fix": "Remove active from the Wave 1/2 enum, or define it as a non-invoking alias of suggest for this schema version. Make the decision schema structurally incapable of expressing an auto-load action, and add a schema-negative test rejecting invocation/action fields."
+    },
+    {
+      "id": "F-006",
+      "severity": "medium",
+      "claim": "The privacy test does not substantiate the claim that receipts are privacy-safe.",
+      "analysis": "Checking that the literal intent string is absent does not prove secrets cannot leak through derived fields, matched signals, paths, diagnostics, aliases, or error messages. A deterministic unsalted fingerprint can also disclose low-entropy prompts by dictionary matching. The plan lacks a field allowlist and adversarial canary fixtures.",
+      "evidence": [
+        "AC-P1 requires only \"receipts fingerprint-only, no raw prompt/secrets\".",
+        "The AC-to-Test Mapping says output inspection checks that the receipt contains intent_fingerprint and not the raw intent string.",
+        "The normalized receipt fields and fingerprint construction are not specified.",
+        "The runtime receipt stream is persisted under .svc/skill-router, increasing the consequence of accidental leakage."
+      ],
+      "proposed_fix": "Define an allowlisted receipt schema, domain-separated fingerprint construction and explicit retention fields. Add canary secrets in intent, file paths, environment-like tokens, aliases, diagnostics, and unmatched text; recursively assert that neither raw nor encoded canaries appear anywhere in decisions, receipts, stderr, or degraded-mode metadata."
+    },
+    {
+      "id": "F-007",
+      "severity": "medium",
+      "claim": "The Recall@5 acceptance test is circular because the router and its evaluation corpus are created together.",
+      "analysis": "A 97% floor has little evidentiary value if the same implementation task defines the corpus, labels, aliases, and trigger fixtures. The plan prohibits loosening labels after failure but provides no independently frozen baseline, minimum sample size, class distribution, or held-out set. The target can therefore pass with a small or implementation-tailored corpus.",
+      "evidence": [
+        "T02 creates aliases and trigger fixtures while T04 creates the labeled corpus.",
+        "AC-O1 measures only the newly created \"reviewed corpus\".",
+        "No reviewer, freeze digest, minimum case count, per-skill coverage, ambiguity distribution, or held-out partition is specified.",
+        "RECOVERY_IF_FAIL prevents loosening labels after failure but does not constrain their initial construction."
+      ],
+      "proposed_fix": "Define corpus governance before implementation: minimum cases and per-category distribution, coverage across representative skill families, frozen label digest, negative and ambiguity proportions, and a held-out portion not used to tune overrides. Report both aggregate Recall@5 and per-category/per-skill misses."
+    },
+    {
+      "id": "F-008",
+      "severity": "high",
+      "claim": "The External State section fails the mandatory mechanical completeness rules.",
+      "analysis": "The protocol requires the untouched taxonomy declaration to cover at least 15 entries or explicitly name all checked entries. The plan names only ten untouched categories. In addition, each decoupled-justified row must be followed by explanatory prose naming why decoupling is safe and the monitoring/recovery path; compact text inside a table cell is not the required follow-on justification, and the host-hook row points to a future review-gate assertion rather than a concrete check in this plan.",
+      "evidence": [
+        "The untouched list names 10 categories: package registries, container images, cloud resources, CI secrets, external SaaS state, browser profiles, mobile device state, DNS/domains, payment/ledger systems.",
+        "Rows 2 and 4 are marked decoupled-justified but have no following justification paragraphs.",
+        "Row 4 says accidental coupling is asserted at review-gate, but no corresponding validation command appears in the Validation Plan.",
+        "The review-plan protocol classifies missing taxonomy coverage or decoupling justification as external-state-uncoupled HIGH and blocks before model review."
+      ],
+      "proposed_fix": "Expand the taxonomy walk to at least the required 15 explicitly named environments. Add a paragraph after each decoupled-justified row explaining safety and an executable monitoring/recovery path. Add a concrete changed-path allowlist command that fails if hooks/ or any undeclared external surface appears."
+    },
+    {
+      "id": "F-009",
+      "severity": "high",
+      "claim": "The commit command can include files outside the declared changeset scope.",
+      "analysis": "git add -A stages every modification and untracked file in the worktree, including unrelated user changes or review artifacts. The plan neither requires a clean starting tree nor verifies the staged path set against Files Planned. This directly violates the scope-boundary dimension and makes reruns unsafe.",
+      "evidence": [
+        "Execution Command Sequence ends with \"git add -A && git commit ...\".",
+        "The plan declares an explicit Files Planned allowlist but does not mechanically compare it with git diff or git diff --cached.",
+        "No precondition requires the worktree to be clean except for declared paths.",
+        "The required active-orchestrator co-author trailer is also absent from the literal commit command."
+      ],
+      "proposed_fix": "Replace git add -A with explicit pathspecs for the declared files. Before committing, compare git diff --cached --name-only against a generated allowlist and fail on additions or omissions. Require unrelated changes to remain unstaged, and construct the co-author trailer from the active orchestrator identity at commit time."
+    }
+  ],
+  "certifications": [
+    {
+      "key": "scope_lock_respected",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "40fd9696b1c31a4e1f2d91d4b3bfb206530e355d29d131baed44c667d2a593d9"
+    }
+  ]
+}

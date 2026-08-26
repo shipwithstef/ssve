@@ -73,19 +73,34 @@ function phasesFor(skill) {
   return out.map(({ _inWrites, ...rest2 }) => rest2);
 }
 
-function main() {
-  const call = readHookPayload();
-  if (!call) process.exit(0);
-  const tool = call.toolName;
+/**
+ * D-1 testable core (WI-SSVE exec review F-002): pure payload → target
+ * resolution with no I/O and no process.exit, so host-payload fixtures can be
+ * evaluated in-process. Returns null when the event is not autoemit-relevant.
+ */
+export function evaluateAutoemitTarget(call) {
+  if (!call) return null;
+  const tool = String(call.toolName || "");
   const operation = resolveHookOperation(call);
-  if (operation.host === "codex" && !operation.scope?.ok) process.exit(0);
+  if (operation.host === "codex" && !operation.scope?.ok) return null;
   const cwd = operation.root || call.cwd || process.cwd();
   let touched = "";
-  if (tool === "Edit" || tool === "Write") touched = extractFilePath(call.toolInput) || "";
-  else if (tool === "Bash") touched = extractCommand(call.toolInput) || "";
-  else process.exit(0);
-  if (!touched) process.exit(0);
-  if (path.isAbsolute(touched) && (tool === "Edit" || tool === "Write")) touched = path.relative(cwd, touched);
+  let kind = "";
+  const toolU = tool.toUpperCase();
+  if (toolU === "EDIT" || toolU === "WRITE") { touched = extractFilePath(call.toolInput) || ""; kind = "file"; }
+  else if (toolU === "BASH" || toolU === "SHELL") { touched = extractCommand(call.toolInput) || ""; kind = "command"; }
+  else return null;
+  if (!touched) return null;
+  if (path.isAbsolute(touched) && kind === "file") touched = path.relative(cwd, touched);
+  return { tool, kind, touched, cwd };
+}
+
+function main() {
+  const call = readHookPayload();
+  const target = evaluateAutoemitTarget(call);
+  if (!target) process.exit(0);
+  const cwd = target.cwd;
+  let touched = target.touched;
 
   const act = activeGraph(cwd);
   if (!act) process.exit(0);
@@ -104,7 +119,7 @@ function main() {
     const before = cmd.slice(0, i);
     return /(>>?\s*$|>>?\s*\S*$|tee(\s+-a)?\s+\S*$|sed\s+-i[\s\S]*$|pipeline-log\.mjs\s+append[\s\S]*$|task-graph\.mjs[\s\S]*$)/.test(before.slice(-200));
   }
-  const matchPath = (wp) => (tool === "Bash" ? bashWrites(touched, wp) : (touched === wp || touched.endsWith(wp)));
+  const matchPath = (wp) => (target.kind === "command" ? bashWrites(touched, wp) : (touched === wp || touched.endsWith(wp)));
   const phases = phasesFor(skill).filter((ph) => !done.has(ph.id) && ph.writes.length);
   // G2 HIGH: prefer phases whose matched path is EXCLUSIVE to them (not shared
   // with any other declared phase) — shared-ledger misattribution guard.

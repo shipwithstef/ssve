@@ -321,7 +321,7 @@ No code serialized into docs for reapplication; no multi-task staging; no skippi
 
 ## Handoff
 
-On all tasks checkpointed + final validation green: feature status → `CHANGE-SET-APPROVED`; if the change has a browser-visible surface, capture `track-visuals --mode diff` before G5 review; hand to `review-exec` (G6) / `review-gate` G5 surface. **Auto-invoke:** new external dependency discovered mid-exec → `research` inline; security-sensitive surface touched → flag for `review-security` at G6. Log insertions as `mechanical` decisions.
+On all tasks checkpointed + final validation green: feature status → `CHANGE-SET-APPROVED`; if the change has a browser-visible surface, capture `track-visuals --mode diff` before G5 review; hand to `review-exec` (G5-enforcing gate) / `review-gate` G5 surface. **Auto-invoke:** new external dependency discovered mid-exec → `research` inline; security-sensitive surface touched → flag for `review-security` at the post-exec review wave. Log insertions as `mechanical` decisions.
 
 ## Retrieval-Augmented Reasoning (cutting-edge technique #9)
 

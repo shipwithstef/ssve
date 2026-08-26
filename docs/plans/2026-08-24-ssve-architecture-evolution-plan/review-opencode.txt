@@ -1,0 +1,5 @@
+[93m[1m! [0m agent "reviewer" not found. Falling back to default agent
+[0m
+> build · x-preview-f-free
+[0m
+[91m[1mError: [0mError from provider (Console): Upstream request failed: Endpoint is unavailable.

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated": "2026-07-15T13:58:50.614Z",
+  "generated": "2026-08-26T00:01:17.715Z",
   "universal_count": 116,
   "concerns": [
     {
@@ -702,9 +702,7 @@
         ]
       },
       "handled_by": {
-        "required_rules": [
-          "paid-api-integration-checklist"
-        ],
+        "required_rules": [],
         "required_skills": [],
         "optional_skills": [
           "design-tech"
@@ -3125,9 +3123,7 @@
         ]
       },
       "handled_by": {
-        "required_rules": [
-          "paid-api-integration-checklist"
-        ],
+        "required_rules": [],
         "required_skills": [],
         "optional_skills": [
           "manage-finops",
@@ -3180,9 +3176,7 @@
         ]
       },
       "handled_by": {
-        "required_rules": [
-          "paid-api-integration-checklist"
-        ],
+        "required_rules": [],
         "required_skills": [],
         "optional_skills": [
           "manage-finops"
@@ -3271,9 +3265,7 @@
         ]
       },
       "handled_by": {
-        "required_rules": [
-          "paid-api-integration-checklist"
-        ],
+        "required_rules": [],
         "required_skills": [
           "manage-finops"
         ],
@@ -3338,9 +3330,7 @@
         ]
       },
       "handled_by": {
-        "required_rules": [
-          "paid-api-integration-checklist"
-        ],
+        "required_rules": [],
         "required_skills": [],
         "optional_skills": [
           "manage-finops"
@@ -3407,9 +3397,7 @@
         ]
       },
       "handled_by": {
-        "required_rules": [
-          "paid-api-integration-checklist"
-        ],
+        "required_rules": [],
         "required_skills": [],
         "optional_skills": [
           "manage-finops",
@@ -3471,9 +3459,7 @@
         ]
       },
       "handled_by": {
-        "required_rules": [
-          "paid-api-integration-checklist"
-        ],
+        "required_rules": [],
         "required_skills": [],
         "optional_skills": [
           "manage-finops"
@@ -3537,9 +3523,7 @@
         ]
       },
       "handled_by": {
-        "required_rules": [
-          "paid-api-integration-checklist"
-        ],
+        "required_rules": [],
         "required_skills": [],
         "optional_skills": [
           "manage-finops",
@@ -3598,9 +3582,7 @@
         ]
       },
       "handled_by": {
-        "required_rules": [
-          "paid-api-integration-checklist"
-        ],
+        "required_rules": [],
         "required_skills": [],
         "optional_skills": [
           "manage-finops",
@@ -3667,9 +3649,7 @@
         ]
       },
       "handled_by": {
-        "required_rules": [
-          "paid-api-integration-checklist"
-        ],
+        "required_rules": [],
         "required_skills": [],
         "optional_skills": [
           "review-security",
@@ -3726,9 +3706,7 @@
         ]
       },
       "handled_by": {
-        "required_rules": [
-          "paid-api-integration-checklist"
-        ],
+        "required_rules": [],
         "required_skills": [],
         "optional_skills": [
           "manage-finops"
@@ -3786,9 +3764,7 @@
         ]
       },
       "handled_by": {
-        "required_rules": [
-          "paid-api-integration-checklist"
-        ],
+        "required_rules": [],
         "required_skills": [],
         "optional_skills": [
           "manage-finops",
@@ -3845,9 +3821,7 @@
         ]
       },
       "handled_by": {
-        "required_rules": [
-          "paid-api-integration-checklist"
-        ],
+        "required_rules": [],
         "required_skills": [],
         "optional_skills": [
           "manage-finops"
@@ -3898,9 +3872,7 @@
         ]
       },
       "handled_by": {
-        "required_rules": [
-          "paid-api-integration-checklist"
-        ],
+        "required_rules": [],
         "required_skills": [],
         "optional_skills": [
           "manage-finops"

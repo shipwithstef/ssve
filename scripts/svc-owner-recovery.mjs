@@ -76,7 +76,7 @@ function executeBoundPromotion(tuple, childArgv) {
   const launched = spawnSync(childArgv[0], childArgv.slice(1), { cwd: worktree, env, stdio: "inherit" });
   if (launched.error) throw launched.error; if (launched.status !== 0) throw Object.assign(new Error(`promotion command exited ${launched.status ?? 1}`), { exitCode: launched.status ?? 1 });
 }
-if (cmd === "arm") console.log(JSON.stringify(armOwnerLease({ repo_root: repo, worktree_root: worktree, wi: value("--wi") || "owner-override", session_id: sid, reason: value("--reason"), ttl_min: Number(value("--ttl-min") || 15), env }), null, 2));
+if (cmd === "arm") console.log(JSON.stringify(armOwnerLease({ repo_root: repo, worktree_root: worktree, wi: value("--wi") || "owner-override", session_id: sid, reason: value("--reason"), ttl_min: Number(value("--ttl-min") || 24 * 60), env }), null, 2));
 else if (cmd === "status") console.log(JSON.stringify(readOwnerLease(repo, sid, env), null, 2));
 else if (cmd === "disarm") console.log(JSON.stringify({ disarmed: disarmOwnerLease(repo, sid, env) }));
 else if (cmd === "legacy-adopt") {

@@ -33,7 +33,8 @@ const HOOKS_DIR_REPO = join(REPO_ROOT, "hooks", "git");
 const EVENTS = ["pre-commit", "post-commit", "pre-push"];
 // WI-557-v2: pre-commit.d/25-impact-triad retired (mid-execution gate moved to
 // boundaries); auto-receipt.mjs generates triad bodies instead of a git hook.
-const REQUIRED_SLOTS = ["pre-commit.d/20-quick-fix-eligibility"];
+// F-001a (WI-SSVE exec review r4): slot 21 is a REQUIRED installed slot.
+const REQUIRED_SLOTS = ["pre-commit.d/20-quick-fix-eligibility", "pre-commit.d/21-manifest-integrity"];
 
 function git(args) {
   return execSync(`git ${args}`, { encoding: "utf8" }).trim();

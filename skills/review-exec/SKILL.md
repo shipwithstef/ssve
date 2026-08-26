@@ -5,7 +5,7 @@ handles_concerns:
   - exec-output-adversarial
   - chain-receipts-completeness
 description: >
-  Mandatory G6 gate. Self-review + adversarial review of the executed diff
+  Mandatory G5-enforcing gate. Self-review + adversarial review of the executed diff
   before land. Delegates to `review-cross-model` for the second-model
   invocation through `scripts/run-external-review.mjs`, with the requested
   owner-configured topology and tuple provenance exposed by
@@ -84,7 +84,7 @@ receipt. Aggregation emits one digest-bound `FINAL_REVIEW_PANEL`, so a panel doe
 multiple final-review events.
 
 This skill makes the **review-of-execution** mandatory and pair-resolved.
-It is the G6 gate in the chain:
+It enforces the **G5** checkpoint (BASELINED → CHANGE-SET-APPROVED) via adversarial post-exec review:
 
 `plan-changeset → review-plan → execute-changeset → review-exec → audit-implementation → land-changeset → verify-promotion`
 
@@ -340,7 +340,7 @@ Before declaring the skill complete:
 ## Composition
 
 - **review-cross-model** — review-exec delegates to it for the actual second-model invocation. review-cross-model is modified in this plan to also emit JSON receipts alongside its markdown output.
-- **review-plan** — same matrix-resolved pair, same self-review + adversarial pattern, but at G5 (pre-exec) instead of G6 (post-exec).
+- **review-plan** — same matrix-resolved pair, same self-review + adversarial pattern, but at G5 (pre-exec) instead of post-exec (G5-enforcing gate).
 - **audit-implementation** — runs in parallel with review-exec post-exec; HIGH/CRITICAL findings from audit-implementation pass through the same adversarial pair for a second pair of eyes.
 - **dispatch-waves** — parallel WI workers DO NOT run review-exec; that's parent-session-only. Workers stop at execute-changeset and emit exec-record receipts; parent serializes review-exec → audit-implementation → land.
 

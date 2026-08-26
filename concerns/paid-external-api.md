@@ -60,7 +60,7 @@ signals:
     - "DODO_*"
 
 handled_by:
-  required_rules: [paid-api-integration-checklist]
+  required_rules: []
   required_skills: [manage-finops]
   optional_skills: [design-tech, explore-solutions]
 

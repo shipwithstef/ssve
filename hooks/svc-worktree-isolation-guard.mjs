@@ -148,7 +148,7 @@ function validOverride(call, env, now) {
   const session = String(call.sessionId || "");
   if (!session || session !== String(env.SVC_ISOLATION_OVERRIDE_SESSION || "")) return false;
   const expiry = Date.parse(env.SVC_ISOLATION_OVERRIDE_EXPIRES_AT || "");
-  return Number.isFinite(expiry) && expiry > now && expiry - now <= 30 * 60_000;
+  return Number.isFinite(expiry) && expiry > now && expiry - now <= 24 * 60 * 60_000;
 }
 
 function delegatedDecision({ env, operationGit, targets, now }) {

@@ -1,0 +1,87 @@
+Independent Round 3 verification complete. Static code inspection against `be5cd04` / digest `288fe2d8…`; shell validators could not be executed in this session (plan-mode command block), but code paths, fixtures, and the Round 6 disposition evidence align.
+
+```json
+{
+  "schema_version": 1,
+  "review_kind": "exec",
+  "rubric_score": null,
+  "rubric_failures": null,
+  "dependencies_needing_read": [],
+  "reviewer": {
+    "station": "cursor-auto",
+    "model": "Composer 2.5",
+    "family": "xai"
+  },
+  "verdict": "APPROVE",
+  "summary": "Round-3 independent re-verification of Cursor-Auto R2 findings F-001..F-005 on frozen candidate be5cd04 (digest 288fe2d82654f712c97b0cc42086dea527f3461191a6950db6121530c223e6b6): all five remediations are substantively closed in the current tree. F-001: assertManifestDigest at scripts/lint-skills-manifest.mjs:227-233 errors.push+exit 1 on missing sidecar (no bootstrap writer); .svc/manifest-digest.json is absent from .gitignore and present on disk; pre-commit slot 21-manifest-integrity:25-49 binds staged manifest sha256 to staged sidecar digest as an atomic pair (be5cd04). F-002: scripts/verify-d1-autoemit-host-payloads.mjs and docs/specs/reviews/wi-ssve-evolution-d1-autoemit-gate.json exist with COMPATIBLE 4/4 including grok-shell Shell recognition via evaluateAutoemitTarget at hooks/svc-phase-receipt-autoemit.mjs:81-91 (254e483). F-003: kimi safety-net at wire-hooks.mjs:671-673 uses only isSvcOwnedCommand && /hooks\\/kimi\\// with no residual substring filter; foreign /opt/foreign/hooks/kimi/relay.sh fixture asserted at validate-claude-wirer-cutover.sh:103,137. F-004: validateMandatoryChainSegments allowedSkills rejection at stage-registry.mjs:93-95 plus bad-skill mutation at validate-stage-registry-single-source.sh:36-38. F-005: delivery receipt rev 3 and lane-tasks task-4 metadata cite 350/353 with named pre-existing failures, not 350/350. Delta commits 254e483 (R5 remediation bundle) and be5cd04 (atomic staged manifest/digest + measured-class velocity plan amendment) introduce no new CRITICAL/HIGH regressions; they strengthen F-001/F-002 closure. Round-1 certifications (catalog cutover via buildHookEntries, emits[] vocabulary, E4 wiring, Cursor payload normalizer, D-2 no migration interpreter with backup-once and corrupt-parse abort) remain valid. Tier-1 validators were not re-executed live in this session; closure is from direct code/fixture inspection plus exec-review-request Round 6 focused-validation claims.",
+  "findings": [],
+  "certifications": [
+    {
+      "key": "r2-F-001-manifest-failclosed-restored",
+      "certified": true,
+      "reviewer_family": "xai",
+      "for_content_sha": "round6-288fe2d82654f712c97b0cc42086dea527f3461191a6950db6121530c223e6b6"
+    },
+    {
+      "key": "r2-F-002-d1-evidence-committed",
+      "certified": true,
+      "reviewer_family": "xai",
+      "for_content_sha": "round6-288fe2d82654f712c97b0cc42086dea527f3461191a6950db6121530c223e6b6"
+    },
+    {
+      "key": "r2-F-003-kimi-filter-narrowed",
+      "certified": true,
+      "reviewer_family": "xai",
+      "for_content_sha": "round6-288fe2d82654f712c97b0cc42086dea527f3461191a6950db6121530c223e6b6"
+    },
+    {
+      "key": "r2-F-004-unknown-skill-rejected",
+      "certified": true,
+      "reviewer_family": "xai",
+      "for_content_sha": "round6-288fe2d82654f712c97b0cc42086dea527f3461191a6950db6121530c223e6b6"
+    },
+    {
+      "key": "r2-F-005-receipt-amended",
+      "certified": true,
+      "reviewer_family": "xai",
+      "for_content_sha": "round6-288fe2d82654f712c97b0cc42086dea527f3461191a6950db6121530c223e6b6"
+    },
+    {
+      "key": "delta-cleanliness-254e483-be5cd04",
+      "certified": true,
+      "reviewer_family": "xai",
+      "for_content_sha": "round6-288fe2d82654f712c97b0cc42086dea527f3461191a6950db6121530c223e6b6"
+    },
+    {
+      "key": "round1-F-001-catalog-compiler",
+      "certified": true,
+      "reviewer_family": "xai",
+      "for_content_sha": "round6-288fe2d82654f712c97b0cc42086dea527f3461191a6950db6121530c223e6b6"
+    },
+    {
+      "key": "round1-F-002-emits-vocabulary",
+      "certified": true,
+      "reviewer_family": "xai",
+      "for_content_sha": "round6-288fe2d82654f712c97b0cc42086dea527f3461191a6950db6121530c223e6b6"
+    },
+    {
+      "key": "round1-F-003-e4-wirer-edits",
+      "certified": true,
+      "reviewer_family": "xai",
+      "for_content_sha": "round6-288fe2d82654f712c97b0cc42086dea527f3461191a6950db6121530c223e6b6"
+    },
+    {
+      "key": "round1-F-004-cursor-payload-d1",
+      "certified": true,
+      "reviewer_family": "xai",
+      "for_content_sha": "round6-288fe2d82654f712c97b0cc42086dea527f3461191a6950db6121530c223e6b6"
+    },
+    {
+      "key": "D-2-e3-no-migration-interpreter",
+      "certified": true,
+      "reviewer_family": "xai",
+      "for_content_sha": "round6-288fe2d82654f712c97b0cc42086dea527f3461191a6950db6121530c223e6b6"
+    }
+  ]
+}
+```
