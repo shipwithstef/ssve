@@ -285,7 +285,7 @@
       "id": 6,
       "skill": "review-exec",
       "subject": "G6 self-review + external adversarial exec review",
-      "status": "in_progress",
+      "status": "completed",
       "blocked_by": [
         5
       ],
@@ -296,21 +296,62 @@
       "skill_receipt": {
         "skill": "review-exec",
         "loaded_at": "2026-08-25T23:35:57.570Z",
-        "loaded_via": "manual"
-      }
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-AdversarialReview",
+            "ts": "2026-08-26T00:28:07.799Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-exec-outcome.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-26T00:28:07.490Z"
     },
     {
       "id": 7,
       "skill": "audit-implementation",
       "subject": "Correctness audit vs verification contract section 7",
-      "status": "pending",
+      "status": "completed",
       "blocked_by": [
         6
       ],
       "metadata": {
         "skill": "audit-implementation",
         "wi": "WI-FW-SKILLS-ROUTING-01"
-      }
+      },
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-08-26T00:28:07.650Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-AcEvidenceMatrix",
+            "ts": "2026-08-26T00:28:57.760Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-FW-SKILLS-ROUTING-01.md"
+              }
+            ]
+          },
+          {
+            "id": "P1-AuditReport",
+            "ts": "2026-08-26T00:31:08.586Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-FW-SKILLS-ROUTING-01.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-26T00:28:57.916Z"
     },
     {
       "id": 8,
@@ -323,6 +364,11 @@
       "metadata": {
         "skill": "land-changeset",
         "wi": "WI-FW-SKILLS-ROUTING-01"
+      },
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-08-26T00:31:08.436Z",
+        "loaded_via": "manual"
       }
     },
     {
@@ -339,5 +385,5 @@
       }
     }
   ],
-  "status": "in_progress"
+  "status": "pending"
 }

@@ -49,4 +49,4 @@ fixed_in_round_3:
   - "F-017: docs/plans/2026-08-25-wifw-skills-routing/review-log.yaml written (this file)"
   - "F-018: compiler alias-collision contract added to Inline Execution Contracts table"
   - "F-020: rollback replaced with revert-based procedure + destructive-git-ops pre-check requirement"
-commit_sha: pending-remediation-commit
+commit_sha: 900daa6
