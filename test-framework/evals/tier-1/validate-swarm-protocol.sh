@@ -216,12 +216,14 @@ const mk = (principal, type, seq, extra = {}) => ({
 const coord = new handler.SwarmCoordinator(root);
 coord.provisionAdapter("w1", { host: "codex" });
 coord.provisionAdapter("w2", { host: "grok" });
-if (!coord.handle(mk("w1", "register_session", 0)).accepted) process.exit(1);
-if (!coord.handle(mk("w2", "register_session", 1)).accepted) process.exit(1);
-const acq = coord.handle(mk("w1", "acquire_task", 2));
+const keyOf = (p) => JSON.parse(fs.readFileSync(root + "/keys/" + p + ".json", "utf8")).private_key;
+const send = (cmd) => coord.handleEnvelope(coord.constructor.envelopeForCommand(cmd, keyOf(cmd.actor.principal_id)));
+if (!send(mk("w1", "register_session", 0)).accepted) process.exit(1);
+if (!send(mk("w2", "register_session", 1)).accepted) process.exit(1);
+const acq = send(mk("w1", "acquire_task", 2));
 if (!acq.accepted) process.exit(1);
 // second acquire while ACTIVE lease held -> must reject (lease guard)
-const blocked = coord.handle(mk("w2", "acquire_task", 3));
+const blocked = send(mk("w2", "acquire_task", 3));
 if (blocked.accepted) process.exit(1);
 // simulate TTL lapse directly in replay state by rewriting the journal lease expiry,
 // then prove digest-chain break is DETECTED (integrity over silent takeover):
@@ -314,5 +316,107 @@ if (JSON.stringify(retry.receipt) !== JSON.stringify(first.receipt)) {
 process.exit(0);
 JS
 
-echo "PASS(validate-swarm-protocol): schema/CAS/idempotency/fail-closed/replay-corruption/checkpoint + run-binding/ownership/heartbeat-renewal/signed-envelopes/lease-guard/crash-window-regeneration verified"
+# EXEC-R3-009: REAL candidate submission against a bound git worktree, exact-retry
+# dedupe (no double append), and concurrent CAS — exactly one winner.
+node --input-type=module - "$TMP" <<'JS' || fail "candidate submit/retry/concurrency probe failed"
+import fs from "node:fs";
+import { execFileSync } from "node:child_process";
+const handler = await import(new URL("file://" + process.cwd() + "/scripts/lib/swarm-command-handler.mjs").href);
+const tmp = process.argv[2] + "/cand";
+fs.rmSync(tmp, { recursive: true, force: true });
+fs.mkdirSync(tmp, { recursive: true, mode: 0o700 });
+const g = (args) => execFileSync("git", ["-C", tmp + "/repo", ...args], { encoding: "utf8" }).trim();
+execFileSync("git", ["init", "-q", "-b", "main", tmp + "/repo"]);
+g(["config", "user.email", "gate@svc"]); g(["config", "user.name", "gate"]);
+fs.writeFileSync(tmp + "/repo/feature.txt", "v1\n");
+g(["add", "."]); g(["commit", "-q", "-m", "base"]);
+const baseSha = g(["rev-parse", "HEAD"]);
+// worker changes the tracked file -> unstaged diff vs HEAD
+fs.writeFileSync(tmp + "/repo/feature.txt", "v2\n");
+const stateRoot = tmp + "/state";
+handler.initStateRoot(stateRoot);
+const coord = new handler.SwarmCoordinator(stateRoot, { worktreeRoot: tmp + "/repo" });
+coord.provisionAdapter("w", { host: "codex" });
+const key = JSON.parse(fs.readFileSync(stateRoot + "/keys/w.json", "utf8")).private_key;
+let n = 0;
+const mk = (type, seq, extra = {}) => ({
+  schema_version: 1,
+  command_id: "018f0000-0000-7000-8000-" + String(++n).padStart(12, "0"),
+  run_id: "cd", command_type: type,
+  task_id: type === "register_session" ? null : "ct",
+  actor: { principal_id: "w", host: "codex", model_family: "openai", session_id: "cs" },
+  authority_generation: 0, expected_sequence: seq, idempotency_key: `ck-${n}`,
+  payload: extra,
+});
+if (!coord.handleEnvelope(coord.constructor.envelopeForCommand(mk("register_session", 0), key)).accepted) process.exit(1);
+const acq = coord.handleEnvelope(coord.constructor.envelopeForCommand(mk("acquire_task", 1, { paths: ["feature.txt"], resources: [], base_sha: baseSha }), key));
+if (!acq.accepted) process.exit(1);
+const leaseId = acq.event.payload.lease.lease_id;
+const headSha = g(["rev-parse", "HEAD"]);
+const submitCmd = { ...mk("submit_candidate", 2, {
+  base_sha: baseSha, head_sha: headSha, changed_paths: ["feature.txt"],
+  evidence_digests: [],
+}), lease_id: leaseId };
+const sub1 = coord.handleEnvelope(coord.constructor.envelopeForCommand(submitCmd, key));
+if (!sub1.accepted) { console.error("candidate rejected:", sub1.receipt?.payload?.reason_code); process.exit(1); }
+const countBefore = fs.readFileSync(stateRoot + "/journal.jsonl", "utf8").trimEnd().split("\n").length;
+const subRetry = coord.handleEnvelope(coord.constructor.envelopeForCommand(submitCmd, key));
+const countAfter = fs.readFileSync(stateRoot + "/journal.jsonl", "utf8").trimEnd().split("\n").length;
+if (!subRetry.replay || countAfter !== countBefore) { console.error("exact retry appended or was not a replay"); process.exit(1); }
+// conflicting retry: same idempotency key, different bytes -> fail closed
+const conflict = coord.handleEnvelope(coord.constructor.envelopeForCommand(
+  { ...submitCmd, command_id: "018f0000-0000-7000-8000-ffffffffffff" }, key));
+const conflictRc = conflict.receipt?.payload?.reason_code ?? conflict.reason_code;
+if (conflictRc !== "idempotency_conflict") { console.error("want idempotency_conflict got", conflictRc); process.exit(1); }
+process.exit(0);
+JS
+
+# EXEC-R3-009: concurrent CAS — two racing acquires on one task, EXACTLY ONE wins
+SRC="$TMP/stateconc"
+node "$SWARM" init --state-root "$SRC" > /dev/null
+node "$SWARM" provision --state-root "$SRC" --principal cw1 --host codex > /dev/null
+node "$SWARM" provision --state-root "$SRC" --principal cw2 --host grok > /dev/null
+node "$SWARM" register --state-root "$SRC" --principal cw1 --host codex --model-family openai --run-id cc > /dev/null
+node "$SWARM" register --state-root "$SRC" --principal cw2 --host grok --model-family xai --run-id cc > /dev/null
+for p in cw1 cw2; do
+  if [ "$p" = "cw1" ]; then HF=codex; else HF=grok; fi
+  node "$SWARM" acquire --state-root "$SRC" --principal $p --task-id ct --run-id cc > "$TMP/conc-$p.json" 2>&1 &
+done
+wait
+ACCEPTED_COUNT=0
+grep -l '"accepted":true' "$TMP"/conc-cw1.json "$TMP"/conc-cw2.json >/dev/null 2>&1 && ACCEPTED_COUNT=$(grep -l '"accepted":true' "$TMP"/conc-cw1.json "$TMP"/conc-cw2.json | wc -l)
+[[ "$ACCEPTED_COUNT" -eq 1 ]] || fail "concurrent acquire must have exactly one winner (got $ACCEPTED_COUNT)"
+
+# EXEC-R3-009: VALID TTL reclaim — an expired lease is reacquirable WITHOUT tampering
+node --input-type=module - "$TMP" <<'JS' || fail "ttl reclaim probe failed"
+import fs from "node:fs";
+const handler = await import(new URL("file://" + process.cwd() + "/scripts/lib/swarm-command-handler.mjs").href);
+const root = process.argv[2] + "/ttlstate";
+fs.rmSync(root, { recursive: true, force: true });
+fs.mkdirSync(root, { recursive: true, mode: 0o700 });
+handler.initStateRoot(root);
+const coord = new handler.SwarmCoordinator(root, { leaseMs: 60 });
+coord.provisionAdapter("tw1", { host: "codex" });
+coord.provisionAdapter("tw2", { host: "grok" });
+let n = 0;
+const mk = (principal, host, type, seq) => ({
+  schema_version: 1,
+  command_id: "018f0000-0000-7000-8000-" + String(++n).padStart(12, "0"),
+  run_id: "tt", command_type: type, task_id: type === "register_session" ? null : "tt-t",
+  actor: { principal_id: principal, host, model_family: "fam", session_id: principal },
+  authority_generation: 0, expected_sequence: seq, idempotency_key: `tk-${n}`,
+  payload: {},
+});
+const keyOf = (p) => JSON.parse(fs.readFileSync(root + "/keys/" + p + ".json", "utf8")).private_key;
+const env = (cmd) => coord.constructor.envelopeForCommand(cmd, keyOf(cmd.actor.principal_id));
+if (!coord.handleEnvelope(env(mk("tw1", "codex", "register_session", 0))).accepted) process.exit(1);
+if (!coord.handleEnvelope(env(mk("tw2", "grok", "register_session", 1))).accepted) process.exit(1);
+if (!coord.handleEnvelope(env(mk("tw1", "codex", "acquire_task", 2))).accepted) process.exit(1);
+await new Promise((r) => setTimeout(r, 120)); // TTL lapses
+const reclaim = coord.handleEnvelope(env(mk("tw2", "grok", "acquire_task", 3)));
+if (!reclaim.accepted) { console.error("expired lease not reclaimable:", reclaim.receipt?.payload?.reason_code ?? reclaim.reason_code); process.exit(1); }
+process.exit(0);
+JS
+
+echo "PASS(validate-swarm-protocol): schema/CAS/idempotency/fail-closed/replay-corruption/checkpoint + run-binding/ownership/heartbeat-renewal/signed-envelopes/lease-guard/crash-window-regeneration/candidate-attestation/ttl-reclaim verified"
 echo "SCOPE NOTE: adjudication capping, remote transport, multi-host shadow runs are OUT of this gate's scope (follow-up WIs)"

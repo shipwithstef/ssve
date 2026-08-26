@@ -3,27 +3,80 @@
   "$id": "https://seriousvibecoding.dev/schemas/swarm-trust-registry-v1.schema.json",
   "title": "SVC Swarm Trust Registry v1",
   "type": "object",
-  "required": ["schema_version", "registry_id", "keys"],
+  "required": [
+    "schema_version",
+    "registry_id",
+    "keys",
+    "registry_version"
+  ],
   "additionalProperties": false,
   "properties": {
-    "schema_version": { "const": 1 },
-    "registry_id": { "type": "string", "minLength": 1 },
-    "root_keyid": { "type": "string" },
-    "root_signature": { "type": ["string", "null"] },
+    "schema_version": {
+      "const": 1
+    },
+    "registry_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "root_keyid": {
+      "type": "string"
+    },
+    "root_signature": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "keys": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["keyid", "purpose", "principal_id", "public_key", "valid_from"],
+        "required": [
+          "keyid",
+          "purpose",
+          "principal_id",
+          "public_key",
+          "valid_from"
+        ],
         "additionalProperties": false,
         "properties": {
-          "keyid": { "type": "string", "minLength": 1 },
-          "purpose": { "enum": ["coordinate", "submit", "verify"] },
-          "principal_id": { "type": "string", "minLength": 1 },
-          "host": { "type": ["string", "null"] },
-          "model_family": { "type": ["string", "null"] },
-          "session_id": { "type": ["string", "null"] },
-          "public_key": { "type": "string", "minLength": 1 },
+          "keyid": {
+            "type": "string",
+            "minLength": 1
+          },
+          "purpose": {
+            "enum": [
+              "coordinate",
+              "submit",
+              "verify"
+            ]
+          },
+          "principal_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "host": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "model_family": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "session_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "public_key": {
+            "type": "string",
+            "minLength": 1
+          },
           "allowed_receipt_kinds": {
             "type": "array",
             "items": {
@@ -37,11 +90,47 @@
               ]
             }
           },
-          "valid_from": { "type": "string", "format": "date-time" },
-          "expires_at": { "type": ["string", "null"] },
-          "revoked_at_sequence": { "type": ["integer", "null"], "minimum": 0 }
+          "valid_from": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "revoked_at_sequence": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "allowed_commands": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "register",
+                "acquire",
+                "heartbeat",
+                "progress",
+                "submit",
+                "cancel",
+                "resolve",
+                "handoff",
+                "ack"
+              ]
+            },
+            "default": []
+          }
         }
       }
+    },
+    "registry_version": {
+      "type": "integer",
+      "minimum": 1
     }
   }
 }

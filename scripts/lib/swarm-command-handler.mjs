@@ -28,6 +28,9 @@ const COMMAND_SCHEMA = JSON.parse(
 const RECEIPT_SCHEMA = JSON.parse(
   fs.readFileSync(fileURLToPath(new URL("../../schemas/swarm-receipt-payload-v1.schema.json", import.meta.url)), "utf8"),
 );
+const TRUST_REGISTRY_SCHEMA = JSON.parse(
+  fs.readFileSync(fileURLToPath(new URL("../../schemas/swarm-trust-registry-v1.schema.json", import.meta.url)), "utf8"),
+);
 import { fileURLToPath } from "node:url";
 import { resolvePair } from "./swarm-conflict-resolver.mjs";
 
@@ -144,6 +147,7 @@ export function initStateRoot(stateRoot, options = {}) {
     const body = {
       schema_version: 1,
       registry_id: registryId,
+      registry_version: 1,
       root_keyid: keyFingerprint(root.public_key),
       root_signature: null,
       keys: [
@@ -268,12 +272,13 @@ function applyToState(state, event) {
       if (handoff) {
         handoff.consumed = true;
         const task = state.tasks[handoff.task_id];
-        if (task?.lease) {
+        if (task?.lease || task) {
+          task.state = "LEASED";
           task.lease = {
             lease_id: `handoff-${event.sequence}`,
             principal_id: event.actor.principal_id,
             acquired_at: event.observed_at,
-            expires_at: event.payload.renewed_until ?? task.lease.expires_at,
+            expires_at: event.payload.renewed_until ?? task.lease?.expires_at,
           };
           task.attempt_id = `${task.attempt_id}-h${event.sequence}`;
         }
@@ -283,7 +288,7 @@ function applyToState(state, event) {
     }
     case "TASK_CANCELLED": {
       const task = state.tasks[event.task_id];
-      if (task) { task.state = "CANCELLED"; task.cancel_reason = event.payload.reason_code; }
+      if (task) { task.state = "CANCELLED"; task.terminal = true; task.cancel_reason = event.payload.reason_code; }
       break;
     }
     case "CONFLICT_RESOLUTION_PROPOSED": {
@@ -368,23 +373,16 @@ import { execFileSync } from "node:child_process";
 export class SwarmCoordinator {
   constructor(stateRoot, options = {}) {
     this.root = stateRoot;
-    // Worktree against which Git facts are INDEPENDENTLY recomputed (EXEC-R2-002).
-    // Worker-claimed base/head/digests are claims; only recomputed values are authority.
+    // Worktree against which Git facts are INDEPENDENTLY recomputed (EXEC-R2-002,
+    // EXEC-R3-002). Facts are recomputed FRESH inside the submission critical
+    // section — never cached across commands — via recomputeGitFacts().
     this.worktreeRoot = options.worktreeRoot ?? null;
     if (this.worktreeRoot) {
-      const git = (args) => execFileSync("git", ["-C", this.worktreeRoot, ...args], { encoding: "utf8" }).trim();
-      this._git = git;
-      this.recomputedFacts = {
-        head_sha: (() => { try { return git(["rev-parse", "HEAD"]); } catch { return null; } })(),
-        changed_paths: (() => {
-          try { return git(["diff", "--name-only"]).split("\n").filter(Boolean); } catch { return []; }
-        })(),
-        diff_digest: (() => {
-          try {
-            return `sha256:${crypto.createHash("sha256").update(git(["diff", "--binary", "HEAD"])).digest("hex")}`;
-          } catch { return null; }
-        })(),
+      this._git = (args, opts = {}) => {
+        const out = execFileSync("git", ["-C", this.worktreeRoot, ...args], { encoding: "utf8", ...opts });
+        return typeof out === "string" ? out.trim() : out;
       };
+      this.recomputedFacts = null;
     }
     this.journalPath = path.join(stateRoot, "journal.jsonl");
     this.registryPath = path.join(stateRoot, "trust-registry.json");
@@ -395,7 +393,7 @@ export class SwarmCoordinator {
     this.receiptsDir = path.join(stateRoot, "receipts");
     fs.mkdirSync(this.receiptsDir, { recursive: true, mode: 0o700 });
     this.validators = [];
-    this.leaseMs = LEASE_MS_DEFAULT;
+    this.leaseMs = Number.isFinite(options.leaseMs) && options.leaseMs > 0 ? options.leaseMs : LEASE_MS_DEFAULT;
   }
 
   registerValidator(fn) { this.validators.push(fn); }
@@ -413,6 +411,11 @@ export class SwarmCoordinator {
     const bytes = fs.readFileSync(this.registryPath, "utf8");
     if (bytes === this._registryCache) return this._registryParsed;
     const parsed = JSON.parse(bytes);
+    // trust chain + schema on every load (EXEC-R3-010)
+    const registryErrors = validate(TRUST_REGISTRY_SCHEMA, parsed).errors;
+    if (registryErrors.length) {
+      throw Object.assign(new Error(`trust registry failed its own schema: ${registryErrors[0]}`), { code: "REGISTRY_SCHEMA_INVALID" });
+    }
     if (!verifyRegistrySignature(parsed, this.rootPublicKey)) {
       throw Object.assign(new Error("trust registry root signature invalid"), { code: "REGISTRY_UNTRUSTED" });
     }
@@ -421,31 +424,73 @@ export class SwarmCoordinator {
     return parsed;
   }
 
+  // Fresh recomputation at acceptance time (EXEC-R3-002): HEAD, changed paths vs
+  // HEAD (staged + unstaged + untracked), full-diff digest. NEVER cached.
+  recomputeGitFacts() {
+    const git = this._git;
+    if (!git) return null;
+    const headSha = (() => { try { return git(["rev-parse", "HEAD"]); } catch { return null; } })();
+    const tracked = (() => { try { return git(["diff", "--name-only", "HEAD"]).split("\n").filter(Boolean); } catch { return []; } })();
+    const untracked = (() => {
+      try {
+        return git(["ls-files", "--others", "--exclude-standard"]).split("\n").filter(Boolean);
+      } catch { return []; }
+    })();
+    const changedPaths = [...new Set([...tracked, ...untracked])].sort();
+    const diffDigest = (() => {
+      try {
+        const raw = execFileSync("git", ["-C", this.worktreeRoot, "diff", "--binary", "HEAD"], { encoding: "buffer", maxBuffer: 1 << 28 });
+        return `sha256:${crypto.createHash("sha256").update(raw).digest("hex")}`;
+      } catch { return null; }
+    })();
+    return { head_sha: headSha, changed_paths: changedPaths, diff_digest: diffDigest };
+  }
+
+  baseIsAncestor(baseSha, headSha) {
+    if (!baseSha || !headSha || !this._git) return false;
+    try {
+      this._git(["merge-base", "--is-ancestor", baseSha, headSha]);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   // Operator-only: provision an adapter session key. The generated private key is
   // written 0600 under keys/ and never returned through any protocol surface.
+  // Allowed commands are OPERATOR-granted here (EXEC-R3-005) — registration can
+  // never expand them; an empty grant denies every gated operation.
   provisionAdapter(principalId, options = {}) {
-    const registry = this.registry();
-    if (registry.keys.some(row => row.principal_id === principalId)) {
-      return { created: false, principal_id: principalId };
-    }
-    const pair = generateKeyPair();
-    atomicWriteJson(path.join(this.keysDir, `${principalId}.json`), pair);
-    delete registry.root_signature;
-    registry.keys.push({
-      keyid: keyFingerprint(pair.public_key),
-      purpose: "submit",
-      principal_id: principalId,
-      host: options.host ?? null,
-      model_family: options.model_family ?? null,
-      session_id: null,
-      public_key: pair.public_key,
-      allowed_receipt_kinds: ["submission_receipt"],
-      valid_from: new Date().toISOString(),
-      expires_at: options.expiresAt ?? null,
-      revoked_at_sequence: null,
+    const DEFAULT_COMMANDS = ["register", "acquire", "heartbeat", "progress", "submit", "cancel", "resolve", "handoff", "ack"];
+    return withJournalLock(this.journalPath, () => {
+      const registry = this.registry();
+      if (registry.keys.some(row => row.principal_id === principalId)) {
+        return { created: false, principal_id: principalId };
+      }
+      const pair = generateKeyPair();
+      writeExclJson(path.join(this.keysDir, `${principalId}.json`), pair);
+      delete registry.root_signature;
+      registry.keys.push({
+        keyid: keyFingerprint(pair.public_key),
+        purpose: "submit",
+        principal_id: principalId,
+        host: options.host ?? null,
+        model_family: options.model_family ?? null,
+        session_id: null,
+        public_key: pair.public_key,
+        allowed_receipt_kinds: ["submission_receipt"],
+        allowed_commands: Array.isArray(options.allowedCommands) ? [...options.allowedCommands] : [...DEFAULT_COMMANDS],
+        valid_from: new Date().toISOString(),
+        expires_at: options.expiresAt ?? null,
+        revoked_at_sequence: null,
+      });
+      const registryErrors = validate(TRUST_REGISTRY_SCHEMA, registry).errors;
+      if (registryErrors.length) {
+        throw Object.assign(new Error(`provisioned registry row failed schema: ${registryErrors[0]}`), { code: "REGISTRY_SCHEMA_INVALID" });
+      }
+      this.signAndPersistRegistry(registry);
+      return { created: true, principal_id: principalId, keyid: registry.keys[registry.keys.length - 1].keyid };
     });
-    this.signAndPersistRegistry(registry);
-    return { created: true, principal_id: principalId, keyid: registry.keys[registry.keys.length - 1].keyid };
   }
 
   revoke(principalId, atSequence) {
@@ -524,7 +569,21 @@ export class SwarmCoordinator {
   }
 
   handle(command) {
-    return withJournalLock(this.journalPath, () => this.handleLocked(command));
+    // EXEC-R3-001: plain objects are never protocol input. Every mutation must
+    // arrive as a DSSE envelope verified against the trust registry. This entry
+    // point stays exported for compatibility but fails closed on raw commands.
+    void command;
+    return withJournalLock(this.journalPath, () => {
+      const events0 = readJournal(this.journalPath);
+      const replayed0 = replay(events0);
+      return this.decide(
+        { run_id: "?", actor: { principal_id: "?" }, authority_generation: -1, expected_sequence: -1, idempotency_key: "unsigned-rejected" },
+        replayed0.state,
+        "signature_invalid",
+        "unsigned command objects are not protocol input; sign via SwarmCoordinator.envelopeForCommand and call handleEnvelope",
+        events0,
+      );
+    });
   }
 
   // Signed-envelope entry point for mutating verbs.
@@ -613,9 +672,15 @@ export class SwarmCoordinator {
       }
     }
     if (!isRegister) {
-      // declared capabilities must cover the operation family
-      const caps = Array.isArray(session?.capabilities) ? session.capabilities : [];
+      // operation grants come from the OPERATOR-written registry row
+      // (EXEC-R3-005); a missing grant denies the command. Session-declared
+      // capabilities are informational only and can narrow but never widen.
+      const grants = Array.isArray(keyRow.allowed_commands) ? keyRow.allowed_commands : [];
       const needsCap = { acquire_task: "acquire", heartbeat_task: "heartbeat", report_progress: "progress", submit_candidate: "submit", request_cancel: "cancel", propose_resolution: "resolve", request_handoff: "handoff", accept_handoff: "handoff", ack_state: "ack" }[command.command_type];
+      if (needsCap && !grants.includes(needsCap)) {
+        return this.decide(command, state, "capability_denied", `operator grant '${needsCap}' missing for ${command.actor.principal_id}`, events);
+      }
+      const caps = Array.isArray(session?.capabilities) ? session.capabilities : [];
       if (needsCap && caps.length > 0 && !caps.includes(needsCap)) {
         return this.decide(command, state, "capability_denied", `session lacks '${needsCap}' capability`, events);
       }
@@ -823,55 +888,77 @@ export class SwarmCoordinator {
         payload = { note: String(command.payload.note ?? "") };
         break;
       case "submit_candidate": {
-        // Conflict-ladder integration (EXEC-008): the candidate's claimed paths are
-        // evaluated against every OTHER active lease claim through the deterministic
-        // resolver before any acceptance.
+        // Conflict-ladder integration (EXEC-008, EXEC-R3-007): candidate paths AND
+        // the task's own persisted resource claims are resolved against every OTHER
+        // ACTIVE (nonterminal, unexpired) claim through the deterministic resolver.
+        const ourTask = state.tasks[command.task_id];
+        const ourClaimResources = Array.isArray(ourTask?.claim?.resources) ? ourTask.claim.resources : [];
+        const isActiveClaim = (t) => {
+          if (!t || t.terminal) return false;
+          if (!t.claim?.paths?.length && !(Array.isArray(t.claim?.resources) && t.claim.resources.length)) return false;
+          if (t.lease && Date.parse(t.lease.expires_at) < Date.now()) return false;
+          if (!t.lease && !t.claim) return false;
+          return true;
+        };
         const candidatePaths = Array.isArray(command.payload.changed_paths) ? command.payload.changed_paths : [];
         for (const [otherTaskId, otherTask] of Object.entries(state.tasks)) {
           if (otherTaskId === command.task_id) continue;
-          if (!otherTask.claim?.paths?.length) continue;
+          if (!isActiveClaim(otherTask)) continue;
           const otherPrincipal = otherTask.lease?.principal_id ?? otherTask.claim.principal_id;
           if (!otherPrincipal) continue;
           const verdict = resolvePair(
-            { principal_id: command.actor.principal_id, task_id: command.task_id ?? "?", paths: candidatePaths, resources: [], authority_generation: state.authority_generation, base_sha: command.payload.base_sha ?? null },
+            { principal_id: command.actor.principal_id, task_id: command.task_id ?? "?", paths: candidatePaths, resources: ourClaimResources, authority_generation: state.authority_generation, base_sha: command.payload.base_sha ?? null },
             { principal_id: otherPrincipal, task_id: otherTaskId, paths: otherTask.claim.paths, resources: otherTask.claim.resources ?? [], authority_generation: state.authority_generation, base_sha: otherTask.claim.base_sha ?? null },
           );
           if (verdict.outcome !== "INTEGRATE" && verdict.outcome !== "MERGE_WITH_VALIDATORS") {
             return { accepted: false, conflicted: true, reason_code: verdict.level === 5 ? "protected_surface" : "conflict_block", ladder: verdict, receipt: this.buildRejectionOnly(command, state, verdict.level === 5 ? "protected_surface" : "conflict_block", `ladder L${verdict.level} ${verdict.outcome}: ${verdict.reason}`).envelope };
           }
         }
-        // Independent recomputation happens HERE, not from worker claims (EXEC-R2-002):
-        // a bound coordinator refuses submissions it cannot verify against the real
-        // worktree; claimed digests must equal recomputed ones, never the reverse.
-        const claimedPaths = Array.isArray(command.payload.changed_paths) ? command.payload.changed_paths : [];
+        // Independent recomputation happens HERE inside the locked critical
+        // section, FRESH per submission (EXEC-R2-002, EXEC-R3-002): claimed
+        // facts must equal recomputed ones exactly — never the reverse. The
+        // submitted head must BE the worktree HEAD and base must be its ancestor.
+        const claimedPaths = Array.isArray(command.payload.changed_paths)
+          ? [...new Set(command.payload.changed_paths)].sort()
+          : [];
         let recomputationFailures = [];
-        if (!this.worktreeRoot || !this.recomputedFacts.head_sha) {
+        const facts = this.recomputeGitFacts();
+        if (!this.worktreeRoot || !facts?.head_sha) {
           return { accepted: false, conflicted: true, reason_code: "worktree_unbound", failed_validators: ["worktree-binding"], receipt: this.buildRejectionOnly(command, state, "worktree_unbound", "coordinator has no verified worktree binding; candidate facts cannot be recomputed").envelope };
         }
         {
           const claimedHead = command.payload.head_sha ?? null;
-          if (claimedHead && claimedHead !== this.recomputedFacts.head_sha) {
-            recomputationFailures.push(`head_sha claim ${claimedHead} != recomputed ${this.recomputedFacts.head_sha}`);
+          if (!claimedHead || claimedHead !== facts.head_sha) {
+            recomputationFailures.push(`head_sha claim ${claimedHead ?? "missing"} != recomputed HEAD ${facts.head_sha}`);
           }
-          const realPaths = new Set(this.recomputedFacts.changed_paths);
+          const claimedBase = command.payload.base_sha ?? null;
+          if (claimedBase && !this.baseIsAncestor(claimedBase, facts.head_sha)) {
+            recomputationFailures.push(`base_sha ${claimedBase} is not an ancestor of HEAD ${facts.head_sha}`);
+          }
+          const realPaths = new Set(facts.changed_paths);
           const undeclared = claimedPaths.filter((p2) => !realPaths.has(p2));
-          if (claimedPaths.length && undeclared.length) {
+          if (undeclared.length) {
             recomputationFailures.push(`claimed paths not in actual diff: ${undeclared.join(",")}`);
           }
+          const omitted = [...realPaths].filter((p2) => !claimedPaths.includes(p2));
+          if (omitted.length) {
+            recomputationFailures.push(`changed paths omitted from claim: ${omitted.join(",")}`);
+          }
           const claimedDigest = command.payload.candidate_digest ?? null;
-          if (claimedDigest && this.recomputedFacts.diff_digest && claimedDigest !== this.recomputedFacts.diff_digest) {
-            recomputationFailures.push(`candidate_digest claim ${claimedDigest} != recomputed ${this.recomputedFacts.diff_digest}`);
+          if (claimedDigest && facts.diff_digest && claimedDigest !== facts.diff_digest) {
+            recomputationFailures.push(`candidate_digest claim ${claimedDigest} != recomputed ${facts.diff_digest}`);
           }
         }
         const candidate = {
           base_sha: command.payload.base_sha ?? null,
-          head_sha: this.recomputedFacts.head_sha,
-          candidate_digest: command.payload.candidate_digest ?? this.recomputedFacts.diff_digest,
+          head_sha: facts.head_sha,
+          candidate_digest: command.payload.candidate_digest ?? facts.diff_digest,
           submission_digest: canonical,
           changed_paths: claimedPaths,
           changed_paths_digest: canonicalDigest({ paths: claimedPaths }),
           evidence_digests: Array.isArray(command.payload.evidence_digests) ? command.payload.evidence_digests : [],
-          recomputed_head_sha: this.recomputedFacts?.head_sha ?? null,
+          recomputed_head_sha: facts.head_sha,
+          recomputed_diff_digest: facts.diff_digest,
         };
         void recomputationFailures;
         const failures = recomputationFailures.map((note) => `recomputation:${note}`);

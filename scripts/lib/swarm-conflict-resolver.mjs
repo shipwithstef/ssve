@@ -21,6 +21,8 @@ function globToRegExp(pattern) {
     .replace(/[.+^${}()|[\]\\]/g, "\\$&")
     .replace(/\*\*/g, "\u0000")
     .replace(/\*/g, "[^/]*")
+    // a leading **/ must also match at the ROOT level (e.g. package-lock.json)
+    .replace(/\u0000\//g, "(?:.*/)?")
     .replace(/\u0000/g, ".*");
   return new RegExp(`^${escaped}$`);
 }

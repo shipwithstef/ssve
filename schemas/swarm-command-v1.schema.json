@@ -293,20 +293,22 @@
         ]
       },
       "then": {
+        "required": [
+          "task_id"
+        ],
         "properties": {
+          "task_id": {
+            "type": "string",
+            "minLength": 1
+          },
           "payload": {
+            "required": [
+              "successor_principal"
+            ],
             "properties": {
               "successor_principal": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              },
-              "successor_hint": {
-                "type": [
-                  "string",
-                  "null"
-                ]
+                "type": "string",
+                "minLength": 1
               }
             }
           }
@@ -325,11 +327,24 @@
         ]
       },
       "then": {
+        "required": [
+          "task_id"
+        ],
         "properties": {
+          "task_id": {
+            "type": "string",
+            "minLength": 1
+          },
           "payload": {
             "required": [
               "handoff_token"
-            ]
+            ],
+            "properties": {
+              "handoff_token": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
           }
         }
       }
@@ -378,6 +393,64 @@
             "required": [
               "note"
             ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command_type": {
+            "const": "request_cancel"
+          }
+        },
+        "required": [
+          "command_type"
+        ]
+      },
+      "then": {
+        "required": [
+          "task_id"
+        ],
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "payload": {
+            "properties": {
+              "reason_code": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command_type": {
+            "const": "ack_state"
+          }
+        },
+        "required": [
+          "command_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": [
+              "acknowledged_through"
+            ],
+            "properties": {
+              "acknowledged_through": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
           }
         }
       }

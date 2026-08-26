@@ -104,7 +104,7 @@ victimReg.actor.host = "cursor"; // claim matches its own pin
 if (!coord.handleEnvelope(coord.constructor.envelopeForCommand(victimReg, keyOf("victim"))).accepted) process.exit(1);
 coord.revoke("victim", 2);
 const afterRevoke = coord.constructor.envelopeForCommand(
-  { ...mk("victim", "ack_state", 2), idempotency_key: "kp-victim-ack" }, keyOf("victim"));
+  { ...mk("victim", "ack_state", 2, { acknowledged_through: 2 }), idempotency_key: "kp-victim-ack" }, keyOf("victim"));
 const r3 = coord.handleEnvelope(afterRevoke);
 if (r3.reason_code !== "key_revoked") { console.error("want key_revoked got", r3.receipt?.payload?.reason_code ?? r3.reason_code); process.exit(1); }
 // operator-pinned identity: row pins host=cursor; a codex claim must be refused

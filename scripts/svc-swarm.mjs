@@ -17,7 +17,8 @@ import {
   withJournalLock,
 } from "./lib/swarm-command-handler.mjs";
 import { resolvePair, isProtectedPath } from "./lib/swarm-conflict-resolver.mjs";
-import { canonicalDigest } from "./lib/swarm-canonical-json.mjs";
+import { canonicalDigest, jcs } from "./lib/swarm-canonical-json.mjs";
+import { validate } from "./lib/json-schema-validator.mjs";
 import {
   verifyEnvelope,
   signReceipt,
@@ -25,6 +26,7 @@ import {
 } from "./lib/swarm-signing.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const RECEIPT_SCHEMA = JSON.parse(fs.readFileSync(path.join(ROOT, "schemas", "swarm-receipt-payload-v1.schema.json"), "utf8"));
 
 function die(message, code = 1) {
   process.stderr.write(`svc-swarm: ${message}\n`);
@@ -93,6 +95,7 @@ function buildCommand(options, verb, state, pinned = {}) {
   const payload = {};
   if (verb === "handoff-accept") payload.handoff_token = options.handoffToken ?? "";
   if (verb === "handoff-prepare") payload.successor_principal = options.successor ?? null;
+  if (verb === "ack") payload.acknowledged_through = state.sequence;
   if (verb === "resolve") payload.conflict = JSON.parse(options.conflictJson ?? "{}");
   if (verb === "progress") payload.note = options.note ?? "";
   if (verb === "submit") {
@@ -195,8 +198,8 @@ function main() {
   switch (verb) {
     case "provision": {
       if (!options.principal) die("provision requires --principal", 2);
-      const result = withJournalLock(coordinator.journalPath, () =>
-        coordinator.provisionAdapter(options.principal, { host: options.host, model_family: options.modelFamily }));
+      // serialization lives INSIDE provisionAdapter (EXEC-R3-010) — no caller lock
+      const result = coordinator.provisionAdapter(options.principal, { host: options.host, model_family: options.modelFamily });
       process.stdout.write(`${JSON.stringify(result)}\n`);
       return 0;
     }
@@ -277,13 +280,38 @@ function main() {
         process.stdout.write(`${JSON.stringify({ verified: false, reason: "signature_invalid" })}\n`);
         return 1;
       }
-      // purpose binding: the key's allowed kinds must cover this envelope's receipt
+      // EXEC-R3-006: signature alone is not verification. The payload must be
+      // canonical JCS bytes of a SCHEMA-VALID receipt with a present kind, and
+      // sequence-aware revocation applies.
       let decoded = null;
-      try { decoded = JSON.parse(sig.payloadBytes.toString("utf8")); } catch {}
+      let canonicalOk = false;
+      try {
+        const raw = Buffer.from(envelope.payload, "base64");
+        decoded = JSON.parse(raw.toString("utf8"));
+        canonicalOk = raw.equals(Buffer.from(jcs(decoded), "utf8"));
+      } catch {}
       const kind = decoded?.receipt_kind ?? null;
-      const allowed = Array.isArray(row.allowed_receipt_kinds) ? row.allowed_receipt_kinds : [];
-      if (envelope.payloadType !== RECEIPT_PAYLOAD_TYPE || (allowed.length > 0 && kind && !allowed.includes(kind))) {
+      if (!canonicalOk) {
+        process.stdout.write(`${JSON.stringify({ verified: false, reason: "noncanonical_payload" })}\n`);
+        return 1;
+      }
+      if (envelope.payloadType !== RECEIPT_PAYLOAD_TYPE || !kind) {
         process.stdout.write(`${JSON.stringify({ verified: false, reason: "wrong_purpose_or_kind", kind })}\n`);
+        return 1;
+      }
+      const schemaErrors = validate(RECEIPT_SCHEMA, decoded).errors;
+      if (schemaErrors.length) {
+        process.stdout.write(`${JSON.stringify({ verified: false, reason: "receipt_schema_invalid", detail: schemaErrors[0] })}\n`);
+        return 1;
+      }
+      const allowed = Array.isArray(row.allowed_receipt_kinds) ? row.allowed_receipt_kinds : [];
+      if (allowed.length > 0 && !allowed.includes(kind)) {
+        process.stdout.write(`${JSON.stringify({ verified: false, reason: "wrong_purpose_or_kind", kind })}\n`);
+        return 1;
+      }
+      const atSeq = typeof decoded.sequence_after === "number" ? decoded.sequence_after : null;
+      if (row.revoked_at_sequence != null && atSeq != null && atSeq >= row.revoked_at_sequence) {
+        process.stdout.write(`${JSON.stringify({ verified: false, reason: "key_revoked", kind })}\n`);
         return 1;
       }
       process.stdout.write(`${JSON.stringify({ verified: true, keyid, principal: row.purpose, kind })}\n`);

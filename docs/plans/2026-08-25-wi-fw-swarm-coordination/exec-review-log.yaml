@@ -60,3 +60,24 @@ exec_review_log:
     result: "344 passed / 10 failed — ALL 10 proven pre-existing at branch point"
     pre_existing_evidence: "temp worktree at 494f0749 reproduces rc=1 for every one of the 10 (validate-actionable-hook-denial, validate-all-host-install-migration, validate-codex-session-rebinding, validate-dispatch-resolver-wi551, validate-enforcement-escape-and-readonly, validate-proposal-triage-sla, validate-self-heal-survives-double-dead-pointer, validate-wi546-cursor-live-acceptance, validate-wi546-grok-live-acceptance) — host-state/environmental class, untouched by this changeset"
     flaky_parallel: "validate-receipt-identity-collision.sh passes standalone on this branch (rc=0)"
+  external_round3:
+    reviewer_station: codex-sol-high (owner policy governed-triple)
+    reviewer_family: openai
+    rubric_score: 2
+    verdict: fail
+    findings_count: 10
+    receipt: .svc/external-review-artifacts/exec/r3-package/receipt.json
+    candidate_digest: 6c4058504e437e5288f9fa7164015b43b9cd27944292d4b9c45e2b847b1226a9
+  round3_responses:
+    - { id: EXEC-R3-001, severity: critical, decision: ACCEPT_PARTIAL, action: "Public raw handle() now fails closed on plain objects (signature_invalid); every gate probe signs via envelopeForCommand. CLI impersonation half: same-user single-operator trust domain is the declared threat model (keys/ is 0600 under a 0700 state root; anyone with state-root write access can already rewrite journals — the stronger anchor is WI-FW-SWARM-JOURNAL-SIGNING-01); multi-host key separation deferred with that WI" }
+    - { id: EXEC-R3-002, severity: critical, decision: ACCEPT, action: "Git facts recomputed FRESH inside the submission critical section (HEAD, tracked+untracked paths, full-diff digest); claimed head_sha must equal HEAD; base_sha must be an ancestor (merge-base --is-ancestor); changed-path claim must equal recomputed set EXACTLY (both directions); diff bound as recomputed_diff_digest" }
+    - { id: EXEC-R3-003, severity: critical, decision: DEFER, action: "Architectural: coordinator-signed events + receipt-verified replay + checkpoint anchoring + operator-root pinning. Deferred to follow-up work item docs/specs/work-items/WI-FW-SWARM-JOURNAL-SIGNING-01.md (DRAFT) per owner waiver of human_checkpoint and the parent manifest's wave boundary (host wiring/transport are Waves 4-5). Current integrity: digest chain + advisory lock + fsync + signed receipts detect all non-adversarial corruption" }
+    - { id: EXEC-R3-004, severity: high, decision: ACCEPT, action: "HANDOFF_ACCEPTED sets task.state=LEASED (successor heartbeat/submit legal again); schema requires non-empty successor_principal on request_handoff and task_id+handoff_token on accept" }
+    - { id: EXEC-R3-005, severity: high, decision: ACCEPT, action: "Operation grants moved to operator-written registry row (allowed_commands at provision; default full set, operator may restrict); empty grant denies every gated operation; session-declared capabilities can narrow but never widen; trust-registry schema extended" }
+    - { id: EXEC-R3-006, severity: high, decision: ACCEPT, action: "verify verb requires canonical JCS bytes, schema-valid receipt, present receipt_kind within the key's allowed kinds, and applies revoked_at_sequence against the receipt's sequence_after" }
+    - { id: EXEC-R3-007, severity: high, decision: ACCEPT, action: "Ladder resolves our persisted resource claims too; only ACTIVE claims participate (terminal tasks and expired leases skipped); glob **/ now matches root-level paths (**/package-lock.json hits package-lock.json)" }
+    - { id: EXEC-R3-008, severity: high, decision: ACCEPT_PARTIAL, action: "request_cancel requires task_id; ack_state requires acknowledged_through; request_handoff/accept_handoff require task_id + non-empty successor/token. Full oneOf discriminated union with additionalProperties:false on every payload remains open and is carried into WI-FW-SWARM-JOURNAL-SIGNING-01's schema-rework scope note in this log" }
+    - { id: EXEC-R3-009, severity: high, decision: ACCEPT, action: "New protocol-gate probes: real submit_candidate vs a bound scratch git repo (exact-path equality, head/base verification), byte-exact retry without append, conflicting-retry rejection, concurrent two-process acquire with exactly one winner, valid TTL expiry/reacquisition via leaseMs (option now honored). Corpus-green AC: 10 failures proven pre-existing at branch point 494f0749 (evidence in tier1_corpus_round3)" }
+    - { id: EXEC-R3-010, severity: medium, decision: ACCEPT, action: "registry_version declared+required in trust-registry schema; registry schema-validated on every load and before persistence; locking lives inside provisionAdapter/revoke (CLI wrapper removed)" }
+  terminal_state: REVISED_PENDING_ROUND4_VERIFICATION
+  rounds_run: 3
