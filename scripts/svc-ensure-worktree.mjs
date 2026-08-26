@@ -518,8 +518,14 @@ export function adoptExistingWorktree(options = {}, env = process.env) {
   const candidates = rows.filter((row) => {
     const graphPath = graphPathFor(row);
     if (!fs.existsSync(graphPath)) return false;
-    try { return validateTaskGraphShape(JSON.parse(fs.readFileSync(graphPath, "utf8"))).ok; }
+    let parsed;
+    try { parsed = JSON.parse(fs.readFileSync(graphPath, "utf8")); }
     catch { return false; }
+    if (!validateTaskGraphShape(parsed).ok) return false;
+    // EXTREV-EXEC-012: the graph's internal identity must equal the requested
+    // WI — a valid-shaped graph for a different WI must never be adopted.
+    if (String(parsed.wi || "") !== wi) return false;
+    return true;
   });
   if (candidates.length === 0) {
     throw new Error(`SELF_HEAL_INELIGIBLE: no registered non-default worktree carries a valid lane graph for ${wi}; say ‘work on <WI>’ from that worktree`);

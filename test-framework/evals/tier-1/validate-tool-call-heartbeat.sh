@@ -214,15 +214,52 @@ assert.equal(preFail.backend_revision, postFail.backend_revision, "failed call d
 r = drive({ session_id: sid, tool_use_id: "t3", host: "codex", tool_input: { command: COMMAND }, tool_response: { success: true } });
 assert.match(r.stdout + "", /no-op \(receipt_missing\)/, "failure invalidated the receipt for any later success");
 
-// concurrent consumers of one live receipt: exactly one wins (claim-by-rename)
+// concurrent consumers of one live receipt: exactly one wins (claim-by-rename).
+// EXTREV-EXEC-015: consumers must genuinely OVERLAP — both processes are
+// spawned unwaited and synchronize on a shared start barrier file before
+// touching the receipt.
 receiptsMod.writeToolCallReceipt({ session_id: sid, tool_use_id: "t5", host: "codex", original_digest: canonicalOriginalDigest(COMMAND), classification: "mutation",
   lease: { repo_id: repoId, wi: "WI-HB", worktree_root: worktree, principal, lease_id: lease.lease_id, generation: lease.generation }, env: process.env });
-const racers = [0, 1].map(() => spawnSync(process.execPath, [path.join(root, "hooks/codex/svc-codex-posttool-heartbeat.mjs")], {
-  input: JSON.stringify({ session_id: sid, tool_use_id: "t5", host: "codex", tool_input: { command: COMMAND }, tool_response: { success: true } }),
-  encoding: "utf8", env: { ...process.env, SVC_RUNTIME_DIR: runtime },
-}));
-const winners = racers.filter((x) => /renewed/.test(x.stdout + "")).length;
-assert.equal(winners, 1, `exactly one concurrent consumer wins (got ${winners})`);
+{
+  const { spawn } = await import("node:child_process");
+  const barrier = path.join(runtime, "start-barrier");
+  const payloadJson = JSON.stringify({ session_id: sid, tool_use_id: "t5", host: "codex", tool_input: { command: COMMAND }, tool_response: { success: true } });
+  const outs = [0, 1].map((i) => new Promise((resolve) => {
+    const child = spawn(process.execPath, [
+      "-e",
+      `
+      const fs = require("fs");
+      const barrier = process.argv[1], out = process.argv[2];
+      // spin until the barrier file appears (both racers are now alive)
+      while (!fs.existsSync(barrier)) {}
+      let raw = "";
+      process.stdin.on("data", (d) => (raw += d));
+      process.stdin.on("end", () => {
+        const req = JSON.parse(raw);
+        import(process.argv[3]).then(async (hb) => {
+          const payload = req;
+          const digest = hb.canonicalOriginalDigest(payload.tool_input.command);
+          const consumed = hb.consumeToolCallReceipt({
+            session_id: payload.session_id, tool_use_id: payload.tool_use_id,
+            host: payload.host, original_digest: digest, env: process.env,
+          });
+          fs.writeFileSync(out, JSON.stringify({ ok: consumed.ok, reason: consumed.reason || null }));
+        });
+      });
+      `,
+      barrier,
+      path.join(runtime, `race-out-${i}.json`),
+      path.join(root, "hooks/lib/tool-call-receipt.mjs"),
+    ], { env: { ...process.env, SVC_RUNTIME_DIR: runtime } });
+    child.stdin.write(payloadJson);
+    child.stdin.end();
+    child.on("close", () => resolve());
+  }));
+  fs.writeFileSync(barrier, "go");
+  await Promise.all(outs);
+  const results = [0, 1].map((i) => JSON.parse(fs.readFileSync(path.join(runtime, `race-out-${i}.json`), "utf8")));
+  assert.equal(results.filter((r) => r.ok === true).length, 1, `exactly one overlapping consumer wins (${JSON.stringify(results)})`);
+}
 
 // generation handover invalidates stale pre receipts for renewal
 receiptsMod.writeToolCallReceipt({

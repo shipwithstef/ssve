@@ -217,21 +217,34 @@ export function continuationIntent(text) {
   // surfaced by every actionable denial; it is positive work intent for
   // self-heal, distinct from a bare mention of the WI.
   const workVerb = "(?:work(?:ing)?\\s+on|implement(?:ing)?|build(?:ing)?)";
+  // EXTREV-EXEC-011: intent verbs count only when they govern the WI-bearing
+  // sentence. A bare "resume"/"continue" anywhere in a long prompt (a noun, a
+  // button label, an unrelated topic) must not activate self-heal.
+  const wiMatch = value.match(/\bWI[-_]?\d[\w-]*\b/i);
+  const scopeText = (() => {
+    if (!wiMatch) return value;
+    const sentences = value.split(/(?:[.!?\n]|\.\s)\s*/);
+    const hit = sentences.find((s) => new RegExp(`\\b${wiMatch[0].replace(/[-_]/g, "[-_]")}\\b`, "i").test(s));
+    return (hit || value).trim();
+  })();
+  // Verbs must sit within ±60 chars of the WI token inside its own sentence.
+  const verbWindow = (() => {
+    if (!wiMatch) return scopeText;
+    const at = Math.max(0, scopeText.search(new RegExp(`\\b${wiMatch[0].replace(/[-_]/g, "[-_]")}\\b`, "i")));
+    if (at < 0) return "";
+    return scopeText.slice(Math.max(0, at - 60), at + wiMatch[0].length + 60);
+  })();
+  const negationLead = "(?:do\\s+not|don['’]?t|dont|won['’]?t|will\\s+not|can['’]?t|cannot|can['’]?t\\s+just|not\\s+going\\s+to|unable\\s+to|never|avoid|without|no\\s+need\\s+to|stop(?:\\s+trying\\s+to)?|refrain\\s+from|(?:we\\s+)?should\\s+not|(?:i(?:'d|\\s+would)\\s+rather|let['’]?s)\\s+not|i\\s+don['’]?t\\s+think\\s+we\\s+should|hold\\s+off\\s+(?:on)?|pause|postpone|defer|cancel|abandon|skip)";
   const negativeIntent = [
-    new RegExp(`\\b(?:do\\s+not|don['’]?t|dont)\\s+(?:(?:try(?:ing)?|attempt(?:ing)?|plan(?:ning)?|need|want)\\s+to\\s+|bother\\s+)?(?:${continuationVerb}|${workVerb})\\b`, "i"),
-    new RegExp(`\\b(?:never|avoid|without)\\s+(?:${continuationVerb}|${workVerb})\\b`, "i"),
-    new RegExp(`\\bno\\s+need\\s+to\\s+(?:${continuationVerb}|${workVerb})\\b`, "i"),
-    new RegExp(`\\bstop\\s+trying\\s+to\\s+(?:${continuationVerb}|${workVerb})\\b`, "i"),
-    new RegExp(`\\brefrain\\s+from\\s+(?:${continuationVerb}|${workVerb})\\b`, "i"),
-    new RegExp(`\\b(?:we\\s+)?should\\s+not\\s+(?:${continuationVerb}|${workVerb})\\b`, "i"),
-    new RegExp(`\\b(?:i(?:'d|\\s+would)\\s+rather|let['’]?s)\\s+not\\s+(?:${continuationVerb}|${workVerb})\\b`, "i"),
-    new RegExp(`\\bi\\s+don['’]?t\\s+think\\s+we\\s+should\\s+(?:${continuationVerb}|${workVerb})\\b`, "i"),
+    new RegExp(`\\b${negationLead}\\s+(?:(?:try(?:ing)?|attempt(?:ing)?|plan(?:ning)?|need|want)\\s+to\\s+|bother\\s+with\\s+)?(?:${continuationVerb}|${workVerb})\\b`, "i"),
+    new RegExp(`\\b(?:${continuationVerb}|${workVerb})\\s+(?:later|another\\s+time|tomorrow|next\\s+week|after\\s+that)\\b`, "i"),
+    new RegExp(`\\b(?:is|are|was|were)\\s+not\\s+(?:to\\s+be\\s+)?(?:${continuationVerb}|${workVerb})\\b`, "i"),
   ];
-  if (negativeIntent.some((pattern) => pattern.test(value))) return "none";
-  if (/\bend[_ -]?to[_ -]?end\b/i.test(value)) return "end_to_end";
-  if (/\bresume\b/i.test(value)) return "resume";
-  if (/\bcontinue\b/i.test(value)) return "continue";
-  if (new RegExp(workVerb, "i").test(value)) return "work_on";
+  if (negativeIntent.some((pattern) => pattern.test(scopeText) || pattern.test(verbWindow))) return "none";
+  if (/\bend[_ -]?to[_ -]?end\b/i.test(scopeText)) return "end_to_end";
+  if (new RegExp(continuationVerb, "i").test(verbWindow) && /\bresume\b/i.test(verbWindow)) return "resume";
+  if (new RegExp(continuationVerb, "i").test(verbWindow) && /\bcontinue\b/i.test(verbWindow)) return "continue";
+  if (new RegExp(workVerb, "i").test(verbWindow)) return "work_on";
   return "none";
 }
 

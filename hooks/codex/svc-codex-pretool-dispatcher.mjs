@@ -73,6 +73,24 @@ currentLease=renewed.lease||currentLease;
 }
 }catch{currentLease=null;}
 }
+// EXTREV-EXEC-010: a bound v2 mutation must PROVE the exact live controller
+// at allow time. Missing, corrupt, non-active, foreign-principal, or
+// stale-generation state fails closed — silence never becomes authorization.
+if(b?.worktree&&b?.binding?.wi){
+const stateRoot=authorityStateRoot(b.worktree,process.env);
+const repoId=repositoryId(b.worktree);
+const principal=principalId({host:hostId,session_id:sid});
+let live=null;
+try{live=readController({stateRoot,repoId,wi:b.binding.wi});}catch(e){deny(`controller state unreadable (${e.message}); recovery: re-arm authority with ‘work on ${b.binding.wi}’.`);}
+// A null read means NO v2 state exists yet (fresh adoption runs on the v1
+// claim/binding until first renewal arms v2) — corruption, by contrast,
+// THROWS above. Only EXISTING v2 state must prove liveness here.
+if(live){
+if(live.state!=="active")deny(`controller lease is ${live.state} for ${b.binding.wi}; recovery: re-arm authority with ‘work on ${b.binding.wi}’.`);
+if(String(live.controller_principal)!==principal)deny("controller principal changed; recovery: request handover from the current owner.");
+if(currentLease&&Number(live.generation)<Number(currentLease.generation))deny("controller generation moved backwards; possible state corruption; recovery: re-arm authority.");
+}
+}
 // T04/AC-5: private one-time receipt enabling the successful PostToolUse call
 // to heartbeat this EXACT authorized tuple. Identifiers only, never content.
 // EXTREV-EXEC-001: the correlation digest binds the EXACT EXECUTION INPUT this

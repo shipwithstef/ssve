@@ -468,6 +468,17 @@ printf '%s' "$SH_OUT" | grep -qiE 'self-heal refused|conflict|foreign|owned by' 
 FOREIGN_AFTER="$(find "$WT4/.svc" -type f | sort | xargs sha256sum | sha256sum)"
 [[ "$FOREIGN_AFTER" == "$FOREIGN_BEFORE" ]] && ok "foreign-owner refusal leaves state byte-identical" || bad "refusal mutated foreign state"
 
+# EXTREV-EXEC-012: a valid-SHAPED graph whose INTERNAL wi differs from the
+# requested WI must never be adopted.
+WT5="$(make_sh_fixture sh-wi-mismatch)"
+node -e 'const fs=require("fs");const p=process.argv[1];const g=JSON.parse(fs.readFileSync(p,"utf8"));g.wi="WI-DIFFERENT";fs.writeFileSync(p,JSON.stringify(g,null,2))' "$WT5/.svc/lane-tasks-WI-SH-01.json"
+MISMATCH_OUT="$(sh_drive "$WT5" "$TMP/sh-wi-mismatch/runtime" "session-sh-mismatch-01" t1 "touch .svc/self-heal-probe")"
+printf '%s' "$MISMATCH_OUT" | grep -qiE 'SELF_HEAL_INELIGIBLE|AUTH_BINDING_MISSING|no registered' && ok "graph with mismatched internal WI is not adoptable" || bad "mismatched-WI graph adopted ($(printf '%s' "$MISMATCH_OUT" | head -c 160))"
+
+# EXTREV-EXEC-011: negated intent in the WI-bearing sentence never self-heals.
+NEG_OUT="$(sh_drive "$WT5" "$TMP/sh-wi-mismatch/runtime" "session-sh-neg-000001" t2 "do not continue WI-SH-01")"
+printf '%s' "$NEG_OUT" | grep -qiE 'INTENT_NOT_POSITIVE|AUTH_BINDING_MISSING' && ok "negated prompt cannot activate self-heal" || bad "negated prompt triggered self-heal path ($(printf '%s' "$NEG_OUT" | head -c 160))"
+
 echo ""
 echo "existing worktree self-heal: $PASS passed, $FAIL failed"
 [[ "$FAIL" -eq 0 ]]

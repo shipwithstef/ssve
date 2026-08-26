@@ -18,6 +18,7 @@ import {
 } from "../lib/tool-call-receipt.mjs";
 import {
   renewControllerIfCurrent,
+  renewalDue,
   readController,
   authorityStateRoot,
 } from "../lib/authority-store.mjs";
@@ -45,11 +46,14 @@ function field(payload, ...names) {
 
 function callSucceeded(payload) {
   const response = payload?.tool_response ?? payload?.toolResponse ?? payload?.response;
-  if (payload?.success === false || payload?.error) return false;
+  if (payload?.success === false || payload?.error || payload?.is_error === true) return false;
   if (response && typeof response === "object") {
-    if (response.success === false || response.error) return false;
+    if (response.success === false || response.error || response.is_error === true) return false;
+    if (response.status && /^(error|failed|failure|denied|timeout|aborted|cancelled|canceled)$/i.test(String(response.status))) return false;
+    if (Number.isFinite(response.exit_code) && response.exit_code !== 0) return false;
+    if (Array.isArray(response.stderr_lines) && response.stderr_lines.length > 0) return false;
   }
-  if (typeof response === "string" && /^\s*(error|denied|failed)\b/i.test(response)) return false;
+  if (typeof response === "string" && /^\s*(error|denied|failed|failure|fatal|exception|timeout)\b/i.test(response)) return false;
   return true;
 }
 
@@ -92,9 +96,16 @@ async function main() {
     if (leaseInfo?.repo_id && leaseInfo?.wi && leaseInfo?.worktree_root && leaseInfo?.lease_id && leaseInfo?.principal) {
       const stateRoot = authorityStateRoot(leaseInfo.worktree_root, process.env);
       const current = readController({ stateRoot, repoId: leaseInfo.repo_id, wi: leaseInfo.wi });
+      // EXTREV-EXEC-009: the threshold policy governs post-tool renewal too —
+      // a correlated success renews ONLY when the lease is actually due.
       if (current && current.state === "active" &&
           String(current.lease_id) === String(leaseInfo.lease_id) &&
           Number(current.generation) === Number(leaseInfo.generation || 0)) {
+        if (!renewalDue(current)) {
+          emit({ systemMessage: "svc post-tool: heartbeat no-op (not due or not current)" });
+          dropConsumedReceipt({ session_id: sessionId, tool_use_id: toolUseId, env: process.env });
+          return;
+        }
         // The exact authorized tuple from the receipt — never a re-derived or
         // widened identity — is what may be renewed.
         const renewed = renewControllerIfCurrent({
