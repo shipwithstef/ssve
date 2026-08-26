@@ -63,8 +63,8 @@ function codexEnforcerCommand(codexHooksDir) {
 }
 function codexDispatcherCommand(codexHooksDir) {
   return LAUNCHER_PATH
-    ? `${NODE_CMD} ${shellQuote(LAUNCHER_PATH)} svc-codex-pretool-dispatcher`
-    : `${NODE_CMD} ${shellQuote(path.join(codexHooksDir, "svc-codex-pretool-dispatcher.mjs"))}`;
+    ? `SVC_HOST=codex ${NODE_CMD} ${shellQuote(LAUNCHER_PATH)} svc-codex-pretool-dispatcher`
+    : `SVC_HOST=codex ${NODE_CMD} ${shellQuote(path.join(codexHooksDir, "svc-codex-pretool-dispatcher.mjs"))}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -221,6 +221,16 @@ function buildHookEntries(skillsPath) {
     // the exact skill-load enforcer once, without a second concurrent host hook.
     hooks: [{ type: "command", command: codexDispatcherCommand(codexHooksDir) }],
   }];
+
+  // WI-FW-HOOKS-SAFETY-01 (AC-5): replay-safe post-tool heartbeat — consumes
+  // the one-time pre-tool receipt and threshold-renews the exact authorized
+  // controller tuple. Never grants authority; failures extend nothing.
+  if (!DISABLED.has("svc-posttool-heartbeat")) {
+    entries.PostToolUse.push({
+      matcher: "Bash|apply_patch|Edit|Write",
+      hooks: [{ type: "command", command: `SVC_HOST=codex ${NODE_CMD} ${shellQuote(path.join(codexHooksDir, "svc-codex-posttool-heartbeat.mjs"))}` }],
+    });
+  }
   return entries;
 }
 

@@ -17,7 +17,7 @@ if [[ -z "$PLAN" || ! -r "$PLAN" ]]; then
   exit 2
 fi
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT="$(pwd -P)"
 LAUNCHER="$ROOT/scripts/run-external-review.mjs"
 PROTOCOL_REF="$ROOT/references/plan-review-protocol.md"
 ORCHESTRATOR="$(bash "$ROOT/scripts/resolve-adversarial-reviewer.sh" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s).orchestrator))')"
@@ -54,7 +54,7 @@ if [[ -f "$REVIEWER_CONFIG" && ! -L "$REVIEWER_CONFIG" ]]; then
           const doc = JSON.parse(s);
           const requested = process.argv[1] || "";
           const stations = (doc.stations || []).filter((station) =>
-            station.kind === "external" && station.required === true && station.authority === "independent" &&
+            station.kind === "external" && station.authority === "independent" && (requested ? station.id === requested : station.required === true) &&
             (!requested || station.id === requested));
           if (stations.length !== 1) {
             process.stderr.write(`review-plan-codex: expected exactly one required independent external station${requested ? ` matching ${requested}` : ""}, found ${stations.length}\n`);

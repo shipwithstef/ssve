@@ -213,20 +213,40 @@ export function explicitWI(text) {
 export function continuationIntent(text) {
   const value = String(text || "");
   const continuationVerb = "(?:continue|continuing|resume|resuming|finish|finishing|complete|completing)";
+  // WI-FW-HOOKS-SAFETY-01: `work on <WI>` is the canonical positive imperative
+  // surfaced by every actionable denial; it is positive work intent for
+  // self-heal, distinct from a bare mention of the WI.
+  const workVerb = "(?:work(?:ing)?\\s+on|implement(?:ing)?|build(?:ing)?)";
+  // EXTREV-EXEC-011: intent verbs count only when they govern the WI-bearing
+  // sentence. A bare "resume"/"continue" anywhere in a long prompt (a noun, a
+  // button label, an unrelated topic) must not activate self-heal.
+  // EXTREV-R3-003: reuse the canonical WI body so NAMESPACED ids
+  // (WI-FW-HOOKS-SAFETY-01) anchor the sentence scope, not just WI-123 forms.
+  const wiMatch = value.match(new RegExp("(?<![A-Za-z0-9._:/-])" + WI_ID_BODY + "(?![A-Za-z0-9._:/-])"));
+  const scopeText = (() => {
+    if (!wiMatch) return value;
+    const sentences = value.split(/(?:[.!?\n]|\.\s)\s*/);
+    const hit = sentences.find((s) => new RegExp(`\\b${wiMatch[0].replace(/[-_]/g, "[-_]")}\\b`, "i").test(s));
+    return (hit || value).trim();
+  })();
+  // Verbs must sit within ±60 chars of the WI token inside its own sentence.
+  const verbWindow = (() => {
+    if (!wiMatch) return scopeText;
+    const at = Math.max(0, scopeText.search(new RegExp(`\\b${wiMatch[0].replace(/[-_]/g, "[-_]")}\\b`, "i")));
+    if (at < 0) return "";
+    return scopeText.slice(Math.max(0, at - 60), at + wiMatch[0].length + 60);
+  })();
+  const negationLead = "(?:do\\s+not|don['’]?t|dont|won['’]?t|will\\s+not|can['’]?t|cannot|can['’]?t\\s+just|not\\s+going\\s+to|unable\\s+to|never|avoid|without|no\\s+need\\s+to|stop(?:\\s+trying\\s+to)?|refrain\\s+from|(?:we\\s+)?should\\s+not|(?:i(?:'d|\\s+would)\\s+rather|let['’]?s)\\s+not|i\\s+don['’]?t\\s+think\\s+we\\s+should|hold\\s+off\\s+(?:on)?|pause|postpone|defer|cancel|abandon|skip)";
   const negativeIntent = [
-    new RegExp(`\\b(?:do\\s+not|don['’]?t|dont)\\s+(?:(?:try(?:ing)?|attempt(?:ing)?|plan(?:ning)?|need|want)\\s+to\\s+|bother\\s+)?${continuationVerb}\\b`, "i"),
-    new RegExp(`\\b(?:never|avoid|without)\\s+${continuationVerb}\\b`, "i"),
-    new RegExp(`\\bno\\s+need\\s+to\\s+${continuationVerb}\\b`, "i"),
-    new RegExp(`\\bstop\\s+trying\\s+to\\s+${continuationVerb}\\b`, "i"),
-    new RegExp(`\\brefrain\\s+from\\s+${continuationVerb}\\b`, "i"),
-    new RegExp(`\\b(?:we\\s+)?should\\s+not\\s+${continuationVerb}\\b`, "i"),
-    new RegExp(`\\b(?:i(?:'d|\\s+would)\\s+rather|let['’]?s)\\s+not\\s+${continuationVerb}\\b`, "i"),
-    new RegExp(`\\bi\\s+don['’]?t\\s+think\\s+we\\s+should\\s+${continuationVerb}\\b`, "i"),
+    new RegExp(`\\b${negationLead}\\s+(?:(?:try(?:ing)?|attempt(?:ing)?|plan(?:ning)?|need|want)\\s+to\\s+|bother\\s+with\\s+)?(?:${continuationVerb}|${workVerb})\\b`, "i"),
+    new RegExp(`\\b(?:${continuationVerb}|${workVerb})\\s+(?:later|another\\s+time|tomorrow|next\\s+week|after\\s+that)\\b`, "i"),
+    new RegExp(`\\b(?:is|are|was|were)\\s+not\\s+(?:to\\s+be\\s+)?(?:${continuationVerb}|${workVerb})\\b`, "i"),
   ];
-  if (negativeIntent.some((pattern) => pattern.test(value))) return "none";
-  if (/\bend[_ -]?to[_ -]?end\b/i.test(value)) return "end_to_end";
-  if (/\bresume\b/i.test(value)) return "resume";
-  if (/\bcontinue\b/i.test(value)) return "continue";
+  if (negativeIntent.some((pattern) => pattern.test(scopeText) || pattern.test(verbWindow))) return "none";
+  if (/\bend[_ -]?to[_ -]?end\b/i.test(scopeText)) return "end_to_end";
+  if (new RegExp(continuationVerb, "i").test(verbWindow) && /\bresume\b/i.test(verbWindow)) return "resume";
+  if (new RegExp(continuationVerb, "i").test(verbWindow) && /\bcontinue\b/i.test(verbWindow)) return "continue";
+  if (new RegExp(workVerb, "i").test(verbWindow)) return "work_on";
   return "none";
 }
 
@@ -251,7 +271,7 @@ function isSafeGit(argv) {
       index += 2;
       continue;
     }
-    if (token.startsWith("--git-dir=") || token.startsWith("--work-tree=") || token === "--no-pager") {
+    if (token.startsWith("--git-dir=") || token.startsWith("--work-tree=") || token === "--no-pager" || token === "--no-optional-locks") {
       if (token.endsWith("=")) return false;
       index += 1;
       continue;
@@ -367,7 +387,10 @@ const TRIVIAL_SAFE_SEGMENTS = new Set(["true", "false", ":"]);
 // WI-501: split a command on shell control operators (&&, ||, |, ;) that appear
 // OUTSIDE single/double quotes. Quoted operators are literal argument text.
 // Returns trimmed, non-empty segments.
-function splitUnquoted(command) {
+// Exported for the shared pre-tool decision engine (WI-FW-HOOKS-SAFETY-01):
+// there must be exactly ONE quote-aware segmentation + one classifier in the
+// framework, never parallel copies that could drift.
+export function splitUnquoted(command) {
   const segments = [];
   let current = "";
   let quote = null; // "'" | '"' | null
@@ -401,7 +424,8 @@ function splitUnquoted(command) {
 // Shell diagnostics commonly end in `2>/dev/null`, `2>&1`, or both. Strip
 // only exact fd duplication and fd-to-/dev/null suffixes before lexing; every
 // file target remains a governed mutation.
-function stripDevNullRedirections(segment) {
+// Exported for the shared pre-tool decision engine (WI-FW-HOOKS-SAFETY-01).
+export function stripDevNullRedirections(segment) {
   let value = segment;
   const suffix = /(?:^|\s)(?:(?:[012]?>|&>)\s*\/dev\/null|[012]?>&[012])\s*$/;
   while (suffix.test(value)) value = value.replace(suffix, "").trim();

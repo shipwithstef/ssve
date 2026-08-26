@@ -72,7 +72,7 @@ OWNER_ENV="SVC_CODEX_RUNTIME_DIR=$TMP/runtime CODEX_THREAD_ID=$SESSION"
 eval "$OWNER_ENV node \"$ROOT/scripts/svc-owner-recovery.mjs\" arm --repo \"$ROOT\" --worktree \"$ROOT\" --wi WI-999 --reason focused-recovery --ttl-min 1" >/dev/null
 eval "$OWNER_ENV node \"$ROOT/scripts/svc-owner-recovery.mjs\" status --repo \"$ROOT\"" | grep -q 'focused-recovery'
 printf '%s' "{\"session_id\":\"$SESSION\",\"cwd\":\"$ROOT\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"touch outside-recovery.txt\"}}" |
-  SVC_CODEX_RUNTIME_DIR="$TMP/runtime" CODEX_THREAD_ID="$SESSION" node "$ROOT/hooks/codex/svc-codex-pretool-dispatcher.mjs" | grep -q '{}'
+  SVC_HOST=codex SVC_CODEX_RUNTIME_DIR="$TMP/runtime" CODEX_THREAD_ID="$SESSION" node "$ROOT/hooks/codex/svc-codex-pretool-dispatcher.mjs" | grep -q '{}'
 DIRECT_ISOLATION="$(printf '%s' "{\"session_id\":\"$SESSION\",\"cwd\":\"$ROOT\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"touch outside-recovery.txt\"}}" |
   SVC_CODEX_RUNTIME_DIR="$TMP/runtime" CODEX_THREAD_ID="$SESSION" node "$ROOT/hooks/svc-worktree-isolation-guard.mjs")"
 test -z "$DIRECT_ISOLATION"

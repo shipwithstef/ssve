@@ -1,9 +1,12 @@
 import path from "node:path";
 import { lexSimpleCommand } from "./argv-lex.mjs";
 import { WI_ID_BODY } from "../../lib/wi-id.mjs";
+// WI-FW-HOOKS-SAFETY-01 (FP-01): Git-valid slash branches are accepted as
+// literal refs; filesystem-path safety is enforced separately by the worktree
+// identity layer, never by a branch-name regex here.
+import { validateLiteralBranchName } from "../../lib/literal-branch.mjs";
 
 const WI = new RegExp(`^${WI_ID_BODY}$`);
-const BRANCH = /^[A-Za-z0-9](?:[A-Za-z0-9._-]{0,126}[A-Za-z0-9])?$/;
 
 // Canonical parser shared by Codex routing, isolation, and bootstrap consume.
 export function parseBootstrapCommand(command, { ensurePath = "scripts/svc-ensure-worktree.mjs" } = {}) {
@@ -29,7 +32,7 @@ export function parseBootstrapCommand(command, { ensurePath = "scripts/svc-ensur
     if (flag === "--authority-v2") { out.authority_v2 = true; continue; }
     return null;
   }
-  if (!WI.test(out.wi) || !BRANCH.test(out.branch)) return null;
+  if (!WI.test(out.wi) || !validateLiteralBranchName(out.branch).ok) return null;
   if (out.from !== "origin/main" && !/^[0-9a-f]{40}$/.test(out.from)) return null;
   if (out.handoff && !/^[A-Za-z0-9_-]{32,128}$/.test(out.handoff)) return null;
   return out;

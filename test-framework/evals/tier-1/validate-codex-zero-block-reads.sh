@@ -38,10 +38,16 @@ expect_allow "rg -n 'alpha|beta' sample.txt | head -n 5" "quoted piped read need
 expect_allow "sed -n '1,20p' sample.txt 2>/dev/null" "diagnostic redirection to dev-null stays read-only"
 expect_allow "sed -n '1,20p' sample.txt >/dev/null 2>&1" "combined diagnostic redirections stay read-only"
 expect_allow "git status 2>&1" "file-descriptor duplication stays read-only"
+# WI-FW-HOOKS-SAFETY-01 (FP-03): optional-lock suppression is per-Git-argv
+# `--no-optional-locks` normalization inside ONE engine decision — never an
+# `export` segment that a sibling classifier re-reads as a mutation.
 status_output="$(payload "git status" | HOME="$TMP/home" XDG_RUNTIME_DIR="$TMP/runtime" env -u SVC_SESSION_ID -u CODEX_SESSION_ID -u CODEX_THREAD_ID node "$HOOK")"
-if printf '%s' "$status_output" | grep -q 'export GIT_OPTIONAL_LOCKS=0; git status'; then pass "authority-free git status disables optional index locks"; else fail "authority-free git status disables optional index locks ($status_output)"; fi
-compound_status_output="$(payload "git rev-parse --show-toplevel && git status" | HOME="$TMP/home" XDG_RUNTIME_DIR="$TMP/runtime" env -u SVC_SESSION_ID -u CODEX_SESSION_ID -u CODEX_THREAD_ID node "$HOOK")"
-if printf '%s' "$compound_status_output" | grep -q 'export GIT_OPTIONAL_LOCKS=0; git rev-parse.*&& git status'; then pass "optional-lock protection covers every segment of a compound read"; else fail "optional-lock protection covers every segment of a compound read ($compound_status_output)"; fi
+if printf '%s' "$status_output" | grep -q 'git --no-optional-locks status'; then pass "authority-free git status disables optional index locks via argv normalization"; else fail "authority-free git status disables optional index locks ($status_output)"; fi
+if printf '%s' "$status_output" | grep -q 'export GIT_OPTIONAL_LOCKS'; then fail "no export-prefix rewrite may remain ($status_output)"; else pass "export-prefix rewrite removed from observation path"; fi
+compound_status_output="$(payload "git rev-parse --show-toplevel && git status --short" | HOME="$TMP/home" XDG_RUNTIME_DIR="$TMP/runtime" env -u SVC_SESSION_ID -u CODEX_SESSION_ID -u CODEX_THREAD_ID node "$HOOK")"
+if printf '%s' "$compound_status_output" | grep -q 'git rev-parse --show-toplevel && git --no-optional-locks status --short'; then pass "optional-lock normalization covers only the segments that need it"; else fail "optional-lock normalization covers only the segments that need it ($compound_status_output)"; fi
+plain_read_output="$(payload "cat sample.txt" | HOME="$TMP/home" XDG_RUNTIME_DIR="$TMP/runtime" env -u SVC_SESSION_ID -u CODEX_SESSION_ID -u CODEX_THREAD_ID node "$HOOK")"
+if [ "$(printf '%s' "$plain_read_output" | tr -d '[:space:]')" = '{}' ]; then pass "non-git reads pass the original bytes through untouched"; else fail "non-git reads must not be rewritten ($plain_read_output)"; fi
 expect_allow "sort sample.txt" "sort without an output target stays read-only"
 expect_allow "uniq sample.txt" "uniq with one input stays read-only"
 expect_allow "file sample.txt" "file inspection stays read-only"

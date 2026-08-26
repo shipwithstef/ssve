@@ -103,5 +103,24 @@ fs.writeFileSync(path.join(staleState, "locks", `${staleKey}.lock`), `99999999\n
 const reclaimed = auth.bootstrapController({ stateRoot: staleState, repoId, wi: "WI-LOCK", worktreeRoot: worktree, principal: a });
 assert.equal(reclaimed.state, "active");
 
+// WI-FW-HOOKS-SAFETY-01 (T04/AC-4): after a handover, the OLD principal's
+// renewal attempt is a typed stale decision that writes nothing.
+const handoverState = path.join(tmp, "handover-renew");
+const hLease = auth.bootstrapController({ stateRoot: handoverState, repoId, wi: "WI-HR", worktreeRoot: worktree, principal: a });
+const tokenLease = auth.prepareHandover({ stateRoot: handoverState, repoId, wi: "WI-HR", principal: a, intendedPrincipal: b });
+auth.acceptHandover({ stateRoot: handoverState, repoId, wi: "WI-HR", principal: b, token: tokenLease.token });
+const oldRenewal = auth.renewControllerIfCurrent({
+  stateRoot: handoverState, repoId, wi: "WI-HR", worktreeRoot: worktree,
+  principal: a, leaseId: hLease.lease_id, generation: hLease.generation,
+});
+assert.equal(oldRenewal.status, "stale_decision", "old principal cannot renew after handover");
+const newPrincipalRenewal = auth.renewControllerIfCurrent({
+  stateRoot: handoverState, repoId, wi: "WI-HR", worktreeRoot: worktree,
+  principal: b, leaseId: auth.readController({ stateRoot: handoverState, repoId, wi: "WI-HR" }).lease_id,
+  generation: auth.readController({ stateRoot: handoverState, repoId, wi: "WI-HR" }).generation,
+});
+assert.equal(newPrincipalRenewal.status, "renewed", "the new exact principal renews the current tuple");
+assert.equal(typeof auth.renewalDue, "function", "renewal due-threshold policy is exported");
+
 console.log("TIER-1 PASS: controller lease resume handover recovery and migration");
 NODE
