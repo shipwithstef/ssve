@@ -46,6 +46,8 @@ Three lenses, one ranked list. Runs on-demand against precomputed state; does no
 
 **Doctrine (binding):** every recommendation MUST cite the registry entry id AND the snapshot row id it came from. If the underlying data doesn't exist (registry not seeded, snapshot not generated), the skill refuses to recommend — it does not hallucinate capabilities.
 
+**Framework-fact guardrail (WI-FW-ADVISOR-KNOWLEDGE-01):** when lens synthesis names framework machinery (hosts, lanes, gates, review topology, worktree rules, governors), load `references/advisor/framework-knowledge-index.md` and re-derive load-bearing counts with its Verify commands before writing them into recommendations. Cite `path § section`; never quote counts from memory.
+
 ## Phase Receipt Contract
 
 When a task graph exists, record these receipts before completing the
@@ -140,6 +142,7 @@ The `evidence` array MUST reference at least one registry path and one snapshot 
 | 4 | Every rec cites ≥1 registry path AND ≥1 snapshot path | evidence array | |
 | 5 | No hallucinated resource-ids | every `required_resource` is in the registry | |
 | 6 | Report written | `docs/specs/capability-concierge/<date>.md` exists | |
+| 7 | Framework facts grounded | Framework-machinery claims in recommendations trace to `references/advisor/framework-knowledge-index.md` + Verify-command runs; no counts from memory | |
 
 ## Pipeline Continuation
 

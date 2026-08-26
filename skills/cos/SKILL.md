@@ -47,6 +47,18 @@ Require a valid company resolver result, readable evidence, and an available app
 4. Propose at most three ranked, reversible next decisions with evidence.
 5. Run `preflight` before presenting the queue.
 
+## Framework-fact guardrail (WI-FW-ADVISOR-KNOWLEDGE-01)
+
+When a briefing, priority, or decision card asserts facts about the framework
+itself — skill/gate/host counts, lane model, review topology, worktree or
+mutation authority, resource governors — do NOT state them from memory:
+
+1. Load `references/advisor/framework-knowledge-index.md` (canonical advisor pack).
+2. Re-derive any load-bearing count/wiring claim with that block's **Verify**
+   command before it enters user-facing output.
+3. Cite `path § section` for each such claim. If the index and its authorities
+   don't cover it, mark the claim as ungrounded instead of improvising.
+
 ## Boundaries and red flags
 
 Do not expose ledger bodies in startup output. Stop on malformed links, unsupported schemas, missing evidence, or an outward-action request. A summary is not approval.
@@ -60,6 +72,7 @@ Live evidence: not-applicable (no visible artifact).
 | 1 | Parent context is explicit | Inspect resolver JSON | |
 | 2 | Claims cite real company evidence | Re-run evidence gate | |
 | 3 | Output is proposer-only and bounded | Inspect cards and action verbs | |
+| 4 | Framework facts grounded | Any framework-machinery claim traces to `references/advisor/framework-knowledge-index.md` + a Verify-command run; no counts from memory | |
 
 ## Task-Graph Contract
 

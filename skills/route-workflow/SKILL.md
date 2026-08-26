@@ -108,7 +108,7 @@ When `execution_mode: end_to_end` crosses a verification/review/closeout seam an
 `.svc/session-contract.jsonl`'s field schema (required + optional fields, including `authorization_envelope` — §4c) is canonically documented in `_shared/session-contract.md`; read it before writing or interpreting a contract row.
 
 ## Lane Model & Routing
-Lane selection is mandatory: choose the lane from `references/lane-model.md`; use `references/framework-policy.md` for svc-on-svc work; use `references/routing-rules.md` for change-type signals; use `references/intent-routing.md` for phrase-to-skill mappings. If no lane fits, propose a new lane instead of forcing a bad match.
+Lane selection is mandatory: choose the lane from `references/lane-model.md`; use `references/framework-policy.md` for svc-on-svc work; use `references/routing-rules.md` for change-type signals; use `references/intent-routing.md` for phrase-to-skill mappings. If no lane fits, propose a new lane instead of forcing a bad match. Explicit framework-quality/capability questions ("is svc good at X", "how does svc handle Y") route to `svc-advisor`, which loads `references/advisor/framework-knowledge-index.md` and answers cite-before-assert.
 
 ## Human-Invoked Prompt Composer
 For human-invoked routing, produce a Prompt Composer package. It must include normalized intent, repo/session evidence read, lane and delivery tier, exact skill sequence, required artifacts, skip conditions, eval/verification commands, closeout requirements, and when to use `/goal`, `/loop`, `dispatch-waves`, or other host capabilities.
