@@ -46,10 +46,17 @@ env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE \
   node "$WIRER" --skills-path "$REPO_ROOT" --settings "$S1" > "$TMP/run1.log" 2>&1
 check "wire run 1 exits 0" test "$?" = "0"
 
-check "loop-guard collapsed to exactly 1" test "$(q PreToolUse "sum('svc-loop-guard.mjs' in h.get('command','') for _,h in cmds)")" = "1"
+# WI-FW-HOOKS-SAFETY-01: fixture canonical Bash|Edit|Write loop-guard survives
+# dedup AND the registry adds the Agent-only coverage entry -> exactly 2.
+check "loop-guard collapsed to canonical + Agent coverage" test "$(q PreToolUse "sum('svc-loop-guard.mjs' in h.get('command','') for _,h in cmds)")" = "2"
 check "surviving loop-guard is canonical (no payload token)" test "$(q PreToolUse "sum('svc-loop-guard.mjs' in h.get('command','') and 'TOOL_INPUT' in h.get('command','') for _,h in cmds)")" = "0"
-check "workflow-guard trio survived (3 entries)" test "$(q PreToolUse "sum('svc-workflow-guard.mjs' in h.get('command','') for _,h in cmds)")" = "3"
+# Fixture-preserved trio: this validator proves the wirer PRESERVES existing
+# user settings; registry-level consolidation is asserted by the engine checks.
+check "workflow-guard trio preserved from fixture (3 entries)" test "$(q PreToolUse "sum('svc-workflow-guard.mjs' in h.get('command','') for _,h in cmds)")" = "3"
 check "trio flag sets intact (plain+phase-boundary+bash-guard)" test "$(q PreToolUse "sum('svc-workflow-guard.mjs' in h.get('command','') and '--phase-boundary' in h.get('command','') for _,h in cmds) + sum('svc-workflow-guard.mjs' in h.get('command','') and '--bash-guard' in h.get('command','') for _,h in cmds)")" = "2"
+check "single deny-capable decision engine wired" test "$(q PreToolUse "sum('svc-codex-pretool-dispatcher.mjs' in h.get('command','') for _,h in cmds)")" = "1"
+check "loop-guard Agent coverage retained" test "$(q PreToolUse "sum(('Agent' in str(r).split('|')) and ('svc-loop-guard.mjs' in h.get('command','')) for r,h in cmds) >= 1")" = "1"
+check "post-tool heartbeat wired once" test "$(q PostToolUse "sum('svc-codex-posttool-heartbeat.mjs' in h.get('command','') for _,h in cmds)")" = "1"
 check "no payload tokens on any svc hook" test "$(q PreToolUse "sum('TOOL_INPUT' in h.get('command','') for _,h in cmds)")" = "0"
 check "accumulate entry survived canonicalized" test "$(q PostToolUse "sum('--accumulate' in h.get('command','') and 'TOOL_INPUT' not in h.get('command','') for _,h in cmds)")" = "1"
 check "eval-gate pre+post both present (distinct identities)" test "$(q PreToolUse "sum('eval-gate.mjs pre' in h.get('command','') for _,h in cmds)")$(q PostToolUse "sum('eval-gate.mjs post' in h.get('command','') for _,h in cmds)")" = "11"

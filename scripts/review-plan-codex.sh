@@ -68,8 +68,9 @@ fi
 # to plan text only when the branch has none. Ambiguity (multiple distinct WIs) or
 # absence is FAIL-CLOSED: refuse before any provider call rather than silently
 # restoring the original unguarded paid-plan path (EXTREV-136 / EXTREV-EXEC-002).
-WI_CANDIDATES="$(git -C "$CONTEXT_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null | grep -oE 'WI-[0-9]+' | sort -u || true)"
-[[ -z "$WI_CANDIDATES" ]] && WI_CANDIDATES="$(grep -oE 'WI-[0-9]+' "$PLAN" | sort -u || true)"
+WI_PATTERN='WI-[A-Z0-9]+(-[A-Z0-9]+)*'
+WI_CANDIDATES="$(git -C "$CONTEXT_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null | tr '[:lower:]' '[:upper:]' | grep -oE "$WI_PATTERN" | sort -u || true)"
+[[ -z "$WI_CANDIDATES" ]] && WI_CANDIDATES="$(tr '[:lower:]' '[:upper:]' < "$PLAN" | grep -oE "$WI_PATTERN" | sort -u || true)"
 WI_COUNT="$(printf '%s\n' "$WI_CANDIDATES" | grep -c . || true)"
 if [[ "$WI_COUNT" -ne 1 ]]; then
   printf 'review-plan-codex: cannot derive exactly one authoritative WI (found %s: %s); refusing plan review before any provider call. Use an unambiguous WI branch or plan, or run review-exec if implementation has begun.\n' "$WI_COUNT" "$(printf '%s' "$WI_CANDIDATES" | tr '\n' ' ')" >&2
@@ -79,7 +80,7 @@ WI="$WI_CANDIDATES"
 # EXTREV-EXEC-007: a stale/reused WI branch could otherwise bind the branch WI
 # while reviewing a plan for a DIFFERENT WI. If the plan names any WI at all,
 # require the derived WI to be one of them; otherwise fail closed.
-PLAN_WIS="$(grep -oE 'WI-[0-9]+' "$PLAN" | sort -u || true)"
+PLAN_WIS="$(tr '[:lower:]' '[:upper:]' < "$PLAN" | grep -oE "$WI_PATTERN" | sort -u || true)"
 if [[ -n "$PLAN_WIS" ]] && ! printf '%s\n' "$PLAN_WIS" | grep -qx "$WI"; then
   printf 'review-plan-codex: derived WI %s does not appear in the plan (%s); refusing to bind a stale/reused branch WI. Rebase the review onto the correct WI branch/plan.\n' "$WI" "$(printf '%s' "$PLAN_WIS" | tr '\n' ' ')" >&2
   exit 4

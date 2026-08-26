@@ -16,7 +16,8 @@ fail=0
 #   task-graph.mjs           — story-receipt TEMPLATE seed (template-driven class)
 #   audit-story-receipts.test — test fixture writer, not a producer
 #   external-review-provenance — HMAC authority marker, not a verification receipt
-ALLOWLIST="scripts/state-io.mjs|scripts/emit-receipt.mjs|scripts/wire-hooks.mjs|scripts/wire-cursor-hooks.mjs|scripts/wire-grok-hooks.mjs|scripts/task-graph.mjs|scripts/audit-story-receipts.test.mjs|scripts/lib/external-review-provenance.mjs"
+#   tool-call-receipt (WI-FW-HOOKS-SAFETY-01) — pre/post correlation receipts use O_EXCL temp + fsync + rename + chmod 0600 (atomic, private); validated in validate-tool-call-heartbeat.sh
+ALLOWLIST="scripts/state-io.mjs|scripts/emit-receipt.mjs|scripts/wire-hooks.mjs|scripts/wire-cursor-hooks.mjs|scripts/wire-grok-hooks.mjs|scripts/task-graph.mjs|scripts/audit-story-receipts.test.mjs|scripts/lib/external-review-provenance.mjs|hooks/lib/tool-call-receipt.mjs"
 VIOLATIONS=$(grep -rnE 'writeFileSync\(' scripts hooks --include='*.mjs' 2>/dev/null \
   | grep -vE "($ALLOWLIST)" \
   | grep -iE '(receipt|staging)' || true)

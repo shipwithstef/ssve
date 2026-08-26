@@ -19,7 +19,9 @@ const lines = text.split('\n');
 let pass = 0, fail = 0;
 const errs = [];
 const isoRe = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
-const wiRe = /^WI-(SPINE-)?\d+\$/;
+// WI-FW-HOOKS-SAFETY-01: align with the canonical namespaced WI grammar in
+  // hooks/lib/wi-id.mjs (single source of truth) — numeric and namespaced ids.
+  const wiRe = /^WI-[A-Z0-9]+(?:-[A-Z0-9]+)*\$/;
 const kinds = new Set(['mechanical','taste','user']);
 lines.forEach((line, idx) => {
   if (!line.trim()) return;
