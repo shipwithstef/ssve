@@ -151,13 +151,57 @@
     },
     {
       "id": 3,
-      "status": "in_progress",
+      "status": "completed",
       "skill": "review-exec",
       "subject": "self-review and independent review of frozen diff",
       "blocked_by": [
         2
       ],
-      "note": "round 1 receipt eaff01dc…: 9 findings (7H/2M) all remediated in remediation commits; round 2 pending on remediated frozen diff"
+      "note": "CONVERGED at WI-491 3-round cap; bounded exit: 0 critical, residuals dispositioned (see cross-model doc)",
+      "completed_at": "2026-08-26T09:05:00.000Z",
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-08-26T06:45:00.000Z",
+        "loaded_via": "opencode-session",
+        "output_artifact": "docs/specs/reviews/wi-fw-hooks-safety-exec-cross-model.md",
+        "validation_output": ".svc/external-review-artifacts/cross-model-r3/receipt.json",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-08-26T00:16:05.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-fw-hooks-safety-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-08-26T06:41:52.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/review-exec-pair.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-08-26T09:05:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/cross-model-r3/receipt.json"
+              },
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-fw-hooks-safety-exec-cross-model.md"
+              }
+            ]
+          }
+        ]
+      }
     },
     {
       "id": 4,
@@ -239,7 +283,7 @@
     },
     {
       "id": 5,
-      "status": "pending",
+      "status": "in_progress",
       "skill": "land-changeset",
       "subject": "push PR, merge, and install all hosts",
       "blocked_by": [
