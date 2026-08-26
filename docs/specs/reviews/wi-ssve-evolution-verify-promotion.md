@@ -40,9 +40,28 @@ Zero landing-attributable failures remain. Logs: `/tmp/opencode/tier1-postland.l
 
 ## Host OTA closeout
 
-Post-verification host convergence executed per owner override: `./setup --all-hosts`,
-`check-install-drift.sh --all-hosts` exit 0, hourshub-port best-effort sync, wi-ssve worktree
-removed post-merge. Results recorded in the session log appended to the swarm registry entry.
+Post-verification host convergence executed per owner override. During `./setup --all-hosts` a
+latent pre-existing defect surfaced and was fixed before convergence:
+
+- **Finding (OTA-1):** governed Cursor stop command duplicated on wirer re-run. Root cause:
+  `hooks/lib/svc-ownership.mjs` `SVC_ENFORCE_RE` required whitespace/EOL after `svc-enforce`, but
+  generated governed commands embed the launcher path shell-QUOTED (`'…/svc-enforce' svc-…`), so
+  installed governed entries were misclassified user-owned → kept + appended = 2. Predates this WI
+  (`svc-ownership.mjs` last touched WI-562 `9dc2c73`; branch diff empty for that file); manifests
+  only on machines where a prior governed entry exists.
+- **Fix:** suffix lookahead widened to accept quotes (`(?=['"]|\s|$)`); two quoted-launcher
+  fixtures added to `validate-ownership-predicate-parity.mjs` (13/13 pass); live-state proof:
+  double-run of `wire-cursor-hooks.mjs` on real HOME converges to exactly one governed command.
+
+Per-host drift status after fix (`check-install-drift.sh --host <h>`): claude OK, codex OK,
+gemini OK, opencode OK, mimo-code OK, antigravity OK, cursor OK, grok OK — **8/9 exit 0**.
+
+**Kimi exception (environmental):** the Kimi Code CLI binary is not installed on this machine
+(`command not found`; same root cause as ledger-adjudicated pre-existing `validate-kimi-host.sh`
+#8). Setup installs skills 103/103 but its transactional protocol rolls back when the host-CLI
+verification step cannot execute, so file-level convergence without the runtime is refused by
+design. Not worked around by weakening the shared host-manifest verify contract. Recovery on a
+kimi-capable machine: install the CLI, then `./setup --host kimi`.
 
 ## Decision points closure
 
