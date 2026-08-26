@@ -2,14 +2,19 @@
 /**
  * audit-framework-docs.mjs — mechanical docs-drift detector (WI-FW-DOCS-AUDIT-01).
  *
- * Detects the failure classes found in proposals/2026-08-26-framework-docs-audit-findings.md:
- *   A. Broken internal markdown links in live docs (historical dirs excluded)
+ * Detects these failure classes (found in proposals/2026-08-26-framework-docs-audit-findings.md):
+ *   A. Broken internal markdown links in live docs (historical dirs excluded;
+ *      uncommitted raw-capture citations reported as WARN)
  *   B. FRAMEWORK-STATE.md over its own WI-362 50KB ceiling        → WARN only
  *      (promote to FAIL after the queued diet WI lands)
- *   C. Countable claims vs disk/manifest truth (agents, rules, reference docs)
- *   D. HOSTS.md host rows vs provision/hosts/*.json
+ *   C. Countable claims vs disk/manifest truth (agents, rules incl. registry↔disk
+ *      parity, skills manifest↔disk, reference docs, tier-1 script count)
+ *   D. HOSTS.md install-command rows vs provision/hosts/*.json
  *   E. FRAMEWORK-STATE.md references to archive paths that don't exist
  *   F. Knowledge INDEX entries older than 90 days                  → WARN only
+ *
+ * Not enforced here (one-time manual fixes, see ledger): OPEN-PROPOSALS residue
+ * markers (F10), superseded-section markings.
  *
  * Exit codes: 0 = pass/warn-only, 1 = fail.
  */
@@ -17,7 +22,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const ROOT = process.cwd();
+// Resolve repo root from this script's location (works from any cwd).
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fails = [];
 const warns = [];
 
@@ -105,6 +111,28 @@ function countTier1Scripts() {
   const d = path.join(ROOT, "test-framework", "evals", "tier-1");
   return fs.readdirSync(d).filter((f) => f.endsWith(".sh") || f.endsWith(".mjs")).length;
 }
+function manifestSkillNames() {
+  const m = JSON.parse(fs.readFileSync(path.join(ROOT, "skills-manifest.json"), "utf8"));
+  return (m.includedSkills || []).map((s) => (typeof s === "string" ? s : s.name)).filter(Boolean);
+}
+function diskSkillDirs() {
+  return fs.readdirSync(path.join(ROOT, "skills")).filter((d) => fs.existsSync(path.join(ROOT, "skills", d, "SKILL.md")));
+}
+function rulesRegistryPaths() {
+  const m = JSON.parse(fs.readFileSync(path.join(ROOT, "skills-manifest.json"), "utf8"));
+  return (m.rulesRegistry?.entries || []).map((r) => r.path || r.file || r.id).filter(Boolean);
+}
+function diskRuleFiles() {
+  const out = [];
+  (function walk(d) {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (e.name.endsWith(".md")) out.push(path.relative(ROOT, p).replaceAll("\\", "/"));
+    }
+  })(path.join(ROOT, "rules"));
+  return out;
+}
 
 function claimIn(file, regex) {
   const s = fs.readFileSync(path.join(ROOT, file), "utf8");
@@ -139,6 +167,14 @@ function checkCounts() {
   const c1 = claimIn("FRAMEWORK-STATE.md", /(\d+) tier-1 scripts/);
   if (c1 !== null && c1 !== t1) fails.push(`C FRAMEWORK-STATE.md claims ${c1} tier-1 scripts, disk has ${t1}`);
   else if (c1 === null) fails.push(`C FRAMEWORK-STATE.md missing parseable tier-1-scripts-count claim`);
+  // manifest ↔ disk parity: skills and rules
+  const manSkills = manifestSkillNames(), diskSkills = diskSkillDirs();
+  for (const s of manSkills) if (!diskSkills.includes(s)) fails.push(`C manifest skill "${s}" has no skills/<dir>/SKILL.md on disk`);
+  for (const d of diskSkills) if (!manSkills.includes(d)) fails.push(`C disk skill dir "${d}" absent from manifest includedSkills`);
+  const regRules = rulesRegistryPaths(), diskRules = diskRuleFiles();
+  const regSet = new Set(regRules);
+  for (const r of diskRules) if (!regSet.has(r)) fails.push(`C rules file ${r} not in rulesRegistry.entries`);
+  for (const r of regRules) if (!fs.existsSync(path.join(ROOT, r))) fails.push(`C rulesRegistry entry ${r} missing on disk`);
 }
 
 // --- D. HOSTS.md rows vs provision/hosts --------------------------------------
@@ -147,7 +183,8 @@ function checkHosts() {
     .filter((f) => f.endsWith(".json")).map((f) => f.replace(/\.json$/, ""));
   const table = fs.readFileSync(path.join(ROOT, "HOSTS.md"), "utf8");
   for (const h of hosts) {
-    if (!table.includes(h)) fails.push(`D HOSTS.md missing provisioned host "${h}"`);
+    // one canonical row per host: its install command must appear in the table
+    if (!new RegExp(`--host ${h}\\b`).test(table)) fails.push(`D HOSTS.md missing install row "./setup --host ${h}"`);
   }
 }
 

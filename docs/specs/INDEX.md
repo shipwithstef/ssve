@@ -43,5 +43,5 @@ file in the table below.
 ## Audit history
 
 - 2026-08-26 — WI-FW-DOCS-AUDIT-01 initial audit:
-  `proposals/2026-08-26-framework-docs-audit-findings.md` (13 findings,
-  F1–F8 fixed same session).
+  `proposals/2026-08-26-framework-docs-audit-findings.md` (19 findings,
+  F1–F8 + F14–F18 fixed same session).
