@@ -2,7 +2,7 @@
   "schema_version": 1,
   "wi": "WI-SSVE-ARCHITECTURE-EVOLUTION-02",
   "lane": "framework",
-  "status": "in_progress",
+  "status": "completed",
   "created": "2026-08-24T17:38:22.667Z",
   "tasks": [
     {
@@ -348,7 +348,7 @@
     },
     {
       "id": 6,
-      "status": "pending",
+      "status": "completed",
       "skill": "land-changeset",
       "subject": "Sign promotion delivery receipt and land branch to origin/main",
       "blocked_by": [
@@ -357,18 +357,34 @@
       "metadata": {
         "deliverables": [
           "docs/specs/reviews/wi-ssve-evolution-delivery-receipt.md"
-        ]
-      }
+        ],
+        "landing": {
+          "branch_head": "35e845d",
+          "merge_sync": "f191cbb",
+          "squash_sha": "baf0e88",
+          "receipt_rev": 6,
+          "path_note": "gh token scope could not open PR against private origin; local squash-merge + direct push (bypass-with-warning), authorized by owner override"
+        }
+      },
+      "completed_at": "2026-08-26T06:20:00.000Z"
     },
     {
       "id": 7,
-      "status": "pending",
+      "status": "completed",
       "skill": "verify-promotion",
       "subject": "Post-merge promotion verification (G7): landed state matches spec, tier-1 green on main",
       "blocked_by": [
         6
       ],
-      "metadata": {}
+      "metadata": {
+        "deliverables": [
+          "docs/specs/reviews/wi-ssve-evolution-verify-promotion.md"
+        ],
+        "verdict": "PROMOTION_VERIFIED",
+        "landed_main": "e7de200",
+        "corpus_final": "346 pass / 8 fail — all eight reproduce on pristine pre-land main @ 6c3ca68; skill-router index drift converged mechanically in e7de200"
+      },
+      "completed_at": "2026-08-26T06:25:00.000Z"
     }
   ]
 }
