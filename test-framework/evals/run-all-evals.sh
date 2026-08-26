@@ -9,6 +9,12 @@
 #   EVALS=1 ./run-all-evals.sh  # all tiers
 set -euo pipefail
 
+# WI-FW-HOOKS-SAFETY-01: evals must be hermetic. An operator session may
+# legitimately run with break-glass armed; leaking it into validators flips
+# governed probes into bypassed ones (observed: EG-01, F-002, install-migration,
+# and dead-pointer suites all fail open under ambient SVC_BREAK_GLASS=1).
+unset SVC_BREAK_GLASS SVC_BREAK_GLASS_TTL_HOURS
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 echo "============================================"

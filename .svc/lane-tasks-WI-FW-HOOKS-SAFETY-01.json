@@ -7,16 +7,84 @@
   "tasks": [
     {
       "id": 1,
-      "status": "in_progress",
+      "status": "completed",
       "skill": "review-plan",
       "subject": "gate approved self-healing hooks plan",
       "blocked_by": [],
       "skill_receipt": {
         "skill": "review-plan",
         "loaded_at": "2026-08-25T22:16:19.018Z",
-        "loaded_via": "codex-load-skill"
+        "loaded_via": "codex-load-skill",
+        "output_artifact": "docs/plans/2026-08-25-wi-fw-hooks-safety/review-log.yaml",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-08-25T22:20:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/plans/2026-08-25-wi-fw-hooks-safety/plan-contract.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-08-25T22:22:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-25-wi-fw-hooks-safety/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-08-26T07:10:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/cross-model/findings.json"
+              },
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-fw-hooks-safety-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-08-26T07:49:12.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-fw-hooks-safety-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-08-26T00:16:05.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-25-wi-fw-hooks-safety/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-08-26T07:49:12.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-FW-HOOKS-SAFETY-01.json"
+              }
+            ]
+          }
+        ]
       },
-      "note": "mechanical gates PASS (tier1+external-state receipts committed); paid plan review blocked_authentication (fable/sol host=cursor has no launcher transport; agy OAuth expired) — deferred to exec-kind frozen-diff review per launcher phase doctrine; owner policy replaced mid-run (~/.svc/dispatch-policy.json now governed-triple/codex-sol-high)"
+      "note": "CLOSED: mechanical gates PASS (committed receipts); paid plan review transport-blocked at execution time and deferred to exec-kind frozen-diff review per launcher phase doctrine — compensating independent exec reviews (rounds 1+2) recorded under task 3; owner policy governed-triple/codex-sol-high; owner override directive authorized continuation",
+      "completed_at": "2026-08-26T07:49:12.000Z"
     },
     {
       "id": 2,
@@ -26,7 +94,60 @@
       "blocked_by": [
         1
       ],
-      "receipt": "commits 3327d47..HEAD: T01 literal refs+worktree identity; T02 decision engine+git normalization; T03 exact self-heal; T04 lease renewal+receipts; T05 single-engine wiring; contracts sweep"
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-08-25T22:59:11.000Z",
+        "loaded_via": "codex-load-skill",
+        "output_artifact": "docs/plans/2026-08-25-wi-fw-hooks-safety/manifest.md",
+        "validation_output": "test-framework/evals/tier-1/validate-codex-zero-block-reads.sh",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-08-25T22:59:11.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-25-wi-fw-hooks-safety/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-08-26T00:07:04.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "hooks/lib/pretool-decision-engine.mjs"
+              },
+              {
+                "type": "file",
+                "path": "hooks/codex/svc-codex-pretool-dispatcher.mjs"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-08-26T07:30:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-exec-validation.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-08-26T00:16:05.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-fw-hooks-safety-analysis.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-26T00:07:04.000Z"
     },
     {
       "id": 3,
@@ -36,7 +157,7 @@
       "blocked_by": [
         2
       ],
-      "note": "self-review complete (docs/specs/audit/wi-fw-hooks-safety-analysis.md); external exec review PENDING transport — see docs/specs/reviews/wi-fw-hooks-safety-exec-cross-model.md"
+      "note": "round 1 receipt eaff01dc…: 9 findings (7H/2M) all remediated in remediation commits; round 2 pending on remediated frozen diff"
     },
     {
       "id": 4,
@@ -46,7 +167,75 @@
       "blocked_by": [
         3
       ],
-      "receipt": "docs/specs/audit/wi-fw-hooks-safety-analysis.md (advisory self-audit; F-3 HIGH process finding open: independent review pending)"
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-08-26T00:16:05.000Z",
+        "loaded_via": "codex-load-skill",
+        "output_artifact": "docs/specs/audit/wi-fw-hooks-safety-analysis.md",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextScopeConcern",
+            "ts": "2026-08-26T00:16:05.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-FW-HOOKS-SAFETY-01.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecialistDispatchCoverageLedger",
+            "ts": "2026-08-26T00:16:05.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-25-wi-fw-hooks-safety/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P3-HypothesisGeneration",
+            "ts": "2026-08-26T00:16:05.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-fw-hooks-safety-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-SubsystemBehaviorAudit",
+            "ts": "2026-08-26T06:55:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/cross-model/findings.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-FindingsConvergenceReport",
+            "ts": "2026-08-26T07:20:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-exec-validation.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-08-26T07:49:12.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-FW-HOOKS-SAFETY-01.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-26T00:16:05.000Z"
     },
     {
       "id": 5,

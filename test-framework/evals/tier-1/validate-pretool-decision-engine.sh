@@ -136,7 +136,7 @@ fi
 grep -q "ULTRA_HOT_READ" "$ENGINE" && ok "ultra-hot read fast path lives inside the engine" || bad "engine ultra-hot path missing"
 
 # 9. EXTREV-EXEC-003: self-heal authority requires provable turn and exact repo
-git init -q "$TMP" 2>/dev/null || true
+git -C "$TMP" init -q 2>/dev/null || true
 mkdir -p "$TMP/rt" && chmod 700 "$TMP/rt"
 S1="$(SVC_RUNTIME_DIR="$TMP/rt" node --input-type=module -e '
 import { evaluateSelfHealAuthority } from "'"$ENGINE"'";

@@ -51,12 +51,12 @@ B="$(node --input-type=module -e "${NODE_IMPORTS}console.log(worktreeLeafFor('fe
 if [[ "$A" != "$B" && "$A" == *"-same-"* ]]; then ok "colliding readable slugs produce distinct hash-derived leaves"; else bad "leaf collision ($A vs $B)"; fi
 
 # --- end-to-end ensure-worktree with a slash branch ---------------------------
-REPO="$TMP/repo"
-git init -q -b main "$REPO"
+REPO="$TMP/repo"; mkdir -p "$REPO"
+git -C "$REPO" init -q -b main
 git -C "$REPO" config user.email t@t.local; git -C "$REPO" config user.name t
 printf '.worktrees/\n.svc/\n' > "$REPO/.gitignore"
 git -C "$REPO" add .gitignore && git -C "$REPO" commit -qm base
-git init -q --bare "$TMP/origin.git"
+mkdir -p "$TMP/origin.git" && git -C "$TMP/origin.git" init -q --bare
 git -C "$REPO" remote add origin "$TMP/origin.git"
 git -C "$REPO" push -q origin main
 SLASH="feat/wi-fw-hooks-safety-check"

@@ -1,1 +1,2 @@
 {"ts": "2026-08-24T17:23:38.892917+00:00", "bound_to": "user-request", "wi": null, "skill": "review-plan", "request": "Adversarial plan review of tier-1 repair plan (read-only). Close stale WI-557 session; this turn did not implement WI-181.", "guard_override_count": 0}
+{"ts": "2026-08-26T07:49:12+00:00", "bound_to": "user-request", "wi": "WI-FW-HOOKS-SAFETY-01", "skill": "review-exec", "request": "Owner override resume: remediate EXTREV findings, round-2 exec review, land, verify, install all hosts. Closeout idempotent.", "guard_override_count": 0}
