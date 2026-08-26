@@ -205,7 +205,7 @@ function main() {
     }
     case "status": {
       const events = readJournal(coordinator.journalPath);
-      const replayed = replay(events);
+      const replayed = coordinator.replayVerified(events);
       if (!replayed.valid) die(`replay invalid: ${replayed.errors.join("; ")}`);
       const s = replayed.state;
       process.stdout.write(`${JSON.stringify({ ok: true, sequence: s.sequence, authority_generation: s.authority_generation, sessions: Object.keys(s.sessions), tasks: Object.fromEntries(Object.entries(s.tasks).map(([k, v]) => [k, v.state])) })}\n`);
@@ -213,13 +213,13 @@ function main() {
     }
     case "replay": {
       const events = readJournal(coordinator.journalPath);
-      const replayed = replay(events);
+      const replayed = coordinator.replayVerified(events);
       process.stdout.write(`${JSON.stringify({ valid: replayed.valid, errors: replayed.errors, event_count: events.length })}\n`);
       return replayed.valid ? 0 : 1;
     }
     case "snapshot": {
       const events = readJournal(coordinator.journalPath);
-      const replayed = replay(events);
+      const replayed = coordinator.replayVerified(events);
       if (!replayed.valid) die(`replay invalid: ${replayed.errors.join("; ")}`);
       const snapshot = { sequence: replayed.state.sequence, last_event_digest: replayed.state.last_event_digest, tasks: replayed.state.tasks, authority_generation: replayed.state.authority_generation };
       fs.writeFileSync(path.join(options.stateRoot, "snapshot.json"), `${JSON.stringify(snapshot, null, 2)}\n`, { mode: 0o600 });
@@ -229,7 +229,7 @@ function main() {
     case "sign-checkpoint": {
       return withJournalLock(coordinator.journalPath, () => {
         const events = readJournal(coordinator.journalPath);
-        const replayed = replay(events);
+        const replayed = coordinator.replayVerified(events);
         if (!replayed.valid) die(`replay invalid: ${replayed.errors.join("; ")}`);
         const state = replayed.state;
         const receipt = {
@@ -305,7 +305,8 @@ function main() {
         return 1;
       }
       const allowed = Array.isArray(row.allowed_receipt_kinds) ? row.allowed_receipt_kinds : [];
-      if (allowed.length > 0 && !allowed.includes(kind)) {
+      // EXEC-R4-008: an absent or empty allowlist denies EVERY receipt kind
+      if (!allowed.includes(kind)) {
         process.stdout.write(`${JSON.stringify({ verified: false, reason: "wrong_purpose_or_kind", kind })}\n`);
         return 1;
       }
@@ -325,7 +326,7 @@ function main() {
   let command = readCommand(options, verb);
   if (!command) {
     const events = readJournal(coordinator.journalPath);
-    const replayed = replay(events);
+    const replayed = coordinator.replayVerified(events);
     if (!replayed.valid) die(`replay invalid: ${replayed.errors.join("; ")}`);
     // identity claims resolve from the trust registry's pinned row first; flag
     // values only fill fields the registry does not pin (EXEC-R2-003 binding).

@@ -117,4 +117,31 @@ if (r4.reason_code !== "actor_binding_mismatch") { console.error("want actor_bin
 process.exit(0);
 JS
 
-echo "PASS(validate-swarm-signatures): JCS vectors, DSSE verify/tamper/wrong-key/determinism, unicode PAE, key-policy expiry/validity-window/revocation/binding verified"
+# EXEC-R4-003 boundary: a key revoked_at_sequence=N cannot author EVENT N.
+node --input-type=module - "$TMP" <<'JS' || fail "revocation boundary probe failed"
+import fs from "node:fs";
+const handler = await import(new URL("file://" + process.cwd() + "/scripts/lib/swarm-command-handler.mjs").href);
+const root = process.argv[2] + "/boundarystate";
+fs.rmSync(root, { recursive: true, force: true });
+fs.mkdirSync(root, { recursive: true, mode: 0o700 });
+handler.initStateRoot(root);
+const coord = new handler.SwarmCoordinator(root);
+coord.provisionAdapter("bw", { host: "codex" });
+const key = JSON.parse(fs.readFileSync(root + "/keys/bw.json", "utf8")).private_key;
+let n = 0;
+const mk = (type, seq, extra = {}) => ({
+  schema_version: 1, command_id: "018f0000-0000-7000-8000-" + String(++n).padStart(12, "0"),
+  run_id: "br", command_type: type, task_id: null,
+  actor: { principal_id: "bw", host: "codex", model_family: "fam", session_id: "bs" },
+  authority_generation: 0, expected_sequence: seq, idempotency_key: `bk-${n}`, payload: extra,
+});
+if (!coord.handleEnvelope(coord.constructor.envelopeForCommand(mk("register_session", 0), key)).accepted) process.exit(1);
+coord.revoke("bw", 2); // next event would be sequence 2
+const atBoundary = coord.handleEnvelope(coord.constructor.envelopeForCommand(
+  mk("ack_state", 1, { acknowledged_through: 1 }), key));
+// proposed event sequence = state.sequence + 1 = 2 >= revoked_at_sequence -> denied
+if (atBoundary.reason_code !== "key_revoked") { console.error("want key_revoked at boundary got", atBoundary.reason_code); process.exit(1); }
+process.exit(0);
+JS
+
+echo "PASS(validate-swarm-signatures): JCS vectors, DSSE verify/tamper/wrong-key/determinism, unicode PAE, key-policy expiry/validity-window/revocation/binding/boundary verified"

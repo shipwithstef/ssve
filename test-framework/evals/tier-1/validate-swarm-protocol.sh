@@ -418,5 +418,59 @@ if (!reclaim.accepted) { console.error("expired lease not reclaimable:", reclaim
 process.exit(0);
 JS
 
-echo "PASS(validate-swarm-protocol): schema/CAS/idempotency/fail-closed/replay-corruption/checkpoint + run-binding/ownership/heartbeat-renewal/signed-envelopes/lease-guard/crash-window-regeneration/candidate-attestation/ttl-reclaim verified"
+# EXEC-R4-007: cancelling an UNKNOWN task must be refused with no journal advance
+SRC="$TMP/statec-missing"
+node "$SWARM" init --state-root "$SRC" > /dev/null
+node "$SWARM" provision --state-root "$SRC" --principal cx --host codex > /dev/null
+node "$SWARM" register --state-root "$SRC" --principal cx --host codex --model-family openai --run-id cr > /dev/null
+BEFORE_LINES=$(wc -l < "$SRC/journal.jsonl")
+set +e
+node "$SWARM" cancel --state-root "$SRC" --principal cx --task-id ghost --run-id cr > "$TMP/cancel-ghost.json"
+GHOST_RC=$?
+set -e
+AFTER_LINES=$(wc -l < "$SRC/journal.jsonl")
+[[ $GHOST_RC -eq 3 ]] || fail "unknown-task cancel must fail closed"
+grep -q '"reason_code":"task_missing"' "$TMP/cancel-ghost.json" || fail "task_missing verdict missing"
+[[ "$BEFORE_LINES" = "$AFTER_LINES" ]] || fail "no-op cancellation appended an event"
+
+# EXEC-R3-003: even an attacker who recomputes every digest (hash-chain forgery)
+# cannot forge history — strict replay verifies coordinator signatures.
+node --input-type=module - "$TMP" <<'JS' || fail "signature-forgery probe failed"
+import fs from "node:fs";
+import crypto from "node:crypto";
+const handler = await import(new URL("file://" + process.cwd() + "/scripts/lib/swarm-command-handler.mjs").href);
+const root = process.argv[2] + "/forgestate";
+fs.rmSync(root, { recursive: true, force: true });
+fs.mkdirSync(root, { recursive: true, mode: 0o700 });
+handler.initStateRoot(root);
+const coord = new handler.SwarmCoordinator(root);
+coord.provisionAdapter("fw", { host: "codex" });
+let n = 0;
+const mk = (type, seq) => ({
+  schema_version: 1, command_id: "018f0000-0000-7000-8000-" + String(++n).padStart(12, "0"),
+  run_id: "fg", command_type: type, task_id: null,
+  actor: { principal_id: "fw", host: "codex", model_family: "fam", session_id: "fs" },
+  authority_generation: 0, expected_sequence: seq, idempotency_key: `fk-${n}`, payload: {},
+});
+const key = JSON.parse(fs.readFileSync(root + "/keys/fw.json", "utf8")).private_key;
+if (!coord.handleEnvelope(coord.constructor.envelopeForCommand(mk("register_session", 0), key)).accepted) process.exit(1);
+// ATTACKER: rewrite actor.model_family and rebuild the whole hash chain
+const jp = root + "/journal.jsonl";
+const lines = fs.readFileSync(jp, "utf8").trimEnd().split("\n").map((l) => JSON.parse(l));
+let prev = null;
+for (const e of lines) {
+  e.actor.model_family = "OWNED";
+  e.previous_event_digest = prev;
+  const copy = { ...e };
+  delete copy.event_digest; delete copy.coordinator_sig;
+  e.event_digest = "sha256:" + crypto.createHash("sha256").update(Buffer.from(JSON.stringify(copy))).digest("hex");
+  prev = e.event_digest;
+}
+fs.writeFileSync(jp, lines.map((e) => JSON.stringify(e)).join("\n") + "\n");
+const strict = handler.replay(handler.readJournal(jp), null, { verifyCoordinatorSignatures: true, coordinatorPublicKey: crypto.createPublicKey(JSON.parse(fs.readFileSync(root + "/keys/coordinator.json", "utf8")).public_key) });
+if (strict.valid) process.exit(1); // fully rebuilt chain must STILL be rejected
+process.exit(0);
+JS
+
+echo "PASS(validate-swarm-protocol): schema/CAS/idempotency/fail-closed/replay-corruption/checkpoint + run-binding/ownership/heartbeat-renewal/signed-envelopes/lease-guard/crash-window-regeneration/candidate-attestation/ttl-reclaim/no-op-cancel/signature-forgery verified"
 echo "SCOPE NOTE: adjudication capping, remote transport, multi-host shadow runs are OUT of this gate's scope (follow-up WIs)"

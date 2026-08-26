@@ -151,7 +151,7 @@ export function initStateRoot(stateRoot, options = {}) {
       root_keyid: keyFingerprint(root.public_key),
       root_signature: null,
       keys: [
-        { keyid: keyFingerprint(coordinator.public_key), purpose: "coordinate", principal_id: "svc-swarm-coordinator", public_key: coordinator.public_key, allowed_receipt_kinds: ["acceptance_receipt", "rejection_receipt", "synchronization_receipt", "resolution_receipt", "checkpoint_receipt"], valid_from: now, expires_at: null, revoked_at_sequence: null },
+        { keyid: keyFingerprint(coordinator.public_key), purpose: "coordinate", principal_id: "svc-swarm-coordinator", public_key: coordinator.public_key, allowed_receipt_kinds: ["acceptance_receipt", "rejection_receipt", "synchronization_receipt", "resolution_receipt", "checkpoint_receipt"], allowed_commands: [], valid_from: now, expires_at: null, revoked_at_sequence: null },
       ],
     };
     // the operator root self-signs the registry body (sans signature field)
@@ -195,11 +195,21 @@ export function readJournal(journalPath) {
 function eventDigestOf(event) {
   const copy = { ...event };
   delete copy.event_digest;
+  delete copy.coordinator_sig;
   return `sha256:${crypto.createHash("sha256").update(Buffer.from(jcs(copy), "utf8")).digest("hex")}`;
 }
 
-export function replay(events, expectedRunId = null) {
+// EXEC-R3-003: every journaled event carries the coordinator's Ed25519 signature
+// over its canonical digest bytes. Replay in strict mode verifies each one, so a
+// state-root writer cannot forge history without the coordinator key.
+export function signEvent(event, coordinatorPrivateKeyPem) {
+  const sig = crypto.sign(null, Buffer.from(event.event_digest.slice(7), "hex"), crypto.createPrivateKey(coordinatorPrivateKeyPem));
+  return { ...event, coordinator_sig: sig.toString("base64") };
+}
+
+export function replay(events, expectedRunId = null, options = {}) {
   const errors = [];
+  const strictSignatures = Boolean(options.verifyCoordinatorSignatures && options.coordinatorPublicKey);
   const state = {
     run_id: expectedRunId, sequence: 0, last_event_digest: null,
     authority_generation: 0, coordinator_epoch: 1,
@@ -214,6 +224,15 @@ export function replay(events, expectedRunId = null) {
       const prev = index === 0 ? null : events[index - 1].event_digest;
       if ((event.previous_event_digest ?? null) !== prev) errors.push(`events[${index}] digest-chain break`);
       if (eventDigestOf(event) !== event.event_digest) errors.push(`events[${index}] event digest mismatch`);
+      if (strictSignatures) {
+        if (!event.coordinator_sig || !crypto.verify(null, Buffer.from(event.event_digest.slice(7), "hex"), options.coordinatorPublicKey, Buffer.from(event.coordinator_sig, "base64"))) {
+          errors.push(`events[${index}] coordinator signature missing or invalid`);
+        }
+      } else if (!event.coordinator_sig) {
+        // journals written by this version are always signed; unsigned events are
+        // legacy-era records — flagged but not fatal outside strict mode
+        errors.push(`events[${index}] missing coordinator signature`);
+      }
       const prior = state.idempotency[event.idempotency_key];
       if (prior && prior.command_digest !== event.command_digest) errors.push(`events[${index}] idempotency key reused across different commands`);
       if (prior && prior.command_digest === event.command_digest && prior.event_digest !== event.event_digest) errors.push(`events[${index}] idempotent command rebound to a divergent event digest (journal corruption)`);
@@ -398,9 +417,22 @@ export class SwarmCoordinator {
 
   registerValidator(fn) { this.validators.push(fn); }
 
+  // replay with coordinator-signature verification (EXEC-R3-003)
+  replayVerified(events) {
+    const coordRow = (() => {
+      try {
+        return this.registry().keys.find(k => k.purpose === "coordinate") ?? null;
+      } catch {
+        return null;
+      }
+    })();
+    if (!coordRow) throw Object.assign(new Error("no coordinate key in trust registry"), { code: "REGISTRY_UNTRUSTED" });
+    return replay(events, null, { verifyCoordinatorSignatures: true, coordinatorPublicKey: crypto.createPublicKey(coordRow.public_key) });
+  }
+
   loadState() {
     const events = readJournal(this.journalPath);
-    const replayed = replay(events);
+    const replayed = this.replayVerified(events);
     if (!replayed.valid) {
       throw Object.assign(new Error(`journal replay failed: ${replayed.errors.join("; ")}`), { code: "REPLAY_INVALID" });
     }
@@ -575,7 +607,7 @@ export class SwarmCoordinator {
     void command;
     return withJournalLock(this.journalPath, () => {
       const events0 = readJournal(this.journalPath);
-      const replayed0 = replay(events0);
+      const replayed0 = this.replayVerified(events0);
       return this.decide(
         { run_id: "?", actor: { principal_id: "?" }, authority_generation: -1, expected_sequence: -1, idempotency_key: "unsigned-rejected" },
         replayed0.state,
@@ -592,7 +624,7 @@ export class SwarmCoordinator {
       const probe = this.verifyCommandEnvelope(envelope, null);
       if (!probe.ok) {
         const events0 = readJournal(this.journalPath);
-        const replayed0 = replay(events0);
+        const replayed0 = this.replayVerified(events0);
         return this.decide({ run_id: "?", actor: { principal_id: "?" }, authority_generation: -1, expected_sequence: -1 }, replayed0.state, probe.reason_code, probe.note, events0);
       }
       return this.handleLocked(probe.command);
@@ -602,7 +634,7 @@ export class SwarmCoordinator {
   handleLocked(command) {
     const started = Date.now();
     const events = readJournal(this.journalPath);
-    const replayed = replay(events);
+    const replayed = this.replayVerified(events);
     if (!replayed.valid) {
       return this.rejectWithoutAppend(command, "signature_invalid", `journal unusable: ${replayed.errors[0] ?? "corrupt"}`);
     }
@@ -639,15 +671,19 @@ export class SwarmCoordinator {
     const isRegister = command.command_type === "register_session";
     const session = state.sessions[command.actor.principal_id];
 
+    // EXEC-R4-003: revocation authorizes against the PROPOSED event sequence
+    // (state.sequence + 1), not the expected one — a key revoked at sequence N
+    // cannot author event N.
+    const proposedEventSequence = state.sequence + 1;
     if (!isRegister) {
       if (!session) return this.decide(command, state, "unknown_session", "principal not registered", events);
-      const status = this.keyStatus(registry, command.actor.principal_id, command.expected_sequence);
+      const status = this.keyStatus(registry, command.actor.principal_id, proposedEventSequence);
       if (!status.ok) return this.decide(command, state, status.reason_code, "session key not usable", events);
     } else {
       // registration requires a submission-purpose key present in the registry
       const row = registry.keys.find(k => k.principal_id === command.actor.principal_id);
       if (!row) return this.decide(command, state, "unknown_session", "no trust-registry entry for principal; operator must provision the adapter key first", events);
-      if (row.revoked_at_sequence != null && command.expected_sequence >= row.revoked_at_sequence) {
+      if (row.revoked_at_sequence != null && proposedEventSequence >= row.revoked_at_sequence) {
         return this.decide(command, state, "key_revoked", "registry row revoked before this sequence", events);
       }
     }
@@ -711,7 +747,10 @@ export class SwarmCoordinator {
     // coordinator-level operator through provision/revoke verbs) may cancel.
     if (command.command_type === "request_cancel" && command.task_id) {
       const task = state.tasks[command.task_id];
-      if (task?.lease && task.lease.principal_id !== command.actor.principal_id && !state.tasks[command.task_id]?.terminal) {
+      // EXEC-R4-007: an unknown task must not yield a no-op cancellation event
+      if (!task) return this.decide(command, state, "task_missing", `no task ${command.task_id} exists in replayed state`, events);
+      if (task.terminal) return this.decide(command, state, "task_missing", `task ${command.task_id} is already terminal`, events);
+      if (task.lease && task.lease.principal_id !== command.actor.principal_id) {
         return this.decide(command, state, "capability_denied", "cancel requires the current lease holder", events);
       }
     }
@@ -1017,17 +1056,20 @@ export class SwarmCoordinator {
       event_digest: "",
     };
     event.event_digest = eventDigestOf(event);
+    // EXEC-R3-003: the coordinator signs every event it appends
+    const signedEvent = signEvent(event, this.coordKey.private_key);
+    Object.assign(event, { coordinator_sig: signedEvent.coordinator_sig });
 
     // append + fsync inside the lock
-    fs.appendFileSync(this.journalPath, `${JSON.stringify(event)}\n`, { mode: 0o600 });
+    fs.appendFileSync(this.journalPath, `${JSON.stringify(signedEvent)}\n`, { mode: 0o600 });
     const fd = fs.openSync(this.journalPath, fs.constants.O_RDONLY);
     try { fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
 
     // persist signed acceptance receipt BEFORE responding
-    const { envelope } = this.buildAcceptance(command, state, event, "ok", event.sequence);
+    const { envelope } = this.buildAcceptance(command, state, signedEvent, "ok", signedEvent.sequence);
     atomicWriteJson(path.join(this.receiptsDir, `${canonical.slice(7)}.json`), envelope);
 
-    return { accepted: true, event, receipt: envelope };
+    return { accepted: true, event: signedEvent, receipt: envelope };
   }
 }
 

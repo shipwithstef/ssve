@@ -6,10 +6,10 @@
     "runtime_concurrency"
   ],
   "concurrency": {
-    "atomic_primitive": "flock",
-    "owner_key": "coordinator journal lock keyed by state-root journal path (withJournalLock pattern inherited from scripts/svc-runtime-v2.mjs)",
-    "concurrent_invoke_behavior": "serialized by the advisory mkdir-mutex held across the whole validate-append-fsync-sign-receipt-write section; a competing process blocks, acquires after release, then re-reads replayed state so its view postdates every committed event; process-death reclaim via /proc start tokens",
-    "stale_lock_cleanup": "advisory locks are kernel-released on process death; startup verifies digest chain and last signed checkpoint and refuses a torn tail",
+    "atomic_primitive": "mkdir_exclusive",
+    "owner_key": "coordinator journal lock keyed by state-root journal path: <journal>.lock directory holding an owner file (pid, /proc/<pid>/stat process-start token, owner_token, created_at); a competing process blocks in bounded retry until the lock dir vanishes, then re-reads replayed state so its view postdates every committed event",
+    "concurrent_invoke_behavior": "serialized by the advisory mkdir-mutex held across the whole validate-append-fsync-sign-receipt-write section; process-death reclaim verifies the recorded pid is alive AND its /proc start token matches before treating the lock as fresh, otherwise the stale directory is renamed to a tombstone and recreated",
+    "stale_lock_cleanup": "manual reclaim via /proc start-token check guards against PID reuse; startup additionally verifies the digest chain and last signed checkpoint and refuses a torn tail",
     "concurrency_test": "test-framework/evals/tier-1/validate-swarm-protocol.sh"
   },
   "ownership": [

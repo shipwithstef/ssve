@@ -36,7 +36,9 @@
           "purpose",
           "principal_id",
           "public_key",
-          "valid_from"
+          "valid_from",
+          "allowed_receipt_kinds",
+          "allowed_commands"
         ],
         "additionalProperties": false,
         "properties": {
@@ -88,7 +90,8 @@
                 "resolution_receipt",
                 "checkpoint_receipt"
               ]
-            }
+            },
+            "minItems": 1
           },
           "valid_from": {
             "type": "string",
