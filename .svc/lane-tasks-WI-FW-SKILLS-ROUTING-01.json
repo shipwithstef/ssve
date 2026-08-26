@@ -357,7 +357,7 @@
       "id": 8,
       "skill": "land-changeset",
       "subject": "Push branch, PR, squash-merge",
-      "status": "in_progress",
+      "status": "completed",
       "blocked_by": [
         7
       ],
@@ -367,23 +367,74 @@
       },
       "skill_receipt": {
         "skill": "land-changeset",
-        "loaded_at": "2026-08-26T00:31:08.436Z",
-        "loaded_via": "manual"
-      }
+        "loaded_at": "2026-08-26T00:47:26.545Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-PushAndMerge",
+            "ts": "2026-08-26T00:47:26.696Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-outcome.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-26T00:47:26.850Z"
     },
     {
       "id": 9,
       "skill": "verify-promotion",
       "subject": "Post-merge G7 verification",
-      "status": "pending",
+      "status": "completed",
       "blocked_by": [
         8
       ],
       "metadata": {
         "skill": "verify-promotion",
         "wi": "WI-FW-SKILLS-ROUTING-01"
-      }
+      },
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-08-26T00:47:37.215Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-08-26T00:47:37.374Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/promotion-verification.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-08-26T00:47:37.533Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-FW-SKILLS-ROUTING-01.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-08-26T00:47:37.684Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/skill-router-validator-run.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-26T00:47:37.840Z"
     }
   ],
-  "status": "in_progress"
+  "status": "completed"
 }
