@@ -2,55 +2,235 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "review-exec receipt",
   "type": "object",
-  "required": ["receipt_type", "schema_version", "wi", "diff_hash", "self_review", "adversarial_review", "verdict", "timestamp"],
+  "required": [
+    "receipt_type",
+    "schema_version",
+    "wi",
+    "diff_hash",
+    "self_review",
+    "adversarial_review",
+    "verdict",
+    "timestamp"
+  ],
   "properties": {
-    "receipt_type": { "const": "review-exec" },
-    "schema_version": { "type": "integer", "minimum": 1 },
-    "wi": { "type": "string" },
-    "candidate_digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
-    "diff_hash": { "type": "string" },
-    "fast_mode": { "type": "boolean" },
+    "receipt_type": {
+      "const": "review-exec"
+    },
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "wi": {
+      "type": "string"
+    },
+    "candidate_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "diff_hash": {
+      "type": "string"
+    },
+    "fast_mode": {
+      "type": "boolean"
+    },
     "self_review": {
       "type": "object",
-      "required": ["orchestrator", "findings_count", "notes"],
+      "required": [
+        "orchestrator",
+        "findings_count",
+        "notes"
+      ],
       "properties": {
-        "orchestrator": { "type": "string", "enum": ["claude", "codex", "gemini", "antigravity"] },
-        "findings_count": { "type": "integer", "minimum": 0 },
-        "notes": { "type": "string" }
+        "orchestrator": {
+          "type": "string",
+          "enum": [
+            "claude",
+            "codex",
+            "gemini",
+            "antigravity",
+            "opencode",
+            "grok",
+            "cursor"
+          ]
+        },
+        "findings_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "notes": {
+          "type": "string"
+        }
       }
     },
     "adversarial_review": {
       "type": "object",
-      "required": ["primary_reviewer_host", "primary_used", "fallback_host", "fallback_used", "findings", "iteration_count"],
+      "required": [
+        "primary_reviewer_host",
+        "primary_used",
+        "fallback_host",
+        "fallback_used",
+        "findings",
+        "iteration_count"
+      ],
       "properties": {
-        "primary_reviewer_host": { "type": "string", "enum": ["codex", "claude", "gemini", "agy"] },
-        "primary_used": { "type": "boolean" },
-        "fallback_host": { "type": "string", "enum": ["codex", "claude", "gemini", "agy"] },
-        "fallback_used": { "type": "boolean" },
-        "availability_log": { "type": "object" },
-        "findings": { "type": "array" },
-        "iteration_count": { "type": "integer", "minimum": 0 }
+        "primary_reviewer_host": {
+          "type": "string",
+          "enum": [
+            "codex",
+            "claude",
+            "gemini",
+            "agy",
+            "opencode",
+            "grok",
+            "cursor",
+            "antigravity"
+          ]
+        },
+        "primary_used": {
+          "type": "boolean"
+        },
+        "fallback_host": {
+          "type": "string",
+          "enum": [
+            "codex",
+            "claude",
+            "gemini",
+            "agy",
+            "opencode",
+            "grok",
+            "cursor",
+            "antigravity"
+          ]
+        },
+        "fallback_used": {
+          "type": "boolean"
+        },
+        "availability_log": {
+          "type": "object"
+        },
+        "findings": {
+          "type": "array"
+        },
+        "iteration_count": {
+          "type": "integer",
+          "minimum": 0
+        }
       }
     },
-    "rejection_action": { "type": "string", "enum": ["none", "patch", "re-execute", "re-plan"] },
-    "verdict": { "type": "string", "enum": ["pass", "fail", "pass-with-acks"] },
-    "timestamp": { "type": "string", "format": "date-time" },
-    "author_family": { "type": "string", "description": "WI-385: cognitive family of the diff's author/orchestrator (anthropic|openai|google). Mechanically resolved via scripts/lib/cognitive-family.mjs. REQUIRED for the low risk-tier; check-chain rejects author_family==reviewer_family wherever both are present (mechanical never-self-review fence)." },
-    "reviewer_family": { "type": "string", "description": "WI-385: cognitive family of the adversarial reviewer (anthropic|openai|google). Must DIFFER from author_family." },
-    "reviewer_evidence": { "$ref": "#/definitions/reviewerEvidence" }
+    "rejection_action": {
+      "type": "string",
+      "enum": [
+        "none",
+        "patch",
+        "re-execute",
+        "re-plan"
+      ]
+    },
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "fail",
+        "pass-with-acks"
+      ]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "author_family": {
+      "type": "string",
+      "description": "WI-385: cognitive family of the diff's author/orchestrator (anthropic|openai|google). Mechanically resolved via scripts/lib/cognitive-family.mjs. REQUIRED for the low risk-tier; check-chain rejects author_family==reviewer_family wherever both are present (mechanical never-self-review fence)."
+    },
+    "reviewer_family": {
+      "type": "string",
+      "description": "WI-385: cognitive family of the adversarial reviewer (anthropic|openai|google). Must DIFFER from author_family."
+    },
+    "reviewer_evidence": {
+      "$ref": "#/definitions/reviewerEvidence"
+    }
   },
   "definitions": {
     "reviewerEvidence": {
       "type": "object",
-      "required": ["independent", "submitter_only", "launcher_receipts", "commands", "output_artifacts", "deletion_bearing", "parse_collect_evidence"],
+      "required": [
+        "independent",
+        "submitter_only",
+        "launcher_receipts",
+        "commands",
+        "output_artifacts",
+        "deletion_bearing",
+        "parse_collect_evidence"
+      ],
       "properties": {
-        "independent": { "const": true }, "submitter_only": { "const": false },
-        "launcher_receipts": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/artifact" } },
-        "commands": { "type": "array", "minItems": 1 }, "output_artifacts": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/artifact" } },
-        "deletion_bearing": { "type": "boolean" }, "parse_collect_evidence": { "type": "array", "items": { "$ref": "#/definitions/artifact" } }
+        "independent": {
+          "const": true
+        },
+        "submitter_only": {
+          "const": false
+        },
+        "launcher_receipts": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/artifact"
+          }
+        },
+        "commands": {
+          "type": "array",
+          "minItems": 1
+        },
+        "output_artifacts": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/artifact"
+          }
+        },
+        "deletion_bearing": {
+          "type": "boolean"
+        },
+        "parse_collect_evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/artifact"
+          }
+        }
       }
     },
-    "artifact": { "type": "object", "required": ["path", "sha256"], "properties": { "path": { "type": "string" }, "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" } }, "additionalProperties": false }
+    "artifact": {
+      "type": "object",
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false
+    }
   },
-  "allOf": [{ "if": { "properties": { "schema_version": { "minimum": 3 } } }, "then": { "required": ["candidate_digest", "reviewer_evidence"] } }]
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "minimum": 3
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "candidate_digest",
+          "reviewer_evidence"
+        ]
+      }
+    }
+  ]
 }

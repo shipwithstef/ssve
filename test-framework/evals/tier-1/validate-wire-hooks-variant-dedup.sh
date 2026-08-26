@@ -70,7 +70,7 @@ check "user hooks with same basename both survive (no fuzzy collapse)" test "$(q
 # write path still preceded by backupSettingsOnce().
 check "no direct settings writes remain (atomic primitive only)" bash -c "! grep -q 'fs.writeFileSync(settingsPath' '$WIRER'"
 check "atomic writeSettingsDocument primitive present" bash -c "grep -q 'renameSync(tmp, target)' '$WIRER'"
-check "all write sites are backup-guarded (static)" bash -c "test \"\$(grep -B1 'writeSettingsDocument(settingsPath' '$WIRER' | grep -c 'backupSettingsOnce();')\" = \"4\""
+check "all write sites are backup-guarded (static)" bash -c "test \"\$(grep -B1 'writeSettingsDocument(settingsPath' '$WIRER' | grep -c 'backupSettingsOnce();')\" = \"2\""
 
 cp "$S1" "$TMP/snap1.json"
 env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE \

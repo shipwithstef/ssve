@@ -1,0 +1,97 @@
+Round-1 plan findings are closed in the current tree except the stamp contract, which the uncommitted linter change reopened. D-2 does not need the emergency migration interpreter.
+
+```json
+{
+  "schema_version": 1,
+  "review_kind": "exec",
+  "rubric_score": null,
+  "rubric_failures": null,
+  "dependencies_needing_read": [],
+  "reviewer": {
+    "station": "cursor-auto",
+    "model": "Cursor Grok 4.6",
+    "family": "xai"
+  },
+  "verdict": "NEEDS_FIX",
+  "summary": "Cursor Auto round-2 plan-closure on the CURRENT worktree: round-1 F-001 (catalog compiler / generateHostEntries cutover), F-002 (emits[] vs receipt-kind-registry), F-003 (E4 catalog-data-only), F-004 (Cursor afterFileEdit no-op), F-005 (External State), F-007 (D-1 matrix), F-008 (G<n> self-label), and F-009 (receipts enum) are implemented as specified — E3 is subtractive rebuild via buildHookEntries (not generateHostEntries), emits[] validates chain receipt types, Cursor/Grok wirers hardcode autoemit, hook-payload.mjs synthesizes Edit from bare file_path, D-1 JSON reports all three hosts COMPATIBLE with fail-open exit 0 and p95 ~45ms, catalog receipts are auto-full/auto-edits-only with full retained as synonym. D-2: proceed to land the E3 cutover; no irreducible regression requiring the emergency hooks/.migrations.json interpreter (35-check cutover validator, backup-once + corrupt-config abort intact, foreign eslint/notify preserved, DISABLED/minimal/--remove-company-session-hooks honored). Blocking: current-worktree lint-skills-manifest.mjs auto-bootstraps a missing gitignored sidecar and exits 0, contradicting amended plan E2.2 and validate-manifest-integrity-stamp.sh (missing+schema_version must exit 1). That reopens round-1 F-006 as an integrity bypass (delete sidecar + edit manifest → lint succeeds). Also: frozen digest 30a33c4c / commit 1870dbc does not contain untracked D-1 evidence or the dirty autoemit/linter/pre-commit/install-git-hooks delta. Known corpus failures validate-codex-session-rebinding.sh and validate-kimi-host.sh are PRE-EXISTING (same on origin/main). Do not land 1870dbc or the dirty tree until the stamp contract is restored or the plan+validator are amended together, D-1 artifacts are committed, and the candidate digest is restamped.",
+  "findings": [
+    {
+      "id": "F-001",
+      "severity": "HIGH",
+      "lens": "Security / fail-closed bias",
+      "file": "scripts/lint-skills-manifest.mjs:227",
+      "claim": "Current-worktree manifest-integrity is fail-open on a missing sidecar, reopening round-1 F-006 and contradicting the amended E2 contract and its own validator.",
+      "evidence": "assertManifestDigest at scripts/lint-skills-manifest.mjs:227-237: if digestPath is absent it mkdir+writeFileSync a sidecar from CURRENT skills-manifest.json bytes (bootstrapped:true), console.warn, and return with no errors.push — lint then exits 0 (line 536). Plan E2.2 (docs/plans/2026-08-24-ssve-architecture-evolution-plan.md:81) requires: once schema_version is present, missing stamp AND mismatch both exit 1 with --stamp remediation. Validator test-framework/evals/tier-1/validate-manifest-integrity-stamp.sh:33-38 deletes .svc/manifest-digest.json and FAILs if lint exits 0 ('missing digest with schema_version should fail'). skills-manifest.json:2 has schema_version 1; .gitignore:154 gitignores the sidecar. Wave log docs/specs/reviews/wi-ssve-evolution-e1-e4-validation.log:3-5 recorded that validator passing at 22:50Z; the linter is now a dirty worktree file (F-001c comment at :228) and will make that same validator fail. Bypass: delete the gitignored sidecar and mutate a still-structurally-valid manifest → lint bootstraps from the new bytes and passes.",
+      "required_action": "Do not ship the F-001c bootstrap. Restore missing-sidecar + schema_version → errors.push + exit 1 (keep --stamp as the only writer), and keep validate-manifest-integrity-stamp.sh:33-38 as the gate. If the integrity model is intentionally a machine-local cache, that is a plan amendment: change E2.2 + the validator + plan-contract together, and document that deleting the sidecar resets the baseline. Do not leave linter and validator disagreeing."
+    },
+    {
+      "id": "F-002",
+      "severity": "MEDIUM",
+      "lens": "Process integrity",
+      "file": "docs/specs/reviews/wi-ssve-evolution-d1-autoemit-gate.json:1",
+      "claim": "D-1 closure evidence and the autoemit Shell/evaluateAutoemitTarget path that produced COMPATIBLE are not in frozen candidate 1870dbc; landing digest 30a33c4c would ship E4 wiring without the proven D-1 baton.",
+      "evidence": "Frozen binding is commit 1870dbc / tree 867c5d0369cfedfb0920a18d09008453312dc928 / digest 30a33c4c74c18ad93b78bfb352f4d7268e05d2019b651e55a55c03e751bc6945. Untracked: scripts/verify-d1-autoemit-host-payloads.mjs and docs/specs/reviews/wi-ssve-evolution-d1-autoemit-gate.json (generated_at 2026-08-25T23:34:28.602Z, after E1–E4 validation log 22:50Z). Dirty vs that commit: hooks/svc-phase-receipt-autoemit.mjs (evaluateAutoemitTarget + tool==='Shell' at :81-90 — required for fixture grok-shell which uses tool_name Shell), scripts/lint-skills-manifest.mjs (F-001), hooks/git/pre-commit.d/21-manifest-integrity, scripts/install-git-hooks.mjs. Plan E4.1 / contract D-1 required the payload gate BEFORE wiring; wiring is in 1870dbc, the gate receipt is not. Outcome of the later gate is COMPATIBLE (so the wiring decision is not wrong), but the frozen SHA is not the D-1-proven tree.",
+      "required_action": "Commit the D-1 verifier + gate JSON with the autoemit Shell export in the same tree as E4 wiring, resolve F-001 in that commit, then restamp candidate_digest. Do not promote 1870dbc / 30a33c4c as the D-1-closed candidate."
+    },
+    {
+      "id": "F-003",
+      "severity": "MEDIUM",
+      "lens": "Correctness",
+      "file": "scripts/wire-hooks.mjs:668",
+      "claim": "Post-strip kimi filter removes any command containing 'hooks/kimi/', including foreign entries, which is broader than the plan's isSvcOwnedCommand && /hooks\\/kimi\\// contract.",
+      "evidence": "scripts/wire-hooks.mjs:662-671 runs after stripSvcOwnedHooks. Filter: if isSvcOwnedCommand && /hooks\\/kimi\\// return false; then `return !h.command?.includes('hooks/kimi/')`. The second clause drops remaining (non-managed) commands whose command string merely includes that substring. Plan E3.1 (docs/plans/2026-08-24-ssve-architecture-evolution-plan.md:107) binds kimi strip to `isSvcOwnedCommand && /hooks\\/kimi\\//` OR a named parity fixture that the shared predicate alone matches every current strip hit. validate-claude-wirer-cutover.sh does not seed a foreign `hooks/kimi/` command; validate-wire-hooks-variant-dedup.sh:64 only asserts kimi-host entries are absent. Backup-once (wire-hooks.mjs:582-589) makes this recoverable, not irrecoverable, but it still violates foreign byte-verbatim preservation.",
+      "required_action": "Change the kimi filter to only the isSvcOwnedCommand && /hooks\\/kimi\\/ conjunction (managed strip already dropped svc-owned kimi commands). Add a cutover fixture: foreign command containing hooks/kimi/ survives rebuild."
+    },
+    {
+      "id": "F-004",
+      "severity": "MEDIUM",
+      "lens": "Correctness",
+      "file": "test-framework/evals/tier-1/validate-stage-registry-single-source.sh:25",
+      "claim": "E1.3 promised a negative fixture that unknown steps[].skill is rejected; the library does not check skill membership and the mutation list has no unknown-skill case.",
+      "evidence": "Plan line 66: 'Negative fixtures: unknown skill, unknown stage key, unknown chain receipt type each rejected.' validateMandatoryChainSegments (scripts/lib/stage-registry.mjs:86-98) checks stage_key against stages[] and emits[] against CHAIN_RECEIPT_TYPES; it never tests step.skill ∈ includedSkills ∪ mandatoryChainOutOfLane. Shell validator lines 20-23 check the LIVE registry only. Mutations at lines 25-32 cover empty/dup/class/profile, bad-emit ('not-a-receipt-type'), and bad-stage ('not-a-stage') — no mutation with skill: 'not-a-skill'. A typo skill would still be derived into SEGMENTS by deriveMandatoryChainSegments (stage-registry.mjs:54-62) for any consumer that only calls loadStageRegistry.",
+      "required_action": "Reject unknown step.skill in validateMandatoryChainSegments (pass allowed-skill set in, or load includedSkills+outOfLane in the validator module) AND add a mutation `{..., mandatory_chain_segments:[{id:'bad-skill', steps:[{skill:'not-a-skill', stage_key:'plan'}], ...}]}` that must throw."
+    },
+    {
+      "id": "F-005",
+      "severity": "LOW",
+      "lens": "Process integrity",
+      "file": "docs/specs/reviews/wi-ssve-evolution-delivery-receipt.md:35",
+      "claim": "Delivery receipt and execute-changeset lane-task metadata claim 350/350 tier-1 PASS; the review package itself records 350/353 with three failures.",
+      "evidence": "docs/specs/reviews/wi-ssve-evolution-delivery-receipt.md:35 'Target: tier-1 corpus 350 / 350 PASS'. .svc/lane-tasks-WI-SSVE-ARCHITECTURE-EVOLUTION-02.json task 4 metadata.validation (line 143) repeats '350/350 tier-1'. Review request known failures: validate-codex-session-rebinding.sh rc=1 and validate-kimi-host.sh check #8, both identical on pristine origin/main (PRE-EXISTING; not a wave regression). The 350/350 figure is an overclaim of the actual corpus, not of E1–E4 validators (those six named commands in the wave log all passed).",
+      "required_action": "Amend the delivery receipt and task-4 validation note to 350 pass / 3 pre-existing fails (cite the two named scripts + the third if reproduced on main). Do not treat this as a wave regression."
+    }
+  ],
+  "certifications": [
+    {
+      "key": "round1-F-001-catalog-compiler",
+      "certified": true,
+      "reviewer_family": "xai",
+      "for_content_sha": "current-worktree"
+    },
+    {
+      "key": "round1-F-002-emits-vocabulary",
+      "certified": true,
+      "reviewer_family": "xai",
+      "for_content_sha": "current-worktree"
+    },
+    {
+      "key": "round1-F-003-e4-wirer-edits",
+      "certified": true,
+      "reviewer_family": "xai",
+      "for_content_sha": "current-worktree"
+    },
+    {
+      "key": "round1-F-004-cursor-payload-d1",
+      "certified": true,
+      "reviewer_family": "xai",
+      "for_content_sha": "current-worktree-uncommitted-d1"
+    },
+    {
+      "key": "D-2-e3-no-migration-interpreter",
+      "certified": true,
+      "reviewer_family": "xai",
+      "for_content_sha": "current-worktree"
+    }
+  ]
+}
+```

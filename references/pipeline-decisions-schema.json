@@ -40,8 +40,8 @@
         },
         "wi": {
           "type": "string",
-          "pattern": "^WI-(SPINE-)?\\d+$",
-          "description": "Optional WI reference"
+          "pattern": "^WI-[A-Z0-9]+(-[A-Z0-9]+)*$",
+          "description": "Optional WI reference (canonical WI-id grammar, validate-wi-id.sh)"
         },
         "kind": {
           "type": "string",

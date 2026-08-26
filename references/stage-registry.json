@@ -45,6 +45,36 @@
     { "key": "capability-inventory", "class": "situational", "owner_skill": "capability-registry", "activation_condition": null, "trigger": "capability inventory maintenance (standing, feeds marketing/pricing stages)", "lane_skills": ["capability-registry", "capability-concierge"], "artifact_set_names": [] },
     { "key": "native-release", "class": "situational", "owner_skill": null, "activation_condition": null, "trigger": "native release shipped", "lane_skills": [], "artifact_set_names": [] }
   ],
+  "mandatory_chain_segments": [
+    {
+      "id": "seg-1-plan",
+      "steps": [
+        { "skill": "plan-changeset", "stage_key": "plan" },
+        { "skill": "review-plan", "stage_key": "review-plan" }
+      ],
+      "checkpoint_after_skill": "plan-changeset",
+      "emits": ["plan-manifest", "review-plan"]
+    },
+    {
+      "id": "seg-2-exec",
+      "steps": [
+        { "skill": "execute-changeset", "stage_key": "implement" },
+        { "skill": "review-exec", "stage_key": "review-exec" },
+        { "skill": "audit-implementation", "stage_key": null }
+      ],
+      "checkpoint_after_skill": "execute-changeset",
+      "emits": ["exec-record", "review-exec", "audit-implementation"]
+    },
+    {
+      "id": "seg-3-land",
+      "steps": [
+        { "skill": "land-changeset", "stage_key": null },
+        { "skill": "verify-promotion", "stage_key": "live-proof" }
+      ],
+      "checkpoint_after_skill": "land-changeset",
+      "emits": []
+    }
+  ],
   "story_type_profiles": {
     "feature": ["vision", "personas", "validate", "spec", "design-ux", "design-ui", "device", "journeys", "impact", "ac", "security", "compliance", "plan", "review-plan", "implement", "review-exec", "perf", "e2e", "test-run", "spec-sync", "live-proof", "analytics", "visuals", "device-proof", "qa-companion", "ledger", "marketing", "pricing", "landing-impact", "finops", "translations", "index-restamp"],
     "bug": ["impact", "ac", "plan", "review-plan", "implement", "review-exec", "e2e", "test-run", "spec-sync", "live-proof", "qa-companion", "ledger", "marketing", "pricing", "index-restamp"],

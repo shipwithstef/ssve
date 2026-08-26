@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import crypto from "node:crypto";
 import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -13,6 +14,9 @@ import {
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
+const stampMode = process.argv.includes("--stamp");
+const manifestPath = path.join(repoRoot, "skills-manifest.json");
+const digestPath = path.join(repoRoot, ".svc/manifest-digest.json");
 
 const errors = [];
 
@@ -139,6 +143,104 @@ function assertManifestArrayRoles(manifest) {
   }
 }
 
+function assertNoUnannotatedDuplicates(manifest) {
+  const allowlist = manifest.dualRunSkillAllowlist || {};
+  const includedSeen = new Set();
+  for (const skill of manifest.includedSkills ?? []) {
+    if (includedSeen.has(skill)) {
+      errors.push(`includedSkills duplicate: ${skill}`);
+    }
+    includedSeen.add(skill);
+  }
+
+  const assertArray = (label, values) => {
+    if (!Array.isArray(values)) return;
+    const counts = new Map();
+    for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1);
+    for (const [skill, count] of counts) {
+      if (count <= 1) continue;
+      const rule = allowlist[skill];
+      const allowed = rule
+        && Array.isArray(rule.arrays)
+        && rule.arrays.includes(label)
+        && count <= (rule.max_occurrences ?? 1);
+      if (!allowed) {
+        errors.push(`${label} has unannotated duplicate "${skill}" (${count} occurrences)`);
+      }
+    }
+  };
+
+  assertArray("pipeline", manifest.pipeline);
+  assertArray("bootstrapStartSequence", manifest.bootstrapStartSequence);
+  for (const [laneName, lane] of Object.entries(manifest.laneDefinitions ?? {})) {
+    assertArray(`laneDefinitions.${laneName}.skills`, lane.skills);
+  }
+}
+
+function assertReviewGates(manifest) {
+  const gates = manifest.reviewGates;
+  if (!gates || typeof gates !== "object") {
+    errors.push("reviewGates missing or malformed");
+    return;
+  }
+  const expectedIds = ["G1", "G2", "G3", "G4", "G5", "G6", "G7"];
+  const actualIds = Object.keys(gates).sort();
+  if (actualIds.join(",") !== expectedIds.join(",")) {
+    errors.push(`reviewGates must be contiguous G1..G7 (got ${actualIds.join(",")})`);
+  }
+  const pipeline = new Set(manifest.pipeline ?? []);
+  const outOfLane = new Set(Object.keys(manifest.mandatoryChainOutOfLane ?? {}));
+  const afterAllowed = new Set([...pipeline, ...outOfLane]);
+  const included = new Set(manifest.includedSkills ?? []);
+  for (const gateId of expectedIds) {
+    const gate = gates[gateId];
+    if (!gate || typeof gate !== "object") {
+      errors.push(`reviewGates.${gateId} missing`);
+      continue;
+    }
+    if (!afterAllowed.has(gate.after)) {
+      errors.push(`reviewGates.${gateId}.after "${gate.after}" not in pipeline ∪ mandatoryChainOutOfLane keys`);
+    }
+    if (!Array.isArray(gate.enforced_by) || gate.enforced_by.length === 0) {
+      errors.push(`reviewGates.${gateId} missing enforced_by`);
+      continue;
+    }
+    for (const skill of gate.enforced_by) {
+      if (!included.has(skill)) {
+        errors.push(`reviewGates.${gateId}.enforced_by contains ${skill}, which is not in includedSkills`);
+      }
+    }
+  }
+}
+
+function assertManifestDigest(manifest) {
+  const manifestBytes = fs.readFileSync(manifestPath);
+  const currentDigest = crypto.createHash("sha256").update(manifestBytes).digest("hex");
+  if (stampMode) {
+    fs.mkdirSync(path.dirname(digestPath), { recursive: true });
+    fs.writeFileSync(
+      digestPath,
+      `${JSON.stringify({ algorithm: "sha256", digest: currentDigest, stamped_at: new Date().toISOString() }, null, 2)}\n`
+    );
+    return;
+  }
+  if (!fs.existsSync(digestPath)) {
+    // E2.2 contract (restored after exec-review R4 F-001c revert, Cursor R2
+    // F-001, Grok R6 F-001): a missing sidecar with schema_version present is
+    // FAIL-CLOSED. The sidecar is TRACKED and ships in the same commit as
+    // skills-manifest.json (pre-commit slot 21 binds them as an atomic pair).
+    // --stamp is the only writer; manual lint may never silently reset the base.
+    errors.push("manifest digest missing — run: node scripts/lint-skills-manifest.mjs --stamp");
+    return;
+  }
+  const sidecar = JSON.parse(fs.readFileSync(digestPath, "utf8"));
+  if (sidecar.digest !== currentDigest) {
+    errors.push(
+      `manifest digest mismatch (stored ${sidecar.digest}, current ${currentDigest}) — run: node scripts/lint-skills-manifest.mjs --stamp`
+    );
+  }
+}
+
 const manifest = JSON.parse(readFile("skills-manifest.json"));
 const workflowRoutingRules = readFile("skills/route-workflow/references/routing-rules.md");
 const externalAddons = readFile("EXTERNAL_ADDONS.md");
@@ -198,6 +300,8 @@ compareList(
 assertIncludedSkillPaths(manifest.includedSkills);
 assertPackagedSkillDirsIncluded(manifest.includedSkills);
 assertManifestArrayRoles(manifest);
+assertNoUnannotatedDuplicates(manifest);
+assertReviewGates(manifest);
 
 function assertRulesRegistry(registry) {
   if (!registry || !Array.isArray(registry.entries)) {
@@ -415,6 +519,8 @@ assertNotIncludes(
     }
   }
 }
+
+assertManifestDigest(manifest);
 
 if (errors.length > 0) {
   console.error("skills-manifest lint failed:");

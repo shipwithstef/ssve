@@ -135,6 +135,24 @@ export function buildGrokHookEntries(skillsPath) {
     });
   }
 
+  // Phase receipt autoemit (Edit/Write paths)
+  if (!DISABLED.has("svc-phase-receipt-autoemit-edit")) {
+    hooks.push({
+      event: "PostToolUse",
+      matcher: "Write|Edit",
+      command: `${NODE_CMD} ${hooksDir}/svc-phase-receipt-autoemit.mjs`,
+      timeout: 10,
+    });
+  }
+  if (!DISABLED.has("svc-phase-receipt-autoemit-bash")) {
+    hooks.push({
+      event: "PostToolUse",
+      matcher: "Shell|Bash",
+      command: `${NODE_CMD} ${hooksDir}/svc-phase-receipt-autoemit.mjs`,
+      timeout: 10,
+    });
+  }
+
   // Session start healthcheck
   if (!DISABLED.has("svc-session-start-healthcheck")) {
     hooks.push({

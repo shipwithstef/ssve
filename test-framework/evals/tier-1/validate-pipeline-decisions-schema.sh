@@ -19,7 +19,7 @@ const lines = text.split('\n');
 let pass = 0, fail = 0;
 const errs = [];
 const isoRe = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
-const wiRe = /^WI-(SPINE-)?\d+\$/;
+const wiRe = /^WI-[A-Z0-9]+(-[A-Z0-9]+)*\$/;
 const kinds = new Set(['mechanical','taste','user']);
 lines.forEach((line, idx) => {
   if (!line.trim()) return;

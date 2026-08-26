@@ -89,6 +89,9 @@ export function buildCursorHookEntries(skillsPath) {
   if (!DISABLED.has("svc-inertia-check")) {
     entries.afterFileEdit.push({ command: `${NODE_CMD} ${q(`${hooksDir}/svc-inertia-check.mjs`)}` });
   }
+  if (!DISABLED.has("svc-phase-receipt-autoemit-edit")) {
+    entries.afterFileEdit.push({ command: `${NODE_CMD} ${q(`${hooksDir}/svc-phase-receipt-autoemit.mjs`)}` });
+  }
   if (!DISABLED.has("svc-session-start-healthcheck")) {
     entries.sessionStart.push({ command: `${NODE_CMD} ${q(`${hooksDir}/svc-session-start-healthcheck.mjs`)}` });
   }

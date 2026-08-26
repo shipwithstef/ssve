@@ -36,7 +36,78 @@ export function validateStageRegistry(document, source = "stage registry") {
       }
     }
   }
+  if (document.mandatory_chain_segments !== undefined) {
+    validateMandatoryChainSegments(document, source);
+  }
   return Object.freeze({ ...document, essential: Object.freeze(essential) });
+}
+
+const CHAIN_RECEIPT_TYPES = new Set([
+  "plan-manifest",
+  "review-plan",
+  "exec-record",
+  "review-exec",
+  "audit-implementation",
+]);
+const CHECKPOINT_SKILLS = new Set(["plan-changeset", "execute-changeset", "land-changeset"]);
+
+export function deriveMandatoryChainSegments(document) {
+  const segments = document.mandatory_chain_segments;
+  if (!Array.isArray(segments)) return [];
+  return segments.map((seg) => ({
+    id: seg.id,
+    stages: seg.steps.map((step) => step.skill),
+    checkpoint_after: seg.checkpoint_after_skill,
+    emits: Array.isArray(seg.emits) ? seg.emits : [],
+  }));
+}
+
+export function validateMandatoryChainSegments(document, source = "stage registry", allowedSkills = null) {
+  const segments = document.mandatory_chain_segments;
+  if (!Array.isArray(segments) || segments.length === 0) {
+    throw new Error(`${source} missing mandatory_chain_segments array`);
+  }
+  const stageKeys = new Set(document.stages.map((stage) => stage.key));
+  const skillAllowlist = allowedSkills instanceof Set ? allowedSkills
+    : Array.isArray(allowedSkills) ? new Set(allowedSkills)
+    : null;
+  const ids = new Set();
+  const checkpointSeen = new Set();
+  for (const seg of segments) {
+    if (!seg || typeof seg.id !== "string" || !seg.id) {
+      throw new Error(`${source} segment missing id`);
+    }
+    if (ids.has(seg.id)) throw new Error(`${source} duplicate segment id "${seg.id}"`);
+    ids.add(seg.id);
+    if (!Array.isArray(seg.steps) || seg.steps.length === 0) {
+      throw new Error(`${source} segment "${seg.id}" has no steps`);
+    }
+    if (!CHECKPOINT_SKILLS.has(seg.checkpoint_after_skill)) {
+      throw new Error(`${source} segment "${seg.id}" checkpoint_after_skill must be plan-changeset|execute-changeset|land-changeset`);
+    }
+    checkpointSeen.add(seg.checkpoint_after_skill);
+    for (const step of seg.steps) {
+      if (!step || typeof step.skill !== "string") {
+        throw new Error(`${source} segment "${seg.id}" step missing skill`);
+      }
+      if (skillAllowlist && !skillAllowlist.has(step.skill)) {
+        throw new Error(`${source} segment "${seg.id}" references unknown skill "${step.skill}" (not in includedSkills or mandatoryChainOutOfLane)`);
+      }
+      if (step.stage_key !== null && typeof step.stage_key === "string" && !stageKeys.has(step.stage_key)) {
+        throw new Error(`${source} segment "${seg.id}" references unknown stage_key "${step.stage_key}"`);
+      }
+    }
+    for (const emit of seg.emits || []) {
+      if (!CHAIN_RECEIPT_TYPES.has(emit)) {
+        throw new Error(`${source} segment "${seg.id}" emits unknown chain receipt type "${emit}"`);
+      }
+    }
+  }
+  for (const skill of CHECKPOINT_SKILLS) {
+    if (!checkpointSeen.has(skill)) {
+      throw new Error(`${source} mandatory_chain_segments missing checkpoint_after_skill for ${skill}`);
+    }
+  }
 }
 
 export function loadStageRegistry(filePath = "references/stage-registry.json") {

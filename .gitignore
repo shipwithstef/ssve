@@ -149,4 +149,12 @@ docs/specs/candidates/*.tmp.*
 # runtime state (the hash-bound baton is the fold of this ledger, not a
 # committed artifact).
 .svc/continuation/
+
+# Machine-local derived caches (WI-SSVE-ARCHITECTURE-EVOLUTION-02)
+.svc/learning-lifecycle.jsonl
+
+# External-review station artifacts (machine-local, receipted via refs/notes/svc-receipts)
+.svc/external-review-artifacts/
+
+# JIT skill-router derived index (WI-FW-SKILLS-ROUTING-01)
 .svc/skill-router/
