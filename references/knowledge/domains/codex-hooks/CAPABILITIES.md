@@ -31,4 +31,7 @@ Hooks expose deterministic lifecycle observation and policy decisions, including
 
 - [events.md](details/events.md) — Each event's input payload schema and decision-response format
 - [configuration.md](details/configuration.md) — hooks.json format, feature flag, precedence, matcher semantics
-- [decision-formats.md](details/decision-formats.md) — Legacy vs hookSpecificOutput response shapes per event
+
+> Index corrected 2026-08-26 (WI-FW-DOCS-AUDIT-01): a previously listed
+> `details/decision-formats.md` was never extracted; per-event response shapes
+> live in this body and in [events.md](details/events.md).

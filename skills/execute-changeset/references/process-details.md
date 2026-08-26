@@ -6,7 +6,7 @@ Before any multi-file execution, on Gemini CLI:
 ```bash
 bash hooks/svc-gemini-context-check.sh
 ```
-Blocks at POOR tier (>4 MB chat JSON). See [references/gemini-context-budget.md](../references/gemini-context-budget.md). On Claude Code this is a no-op. G1 from 2026-04-19 WI-085 audit.
+Blocks at POOR tier (>4 MB chat JSON). See [references/gemini-context-budget.md](../../../references/gemini-context-budget.md). On Claude Code this is a no-op. G1 from 2026-04-19 WI-085 audit.
 
 
 ### Step 0a: Pre/Post Validation Baseline

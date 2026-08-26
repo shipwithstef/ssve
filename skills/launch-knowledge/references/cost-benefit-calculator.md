@@ -20,7 +20,7 @@ Every recommendation that involves money or time goes through one of these four 
 - VAT trigger: at `R_self >= VAT_threshold_J` (BG: 100,000 BGN/year), VAT registration is mandatory.
 
 **Output line in `launch-vehicle-decision.md`:**
-> "Net cost of registering: ~€{X}/year given employment status. Breakeven at ~{Y} BGN annual revenue. See [bg.md](../references/knowledge/launch/jurisdictions/bg.md)."
+> "Net cost of registering: ~€{X}/year given employment status. Breakeven at ~{Y} BGN annual revenue. See [bg.md](../../../references/knowledge/launch/jurisdictions/bg.md)."
 
 ## Calculator 2: Credit program expected value
 

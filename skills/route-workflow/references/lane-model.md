@@ -465,7 +465,7 @@ Use when:
 - The work improves the framework, its skills, hooks, rules, tests, or documentation
 - The work is NOT about using svc on another project (that routes to lanes 1–6)
 
-**This lane is a decision tree, not a linear pipeline.** Framework work is classified by use case before routing. See [references/framework-policy.md](references/framework-policy.md) for the full svc-on-svc classification matrix.
+**This lane is a decision tree, not a linear pipeline.** Framework work is classified by use case before routing. See [framework-policy.md](framework-policy.md) for the full svc-on-svc classification matrix.
 
 **Framework Work Classification (MANDATORY FIRST STEP):**
 

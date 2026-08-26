@@ -12,6 +12,10 @@ Branch WI-557-v2 squash-merged to main. Results:
 **Branch:** WI-557-governance-speed-pass-v2 (worktree exists)
 **Scope:** Fix ~8 validator regressions from WI-556/557 hook deletions + schema enum removals + implement FP-030 surface-scoped runner + FP-029 AC-table gate
 
+> **Historical planning residue** (marked 2026-08-26, WI-FW-DOCS-AUDIT-01):
+> everything below this banner is the WI-557-v2 execution plan, already landed
+> 2026-08-23. The tables read as record only — they are NOT open work.
+
 ### Tier-1 Regressions to Fix (caused by WI-556/557)
 
 | Validator | Why broken | Fix |

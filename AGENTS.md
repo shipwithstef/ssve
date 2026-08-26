@@ -387,7 +387,7 @@ SVC checks and not deleted lifecycle protection. Validate effective wiring with
 | `svc-task-completion-guard.sh` | Stop | Blocks stop when actionable work remains in task graph |
 
 ### Rules (`rules/`)
-13 registered rules across stacks (universal, web, golang, rust, python, react, react-native). Each rule has:
+48 registered rules across stacks (universal, base44, web, golang, rust, python, react, react-native); the authoritative list is `rulesRegistry.entries` in `skills-manifest.json`. Each rule has:
 - `type`: `correction` (prevents mistakes) or `steering` (guides style)
 - `scope`: `universal` or stack-specific
 - `source`: `local` or `blended:ecc`
@@ -395,9 +395,10 @@ SVC checks and not deleted lifecycle protection. Validate effective wiring with
 Rules are injected into `CLAUDE.md` / `AGENTS.md` based on the active stack.
 
 ### Agents (`agents/`)
-First-class primitives distinct from skills. Three agents defined:
+First-class primitives distinct from skills. **28 agent definitions** with YAML frontmatter under `agents/` (full roster and format contract: `agents/README.md`). Notable:
 - `summary-extractor` — Haiku 4.5, locked pass-through for extracting `SVC_WORKER_SUMMARY` blocks
-- `plan-reviewer` — Sonnet 4.6, adversarial reviewer for plan-changeset manifests
+- `plan-reviewer` — Sonnet 5, adversarial reviewer for plan-changeset manifests
+- Company operating brains (`chief-of-staff`, `counsel`, `financial-analyst`, …) and svc stage/lens executors (`svc-stage-*`, `svc-lens-*`, `svc-journey-qa`, `svc-state-janitor`)
 
 Agent format: YAML frontmatter (`name`, `description`, `model`, `tools`, `harness`) + system prompt body.
 

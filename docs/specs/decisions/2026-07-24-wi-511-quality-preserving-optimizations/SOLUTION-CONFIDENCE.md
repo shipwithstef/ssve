@@ -24,12 +24,12 @@ Which portions of the pasted multi-script optimization proposal improve the curr
 
 ## 3. Prior decisions recovered
 
-1. [WI-399](../../../work-items/WI-399.md) introduced per-session guard state to prevent cross-session counter pollution. Cleanup must preserve this isolation.
-2. [WI-440](../../../work-items/WI-440.md) requires zero-loss optimization children to ship one-per-run and records that naive consolidations were rejected.
-3. [WI-452](../../../work-items/WI-452.md) makes the resolved repository `.svc` directory the only valid hook-state home and proves out-of-repo writes must not seed state.
-4. [WI-508](../../../work-items/WI-508.md) intentionally selects deterministic JSON plus bounded SQLite contention for the candidate reservoir.
-5. [WI-509](../../../work-items/WI-509.md) intentionally selects ordered, timeout-bounded receipt workers to preserve per-SHA fail-closed attribution.
-6. [WI-510](../../../work-items/WI-510.md) preserves strict structured evidence and refuses prose or malformed-data bypasses.
+1. [WI-399](../../work-items/WI-399.md) introduced per-session guard state to prevent cross-session counter pollution. Cleanup must preserve this isolation.
+2. [WI-440](../../work-items/WI-440.md) requires zero-loss optimization children to ship one-per-run and records that naive consolidations were rejected.
+3. [WI-452](../../work-items/WI-452.md) makes the resolved repository `.svc` directory the only valid hook-state home and proves out-of-repo writes must not seed state.
+4. [WI-508](../../work-items/WI-508.md) intentionally selects deterministic JSON plus bounded SQLite contention for the candidate reservoir.
+5. [WI-509](../../work-items/WI-509.md) intentionally selects ordered, timeout-bounded receipt workers to preserve per-SHA fail-closed attribution.
+6. [WI-510](../../work-items/WI-510.md) preserves strict structured evidence and refuses prose or malformed-data bypasses.
 7. [Leftover disposition](../../../../references/leftover-disposition.md) classifies loop-guard state as generated machine-local residue, unlike append-only audit history.
 
 These are current local framework contracts and therefore stronger evidence for this repository than a generic optimization checklist.
