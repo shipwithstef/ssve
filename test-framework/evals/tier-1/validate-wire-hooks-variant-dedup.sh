@@ -77,7 +77,11 @@ check "user hooks with same basename both survive (no fuzzy collapse)" test "$(q
 # write path still preceded by backupSettingsOnce().
 check "no direct settings writes remain (atomic primitive only)" bash -c "! grep -q 'fs.writeFileSync(settingsPath' '$WIRER'"
 check "atomic writeSettingsDocument primitive present" bash -c "grep -q 'renameSync(tmp, target)' '$WIRER'"
-check "all write sites are backup-guarded (static)" bash -c "test \"\$(grep -B1 'writeSettingsDocument(settingsPath' '$WIRER' | grep -c 'backupSettingsOnce();')\" = \"2\""
+# Property form (WI-FW-HOOKS-SAFETY-01 merge with baf0e88): EVERY
+# writeSettingsDocument call site must be immediately preceded by
+# backupSettingsOnce() — the invariant, not a hardcoded site count, since the
+# merge-based wirer legitimately has four guarded write paths.
+check "all write sites are backup-guarded (static)" bash -c "test \"\$(grep -B1 'writeSettingsDocument(settingsPath' '$WIRER' | grep -c 'backupSettingsOnce();')\" = \"\$(grep -c 'writeSettingsDocument(settingsPath' '$WIRER')\""
 
 cp "$S1" "$TMP/snap1.json"
 env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE \
