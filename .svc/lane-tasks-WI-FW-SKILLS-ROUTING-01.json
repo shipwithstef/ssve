@@ -357,7 +357,7 @@
       "id": 8,
       "skill": "land-changeset",
       "subject": "Push branch, PR, squash-merge",
-      "status": "pending",
+      "status": "in_progress",
       "blocked_by": [
         7
       ],
@@ -385,5 +385,5 @@
       }
     }
   ],
-  "status": "pending"
+  "status": "in_progress"
 }
