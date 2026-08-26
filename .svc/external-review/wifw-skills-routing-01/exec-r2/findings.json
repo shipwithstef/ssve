@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "review_kind": "exec",
+  "rubric_score": null,
+  "rubric_failures": null,
+  "dependencies_needing_read": [
+    "references/skill-routing-index.json",
+    "docs/specs/research-log.md"
+  ],
+  "reviewer": {
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6-sol",
+    "effort": "high"
+  },
+  "verdict": "fail",
+  "summary": "Round-1 remediation is incomplete. The router now reports advisory-only enforcement and includes the requested safety controls, but runtime freshness misses SKILL.md changes, explicit invocation is under-recognized, ambiguity fallback can be evicted, and schema-validation claims remain materially stronger than the implementation.",
+  "findings": [
+    {
+      "id": "F-EXEC-011",
+      "severity": "high",
+      "claim": "Runtime index-freshness verification does not detect changed SKILL.md content.",
+      "analysis": "Each compiled skill record carries a content_hash, but verifyIndexFreshness checks only skills-manifest.json, the overrides registry, and concerns/REGISTRY.json. Editing a skill description or body without changing those files leaves freshness.fresh=true, so stale lexical metadata remains active. This defeats the claimed content-addressed runtime verification and can route users using obsolete instructions.",
+      "evidence": [
+        "scripts/compile-skill-router-index.mjs stores content_hash for every skill record.",
+        "scripts/lib/skill-router.mjs verifyIndexFreshness checks only manifest_sha256, overrides_sha256, and concern_registry_sha256.",
+        "schemas/skill-routing-index.schema.json has no aggregate fingerprint covering the SKILL.md inputs."
+      ],
+      "proposed_fix": "During freshness verification, safely read every indexed path and compare its SHA-256 with content_hash, or add a deterministic aggregate SKILL-input hash to compiled_from and verify it at runtime. Add a test that edits one SKILL.md while leaving the other canonical files unchanged and requires optional discovery to degrade."
+    },
+    {
+      "id": "F-EXEC-012",
+      "severity": "medium",
+      "claim": "Explicit skill requests are pinned only when the entire normalized intent equals a skill name or alias.",
+      "analysis": "The explicit resolver uses names.includes(q). Normal requests such as “use diagnose-bug for this regression” or “run /review-security” therefore do not become deterministic explicit pins; they fall into lexical suggestion instead. That does not satisfy the 100% explicit-selection contract.",
+      "evidence": [
+        "scripts/lib/skill-router.mjs resolvePins normalizes the complete intent and tests q && names.includes(q).",
+        "The corpus tests only bare values such as \"diagnose-bug\" and \"root cause\"; it has no sentence-form or command-form explicit invocation fixtures."
+      ],
+      "proposed_fix": "Parse unambiguous explicit syntax and boundary-delimited canonical names, including `$skill`, `/skill`, and phrases such as `use <skill>` or `run <skill>`, while preserving the collision guard. Add adversarial sentence-form fixtures for every supported explicit form."
+    },
+    {
+      "id": "F-EXEC-013",
+      "severity": "medium",
+      "claim": "The approved route-workflow ambiguity fallback can still be dropped by the optional-card budget.",
+      "analysis": "When active-mode selection fails, the fallback is inserted only if another card and its token cost fit. With eight ranked cards or a full token budget, the code increments truncated and emits no route-workflow fallback. A broad ambiguous intent can therefore end with selected=null and ordinary suggestions only, contrary to the approved-fallback behavior.",
+      "evidence": [
+        "scripts/lib/skill-router.mjs checks cards.length >= d1CeilingCards before unshifting the fallback.",
+        "On overflow, the fallback is discarded instead of replacing the lowest-ranked optional card.",
+        "The ambiguity corpus fixture uses a zero-match query, so it does not exercise a full-card or token-saturated fallback."
+      ],
+      "proposed_fix": "Give the ambiguity fallback priority over ranked optional cards: reserve one slot or evict the lowest-ranked optional card, recompute d1_tokens, and always emit the fallback reason. Add card-saturated and token-saturated active-mode fixtures."
+    },
+    {
+      "id": "F-EXEC-014",
+      "severity": "medium",
+      "claim": "The CLI validate command can report ok:true for a stale or schema-invalid index.",
+      "analysis": "validate calls loadIndex, counts policies, and checks only that descriptions are non-empty. loadIndex itself checks only schema_version and duplicate skill names. Invalid policies, malformed paths, missing required fields, wrong compiled_from hashes, or changed canonical inputs can therefore pass this advertised validation command.",
+      "evidence": [
+        "scripts/skill-router.mjs validate does not call verifyIndexFreshness or the compiler --check path.",
+        "scripts/lib/skill-router.mjs loadIndex performs no JSON-Schema validation.",
+        "The manifest's validation sequence presents `node scripts/skill-router.mjs validate` as artifact validation."
+      ],
+      "proposed_fix": "Make validate perform compiled-input freshness verification and complete index-schema validation, returning nonzero with named diagnostics. Add negative tests for stale inputs, invalid policies, malformed paths, and missing required properties."
+    },
+    {
+      "id": "F-EXEC-015",
+      "severity": "medium",
+      "claim": "The decision validator and its tier-1 parity check do not establish JSON-Schema conformance.",
+      "analysis": "validateDecision validates only a subset of the schema and directly dereferences nested values. The parity test compares top-level keys and two constants rather than validating the emitted object against the schema. There is already a concrete mismatch: receipt is optional in the JSON Schema but validateDecision effectively requires receipt.intent_fingerprint.",
+      "evidence": [
+        "schemas/skill-router-decision.schema.json omits receipt from its top-level required array.",
+        "scripts/lib/skill-router.mjs always rejects a decision without receipt.intent_fingerprint.",
+        "validateDecision does not validate semantic.status, nested additionalProperties, array item types, budget required keys, timestamp format, or most enums.",
+        "validate-skill-router.sh's schema-parity section checks only top-level fields and selected constants."
+      ],
+      "proposed_fix": "Use a real Draft 2020-12 validator or generate an equivalent complete dependency-free validator. Align whether receipt is required, validate the actual emitted decision against the schema, and add negative fixtures for every nested enum, required field, and additionalProperties boundary."
+    },
+    {
+      "id": "F-EXEC-016",
+      "severity": "medium",
+      "claim": "The compiler can emit an index that violates its own schema because override arrays are not structurally validated.",
+      "analysis": "Only invocation_policy, risk, requires targets, and required_rules targets receive meaningful validation. Duplicate aliases owned by the same skill are accepted and preserved even though the index schema declares aliases uniqueItems=true. Other enrichment fields are not checked as arrays of strings.",
+      "evidence": [
+        "scripts/compile-skill-router-index.mjs permits a repeated alias when aliasOwners already maps it to the same skill.",
+        "The record writes aliases and other enrichment arrays directly from overrides.",
+        "schemas/skill-routing-index.schema.json requires unique aliases and typed array items.",
+        "The malformed-input test covers only duplicate includedSkills."
+      ],
+      "proposed_fix": "Validate the overrides document and compiled result structurally before writing. Reject duplicate normalized aliases even within one skill and non-string/non-array enrichment values. Add negative fixtures for duplicate aliases, invalid field types, and schema-invalid compiled output."
+    },
+    {
+      "id": "F-EXEC-017",
+      "severity": "medium",
+      "claim": "A malformed live concern registry aborts the advisory router instead of entering the declared read-only degraded state.",
+      "analysis": "resolvePins calls loadConcerns, which directly reads and parses REGISTRY.json. Parse or read failure throws before a decision is produced. Because this wave has no mutation gate, aborting also blocks advisory/read-only routing, contrary to the plan's failure semantics and the schema's read-only-diagnosis enforcement value.",
+      "evidence": [
+        "scripts/lib/skill-router.mjs loadConcerns has no recovery path.",
+        "route calls resolvePins before it can construct semantic degraded status or enforcement output.",
+        "The decision schema permits enforcement=\"read-only-diagnosis\", but route never emits it."
+      ],
+      "proposed_fix": "Catch registry read/parse failures, withhold optional discovery and unverified concern claims, emit a diagnostic decision with enforcement=read-only-diagnosis, and preserve a nonzero mutation-gate status for future adapters. Add missing, malformed, and unsupported-schema registry fixtures."
+    },
+    {
+      "id": "F-EXEC-018",
+      "severity": "low",
+      "claim": "The claimed research-log removal is not reflected consistently in the supplied candidate.",
+      "analysis": "The review request says the research-log artifact was removed, but the candidate stat still adds it and planning artifacts continue to stage and own it. The file was also omitted from the provided full diff despite the statement that only the generated index and session state were excluded, preventing verification of its contents.",
+      "evidence": [
+        "The candidate stat lists docs/specs/research-log.md with 20 added lines.",
+        "manifest.md Files Planned and Execution Command Sequence still include docs/specs/research-log.md.",
+        "plan-contract.json assigns docs/specs/research-log.md to T05 ownership."
+      ],
+      "proposed_fix": "Either remove the file and every manifest/ownership/staging reference, or explicitly retain it and include its diff in the review package. Regenerate the candidate digest afterward."
+    }
+  ],
+  "certifications": [
+    {
+      "key": "implementation_review_completed",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "722cb10c8de5d1de6a3c6fb0e5465cc3b2ab8305b629e98440f309ebf18486bc"
+    },
+    {
+      "key": "release_authorized",
+      "certified": false,
+      "reviewer_family": "openai",
+      "for_content_sha": "722cb10c8de5d1de6a3c6fb0e5465cc3b2ab8305b629e98440f309ebf18486bc"
+    }
+  ]
+}
