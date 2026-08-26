@@ -29,7 +29,23 @@ const CHILDREN = [["svc-worktree-isolation-guard.mjs"],["svc-workflow-guard.mjs"
 // EXTREV-EXEC-006: host identity is wiring-supplied, never hardcoded. The
 // shared engine path must produce distinct principals per host and fail closed
 // when the identity is missing.
-function hostIdentity(){const h=String(process.env.SVC_HOST||"").toLowerCase();return ["codex","claude","kimi","gemini","opencode","mimo-code","antigravity","cursor","grok"].includes(h)?h:"";}
+// WI-FW-CODEX-SVC-HOST-DISPATCH-01: ad-hoc `nohup codex exec` lane dispatches
+// do not export SVC_HOST into the spawned session, so every governed call was
+// denied ("host identity missing") and killed the iOS pipeline lane even with
+// BREAK-GLASS armed. When wiring evidence is absent, infer THIS host from
+// codex-exclusive signals in strict order — thread id, session id, CODEX_HOME,
+// then this dispatcher's own canonical hooks/codex install path. Each signal
+// is produced only by a Codex runtime, so inference cannot impersonate a
+// foreign host; an explicit but UNKNOWN SVC_HOST still fails closed.
+const KNOWN_HOSTS=["codex","claude","kimi","gemini","opencode","mimo-code","antigravity","cursor","grok"];
+function hostIdentity(){
+const explicit=String(process.env.SVC_HOST||"").toLowerCase();
+if(explicit)return KNOWN_HOSTS.includes(explicit)?explicit:"";
+if(String(process.env.CODEX_THREAD_ID||"").trim())return "codex";
+if(String(process.env.CODEX_SESSION_ID||"").trim())return "codex";
+if(String(process.env.CODEX_HOME||"").trim())return "codex";
+try{if(path.basename(HERE)==="codex")return "codex";}catch{}
+return "";}
 function sidOf(p) { return String(p.session_id || p.sessionId || p.thread_id || p.threadId || process.env.SVC_SESSION_ID || process.env.CODEX_THREAD_ID || process.env.CODEX_SESSION_ID || ""); }
 function worktreeRows(repo) { return (spawnSync("git",["-C",repo,"worktree","list","--porcelain"],{encoding:"utf8"}).stdout||"").split(/\r?\n/).filter(x=>x.startsWith("worktree ")).map(x=>x.slice(9)); }
 function baton(repo,sid,payload) { if(!repo)return null; const found=[]; try { for(const root of new Set([repo,...worktreeRows(repo)])){ const candidate=fs.realpathSync(root); const dir=path.join(candidate,".svc","bindings"); try { for(const n of fs.readdirSync(dir)){ if(!n.endsWith(".json"))continue; const f=path.join(dir,n),s=fs.lstatSync(f); if(!s.isFile()||s.isSymbolicLink())continue; const b=JSON.parse(fs.readFileSync(f,"utf8")); if(b.session_id===sid&&b.role==="mutating"&&!b.released_at)found.push({worktree:fs.realpathSync(b.worktree_root),binding:b}); } } catch {} } if(!found.length){ for(const root of new Set([repo,...worktreeRows(repo)])){ const candidate=fs.realpathSync(root); const resolved=resolveWI({...payload,cwd:candidate,session_id:sid},{...process.env,SVC_REQUIRE_SESSION_BINDING:"1"}); if(resolved.authority&&resolved.tuple?.worktree_root===candidate)found.push({worktree:candidate,binding:null}); } } } catch {} return found.length===1?found[0]:found.length>1?{conflict:true}:null; }
@@ -40,7 +56,7 @@ try { const key=payload.tool_input?"tool_input":payload.toolInput?"toolInput":pa
 // original input is
 // per-Git-argv `--no-optional-locks` normalization — never an `export`
 // prefix that a sibling classifier could re-read as an unbound mutation.
-const observation=evaluatePreToolObservation(payload);if(observation){if(observation.execution_input){allow(observation.execution_input);}else{allow();}process.exit(0);}}const sid=sidOf(payload);if(!sid)deny("Codex session identity is missing; recovery: resume with a stable session_id.");const hostId=hostIdentity();if(!hostId)deny("host identity missing: wiring must set SVC_HOST for this host; recovery: reinstall hooks via ./setup --host <host>.");const ctx=operationHookContext(payload,{...process.env,SVC_HOST:hostId});const scope=resolveOperationScope(payload,{host:hostId,env:process.env});if(!scope.ok)deny(`invalid mutation operation scope (${scope.contradictions[0]?.code||"scope contradiction"})`);const repo=scope.operation_repository?.worktree_root||scope.session_repository?.worktree_root||ctx.repo_root;let b=baton(repo,sid,payload);if(b?.conflict)deny("multiple active bindings for this session; recovery: select one WI explicitly.");let effective=payload;const input=payload[key];if(b?.worktree&&!scope.explicit_workdir.present&&input&&typeof input==="object")effective={...payload,[key]:{...input,workdir:b.worktree}};const command=mutationPayload(effective);const boot=parseBootstrapCommand(command);if(boot&&!boot.handoff){// WI-FW-HOOKS-SAFETY-01 (FP-04): operation scope outranks stale session cwd.
+const observation=evaluatePreToolObservation(payload);if(observation){if(observation.execution_input){allow(observation.execution_input);}else{allow();}process.exit(0);}}const sid=sidOf(payload);if(!sid)deny("Codex session identity is missing; recovery: resume with a stable session_id.");const hostId=hostIdentity();if(!hostId)deny("host identity missing: wiring must set SVC_HOST for this host and no codex session evidence exists; recovery: relaunch detached lanes via scripts/lib/dispatch-codex-lane.sh or reinstall hooks via ./setup --host <host>.");const ctx=operationHookContext(payload,{...process.env,SVC_HOST:hostId});const scope=resolveOperationScope(payload,{host:hostId,env:process.env});if(!scope.ok)deny(`invalid mutation operation scope (${scope.contradictions[0]?.code||"scope contradiction"})`);const repo=scope.operation_repository?.worktree_root||scope.session_repository?.worktree_root||ctx.repo_root;let b=baton(repo,sid,payload);if(b?.conflict)deny("multiple active bindings for this session; recovery: select one WI explicitly.");let effective=payload;const input=payload[key];if(b?.worktree&&!scope.explicit_workdir.present&&input&&typeof input==="object")effective={...payload,[key]:{...input,workdir:b.worktree}};const command=mutationPayload(effective);const boot=parseBootstrapCommand(command);if(boot&&!boot.handoff){// WI-FW-HOOKS-SAFETY-01 (FP-04): operation scope outranks stale session cwd.
 // The default-checkout requirement is evaluated against the repository the
 // EXPLICIT operation evidence resolves to when present; session cwd is
 // context, never mutation authority.

@@ -350,6 +350,21 @@ function isSafeVersionProbe(argv) {
   return new Set(["node", "bash", "git", "rg", "jq", "sed", "python3", "gh"]).has(argv[0]);
 }
 
+// WI-FW-CODEX-SVC-HOST-DISPATCH-01: provider observation for Azure DevOps
+// pipeline polling. Only `az pipelines runs show|list` is proven read-only —
+// the exact shape a relaunched lane needs to poll a failed build. Every other
+// az shape (build queue, devops invoke, repos, …) stays a governed mutation.
+// az writes files only through --output-file, which is rejected outright;
+// -o/--output merely formats stdout and stays allowed.
+function isSafeAz(argv) {
+  if (argv[0] !== "az") return false;
+  const rest = argv.slice(1);
+  if (rest[0] !== "pipelines" || rest[1] !== "runs") return false;
+  if (rest[2] !== "show" && rest[2] !== "list") return false;
+  return !rest.slice(3).some((token) =>
+    token === "--output-file" || token.startsWith("--output-file="));
+}
+
 function isSafeRg(command, env = process.env) {
   const tokens = words(command);
   if (tokens[0] !== "rg") return false;
@@ -472,6 +487,7 @@ export function isReadOnlyTool(ctx) {
     return isSafeGit(readArgv) || isSafeRg(decoded) || isSafeFind(decoded)
       || isSafeSort(readArgv) || isSafeUniq(readArgv) || isSafeFile(readArgv)
       || isSafeSed(readArgv) || isSafeJq(readArgv) || isSafeVersionProbe(readArgv)
+      || isSafeAz(readArgv)
       || SAFE_BASH.some((pattern) => pattern.test(decoded));
   });
 }

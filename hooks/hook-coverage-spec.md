@@ -65,3 +65,28 @@ svc-session-contract-freshness, svc-inertia-check, svc-codex-skill-load-enforcer
 svc-impact-triad-guard (Bash side). Tool-specific gates outside the mutation
 tool set stay directly wired: svc-eval-gate-pre (TaskUpdate), svc-preflight-skill
 (Skill), svc-continuation-phase-guard (Skill), svc-loop-guard-agent (Agent).
+
+## WI-FW-CODEX-SVC-HOST-DISPATCH-01 — host identity survives ad-hoc dispatch (2026-08-26)
+
+Ad-hoc `nohup codex exec` lane dispatches do not inherit `SVC_HOST`; once the
+identity gate fired, EVERY governed call was denied and the lane died even with
+BREAK-GLASS armed (iOS Azure pipeline incident, 2026-08-26). Contract now:
+
+- `hostIdentity()` resolves in strict order: explicit `SVC_HOST` →
+  `CODEX_THREAD_ID` → `CODEX_SESSION_ID` → `CODEX_HOME` → this dispatcher's own
+  canonical `hooks/codex` install path. Every inferred signal is produced only
+  by a Codex runtime, so inference cannot impersonate a foreign host; an
+  explicit but UNKNOWN `SVC_HOST` still fails closed.
+- Detached Codex lanes MUST launch through `scripts/lib/dispatch-codex-lane.sh`,
+  which exports `SVC_HOST=codex` before `setsid nohup` detach and refuses to
+  wrap non-codex commands.
+- Provider observation covers read-only `az pipelines runs show|list`: Azure
+  pipeline polling never needs mutation authority or host wiring.
+  `--output-file`, mutating az subcommands, and `az devops invoke` remain
+  governed mutations.
+
+**BREAK-GLASS ≠ SVC_HOST bypass:** owner override / break-glass authority
+objects govern MUTATION authorization only (leases, bindings, handover). They
+never substitute for host identity wiring — a lane denied for host identity is
+not recoverable by arming break-glass; relaunch it through
+`scripts/lib/dispatch-codex-lane.sh` instead.
