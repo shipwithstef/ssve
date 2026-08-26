@@ -2,7 +2,7 @@
 
 > **Company Operating System (COS) Living Ledger of all Swarm Worktrees, Multi-Agent Sessions, Promotions, Vault Secrets, and Deliverables.**
 > *Single Source of Truth across Antigravity, Cursor Auto, Codex, and Grok Swarm Fleet.*
-> *Last Updated: Tuesday, August 25, 2026 at 15:18 UTC+3*
+> *Last Updated: Wednesday, August 26, 2026 at 11:55 UTC+3 — WI-FW-SWARM-COORDINATION-01 promoted*
 
 ---
 
@@ -17,10 +17,13 @@
 | **`WI-UI-I18N-WRAP-POLISH-01`** | 30-locale mobile typography, elastic cards, zero-overflow viewports | `wt-lane-ui-i18n-wrap-polish` -> `feat/ui-i18n-wrap-polish` | Codex 5.6 Sol High | **PROMOTED & LIVE** | `dac04466d` • 20/20 mobile geometry tests passed |
 | **`WI-THEME-FIRST-VISIT-SOLAR-01`** | Real-time solar daylight engine (06:00–20:30 Cream vs 20:30–06:00 Dark) | `wt-lane-theme-first-visit-solar` -> `feat/first-visit-daylight-theme` | Codex 5.6 Sol High | **PROMOTED & LIVE** | `821a9741a` • Synchronous bootstrap in `<1ms` |
 | **`WI-562` (Multi-Agent Swarm Graph)** | Process-death-proof authority locks, CAS mutex, atomic digests in `seriousvibecoding` | `wi-562-swarm-graph-engineering` | Codex 5.6 & OpenCode | **PROMOTED & MERGED** | `784b764b` • 348/350 tests • 25+ commits, ~70 files |
+| **`WI-FW-SKILLS-ROUTING-01`** | JIT skill routing — deterministic index compiler + suggestion router, lane graph closeout | `feat-fw-skills-routing` | OpenCode ox-alpha | **PROMOTED & MERGED** | `6c3ca68` • triple review APPROVE |
+| **`WI-SSVE-ARCHITECTURE-EVOLUTION-02`** | SSVE framework evolution E1–E4: stage-registry single source, manifest integrity + gate ownership, Claude-wirer catalog cutover, cross-host auto-receipt parity | `.worktrees/wi-ssve-architecture-evolution-02` -> `feat/ssve-architecture-evolution-02` | OpenCode ox-alpha + Codex Sol High / Cursor Auto / Grok High panel | **PROMOTED & MERGED** | squash `baf0e88` + router-index convergence `e7de200` • exec R7/R8 Sol High terminal APPROVE • corpus 346/8 all pre-existing • verify-promotion receipt `docs/specs/reviews/wi-ssve-evolution-verify-promotion.md` |
 | **`WI-AI-FEATURES-01`** | AI feature availability toggles, Deno edge-gateway fallback | `wt-lane-ai-features` | Codex 5.6 Sol High | **PROMOTED & LIVE** | `3f815192` • Unit & runtime gates passed |
 | **`WI-ANDROID-BETA-01`** | Google Play Production submission (`vc125` signed AAB + release keystore) | `main` / `android/` | Orchestrator & Codex | **SUBMITTED & SIGNED** | `hourshub-release.keystore` in Azure Key Vault `kv-surge-dev-1` |
 | **`IARC-LIVE-RATING-01`** | Official IARC Global Age Rating Certificate (`5d663b18-1c47-8060-89d0-3f827a866ac0`) | `docs/specs/compliance/` | GlobalRatings.com / IARC | **LIVE & ACTIVE** | PEGI 3 / ESRB Everyone / USK 0 certified |
 | **`WI-SCOUT-ECONOMY-01`** | Scout reward acquisition points, QR redemption, Dodo billing integration | `wt-lane-scout-economy` | Codex 5.6 Sol High | **PROMOTED & LIVE** | `7e70c3a0f` & `830b72d1c` • 26/28 receipts green |
+| **`WI-FW-SWARM-COORDINATION-01`** | Central swarm coordination kernel — single-writer event journal, DSSE/Ed25519 signed command envelopes, coordinator-signed events w/ strict replay, CAS+idempotency, lease/handoff state machine, conflict ladder L0-L5, 4 tier-1 gates | `feature-WI-563-swarm-coordination` -> PR #26 | Codex Sol High (review) & OpenCode 0x-alpha (exec) | **PROMOTED & MERGED** | `cb38349` • AC1-11 audit PASS • OTA 9/9 hosts zero drift |
 
 ---
 
@@ -38,7 +41,6 @@
 
 | Work Item ID | Domain / Scope | Worktree / Branch | Lead Model / PID | Current Phase | Next Immediate Milestone |
 |---|---|---|---|---|---|
-| **`WI-SSVE-ARCHITECTURE-EVOLUTION-02`** | Framework evolution (SR-1/SR-3 stage unification, SR-4 manifest digest, HW-7 catalog cutover, 350/350 Tier-1 test fix) | `seriousvibecoding/.worktrees/wi-ssve-architecture-evolution-02` (`feat/ssve-architecture-evolution-02`) | Cursor Agent (`PID 558249`) & OpenCode 0x-alpha | **Executing Waves E1–E4** | Run all Tier-1 evals -> 350/350 PASS -> land to `origin/main` |
 | **`WI-IOS-AZURE-PIPELINE-01`** | Azure Pipelines macOS-14 cloud runner for iOS build & TestFlight upload | `azure-pipelines-ios.yml` | Architecture Spec | **Awaiting ASC `.p8` Key** | Download `.p8` from `appstoreconnect.apple.com` to `Downloads/` |
 | **`WI-ANDROID-BETA-GROUPS-SYNC-01`** | Automated Google Directory API sync for `beta-testers@hourshub.app` | `supabase/functions/android-beta-waitlist/` | Codex Medium | **Code Complete** | Add Service Account client email to Google Group |
 

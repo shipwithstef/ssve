@@ -125,9 +125,13 @@ else
 fi
 
 # 8. Verify resolve-model.sh fail-closed behavior and owner-policy routing
-if bash "$SCRIPT_DIR/scripts/resolve-model.sh" STRAT >/dev/null 2>&1; then
+ISOLATED_HOME="$(mktemp -d)"
+chmod 700 "$ISOLATED_HOME"
+if env -u SVC_DISPATCH_POLICY -u SVC_REVIEWER_POLICY HOME="$ISOLATED_HOME" bash "$SCRIPT_DIR/scripts/resolve-model.sh" STRAT >/dev/null 2>&1; then
+  rm -rf "$ISOLATED_HOME"
   fail "resolve-model.sh unexpectedly succeeded without owner dispatch policy"
 else
+  rm -rf "$ISOLATED_HOME"
   pass "resolve-model.sh refuses when owner dispatch policy is missing"
 fi
 

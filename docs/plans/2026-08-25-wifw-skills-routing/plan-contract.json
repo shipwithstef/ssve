@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "base_sha": "494f0749250ccf8c3e52e7dbd7a55128a0800b78",
+  "manifest": "docs/plans/2026-08-25-wifw-skills-routing/manifest.md",
+  "risk_flags": [
+    "idempotent_rewriter"
+  ],
+  "ownership": [
+    {
+      "task": "T01",
+      "paths": [
+        "schemas/skill-routing-index.schema.json",
+        "schemas/skill-router-decision.schema.json"
+      ]
+    },
+    {
+      "task": "T02",
+      "paths": [
+        "references/skill-routing-overrides.json",
+        "scripts/compile-skill-router-index.mjs",
+        "references/skill-routing-index.json"
+      ]
+    },
+    {
+      "task": "T03",
+      "paths": [
+        "scripts/lib/skill-router.mjs",
+        "scripts/skill-router.mjs",
+        ".gitignore"
+      ]
+    },
+    {
+      "task": "T04",
+      "paths": [
+        "test-framework/fixtures/skill-router/corpus.json",
+        "test-framework/evals/tier-1/validate-skill-router.sh"
+      ]
+    },
+    {
+      "task": "T05",
+      "paths": [
+        "FRAMEWORK-STATE.md",
+        "docs/specs/plans/wi-framework-skills-routing-plan.md",
+        "docs/plans/2026-08-25-wifw-skills-routing/manifest.md",
+        "docs/plans/2026-08-25-wifw-skills-routing/plan-contract.json",
+        "docs/specs/receipts/WI-FW-SKILLS-ROUTING-01.receipts.json",
+        "docs/specs/research-log.md",
+        "docs/plans/2026-08-25-wifw-skills-routing/review-log.yaml"
+      ]
+    },
+    {
+      "task": "T06",
+      "paths": [
+        "test-framework/evals/tier-1/validate-concern-compiler-v2.mjs",
+        "concerns/REGISTRY.json",
+        "concerns/cache-strategy-symmetry.md",
+        "concerns/paid-analytics-api.md",
+        "concerns/paid-cdn-egress.md",
+        "concerns/paid-external-api.md",
+        "concerns/paid-geocoding-api.md",
+        "concerns/paid-llm-api.md",
+        "concerns/paid-ml-inference-api.md",
+        "concerns/paid-notification-api.md",
+        "concerns/paid-ocr-vision-api.md",
+        "concerns/paid-payment-api.md",
+        "concerns/paid-search-api.md",
+        "concerns/paid-storage-api.md",
+        "concerns/paid-streaming-api.md",
+        "concerns/paid-translation-api.md"
+      ]
+    }
+  ],
+  "volatile_paths": [
+    ".svc"
+  ],
+  "resource_review": {
+    "verification": "changed-executable-census",
+    "denominator": 5,
+    "disposition": "no-risky-resource-writers",
+    "evidence": "changed executables: scripts/compile-skill-router-index.mjs, scripts/skill-router.mjs, scripts/lib/skill-router.mjs, test-framework/evals/tier-1/validate-skill-router.sh — a deterministic compiler, a suggestion-only CLI, a library, and a hermetic validator; none write money/ledger/quota/identity state; the receipts stream under .svc/ is observational and gitignored; T06 repairs are markdown/json data only, no new executables beyond the census of 4 code files + concerns data"
+  },
+  "resource_writers": [],
+  "claims": [
+    {
+      "kind": "absence",
+      "evidence": {
+        "verification": "diff-manifest-parity"
+      },
+      "denominator": 0
+    },
+    {
+      "kind": "unused",
+      "evidence": {
+        "verification": "executable-consumers"
+      },
+      "denominator": 0
+    }
+  ],
+  "external_writer": {
+    "immutable_baseline": "git show HEAD:references/skill-routing-index.json (committed artifact at base SHA)",
+    "rolling_rollback": "references/skill-routing-index.json regenerated on demand by scripts/compile-skill-router-index.mjs from canonical inputs",
+    "read_failure_policy": "if the committed artifact is unreadable or hash-mismatched, the tier-1 validator fails closed with a named reason; routing callers fall back to exact name resolution only and record degraded mode",
+    "file_mode_preservation": "compiler writes via temp-file atomic rename preserving 0644 regular-file mode; no symlink following"
+  },
+  "idempotent_rewriter": {
+    "proof": "compiler output is a pure function of canonical inputs: deterministic sort order, stable sha256 content hashes, schema_version stamp. Attempt N for identical inputs writes byte-identical bytes to attempt 1, so the committed baseline can never be silently overwritten by drift — validate-skill-router.sh recompiles and byte-diffs, failing closed on any divergence"
+  },
+  "executables": [
+    {
+      "path": "scripts/compile-skill-router-index.mjs",
+      "consumers": [
+        "test-framework/evals/tier-1/validate-skill-router.sh"
+      ]
+    },
+    {
+      "path": "scripts/skill-router.mjs",
+      "consumers": [
+        "test-framework/evals/tier-1/validate-skill-router.sh"
+      ]
+    },
+    {
+      "path": "scripts/lib/skill-router.mjs",
+      "consumers": [
+        "scripts/skill-router.mjs"
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-skill-router.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "tier-1"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-concern-compiler-v2.mjs",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "tier-1"
+        }
+      ]
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 {
+  "schema_version": 1,
   "manifestArrayRoles": {
     "includedSkills": {
       "role": "Complete svc-native skill registry. Every installed or documented first-party skill belongs here.",
@@ -406,41 +407,74 @@
     "REJECTED",
     "PIVOTED"
   ],
+  "dualRunSkillAllowlist": {
+    "track-visuals": {
+      "max_occurrences": 2,
+      "arrays": [
+        "pipeline",
+        "bootstrapStartSequence",
+        "laneDefinitions.greenfield.skills",
+        "laneDefinitions.brownfield-feature.skills"
+      ]
+    }
+  },
   "reviewGates": {
     "G1": {
       "after": "write-spec",
       "transition": "DRAFT \u2192 DRAFT (quality gate, no state change)",
-      "checks": "Stories testable? ACs specific? Layer 3 clean? Dependencies identified?"
+      "checks": "Stories testable? ACs specific? Layer 3 clean? Dependencies identified?",
+      "enforced_by": [
+        "write-spec"
+      ]
     },
     "G2": {
       "after": "design-ux",
       "transition": "DRAFT \u2192 UX-REVIEWED",
-      "checks": "Flows cover all stories? States complete? Error handling? Accessibility?"
+      "checks": "Flows cover all stories? States complete? Error handling? Accessibility?",
+      "enforced_by": [
+        "design-ux"
+      ]
     },
     "G3": {
       "after": "design-ui",
       "transition": "UX-REVIEWED \u2192 DESIGNED",
-      "checks": "Design system consistency? Responsive? Dark mode? Component reuse?"
+      "checks": "Design system consistency? Responsive? Dark mode? Component reuse?",
+      "enforced_by": [
+        "design-ui"
+      ]
     },
     "G4": {
       "after": "design-tech",
       "transition": "DESIGNED \u2192 BASELINED",
-      "checks": "All ACs feasible? Architecture sound? Risks identified? Trade-offs explicit?"
+      "checks": "All ACs feasible? Architecture sound? Risks identified? Trade-offs explicit?",
+      "enforced_by": [
+        "design-tech"
+      ]
     },
     "G5": {
       "after": "execute-changeset",
       "transition": "BASELINED \u2192 CHANGE-SET-APPROVED",
-      "checks": "Executed branch diff matches design? Tasks cover ACs? Cross-file consistency? No placeholders? Task checkpoints clean?"
+      "checks": "Executed branch diff matches design? Tasks cover ACs? Cross-file consistency? No placeholders? Task checkpoints clean?",
+      "enforced_by": [
+        "review-exec",
+        "audit-implementation"
+      ]
     },
     "G6": {
       "after": "land-changeset",
       "transition": "CHANGE-SET-APPROVED \u2192 PROMOTED",
-      "checks": "Squash diff matches manifest file set? No unplanned changes? Validation clean?"
+      "checks": "Squash diff matches manifest file set? No unplanned changes? Validation clean?",
+      "enforced_by": [
+        "land-changeset"
+      ]
     },
     "G7": {
       "after": "verify-promotion",
       "transition": "PROMOTED \u2192 VERIFIED",
-      "checks": "Tests pass? QA complete? E2E complete? Spec annotations and responsive evidence updated?"
+      "checks": "Tests pass? QA complete? E2E complete? Spec annotations and responsive evidence updated?",
+      "enforced_by": [
+        "verify-promotion"
+      ]
     }
   },
   "externalAddOns": {

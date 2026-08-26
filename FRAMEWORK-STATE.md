@@ -121,6 +121,18 @@ When ANY external service fails due to infrastructure/credit/billing (NOT code q
 Detection: steps=[], HTTP 402/403/429, quota exceeded, billing, capacity, runner allocation failed.
 Never falls back for: actual test failures, lint errors, type errors, security findings.
 
+## JIT Skill Routing Surface (WI-FW-SKILLS-ROUTING-01, 2026-08-25)
+
+Wave 1+2 of the routing plan (`docs/specs/plans/wi-framework-skills-routing-plan.md`) landed:
+
+- **Compiled routing index** — `references/skill-routing-index.json` is generated, content-addressed, byte-stable (no wall-clock fields). Canonical inputs: `skills-manifest.json` + SKILL.md frontmatter descriptions + `concerns/REGISTRY.json` + `references/skill-routing-overrides.json`. Recompile with `node scripts/compile-skill-router-index.mjs`; verify with `--check`. Never hand-edit the artifact.
+- **Deterministic-first router** — `scripts/lib/skill-router.mjs` + CLI `scripts/skill-router.mjs route`. Pins (explicit name/alias, active task-graph skill + prerequisites, next lane transition, concern signals) resolve before lexical BM25-lite ranking; concern-required skills/rules are never displaced by rank or budget. D0 kernel ≤1,500 tokens, D1 ≤8 cards / ≤1,200 tokens.
+- **Conservative invocation** — every skill compiles to `suggest-only`; active mode auto-selects nothing until a reviewed allowlist loosens policies. Ambiguity falls back to `route-workflow`.
+- **Privacy-safe receipts** — append-only `.svc/skill-router/decisions.jsonl` (gitignored) stores truncated intent fingerprints only.
+- **Hermetic validator** — `test-framework/evals/tier-1/validate-skill-router.sh` (<1s): byte-stability, malformed-input failures, 12 labeled corpus cases, decision contract conformance, offline guarantee, receipt redaction.
+
+Deferred waves (explicit follow-ups, not silent omissions): Wave 0 baseline capture, Wave 3 semantic shadow, Wave 4 auto-invocation canary, Wave 5 mutation-gate rollout, Wave 6 host adapters/catalog diet.
+
 ## WI-557-v2 Governance Speed Pass Completion (2026-08-23)
 
 Repaired the 10 tier-1 regressions introduced by WI-556/557 and shipped two efficiency items:

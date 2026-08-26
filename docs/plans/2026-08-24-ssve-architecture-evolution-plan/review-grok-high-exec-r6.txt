@@ -1,0 +1,105 @@
+I'll start by reading the complete review brief and verifying the frozen candidate binding before any adjudication.HEAD, tree, and digest match the frozen candidate; the working tree has three uncommitted files, so I’ll inspect those diffs and then review against `be5cd04` only.HEAD and digest bind; uncommitted files are session noise. I’ll review `be5cd04` and pull the plan, prior findings, and the claimed remediations.I’ll verify the five claimed remediations against the frozen tree, then run the named validators.Next I’ll inspect the cutover, ownership, and catalog surfaces and run the named validators against HEAD.Candidate `be5cd04` binds: HEAD tree `27618c6f99c8bd10e6637b5b0bb95822e356607c`, `git archive HEAD | sha256sum` = `288fe2d8…e6b6`. Index equals HEAD. Three unstaged files are session noise (sidecar timestamp, session-contract, this brief) and were not used as the review surface.
+
+Cursor R2 remediations F-001–F-005 are present and mechanically green on this tree. D-1 independently re-ran COMPATIBLE 4/4 (p95 38–40 ms, never exit 2). Named corpus failures reproduce on a pristine `origin/main` archive and are PRE-EXISTING. D-2: land the E3 subtractive rebuild; no migration-interpreter fallback.
+
+```json
+{
+  "schema_version": 1,
+  "review_kind": "exec",
+  "rubric_score": null,
+  "rubric_failures": null,
+  "dependencies_needing_read": [],
+  "reviewer": {
+    "station": "grok-high",
+    "model": "Grok 4.6",
+    "family": "xai"
+  },
+  "verdict": "APPROVE",
+  "summary": "Frozen candidate be5cd04 / tree 27618c6f99c8bd10e6637b5b0bb95822e356607c / digest 288fe2d82654f712c97b0cc42086dea527f3461191a6950db6121530c223e6b6 matches git archive HEAD. Cursor-Auto R2 F-001..F-005 are implemented: missing sidecar fail-closes (errors.push), pre-commit slot 21 binds staged manifest↔staged digest, D-1 verifier+gate JSON are tracked and re-run COMPATIBLE 4/4 with never-exit-2, kimi strip is the isSvcOwnedCommand && /hooks\\/kimi\\/ conjunction with a foreign-path fixture, unknown step.skill is rejected when allowedSkills is supplied, and the delivery receipt no longer claims 350/350. E1–E4 focused validators pass (stamp 5/5, gate-ownership, stage-registry, cutover 36/36, variant-dedup 22/22, catalog, cross-host 67, stage-isolation, review-gate routing, plan-product-safety, lint-skills-manifest). validate-codex-session-rebinding.sh rc=1 and validate-kimi-host.sh check #8 reproduce identically on an origin/main archive (PRE-EXISTING; this branch did not touch those scripts). D-2: proceed to land the E3 subtractive rebuild; backup-once + corrupt-config abort + foreign preservation + DISABLED/minimal/company-prune early-exit are intact; no irreducible regression requiring hooks/.migrations.json. Residual issues are documentation-only (MEDIUM/LOW) and do not reopen fail-closed integrity or wirer safety.",
+  "findings": [
+    {
+      "id": "F-001",
+      "severity": "MEDIUM",
+      "lens": "Process integrity",
+      "file": "docs/specs/reviews/wi-ssve-evolution-delivery-receipt.md:14",
+      "claim": "Promotion receipt still describes the E2 sidecar as a gitignored cache with fresh-clone --stamp self-heal, which contradicts the tracked fail-closed model landed for Cursor R2 F-001.",
+      "evidence": "Receipt E2 row (line 14) still says 'lint `--stamp` digest sidecar (gitignored cache)' and 'fresh-clone stamp self-heal'; validation block line 21 still says 'node scripts/lint-skills-manifest.mjs --stamp   # once per clone'. HEAD tracks .svc/manifest-digest.json (git ls-files; git check-ignore: not ignored). lint-skills-manifest.mjs:227-232 fail-closes on a missing sidecar via errors.push; the comment at :230-231 still claims 'the pre-commit slot self-heals fresh clones by stamping before lint'. hooks/git/pre-commit.d/21-manifest-integrity:24-48 runs lint then the staged-pair check and does not stamp. Operator following the receipt could drop the sidecar from git or treat --stamp as clone bootstrap, reopening the integrity bypass R2 F-001 closed.",
+      "required_action": "Amend delivery-receipt E2 row + validation comment to the tracked-sidecar contract (sidecar committed with the manifest; rotation = --stamp && git add of both; missing sidecar is exit 1). Delete the self-heal sentence at lint-skills-manifest.mjs:230-231. Do not gitignore the sidecar."
+    },
+    {
+      "id": "F-002",
+      "severity": "LOW",
+      "lens": "Process integrity",
+      "file": "docs/specs/reviews/wi-ssve-evolution-delivery-receipt.md:25",
+      "claim": "Delivery receipt and execute-changeset lane-task metadata cite docs/specs/reviews/wi-ssve-evolution-exec-triple-review.md as the location of the final tier-1 result; that file is not in the candidate tree.",
+      "evidence": "Receipt line 7 and line 25 name wi-ssve-evolution-exec-triple-review.md. .svc/lane-tasks-WI-SSVE-ARCHITECTURE-EVOLUTION-02.json task 4 metadata.validation (line 169) repeats 'final count recorded in wi-ssve-evolution-exec-triple-review.md'. git ls-files and a filesystem read both miss the path. Named pre-existing failures are listed in the receipt itself (lines 26-29); the cited rollup file does not exist yet.",
+      "required_action": "Either write the exec-triple-review rollup before T06 or retarget those citations to artifacts that exist on be5cd04 (this receipt + wi-ssve-evolution-e1-e4-validation.log + the two named PRE-EXISTING scripts)."
+    },
+    {
+      "id": "F-003",
+      "severity": "LOW",
+      "lens": "Correctness",
+      "file": "skills/align-feature/SKILL.md:320",
+      "claim": "FP-024 G5/G6 prose sweep missed a load-bearing review-exec label that still calls it G6.",
+      "evidence": "skills/align-feature/SKILL.md:320 table row: '`review-exec` (G6)'. Plan E2.5 required rg G[56] over skills/*/SKILL.md plus the listed owners. validate-gate-ownership-matrix.sh:26-29 only matches 'It is the G<n> gate in the chain' / 'Mandatory G<n> gate' / 'enforces the G<n> checkpoint', so this parenthetical form is invisible to the new validator. review-exec/SKILL.md:87 correctly says it enforces G5.",
+      "required_action": "Change the align-feature row to G5-enforcing (same wording as review-exec). Optional: extend the ownership scan with a narrow '`review-exec` (G<n>)' pattern so this class cannot recur."
+    }
+  ],
+  "certifications": [
+    {
+      "key": "candidate-binding-be5cd04",
+      "certified": true,
+      "reviewer_family": "xai",
+      "for_content_sha": "288fe2d82654f712c97b0cc42086dea527f3461191a6950db6121530c223e6b6"
+    },
+    {
+      "key": "cursor-r2-F-001-fail-closed-stamp",
+      "certified": true,
+      "reviewer_family": "xai",
+      "for_content_sha": "288fe2d82654f712c97b0cc42086dea527f3461191a6950db6121530c223e6b6"
+    },
+    {
+      "key": "cursor-r2-F-002-d1-artifacts",
+      "certified": true,
+      "reviewer_family": "xai",
+      "for_content_sha": "288fe2d82654f712c97b0cc42086dea527f3461191a6950db6121530c223e6b6"
+    },
+    {
+      "key": "cursor-r2-F-003-kimi-strip-conjunction",
+      "certified": true,
+      "reviewer_family": "xai",
+      "for_content_sha": "288fe2d82654f712c97b0cc42086dea527f3461191a6950db6121530c223e6b6"
+    },
+    {
+      "key": "cursor-r2-F-004-unknown-skill-rejection",
+      "certified": true,
+      "reviewer_family": "xai",
+      "for_content_sha": "288fe2d82654f712c97b0cc42086dea527f3461191a6950db6121530c223e6b6"
+    },
+    {
+      "key": "cursor-r2-F-005-receipt-350-of-353",
+      "certified": true,
+      "reviewer_family": "xai",
+      "for_content_sha": "288fe2d82654f712c97b0cc42086dea527f3461191a6950db6121530c223e6b6"
+    },
+    {
+      "key": "known-failures-pre-existing-on-origin-main",
+      "certified": true,
+      "reviewer_family": "xai",
+      "for_content_sha": "288fe2d82654f712c97b0cc42086dea527f3461191a6950db6121530c223e6b6"
+    },
+    {
+      "key": "D-1-autoemit-compatible-never-exit-2",
+      "certified": true,
+      "reviewer_family": "xai",
+      "for_content_sha": "288fe2d82654f712c97b0cc42086dea527f3461191a6950db6121530c223e6b6"
+    },
+    {
+      "key": "D-2-e3-no-migration-interpreter",
+      "certified": true,
+      "reviewer_family": "xai",
+      "for_content_sha": "288fe2d82654f712c97b0cc42086dea527f3461191a6950db6121530c223e6b6"
+    }
+  ]
+}
+```

@@ -7,8 +7,11 @@
 
 // Governed svc hook script names: svc-<thing>.<mjs|js|sh> as a distinct token.
 const SVC_SCRIPT_RE = /(?:^|[^\w.-])svc-[A-Za-z0-9._-]+\.(?:mjs|js|sh)\b/;
-// The svc-enforce launcher.
-const SVC_ENFORCE_RE = /(?:^|[^\w.-])svc-enforce(?:\s|$)/;
+// The svc-enforce launcher. Suffix lookahead accepts a shell-quote because
+// governed commands embed the launcher path QUOTED ('…/bin/svc-enforce' …);
+// requiring \s|$ there misclassified installed governed entries as user-owned
+// and made wirer rebuilds append duplicates (post-land OTA finding, 2026-08-26).
+const SVC_ENFORCE_RE = /(?:^|[^\w.-])svc-enforce(?=['"]|\s|$)/;
 // Skills hooks directory containment.
 const SKILLS_HOOKS_RE = /\/skills\/hooks\//;
 // Documented grok carve-out: user hooks under skills/hooks/user-keep.* are

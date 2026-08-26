@@ -61,6 +61,12 @@ export function validate(schema, data, path = "$") {
     }
   }
 
+  if (schema.const !== undefined) {
+    if (JSON.stringify(data) !== JSON.stringify(schema.const)) {
+      errors.push(`${path}: value ${JSON.stringify(data)} does not equal const ${JSON.stringify(schema.const)}`);
+    }
+  }
+
   if (schema.format === "date" && typeof data === "string") {
     if (!ISO_DATE.test(data)) errors.push(`${path}: not ISO-8601 date (YYYY-MM-DD): ${data}`);
     else {
@@ -75,13 +81,13 @@ export function validate(schema, data, path = "$") {
     try { new URL(data); } catch { errors.push(`${path}: not a valid URI: ${data}`); }
   }
 
-  if (schema.required && schema.type === "object") {
+  if (schema.required && data !== null && typeof data === "object" && !Array.isArray(data)) {
     for (const key of schema.required) {
       if (!(key in data)) errors.push(`${path}: missing required property "${key}"`);
     }
   }
 
-  if (schema.properties && schema.type === "object" && data !== null && typeof data === "object") {
+  if (schema.properties && data !== null && typeof data === "object" && !Array.isArray(data)) {
     for (const [key, subSchema] of Object.entries(schema.properties)) {
       if (key in data) {
         const sub = validate(subSchema, data[key], `${path}.${key}`);
@@ -95,6 +101,37 @@ export function validate(schema, data, path = "$") {
       const sub = validate(schema.items, item, `${path}[${i}]`);
       if (!sub.valid) errors.push(...sub.errors);
     });
+  }
+
+  // Combinators (documented contract of this validator; implemented since WI-FW-SWARM-COORDINATION-01).
+  if (Array.isArray(schema.allOf)) {
+    for (const [i, subSchema] of schema.allOf.entries()) {
+      const sub = validate(subSchema, data, `${path}.allOf[${i}]`);
+      if (!sub.valid) errors.push(...sub.errors);
+    }
+  }
+  if (Array.isArray(schema.anyOf)) {
+    const attempts = schema.anyOf.map((subSchema, i) => ({ i, result: validate(subSchema, data, `${path}.anyOf[${i}]`) }));
+    if (!attempts.some((attempt) => attempt.result.valid)) {
+      errors.push(`${path}: failed every anyOf branch (${attempts.flatMap((a) => a.result.errors.slice(0, 1)).join("; ")})`);
+    }
+  }
+  if (Array.isArray(schema.oneOf)) {
+    const passing = schema.oneOf.filter((subSchema) => validate(subSchema, data, path).valid).length;
+    if (passing !== 1) errors.push(`${path}: oneOf matched ${passing} branches, expected exactly 1`);
+  }
+  if (schema.not && validate(schema.not, data, `${path}.not`).valid) {
+    errors.push(`${path}: must NOT match the not-schema`);
+  }
+  if (schema.if) {
+    const matchesIf = validate(schema.if, data, `${path}.if`).valid;
+    if (matchesIf && schema.then) {
+      const sub = validate(schema.then, data, `${path}.then`);
+      if (!sub.valid) errors.push(...sub.errors);
+    } else if (!matchesIf && schema.else) {
+      const sub = validate(schema.else, data, `${path}.else`);
+      if (!sub.valid) errors.push(...sub.errors);
+    }
   }
 
   return { valid: errors.length === 0, errors };

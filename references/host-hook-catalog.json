@@ -3,7 +3,7 @@
   "hosts": {
     "claude": {
       "hooks_capable": true,
-      "receipts": "full",
+      "receipts": "auto-full",
       "freeze_enforcement": "guard"
     },
     "kimi": {
@@ -28,12 +28,12 @@
     },
     "cursor": {
       "hooks_capable": true,
-      "receipts": "skills-only",
+      "receipts": "auto-edits-only",
       "freeze_enforcement": "verbs-only"
     },
     "grok": {
       "hooks_capable": true,
-      "receipts": "skills-only",
+      "receipts": "auto-full",
       "freeze_enforcement": "verbs-only"
     }
   },
@@ -326,13 +326,18 @@
     {
       "id": "svc-phase-receipt-autoemit",
       "hosts": [
-        "claude"
+        "claude",
+        "cursor",
+        "grok"
       ],
       "events": [
         "PostToolUse"
       ],
       "command_template": "node {HOOKS_DIR}/svc-phase-receipt-autoemit.mjs",
-      "host_commands": {}
+      "host_commands": {
+        "cursor": "node {NODE_Q} {HOOKS_DIR}/svc-phase-receipt-autoemit.mjs",
+        "grok": "node {HOOKS_DIR}/svc-phase-receipt-autoemit.mjs"
+      }
     },
     {
       "id": "svc-pre-compact-snapshot",

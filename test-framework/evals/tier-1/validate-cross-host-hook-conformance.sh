@@ -155,6 +155,44 @@ while IFS=$'\t' read -r kind gate host pattern; do
   fi
 done <<< "$checks"
 
+# WI-SSVE-ARCHITECTURE-EVOLUTION-02 E4: capability-tier receipt wiring truth
+receipt_checks=$(node - "$REPO_ROOT" <<'NODE'
+const fs = require("fs");
+const path = require("path");
+const root = process.argv[2];
+const catalog = JSON.parse(fs.readFileSync(path.join(root, "references/host-hook-catalog.json"), "utf8"));
+const wirers = {
+  claude: "scripts/wire-hooks.mjs",
+  cursor: "scripts/wire-cursor-hooks.mjs",
+  grok: "scripts/wire-grok-hooks.mjs",
+};
+const AUTOEMIT = "svc-phase-receipt-autoemit";
+for (const [host, cap] of Object.entries(catalog.hosts || {})) {
+  const tier = cap.receipts;
+  const wirerPath = wirers[host];
+  if (!wirerPath) continue;
+  const text = fs.readFileSync(path.join(root, wirerPath), "utf8");
+  const hasAutoemit = text.includes(AUTOEMIT);
+  if (tier === "skills-only" || tier === "none") {
+    if (hasAutoemit) console.log(`FAIL\t${host}\tskills-only/none must not wire autoemit`);
+    else console.log(`PASS\t${host}\tskills-only correctly omits autoemit`);
+  } else if (tier === "auto-edits-only") {
+    if (!hasAutoemit) console.log(`FAIL\t${host}\tauto-edits-only must wire autoemit`);
+    else if (text.includes("PostToolUse") && text.includes(AUTOEMIT)) console.log(`FAIL\t${host}\tauto-edits-only must not claim PostToolUse autoemit in ${wirerPath}`);
+    else console.log(`PASS\t${host}\tauto-edits-only wires edit-surface autoemit only`);
+  } else if (tier === "auto-full" || tier === "full") {
+    if (!hasAutoemit) console.log(`FAIL\t${host}\tauto-full must wire autoemit`);
+    else console.log(`PASS\t${host}\tauto-full wires autoemit`);
+  }
+}
+NODE
+)
+
+while IFS=$'\t' read -r status host message; do
+  [ -z "$status" ] && continue
+  if [ "$status" = PASS ]; then pass "receipts $host: $message"; else fail "receipts $host: $message"; fi
+done <<< "$receipt_checks"
+
 echo ""
 echo "validate-cross-host-hook-conformance: $PASS passed, $FAIL failed (MUST), $WARN warned (MAY)"
 [ "$FAIL" -eq 0 ]

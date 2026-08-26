@@ -1,0 +1,174 @@
+{
+  "schema_version": 1,
+  "base_sha": "784b764b9af91dbcbd4167f3c317508fa6084677",
+  "manifest": "docs/plans/2026-08-24-ssve-architecture-evolution-plan/manifest.md",
+  "plan": "docs/plans/2026-08-24-ssve-architecture-evolution-plan.md",
+  "work_item": "WI-SSVE-ARCHITECTURE-EVOLUTION-02",
+  "branch": "feat/ssve-architecture-evolution-02",
+  "volatile_paths": [
+    ".svc/session-contract.jsonl",
+    ".svc/authorization-events.jsonl"
+  ],
+  "amendment_protocol": "Living contract per review-plan 'revised in place' doctrine: each execution wave amends ownership[] and manifest.md Files table in the SAME commit as its file changes, keeping strict bidirectional diff parity. Prospective wave file sets live in the plan doc \u00a72 until they exist on disk.",
+  "ownership": [
+    {
+      "task": "T01",
+      "paths": [
+        ".svc/lane-tasks-WI-SSVE-ARCHITECTURE-EVOLUTION-02.json",
+        "docs/specs/audits/2026-08-24-ssve-evolution-feasibility-audit.md"
+      ]
+    },
+    {
+      "task": "T02",
+      "paths": [
+        "docs/plans/2026-08-24-ssve-architecture-evolution-plan.md",
+        "docs/plans/2026-08-24-ssve-architecture-evolution-plan/manifest.md",
+        "docs/plans/2026-08-24-ssve-architecture-evolution-plan/plan-contract.json",
+        "docs/plans/2026-08-24-ssve-architecture-evolution-plan/review-request.md",
+        "docs/plans/2026-08-24-ssve-architecture-evolution-plan/full-review-prompt.md"
+      ]
+    },
+    {
+      "task": "T03",
+      "paths": [
+        "docs/plans/2026-08-24-ssve-architecture-evolution-plan/review-log.yaml",
+        "docs/plans/2026-08-24-ssve-architecture-evolution-plan/review-grok-high.txt",
+        "docs/plans/2026-08-24-ssve-architecture-evolution-plan/review-cursor-auto.txt",
+        "docs/plans/2026-08-24-ssve-architecture-evolution-plan/review-cursor.txt",
+        "docs/plans/2026-08-24-ssve-architecture-evolution-plan/review-opencode-codex.txt",
+        "docs/plans/2026-08-24-ssve-architecture-evolution-plan/review-opencode.txt",
+        "docs/specs/reviews/wi-ssve-evolution-plan-grok-high.md",
+        "docs/specs/reviews/wi-ssve-evolution-plan-triple-review.md",
+        "docs/specs/reviews/wi-ssve-evolution-plan-review-log.yaml"
+      ]
+    },
+    {
+      "task": "T04",
+      "paths": [
+        "references/stage-registry.json",
+        "scripts/lib/stage-registry.mjs",
+        "scripts/stage-segment.mjs",
+        "scripts/audit-story-receipts.mjs",
+        "test-framework/evals/tier-1/validate-stage-registry-single-source.sh"
+      ]
+    },
+    {
+      "task": "T05",
+      "paths": [
+        "skills-manifest.json",
+        "scripts/lint-skills-manifest.mjs",
+        "hooks/git/pre-commit.d/21-manifest-integrity",
+        ".gitignore",
+        "AGENTS.md",
+        "README.md",
+        "skills/execute-changeset/SKILL.md",
+        "skills/review-exec/SKILL.md",
+        "test-framework/evals/tier-1/validate-manifest-integrity-stamp.sh",
+        "test-framework/evals/tier-1/validate-gate-ownership-matrix.sh"
+      ]
+    },
+    {
+      "task": "T06",
+      "paths": [
+        "scripts/wire-hooks.mjs",
+        "test-framework/evals/tier-1/validate-claude-wirer-cutover.sh",
+        "test-framework/evals/tier-1/validate-wire-hooks-variant-dedup.sh"
+      ]
+    },
+    {
+      "task": "T07",
+      "paths": [
+        "hooks/lib/hook-payload.mjs",
+        "references/host-hook-catalog.json",
+        "scripts/wire-cursor-hooks.mjs",
+        "scripts/wire-grok-hooks.mjs",
+        "test-framework/evals/tier-1/validate-cross-host-hook-conformance.sh",
+        "test-framework/evals/tier-1/validate-catalog-generation.sh",
+        "test-framework/evals/tier-1/validate-wi546-cursor-live-acceptance.sh",
+        "hooks/svc-phase-receipt-autoemit.mjs",
+        "scripts/verify-d1-autoemit-host-payloads.mjs",
+        "test-framework/evals/tier-1/validate-wi546-grok-live-acceptance.sh"
+      ]
+    },
+    {
+      "task": "T08",
+      "paths": [
+        ".svc/pipeline-decisions.jsonl",
+        "references/pipeline-decisions-schema.json",
+        "test-framework/evals/tier-1/validate-pipeline-decisions-schema.sh",
+        "docs/specs/reviews/wi-ssve-evolution-e1-e4-validation.log",
+        "test-framework/evals/tier-1/validate-plan-product-safety.sh",
+        "scripts/install-git-hooks.mjs"
+      ]
+    },
+    {
+      "task": "T09",
+      "paths": [
+        "docs/specs/reviews/wi-ssve-evolution-delivery-receipt.md"
+      ]
+    },
+    {
+      "task": "T10",
+      "paths": [
+        "docs/plans/2026-08-24-ssve-architecture-evolution-plan/exec-review-request.md",
+        "docs/plans/2026-08-24-ssve-architecture-evolution-plan/review-cursor-auto-r2.txt",
+        ".svc/manifest-digest.json",
+        "docs/specs/reviews/wi-ssve-evolution-d1-autoemit-gate.json",
+        "schemas/receipts/review-exec.schema.json",
+        "schemas/receipts/review-plan.schema.json"
+      ]
+    }
+  ],
+  "validation_commands": [
+    "bash scripts/verify-plan-mechanical.sh docs/plans/2026-08-24-ssve-architecture-evolution-plan/manifest.md",
+    "node scripts/lint-skills-manifest.mjs",
+    "node scripts/lint-skills-manifest.mjs --stamp",
+    "bash test-framework/evals/tier-1/validate-stage-registry-single-source.sh",
+    "bash test-framework/evals/tier-1/validate-stage-isolation.sh",
+    "bash test-framework/evals/tier-1/validate-review-gate-routing-arrays.sh",
+    "bash test-framework/evals/tier-1/validate-manifest-integrity-stamp.sh",
+    "bash test-framework/evals/tier-1/validate-gate-ownership-matrix.sh",
+    "bash test-framework/evals/tier-1/validate-claude-wirer-cutover.sh",
+    "bash test-framework/evals/tier-1/validate-catalog-generation.sh",
+    "bash test-framework/evals/tier-1/validate-cross-host-hook-conformance.sh",
+    "bash test-framework/evals/run-all-evals.sh"
+  ],
+  "resource_review": {
+    "verification": "changed-executable-census",
+    "denominator": 22,
+    "disposition": "no-risky-resource-writers",
+    "evidence": "changed-executable-census over git diff 784b764 --diff-filter=ACMR plus untracked files, filtered to executable code: 9 .mjs runtime scripts (stage-segment, lib/stage-registry, lint-skills-manifest, wire-hooks, wire-cursor-hooks, wire-grok-hooks, audit-story-receipts, hooks/lib/hook-payload, hooks/svc-phase-receipt-autoemit), 2 new governance scripts (verify-d1-autoemit-host-payloads, install-git-hooks), 11 tier-1 validator shells (wi546-grok-live-acceptance owner-policy routing invariant, plan-product-safety active-contract selector, catalog-generation, claude-wirer-cutover, cross-host-hook-conformance, gate-ownership-matrix, manifest-integrity-stamp, pipeline-decisions-schema, stage-registry-single-source, wi546-cursor-live-acceptance, wire-hooks-variant-dedup), 1 git hook slot (hooks/git/pre-commit.d/21-manifest-integrity). None write money/storage/identity/external resources; all are local validation or wiring code covered by the tier-1 corpus."
+  },
+  "resource_writers": [],
+  "executables": [],
+  "claims": [
+    {
+      "kind": "absence",
+      "evidence": {
+        "verification": "diff-manifest-parity"
+      },
+      "denominator": 0
+    }
+  ],
+  "decision_points": [
+    {
+      "id": "D-1",
+      "wave": "T04-E4",
+      "question": "Do Cursor afterFileEdit and Grok PostToolUse stdin payloads produce a file path when piped through readHookPayload() plus autoemit main() (or a testable export)?",
+      "resolution_rule": "Smoke-test in sandboxed harness BEFORE wiring, using real host stdin shapes through readHookPayload + autoemit \u2014 not extractFilePath alone. Independent outcomes: Cursor compatible -> auto-edits-only and wire afterFileEdit (autoemit must never exit 2); Cursor incompatible -> skills-only; Grok compatible -> auto-full and wire PostToolUse; Grok incompatible -> skills-only; both incompatible -> both skills-only. No adapter heuristics that fabricate evidence. Command: node --input-type=module fixtures that import readHookPayload + autoemit against recorded Cursor/Grok stdin samples."
+    },
+    {
+      "id": "D-2",
+      "wave": "T04-E3",
+      "question": "Does the Claude-wirer catalog cutover survive exec review without irreducible regression risk?",
+      "resolution_rule": "Primary E3 path is subtractive rebuild using buildHookEntries (not generateHostEntries). If T05 surfaces irreducible risk, emergency-only fallback: five passes into hooks/.migrations.json interpreter \u2014 not a stable end state; T06 must register a followup WI to delete that interpreter within one cycle. Decision recorded in exec triple-review log either way."
+    }
+  ],
+  "velocity_guarantees": [
+    "Zero new blocking hooks on any host; svc-phase-receipt-autoemit remains fail-open observational.",
+    "Agent-visible runtime cost limited to module-init JSON parses (~ms) in stage-segment.mjs. E3 keeps buildHookEntries as the Claude emitter (no generateHostEntries drop-in). E4 Cursor autoemit is gated on a timed D-1 measurement.",
+    "Pre-commit slot 21-manifest-integrity runs sub-second and skips when no manifest bytes are staged. Digest sidecar is a COMMITTED baseline (exec R5 F-006): rotation = --stamp + re-add with the manifest change; deletion is git-restorable, never a silent reset.",
+    "Net code deletion in scripts/wire-hooks.mjs (isAlreadyWired ~40 lines + five migration passes ~95 lines + dedup nets ~90 lines removed).",
+    "Retro-plan R2 adjudications: (a) staged manifest+digest ship as an atomic pair \u2014 pre-commit slot 21 compares indexed digest vs indexed manifest sha and fails closed on drift; (b) E4 velocity constraint is the measured-class rule in plan \u00a7E4 (autoemit spawn sanctioned when recorded no-graph p95 sits in the existing Claude PostToolUse class per D-1 gate JSON); conformance = cross-host validator checks capability tier \u2194 wirer text both directions; dual track-visuals = dualRunSkillAllowlist contract."
+  ]
+}

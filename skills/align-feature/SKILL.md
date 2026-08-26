@@ -317,7 +317,7 @@ territory instead of the journey.
 | 1 | **plan** | `plan-changeset` | manifest + task graph. **Every** screen-spec `UI-<WI>-NN` row maps to a task carrying DONE-conditions generated from that row. When plan-changeset runs INLINE (no §3a blueprints), that checklist **is** the completeness artifact — there is no other |
 | 2 | **review the plan** | `review-plan` | adversarial findings **before a line of code**. A wrong plan caught here costs an edit; caught in the diff it costs a rebuild |
 | 3 | **execute** | `execute-changeset` | the code |
-| 4 | **review the diff** | `review-exec` (G6) | the §8 pair — exact + full |
+| 4 | **review the diff** | `review-exec` (G5-enforcing gate) | the §8 pair — exact + full |
 
 ### Model tier belongs to the PLANNING, not the execution
 

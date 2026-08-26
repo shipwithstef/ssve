@@ -37,7 +37,7 @@ const required = ["claude","kimi","codex","gemini","opencode","cursor","grok"];
 for (const h of required) {
   const cap = c.hosts?.[h];
   if (!cap) throw new Error(`missing capability truth for ${h}`);
-  if (!["full","skills-only","none"].includes(cap.receipts)) throw new Error(`bad receipts capability for ${h}`);
+  if (!["full","auto-full","auto-edits-only","skills-only","none"].includes(cap.receipts)) throw new Error(`bad receipts capability for ${h}`);
 }
 if (!c.hooks || !Array.isArray(c.hooks) || c.hooks.length === 0) throw new Error("no hooks registered");
 ' "$ROOT/references/host-hook-catalog.json"

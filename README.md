@@ -622,7 +622,7 @@ Mode contract and detection logic: [`REPO_MODES.md`](REPO_MODES.md)
 - `research` — Resolve uncertainty about APIs, libraries, patterns
 - `reverse-engineer` — Deconstruct any company/product/tweet/technique, produce teardown + build brief with unique twist
 - `review-cross-model` — Adversarial review via a second model
-- `review-exec` — Mandatory G6 gate: self-review + adversarial review of executed diff before land (mandatory-chain plan)
+- `review-exec` — G5-enforcing gate: self-review + adversarial review of executed diff before land (mandatory-chain plan)
 - `review-gate` — Run the 5-step adversarial review at gates G1-G7
 - `review-plan` — Plan-level adversarial review gate between plan-changeset and execute-changeset
 - `review-security` — OWASP Top 10 + STRIDE + supply chain audit

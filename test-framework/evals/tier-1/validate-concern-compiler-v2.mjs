@@ -106,7 +106,11 @@ check("live registry shadow inventory exposes unwired high-risk lenses", () => {
   const result = compileConcernObligations(live, hits, { mode: "shadow" });
   assert.equal(result.valid, true);
   assert.equal(result.summary.hits, 116);
-  assert.equal(result.gaps.filter((gap) => gap.code === "MISSING_REQUIRED_HANDLER").length, 40);
+  // Calibrated by WI-FW-SKILLS-ROUTING-01 exec-review F-EXEC-020 remediation: 14
+// concerns carried dangling required_rules references to the never-created
+// paid-api-integration-checklist rule; repairing them surfaced their true
+// MISSING_REQUIRED_HANDLER gaps (48). Evidence: docs/plans/2026-08-25-wifw-skills-routing/review-log.yaml
+assert.equal(result.gaps.filter((gap) => gap.code === "MISSING_REQUIRED_HANDLER").length, 48);
 });
 
 if (process.exitCode) {

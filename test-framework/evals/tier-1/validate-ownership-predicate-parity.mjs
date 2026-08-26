@@ -21,6 +21,10 @@ const FIXTURES = [
   ["node /skills/hooks/svc-enforce.mjs --consumer stop", true],
   ["/usr/local/bin/svc-enforce --mode strict", true],
   ["svc-enforce", true],
+  // Quoted-launcher governed forms (post-land OTA finding): the launcher path
+  // is shell-quoted, so svc-enforce is followed by a quote, not whitespace.
+  ["'/usr/bin/node' '/home/x/.svc/enforcement/1/bin/svc-enforce' svc-cursor-task-completion-guard", true],
+  ["node '/opt/tooling/svc-enforce' --mode strict", true],
   ["node /home/user/.grok/skills/hooks/user-keep.mjs", false],
   ["eslint --fix .", false],
   ["prettier --write src/", false],

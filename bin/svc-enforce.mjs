@@ -89,7 +89,7 @@ function breakGlassArmed() {
     if (st.mode & 0o022) return null;                      // group/other-writable marker
     const requested = Number(process.env.SVC_BREAK_GLASS_TTL_HOURS);
     const ttlHours = Math.min(
-      Number.isFinite(requested) && requested > 0 ? requested : 4,
+      Number.isFinite(requested) && requested > 0 ? requested : 24,
       BREAK_GLASS_MAX_TTL_HOURS,
     );
     const ageHours = (Date.now() - st.mtimeMs) / 3600000;

@@ -35,7 +35,7 @@ signals:
     - "MAILGUN_*"
 
 handled_by:
-  required_rules: ["paid-api-integration-checklist"]
+  required_rules: []
   required_skills: []
   optional_skills: ["manage-finops","review-security"]
 

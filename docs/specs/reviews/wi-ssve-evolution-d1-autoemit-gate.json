@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "gate": "D-1",
+  "wi": "WI-SSVE-ARCHITECTURE-EVOLUTION-02",
+  "generated_at": "2026-08-26T00:25:17.258Z",
+  "hook": "hooks/svc-phase-receipt-autoemit.mjs",
+  "verdict": "COMPATIBLE",
+  "results": [
+    {
+      "fixture": "claude-edit",
+      "host": "claude",
+      "event": "PostToolUse",
+      "expect_kind": "file",
+      "exit_code": 0,
+      "receipt_emitted": true,
+      "never_blocked": true,
+      "latency_ms": {
+        "p50": 38,
+        "p95": 44,
+        "unit": "ms"
+      },
+      "pass": true,
+      "stderr_excerpt": ""
+    },
+    {
+      "fixture": "cursor-afterFileEdit",
+      "host": "cursor",
+      "event": "afterFileEdit",
+      "expect_kind": "file",
+      "exit_code": 0,
+      "receipt_emitted": true,
+      "never_blocked": true,
+      "latency_ms": {
+        "p50": 37,
+        "p95": 39,
+        "unit": "ms"
+      },
+      "pass": true,
+      "stderr_excerpt": ""
+    },
+    {
+      "fixture": "grok-shell-lowercase",
+      "host": "grok",
+      "event": "PostToolUse",
+      "expect_kind": "command",
+      "exit_code": 0,
+      "receipt_emitted": true,
+      "never_blocked": true,
+      "latency_ms": {
+        "p50": 39,
+        "p95": 42,
+        "unit": "ms"
+      },
+      "pass": true,
+      "stderr_excerpt": ""
+    },
+    {
+      "fixture": "grok-shell",
+      "host": "grok",
+      "event": "PostToolUse",
+      "expect_kind": "command",
+      "exit_code": 0,
+      "receipt_emitted": true,
+      "never_blocked": true,
+      "latency_ms": {
+        "p50": 38,
+        "p95": 44,
+        "unit": "ms"
+      },
+      "pass": true,
+      "stderr_excerpt": ""
+    }
+  ]
+}

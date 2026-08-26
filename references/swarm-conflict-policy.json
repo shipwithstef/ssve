@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "resolvers": [
+    {
+      "id": "append-only-jsonl-union",
+      "applies_to": ["*.jsonl"],
+      "strategy": "union by immutable id; same id with different digest is fatal"
+    },
+    {
+      "id": "canonical-json-map-three-way",
+      "applies_to": ["*.state.json", "*.projection.json"],
+      "strategy": "three-way per-key merge; divergent same-key writes conflict"
+    },
+    {
+      "id": "set-registry-union",
+      "applies_to": ["*.registry.json"],
+      "strategy": "normalized union plus uniqueness and order validator"
+    },
+    {
+      "id": "markdown-stable-sections",
+      "applies_to": ["*.md"],
+      "strategy": "merge only preassigned stable sections; anything else escalates"
+    }
+  ],
+  "protected_surfaces": [
+    { "pattern": "**/migrations/**", "reason": "schema migration ordering is owner authority" },
+    { "pattern": "**/package-lock.json", "reason": "lockfiles regenerate once from accepted manifests under an exclusive claim" },
+    { "pattern": "provision/policies/**", "reason": "authority/security policy is owner authority" },
+    { "pattern": "**/.env*", "reason": "secrets never auto-merge" },
+    { "pattern": "hooks/lib/authority-store.mjs", "reason": "authority kernel requires owner review on overlap" }
+  ],
+  "commutative_resources_note": "an undeclared overlap of logical resources is exclusive by default; a commutative claim must be registered here with a resolver id before dispatch treats it as mergeable",
+  "adjudication": {
+    "max_attempts": 2,
+    "blocked_state": "BLOCKED",
+    "cross_family_preferred": true
+  }
+}
