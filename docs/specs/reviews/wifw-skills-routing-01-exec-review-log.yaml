@@ -1,0 +1,42 @@
+# WI-FW-SKILLS-ROUTING-01 exec review log (review-exec G6 gate)
+wi: WI-FW-SKILLS-ROUTING-01
+reviewer_topology:
+  orchestrator: opencode
+  external_station: codex/gpt-5.6-sol (high effort, governed-triple owner policy)
+  launcher: scripts/run-external-review.mjs --review-kind exec
+rounds_run: 3
+rounds:
+  - round: 1
+    digest: bf1f1d2f205a65907315b59c4cf1ee9b665ca4c4f4ec62da03ad1d11967e734c
+    findings: 10
+    artifacts: .svc/external-review/wifw-skills-routing-01/exec/
+    outcome: F-EXEC-001..005,007..010 fixed in code (commit 0f9eec2); F-EXEC-006 fixed
+      in code; F-EXEC-008 fixed via schema-parity cross-check
+  - round: 2
+    digest: 722cb10c8de5d1de6a3c6fb0e5465cc3b2ab8305b629e98440f309ebf18486bc
+    findings: 8
+    artifacts: .svc/external-review/wifw-skills-routing-01/exec-r2/
+    outcome: F-EXEC-011 fixed (per-record content-hash freshness), F-013 fixed then
+      superseded, F-014 fixed (stale-aware validate), F-016 fixed (override type
+      guards), F-017 fixed (non-throwing registry read); F-012 dispositioned below
+  - round: 3
+    digest: 17d418b6b836f12cc852b434f4375c8474d7794875aadb616c7f64c7c02696cb
+    findings: 4
+    artifacts: .svc/external-review/wifw-skills-routing-01/exec-r3/
+    outcome: F-019 strengthened (all-record hash verification + threat-model note),
+      F-020 fixed in compiler AND surfaced real repo drift (14 concerns referencing
+      never-created paid-api-integration-checklist rule) which was repaired at
+      source with REGISTRY regeneration (commit 4577895), F-021 fixed (uniqueItems
+      guards), F-022 fixed (gate evaluation before fallback insertion)
+self_review_passes: 1
+self_review_digest: 17d418b6b836f12cc852b434f4375c8474d7794875aadb616c7f64c7c02696cb
+terminal_state: REVISED_AND_REVIEWED
+unresolved_critical: 0
+remaining_high: 1
+bounded_exit:
+  disposition: reject-with-justification
+  residual_highs:
+    - "F-EXEC-012 rejected-with-justification: whole-normalized-intent exact matching is the documented conservative explicit-pin semantics for this wave. Substring/fuzzy explicit matching would create false pins against a 103-skill catalog (plan §4.3 'an explicit user named skill'); loosening is precisely the Wave 4 auto-invocation canary decision and requires its own trigger-precision evidence per plan §5 Wave 4."
+verification_at_close:
+  full_tier1: "346 passed / 5 failed — every failure verified present at pristine base 494f074 (codex-session-rebinding, kimi-host, proposal-triage-sla, wi546-cursor, wi546-grok)"
+  skill_router_validator: "PASS (13 corpus cases + glob/conformance + schema parity)"
