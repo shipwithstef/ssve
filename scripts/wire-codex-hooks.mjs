@@ -63,8 +63,8 @@ function codexEnforcerCommand(codexHooksDir) {
 }
 function codexDispatcherCommand(codexHooksDir) {
   return LAUNCHER_PATH
-    ? `${NODE_CMD} ${shellQuote(LAUNCHER_PATH)} svc-codex-pretool-dispatcher`
-    : `${NODE_CMD} ${shellQuote(path.join(codexHooksDir, "svc-codex-pretool-dispatcher.mjs"))}`;
+    ? `SVC_HOST=codex ${NODE_CMD} ${shellQuote(LAUNCHER_PATH)} svc-codex-pretool-dispatcher`
+    : `SVC_HOST=codex ${NODE_CMD} ${shellQuote(path.join(codexHooksDir, "svc-codex-pretool-dispatcher.mjs"))}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -228,7 +228,7 @@ function buildHookEntries(skillsPath) {
   if (!DISABLED.has("svc-posttool-heartbeat")) {
     entries.PostToolUse.push({
       matcher: "Bash|apply_patch|Edit|Write",
-      hooks: [{ type: "command", command: `${NODE_CMD} ${shellQuote(path.join(codexHooksDir, "svc-codex-posttool-heartbeat.mjs"))}` }],
+      hooks: [{ type: "command", command: `SVC_HOST=codex ${NODE_CMD} ${shellQuote(path.join(codexHooksDir, "svc-codex-posttool-heartbeat.mjs"))}` }],
     });
   }
   return entries;

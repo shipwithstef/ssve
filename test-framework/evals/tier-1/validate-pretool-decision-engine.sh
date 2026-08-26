@@ -108,5 +108,59 @@ try { const r = evaluatePreToolObservation(null); console.log(r===null?"null":"e
 catch { console.log("throw"); }')"
 [[ "$M1" == "null" && "$M2" == "null" ]] && ok "malformed payloads never yield an engine allow" || bad "malformed payload handling ($M1/$M2)"
 
+# 7. EXTREV-EXEC-007: git normalization preserves diagnostic redirections
+N1="$(node --input-type=module -e '
+import { evaluatePreToolObservation } from "'"$ENGINE"'";
+const r = evaluatePreToolObservation({tool_name:"Bash",tool_input:{command:"git status 2>/dev/null"},cwd:"'"$TMP"'"});
+console.log(r?.execution_input?.command||"none")')"
+case "$N1" in
+  *"--no-optional-locks"*"2>/dev/null"*) ok "normalization re-appends diagnostic redirection suffixes byte-for-byte" ;;
+  *) bad "redirection suffix lost during normalization ($N1)" ;;
+esac
+N2="$(node --input-type=module -e '
+import { evaluatePreToolObservation } from "'"$ENGINE"'";
+const r = evaluatePreToolObservation({tool_name:"Bash",tool_input:{command:"git status --short 2>&1"},cwd:"'"$TMP"'"});
+console.log(r?.execution_input?.command||"none")')"
+case "$N2" in
+  *"--no-optional-locks"*"2>&1"*) ok "compound suffix (2>&1) survives argv normalization" ;;
+  *) bad "2>&1 suffix lost ($N2)" ;;
+esac
+
+# 8. EXTREV-EXEC-008: exactly ONE classification entry point — the dispatcher
+# must not carry its own observation classifier or fast path
+if grep -qE "lightRead|isReadOnlyTool\(" "$ROOT/hooks/codex/svc-codex-pretool-dispatcher.mjs"; then
+  bad "dispatcher still classifies observations itself"
+else
+  ok "dispatcher delegates all classification to the engine entry point"
+fi
+grep -q "ULTRA_HOT_READ" "$ENGINE" && ok "ultra-hot read fast path lives inside the engine" || bad "engine ultra-hot path missing"
+
+# 9. EXTREV-EXEC-003: self-heal authority requires provable turn and exact repo
+git init -q "$TMP" 2>/dev/null || true
+mkdir -p "$TMP/rt" && chmod 700 "$TMP/rt"
+S1="$(SVC_RUNTIME_DIR="$TMP/rt" node --input-type=module -e '
+import { evaluateSelfHealAuthority } from "'"$ENGINE"'";
+// no turn identifier in payload → TURN_UNPROVABLE, never eligible
+const r = evaluateSelfHealAuthority({session_id:"s9",cwd:"'"$TMP"'"}, process.env, {repo_root:"'"$TMP"'"});
+console.log(r.reason_code)')"
+[[ "$S1" == "TURN_UNPROVABLE" ]] && ok "missing turn identifier is ineligible for self-heal" || bad "turn gate ($S1)"
+S2="$(SVC_RUNTIME_DIR="$TMP/rt" node --input-type=module - <<NODE
+import fs from "node:fs";
+import { evaluateSelfHealAuthority } from "$ENGINE";
+import { hookContext, authorityPath } from "$ROOT/hooks/codex/lib/codex-hook-context.mjs";
+const payload = { session_id: "s9b", turn_id: "t9", cwd: "$TMP" };
+const ctx = hookContext(payload, process.env);
+fs.mkdirSync(ctx.session_dir, { recursive: true });
+fs.writeFileSync(authorityPath(ctx), JSON.stringify({
+  schema_version: 1, session_id: "s9b", turn_id: "t9",
+  recorded_at: new Date().toISOString(), continuation_intent: "work_on",
+  explicit_wi: "WI-X", repo_root: "/somewhere/else",
+}));
+const r = evaluateSelfHealAuthority(payload, process.env, { repo_root: "$TMP" });
+console.log(r.reason_code);
+NODE
+)"
+[[ "$S2" == "AUTH_TUPLE_REPO_MISMATCH" ]] && ok "cross-repository authority tuple is ineligible" || bad "repo tuple gate ($S2)"
+
 printf '\nT02 decision engine: %s passed, %s failed\n' "$PASS" "$FAIL"
 [[ "$FAIL" -eq 0 ]]

@@ -14,12 +14,14 @@ import {
   consumeToolCallReceipt,
   dropConsumedReceipt,
   sweepExpiredReceipts,
+  canonicalOriginalDigest,
 } from "../lib/tool-call-receipt.mjs";
 import {
   renewControllerIfCurrent,
   readController,
   authorityStateRoot,
 } from "../lib/authority-store.mjs";
+import { mutationPayload } from "./lib/codex-hook-context.mjs";
 
 function parsePayload(raw) {
   try {
@@ -63,15 +65,20 @@ async function main() {
   const sessionId = field(payload, "session_id", "sessionId");
   const toolUseId = field(payload, "tool_use_id", "toolUseId", "tool_call_id");
   const host = field(payload, "host") || process.env.SVC_HOST || "";
-  const originalDigest = field(payload, "original_digest", "originalDigest");
   if (!sessionId || !toolUseId) { emit({}); return; }
 
   if (!callSucceeded(payload)) {
-    // Failure metrics only; authority is never extended by a failed call.
+    // EXTREV-EXEC-002: a failed call is a terminal outcome — the receipt is
+    // invalidated so a later duplicated or forged success cannot correlate it.
+    dropConsumedReceipt({ session_id: sessionId, tool_use_id: toolUseId, env: process.env });
     emit({ systemMessage: "svc post-tool: failure outcome recorded; no authority extension" });
     return;
   }
 
+  // EXTREV-EXEC-001: the correlation digest is RECOMPUTED from the original
+  // tool input the host echoes back — never read from an attacker-controllable
+  // payload field.
+  const originalDigest = canonicalOriginalDigest(mutationPayload(payload));
   const consumed = consumeToolCallReceipt({
     session_id: sessionId, tool_use_id: toolUseId, host, original_digest: originalDigest,
     env: process.env,

@@ -114,7 +114,7 @@ function buildHookEntries(skillsPath) {
     entries.PreToolUse.push({
       id: "svc-pretool-decision-engine",
       matcher: "Bash|Edit|Write|MultiEdit|StrReplaceFile|NotebookEdit|apply_patch",
-      hooks: [{ type: "command", command: `node ${hooksDir}/codex/svc-codex-pretool-dispatcher.mjs` }],
+      hooks: [{ type: "command", command: `SVC_HOST=claude node ${hooksDir}/codex/svc-codex-pretool-dispatcher.mjs` }],
     });
   }
 
@@ -167,7 +167,7 @@ function buildHookEntries(skillsPath) {
     entries.PostToolUse.push({
       id: "svc-posttool-heartbeat",
       matcher: "Bash|Edit|Write|MultiEdit|StrReplaceFile|NotebookEdit|apply_patch",
-      hooks: [{ type: "command", command: `node ${hooksDir}/codex/svc-codex-posttool-heartbeat.mjs` }],
+      hooks: [{ type: "command", command: `SVC_HOST=claude node ${hooksDir}/codex/svc-codex-posttool-heartbeat.mjs` }],
     });
   }
 

@@ -37,7 +37,10 @@ fi
 echo "== EG-01: break-glass allows, expires (fail safe), audits, refuses insecure marker =="
 LAUNCHER="$ROOT/bin/svc-enforce.mjs"
 HOMEDIR="$(mktemp -d)"; trap 'rm -rf "$HOMEDIR"' EXIT
-fire(){ env HOME="$HOMEDIR" "$@" node "$LAUNCHER" svc-task-completion-guard 2>&1 <<< '{"hook_event_name":"Stop"}'; }
+# Hermeticity: an operator session may legitimately run with SVC_BREAK_GLASS=1
+# armed; the validator must strip ambient break-glass state so "governed"
+# probes actually exercise the governed path (WI-FW-HOOKS-SAFETY-01 remediation).
+fire(){ env -u SVC_BREAK_GLASS -u SVC_BREAK_GLASS_TTL_HOURS HOME="$HOMEDIR" "$@" node "$LAUNCHER" svc-task-completion-guard 2>&1 <<< '{"hook_event_name":"Stop"}'; }
 armed(){ printf '%s' "$1" | grep -q "BREAK-GLASS ACTIVE"; }
 
 armed "$(fire SVC_BREAK_GLASS=1)" && ok "env form bypasses and announces" || bad "env form did not bypass"
@@ -72,7 +75,7 @@ rm -f "$HOMEDIR/.svc/break-glass-audit.jsonl"
 # R2-F003 / EG-01a: prove the hatch flips a REAL governed denial into an allow.
 # Uses the PreToolUse enforcer so the decision JSON is observable.
 PROBE='{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"touch /tmp/svc-eg01a-probe"},"cwd":"'"$ROOT"'"}'
-decide(){ printf '%s' "$PROBE" | env HOME="$HOMEDIR" "$@" node "$LAUNCHER" svc-codex-skill-load-enforcer 2>/dev/null \
+decide(){ printf '%s' "$PROBE" | env -u SVC_BREAK_GLASS -u SVC_BREAK_GLASS_TTL_HOURS HOME="$HOMEDIR" "$@" node "$LAUNCHER" svc-codex-skill-load-enforcer 2>/dev/null \
   | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const h=JSON.parse(s).hookSpecificOutput;console.log(h&&h.permissionDecision==="deny"?"DENY":"ALLOW")}catch(e){console.log("UNPARSEABLE")}})'; }
 GOVERNED="$(decide)"
 BYPASSED="$(decide SVC_BREAK_GLASS=1)"

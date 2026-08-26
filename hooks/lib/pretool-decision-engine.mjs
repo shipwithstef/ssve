@@ -103,13 +103,17 @@ export function normalizeObservationCommand(command) {
   for (const rawSegment of segments) {
     const classified = stripDevNullRedirections(rawSegment);
     if (!classified) continue;
+    // EXTREV-EXEC-007: normalization must not change command semantics. The
+    // stripped diagnostic-redirection suffix (2>/dev/null, 2>&1, …) is
+    // re-appended byte-for-byte after the normalized argv.
+    const rawTail = rawSegment.trimEnd().slice(classified.length).trim();
     const lexed = lexSimpleCommand(classified);
     if (!lexed.ok || !Array.isArray(lexed.argv) || !lexed.argv.length) continue;
     const nextArgv = normalizeGitArgv(lexed.argv);
     if (!nextArgv) continue;
     const roundTrip = assertArgvRoundTrip(nextArgv);
     if (!roundTrip.ok) return null; // fail closed to NO rewrite, never to a broken command
-    const encoded = encodeSimpleCommand(nextArgv);
+    const encoded = encodeSimpleCommand(nextArgv) + (rawTail ? ` ${rawTail}` : "");
     // Replace the EXACT segment text once, preserving every operator and any
     // byte outside the segment (semantics of ; | && || order are untouched).
     const index = normalized.indexOf(rawSegment);
@@ -123,21 +127,24 @@ export function normalizeObservationCommand(command) {
 
 // WI-FW-HOOKS-SAFETY-01 T03/AC-3: fresh positive prompt-authority gate for the
 // ONE allowed self-heal attempt. Eligible only when the UserPromptSubmit
-// authority record (a) exists, (b) belongs to THIS session and turn, (c) is
-// fresh within the configured TTL window, (d) carries exactly one explicit WI,
+// authority record (a) exists, (b) belongs to THIS session and turn,
+// (c) is fresh within the configured TTL window, (d) carries exactly one explicit WI,
 // and (e) expresses POSITIVE work/resume/continue intent — a bare mention or a
-// negated instruction is never sufficient. Returns { eligible, wi, reason_code }.
-export function evaluateSelfHealAuthority(payload, env = process.env) {
+// negated instruction is never sufficient.
+// EXTREV-EXEC-003: the record must also bind the EXACT repository identity the
+// mutation scope resolved to, and an unprovable turn is never eligible.
+export function evaluateSelfHealAuthority(payload, env = process.env, expected = {}) {
   const ineligible = (reason_code) => ({ eligible: false, wi: null, reason_code });
   let ctx;
   try { ctx = hookContext(payload, env); } catch { return ineligible("PROMPT_AUTHORITY_UNREADABLE"); }
   if (!ctx.session_id || !ctx.session_dir) return ineligible("PROMPT_AUTHORITY_ABSENT");
+  if (!String(ctx.turn_id || "")) return ineligible("TURN_UNPROVABLE");
   let document = null;
   try { document = JSON.parse(fs.readFileSync(authorityPath(ctx), "utf8")); }
   catch { return ineligible("PROMPT_AUTHORITY_ABSENT"); }
   if (!document || typeof document !== "object") return ineligible("PROMPT_AUTHORITY_MALFORMED");
   if (String(document.session_id || "") !== String(ctx.session_id)) return ineligible("PROMPT_AUTHORITY_FOREIGN_SESSION");
-  if (String(ctx.turn_id || "") && String(document.turn_id || "") !== String(ctx.turn_id)) return ineligible("STALE_TURN");
+  if (String(document.turn_id || "") !== String(ctx.turn_id)) return ineligible("STALE_TURN");
   const ttlMinutes = Number(env.SVC_CODEX_AUTHORITY_TTL_MIN || 240);
   const recorded = Date.parse(document.recorded_at || "");
   if (!Number.isFinite(recorded) || Date.now() - recorded > Math.max(1, ttlMinutes) * 60_000) {
@@ -149,11 +156,22 @@ export function evaluateSelfHealAuthority(payload, env = process.env) {
   }
   const wi = String(document.explicit_wi || "");
   if (!wi) return ineligible("NO_EXPLICIT_WI");
+  const expectedRoot = String(expected.repo_root || "");
+  if (!expectedRoot) return ineligible("AUTH_TUPLE_INCOMPLETE");
+  try {
+    if (fs.realpathSync(String(document.repo_root || "")) !== fs.realpathSync(expectedRoot)) {
+      return ineligible("AUTH_TUPLE_REPO_MISMATCH");
+    }
+  } catch { return ineligible("AUTH_TUPLE_REPO_MISMATCH"); }
   return { eligible: true, wi, reason_code: "FRESH_POSITIVE_INTENT" };
 }
 
 // Typed decision envelope for the observation fast path. Returns null when the
 // call is NOT a proven observation (the governed path owns those decisions).
+// EXTREV-EXEC-008: the latency-critical quoted-`sed -n` fast path lives INSIDE
+// the engine, so every call is classified by exactly ONE entry point and the
+// dispatcher never re-classifies.
+const ULTRA_HOT_READ = /^sed\s+-n\s+(['"])(?:\d+|\$)(?:,(?:\d+|\$))?p\1\s+[A-Za-z0-9_./~][^;&|`$<>\s]*(?:\s+(?:[012]?>\s*\/dev\/null|[012]?>&[012]))*$/;
 export function evaluatePreToolObservation(payload, env = process.env) {
   void env;
   const started = Date.now();
@@ -177,13 +195,20 @@ export function evaluatePreToolObservation(payload, env = process.env) {
   if (!input || typeof input !== "object" || !key) {
     return { ...base, execution_input: null, operation: { repo_id: null, worktree_root: null, targets: [] }, latency_ms: Date.now() - started };
   }
-  const normalized = normalizeObservationCommand(command);
-  const nextInput = normalized && normalized !== command ? { ...input, command: normalized } : null;
-  return {
-    ...base,
-    reason_code: nextInput ? "OBSERVATION_PROVEN_GIT_NORMALIZED" : "OBSERVATION_PROVEN",
-    execution_input: nextInput,
-    operation: { repo_id: null, worktree_root: null, targets: [] },
-    latency_ms: Date.now() - started,
-  };
+  // Ultra-hot path first (identical semantics to the former dispatcher-local
+  // lightRead): quoted sed line/range print with ordinary input path and
+  // optional diagnostic redirection. Anything ambiguous falls through to the
+  // complete argv-aware normalization below.
+  if (!ULTRA_HOT_READ.test(command.trim())) {
+    const normalized = normalizeObservationCommand(command);
+    const nextInput = normalized && normalized !== command ? { ...input, command: normalized } : null;
+    return {
+      ...base,
+      reason_code: nextInput ? "OBSERVATION_PROVEN_GIT_NORMALIZED" : "OBSERVATION_PROVEN",
+      execution_input: nextInput,
+      operation: { repo_id: null, worktree_root: null, targets: [] },
+      latency_ms: Date.now() - started,
+    };
+  }
+  return { ...base, execution_input: null, operation: { repo_id: null, worktree_root: null, targets: [] }, latency_ms: Date.now() - started };
 }

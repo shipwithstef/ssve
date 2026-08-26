@@ -268,6 +268,12 @@ export function renewControllerIfCurrent({ stateRoot, repoId, wi, worktreeRoot, 
       if (fs.realpathSync(worktreeRoot) !== fs.realpathSync(lease.worktree_root)) return { status: "stale_decision", reason: "canonical worktree changed" };
     } catch { return { status: "stale_decision", reason: "worktree path unresolved" }; }
     if (lease.state !== "active") return { status: "not_renewable", reason: `lease state is ${lease.state}` };
+    // EXTREV-EXEC-004: an expired or unreadable expiry must never be renewed
+    // — renewal resurrecting dead authority is exactly the failure this guard
+    // exists to prevent.
+    const expiresAt = Date.parse(lease.expires_at || "");
+    if (!Number.isFinite(expiresAt)) return { status: "not_renewable", reason: "lease expiry is malformed" };
+    if (expiresAt <= now) return { status: "not_renewable", reason: "lease expired" };
     try { verifyLatestHandoffRecord(paths, lease); }
     catch (error) { return { status: "stale_decision", reason: error.message }; }
     const renewed = { ...lease, owner_process: ownerProcessIdentity(), renewed_at: iso(now), expires_at: iso(now + ttlMs), backend_revision: lease.backend_revision + 1 };

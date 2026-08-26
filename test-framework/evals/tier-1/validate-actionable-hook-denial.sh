@@ -90,7 +90,7 @@ if [ -L "$LAUNCHER" ]; then fail "launcher is a symlink (must be a copied real f
 rm -rf "$SRC"
 [ -d "$SRC" ] && fail "source checkout still present" || pass "deleted the entire source checkout"
 
-OUT="$(echo '{}' | HOME="$FHOME" node "$LAUNCHER" svc-task-completion-guard 2>/tmp/wi487-launcher-err.$$)"
+OUT="$(echo '{}' | env -u SVC_BREAK_GLASS -u SVC_BREAK_GLASS_TTL_HOURS HOME="$FHOME" node "$LAUNCHER" svc-task-completion-guard 2>/tmp/wi487-launcher-err.$$)"
 RC=$?
 ERR="$(cat /tmp/wi487-launcher-err.$$ 2>/dev/null)"; rm -f /tmp/wi487-launcher-err.$$
 [ "$RC" -ne 0 ] && pass "launcher fails closed (exit $RC) after checkout deletion" || fail "launcher did NOT fail closed after checkout deletion (exit 0 = fail-open)"
@@ -219,7 +219,7 @@ else
 fi
 # Now delete the ENTIRE source checkout and run the EXTRACTED host command.
 rm -rf "$SRC2"
-HP_OUT="$(echo '{}' | HOME="$FHOME5" bash -c "$STOP_CMD" 2>/tmp/wi487-hostpath-err.$$)"
+HP_OUT="$(echo '{}' | env -u SVC_BREAK_GLASS -u SVC_BREAK_GLASS_TTL_HOURS HOME="$FHOME5" bash -c "$STOP_CMD" 2>/tmp/wi487-hostpath-err.$$)"
 HP_RC=$?
 HP_ERR="$(cat /tmp/wi487-hostpath-err.$$ 2>/dev/null)"; rm -f /tmp/wi487-hostpath-err.$$
 [ "$HP_RC" -ne 0 ] && pass "F-001: installed host command fails closed (exit $HP_RC) after checkout deletion" || fail "F-001: installed host command DID NOT fail closed after checkout deletion (fail-OPEN)"
@@ -256,7 +256,7 @@ HOME="$FHOME6" node "$SRC3/scripts/svc-migrate-install.mjs" materialize --host c
 LAUNCHER3="$FHOME6/.svc/enforcement/1/bin/svc-enforce"
 # Delete the REAL source so the ONLY way to "succeed" would be honoring the override.
 rm -rf "$SRC3"
-OV_OUT="$(echo '{}' | SVC_ENFORCE_SOURCE="$ATTACK" HOME="$FHOME6" node "$LAUNCHER3" svc-task-completion-guard 2>/dev/null)"
+OV_OUT="$(echo '{}' | env -u SVC_BREAK_GLASS -u SVC_BREAK_GLASS_TTL_HOURS SVC_ENFORCE_SOURCE="$ATTACK" HOME="$FHOME6" node "$LAUNCHER3" svc-task-completion-guard 2>/dev/null)"
 if echo "$OV_OUT" | grep -q '"decision":"approve"'; then
   fail "F-002: launcher HONORED an attacker-chosen SVC_ENFORCE_SOURCE (authority substitution)"
 else
