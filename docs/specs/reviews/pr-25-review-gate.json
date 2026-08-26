@@ -1,0 +1,20 @@
+{
+ "schema_version": 1,
+ "pr": 25,
+ "reviewed_at": "2026-08-26T07:05:00Z",
+ "review_gate_task": "WI-FW-SKILLS-ROUTING-01 lane task 5 (review-gate G5) + task 6 (review-exec G6), completed 2026-08-26T00:28Z",
+ "reviewer": "opencode/x-preview-f-free (active orchestrator; adversarial rounds logged)",
+ "result": "PASS",
+ "evidence": [
+  "docs/plans/2026-08-25-wifw-skills-routing/review-log.yaml",
+  "docs/specs/reviews/wifw-skills-routing-01-exec-review-log.yaml",
+  "docs/specs/audit-reports/WI-FW-SKILLS-ROUTING-01.md",
+  "commit:4876adc",
+  "commit:69d4784",
+  "commit:4577895",
+  "commit:1181a6a"
+ ],
+ "self_review": false,
+ "review_gate_required": true,
+ "note": "G5 diff-vs-manifest + quality scan, three bounded exec-review rounds (F-012 dispositioned, F-EXEC-020 remediated), audit AC evidence matrix PASS; G10 story receipts STORY ALIGNED and branch indexes FRESH at head 1181a6a."
+}
