@@ -220,7 +220,9 @@ export function continuationIntent(text) {
   // EXTREV-EXEC-011: intent verbs count only when they govern the WI-bearing
   // sentence. A bare "resume"/"continue" anywhere in a long prompt (a noun, a
   // button label, an unrelated topic) must not activate self-heal.
-  const wiMatch = value.match(/\bWI[-_]?\d[\w-]*\b/i);
+  // EXTREV-R3-003: reuse the canonical WI body so NAMESPACED ids
+  // (WI-FW-HOOKS-SAFETY-01) anchor the sentence scope, not just WI-123 forms.
+  const wiMatch = value.match(new RegExp("(?<![A-Za-z0-9._:/-])" + WI_ID_BODY + "(?![A-Za-z0-9._:/-])"));
   const scopeText = (() => {
     if (!wiMatch) return value;
     const sentences = value.split(/(?:[.!?\n]|\.\s)\s*/);

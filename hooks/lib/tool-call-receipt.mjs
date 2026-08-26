@@ -72,6 +72,15 @@ function receiptPath(root, key) {
   return path.join(root, key.slice(0, 2), `${key}.json`);
 }
 
+// EXTREV-R3-004: the fan-out directory itself is validated no-follow after
+// creation — a symlink swapped in between mkdir and use is refused.
+function assertFanOutDir(dir) {
+  const stat = lstatSafe(dir);
+  if (!stat || !stat.isDirectory()) throw new Error("receipt fan-out dir missing");
+  if (stat.isSymbolicLink()) throw new Error("receipt fan-out dir is a symlink");
+  if (!sameUid(stat)) throw new Error("receipt fan-out dir foreign-owned");
+}
+
 export function writeToolCallReceipt({ session_id, tool_use_id, host, original_digest, decision = "allow", classification = "mutation", lease = null, ttlMs = RECEIPT_TTL_MS_DEFAULT, now = Date.now(), env = process.env }) {
   const key = receiptKey({ session_id, tool_use_id });
   const root = receiptsRoot(env);
@@ -80,6 +89,7 @@ export function writeToolCallReceipt({ session_id, tool_use_id, host, original_d
   assertSecureAncestry(root);
   const file = receiptPath(root, key);
   fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
+  try { assertFanOutDir(path.dirname(file)); } catch { return { receipt: null, file: null, error: "receipt_fanout_insecure" }; }
   const receipt = {
     schema_version: RECEIPT_SCHEMA_VERSION,
     key,
@@ -87,6 +97,10 @@ export function writeToolCallReceipt({ session_id, tool_use_id, host, original_d
     session_id: String(session_id || ""),
     tool_use_id: String(tool_use_id || ""),
     original_digest: String(original_digest || ""),
+    // EXTREV-R3-007: explicit semantics — this digest covers the EXECUTION
+    // INPUT the dispatcher authorized (hosts echo it back on PostToolUse),
+    // not a raw pre-normalization payload.
+    digest_scope: "execution_input",
     decision, classification,
     lease: lease && typeof lease === "object" ? { ...lease } : null,
     issued_at: new Date(now).toISOString(),
@@ -122,6 +136,16 @@ export function consumeToolCallReceipt({ session_id, tool_use_id, host, original
   try { assertSecureAncestry(root); }
   catch { return noop("receipt_insecure"); }
   const file = receiptPath(root, receiptKey({ session_id, tool_use_id }));
+  // EXTREV-R3-004: enforce no-follow on the fan-out dir WHEN IT EXISTS; a
+  // missing dir simply means there is nothing to claim.
+  {
+    const fanOut = path.dirname(file);
+    const fanStat = lstatSafe(fanOut);
+    if (fanStat) {
+      try { assertFanOutDir(fanOut); }
+      catch { return noop("receipt_insecure"); }
+    }
+  }
   const claim = `${file}.claim.${process.pid}.${crypto.randomBytes(6).toString("hex")}`;
   try { fs.renameSync(file, claim); }
   catch { return noop("receipt_missing"); }

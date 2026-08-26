@@ -774,40 +774,14 @@ for (const hookType of Object.keys(settings.hooks)) {
 }
 
 // ---------------------------------------------------------------------------
-// EXTREV-EXEC-013 (WI-FW-HOOKS-SAFETY-01): prune LEGACY deny-capable
-// PreToolUse siblings. Upgrades can retain pre-consolidation guards beside the
-// single engine, recreating the duplicate-classification hazard AC-6 removes.
-// Every pruned script runs as an ENGINE CHILD, so enforcement is preserved.
+// EXTREV-R3-002 disposition (WI-FW-HOOKS-SAFETY-01 round 3): the wirer
+// PRESERVES pre-existing user/legacy entries — the dedup-v2 contract above is
+// load-bearing and validated by validate-wire-hooks-variant-dedup.sh.
+// Consolidation is enforced at the ENGINE level (children registry), the
+// managed registry rewrite during `./setup`, and
+// validate-settings-no-duplicate-hooks.sh — not by deleting user settings
+// here, which would destroy non-svc customizations sharing an entry.
 // ---------------------------------------------------------------------------
-const ENGINE_CHILD_SCRIPTS = new Set([
-  "svc-worktree-isolation-guard.mjs",
-  "svc-workflow-guard.mjs",
-  "svc-loop-guard.mjs",
-  "svc-skill-artifact-authenticity.mjs",
-  "svc-session-contract-freshness.mjs",
-  "svc-inertia-check.mjs",
-  "svc-impact-triad-guard.mjs",
-  "svc-phase-boundary-detector.mjs",
-]);
-{
-  let removed = 0;
-  const pre = settings.hooks?.PreToolUse;
-  if (Array.isArray(pre)) {
-    for (const entry of pre) {
-      if (!Array.isArray(entry.hooks)) continue;
-      const before = entry.hooks.length;
-      entry.hooks = entry.hooks.filter((h) => {
-        const cmd = String(h.command || "");
-        // Keep the engine itself; drop only legacy sibling guard commands.
-        if (cmd.includes("svc-pretool-decision-engine") || cmd.includes("svc-codex-pretool-dispatcher")) return true;
-        return !ENGINE_CHILD_SCRIPTS.has((cmd.split(/[/?]/).pop() || "").split(" ")[0].replace(/['"].*/, ""));
-      });
-      removed += before - entry.hooks.length;
-    }
-    settings.hooks.PreToolUse = pre.filter((e) => !Array.isArray(e.hooks) || e.hooks.length > 0);
-    if (removed > 0) migrated.push(`PreToolUse:legacy-engine-siblings-pruned-x${removed}`);
-  }
-}
 
 
 // WI-370: kimi-host scripts do not belong in Claude-written settings — they
