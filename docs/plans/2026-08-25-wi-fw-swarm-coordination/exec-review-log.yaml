@@ -55,3 +55,8 @@ exec_review_log:
     - { id: EXEC-R2-012, severity: high, decision: ACCEPT, action: "Gates extended: crash-window regeneration determinism, handoff ownership transfer, lease-guard re-acquire block, key-policy negatives (expired/not-yet-valid/revoked/pinned), run-binding, signed-envelope forgery rejection" }
   terminal_state: REVISED_PENDING_ROUND3_VERIFICATION
   rounds_run: 2
+  tier1_corpus_round3:
+    command: TEST_CONCURRENCY=2 bash test-framework/evals/run-all-evals.sh
+    result: "344 passed / 10 failed — ALL 10 proven pre-existing at branch point"
+    pre_existing_evidence: "temp worktree at 494f0749 reproduces rc=1 for every one of the 10 (validate-actionable-hook-denial, validate-all-host-install-migration, validate-codex-session-rebinding, validate-dispatch-resolver-wi551, validate-enforcement-escape-and-readonly, validate-proposal-triage-sla, validate-self-heal-survives-double-dead-pointer, validate-wi546-cursor-live-acceptance, validate-wi546-grok-live-acceptance) — host-state/environmental class, untouched by this changeset"
+    flaky_parallel: "validate-receipt-identity-collision.sh passes standalone on this branch (rc=0)"
