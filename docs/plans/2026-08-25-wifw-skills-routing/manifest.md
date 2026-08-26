@@ -55,6 +55,7 @@ Constraints:
 | T05 | MODIFY | docs/plans/2026-08-25-wifw-skills-routing/plan-contract.json | Planning artifact self-ownership |
 | T05 | MODIFY | docs/specs/receipts/WI-FW-SKILLS-ROUTING-01.receipts.json | Story-receipts seed for this WI |
 | T05 | MODIFY | docs/specs/research-log.md;docs/plans/2026-08-25-wifw-skills-routing/review-log.yaml | Research entry preserved from prior session; review-plan gate log (rounds 1-3 + bounded exit) |
+| T06 | MODIFY | concerns/REGISTRY.json;concerns/cache-strategy-symmetry.md;concerns/paid-analytics-api.md;concerns/paid-cdn-egress.md;concerns/paid-external-api.md;concerns/paid-geocoding-api.md;concerns/paid-llm-api.md;concerns/paid-ml-inference-api.md;concerns/paid-notification-api.md;concerns/paid-ocr-vision-api.md;concerns/paid-payment-api.md;concerns/paid-search-api.md;concerns/paid-storage-api.md;concerns/paid-streaming-api.md;concerns/paid-translation-api.md | Exec-review F-EXEC-020 remediation: repair 14 dangling required_rules references to the never-created paid-api-integration-checklist rule (silent critical-pin failure); regenerate REGISTRY.json via canonical builder |
 
 ## Task Graph
 

@@ -74,7 +74,7 @@
   ],
   "resource_review": {
     "verification": "changed-executable-census",
-    "denominator": 5,
+    "denominator": 4,
     "disposition": "no-risky-resource-writers",
     "evidence": "changed executables: scripts/compile-skill-router-index.mjs, scripts/skill-router.mjs, scripts/lib/skill-router.mjs, test-framework/evals/tier-1/validate-skill-router.sh — a deterministic compiler, a suggestion-only CLI, a library, and a hermetic validator; none write money/ledger/quota/identity state; the receipts stream under .svc/ is observational and gitignored; T06 repairs are markdown/json data only, no new executables beyond the census of 4 code files + concerns data"
   },
