@@ -1,0 +1,57 @@
+exec_review_log:
+  wi: WI-FW-SWARM-COORDINATION-01
+  diff_base: 494f0749250ccf8c3e52e7dbd7a55128a0800b78
+  tier1_corpus:
+    command: TEST_CONCURRENCY=2 bash test-framework/evals/run-all-evals.sh
+    result: "353 passed / 2 failed (both pre-existing, proven at branch point)"
+    pre_existing_failures:
+      - validate-codex-session-rebinding.sh — fails identically at branch point 784b764 in wi-562 worktree (environment-sensitive isolation-guard session binding)
+      - validate-proposal-triage-sla.sh — date bomb: 14-day deferrals set 2026-08-11 expired 2026-08-25 (today) on every branch; owner-level backlog triage, out of changeset scope
+    flaky_parallel:
+      - validate-receipt-identity-collision.sh — passes standalone (verified twice); parallel-timing flake
+    self_review_findings_fixed_during_execution:
+      - validate-kimi-host.sh / validate-wi546-cursor|grok-live-acceptance.sh — latent no-owner-policy assumptions exposed when ~/.svc/dispatch-policy.json appeared on this host; repaired preserving validator intent (fail-closed isolation / no-Sonnet invariant)
+  external_round1:
+    reviewer_station: codex-sol-high (owner policy governed-triple)
+    reviewer_family: openai
+    rubric_score: 2
+    verdict: fail
+    findings_count: 14
+    receipt: .svc/external-review-artifacts/exec/32b9d9649606dd4ffaf90c0f405228d9ac3348cb7d01943ff9c1f90a7e47cc80/20260825T235445Z-761937/receipt.json
+  responses:
+    - { id: EXEC-001, severity: critical, decision: ACCEPT, action: "Mutating verbs now require DSSE-signed command envelopes verified against the principal's provisioned submit-purpose key before any state access (handleEnvelope + verifyCommandEnvelope)" }
+    - { id: EXEC-002, severity: critical, decision: ACCEPT, action: "Coordinator verifies registry root_signature against root public key on every registry read and refuses untrusted registries" }
+    - { id: EXEC-003, severity: high, decision: ACCEPT, action: "run_id binding: commands targeting a foreign run are rejected with schema_invalid once the journal has events" }
+    - { id: EXEC-004, severity: high, decision: ACCEPT, action: "Replay flags idempotent command rebound to a divergent event digest as journal corruption" }
+    - { id: EXEC-005, severity: high, decision: ACCEPT, action: "receipt_id derived from sha256(command_digest|event_digest), issued_at bound to event.observed_at, Ed25519 determinism => byte-identical crash re-signs" }
+    - { id: EXEC-006, severity: high, decision: ACCEPT, action: "Swarm journal declared standalone (inherits mechanisms, not the v2 envelope); runtime-journal-event-v2.enum extension reverted" }
+    - { id: EXEC-007, severity: high, decision: ACCEPT, action: "Per-kind allOf constraints on receipt payload; root cause was json-schema-validator ignoring documented allOf/if/then/const keywords — implemented them plus object-semantics required/properties" }
+    - { id: EXEC-008, severity: high, decision: ACCEPT, action: "Conflict ladder integrated into submit_candidate acceptance via claim overlap (resolvePair per active lease claim); claims recorded at acquire_task" }
+    - { id: EXEC-009, severity: high, decision: ACCEPT, action: "Lease ownership enforced on heartbeat/progress/submit/cancel/handoff; handoff tokens bind target principals" }
+    - { id: EXEC-010, severity: high, decision: ACCEPT, action: "Protocol gate extended with run-binding, ownership-denial, heartbeat-renewal, signed-envelope negative tests; explicit SCOPE NOTE for adjudication capping / remote transport / shadow runs" }
+    - { id: EXEC-011, severity: high, decision: ACCEPT, action: "Bootstrap artifacts written with O_EXCL final-artifact semantics (writeExclJson); partial bootstrap refuses with named-artifact repair" }
+    - { id: EXEC-012, severity: medium, decision: ACCEPT, action: "Heartbeat appends renewed_until and replay updates lease expiry; gate asserts renewal changes expiry" }
+    - { id: EXEC-013, severity: medium, decision: ACCEPT, action: "JCS rejects lone UTF-16 surrogates fail-closed" }
+    - { id: EXEC-014, severity: medium, decision: ACCEPT, action: "localeCompare replaced with code-unit comparators in resolver ordering" }
+  external_round2:
+    reviewer_station: codex-sol-high (owner policy governed-triple)
+    reviewer_family: openai
+    rubric_score: 2
+    verdict: fail
+    findings_count: 12
+    receipt: .svc/external-review-artifacts/exec/90c064b1d0fe344b5f6317d81985334739913b6230ede86d6b43c4fe0ac86ce5/r2-20260826T004716Z-3583398/receipt.json
+  round2_responses:
+    - { id: EXEC-R2-001, severity: critical, decision: ACCEPT, action: "CLI mutating verbs route exclusively through handleEnvelope; unsigned or unkeyed principals fail closed; envelope verification requires the command payload-type literal and canonical JCS payload bytes" }
+    - { id: EXEC-R2-002, severity: critical, decision: ACCEPT, action: "Coordinator binds a worktree at construction; submit_candidate refuses when unbound (worktree_unbound), recomputes HEAD + changed paths + full-diff sha256, enforces claimed head_sha/candidate_digest equality, and records recomputed values in the candidate" }
+    - { id: EXEC-R2-003, severity: high, decision: ACCEPT, action: "Registry validity windows (valid_from/expires_at +/-300s skew) gate registration too; operator-pinned host/model_family/session_id enforced as actor_binding_mismatch; registered capabilities cover all command families; negative tests for expired/not-yet-valid/revoked/pinned-mismatch in validate-swarm-signatures.sh" }
+    - { id: EXEC-R2-004, severity: high, decision: ACCEPT, action: "request_handoff emits successor_principal (schema-required); replay transitions task to HANDOFF_PREPARED; accept binds token+task+successor atomically and installs a successor-owned lease with fresh renewed_until; CLI-level positive + wrong-token negative tests added" }
+    - { id: EXEC-R2-005, severity: high, decision: ACCEPT, action: "buildAcceptance derives sequence_before/event binding from the original event (sequence_before=event.sequence-1, prior_receipt_digest=previous_event_digest); crash-window gate test deletes the receipt, advances the journal, retries byte-identical command, asserts byte-identical regenerated envelope" }
+    - { id: EXEC-R2-006, severity: high, decision: ACCEPT, action: "Per-kind if/then required blocks incl. task_id on cancel/handoff; acceptance branch requires non-null string event_digest/submission_digest; submission_digest now always binds the accepted command digest; rejection receipts drop event_digest and are schema-validated pre-sign; checkpoint receipts use UUIDv7" }
+    - { id: EXEC-R2-007, severity: high, decision: ACCEPT, action: "Ladder evaluates candidate claimed paths against every other task's active claim/lease via resolvePair before acceptance; non-INTEGRATE/MERGE outcomes refuse with conflict_block/protected_surface" }
+    - { id: EXEC-R2-008, severity: high, decision: ACCEPT, action: "acquire_task rejects only ACTIVE unexpired leases (lease_missing); expired leases become reclaimable by fresh attempts; protocol gate asserts both the block and reclaim-after-TTL semantics" }
+    - { id: EXEC-R2-009, severity: high, decision: ACCEPT, action: "verify verb decodes the payload, checks payloadType literal and the key's allowed_receipt_kinds against the decoded receipt_kind (wrong_purpose_or_kind rejection)" }
+    - { id: EXEC-R2-010, severity: high, decision: ACCEPT, action: "provision serialized under the journal lock; revoke wrapped in withJournalLock; registry_version monotonic; atomicWriteJson fsyncs the parent directory after rename (crash-durable rename)" }
+    - { id: EXEC-R2-011, severity: high, decision: ACCEPT, action: "schemas/runtime-journal-event-v2.schema.json restored byte-identical to base 494f0749 — swarm journal is fully standalone; legacy compatibility proven by validate-runtime-v2.mjs" }
+    - { id: EXEC-R2-012, severity: high, decision: ACCEPT, action: "Gates extended: crash-window regeneration determinism, handoff ownership transfer, lease-guard re-acquire block, key-policy negatives (expired/not-yet-valid/revoked/pinned), run-binding, signed-envelope forgery rejection" }
+  terminal_state: REVISED_PENDING_ROUND3_VERIFICATION
+  rounds_run: 2

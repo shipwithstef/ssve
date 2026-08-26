@@ -158,22 +158,25 @@
    ]
   },
   "reason_code": {
-   "enum": [
-    "ok",
-    "stale_generation",
-    "sequence_mismatch",
-    "lease_expired",
-    "lease_missing",
-    "unknown_session",
-    "capability_denied",
-    "idempotency_conflict",
-    "schema_invalid",
-    "protected_surface",
-    "conflict_block",
-    "key_revoked",
-    "key_expired",
-    "signature_invalid"
-   ]
+    "enum": [
+     "ok",
+     "stale_generation",
+     "sequence_mismatch",
+     "lease_expired",
+     "lease_missing",
+     "unknown_session",
+     "capability_denied",
+     "idempotency_conflict",
+     "schema_invalid",
+     "protected_surface",
+     "conflict_block",
+     "key_revoked",
+     "key_not_valid",
+     "key_expired",
+     "actor_binding_mismatch",
+     "worktree_unbound",
+     "signature_invalid"
+    ]
   },
   "issued_at": {
    "type": "string",
@@ -211,9 +214,11 @@
       "const": "ok"
      },
      "event_digest": {
+      "type": "string",
       "pattern": "^sha256:[0-9a-f]{64}$"
      },
      "submission_digest": {
+      "type": "string",
       "pattern": "^sha256:[0-9a-f]{64}$"
      }
     }

@@ -23,7 +23,7 @@ Inline. The orchestrator session implements every task directly in this worktree
 
 **Crash-atomic acceptance.** One flock critical section per append: replay-validate the candidate against replayed state; append+fsync the event batch; sign the acceptance receipt referencing the appended event digest; write that receipt to receipts/<command-canonical-digest>.json (0600, atomic rename) inside the same section; respond only after the receipt file is durable. Crash windows: pre-fsync = zero effect, retry recomputes cleanly; post-fsync pre-receipt = retry re-signs deterministically (Ed25519 signatures are deterministic over identical PAE bytes, so the regenerated receipt is byte-identical to what the interrupted attempt would have produced); post-receipt = retry reads and returns the persisted receipt verbatim. There is deliberately no response-delivery guarantee beyond at-least-once delivery plus durable effect receipts.
 
-**Rollback scoping.** Concrete procedure, in order: (1) pre-land rollback = discard the feature branch (git checkout of main worktree; branch deletion via the normal worktree path); (2) post-land rollback = git revert <squash-SHA> on main followed by the standard promotion verification; (3) state disposal = remove any swarm state roots created under caller-provided directories (rm -rf of those explicit paths only — they contain exclusively post-change data); (4) compatibility proof = after revert, replay one pre-existing runtime-v2 journal via validate-runtime-journal-schema.sh to demonstrate legacy readability; runtime-v2 journals written before the change stay readable because the schema change is additive-only (enum widening cannot invalidate previously valid documents). Swarm state roots created after the change live wholly under caller-provided state-root directories, are inert unless a coordinator is explicitly started against them (zero call sites outside tests), and may be discarded wholesale during rollback since they carry no pre-change data.
+**Rollback scoping.** Concrete procedure, in order: (1) pre-land rollback = discard the feature branch (git checkout of main worktree; branch deletion via the normal worktree path); (2) post-land rollback = git revert <squash-SHA> on main followed by the standard promotion verification; (3) state disposal = remove any swarm state roots created under caller-provided directories (rm -rf of those explicit paths only — they contain exclusively post-change data); (4) compatibility proof = after revert, replay one pre-existing runtime-v2 journal via test-framework/evals/tier-1/validate-runtime-v2.mjs to demonstrate legacy readability; runtime-v2 journals written before the change stay readable because the schema change is additive-only (enum widening cannot invalidate previously valid documents). Swarm state roots created after the change live wholly under caller-provided state-root directories, are inert unless a coordinator is explicitly started against them (zero call sites outside tests), and may be discarded wholesale during rollback since they carry no pre-change data.
 
 ## CLI Surface Contract (normative for T06)
 
@@ -96,6 +96,7 @@ Fail-closed rule carried over from the source plan: a model-authored PASS string
 | T08 | MODIFY | .svc/lane-tasks-WI-FW-SWARM-COORDINATION-01.json | Task-graph status progression and phase receipts |
 | T08 | MODIFY | docs/plans/2026-08-25-wi-fw-swarm-coordination/manifest.md | Plan artifact itself: revised in place through bounded review rounds; final digest bound at closeout |
 | T08 | MODIFY | docs/plans/2026-08-25-wi-fw-swarm-coordination/review-log.yaml | Review log persistence: findings, responses, dispositions, terminal state |
+| T08 | MODIFY | docs/plans/2026-08-25-wi-fw-swarm-coordination/exec-review-log.yaml | Execution-review responses and disposition record |
 | T07 | MODIFY | test-framework/evals/tier-1/validate-kimi-host.sh | Environment-robustness repair: fail-closed probe isolates HOME/policy env so it tests no-owner-policy behavior on machines that have one |
 | T07 | MODIFY | test-framework/evals/tier-1/validate-wi546-cursor-live-acceptance.sh | Environment-robustness repair: live note-consume probe iterates store entries; live EXEC check tolerates a present owner dispatch policy (no-Sonnet invariant preserved) |
 | T07 | MODIFY | test-framework/evals/tier-1/validate-wi546-grok-live-acceptance.sh | Environment-robustness repair: live EXEC check tolerates a present owner dispatch policy (no-Sonnet/fast invariant preserved) |
@@ -135,7 +136,7 @@ Every task lands red-green: the owning tier-1 gate or a direct CLI invocation mu
 Focused pre-existing validators guarding the touched surface:
 
 ```bash
-bash test-framework/evals/tier-1/validate-runtime-journal-schema.sh
+bash test-framework/evals/tier-1/test-framework/evals/tier-1/validate-runtime-v2.mjs
 node scripts/task-graph.mjs validate .svc/lane-tasks-WI-FW-SWARM-COORDINATION-01.json
 node scripts/check-plan-deploy-dependency.mjs --lane-tasks .svc/lane-tasks-WI-FW-SWARM-COORDINATION-01.json
 ```
@@ -160,7 +161,7 @@ TEST_CONCURRENCY=2 bash test-framework/evals/tier-1/validate-swarm-host-parity.s
 # T08: materialize plan-contract.json from the inline block, validate it, regression + full corpus
 node scripts/extract-inline-plan-contract.mjs
 node scripts/validate-plan-contract.mjs docs/plans/2026-08-25-wi-fw-swarm-coordination/plan-contract.json .
-bash test-framework/evals/tier-1/validate-runtime-journal-schema.sh
+bash test-framework/evals/tier-1/test-framework/evals/tier-1/validate-runtime-v2.mjs
 TEST_CONCURRENCY=2 bash test-framework/evals/run-all-evals.sh
 ```
 
@@ -183,7 +184,7 @@ Checkpoint commits follow execute-changeset naming: checkpoint: task-N-<name>.
 | Host hook configurations (cursor/codex/grok wirers) | decoupled-justified | This changeset creates no host wiring; adapters arrive in the follow-up host-adapter work item. Drift catch: the four new tier-1 gates run hermetically on every lint and would fail if any wiring assumption leaked into kernel code paths. |
 | Provider CLIs / network | decoupled-justified | All gates are hermetic: no network calls, no provider binaries invoked. The gates themselves assert no-network by construction (pure node invocations). |
 | Git remotes / branches | coupled | Coordinator binds candidate digests to SHAs it reads via git rev-parse in the local worktree; verification gate exercises wrong-SHA rejection. Recovery: all state lives under a caller-provided state root directory; nothing outside the worktree or state root is read or written. |
-| Existing runtime-v2 journals on disk | coupled | Enum extension is additive; replay compatibility is enforced by validate-runtime-journal-schema.sh in the validation plan. Recovery: revert restores prior schema bytes; journals were never rewritten. |
+| Existing runtime-v2 journals on disk | coupled | Enum extension is additive; replay compatibility is enforced by test-framework/evals/tier-1/validate-runtime-v2.mjs in the validation plan. Recovery: revert restores prior schema bytes; journals were never rewritten. |
 | Hermeticity of the new gates | coupled | Each validate-swarm-* gate runs only node against the worktree's own scripts with a mktemp state root and asserts exit codes; no network sockets, no provider binaries, no environment-specific paths are referenced. Drift catch: run-all-evals.sh executes them on every lint; any non-hermetic dependency fails the gate in CI-less local runs the same way. |
 
 Untouched environments (walked the taxonomy, found nothing): production databases, migrations, package registries, schedulers, external SaaS endpoints, DNS, secrets managers, CI systems, message queues, object storage, third-party APIs, operating-system services outside the invoking user account, other repositories, other worktrees.
@@ -284,7 +285,8 @@ The contract artifact content is fixed NOW by this inline block (byte-stable; th
         "docs/plans/2026-08-25-wi-fw-swarm-coordination/plan-contract.json",
         "scripts/extract-inline-plan-contract.mjs",
         "docs/plans/2026-08-25-wi-fw-swarm-coordination/manifest.md",
-        "docs/plans/2026-08-25-wi-fw-swarm-coordination/review-log.yaml"
+        "docs/plans/2026-08-25-wi-fw-swarm-coordination/review-log.yaml",
+        "docs/plans/2026-08-25-wi-fw-swarm-coordination/exec-review-log.yaml"
       ]
     },
     {
@@ -386,7 +388,7 @@ Each AC names its owning task and the gate that proves it, so coverage is mechan
 | 6. Replay detects torn records, byte changes, digest breaks, sequence gaps | T04 | validate-swarm-protocol.sh replay-corruption section |
 | 7. Ladder: disjoint integrates, clean overlap merges after union validators, resolvers deterministic, undeclared overlap + protected surfaces refuse | T05 | validate-swarm-conflicts.sh |
 | 8. Golden scenario identical across host labels | T07 | validate-swarm-host-parity.sh |
-| 9. Legacy journals stay replayable after enum extension | T02 | validate-runtime-journal-schema.sh (pre-existing) |
+| 9. Legacy journals stay replayable after enum extension | T02 | test-framework/evals/tier-1/validate-runtime-v2.mjs (pre-existing) |
 | 10. Full tier-1 corpus green at TEST_CONCURRENCY=2 | T08 | run-all-evals.sh output in execution record |
 | 11. Every command-union enum value maps to exactly one CLI verb | T06 | validate-swarm-host-parity.sh verb-coverage assertion |
 

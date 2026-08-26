@@ -63,4 +63,58 @@ process.exit(0);
 JS
 [[ -f "$TMP/dsse-ok" ]] || fail "DSSE checks did not pass"
 
-echo "PASS(validate-swarm-signatures): JCS vectors, DSSE verify/tamper/wrong-key/determinism, unicode PAE verified"
+# key-policy enforcement (EXEC-R2-003): expired / not-yet-valid / revoked keys and
+# wrong-purpose envelopes must fail closed against live commands.
+node --input-type=module - "$TMP" <<'JS' || fail "key-policy probe failed"
+import fs from "node:fs";
+const handler = await import(new URL("file://" + process.cwd() + "/scripts/lib/swarm-command-handler.mjs").href);
+const root = process.argv[2] + "/keystate";
+fs.rmSync(root, { recursive: true, force: true });
+fs.mkdirSync(root, { recursive: true, mode: 0o700 });
+handler.initStateRoot(root);
+const coord = new handler.SwarmCoordinator(root, { worktreeRoot: null });
+coord.provisionAdapter("expired1", { host: "codex", expiresAt: new Date(Date.now() - 3600_000).toISOString() });
+coord.provisionAdapter("future1", { host: "grok" });
+// backdate valid_from to the future for the not-yet-valid case
+{
+  const registry = coord.registry();
+  registry.keys.find(k => k.principal_id === "future1").valid_from = new Date(Date.now() + 3600_000).toISOString();
+  coord.signAndPersistRegistry(registry);
+}
+const mk = (principal, type, seq, extra = {}) => ({
+  schema_version: 1,
+  command_id: "018f0000-0000-7000-8000-" + String(seq).padStart(12, "0"),
+  run_id: "kr", command_type: type, task_id: null,
+  actor: { principal_id: principal, host: "codex", model_family: "fam", session_id: "s" },
+  authority_generation: 0, expected_sequence: seq, idempotency_key: `kp-${principal}-${seq}`,
+  payload: extra,
+});
+const keyOf = (p) => JSON.parse(fs.readFileSync(root + "/keys/" + p + ".json", "utf8")).private_key;
+const env1 = coord.constructor.envelopeForCommand(mk("expired1", "register_session", 0), keyOf("expired1"));
+const r1 = coord.handleEnvelope(env1);
+if (r1.accepted) process.exit(1);
+if (r1.reason_code !== "key_expired") { console.error("want key_expired got", r1.reason_code); process.exit(1); }
+const env2 = coord.constructor.envelopeForCommand(mk("future1", "register_session", 0), keyOf("future1"));
+const r2 = coord.handleEnvelope(env2);
+if (r2.reason_code !== "key_not_valid") { console.error("want key_not_valid got", r2.reason_code); process.exit(1); }
+// revoked key: register a fresh principal, then revoke before next command
+coord.provisionAdapter("victim", { host: "cursor" });
+const victimReg = mk("victim", "register_session", 0);
+victimReg.actor.host = "cursor"; // claim matches its own pin
+if (!coord.handleEnvelope(coord.constructor.envelopeForCommand(victimReg, keyOf("victim"))).accepted) process.exit(1);
+coord.revoke("victim", 2);
+const afterRevoke = coord.constructor.envelopeForCommand(
+  { ...mk("victim", "ack_state", 2), idempotency_key: "kp-victim-ack" }, keyOf("victim"));
+const r3 = coord.handleEnvelope(afterRevoke);
+if (r3.reason_code !== "key_revoked") { console.error("want key_revoked got", r3.receipt?.payload?.reason_code ?? r3.reason_code); process.exit(1); }
+// operator-pinned identity: row pins host=cursor; a codex claim must be refused
+coord.provisionAdapter("pinned", { host: "cursor" });
+const pinCmd = mk("pinned", "register_session", 1);
+pinCmd.actor.host = "codex";
+pinCmd.idempotency_key = "kp-pinned-1";
+const r4 = coord.handleEnvelope(coord.constructor.envelopeForCommand(pinCmd, keyOf("pinned")));
+if (r4.reason_code !== "actor_binding_mismatch") { console.error("want actor_binding_mismatch got", r4.reason_code); process.exit(1); }
+process.exit(0);
+JS
+
+echo "PASS(validate-swarm-signatures): JCS vectors, DSSE verify/tamper/wrong-key/determinism, unicode PAE, key-policy expiry/validity-window/revocation/binding verified"

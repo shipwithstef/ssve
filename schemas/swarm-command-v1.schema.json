@@ -16,12 +16,35 @@
   ],
   "additionalProperties": false,
   "properties": {
-    "schema_version": { "const": 1 },
-    "command_id": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" },
-    "run_id": { "type": "string", "minLength": 1 },
-    "wi": { "type": ["string", "null"] },
-    "task_id": { "type": ["string", "null"] },
-    "attempt_id": { "type": ["string", "null"] },
+    "schema_version": {
+      "const": 1
+    },
+    "command_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "wi": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "task_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "attempt_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "command_type": {
       "enum": [
         "register_session",
@@ -38,36 +61,326 @@
     },
     "actor": {
       "type": "object",
-      "required": ["principal_id", "host", "model_family", "session_id"],
+      "required": [
+        "principal_id",
+        "host",
+        "model_family",
+        "session_id"
+      ],
       "additionalProperties": false,
       "properties": {
-        "principal_id": { "type": "string", "minLength": 1 },
-        "host": { "enum": ["codex", "grok", "cursor", "claude", "opencode", "agy"] },
-        "model_family": { "type": "string", "minLength": 1 },
-        "session_id": { "type": "string", "minLength": 1 }
+        "principal_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "host": {
+          "enum": [
+            "codex",
+            "grok",
+            "cursor",
+            "claude",
+            "opencode",
+            "agy"
+          ]
+        },
+        "model_family": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session_id": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
-    "lease_id": { "type": ["string", "null"] },
-    "authority_generation": { "type": "integer", "minimum": 0 },
-    "expected_sequence": { "type": "integer", "minimum": 0 },
-    "observed_sequence": { "type": "integer", "minimum": 0 },
-    "idempotency_key": { "type": "string", "minLength": 1 },
-    "traceparent": { "type": "string" },
-    "submitted_at": { "type": "string", "format": "date-time" },
-    "payload": { "type": "object" }
+    "lease_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "authority_generation": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "expected_sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "observed_sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1
+    },
+    "traceparent": {
+      "type": "string"
+    },
+    "submitted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "payload": {
+      "type": "object"
+    }
   },
   "allOf": [
     {
-      "if": { "properties": { "command_type": { "const": "acquire_task" } }, "required": ["command_type"] },
-      "then": { "properties": { "task_id": { "type": "string", "minLength": 1 } }, "required": ["task_id"] }
+      "if": {
+        "properties": {
+          "command_type": {
+            "const": "acquire_task"
+          }
+        },
+        "required": [
+          "command_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "task_id"
+        ]
+      }
     },
     {
-      "if": { "properties": { "command_type": { "enum": ["heartbeat_task", "report_progress", "submit_candidate", "propose_resolution"] } }, "required": ["command_type"] },
-      "then": { "properties": { "lease_id": { "type": "string", "minLength": 1 } }, "required": ["lease_id"] }
+      "if": {
+        "properties": {
+          "command_type": {
+            "enum": [
+              "heartbeat_task",
+              "report_progress",
+              "submit_candidate",
+              "propose_resolution"
+            ]
+          }
+        },
+        "required": [
+          "command_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "lease_id": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "lease_id"
+        ]
+      }
     },
     {
-      "if": { "properties": { "command_type": { "const": "accept_handoff" } }, "required": ["command_type"] },
-      "then": { "properties": { "payload": { "type": "object", "required": ["handoff_token"], "properties": { "handoff_token": { "type": "string", "minLength": 1 } } } } }
+      "if": {
+        "properties": {
+          "command_type": {
+            "const": "accept_handoff"
+          }
+        },
+        "required": [
+          "command_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "type": "object",
+            "required": [
+              "handoff_token"
+            ],
+            "properties": {
+              "handoff_token": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command_type": {
+            "const": "acquire_task"
+          }
+        },
+        "required": [
+          "command_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "properties": {
+              "paths": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command_type": {
+            "const": "submit_candidate"
+          }
+        },
+        "required": [
+          "command_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "properties": {
+              "base_sha": {
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "head_sha": {
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "changed_paths": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "candidate_digest": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "evidence_digests": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "base_sha",
+              "head_sha",
+              "changed_paths"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command_type": {
+            "const": "request_handoff"
+          }
+        },
+        "required": [
+          "command_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "properties": {
+              "successor_principal": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "successor_hint": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command_type": {
+            "const": "accept_handoff"
+          }
+        },
+        "required": [
+          "command_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": [
+              "handoff_token"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command_type": {
+            "const": "propose_resolution"
+          }
+        },
+        "required": [
+          "command_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": [
+              "conflict"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command_type": {
+            "const": "report_progress"
+          }
+        },
+        "required": [
+          "command_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "properties": {
+              "note": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "note"
+            ]
+          }
+        }
+      }
     }
   ]
 }

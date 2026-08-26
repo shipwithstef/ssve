@@ -1,154 +1,50 @@
 {
- "$schema": "https://json-schema.org/draft/2020-12/schema",
- "$id": "https://seriousvibecoding.dev/schemas/runtime-journal-event-v2.schema.json",
- "title": "SVC Runtime Journal Event v2",
- "type": "object",
- "required": [
-  "schema_version",
-  "run_id",
-  "sequence",
-  "type",
-  "observed_at",
-  "idempotency_key",
-  "generation_bindings",
-  "previous_event_digest",
-  "payload",
-  "event_digest"
- ],
- "properties": {
-  "schema_version": {
-   "type": "integer",
-   "enum": [
-    2
-   ]
-  },
-  "run_id": {
-   "type": "string",
-   "minLength": 1
-  },
-  "sequence": {
-   "type": "integer",
-   "minimum": 1
-  },
-  "type": {
-   "type": "string",
-   "enum": [
-    "RUN_COMPILED",
-    "RUN_STARTED",
-    "RUN_RESUMED",
-    "RUN_STOPPED",
-    "DELIVERY_BLOCKED",
-    "DELIVERY_UNBLOCKED",
-    "TASK_LEASE_ACQUIRED",
-    "TASK_HEARTBEAT",
-    "TASK_LEASE_EXPIRED",
-    "TASK_LEASE_RECLAIMED",
-    "TASK_LEGACY_ACCEPTED_IMPORTED",
-    "TASK_ATTEMPT_FAILED",
-    "TASK_DISPATCHED",
-    "VALIDATOR_STARTED",
-    "VALIDATOR_FINISHED",
-    "EFFECT_AUTHORIZED",
-    "EFFECT_EXECUTED",
-    "EFFECT_COMPENSATED",
-    "EVIDENCE_PRODUCED",
-    "EVIDENCE_CONSUMED",
-    "EVIDENCE_INVALIDATED",
-    "CAUSAL_PROGRESS_RECORDED",
-    "TASK_ACCEPTED",
-    "TASK_CONSUMED",
-    "CANDIDATE_FROZEN",
-    "FINAL_REVIEW_RECORDED",
-    "FINAL_SHA_BOUND",
-    "ROLLBACK_READY",
-    "RELEASE_STARTED",
-    "PRODUCTION_RELEASED",
-    "LIVE_VERIFIED",
-    "ROLLBACK_EXECUTED",
-    "OBSERVATION_SCHEDULED",
-    "OUTCOME_OBSERVED",
-    "NEXT_DECISION_RECORDED",
-    "LEARNING_PROMOTED",
-    "PROJECTION_EMITTED",
-    "SESSION_REGISTERED",
-    "CANDIDATE_SUBMITTED",
-    "HANDOFF_PREPARED",
-    "HANDOFF_ACCEPTED",
-    "TASK_CANCELLED",
-    "CONFLICT_RESOLUTION_PROPOSED",
-    "ACK_STATE_RECORDED",
-    "CHECKPOINT_SIGNED"
-   ]
-  },
-  "task_id": {
-   "type": [
-    "string",
-    "null"
-   ]
-  },
-  "observed_at": {
-   "type": "string"
-  },
-  "idempotency_key": {
-   "type": "string",
-   "minLength": 1
-  },
-  "generation_bindings": {
-   "type": "object",
-   "required": [
-    "protocol_generation_digest",
-    "product_generation_digest",
-    "context_generation_digest",
-    "concern_generation_digest",
-    "control_generation_digest",
-    "authority_generation_digest",
-    "layer_inventory_digest"
-   ],
-   "additionalProperties": false,
-   "properties": {
-    "protocol_generation_digest": {
-     "type": "string",
-     "pattern": "^[a-f0-9]{64}$"
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seriousvibecoding.dev/schemas/runtime-journal-event-v2.schema.json",
+  "title": "SVC Runtime Journal Event v2",
+  "type": "object",
+  "required": ["schema_version", "run_id", "sequence", "type", "observed_at", "idempotency_key", "generation_bindings", "previous_event_digest", "payload", "event_digest"],
+  "properties": {
+    "schema_version": { "type": "integer", "enum": [2] },
+    "run_id": { "type": "string", "minLength": 1 },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "type": {
+      "type": "string",
+      "enum": [
+        "RUN_COMPILED", "RUN_STARTED", "RUN_RESUMED", "RUN_STOPPED", "DELIVERY_BLOCKED", "DELIVERY_UNBLOCKED",
+        "TASK_LEASE_ACQUIRED", "TASK_HEARTBEAT", "TASK_LEASE_EXPIRED", "TASK_LEASE_RECLAIMED", "TASK_LEGACY_ACCEPTED_IMPORTED", "TASK_ATTEMPT_FAILED",
+        "TASK_DISPATCHED", "VALIDATOR_STARTED", "VALIDATOR_FINISHED", "EFFECT_AUTHORIZED",
+        "EFFECT_EXECUTED", "EFFECT_COMPENSATED", "EVIDENCE_PRODUCED", "EVIDENCE_CONSUMED",
+        "EVIDENCE_INVALIDATED", "CAUSAL_PROGRESS_RECORDED", "TASK_ACCEPTED", "TASK_CONSUMED", "CANDIDATE_FROZEN",
+        "FINAL_REVIEW_RECORDED", "FINAL_SHA_BOUND", "ROLLBACK_READY", "RELEASE_STARTED",
+        "PRODUCTION_RELEASED", "LIVE_VERIFIED", "ROLLBACK_EXECUTED", "OBSERVATION_SCHEDULED",
+        "OUTCOME_OBSERVED", "NEXT_DECISION_RECORDED", "LEARNING_PROMOTED", "PROJECTION_EMITTED"
+      ]
     },
-    "product_generation_digest": {
-     "type": "string",
-     "pattern": "^[a-f0-9]{64}$"
+    "task_id": { "type": ["string", "null"] },
+    "observed_at": { "type": "string" },
+    "idempotency_key": { "type": "string", "minLength": 1 },
+    "generation_bindings": {
+      "type": "object",
+      "required": [
+        "protocol_generation_digest", "product_generation_digest", "context_generation_digest",
+        "concern_generation_digest", "control_generation_digest", "authority_generation_digest",
+        "layer_inventory_digest"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "protocol_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "product_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "context_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "concern_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "control_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "authority_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "layer_inventory_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
     },
-    "context_generation_digest": {
-     "type": "string",
-     "pattern": "^[a-f0-9]{64}$"
-    },
-    "concern_generation_digest": {
-     "type": "string",
-     "pattern": "^[a-f0-9]{64}$"
-    },
-    "control_generation_digest": {
-     "type": "string",
-     "pattern": "^[a-f0-9]{64}$"
-    },
-    "authority_generation_digest": {
-     "type": "string",
-     "pattern": "^[a-f0-9]{64}$"
-    },
-    "layer_inventory_digest": {
-     "type": "string",
-     "pattern": "^[a-f0-9]{64}$"
-    }
-   }
+    "previous_event_digest": { "type": ["string", "null"] },
+    "payload": { "type": "object" },
+    "event_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
   },
-  "previous_event_digest": {
-   "type": [
-    "string",
-    "null"
-   ]
-  },
-  "payload": {
-   "type": "object"
-  },
-  "event_digest": {
-   "type": "string",
-   "pattern": "^[a-f0-9]{64}$"
-  }
- },
- "additionalProperties": false
+  "additionalProperties": false
 }

@@ -46,6 +46,7 @@ function parseArgs(argv) {
     else if (argv[i] === "--wi") options.wi = argv[++i];
     else if (argv[i] === "--json") options.json = true;
     else if (argv[i] === "--handoff-token") options.handoffToken = argv[++i];
+    else if (argv[i] === "--successor") options.successor = argv[++i];
     else if (argv[i] === "--conflict-json") options.conflictJson = argv[++i];
     else if (argv[i] === "--note") options.note = argv[++i];
     else if (argv[i] === "--base-sha") options.baseSha = argv[++i];
@@ -73,7 +74,7 @@ function readCommand(options, verb) {
 }
 
 // Canonical command construction for protocol verbs driven by flags.
-function buildCommand(options, verb, state) {
+function buildCommand(options, verb, state, pinned = {}) {
   const verbMap = {
     register: "register_session",
     acquire: "acquire_task",
@@ -91,6 +92,7 @@ function buildCommand(options, verb, state) {
   if (!commandType) return null;
   const payload = {};
   if (verb === "handoff-accept") payload.handoff_token = options.handoffToken ?? "";
+  if (verb === "handoff-prepare") payload.successor_principal = options.successor ?? null;
   if (verb === "resolve") payload.conflict = JSON.parse(options.conflictJson ?? "{}");
   if (verb === "progress") payload.note = options.note ?? "";
   if (verb === "submit") {
@@ -110,8 +112,8 @@ function buildCommand(options, verb, state) {
     command_type: commandType,
     actor: {
       principal_id: options.principal ?? "",
-      host: options.host ?? "opencode",
-      model_family: options.modelFamily ?? "opencode-family",
+      host: pinned.host ?? options.host ?? "opencode",
+      model_family: pinned.model_family ?? options.modelFamily ?? "opencode-family",
       session_id: options.session ?? "cli-session",
     },
     lease_id: options.leaseId ?? null,
@@ -180,7 +182,7 @@ function main() {
       break;
   }
 
-  const coordinator = new SwarmCoordinator(options.stateRoot);
+  const coordinator = new SwarmCoordinator(options.stateRoot, { worktreeRoot: options.worktree ?? process.cwd() });
   // Conflict prevention at submission: recompute claim overlap against every other
   // active lease using the deterministic ladder; protected surfaces refuse outright.
   coordinator.registerValidator((candidate) => {
@@ -193,7 +195,8 @@ function main() {
   switch (verb) {
     case "provision": {
       if (!options.principal) die("provision requires --principal", 2);
-      const result = coordinator.provisionAdapter(options.principal, { host: options.host, model_family: options.modelFamily });
+      const result = withJournalLock(coordinator.journalPath, () =>
+        coordinator.provisionAdapter(options.principal, { host: options.host, model_family: options.modelFamily }));
       process.stdout.write(`${JSON.stringify(result)}\n`);
       return 0;
     }
@@ -228,7 +231,7 @@ function main() {
         const state = replayed.state;
         const receipt = {
           schema_version: 1,
-          receipt_id: crypto.randomUUID(),
+          receipt_id: uuid7ForCli(),
           receipt_kind: "checkpoint_receipt",
           command_id: null,
           run_id: state.run_id ?? "default-run",
@@ -269,9 +272,22 @@ function main() {
         process.stdout.write(`${JSON.stringify({ verified: false, reason: "unknown_keyid" })}\n`);
         return 1;
       }
-      const result = verifyEnvelope(row.public_key, envelope);
-      process.stdout.write(`${JSON.stringify({ verified: result.verified, keyid, principal: row.purpose })}\n`);
-      return result.verified ? 0 : 1;
+      const sig = verifyEnvelope(row.public_key, envelope);
+      if (!sig.verified) {
+        process.stdout.write(`${JSON.stringify({ verified: false, reason: "signature_invalid" })}\n`);
+        return 1;
+      }
+      // purpose binding: the key's allowed kinds must cover this envelope's receipt
+      let decoded = null;
+      try { decoded = JSON.parse(sig.payloadBytes.toString("utf8")); } catch {}
+      const kind = decoded?.receipt_kind ?? null;
+      const allowed = Array.isArray(row.allowed_receipt_kinds) ? row.allowed_receipt_kinds : [];
+      if (envelope.payloadType !== RECEIPT_PAYLOAD_TYPE || (allowed.length > 0 && kind && !allowed.includes(kind))) {
+        process.stdout.write(`${JSON.stringify({ verified: false, reason: "wrong_purpose_or_kind", kind })}\n`);
+        return 1;
+      }
+      process.stdout.write(`${JSON.stringify({ verified: true, keyid, principal: row.purpose, kind })}\n`);
+      return 0;
     }
     default:
       break;
@@ -283,13 +299,30 @@ function main() {
     const events = readJournal(coordinator.journalPath);
     const replayed = replay(events);
     if (!replayed.valid) die(`replay invalid: ${replayed.errors.join("; ")}`);
-    command = buildCommand(options, verb, replayed.state);
+    // identity claims resolve from the trust registry's pinned row first; flag
+    // values only fill fields the registry does not pin (EXEC-R2-003 binding).
+    const pinned = coordinator.registry().keys.find(k => k.principal_id === options.principal) ?? {};
+    command = buildCommand(options, verb, replayed.state, pinned);
     if (!command) {
       process.stderr.write(`${USAGE}\n`);
       die(`unknown verb ${verb}`, 2);
     }
   }
-  const result = coordinator.handle(command);
+  // EXEC-R2-001: every mutating verb crosses the signed-envelope boundary.
+  const principalId = command.actor?.principal_id;
+  let adapterKey = null;
+  if (principalId) {
+    const keyFile = path.join(options.stateRoot, "keys", `${principalId}.json`);
+    try { adapterKey = JSON.parse(fs.readFileSync(keyFile, "utf8")).private_key; } catch { adapterKey = null; }
+  }
+  let result;
+  if (adapterKey) {
+    result = coordinator.handleEnvelope(coordinator.constructor.envelopeForCommand(command, adapterKey));
+  } else {
+    // no provisioned key for this principal: fail closed with the same verdict the
+    // envelope check would produce, without pretending to sign.
+    result = coordinator.handleEnvelope({ payloadType: "application/vnd.svc.swarm-command+json;version=1", payload: Buffer.from(JSON.stringify(command)).toString("base64"), signatures: [{ keyid: "unknown", sig: "" }] });
+  }
   process.stdout.write(`${JSON.stringify({
     accepted: Boolean(result.accepted),
     replay: Boolean(result.replay),

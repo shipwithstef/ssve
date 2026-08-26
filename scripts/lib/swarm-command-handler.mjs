@@ -91,6 +91,11 @@ export function atomicWriteJson(file, value, mode = 0o600) {
     fs.closeSync(fd);
   }
   fs.renameSync(temp, file);
+  // crash-durable rename: the directory entry itself must be durable too (EXEC-R2-010)
+  try {
+    const dirFd = fs.openSync(path.dirname(file), fs.constants.O_RDONLY);
+    try { fs.fsyncSync(dirFd); } finally { fs.closeSync(dirFd); }
+  } catch { /* directory fsync unsupported on this filesystem */ }
 }
 
 // --- bootstrap (rerun-safe, crash-safe) --------------------------------------
@@ -254,11 +259,25 @@ function applyToState(state, event) {
     case "HANDOFF_PREPARED": {
       const token = event.payload.handoff_token;
       state.handoffs[token] = { from_principal: event.actor.principal_id, task_id: event.task_id, consumed: false, target_generation: event.authority_generation + 1, for_principal: event.payload.successor_principal ?? null };
+      const task = state.tasks[event.task_id];
+      if (task) task.state = "HANDOFF_PREPARED";
       break;
     }
     case "HANDOFF_ACCEPTED": {
       const handoff = state.handoffs[event.payload.handoff_token];
-      if (handoff) handoff.consumed = true;
+      if (handoff) {
+        handoff.consumed = true;
+        const task = state.tasks[handoff.task_id];
+        if (task?.lease) {
+          task.lease = {
+            lease_id: `handoff-${event.sequence}`,
+            principal_id: event.actor.principal_id,
+            acquired_at: event.observed_at,
+            expires_at: event.payload.renewed_until ?? task.lease.expires_at,
+          };
+          task.attempt_id = `${task.attempt_id}-h${event.sequence}`;
+        }
+      }
       state.authority_generation = event.authority_generation + 1;
       break;
     }
@@ -344,9 +363,29 @@ function clearAbandonedLock(lockDir) {
   } catch { return false; }
 }
 
+import { execFileSync } from "node:child_process";
+
 export class SwarmCoordinator {
-  constructor(stateRoot) {
+  constructor(stateRoot, options = {}) {
     this.root = stateRoot;
+    // Worktree against which Git facts are INDEPENDENTLY recomputed (EXEC-R2-002).
+    // Worker-claimed base/head/digests are claims; only recomputed values are authority.
+    this.worktreeRoot = options.worktreeRoot ?? null;
+    if (this.worktreeRoot) {
+      const git = (args) => execFileSync("git", ["-C", this.worktreeRoot, ...args], { encoding: "utf8" }).trim();
+      this._git = git;
+      this.recomputedFacts = {
+        head_sha: (() => { try { return git(["rev-parse", "HEAD"]); } catch { return null; } })(),
+        changed_paths: (() => {
+          try { return git(["diff", "--name-only"]).split("\n").filter(Boolean); } catch { return []; }
+        })(),
+        diff_digest: (() => {
+          try {
+            return `sha256:${crypto.createHash("sha256").update(git(["diff", "--binary", "HEAD"])).digest("hex")}`;
+          } catch { return null; }
+        })(),
+      };
+    }
     this.journalPath = path.join(stateRoot, "journal.jsonl");
     this.registryPath = path.join(stateRoot, "trust-registry.json");
     this.keysDir = path.join(stateRoot, "keys");
@@ -410,12 +449,16 @@ export class SwarmCoordinator {
   }
 
   revoke(principalId, atSequence) {
-    const registry = this.registry();
-    const row = registry.keys.find(k => k.principal_id === principalId);
-    if (!row) throw new Error(`no registry row for ${principalId}`);
-    row.revoked_at_sequence = atSequence;
-    this.signAndPersistRegistry(registry);
-    return { revoked: true, principal_id: principalId, revoked_at_sequence: atSequence };
+    // single-writer: registry mutations serialize through the same journal lock
+    // as command appends so two operators cannot interleave registry_version bumps
+    return withJournalLock(this.journalPath, () => {
+      const registry = this.registry();
+      const row = registry.keys.find(k => k.principal_id === principalId);
+      if (!row) throw new Error(`no registry row for ${principalId}`);
+      row.revoked_at_sequence = atSequence;
+      this.signAndPersistRegistry(registry);
+      return { revoked: true, principal_id: principalId, revoked_at_sequence: atSequence };
+    });
   }
 
   keyStatus(registry, principalId, atSequence) {
@@ -431,6 +474,7 @@ export class SwarmCoordinator {
   }
 
   signAndPersistRegistry(registry) {
+    registry.registry_version = (registry.registry_version ?? 0) + 1;
     delete registry.root_signature;
     const rootPrivate = JSON.parse(fs.readFileSync(path.join(this.keysDir, "root.json"), "utf8")).private_key;
     registry.root_signature = crypto.sign(null, registryBodyBytes(registry), crypto.createPrivateKey(rootPrivate)).toString("base64");
@@ -447,11 +491,21 @@ export class SwarmCoordinator {
   }
 
   verifyCommandEnvelope(envelope, expectedPrincipalId) {
-    let parsed;
+    // DSSE profile binding (EXEC-R2-001): only the command payload type is a
+    // valid mutation envelope, and the signed bytes must be the canonical JCS
+    // serialization of the parsed command — noncanonical encodings fail closed.
+    if (envelope?.payloadType !== COMMAND_PAYLOAD_TYPE_IMPORT) {
+      return { ok: false, reason_code: "signature_invalid", note: "envelope is not a swarm command payload" };
+    }
+    let raw;
     try {
-      parsed = JSON.parse(Buffer.from(envelope.payload, "base64").toString("utf8"));
+      raw = Buffer.from(envelope.payload, "base64");
+      var parsed = JSON.parse(raw.toString("utf8"));
     } catch {
       return { ok: false, reason_code: "schema_invalid", note: "envelope payload is not JSON" };
+    }
+    if (!raw.equals(Buffer.from(jcs(parsed), "utf8"))) {
+      return { ok: false, reason_code: "schema_invalid", note: "signed payload bytes are not canonical JCS" };
     }
     const registry = this.registry();
     const actorPrincipal = parsed?.actor?.principal_id;
@@ -539,6 +593,34 @@ export class SwarmCoordinator {
       }
     }
 
+    // Validity windows gate LIVE commands — including registration (+/-300s skew)
+    const keyRow = registry.keys.find(k => k.principal_id === command.actor.principal_id);
+    if (keyRow) {
+      const nowMs = Date.now();
+      const skew = 300_000;
+      if (keyRow.valid_from && nowMs < Date.parse(keyRow.valid_from) - skew) {
+        return this.decide(command, state, "key_not_valid", "session key not yet inside its validity window", events);
+      }
+      if (keyRow.expires_at && nowMs > Date.parse(keyRow.expires_at) + skew) {
+        return this.decide(command, state, "key_expired", "session key past expiry window", events);
+      }
+      // operator-pinned identity binding: a provisioned row that pins host,
+      // model_family, or session_id only serves commands claiming the same values
+      for (const field of ["host", "model_family", "session_id"]) {
+        if (keyRow[field] != null && command.actor[field] !== keyRow[field]) {
+          return this.decide(command, state, "actor_binding_mismatch", `registry pins ${field}=${keyRow[field]}, command claims ${command.actor[field] ?? "none"}`, events);
+        }
+      }
+    }
+    if (!isRegister) {
+      // declared capabilities must cover the operation family
+      const caps = Array.isArray(session?.capabilities) ? session.capabilities : [];
+      const needsCap = { acquire_task: "acquire", heartbeat_task: "heartbeat", report_progress: "progress", submit_candidate: "submit", request_cancel: "cancel", propose_resolution: "resolve", request_handoff: "handoff", accept_handoff: "handoff", ack_state: "ack" }[command.command_type];
+      if (needsCap && caps.length > 0 && !caps.includes(needsCap)) {
+        return this.decide(command, state, "capability_denied", `session lacks '${needsCap}' capability`, events);
+      }
+    }
+
     if (command.authority_generation !== state.authority_generation) {
       return this.decide(command, state, "stale_generation", `command generation ${command.authority_generation} vs current ${state.authority_generation}`, events);
     }
@@ -587,6 +669,10 @@ export class SwarmCoordinator {
     if (command.command_type === "accept_handoff") {
       const handoff = state.handoffs[command.payload.handoff_token];
       if (!handoff || handoff.consumed) return this.decide(command, state, "schema_invalid", "handoff token already consumed or unknown", events);
+      // token/task/successor must all bind atomically (EXEC-R2-004)
+      if (!command.task_id || handoff.task_id !== command.task_id) {
+        return this.decide(command, state, "schema_invalid", `handoff token is bound to task ${handoff.task_id}, not ${command.task_id ?? "none"}`, events);
+      }
     }
 
     // attempt state machine gate for task-scoped commands
@@ -595,8 +681,12 @@ export class SwarmCoordinator {
     if (transitionName && command.task_id) {
       const task = state.tasks[command.task_id];
       const currentAttempt = task ? task.state : "PLANNED";
-      if (currentAttempt === "PLANNED" && command.command_type === "acquire_task") {
-        // always legal: creates the lease
+      if (command.command_type === "acquire_task") {
+        // fresh acquisition OR reclaim of an EXPIRED lease (EXEC-R2-008):
+        // a stranded task becomes acquirable again once its TTL lapses.
+        if (task?.lease && Date.parse(task.lease.expires_at) >= Date.now()) {
+          return this.decide(command, state, "lease_missing", "active unexpired lease held by another attempt", events);
+        }
       } else if (task) {
         const allowed = ATTEMPT_TRANSITIONS[task.state] ?? {};
         if (!(transitionName in allowed)) {
@@ -623,9 +713,13 @@ export class SwarmCoordinator {
   }
 
   buildAcceptance(command, state, event, reasonCode, seqAfter) {
+    // Deterministic binding: sequences come from the EVENT, never from live state,
+    // so a crash-window regeneration reproduces byte-identical receipts (EXEC-R2-005).
+    const seqAfterFinal = event ? event.sequence : seqAfter;
+    const seqBeforeFinal = event ? Math.max(0, event.sequence - 1) : state.sequence;
     const receipt = {
       schema_version: 1,
-      receipt_id: this.derivedReceiptId(event.command_digest ?? canonicalDigest(command), event.event_digest ?? "no-event"),
+      receipt_id: this.derivedReceiptId(event?.command_digest ?? canonicalDigest(command), event?.event_digest ?? "no-event"),
       receipt_kind: reasonCode === "ok" ? "acceptance_receipt" : "rejection_receipt",
       command_id: command.command_id ?? null,
       run_id: command.run_id,
@@ -635,17 +729,21 @@ export class SwarmCoordinator {
       actor_principal: command.actor.principal_id,
       signer_principal: "svc-swarm-coordinator",
       lease_id: command.lease_id ?? null,
-      authority_generation: state.authority_generation,
+      authority_generation: event?.authority_generation ?? state.authority_generation,
       coordinator_epoch: state.coordinator_epoch,
-      sequence_before: state.sequence,
-      sequence_after: seqAfter,
+      sequence_before: seqBeforeFinal,
+      sequence_after: seqAfterFinal,
       base_sha: event?.payload?.candidate?.base_sha ?? null,
       head_sha: event?.payload?.candidate?.head_sha ?? null,
       candidate_digest: event?.payload?.candidate?.candidate_digest ?? null,
-      submission_digest: event?.payload?.candidate?.submission_digest ?? null,
+      // every acceptance binds the digest of the submitted command it accepts
+      // (submit_candidate carries its own; other kinds bind their canonical bytes)
+      submission_digest: event?.payload?.candidate?.submission_digest ?? event?.command_digest ?? null,
       changed_paths_digest: event?.payload?.candidate?.changed_paths_digest ?? null,
       evidence_digests: event?.payload?.candidate?.evidence_digests ?? [],
-      prior_receipt_digest: state.last_event_digest,
+      // bind to the ORIGINAL event's predecessor so a crash-window regeneration
+      // after later appends still reproduces byte-identical receipts (EXEC-R2-005)
+      prior_receipt_digest: event ? (event.previous_event_digest ?? null) : state.last_event_digest,
       event_digest: event?.event_digest ?? null,
       verdict: reasonCode === "ok" ? "ACCEPTED" : "REJECTED",
       reason_code: reasonCode,
@@ -688,12 +786,17 @@ export class SwarmCoordinator {
       base_sha: null, head_sha: null, candidate_digest: null, submission_digest: null,
       changed_paths_digest: null, evidence_digests: [],
       prior_receipt_digest: state?.last_event_digest ?? null,
-      event_digest: null,
       verdict: "REJECTED",
       reason_code: reasonCode === "" ? "schema_invalid" : reasonCode,
       issued_at: new Date().toISOString(),
       traceparent: command.traceparent ?? "",
     };
+    // rejection branch forbids event_digest entirely (`not: required`)
+    delete receipt.event_digest;
+    const rejectionErrors = validate(RECEIPT_SCHEMA, receipt).errors;
+    if (rejectionErrors.length) {
+      throw Object.assign(new Error(`rejection receipt failed schema: ${rejectionErrors[0]}`), { code: "RECEIPT_SCHEMA_INVALID" });
+    }
     const envelope = signReceipt(this.coordKey.private_key, receipt);
     return { receipt, envelope };
   }
@@ -725,27 +828,53 @@ export class SwarmCoordinator {
         // resolver before any acceptance.
         const candidatePaths = Array.isArray(command.payload.changed_paths) ? command.payload.changed_paths : [];
         for (const [otherTaskId, otherTask] of Object.entries(state.tasks)) {
-          if (otherTaskId === command.task_id || !otherTask.claim?.paths?.length || !otherTask.lease) continue;
-          if (state.tasks[command.task_id]?.lease && state.tasks[command.task_id].lease.principal_id === otherTask.lease.principal_id && otherTaskId === command.task_id) continue;
+          if (otherTaskId === command.task_id) continue;
+          if (!otherTask.claim?.paths?.length) continue;
+          const otherPrincipal = otherTask.lease?.principal_id ?? otherTask.claim.principal_id;
+          if (!otherPrincipal) continue;
           const verdict = resolvePair(
             { principal_id: command.actor.principal_id, task_id: command.task_id ?? "?", paths: candidatePaths, resources: [], authority_generation: state.authority_generation, base_sha: command.payload.base_sha ?? null },
-            { principal_id: otherTask.lease.principal_id, task_id: otherTaskId, paths: otherTask.claim.paths, resources: otherTask.claim.resources ?? [], authority_generation: state.authority_generation, base_sha: otherTask.claim.base_sha ?? null },
+            { principal_id: otherPrincipal, task_id: otherTaskId, paths: otherTask.claim.paths, resources: otherTask.claim.resources ?? [], authority_generation: state.authority_generation, base_sha: otherTask.claim.base_sha ?? null },
           );
           if (verdict.outcome !== "INTEGRATE" && verdict.outcome !== "MERGE_WITH_VALIDATORS") {
             return { accepted: false, conflicted: true, reason_code: verdict.level === 5 ? "protected_surface" : "conflict_block", ladder: verdict, receipt: this.buildRejectionOnly(command, state, verdict.level === 5 ? "protected_surface" : "conflict_block", `ladder L${verdict.level} ${verdict.outcome}: ${verdict.reason}`).envelope };
           }
         }
-        // independent recomputation happens HERE, not from worker claims
+        // Independent recomputation happens HERE, not from worker claims (EXEC-R2-002):
+        // a bound coordinator refuses submissions it cannot verify against the real
+        // worktree; claimed digests must equal recomputed ones, never the reverse.
+        const claimedPaths = Array.isArray(command.payload.changed_paths) ? command.payload.changed_paths : [];
+        let recomputationFailures = [];
+        if (!this.worktreeRoot || !this.recomputedFacts.head_sha) {
+          return { accepted: false, conflicted: true, reason_code: "worktree_unbound", failed_validators: ["worktree-binding"], receipt: this.buildRejectionOnly(command, state, "worktree_unbound", "coordinator has no verified worktree binding; candidate facts cannot be recomputed").envelope };
+        }
+        {
+          const claimedHead = command.payload.head_sha ?? null;
+          if (claimedHead && claimedHead !== this.recomputedFacts.head_sha) {
+            recomputationFailures.push(`head_sha claim ${claimedHead} != recomputed ${this.recomputedFacts.head_sha}`);
+          }
+          const realPaths = new Set(this.recomputedFacts.changed_paths);
+          const undeclared = claimedPaths.filter((p2) => !realPaths.has(p2));
+          if (claimedPaths.length && undeclared.length) {
+            recomputationFailures.push(`claimed paths not in actual diff: ${undeclared.join(",")}`);
+          }
+          const claimedDigest = command.payload.candidate_digest ?? null;
+          if (claimedDigest && this.recomputedFacts.diff_digest && claimedDigest !== this.recomputedFacts.diff_digest) {
+            recomputationFailures.push(`candidate_digest claim ${claimedDigest} != recomputed ${this.recomputedFacts.diff_digest}`);
+          }
+        }
         const candidate = {
           base_sha: command.payload.base_sha ?? null,
-          head_sha: command.payload.head_sha ?? null,
-          candidate_digest: command.payload.candidate_digest ?? null,
+          head_sha: this.recomputedFacts.head_sha,
+          candidate_digest: command.payload.candidate_digest ?? this.recomputedFacts.diff_digest,
           submission_digest: canonical,
-          changed_paths: Array.isArray(command.payload.changed_paths) ? command.payload.changed_paths : [],
-          changed_paths_digest: canonicalDigest({ paths: command.payload.changed_paths ?? [] }),
+          changed_paths: claimedPaths,
+          changed_paths_digest: canonicalDigest({ paths: claimedPaths }),
           evidence_digests: Array.isArray(command.payload.evidence_digests) ? command.payload.evidence_digests : [],
+          recomputed_head_sha: this.recomputedFacts?.head_sha ?? null,
         };
-        const failures = [];
+        void recomputationFailures;
+        const failures = recomputationFailures.map((note) => `recomputation:${note}`);
         for (const validator of this.validators) {
           try {
             const result = validator(candidate, command, state);
@@ -763,11 +892,11 @@ export class SwarmCoordinator {
       }
       case "request_handoff":
         type = "HANDOFF_PREPARED";
-        payload = { handoff_token: crypto.randomBytes(24).toString("hex"), successor_hint: command.payload.successor_hint ?? null };
+        payload = { handoff_token: crypto.randomBytes(24).toString("hex"), successor_principal: command.payload.successor_principal ?? command.payload.successor_hint ?? null };
         break;
       case "accept_handoff":
         type = "HANDOFF_ACCEPTED";
-        payload = { handoff_token: command.payload.handoff_token };
+        payload = { handoff_token: command.payload.handoff_token, renewed_until: new Date(Date.now() + this.leaseMs).toISOString() };
         break;
       case "request_cancel":
         type = "TASK_CANCELLED";

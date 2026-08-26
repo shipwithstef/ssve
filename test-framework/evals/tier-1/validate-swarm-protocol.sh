@@ -99,7 +99,7 @@ grep -q '"verified":true' "$TMP/verify.json" || fail "verification verdict wrong
 SR4="$TMP/state4"
 node "$SWARM" init --state-root "$SR4" > /dev/null
 node "$SWARM" provision --state-root "$SR4" --principal w1 --host codex > /dev/null
-node "$SWARM" register --state-root "$SR4" --principal w1 --run-id dup > /dev/null
+node "$SWARM" register --state-root "$SR4" --principal w1 --host codex --model-family openai --run-id dup > /dev/null
 node "$SWARM" acquire --state-root "$SR4" --principal w1 --task-id dt --run-id dup > "$TMP/acq.json"
 LEASE=$(node -e 'const fs=require("fs");void fs; process.exit(0)' )
 SEQ_AFTER_ACQ=$(node "$SWARM" status --state-root "$SR4" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).sequence))')
@@ -183,5 +183,136 @@ if (forgedResult.reason_code !== "signature_invalid") { console.error("expected 
 process.exit(0);
 JS
 
-echo "PASS(validate-swarm-protocol): schema/CAS/idempotency/fail-closed/replay-corruption/checkpoint + run-binding/ownership/heartbeat-renewal/signed-envelopes verified"
-echo "SCOPE NOTE: adjudication loop capping, remote transport, and multi-host shadow runs are OUT of this gate's scope (follow-up WIs)"
+# lease guard: an active unexpired lease blocks re-acquire (R2-008 precondition)
+SR6="$TMP/state6"
+node "$SWARM" init --state-root "$SR6" > /dev/null
+node "$SWARM" provision --state-root "$SR6" --principal r1p --host codex > /dev/null
+node "$SWARM" provision --state-root "$SR6" --principal r2p --host grok > /dev/null
+node "$SWARM" register --state-root "$SR6" --principal r1p --host codex --model-family openai --run-id rc > /dev/null
+node "$SWARM" register --state-root "$SR6" --principal r2p --host grok --model-family xai --run-id rc > /dev/null
+node "$SWARM" acquire --state-root "$SR6" --principal r1p --task-id rt --run-id rc > /dev/null
+set +e
+node "$SWARM" acquire --state-root "$SR6" --principal r2p --task-id rt --run-id rc > "$TMP/reject-acq.json" 2>&1
+REJ_RC=$?
+set -e
+[[ $REJ_RC -eq 3 ]] || fail "active unexpired lease should block re-acquire"
+grep -qE "lease_missing|capability_denied" "$TMP/reject-acq.json" || fail "active-lease rejection verdict missing"
+
+node --input-type=module - "$TMP" <<'JS' || fail "reclaim probe failed"
+import fs from "node:fs";
+const handler = await import(new URL("file://" + process.cwd() + "/scripts/lib/swarm-command-handler.mjs").href);
+const root = process.argv[2] + "/reclaim-state";
+fs.rmSync(root, { recursive: true, force: true });
+fs.mkdirSync(root, { recursive: true, mode: 0o700 });
+handler.initStateRoot(root);
+const mk = (principal, type, seq, extra = {}) => ({
+  schema_version: 1,
+  command_id: "018f0000-0000-7000-8000-" + String(Math.floor(Math.random() * 0xfffffffffffff)).padStart(12, "0"),
+  run_id: "rr", command_type: type, task_id: type === "register_session" ? null : "trt",
+  actor: { principal_id: principal, host: principal === "w2" ? "grok" : "codex", model_family: "fam", session_id: principal },
+  authority_generation: 0, expected_sequence: seq, idempotency_key: `rk-${principal}-${type}-${seq}-${Math.random()}`,
+  payload: extra,
+});
+const coord = new handler.SwarmCoordinator(root);
+coord.provisionAdapter("w1", { host: "codex" });
+coord.provisionAdapter("w2", { host: "grok" });
+if (!coord.handle(mk("w1", "register_session", 0)).accepted) process.exit(1);
+if (!coord.handle(mk("w2", "register_session", 1)).accepted) process.exit(1);
+const acq = coord.handle(mk("w1", "acquire_task", 2));
+if (!acq.accepted) process.exit(1);
+// second acquire while ACTIVE lease held -> must reject (lease guard)
+const blocked = coord.handle(mk("w2", "acquire_task", 3));
+if (blocked.accepted) process.exit(1);
+// simulate TTL lapse directly in replay state by rewriting the journal lease expiry,
+// then prove digest-chain break is DETECTED (integrity over silent takeover):
+const jp = root + "/journal.jsonl";
+const lines = fs.readFileSync(jp, "utf8").trimEnd().split("\n").map((l) => JSON.parse(l));
+for (const e of lines) if (e.type === "TASK_LEASE_ACQUIRED") e.payload.lease.expires_at = "2020-01-01T00:00:00.000Z";
+fs.writeFileSync(jp, lines.map((e) => JSON.stringify(e)).join("\n") + "\n");
+const replayed = handler.replay(handler.readJournal(jp));
+if (replayed.valid) process.exit(1); // tamper must be caught — reclaim uses fresh attempts, not edits
+process.exit(0);
+JS
+
+# handoff transfers ownership atomically (EXEC-R2-004): prepare binds successor,
+# accept installs a successor-owned successor lease and bumps authority_generation
+SRH="$TMP/stateh"
+node "$SWARM" init --state-root "$SRH" > /dev/null
+node "$SWARM" provision --state-root "$SRH" --principal hw1 --host codex > /dev/null
+node "$SWARM" provision --state-root "$SRH" --principal hw2 --host grok > /dev/null
+node "$SWARM" register --state-root "$SRH" --principal hw1 --host codex --model-family openai --run-id hr > /dev/null
+node "$SWARM" register --state-root "$SRH" --principal hw2 --host grok --model-family xai --run-id hr > /dev/null
+node "$SWARM" acquire --state-root "$SRH" --principal hw1 --task-id ht --run-id hr > /dev/null
+set +e
+node "$SWARM" "handoff-accept" --state-root "$SRH" --principal hw2 --task-id WRONGTASK --run-id hr \
+  --handoff-token deadbeef > "$TMP/handoff-wrong.json"
+WRONG_RC=$?
+set -e
+[[ $WRONG_RC -eq 3 ]] || fail "handoff accept without valid token must fail"
+node "$SWARM" "handoff-prepare" --state-root "$SRH" --principal hw1 --task-id ht --run-id hr --successor hw2 > /dev/null
+HANDOFF_TOKEN=$(python3 -c "
+import json
+lines=[json.loads(l) for l in open('$SRH/journal.jsonl')]
+ev=[e for e in lines if e['type']=='HANDOFF_PREPARED'][-1]
+print(ev['payload']['handoff_token'])")
+[[ -n "$HANDOFF_TOKEN" ]] || fail "handoff token missing from journal"
+node "$SWARM" "handoff-accept" --state-root "$SRH" --principal hw2 --task-id ht --run-id hr --handoff-token "$HANDOFF_TOKEN" > /dev/null
+python3 - "$SRH" <<'PY' || fail "handover state invalid"
+import json, sys
+lines = [json.loads(l) for l in open(sys.argv[1] + "/journal.jsonl")]
+prepared = [e for e in lines if e["type"] == "HANDOFF_PREPARED"][-1]
+accepted = [e for e in lines if e["type"] == "HANDOFF_ACCEPTED"][-1]
+assert prepared["payload"]["successor_principal"] == "hw2", "successor not bound at prepare"
+assert accepted["actor"]["principal_id"] == "hw2", "successor did not accept"
+assert accepted["payload"].get("renewed_until"), "successor lease expiry missing"
+PY
+node "$SWARM" status --state-root "$SRH" | grep -q '"authority_generation":1' || fail "authority_generation must advance to 1 after handoff"
+
+# crash-window receipt regeneration (EXEC-R2-005): delete the acceptance receipt
+# after fsync, advance the journal, then retry the byte-identical command — the
+# regenerated receipt must be BYTE-IDENTICAL and bind the original event's
+# sequence interval, never the current tail.
+node --input-type=module - "$TMP" <<'JS' || fail "crash-window regeneration probe failed"
+import fs from "node:fs";
+const handler = await import(new URL("file://" + process.cwd() + "/scripts/lib/swarm-command-handler.mjs").href);
+const root = process.argv[2] + "/crashstate";
+fs.rmSync(root, { recursive: true, force: true });
+fs.mkdirSync(root, { recursive: true, mode: 0o700 });
+handler.initStateRoot(root);
+const coord = new handler.SwarmCoordinator(root);
+coord.provisionAdapter("cw", { host: "codex" });
+const key = JSON.parse(fs.readFileSync(root + "/keys/cw.json", "utf8")).private_key;
+let seq = 0;
+const mk = (type, extra = {}) => ({
+  schema_version: 1,
+  command_id: "018f0000-0000-7000-8000-" + String(++seq).padStart(12, "0"),
+  run_id: "cr", command_type: type, task_id: type === "register_session" ? null : "ct",
+  actor: { principal_id: "cw", host: "codex", model_family: "openai", session_id: "cs" },
+  authority_generation: 0, expected_sequence: seq - 1, idempotency_key: `ck-${seq}`,
+  payload: extra,
+});
+if (!coord.handleEnvelope(coord.constructor.envelopeForCommand(mk("register_session"), key)).accepted) process.exit(1);
+const acqCmd = mk("acquire_task");
+const first = coord.handleEnvelope(coord.constructor.envelopeForCommand(acqCmd, key));
+if (!first.accepted) process.exit(1);
+const acqSeq = first.event.sequence;
+// crash window: receipt lost post-fsync
+for (const f of fs.readdirSync(root + "/receipts")) {
+  const env = JSON.parse(fs.readFileSync(root + "/receipts/" + f, "utf8"));
+  if (JSON.parse(Buffer.from(env.payload, "base64").toString("utf8")).command_id === acqCmd.command_id) {
+    fs.rmSync(root + "/receipts/" + f);
+  }
+}
+// journal advances past the original event before the retry arrives
+coord.handleEnvelope(coord.constructor.envelopeForCommand({ ...mk("ack_state"), idempotency_key: "ck-late" }, key));
+const retry = coord.handleEnvelope(coord.constructor.envelopeForCommand(acqCmd, key));
+if (!retry.replay || !retry.regenerated) { console.error("want regenerated replay"); process.exit(1); }
+if (JSON.stringify(retry.receipt) !== JSON.stringify(first.receipt)) {
+  console.error("regenerated receipt not byte-identical to interrupted attempt");
+  process.exit(1);
+}
+process.exit(0);
+JS
+
+echo "PASS(validate-swarm-protocol): schema/CAS/idempotency/fail-closed/replay-corruption/checkpoint + run-binding/ownership/heartbeat-renewal/signed-envelopes/lease-guard/crash-window-regeneration verified"
+echo "SCOPE NOTE: adjudication capping, remote transport, multi-host shadow runs are OUT of this gate's scope (follow-up WIs)"
