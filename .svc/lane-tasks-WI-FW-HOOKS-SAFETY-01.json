@@ -2,7 +2,7 @@
   "schema_version": 1,
   "wi": "WI-FW-HOOKS-SAFETY-01",
   "lane": "framework",
-  "status": "in_progress",
+  "status": "completed",
   "created": "2026-08-25T00:00:00.000Z",
   "tasks": [
     {
@@ -283,22 +283,90 @@
     },
     {
       "id": 5,
-      "status": "in_progress",
+      "status": "completed",
       "skill": "land-changeset",
       "subject": "push PR, merge, and install all hosts",
       "blocked_by": [
         3,
         4
-      ]
+      ],
+      "completed_at": "2026-08-26T09:23:56.000Z",
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-08-26T09:10:00.000Z",
+        "loaded_via": "opencode-session",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-08-26T09:12:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-25-wi-fw-hooks-safety/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-08-26T09:20:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-FW-HOOKS-SAFETY-01.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-08-26T09:22:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "PR #27 checks"
+              }
+            ]
+          }
+        ]
+      },
+      "receipt": "PR #27 squash-merged c92f91b58df774ade6ccc18403f85e965613eeeb at 2026-08-26T09:23:56Z"
     },
     {
       "id": 6,
-      "status": "pending",
+      "status": "completed",
       "skill": "verify-promotion",
       "subject": "verify promoted source and installed hooks",
       "blocked_by": [
         5
-      ]
+      ],
+      "completed_at": "2026-08-26T09:40:00.000Z",
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-08-26T09:30:00.000Z",
+        "loaded_via": "opencode-session",
+        "phases_executed": [
+          {
+            "id": "P1-PromotedSourceVerification",
+            "ts": "2026-08-26T09:35:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "8/8 WI validators PASS from main@c92f91b"
+              }
+            ]
+          },
+          {
+            "id": "P2-InstalledParity",
+            "ts": "2026-08-26T09:38:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "check-install-drift --all-hosts: zero drift, 9 hosts"
+              }
+            ]
+          }
+        ]
+      },
+      "receipt": "promoted source main@c92f91b: 8/8 focused validators PASS; ./setup --all-hosts converged (kimi CLI verify env-gap only); drift zero across 9 hosts"
     }
   ]
 }
