@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "review_kind": "exec",
+  "rubric_score": 7,
+  "rubric_failures": [
+    2,
+    3
+  ],
+  "dependencies_needing_read": [
+    "skills-manifest.json",
+    "agents/*.md",
+    "rules/**/*.md",
+    "references/*.md",
+    "provision/hosts/*.json"
+  ],
+  "reviewer": {
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6",
+    "effort": "high"
+  },
+  "verdict": "pass-with-findings",
+  "summary": "The factual corrections are directionally consistent with the supplied evidence, and no existing executable behavior is changed. However, the audit documentation understates its own findings, while the new validator claims broader protection than it implements.",
+  "findings": [
+    {
+      "id": "DOC-001",
+      "severity": "medium",
+      "claim": "The authority registry incorrectly says the audit produced 13 findings and fixed only F1–F8, while the committed ledger contains 19 findings and records additional fixes.",
+      "analysis": "This creates fresh documentation drift in the changeset intended to eliminate it. The accurate summary is 19 findings, with F1–F8, F10, and F14–F18 fixed during the session.",
+      "evidence": [
+        "docs/specs/INDEX.md: Audit history says “13 findings, F1–F8 fixed same session.”",
+        "proposals/2026-08-26-framework-docs-audit-findings.md contains F1 through F19.",
+        "The ledger marks F10 and F14–F18 fixed in addition to F1–F8."
+      ],
+      "proposed_fix": "Update docs/specs/INDEX.md and any audit summary to state “19 findings; 14 fixed during the session,” or describe dispositions without a brittle count."
+    },
+    {
+      "id": "VAL-001",
+      "severity": "medium",
+      "claim": "The audit script says it detects F1–F11, but it has no check for F10, the stale OPEN-PROPOSALS planning-residue class.",
+      "analysis": "The implemented checks cover links, size, counts, hosts, archive paths, and knowledge dates. None inspect OPEN-PROPOSALS.md for landed work still presented as open. Therefore the same F10 regression can recur while tier 1 passes.",
+      "evidence": [
+        "scripts/audit-framework-docs.mjs header says it detects the failure classes in the findings ledger.",
+        "The invoked checks are checkLinks, checkSize, checkCounts, checkHosts, checkArchiveRefs, and checkKnowledgeFreshness.",
+        "F10 concerns landed work presented as open in OPEN-PROPOSALS.md; no implemented check reads proposal state."
+      ],
+      "proposed_fix": "Either add a mechanical OPEN-PROPOSALS landed/residue check or narrow the script and ledger claims to the specific detected classes, excluding F10."
+    },
+    {
+      "id": "VAL-002",
+      "severity": "medium",
+      "claim": "Advertised count reconciliation is incomplete: skill counts are not checked, and rule parity is checked only against the manifest—not against rules on disk.",
+      "analysis": "The findings ledger promises agent/rule/skill counts against disk and manifest. checkCounts never enumerates skill directories or validates the 103-skill claims, while countRulesFromManifest only counts rulesRegistry.entries. A missing or extra rule file could leave the authority claims and this validator green.",
+      "evidence": [
+        "proposals/2026-08-26-framework-docs-audit-findings.md says detection covers “agent/rule/skill counts vs disk+manifest.”",
+        "scripts/audit-framework-docs.mjs defines no skill-count function.",
+        "countRulesFromManifest returns only rulesRegistry.entries.length; no rules/**/*.md enumeration or set comparison occurs.",
+        "The tier-1 wrapper invokes only audit-framework-docs.mjs."
+      ],
+      "proposed_fix": "Compare includedSkills with skill directories and relevant authority claims; compare normalized rulesRegistry paths with rules/**/*.md as sets. Alternatively, invoke the existing manifest/structure validators and stop claiming this script independently covers those checks."
+    },
+    {
+      "id": "VAL-003",
+      "severity": "low",
+      "claim": "Host-table validation uses substring presence rather than proving that each provisioned host has a table row.",
+      "analysis": "HOSTS.md can mention a host in prose while omitting its canonical setup row, and table.includes(host) will still pass—the precise F2 failure class this check is intended to prevent.",
+      "evidence": [
+        "scripts/audit-framework-docs.mjs checkHosts uses `if (!table.includes(h))`.",
+        "F2 requires one canonical HOSTS.md row per provision/hosts JSON file."
+      ],
+      "proposed_fix": "Parse HOSTS.md table rows and require exactly one row containing the expected `./setup --host <id>` command for every provisioned host."
+    },
+    {
+      "id": "VAL-004",
+      "severity": "low",
+      "claim": "The validator is dependent on the caller’s current working directory despite computing its own repository root in the shell wrapper.",
+      "analysis": "Running the validator by absolute path outside the repository makes the Node script look for FRAMEWORK-STATE.md and other files under the caller’s directory. This weakens its hermeticity claim and makes standalone invocation fragile.",
+      "evidence": [
+        "scripts/audit-framework-docs.mjs sets `ROOT = process.cwd()`.",
+        "fileURLToPath is imported but unused.",
+        "validate-framework-docs-audit.sh computes ROOT but executes Node without `cd \"$ROOT\"`."
+      ],
+      "proposed_fix": "Derive ROOT from import.meta.url inside the Node script, or run `cd \"$ROOT\"` before exec in the shell validator."
+    }
+  ],
+  "certifications": [
+    {
+      "key": "reviewed_request_content",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "071bfa51107acff65d06df03c4b18a30ae0f76460dfb847334c23f4df9573c47"
+    },
+    {
+      "key": "no_unintended_existing_runtime_change_observed",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "071bfa51107acff65d06df03c4b18a30ae0f76460dfb847334c23f4df9573c47"
+    }
+  ]
+}

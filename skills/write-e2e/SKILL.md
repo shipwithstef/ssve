@@ -74,7 +74,7 @@ chain:
 - Especially read the toast/notification component.
 - See [references/deployment.md](references/deployment.md) for pre-flight details.
 
-**Gemini CLI pre-flight (MANDATORY on Gemini):** before any multi-file E2E work, run `bash hooks/svc-gemini-context-check.sh`. Blocks at POOR tier (>4 MB chat JSON). See [references/gemini-context-budget.md](../references/gemini-context-budget.md). This is WI-085 archetype — Gemini spent 40 min blaming selectors when "fix not deployed" had fallen out of attention.
+**Gemini CLI pre-flight (MANDATORY on Gemini):** before any multi-file E2E work, run `bash hooks/svc-gemini-context-check.sh`. Blocks at POOR tier (>4 MB chat JSON). See [references/gemini-context-budget.md](../../references/gemini-context-budget.md). This is WI-085 archetype — Gemini spent 40 min blaming selectors when "fix not deployed" had fallen out of attention.
 
 **Deploy-before-validate (MANDATORY for post-deploy E2E runs):** before running a spec that claims to validate a fix is live, run `node scripts/verify-deploy-status.mjs`. Confirms HEAD is pushed, auto-deploy elapsed-time has passed, and optional health-check sha matches HEAD. Requires `## Deployment Contract` section in repo's `docs/specs/router-context.md`. This is G2 from the 2026-04-19 WI-085 audit.
 

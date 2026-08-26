@@ -37,5 +37,8 @@ The most feature-rich hook system among the four supported svc hosts.
 ## L3 Detail Files
 
 - [events.md](details/events.md) — All 28 events with input/output schemas
-- [configuration.md](details/configuration.md) — settings.json format, hook types, matcher DSL
 - [decision-format.md](details/decision-format.md) — Modern vs legacy decision shapes, merge precedence
+
+> Index corrected 2026-08-26 (WI-FW-DOCS-AUDIT-01): a previously listed
+> `details/configuration.md` was never extracted; settings.json / matcher DSL
+> facts live in this body and in [events.md](details/events.md).

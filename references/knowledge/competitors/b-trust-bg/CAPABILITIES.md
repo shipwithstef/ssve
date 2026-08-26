@@ -134,10 +134,16 @@
 ## Detail files
 
 - [details/services.md](details/services.md) — full product catalog with verbatim prices
-- [details/identity.md](details/identity.md) — Borica AD operator + eIDAS / КРС context
-- [details/coverage.md](details/coverage.md) — 42-URL coverage table
-- [details/required-docs.md](details/required-docs.md) — what you need to bring/upload
+- [details/about.md](details/about.md) — operator/company background
+- [details/legal.md](details/legal.md) — legal/terms pages
+- [details/contact.md](details/contact.md) — contact channels
+- [details/blog-recent.md](details/blog-recent.md) — recent blog index
 - [details/applied-knowledge.md](details/applied-knowledge.md) — distilled positions + Example Marketplace application
+
+> Index corrected 2026-08-26 (WI-FW-DOCS-AUDIT-01): previously listed
+> `identity.md`, `coverage.md`, `required-docs.md` were never extracted to
+> disk; the Borica/eIDAS identity facts above come from the first-pass body,
+> not a separate detail file.
 
 ## Validator scorecard
 

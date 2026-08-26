@@ -127,7 +127,7 @@ Before diagnosis, on Gemini CLI:
 ```bash
 bash hooks/svc-gemini-context-check.sh
 ```
-Blocks at POOR tier (>4 MB chat JSON). Diagnosis requires holding spec + code + reproduction in attention simultaneously — impossible at POOR tier. On Claude Code this is a no-op. See [references/gemini-context-budget.md](../references/gemini-context-budget.md). G1 from 2026-04-19 WI-085 audit.
+Blocks at POOR tier (>4 MB chat JSON). Diagnosis requires holding spec + code + reproduction in attention simultaneously — impossible at POOR tier. On Claude Code this is a no-op. See [references/gemini-context-budget.md](../../references/gemini-context-budget.md). G1 from 2026-04-19 WI-085 audit.
 
 ### 0. Task Graph Setup — MANDATORY
 

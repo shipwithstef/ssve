@@ -11,7 +11,7 @@ MiMo has **TWO separate API products with different ToS**:
 | Tier | URL pattern | Authorized use | Pricing |
 |---|---|---|---|
 | **Token Plan** (the "$0/200M-credits" subscription) | `token-plan-ams.xiaomimimo.com/v1` | **DEVELOPER TOOLING ONLY** — IDE integrations (Claude Code, Cursor, Cline, OpenCode), personal exploration | Subscription tier with monthly credit pool |
-| **Open Platform** (commercial API) | Different URL — see [details/commercial-vs-token-plan.md](details/commercial-vs-token-plan.md) | **PRODUCTION** apps, customer-facing AI, automated backends — requires Business Verification | Pay-As-You-Go ~$0.40/$2.00 per Mtok input/output (MiMo-V2.5) |
+| **Open Platform** (commercial API) | Different URL (see the ToS warning directly below this table) | **PRODUCTION** apps, customer-facing AI, automated backends — requires Business Verification | Pay-As-You-Go ~$0.40/$2.00 per Mtok input/output (MiMo-V2.5) |
 
 **Routing production app traffic through Token Plan URL = ToS violation, account suspension risk.** This is the single most important fact about MiMo and the registry was wrong about it until 2026-04-25.
 
@@ -29,7 +29,7 @@ MiMo has **TWO separate API products with different ToS**:
 | MiMo-V2.5-TTS-VoiceDesign | Synthetic voice | text → audio | Limited-time free |
 | MiMo-V2-TTS | Older speech | text → audio | Limited-time free |
 
-See [details/model-roster.md](details/model-roster.md).
+Full roster is the table above.
 
 ## Authorized use surfaces (Token Plan)
 
@@ -73,7 +73,7 @@ These limits alone make production routing impractical even ignoring ToS.
 
 Wired into `~/.config/opencode/opencode.json` `options.temperature/topP` and `references/model-registry.json` per 2026-04-25 commit `dbf9cfd`.
 
-See [details/hyperparameters.md](details/hyperparameters.md).
+Hyperparameter notes are inline in the tables above.
 
 ## Strategic implications for svc-stack
 
@@ -82,15 +82,14 @@ See [details/hyperparameters.md](details/hyperparameters.md).
 | Use MiMo to migrate Example Marketplace off Base44? | **Only via Open Platform Pay-As-You-Go** (Business Verification + $0.40/$2.00 per Mtok), NOT via Token Plan. |
 | Replace Claude EXEC with MiMo for free? | Yes for **dev** EXEC (svc-default profile). No for **prod** anything. |
 | Side-earning content via TTS suite? | Yes — TTS is limited-time free. Voice cloning, synthesis, voice design all free for now. |
-| Cancel Base44 because "MiMo is free"? | **NO** — that was the false premise corrected 2026-04-25. See [details/migration-cost-impact.md](details/migration-cost-impact.md). |
+| Cancel Base44 because "MiMo is free"? | **NO** — that was the false premise corrected 2026-04-25; migration cost math: Open Platform Pay-As-You-Go vs Base44 subscription, quantified in the pricing rows above. |
 
 ## Detail files
 
-- [details/commercial-vs-token-plan.md](details/commercial-vs-token-plan.md)
-- [details/model-roster.md](details/model-roster.md)
-- [details/hyperparameters.md](details/hyperparameters.md)
-- [details/throughput-limits.md](details/throughput-limits.md)
-- [details/migration-cost-impact.md](details/migration-cost-impact.md)
+> Corrected 2026-08-26 (WI-FW-DOCS-AUDIT-01): the five detail files previously
+> listed here (`commercial-vs-token-plan`, `model-roster`, `hyperparameters`,
+> `throughput-limits`, `migration-cost-impact`) were never extracted to disk.
+> All captured facts live in this body.
 
 ## Volatility
 

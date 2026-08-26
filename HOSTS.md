@@ -12,5 +12,6 @@ svc runs on multiple agent hosts. Read your host's context file, then run `./set
 | MiMo Code | `AGENTS.md` (auto-generated) | `./setup --host mimo-code` |
 | Antigravity | `ANTIGRAVITY.md` | `./setup --host antigravity` |
 | Cursor | (uses `CLAUDE.md`) | `./setup --host cursor` |
+| Grok Build CLI | `GROK.md` | `./setup --host grok` |
 
 **Start here:** read your host's context file, then run `./setup --host <your-host>`. The setup script reads `provision/hosts/<host>.json` and symlinks skills + infra accordingly.
