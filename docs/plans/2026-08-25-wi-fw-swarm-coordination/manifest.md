@@ -97,6 +97,7 @@ Fail-closed rule carried over from the source plan: a model-authored PASS string
 | T08 | MODIFY | docs/plans/2026-08-25-wi-fw-swarm-coordination/manifest.md | Plan artifact itself: revised in place through bounded review rounds; final digest bound at closeout |
 | T08 | MODIFY | docs/plans/2026-08-25-wi-fw-swarm-coordination/review-log.yaml | Review log persistence: findings, responses, dispositions, terminal state |
 | T08 | MODIFY | docs/plans/2026-08-25-wi-fw-swarm-coordination/exec-review-log.yaml | Execution-review responses and disposition record |
+| T08 | CREATE | docs/specs/work-items/WI-FW-SWARM-JOURNAL-SIGNING-01.md | Follow-up work item: coordinator-signed journal events + anchored checkpoints (EXEC-R3-003 deferral) |
 | T07 | MODIFY | test-framework/evals/tier-1/validate-kimi-host.sh | Environment-robustness repair: fail-closed probe isolates HOME/policy env so it tests no-owner-policy behavior on machines that have one |
 | T07 | MODIFY | test-framework/evals/tier-1/validate-wi546-cursor-live-acceptance.sh | Environment-robustness repair: live note-consume probe iterates store entries; live EXEC check tolerates a present owner dispatch policy (no-Sonnet invariant preserved) |
 | T07 | MODIFY | test-framework/evals/tier-1/validate-wi546-grok-live-acceptance.sh | Environment-robustness repair: live EXEC check tolerates a present owner dispatch policy (no-Sonnet/fast invariant preserved) |
@@ -286,7 +287,8 @@ The contract artifact content is fixed NOW by this inline block (byte-stable; th
         "scripts/extract-inline-plan-contract.mjs",
         "docs/plans/2026-08-25-wi-fw-swarm-coordination/manifest.md",
         "docs/plans/2026-08-25-wi-fw-swarm-coordination/review-log.yaml",
-        "docs/plans/2026-08-25-wi-fw-swarm-coordination/exec-review-log.yaml"
+        "docs/plans/2026-08-25-wi-fw-swarm-coordination/exec-review-log.yaml",
+        "docs/specs/work-items/WI-FW-SWARM-JOURNAL-SIGNING-01.md"
       ]
     },
     {
