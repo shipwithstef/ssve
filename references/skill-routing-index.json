@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "compiled_from": {
-    "manifest_sha256": "9192e74801138521a8fc28b9746dfcede5f3a6bf3e9e4226471481a594920020",
+    "manifest_sha256": "55b14b41041ce86c1704deb6853efc9ccef16542767ea66c5c747e97f48d3240",
     "overrides_sha256": "ffe50a0a60e4feebe57a229aae3cb6fb4eae19dba97ed0099ed6ead998c48d93",
     "concern_registry_sha256": "6c336c8832c4907ee78413a2b7d377b790bb55bba180783d2164892a130ea507"
   },
@@ -27,7 +27,7 @@
     {
       "skill": "align-feature",
       "path": "skills/align-feature/SKILL.md",
-      "content_hash": "a8b2f95902bbb0fc19a9849a5a87b1195dc986b99c3ed77b4d12c1e0de853f46",
+      "content_hash": "fae5ddf3e23ce8b6926c3cd56b2047f227e88a9d024649702930ae95dc2d9caf",
       "description": "Execute the story-receipts chain for one WI until the validator prints STORY ALIGNED — the fixing counterpart of /audit-feature. Walks every required stage in order (personas → validate/intent card → spec → skills/design-ux/ui/device → journeys → ac → implement → e2e → test-run → spec-sync → visuals → qa-companion → ledger → marketing → pricing), each through its owning skill, recording a tracked receipt per stage. Use when the founder says \"align <feature>\", \"оправи <feature> по веригата\", \"continue the chain for WI-X\", \"fix it the receipted way\", or after /audit-feature produced a receipts file.",
       "aliases": [],
       "positive_triggers": [],
@@ -753,7 +753,7 @@
     {
       "skill": "execute-changeset",
       "path": "skills/execute-changeset/SKILL.md",
-      "content_hash": "68af37343e622319066d9ac2c26157f45dfb44896d5151807b00aa7b92ce0753",
+      "content_hash": "24ec5022a3886dd004f0c0f5716fe73907b3deeebbf469de0cb852161caaa11d",
       "description": "Use after plan-changeset has produced a manifest and task graph. Triggers on \"execute the plan\", \"implement the changeset\", \"run the tasks\", \"start building\", or when a plan-changeset manifest exists and is ready for execution.",
       "aliases": [],
       "positive_triggers": [],
@@ -1449,8 +1449,8 @@
     {
       "skill": "review-exec",
       "path": "skills/review-exec/SKILL.md",
-      "content_hash": "8ba47d6071bda764f25df64825abd85871cb9bad462b31a65cf95f48b95fa9f9",
-      "description": "Mandatory G6 gate. Self-review + adversarial review of the executed diff before land. Delegates to `review-cross-model` for the second-model invocation through `scripts/run-external-review.mjs`, with the requested owner-configured topology and tuple provenance exposed by `scripts/review-topology-v2.mjs`. Same-family Sol remains advisory; the configured different-family external station owns independent release authority. Emits SHA-keyed receipt at `.svc/receipts/<sha>/review-exec.json` and updates the consolidated git note on `refs/notes/svc-receipts`. Use after `execute-changeset` produces an exec-record receipt, before `land-changeset` opens the PR.",
+      "content_hash": "da53c5ca0fd778df617ba18466ebf6e65689a8289ce8e10924f7498f851d8f0e",
+      "description": "Mandatory G5-enforcing gate. Self-review + adversarial review of the executed diff before land. Delegates to `review-cross-model` for the second-model invocation through `scripts/run-external-review.mjs`, with the requested owner-configured topology and tuple provenance exposed by `scripts/review-topology-v2.mjs`. Same-family Sol remains advisory; the configured different-family external station owns independent release authority. Emits SHA-keyed receipt at `.svc/receipts/<sha>/review-exec.json` and updates the consolidated git note on `refs/notes/svc-receipts`. Use after `execute-changeset` produces an exec-record receipt, before `land-changeset` opens the PR.",
       "aliases": [],
       "positive_triggers": [],
       "negative_triggers": [],
