@@ -37,3 +37,36 @@ review_log:
   exec_review:
     status: pending_external_transport
     artifact: docs/specs/reviews/wi-fw-hooks-safety-exec-cross-model.md
+
+# --- exec-phase review (WI-FW-HOOKS-SAFETY-01 closeout, 2026-08-26) ---
+exec_review:
+  kind: exec
+  station: codex-sol-high
+  policy: governed-triple (owner config sha a10e59a4)
+  rounds: 3
+  round_1:
+    candidate_digest: eaff01dcde8231f27689d91b20516cf52cfc0d2378bb71728e51526695f1e429
+    verdict: fail
+    findings: 9
+    remediation_commit: 227cf17
+    receipt: .svc/external-review-artifacts/cross-model/receipt.json
+  round_2:
+    candidate_digest: 7a3c30f9431a50fc1cd37af98c9cf200d6cb16bcba1e52d1241dd2ae266b08da
+    verdict: fail
+    findings: 7
+    remediation_commit: e3d3b42
+    receipt: .svc/external-review-artifacts/cross-model-r2/receipt.json
+  round_3:
+    candidate_digest: 7ed772452103aa1e671944657d1d01796d1c90b7f7e8edf0202c6cd28d8f5787
+    verdict: fail
+    findings: 8
+    remediation_commit: 34ee21f
+    receipt: .svc/external-review-artifacts/cross-model-r3/receipt.json
+  cap: WI-491 hard 3-round cap reached
+  bounded_exit:
+    unresolved_critical: 0
+    fixed_in_round_3: [EXTREV-R3-002, EXTREV-R3-003, EXTREV-R3-004, EXTREV-R3-005, EXTREV-R3-008]
+    accepted_with_justification: [EXTREV-R3-001, EXTREV-R3-007]
+    partially_resolved: [EXTREV-R3-006]
+    authority: repository-owner override directive (resume + land + human_checkpoint waived)
+self_review_passes: 2
