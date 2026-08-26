@@ -1,0 +1,1 @@
+$.rubric_score: plan review requires an integer score from 0 through 10

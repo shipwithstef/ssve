@@ -164,7 +164,79 @@
       "skill_receipt": {
         "skill": "execute-changeset",
         "loaded_at": "2026-08-25T23:35:31.681Z",
-        "loaded_via": "manual"
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-TaskExecution",
+            "ts": "2026-08-26T00:11:56.586Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/exec-phases.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-CheckpointVerification",
+            "ts": "2026-08-26T00:11:56.938Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/skill-router-validator-run.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ReceiptsAndContinuation",
+            "ts": "2026-08-26T00:11:57.210Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-outcome.log"
+              }
+            ]
+          },
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-08-26T00:16:03.863Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/exec-phases.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-08-26T00:16:04.013Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/exec-phases.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-08-26T00:16:04.167Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/skill-router-validator-run.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-08-26T00:16:04.324Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-outcome.log"
+              }
+            ]
+          }
+        ]
       },
       "completed_at": "2026-08-25T23:35:31.832Z"
     },

@@ -1,0 +1,249 @@
+{
+  "schema_version": 2,
+  "launcher_version": "2.4.0",
+  "cli_version": "codex-cli-exec 0.149.0",
+  "request_id": "56a962b8-852e-433d-984f-05465abca382",
+  "review_kind": "exec",
+  "candidate_digest": "722cb10c8de5d1de6a3c6fb0e5465cc3b2ab8305b629e98440f309ebf18486bc",
+  "package_sha256": "ddb36623658374a6367254507df5abfe5165097b37e2940bd731b95714c92748",
+  "findings_schema_sha256": "c53006becb41df17e49ba913ddffa9b9fa70c0e1f2039fb9b86457446191774b",
+  "findings_sha256": "00e33309695de0aa5ffff248b10afedc7b5fef5d2105e2887b51bcacf7ed6ed4",
+  "cache_key": "b089a5b3d934f10c3101c140319c0d4cc652ffd5d0b7bcd68d8839a74a1ec898",
+  "fixture_mode": false,
+  "started_at": "2026-08-25T23:46:35.122Z",
+  "finished_at": "2026-08-25T23:51:02.767Z",
+  "status": "success",
+  "classification": "success",
+  "requested_tuple": {
+    "orchestrator": "opencode",
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6-sol",
+    "effort": "high"
+  },
+  "invocation_tuple": {
+    "orchestrator": "opencode",
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6-sol",
+    "effort": "high"
+  },
+  "effective_tuple": {
+    "orchestrator": "opencode",
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6-sol",
+    "effort": "high"
+  },
+  "attempts": [
+    {
+      "index": 1,
+      "tuple": {
+        "orchestrator": "opencode",
+        "host": "codex",
+        "family": "openai",
+        "model": "gpt-5.6-sol",
+        "effort": "high"
+      },
+      "started_at": "2026-08-25T23:46:35.161Z",
+      "finished_at": "2026-08-25T23:51:02.765Z",
+      "exit_code": 0,
+      "classification": "success",
+      "command": {
+        "binary": "codex",
+        "argv": [
+          "exec",
+          "--skip-git-repo-check",
+          "--sandbox",
+          "read-only",
+          "--ephemeral",
+          "--ignore-user-config",
+          "--ignore-rules",
+          "--strict-config",
+          "--model",
+          "gpt-5.6-sol",
+          "-c",
+          "model_reasoning_effort=\"high\"",
+          "--output-schema",
+          "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feat-fw-skills-routing/schemas/external-review-findings.schema.json",
+          "--json",
+          "--output-last-message",
+          "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feat-fw-skills-routing/.svc/external-review/wifw-skills-routing-01/exec-r2/attempt-1-findings.json",
+          "--color",
+          "never",
+          "-"
+        ]
+      },
+      "artifacts": {
+        "events": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feat-fw-skills-routing/.svc/external-review/wifw-skills-routing-01/exec-r2/attempt-1-events.jsonl",
+        "stderr": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feat-fw-skills-routing/.svc/external-review/wifw-skills-routing-01/exec-r2/attempt-1-stderr.log",
+        "findings": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feat-fw-skills-routing/.svc/external-review/wifw-skills-routing-01/exec-r2/attempt-1-findings.json"
+      },
+      "usage": {
+        "input_tokens": 158245,
+        "cached_input_tokens": 78592,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 8740,
+        "reasoning_output_tokens": 6646,
+        "observed_models": []
+      }
+    }
+  ],
+  "reviewer_run": {
+    "commands": [
+      {
+        "binary": "codex",
+        "argv": [
+          "exec",
+          "--skip-git-repo-check",
+          "--sandbox",
+          "read-only",
+          "--ephemeral",
+          "--ignore-user-config",
+          "--ignore-rules",
+          "--strict-config",
+          "--model",
+          "gpt-5.6-sol",
+          "-c",
+          "model_reasoning_effort=\"high\"",
+          "--output-schema",
+          "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feat-fw-skills-routing/schemas/external-review-findings.schema.json",
+          "--json",
+          "--output-last-message",
+          "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feat-fw-skills-routing/.svc/external-review/wifw-skills-routing-01/exec-r2/attempt-1-findings.json",
+          "--color",
+          "never",
+          "-"
+        ]
+      }
+    ],
+    "output_artifacts": [
+      "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feat-fw-skills-routing/.svc/external-review/wifw-skills-routing-01/exec-r2/attempt-1-events.jsonl",
+      "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feat-fw-skills-routing/.svc/external-review/wifw-skills-routing-01/exec-r2/attempt-1-stderr.log",
+      "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feat-fw-skills-routing/.svc/external-review/wifw-skills-routing-01/exec-r2/attempt-1-findings.json"
+    ]
+  },
+  "fallback": {
+    "eligible": false,
+    "used": false,
+    "reason": null
+  },
+  "override": {
+    "used": false,
+    "authority": null,
+    "source": null,
+    "path": null,
+    "expected_sha256": null,
+    "actual_sha256": null
+  },
+  "policy": {
+    "version": 2,
+    "profile": "governed-triple:codex-sol-high",
+    "source": "owner-config",
+    "resolved_at": "2026-08-25T23:46:35.122Z",
+    "effective_window": {
+      "starts_at": null,
+      "ends_at": null
+    },
+    "cutover_utc": null,
+    "cutover_local": null,
+    "timezone": null,
+    "selection_sha256": "a00d14feb4fd0f952e55e0853d4807332decfe614566c589611f6f689f060f14",
+    "selection_expires_at": null,
+    "selection_authority": "repository-owner"
+  },
+  "protocol": {
+    "process_invocations": 1,
+    "configured_turn_ceiling": null,
+    "configured_budget_usd": null,
+    "reported_turns": null,
+    "stop_reason": null,
+    "terminal_reason": null,
+    "errors": []
+  },
+  "route": {
+    "kind": "owner_config_primary",
+    "switching_enabled": false,
+    "cli_fallback_configured": false,
+    "evidence": "requested_primary"
+  },
+  "effective_effort": {
+    "value": "high",
+    "provenance": "requested"
+  },
+  "model_attestation": {
+    "level": "requested_accepted",
+    "requested_model": "gpt-5.6-sol",
+    "observed_models": [],
+    "evidence": "exact_model_argv_plus_successful_auth_schema_exit_no_server_model_echo"
+  },
+  "phase_guard": {
+    "applicable": false,
+    "kind": "exec",
+    "decision": "not-applicable",
+    "reason": null,
+    "wi": null,
+    "pre_execution_base": null,
+    "plan_manifest_sha256": null,
+    "exec_record_present": null,
+    "exec_record_path": null,
+    "implementation_diverged": null,
+    "diverged_files": [],
+    "base_resolved": null,
+    "override": {
+      "used": false,
+      "authority": null,
+      "source": null,
+      "path": null,
+      "expected_sha256": null,
+      "actual_sha256": null,
+      "kind": null
+    }
+  },
+  "package_context": {
+    "version": 1,
+    "context_root": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feat-fw-skills-routing",
+    "base_package_sha256": "d6322283e151830651971cba2b5807020c7e87370159adcad6ad66e07f62b91b",
+    "files": [
+      {
+        "path": "target:AGENTS.md",
+        "sha256": "82c6958c1e80833f812707112ed53c3e25f9c6e02565dcffbb009cebd393296c",
+        "bytes": 27101
+      },
+      {
+        "path": "target:CLAUDE.md",
+        "sha256": "2a438d254509b3cb2b40f22b24c5075e92ea6b9b1fc96a1c5518602cb6c3eb03",
+        "bytes": 11576
+      },
+      {
+        "path": "framework:skills/review-exec/SKILL.md",
+        "sha256": "8ba47d6071bda764f25df64825abd85871cb9bad462b31a65cf95f48b95fa9f9",
+        "bytes": 19527
+      },
+      {
+        "path": "framework:skills/review-cross-model/SKILL.md",
+        "sha256": "4bbe2968bef6e84511483f8277232352e8ad406d397789038e89798afe263abf",
+        "bytes": 22108
+      }
+    ]
+  },
+  "cache": {
+    "disposition": "published",
+    "reusable": true,
+    "entry": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feat-fw-skills-routing/.svc/external-review-cache/v1/b089a5b3d934f10c3101c140319c0d4cc652ffd5d0b7bcd68d8839a74a1ec898"
+  },
+  "artifacts": {
+    "findings": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feat-fw-skills-routing/.svc/external-review/wifw-skills-routing-01/exec-r2/findings.json",
+    "receipt": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feat-fw-skills-routing/.svc/external-review/wifw-skills-routing-01/exec-r2/receipt.json",
+    "package": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feat-fw-skills-routing/.svc/external-review/wifw-skills-routing-01/exec-r2/review-package.bin",
+    "capabilities": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feat-fw-skills-routing/.svc/external-review/wifw-skills-routing-01/exec-r2/capabilities.log"
+  },
+  "usage": {
+    "input_tokens": 158245,
+    "cached_input_tokens": 78592,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 8740,
+    "reasoning_output_tokens": 6646,
+    "observed_models": []
+  }
+}
