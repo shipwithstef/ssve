@@ -2,7 +2,7 @@
 
 > **Company Operating System (COS) Living Ledger of all Swarm Worktrees, Multi-Agent Sessions, Promotions, Vault Secrets, and Deliverables.**
 > *Single Source of Truth across Antigravity, Cursor Auto, Codex, and Grok Swarm Fleet.*
-> *Last Updated: Wednesday, August 26, 2026 at 06:30 UTC+3*
+> *Last Updated: Wednesday, August 26, 2026 at 11:55 UTC+3 — WI-FW-SWARM-COORDINATION-01 promoted*
 
 ---
 
@@ -23,6 +23,7 @@
 | **`WI-ANDROID-BETA-01`** | Google Play Production submission (`vc125` signed AAB + release keystore) | `main` / `android/` | Orchestrator & Codex | **SUBMITTED & SIGNED** | `hourshub-release.keystore` in Azure Key Vault `kv-surge-dev-1` |
 | **`IARC-LIVE-RATING-01`** | Official IARC Global Age Rating Certificate (`5d663b18-1c47-8060-89d0-3f827a866ac0`) | `docs/specs/compliance/` | GlobalRatings.com / IARC | **LIVE & ACTIVE** | PEGI 3 / ESRB Everyone / USK 0 certified |
 | **`WI-SCOUT-ECONOMY-01`** | Scout reward acquisition points, QR redemption, Dodo billing integration | `wt-lane-scout-economy` | Codex 5.6 Sol High | **PROMOTED & LIVE** | `7e70c3a0f` & `830b72d1c` • 26/28 receipts green |
+| **`WI-FW-SWARM-COORDINATION-01`** | Central swarm coordination kernel — single-writer event journal, DSSE/Ed25519 signed command envelopes, coordinator-signed events w/ strict replay, CAS+idempotency, lease/handoff state machine, conflict ladder L0-L5, 4 tier-1 gates | `feature-WI-563-swarm-coordination` -> PR #26 | Codex Sol High (review) & OpenCode 0x-alpha (exec) | **PROMOTED & MERGED** | `cb38349` • AC1-11 audit PASS • OTA 9/9 hosts zero drift |
 
 ---
 

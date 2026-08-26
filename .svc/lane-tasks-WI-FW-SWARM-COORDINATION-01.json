@@ -4,7 +4,7 @@
   "title": "Structured cross-model swarm coordination bus (single-writer event-sourced kernel, signed receipts, deterministic conflict ladder)",
   "lane": "framework",
   "branch": "feature-WI-563-swarm-coordination",
-  "status": "in_progress",
+  "status": "completed",
   "created_at": "2026-08-25T22:10:33.439Z",
   "classification_note": "Bootstrap misclassified this graph as greenfield product work; corrected to framework lane per WI-FW prefix and central-framework implementation authority. Persona gate not applicable to framework-lane changes.",
   "tasks": [
@@ -206,12 +206,47 @@
     },
     {
       "id": 6,
-      "status": "in_progress",
+      "status": "completed",
       "skill": "land-changeset",
       "subject": "Land changeset to main with promotion evidence",
       "blocked_by": [
         5
-      ]
+      ],
+      "completed_at": "2026-08-26T08:57:30.000Z",
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-08-26T08:57:30.000Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "push-and-pr",
+            "evidence_artifacts": [
+              {
+                "type": "url",
+                "path": "https://github.com/s7an-it/serious-serious-vibe-engineering/pull/26"
+              }
+            ]
+          },
+          {
+            "id": "squash-merge",
+            "evidence_artifacts": [
+              {
+                "type": "sha",
+                "path": "cb383495741f83883578af47f99d78577f1bffbe"
+              }
+            ]
+          },
+          {
+            "id": "ota-convergence",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "check-install-drift.sh --all-hosts: all 9 hosts zero drift; second setup run idempotent no-op"
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }
