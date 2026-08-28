@@ -8,7 +8,7 @@ Bootstrap rule for onboarded projects: respect the project's local AGENTS.md/CLA
 
 ## 1. Project Overview
 
-**Serious Serious Vibe Engineering (SSVE)** is a **production-grade governed skill and runtime framework** for progressive deterministic development with LLMs. It is **not a single application**. Its 103 first-party reusable skills are packaged beneath `skills/` and installed consistently across nine supported agent hosts. The lowercase `svc` name remains the compatibility namespace for commands, paths, state, and hooks.
+**Serious Serious Vibe Engineering (SSVE)** is a **production-grade governed skill and runtime framework** for progressive deterministic development with LLMs. It is **not a single application**. Its 104 first-party reusable skills are packaged beneath `skills/` and installed consistently across nine supported agent hosts. The lowercase `svc` name remains the compatibility namespace for commands, paths, state, and hooks.
 
 Skills form a deterministic pipeline from product vision to verified code merge:
 

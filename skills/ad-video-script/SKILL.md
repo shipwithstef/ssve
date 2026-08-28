@@ -9,10 +9,11 @@ description: >
   first-frame image-prompt, motion-prompt, persistent-character lock, and
   last-frame seeding) — because no video model renders a coherent 60s clip in
   one shot (Veo 8s; Runway/Kling/Pika ~10s). Emits one base script, or many
-  variants when ≥2 placements or awareness stages qualify. Emits the beat sheet for rendering — manually today, or by the
-  planned ad-video-producer agent (WI-402). Use when "ad video script",
+  variants when ≥2 placements or awareness stages qualify. Hands the beat
+  sheet to `produce-ad-video` (WI-402) to render. Use when "ad video script",
   "video ad", "UGC script", "promo video script", "60 second ad", "make an ad
-  for <product>", or any WI tagged ad-video / performance-creative.
+  for <product>", or any WI tagged ad-video / performance-creative. Do not use
+  for remux/I2V/audio-fix of an existing cut — that is `produce-ad-video`.
 inputs:
   required:
     - { path: "docs/specs/vision.md", artifact: product-source, note: "the REAL product — read the live landing-page URL via curl, or this spec / docs/specs/vision.md. Grounding is mandatory step 1." }
@@ -23,7 +24,7 @@ inputs:
 outputs:
   produces:
     - { path: "docs/specs/ad-scripts/<product>/<scenario>-<placement>.md", artifact: ad-script, note: "human-readable script + beat sheet" }
-    - { path: "docs/specs/ad-scripts/<product>/<scenario>-<placement>.beatsheet.json", artifact: beat-sheet, note: "machine-usable; the ad-video-producer renders this" }
+    - { path: "docs/specs/ad-scripts/<product>/<scenario>-<placement>.beatsheet.json", artifact: beat-sheet, note: "machine-usable; produce-ad-video renders this" }
 phases:
   - { id: P1-ProductGrounding, required_for_completion: true, evidence: "real product read in-session (URL fetched or spec read); product facts + ICP + offer + real proof extracted, no invented features" }
   - { id: P2-ScenarioAndPlacement, required_for_completion: true, evidence: "scenario (which audience) + placement + awareness stage selected; eval metric set per placement" }
@@ -38,7 +39,7 @@ chain:
   human_checkpoint: false
 ---
 
-> **Cognitive routing:** 🧠 [STRAT] for product grounding + angle + scenario (the creative judgment); ⚙️ [EXEC] for beat-sheet mechanics. This skill writes the *script*; rendering is the `ad-video-producer` agent's job.
+> **Cognitive routing:** 🧠 [STRAT] for product grounding + angle + scenario (the creative judgment); ⚙️ [EXEC] for beat-sheet mechanics. This skill writes the *script*; rendering is `produce-ad-video`.
 
 # Ad Video Script
 
@@ -126,7 +127,7 @@ Single placement + single stage → one focused script. Don't manufacture noise.
 
 ## Step 6 — Hand off to the producer
 
-The beat sheet is consumed by the **`ad-video-producer`** agent (WI-402), which renders it: keyframe per beat (Nano Banana Pro) → image-to-video (Veo 3.1, native scene-extension + audio) → last-frame chaining → ElevenLabs VO + music bed → ffmpeg stitch; fal.ai/Replicate escape hatch for Kling/Runway. This skill stops at the beat sheet; it does not render.
+The beat sheet is consumed by the **`produce-ad-video`** skill (WI-402 / `ad-video-producer` agent). This skill stops at the beat sheet; it does not render.
 
 ## Relationship to existing skills (no duplication)
 
@@ -160,7 +161,7 @@ The beat sheet is consumed by the **`ad-video-producer`** agent (WI-402), which 
 - In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
 - Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror; record phases P1–P6 via `record-phase`
 
-**Next:** hand the emitted beat sheet to the **`ad-video-producer`** agent (WI-402) to render into a consistent ~60s video; or return the beat sheet to the orchestrator for manual rendering using the per-beat prompts. `--progressive`: none (sidecar). `--skip`: skip when a current beat sheet for the same (product, scenario, placement) already exists and the product has not changed.
+**Next:** hand the beat-sheet path to **`produce-ad-video`**. `--progressive`: none (sidecar). `--skip`: skip when a current beat sheet for the same (product, scenario, placement) already exists and the product has not changed.
 
 ## Phase receipts
 

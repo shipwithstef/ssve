@@ -48,7 +48,12 @@
     "compiler": "scripts/svc-skill-runtime-compiler-v2.mjs",
     "continuation": "references/runtime-continuation-v2.md",
     "authoritative_state": "runtime-journal",
-    "projections": ["lane-tasks", "orchestrator-state", "receipt-mirrors", "decision-log"]
+    "projections": [
+      "lane-tasks",
+      "orchestrator-state",
+      "receipt-mirrors",
+      "decision-log"
+    ]
   },
   "includedSkills": [
     "ad-video-script",
@@ -120,6 +125,7 @@
     "platform-operating-architect",
     "privacy-dpo",
     "procurement",
+    "produce-ad-video",
     "product-lead",
     "quick-fix",
     "recall-stack-knowledge",
@@ -175,6 +181,7 @@
     "define-code-style",
     "write-e2e",
     "analyze-marketing",
+    "produce-ad-video",
     "recall-stack-knowledge",
     "onboard-repo",
     "diagnose-bug",

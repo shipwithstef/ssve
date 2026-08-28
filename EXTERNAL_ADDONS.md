@@ -99,6 +99,7 @@ Validator: `test-framework/evals/tier-1/validate-visual-skills-have-live-evidenc
 - `platform-operating-architect`
 - `privacy-dpo`
 - `procurement`
+- `produce-ad-video`
 - `product-lead`
 - `quick-fix`
 - `recall-stack-knowledge`

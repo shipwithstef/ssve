@@ -61,6 +61,7 @@ dieting safe.
 - `define-code-style`
 - `write-e2e`
 - `analyze-marketing`
+- `produce-ad-video`
 - `recall-stack-knowledge`
 - `onboard-repo`
 - `diagnose-bug`
@@ -212,6 +213,8 @@ These skills are not in any lane's linear pipeline. They auto-insert into the ta
 | `find-opportunity` | `validate-feature` | Ship Brief = NO-SHIP and builder needs revenue-generating alternatives | Immediately after NO-SHIP decision | Re-routing until alternatives table exists |
 | `stage-revenue` | `validate-feature`, `route-workflow` | Timeline > 2 weeks + no proven revenue model + limited capital/runway | After `validate-feature` when capital-risk profile matches | Big-vision execution until Stage 1 plan exists |
 | `analyze-marketing` | `validate-feature`, `write-spec` | SHIP decision made; or competitive differentiators / product-market fit angles discovered in Layer 3 | After feature approval or spec Layer 3 | Launch-prep until marketing context exists |
+| `ad-video-script` | `route-workflow`, `ad-strategist` | "ad video script", beat sheet, UGC/promo script, 60s ad copy | Sidecar — writes the script, does not render | `produce-ad-video` if the user wants the file |
+| `produce-ad-video` | `route-workflow`, `ad-video-script` | remux / I2V stitch / pumping / whistle / too-hot / silent bed / `~/delivery` masters / "fix the video" | Sidecar after a beat sheet, or standalone on a locked picture | founder sound-on/sound-off watch. Adjacent exclusions: `ad-video-script` (copy), `generate-visuals` (stills), `wsl2-audio` (speakers) |
 | `strategic-decision` | `route-workflow` | N-way trade study with ≥3 viable options and multi-feature/year impact | **Pre-lane** — before lane selection | Lane selection until DECISION.md names downstream lane |
 | `plan-capabilities` | `route-workflow`, `onboard-repo` | First session; empty/missing `capability-registry.json`; unrecognized project type | Before first lane execution | Downstream work until capability inventory exists |
 | `mine-builder` | `route-workflow`, `verify-promotion` | First interaction and missing `~/.svc/builder-profile.md`; or post-project update needed | At session start if profile missing; or after project ships | Pipeline initialization until profile exists |

@@ -546,7 +546,7 @@ Mode contract and detection logic: [`REPO_MODES.md`](REPO_MODES.md)
 ## Included Skills
 
 <!-- svc:generated:begin readme-included-skills — edit skills-manifest.json / references/model-registry.json, then run: node scripts/generate-manifest-mirrors.mjs --write -->
-- `ad-video-script` — Performance ad-video script writer (Senior DR Creative Strategist). Reads the real product first, then emits a placement-aware modular script + render-ready 6×10s beat sheet (per-beat image+motion prompts, character lock, last-frame seeding). One base or many variants; hands the beat sheet to the ad-video-producer agent.
+- `ad-video-script` — Performance ad-video script writer (Senior DR Creative Strategist). Reads the real product first, then emits a placement-aware modular script + render-ready 6×10s beat sheet (per-beat image+motion prompts, character lock, last-frame seeding). One base or many variants; hands the beat sheet to `produce-ad-video`.
 - `align-feature` — Execute the story-receipts chain for one WI until STORY ALIGNED — the fixing counterpart of audit-feature
 - `analyze-competitors` — Comprehensive one-shot competitive deep-dive for new entrants
 - `analyze-domain` — Build domain expertise and reference packs
@@ -615,6 +615,7 @@ Mode contract and detection logic: [`REPO_MODES.md`](REPO_MODES.md)
 - `platform-operating-architect` — Classify platform operating model, split local/dev/staging/prod, define integration boundaries, and encode how svc should coexist with hosted platforms
 - `privacy-dpo` — Privacy, personal-data, DPIA, and retention review.
 - `procurement` — Vendor diligence and buying-decision proposals; never purchases.
+- `produce-ad-video` — Render and finish ad/launch video from a beat sheet or locked picture: I2V stitch, one ducked music bed, listen/spectrogram QA, `~/delivery` masters. Complements `ad-video-script`.
 - `product-lead` — Product prioritization, problem validation, and roadmap tradeoffs.
 - `quick-fix` — Compatibility-only retired lane; new work uses the full mandatory chain
 - `recall-stack-knowledge` — Knowledge Spine recall gate (see WI-SPINE-001)
