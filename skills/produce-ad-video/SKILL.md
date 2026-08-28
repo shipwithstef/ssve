@@ -48,7 +48,7 @@ Turn a beat sheet (or a locked picture + stems) into masters a founder can watch
 ## Before anything
 
 1. Read the beat sheet or the WI. Do not invent product features.
-2. If a cut already exists, **watch it** (1 s stills across the timeline, 0.25 s on the complained window). For audio complaints, spectrogram + ebur128 **before** touching ffmpeg. `references/audio-house-lock.md`.
+2. If a cut already exists, **watch it** (1 s stills across the timeline, 0.25 s on the complained window). For audio complaints, capture spectrogram + ebur128 **before remixing, remuxing, or overwriting any artifact**. Read-only ffmpeg analysis and still extraction are allowed. `references/audio-house-lock.md`.
 3. Decide: keep picture (`-c:v copy`) vs re-I2V named shots. A UI/compositor win is not permission to regenerate every plate. An absurd I2V gag (particle puff, extra limbs) **is** permission to re-I2V **that** shot.
 
 ## Pipeline

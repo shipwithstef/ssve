@@ -1,0 +1,49 @@
+review: produce-ad-video-exec
+rounds_run: 3
+hard_round_cap: 3
+unresolved_critical: 0
+remaining_high: 0
+remaining_medium: 4
+remaining_low: 0
+terminal_state: PASS_WITH_FINDINGS
+round_1:
+  status: completed
+  diff_sha256: 6916944d7e85bcd9c561e1ddee6b8985d77aacc6d188079fb1ede5e6b83e3865
+  result: remediation_required
+  critical: 0
+  high: 1
+  artifact: .svc/external-review-artifacts/produce-ad-video-exec-r2/findings.json
+round_2:
+  status: completed
+  diff_sha256: 64c160ca15952cf90bb4ee89ed2afeebb718b43c2eb641d07615534c6fd15aa1
+  result: package_incomplete
+  critical: 0
+  high: 1
+  artifact: .svc/external-review-artifacts/produce-ad-video-exec-r3/findings.json
+round_3:
+  status: completed
+  diff_sha256: 64c160ca15952cf90bb4ee89ed2afeebb718b43c2eb641d07615534c6fd15aa1
+  result: certified_pass_with_findings
+  critical: 0
+  high: 0
+  medium: 5
+  low: 1
+  artifact: .svc/external-review-artifacts/produce-ad-video-exec-r4/findings.json
+bounded_exit:
+  disposition: accept-with-justification
+  reason: Hard cap 3. Zero Critical, zero High on the frozen cumulative diff. Residual Mediums are contract polish, not house-lock holes.
+  residual_mediums:
+    - id: F-008
+      decision: accept-with-justification
+    - id: F-009
+      decision: accept-with-justification
+    - id: F-010
+      decision: accept-with-justification
+    - id: F-011
+      decision: accept-with-justification
+    - id: F-012
+      decision: accept-with-justification
+      note: applied after cap (ffmpeg analysis vs remix wording)
+    - id: F-013
+      decision: accept-with-justification
+      note: applied after cap (verified date)
