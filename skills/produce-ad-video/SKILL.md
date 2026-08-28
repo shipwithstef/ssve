@@ -18,13 +18,14 @@ inputs:
     - { path: "docs/specs/marketing-context.md", artifact: marketing-context }
 outputs:
   produces:
-    - { path: "docs/specs/ad-scripts/<product>/<scenario>.render.json", artifact: render-provenance, note: "per-beat tool/model/seed; masters themselves are written to ~/delivery/<slug>/ with DELIVERY-RECEIPT.md (VM write; Windows is a pull)" }
+    - { path: "docs/specs/ad-scripts/<product>/<scenario>.render.json", artifact: render-provenance, note: "per-beat tool/model/seed" }
+    - { path: "docs/specs/ad-scripts/<product>/DELIVERY-RECEIPT.md", artifact: delivery-receipt, note: "repo copy of ~/delivery/<slug>/DELIVERY-RECEIPT.md; binaries stay on the VM, Windows is a pull" }
 phases:
-  - { id: P1-WatchExisting, required_for_completion: true, evidence: "watched/listened to the current cut or named the stills/spectrogram windows; do not skip on a 'fix audio' WI" }
+  - { id: P1-WatchExisting, required_for_completion: true, evidence: "stills + spectrogram/ebur128 files from this run exist on disk for the complained window; do not skip on a 'fix audio' WI" }
   - { id: P2-LockPictureVsAudio, required_for_completion: true, evidence: "stated whether picture is kept (-c:v copy) or which shots re-I2V and why" }
   - { id: P3-RenderOrRemux, required_for_completion: true, evidence: "shots assembled or remuxed; I2V prompts avoid particle/breath metaphors; audio mix from stems once" }
   - { id: P4-InstrumentQA, required_for_completion: true, evidence: "ebur128 + spectrogram + stills of problem windows; no second loudnorm; PCM→AAC once" }
-  - { id: P5-DeliverReceipt, required_for_completion: true, evidence: "~/delivery/<slug>/ has masters + receipt with SHA; Windows pull named; paid-media not self-PASSED" }
+  - { id: P5-DeliverReceipt, required_for_completion: true, evidence: "~/delivery/<slug>/ has masters + receipt with SHA and paid_media=PENDING_FOUNDER_WATCH; pull command named, not executed as a C:\\ write" }
   - { id: P6-SelfVerifyContinuation, required_for_completion: true, evidence: "self-verify table filled; ad-video-script not rewritten" }
 chain:
   lanes: {}
@@ -77,7 +78,7 @@ Same fps/size for every shot → `concat` copy → burn captions if the cut uses
 
 ### 5. Deliver
 
-`~/delivery/<slug>/` + receipt. Do not claim a Windows copy from a VM. Name the pull command. Paid-media PASS is the founder’s.
+`~/delivery/<slug>/` + receipt. Do not claim a Windows copy from a VM. Name the pull command. Receipt must set `paid_media_status: PENDING_FOUNDER_WATCH`. Paid-media PASS is a later founder acknowledgment of sound-on **and** sound-off, not this skill’s terminal state.
 
 ## Rationalization table
 
@@ -116,10 +117,10 @@ Same fps/size for every shot → `concat` copy → burn captions if the cut uses
 | 3 | Mix is stems once | ffmpeg graph has no second loudnorm on a finished mix; AAC from PCM | |
 | 4 | I2V prompts are literal | No particle/breath metaphors unless the still needs that FX | |
 | 5 | Delivery is on the VM | `~/delivery/<slug>/` has exact names + SHA + pull line; no fake `C:\` write | |
-| 6 | Paid-media not self-PASSED | Receipt says founder sound-on + sound-off | |
+| 6 | Paid-media not self-PASSED | Receipt has `paid_media_status: PENDING_FOUNDER_WATCH`; no PASS without a separate founder ack of sound-on and sound-off | |
 
 ## Pipeline Continuation
 
-Sidecar. After delivery, stop for founder watch (`human_checkpoint`). Do not chain into `land-changeset` for binary masters unless the WI says so.
+Sidecar. After delivery the terminal state is `WAITING_FOR_HUMAN` (`human_checkpoint`). Do not chain into `land-changeset` for binary masters unless the WI says so.
 
 `--skip` when masters + receipt already match the WI SHA and the founder has not opened a new defect.

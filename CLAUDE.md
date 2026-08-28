@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-Serious Serious Vibe Engineering (SSVE) — a 103-skill framework for progressive deterministic development (count = `skills-manifest.json includedSkills.length`, verified 2026-08-11; check the manifest, don't trust this prose). This repo IS the framework, not a project built with it. Skills are SKILL.md files that Claude Code loads as prompts. The lowercase `svc` name remains the compatibility namespace for commands, paths, state, and hooks.
+Serious Serious Vibe Engineering (SSVE) — a 104-skill framework for progressive deterministic development (count = `skills-manifest.json includedSkills.length`, verified 2026-08-11; check the manifest, don't trust this prose). This repo IS the framework, not a project built with it. Skills are SKILL.md files that Claude Code loads as prompts. The lowercase `svc` name remains the compatibility namespace for commands, paths, state, and hooks.
 
 Bootstrap rule for onboarded projects: respect the project's local AGENTS.md/CLAUDE.md and svc route-workflow contract from its actual worktree; post-deploy/production validation asks require live post-deploy evidence, never local substitutes.
 

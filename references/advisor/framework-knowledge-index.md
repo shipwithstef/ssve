@@ -27,7 +27,7 @@ Derived-at for all blocks: **2026-08-26** unless stated otherwise
 
 | Fact | Value | Authority | Verify |
 |---|---|---|---|
-| First-party skills | 103 in `includedSkills`; 58 in router core pack | `skills-manifest.json` | `node -e "console.log(require('./skills-manifest.json').includedSkills.length)"` |
+| First-party skills | 104 in `includedSkills`; 59 in router core pack | `skills-manifest.json` | `node -e "console.log(require('./skills-manifest.json').includedSkills.length)"` |
 | Review gates | G1–G7 (write-spec, design-ux, design-ui, design-tech, execute-changeset, land-changeset, verify-promotion) | `skills-manifest.json` `gates` | `node -e "const m=require('./skills-manifest.json');console.log(Object.keys(m.reviewGates\|\|m.gates))"` |
 | Workflow lanes | 7: greenfield, brownfield-conversion, brownfield-feature, bugfix, drift, refactor, framework | `skills-manifest.json` `laneDefinitions` | `node -e "console.log(Object.keys(require('./skills-manifest.json').laneDefinitions).join(','))"` |
 | Anti-patterns | 34 APs in the reference doc | `references/anti-patterns.md` | `grep -cE '^###? AP-[0-9]+' references/anti-patterns.md` |

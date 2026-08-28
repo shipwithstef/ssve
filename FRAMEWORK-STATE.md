@@ -9,7 +9,7 @@ Skills that update this: same list + any manual framework change
 
 ## Current State
 
-- **Skills:** 103 (`skills-manifest.json` is authoritative; WI-507 added the 15 terminal company operating brains on 2026-07-22: `cos`, `growth-lead`, `fin-analyst`, `product-lead`, `market-intel`, `counsel`, `security-ops`, `customer-cs`, `revops`, `comms`, `tax-auditor`, `privacy-dpo`, `infra-sre`, `procurement`, and `growth-eng`)
+- **Skills:** 104 (`skills-manifest.json` is authoritative; 2026-08-28 added `produce-ad-video`. WI-507 added the 15 terminal company operating brains on 2026-07-22: `cos`, `growth-lead`, `fin-analyst`, `product-lead`, `market-intel`, `counsel`, `security-ops`, `customer-cs`, `revops`, `comms`, `tax-auditor`, `privacy-dpo`, `infra-sre`, `procurement`, and `growth-eng`)
   - **External-grade skills (WI-CLN-2 / §2.6):** `wsl2-audio` (host-specific troubleshooting) and `suno-architect` (creative/music) are in `includedSkills` but are external-grade — host-specific or creative rather than core pipeline. They stay in the manifest (the structure validator errors on any top-level SKILL.md dir absent from `includedSkills`) and are NOT in `corePackForRouting`, `pipeline`, or any lane. Treat them as host/creative addons, not framework signal.
 - **Review gates:** 7 (G1-G7)
 - **Lanes:** 7 (greenfield, brownfield-conversion, brownfield-feature, bugfix, drift, refactor, framework) + pre-lane skills (`strategic-decision` operates above lanes — output names downstream lane)

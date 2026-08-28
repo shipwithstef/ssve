@@ -22,7 +22,7 @@ If the product repo has `scripts/pull-vm-delivery-to-windows.sh`:
 bash ~/app-workspaces/<product>/scripts/pull-vm-delivery-to-windows.sh <slug>
 ```
 
-That rsyncs `vm-agent-swarm:~/delivery/<slug>/` → `C:\Users\Dell\Downloads\<slug>\`.
+That rsyncs `<render-host>:~/delivery/<slug>/` → `C:\Users\<windows-user>\Downloads\<slug>\`. Resolve both names from the project (do not hard-code a person or VM). Record the resolved paths in the receipt. Do not claim the Windows copy exists until the pull actually ran on a machine that can see `/mnt/c`.
 
 ## Paid-media gate
 
