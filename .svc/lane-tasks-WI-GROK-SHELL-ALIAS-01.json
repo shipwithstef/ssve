@@ -675,6 +675,36 @@
                 "path": ".svc/land-changeset-validation.log"
               }
             ]
+          },
+          {
+            "id": "P4-PushPrCreation",
+            "ts": "2026-08-30T14:42:25.817Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-pr.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-MergeDecisionCleanup",
+            "ts": "2026-08-30T14:42:25.969Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-merge.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SpecStatusSelfVerify",
+            "ts": "2026-08-30T14:42:26.141Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-self-verify.log"
+              }
+            ]
           }
         ]
       }
