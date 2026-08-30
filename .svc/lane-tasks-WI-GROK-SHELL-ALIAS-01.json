@@ -2,7 +2,7 @@
   "wi": "WI-GROK-SHELL-ALIAS-01",
   "lane": "bugfix",
   "created": "2026-08-30T12:47:09.095Z",
-  "status": "in_progress",
+  "status": "pending",
   "delivery_graph": {
     "compiler_version": 1,
     "user_intent": "Fix Grok run_terminal_command shell alias handling and skip Codex skill-load receipts for non-loader Grok shell commands while retaining isolation and WI binding",
@@ -486,7 +486,7 @@
     {
       "id": 6,
       "subject": "review-exec: delivery graph required step",
-      "status": "in_progress",
+      "status": "completed",
       "blocked_by": [
         5
       ],
@@ -537,20 +537,99 @@
                 "path": "docs/specs/reviews/grok-shell-alias-exec-review-log.yaml"
               }
             ]
+          },
+          {
+            "id": "P5-VerdictAndReceiptFinalize",
+            "ts": "2026-08-30T14:36:37.474Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipts/0c610c1/review-exec.json"
+              }
+            ]
           }
         ]
-      }
+      },
+      "completed_at": "2026-08-30T14:36:37.680Z"
     },
     {
       "id": 7,
       "subject": "audit-implementation: delivery graph required step",
-      "status": "pending",
+      "status": "completed",
       "blocked_by": [
         6
       ],
       "metadata": {
         "skill": "audit-implementation"
-      }
+      },
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-08-30T14:36:37.979Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextScopeConcern",
+            "ts": "2026-08-30T14:37:59.337Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/grok-shell-alias-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecialistDispatchCoverageLedger",
+            "ts": "2026-08-30T14:37:59.497Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/grok-shell-alias-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-HypothesisGeneration",
+            "ts": "2026-08-30T14:37:59.646Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/grok-shell-alias-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-SubsystemBehaviorAudit",
+            "ts": "2026-08-30T14:37:59.797Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/grok-shell-alias-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-FindingsConvergenceReport",
+            "ts": "2026-08-30T14:37:59.949Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/grok-shell-alias-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-08-30T14:38:00.100Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/grok-shell-alias-analysis.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-30T14:38:00.256Z"
     },
     {
       "id": 8,
