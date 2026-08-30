@@ -1,0 +1,72 @@
+{
+  "receipt_type": "plan-manifest",
+  "schema_version": 3,
+  "wi": "WI-GROK-SHELL-ALIAS-01",
+  "mode": "inline",
+  "lane": "bugfix",
+  "scope": {
+    "included": [
+      "shared shell alias classification",
+      "Grok non-loader receipt bypass after ownership",
+      "Grok hook matcher parity",
+      "focused Tier-1 regression coverage"
+    ],
+    "excluded": ["HoursHub video and media files", "Codex video remux", "new Grok hook rows"],
+    "excluded_reason_per_path": {
+      "HoursHub video and media files": "Live proof is hook-only and status-preserving.",
+      "Codex video remux": "Owner explicitly prohibited sending the video job to Codex.",
+      "new Grok hook rows": "Owner limited TOML changes to two existing matchers."
+    }
+  },
+  "dependencies": [
+    {"artifact": "bug diagnosis", "citation": "docs/specs/bugfix/grok-shell-alias-brief.md:1"},
+    {"artifact": "technical design", "citation": "docs/specs/tech/grok-shell-alias.md:1"},
+    {"artifact": "changeset manifest", "citation": "docs/plans/2026-08-30-grok-shell-alias/manifest.md:1"}
+  ],
+  "decision_trace": [
+    {
+      "question": "How should shell aliases be normalized?",
+      "alternatives": ["duplicate local sets", "one shared classifier"],
+      "chosen": "one shared classifier",
+      "rationale": "Prevents host alias drift across enforcement predicates.",
+      "reversal_conditions": "Only if host protocols stop sharing Bash-shaped parsing."
+    },
+    {
+      "question": "When may Grok skip the Codex receipt?",
+      "alternatives": ["before ownership", "after owned active task and only for non-loaders"],
+      "chosen": "after owned active task and only for non-loaders",
+      "rationale": "Retains operation scope, isolation, and WI ownership while removing a Codex-only protocol requirement."
+    }
+  ],
+  "task_graph": [
+    {"id": "T01", "purpose": "runtime aliases"},
+    {"id": "T02", "purpose": "Grok matcher wiring"},
+    {"id": "T03", "purpose": "focused regression proof"},
+    {"id": "T04", "purpose": "plan and receipt closeout"}
+  ],
+  "validation_plan": [
+    {"command": "bash test-framework/evals/tier-1/validate-codex-execution-integrity.sh", "expected": "188 passed, 0 failed"},
+    {"command": "bash test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh", "expected": "27 passed, 0 failed"},
+    {"command": "bash test-framework/evals/tier-1/validate-operation-scope-authority.sh", "expected": "exit 0"}
+  ],
+  "risk_rollback": {
+    "tier": "high",
+    "rollback_anchor": "35c9a07bfa0b4a8cc70bdd672e5690b241d751a5",
+    "host_install_timing": "post-land only",
+    "host_transaction": "setup restores prior managed bytes on internal failure"
+  },
+  "timestamp": "2026-08-30T13:40:00.000Z",
+  "execution_command_sequence": [
+    {"step": 1, "command": "run changed-module syntax checks", "expected_outcome": "exit 0"},
+    {"step": 2, "command": "run three focused Tier-1 validators", "expected_outcome": "all focused checks pass"},
+    {"step": 3, "command": "land through mandatory review chain", "expected_outcome": "landed canonical SHA"},
+    {"step": 4, "command": "./setup --host grok from landed canonical source", "expected_outcome": "installed source and matchers converge"},
+    {"step": 5, "command": "replay exact HoursHub bootstrap payload through installed enforcer", "expected_outcome": "bootstrap allow, negative control deny, no HoursHub status delta"}
+  ],
+  "ac_digests": {
+    "spec_path": "docs/specs/bugfix/grok-shell-alias-brief.md",
+    "spec_ac_table_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "entries": []
+  },
+  "mocked_deps": []
+}

@@ -89,7 +89,7 @@ export function buildGrokHookEntries(skillsPath) {
   if (!DISABLED.has("svc-bash-guard")) {
     hooks.push({
       event: "PreToolUse",
-      matcher: "Shell|Bash",
+      matcher: "Shell|Bash|run_terminal_command",
       command: `${NODE_CMD} ${hooksDir}/svc-workflow-guard.mjs --bash-guard`,
       timeout: 10,
     });
@@ -147,7 +147,7 @@ export function buildGrokHookEntries(skillsPath) {
   if (!DISABLED.has("svc-phase-receipt-autoemit-bash")) {
     hooks.push({
       event: "PostToolUse",
-      matcher: "Shell|Bash",
+      matcher: "Shell|Bash|run_terminal_command",
       command: `${NODE_CMD} ${hooksDir}/svc-phase-receipt-autoemit.mjs`,
       timeout: 10,
     });

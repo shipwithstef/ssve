@@ -9,6 +9,7 @@ import { validateTaskGraphShape } from "../../lib/validate-task-graph-shape.mjs"
 import { isValidWiId, WI_ID_BODY } from "../../lib/wi-id.mjs";
 import { resolveOperationScope } from "../../lib/operation-scope.mjs";
 import { assertPrivateDirectory, ensurePrivateDirectory, resolveRuntimeDirectory } from "../../lib/svc-runtime-root.mjs";
+import { isShellTool } from "../../lib/shell-tools.mjs";
 
 export const SCHEMA_VERSION = 1;
 
@@ -453,7 +454,7 @@ export function stripDevNullRedirections(segment) {
 export function isReadOnlyTool(ctx) {
   const name = toolName(ctx);
   if (READ_ONLY_TOOLS.has(name)) return true;
-  if (name !== "Bash") return false;
+  if (!isShellTool(name)) return false;
   const command = mutationPayload(ctx).trim();
   if (!command) return false;
   // WI-501: classify EVERY SEGMENT of a compound command instead of rejecting the

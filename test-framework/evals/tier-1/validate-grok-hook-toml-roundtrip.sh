@@ -178,6 +178,14 @@ else
   fail "Grok isolation matcher omits run_terminal_command"
 fi
 
+if [ "$(grep -c '^matcher = "Shell|Bash|run_terminal_command"$' "$CONFIG")" -eq 2 ] \
+  && grep -q 'svc-workflow-guard.mjs --bash-guard' "$CONFIG" \
+  && grep -q 'svc-phase-receipt-autoemit.mjs' "$CONFIG"; then
+  pass "Grok bash guard and shell phase receipt include run_terminal_command"
+else
+  fail "Grok bash guard or shell phase receipt omits run_terminal_command"
+fi
+
 if grep -q 'svc-codex-prompt-authority.mjs' "$CONFIG" \
   && grep -q 'svc-codex-owner-recovery.mjs' "$CONFIG"; then
   pass "Grok UserPromptSubmit wires prompt authority and owner recovery"

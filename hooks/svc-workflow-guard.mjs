@@ -44,6 +44,7 @@ const { blockViaExit, emitDecision, ASK, detectHost: detectHostEnv } = await imp
 );
 const { resolveOperationScope } = await import(path.join(__dirname, "lib", "operation-scope.mjs"));
 const { classifyBashMutationTargets } = await import(path.join(__dirname, "lib", "bash-mutation-targets.mjs"));
+const { isShellTool } = await import(path.join(__dirname, "lib", "shell-tools.mjs"));
 
 let operationRoot = process.cwd();
 let operationMaintenance = false;
@@ -1130,7 +1131,7 @@ async function main() {
     // vs Bash into separate hook entries. Applies only the path-specific guards
     // (config protection, phase gate, scope, boundary); the Bash-specific
     // checks (no-verify, commit quality, destructive git) remain in --bash-guard.
-    if (call.toolName === "Bash") {
+    if (isShellTool(call.toolName)) {
       const command = extractCommand(toolInput);
       if (!command) process.exit(0);
       for (const fp of classifyBashMutationTargets(command, { cwd: operationRoot })) {
