@@ -60,6 +60,7 @@ const { readHookPayload, extractFilePath, extractCommand } = await import(
 );
 const { resolveOperationScope } = await import(path.join(__dirname, "lib", "operation-scope.mjs"));
 const { classifyBashMutationTargets } = await import(path.join(__dirname, "lib", "bash-mutation-targets.mjs"));
+const { isShellTool } = await import(path.join(__dirname, "lib", "shell-tools.mjs"));
 const { blockViaExit } = await import(path.join(__dirname, "lib", "hook-decision.mjs"));
 
 // WI-487 (F-003/AC-487-7): route BLOCK paths through the 5-field actionable-denial
@@ -213,7 +214,7 @@ async function main() {
   if (!call) process.exit(0);
 
   const { toolName, toolInput } = call;
-  if (!/^(Edit|Write|WriteFile|StrReplaceFile|Bash)$/.test(toolName)) {
+  if (!/^(Edit|Write|WriteFile|StrReplaceFile)$/.test(toolName) && !isShellTool(toolName)) {
     process.exit(0);
   }
 
@@ -230,7 +231,7 @@ async function main() {
     tool_name: call.toolName, tool_input: call.toolInput, cwd: call.session_cwd || call.cwd,
   });
   const operationRoot = operationScope.operation_repository?.worktree_root || operationScope.operation_cwd || call.cwd || process.cwd();
-  const mutationTargets = toolName === "Bash"
+  const mutationTargets = isShellTool(toolName)
     ? classifyBashMutationTargets(extractCommand(toolInput), { cwd: operationRoot })
     : [operationScope.targets[0]?.canonical || path.resolve(operationRoot, requestedPath)].filter(Boolean);
   if (!mutationTargets.length) process.exit(0);

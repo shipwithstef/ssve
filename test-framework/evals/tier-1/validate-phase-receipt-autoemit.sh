@@ -47,6 +47,12 @@ RUN(){ env -u GIT_DIR -u GIT_WORK_TREE SVC_AUTOEMIT_SKILLS_ROOT="$TMP/proj" node
 echo "=== Tier 1: phase-receipt autoemit (WI-363) ==="
 check "hook exists + syntax" node --check "$HOOK"
 
+# A0 Grok's native tool name must reach the command classifier.
+check "A0 run_terminal_command is command-shaped" node --input-type=module -e "
+import { evaluateAutoemitTarget } from '$HOOK';
+const target = evaluateAutoemitTarget({toolName:'run_terminal_command',toolInput:{command:'echo x >> .svc/alpha.log'},cwd:'$TMP/proj',raw:{host:'grok'}});
+if (!target || target.kind !== 'command' || target.touched !== 'echo x >> .svc/alpha.log') process.exit(1);"
+
 # A1 Bash append with mutation op -> P1-Inline recorded (prose suffix stripped)
 payload Bash '{"command":"echo x >> .svc/alpha.log"}' "$TMP/proj" | RUN
 check "A1 inline-map phase auto-recorded" grep -q '"id": "P1-Inline"' "$GRAPH"

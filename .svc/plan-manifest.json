@@ -9,6 +9,7 @@
       "shared shell alias classification",
       "Grok non-loader receipt bypass after ownership",
       "Grok hook matcher parity",
+      "live dispatcher child alias parity",
       "focused Tier-1 regression coverage"
     ],
     "excluded": ["HoursHub video and media files", "Codex video remux", "new Grok hook rows"],
@@ -47,7 +48,10 @@
   "validation_plan": [
     {"command": "bash test-framework/evals/tier-1/validate-codex-execution-integrity.sh", "expected": "188 passed, 0 failed"},
     {"command": "bash test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh", "expected": "27 passed, 0 failed"},
-    {"command": "bash test-framework/evals/tier-1/validate-operation-scope-authority.sh", "expected": "exit 0"}
+    {"command": "bash test-framework/evals/tier-1/validate-operation-scope-authority.sh", "expected": "exit 0"},
+    {"command": "bash test-framework/evals/tier-1/validate-g4-skill-artifact-authenticity.sh", "expected": "10 passed, 0 failed"},
+    {"command": "bash test-framework/evals/tier-1/validate-phase-receipt-autoemit.sh", "expected": "12 passed, 0 failed"},
+    {"command": "bash test-framework/evals/tier-1/validate-impact-triad.sh", "expected": "58 passed, 0 failed"}
   ],
   "risk_rollback": {
     "tier": "high",

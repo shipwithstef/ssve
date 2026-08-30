@@ -13,11 +13,11 @@
 
 ## Implementation Summary
 
-Centralize shell tool aliases and apply the classifier to the eight hook consumers named by the owner. Preserve raw tool names for diagnostics. Retain zero-state exact bootstrap authorization, isolation, operation-scope validation, and owned-task resolution. Bypass only the Codex skill-load receipt for Grok non-loader shell commands after ownership is proven. Update Grok hook matchers and install with the existing transactional setup path. HoursHub video files are outside scope.
+Centralize shell tool aliases and apply the classifier to the owner-named consumers and every fail-closed child on Grok's live consolidated dispatcher path. Preserve raw tool names for diagnostics. Retain zero-state exact bootstrap authorization, isolation, operation-scope validation, and owned-task resolution. Bypass only the Codex skill-load receipt for Grok non-loader shell commands after ownership is proven. Update Grok hook matchers and install with the existing transactional setup path. HoursHub video files are outside scope.
 
 ## Entry-point universe
 
-Pattern scan found eight runtime consumers plus one Grok wirer: the skill-load enforcer; operation scope; Codex read-only context; observation normalization; workflow guard; loop guard; worktree isolation guard; the new shared helper; and Grok TOML wiring. The task graph covers 100% of this declared universe.
+Pattern scan plus G5 live-dispatch review found twelve runtime consumers plus one Grok wirer: the original owner-named hooks, worktree isolation, skill-artifact authenticity, session-contract freshness, phase-receipt autoemit, impact-triad, the shared helper, and Grok TOML wiring. The task graph covers 100% of this corrected live universe.
 
 ## Read-only review dependencies
 
@@ -34,9 +34,9 @@ The adversarial plan reviewer may read `AGENTS.md`, `CLAUDE.md`, `skills-manifes
 
 | Task | Action | Files | Purpose |
 |---|---|---|---|
-| T01 | CREATE/MODIFY | hooks/lib/shell-tools.mjs;hooks/codex/svc-codex-skill-load-enforcer.mjs;hooks/lib/operation-scope.mjs;hooks/codex/lib/codex-hook-context.mjs;hooks/lib/pretool-decision-engine.mjs;hooks/svc-workflow-guard.mjs;hooks/svc-loop-guard.mjs;hooks/svc-worktree-isolation-guard.mjs | Shared alias classification and runtime consumers |
+| T01 | CREATE/MODIFY | hooks/lib/shell-tools.mjs;hooks/codex/svc-codex-skill-load-enforcer.mjs;hooks/lib/operation-scope.mjs;hooks/codex/lib/codex-hook-context.mjs;hooks/lib/pretool-decision-engine.mjs;hooks/svc-workflow-guard.mjs;hooks/svc-loop-guard.mjs;hooks/svc-worktree-isolation-guard.mjs;hooks/svc-skill-artifact-authenticity.mjs;hooks/svc-session-contract-freshness.mjs;hooks/svc-phase-receipt-autoemit.mjs;hooks/svc-impact-triad-guard.mjs | Shared alias classification across the live Grok dispatcher path |
 | T02 | MODIFY | scripts/wire-grok-hooks.mjs | Grok matcher wiring |
-| T03 | CREATE/MODIFY | test-framework/evals/tier-1/validate-codex-execution-integrity.sh;test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh;docs/specs/contract-maps/grok-shell-alias.md;docs/specs/test-evidence/WI-GROK-SHELL-ALIAS-01/cross-system-probe.json;docs/specs/reviews/wi-grok-shell-alias-g5.md | Alias, bootstrap, receipt, isolation, matcher, cross-system proof, and G5 decision |
+| T03 | CREATE/MODIFY | test-framework/evals/tier-1/validate-codex-execution-integrity.sh;test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh;test-framework/evals/tier-1/validate-g4-skill-artifact-authenticity.sh;test-framework/evals/tier-1/validate-session-contract-freshness.sh;test-framework/evals/tier-1/validate-phase-receipt-autoemit.sh;test-framework/evals/tier-1/validate-impact-triad.sh;docs/specs/contract-maps/grok-shell-alias.md;docs/specs/test-evidence/WI-GROK-SHELL-ALIAS-01/cross-system-probe.json;docs/specs/reviews/wi-grok-shell-alias-g5.md | Alias, bootstrap, receipt, isolation, matcher, dispatcher-child, cross-system proof, and G5 decision |
 | T04 | CREATE/MODIFY | docs/specs/bugfix/grok-shell-alias-brief.md;docs/specs/tech/grok-shell-alias.md;docs/plans/2026-08-30-grok-shell-alias/manifest.md;docs/plans/2026-08-30-grok-shell-alias/plan-contract.json;docs/plans/2026-08-30-grok-shell-alias/review-log.yaml;.svc/plan-manifest.json;.svc/lane-tasks-WI-GROK-SHELL-ALIAS-01.json;.svc/phase-override-WI-GROK-SHELL-ALIAS-01.json;.svc/authorization-events.jsonl;.svc/manifest-digest.json;.svc/pipeline-decisions.jsonl | Diagnosis, design, plan/review, graph, chain baton, review digest, and authority decision receipts |
 
 Changeset Blueprint is intentionally omitted because execution mode is `inline` and the same orchestrator holds the diagnosis and technical design context.
@@ -144,7 +144,7 @@ Scan remainder outside T01/T02:
 | Hit | Exclusion |
 |---|---|
 | `hooks/svc-owner-inject.mjs`, `hooks/svc-learning-inject.mjs`, `hooks/svc-rule-injector.mjs` | Context-injection hooks wired to host-specific Bash events; not enforcement predicates named by the owner and not in the Grok PreToolUse chain. |
-| `hooks/svc-session-contract-freshness.mjs`, `hooks/svc-skill-artifact-authenticity.mjs` | Their Grok matcher is `Write|Edit`; their Bash branches are unreachable for Grok and outside this owner-scoped alias patch. |
+| `hooks/svc-session-contract-freshness.mjs`, `hooks/svc-skill-artifact-authenticity.mjs`, `hooks/svc-phase-receipt-autoemit.mjs`, `hooks/svc-impact-triad-guard.mjs` | INCLUDED after G5 proved the consolidated dispatcher invokes these children for Grok shell calls regardless of their standalone matcher rows. |
 | `hooks/kimi/svc-kimi-skill-load-enforcer.sh` | Kimi-specific shell contract, intentionally independent of Grok/Codex ESM classification. |
 
 ## Checkpoint Plan

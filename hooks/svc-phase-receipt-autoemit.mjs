@@ -9,6 +9,7 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readHookPayload, extractFilePath, extractCommand, resolveHookOperation } from "./lib/hook-payload.mjs";
+import { isShellTool } from "./lib/shell-tools.mjs";
 
 const SVC_ROOT = process.env.SVC_AUTOEMIT_SKILLS_ROOT || path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -88,7 +89,7 @@ export function evaluateAutoemitTarget(call) {
   let kind = "";
   const toolU = tool.toUpperCase();
   if (toolU === "EDIT" || toolU === "WRITE") { touched = extractFilePath(call.toolInput) || ""; kind = "file"; }
-  else if (toolU === "BASH" || toolU === "SHELL") { touched = extractCommand(call.toolInput) || ""; kind = "command"; }
+  else if (isShellTool(tool)) { touched = extractCommand(call.toolInput) || ""; kind = "command"; }
   else return null;
   if (!touched) return null;
   if (path.isAbsolute(touched) && kind === "file") touched = path.relative(cwd, touched);

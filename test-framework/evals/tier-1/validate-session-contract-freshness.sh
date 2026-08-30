@@ -114,6 +114,8 @@ mkdir -p "$T/.svc"
 printf '%s\n' '{"ts":"2026-01-01T00:00:00Z","wi":"old"}' > "$T/.svc/session-contract.jsonl"
 probe "stale contract in svc repo still blocks (negative fixture)" \
   "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$T/file.txt\",\"content\":\"x\"},\"cwd\":\"$T\"}" 2
+probe "stale contract blocks Grok shell mutation" \
+  "{\"tool_name\":\"run_terminal_command\",\"tool_input\":{\"command\":\"touch $T/grok.txt\"},\"cwd\":\"$T\",\"host\":\"grok\"}" 2
 
 # git repo WITHOUT .svc dir → not svc-governed → pass
 T2="$(mktemp -d)"

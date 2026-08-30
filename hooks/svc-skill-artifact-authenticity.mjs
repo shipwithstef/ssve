@@ -32,6 +32,7 @@ const { readHookPayload, extractFilePath, extractCommand } = await import(
 );
 const { resolveOperationScope } = await import(path.join(__dirname, "lib", "operation-scope.mjs"));
 const { classifyBashMutationTargets } = await import(path.join(__dirname, "lib", "bash-mutation-targets.mjs"));
+const { isShellTool } = await import(path.join(__dirname, "lib", "shell-tools.mjs"));
 // WI-487 (F-003/AC-487-7): route the block through the 5-field actionable-denial
 // envelope + durable receipt (fall back to the legacy prose on older installs).
 let emitDenial = null;
@@ -39,7 +40,7 @@ try { ({ emitDenial } = await import(path.join(__dirname, "lib", "hook-denial.mj
 
 const call = readHookPayload();
 if (!call) process.exit(0);
-if (!["Edit", "Write", "Update", "Bash"].includes(call.toolName)) process.exit(0);
+if (!["Edit", "Write", "Update"].includes(call.toolName) && !isShellTool(call.toolName)) process.exit(0);
 
 const operationHost = call.raw?.host || process.env.SVC_HOST ||
   (process.env.CLAUDE_PLUGIN_ROOT || process.env.CLAUDE_CODE_REMOTE || process.env.CLAUDE_PROJECT_DIR ? "claude" : "codex");
@@ -51,7 +52,7 @@ if (!operationScope.ok) process.exit(0);
 const target = operationScope.targets[0];
 const targetRoot = target?.worktree_root || operationScope.operation_repository?.worktree_root || operationScope.operation_cwd;
 if (!targetRoot) process.exit(0);
-const filePaths = call.toolName === "Bash"
+const filePaths = isShellTool(call.toolName)
   ? classifyBashMutationTargets(extractCommand(call.toolInput), { cwd: targetRoot })
   : [extractFilePath(call.toolInput)].filter(Boolean);
 if (!filePaths.length) process.exit(0);
