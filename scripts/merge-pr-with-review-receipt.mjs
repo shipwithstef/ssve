@@ -217,8 +217,9 @@ for (const banned of ["--rebase", "--merge", "--auto"]) {
     const meta = JSON.parse(pre.stdout);
     if (!/^[0-9a-f]{40}$/.test(meta.baseRefOid || "") || !/^[0-9a-f]{40}$/.test(meta.headRefOid || "")) throw new Error("PR base/head OIDs are missing");
     const compare = spawnSync("gh", ["api", `repos/${repo}/compare/${meta.baseRefOid}...${meta.headRefOid}`, "--jq", ".behind_by"], { encoding: "utf8" });
-    const behindBy = Number(String(compare.stdout || "").trim());
-    if (compare.status !== 0 || !Number.isInteger(behindBy) || behindBy < 0) throw new Error("GitHub compare did not return a valid behind_by count");
+    const rawBehindBy = String(compare.stdout ?? "").trim();
+    if (compare.status !== 0 || !/^(0|[1-9]\d*)$/.test(rawBehindBy)) throw new Error("GitHub compare did not return a valid behind_by count");
+    const behindBy = Number(rawBehindBy);
     if (behindBy !== 0) {
       console.error(`[svc-finalize] BLOCKED: PR behindBy=${behindBy} (must be 0); rebase so squash tree matches reviewed candidate.`);
       process.exit(2);
