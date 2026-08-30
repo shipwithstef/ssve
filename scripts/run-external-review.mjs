@@ -25,7 +25,7 @@ import { resolveExternalReviewer } from './review-topology-v2.mjs';
 import { candidateTreeIdentity, issueExternalReviewProvenance } from './lib/external-review-provenance.mjs';
 import { relocateTree } from './lib/review-evidence-store.mjs';
 
-const LAUNCHER_VERSION = '2.5.2';
+const LAUNCHER_VERSION = '2.5.3';
 export const EXTERNAL_REVIEW_LAUNCHER_VERSION = LAUNCHER_VERSION;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FINDINGS_SCHEMA = path.join(ROOT, 'schemas/external-review-findings.schema.json');
@@ -1127,7 +1127,7 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
     args = ['--print', '--mode', 'plan', '--output-format', 'json', '--model', cursorModel, '--sandbox', 'disabled', '--workspace', path.resolve(process.env.SVC_EXTERNAL_REVIEW_CONTEXT_ROOT || process.cwd()), '--trust'];
   } else if (tuple.host === 'grok') {
     const inlineSchema = JSON.stringify(JSON.parse(schemaBytes.toString('utf8')));
-    const reviewInstruction = Buffer.from(`You are the independent SVC ${reviewKind} reviewer. Work read-only. Return the JSON object required by the supplied schema. The reviewer object must use host=grok, family=xai, model=${tuple.model}, effort=${tuple.effort}.\n\n`);
+    const reviewInstruction = Buffer.from(`You are the independent SVC ${reviewKind} reviewer. Work read-only. The complete context and diff are already embedded in this prompt; do not return a loading, status, or intermediate response. Complete the review now and return the final JSON object required by the supplied schema. Set review_kind exactly to ${reviewKind}. The reviewer object must use host=grok, family=xai, model=${tuple.model}, effort=${tuple.effort}.\n\n`);
     packageBytes = Buffer.concat([reviewInstruction, packageBytes]);
     const promptFile = path.join(artifactsDir, `${prefix}-grok-prompt.txt`);
     await writeFile(promptFile, packageBytes, { mode: 0o600 });
