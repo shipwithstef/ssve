@@ -59,7 +59,7 @@ export function buildGrokHookEntries(skillsPath) {
   if (!DISABLED.has("svc-worktree-isolation-guard")) {
     hooks.push({
       event: "PreToolUse",
-      matcher: "Shell|Write|Edit|Bash",
+      matcher: "Shell|Write|Edit|Bash|run_terminal_command",
       command: `${NODE_CMD} ${hooksDir}/svc-worktree-isolation-guard.mjs`,
       timeout: 10,
     });
@@ -169,6 +169,24 @@ export function buildGrokHookEntries(skillsPath) {
       event: "UserPromptSubmit",
       matcher: "*",
       command: `${NODE_CMD} ${hooksDir}/svc-prompt-stale-state.mjs`,
+      timeout: 10,
+    });
+  }
+
+  if (!DISABLED.has("svc-codex-prompt-authority")) {
+    hooks.push({
+      event: "UserPromptSubmit",
+      matcher: "*",
+      command: `${NODE_CMD} ${hooksDir}/codex/svc-codex-prompt-authority.mjs`,
+      timeout: 10,
+    });
+  }
+
+  if (!DISABLED.has("svc-codex-owner-recovery")) {
+    hooks.push({
+      event: "UserPromptSubmit",
+      matcher: "*",
+      command: `${NODE_CMD} ${hooksDir}/codex/svc-codex-owner-recovery.mjs`,
       timeout: 10,
     });
   }

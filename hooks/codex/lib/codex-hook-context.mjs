@@ -26,8 +26,11 @@ export function sessionId(payload, env = process.env) {
   return String(payload?.session_id || payload?.sessionId || env.CODEX_THREAD_ID || env.CODEX_SESSION_ID || "");
 }
 
-export function turnId(payload) {
-  return String(payload?.turn_id || payload?.turnId || "");
+export function turnId(payload, env = process.env) {
+  const explicit = String(payload?.turn_id || payload?.turnId || "");
+  if (explicit) return explicit;
+  const sid = sessionId(payload, env);
+  return sid ? `session:${sid}` : "";
 }
 
 export function toolName(payload) {
@@ -600,7 +603,7 @@ export function hookContext(payload, env = process.env) {
   const cwd = path.resolve(payload?.cwd || payload?.working_directory || process.cwd());
   const repoRoot = findRepoRoot(cwd);
   const sid = sessionId(payload, env);
-  const turn = turnId(payload);
+  const turn = turnId(payload, env);
   const governance = governanceBinding(payload, env);
   if (!repoRoot || !sid) return {
     cwd, session_cwd: cwd, repo_root: repoRoot, governance_worktree: governance?.worktree || null,

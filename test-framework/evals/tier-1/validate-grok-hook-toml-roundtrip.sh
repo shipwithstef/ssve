@@ -172,6 +172,19 @@ else
   fail "nested SessionStart healthcheck timeout 30 missing"
 fi
 
+if grep -q 'matcher = "Shell|Write|Edit|Bash|run_terminal_command"' "$CONFIG"; then
+  pass "Grok isolation matcher includes run_terminal_command"
+else
+  fail "Grok isolation matcher omits run_terminal_command"
+fi
+
+if grep -q 'svc-codex-prompt-authority.mjs' "$CONFIG" \
+  && grep -q 'svc-codex-owner-recovery.mjs' "$CONFIG"; then
+  pass "Grok UserPromptSubmit wires prompt authority and owner recovery"
+else
+  fail "Grok UserPromptSubmit authority hooks missing"
+fi
+
 if grep -q '^\[cli\]' "$CONFIG" && grep -q '^\[privacy\]' "$CONFIG"; then
   pass "non-hook sections preserved"
 else
