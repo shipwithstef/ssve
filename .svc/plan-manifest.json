@@ -73,8 +73,15 @@
   ],
   "ac_digests": {
     "spec_path": "docs/specs/work-items/WI-GROK-HOST-IDENTITY-02.md",
-    "spec_ac_table_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "entries": []
+    "spec_ac_table_sha256": "839a866407d671214d61301f7183c9945d514018db4108231e63aec4cf9634cc",
+    "entries": [
+      {"ac_id": "AC-1", "digest": "Grok host/session identity resolves consistently across shared resolver, dispatcher, bootstrap, and authority CLI with fail-closed unknown identity.", "anchor": "docs/specs/work-items/WI-GROK-HOST-IDENTITY-02.md:126"},
+      {"ac_id": "AC-2", "digest": "Canonical bootstrap carries allowlisted Grok host while the private one-use handoff carries the stable session without shell interpolation.", "anchor": "docs/specs/work-items/WI-GROK-HOST-IDENTITY-02.md:131"},
+      {"ac_id": "AC-3", "digest": "Lossless Grok TOML convergence disables Claude/Cursor compatibility hooks and installs native Grok host identity.", "anchor": "docs/specs/work-items/WI-GROK-HOST-IDENTITY-02.md:134"},
+      {"ac_id": "AC-4", "digest": "Post-setup Grok inspect reports foreign hook compatibility disabled and no enabled Claude/Cursor hook entries.", "anchor": "docs/specs/work-items/WI-GROK-HOST-IDENTITY-02.md:136"},
+      {"ac_id": "AC-5", "digest": "HoursHub controller lease is recovered by exact generation-bound compare-and-swap from synthetic principal to the Grok principal.", "anchor": "docs/specs/work-items/WI-GROK-HOST-IDENTITY-02.md:138"},
+      {"ac_id": "AC-6", "digest": "Exact bootstrap and harmless bound-worktree terminal observation pass without controller-principal mismatch or media mutation.", "anchor": "docs/specs/work-items/WI-GROK-HOST-IDENTITY-02.md:140"}
+    ]
   },
   "mocked_deps": []
 }

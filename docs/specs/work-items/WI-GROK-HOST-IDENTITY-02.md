@@ -121,7 +121,7 @@ sequence: bootstrap, then a governed mutation from the bound worktree.
 
 Single correction — no decomposition needed.
 
-## Proof of Fix
+## Acceptance Criteria / Proof of Fix
 
 - **AC-1:** Hermetic identity fixtures prove `GROK_SESSION_ID` resolves to host
   `grok` and the same non-empty session ID in the shared resolver, dispatcher,
