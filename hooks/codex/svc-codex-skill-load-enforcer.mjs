@@ -248,14 +248,25 @@ function isSkillLoaderShape(payload, ctx, env = process.env) {
 function isBootstrapShape(payload, ctx, env = process.env) {
   try { return bootstrapShapeInner(payload, ctx, env); } catch { return false; }
 }
+const BOOTSTRAP_IDENTITY_HOSTS = new Set(["codex", "claude", "kimi", "gemini", "opencode", "mimo-code", "antigravity", "cursor", "grok"]);
+function bootstrapArgv(command) {
+  const lexed = lexSimpleCommand(String(command || "").trim());
+  if (!lexed.ok) return null;
+  const argv = lexed.argv;
+  if (!String(argv[0] || "").startsWith("SVC_HOST=")) return argv;
+  if (!String(argv[1] || "").startsWith("SVC_SESSION_ID=")) return null;
+  const host = argv[0].slice("SVC_HOST=".length);
+  const session = argv[1].slice("SVC_SESSION_ID=".length);
+  if (!BOOTSTRAP_IDENTITY_HOSTS.has(host) || !session || session.length > 512 || /[\0\r\n]/.test(session)) return null;
+  return argv.slice(2);
+}
 function bootstrapShapeInner(payload, ctx, env) {
   if (!isShellTool(toolName(payload))) return false;
   // F-001: a format-valid, non-empty session identity is a precondition. Codex session
   // ids are non-trivial tokens; require the same minimum the receipt path enforces.
   if (!ctx.session_id || String(ctx.session_id).length < 8) return false;
-  const lexed = lexSimpleCommand(mutationPayload(payload).trim());
-  if (!lexed.ok) return false;
-  const argv = lexed.argv;
+  const argv = bootstrapArgv(mutationPayload(payload));
+  if (!argv) return false;
   if (argv[0] !== "node") return false;
 
   // F-001 (round 2, CONFIRMED CRITICAL): the script path argv[1] is a RELATIVE

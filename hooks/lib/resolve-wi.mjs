@@ -132,10 +132,10 @@ function repoRootFor(worktreeRoot) {
   }
 }
 
-function sessionId(hookPayload = {}, env = process.env) {
+export function sessionId(hookPayload = {}, env = process.env) {
   return String(
     hookPayload.session_id || hookPayload.sessionId || hookPayload.thread_id || hookPayload.threadId ||
-    env.SVC_SESSION_ID || env.CODEX_THREAD_ID || env.CODEX_SESSION_ID ||
+    env.SVC_SESSION_ID || env.GROK_SESSION_ID || env.CODEX_THREAD_ID || env.CODEX_SESSION_ID ||
     env.KIMI_SESSION_ID || env.CLAUDE_SESSION_ID || env.GEMINI_SESSION_ID || ""
   );
 }
@@ -143,6 +143,7 @@ function sessionId(hookPayload = {}, env = process.env) {
 export function resolveAuthorityHost(payload = {}, env = process.env) {
   const explicit = payload.host || env.SVC_HOST;
   if (explicit) return String(explicit).toLowerCase();
+  if (env.GROK_SESSION_ID) return "grok";
   if (env.CODEX_THREAD_ID || env.CODEX_SESSION_ID) return "codex";
   if (env.CLAUDE_SESSION_ID) return "claude";
   if (env.KIMI_SESSION_ID) return "kimi";
