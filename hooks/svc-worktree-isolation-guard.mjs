@@ -18,7 +18,7 @@ import { readController, repositoryId } from "./lib/authority-store.mjs";
 import { parseBootstrapCommand } from "./codex/lib/bootstrap-command.mjs";
 import { readOwnerLease } from "./codex/lib/owner-lease.mjs";
 
-const SHELL_TOOLS = new Set(["Bash", "Shell", "run_shell_command", "shell"]);
+const SHELL_TOOLS = new Set(["Bash", "Shell", "run_shell_command", "shell", "run_terminal_command"]);
 const WRITE_TOOLS = new Set([
   "apply_patch", "Edit", "Write", "WriteFile", "StrReplaceFile",
   "write_file", "replace", "edit",
@@ -274,7 +274,7 @@ export function classifyMutation(call, env = process.env, now = Date.now()) {
       };
     }
   }
-  if (scopeHost === "codex" && operationGit && normalized.sessionId) {
+  if (operationGit && normalized.sessionId) {
     const lease = readOwnerLease(operationGit.current, normalized.sessionId, env) ||
       readOwnerLease(operationGit.defaultRoot, normalized.sessionId, env);
     if (lease && path.resolve(lease.worktree_root) === operationGit.current) {

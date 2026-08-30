@@ -66,6 +66,22 @@ check "bash guard allows gh pr merge with receipt" bash -c "cd '$FIX' && printf 
 check "codex shell wrapper accepts merge with receipt" node "$ROOT/scripts/merge-pr-with-review-receipt.mjs" --root "$FIX" --repo example/repo --pr 123 --squash --delete-branch --dry-run
 check "codex shell wrapper dry-run uses explicit repo" bash -c "node '$ROOT/scripts/merge-pr-with-review-receipt.mjs' --root '$FIX' --repo example/repo --pr 123 --squash --delete-branch --dry-run | grep -q 'gh pr merge 123 --repo example/repo --squash --delete-branch'"
 
+FAKE_BIN="$TMP/fake-bin"
+mkdir -p "$FAKE_BIN"
+cat >"$FAKE_BIN/gh" <<'SH'
+#!/usr/bin/env bash
+if [[ "$1 $2" == "pr view" ]]; then
+  printf '{"baseRefOid":"%040d","headRefName":"feature","headRefOid":"%040d"}\n' 1 2
+elif [[ "$1" == "api" ]]; then
+  printf '%s' "${GH_COMPARE_OUTPUT-}"
+else
+  exit 97
+fi
+SH
+chmod +x "$FAKE_BIN/gh"
+check "freshness probe rejects empty compare output" bash -c "PATH='$FAKE_BIN':\"\$PATH\" GH_COMPARE_OUTPUT='' node '$ROOT/scripts/merge-pr-with-review-receipt.mjs' --root '$FIX' --repo example/repo --pr 123 --squash --delete-branch --subject hatch --body none --net-files scripts/foo.mjs >'$TMP/empty-compare' 2>&1; status=\$?; test \$status -ne 0 && grep -q 'valid behind_by count' '$TMP/empty-compare'"
+check "freshness probe rejects whitespace-only compare output" bash -c "PATH='$FAKE_BIN':\"\$PATH\" GH_COMPARE_OUTPUT='   ' node '$ROOT/scripts/merge-pr-with-review-receipt.mjs' --root '$FIX' --repo example/repo --pr 123 --squash --delete-branch --subject hatch --body none --net-files scripts/foo.mjs >'$TMP/blank-compare' 2>&1; status=\$?; test \$status -ne 0 && grep -q 'valid behind_by count' '$TMP/blank-compare'"
+
 rm "$FIX/.svc/review-receipts/pr-123.json"
 cat >"$FIX/.svc/pipeline-decisions.jsonl" <<'JSONL'
 {"timestamp":"2026-05-12T10:00:00Z","skill":"review-gate","review_gate_bypass":true,"pr":123,"reasoning":"Emergency merge approved after out-of-band review evidence was archived.","approved_by":"human-owner"}

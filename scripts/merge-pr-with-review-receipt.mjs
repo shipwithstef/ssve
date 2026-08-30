@@ -208,15 +208,20 @@ for (const banned of ["--rebase", "--merge", "--auto"]) {
   }
 }
 {
-  const pre = spawnSync("gh", ["pr", "view", pr, "--repo", repo, "--json", "behindBy,headRefName,headRefOid"], { encoding: "utf8" });
+  const pre = spawnSync("gh", ["pr", "view", pr, "--repo", repo, "--json", "baseRefOid,headRefName,headRefOid"], { encoding: "utf8" });
   if (pre.status !== 0 || !pre.stdout) {
     console.error("[svc-finalize] BLOCKED: cannot verify PR freshness (gh pr view failed). Merge refused to prevent stale-base coverage mismatch.");
     process.exit(2);
   }
   try {
     const meta = JSON.parse(pre.stdout);
-    if (Number(meta.behindBy ?? -1) !== 0) {
-      console.error(`[svc-finalize] BLOCKED: PR behindBy=${meta.behindBy ?? "unknown"} (must be 0); rebase so squash tree matches reviewed candidate.`);
+    if (!/^[0-9a-f]{40}$/.test(meta.baseRefOid || "") || !/^[0-9a-f]{40}$/.test(meta.headRefOid || "")) throw new Error("PR base/head OIDs are missing");
+    const compare = spawnSync("gh", ["api", `repos/${repo}/compare/${meta.baseRefOid}...${meta.headRefOid}`, "--jq", ".behind_by"], { encoding: "utf8" });
+    const rawBehindBy = String(compare.stdout ?? "").trim();
+    if (compare.status !== 0 || !/^(0|[1-9]\d*)$/.test(rawBehindBy)) throw new Error("GitHub compare did not return a valid behind_by count");
+    const behindBy = Number(rawBehindBy);
+    if (behindBy !== 0) {
+      console.error(`[svc-finalize] BLOCKED: PR behindBy=${behindBy} (must be 0); rebase so squash tree matches reviewed candidate.`);
       process.exit(2);
     }
     if (/^[0-9a-f]{40}$/.test(meta.headRefOid || "")) globalThis.__wi556HeadOid = meta.headRefOid;
@@ -370,4 +375,3 @@ for (const key of Object.keys(remapped)) {
   console.log(`[svc-finalize] DONE ${oid} coverage=${coverageAdded ? "published" : "skipped(no tracked graph)"}`);
   process.exit(0);
 })();
-

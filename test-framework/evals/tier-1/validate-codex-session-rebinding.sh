@@ -69,6 +69,12 @@ echo "legacy direct impact-triad hook is pruned behind the single dispatcher: PA
 
 SESSION=sess-owner-12345678
 OWNER_ENV="SVC_CODEX_RUNTIME_DIR=$TMP/runtime CODEX_THREAD_ID=$SESSION"
+OVERRIDE_PAYLOAD="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],cwd:process.argv[2],prompt:"SVC OWNER OVERRIDE: work on WI-999\nContinue with the bounded hatch."}))' "$SESSION" "$ROOT")"
+OVERRIDE_OUT="$(printf '%s' "$OVERRIDE_PAYLOAD" | SVC_CODEX_RUNTIME_DIR="$TMP/runtime" CODEX_THREAD_ID="$SESSION" node "$ROOT/hooks/codex/svc-codex-owner-recovery.mjs")"
+printf '%s' "$OVERRIDE_OUT" | grep -q 'armed for 24 hours'
+eval "$OWNER_ENV node \"$ROOT/scripts/svc-owner-recovery.mjs\" status --repo \"$ROOT\"" | grep -q 'work on WI-999'
+eval "$OWNER_ENV node \"$ROOT/scripts/svc-owner-recovery.mjs\" disarm --repo \"$ROOT\"" | grep -q 'true'
+echo "multiline owner prompt arms from its first line: PASS"
 eval "$OWNER_ENV node \"$ROOT/scripts/svc-owner-recovery.mjs\" arm --repo \"$ROOT\" --worktree \"$ROOT\" --wi WI-999 --reason focused-recovery --ttl-min 1" >/dev/null
 eval "$OWNER_ENV node \"$ROOT/scripts/svc-owner-recovery.mjs\" status --repo \"$ROOT\"" | grep -q 'focused-recovery'
 printf '%s' "{\"session_id\":\"$SESSION\",\"cwd\":\"$ROOT\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"touch outside-recovery.txt\"}}" |
@@ -76,6 +82,10 @@ printf '%s' "{\"session_id\":\"$SESSION\",\"cwd\":\"$ROOT\",\"tool_name\":\"Bash
 DIRECT_ISOLATION="$(printf '%s' "{\"session_id\":\"$SESSION\",\"cwd\":\"$ROOT\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"touch outside-recovery.txt\"}}" |
   SVC_CODEX_RUNTIME_DIR="$TMP/runtime" CODEX_THREAD_ID="$SESSION" node "$ROOT/hooks/svc-worktree-isolation-guard.mjs")"
 test -z "$DIRECT_ISOLATION"
+DIRECT_GROK_ISOLATION="$(printf '%s' "{\"session_id\":\"$SESSION\",\"cwd\":\"$ROOT\",\"tool_name\":\"run_terminal_command\",\"tool_input\":{\"command\":\"touch outside-recovery.txt\"}}" |
+  SVC_HOST=grok SVC_CODEX_RUNTIME_DIR="$TMP/runtime" GROK_SESSION_ID="$SESSION" node "$ROOT/hooks/svc-worktree-isolation-guard.mjs")"
+test -z "$DIRECT_GROK_ISOLATION"
+echo "Grok run_terminal_command is shell-classified and accepts only the exact owner lease: PASS"
 echo "owner recovery also bypasses a stale direct isolation hook: PASS"
 eval "$OWNER_ENV node \"$ROOT/scripts/svc-owner-recovery.mjs\" disarm --repo \"$ROOT\"" | grep -q 'true'
 echo "owner prompt/out-of-band lease arm/status/disarm and bounded bypass: PASS"

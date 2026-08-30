@@ -52,6 +52,14 @@ CODEX_ASK="$(node --input-type=module -e 'import {emitDecision,ASK} from "./hook
 expect "Codex ask is normalized to a supported deny" node -e 'const j=JSON.parse(process.argv[1]);process.exit(j.hookSpecificOutput?.permissionDecision==="deny"?0:1)' "$CODEX_ASK"
 CLAUDE_ASK="$(node --input-type=module -e 'import {emitDecision,ASK} from "./hooks/lib/hook-decision.mjs"; emitDecision({host:"claude",event:"PreToolUse",decision:ASK,reason:"protected fixture"})')"
 expect "Claude ask remains interactive" node -e 'const j=JSON.parse(process.argv[1]);process.exit(j.hookSpecificOutput?.permissionDecision==="ask"?0:1)' "$CLAUDE_ASK"
+expect "explicit turn id remains unchanged and absent Grok turn falls back to session" node --input-type=module -e '
+  import assert from "node:assert/strict";
+  import { turnId } from "./hooks/codex/lib/codex-hook-context.mjs";
+  assert.equal(turnId({session_id:"sid-1",turn_id:"turn-1"},{}),"turn-1");
+  assert.equal(turnId({session_id:"sid-1"},{}),"session:sid-1");
+  assert.equal(turnId({}, {CODEX_THREAD_ID:"sid-env"}),"session:sid-env");
+  assert.equal(turnId({}, {}),"");
+'
 
 AUTH_PAYLOAD="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],turn_id:process.argv[2],cwd:process.argv[3],prompt:"continue WI-485 and do not store SECRET_VALUE"}))' "$SESSION" "$TURN" "$TEST_CWD")"
 expect "prompt authority records exact session/turn" bash -c "printf '%s' '$AUTH_PAYLOAD' | SVC_CODEX_RUNTIME_DIR='$RUNTIME' node '$ROOT/hooks/codex/svc-codex-prompt-authority.mjs' >/dev/null"
@@ -181,7 +189,7 @@ BAD_LOAD_PAYLOAD="$(node -e 'process.stdout.write(JSON.stringify({session_id:pro
 BAD_LOAD_OUT="$(printf '%s' "$BAD_LOAD_PAYLOAD" | SVC_CODEX_RUNTIME_DIR="$RUNTIME" node "$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs")"
 expect "altered recovery loader command remains governed" node -e 'const j=JSON.parse(process.argv[1]);process.exit(j.hookSpecificOutput?.permissionDecision==="deny"?0:1)' "$BAD_LOAD_OUT"
 
-expect "load CLI writes exact receipt" env CODEX_THREAD_ID="$SESSION" SVC_CODEX_RUNTIME_DIR="$RUNTIME" CODEX_SKILLS_DIR="$ROOT/skills" node "$ROOT/scripts/codex-load-skill.mjs" --graph "$GRAPH" --task 1 --skill execute-changeset --turn "$TURN" >/dev/null
+expect "load CLI writes exact receipt" env CODEX_SESSION_ID= CODEX_THREAD_ID="$SESSION" SVC_CODEX_RUNTIME_DIR="$RUNTIME" CODEX_SKILLS_DIR="$ROOT/skills" node "$ROOT/scripts/codex-load-skill.mjs" --graph "$GRAPH" --task 1 --skill execute-changeset --turn "$TURN" >/dev/null
 LOAD_FILE="$(find "$RUNTIME" -name skill-load.json -type f | head -1)"
 expect "skill receipt mode 0600" test "$(stat -c %a "$LOAD_FILE")" = 600
 ALLOW_OUT="$(printf '%s' "$MUTATION" | SVC_CODEX_TASK_GRAPH="$GRAPH" SVC_CODEX_RUNTIME_DIR="$RUNTIME" node "$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs")"
