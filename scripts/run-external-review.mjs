@@ -25,7 +25,7 @@ import { resolveExternalReviewer } from './review-topology-v2.mjs';
 import { candidateTreeIdentity, issueExternalReviewProvenance } from './lib/external-review-provenance.mjs';
 import { relocateTree } from './lib/review-evidence-store.mjs';
 
-const LAUNCHER_VERSION = '2.5.0';
+const LAUNCHER_VERSION = '2.5.1';
 export const EXTERNAL_REVIEW_LAUNCHER_VERSION = LAUNCHER_VERSION;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FINDINGS_SCHEMA = path.join(ROOT, 'schemas/external-review-findings.schema.json');
@@ -46,6 +46,7 @@ function reviewTransport(host) {
 const ELIGIBLE_FALLBACKS = new Set(['model_unavailable', 'model_entitlement', 'provider_overload']);
 const DEFAULT_TIMEOUT_SECONDS = 1200;
 const DEFAULT_REVIEW_BUDGET_USD = 50;
+const DEFAULT_GROK_MAX_TURNS = 40;
 const DEFAULT_LOCK_STALE_SECONDS = 2460;
 const DEFAULT_CACHE_TTL_DAYS = 30;
 const HEARTBEAT_MS = 30_000;
@@ -91,6 +92,21 @@ function positiveNumber(name, fallback) {
   if (raw === undefined || raw === '') return fallback;
   if (!/^\d+(?:\.\d+)?$/.test(raw) || !Number.isFinite(Number(raw)) || Number(raw) <= 0) throw new Error(`${name} must be a positive number`);
   return Number(raw);
+}
+
+async function configuredTurnCeiling(tuple, configPath) {
+  if (tuple?.host === 'claude') return 4;
+  if (tuple?.host !== 'grok') return null;
+  if (!configPath) return DEFAULT_GROK_MAX_TURNS;
+  let policy;
+  try { policy = JSON.parse(await readFile(path.resolve(configPath), 'utf8')); }
+  catch (error) { throw Object.assign(new Error(`cannot read reviewer transport options: ${error.message}`), { classification: 'config_invalid' }); }
+  const configured = policy?.transport_options?.grok?.max_turns;
+  if (configured === undefined) return DEFAULT_GROK_MAX_TURNS;
+  if (!Number.isInteger(configured) || configured < 1 || configured > 100) {
+    throw Object.assign(new Error('transport_options.grok.max_turns must be an integer from 1 to 100'), { classification: 'config_invalid' });
+  }
+  return configured;
 }
 
 function sha256(value) {
@@ -1080,7 +1096,7 @@ async function gcCache(cacheRoot, ttlDays, staleSeconds, fixture) {
   return removed;
 }
 
-async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, artifactsDir, attemptIndex, timeoutMs, budgetUsd) {
+async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, artifactsDir, attemptIndex, timeoutMs, budgetUsd, turnCeiling = null) {
   const prefix = `attempt-${attemptIndex}`;
   const finalFile = path.join(artifactsDir, `${prefix}-findings.json`);
   const eventsFile = path.join(artifactsDir, `${prefix}-events.jsonl`);
@@ -1115,7 +1131,7 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
     packageBytes = Buffer.concat([reviewInstruction, packageBytes]);
     const promptFile = path.join(artifactsDir, `${prefix}-grok-prompt.txt`);
     await writeFile(promptFile, packageBytes, { mode: 0o600 });
-    args = ['--prompt-file', promptFile, '--cwd', path.resolve(process.env.SVC_EXTERNAL_REVIEW_CONTEXT_ROOT || process.cwd()), '--model', tuple.model, '--reasoning-effort', tuple.effort, '--permission-mode', 'plan', '--disable-web-search', '--no-subagents', '--max-turns', '12', '--json-schema', inlineSchema, '--output-format', 'json'];
+    args = ['--prompt-file', promptFile, '--cwd', path.resolve(process.env.SVC_EXTERNAL_REVIEW_CONTEXT_ROOT || process.cwd()), '--model', tuple.model, '--reasoning-effort', tuple.effort, '--permission-mode', 'plan', '--disable-web-search', '--no-subagents', '--max-turns', String(turnCeiling || DEFAULT_GROK_MAX_TURNS), '--json-schema', inlineSchema, '--output-format', 'json'];
   } else {
     args = [];
     result = { code: null, signal: null, timedOut: false, stdout: Buffer.alloc(0), stderr: Buffer.from(`no review transport for host ${tuple.host}`), spawnError: true };
@@ -1131,7 +1147,7 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
   let routeKind = 'exact_primary';
   let effectiveTuple = tuple;
   let modelAttestation = { level: 'none', requested_model: tuple.model, observed_models: [], evidence: null };
-  let protocol = { process_invocations: 1, configured_turn_ceiling: tuple.host === 'grok' ? 12 : tuple.host === 'claude' ? 4 : null, configured_budget_usd: tuple.host === 'claude' ? budgetUsd : null, reported_turns: null, stop_reason: null, terminal_reason: null, errors: [] };
+  let protocol = { process_invocations: 1, configured_turn_ceiling: turnCeiling, configured_budget_usd: tuple.host === 'claude' ? budgetUsd : null, reported_turns: null, stop_reason: null, terminal_reason: null, errors: [] };
   let classification = result.cancelled ? 'cancelled' : result.timedOut ? 'timeout' : result.code === 0 ? 'success' : classifyProviderFailure(result.stdout.toString('utf8'), result.stderr.toString('utf8'), false);
   if (result.spawnError) classification = 'capability';
   if (!result.cancelled && !result.timedOut && !result.spawnError) {
@@ -1386,6 +1402,7 @@ async function main() {
   if (!options.validateCapabilities) await writeFile(packagePath, packageBytes, { mode: 0o600 });
   let resolvedPolicy = null;
   let policyError = null;
+  let resolvedReviewerConfigPath = options.reviewerConfig || null;
   try {
     const inferredPhase = options.reviewerPhase || (options.reviewKind === 'plan' || options.reviewKind === 'prompt-floor' || options.reviewKind === 'blind-floor' ? 'plan' : 'exec');
     if (!['plan', 'exec', 'design'].includes(inferredPhase)) throw Object.assign(new Error(`unsupported reviewer phase ${inferredPhase}`), { classification: 'input_invalid' });
@@ -1405,6 +1422,7 @@ async function main() {
       explicitAsk: process.env.SVC_DISPATCH_EXPLICIT_ASK === '1' || process.env.SVC_DISPATCH_EXPLICIT_ASK === 'true',
       unavailableStations: process.env.SVC_DISPATCH_UNAVAILABLE_STATIONS || '',
     });
+    resolvedReviewerConfigPath = external.topology.config_path || resolvedReviewerConfigPath;
     resolvedPolicy = {
       tuple: external.tuple,
       fallback: null,
@@ -1428,6 +1446,7 @@ async function main() {
   const defaultTuple = resolvedPolicy?.tuple || null;
   const configuredFallback = resolvedPolicy?.fallback || null;
   let requestedTuple = defaultTuple;
+  let reviewerTurnCeiling = null;
   let override = { used: false, authority: null, source: null, path: null, expected_sha256: null, actual_sha256: null };
   let cliVersion = null;
   let capabilityArtifact = null;
@@ -1465,7 +1484,7 @@ async function main() {
     fallback: overrides.fallback || { eligible: false, used: false, reason: null },
     override,
     policy: resolvedPolicy?.metadata || { version: policy?.version || null, profile: null, source: null, resolved_at: now?.toISOString() || null, effective_window: null, cutover_utc: policy?.cutover_utc || null, cutover_local: policy?.cutover_local || null, timezone: policy?.timezone || null, selection_sha256: null, selection_expires_at: null, selection_authority: null },
-    protocol: overrides.protocol || { process_invocations: attempts.length, configured_turn_ceiling: requestedTuple?.host === 'claude' ? 4 : null, configured_budget_usd: requestedTuple?.host === 'claude' ? reviewBudgetUsd : null, reported_turns: null, stop_reason: null, terminal_reason: null, errors: [] },
+    protocol: overrides.protocol || { process_invocations: attempts.length, configured_turn_ceiling: reviewerTurnCeiling, configured_budget_usd: requestedTuple?.host === 'claude' ? reviewBudgetUsd : null, reported_turns: null, stop_reason: null, terminal_reason: null, errors: [] },
     route: overrides.route || { kind: classification === 'cache_hit' ? 'cache_hit' : classification === 'success' ? (resolvedPolicy?.metadata.source === 'schedule' ? 'scheduled_primary' : resolvedPolicy?.metadata.source === 'explicit-selection' ? 'explicit_profile_primary' : resolvedPolicy?.metadata.source === 'owner-config' ? 'owner_config_primary' : 'exact_primary') : 'hard_failure', switching_enabled: requestedTuple?.model === 'claude-fable-5', cli_fallback_configured: false, evidence: classification === 'cache_hit' ? 'cache_receipt_replay' : classification === 'success' ? 'requested_primary' : 'failure' },
     effective_effort: overrides.effectiveEffort || (overrides.effectiveTuple?.host === 'cursor'
       ? { value: null, provenance: 'provider-managed' }
@@ -1536,6 +1555,7 @@ async function main() {
     const parsedOverride = await parseOwnerOverride(options.ownerOverrideFile, defaultTuple);
     requestedTuple = parsedOverride.tuple;
     override = parsedOverride.evidence;
+    reviewerTurnCeiling = await configuredTurnCeiling(requestedTuple, resolvedReviewerConfigPath);
   } catch (error) {
     if (error.overrideEvidence) override = error.overrideEvidence;
     await finishFailure(error.classification || 'override_invalid');
@@ -1620,7 +1640,7 @@ async function main() {
         cache: { disposition: 'hit', reusable: true, entry: entryDir },
         cliVersion: hit.receipt.cli_version,
         usage: hit.receipt.usage,
-        protocol: { process_invocations: 0, configured_turn_ceiling: requestedTuple.host === 'claude' ? 4 : null, configured_budget_usd: requestedTuple.host === 'claude' ? reviewBudgetUsd : null, reported_turns: null, stop_reason: null, terminal_reason: 'cache_hit', errors: [] },
+        protocol: { process_invocations: 0, configured_turn_ceiling: reviewerTurnCeiling, configured_budget_usd: requestedTuple.host === 'claude' ? reviewBudgetUsd : null, reported_turns: null, stop_reason: null, terminal_reason: 'cache_hit', errors: [] },
         route: { kind: 'cache_hit', switching_enabled: requestedTuple.model === 'claude-fable-5', cli_fallback_configured: false, evidence: 'cache_receipt_replay' },
         modelAttestation: { level: 'cache_replay', requested_model: requestedTuple.model, observed_models: hit.receipt.model_attestation?.observed_models || [], evidence: 'validated_content_addressed_receipt' },
       });
@@ -1674,7 +1694,7 @@ async function main() {
     }
 
     const attempts = [];
-    const primaryResult = await invoke(requestedTuple, binary, packageBytes, reviewKind, schemaBytes, artifactsDir, 1, timeoutSeconds * 1000, reviewBudgetUsd);
+    const primaryResult = await invoke(requestedTuple, binary, packageBytes, reviewKind, schemaBytes, artifactsDir, 1, timeoutSeconds * 1000, reviewBudgetUsd, reviewerTurnCeiling);
     attempts.push(primaryResult.attempt);
     if (primaryResult.attempt.classification === 'success') {
       const validationErrors = validateFindings(primaryResult.findings, primaryResult.effectiveTuple, reviewKind, findingsSchema);
@@ -1768,7 +1788,8 @@ async function main() {
       await finishFailure('budget_exhausted', { cacheKey, attempts, fallback: { eligible: true, used: false, reason: classification }, protocol: { ...primaryResult.protocol, configured_budget_usd: reviewBudgetUsd }, cache: { disposition: 'not_reusable', reusable: false, entry: entryDir } });
       return;
     }
-    const fallbackResult = await invoke(fallbackTuple, binary, packageBytes, reviewKind, schemaBytes, artifactsDir, 2, timeoutSeconds * 1000, fallbackBudgetUsd);
+    const fallbackTurnCeiling = await configuredTurnCeiling(fallbackTuple, resolvedReviewerConfigPath);
+    const fallbackResult = await invoke(fallbackTuple, binary, packageBytes, reviewKind, schemaBytes, artifactsDir, 2, timeoutSeconds * 1000, fallbackBudgetUsd, fallbackTurnCeiling);
     attempts.push(fallbackResult.attempt);
     const fallbackProtocol = { ...fallbackResult.protocol, process_invocations: attempts.length, configured_budget_usd: reviewBudgetUsd };
     if (fallbackResult.attempt.classification !== 'success') {
