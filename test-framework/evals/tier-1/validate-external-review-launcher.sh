@@ -128,13 +128,39 @@ if [[ "${SVC_FAKE_MODE:-success}" != "success" ]]; then printf "%s\n" "${SVC_FAK
 finding="{\"schema_version\":1,\"review_kind\":\"${SVC_REVIEW_KIND:-generic}\",\"rubric_score\":10,\"rubric_failures\":null,\"dependencies_needing_read\":null,\"reviewer\":{\"host\":\"agy\",\"family\":\"google\",\"model\":\"$model\",\"effort\":\"$effort\"},\"verdict\":\"pass\",\"summary\":\"fixture pass\",\"findings\":[],\"certifications\":[]}"
 node -e "process.stdout.write(JSON.stringify({response:process.argv[1],stats:{model:process.argv[2],input_tokens:10,output_tokens:5}}))" "$finding" "$model"
 ' > "$TMP/bin/agy"
-chmod 700 "$TMP/bin/codex" "$TMP/bin/claude" "$TMP/bin/agy"
+
+printf '%s\n' '#!/usr/bin/env bash' 'set -euo pipefail' '
+if [[ "${1:-}" == "--help" ]]; then if [[ "${SVC_FAKE_CURSOR_CAPABILITY_MISSING:-0}" == 1 ]]; then printf "%s\n" "--print --output-format --model --sandbox --workspace --trust"; else printf "%s\n" "--print --output-format --mode --model --sandbox --workspace --trust"; fi; exit 0; fi
+if [[ "${1:-}" == "--version" ]]; then printf "%s\n" "2026.08.25-fixture"; exit 0; fi
+mkdir -p "$SVC_FAKE_LOG"
+printf "%s\n" "$*" >> "$SVC_FAKE_LOG/cursor.argv"
+printf "%s\n" "cursor" >> "$SVC_FAKE_LOG/cursor.calls"
+cat > "$SVC_FAKE_LOG/cursor.stdin"
+finding="{\"schema_version\":1,\"review_kind\":\"${SVC_REVIEW_KIND:-generic}\",\"rubric_score\":10,\"rubric_failures\":null,\"dependencies_needing_read\":null,\"reviewer\":{\"host\":\"cursor\",\"family\":\"multi\",\"model\":\"cursor-auto\",\"effort\":\"high\"},\"verdict\":\"pass\",\"summary\":\"fixture pass\",\"findings\":[],\"certifications\":[]}"
+node -e "process.stdout.write(JSON.stringify({type:\"result\",subtype:\"success\",is_error:false,result:\"review preface\\n\"+process.argv[1],usage:{inputTokens:10,outputTokens:5}}))" "$finding"
+' > "$TMP/bin/cursor-agent"
+
+printf '%s\n' '#!/usr/bin/env bash' 'set -euo pipefail' '
+if [[ "${1:-}" == "--help" ]]; then if [[ "${SVC_FAKE_GROK_CAPABILITY_MISSING:-0}" == 1 ]]; then printf "%s\n" "--prompt-file --cwd --model"; else printf "%s\n" "--prompt-file --cwd --model --reasoning-effort --permission-mode --disable-web-search --no-subagents --max-turns --json-schema --output-format"; fi; exit 0; fi
+if [[ "${1:-}" == "--version" ]]; then printf "%s\n" "grok 1.0.13 fixture"; exit 0; fi
+mkdir -p "$SVC_FAKE_LOG"
+printf "%s\n" "$*" >> "$SVC_FAKE_LOG/grok.argv"
+printf "%s\n" "grok" >> "$SVC_FAKE_LOG/grok.calls"
+model="" effort="" prompt_file=""
+while [[ $# -gt 0 ]]; do if [[ "$1" == "--model" ]]; then model="$2"; shift 2; elif [[ "$1" == "--reasoning-effort" ]]; then effort="$2"; shift 2; elif [[ "$1" == "--prompt-file" ]]; then prompt_file="$2"; shift 2; else shift; fi; done
+test -r "$prompt_file"; cp "$prompt_file" "$SVC_FAKE_LOG/grok.prompt"
+finding="{\"schema_version\":1,\"review_kind\":\"${SVC_REVIEW_KIND:-generic}\",\"rubric_score\":10,\"rubric_failures\":null,\"dependencies_needing_read\":null,\"reviewer\":{\"host\":\"grok\",\"family\":\"xai\",\"model\":\"$model\",\"effort\":\"$effort\"},\"verdict\":\"pass\",\"summary\":\"fixture pass\",\"findings\":[],\"certifications\":[]}"
+node -e "const f=JSON.parse(process.argv[1]),m=process.argv[2];process.stdout.write(JSON.stringify({text:JSON.stringify(f),stopReason:\"end_turn\",usage:{input_tokens:10,output_tokens:5},num_turns:1,total_cost_usd:0.01,modelUsage:{[m+\"-build\"]:{modelCalls:1}},structuredOutput:f}))" "$finding" "$model"
+' > "$TMP/bin/grok"
+chmod 700 "$TMP/bin/codex" "$TMP/bin/claude" "$TMP/bin/agy" "$TMP/bin/cursor-agent" "$TMP/bin/grok"
 
 export SVC_EXTERNAL_REVIEW_FIXTURE=1
 export SVC_EXTERNAL_REVIEW_FIXTURE_ROOT="$TMP"
 export SVC_EXTERNAL_REVIEW_CODEX_BIN="$TMP/bin/codex"
 export SVC_EXTERNAL_REVIEW_CLAUDE_BIN="$TMP/bin/claude"
 export SVC_EXTERNAL_REVIEW_AGY_BIN="$TMP/bin/agy"
+export SVC_EXTERNAL_REVIEW_CURSOR_BIN="$TMP/bin/cursor-agent"
+export SVC_EXTERNAL_REVIEW_GROK_BIN="$TMP/bin/grok"
 export SVC_EXTERNAL_REVIEW_CACHE_DIR="$TMP/cache"
 export SVC_EXTERNAL_REVIEW_POLICY_DIR="$TMP/policy"
 export SVC_EXTERNAL_REVIEW_CONTEXT_ROOT="$ROOT"
@@ -384,13 +410,34 @@ expect "explicit selection is inert for Claude orchestration too" node -e 'const
 node "$LAUNCHER" --clear-profile-selection --reason "explicit invocation fixture cleanup" > "$TMP/clear-explicit.json"
 
 REVIEWER_CONFIG="$TMP/reviewer-policy-v2.json"
-node -e 'const fs=require("fs");const ext=(id,host,family,model,required=false)=>({id,kind:"external",required,authority:"independent",tuple:{host,family,model,effort:"high"}});const self={id:"self",kind:"inline-self",required:true,authority:"advisory",tuple:{host:"current",family:"openai",model:"current",effort:"high"}};const p={release_authority:false,stations:[self,ext("agy","agy","google","Gemini 3.6 Flash (High)"),ext("opus","claude","anthropic","claude-opus-4-6")]};fs.writeFileSync(process.argv[1],JSON.stringify({schema_version:2,authority:"repository-owner",default_mode:"fast",modes:{fast:{orchestrators:{codex:{plan:p,exec:p}}}}},null,2),{mode:0o600})' "$REVIEWER_CONFIG"
+node -e 'const fs=require("fs");const ext=(id,host,family,model,required=false,authority="independent")=>({id,kind:"external",required,authority,tuple:{host,family,model,effort:"high"}});const self={id:"self",kind:"inline-self",required:true,authority:"advisory",tuple:{host:"current",family:"openai",model:"current",effort:"high"}};const p={release_authority:false,stations:[self,ext("agy","agy","google","Gemini 3.6 Flash (High)"),ext("opus","claude","anthropic","claude-opus-4-6"),ext("cursor-auto","cursor","multi","cursor-auto",false,"advisory"),ext("grok-build","grok","xai","grok-4.6")]};fs.writeFileSync(process.argv[1],JSON.stringify({schema_version:2,authority:"repository-owner",default_mode:"fast",modes:{fast:{orchestrators:{codex:{plan:p,exec:p}}}}},null,2),{mode:0o600})' "$REVIEWER_CONFIG"
 CANDIDATE_DIGEST="$(node --input-type=module -e 'import {candidateTreeIdentity} from "./scripts/lib/external-review-provenance.mjs"; process.stdout.write(candidateTreeIdentity(process.cwd()).candidate_digest)')"
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 printf 'agy-independent candidate_digest=%s' "$CANDIDATE_DIGEST" | SVC_EXTERNAL_REVIEW_NOW=2026-07-19T21:00:00Z node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$CANDIDATE_DIGEST" --reviewer-config "$REVIEWER_CONFIG" --reviewer-mode fast --reviewer-phase plan --reviewer-station agy --artifacts-dir "$TMP/out/agy-independent" > "$TMP/agy-independent.summary"
 AGY_RECEIPT="$(receipt_from_summary "$TMP/agy-independent.summary")"
 expect "owner-configured Gemini 3.6 Flash runs through canonical AGY and emits an exact independent Google receipt" node -e 'const fs=require("fs"),r=require(process.argv[1]),argv=fs.readFileSync(process.argv[2],"utf8");if(r.policy.profile!=="fast:agy"||r.policy.source!=="owner-config"||!r.policy.selection_sha256||!r.candidate_digest||r.requested_tuple.host!=="agy"||r.requested_tuple.family!=="google"||r.requested_tuple.model!=="Gemini 3.6 Flash (High)"||r.requested_tuple.effort!=="high"||r.route.kind!=="owner_config_primary"||r.model_attestation.level!=="requested_accepted"||!argv.includes("--sandbox --mode plan --model Gemini 3.6 Flash (High)")||argv.includes("--effort")||argv.includes("--json-schema")||argv.includes("--output-format"))process.exit(1)' "$AGY_RECEIPT" "$SVC_FAKE_LOG/agy.argv"
-expect "AGY review package crosses the canonical private-file bridge with the fail-closed schema" bash -c "grep -q 'agy-independent' '$SVC_FAKE_LOG/agy.package' && grep -q 'svc-external-review-findings-v1' '$SVC_FAKE_LOG/agy.package'"
+expect "AGY review package crosses the canonical private-file bridge with the fail-closed schema" bash -c "grep -q 'agy-independent' '$SVC_FAKE_LOG/agy.package' && grep -q 'https://seriousvibecoding.dev/schemas/external-review-findings-v1' '$SVC_FAKE_LOG/agy.package'"
+
+printf 'cursor independent candidate_digest=%s' "$CANDIDATE_DIGEST" | node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$CANDIDATE_DIGEST" --reviewer-config "$REVIEWER_CONFIG" --reviewer-mode fast --reviewer-phase plan --reviewer-station cursor-auto --artifacts-dir "$TMP/out/cursor-independent" > "$TMP/cursor-independent.summary"
+CURSOR_RECEIPT="$(receipt_from_summary "$TMP/cursor-independent.summary")"
+expect "owner-configured Cursor Auto extracts schema-valid JSON after prose and records provider-managed effort" node -e 'const fs=require("fs"),r=require(process.argv[1]),argv=fs.readFileSync(process.argv[2],"utf8");if(r.requested_tuple.host!=="cursor"||r.requested_tuple.family!=="multi"||r.requested_tuple.model!=="cursor-auto"||r.model_attestation.level!=="requested_accepted"||r.effective_effort.value!==null||r.effective_effort.provenance!=="provider-managed"||!argv.includes("--mode plan")||!argv.includes("--model auto")||!argv.includes("--sandbox disabled")||r.route.kind!=="owner_config_primary")process.exit(1)' "$CURSOR_RECEIPT" "$SVC_FAKE_LOG/cursor.argv"
+
+printf 'grok independent candidate_digest=%s' "$CANDIDATE_DIGEST" | node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$CANDIDATE_DIGEST" --reviewer-config "$REVIEWER_CONFIG" --reviewer-mode fast --reviewer-phase plan --reviewer-station grok-build --artifacts-dir "$TMP/out/grok-independent" > "$TMP/grok-independent.summary"
+GROK_RECEIPT="$(receipt_from_summary "$TMP/grok-independent.summary")"
+expect "owner-configured Grok Build runs in bounded plan mode with server-observed model evidence" node -e 'const fs=require("fs"),r=require(process.argv[1]),argv=fs.readFileSync(process.argv[2],"utf8");if(r.requested_tuple.host!=="grok"||r.requested_tuple.family!=="xai"||r.requested_tuple.model!=="grok-4.6"||r.model_attestation.level!=="server_observed"||!r.model_attestation.observed_models.includes("grok-4.6-build")||r.protocol.configured_turn_ceiling!==12||!argv.includes("--permission-mode plan")||!argv.includes("--max-turns 12")||!argv.includes("--json-schema")||r.route.kind!=="owner_config_primary")process.exit(1)' "$GROK_RECEIPT" "$SVC_FAKE_LOG/grok.argv"
+
+rm -f "$SVC_FAKE_LOG/cursor.calls" "$SVC_FAKE_LOG/grok.calls"
+node "$LAUNCHER" --validate-capabilities --orchestrator codex --reviewer-config "$REVIEWER_CONFIG" --reviewer-mode fast --reviewer-phase plan --reviewer-station cursor-auto --artifacts-dir "$TMP/out/cursor-capability-only" > "$TMP/cursor-capability-only.summary"
+node "$LAUNCHER" --validate-capabilities --orchestrator codex --reviewer-config "$REVIEWER_CONFIG" --reviewer-mode fast --reviewer-phase plan --reviewer-station grok-build --artifacts-dir "$TMP/out/grok-capability-only" > "$TMP/grok-capability-only.summary"
+expect "Cursor and Grok capability probes perform zero review invocations" bash -c "test ! -e '$SVC_FAKE_LOG/cursor.calls' && test ! -e '$SVC_FAKE_LOG/grok.calls' && node -e 'for(const p of process.argv.slice(1)){const r=require(p);if(r.status!==\"success\"||r.review_kind!==\"capability-probe\"||r.attempts.length!==0)process.exit(1)}' '$TMP/out/cursor-capability-only/receipt.json' '$TMP/out/grok-capability-only/receipt.json'"
+
+set +e
+SVC_FAKE_CURSOR_CAPABILITY_MISSING=1 node "$LAUNCHER" --validate-capabilities --orchestrator codex --reviewer-config "$REVIEWER_CONFIG" --reviewer-mode fast --reviewer-phase plan --reviewer-station cursor-auto --artifacts-dir "$TMP/out/cursor-capability-missing" >/dev/null 2>&1
+CURSOR_CAP_RC=$?
+SVC_FAKE_GROK_CAPABILITY_MISSING=1 node "$LAUNCHER" --validate-capabilities --orchestrator codex --reviewer-config "$REVIEWER_CONFIG" --reviewer-mode fast --reviewer-phase plan --reviewer-station grok-build --artifacts-dir "$TMP/out/grok-capability-missing" >/dev/null 2>&1
+GROK_CAP_RC=$?
+set -e
+expect "Cursor exact --mode token and Grok missing controls fail closed before review invocation" bash -c "test '$CURSOR_CAP_RC' -ne 0 && test '$GROK_CAP_RC' -ne 0 && test ! -e '$SVC_FAKE_LOG/cursor.calls' && test ! -e '$SVC_FAKE_LOG/grok.calls' && grep -qx -- '--mode' '$TMP/out/cursor-capability-missing/capability-missing.txt' && node -e 'for(const p of process.argv.slice(1)){const r=require(p);if(r.classification!==\"capability\"||r.attempts.length!==0)process.exit(1)}' '$TMP/out/cursor-capability-missing/receipt.json' '$TMP/out/grok-capability-missing/receipt.json'"
 
 node "$LAUNCHER" --validate-capabilities --orchestrator codex --reviewer-config "$REVIEWER_CONFIG" --reviewer-mode fast --reviewer-phase plan --reviewer-station opus --artifacts-dir "$TMP/out/opus46-capability" > "$TMP/opus46-capability.summary"
 expect "optional Opus 4.6 is capability-probed without a review invocation" node -e 'const r=require(process.argv[1]);if(r.status!=="success"||r.review_kind!=="capability-probe"||r.requested_tuple.model!=="claude-opus-4-6"||r.attempts.length!==0)process.exit(1)' "$TMP/out/opus46-capability/receipt.json"
@@ -734,7 +781,7 @@ cp "$ROOT/skills/review-cross-model/SKILL.md" "$TMP/runtime-copy/skills/review-c
 printf schema-version-key | node "$TMP/runtime-copy/scripts/run-external-review.mjs" --orchestrator claude --review-kind exec --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/key-schema-1" > "$TMP/key-schema-1.summary"
 printf '\n' >> "$TMP/runtime-copy/schemas/external-review-findings.schema.json"
 printf schema-version-key | node "$TMP/runtime-copy/scripts/run-external-review.mjs" --orchestrator claude --review-kind exec --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/key-schema-2" > "$TMP/key-schema-2.summary"
-sed -i 's/const LAUNCHER_VERSION = '\''2.4.0'\''/const LAUNCHER_VERSION = '\''2.4.1'\''/' "$TMP/runtime-copy/scripts/run-external-review.mjs"
+sed -i 's/const LAUNCHER_VERSION = '\''2.5.0'\''/const LAUNCHER_VERSION = '\''2.5.1'\''/' "$TMP/runtime-copy/scripts/run-external-review.mjs"
 printf schema-version-key | node "$TMP/runtime-copy/scripts/run-external-review.mjs" --orchestrator claude --review-kind exec --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/key-launcher-2" > "$TMP/key-launcher-2.summary"
 expect "changed findings schema and launcher version each force a fresh cache key" test "$(grep -c '^codex$' "$SVC_FAKE_LOG/calls")" -eq 3
 

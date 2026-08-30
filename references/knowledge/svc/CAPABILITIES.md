@@ -284,6 +284,7 @@ Progressive deterministic development framework — vision to verified code in o
 | Mock-by-default with toggles | Every external dep has mock ON, real behind toggle |
 | Teach-project owner guide | Builder learns what was built, calibrated to their knowledge gap |
 | Framework self-improvement lane | test → evolve → blend → improve closed loop |
+| Config-driven cross-host external review | Canonical receipt-producing transports cover Codex, Claude, AGY, Cursor Auto, and Grok Build while owner configuration retains station authority |
 | Layered knowledge system | 3-depth persistent expertise that compounds across projects |
 | AST-based eval validation | Proper YAML/Markdown parsing, not grep — 2263 structural checks |
 | 24 anti-patterns | Most comprehensive anti-pattern collection across all frameworks |

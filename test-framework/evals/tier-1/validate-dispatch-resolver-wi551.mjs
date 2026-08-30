@@ -66,18 +66,18 @@ const basePolicy = {
           release_authority: true,
           stations: [
             { id: 'grok-self', kind: 'inline-self', required: true, authority: 'advisory', tuple: { host: 'grok', family: 'xai', model: 'grok-4.6', effort: 'high' } },
-            { id: 'fable', kind: 'external', required: true, authority: 'independent', tuple: { host: 'cursor', family: 'anthropic', model: 'claude-fable-5', effort: 'high' }, max_invocations: 1, round_trip: false },
-            { id: 'sol-high', kind: 'external', required: true, authority: 'independent', tuple: { host: 'cursor', family: 'openai', model: 'gpt-5.6-sol', effort: 'high' } },
-            { id: 'agy-gemini-3.7-high', kind: 'external', required: false, authority: 'independent', tuple: { host: 'agy', family: 'google', model: 'Gemini 3.7 Flash (High)', effort: 'high' }, fallback_only: true, explicit_request_only: true },
+            { id: 'fable', kind: 'external', required: true, authority: 'advisory', tuple: { host: 'cursor', family: 'anthropic', model: 'claude-fable-5', effort: 'high' }, max_invocations: 1, round_trip: false },
+            { id: 'sol-high', kind: 'external', required: true, authority: 'advisory', tuple: { host: 'cursor', family: 'openai', model: 'gpt-5.6-sol', effort: 'high' } },
+            { id: 'agy-gemini-3.7-high', kind: 'external', required: true, authority: 'independent', tuple: { host: 'agy', family: 'google', model: 'Gemini 3.7 Flash (High)', effort: 'high' }, fallback_only: true, explicit_request_only: true },
           ],
         },
         exec: {
           release_authority: true,
           stations: [
             { id: 'grok-self', kind: 'inline-self', required: true, authority: 'advisory', tuple: { host: 'grok', family: 'xai', model: 'grok-4.6', effort: 'high' } },
-            { id: 'fable', kind: 'external', required: true, authority: 'independent', tuple: { host: 'cursor', family: 'anthropic', model: 'claude-fable-5', effort: 'high' }, max_invocations: 1, round_trip: false },
-            { id: 'sol-high', kind: 'external', required: true, authority: 'independent', tuple: { host: 'cursor', family: 'openai', model: 'gpt-5.6-sol', effort: 'high' } },
-            { id: 'agy-gemini-3.7-high', kind: 'external', required: false, authority: 'independent', tuple: { host: 'agy', family: 'google', model: 'Gemini 3.7 Flash (High)', effort: 'high' }, fallback_only: true, explicit_request_only: true },
+            { id: 'fable', kind: 'external', required: true, authority: 'advisory', tuple: { host: 'cursor', family: 'anthropic', model: 'claude-fable-5', effort: 'high' }, max_invocations: 1, round_trip: false },
+            { id: 'sol-high', kind: 'external', required: true, authority: 'advisory', tuple: { host: 'cursor', family: 'openai', model: 'gpt-5.6-sol', effort: 'high' } },
+            { id: 'agy-gemini-3.7-high', kind: 'external', required: true, authority: 'independent', tuple: { host: 'agy', family: 'google', model: 'Gemini 3.7 Flash (High)', effort: 'high' }, fallback_only: true, explicit_request_only: true },
           ],
         },
         design: {
@@ -337,5 +337,14 @@ const geminiExplicitStationAsk = resolveDispatchExternalReviewer({
   explicitAsk: true,
 });
 assert.equal(geminiExplicitStationAsk.station.id, 'agy-gemini-3.7-high');
+
+const cursorAutoLaunderingPolicy = structuredClone(policy);
+cursorAutoLaunderingPolicy.modes['mixed-grok-cursor'].review.exec.stations.push({ id: 'cursor-auto', kind: 'external', required: true, authority: 'independent', tuple: { host: 'cursor', family: 'multi', model: 'cursor-auto', effort: 'high' } });
+const cursorAutoLaunderingPath = path.join(root, 'cursor-auto-laundering.json');
+writeJson(cursorAutoLaunderingPath, cursorAutoLaunderingPolicy);
+assert.throws(
+  () => resolveDispatchReviewTopology({ configPath: cursorAutoLaunderingPath, orchestrator: 'grok', phase: 'exec' }),
+  /Cursor cannot be independent because its runtime provider family is not attested/,
+);
 
 console.log('validate-dispatch-resolver-wi551: PASS (AC-551-1..9 + proposal AC-10 replay matrix)');

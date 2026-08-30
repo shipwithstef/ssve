@@ -389,3 +389,17 @@ The best-fit design is therefore one pure classifier for completed registry-skil
 **As-of date:** 2026-08-25
 
 **Re-verify after:** 90 days, or on a supported-host/model major change.
+
+## 2026-08-30: Cursor Auto and Grok Build canonical review transports (WI-565)
+
+**Asked by:** `improve-framework` / `diagnose-bug`
+**Question:** What exact installed CLI contracts can provide read-only, noninteractive, receipt-producing external reviews for configured Cursor Auto and Grok Build stations?
+**Finding:** Cursor Agent `2026.08.25-3e8eec8` accepts stdin in `--print --mode=plan --output-format json`, maps the owner logical alias `cursor-auto` to CLI model `auto`, and returns a JSON result envelope without the underlying Auto-selected model. Its honest attestation is therefore `requested_accepted`, not `server_observed`. On this WSL/AppArmor host, forcing Cursor's optional sandbox fails before invocation; explicit `--sandbox disabled` plus Cursor's read-only `plan` mode is the working host contract. Grok Build `1.0.13` accepts a protected `--prompt-file`, `--permission-mode plan`, `--reasoning-effort`, `--max-turns`, and `--json-schema`; its JSON envelope includes `structuredOutput`, cost/turn data, and `modelUsage.grok-4.6-build`, allowing server-observed attestation for configured `grok-4.6`.
+**Sources:** installed `cursor-agent --help`, `cursor-agent --version`, `cursor-agent --list-models`, and live stdin JSON probe [T1 installed runtime]; installed `grok --help`, `grok --version`, `grok models`, and live schema-output probe [T1 installed runtime]; `scripts/review-topology-v2.mjs` and `provision/hosts/{cursor,grok}.json` [T1 repository contract].
+**Triangulation:** CLI help establishes accepted flags, live probes establish result envelopes, and repository topology establishes configured tuple semantics. These primary sources agree; no web fallback was necessary.
+**Confidence:** high
+**Volatility:** volatile with Cursor Agent or Grok Build CLI updates.
+**As-of date:** 2026-08-30
+**Re-verify after:** either CLI major update or any launcher envelope/parser change.
+**Version-specific:** Cursor Agent `2026.08.25-3e8eec8`; Grok Build `1.0.13`.
+**Routed-to:** local-primary research.

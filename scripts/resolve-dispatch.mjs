@@ -120,6 +120,8 @@ function validateStation(station, scope) {
   if (typeof station.required !== 'boolean') fail(`${scope} station.required must be boolean`);
   if (!STATION_AUTHORITIES.has(station.authority)) fail(`${scope} station.authority is invalid`);
   validateTuple(station.tuple, `${scope}/${station.id}`);
+  if (station.tuple.host === 'cursor' && station.tuple.model === 'cursor-auto' && station.tuple.family !== 'multi') fail(`${scope}/${station.id} Cursor Auto family must be multi because the provider family is not attested`);
+  if (station.kind === 'external' && station.authority === 'independent' && station.tuple.host === 'cursor') fail(`${scope}/${station.id} Cursor cannot be independent because its runtime provider family is not attested`);
 }
 
 function validateDispatchPolicy(policy) {

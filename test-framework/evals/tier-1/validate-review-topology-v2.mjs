@@ -133,6 +133,21 @@ const unsafeSubagent = structuredClone(policy); unsafeSubagent.modes.fast.orches
 const unsafeSubagentFile = path.join(root, 'unsafe-subagent.json'); fs.writeFileSync(unsafeSubagentFile, `${JSON.stringify(unsafeSubagent)}\n`, { mode: 0o600 });
 assert.throws(() => resolveReviewTopology({ configPath: unsafeSubagentFile, orchestrator: 'codex', phase: 'exec' }), /subagent cannot be independent/);
 
+const launderedCursorAuto = structuredClone(policy);
+launderedCursorAuto.modes.fast.orchestrators.codex.exec.stations.push({ id: 'cursor-auto', kind: 'external', required: true, authority: 'independent', tuple: { host: 'cursor', family: 'multi', model: 'cursor-auto', effort: 'high' } });
+const launderedCursorAutoFile = path.join(root, 'laundered-cursor-auto.json'); fs.writeFileSync(launderedCursorAutoFile, `${JSON.stringify(launderedCursorAuto)}\n`, { mode: 0o600 });
+assert.throws(() => resolveReviewTopology({ configPath: launderedCursorAutoFile, orchestrator: 'codex', phase: 'exec' }), /Cursor cannot be independent because its runtime provider family is not attested/);
+
+const launderedPinnedCursor = structuredClone(policy);
+launderedPinnedCursor.modes.fast.orchestrators.codex.exec.stations.push({ id: 'cursor-xai-claim', kind: 'external', required: true, authority: 'independent', tuple: { host: 'cursor', family: 'xai', model: 'cursor-grok-4.6-high', effort: 'high' } });
+const launderedPinnedCursorFile = path.join(root, 'laundered-pinned-cursor.json'); fs.writeFileSync(launderedPinnedCursorFile, `${JSON.stringify(launderedPinnedCursor)}\n`, { mode: 0o600 });
+assert.throws(() => resolveReviewTopology({ configPath: launderedPinnedCursorFile, orchestrator: 'codex', phase: 'exec' }), /Cursor cannot be independent because its runtime provider family is not attested/);
+
+const falseCursorFamily = structuredClone(policy);
+falseCursorFamily.modes.fast.orchestrators.codex.exec.stations.push({ id: 'cursor-auto', kind: 'external', required: true, authority: 'advisory', tuple: { host: 'cursor', family: 'anthropic', model: 'cursor-auto', effort: 'high' } });
+const falseCursorFamilyFile = path.join(root, 'false-cursor-family.json'); fs.writeFileSync(falseCursorFamilyFile, `${JSON.stringify(falseCursorFamily)}\n`, { mode: 0o600 });
+assert.throws(() => resolveReviewTopology({ configPath: falseCursorFamilyFile, orchestrator: 'codex', phase: 'exec' }), /Cursor Auto family must be multi because the provider family is not attested/);
+
 const linkedConfig = path.join(root, 'linked.json'); fs.symlinkSync(config, linkedConfig);
 assert.throws(() => resolveReviewTopology({ configPath: linkedConfig, orchestrator: 'codex', phase: 'exec' }), /not a regular file|must not be a symlink/);
 

@@ -25,7 +25,7 @@ import { resolveExternalReviewer } from './review-topology-v2.mjs';
 import { candidateTreeIdentity, issueExternalReviewProvenance } from './lib/external-review-provenance.mjs';
 import { relocateTree } from './lib/review-evidence-store.mjs';
 
-const LAUNCHER_VERSION = '2.4.0';
+const LAUNCHER_VERSION = '2.5.0';
 export const EXTERNAL_REVIEW_LAUNCHER_VERSION = LAUNCHER_VERSION;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FINDINGS_SCHEMA = path.join(ROOT, 'schemas/external-review-findings.schema.json');
@@ -36,6 +36,8 @@ const REVIEW_HOST_TRANSPORTS = Object.freeze({
   codex: { env: 'SVC_EXTERNAL_REVIEW_CODEX_BIN', binary: 'codex' },
   agy: { env: 'SVC_EXTERNAL_REVIEW_AGY_BIN', binary: 'agy' },
   claude: { env: 'SVC_EXTERNAL_REVIEW_CLAUDE_BIN', binary: 'claude' },
+  cursor: { env: 'SVC_EXTERNAL_REVIEW_CURSOR_BIN', binary: 'cursor-agent' },
+  grok: { env: 'SVC_EXTERNAL_REVIEW_GROK_BIN', binary: 'grok' },
 });
 
 function reviewTransport(host) {
@@ -324,6 +326,32 @@ async function readStdin() {
   return Buffer.concat(chunks);
 }
 
+function parseJsonObjectEnvelope(value) {
+  const text = String(value || '').trim();
+  try { return JSON.parse(text); } catch {}
+  for (let start = 0; start < text.length; start += 1) {
+    if (text[start] !== '{') continue;
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    for (let index = start; index < text.length; index += 1) {
+      const char = text[index];
+      if (inString) {
+        if (escaped) escaped = false;
+        else if (char === '\\') escaped = true;
+        else if (char === '"') inString = false;
+        continue;
+      }
+      if (char === '"') inString = true;
+      else if (char === '{') depth += 1;
+      else if (char === '}' && --depth === 0) {
+        try { return JSON.parse(text.slice(start, index + 1)); } catch { break; }
+      }
+    }
+  }
+  throw new Error('provider result contains no valid JSON object');
+}
+
 async function writeJson(file, value) {
   await mkdir(path.dirname(file), { recursive: true, mode: 0o700 });
   const temporary = `${file}.tmp-${process.pid}-${randomUUID()}`;
@@ -405,7 +433,7 @@ export function validateExternalReviewReceiptSemantics(receipt) {
   if (receipt.status === 'success' && receipt.route?.kind !== 'cache_hit' && receipt.review_kind !== 'capability-probe') {
     if (receipt.model_attestation?.requested_model !== receipt.invocation_tuple?.model) errors.push('$.model_attestation.requested_model: must match invocation tuple');
     if (receipt.invocation_tuple?.host === 'claude' && receipt.model_attestation?.level !== 'server_observed') errors.push('$.model_attestation.level: Claude success requires server_observed');
-    if (['codex', 'agy'].includes(receipt.invocation_tuple?.host) && !['requested_accepted', 'server_observed'].includes(receipt.model_attestation?.level)) errors.push('$.model_attestation.level: Codex/AGY success requires requested_accepted or server_observed');
+    if (['codex', 'agy', 'cursor', 'grok'].includes(receipt.invocation_tuple?.host) && !['requested_accepted', 'server_observed'].includes(receipt.model_attestation?.level)) errors.push('$.model_attestation.level: Codex/AGY/Cursor/Grok success requires requested_accepted or server_observed');
   }
   if (receipt.policy?.source === 'schedule' && receipt.route?.kind === 'explicit_profile_primary') errors.push('$.route.kind: scheduled policy cannot be explicit primary');
   if (receipt.policy?.source === 'explicit-selection' && receipt.route?.kind === 'scheduled_primary') errors.push('$.route.kind: explicit policy cannot be scheduled primary');
@@ -454,6 +482,8 @@ function classifyProviderFailure(stdout, stderr, timedOut) {
   const joinedCodes = structuredCodes.join(' ');
   const diagnostics = `${joinedCodes}\n${stderr}`.toLowerCase();
   const forbiddenRules = [
+    ['schema_invalid', /(?:^|\b)(?:schema validation failed|invalid json schema|response schema is invalid)(?:\b|$)/],
+    ['schema_turn_budget', /(?:^|\b)(?:max turns reached|maximum turns reached)(?:\b|$)/],
     ['model_entitlement', /(?:^|\b)(?:ineligibletiererror|ineligible tier|client is no longer supported for gemini code assist)(?:\b|$)/],
     ['model_unavailable', /(?:^|\b)invalid model selection(?:\b|$)/],
     ['authentication', /(?:^|\b)(?:authentication|unauthenticated|unauthorized|invalid api key|login required|oauth)(?:\b|$)/],
@@ -583,7 +613,11 @@ async function capabilityCheck(tuple, binary, timeoutMs) {
     ? ['--config', '--strict-config', '--model', '--sandbox', 'read-only', '--skip-git-repo-check', '--ephemeral', '--ignore-user-config', '--ignore-rules', '--output-schema', '--json', '--output-last-message', '--color']
     : tuple.host === 'agy'
       ? ['--sandbox', '--mode', '--model', '--effort', '--add-dir', '--json-schema', '--output-format', '--print-timeout', '--print']
-      : ['--print', '--model', '--effort', '--safe-mode', '--tools', '--strict-mcp-config', '--mcp-config', '--permission-mode', '--no-session-persistence', '--disable-slash-commands', '--no-chrome', '--settings', '--json-schema', '--output-format', '--max-budget-usd'];
+      : tuple.host === 'cursor'
+        ? ['--print', '--output-format', '--mode', '--model', '--sandbox', '--workspace', '--trust']
+        : tuple.host === 'grok'
+          ? ['--prompt-file', '--cwd', '--model', '--reasoning-effort', '--permission-mode', '--disable-web-search', '--no-subagents', '--max-turns', '--json-schema', '--output-format']
+          : ['--print', '--model', '--effort', '--safe-mode', '--tools', '--strict-mcp-config', '--mcp-config', '--permission-mode', '--no-session-persistence', '--disable-slash-commands', '--no-chrome', '--settings', '--json-schema', '--output-format', '--max-budget-usd'];
   let result;
   try {
     result = await runProcess(binary, tuple.host === 'codex' ? ['exec', '--help'] : ['--help'], Buffer.alloc(0), Math.min(timeoutMs, 30_000));
@@ -592,13 +626,16 @@ async function capabilityCheck(tuple, binary, timeoutMs) {
   }
   const output = `${result.stdout.toString('utf8')}\n${result.stderr.toString('utf8')}`;
   if (result.cancelled) return { ok: false, cancelled: true, missing: [], version: null, output };
-  const missing = required.filter((flag) => !output.includes(flag));
+  const helpFlags = new Set(output.match(/--[A-Za-z0-9-]+/g) || []);
+  const missing = required.filter((control) => control.startsWith('--') ? !helpFlags.has(control) : !output.includes(control));
   if (result.code !== 0) missing.unshift(`help exited ${result.code}`);
   const parserArgs = tuple.host === 'codex'
     ? ['exec', '--skip-git-repo-check', '--sandbox', 'read-only', '--ephemeral', '--ignore-user-config', '--ignore-rules', '--strict-config', '--model', tuple.model, '-c', `model_reasoning_effort="${tuple.effort}"`, '--color', 'never', '--version']
     : tuple.host === 'agy'
       ? ['--version']
-      : ['--print', '--model', tuple.model, '--effort', tuple.effort, '--safe-mode', '--tools', '', '--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}', '--permission-mode', 'plan', '--no-session-persistence', '--max-turns', '4', '--disable-slash-commands', '--no-chrome', ...(tuple.model === 'claude-fable-5' ? ['--settings', '{"switchModelsOnFlag":true}'] : []), '--json-schema', '{"type":"object"}', '--output-format', 'json', '--max-budget-usd', '1', '--version'];
+      : tuple.host === 'cursor' || tuple.host === 'grok'
+        ? ['--version']
+        : ['--print', '--model', tuple.model, '--effort', tuple.effort, '--safe-mode', '--tools', '', '--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}', '--permission-mode', 'plan', '--no-session-persistence', '--max-turns', '4', '--disable-slash-commands', '--no-chrome', ...(tuple.model === 'claude-fable-5' ? ['--settings', '{"switchModelsOnFlag":true}'] : []), '--json-schema', '{"type":"object"}', '--output-format', 'json', '--max-budget-usd', '1', '--version'];
   const parser = await runProcess(binary, parserArgs, Buffer.alloc(0), Math.min(timeoutMs, 30_000));
   if (parser.cancelled) return { ok: false, cancelled: true, missing: [], version: null, output: `${output}\n${parser.stdout}\n${parser.stderr}` };
   if (parser.code !== 0) missing.push(`configured argv parser exited ${parser.code}`);
@@ -622,7 +659,7 @@ async function parseOwnerOverride(file, primary) {
   const evidence = { used: true, authority: document.authority || null, source: document.source || null, path: absolute, expected_sha256: expected, actual_sha256: actual };
   const expectedFamily = primary.family;
   const tupleKeys = requested && typeof requested === 'object' ? Object.keys(requested).sort().join(',') : '';
-  const validHostFamily = (requested?.host === 'codex' && requested?.family === 'openai') || (requested?.host === 'claude' && requested?.family === 'anthropic') || (requested?.host === 'agy' && requested?.family === 'google');
+  const validHostFamily = (requested?.host === 'codex' && requested?.family === 'openai') || (requested?.host === 'claude' && requested?.family === 'anthropic') || (requested?.host === 'agy' && requested?.family === 'google') || (requested?.host === 'grok' && requested?.family === 'xai') || (requested?.host === 'cursor' && ['multi', 'openai', 'anthropic', 'google', 'xai'].includes(requested?.family));
   const validTuple = requested && tupleKeys === 'effort,family,host,model,orchestrator' && requested.orchestrator === primary.orchestrator && requested.host === primary.host && requested.family === expectedFamily && requested.model === primary.model && validHostFamily && ['low', 'medium', 'high', 'xhigh', 'max'].includes(requested.effort);
   if (!expected || expected !== actual || document.authority !== 'repository-owner' || typeof document.source !== 'string' || !document.source || typeof document.reason !== 'string' || !document.reason || !Number.isFinite(timestamp) || Math.abs(Date.now() - timestamp) > MAX_OWNER_OVERRIDE_AGE_MS || !validTuple) {
     throw Object.assign(new Error('owner override failed trust, freshness, provenance, or tuple validation'), { classification: 'override_invalid', overrideEvidence: evidence });
@@ -1067,6 +1104,18 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
     const inlineSchema = JSON.stringify(JSON.parse(schemaBytes.toString('utf8')));
     for (const key of ['CLAUDE_CODE_DISABLE_REFUSAL_FALLBACK', 'ANTHROPIC_MODEL', 'CLAUDE_MODEL', 'CLAUDE_CODE_MODEL', 'ANTHROPIC_DEFAULT_OPUS_MODEL', 'ANTHROPIC_DEFAULT_SONNET_MODEL', 'ANTHROPIC_DEFAULT_HAIKU_MODEL']) delete env[key];
     args = ['--print', '--model', tuple.model, '--effort', tuple.effort, '--safe-mode', '--tools', '', '--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}', '--permission-mode', 'plan', '--no-session-persistence', '--max-turns', '4', '--disable-slash-commands', '--no-chrome', ...(switchingEnabled ? ['--settings', '{"switchModelsOnFlag":true}'] : []), '--json-schema', inlineSchema, '--output-format', 'json', '--max-budget-usd', String(budgetUsd)];
+  } else if (tuple.host === 'cursor') {
+    const cursorModel = tuple.model === 'cursor-auto' ? 'auto' : tuple.model;
+    const reviewInstruction = Buffer.from(`You are the independent SVC ${reviewKind} reviewer. Work read-only. Return exactly one raw JSON object and no markdown or commentary. It must match the following schema, which SVC validates fail-closed after transport. The reviewer object must use host=cursor, family=${tuple.family}, model=${tuple.model}, effort=${tuple.effort}.\nJSON_SCHEMA:\n${schemaBytes.toString('utf8')}\nEND_JSON_SCHEMA\n\n`);
+    packageBytes = Buffer.concat([reviewInstruction, packageBytes]);
+    args = ['--print', '--mode', 'plan', '--output-format', 'json', '--model', cursorModel, '--sandbox', 'disabled', '--workspace', path.resolve(process.env.SVC_EXTERNAL_REVIEW_CONTEXT_ROOT || process.cwd()), '--trust'];
+  } else if (tuple.host === 'grok') {
+    const inlineSchema = JSON.stringify(JSON.parse(schemaBytes.toString('utf8')));
+    const reviewInstruction = Buffer.from(`You are the independent SVC ${reviewKind} reviewer. Work read-only. Return the JSON object required by the supplied schema. The reviewer object must use host=grok, family=xai, model=${tuple.model}, effort=${tuple.effort}.\n\n`);
+    packageBytes = Buffer.concat([reviewInstruction, packageBytes]);
+    const promptFile = path.join(artifactsDir, `${prefix}-grok-prompt.txt`);
+    await writeFile(promptFile, packageBytes, { mode: 0o600 });
+    args = ['--prompt-file', promptFile, '--cwd', path.resolve(process.env.SVC_EXTERNAL_REVIEW_CONTEXT_ROOT || process.cwd()), '--model', tuple.model, '--reasoning-effort', tuple.effort, '--permission-mode', 'plan', '--disable-web-search', '--no-subagents', '--max-turns', '12', '--json-schema', inlineSchema, '--output-format', 'json'];
   } else {
     args = [];
     result = { code: null, signal: null, timedOut: false, stdout: Buffer.alloc(0), stderr: Buffer.from(`no review transport for host ${tuple.host}`), spawnError: true };
@@ -1082,7 +1131,7 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
   let routeKind = 'exact_primary';
   let effectiveTuple = tuple;
   let modelAttestation = { level: 'none', requested_model: tuple.model, observed_models: [], evidence: null };
-  let protocol = { process_invocations: 1, configured_turn_ceiling: tuple.host === 'claude' ? 4 : null, configured_budget_usd: tuple.host === 'claude' ? budgetUsd : null, reported_turns: null, stop_reason: null, terminal_reason: null, errors: [] };
+  let protocol = { process_invocations: 1, configured_turn_ceiling: tuple.host === 'grok' ? 12 : tuple.host === 'claude' ? 4 : null, configured_budget_usd: tuple.host === 'claude' ? budgetUsd : null, reported_turns: null, stop_reason: null, terminal_reason: null, errors: [] };
   let classification = result.cancelled ? 'cancelled' : result.timedOut ? 'timeout' : result.code === 0 ? 'success' : classifyProviderFailure(result.stdout.toString('utf8'), result.stderr.toString('utf8'), false);
   if (result.spawnError) classification = 'capability';
   if (!result.cancelled && !result.timedOut && !result.spawnError) {
@@ -1136,6 +1185,26 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
           modelAttestation = { level: 'requested_accepted', requested_model: tuple.model, observed_models: [], evidence: 'canonical_agy_dispatch_receipt_exact_model_preset_package_schema' };
           if (findings) await writeJson(finalFile, findings);
         }
+      } else if (tuple.host === 'cursor') {
+        const outer = JSON.parse(result.stdout.toString('utf8'));
+        findings = parseJsonObjectEnvelope(String(outer.result || '').replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim());
+        usage = outer.usage && typeof outer.usage === 'object' ? outer.usage : {};
+        protocol = { ...protocol, terminal_reason: typeof outer.subtype === 'string' ? outer.subtype : null };
+        if (result.code === 0 && outer.subtype === 'success' && !outer.is_error) {
+          modelAttestation = { level: 'requested_accepted', requested_model: tuple.model, observed_models: [], evidence: tuple.model === 'cursor-auto' ? 'cursor_plan_mode_auto_alias_plus_successful_json_exit_no_server_model_echo' : 'cursor_plan_mode_exact_model_argv_plus_successful_json_exit_no_server_model_echo' };
+        } else if (result.code === 0) classification = 'schema_invalid';
+        if (findings) await writeJson(finalFile, findings);
+      } else if (tuple.host === 'grok') {
+        const outer = JSON.parse(result.stdout.toString('utf8'));
+        findings = outer.structuredOutput || (typeof outer.text === 'string' ? JSON.parse(outer.text) : null);
+        const observedModels = Object.keys(outer.modelUsage || {});
+        usage = { ...(outer.usage && typeof outer.usage === 'object' ? outer.usage : {}), modelUsage: outer.modelUsage || {}, total_cost_usd: outer.total_cost_usd ?? null };
+        protocol = { ...protocol, reported_turns: Number.isInteger(outer.num_turns) ? outer.num_turns : null, stop_reason: typeof outer.stopReason === 'string' ? outer.stopReason : null, terminal_reason: typeof outer.stopReason === 'string' ? outer.stopReason : null };
+        if (result.code === 0 && findings && observedModels.length > 0) {
+          modelAttestation = { level: 'server_observed', requested_model: tuple.model, observed_models: observedModels, evidence: 'grok_modelUsage' };
+          if (!observedModels.every((model) => model === tuple.model || model === `${tuple.model}-build`)) classification = 'model_mismatch';
+        } else if (result.code === 0) classification = 'schema_invalid';
+        if (findings) await writeJson(finalFile, findings);
       } else {
         const outer = JSON.parse(result.stdout.toString('utf8'));
         findings = outer.structured_output;
@@ -1398,7 +1467,9 @@ async function main() {
     policy: resolvedPolicy?.metadata || { version: policy?.version || null, profile: null, source: null, resolved_at: now?.toISOString() || null, effective_window: null, cutover_utc: policy?.cutover_utc || null, cutover_local: policy?.cutover_local || null, timezone: policy?.timezone || null, selection_sha256: null, selection_expires_at: null, selection_authority: null },
     protocol: overrides.protocol || { process_invocations: attempts.length, configured_turn_ceiling: requestedTuple?.host === 'claude' ? 4 : null, configured_budget_usd: requestedTuple?.host === 'claude' ? reviewBudgetUsd : null, reported_turns: null, stop_reason: null, terminal_reason: null, errors: [] },
     route: overrides.route || { kind: classification === 'cache_hit' ? 'cache_hit' : classification === 'success' ? (resolvedPolicy?.metadata.source === 'schedule' ? 'scheduled_primary' : resolvedPolicy?.metadata.source === 'explicit-selection' ? 'explicit_profile_primary' : resolvedPolicy?.metadata.source === 'owner-config' ? 'owner_config_primary' : 'exact_primary') : 'hard_failure', switching_enabled: requestedTuple?.model === 'claude-fable-5', cli_fallback_configured: false, evidence: classification === 'cache_hit' ? 'cache_receipt_replay' : classification === 'success' ? 'requested_primary' : 'failure' },
-    effective_effort: overrides.effectiveEffort || { value: overrides.effectiveTuple?.effort ?? null, provenance: overrides.effectiveTuple?.effort === 'provider-managed' ? 'provider-managed' : overrides.effectiveTuple ? 'requested' : 'none' },
+    effective_effort: overrides.effectiveEffort || (overrides.effectiveTuple?.host === 'cursor'
+      ? { value: null, provenance: 'provider-managed' }
+      : { value: overrides.effectiveTuple?.effort ?? null, provenance: overrides.effectiveTuple?.effort === 'provider-managed' ? 'provider-managed' : overrides.effectiveTuple ? 'requested' : 'none' }),
     model_attestation: overrides.modelAttestation || { level: 'none', requested_model: invocationTuple?.model ?? null, observed_models: [], evidence: null },
     phase_guard: phaseGuardState,
     package_context: packageBundle.context,

@@ -1,0 +1,230 @@
+{
+  "wi": "WI-565",
+  "lane": "bugfix",
+  "created": "2026-08-30T09:22:38.250Z",
+  "status": "in_progress",
+  "delivery_graph": {
+    "compiler_version": 1,
+    "user_intent": "Fix canonical external-review transports for configured Cursor Auto and Grok Build reviewers",
+    "repo_mode": "framework",
+    "change_type": "bugfix",
+    "lane": "bugfix",
+    "delivery_mode": "end_to_end",
+    "delivery_tier": {
+      "mode": "full",
+      "selected_by": "route-workflow",
+      "rationale": "Canonical cross-host review hot path and receipt boundary",
+      "decision_log_ref": "",
+      "validation_policy": {
+        "mandatory_skills": [
+          "diagnose-bug",
+          "plan-changeset",
+          "review-plan",
+          "execute-changeset",
+          "review-gate",
+          "review-exec",
+          "audit-implementation",
+          "land-changeset",
+          "verify-promotion",
+          "design-tech"
+        ],
+        "skippable_skills": [],
+        "blocked_behind_explicit_override": []
+      }
+    },
+    "risk_flags": [
+      "cross_runtime_integration",
+      "external-integration"
+    ],
+    "planned_files": [
+      "scripts/run-external-review.mjs",
+      "schemas/external-review-findings.schema.json",
+      "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+      "docs/specs/work-items/WI-565.md"
+    ],
+    "platform_contracts": [],
+    "solution_confidence": {
+      "required": false,
+      "mode": "none",
+      "status": "not_required"
+    },
+    "compression": {
+      "ratio": 1,
+      "threshold": 2,
+      "rationale": ""
+    },
+    "evidence_families": {
+      "product": "required",
+      "acceptance_criteria": "required",
+      "journey": "required",
+      "visual": "n/a",
+      "runtime": "n/a",
+      "plan_review": "required",
+      "code_review": "required",
+      "implementation_audit": "required",
+      "deploy": "n/a",
+      "promotion": "required",
+      "session_forensics": "n/a",
+      "feature_validation_closeout": "n/a",
+      "provider_fidelity": "n/a"
+    },
+    "required_skills": [
+      "diagnose-bug",
+      "plan-changeset",
+      "review-plan",
+      "execute-changeset",
+      "review-gate",
+      "review-exec",
+      "audit-implementation",
+      "land-changeset",
+      "verify-promotion",
+      "design-tech"
+    ],
+    "conditional_mandatory_skills": [
+      {
+        "skill": "design-tech",
+        "signal": "technical-risk",
+        "reason": "Backend, data, integration, or concurrency risk requires technical design."
+      },
+      {
+        "skill": "audit-implementation",
+        "signal": "technical-risk",
+        "reason": "Technical-risk implementation requires implementation audit."
+      }
+    ],
+    "optional_skills": [],
+    "skipped_skills": [],
+    "verification_tiers": {
+      "local": [
+        "tier-1"
+      ],
+      "runtime": [],
+      "production": []
+    },
+    "mutation_history": [
+      {
+        "ts": "2026-08-30T09:22:38.250Z",
+        "source": "route-workflow",
+        "action": "initial_compile",
+        "reason": "Compiled delivery graph at lane entry before downstream mutation."
+      }
+    ],
+    "closeout_classification_required": true
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "diagnose-bug: delivery graph required step",
+      "status": "in_progress",
+      "blocked_by": [],
+      "metadata": {
+        "skill": "diagnose-bug"
+      },
+      "skill_receipt": {
+        "skill": "diagnose-bug",
+        "loaded_at": "2026-08-30T09:22:43.012Z",
+        "loaded_via": "codex"
+      }
+    },
+    {
+      "id": 2,
+      "subject": "plan-changeset: delivery graph required step",
+      "status": "pending",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "plan-changeset"
+      }
+    },
+    {
+      "id": 3,
+      "subject": "review-plan: delivery graph required step",
+      "status": "pending",
+      "blocked_by": [
+        2
+      ],
+      "metadata": {
+        "skill": "review-plan"
+      }
+    },
+    {
+      "id": 4,
+      "subject": "execute-changeset: delivery graph required step",
+      "status": "pending",
+      "blocked_by": [
+        3
+      ],
+      "metadata": {
+        "skill": "execute-changeset"
+      }
+    },
+    {
+      "id": 5,
+      "subject": "review-gate: delivery graph required step",
+      "status": "pending",
+      "blocked_by": [
+        4
+      ],
+      "metadata": {
+        "skill": "review-gate"
+      }
+    },
+    {
+      "id": 6,
+      "subject": "review-exec: delivery graph required step",
+      "status": "pending",
+      "blocked_by": [
+        5
+      ],
+      "metadata": {
+        "skill": "review-exec"
+      }
+    },
+    {
+      "id": 7,
+      "subject": "audit-implementation: delivery graph required step",
+      "status": "pending",
+      "blocked_by": [
+        6
+      ],
+      "metadata": {
+        "skill": "audit-implementation"
+      }
+    },
+    {
+      "id": 8,
+      "subject": "land-changeset: delivery graph required step",
+      "status": "pending",
+      "blocked_by": [
+        7
+      ],
+      "metadata": {
+        "skill": "land-changeset"
+      }
+    },
+    {
+      "id": 9,
+      "subject": "verify-promotion: delivery graph required step",
+      "status": "pending",
+      "blocked_by": [
+        8
+      ],
+      "metadata": {
+        "skill": "verify-promotion"
+      }
+    },
+    {
+      "id": 10,
+      "subject": "design-tech: delivery graph required step",
+      "status": "pending",
+      "blocked_by": [
+        9
+      ],
+      "metadata": {
+        "skill": "design-tech",
+        "signal": "technical-risk"
+      }
+    }
+  ]
+}

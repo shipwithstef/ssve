@@ -47,6 +47,7 @@ function validateTupleLegacy(tuple, station, orchestrator) {
   if (keys !== 'effort,family,host,model') fail(`${orchestrator}/${station.id} tuple keys must be effort,family,host,model`);
   if (!['low', 'medium', 'high', 'xhigh', 'max', 'provider-managed'].includes(tuple.effort) || !tuple.host || !tuple.family || !tuple.model) fail(`${orchestrator}/${station.id} tuple values are invalid`);
   if (station.kind === 'external' && HOST_FAMILY[tuple.host] && HOST_FAMILY[tuple.host] !== tuple.family) fail(`${orchestrator}/${station.id} external host/family mismatch`);
+  if (tuple.host === 'cursor' && tuple.model === 'cursor-auto' && tuple.family !== 'multi') fail(`${orchestrator}/${station.id} Cursor Auto family must be multi because the provider family is not attested`);
   if (tuple.effort === 'provider-managed') fail(`${orchestrator}/${station.id} provider-managed effort is not a verifiable reviewer tuple; configure an exact host effort`);
   if (tuple.host === 'agy' && !new RegExp(`(?:\\(|-)${tuple.effort}\\)?$`, 'i').test(tuple.model)) fail(`${orchestrator}/${station.id} AGY model preset must encode the configured effort`);
   if (station.kind === 'inline-self' && tuple.host !== 'current') fail(`${orchestrator}/${station.id} inline self host must be current`);
@@ -65,6 +66,7 @@ function validatePhaseLegacy(phase, orchestrator, phaseName) {
     if (station.kind === 'inline-self' && station.authority !== 'advisory') fail(`${orchestrator}/${phaseName}/${station.id} self-review cannot be independent`);
     if (station.kind === 'subagent' && station.authority !== 'advisory') fail(`${orchestrator}/${phaseName}/${station.id} subagent cannot be independent release authority`);
     if (station.kind === 'external' && station.authority === 'independent' && HOST_FAMILY[orchestrator] && station.tuple.family === HOST_FAMILY[orchestrator]) fail(`${orchestrator}/${phaseName}/${station.id} independent external authority must be different-family`);
+    if (station.kind === 'external' && station.authority === 'independent' && station.tuple.host === 'cursor') fail(`${orchestrator}/${phaseName}/${station.id} Cursor cannot be independent because its runtime provider family is not attested`);
   }
   if (phase.stations[0].kind !== 'inline-self') fail(`${orchestrator}/${phaseName} must start with inline self-review`);
   if (phase.release_authority && HOST_FAMILY[orchestrator] && !phase.stations.some(station => station.kind === 'external' && station.required && station.authority === 'independent' && station.tuple.family !== HOST_FAMILY[orchestrator])) fail(`${orchestrator}/${phaseName} release authority requires a required different-family external station`);

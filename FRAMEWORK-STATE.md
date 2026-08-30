@@ -79,6 +79,8 @@ Skills that update this: same list + any manual framework change
 
 ## External Review Fallback Policy (WI-557)
 
+**Configured host transport parity (WI-565, candidate 2026-08-30):** The canonical external-review launcher supports Codex, Claude, AGY, Cursor Agent, and Grok Build. Cursor logical `cursor-auto` maps only at the transport boundary to CLI `auto` and records requested acceptance plus provider-managed effective effort because Cursor's result envelope exposes neither the selected provider model nor effort. Cursor Auto may be a required advisory station but must not carry independent release authority without provider-family evidence. Grok `grok-4.6` accepts the observed runtime alias `grok-4.6-build` and records server-observed xAI evidence, so it can be the required independent station. Both hosts use read-only/plan execution, the shared findings schema, redacted diagnostics, and the canonical v2 receipt. Reviewer/station selection remains exclusively owner-configured.
+
 When no external review station is available (quota exhausted, billing blocked, CLI missing):
 1. Run local validation only (tier-1 focused validator + manifest lint)
 2. Record decision in pipeline-decisions.jsonl with reason "external-station-unavailable"
