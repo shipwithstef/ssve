@@ -2,7 +2,7 @@
   "wi": "WI-GROK-SHELL-ALIAS-01",
   "lane": "bugfix",
   "created": "2026-08-30T12:47:09.095Z",
-  "status": "pending",
+  "status": "in_progress",
   "delivery_graph": {
     "compiler_version": 1,
     "user_intent": "Fix Grok run_terminal_command shell alias handling and skip Codex skill-load receipts for non-loader Grok shell commands while retaining isolation and WI binding",
@@ -634,12 +634,49 @@
     {
       "id": 8,
       "subject": "land-changeset: delivery graph required step",
-      "status": "pending",
+      "status": "in_progress",
       "blocked_by": [
         7
       ],
       "metadata": {
         "skill": "land-changeset"
+      },
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-08-30T14:38:25.540Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-08-30T14:40:39.203Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-08-30T14:40:39.369Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-diff-audit.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-08-30T14:40:39.546Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-validation.log"
+              }
+            ]
+          }
+        ]
       }
     },
     {
