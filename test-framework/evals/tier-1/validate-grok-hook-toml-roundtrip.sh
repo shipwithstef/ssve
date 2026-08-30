@@ -27,6 +27,22 @@ else
   exit 1
 fi
 
+if node --input-type=module - "$WIRER" <<'NODE'
+import assert from "node:assert/strict";
+import { pathToFileURL } from "node:url";
+const { convergeGrokCompatHooks } = await import(pathToFileURL(process.argv[2]));
+assert.match(convergeGrokCompatHooks("[cli]\ninstaller = \"internal\"\n"), /\[compat\.claude\]\nhooks = false/);
+assert.match(convergeGrokCompatHooks("[compat.claude]\nhooks = false\n[compat.cursor]\nhooks = false\n"), /\[compat\.claude\]\nhooks = false/);
+assert.throws(() => convergeGrokCompatHooks("[compat.claude]\nhooks = \"true\"\n"), /non-boolean hooks value/);
+assert.throws(() => convergeGrokCompatHooks("[compat.claude]\nhooks = true\nhooks = false\n"), /duplicate hooks keys/);
+assert.throws(() => convergeGrokCompatHooks("[compat.claude]\nhooks = true\n[compat.claude]\nhooks = false\n"), /duplicate .* tables/);
+NODE
+then
+  pass "compat hook convergence covers absent, already-false, malformed, duplicate-key, and duplicate-table fixtures"
+else
+  fail "compat hook convergence edge fixtures failed"
+fi
+
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 SKILLS="$TMP/skills"
@@ -206,10 +222,13 @@ else
   fail "native Grok dispatcher count or matcher is wrong"
 fi
 
-if awk '/^command = / && /\.grok\/skills/ && /\/svc-|\/codex\/svc-/ && $0 !~ /^command = "SVC_HOST=grok / { bad=1 } END { exit bad ? 1 : 0 }' "$CONFIG"; then
+EXPECTED_SVC_COMMANDS="$(node --input-type=module -e 'import {buildGrokHookEntries} from "./scripts/wire-grok-hooks.mjs"; process.stdout.write(String(buildGrokHookEntries(process.argv[1]).length))' "$SKILLS")"
+ACTUAL_SVC_COMMANDS="$(grep -c '^command = "SVC_HOST=grok ' "$CONFIG")"
+if [ "$ACTUAL_SVC_COMMANDS" -eq "$EXPECTED_SVC_COMMANDS" ] \
+  && awk -v prefix="$SKILLS/hooks/" '/^command = / && index($0,prefix)>0 && $0 !~ /^command = "SVC_HOST=grok / { bad=1 } END { exit bad ? 1 : 0 }' "$CONFIG"; then
   pass "every Grok-owned command carries SVC_HOST=grok"
 else
-  fail "a Grok-owned command lacks SVC_HOST=grok"
+  fail "a Grok-owned command is missing or lacks SVC_HOST=grok"
 fi
 
 if [ "$(grep -c '^matcher = "Shell|Bash|run_terminal_command"$' "$CONFIG")" -eq 2 ] \

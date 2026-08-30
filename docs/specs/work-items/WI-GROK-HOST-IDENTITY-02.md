@@ -125,10 +125,12 @@ Single correction — no decomposition needed.
 
 - **AC-1:** Hermetic identity fixtures prove `GROK_SESSION_ID` resolves to host
   `grok` and the same non-empty session ID in the shared resolver, dispatcher,
-  worktree bootstrap, and authority CLI; explicit payload/`SVC_HOST` precedence
-  and unknown-host fail-closed behavior remain intact.
+  worktree bootstrap, and authority CLI. Precedence is allowlisted wired
+  `SVC_HOST`, then `GROK_SESSION_ID`, then an allowlisted payload host; unknown
+  explicit identities fail closed.
 - **AC-2:** Execution-integrity fixtures prove the dispatcher rewrites canonical
-  bootstrap with allowlisted `SVC_HOST=grok` and `SVC_SESSION_ID=<same-session>`.
+  bootstrap with allowlisted `SVC_HOST=grok` while the private one-use handoff
+  carries the same stable session without shell interpolation.
 - **AC-3:** Hermetic TOML round-trip proves `compat.claude.hooks=false`,
   `compat.cursor.hooks=false`, native dispatcher wiring, and `SVC_HOST=grok`.
 - **AC-4:** `grok inspect --json` after setup reports foreign hook compatibility disabled

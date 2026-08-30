@@ -33,6 +33,7 @@ function identity(flags, env = process.env) {
   if (flags["--session-id"] && String(flags["--session-id"]) !== trustedSession) throw new Error("--session-id does not match trusted host session identity");
   if (flags["--host"] && String(flags["--host"]).toLowerCase() !== resolveAuthorityHost({}, env)) throw new Error("--host does not match trusted host identity");
   const host = resolveAuthorityHost({ host: flags["--host"] || null }, env);
+  if (!host) throw new Error("trusted host identity is missing or unsupported");
   const session_id = String(flags["--session-id"] || trustedSession);
   const agent_id = flags["--agent-id"] || env.SVC_AGENT_ID || null;
   return { host, session_id, agent_id, principal: principalId({ host, session_id, agent_id }) };

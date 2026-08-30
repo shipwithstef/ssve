@@ -520,6 +520,7 @@ export function repairSameSessionBranchCoordinates(opts = {}) {
       try {
         const repairEnv = opts.env || process.env;
         const controllerHost = String(opts.host || repairEnv.SVC_HOST ||
+          (repairEnv.GROK_SESSION_ID ? "grok" : "") ||
           (repairEnv.CODEX_THREAD_ID || repairEnv.CODEX_SESSION_ID ? "codex" : "") ||
           (repairEnv.CLAUDE_SESSION_ID ? "claude" : "") ||
           (repairEnv.KIMI_SESSION_ID ? "kimi" : "") ||
@@ -1237,9 +1238,11 @@ export async function migrateSessionBindingToV2(opts = {}) {
   }
   const repoId = repositoryId(worktreeRoot);
   const stateRoot = opts.state_root ? path.resolve(opts.state_root) : authorityStateRoot(worktreeRoot, opts.env || process.env);
+  const host = String(opts.host || "");
+  if (!host) throw new Error("a trusted host identity is required for controller-v2 migration");
   return migrateV1Claim({
     stateRoot, claimPath: binding.claim_path, repoId, worktreeRoot,
-    host: String(opts.host || "codex"), env: opts.env || process.env,
+    host, env: opts.env || process.env,
   });
 }
 

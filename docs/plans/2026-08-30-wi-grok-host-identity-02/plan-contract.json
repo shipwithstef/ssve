@@ -27,17 +27,17 @@
   },
   "resource_review": {
     "verification": "changed-executable-census",
-    "denominator": 8,
+    "denominator": 13,
     "disposition": "no-risky-resource-writers",
-    "evidence": "Actual changed-executable-census denominator is 8: five runtime/hook .mjs modules, the Grok wirer, and two executable Tier-1 shell validators. None is a money, ledger, quota, inventory, entitlement, or notification writer; Grok config remains governed separately by external_writer."
+    "evidence": "Actual changed-executable-census denominator is 13: eight runtime/hook .mjs modules, the Grok wirer, and four executable Tier-1 shell validators. None is a money, ledger, quota, inventory, entitlement, or notification writer; Grok config remains governed separately by external_writer."
   },
   "resource_writers": [],
   "claims": [],
   "executables": [],
   "volatile_paths": [".svc/authorization-events.jsonl"],
   "ownership": [
-    {"task": "T01", "paths": ["hooks/lib/resolve-wi.mjs", "hooks/codex/lib/bootstrap-command.mjs", "hooks/codex/svc-codex-pretool-dispatcher.mjs", "hooks/codex/svc-codex-skill-load-enforcer.mjs", "scripts/svc-authority.mjs", "test-framework/evals/tier-1/validate-codex-execution-integrity.sh"]},
+    {"task": "T01", "paths": ["hooks/lib/resolve-wi.mjs", "hooks/lib/wi-claim.mjs", "hooks/codex/lib/bootstrap-command.mjs", "hooks/codex/lib/session-handoff.mjs", "hooks/codex/svc-codex-pretool-dispatcher.mjs", "hooks/codex/svc-codex-skill-load-enforcer.mjs", "scripts/svc-authority.mjs", "scripts/svc-ensure-worktree.mjs", "test-framework/evals/tier-1/validate-codex-execution-integrity.sh", "test-framework/evals/tier-1/validate-codex-session-rebinding.sh", "test-framework/evals/tier-1/validate-existing-worktree-self-heal.sh"]},
     {"task": "T02", "paths": ["scripts/wire-grok-hooks.mjs", "test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh"]},
-    {"task": "T03", "paths": ["docs/specs/work-items/WI-GROK-HOST-IDENTITY-02.md", "docs/specs/tech/wi-grok-host-identity-02.md", "docs/plans/2026-08-30-wi-grok-host-identity-02/manifest.md", "docs/plans/2026-08-30-wi-grok-host-identity-02/plan-contract.json", "docs/plans/2026-08-30-wi-grok-host-identity-02/review-log.yaml", ".svc/lane-tasks-WI-GROK-HOST-IDENTITY-02.json", ".svc/session-contract.jsonl"]}
+    {"task": "T03", "paths": ["docs/specs/work-items/WI-GROK-HOST-IDENTITY-02.md", "docs/specs/tech/wi-grok-host-identity-02.md", "docs/specs/contract-maps/grok-host-identity.md", "docs/specs/security/wi-grok-host-identity-02-review.md", "docs/specs/audit/wi-grok-host-identity-02-analysis.md", "docs/specs/test-evidence/WI-GROK-HOST-IDENTITY-02/cross-system-probe.json", "docs/specs/test-evidence/WI-GROK-HOST-IDENTITY-02/pre-post-evidence.json", "docs/specs/reviews/wi-grok-host-identity-g5.md", "docs/specs/reviews/wi-grok-host-identity-exec-cross-model.md", "docs/specs/reviews/wi-grok-host-identity-exec-review-log.yaml", "docs/plans/2026-08-30-wi-grok-host-identity-02/manifest.md", "docs/plans/2026-08-30-wi-grok-host-identity-02/plan-contract.json", "docs/plans/2026-08-30-wi-grok-host-identity-02/review-log.yaml", ".svc/plan-manifest.json", ".svc/lane-tasks-WI-GROK-HOST-IDENTITY-02.json", ".svc/session-contract.jsonl"]}
   ]
 }

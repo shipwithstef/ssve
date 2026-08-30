@@ -14,7 +14,7 @@ export function parseBootstrapCommand(command, { ensurePath = "scripts/svc-ensur
   const lexed = lexSimpleCommand(String(command || ""));
   let tokens = lexed?.ok ? lexed.argv : null;
   const identity = {};
-  while (tokens?.length && /^(?:SVC_HOST|SVC_SESSION_ID)=/.test(tokens[0])) {
+  while (tokens?.length && /^SVC_HOST=/.test(tokens[0])) {
     const token = tokens.shift();
     const split = token.indexOf("=");
     const key = token.slice(0, split);
@@ -22,9 +22,7 @@ export function parseBootstrapCommand(command, { ensurePath = "scripts/svc-ensur
     if (Object.hasOwn(identity, key) || !value || /[\0\r\n]/.test(value)) return null;
     identity[key] = value;
   }
-  if (Object.keys(identity).length && (
-    !BOOTSTRAP_HOSTS.has(identity.SVC_HOST) || !identity.SVC_SESSION_ID || identity.SVC_SESSION_ID.length > 512
-  )) return null;
+  if (Object.keys(identity).length && !BOOTSTRAP_HOSTS.has(identity.SVC_HOST)) return null;
   if (!tokens || tokens.length < 6 || tokens[0] !== "node") return null;
   const script = path.normalize(tokens[1] || "");
   if (script !== ensurePath && !script.endsWith(`/scripts/svc-ensure-worktree.mjs`)) return null;

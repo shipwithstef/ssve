@@ -141,9 +141,12 @@ export function sessionId(hookPayload = {}, env = process.env) {
 }
 
 export function resolveAuthorityHost(payload = {}, env = process.env) {
-  const explicit = payload.host || env.SVC_HOST;
-  if (explicit) return String(explicit).toLowerCase();
+  const knownHosts = new Set(["codex", "claude", "kimi", "gemini", "opencode", "mimo-code", "antigravity", "cursor", "grok"]);
+  const wired = String(env.SVC_HOST || "").toLowerCase();
+  if (wired) return knownHosts.has(wired) ? wired : "";
   if (env.GROK_SESSION_ID) return "grok";
+  const payloadHost = String(payload.host || "").toLowerCase();
+  if (payloadHost) return knownHosts.has(payloadHost) ? payloadHost : "";
   if (env.CODEX_THREAD_ID || env.CODEX_SESSION_ID) return "codex";
   if (env.CLAUDE_SESSION_ID) return "claude";
   if (env.KIMI_SESSION_ID) return "kimi";

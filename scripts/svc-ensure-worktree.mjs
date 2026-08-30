@@ -55,7 +55,7 @@ function repository(start) {
 }
 
 function sessionId(env) {
-  return String(env.SVC_SESSION_ID || env.CODEX_THREAD_ID || env.CODEX_SESSION_ID ||
+  return String(env.SVC_SESSION_ID || env.GROK_SESSION_ID || env.CODEX_THREAD_ID || env.CODEX_SESSION_ID ||
     env.CLAUDE_SESSION_ID || env.KIMI_SESSION_ID || env.GEMINI_SESSION_ID || "");
 }
 
@@ -573,11 +573,13 @@ export function ensureWorktree(options = {}, env = process.env) {
   if (!branchCheck.ok) throw new Error(`--branch must be a Git-valid literal ref (BRANCH_REF_INVALID: ${branchCheck.reason})`);
   const owner = sessionId(env);
   if (!owner) throw new Error("a host session id is required to create or resume a mutating worktree");
+  const host = resolveAuthorityHost({}, env);
+  if (!host) throw new Error("trusted host identity is missing or unsupported");
   const repo = repository(options.cwd || process.cwd());
-  return withLock(repo.root, wi, env, () => transaction({ repo, wi, branch, from, owner, env }));
+  return withLock(repo.root, wi, env, () => transaction({ repo, wi, branch, from, owner, host, env }));
 }
 
-function transaction({ repo, wi, branch, from, owner, env }) {
+function transaction({ repo, wi, branch, from, owner, host, env }) {
   assertIgnored(repo.root);
   const worktreesRoot = path.join(repo.root, ".worktrees");
   // AC-1/FP-02: the requested NEW-worktree path is derived independently of the
@@ -664,7 +666,7 @@ function transaction({ repo, wi, branch, from, owner, env }) {
       path.resolve(String(existingMarker.target_worktree || "")) === worktree) {
     const baseSha = resolveBase(repo.root, from);
     if (String(existingMarker.base_sha) === baseSha) {
-      return forwardComplete({ repo, wi, branch, owner, env, worktree, markerPath, marker: existingMarker, baseSha });
+      return forwardComplete({ repo, wi, branch, owner, host, env, worktree, markerPath, marker: existingMarker, baseSha });
     }
   }
 
@@ -675,16 +677,16 @@ function transaction({ repo, wi, branch, from, owner, env }) {
     if (!byPath || byPath.branch !== branch || (byBranch && byBranch.path !== worktree)) {
       throw new Error("conflicting worktree path or branch");
     }
-    return resumeExisting({ repo, wi, branch, from, owner, env, worktree, markerPath, existingMarker });
+    return resumeExisting({ repo, wi, branch, from, owner, host, env, worktree, markerPath, existingMarker });
   }
-  return createFresh({ repo, wi, branch, from, owner, env, worktree, markerPath, existingMarker });
+  return createFresh({ repo, wi, branch, from, owner, host, env, worktree, markerPath, existingMarker });
 }
 
 // SIB-14/15: exact same-session complete tuple resumes unchanged; a released or
 // stale foreign tuple with no live owner is reclaimed and re-bound to the current
 // session; a LIVE foreign owner is an actionable conflict and is never repaired or
 // deleted.
-function resumeExisting({ repo, wi, branch, from, owner, env, worktree, markerPath, existingMarker }) {
+function resumeExisting({ repo, wi, branch, from, owner, host, env, worktree, markerPath, existingMarker }) {
   const baseSha = resolveBase(repo.root, from);
   const claimP = path.join(worktree, ".svc", "claims", `${wi}.claim.json`);
   let myBinding = readSessionBinding(worktree, owner);
@@ -697,7 +699,7 @@ function resumeExisting({ repo, wi, branch, from, owner, env, worktree, markerPa
     // current binding would make that partial repair invisible on retry.
     const repaired = repairSameSessionBranchCoordinates({
       wi, worktree_root: worktree, repo_root: repo.root, session_id: owner, branch,
-      host: resolveAuthorityHost({}, env), env,
+      host, env,
     });
     if (!repaired.ok) throw new Error(repaired.warning || "same-session branch coordinate repair failed");
     myBinding = readSessionBinding(worktree, owner);
@@ -737,7 +739,7 @@ function resumeExisting({ repo, wi, branch, from, owner, env, worktree, markerPa
   if (authorityEntries.length === 0) {
     const adopted = writeSessionBinding({
       worktree_root: worktree, session_id: owner, role: "mutating", wi, branch,
-      repo_root: repo.root, host: env.SVC_HOST || env.SVC_HARNESS || "unknown", pid: ownerPid(env),
+      repo_root: repo.root, host, pid: ownerPid(env),
     });
     if (!adopted.ok || Number(adopted.binding?.generation || 0) !== 1) {
       throw new Error(adopted.warning || "generation-zero authority adoption failed");
@@ -756,7 +758,7 @@ function resumeExisting({ repo, wi, branch, from, owner, env, worktree, markerPa
   if (tuple.state === "reclaimable") {
     const transferred = transferClaim(wi, Number(tuple.generation || 0), {
       worktree_root: worktree, claim_path: claimP, session_id: owner, role: "mutating",
-      branch, repo_root: repo.root, host: env.SVC_HOST || env.SVC_HARNESS || "unknown",
+      branch, repo_root: repo.root, host,
       pid: ownerPid(env), env, complete_tuple: true,
       source_binding_path: tuple.source_binding_path,
     });
@@ -772,7 +774,7 @@ function resumeExisting({ repo, wi, branch, from, owner, env, worktree, markerPa
   }
   const bound = writeSessionBinding({
     worktree_root: worktree, session_id: owner, role: "mutating", wi, branch,
-    repo_root: repo.root, host: env.SVC_HOST || env.SVC_HARNESS || "unknown",
+    repo_root: repo.root, host,
     pid: ownerPid(env),
   });
   if (!bound.ok) throw new Error(bound.warning || "failed to rebind session to resumed worktree");
@@ -786,7 +788,7 @@ function resumeExisting({ repo, wi, branch, from, owner, env, worktree, markerPa
   return result({ wi, branch, baseSha, worktree, owner, graphPath: graph.path, generation: Number(verified.tuple.claim_generation || 0), created: false, resumed: true });
 }
 
-function createFresh({ repo, wi, branch, from, owner, env, worktree, markerPath, existingMarker }) {
+function createFresh({ repo, wi, branch, from, owner, host, env, worktree, markerPath, existingMarker }) {
   const baseSha = resolveBase(repo.root, from);
 
   // Same-session partial tuple -> forward-complete idempotently (SIB-14). The
@@ -795,7 +797,7 @@ function createFresh({ repo, wi, branch, from, owner, env, worktree, markerPath,
   if (existingMarker && String(existingMarker.session_id) === owner &&
       path.resolve(String(existingMarker.target_worktree || "")) === worktree &&
       String(existingMarker.branch) === branch) {
-    return forwardComplete({ repo, wi, branch, owner, env, worktree, markerPath, marker: existingMarker, baseSha });
+    return forwardComplete({ repo, wi, branch, owner, host, env, worktree, markerPath, marker: existingMarker, baseSha });
   }
 
   // Foreign / ambiguous marker -> classify owner liveness. A LIVE foreign owner
@@ -834,7 +836,7 @@ function createFresh({ repo, wi, branch, from, owner, env, worktree, markerPath,
     if (env.SVC_ENSURE_FAILPOINT === "before-binding") throw new Error("injected failpoint: before-binding");
     const bound = writeSessionBinding({
       worktree_root: worktree, session_id: owner, role: "mutating", wi, branch,
-      repo_root: repo.root, host: env.SVC_HOST || env.SVC_HARNESS || "unknown",
+      repo_root: repo.root, host,
       pid: ownerPid(env),
     });
     if (!bound.ok) throw new Error(bound.warning || "failed to initialize session/worktree binding");
@@ -902,7 +904,7 @@ function verifyCompleteTuple({ repo, wi, branch, owner, worktree, graphP, marker
   return { ok: true, tuple: t };
 }
 
-function forwardComplete({ repo, wi, branch, owner, env, worktree, markerPath, marker, baseSha }) {
+function forwardComplete({ repo, wi, branch, owner, host, env, worktree, markerPath, marker, baseSha }) {
   try {
     if (!fs.existsSync(worktree)) {
       recordIntent(markerPath, marker, worktree, repo.root);
@@ -919,7 +921,7 @@ function forwardComplete({ repo, wi, branch, owner, env, worktree, markerPath, m
       recordIntent(markerPath, marker, bindingPath(worktree, owner), repo.root);
       const bound = writeSessionBinding({
         worktree_root: worktree, session_id: owner, role: "mutating", wi, branch,
-        repo_root: repo.root, host: env.SVC_HOST || env.SVC_HARNESS || "unknown",
+        repo_root: repo.root, host,
         pid: ownerPid(env),
       });
       if (!bound.ok) throw new Error(bound.warning || "forward-complete binding failed");
@@ -963,8 +965,12 @@ async function main() {
   if (!args.wi || !args.branch) {
     throw new Error("Usage: node scripts/svc-ensure-worktree.mjs --wi WI-N --branch NAME [--from origin/main] [--authority-v2] [--print-cd] [--json]");
   }
+  const authorityHost = resolveAuthorityHost({}, process.env);
+  if (!authorityHost) throw new Error("trusted host identity is missing or unsupported");
   if (args.handoff) {
-    const handoff = consumeBootstrapHandoff(args.handoff, { wi: args.wi, branch: args.branch }, { env: process.env });
+    const invocationRepo = repository(process.cwd()).root;
+    const requestedBase = (args.from || "origin/main") === "origin/main" ? git(["rev-parse", "origin/main"], invocationRepo) : args.from;
+    const handoff = consumeBootstrapHandoff(args.handoff, { host: authorityHost, repo_root: invocationRepo, wi: args.wi, branch: args.branch, base: requestedBase }, { env: process.env });
     // The session id crosses the hook/child boundary only through the private
     // one-use handoff, never as a shell argument. Existing callers may still
     // provide the host env identity; the handoff wins when present.
@@ -976,7 +982,7 @@ async function main() {
     value.authority_v2 = await migrateSessionBindingToV2({
       worktree_root: value.absolute_worktree,
       session_id: value.owner_session,
-      host: resolveAuthorityHost({}, process.env),
+      host: authorityHost,
       env: process.env,
     });
   }

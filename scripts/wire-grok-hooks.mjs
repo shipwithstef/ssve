@@ -453,6 +453,9 @@ function convergeCompatHookTable(content, vendor) {
   }
   if (keys.length > 1) throw new Error(`duplicate hooks keys in ${header}`);
   if (keys.length === 1) {
+    if (!/^\s*hooks\s*=\s*(?:true|false)(?:\s*(?:#.*)?)?$/i.test(lines[keys[0]])) {
+      throw new Error(`non-boolean hooks value in ${header}`);
+    }
     lines[keys[0]] = lines[keys[0]].replace(/^(\s*hooks\s*=\s*)(?:true|false)(.*)$/i, "$1false$2");
   } else {
     lines.splice(end, 0, "hooks = false", "");

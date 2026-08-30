@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Host-identity assertions must not inherit the shell that launched this suite.
+unset SVC_HOST GROK_SESSION_ID GROK_HOME GROK_CLI XAI_API_KEY
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 export CODEX_SKILLS_DIR="$ROOT/skills"
 TMP="$(mktemp -d)"
@@ -74,23 +77,25 @@ expect "GROK_SESSION_ID resolves shared authority host and session without Codex
   const env = { GROK_SESSION_ID: "grok-session-01" };
   assert.equal(resolveAuthorityHost({}, env), "grok");
   assert.equal(sessionId({}, env), "grok-session-01");
-  assert.equal(resolveAuthorityHost({host:"claude"}, env), "claude");
+  assert.equal(resolveAuthorityHost({host:"claude"}, env), "grok");
+  assert.equal(resolveAuthorityHost({host:"claude"}, {SVC_HOST:"grok"}), "grok");
+  assert.equal(resolveAuthorityHost({}, {SVC_HOST:"bogus",GROK_SESSION_ID:"grok-session-01"}), "");
 '
-expect "dispatcher gives Grok marker precedence over hooks/codex fallback and propagates bounded identity" node -e '
+expect "dispatcher gives Grok marker precedence over hooks/codex fallback without shell-interpolating session identity" node -e '
   const fs=require("fs"),s=fs.readFileSync(process.argv[1],"utf8");
   const grok=s.indexOf("process.env.GROK_SESSION_ID");
   const fallback=s.indexOf("path.basename(HERE)");
   if(grok<0||fallback<0||grok>fallback)process.exit(1);
-  if(!s.includes("SVC_HOST=${hostId}")||!s.includes("SVC_SESSION_ID=${JSON.stringify(sid)}"))process.exit(1);
+  if(!s.includes("command:`SVC_HOST=${hostId} ${encodeSimpleCommand(bootstrapArgv)}")||s.includes("SVC_SESSION_ID=${JSON.stringify(sid)}"))process.exit(1);
 ' "$ROOT/hooks/codex/svc-codex-pretool-dispatcher.mjs"
-expect "bootstrap parser accepts only the bounded propagated Grok identity prefix" node --input-type=module -e '
+expect "bootstrap parser accepts only the allowlisted propagated host prefix" node --input-type=module -e '
   import assert from "node:assert/strict";
   import { parseBootstrapCommand } from "./hooks/codex/lib/bootstrap-command.mjs";
   const base = "node scripts/svc-ensure-worktree.mjs --wi WI-GROK-PROBE-01 --branch framework-WI-GROK-PROBE-01 --from origin/main --print-cd";
-  const parsed = parseBootstrapCommand(`SVC_HOST=grok SVC_SESSION_ID="grok-session-01" ${base}`);
+  const parsed = parseBootstrapCommand(`SVC_HOST=grok ${base}`);
   assert.equal(parsed.identity.SVC_HOST, "grok");
-  assert.equal(parsed.identity.SVC_SESSION_ID, "grok-session-01");
-  assert.equal(parseBootstrapCommand(`SVC_HOST=unknown SVC_SESSION_ID=x ${base}`), null);
+  assert.equal(parseBootstrapCommand(`SVC_HOST=unknown ${base}`), null);
+  assert.equal(parseBootstrapCommand(`SVC_HOST=grok SVC_SESSION_ID=x ${base}`), null);
   assert.equal(parseBootstrapCommand(`EVIL=value ${base}`), null);
 '
 GROK_BOOT_SRC="$TMP/grok-boot-src"
@@ -102,21 +107,87 @@ git -C "$GROK_BOOT_SRC" init -q -b main
 git -C "$GROK_BOOT_SRC" config user.email t@t
 git -C "$GROK_BOOT_SRC" config user.name t
 printf 'grok bootstrap fixture\n' > "$GROK_BOOT_SRC/README.md"
-git -C "$GROK_BOOT_SRC" add README.md
+printf '.worktrees/\n' > "$GROK_BOOT_SRC/.gitignore"
+git -C "$GROK_BOOT_SRC" add README.md .gitignore
 git -C "$GROK_BOOT_SRC" commit -qm init
 git clone -q "$GROK_BOOT_SRC" "$GROK_BOOT_REPO"
 mkdir -p "$GROK_BOOT_REPO/.svc"
 GROK_BOOT_CMD="node $ROOT/scripts/svc-ensure-worktree.mjs --wi WI-GROK-PROBE-01 --branch framework-WI-GROK-PROBE-01 --from origin/main --print-cd"
-GROK_BOOT_PAYLOAD="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],cwd:process.argv[2],tool_name:"run_terminal_command",tool_input:{command:process.argv[3],workdir:process.argv[2]}}))' grok-probe-session "$GROK_BOOT_REPO" "$GROK_BOOT_CMD")"
-GROK_BOOT_OUT="$(printf '%s' "$GROK_BOOT_PAYLOAD" | env -u SVC_SESSION_ID -u CODEX_THREAD_ID -u CODEX_SESSION_ID \
-  SVC_HOST=grok GROK_SESSION_ID=grok-probe-session SVC_CODEX_RUNTIME_DIR="$GROK_BOOT_RUNTIME" \
+GROK_BOOT_SESSION="01a05200-f1e6-74d0-9b90-7192c6174a2a"
+GROK_BOOT_PAYLOAD="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],cwd:process.argv[2],tool_name:"run_terminal_command",tool_input:{command:process.argv[3],workdir:process.argv[2]}}))' "$GROK_BOOT_SESSION" "$GROK_BOOT_REPO" "$GROK_BOOT_CMD")"
+GROK_BOOT_OUT="$(printf '%s' "$GROK_BOOT_PAYLOAD" | env -u SVC_HOST -u SVC_SESSION_ID -u CODEX_THREAD_ID -u CODEX_SESSION_ID \
+  GROK_SESSION_ID="$GROK_BOOT_SESSION" SVC_CODEX_RUNTIME_DIR="$GROK_BOOT_RUNTIME" \
   node "$ROOT/hooks/codex/svc-codex-pretool-dispatcher.mjs")"
-expect "Grok run_terminal_command bootstrap reaches allow and carries exact identity" node -e '
+expect "Grok run_terminal_command bootstrap reaches allow and carries host while handoff carries session" node -e '
   const j=JSON.parse(process.argv[1]);
   const h=j.hookSpecificOutput||{};
   const c=String(h.updatedInput?.command||"");
-  process.exit(h.permissionDecision==="allow"&&c.startsWith("SVC_HOST=grok SVC_SESSION_ID=\"grok-probe-session\" node ")&&c.includes(" --wi WI-GROK-PROBE-01 ")?0:1);
+  process.exit(h.permissionDecision==="allow"&&c.startsWith("SVC_HOST=grok node ")&&!c.includes("grok-probe-session")&&c.includes(" --wi WI-GROK-PROBE-01 ")?0:1);
 ' "$GROK_BOOT_OUT"
+GROK_BOOT_REWRITTEN="$(node -e 'const j=JSON.parse(process.argv[1]);process.stdout.write(j.hookSpecificOutput.updatedInput.command)' "$GROK_BOOT_OUT")"
+GROK_BOOT_RESULT="$(cd "$GROK_BOOT_REPO" && env -u SVC_SESSION_ID GROK_SESSION_ID="$GROK_BOOT_SESSION" SVC_CODEX_RUNTIME_DIR="$GROK_BOOT_RUNTIME" bash -c "$GROK_BOOT_REWRITTEN")"
+GROK_BOOT_WORKTREE="$(node -e 'const s=process.argv[1];process.stdout.write(JSON.parse(s.slice(3)))' "$GROK_BOOT_RESULT")"
+expect "rewritten Grok bootstrap executes and creates the bound worktree" bash -c 'test -d "$1" && test -f "$1/.svc/lane-tasks-WI-GROK-PROBE-01.json"' _ "$GROK_BOOT_WORKTREE"
+GROK_FOLLOW_PAYLOAD="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],cwd:process.argv[2],tool_name:"run_terminal_command",tool_input:{command:"printf harmless",workdir:process.argv[2]}}))' "$GROK_BOOT_SESSION" "$GROK_BOOT_WORKTREE")"
+GROK_FOLLOW_OUT="$(printf '%s' "$GROK_FOLLOW_PAYLOAD" | env -u SVC_HOST -u SVC_SESSION_ID -u CODEX_THREAD_ID -u CODEX_SESSION_ID GROK_SESSION_ID="$GROK_BOOT_SESSION" SVC_CODEX_RUNTIME_DIR="$GROK_BOOT_RUNTIME" node "$ROOT/hooks/codex/svc-codex-pretool-dispatcher.mjs")"
+expect "first bound Grok follow-on reaches the task gate without controller-principal drift" node -e '
+  const j=JSON.parse(process.argv[1]);
+  const reason=String(j.hookSpecificOutput?.permissionDecisionReason||"");
+  process.exit(reason.includes("controller principal changed")||reason.includes("principal mismatch")?1:0);
+' "$GROK_FOLLOW_OUT"
+
+GROK_META_REPO="$TMP/grok-meta-repo"
+git clone -q "$GROK_BOOT_SRC" "$GROK_META_REPO"
+mkdir -p "$GROK_META_REPO/.svc"
+GROK_META_BRANCH='framework-WI-GROK-META-01-$(touch${IFS}PWNED)'
+GROK_META_SESSION="01a05201-f1e6-74d0-9b90-7192c6174a2b"
+GROK_META_CMD="node $ROOT/scripts/svc-ensure-worktree.mjs --wi WI-GROK-META-01 --branch '$GROK_META_BRANCH' --from origin/main --print-cd"
+GROK_META_PAYLOAD="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],cwd:process.argv[2],tool_name:"run_terminal_command",tool_input:{command:process.argv[3],workdir:process.argv[2]}}))' "$GROK_META_SESSION" "$GROK_META_REPO" "$GROK_META_CMD")"
+GROK_META_OUT="$(printf '%s' "$GROK_META_PAYLOAD" | env -u SVC_HOST -u SVC_SESSION_ID GROK_SESSION_ID="$GROK_META_SESSION" SVC_CODEX_RUNTIME_DIR="$GROK_BOOT_RUNTIME" node "$ROOT/hooks/codex/svc-codex-pretool-dispatcher.mjs")"
+GROK_META_REWRITTEN="$(node -e 'const j=JSON.parse(process.argv[1]);process.stdout.write(j.hookSpecificOutput.updatedInput.command)' "$GROK_META_OUT")"
+expect "bootstrap rewrite quotes a Git-valid branch containing shell substitution" node --input-type=module - "$ROOT" "$GROK_META_REWRITTEN" "$GROK_META_BRANCH" <<'NODE'
+  import assert from "node:assert/strict";
+  import path from "node:path";
+  import { pathToFileURL } from "node:url";
+  const [root, command, branch] = process.argv.slice(2);
+  const { lexSimpleCommand } = await import(pathToFileURL(path.join(root, "hooks/codex/lib/argv-lex.mjs")));
+  const parsed = lexSimpleCommand(command);
+  assert.equal(parsed.ok, true);
+  assert.equal(parsed.argv[parsed.argv.indexOf("--branch") + 1], branch);
+NODE
+(cd "$GROK_META_REPO" && env -u SVC_SESSION_ID GROK_SESSION_ID="$GROK_META_SESSION" SVC_CODEX_RUNTIME_DIR="$GROK_BOOT_RUNTIME" bash -c "$GROK_META_REWRITTEN" >/dev/null)
+expect "quoted bootstrap branch cannot execute command substitution" bash -c 'test ! -e "$1/PWNED"' _ "$GROK_META_REPO"
+GROK_INJECTION_SESSION='grok-$(touch should-never-run)'
+GROK_INJECTION_CMD="node $ROOT/scripts/svc-ensure-worktree.mjs --wi WI-GROK-PROBE-02 --branch framework-WI-GROK-PROBE-02 --from origin/main --print-cd"
+GROK_INJECTION_PAYLOAD="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],cwd:process.argv[2],tool_name:"run_terminal_command",tool_input:{command:process.argv[3],workdir:process.argv[2]}}))' "$GROK_INJECTION_SESSION" "$GROK_BOOT_REPO" "$GROK_INJECTION_CMD")"
+GROK_INJECTION_OUT="$(printf '%s' "$GROK_INJECTION_PAYLOAD" | env -u SVC_HOST -u SVC_SESSION_ID -u CODEX_THREAD_ID -u CODEX_SESSION_ID \
+  "GROK_SESSION_ID=$GROK_INJECTION_SESSION" SVC_CODEX_RUNTIME_DIR="$GROK_BOOT_RUNTIME" \
+  node "$ROOT/hooks/codex/svc-codex-pretool-dispatcher.mjs")"
+expect "Grok session identity is transported only in the private handoff, never shell-interpolated" node -e '
+  const j=JSON.parse(process.argv[1]);
+  const h=j.hookSpecificOutput||{};
+  const c=String(h.updatedInput?.command||"");
+  process.exit(h.permissionDecision==="allow"&&!c.includes(process.argv[2])&&!c.includes("touch should-never-run")?0:1);
+' "$GROK_INJECTION_OUT" "$GROK_INJECTION_SESSION"
+GROK_DIRECT_SESSION="01a05202-f1e6-74d0-9b90-7192c6174a2c"
+GROK_DIRECT_ENSURE="$(cd "$GROK_BOOT_REPO" && env -u SVC_HOST -u SVC_SESSION_ID GROK_SESSION_ID="$GROK_DIRECT_SESSION" \
+  node "$ROOT/scripts/svc-ensure-worktree.mjs" --wi WI-GROK-PROBE-03 --branch framework-WI-GROK-PROBE-03 --from origin/main --authority-v2 --json)"
+expect "ensure-worktree stamps the Grok principal from GROK_SESSION_ID without dispatcher handoff" node --input-type=module - "$ROOT" "$GROK_DIRECT_ENSURE" "$GROK_DIRECT_SESSION" <<'NODE'
+  import assert from "node:assert/strict";
+  import path from "node:path";
+  import { pathToFileURL } from "node:url";
+  const [root, raw, session] = process.argv.slice(2);
+  const { principalId } = await import(pathToFileURL(path.join(root, "hooks/lib/authority-store.mjs")));
+  const result = JSON.parse(raw);
+  assert.equal(result.owner_session, session);
+  assert.equal(result.authority_v2?.lease?.controller_principal, principalId({ host: "grok", session_id: session }));
+NODE
+expect "ensure-worktree rejects an unknown wired host before direct Grok bootstrap mutation" bash -c '
+  ! (cd "$1" && env SVC_HOST=bogus GROK_SESSION_ID="$2" node "$3/scripts/svc-ensure-worktree.mjs" --wi WI-GROK-PROBE-04 --branch framework-WI-GROK-PROBE-04 --from origin/main --authority-v2 --json) >/dev/null 2>&1
+' _ "$GROK_BOOT_REPO" "$GROK_DIRECT_SESSION" "$ROOT"
+expect "unknown-host direct bootstrap creates no branch" bash -c '
+  ! git -C "$1" show-ref --verify --quiet refs/heads/framework-WI-GROK-PROBE-04
+' _ "$GROK_BOOT_REPO"
 
 AUTH_REPO="$TMP/grok-authority"
 mkdir -p "$AUTH_REPO"
@@ -128,9 +199,12 @@ git -C "$AUTH_REPO" add README.md
 git -C "$AUTH_REPO" commit -qm init
 AUTH_BOOT="$(SVC_HOST=codex SVC_SESSION_ID=synthetic-codex node "$ROOT/scripts/svc-authority.mjs" bootstrap --wi WI-GROK-AUTH-01 --worktree "$AUTH_REPO")"
 AUTH_OLD="$(printf '%s' "$AUTH_BOOT" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s).controller_principal))')"
-expect "authority CLI trusts GROK_SESSION_ID with matching explicit session during takeover" env -u SVC_SESSION_ID GROK_SESSION_ID=grok-session-01 SVC_HOST=grok \
+expect "authority CLI trusts GROK_SESSION_ID alone with matching explicit session during takeover" env -u SVC_HOST -u SVC_SESSION_ID GROK_SESSION_ID=grok-session-01 \
   node "$ROOT/scripts/svc-authority.mjs" takeover --wi WI-GROK-AUTH-01 --worktree "$AUTH_REPO" \
   --session-id grok-session-01 --expected-principal "$AUTH_OLD" --expected-generation 1 --reason "hermetic Grok identity proof" >/dev/null
+expect "authority CLI rejects unknown explicit SVC_HOST even when a Grok marker exists" bash -c '
+  ! env SVC_HOST=bogus GROK_SESSION_ID=grok-session-01 node "$1/scripts/svc-authority.mjs" resume --wi WI-GROK-AUTH-01 --worktree "$2" --session-id grok-session-01 >/dev/null 2>&1
+' _ "$ROOT" "$AUTH_REPO"
 expect "authority CLI takeover stamps exact Grok principal" bash -c '
   actual=$(node "$1/scripts/svc-authority.mjs" status --wi WI-GROK-AUTH-01 --worktree "$2" | node -e '\''let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s).lease.controller_principal))'\'')
   expected=$(node --input-type=module -e '\''import {principalId} from "./hooks/lib/authority-store.mjs";process.stdout.write(principalId({host:"grok",session_id:"grok-session-01"}))'\'')
@@ -215,8 +289,10 @@ for shell_tool in Bash Shell run_shell_command shell run_terminal_command; do
   expect "read-only $shell_tool is classified as Bash-shaped" bash -c "test \"\$(printf '%s' '$ALIAS_READ' | SVC_CODEX_TASK_GRAPH='$GRAPH' SVC_CODEX_RUNTIME_DIR='$RUNTIME' node '$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs')\" = '{}'"
 done
 
-GROK_FFMPEG="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],turn_id:process.argv[2],cwd:process.argv[3],tool_name:"run_terminal_command",tool_input:{command:"ffmpeg -i input.mp4 -c copy output.mp4"}}))' "$SESSION" "$TURN" "$TEST_CWD")"
-expect "owned Grok run_terminal_command skips the Codex skill receipt for ffmpeg" bash -c "test \"\$(printf '%s' '$GROK_FFMPEG' | SVC_CODEX_TASK_GRAPH='$GRAPH' SVC_CODEX_RUNTIME_DIR='$RUNTIME' node '$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs')\" = '{}'"
+GROK_SHELL_PROBE="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],turn_id:process.argv[2],cwd:process.argv[3],tool_name:"run_terminal_command",tool_input:{command:"printf grok-owned-probe"}}))' "$SESSION" "$TURN" "$TEST_CWD")"
+expect "owned Grok run_terminal_command skips the Codex skill receipt only with Grok host identity" bash -c "test \"\$(printf '%s' '$GROK_SHELL_PROBE' | SVC_HOST=grok SVC_CODEX_TASK_GRAPH='$GRAPH' SVC_CODEX_RUNTIME_DIR='$RUNTIME' node '$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs')\" = '{}'"
+NON_GROK_TERMINAL_OUT="$(printf '%s' "$GROK_SHELL_PROBE" | env -u SVC_HOST -u GROK_SESSION_ID SVC_CODEX_TASK_GRAPH="$GRAPH" SVC_CODEX_RUNTIME_DIR="$RUNTIME" node "$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs")"
+expect "non-Grok run_terminal_command mutation still requires the Codex skill receipt" node -e 'const j=JSON.parse(process.argv[1]);process.exit(j.hookSpecificOutput?.permissionDecision==="deny"?0:1)' "$NON_GROK_TERMINAL_OUT"
 expect "Grok ffmpeg remains subject to worktree isolation after receipt bypass" node --input-type=module - "$ROOT" "$TEST_CWD" "$SESSION" <<'NODE'
   import assert from "node:assert/strict";
   import path from "node:path";
@@ -246,10 +322,12 @@ CODEX_SHELL_MUTATION="$(node -e 'process.stdout.write(JSON.stringify({session_id
 CODEX_SHELL_OUT="$(printf '%s' "$CODEX_SHELL_MUTATION" | SVC_CODEX_TASK_GRAPH="$GRAPH" SVC_CODEX_RUNTIME_DIR="$RUNTIME" node "$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs")"
 expect "non-Grok Shell mutation still requires the Codex skill receipt" node -e 'const j=JSON.parse(process.argv[1]);process.exit(j.hookSpecificOutput?.permissionDecision==="deny"?0:1)' "$CODEX_SHELL_OUT"
 GROK_LOADER="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],turn_id:process.argv[2],cwd:process.argv[3],tool_name:"run_terminal_command",tool_input:{command:process.argv[4]}}))' "$SESSION" "$TURN" "$TEST_CWD" "node $ROOT/scripts/codex-load-skill.mjs --graph /wrong --task 1 --skill execute-changeset")"
-GROK_LOADER_OUT="$(printf '%s' "$GROK_LOADER" | SVC_CODEX_TASK_GRAPH="$GRAPH" SVC_CODEX_RUNTIME_DIR="$RUNTIME" node "$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs")"
+GROK_LOADER_OUT="$(printf '%s' "$GROK_LOADER" | SVC_HOST=grok GROK_SESSION_ID="$SESSION" SVC_CODEX_TASK_GRAPH="$GRAPH" SVC_CODEX_RUNTIME_DIR="$RUNTIME" node "$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs")"
 expect "Grok loader-shaped command never takes the receipt bypass" node -e 'const j=JSON.parse(process.argv[1]);process.exit(j.hookSpecificOutput?.permissionDecision==="deny"?0:1)' "$GROK_LOADER_OUT"
+GROK_MARKER_LOADER_OUT="$(printf '%s' "$GROK_LOADER" | env -u SVC_HOST GROK_SESSION_ID="$SESSION" SVC_CODEX_TASK_GRAPH="$GRAPH" SVC_CODEX_RUNTIME_DIR="$RUNTIME" node "$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs")"
+expect "GROK_SESSION_ID-only loader command never takes the receipt bypass" node -e 'const j=JSON.parse(process.argv[1]);process.exit(j.hookSpecificOutput?.permissionDecision==="deny"?0:1)' "$GROK_MARKER_LOADER_OUT"
 GROK_COMPOUND_LOADER="$(node -e 'const j=JSON.parse(process.argv[1]);j.tool_input.command="echo before && node scripts/codex-load-skill.mjs --graph /wrong --task 1 --skill execute-changeset";process.stdout.write(JSON.stringify(j))' "$GROK_LOADER")"
-GROK_COMPOUND_LOADER_OUT="$(printf '%s' "$GROK_COMPOUND_LOADER" | SVC_CODEX_TASK_GRAPH="$GRAPH" SVC_CODEX_RUNTIME_DIR="$RUNTIME" node "$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs")"
+GROK_COMPOUND_LOADER_OUT="$(printf '%s' "$GROK_COMPOUND_LOADER" | SVC_HOST=grok GROK_SESSION_ID="$SESSION" SVC_CODEX_TASK_GRAPH="$GRAPH" SVC_CODEX_RUNTIME_DIR="$RUNTIME" node "$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs")"
 expect "compound Grok command mentioning the loader never takes the receipt bypass" node -e 'const j=JSON.parse(process.argv[1]);process.exit(j.hookSpecificOutput?.permissionDecision==="deny"?0:1)' "$GROK_COMPOUND_LOADER_OUT"
 
 for command in \

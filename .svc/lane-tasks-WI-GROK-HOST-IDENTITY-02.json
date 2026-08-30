@@ -445,42 +445,226 @@
       "id": 7,
       "skill": "review-gate",
       "subject": "review-gate: validate implemented diff",
-      "status": "in_progress",
+      "status": "completed",
       "blocked_by": [
         6
       ],
       "skill_receipt": {
         "skill": "review-gate",
-        "loaded_at": "2026-08-30T16:07:38.986Z",
-        "loaded_via": "activate-skill"
-      }
+        "loaded_at": "2026-08-30T16:07:48.005Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-GateContextChecklistConcernScan",
+            "ts": "2026-08-30T17:03:37.832Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SelfReviewFindings",
+            "ts": "2026-08-30T17:03:37.981Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-grok-host-identity-g5.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-SelfJudgment",
+            "ts": "2026-08-30T17:03:38.136Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-grok-host-identity-g5.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-CrossReviewConvergence",
+            "ts": "2026-08-30T17:03:38.289Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/cross-model-grok-r3/findings.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-GateDecisionBacklog",
+            "ts": "2026-08-30T17:03:38.438Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-grok-host-identity-g5.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-08-30T17:03:38.604Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/grok-integrity-bounded.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-30T17:03:38.755Z"
     },
     {
       "id": 8,
       "skill": "review-exec",
       "subject": "review-exec: mandatory G5 adversarial review",
-      "status": "pending",
+      "status": "completed",
       "blocked_by": [
         7
-      ]
+      ],
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-08-30T17:04:14.730Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-08-30T17:09:22.052Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-grok-host-identity-g5.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-08-30T17:09:22.274Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-exec-pair.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-08-30T17:09:22.481Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-grok-host-identity-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerdictAndReceiptFinalize",
+            "ts": "2026-08-30T17:09:22.681Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-grok-host-identity-exec-cross-model.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-30T17:09:22.852Z"
     },
     {
       "id": 9,
       "skill": "audit-implementation",
       "subject": "audit-implementation: prove complete host boundary coverage",
-      "status": "pending",
+      "status": "completed",
       "blocked_by": [
         8
-      ]
+      ],
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-08-30T17:47:06.045Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextScopeConcern",
+            "ts": "2026-08-30T17:58:56.770Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-implementation-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecialistDispatchCoverageLedger",
+            "ts": "2026-08-30T17:58:56.968Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-grok-host-identity-02-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-HypothesisGeneration",
+            "ts": "2026-08-30T17:58:57.142Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-grok-host-identity-02-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-SubsystemBehaviorAudit",
+            "ts": "2026-08-30T17:58:57.318Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-implementation-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-FindingsConvergenceReport",
+            "ts": "2026-08-30T17:58:57.503Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-grok-host-identity-02-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-08-30T17:58:57.675Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-implementation-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-30T17:59:27.376Z"
     },
     {
       "id": 10,
       "skill": "land-changeset",
       "subject": "land-changeset: merge the reviewed correction",
-      "status": "pending",
+      "status": "in_progress",
       "blocked_by": [
         9
-      ]
+      ],
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-08-30T17:59:27.521Z",
+        "loaded_via": "manual"
+      }
     },
     {
       "id": 11,

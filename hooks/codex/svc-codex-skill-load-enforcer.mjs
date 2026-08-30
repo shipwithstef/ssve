@@ -9,7 +9,7 @@ import { lexSimpleCommand } from "./lib/argv-lex.mjs";
 import { markerPathFor, readMarker, secureAncestors } from "./lib/bootstrap-marker.mjs";
 import { WI_ID_RE } from "../lib/wi-id.mjs";
 import { validateLiteralBranchName } from "../lib/literal-branch.mjs";
-import { resolveWI } from "../lib/resolve-wi.mjs";
+import { resolveAuthorityHost, resolveWI } from "../lib/resolve-wi.mjs";
 import { inspectBootstrapHandoff } from "./lib/session-handoff.mjs";
 import { isShellTool } from "../lib/shell-tools.mjs";
 
@@ -253,20 +253,19 @@ function bootstrapArgv(command) {
   const lexed = lexSimpleCommand(String(command || "").trim());
   if (!lexed.ok) return null;
   const argv = lexed.argv;
-  if (!String(argv[0] || "").startsWith("SVC_HOST=")) return argv;
-  if (!String(argv[1] || "").startsWith("SVC_SESSION_ID=")) return null;
+  if (!String(argv[0] || "").startsWith("SVC_HOST=")) return { argv, host: "" };
   const host = argv[0].slice("SVC_HOST=".length);
-  const session = argv[1].slice("SVC_SESSION_ID=".length);
-  if (!BOOTSTRAP_IDENTITY_HOSTS.has(host) || !session || session.length > 512 || /[\0\r\n]/.test(session)) return null;
-  return argv.slice(2);
+  if (!BOOTSTRAP_IDENTITY_HOSTS.has(host)) return null;
+  return { argv: argv.slice(1), host };
 }
 function bootstrapShapeInner(payload, ctx, env) {
   if (!isShellTool(toolName(payload))) return false;
   // F-001: a format-valid, non-empty session identity is a precondition. Codex session
   // ids are non-trivial tokens; require the same minimum the receipt path enforces.
   if (!ctx.session_id || String(ctx.session_id).length < 8) return false;
-  const argv = bootstrapArgv(mutationPayload(payload));
-  if (!argv) return false;
+  const parsedBootstrap = bootstrapArgv(mutationPayload(payload));
+  if (!parsedBootstrap) return false;
+  const { argv, host: commandHost } = parsedBootstrap;
   if (argv[0] !== "node") return false;
 
   // F-001 (round 2, CONFIRMED CRITICAL): the script path argv[1] is a RELATIVE
@@ -361,7 +360,12 @@ function bootstrapShapeInner(payload, ctx, env) {
 
   // ZERO-STATE ONLY: if any graph is owned, this exception does not exist.
   if (flags["--handoff"]) {
-    try { inspectBootstrapHandoff(flags["--handoff"], { session_id: ctx.session_id, repo_root: ctx.repo_root, wi: flags["--wi"], branch: flags["--branch"] }, { env }); return true; }
+    const trustedHost = resolveAuthorityHost({}, env);
+    if (!trustedHost || commandHost !== trustedHost) return false;
+    let base;
+    try { base = flags["--from"] === "origin/main" ? execFileSync("git", ["-C", ctx.repo_root, "rev-parse", "origin/main"], { encoding: "utf8" }).trim() : flags["--from"]; }
+    catch { return false; }
+    try { inspectBootstrapHandoff(flags["--handoff"], { session_id: ctx.session_id, host: trustedHost, repo_root: ctx.repo_root, wi: flags["--wi"], branch: flags["--branch"], base }, { env }); return true; }
     catch { return false; }
   }
   if (laneGraphs(ctx.repo_root, env).length !== 0) return false;
@@ -468,8 +472,7 @@ const shellCommand = isShellTool(shellName) ? mutationPayload(payload).trim() : 
 // that mention the loader must never become eligible merely because the strict
 // lexer rejects their shape.
 const loaderShaped = shellCommand.includes("codex-load-skill.mjs");
-const grokShell = isShellTool(shellName) &&
-  (shellName === "run_terminal_command" || String(process.env.SVC_HOST || "").toLowerCase() === "grok");
+const grokShell = isShellTool(shellName) && resolveAuthorityHost({}, process.env) === "grok";
 if (grokShell && !loaderShaped) { allow(); process.exit(0); }
 if (!ctx.session_id || !ctx.session_dir) { deny("missing Codex session identity for governed mutation", active, ctx); process.exit(0); }
 const receipt = readJson(skillReceiptPath(ctx));

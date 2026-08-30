@@ -25,9 +25,9 @@ and foreign-owner denial remain unchanged and fail-closed.
 
 | Task | Action | File(s) | Purpose |
 |---|---|---|---|
-| T01 | MODIFY | `hooks/lib/resolve-wi.mjs`; `hooks/codex/lib/bootstrap-command.mjs`; `hooks/codex/svc-codex-pretool-dispatcher.mjs`; `hooks/codex/svc-codex-skill-load-enforcer.mjs`; `scripts/svc-authority.mjs`; `test-framework/evals/tier-1/validate-codex-execution-integrity.sh` | Resolve Grok host/session in every bootstrap and recovery boundary, carry both into bootstrap, and recognize only the bounded rewritten prefix through isolation and zero-state receipt gates |
+| T01 | MODIFY | `hooks/lib/resolve-wi.mjs`; `hooks/lib/wi-claim.mjs`; `hooks/codex/lib/bootstrap-command.mjs`; `hooks/codex/lib/session-handoff.mjs`; `hooks/codex/svc-codex-pretool-dispatcher.mjs`; `hooks/codex/svc-codex-skill-load-enforcer.mjs`; `scripts/svc-authority.mjs`; `scripts/svc-ensure-worktree.mjs`; `test-framework/evals/tier-1/validate-codex-execution-integrity.sh`; `test-framework/evals/tier-1/validate-codex-session-rebinding.sh`; `test-framework/evals/tier-1/validate-existing-worktree-self-heal.sh` | Resolve Grok host/session in every bootstrap and recovery boundary, shell-encode rewritten argv, bind host/repo/base in the one-use private handoff, and preserve fail-closed direct Grok-session fallback |
 | T02 | MODIFY | `scripts/wire-grok-hooks.mjs`; `test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh` | Native dispatcher, Grok host prefix, and foreign-hook compatibility isolation |
-| T03 | CREATE/MODIFY | `docs/specs/work-items/WI-GROK-HOST-IDENTITY-02.md`; `docs/specs/tech/wi-grok-host-identity-02.md`; `docs/plans/2026-08-30-wi-grok-host-identity-02/manifest.md`; `docs/plans/2026-08-30-wi-grok-host-identity-02/plan-contract.json`; `docs/plans/2026-08-30-wi-grok-host-identity-02/review-log.yaml`; `.svc/lane-tasks-WI-GROK-HOST-IDENTITY-02.json`; `.svc/session-contract.jsonl` | Root cause, design, plan, risk contract, and durable lane/session evidence |
+| T03 | CREATE/MODIFY | `docs/specs/work-items/WI-GROK-HOST-IDENTITY-02.md`; `docs/specs/tech/wi-grok-host-identity-02.md`; `docs/specs/contract-maps/grok-host-identity.md`; `docs/specs/security/wi-grok-host-identity-02-review.md`; `docs/specs/audit/wi-grok-host-identity-02-analysis.md`; `docs/specs/test-evidence/WI-GROK-HOST-IDENTITY-02/cross-system-probe.json`; `docs/specs/test-evidence/WI-GROK-HOST-IDENTITY-02/pre-post-evidence.json`; `docs/specs/reviews/wi-grok-host-identity-g5.md`; `docs/specs/reviews/wi-grok-host-identity-exec-cross-model.md`; `docs/specs/reviews/wi-grok-host-identity-exec-review-log.yaml`; `docs/plans/2026-08-30-wi-grok-host-identity-02/manifest.md`; `docs/plans/2026-08-30-wi-grok-host-identity-02/plan-contract.json`; `docs/plans/2026-08-30-wi-grok-host-identity-02/review-log.yaml`; `.svc/plan-manifest.json`; `.svc/lane-tasks-WI-GROK-HOST-IDENTITY-02.json`; `.svc/session-contract.jsonl` | Root cause, design, plan, cross-system/red-green proof, security/audit findings, review decision, risk contract, and durable lane/session evidence |
 
 ## Changeset Blueprint
 
@@ -38,7 +38,7 @@ loaded live evidence, work item, technical design, and affected source context.
 
 | Task | Title | Files | Dependencies | AC coverage | Validation | Checkpoint |
 |---|---|---|---|---|---|---|
-| T01 | Principal propagation | resolver, dispatcher, authority CLI, execution-integrity fixture | none | AC-1, AC-2 | `validate-codex-execution-integrity.sh` | `host-propagation-green` |
+| T01 | Principal propagation | resolver, dispatcher, ensure-worktree, authority CLI, execution-integrity fixture | none | AC-1, AC-2 | `validate-codex-execution-integrity.sh` | `host-propagation-green` |
 | T02 | Grok-native hook convergence | Grok wirer and TOML fixture | T01 | AC-3, AC-4 | `validate-grok-hook-toml-roundtrip.sh` | `grok-wiring-green` |
 | T03 | Evidence and chain closeout | WI, tech, plan, graph | T01,T02 | none | plan/lane validators | `evidence-green` |
 | verify-promotion | Installed Grok and HoursHub authority proof | Grok config/install and exact lease | land | AC-4, AC-5, AC-6 | inspect, CAS takeover, harmless two-call probe | `installed-proof-green` |
@@ -66,11 +66,13 @@ loaded live evidence, work item, technical design, and affected source context.
 | AC-6 | Manual runtime | exact bootstrap plus harmless `pwd`/branch observation |
 
 T01 pins identity precedence in both shared and dispatcher-local resolution:
-allowlisted explicit `SVC_HOST`/payload wins; next `GROK_SESSION_ID` selects
+allowlisted explicit `SVC_HOST` wins; next `GROK_SESSION_ID` selects
 `grok` and supplies the session even though the dispatcher lives under
 `hooks/codex`; only then may existing Codex signals/path fallback run. Unknown
-explicit `SVC_HOST` remains a denial. The canonical rewrite is shell-safe
-`SVC_HOST=<allowlisted-host> SVC_SESSION_ID=<JSON-quoted-sid> node <ensure> ...`.
+explicit `SVC_HOST` remains a denial. Payload host is considered only after the
+Grok marker. The canonical rewrite is shell-safe
+`SVC_HOST=<allowlisted-host> node <ensure> ...`; the stable session crosses the
+process boundary only in the private one-use handoff.
 The exact call sites are: (1) `resolveAuthorityHost()` returns `grok` for
 `env.GROK_SESSION_ID` after explicit host; (2) dispatcher `hostIdentity()` does
 the same after allowlisted `SVC_HOST` but before Codex signals/path fallback;
@@ -163,7 +165,7 @@ reusing this command. T01's hermetic CLI fixture requires
 Do not replay bootstrap against the already-bound WI: the existing second-
 bootstrap guard must remain fail-closed. T01's dispatcher fixture supplies the
 exact user command from the HoursHub default checkout and proves that a Grok
-`run_terminal_command` is allowed and rewritten with Grok host/session before
+`run_terminal_command` is allowed and rewritten with Grok host while the private handoff carries the session before
 execution. After takeover, use the original Grok session to issue exactly two
 real `run_terminal_command` calls from the bound HoursHub worktree: first `pwd`,
 then `git branch --show-current` (each expected exit 0 through ordinary

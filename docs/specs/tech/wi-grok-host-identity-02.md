@@ -55,8 +55,9 @@ hooks = false
 | Component | Change | Preserved contract |
 |---|---|---|
 | `scripts/wire-grok-hooks.mjs` | Prefix Grok hooks with `SVC_HOST=grok`; wire the consolidated dispatcher; converge foreign hook compatibility to false | Transactional, mode-preserving, idempotent TOML rewrite |
-| `hooks/codex/svc-codex-pretool-dispatcher.mjs` | Recognize Grok's reserved session marker and propagate validated `hostId` plus stable session into rewritten bootstrap command | Existing parser, handoff, isolation, child gates |
-| `hooks/lib/resolve-wi.mjs` | Recognize `GROK_SESSION_ID` for session and host resolution | Explicit payload/`SVC_HOST` continues to win |
+| `hooks/codex/svc-codex-pretool-dispatcher.mjs` | Recognize Grok's reserved session marker, put validated `hostId` in the rewritten command, and carry stable session only in the private one-use handoff | Existing parser, isolation, child gates |
+| `hooks/lib/resolve-wi.mjs` | Recognize `GROK_SESSION_ID` for session and host resolution | Allowlisted wired `SVC_HOST` wins, then the Grok marker, then payload host; unknown wired hosts fail closed |
+| `scripts/svc-ensure-worktree.mjs` and `hooks/lib/wi-claim.mjs` | Resolve one trusted host for every binding/claim/controller write and reject missing or unsupported identity before mutation | Direct and dispatcher bootstrap stamp the same host/session principal |
 | `scripts/svc-authority.mjs` | Accept `GROK_SESSION_ID` as trusted identity for generation-bound takeover | Flag/environment equality checks remain fail-closed |
 | Tier-1 fixtures | Prove TOML compatibility isolation, dispatcher host prefix, bootstrap propagation, and Grok resolver behavior | Existing host cases remain unchanged |
 
@@ -94,7 +95,8 @@ read-only observation path is already optimized. Setup verification uses
 ## Acceptance Proof
 
 1. **AC-1:** Focused identity fixtures resolve `GROK_SESSION_ID` consistently.
-2. **AC-2:** The rewritten bootstrap exports validated host and session identity.
+2. **AC-2:** The rewritten bootstrap exports only validated host identity; the
+   private one-use handoff carries the stable session without shell interpolation.
 3. **AC-3:** The Grok TOML transformer is lossless, transactional, and idempotent.
 4. **AC-4:** `./setup --host grok` converges the live config and `grok inspect
    --json` reports Claude/Cursor hooks disabled and exactly one
