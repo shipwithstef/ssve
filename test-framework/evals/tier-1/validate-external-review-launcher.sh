@@ -283,6 +283,8 @@ if [[ ! -f "$LAUNCHER" ]]; then
   exit 1
 fi
 expect "launcher parses" node --check "$LAUNCHER"
+ln -s "$LAUNCHER" "$TMP/installed-launcher-link.mjs"
+expect "installed symlink path executes the canonical launcher" bash -c "node '$TMP/installed-launcher-link.mjs' --help | grep -q '^usage: run-external-review.mjs'"
 expect "production review and stale-lock defaults allow a complete 20-minute review" grep -q 'const DEFAULT_TIMEOUT_SECONDS = 1200;.*' "$LAUNCHER"
 expect "production review budget defaults to fifty dollars for the whole launcher review" grep -q 'const DEFAULT_REVIEW_BUDGET_USD = 50;.*' "$LAUNCHER"
 expect "production stale-lock default preserves the two-attempt-plus-margin invariant" grep -q 'const DEFAULT_LOCK_STALE_SECONDS = 2460;.*' "$LAUNCHER"
