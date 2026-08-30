@@ -463,12 +463,13 @@ export function readSessionBinding(worktreeRoot, sessionId) {
 }
 
 // Repair one narrowly provable legacy condition: the same live session still
-// owns the same WI/worktree/generation, but Git renamed the checked-out branch
-// after claim-v1 was written. The registered Git branch is authoritative. This
-// never transfers ownership or increments a generation. When controller lease
-// v2 is present, repair is allowed only for the exact same principal, WI,
-// worktree, and generation. Either file may already contain the new branch so
-// an interrupted multi-file repair forward-completes on exact retry.
+// owns the same WI/worktree, but Git renamed the checked-out branch after
+// claim-v1 was written. The registered Git branch is authoritative. This never
+// transfers ownership or mutates controller-v2. With an active controller,
+// repair requires the exact same principal, WI, and worktree; compatibility v1
+// may match its generation or trail it by exactly one. The latter catches claim
+// and current binding up to v2, and an interrupted claim-first write
+// forward-completes on exact retry.
 export function repairSameSessionBranchCoordinates(opts = {}) {
   const wi = String(opts.wi || "");
   const requestedSession = String(opts.session_id || opts.session_token || "");
@@ -631,7 +632,10 @@ export function repairSameSessionBranchCoordinates(opts = {}) {
         atomicWriteJson(evidence.path, {
           ...evidence.value,
           branch,
-          ...((generationAdvanced || compatibilityBindingLag) && isCurrentBinding ? { generation: targetGeneration } : {}),
+          ...((generationAdvanced || compatibilityBindingLag) && isCurrentBinding ? {
+            generation: targetGeneration,
+            ...(controllerHost ? { host: controllerHost } : {}),
+          } : {}),
           updated_at: repairedAt,
         });
       }

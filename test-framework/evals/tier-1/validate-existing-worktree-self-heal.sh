@@ -169,14 +169,26 @@ const oldPrincipal = authority.principalId({ host: 'codex', session_id: session 
 const grokPrincipal = authority.principalId({ host: 'grok', session_id: session });
 authority.bootstrapController({ stateRoot, repoId, wi, worktreeRoot: worktree, principal: oldPrincipal, initialGeneration: 1 });
 authority.takeoverController({ stateRoot, repoId, wi, principal: grokPrincipal, expectedPrincipal: oldPrincipal, expectedGeneration: 1, reason: 'repair synthetic host principal' });
+const refused = claims.repairSameSessionBranchCoordinates({ wi, worktree_root: worktree, repo_root: repo, session_id: session, branch: 'grok-takeover', host: 'codex', env: { SVC_AUTHORITY_STATE_ROOT: stateRoot, SVC_HOST: 'codex', CODEX_SESSION_ID: session } });
+const refusedClaim = JSON.parse(fs.readFileSync(path.join(worktree, '.svc', 'claims', `${wi}.claim.json`), 'utf8'));
+const refusedBinding = claims.readSessionBinding(worktree, session);
+const foreignLease = authority.readController({ stateRoot, repoId, wi });
+if (refused.ok || refused.warning !== 'branch repair tuple coordinates or ownership are not exact' ||
+    refusedClaim.generation !== 1 || refusedBinding.generation !== 1 ||
+    foreignLease.generation !== 2 || foreignLease.controller_principal !== grokPrincipal) process.exit(1);
 const interrupted = claims.repairSameSessionBranchCoordinates({ wi, worktree_root: worktree, repo_root: repo, session_id: session, branch: 'grok-takeover', env: { SVC_AUTHORITY_STATE_ROOT: stateRoot, GROK_SESSION_ID: session, SVC_TEST_MODE: '1', SVC_COMPAT_REPAIR_FAILPOINT: 'after-claim-generation' } });
 if (interrupted.ok) process.exit(1);
+const splitClaim = JSON.parse(fs.readFileSync(path.join(worktree, '.svc', 'claims', `${wi}.claim.json`), 'utf8'));
+const splitBinding = claims.readSessionBinding(worktree, session);
+const splitLease = authority.readController({ stateRoot, repoId, wi });
+if (splitClaim.generation !== 2 || splitClaim.host !== 'grok' ||
+    splitBinding.generation !== 1 || splitLease.generation !== 2) process.exit(1);
 const repaired = claims.repairSameSessionBranchCoordinates({ wi, worktree_root: worktree, repo_root: repo, session_id: session, branch: 'grok-takeover', env: { SVC_AUTHORITY_STATE_ROOT: stateRoot, GROK_SESSION_ID: session } });
 const claim = JSON.parse(fs.readFileSync(path.join(worktree, '.svc', 'claims', `${wi}.claim.json`), 'utf8'));
 const binding = claims.readSessionBinding(worktree, session);
 const lease = authority.readController({ stateRoot, repoId, wi });
 if (!repaired.ok || !repaired.controller_generation_converged || repaired.generation !== 2 ||
-    claim.generation !== 2 || claim.host !== 'grok' || binding.generation !== 2 ||
+    claim.generation !== 2 || claim.host !== 'grok' || binding.generation !== 2 || binding.host !== 'grok' ||
     lease.generation !== 2 || lease.controller_principal !== grokPrincipal) process.exit(1);
 NODE
 then ok "same-session Grok takeover forward-completes the v1 compatibility generation"; else bad "Grok takeover left split v1/v2 generations"; fi
@@ -484,9 +496,11 @@ SH_SESSION="session-sh-heal-11111111"
 # The mutation runs inside an active skill context produced by the REAL loader,
 # mirroring validate-codex-execution-integrity.sh fixture conventions.
 WT1="$(make_sh_fixture sh-fresh)"
-env NODE_ENV=test SVC_CODEX_TEST_MODE=1 SVC_CODEX_TEST_REPO="$WT1" SVC_CODEX_RUNTIME_DIR="$TMP/sh-fresh/runtime" CODEX_SESSION_ID="$SH_SESSION" CODEX_THREAD_ID="$SH_SESSION" CODEX_SKILLS_DIR="$ROOT/skills" \
-  node "$ROOT/scripts/codex-load-skill.mjs" --graph "$WT1/.svc/lane-tasks-WI-SH-01.json" --task 1 --skill route-workflow --turn t1 >/dev/null || true
+env -u GROK_SESSION_ID -u XAI_API_KEY -u GROK_HOME -u GROK_CLI -u SVC_HOST \
+  NODE_ENV=test SVC_CODEX_TEST_MODE=1 SVC_CODEX_TEST_REPO="$WT1" SVC_CODEX_RUNTIME_DIR="$TMP/sh-fresh/runtime" CODEX_SESSION_ID="$SH_SESSION" CODEX_THREAD_ID="$SH_SESSION" CODEX_SKILLS_DIR="$ROOT/skills" \
+  node "$ROOT/scripts/codex-load-skill.mjs" --graph "$WT1/.svc/lane-tasks-WI-SH-01.json" --task 1 --skill route-workflow --turn t1 >/dev/null
 sh_authority "$WT1" "$TMP/sh-fresh/runtime" "$SH_SESSION" t1 "work on WI-SH-01 to finish the lane"
+unset GROK_SESSION_ID XAI_API_KEY GROK_HOME GROK_CLI SVC_HOST
 NODE_ENV=test
 SVC_CODEX_TEST_MODE=1
 SVC_CODEX_TEST_REPO="$WT1"
