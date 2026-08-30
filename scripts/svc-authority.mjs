@@ -83,6 +83,15 @@ export function run(argv = process.argv.slice(2), env = process.env) {
   throw new Error("Usage: svc-authority.mjs <status|bootstrap|resume|renew|handover prepare|handover accept|takeover|recover|migrate|rollback|release> --wi WI-N [options]");
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+function isMainModule(argvPath, moduleUrl) {
+  if (!argvPath) return false;
+  try {
+    return fs.realpathSync(argvPath) === fs.realpathSync(fileURLToPath(moduleUrl));
+  } catch {
+    return path.resolve(argvPath) === path.resolve(fileURLToPath(moduleUrl));
+  }
+}
+
+if (isMainModule(process.argv[1], import.meta.url)) {
   try { run(); } catch (error) { process.stderr.write(`[svc-authority] ${error.message}\n`); process.exit(2); }
 }
