@@ -122,6 +122,33 @@ else
   bad "pre-intent exact v2 controller did not self-heal the renamed v1 lineage"
 fi
 
+GROK_REPAIR_REPO="$TMP/grok-repair"
+make_repo "$GROK_REPAIR_REPO"
+GROK_REPAIR_WT="$GROK_REPAIR_REPO/.worktrees/grok-repair-path"
+GROK_REPAIR_STATE="$TMP/grok-repair-authority"
+GROK_REPAIR_SESSION="019fe17e-9999-7cc3-902b-084b95218fe8"
+GROK_REPAIR_WI="WI-GROK-REPAIR-01"
+git -C "$GROK_REPAIR_REPO" worktree add -q -b grok-repair-old "$GROK_REPAIR_WT" origin/main
+mkdir -p "$GROK_REPAIR_WT/.svc"
+node --input-type=module - "$ROOT" "$GROK_REPAIR_WT" "$GROK_REPAIR_REPO" "$GROK_REPAIR_STATE" "$GROK_REPAIR_SESSION" "$GROK_REPAIR_WI" <<'NODE'
+import path from 'node:path'; import { pathToFileURL } from 'node:url';
+const [root, worktree, repo, stateRoot, session, wi] = process.argv.slice(2);
+const claims = await import(pathToFileURL(path.join(root, 'hooks/lib/wi-claim.mjs')));
+const authority = await import(pathToFileURL(path.join(root, 'hooks/lib/authority-store.mjs')));
+const bound = claims.writeSessionBinding({ worktree_root: worktree, repo_root: repo, wi, branch: 'grok-repair-old', session_id: session, role: 'mutating', host: 'grok' });
+if (!bound.ok) throw new Error(bound.warning);
+authority.bootstrapController({ stateRoot, repoId: authority.repositoryId(worktree), wi, worktreeRoot: worktree, principal: authority.principalId({ host: 'grok', session_id: session }), initialGeneration: 1 });
+NODE
+git -C "$GROK_REPAIR_WT" branch -m grok-repair-new
+if node --input-type=module - "$ROOT" "$GROK_REPAIR_WT" "$GROK_REPAIR_REPO" "$GROK_REPAIR_STATE" "$GROK_REPAIR_SESSION" "$GROK_REPAIR_WI" <<'NODE'
+import path from 'node:path'; import { pathToFileURL } from 'node:url';
+const [root, worktree, repo, stateRoot, session, wi] = process.argv.slice(2);
+const claims = await import(pathToFileURL(path.join(root, 'hooks/lib/wi-claim.mjs')));
+const result = claims.repairSameSessionBranchCoordinates({ wi, worktree_root: worktree, repo_root: repo, session_id: session, branch: 'grok-repair-new', env: { SVC_AUTHORITY_STATE_ROOT: stateRoot, GROK_SESSION_ID: session } });
+if (!result.ok || !result.repaired) process.exit(1);
+NODE
+then ok "GROK_SESSION_ID-only same-session repair attributes the exact Grok controller"; else bad "Grok-marker-only controller repair failed"; fi
+
 CONCURRENT_REPO="$TMP/concurrent-v2"
 make_repo "$CONCURRENT_REPO"
 CONCURRENT_WT="$CONCURRENT_REPO/.worktrees/concurrent-path"

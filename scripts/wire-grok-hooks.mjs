@@ -55,6 +55,17 @@ export function buildGrokHookEntries(skillsPath) {
 
   const hooks = [];
 
+  // Grok owns the complete governed mutation boundary. Imported compatibility
+  // hooks are disabled separately so this is the sole bootstrap rewriter.
+  if (!DISABLED.has("svc-codex-pretool-dispatcher")) {
+    hooks.push({
+      event: "PreToolUse",
+      matcher: "Shell|Write|Edit|Bash|run_terminal_command",
+      command: `${NODE_CMD} ${hooksDir}/codex/svc-codex-pretool-dispatcher.mjs`,
+      timeout: 30,
+    });
+  }
+
   // Worktree isolation
   if (!DISABLED.has("svc-worktree-isolation-guard")) {
     hooks.push({
@@ -211,7 +222,7 @@ export function buildGrokHookEntries(skillsPath) {
     });
   }
 
-  return hooks;
+  return hooks.map((hook) => ({ ...hook, command: `SVC_HOST=grok ${hook.command}` }));
 }
 
 function parseTomlScalar(raw) {
@@ -422,6 +433,40 @@ function isSvcOwnedText(text) {
   return isSvcOwnedCommand(text);
 }
 
+function convergeCompatHookTable(content, vendor) {
+  const lines = String(content || "").split(/\r?\n/);
+  const header = `[compat.${vendor}]`;
+  const starts = lines.flatMap((line, index) => line.trim() === header ? [index] : []);
+  if (starts.length > 1) throw new Error(`duplicate ${header} tables prevent lossless convergence`);
+  if (starts.length === 0) {
+    const prefix = lines.join("\n").replace(/\s+$/, "");
+    return `${prefix}${prefix ? "\n\n" : ""}${header}\nhooks = false\n`;
+  }
+  const start = starts[0];
+  let end = lines.length;
+  for (let index = start + 1; index < lines.length; index += 1) {
+    if (/^\s*\[/.test(lines[index])) { end = index; break; }
+  }
+  const keys = [];
+  for (let index = start + 1; index < end; index += 1) {
+    if (/^\s*hooks\s*=/.test(lines[index])) keys.push(index);
+  }
+  if (keys.length > 1) throw new Error(`duplicate hooks keys in ${header}`);
+  if (keys.length === 1) {
+    if (!/^\s*hooks\s*=\s*(?:true|false)(?:\s*(?:#.*)?)?$/i.test(lines[keys[0]])) {
+      throw new Error(`non-boolean hooks value in ${header}`);
+    }
+    lines[keys[0]] = lines[keys[0]].replace(/^(\s*hooks\s*=\s*)(?:true|false)(.*)$/i, "$1false$2");
+  } else {
+    lines.splice(end, 0, "hooks = false", "");
+  }
+  return lines.join("\n");
+}
+
+export function convergeGrokCompatHooks(content) {
+  return convergeCompatHookTable(convergeCompatHookTable(content, "claude"), "cursor");
+}
+
 // Split TOML into ordered text/hook-table regions so non-SVC hooks (HTTP, env,
 // comments, escaped strings, ${HOME}, multi-handler) are kept byte-verbatim.
 export function splitTomlHookRegions(content) {
@@ -468,7 +513,7 @@ function composeWiredToml(content, svcHooks) {
   for (const part of splitTomlHookRegions(content)) {
     if (part.kind === "text" || !isSvcOwnedText(part.text)) kept.push(part.text);
   }
-  const prefix = kept.join("\n\n").replace(/\n{3,}/g, "\n\n").trim();
+  const prefix = convergeGrokCompatHooks(kept.join("\n\n").replace(/\n{3,}/g, "\n\n").trim()).trim();
   const svcBlock = serializeToml("", svcHooks).trim();
   if (prefix && svcBlock) return `${prefix}\n\n${svcBlock}\n`;
   if (svcBlock) return `${svcBlock}\n`;

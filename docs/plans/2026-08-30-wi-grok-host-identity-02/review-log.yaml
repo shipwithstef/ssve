@@ -1,0 +1,40 @@
+wi: WI-GROK-HOST-IDENTITY-02
+plan_manifest: docs/plans/2026-08-30-wi-grok-host-identity-02/manifest.md
+reviewer_topology:
+  orchestrator: codex
+  external_station: grok/grok-4.6 (high effort, governed-triple owner policy)
+  launcher: scripts/review-plan-codex.sh
+rounds_run: 3
+rounds:
+  - round: 1
+    digest: e3e61af1238460a4745605a3aac08a8be1dc827d2309000ade2655055054f7dc
+    verdict: fail
+    rubric_score: 3
+    outcome: accepted all six findings; added mechanical ownership, stable AC ids,
+      explicit dispatcher-local identity coverage, exact CAS evidence, and rc-bound validation.
+  - round: 2
+    digest: 6ecb278fbadfef1a8511cf022c29cb45d011d4f772d1ced23dfcb83fa6b6a219
+    verdict: fail
+    rubric_score: 6
+    outcome: accepted all eight findings; pinned precedence, native matcher/event,
+      TOML fixture matrix, explicit session takeover, inspect schema, and forbidden actions.
+  - round: 3
+    digest: 4f45f3d114d9c9ea4c8cf9771de340d949cd7ca2d65cdf8aa105e47eeb94d9f5
+    verdict: fail
+    rubric_score: 7
+    outcome: bounded three-round exit; all three findings accepted after review.
+terminal_state: PROMOTED_WITH_DISPUTES
+self_review_passes: 1
+unresolved_critical: 0
+remaining_high: 0
+bounded_exit:
+  disposition: accept-after-remediation
+  residuals:
+    - "R3 F-001 resolved: no second bootstrap is executed for the already-bound WI; exact rewrite is hermetic and live proof is two harmless Grok calls in the bound worktree."
+    - "R3 F-002 resolved: T01 names all four exact host/session call sites and the GROK_SESSION_ID-only CLI fixture."
+    - "R3 F-003 resolved: live assertion uses path suffix and the Grok 1.0.13 inspect field shape is recorded in the manifest."
+mechanical_note: >-
+  validate-plan-contract intentionally reports prospective T01/T02 paths as
+  unchanged before execution. T03 recomputes executable consumers and the actual
+  changed-executable census after implementation; this is the validator's
+  diff-parity contract, not an unresolved plan ambiguity.

@@ -1,76 +1,87 @@
 {
   "receipt_type": "plan-manifest",
   "schema_version": 3,
-  "wi": "WI-GROK-SHELL-ALIAS-01",
+  "wi": "WI-GROK-HOST-IDENTITY-02",
   "mode": "inline",
   "lane": "bugfix",
   "scope": {
     "included": [
-      "shared shell alias classification",
-      "Grok non-loader receipt bypass after ownership",
-      "Grok hook matcher parity",
-      "live dispatcher child alias parity",
-      "focused Tier-1 regression coverage"
+      "Grok host and stable-session resolution",
+      "bootstrap handoff and controller principal continuity",
+      "Grok-native hook ownership and lossless TOML convergence",
+      "host-bound non-loader receipt bypass",
+      "focused Tier-1 regression evidence"
     ],
-    "excluded": ["HoursHub video and media files", "Codex video remux", "new Grok hook rows"],
+    "excluded": [
+      "HoursHub application and media files",
+      "Codex video remux",
+      "direct lease-file edits"
+    ],
     "excluded_reason_per_path": {
-      "HoursHub video and media files": "Live proof is hook-only and status-preserving.",
-      "Codex video remux": "Owner explicitly prohibited sending the video job to Codex.",
-      "new Grok hook rows": "Owner limited TOML changes to two existing matchers."
+      "HoursHub application and media files": "This WI changes only SSVE host integration and uses harmless proof calls.",
+      "Codex video remux": "The owner explicitly reserved the video job for Grok.",
+      "direct lease-file edits": "Controller repair must use generation-bound authority CAS after landing."
     }
   },
   "dependencies": [
-    {"artifact": "bug diagnosis", "citation": "docs/specs/bugfix/grok-shell-alias-brief.md:1"},
-    {"artifact": "technical design", "citation": "docs/specs/tech/grok-shell-alias.md:1"},
-    {"artifact": "changeset manifest", "citation": "docs/plans/2026-08-30-grok-shell-alias/manifest.md:1"}
+    {"artifact": "bug diagnosis", "citation": "docs/specs/work-items/WI-GROK-HOST-IDENTITY-02.md:1"},
+    {"artifact": "technical design", "citation": "docs/specs/tech/wi-grok-host-identity-02.md:1"},
+    {"artifact": "changeset manifest", "citation": "docs/plans/2026-08-30-wi-grok-host-identity-02/manifest.md:1"}
   ],
   "decision_trace": [
     {
-      "question": "How should shell aliases be normalized?",
-      "alternatives": ["duplicate local sets", "one shared classifier"],
-      "chosen": "one shared classifier",
-      "rationale": "Prevents host alias drift across enforcement predicates.",
-      "reversal_conditions": "Only if host protocols stop sharing Bash-shaped parsing."
+      "question": "How does bootstrap preserve Grok identity without exposing session text to the shell?",
+      "alternatives": ["shell-interpolate host and session", "allowlisted host prefix plus private one-use session handoff"],
+      "chosen": "allowlisted host prefix plus private one-use session handoff",
+      "rationale": "The host remains visible to child guards while the authenticated handoff carries session identity without shell expansion.",
+      "reversal_conditions": "Only if the host provides a stronger native structured environment transport."
     },
     {
-      "question": "When may Grok skip the Codex receipt?",
-      "alternatives": ["before ownership", "after owned active task and only for non-loaders"],
-      "chosen": "after owned active task and only for non-loaders",
-      "rationale": "Retains operation scope, isolation, and WI ownership while removing a Codex-only protocol requirement."
+      "question": "What authorizes Grok to skip the Codex skill receipt?",
+      "alternatives": ["the run_terminal_command alias", "resolved Grok host identity after scope and active-task ownership"],
+      "chosen": "resolved Grok host identity after scope and active-task ownership",
+      "rationale": "The alias is shared; host identity is the authorization boundary.",
+      "reversal_conditions": "Only if run_terminal_command becomes cryptographically host-exclusive."
     }
   ],
   "task_graph": [
-    {"id": "T01", "purpose": "runtime aliases"},
-    {"id": "T02", "purpose": "Grok matcher wiring"},
-    {"id": "T03", "purpose": "focused regression proof"},
-    {"id": "T04", "purpose": "plan and receipt closeout"}
+    {"id": "T01", "purpose": "principal propagation"},
+    {"id": "T02", "purpose": "Grok-native hook convergence"},
+    {"id": "T03", "purpose": "evidence and chain closeout"},
+    {"id": "verify-promotion", "purpose": "landed install, lease CAS, and harmless runtime proof"}
   ],
   "validation_plan": [
-    {"command": "bash test-framework/evals/tier-1/validate-codex-execution-integrity.sh", "expected": "188 passed, 0 failed"},
-    {"command": "bash test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh", "expected": "27 passed, 0 failed"},
+    {"command": "bash test-framework/evals/tier-1/validate-codex-execution-integrity.sh", "expected": "205 passed, 0 failed"},
+    {"command": "bash test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh", "expected": "31 passed, 0 failed"},
     {"command": "bash test-framework/evals/tier-1/validate-operation-scope-authority.sh", "expected": "exit 0"},
-    {"command": "bash test-framework/evals/tier-1/validate-g4-skill-artifact-authenticity.sh", "expected": "10 passed, 0 failed"},
-    {"command": "bash test-framework/evals/tier-1/validate-phase-receipt-autoemit.sh", "expected": "12 passed, 0 failed"},
-    {"command": "bash test-framework/evals/tier-1/validate-impact-triad.sh", "expected": "58 passed, 0 failed"}
+    {"command": "bash test-framework/evals/tier-1/validate-cross-host-hook-conformance.sh", "expected": "67 passed, 0 failed"}
   ],
   "risk_rollback": {
     "tier": "high",
-    "rollback_anchor": "35c9a07bfa0b4a8cc70bdd672e5690b241d751a5",
+    "rollback_anchor": "86da7be87447e56f7e9af32ed1e39b70e307f4f5",
     "host_install_timing": "post-land only",
-    "host_transaction": "setup restores prior managed bytes on internal failure"
+    "host_transaction": "setup restores prior managed Grok bytes on internal failure",
+    "authority_repair": "exact principal and generation compare-and-swap; abort on tuple drift"
   },
-  "timestamp": "2026-08-30T13:40:00.000Z",
+  "timestamp": "2026-08-30T15:20:00.000Z",
   "execution_command_sequence": [
-    {"step": 1, "command": "run changed-module syntax checks", "expected_outcome": "exit 0"},
-    {"step": 2, "command": "run three focused Tier-1 validators", "expected_outcome": "all focused checks pass"},
-    {"step": 3, "command": "land through mandatory review chain", "expected_outcome": "landed canonical SHA"},
-    {"step": 4, "command": "./setup --host grok from landed canonical source", "expected_outcome": "installed source and matchers converge"},
-    {"step": 5, "command": "replay exact HoursHub bootstrap payload through installed enforcer", "expected_outcome": "bootstrap allow, negative control deny, no HoursHub status delta"}
+    {"step": 1, "command": "run focused host identity and TOML validators", "expected_outcome": "all focused checks pass"},
+    {"step": 2, "command": "complete independent G5 review and implementation audit", "expected_outcome": "review and audit receipts pass"},
+    {"step": 3, "command": "land through land-changeset", "expected_outcome": "canonical squash SHA"},
+    {"step": 4, "command": "./setup --host grok from landed canonical source", "expected_outcome": "native Grok hooks and compat flags converge"},
+    {"step": 5, "command": "repair the exact HoursHub controller tuple and replay harmless probes", "expected_outcome": "Grok principal owns the lease and ordinary gates accept the calls"}
   ],
   "ac_digests": {
-    "spec_path": "docs/specs/bugfix/grok-shell-alias-brief.md",
-    "spec_ac_table_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "entries": []
+    "spec_path": "docs/specs/work-items/WI-GROK-HOST-IDENTITY-02.md",
+    "spec_ac_table_sha256": "839a866407d671214d61301f7183c9945d514018db4108231e63aec4cf9634cc",
+    "entries": [
+      {"ac_id": "AC-1", "digest": "Grok host/session identity resolves consistently across shared resolver, dispatcher, bootstrap, and authority CLI with fail-closed unknown identity.", "anchor": "docs/specs/work-items/WI-GROK-HOST-IDENTITY-02.md:126"},
+      {"ac_id": "AC-2", "digest": "Canonical bootstrap carries allowlisted Grok host while the private one-use handoff carries the stable session without shell interpolation.", "anchor": "docs/specs/work-items/WI-GROK-HOST-IDENTITY-02.md:131"},
+      {"ac_id": "AC-3", "digest": "Lossless Grok TOML convergence disables Claude/Cursor compatibility hooks and installs native Grok host identity.", "anchor": "docs/specs/work-items/WI-GROK-HOST-IDENTITY-02.md:134"},
+      {"ac_id": "AC-4", "digest": "Post-setup Grok inspect reports foreign hook compatibility disabled and no enabled Claude/Cursor hook entries.", "anchor": "docs/specs/work-items/WI-GROK-HOST-IDENTITY-02.md:136"},
+      {"ac_id": "AC-5", "digest": "HoursHub controller lease is recovered by exact generation-bound compare-and-swap from synthetic principal to the Grok principal.", "anchor": "docs/specs/work-items/WI-GROK-HOST-IDENTITY-02.md:138"},
+      {"ac_id": "AC-6", "digest": "Exact bootstrap and harmless bound-worktree terminal observation pass without controller-principal mismatch or media mutation.", "anchor": "docs/specs/work-items/WI-GROK-HOST-IDENTITY-02.md:140"}
+    ]
   },
   "mocked_deps": []
 }

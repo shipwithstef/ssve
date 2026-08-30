@@ -7,15 +7,26 @@ import { WI_ID_BODY } from "../../lib/wi-id.mjs";
 import { validateLiteralBranchName } from "../../lib/literal-branch.mjs";
 
 const WI = new RegExp(`^${WI_ID_BODY}$`);
+const BOOTSTRAP_HOSTS = new Set(["codex", "claude", "kimi", "gemini", "opencode", "mimo-code", "antigravity", "cursor", "grok"]);
 
 // Canonical parser shared by Codex routing, isolation, and bootstrap consume.
 export function parseBootstrapCommand(command, { ensurePath = "scripts/svc-ensure-worktree.mjs" } = {}) {
   const lexed = lexSimpleCommand(String(command || ""));
-  const tokens = lexed?.ok ? lexed.argv : null;
+  let tokens = lexed?.ok ? lexed.argv : null;
+  const identity = {};
+  while (tokens?.length && /^SVC_HOST=/.test(tokens[0])) {
+    const token = tokens.shift();
+    const split = token.indexOf("=");
+    const key = token.slice(0, split);
+    const value = token.slice(split + 1);
+    if (Object.hasOwn(identity, key) || !value || /[\0\r\n]/.test(value)) return null;
+    identity[key] = value;
+  }
+  if (Object.keys(identity).length && !BOOTSTRAP_HOSTS.has(identity.SVC_HOST)) return null;
   if (!tokens || tokens.length < 6 || tokens[0] !== "node") return null;
   const script = path.normalize(tokens[1] || "");
   if (script !== ensurePath && !script.endsWith(`/scripts/svc-ensure-worktree.mjs`)) return null;
-  const out = { script, wi: "", branch: "", from: "origin/main", json: false, print_cd: false, handoff: "" };
+  const out = { script, wi: "", branch: "", from: "origin/main", json: false, print_cd: false, handoff: "", identity };
   for (let i = 2; i < tokens.length; i += 1) {
     const flag = tokens[i];
     if (flag === "--wi" || flag === "--branch" || flag === "--from" || flag === "--handoff") {

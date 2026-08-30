@@ -1,0 +1,20 @@
+schema_version: 1
+wi: WI-GROK-HOST-IDENTITY-02
+self_review_passes: 1
+rounds_run: 3
+unresolved_critical: 0
+remaining_high: 0
+candidate_rule: final tracked tree is frozen before both owner-required external stations
+bounded_exit: null
+verdict: pass
+round_1:
+  status: completed
+  finding: direct bootstrap fixture did not assert the authority-v2 Grok principal
+  disposition: fixed
+round_2:
+  status: completed
+  finding: direct CLI could coalesce unsupported host to Codex or persist unknown binding host
+  disposition: fixed
+round_3:
+  status: completed
+  finding: none

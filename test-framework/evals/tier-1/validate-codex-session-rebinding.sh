@@ -15,13 +15,21 @@ const newPrincipal = principalId({ host: "codex", session_id: "sess-new-12345678
 const first = bootstrapController({ stateRoot: env.SVC_AUTHORITY_STATE_ROOT, repoId: "repo-test", wi: "WI-999", worktreeRoot: root, principal: oldPrincipal });
 const transferred = takeoverController({ stateRoot: env.SVC_AUTHORITY_STATE_ROOT, repoId: "repo-test", wi: "WI-999", worktreeRoot: root, principal: newPrincipal, expectedPrincipal: oldPrincipal, expectedGeneration: first.generation, reason: "explicit owner takeover" });
 if (transferred.lease.generation !== 2 || readController({ stateRoot: env.SVC_AUTHORITY_STATE_ROOT, repoId: "repo-test", wi: "WI-999" }).controller_principal !== newPrincipal) throw new Error("takeover CAS failed");
-const handoff = createBootstrapHandoff({ session_id: "sess-new-12345678", repo_root: root, wi: "WI-998", branch: "framework-WI-998", base: "a".repeat(40), command_digest: "sha256:test", env });
+const handoff = createBootstrapHandoff({ session_id: "sess-new-12345678", host: "grok", repo_root: root, wi: "WI-998", branch: "framework-WI-998", base: "a".repeat(40), env });
 if ((fs.statSync(handoff.file).mode & 0o777) !== 0o600) throw new Error("handoff mode");
-inspectBootstrapHandoff(handoff.nonce, { session_id: "sess-new-12345678", repo_root: root, wi: "WI-998", branch: "framework-WI-998" }, { env });
-consumeBootstrapHandoff(handoff.nonce, { session_id: "sess-new-12345678", wi: "WI-998", branch: "framework-WI-998" }, { env });
+inspectBootstrapHandoff(handoff.nonce, { session_id: "sess-new-12345678", host: "grok", repo_root: root, wi: "WI-998", branch: "framework-WI-998", base: "a".repeat(40) }, { env });
+consumeBootstrapHandoff(handoff.nonce, { session_id: "sess-new-12345678", host: "grok", wi: "WI-998", branch: "framework-WI-998", base: "a".repeat(40) }, { env });
 let replayDenied = false;
 try { consumeBootstrapHandoff(handoff.nonce, { session_id: "sess-new-12345678" }, { env }); } catch { replayDenied = true; }
 if (!replayDenied) throw new Error("handoff replay accepted");
+const hostBound = createBootstrapHandoff({ session_id: "sess-new-12345678", host: "grok", repo_root: root, wi: "WI-997", branch: "framework-WI-997", base: "b".repeat(40), env });
+let hostDenied = false;
+try { inspectBootstrapHandoff(hostBound.nonce, { session_id: "sess-new-12345678", host: "codex", repo_root: root, wi: "WI-997", branch: "framework-WI-997", base: "b".repeat(40) }, { env }); } catch { hostDenied = true; }
+if (!hostDenied || !fs.existsSync(hostBound.file)) throw new Error("host mismatch consumed or accepted handoff");
+let baseDenied = false;
+try { consumeBootstrapHandoff(hostBound.nonce, { session_id: "sess-new-12345678", host: "grok", repo_root: root, wi: "WI-997", branch: "framework-WI-997", base: "c".repeat(40) }, { env }); } catch { baseDenied = true; }
+if (!baseDenied || !fs.existsSync(hostBound.file)) throw new Error("base mismatch consumed or accepted handoff");
+consumeBootstrapHandoff(hostBound.nonce, { session_id: "sess-new-12345678", host: "grok", repo_root: root, wi: "WI-997", branch: "framework-WI-997", base: "b".repeat(40) }, { env });
 console.log("codex session rebinding: takeover CAS PASS; old session remains alive; handoff mode/one-use/replay PASS");
 NODE
 

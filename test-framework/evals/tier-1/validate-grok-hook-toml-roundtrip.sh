@@ -27,6 +27,22 @@ else
   exit 1
 fi
 
+if node --input-type=module - "$WIRER" <<'NODE'
+import assert from "node:assert/strict";
+import { pathToFileURL } from "node:url";
+const { convergeGrokCompatHooks } = await import(pathToFileURL(process.argv[2]));
+assert.match(convergeGrokCompatHooks("[cli]\ninstaller = \"internal\"\n"), /\[compat\.claude\]\nhooks = false/);
+assert.match(convergeGrokCompatHooks("[compat.claude]\nhooks = false\n[compat.cursor]\nhooks = false\n"), /\[compat\.claude\]\nhooks = false/);
+assert.throws(() => convergeGrokCompatHooks("[compat.claude]\nhooks = \"true\"\n"), /non-boolean hooks value/);
+assert.throws(() => convergeGrokCompatHooks("[compat.claude]\nhooks = true\nhooks = false\n"), /duplicate hooks keys/);
+assert.throws(() => convergeGrokCompatHooks("[compat.claude]\nhooks = true\n[compat.claude]\nhooks = false\n"), /duplicate .* tables/);
+NODE
+then
+  pass "compat hook convergence covers absent, already-false, malformed, duplicate-key, and duplicate-table fixtures"
+else
+  fail "compat hook convergence edge fixtures failed"
+fi
+
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 SKILLS="$TMP/skills"
@@ -36,6 +52,16 @@ CONFIG="$TMP/config.toml"
 cat > "$CONFIG" <<'EOF'
 [cli]
 installer = "internal"
+
+[compat.claude]
+# keep claude skills and sessions discoverable
+skills = true
+sessions = true
+hooks = true
+
+[compat.cursor]
+# cursor hook key is intentionally absent before convergence
+skills = true
 
 # keep this user comment
 # not an svc-owned hook
@@ -176,6 +202,33 @@ if grep -q 'matcher = "Shell|Write|Edit|Bash|run_terminal_command"' "$CONFIG"; t
   pass "Grok isolation matcher includes run_terminal_command"
 else
   fail "Grok isolation matcher omits run_terminal_command"
+fi
+
+if [ "$(grep -c '^\[compat\.claude\]$' "$CONFIG")" -eq 1 ] \
+  && [ "$(grep -c '^\[compat\.cursor\]$' "$CONFIG")" -eq 1 ] \
+  && [ "$(grep -c '^hooks = false$' "$CONFIG")" -eq 2 ] \
+  && grep -q 'keep claude skills and sessions discoverable' "$CONFIG" \
+  && grep -q '^sessions = true$' "$CONFIG" \
+  && grep -q 'cursor hook key is intentionally absent' "$CONFIG"; then
+  pass "compat Claude/Cursor hooks disabled without duplicate tables or unrelated-key loss"
+else
+  fail "compat hook convergence is missing, duplicated, or lossy"
+fi
+
+if [ "$(grep -c 'svc-codex-pretool-dispatcher.mjs' "$CONFIG")" -eq 1 ] \
+  && grep -B4 -A5 'svc-codex-pretool-dispatcher.mjs' "$CONFIG" | grep -q 'matcher = "Shell|Write|Edit|Bash|run_terminal_command"'; then
+  pass "one native PreToolUse dispatcher covers run_terminal_command"
+else
+  fail "native Grok dispatcher count or matcher is wrong"
+fi
+
+EXPECTED_SVC_COMMANDS="$(node --input-type=module -e 'import {buildGrokHookEntries} from "./scripts/wire-grok-hooks.mjs"; process.stdout.write(String(buildGrokHookEntries(process.argv[1]).length))' "$SKILLS")"
+ACTUAL_SVC_COMMANDS="$(grep -c '^command = "SVC_HOST=grok ' "$CONFIG")"
+if [ "$ACTUAL_SVC_COMMANDS" -eq "$EXPECTED_SVC_COMMANDS" ] \
+  && awk -v prefix="$SKILLS/hooks/" '/^command = / && index($0,prefix)>0 && $0 !~ /^command = "SVC_HOST=grok / { bad=1 } END { exit bad ? 1 : 0 }' "$CONFIG"; then
+  pass "every Grok-owned command carries SVC_HOST=grok"
+else
+  fail "a Grok-owned command is missing or lacks SVC_HOST=grok"
 fi
 
 if [ "$(grep -c '^matcher = "Shell|Bash|run_terminal_command"$' "$CONFIG")" -eq 2 ] \

@@ -18,14 +18,14 @@ function fileFor(nonce, env = process.env) {
   return path.join(handoffDir(env), `${nonce}.json`);
 }
 
-export function createBootstrapHandoff({ session_id, repo_root, wi, branch, base, command_digest, now = Date.now(), env = process.env }) {
-  if (!session_id || !repo_root || !wi || !branch || !base || !command_digest) throw new Error("incomplete bootstrap handoff");
+export function createBootstrapHandoff({ session_id, host, repo_root, wi, branch, base, now = Date.now(), env = process.env }) {
+  if (!session_id || !host || !repo_root || !wi || !branch || !base) throw new Error("incomplete bootstrap handoff");
   const nonce = crypto.randomBytes(32).toString("base64url");
   const record = {
-    schema_version: 1,
+    schema_version: 2,
     nonce_hash: `sha256:${crypto.createHash("sha256").update(nonce).digest("hex")}`,
-    session_id: String(session_id), repo_root: fs.realpathSync(repo_root), repo_id: repoIdentity(repo_root),
-    wi: String(wi), branch: String(branch), base: String(base), command_digest: String(command_digest),
+    session_id: String(session_id), host: String(host), repo_root: fs.realpathSync(repo_root), repo_id: repoIdentity(repo_root),
+    wi: String(wi), branch: String(branch), base: String(base),
     created_at: new Date(now).toISOString(), expires_at: new Date(now + MAX_LIFETIME_MS).toISOString(),
   };
   const file = fileFor(nonce, env);
@@ -39,10 +39,10 @@ export function consumeBootstrapHandoff(nonce, expected = {}, { now = Date.now()
   const stat = fs.lstatSync(file);
   if (!stat.isFile() || stat.isSymbolicLink() || (typeof process.getuid === "function" && stat.uid !== process.getuid())) throw new Error("invalid bootstrap handoff file");
   const record = readJson(file);
-  if (!record || record.schema_version !== 1) throw new Error("malformed bootstrap handoff");
+  if (!record || record.schema_version !== 2) throw new Error("malformed bootstrap handoff");
   if (Date.parse(record.expires_at) <= now) throw new Error("bootstrap handoff expired");
   if (expected.session_id && record.session_id !== expected.session_id) throw new Error("bootstrap handoff session mismatch");
-  for (const key of ["repo_root", "wi", "branch", "base", "command_digest"]) if (expected[key] && String(record[key]) !== String(expected[key])) throw new Error(`bootstrap handoff ${key} mismatch`);
+  for (const key of ["host", "repo_root", "wi", "branch", "base"]) if (expected[key] && String(record[key]) !== String(expected[key])) throw new Error(`bootstrap handoff ${key} mismatch`);
   const consumed = `${file}.consumed.${process.pid}.${crypto.randomBytes(8).toString("hex")}`;
   fs.renameSync(file, consumed);
   fs.chmodSync(consumed, 0o600);
@@ -53,8 +53,8 @@ export function inspectBootstrapHandoff(nonce, expected = {}, { now = Date.now()
   const file = fileFor(nonce, env); const stat = fs.lstatSync(file);
   if (!stat.isFile() || stat.isSymbolicLink() || (typeof process.getuid === "function" && stat.uid !== process.getuid())) throw new Error("invalid bootstrap handoff file");
   const record = readJson(file);
-  if (!record || record.schema_version !== 1 || Date.parse(record.expires_at) <= now) throw new Error("invalid or expired bootstrap handoff");
-  for (const key of ["session_id", "repo_root", "wi", "branch"]) if (expected[key] && String(record[key]) !== String(expected[key])) throw new Error(`bootstrap handoff ${key} mismatch`);
+  if (!record || record.schema_version !== 2 || Date.parse(record.expires_at) <= now) throw new Error("invalid or expired bootstrap handoff");
+  for (const key of ["session_id", "host", "repo_root", "wi", "branch", "base"]) if (expected[key] && String(record[key]) !== String(expected[key])) throw new Error(`bootstrap handoff ${key} mismatch`);
   return record;
 }
 
