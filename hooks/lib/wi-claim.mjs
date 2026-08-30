@@ -516,10 +516,13 @@ export function repairSameSessionBranchCoordinates(opts = {}) {
     const generation = Number(claim.generation || 0);
     const bindingGeneration = Number(binding.generation || 0);
     let exactController = true;
+    let controllerHost = "";
+    let targetGeneration = generation;
+    let compatibilityBindingLag = false;
     if (controller) {
       try {
         const repairEnv = opts.env || process.env;
-        const controllerHost = String(opts.host || repairEnv.SVC_HOST ||
+        controllerHost = String(opts.host || repairEnv.SVC_HOST ||
           (repairEnv.GROK_SESSION_ID ? "grok" : "") ||
           (repairEnv.CODEX_THREAD_ID || repairEnv.CODEX_SESSION_ID ? "codex" : "") ||
           (repairEnv.CLAUDE_SESSION_ID ? "claude" : "") ||
@@ -534,7 +537,10 @@ export function repairSameSessionBranchCoordinates(opts = {}) {
         exactController = controller.state === "active" &&
           controller.controller_principal === expectedPrincipal &&
           fs.realpathSync(controller.worktree_root) === worktreeRoot &&
-          controller.generation === generation;
+          (controller.generation === generation || controller.generation === generation + 1);
+        if (exactController) targetGeneration = controller.generation;
+        compatibilityBindingLag = exactController && controller.generation === generation &&
+          bindingGeneration === generation - 1 && claim.host === controllerHost;
       } catch {
         exactController = false;
       }
@@ -546,7 +552,8 @@ export function repairSameSessionBranchCoordinates(opts = {}) {
       Number.isInteger(generation) && generation > 0 &&
       sameResolvedPath(claim.repo_root, repoRoot) && sameResolvedPath(claim.worktree_root, worktreeRoot) &&
       binding.schema_version === 1 && binding.session_id === requestedSession && binding.role === "mutating" &&
-      binding.wi === wi && !binding.released_at && bindingGeneration === generation &&
+      binding.wi === wi && !binding.released_at &&
+      (bindingGeneration === generation || compatibilityBindingLag) &&
       sameResolvedPath(binding.repo_root, repoRoot) && sameResolvedPath(binding.worktree_root, worktreeRoot) &&
       path.resolve(String(binding.claim_path || "")) === claimPath && exactController;
     if (!canonical) return { ok: false, warning: "branch repair tuple coordinates or ownership are not exact" };
@@ -601,20 +608,39 @@ export function repairSameSessionBranchCoordinates(opts = {}) {
       }
     }
 
-    if (claim.branch === branch && lineageBindings.every((entry) => entry.value.branch === branch)) {
+    const generationAdvanced = targetGeneration === generation + 1;
+    if (claim.branch === branch && !generationAdvanced && !compatibilityBindingLag &&
+        lineageBindings.every((entry) => entry.value.branch === branch)) {
       return { ok: true, repaired: false, generation, branch };
     }
-    if (claim.branch !== branch) atomicWriteJson(claimPath, { ...claim, branch });
     const repairedAt = new Date().toISOString();
+    atomicWriteJson(claimPath, {
+      ...claim,
+      branch,
+      generation: targetGeneration,
+      ...(generationAdvanced && controllerHost ? { host: controllerHost } : {}),
+      renewed_at: repairedAt,
+    });
+    if ((opts.env || process.env).SVC_TEST_MODE === "1" &&
+        (opts.env || process.env).SVC_COMPAT_REPAIR_FAILPOINT === "after-claim-generation") {
+      return { ok: false, warning: "injected failpoint: after compatibility claim generation" };
+    }
     for (const evidence of lineageBindings) {
-      if (evidence.value.branch !== branch) {
-        atomicWriteJson(evidence.path, { ...evidence.value, branch, updated_at: repairedAt });
+      const isCurrentBinding = path.resolve(evidence.path) === path.resolve(currentBindingPath);
+      if (evidence.value.branch !== branch || ((generationAdvanced || compatibilityBindingLag) && isCurrentBinding)) {
+        atomicWriteJson(evidence.path, {
+          ...evidence.value,
+          branch,
+          ...((generationAdvanced || compatibilityBindingLag) && isCurrentBinding ? { generation: targetGeneration } : {}),
+          updated_at: repairedAt,
+        });
       }
     }
     const repairedClaim = readClaimAbsolute(claimPath);
     const repairedBinding = readClaimAbsolute(currentBindingPath);
     if (repairedClaim?.branch !== branch || repairedBinding?.branch !== branch ||
-        Number(repairedClaim?.generation || 0) !== generation || Number(repairedBinding?.generation || 0) !== generation) {
+        Number(repairedClaim?.generation || 0) !== targetGeneration ||
+        Number(repairedBinding?.generation || 0) !== targetGeneration) {
       return { ok: false, warning: "branch repair did not converge to the registered Git branch" };
     }
     for (const evidence of lineageBindings) {
@@ -622,7 +648,8 @@ export function repairSameSessionBranchCoordinates(opts = {}) {
         return { ok: false, warning: "branch repair did not converge every lineage binding" };
       }
     }
-    return { ok: true, repaired: true, generation, branch };
+    return { ok: true, repaired: true, generation: targetGeneration, branch,
+      controller_generation_converged: generationAdvanced || compatibilityBindingLag };
     });
   }, repoRoot);
 }

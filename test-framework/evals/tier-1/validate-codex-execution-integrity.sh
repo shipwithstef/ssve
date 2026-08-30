@@ -210,6 +210,11 @@ expect "authority CLI takeover stamps exact Grok principal" bash -c '
   expected=$(node --input-type=module -e '\''import {principalId} from "./hooks/lib/authority-store.mjs";process.stdout.write(principalId({host:"grok",session_id:"grok-session-01"}))'\'')
   test "$actual" = "$expected"
 ' _ "$ROOT" "$AUTH_REPO"
+ln -s "$ROOT/scripts" "$TMP/installed-scripts"
+expect "authority CLI executes through an installed symlinked scripts directory" bash -c '
+  out=$(node "$1/installed-scripts/svc-authority.mjs" status --wi WI-GROK-AUTH-01 --worktree "$2")
+  test "$(printf "%s" "$out" | node -e '\''let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s).lease.wi))'\'')" = WI-GROK-AUTH-01
+' _ "$TMP" "$AUTH_REPO"
 
 AUTH_PAYLOAD="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],turn_id:process.argv[2],cwd:process.argv[3],prompt:"continue WI-485 and do not store SECRET_VALUE"}))' "$SESSION" "$TURN" "$TEST_CWD")"
 expect "prompt authority records exact session/turn" bash -c "printf '%s' '$AUTH_PAYLOAD' | SVC_CODEX_RUNTIME_DIR='$RUNTIME' node '$ROOT/hooks/codex/svc-codex-prompt-authority.mjs' >/dev/null"

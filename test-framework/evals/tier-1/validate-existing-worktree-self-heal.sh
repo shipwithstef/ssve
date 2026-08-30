@@ -149,6 +149,38 @@ if (!result.ok || !result.repaired) process.exit(1);
 NODE
 then ok "GROK_SESSION_ID-only same-session repair attributes the exact Grok controller"; else bad "Grok-marker-only controller repair failed"; fi
 
+GROK_TAKEOVER_REPO="$TMP/grok-takeover"
+make_repo "$GROK_TAKEOVER_REPO"
+GROK_TAKEOVER_WT="$GROK_TAKEOVER_REPO/.worktrees/grok-takeover-path"
+GROK_TAKEOVER_STATE="$TMP/grok-takeover-authority"
+GROK_TAKEOVER_SESSION="019fe17e-aaaa-7cc3-902b-084b95218fe8"
+GROK_TAKEOVER_WI="WI-GROK-TAKEOVER-01"
+git -C "$GROK_TAKEOVER_REPO" worktree add -q -b grok-takeover "$GROK_TAKEOVER_WT" origin/main
+mkdir -p "$GROK_TAKEOVER_WT/.svc"
+if node --input-type=module - "$ROOT" "$GROK_TAKEOVER_WT" "$GROK_TAKEOVER_REPO" "$GROK_TAKEOVER_STATE" "$GROK_TAKEOVER_SESSION" "$GROK_TAKEOVER_WI" <<'NODE'
+import fs from 'node:fs'; import path from 'node:path'; import { pathToFileURL } from 'node:url';
+const [root, worktree, repo, stateRoot, session, wi] = process.argv.slice(2);
+const claims = await import(pathToFileURL(path.join(root, 'hooks/lib/wi-claim.mjs')));
+const authority = await import(pathToFileURL(path.join(root, 'hooks/lib/authority-store.mjs')));
+const bound = claims.writeSessionBinding({ worktree_root: worktree, repo_root: repo, wi, branch: 'grok-takeover', session_id: session, role: 'mutating', host: 'unknown' });
+if (!bound.ok) throw new Error(bound.warning);
+const repoId = authority.repositoryId(worktree);
+const oldPrincipal = authority.principalId({ host: 'codex', session_id: session });
+const grokPrincipal = authority.principalId({ host: 'grok', session_id: session });
+authority.bootstrapController({ stateRoot, repoId, wi, worktreeRoot: worktree, principal: oldPrincipal, initialGeneration: 1 });
+authority.takeoverController({ stateRoot, repoId, wi, principal: grokPrincipal, expectedPrincipal: oldPrincipal, expectedGeneration: 1, reason: 'repair synthetic host principal' });
+const interrupted = claims.repairSameSessionBranchCoordinates({ wi, worktree_root: worktree, repo_root: repo, session_id: session, branch: 'grok-takeover', env: { SVC_AUTHORITY_STATE_ROOT: stateRoot, GROK_SESSION_ID: session, SVC_TEST_MODE: '1', SVC_COMPAT_REPAIR_FAILPOINT: 'after-claim-generation' } });
+if (interrupted.ok) process.exit(1);
+const repaired = claims.repairSameSessionBranchCoordinates({ wi, worktree_root: worktree, repo_root: repo, session_id: session, branch: 'grok-takeover', env: { SVC_AUTHORITY_STATE_ROOT: stateRoot, GROK_SESSION_ID: session } });
+const claim = JSON.parse(fs.readFileSync(path.join(worktree, '.svc', 'claims', `${wi}.claim.json`), 'utf8'));
+const binding = claims.readSessionBinding(worktree, session);
+const lease = authority.readController({ stateRoot, repoId, wi });
+if (!repaired.ok || !repaired.controller_generation_converged || repaired.generation !== 2 ||
+    claim.generation !== 2 || claim.host !== 'grok' || binding.generation !== 2 ||
+    lease.generation !== 2 || lease.controller_principal !== grokPrincipal) process.exit(1);
+NODE
+then ok "same-session Grok takeover forward-completes the v1 compatibility generation"; else bad "Grok takeover left split v1/v2 generations"; fi
+
 CONCURRENT_REPO="$TMP/concurrent-v2"
 make_repo "$CONCURRENT_REPO"
 CONCURRENT_WT="$CONCURRENT_REPO/.worktrees/concurrent-path"
@@ -452,18 +484,19 @@ SH_SESSION="session-sh-heal-11111111"
 # The mutation runs inside an active skill context produced by the REAL loader,
 # mirroring validate-codex-execution-integrity.sh fixture conventions.
 WT1="$(make_sh_fixture sh-fresh)"
-env NODE_ENV=test SVC_CODEX_TEST_MODE=1 SVC_CODEX_TEST_REPO="$WT1" SVC_CODEX_RUNTIME_DIR="$TMP/sh-fresh/runtime" CODEX_THREAD_ID="$SH_SESSION" CODEX_SKILLS_DIR="$ROOT/skills" \
+env NODE_ENV=test SVC_CODEX_TEST_MODE=1 SVC_CODEX_TEST_REPO="$WT1" SVC_CODEX_RUNTIME_DIR="$TMP/sh-fresh/runtime" CODEX_SESSION_ID="$SH_SESSION" CODEX_THREAD_ID="$SH_SESSION" CODEX_SKILLS_DIR="$ROOT/skills" \
   node "$ROOT/scripts/codex-load-skill.mjs" --graph "$WT1/.svc/lane-tasks-WI-SH-01.json" --task 1 --skill route-workflow --turn t1 >/dev/null || true
 sh_authority "$WT1" "$TMP/sh-fresh/runtime" "$SH_SESSION" t1 "work on WI-SH-01 to finish the lane"
 NODE_ENV=test
 SVC_CODEX_TEST_MODE=1
 SVC_CODEX_TEST_REPO="$WT1"
 CODEX_SKILLS_DIR="$ROOT/skills"
+CODEX_SESSION_ID="$SH_SESSION"
 CODEX_THREAD_ID="$SH_SESSION"
 SVC_CODEX_RUNTIME_DIR="$TMP/sh-fresh/runtime"
-export NODE_ENV SVC_CODEX_TEST_MODE SVC_CODEX_TEST_REPO CODEX_SKILLS_DIR CODEX_THREAD_ID SVC_CODEX_RUNTIME_DIR
+export NODE_ENV SVC_CODEX_TEST_MODE SVC_CODEX_TEST_REPO CODEX_SKILLS_DIR CODEX_SESSION_ID CODEX_THREAD_ID SVC_CODEX_RUNTIME_DIR
 SH_OUT="$(sh_drive "$WT1" "$TMP/sh-fresh/runtime" "$SH_SESSION" t1 "touch .svc/self-heal-probe")"
-unset NODE_ENV SVC_CODEX_TEST_MODE SVC_CODEX_TEST_REPO CODEX_SKILLS_DIR CODEX_THREAD_ID
+unset NODE_ENV SVC_CODEX_TEST_MODE SVC_CODEX_TEST_REPO CODEX_SKILLS_DIR CODEX_SESSION_ID CODEX_THREAD_ID
 if printf '%s' "$SH_OUT" | grep -q '"permissionDecision":"allow"'; then
   ok "fresh positive intent self-heals the exact worktree and allows the original mutation"
 else bad "fresh positive intent did not self-heal ($(printf '%s' "$SH_OUT" | head -c 200))"; fi
