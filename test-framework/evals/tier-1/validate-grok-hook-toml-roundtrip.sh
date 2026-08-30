@@ -37,6 +37,16 @@ cat > "$CONFIG" <<'EOF'
 [cli]
 installer = "internal"
 
+[compat.claude]
+# keep claude skills and sessions discoverable
+skills = true
+sessions = true
+hooks = true
+
+[compat.cursor]
+# cursor hook key is intentionally absent before convergence
+skills = true
+
 # keep this user comment
 # not an svc-owned hook
 [[hooks]]
@@ -176,6 +186,30 @@ if grep -q 'matcher = "Shell|Write|Edit|Bash|run_terminal_command"' "$CONFIG"; t
   pass "Grok isolation matcher includes run_terminal_command"
 else
   fail "Grok isolation matcher omits run_terminal_command"
+fi
+
+if [ "$(grep -c '^\[compat\.claude\]$' "$CONFIG")" -eq 1 ] \
+  && [ "$(grep -c '^\[compat\.cursor\]$' "$CONFIG")" -eq 1 ] \
+  && [ "$(grep -c '^hooks = false$' "$CONFIG")" -eq 2 ] \
+  && grep -q 'keep claude skills and sessions discoverable' "$CONFIG" \
+  && grep -q '^sessions = true$' "$CONFIG" \
+  && grep -q 'cursor hook key is intentionally absent' "$CONFIG"; then
+  pass "compat Claude/Cursor hooks disabled without duplicate tables or unrelated-key loss"
+else
+  fail "compat hook convergence is missing, duplicated, or lossy"
+fi
+
+if [ "$(grep -c 'svc-codex-pretool-dispatcher.mjs' "$CONFIG")" -eq 1 ] \
+  && grep -B4 -A5 'svc-codex-pretool-dispatcher.mjs' "$CONFIG" | grep -q 'matcher = "Shell|Write|Edit|Bash|run_terminal_command"'; then
+  pass "one native PreToolUse dispatcher covers run_terminal_command"
+else
+  fail "native Grok dispatcher count or matcher is wrong"
+fi
+
+if awk '/^command = / && /\.grok\/skills/ && /\/svc-|\/codex\/svc-/ && $0 !~ /^command = "SVC_HOST=grok / { bad=1 } END { exit bad ? 1 : 0 }' "$CONFIG"; then
+  pass "every Grok-owned command carries SVC_HOST=grok"
+else
+  fail "a Grok-owned command lacks SVC_HOST=grok"
 fi
 
 if [ "$(grep -c '^matcher = "Shell|Bash|run_terminal_command"$' "$CONFIG")" -eq 2 ] \
