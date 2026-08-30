@@ -496,7 +496,49 @@
       "skill_receipt": {
         "skill": "review-exec",
         "loaded_at": "2026-08-30T13:46:15.459Z",
-        "loaded_via": "manual"
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-08-30T14:34:37.003Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-grok-shell-alias-g5.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-08-30T14:34:37.171Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/reviews/grok-shell-alias-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-08-30T14:34:37.482Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/grok-shell-alias-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-IterationLoop",
+            "ts": "2026-08-30T14:34:37.707Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/grok-shell-alias-exec-review-log.yaml"
+              }
+            ]
+          }
+        ]
       }
     },
     {
