@@ -36,8 +36,8 @@ The adversarial plan reviewer may read `AGENTS.md`, `CLAUDE.md`, `skills-manifes
 |---|---|---|---|
 | T01 | CREATE/MODIFY | hooks/lib/shell-tools.mjs;hooks/codex/svc-codex-skill-load-enforcer.mjs;hooks/lib/operation-scope.mjs;hooks/codex/lib/codex-hook-context.mjs;hooks/lib/pretool-decision-engine.mjs;hooks/svc-workflow-guard.mjs;hooks/svc-loop-guard.mjs;hooks/svc-worktree-isolation-guard.mjs | Shared alias classification and runtime consumers |
 | T02 | MODIFY | scripts/wire-grok-hooks.mjs | Grok matcher wiring |
-| T03 | MODIFY | test-framework/evals/tier-1/validate-codex-execution-integrity.sh;test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh | Alias, bootstrap, receipt, isolation, and matcher proof |
-| T04 | CREATE/MODIFY | docs/specs/bugfix/grok-shell-alias-brief.md;docs/specs/tech/grok-shell-alias.md;docs/plans/2026-08-30-grok-shell-alias/manifest.md;docs/plans/2026-08-30-grok-shell-alias/plan-contract.json;docs/plans/2026-08-30-grok-shell-alias/review-log.yaml;.svc/plan-manifest.json;.svc/impact-triad/WI-GROK-SHELL-ALIAS-01/task-4.json;.svc/lane-tasks-WI-GROK-SHELL-ALIAS-01.json;.svc/phase-override-WI-GROK-SHELL-ALIAS-01.json;.svc/authorization-events.jsonl;.svc/manifest-digest.json;.svc/pipeline-decisions.jsonl | Diagnosis, design, plan/review, graph, chain baton, impact receipt, review digest, and authority decision receipts |
+| T03 | CREATE/MODIFY | test-framework/evals/tier-1/validate-codex-execution-integrity.sh;test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh;docs/specs/contract-maps/grok-shell-alias.md;docs/specs/test-evidence/WI-GROK-SHELL-ALIAS-01/cross-system-probe.json;docs/specs/reviews/wi-grok-shell-alias-g5.md | Alias, bootstrap, receipt, isolation, matcher, cross-system proof, and G5 decision |
+| T04 | CREATE/MODIFY | docs/specs/bugfix/grok-shell-alias-brief.md;docs/specs/tech/grok-shell-alias.md;docs/plans/2026-08-30-grok-shell-alias/manifest.md;docs/plans/2026-08-30-grok-shell-alias/plan-contract.json;docs/plans/2026-08-30-grok-shell-alias/review-log.yaml;.svc/plan-manifest.json;.svc/lane-tasks-WI-GROK-SHELL-ALIAS-01.json;.svc/phase-override-WI-GROK-SHELL-ALIAS-01.json;.svc/authorization-events.jsonl;.svc/manifest-digest.json;.svc/pipeline-decisions.jsonl | Diagnosis, design, plan/review, graph, chain baton, review digest, and authority decision receipts |
 
 Changeset Blueprint is intentionally omitted because execution mode is `inline` and the same orchestrator holds the diagnosis and technical design context.
 
@@ -96,7 +96,7 @@ Untouched environments (walked the taxonomy, found nothing): 4, 5, 6, 7, 8, 9, 1
 
 Run focused syntax/fixture proof first, then existing Codex integrity/operation-scope regressions. Do not install during execute-changeset. After review, audit, and landing, run setup from the durable landed source, validate installed bytes/TOML, and launch the installed hook against the HoursHub bootstrap payload. Compare the entire HoursHub Git status before and after; this is stronger than a video-path-only filter.
 
-## Execute-changeset Command Sequence
+## Execution Command Sequence
 
 ```bash
 for file in hooks/lib/shell-tools.mjs hooks/codex/svc-codex-skill-load-enforcer.mjs hooks/lib/operation-scope.mjs hooks/codex/lib/codex-hook-context.mjs hooks/lib/pretool-decision-engine.mjs hooks/svc-workflow-guard.mjs hooks/svc-loop-guard.mjs hooks/svc-worktree-isolation-guard.mjs scripts/wire-grok-hooks.mjs; do node --check "$file"; done  # expected 0

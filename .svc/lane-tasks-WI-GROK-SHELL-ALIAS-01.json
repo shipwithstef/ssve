@@ -407,7 +407,7 @@
     {
       "id": 5,
       "subject": "review-gate: delivery graph required step",
-      "status": "in_progress",
+      "status": "completed",
       "blocked_by": [
         4
       ],
@@ -417,18 +417,86 @@
       "skill_receipt": {
         "skill": "review-gate",
         "loaded_at": "2026-08-30T13:41:30.769Z",
-        "loaded_via": "manual"
-      }
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-GateContextChecklistConcernScan",
+            "ts": "2026-08-30T13:46:14.178Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/reviews/wi-grok-shell-alias-g5.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SelfReviewFindings",
+            "ts": "2026-08-30T13:46:14.324Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/reviews/wi-grok-shell-alias-g5.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-SelfJudgment",
+            "ts": "2026-08-30T13:46:14.485Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/reviews/wi-grok-shell-alias-g5.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-CrossReviewConvergence",
+            "ts": "2026-08-30T13:46:14.635Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/reviews/wi-grok-shell-alias-g5.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-GateDecisionBacklog",
+            "ts": "2026-08-30T13:46:14.780Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/reviews/wi-grok-shell-alias-g5.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-08-30T13:46:14.921Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/reviews/wi-grok-shell-alias-g5.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-30T13:46:15.108Z"
     },
     {
       "id": 6,
       "subject": "review-exec: delivery graph required step",
-      "status": "pending",
+      "status": "in_progress",
       "blocked_by": [
         5
       ],
       "metadata": {
         "skill": "review-exec"
+      },
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-08-30T13:46:15.459Z",
+        "loaded_via": "manual"
       }
     },
     {
