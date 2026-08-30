@@ -17,8 +17,8 @@ import { authorizeDelegatedMutation, readDelegation } from "./lib/delegation-aut
 import { readController, repositoryId } from "./lib/authority-store.mjs";
 import { parseBootstrapCommand } from "./codex/lib/bootstrap-command.mjs";
 import { readOwnerLease } from "./codex/lib/owner-lease.mjs";
+import { isShellTool } from "./lib/shell-tools.mjs";
 
-const SHELL_TOOLS = new Set(["Bash", "Shell", "run_shell_command", "shell", "run_terminal_command"]);
 const WRITE_TOOLS = new Set([
   "apply_patch", "Edit", "Write", "WriteFile", "StrReplaceFile",
   "write_file", "replace", "edit",
@@ -79,7 +79,7 @@ function gitContextForTarget(target) {
 }
 
 function canonicalToolName(name) {
-  return SHELL_TOOLS.has(name) ? "Bash" : name;
+  return isShellTool(name) ? "Bash" : name;
 }
 
 function canonicalReadContext(call) {
@@ -90,7 +90,7 @@ function canonicalReadContext(call) {
 }
 
 function extraReadOnly(call) {
-  if (!SHELL_TOOLS.has(call.toolName)) return false;
+  if (!isShellTool(call.toolName)) return false;
   const command = extractCommand(call.toolInput).trim();
   if (!command || /[;&|`$<>\n'"\\]/.test(command)) return false;
   const tokens = command.split(/\s+/).filter(Boolean);
@@ -105,7 +105,7 @@ function patchPaths(text) {
 }
 
 function shellMutationPaths(call) {
-  if (!SHELL_TOOLS.has(call.toolName)) return [];
+  if (!isShellTool(call.toolName)) return [];
   const command = extractCommand(call.toolInput).trim();
   if (!command || /[;&|$<>\n'"\\]/.test(command) || command.includes(String.fromCharCode(96))) return [];
   const tokens = command.split(/\s+/).filter(Boolean);
@@ -243,7 +243,7 @@ export function classifyMutation(call, env = process.env, now = Date.now()) {
     defaultRoot: operation.default_worktree_root,
     repoRoots: operation.worktree_roots,
   } : null;
-  const command = SHELL_TOOLS.has(normalized.toolName) ? extractCommand(normalized.toolInput).trim() : "";
+  const command = isShellTool(normalized.toolName) ? extractCommand(normalized.toolInput).trim() : "";
   if (parseBootstrapCommand(command) && operationGit?.current === operationGit?.defaultRoot) {
     return { classification: "bootstrap-isolation", allow: true, operation_scope: scope, ...operationGit };
   }
@@ -289,7 +289,7 @@ export function classifyMutation(call, env = process.env, now = Date.now()) {
     return { classification: "external-temp-mutation", allow: true, targets, operation_scope: scope, ...(operationGit || cwdGit || {}) };
   }
 
-  const knownWrite = WRITE_TOOLS.has(normalized.toolName) || SHELL_TOOLS.has(normalized.toolName);
+  const knownWrite = WRITE_TOOLS.has(normalized.toolName) || isShellTool(normalized.toolName);
   const classification = knownWrite ? "repo-mutation" : "ambiguous-write";
   if (operationGit && operationGit.current === operationGit.defaultRoot) {
     if (validOverride(normalized, env, now)) {

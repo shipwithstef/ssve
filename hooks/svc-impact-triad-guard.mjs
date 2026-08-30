@@ -7,6 +7,7 @@ import { findSvcDir, resolveWI } from "./lib/resolve-wi.mjs";
 import { classifyFromGit } from "../scripts/classify-change-risk.mjs";
 import { WI_ID_RE } from "./lib/wi-id.mjs";
 import { resolveOperationScope } from "./lib/operation-scope.mjs";
+import { isShellTool } from "./lib/shell-tools.mjs";
 
 function hookAllow() { process.stdout.write("{}\n"); }
 function hookDeny(reason) {
@@ -49,7 +50,7 @@ function hookBoundary(payload) {
   const tool = String(payload.tool_name || payload.toolName || "");
   const input = payload.tool_input || payload.toolInput || {};
   if (/TaskUpdate/i.test(tool)) return String(input.status || "").toLowerCase() === "completed";
-  if (/Bash|Shell|exec_command/i.test(tool)) {
+  if (isShellTool(tool) || tool === "exec_command") {
     const command = String(input.command || input.cmd || "");
     return /(^|[;&|(\n]\s*)git\b(?:\s+(?!commit(?:\s|$))[^\s;&|()]+)*\s+commit(?:\s|$)/.test(command);
   }

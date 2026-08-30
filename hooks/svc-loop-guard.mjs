@@ -37,6 +37,7 @@ const {
 } = await import(path.join(__dirname, "lib", "hook-decision.mjs"));
 const { resolveSvcStateDir } = await import(path.join(__dirname, "lib", "svc-state-dir.mjs"));
 const { resolveOperationScope } = await import(path.join(__dirname, "lib", "operation-scope.mjs"));
+const { isShellTool } = await import(path.join(__dirname, "lib", "shell-tools.mjs"));
 
 // -------------------------------------------------------------------
 // Config
@@ -146,7 +147,7 @@ async function checkNoProgress(state) {
   const recent = state.history.slice(-NO_PROGRESS_WINDOW);
   const meaningful = recent.filter(h => {
     const t = h.tool;
-    return t === "Bash" || t === "Edit" || t === "Write" || t === "StrReplaceFile";
+    return isShellTool(t) || t === "Edit" || t === "Write" || t === "StrReplaceFile";
   });
   if (meaningful.length < NO_PROGRESS_WINDOW) return { stuck: false };
 
@@ -270,7 +271,7 @@ async function main() {
   // --- No-progress (every 10th meaningful call) ---
   const meaningfulCount = state.history.filter(h => {
     const t = h.tool;
-    return t === "Bash" || t === "Edit" || t === "Write" || t === "StrReplaceFile";
+    return isShellTool(t) || t === "Edit" || t === "Write" || t === "StrReplaceFile";
   }).length;
   if (meaningfulCount % NO_PROGRESS_WINDOW === 0) {
     const noProgress = await checkNoProgress(state);

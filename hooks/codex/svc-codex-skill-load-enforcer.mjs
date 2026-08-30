@@ -11,6 +11,7 @@ import { WI_ID_RE } from "../lib/wi-id.mjs";
 import { validateLiteralBranchName } from "../lib/literal-branch.mjs";
 import { resolveWI } from "../lib/resolve-wi.mjs";
 import { inspectBootstrapHandoff } from "./lib/session-handoff.mjs";
+import { isShellTool } from "../lib/shell-tools.mjs";
 
 function allow() { process.stdout.write("{}\n"); }
 // WI-496: the running enforcer's OWN sibling copy of the worktree-ensure script --
@@ -137,7 +138,7 @@ function deny(reason, active, ctx) {
 }
 
 function isExactSkillLoad(payload, active, ctx) {
-  if (toolName(payload) !== "Bash" || !active?.ok) return false;
+  if (!isShellTool(toolName(payload)) || !active?.ok) return false;
   const command = mutationPayload(payload).trim();
   if (!command || /[;&|`$<>\n'"\\]/.test(command)) return false;
   const tokens = command.split(/\s+/);
@@ -175,7 +176,7 @@ function firstRunnablePendingTask(graph) {
 // equal the current turn. When a task IS in_progress the stricter isExactSkillLoad
 // governs instead.
 function isSkillLoaderShape(payload, ctx, env = process.env) {
-  if (toolName(payload) !== "Bash") return false;
+  if (!isShellTool(toolName(payload))) return false;
   const command = mutationPayload(payload).trim();
   if (!command || /[;&|`$<>\n'"\\]/.test(command)) return false;
   const tokens = command.split(/\s+/);
@@ -248,7 +249,7 @@ function isBootstrapShape(payload, ctx, env = process.env) {
   try { return bootstrapShapeInner(payload, ctx, env); } catch { return false; }
 }
 function bootstrapShapeInner(payload, ctx, env) {
-  if (toolName(payload) !== "Bash") return false;
+  if (!isShellTool(toolName(payload))) return false;
   // F-001: a format-valid, non-empty session identity is a precondition. Codex session
   // ids are non-trivial tokens; require the same minimum the receipt path enforces.
   if (!ctx.session_id || String(ctx.session_id).length < 8) return false;
@@ -446,6 +447,19 @@ if (active.ok) {
   deny(`governed mutation denied without an owned in_progress task (${active.diagnostic || "no active task"})`, active, ctx);
   process.exit(0);
 }
+// Grok reuses this authority enforcer but does not execute Codex's per-turn
+// skill-load protocol. Once operation scope and one owned in-progress task have
+// both passed, a non-loader Grok shell command may continue without a Codex
+// receipt. Loader-shaped commands stay on the exact loader/receipt path above.
+const shellName = toolName(payload);
+const shellCommand = isShellTool(shellName) ? mutationPayload(payload).trim() : "";
+// Substring detection is deliberately conservative: malformed/compound commands
+// that mention the loader must never become eligible merely because the strict
+// lexer rejects their shape.
+const loaderShaped = shellCommand.includes("codex-load-skill.mjs");
+const grokShell = isShellTool(shellName) &&
+  (shellName === "run_terminal_command" || String(process.env.SVC_HOST || "").toLowerCase() === "grok");
+if (grokShell && !loaderShaped) { allow(); process.exit(0); }
 if (!ctx.session_id || !ctx.session_dir) { deny("missing Codex session identity for governed mutation", active, ctx); process.exit(0); }
 const receipt = readJson(skillReceiptPath(ctx));
 if (!receipt) { deny("missing or insecure Codex skill-load receipt", active, ctx); process.exit(0); }

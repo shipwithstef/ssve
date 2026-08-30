@@ -1,0 +1,94 @@
+review_log:
+  plan: docs/plans/2026-08-30-grok-shell-alias/manifest.md
+  wi: WI-GROK-SHELL-ALIAS-01
+  round_1:
+    reviewer: grok
+    reviewer_family: xai
+    model: grok-4.6
+    effort: high
+    rubric_score: 4
+    verdict: fail
+    receipt: .svc/external-review-artifacts/plan/9877f904fee63201b1a6b7d4130c78092cdf411f2979f847278f9b4216b24063/20260830T125948Z-211456/receipt.json
+    responses:
+      - finding_id: F-001
+        decision: ACCEPT
+        action: Added the exact HoursHub checkout, installed bootstrap argv, installed-byte/config checks, hook replay, expected exit codes, and before/after video-path status proof to the execution sequence.
+      - finding_id: F-002
+        decision: ACCEPT
+        action: Removed the stale new-validator claim and synchronized the manifest, brief, plan contract, and lane graph on the two existing modified validators.
+      - finding_id: F-003
+        decision: ACCEPT
+        action: Added a separate worktree-isolation classification assertion for the same Grok ffmpeg shape after proving receipt bypass.
+      - finding_id: F-004
+        decision: REJECT
+        justification: The owner supplied live evidence that Grok already invokes this enforcer and explicitly limited TOML changes to the bash guard and shell phase-receipt matchers. Adding another enforcer matcher would expand scope and risk duplicate enforcement.
+        counter_evidence: The exact live denial string is unique to hooks/codex/svc-codex-skill-load-enforcer.mjs; this WI changes its Grok alias behavior and validates the installed hook directly.
+      - finding_id: F-005
+        decision: ACCEPT
+        action: Added syntax checks for every changed executable, the operation-scope validator, and expected exit code 0 to every command.
+  round_2:
+    reviewer: grok
+    reviewer_family: xai
+    model: grok-4.6
+    effort: high
+    rubric_score: 4
+    verdict: fail
+    receipt: .svc/external-review-artifacts/plan/f5e1ff80fca89f50d7eca313f98c3e18c878cdff392dd473cf7a591296bb69d5/20260830T131634Z-271713/receipt.json
+    responses:
+      - finding_id: F-001
+        decision: ACCEPT-WITH-ALTERNATE
+        justification: Installing an unlanded worktree would violate the repository's durable-source rule.
+        action: Removed setup from execute; R5/R6 now run only after landing from the durable canonical landed source, followed by installed-byte comparisons.
+      - finding_id: F-002
+        decision: ACCEPT
+        action: Added copy-pasteable payload generation, installed-enforcer stdin replay, exact stdout assertion, and whole-HoursHub-status before/after comparison commands.
+      - finding_id: F-003
+        decision: ACCEPT
+        action: Repo-local R1-R4 close in task 3/4; installed R5/R6 close only in the post-land verify step.
+      - finding_id: F-004
+        decision: ACCEPT
+        action: Added comparisons for every installed runtime path and an installed shared-helper import/classification assertion.
+      - finding_id: F-005
+        decision: REJECT
+        justification: The existing setup contract is already transactional across the complete managed host surface and restores prior bytes on late wiring/verification failure; a second ad-hoc recursive host backup would duplicate and weaken that contract.
+        counter_evidence: AGENTS.md states setup is content-addressed and transactional across its managed host surface and restores prior bytes on late verification/wiring failure.
+      - finding_id: F-006
+        decision: REJECT
+        justification: The owner supplied the live Grok denial uniquely emitted by this enforcer and explicitly limited config edits to two existing matcher rows. A new enforcer row would exceed scope and risk duplicate enforcement.
+        counter_evidence: The live error text is unique to svc-codex-skill-load-enforcer.mjs; post-land proof invokes the installed hook with the exact native Grok envelope.
+      - finding_id: F-007
+        decision: ACCEPT
+        action: Locked Grok identity, conservative loader detection, exact payload fields, and every focused assertion in the manifest.
+      - finding_id: F-008
+        decision: ACCEPT
+        action: Added lane-compliance dispositions and evidence for completed, default-skipped, and pending skills.
+      - finding_id: F-009
+        decision: ACCEPT
+        action: Added the exact Bash-classifier scan and an explicit remainder classification.
+  round_3:
+    reviewer: grok
+    reviewer_family: xai
+    model: grok-4.6
+    effort: high
+    rubric_score: 6
+    verdict: fail
+    receipt: .svc/external-review-artifacts/plan/29ae58687af3db738d6afa1bb04c2995c38ebe2b969a2c5b0e19eeb67790e223/20260830T132736Z-307208/receipt.json
+    responses:
+      - finding_id: F-001
+        decision: ACCEPT
+        action: Split execute and verify-promotion into separate fenced command sequences with an explicit landed-SHA prerequisite.
+      - finding_id: F-002
+        decision: ACCEPT
+        action: Added canonical-root equality, zero owned-graph proof, and a same-envelope non-bootstrap denial control before the bootstrap allow assertion.
+      - finding_id: F-003
+        decision: ACCEPT
+        action: Corrected the mechanical checker invocation from node to bash.
+      - finding_id: F-004
+        decision: REJECT
+        justification: The owner explicitly required the receipt skip when host is Grok OR the tool is run_terminal_command. Replacing OR with host-only gating would violate the requested host-alias compatibility contract.
+        counter_evidence: The owner request states “If host is grok (or tool is run_terminal_command) ... skip the receipt gate.” Codex Bash and Shell negative fixtures remain receipt-gated.
+      - finding_id: F-005
+        decision: REJECT
+        justification: Setup success followed by a proof failure is a blocked verification state, not authorization to mutate Git history or repoint the durable install at a temporary pre-change worktree. Automatic rollback after setup success would exceed owner authority and could create dangling install ancestry.
+        counter_evidence: Setup already restores all managed bytes for failures within its transaction; later proof failure is reported without claiming success and requires a separate owner-authorized corrective operation.
+  terminal_state: REVISED_AND_REVIEWED_AT_ROUND_CAP

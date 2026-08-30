@@ -18,6 +18,7 @@ mkdir -p hooks/lib hooks/codex/lib .svc docs/specs/features docs/specs/decisions
 cp "$REPO_ROOT/hooks/lib/hook-payload.mjs" hooks/lib/
 cp "$REPO_ROOT/hooks/lib/operation-scope.mjs" hooks/lib/
 cp "$REPO_ROOT/hooks/lib/bash-mutation-targets.mjs" hooks/lib/
+cp "$REPO_ROOT/hooks/lib/shell-tools.mjs" hooks/lib/
 cp "$REPO_ROOT/hooks/codex/lib/argv-lex.mjs" hooks/codex/lib/
 cp "$HOOK" hooks/
 
@@ -76,6 +77,14 @@ EXIT=$(invoke "docs/specs/capability-plan.md")
 printf '%s\n' '{"timestamp":"not-a-time","skill":"write-spec"}' > .svc/pipeline-decisions.jsonl
 EXIT=$(invoke "docs/specs/features/malformed-time.md")
 [ "$EXIT" = "2" ] && pass "T9 BLOCK: malformed timestamp cannot satisfy freshness" || fail "T9 expected 2, got $EXIT"
+
+# Grok's native shell alias must take the same protected-output path as Bash.
+GROK_PAYLOAD="{\"tool_name\":\"run_terminal_command\",\"tool_input\":{\"command\":\"touch docs/specs/features/grok.md\"},\"cwd\":\"$TMP\",\"host\":\"grok\"}"
+set +e
+echo "$GROK_PAYLOAD" | node hooks/svc-skill-artifact-authenticity.mjs >/dev/null 2>&1
+EXIT=$?
+set -e
+[ "$EXIT" = "2" ] && pass "T10 BLOCK: Grok shell write needs skill receipt" || fail "T10 expected 2, got $EXIT"
 
 echo ""
 echo "  $PASS passed, $FAIL failed"

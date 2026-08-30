@@ -60,6 +60,14 @@ expect "explicit turn id remains unchanged and absent Grok turn falls back to se
   assert.equal(turnId({}, {CODEX_THREAD_ID:"sid-env"}),"session:sid-env");
   assert.equal(turnId({}, {}),"");
 '
+expect "all supported shell aliases share one canonical classifier" node --input-type=module -e '
+  import assert from "node:assert/strict";
+  import { SHELL_TOOLS, isShellTool } from "./hooks/lib/shell-tools.mjs";
+  const expected = ["Bash", "Shell", "run_shell_command", "shell", "run_terminal_command"];
+  assert.deepEqual([...SHELL_TOOLS], expected);
+  for (const name of expected) assert.equal(isShellTool(name), true);
+  assert.equal(isShellTool("terminal"), false);
+'
 
 AUTH_PAYLOAD="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],turn_id:process.argv[2],cwd:process.argv[3],prompt:"continue WI-485 and do not store SECRET_VALUE"}))' "$SESSION" "$TURN" "$TEST_CWD")"
 expect "prompt authority records exact session/turn" bash -c "printf '%s' '$AUTH_PAYLOAD' | SVC_CODEX_RUNTIME_DIR='$RUNTIME' node '$ROOT/hooks/codex/svc-codex-prompt-authority.mjs' >/dev/null"
@@ -134,6 +142,47 @@ done
 
 READ="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],turn_id:process.argv[2],cwd:process.argv[3],tool_name:"Bash",tool_input:{command:"git status --short"}}))' "$SESSION" "$TURN" "$TEST_CWD")"
 expect "read-only Bash allowed without receipt" bash -c "test \"\$(printf '%s' '$READ' | SVC_CODEX_TASK_GRAPH='$GRAPH' SVC_CODEX_RUNTIME_DIR='$RUNTIME' node '$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs')\" = '{}'"
+for shell_tool in Bash Shell run_shell_command shell run_terminal_command; do
+  ALIAS_READ="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],turn_id:process.argv[2],cwd:process.argv[3],tool_name:process.argv[4],tool_input:{command:"git status --short"}}))' "$SESSION" "$TURN" "$TEST_CWD" "$shell_tool")"
+  expect "read-only $shell_tool is classified as Bash-shaped" bash -c "test \"\$(printf '%s' '$ALIAS_READ' | SVC_CODEX_TASK_GRAPH='$GRAPH' SVC_CODEX_RUNTIME_DIR='$RUNTIME' node '$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs')\" = '{}'"
+done
+
+GROK_FFMPEG="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],turn_id:process.argv[2],cwd:process.argv[3],tool_name:"run_terminal_command",tool_input:{command:"ffmpeg -i input.mp4 -c copy output.mp4"}}))' "$SESSION" "$TURN" "$TEST_CWD")"
+expect "owned Grok run_terminal_command skips the Codex skill receipt for ffmpeg" bash -c "test \"\$(printf '%s' '$GROK_FFMPEG' | SVC_CODEX_TASK_GRAPH='$GRAPH' SVC_CODEX_RUNTIME_DIR='$RUNTIME' node '$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs')\" = '{}'"
+expect "Grok ffmpeg remains subject to worktree isolation after receipt bypass" node --input-type=module - "$ROOT" "$TEST_CWD" "$SESSION" <<'NODE'
+  import assert from "node:assert/strict";
+  import path from "node:path";
+  import { pathToFileURL } from "node:url";
+  const [root, cwd, sessionId] = process.argv.slice(2);
+  const { classifyMutation } = await import(pathToFileURL(path.join(root, "hooks/svc-worktree-isolation-guard.mjs")));
+  const raw = {
+    host: "grok",
+    session_id: sessionId,
+    cwd,
+    tool_name: "run_terminal_command",
+    tool_input: { command: "ffmpeg -i input.mp4 -c copy output.mp4" },
+  };
+  const decision = classifyMutation({
+    toolName: raw.tool_name,
+    toolInput: raw.tool_input,
+    sessionId,
+    cwd,
+    raw,
+  }, { ...process.env, SVC_HOST: "grok", PWD: cwd });
+  assert.equal(decision.allow, false);
+  assert.match(decision.reason, /default checkout|authoritative session\/WI binding/);
+NODE
+GROK_SHELL_MUTATION="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],turn_id:process.argv[2],cwd:process.argv[3],tool_name:"Shell",tool_input:{command:"touch grok-output.mp4"}}))' "$SESSION" "$TURN" "$TEST_CWD")"
+expect "Grok host identity skips the Codex receipt for the Shell alias" bash -c "test \"\$(printf '%s' '$GROK_SHELL_MUTATION' | SVC_HOST=grok SVC_CODEX_TASK_GRAPH='$GRAPH' SVC_CODEX_RUNTIME_DIR='$RUNTIME' node '$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs')\" = '{}'"
+CODEX_SHELL_MUTATION="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],turn_id:process.argv[2],cwd:process.argv[3],tool_name:"Shell",tool_input:{command:"touch output.mp4"}}))' "$SESSION" "$TURN" "$TEST_CWD")"
+CODEX_SHELL_OUT="$(printf '%s' "$CODEX_SHELL_MUTATION" | SVC_CODEX_TASK_GRAPH="$GRAPH" SVC_CODEX_RUNTIME_DIR="$RUNTIME" node "$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs")"
+expect "non-Grok Shell mutation still requires the Codex skill receipt" node -e 'const j=JSON.parse(process.argv[1]);process.exit(j.hookSpecificOutput?.permissionDecision==="deny"?0:1)' "$CODEX_SHELL_OUT"
+GROK_LOADER="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],turn_id:process.argv[2],cwd:process.argv[3],tool_name:"run_terminal_command",tool_input:{command:process.argv[4]}}))' "$SESSION" "$TURN" "$TEST_CWD" "node $ROOT/scripts/codex-load-skill.mjs --graph /wrong --task 1 --skill execute-changeset")"
+GROK_LOADER_OUT="$(printf '%s' "$GROK_LOADER" | SVC_CODEX_TASK_GRAPH="$GRAPH" SVC_CODEX_RUNTIME_DIR="$RUNTIME" node "$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs")"
+expect "Grok loader-shaped command never takes the receipt bypass" node -e 'const j=JSON.parse(process.argv[1]);process.exit(j.hookSpecificOutput?.permissionDecision==="deny"?0:1)' "$GROK_LOADER_OUT"
+GROK_COMPOUND_LOADER="$(node -e 'const j=JSON.parse(process.argv[1]);j.tool_input.command="echo before && node scripts/codex-load-skill.mjs --graph /wrong --task 1 --skill execute-changeset";process.stdout.write(JSON.stringify(j))' "$GROK_LOADER")"
+GROK_COMPOUND_LOADER_OUT="$(printf '%s' "$GROK_COMPOUND_LOADER" | SVC_CODEX_TASK_GRAPH="$GRAPH" SVC_CODEX_RUNTIME_DIR="$RUNTIME" node "$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs")"
+expect "compound Grok command mentioning the loader never takes the receipt bypass" node -e 'const j=JSON.parse(process.argv[1]);process.exit(j.hookSpecificOutput?.permissionDecision==="deny"?0:1)' "$GROK_COMPOUND_LOADER_OUT"
 
 for command in \
   "find . -exec rm {} +" \
@@ -465,6 +514,9 @@ wi494_is_deny() { node -e 'const j=JSON.parse(process.argv[1]);process.exit(j.ho
 # Step 2: drive the hook, cwd=$WI494_REPO, BEFORE the command is executed.
 WI494_STEP2_OUT="$(wi494_drive "$(wi494_payload "$WI494_SESSION" "$WI494_REPO" "$WI494_BOOT_CMD")" "$WI494_SESSION")"
 expect "CED-01 zero-state bootstrap command allowed (install-absolute)" wi494_is_allow "$WI494_STEP2_OUT"
+WI494_GROK_STEP2_PAYLOAD="$(wi494_payload "$WI494_SESSION" "$WI494_REPO" "$WI494_BOOT_CMD" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const p=JSON.parse(s);p.tool_name="run_terminal_command";process.stdout.write(JSON.stringify(p))})')"
+WI494_GROK_STEP2_OUT="$(wi494_drive "$WI494_GROK_STEP2_PAYLOAD" "$WI494_SESSION")"
+expect "Grok run_terminal_command reaches the exact zero-state bootstrap hatch" wi494_is_allow "$WI494_GROK_STEP2_OUT"
 # WI-498 (F-001): the relative spelling from a clone (repo_root != install) is DENIED.
 WI494_STEP2_REL_OUT="$(wi494_drive "$(wi494_payload "$WI494_SESSION" "$WI494_REPO" "$WI494_BOOT_CMD_REL")" "$WI494_SESSION")"
 expect "WI-498: relative bootstrap from a non-install repo is DENIED (F-001)" wi494_is_deny "$WI494_STEP2_REL_OUT"
@@ -747,6 +799,7 @@ cp "$ROOT/hooks/codex/lib/codex-hook-context.mjs" "$WI494_MUT/boot/hooks/codex/l
 cp "$ROOT/hooks/codex/lib/session-handoff.mjs" "$WI494_MUT/boot/hooks/codex/lib/session-handoff.mjs"
 cp "$ROOT/hooks/lib/resolve-wi.mjs" "$WI494_MUT/boot/hooks/lib/resolve-wi.mjs"
 cp "$ROOT/hooks/lib/operation-scope.mjs" "$WI494_MUT/boot/hooks/lib/operation-scope.mjs"
+cp "$ROOT/hooks/lib/shell-tools.mjs" "$WI494_MUT/boot/hooks/lib/shell-tools.mjs"
 cp "$ROOT/hooks/lib/validate-task-graph-shape.mjs" "$WI494_MUT/boot/hooks/lib/validate-task-graph-shape.mjs"
 cp "$ROOT/hooks/lib/wi-claim.mjs" "$WI494_MUT/boot/hooks/lib/wi-claim.mjs"
 cp "$ROOT/hooks/lib/svc-runtime-root.mjs" "$WI494_MUT/boot/hooks/lib/svc-runtime-root.mjs"
@@ -810,6 +863,7 @@ cp "$ROOT/hooks/codex/lib/session-handoff.mjs" "$WI494_MUT/marker/hooks/codex/li
 cp "$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs" "$WI494_MUT/marker/hooks/codex/svc-codex-skill-load-enforcer.mjs"
 cp "$ROOT/hooks/lib/resolve-wi.mjs" "$WI494_MUT/marker/hooks/lib/resolve-wi.mjs"
 cp "$ROOT/hooks/lib/operation-scope.mjs" "$WI494_MUT/marker/hooks/lib/operation-scope.mjs"
+cp "$ROOT/hooks/lib/shell-tools.mjs" "$WI494_MUT/marker/hooks/lib/shell-tools.mjs"
 cp "$ROOT/hooks/lib/validate-task-graph-shape.mjs" "$WI494_MUT/marker/hooks/lib/validate-task-graph-shape.mjs"
 cp "$ROOT/hooks/lib/wi-claim.mjs" "$WI494_MUT/marker/hooks/lib/wi-claim.mjs"
 # WI-562: wi-claim/authority-store import the shared liveness lib

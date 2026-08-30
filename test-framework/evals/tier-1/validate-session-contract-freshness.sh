@@ -22,6 +22,7 @@ HOOK="$REPO_ROOT/hooks/svc-session-contract-freshness.mjs"
 
 MAX_AGE_HOURS=4
 MAX_AGE_SEC=$((MAX_AGE_HOURS * 3600))
+LIVE_FAIL=0
 
 echo "=== Tier 1: Session Contract Freshness ==="
 
@@ -79,7 +80,7 @@ elif [[ $AGE -gt $MAX_AGE_SEC ]]; then
   AGE_HOURS=$((AGE / 3600))
   echo "  FAIL — session contract is ${AGE_HOURS}h old (max ${MAX_AGE_HOURS}h)"
   echo "    Last entry: $LAST_LINE"
-  exit 1
+  LIVE_FAIL=1
 else
   AGE_HOURS=$((AGE / 3600))
   echo "  PASS — session contract is ${AGE_HOURS}h old (fresh)"
@@ -114,6 +115,8 @@ mkdir -p "$T/.svc"
 printf '%s\n' '{"ts":"2026-01-01T00:00:00Z","wi":"old"}' > "$T/.svc/session-contract.jsonl"
 probe "stale contract in svc repo still blocks (negative fixture)" \
   "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$T/file.txt\",\"content\":\"x\"},\"cwd\":\"$T\"}" 2
+probe "stale contract blocks Grok shell mutation" \
+  "{\"tool_name\":\"run_terminal_command\",\"tool_input\":{\"command\":\"touch $T/grok.txt\"},\"cwd\":\"$T\",\"host\":\"grok\"}" 2
 
 # git repo WITHOUT .svc dir → not svc-governed → pass
 T2="$(mktemp -d)"
@@ -134,8 +137,9 @@ fi
 git -C "$T" worktree remove --force "$T-wt" >/dev/null 2>&1 || true
 rm -rf "$T" "$T-wt" 2>/dev/null || true
 
-if [[ $FIX_FAIL -ne 0 ]]; then
-  echo "  FAIL — A3 scope-behavior fixtures failed"
+if [[ $FIX_FAIL -ne 0 || $LIVE_FAIL -ne 0 ]]; then
+  [[ $FIX_FAIL -ne 0 ]] && echo "  FAIL — A3 scope-behavior fixtures failed"
+  [[ $LIVE_FAIL -ne 0 ]] && echo "  FAIL — live session contract freshness check failed"
   exit 1
 fi
 exit 0

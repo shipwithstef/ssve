@@ -3,10 +3,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { isShellTool } from "./shell-tools.mjs";
 
 export const OPERATION_SCOPE_SCHEMA_VERSION = 1;
 
-const SHELL_TOOLS = new Set(["Bash", "Shell", "run_shell_command", "shell"]);
 const PATCH_TOOLS = new Set(["apply_patch", "ApplyPatch"]);
 const TRUSTED_WORKDIR_FIELDS = {
   // Codex exposes the effective tool directory through several aliases across
@@ -339,7 +339,7 @@ export function resolveOperationScope(payload, { host = "", env = process.env } 
     ...(PATCH_TOOLS.has(name) || typeof input.patch === "string" || /^\*\*\* Begin Patch/m.test(shellCommand(input))
       ? parsePatchTargets(input.patch || shellCommand(input)) : []),
   ];
-  const commandEvidence = SHELL_TOOLS.has(name) ? commandDirectoryEvidence(shellCommand(input), sessionCwd) : [];
+  const commandEvidence = isShellTool(name) ? commandDirectoryEvidence(shellCommand(input), sessionCwd) : [];
   for (const item of commandEvidence) {
     if (item.error) contradictions.push({ code: "invalid-operation-cwd", source: item.source, requested: item.requested, message: item.error });
   }
@@ -398,7 +398,7 @@ export function resolveOperationScope(payload, { host = "", env = process.env } 
   else if (!targets.length && workdirRepository) operationRepository = workdirRepository;
   else if (!targets.length && !explicit.present && sessionRepository) operationRepository = sessionRepository;
 
-  const shellBoundary = SHELL_TOOLS.has(name)
+  const shellBoundary = isShellTool(name)
     ? analyzeShellBoundary(shellCommand(input), {
       authorityRoot: operationRepository?.worktree_root || effectiveWorkdir || sessionCwd,
       initialDirectory: explicit.canonical || sessionCwd,

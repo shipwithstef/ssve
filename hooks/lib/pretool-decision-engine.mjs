@@ -17,6 +17,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import { lexSimpleCommand } from "../codex/lib/argv-lex.mjs";
 import { encodeSimpleCommand, assertArgvRoundTrip } from "../codex/lib/argv-encode.mjs";
+import { isShellTool } from "./shell-tools.mjs";
 import {
   isReadOnlyTool, toolName, splitUnquoted, stripDevNullRedirections,
   hookContext, authorityPath,
@@ -188,7 +189,7 @@ export function evaluatePreToolObservation(payload, env = process.env) {
     renewal: { status: "not_applicable" },
     policy_findings: [],
   };
-  if (name !== "Bash") {
+  if (!isShellTool(name)) {
     return { ...base, execution_input: null, operation: { repo_id: null, worktree_root: null, targets: [] }, latency_ms: Date.now() - started };
   }
   const { input, key, command } = bashCommandOf(payload);

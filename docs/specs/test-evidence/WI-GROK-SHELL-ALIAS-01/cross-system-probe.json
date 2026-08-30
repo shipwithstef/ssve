@@ -1,0 +1,52 @@
+{
+  "probes": [
+    {
+      "id": "GROK-BOOTSTRAP-ALIAS",
+      "hypothesis": "Routing the Grok native shell alias through the shared Bash-shaped classifier makes the exact zero-state bootstrap use the bootstrap hatch instead of the no-active-task denial.",
+      "change_reason": "Route run_terminal_command through the same bootstrap predicate instead of a Bash-only path.",
+      "requires_old_new_path_proof": true,
+      "same_input": "PreToolUse JSON with a stable Grok session, repository-root cwd, tool_name run_terminal_command, and the canonical installed svc-ensure-worktree command for WI-VIDEO-AUDIO-REMEDIATION-02.",
+      "confirmation_check": {
+        "predicate": "Patched zero-state run_terminal_command bootstrap fixture returns exactly {}.",
+        "result": "PASS"
+      },
+      "falsification_check": {
+        "predicate": "With the same zero-state Grok envelope, replacing the command with touch must-not-run returns a structured owned-in-progress-task denial.",
+        "result": "PASS"
+      },
+      "old_path": {
+        "command": "Pipe the exact HoursHub Grok payload to the pre-land installed svc-codex-skill-load-enforcer.mjs.",
+        "result": "failing-state",
+        "observed": "governed mutation denied without an owned in_progress task (no active task)"
+      },
+      "new_path": {
+        "command": "Run the WI-494 Grok run_terminal_command zero-state fixture in validate-codex-execution-integrity.sh.",
+        "result": "PASS",
+        "observed": "Grok run_terminal_command reaches the exact zero-state bootstrap hatch"
+      },
+      "verdict": "hypothesis-holds"
+    },
+    {
+      "id": "GROK-RECEIPT-ISOLATION",
+      "hypothesis": "An owned Grok non-loader bypasses only the Codex receipt while remaining subject to worktree isolation and WI ownership.",
+      "same_input": "Owned in-progress task plus a Grok ffmpeg non-loader envelope without a Codex skill-load receipt.",
+      "confirmation_check": {
+        "predicate": "Owned Grok ffmpeg envelope returns allow without a Codex skill-load receipt.",
+        "result": "PASS"
+      },
+      "falsification_check": {
+        "predicate": "The same ffmpeg shape remains denied by worktree isolation when the worktree binding is absent/default-checkout.",
+        "result": "PASS"
+      },
+      "old_path": {
+        "command": "Run the owned Grok ffmpeg envelope through the pre-change receipt boundary.",
+        "result": "failing-state"
+      },
+      "new_path": {
+        "command": "Run the owned Grok ffmpeg envelope through the patched receipt boundary and then the isolation classifier.",
+        "result": "PASS"
+      },
+      "verdict": "hypothesis-holds"
+    }
+  ]
+}

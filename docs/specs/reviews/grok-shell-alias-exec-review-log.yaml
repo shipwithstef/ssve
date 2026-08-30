@@ -1,0 +1,13 @@
+wi: WI-GROK-SHELL-ALIAS-01
+review_kind: exec
+rounds_run: 3
+self_review_passes: 1
+remaining_high: 1
+dispositioned_high: 1
+unresolved_critical: 0
+escalated: false
+bounded_exit:
+  disposition: reject-with-justification
+  residual_highs:
+    - "F-EXEC-002: rejected because Grok and Claude compatibility hook paths resolve to the same canonical installed tree; Grok-only setup converges both paths"
+terminal_state: PASS_WITH_ACKS_AT_ROUND_CAP

@@ -166,6 +166,8 @@ hook_allow="$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git stat
 rm -rf .svc/impact-triad
 hook_deny="$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git commit -m test"}}' | SVC_SESSION_ID="$SESSION" node "$GUARD")"
 printf '%s' "$hook_deny" | grep -q 'permissionDecision.*deny' && ok "commit command receives early deny" || bad "commit command receives early deny"
+hook_deny="$(printf '%s' '{"tool_name":"run_terminal_command","tool_input":{"command":"git commit -m test"},"host":"grok"}' | SVC_SESSION_ID="$SESSION" node "$GUARD")"
+printf '%s' "$hook_deny" | grep -q 'permissionDecision.*deny' && ok "Grok commit alias receives early deny" || bad "Grok commit alias receives early deny"
 hook_deny="$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git -c user.name=test commit --no-verify -m test"}}' | SVC_SESSION_ID="$SESSION" node "$GUARD")"
 printf '%s' "$hook_deny" | grep -q 'permissionDecision.*deny' && ok "git prefix options cannot bypass commit boundary" || bad "git prefix options cannot bypass commit boundary"
 write_receipt high anthropic behavioral pass
