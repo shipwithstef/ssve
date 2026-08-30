@@ -25,7 +25,7 @@ import { resolveExternalReviewer } from './review-topology-v2.mjs';
 import { candidateTreeIdentity, issueExternalReviewProvenance } from './lib/external-review-provenance.mjs';
 import { relocateTree } from './lib/review-evidence-store.mjs';
 
-const LAUNCHER_VERSION = '2.5.1';
+const LAUNCHER_VERSION = '2.5.2';
 export const EXTERNAL_REVIEW_LAUNCHER_VERSION = LAUNCHER_VERSION;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FINDINGS_SCHEMA = path.join(ROOT, 'schemas/external-review-findings.schema.json');
@@ -46,7 +46,7 @@ function reviewTransport(host) {
 const ELIGIBLE_FALLBACKS = new Set(['model_unavailable', 'model_entitlement', 'provider_overload']);
 const DEFAULT_TIMEOUT_SECONDS = 1200;
 const DEFAULT_REVIEW_BUDGET_USD = 50;
-const DEFAULT_GROK_MAX_TURNS = 40;
+const DEFAULT_GROK_MAX_TURNS = 100;
 const DEFAULT_LOCK_STALE_SECONDS = 2460;
 const DEFAULT_CACHE_TTL_DAYS = 30;
 const HEARTBEAT_MS = 30_000;
