@@ -251,6 +251,19 @@ until this check passes.
 > High-only persistence AT round 3 is a DISPOSITION event, not a re-review event —
 > you never reach round 4.
 
+**Schema-current receipt handoff (WI-566).** When the final immutable reviewer
+object remains raw `fail` after a compliant bounded exit, return every ordered
+launcher receipt/findings digest and the complete finding census to the calling
+review skill. The caller emits `pass-with-acks` with
+`reviewer_evidence.bounded_exit` per
+`schemas/receipts/bounded-exit.schema.json`. Never normalize the raw verdict or
+discard earlier round identities. This path is admissible only for zero
+Critical, at most three rounds, an unchanged candidate, and evidence-bound High
+dispositions. Terminal rubric failures additionally require an exact census
+mapped to dispositioned terminal finding IDs with hash-verified repository
+evidence; unread dependencies and failed certifications remain blocking.
+Otherwise the chain remains blocked.
+
 ## Single-Vendor Windows (§4g)
 
 When only one vendor family is reachable (quota, outage, cost), the reviewer

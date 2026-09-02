@@ -1826,7 +1826,13 @@ async function main() {
   }
 }
 
-if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
+const isMainModule = (() => {
+  if (!process.argv[1]) return false;
+  try { return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url)); }
+  catch { return false; }
+})();
+
+if (isMainModule) {
   main().catch(async (error) => {
     let receipt = null;
     try { receipt = emergencyReceipt ? await emergencyReceipt(error) : null; } catch {}

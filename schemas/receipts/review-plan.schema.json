@@ -26,6 +26,10 @@
       "type": "string",
       "pattern": "^[0-9a-f]{64}$"
     },
+    "reviewed_plan_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
     "self_review": {
       "type": "object",
       "required": [
@@ -170,6 +174,10 @@
           "items": {
             "$ref": "#/definitions/artifact"
           }
+        },
+        "bounded_exit": {
+          "type": "object",
+          "description": "Optional WI-566 adjudication, validated fail-closed against schemas/receipts/bounded-exit.schema.json when the terminal launcher round has a non-passing verdict."
         }
       }
     },

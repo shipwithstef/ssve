@@ -233,10 +233,23 @@ the mechanical gate and capture its output:
 node scripts/check-review-round-cap.mjs --log docs/specs/reviews/<name>-exec-review-log.yaml
 ```
 
-Exit 0 = bounded and every High dispositioned → finalize `pass`. Exit 3 =
+Exit 0 = bounded and every High dispositioned → finalize `pass`; when the
+terminal immutable launcher verdict remains raw `fail`, finalize the local
+receipt as `pass-with-acks` with the WI-566 adjudication described below. Exit 3 =
 unresolved Critical correctly escalated → verdict is `escalated`, the change does
 NOT promote. Exit 1 = a 4th round ran, an unresolved Critical lacks escalation,
 or a High is undispositioned → fix the disposition, never start another round.
+
+For a terminal raw `fail`, attach `reviewer_evidence.bounded_exit` matching
+`schemas/receipts/bounded-exit.schema.json`. It must bind the exact ordered
+launcher/findings digests, candidate SHA/tree/digest, derived cycle ID, review
+log and deterministic cap result, plus exactly one census entry per terminal
+finding. Every High requires hash-verified `.svc/` or `docs/` evidence. Never
+rewrite reviewer bytes. Every terminal rubric failure requires an exact census entry mapped to
+dispositioned terminal finding IDs, with justification and hash-verified
+repository evidence. Unread dependencies and failed certifications still block.
+Never rewrite reviewer bytes. A Critical, stale/mutated candidate, missing/duplicate
+finding, wrong digest, or fourth receipt remains inadmissible.
 
 ### P5 — Verdict and Receipt Finalize
 

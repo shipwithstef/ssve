@@ -268,6 +268,21 @@ The checker fails closed: a bare `bounded_exit` mention, prose escalation, or a
 same guard `review-exec` runs; it exists because the WI-486 plan looped 9 rounds
 on 6 persistent High / 0 Critical.
 
+**Receipt adjudication (WI-566).** If the terminal immutable launcher finding
+still says raw `fail`, do not alter it and do not run round 4. Emit receipt
+verdict `pass-with-acks` and attach `reviewer_evidence.bounded_exit` matching
+`schemas/receipts/bounded-exit.schema.json`. Bind the exact ordered launcher and
+findings digests, candidate SHA/tree/digest, derived cycle ID, review-log digest,
+round-cap result digest, and a complete terminal findings census. Every High
+needs non-empty justification plus hash-verified `.svc/` or `docs/` evidence.
+Every terminal rubric failure also needs one exact census entry mapped to
+dispositioned terminal finding IDs, with justification and hash-verified
+repository evidence. Unread dependencies and failed certifications still block.
+Any Critical, stale candidate, omitted/duplicate finding or rubric failure,
+wrong digest, or more
+than three launcher receipts fails closed. Existing raw `pass` and
+`pass-with-findings` evidence does not need this object.
+
 Git-tracked alongside the plan manifest. Audit trail.
 
 ## Self-Verify
