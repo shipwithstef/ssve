@@ -772,6 +772,7 @@ rm -rf "$SVC_FAKE_LOG" "$TMP/cache" "$TMP/runtime-copy"; mkdir -p "$SVC_FAKE_LOG
 cp "$LAUNCHER" "$TMP/runtime-copy/scripts/run-external-review.mjs"
 cp "$ROOT/scripts/review-topology-v2.mjs" "$TMP/runtime-copy/scripts/review-topology-v2.mjs"
 cp "$ROOT/scripts/resolve-dispatch.mjs" "$TMP/runtime-copy/scripts/resolve-dispatch.mjs"
+cp "$ROOT/scripts/state-lock.mjs" "$TMP/runtime-copy/scripts/state-lock.mjs"
 cp "$ROOT/schemas/dispatch-policy.schema.json" "$TMP/runtime-copy/schemas/dispatch-policy.schema.json"
 cp "$ROOT/scripts/lib/json-schema-validator.mjs" "$ROOT/scripts/lib/external-review-provenance.mjs" "$ROOT/scripts/lib/review-evidence-store.mjs" "$TMP/runtime-copy/scripts/lib/"
 cp "$ROOT/skills/research/scripts/dispatch-agy.mjs" "$TMP/runtime-copy/skills/research/scripts/dispatch-agy.mjs"

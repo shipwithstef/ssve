@@ -1,0 +1,8 @@
+{
+  "authority": "repository-owner",
+  "source": "owner directive: do what is needed to unblock and fully close WI-566",
+  "reason": "The authorized Cursor worker was blocked before mutation; the controller completed the reviewed proposal in the same bound worktree and now requires the canonical plan gate to repair lifecycle ordering before landing.",
+  "kind": "retro-plan-review",
+  "wi": "WI-566",
+  "timestamp": "2026-09-02T05:02:18.000Z"
+}

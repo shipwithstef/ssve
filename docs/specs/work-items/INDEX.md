@@ -1,5 +1,6 @@
 # Work Items Index
 
+- [WI-566](WI-566.md) — Hash-bound bounded-exit adjudication makes WI-491 three-round disposition receiptable without altering reviewer evidence or permitting Critical/fourth-round bypass (severity:high) — status:implementation-complete; review pending
 - [WI-556](WI-556.md) — Final-SHA mandatory-skill coverage with terminating receipts: one binary yes/no per final commit via content-addressed `skill-coverage` note index + atomic merge finalization (severity:high) — status:VERIFIED-L3 (PR #20 squash e0cf0257, G7 complete)
 - [WI-555](WI-555.md) — Consumer-local reviewed retroactive receipt recovery: post-WI-472 gaps resolve ledger/bundle/review from `repoRootForCache()`, WI-472 framework-package authority unchanged (severity:high) — status:in_progress
 - [WI-554](WI-554.md) — Centrally installed `check-chain-receipts` must verify schema-v3 reviewer evidence against the consumer/invocation repo root via `repoRootForCache()`, not `SCRIPT_DIR`'s framework parent (severity:critical) — status:VERIFIED-L3 (PR #16 `39e91c1b`, verify-promotion closeout)

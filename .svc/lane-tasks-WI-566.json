@@ -1,0 +1,644 @@
+{
+  "schema_version": 1,
+  "wi": "WI-566",
+  "lane": "framework",
+  "status": "in_progress",
+  "created": "2026-09-02T04:08:07.237Z",
+  "delivery_graph": {
+    "compiler_version": 1,
+    "user_intent": "Repair bounded review receipt parity, land and install it, then replay the immutable HoursHub plan-review cycle without a fourth review or reviewer-byte mutation.",
+    "repo_mode": "framework",
+    "change_type": "bugfix",
+    "lane": "framework",
+    "delivery_mode": "end_to_end",
+    "delivery_tier": {
+      "mode": "full",
+      "selected_by": "route-workflow",
+      "rationale": "The change modifies fail-closed review authority, schemas, host HMAC issuance, and promotion receipts.",
+      "decision_log_ref": ".svc/pipeline-decisions.jsonl",
+      "validation_policy": {
+        "mandatory_skills": [
+          "improve-framework",
+          "diagnose-bug",
+          "plan-changeset",
+          "review-plan",
+          "execute-changeset",
+          "review-gate",
+          "review-exec",
+          "audit-implementation",
+          "test-framework",
+          "land-changeset",
+          "verify-promotion"
+        ],
+        "skippable_skills": [
+          "write-spec",
+          "design-tech",
+          "explore-solutions",
+          "design-ux",
+          "design-ui",
+          "track-visuals",
+          "write-e2e",
+          "test-journeys"
+        ],
+        "blocked_behind_explicit_override": []
+      }
+    },
+    "risk_flags": [
+      "framework-hot-path",
+      "fail-closed-authority",
+      "host-state",
+      "receipt-schema"
+    ],
+    "planned_files": [
+      "docs/plans/2026-09-02-wi566-bounded-review-receipts/manifest.md"
+    ],
+    "platform_contracts": [
+      "schema-v3 review receipt",
+      "HMAC external-review issuance inventory",
+      "WI-491 three-round cap"
+    ],
+    "solution_confidence": {
+      "required": false,
+      "mode": "none",
+      "status": "not_required"
+    },
+    "evidence_families": {
+      "product": "n/a",
+      "acceptance_criteria": "required",
+      "journey": "n/a",
+      "visual": "n/a",
+      "runtime": "required",
+      "plan_review": "required",
+      "code_review": "required",
+      "security_review": "required",
+      "implementation_audit": "required",
+      "deploy": "n/a",
+      "promotion": "required",
+      "session_forensics": "required",
+      "feature_validation_closeout": "n/a",
+      "provider_fidelity": "n/a"
+    },
+    "required_skills": [
+      "improve-framework",
+      "diagnose-bug",
+      "plan-changeset",
+      "review-plan",
+      "execute-changeset",
+      "review-gate",
+      "review-exec",
+      "audit-implementation",
+      "test-framework",
+      "land-changeset",
+      "verify-promotion"
+    ],
+    "conditional_mandatory_skills": [
+      {
+        "skill": "audit-implementation",
+        "signal": "fail-closed-authority",
+        "reason": "Receipt authority and host HMAC state require full correctness/security audit."
+      },
+      {
+        "skill": "test-framework",
+        "signal": "framework-hot-path",
+        "reason": "Focused mutations plus full Tier-1 candidate/base comparison are mandatory."
+      }
+    ],
+    "optional_skills": [],
+    "skipped_skills": [
+      {
+        "skill": "write-spec",
+        "skip_condition_id": "retroactive-authoritative-wi",
+        "reason": "The accepted proposal and WI-566 carry the complete testable contract; a second feature-spec wrapper would duplicate authority.",
+        "evidence": "proposals/2026-09-02-framework-improvement-bounded-review-receipt-parity.md; docs/specs/work-items/WI-566.md; owner retro-plan authorization"
+      },
+      {
+        "skill": "design-tech",
+        "skip_condition_id": "retroactive-design-artifact",
+        "reason": "The blocked Cursor handoff left implementation ahead of graph normalization; the durable dual-identity design is recorded directly and is now adversarially reviewed.",
+        "evidence": "docs/specs/decisions/wi-566-bounded-review-receipt-parity.md; docs/specs/reviews/wi-566-retro-plan-override.json"
+      },
+      {
+        "skill": "explore-solutions",
+        "skip_condition_id": "smallest-safe-repair-selected",
+        "reason": "Alternatives are bounded and recorded in the decision: reviewer-byte rewrite, raw-fail waiver, and round four are all invariant violations.",
+        "evidence": "docs/specs/decisions/wi-566-bounded-review-receipt-parity.md"
+      },
+      {
+        "skill": "design-ux",
+        "skip_condition_id": "framework-no-ux",
+        "reason": "No user interaction surface changes.",
+        "evidence": "Framework receipt/runtime files only."
+      },
+      {
+        "skill": "design-ui",
+        "skip_condition_id": "framework-no-ui",
+        "reason": "No browser-rendered surface changes.",
+        "evidence": "Framework receipt/runtime files only."
+      },
+      {
+        "skill": "track-visuals",
+        "skip_condition_id": "no-browser-visible-change",
+        "reason": "No visual delta exists.",
+        "evidence": "Framework receipt/runtime files only."
+      },
+      {
+        "skill": "write-e2e",
+        "skip_condition_id": "headless-governance-runtime",
+        "reason": "Hermetic receipt emission and immutable installed replay are the behavioral E2E proof.",
+        "evidence": "test-framework/evals/tier-1/validate-bounded-review-exit.mjs"
+      },
+      {
+        "skill": "test-journeys",
+        "skip_condition_id": "no-product-journey",
+        "reason": "No customer/admin journey changes; the HoursHub governance replay is mandatory instead.",
+        "evidence": "docs/plans/2026-09-02-wi566-bounded-review-receipts/manifest.md"
+      }
+    ],
+    "verification_tiers": {
+      "local": [
+        "focused bounded-exit mutation matrix",
+        "full Tier-1 candidate/base comparison"
+      ],
+      "runtime": [
+        "clean merged all-host installation",
+        "immutable HoursHub three-round plan replay"
+      ],
+      "production": []
+    },
+    "mutation_history": [
+      {
+        "ts": "2026-09-02T05:20:00.000Z",
+        "source": "route-workflow-retro-normalization",
+        "action": "compile-retroactive-full-graph",
+        "reason": "Owner-directed recovery normalized an implementation-ahead session without claiming skipped skill executions."
+      }
+    ],
+    "closeout_classification_required": true
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "route-workflow",
+      "subject": "route workflow",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-09-02T04:13:36.370Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-09-02T04:58:36.112Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/work-items/WI-566.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-09-02T04:58:36.241Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/work-items/WI-566.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-09-02T04:58:36.373Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-566.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-09-02T04:58:36.513Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/plans/2026-09-02-wi566-bounded-review-receipts/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-09-02T04:58:36.648Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-566.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-09-02T04:58:36.781Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/lane-tasks-WI-566.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-02T04:58:36.909Z"
+    },
+    {
+      "id": 2,
+      "status": "completed",
+      "skill": "diagnose-bug",
+      "subject": "reproduce and diagnose bounded-review receipt contradiction",
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "diagnose-bug",
+        "loaded_at": "2026-09-02T04:58:37.176Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-Inputs",
+            "ts": "2026-09-02T04:58:46.911Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/work-items/WI-566.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-Reproduction",
+            "ts": "2026-09-02T04:58:47.048Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/bugfix/wi-566-bounded-review-receipt-parity.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RootCause",
+            "ts": "2026-09-02T04:58:47.183Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/bugfix/wi-566-bounded-review-receipt-parity.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-FixPlan",
+            "ts": "2026-09-02T04:58:47.315Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/bugfix/wi-566-bounded-review-receipt-parity.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-PillarRevisit",
+            "ts": "2026-09-02T04:58:47.446Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-566.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-02T04:58:47.579Z"
+    },
+    {
+      "id": 3,
+      "status": "completed",
+      "skill": "plan-changeset",
+      "subject": "plan candidate-bound bounded-exit receipt implementation",
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-09-02T05:00:35.898Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-09-02T05:00:36.031Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/plans/2026-09-02-wi566-bounded-review-receipts/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-09-02T05:00:36.164Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/work-items/WI-566.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-09-02T05:00:36.298Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-09-02-wi566-bounded-review-receipts/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-09-02T05:00:36.426Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-09-02-wi566-bounded-review-receipts/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-09-02T05:00:36.559Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/lane-tasks-WI-566.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-09-02T05:00:36.689Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/lane-tasks-WI-566.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-02T05:01:32.918Z"
+    },
+    {
+      "id": 4,
+      "status": "completed",
+      "skill": "review-plan",
+      "subject": "adversarially review WI-566 implementation plan",
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-09-02T05:01:33.186Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-09-02T06:04:56.670Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/plans/2026-09-02-wi566-bounded-review-receipts/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-09-02T06:04:56.801Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/plans/2026-09-02-wi566-bounded-review-receipts/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-09-02T06:04:56.932Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/plan/2fc30bfaf21e376bab89f47c304f7fab7b86ed05216ede4e412cd52925ef37db/20260902T055103Z-1218863/receipt.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-09-02T06:04:57.064Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-09-02-wi566-bounded-review-receipts/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-09-02T06:04:57.199Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-09-02-wi566-bounded-review-receipts/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-09-02T06:04:57.335Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/lane-tasks-WI-566.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-02T06:04:57.468Z"
+    },
+    {
+      "id": 5,
+      "status": "completed",
+      "skill": "execute-changeset",
+      "subject": "verify and checkpoint the frozen WI-566 implementation; edit only an in-fence file invalidated by a failing focused test",
+      "blocked_by": [
+        4
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-09-02T06:05:10.458Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-09-02T06:07:38.296Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/plans/2026-09-02-wi566-bounded-review-receipts/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-09-02T06:07:38.453Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "scripts/lib/bounded-exit.mjs"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-09-02T06:07:38.598Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "test-framework/results/2026-09-02-WI-566/summary.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-09-02T06:07:49.237Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/lane-tasks-WI-566.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-02T06:07:49.371Z"
+    },
+    {
+      "id": 10,
+      "status": "in_progress",
+      "skill": "review-gate",
+      "subject": "run mandatory G5 universal review protocol",
+      "blocked_by": [
+        5,
+        11
+      ],
+      "skill_receipt": {
+        "skill": "review-gate",
+        "loaded_at": "2026-09-02T06:18:33.972Z",
+        "loaded_via": "manual"
+      }
+    },
+    {
+      "id": 6,
+      "status": "pending",
+      "skill": "review-exec",
+      "subject": "independent review of frozen WI-566 candidate",
+      "blocked_by": [
+        10
+      ]
+    },
+    {
+      "id": 7,
+      "status": "pending",
+      "skill": "audit-implementation",
+      "subject": "deep correctness and security audit",
+      "blocked_by": [
+        6
+      ],
+      "args": {
+        "mode": "full"
+      }
+    },
+    {
+      "id": 8,
+      "status": "pending",
+      "skill": "land-changeset",
+      "subject": "land reviewed WI-566 branch through PR 35",
+      "blocked_by": [
+        7
+      ]
+    },
+    {
+      "id": 9,
+      "status": "pending",
+      "skill": "verify-promotion",
+      "subject": "install and replay promoted WI-566 implementation",
+      "blocked_by": [
+        8
+      ]
+    },
+    {
+      "id": 11,
+      "status": "completed",
+      "skill": "test-framework",
+      "subject": "run and persist the static candidate/base framework comparison before G5",
+      "blocked_by": [
+        5
+      ],
+      "skill_receipt": {
+        "skill": "test-framework",
+        "loaded_at": "2026-09-02T06:07:49.645Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-TestModeSelection",
+            "ts": "2026-09-02T06:18:33.129Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "test-framework/results/2026-09-02-WI-566/summary.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-StaticOrScenarioRunnerExecution",
+            "ts": "2026-09-02T06:18:33.275Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "test-framework/results/2026-09-02-WI-566/tier1-candidate.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-ResultsPersistenceGapRouting",
+            "ts": "2026-09-02T06:18:33.416Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "test-framework/results/2026-09-02-WI-566/summary.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-09-02T06:18:33.554Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/lane-tasks-WI-566.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-02T06:18:33.690Z"
+    }
+  ]
+}

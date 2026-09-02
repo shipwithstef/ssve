@@ -1,8 +1,7 @@
 # Framework improvement: bounded-review disposition must be receiptable
 
-**Status:** DRAFT — human checkpoint before WI promotion
-deferred_until: 2026-09-03
-reason: Awaiting owner review of the submitted proposal before WI promotion.
+**Status:** ACCEPTED — promoted to WI-566 on 2026-09-02 by owner direction
+accepted_wi: WI-566
 **Date:** 2026-09-02
 **Category:** review convergence / receipt integrity
 **Severity:** high
@@ -24,7 +23,7 @@ This proposal covers one gap only: **bounded adversarial-review convergence and 
 - `scripts/check-review-round-cap.mjs` exits 0 for `rounds_run <= 3`, no unresolved Critical, and every residual High enumerated in `bounded_exit` with an allowed disposition.
 - `scripts/lib/reviewer-evidence.mjs` currently rejects launcher findings unless `findings.verdict` starts with `pass`, and separately rejects any High unless the raw reviewer verdict is exactly `pass-with-findings`.
 - The review-plan schema has no machine-readable bounded-exit/adjudication object that binds dispositions to launcher findings, the candidate digest, and the terminal round.
-- HoursHub candidate `940794c79725dc7c7737f599616467a7a868fd17` completed the permitted three cross-family plan-review rounds. The final round contained zero Critical findings but returned raw `fail` with three High and one Medium findings. Each finding was evaluated and dispositioned, but schema-v3 `review-plan` receipt emission failed with:
+- HoursHub closeout candidate `940794c79725dc7c7737f599616467a7a868fd17` retains the permitted three cross-family plan-review rounds over successive manifest digests `cf89…`, `7e3d…`, and `124a…`. The immutable final round contains zero Critical findings and returns raw `fail` with two High and two Medium findings. Each finding was evaluated and dispositioned, but schema-v3 `review-plan` receipt emission failed with:
   - `launcher findings do not carry a passing plan verdict`
   - `launcher findings contain unresolved Critical/High`
 - The HoursHub runtime change itself was already merged, deployed, and live-verified. The contradiction blocks durable governance closeout rather than product runtime behavior, which makes it a replayable framework integration defect rather than a product-state defect.
@@ -40,7 +39,7 @@ This proposal covers one gap only: **bounded adversarial-review convergence and 
 
 Add one canonical `bounded_exit` adjudication object to review evidence. It must bind:
 
-- review kind, WI, candidate SHA/tree/digest, and the exact terminal launcher receipt/findings digests;
+- final promotion SHA/tree/digest, plus each round's exact reviewed-subject, launcher-receipt, and findings digests;
 - `rounds_run`, the hard cap, and the ordered identities of all rounds;
 - canonical finding IDs and severities from the terminal findings artifact;
 - one disposition per residual finding: `fixed`, `accept-with-justification`, or `reject-with-justification`;
@@ -50,18 +49,19 @@ Add one canonical `bounded_exit` adjudication object to review evidence. It must
 
 The receipt validator may accept a terminal raw `fail` only when this complete object validates. Existing raw `pass` and `pass-with-findings` paths remain valid under their current constraints. A Critical finding always blocks.
 
-The contract must also define candidate mutation after review: any tree/digest change invalidates the adjudication and requires a newly governed review cycle for the new candidate. A cycle identity and per-cycle three-round counter must prevent both accidental reuse and relabeling a forbidden fourth round as a new cycle.
+The contract must distinguish plan-revision iteration from promotion-tree freshness. Successive plan-manifest digests may remain in one bounded cycle when their immutable phase-guard anchor is identical; an execution-tree mutation starts a new cycle. The final promotion tree remains independently exact. A launcher-authoritative cycle identity and locked per-cycle counter must prevent accidental reuse or relabeling a forbidden fourth round as a new cycle.
 
 ## Acceptance criteria
 
 - **AC-1 — Doctrine/receipt parity:** A three-round review log with zero unresolved Critical findings and complete residual dispositions can emit and validate a schema-current `review-plan` or `review-exec` receipt even when the terminal reviewer's raw verdict is `fail`.
-- **AC-2 — No fourth-round pressure:** The successful bounded-exit path requires no additional external invocation and rejects `rounds_run > 3` within the same candidate/review cycle.
+- **AC-2 — No fourth-round pressure:** The successful bounded-exit path requires no additional external invocation and rejects `rounds_run > 3` within the same authoritative review cycle.
 - **AC-3 — Criticals remain blocking:** Any canonical unresolved Critical finding rejects receipt emission regardless of disposition text, owner acknowledgment, or reviewer verdict.
 - **AC-4 — Complete finding census:** Missing, duplicate, unknown, or severity-mismatched finding IDs fail closed. Every terminal finding is reconciled exactly once.
+- **AC-4a — Complete rubric census:** Every terminal rubric failure is enumerated exactly once, mapped to one or more dispositioned terminal finding IDs, justified, and backed by hash-verified repository evidence. Unread dependencies and failed certifications remain blocking.
 - **AC-5 — Evidence-bound High dispositions:** Every accepted/rejected High has non-empty justification and hash-verified evidence. Prose-only or blanket dispositions fail.
 - **AC-6 — Immutable reviewer evidence:** The implementation consumes launcher receipts and findings by digest and never edits, normalizes, or replaces their content.
-- **AC-7 — Candidate freshness:** Wrong WI, review kind, SHA, tree hash, candidate digest, review-log digest, launcher digest, or findings digest fails closed.
-- **AC-8 — Cycle integrity:** A changed candidate starts a distinct governed cycle; the validator rejects attempts to evade the cap by renaming round 4 as round 1 without a new candidate digest and cycle identity.
+- **AC-7 — Identity freshness:** Wrong WI, review kind, promotion SHA/tree/digest, per-round reviewed-subject digest, review-log digest, launcher digest, or findings digest fails closed.
+- **AC-8 — Cycle integrity:** Plan revisions with one immutable phase-guard anchor stay in one bounded cycle; execution-tree changes start a distinct cycle. The launcher refuses and the validator rejects attempts to relabel round 4 as round 1.
 - **AC-9 — Existing passes preserved:** Current valid `pass` and `pass-with-findings` receipts continue to validate, and raw `fail` without a valid bounded-exit object continues to fail.
 - **AC-10 — HoursHub replay:** The immutable three-round HoursHub evidence shape reproduces the current receipt failure before the fix and validates afterward using only the new adjudication artifact; no fourth review and no reviewer-artifact mutation are required.
 
@@ -73,8 +73,8 @@ The contract must also define candidate mutation after review: any tree/digest c
 - A High disposition with prose but no evidence digest.
 - Correct dispositions bound to a stale candidate tree or another review kind.
 - Three valid rounds plus a hidden fourth launcher receipt.
-- Same candidate digest with a fabricated new cycle identity.
-- Changed candidate digest reusing dispositions or findings from the prior cycle.
+- Same plan-cycle anchor with a fabricated new cycle identity.
+- Changed execution candidate digest reusing dispositions or findings from the prior cycle.
 - Altered launcher/findings bytes with unchanged claimed digests.
 - Raw `pass-with-findings` regression fixture proving the existing path still works.
 

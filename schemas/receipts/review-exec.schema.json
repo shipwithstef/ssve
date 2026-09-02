@@ -195,6 +195,10 @@
           "items": {
             "$ref": "#/definitions/artifact"
           }
+        },
+        "bounded_exit": {
+          "type": "object",
+          "description": "Optional WI-566 adjudication, validated fail-closed against schemas/receipts/bounded-exit.schema.json when the terminal launcher round has a non-passing verdict."
         }
       }
     },

@@ -1,0 +1,83 @@
+review_kind: plan
+wi: WI-566
+reviewer_family: xai
+reviewer_model: grok-4.6
+reviewer_effort: high
+rounds_run: 3
+unresolved_critical: 0
+remaining_high: 4
+self_review_passes: 1
+round_1:
+  status: complete
+  receipt: .svc/external-review-artifacts/plan/6d29ec2a459cac88967e07198b09513f8c5fef5d3bdc55a015b0cc8525d6abac/20260902T050547Z-840593/receipt.json
+  verdict: fail
+  rubric_score: 3
+  responses:
+    - finding_id: F-001
+      decision: ACCEPT
+      action: Added the canonical full delivery graph, named mandatory skills, and explicit skip decisions with durable evidence.
+    - finding_id: F-002
+      decision: ACCEPT
+      action: Replaced bucketed scope with an exact file fence and added the deterministic bounded-exit builder.
+    - finding_id: F-003
+      decision: ACCEPT
+      action: Added the original HoursHub immutable receipt paths, isolated replay worktree, exact closeout artifacts, and installed commands.
+    - finding_id: F-004
+      decision: ACCEPT
+      action: Made the complete signed HMAC cycle inventory authoritative and retained caller arrays only as asserted evidence to reconcile.
+    - finding_id: F-005
+      decision: ACCEPT
+      action: Rollback now preserves append-only HMAC markers, reviewer bytes, evidence-store objects, and emitted receipts.
+    - finding_id: F-006
+      decision: ACCEPT
+      action: Added the complete focused/full/install/replay command sequence and expected lifecycle checkpoints.
+    - finding_id: F-007
+      decision: ACCEPT
+      action: Marked the manifest as retroactive frozen implementation and made execute-changeset verification-only.
+round_2:
+  status: complete
+  receipt: .svc/external-review-artifacts/plan/071c726f40f681b7a1dbc238cd8e407100f5d24ac6ba6704b4ea64ed300b1ef1/20260902T053524Z-1167656/receipt.json
+  verdict: fail
+  rubric_score: 4
+  responses:
+    - finding_id: F-001
+      decision: ACCEPT
+      action: Added an exact rubric-failure census mapped to dispositioned terminal findings with mandatory hash evidence; unread dependencies and failed certifications remain blocking.
+    - finding_id: F-002
+      decision: ACCEPT
+      action: Replaced all three malformed receipt paths with the timestamp-matched real 64-hex artifact paths and added pre-build existence checks.
+    - finding_id: F-003
+      decision: ACCEPT
+      action: Added idempotent worktree materialization, explicit CWD, exact builder config, all F-001 through F-004 dispositions, rubric mappings, and expected exit-zero commands.
+    - finding_id: F-004
+      decision: ACCEPT
+      action: Named improve-framework and test-framework evidence, added task 11 for static comparison, changed task 5 to frozen verification, and pinned the runtime/schema/contract/test blob-manifest digest.
+round_3:
+  status: complete
+  receipt: .svc/external-review-artifacts/plan/2fc30bfaf21e376bab89f47c304f7fab7b86ed05216ede4e412cd52925ef37db/20260902T055103Z-1218863/receipt.json
+  verdict: fail
+  rubric_score: 6
+  responses:
+    - finding_id: F-001
+      decision: PARTIAL
+      accepted_part: Pin the replay worktree directly to the immutable SHA, verify inputs in the command block, and normalize exact artifact permissions.
+      rejected_part: The claim that the promotion report is absent from commit 940794c is false.
+      counter_evidence: git ls-tree at 940794c lists the exact report; the real builder replay consumed it and returned status pass for cycle 5c672f3a with three rounds.
+      counter_proposal: Keep the candidate-resident report and add explicit test-f/mode checks before the builder.
+    - finding_id: F-002
+      decision: ACCEPT
+      action: Replace the unrelated verify-promotion consumer with reconcile so the newly emitted review-plan slot is parsed and validated without requiring a different receipt type.
+    - finding_id: F-003
+      decision: ACCEPT
+      action: Add exact candidate/base worktree commands, persisted logs/failure sets, and a comm-based candidate-only failure predicate.
+    - finding_id: F-004
+      decision: ACCEPT
+      action: Add the exact ordered path array and Git-blob digest command with the expected digest assertion.
+bounded_exit:
+  disposition: accept-with-justification
+  residual_highs:
+    - F-001
+    - F-002
+    - F-003
+    - F-004
+terminal_state: PROMOTED_BY_BOUNDED_DISPOSITION
