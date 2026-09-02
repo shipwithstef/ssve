@@ -26,6 +26,10 @@
       "type": "string",
       "pattern": "^[0-9a-f]{64}$"
     },
+    "reviewed_plan_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
     "self_review": {
       "type": "object",
       "required": [

@@ -62,6 +62,47 @@ authority defect; the latter two were Medium fail-closed defects. Corrections:
 The expanded test suite reproduces each defect and passes after correction.
 No Critical or High finding remains in the local specialist audit.
 
+The first post-G5 advisory execution review then found one additional Critical
+legacy-corruption case and two Medium contract gaps. Receipt resolution now
+accepts path bytes only when they match the authenticated digest, falls back to
+the immutable content-addressed object, and fails closed when a potentially
+in-cycle legacy object cannot be recovered. Issuance stores the immutable
+receipt object before publishing its HMAC marker. The shared schema validator
+now enforces `uniqueItems`, and the builder requires an exec `diff_hash` and
+validates the complete generated plan/exec body. Dedicated corruption,
+duplicate-rubric-ID, and exec-builder regressions pass.
+
+The corrected-tree advisory and first independent Grok execution reviews then
+identified the remaining authority boundaries. Bounded exec rounds are now
+strictly promotion-digest-equal; passing plan evidence binds its WI and explicit
+reviewed-plan digest; signed provenance distinguishes advisory panel stations
+from independent adversarial rounds; cycle derivation cannot fail open; and an
+unavailable legacy marker blocks only a cycle to which authenticated fields or
+a declared subject digest can connect it. Panel-round, stale-exec, cross-WI,
+unclassifiable-modern-marker, related-corrupt-legacy, and unrelated-legacy
+regressions exercise those boundaries.
+
+The final advisory pass added one High plan-subject observation. Bounded plan
+receipts now require a top-level `reviewed_plan_digest` equal to the terminal
+phase-guarded subject, the builder emits it, and a stale reviewed-plan mutation
+rejects.
+
+The next advisory pass tightened the proof boundary again. Disposition evidence
+is now a schema-valid candidate/WI/finding-or-rubric binding with a separately
+hash-verified result artifact. Issuance writes an HMAC-signed cycle
+classification sidecar and legacy reads backfill it while immutable bytes are
+available; subsequent receipt loss therefore cannot reset a known cycle.
+Modern advisory markers are excluded from independent inventory before receipt
+recovery. Generic evidence, damaged advisory, and classified-legacy-loss
+regressions pass.
+
+The succeeding Grok pass found same-tree/different-WI legacy isolation and a
+family-mapper mismatch. Signed classification now skips a known different
+WI/kind before subject-digest recovery, while HMAC mismatch deliberately
+remains a global authority-integrity stop because its fields are untrusted.
+Provenance and reviewer verification now share the canonical `familyOf`
+mapper; reduced-runtime launcher fixtures include that dependency.
+
 ## Test Quality
 
 - Expected values come from independent identities/digests and explicit

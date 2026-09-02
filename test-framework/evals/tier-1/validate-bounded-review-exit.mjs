@@ -8,7 +8,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createExternalReviewFixture } from "./fixtures/external-review-fixture.mjs";
 import { boundedExitCycleId, evaluateReviewRoundCap, validateBoundedExitAdjudication } from "../../../scripts/lib/bounded-exit.mjs";
-import { candidateTreeIdentity } from "../../../scripts/lib/external-review-provenance.mjs";
+import { candidateTreeIdentity, listExternalReviewCycleProvenance } from "../../../scripts/lib/external-review-provenance.mjs";
 import { verifyReviewerEvidence } from "../../../scripts/lib/reviewer-evidence.mjs";
 
 const frameworkRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -48,8 +48,10 @@ function boundedBody(reviewKind, rounds, wi = "WI-HOURSHUB-POSTHOG") {
   fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
   const logPath = path.join(directory, "review-log.yaml");
   fs.writeFileSync(logPath, `rounds_run: 3\nunresolved_critical: 0\nremaining_high: 3\nself_review_passes: 1\nround_1:\n  status: complete\nround_2:\n  status: complete\nround_3:\n  status: complete\nbounded_exit:\n  disposition: accept-with-justification\n  residual_highs:\n    - H-1\n    - H-2\n    - H-3\n`, { mode: 0o600 });
-  const evidencePath = path.join(directory, "high-evidence.md");
-  fs.writeFileSync(evidencePath, "candidate-bound verification evidence\n", { mode: 0o600 });
+  const resultPath = path.join(directory, "verification-result.md");
+  fs.writeFileSync(resultPath, "candidate-bound verification evidence\n", { mode: 0o600 });
+  const evidencePath = path.join(directory, "disposition-evidence.json");
+  fs.writeFileSync(evidencePath, JSON.stringify({ schema_version: 1, wi, candidate_digest: identity.candidate_digest, finding_ids: terminalFindings.map((row) => row.id), rubric_ids: [2, 6, 7, 10], verification_method: "focused-regression", result: "pass", result_artifact: artifact(resultPath) }), { mode: 0o600 });
   const cap = evaluateReviewRoundCap(fs.readFileSync(logPath));
   assert.equal(cap.exit_code, 0, cap.stderr);
   const launcherReceipts = rounds.map((round) => artifact(round.receiptPath));
@@ -75,6 +77,7 @@ function boundedBody(reviewKind, rounds, wi = "WI-HOURSHUB-POSTHOG") {
     candidate_sha: candidateSha,
     tree_hash: identity.tree_hash,
     candidate_digest: identity.candidate_digest,
+    ...(reviewKind === "plan" ? { reviewed_plan_digest: rounds.at(-1).candidateDigest } : {}),
     ...(reviewKind === "exec" ? { diff_hash: "fixture-diff" } : {}),
     self_review: { orchestrator: "codex", findings_count: 0, notes: "self review" },
     adversarial_review: { primary_reviewer_host: "agy", primary_used: true, fallback_host: "agy", fallback_used: false, findings: terminalFindings, iteration_count: rounds.length },
@@ -115,12 +118,12 @@ const multiRevisionDigests = ["revision-1", "revision-2", "revision-3"].map((val
 const multiRevisionRubricFailures = [2, 6, 7, 10];
 const multiRevisionRounds = fixtureSet("plan", 3, terminalFindings, { wi: multiRevisionWi, targetDigests: multiRevisionDigests, rubricFailures: multiRevisionRubricFailures });
 const multiRevisionBody = boundedBody("plan", multiRevisionRounds, multiRevisionWi);
-const rubricEvidencePath = path.join(temp, ".svc", "bounded-exit", "plan", "high-evidence.md");
+const rubricEvidencePath = path.join(temp, ".svc", "bounded-exit", "plan", "disposition-evidence.json");
 multiRevisionBody.reviewer_evidence.bounded_exit.rubric_failure_census = multiRevisionRubricFailures.map((rubricId) => ({ rubric_id: rubricId, finding_ids: [rubricId === 2 ? "M-1" : "H-1"], disposition: "accept-with-justification", justification: `Rubric ${rubricId} is bound to a terminal finding disposition.`, evidence: [artifact(rubricEvidencePath)] }));
 assert.deepEqual(verifyReviewerEvidence({ root: temp, reviewKind: "plan", body: multiRevisionBody }), [], "one bounded review cycle must admit successive reviewed revisions while retaining final commit binding");
 const builderConfigPath = path.join(temp, ".svc", "bounded-exit", "builder-config.json");
 const builderOutPath = path.join(temp, ".svc", "bounded-exit", "builder-body.json");
-const builderEvidencePath = path.join(temp, ".svc", "bounded-exit", "plan", "high-evidence.md");
+const builderEvidencePath = path.join(temp, ".svc", "bounded-exit", "plan", "disposition-evidence.json");
 fs.writeFileSync(builderConfigPath, JSON.stringify({ schema_version: 1, review_kind: "plan", wi: multiRevisionWi, candidate_sha: candidateSha, launcher_receipts: multiRevisionRounds.map((round) => round.receiptPath), review_log: path.relative(temp, path.join(temp, ".svc", "bounded-exit", "plan", "review-log.yaml")), dispositions: Object.fromEntries(terminalFindings.map((row) => [row.id, { disposition: "accept-with-justification", justification: `Disposition for ${row.id} is tied to immutable candidate evidence.`, ...(row.severity === "high" ? { evidence: [path.relative(temp, builderEvidencePath)] } : {}) }])), rubric_dispositions: Object.fromEntries(multiRevisionRubricFailures.map((rubricId) => [String(rubricId), { finding_ids: [rubricId === 2 ? "M-1" : "H-1"], disposition: "accept-with-justification", justification: `Rubric ${rubricId} is bound to a terminal finding disposition.`, evidence: [path.relative(temp, builderEvidencePath)] }])) }), { mode: 0o600 });
 const built = spawnSync(process.execPath, [path.join(frameworkRoot, "scripts/build-bounded-exit-receipt.mjs"), "--config", path.relative(temp, builderConfigPath), "--out", path.relative(temp, builderOutPath)], { cwd: temp, encoding: "utf8" });
 assert.equal(built.status, 0, `bounded-exit builder failed: ${built.stderr}`);
@@ -131,13 +134,37 @@ const unknownRubricFinding = structuredClone(multiRevisionBody); unknownRubricFi
 assert.match(verifyReviewerEvidence({ root: temp, reviewKind: "plan", body: unknownRubricFinding }).join("\n"), /unknown terminal finding|undispositioned terminal finding/);
 const noRubricEvidence = structuredClone(multiRevisionBody); noRubricEvidence.reviewer_evidence.bounded_exit.rubric_failure_census[0].evidence = [];
 assert.match(verifyReviewerEvidence({ root: temp, reviewKind: "plan", body: noRubricEvidence }).join("\n"), /must NOT have fewer than 1 items|schema/);
+const duplicateRubricFinding = structuredClone(multiRevisionBody); duplicateRubricFinding.reviewer_evidence.bounded_exit.rubric_failure_census[0].finding_ids = ["M-1", "M-1"];
+assert.match(verifyReviewerEvidence({ root: temp, reviewKind: "plan", body: duplicateRubricFinding }).join("\n"), /uniqueItems|duplicate items/);
 const wrongSubjectRevision = structuredClone(multiRevisionBody);
 wrongSubjectRevision.reviewer_evidence.bounded_exit.round_identities[1].review_target_digest = "0".repeat(64);
 assert.match(verifyReviewerEvidence({ root: temp, reviewKind: "plan", body: wrongSubjectRevision }).join("\n"), /review target digest mismatch/);
+const wrongReviewedPlan = structuredClone(multiRevisionBody); wrongReviewedPlan.reviewed_plan_digest = multiRevisionRounds[0].candidateDigest;
+assert.match(verifyReviewerEvidence({ root: temp, reviewKind: "plan", body: wrongReviewedPlan }).join("\n"), /reviewed_plan_digest must bind the terminal/);
 
 const hiddenFourthWi = "WI-HOURSHUB-HIDDEN-FOURTH";
 const hiddenFourthDigests = ["hidden-1", "hidden-2", "hidden-3", "hidden-4"].map((value) => sha(Buffer.from(value)));
 assert.throws(() => fixtureSet("plan", 4, terminalFindings, { wi: hiddenFourthWi, targetDigests: hiddenFourthDigests }), /hard cap reached/, "launcher authority must refuse a modern fourth plan-review revision");
+
+const panelWi = "WI-PANEL-ROUNDS";
+const panelDigests = ["panel-1", "panel-2", "panel-3"].map((value) => sha(Buffer.from(value)));
+const advisoryTuple = { orchestrator: "codex", host: "codex", family: "openai", model: "gpt-5.6-sol", effort: "high" };
+const panelIndependentRounds = [];
+const panelAdvisoryRounds = [];
+for (const [index, panelDigest] of panelDigests.entries()) {
+  panelAdvisoryRounds.push(createExternalReviewFixture({ frameworkRoot, repo: temp, reviewKind: "plan", candidateSha, candidateDigestOverride: panelDigest, tupleOverride: advisoryTuple, wi: panelWi, roundLabel: `panel-advisory-${index + 1}`, verdict: "fail", findings: terminalFindings }));
+  panelIndependentRounds.push(createExternalReviewFixture({ frameworkRoot, repo: temp, reviewKind: "plan", candidateSha, candidateDigestOverride: panelDigest, wi: panelWi, roundLabel: `panel-independent-${index + 1}`, verdict: "fail", findings: index === 2 ? terminalFindings : [finding(`PANEL-${index + 1}`, "high")] }));
+}
+assert.deepEqual(verifyReviewerEvidence({ root: temp, reviewKind: "plan", body: boundedBody("plan", panelIndependentRounds, panelWi) }), [], "advisory panel stations must not consume independent review rounds or bounded inventory slots");
+const damagedAdvisoryReceipt = JSON.parse(fs.readFileSync(panelAdvisoryRounds[0].receiptPath, "utf8"));
+const damagedAdvisoryMarker = JSON.parse(fs.readFileSync(path.join(process.env.SVC_EXTERNAL_REVIEW_ISSUANCE_ROOT, "issuance", `${damagedAdvisoryReceipt.request_id}.json`), "utf8"));
+fs.unlinkSync(panelAdvisoryRounds[0].receiptPath);
+fs.unlinkSync(path.join(process.env.SVC_REVIEW_EVIDENCE_STORE, "objects", damagedAdvisoryMarker.receipt_sha256.slice(0, 2), damagedAdvisoryMarker.receipt_sha256.slice(2)));
+assert.deepEqual(verifyReviewerEvidence({ root: temp, reviewKind: "plan", body: boundedBody("plan", panelIndependentRounds, panelWi) }), [], "damaged signed advisory evidence must not block independent cycle reconciliation");
+
+const malformedMarkerCount = fs.readdirSync(path.join(process.env.SVC_EXTERNAL_REVIEW_ISSUANCE_ROOT, "issuance")).length;
+assert.throws(() => createExternalReviewFixture({ frameworkRoot, repo: temp, reviewKind: "plan", candidateSha, candidateDigestOverride: sha(Buffer.from("malformed-cycle")), preExecutionBaseOverride: null, wi: "WI-MALFORMED-CYCLE", roundLabel: "malformed-cycle", verdict: "fail", findings: terminalFindings }), /plan review cycle requires a pre-execution base/);
+assert.equal(fs.readdirSync(path.join(process.env.SVC_EXTERNAL_REVIEW_ISSUANCE_ROOT, "issuance")).length, malformedMarkerCount, "unclassifiable modern review must not publish a marker");
 
 for (const reviewKind of ["plan", "exec"]) {
   const rounds = fixtureSet(reviewKind);
@@ -159,6 +186,9 @@ for (const reviewKind of ["plan", "exec"]) {
 
   const noEvidence = structuredClone(body); delete noEvidence.reviewer_evidence.bounded_exit.findings_census[0].evidence;
   assert.match(verifyReviewerEvidence({ root: temp, reviewKind, body: noEvidence }).join("\n"), /requires hash-verified evidence/);
+
+  const genericEvidence = structuredClone(body); genericEvidence.reviewer_evidence.bounded_exit.findings_census[0].evidence = [artifact(path.join(temp, ".svc", "bounded-exit", reviewKind, "verification-result.md"))];
+  assert.match(verifyReviewerEvidence({ root: temp, reviewKind, body: genericEvidence }).join("\n"), /not valid JSON|disposition evidence/);
 
   const duplicateCensus = structuredClone(body); duplicateCensus.reviewer_evidence.bounded_exit.findings_census[1].id = "H-1";
   assert.match(verifyReviewerEvidence({ root: temp, reviewKind, body: duplicateCensus }).join("\n"), /duplicate IDs|omitted/);
@@ -236,6 +266,7 @@ assert.match(verifyReviewerEvidence({ root: temp, reviewKind: "plan", body: crit
 
 const passFixture = createExternalReviewFixture({ frameworkRoot, repo: temp, reviewKind: "plan", candidateSha, wi: "WI-PASS-PLAN", roundLabel: "existing-pass" });
 const passBody = {
+  wi: "WI-PASS-PLAN",
   candidate_sha: candidateSha,
   tree_hash: identity.tree_hash,
   candidate_digest: identity.candidate_digest,
@@ -244,8 +275,10 @@ const passBody = {
 };
 assert.deepEqual(verifyReviewerEvidence({ root: temp, reviewKind: "plan", body: passBody }), [], "existing pass path regressed");
 const passPlanRevision = createExternalReviewFixture({ frameworkRoot, repo: temp, reviewKind: "plan", candidateSha, candidateDigestOverride: sha(Buffer.from("passing-plan-revision")), wi: "WI-PASS-PLAN-REVISION", roundLabel: "passing-plan-revision" });
-const passPlanRevisionBody = { ...passBody, reviewer_evidence: passPlanRevision.reviewerEvidence };
+const passPlanRevisionBody = { ...passBody, wi: "WI-PASS-PLAN-REVISION", reviewed_plan_digest: passPlanRevision.candidateDigest, reviewer_evidence: passPlanRevision.reviewerEvidence };
 assert.deepEqual(verifyReviewerEvidence({ root: temp, reviewKind: "plan", body: passPlanRevisionBody }), [], "passing plan artifact revision must remain distinct from the final promotion tree identity");
+const crossWiPass = { ...passPlanRevisionBody, wi: "WI-OTHER" };
+assert.match(verifyReviewerEvidence({ root: temp, reviewKind: "plan", body: crossWiPass }).join("\n"), /plan WI does not match/);
 
 const passWithFindingsFixture = createExternalReviewFixture({ frameworkRoot, repo: temp, reviewKind: "exec", candidateSha, wi: "WI-PASS-EXEC", roundLabel: "existing-pass-with-findings", verdict: "pass-with-findings", findings: [finding("H-PASS", "high")] });
 const passWithFindingsBody = { ...passBody, self_review: { orchestrator: "codex" }, reviewer_evidence: passWithFindingsFixture.reviewerEvidence };
@@ -260,8 +293,57 @@ for (const [mutation, expected] of [
   [(findings) => { findings.certifications = [{ key: "scope", certified: false, reviewer_family: "google", for_content_sha: null }]; }, /failed reviewer certifications/],
 ]) {
   const alteredRounds = structuredClone(directRounds); mutation(alteredRounds.at(-1).findings);
-  assert.match(validateBoundedExitAdjudication({ root: temp, reviewKind: "exec", body: directBody, identity, rounds: alteredRounds }).join("\n"), expected);
+assert.match(validateBoundedExitAdjudication({ root: temp, reviewKind: "exec", body: directBody, identity, rounds: alteredRounds }).join("\n"), expected);
 }
+
+const staleExecDigest = sha(Buffer.from("stale-exec-tree"));
+const staleExecRounds = fixtureSet("exec", 3, terminalFindings, { wi: "WI-STALE-EXEC", targetDigests: [staleExecDigest, staleExecDigest, staleExecDigest] });
+const staleExecBody = boundedBody("exec", staleExecRounds, "WI-STALE-EXEC");
+assert.match(verifyReviewerEvidence({ root: temp, reviewKind: "exec", body: staleExecBody }).join("\n"), /exec rounds must all review the final promotion candidate digest/);
+
+const builderExecWi = "WI-BUILDER-EXEC";
+const builderExecRounds = fixtureSet("exec", 3, terminalFindings, { wi: builderExecWi });
+boundedBody("exec", builderExecRounds, builderExecWi);
+const builderExecConfig = { schema_version: 1, review_kind: "exec", wi: builderExecWi, candidate_sha: candidateSha, launcher_receipts: builderExecRounds.map((round) => round.receiptPath), review_log: path.relative(temp, path.join(temp, ".svc", "bounded-exit", "exec", "review-log.yaml")), dispositions: Object.fromEntries(terminalFindings.map((row) => [row.id, { disposition: "accept-with-justification", justification: `Disposition for ${row.id} is tied to immutable candidate evidence.`, ...(row.severity === "high" ? { evidence: [path.relative(temp, path.join(temp, ".svc", "bounded-exit", "exec", "disposition-evidence.json"))] } : {}) }])) };
+const builderExecConfigPath = path.join(temp, ".svc", "bounded-exit", "builder-exec-config.json");
+const builderExecOutPath = path.join(temp, ".svc", "bounded-exit", "builder-exec-body.json");
+fs.writeFileSync(builderExecConfigPath, JSON.stringify(builderExecConfig), { mode: 0o600 });
+const missingExecDiff = spawnSync(process.execPath, [path.join(frameworkRoot, "scripts/build-bounded-exit-receipt.mjs"), "--config", path.relative(temp, builderExecConfigPath), "--out", path.relative(temp, builderExecOutPath)], { cwd: temp, encoding: "utf8" });
+assert.notEqual(missingExecDiff.status, 0, "exec builder must reject a missing diff_hash");
+builderExecConfig.diff_hash = sha(Buffer.from("builder-exec-diff"));
+fs.writeFileSync(builderExecConfigPath, JSON.stringify(builderExecConfig), { mode: 0o600 });
+const builtExec = spawnSync(process.execPath, [path.join(frameworkRoot, "scripts/build-bounded-exit-receipt.mjs"), "--config", path.relative(temp, builderExecConfigPath), "--out", path.relative(temp, builderExecOutPath)], { cwd: temp, encoding: "utf8" });
+assert.equal(builtExec.status, 0, `bounded-exit exec builder failed: ${builtExec.stderr}`);
+assert.equal(JSON.parse(fs.readFileSync(builderExecOutPath, "utf8")).diff_hash, builderExecConfig.diff_hash);
+
+const legacyCorruptionWi = "WI-LEGACY-CORRUPTION";
+const legacyCorruptionRounds = fixtureSet("plan", 3, terminalFindings, { wi: legacyCorruptionWi, targetDigests: ["legacy-1", "legacy-2", "legacy-3"].map((value) => sha(Buffer.from(value))) });
+const legacyReceipt = JSON.parse(fs.readFileSync(legacyCorruptionRounds[0].receiptPath, "utf8"));
+const authorityRoot = process.env.SVC_EXTERNAL_REVIEW_ISSUANCE_ROOT;
+const markerPath = path.join(authorityRoot, "issuance", `${legacyReceipt.request_id}.json`);
+const marker = JSON.parse(fs.readFileSync(markerPath, "utf8"));
+delete marker.authority_hmac_sha256; delete marker.review_kind; delete marker.wi; delete marker.review_cycle_id; delete marker.cycle_sequence;
+const canonical = (value) => Array.isArray(value) ? `[${value.map(canonical).join(",")}]` : value && typeof value === "object" ? `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonical(value[key])}`).join(",")}}` : JSON.stringify(value);
+marker.authority_hmac_sha256 = crypto.createHmac("sha256", fs.readFileSync(path.join(authorityRoot, "authority.key"))).update(canonical(marker)).digest("hex");
+fs.writeFileSync(markerPath, JSON.stringify(marker), { mode: 0o600 });
+fs.writeFileSync(legacyCorruptionRounds[0].receiptPath, `${JSON.stringify({ ...legacyReceipt, phase_guard: { ...legacyReceipt.phase_guard, wi: "WI-ALTERED" } })}\n`, { mode: 0o600 });
+const legacyObject = path.join(process.env.SVC_REVIEW_EVIDENCE_STORE, "objects", marker.receipt_sha256.slice(0, 2), marker.receipt_sha256.slice(2));
+fs.unlinkSync(legacyObject);
+const legacyCycle = boundedExitCycleId({ reviewKind: "plan", wi: legacyCorruptionWi, preExecutionBase: candidateSha });
+assert.throws(() => listExternalReviewCycleProvenance({ receiptPath: legacyCorruptionRounds[1].receiptPath, wi: legacyCorruptionWi, reviewKind: "plan", cycleId: legacyCycle, candidateDigests: legacyCorruptionRounds.map((round) => round.candidateDigest) }), /(legacy|cycle) receipt is unavailable or digest-mismatched/);
+assert.throws(() => createExternalReviewFixture({ frameworkRoot, repo: temp, reviewKind: "plan", candidateSha, candidateDigestOverride: sha(Buffer.from("legacy-4")), wi: legacyCorruptionWi, roundLabel: "legacy-round-4", verdict: "fail", findings: terminalFindings }), /hard cap reached/, "signed legacy classification must prevent an effective fourth independent round after receipt loss");
+assert.doesNotThrow(() => createExternalReviewFixture({ frameworkRoot, repo: temp, reviewKind: "plan", candidateSha, candidateDigestOverride: sha(Buffer.from("unrelated-after-broken-legacy")), wi: "WI-UNRELATED-AFTER-BROKEN-LEGACY", roundLabel: "unrelated-after-broken-legacy", verdict: "fail", findings: terminalFindings }), "an unrelated broken legacy marker must not poison a different review cycle");
+assert.doesNotThrow(() => createExternalReviewFixture({ frameworkRoot, repo: temp, reviewKind: "plan", candidateSha, candidateDigestOverride: legacyCorruptionRounds[0].candidateDigest, wi: "WI-SAME-SUBJECT-DIFFERENT-CYCLE", roundLabel: "same-subject-different-wi", verdict: "fail", findings: terminalFindings }), "a classified broken marker from another WI must not poison a same-subject cycle");
+
+const swappedClassificationWi = "WI-SWAPPED-CLASSIFICATION";
+const advisoryClassification = createExternalReviewFixture({ frameworkRoot, repo: temp, reviewKind: "plan", candidateSha, candidateDigestOverride: sha(Buffer.from("swapped-advisory")), wi: swappedClassificationWi, roundLabel: "swapped-advisory", verdict: "fail", findings: terminalFindings, tupleOverride: { orchestrator: "codex", host: "cursor", family: "openai", model: "gpt-5.6-sol", effort: "high" } });
+const independentClassification = createExternalReviewFixture({ frameworkRoot, repo: temp, reviewKind: "plan", candidateSha, candidateDigestOverride: sha(Buffer.from("swapped-independent")), wi: swappedClassificationWi, roundLabel: "swapped-independent", verdict: "fail", findings: terminalFindings });
+const advisoryRequestId = JSON.parse(fs.readFileSync(advisoryClassification.receiptPath, "utf8")).request_id;
+const independentRequestId = JSON.parse(fs.readFileSync(independentClassification.receiptPath, "utf8")).request_id;
+fs.copyFileSync(path.join(authorityRoot, "classifications", `${advisoryRequestId}.json`), path.join(authorityRoot, "classifications", `${independentRequestId}.json`));
+const swappedCycle = boundedExitCycleId({ reviewKind: "plan", wi: swappedClassificationWi, preExecutionBase: candidateSha });
+assert.throws(() => listExternalReviewCycleProvenance({ receiptPath: independentClassification.receiptPath, wi: swappedClassificationWi, reviewKind: "plan", cycleId: swappedCycle, candidateDigests: [independentClassification.candidateDigest] }), /classification identity mismatch/, "a valid classification copied under another request ID must fail inventory closed");
+assert.throws(() => createExternalReviewFixture({ frameworkRoot, repo: temp, reviewKind: "plan", candidateSha, candidateDigestOverride: sha(Buffer.from("swapped-independent-2")), wi: swappedClassificationWi, roundLabel: "swapped-independent-2", verdict: "fail", findings: terminalFindings }), /classification identity mismatch/, "a swapped advisory classification must not hide an independent round during issuance");
 
 assert.throws(() => evaluateReviewRoundCap(Buffer.from("rounds_run: 0\nunresolved_critical: 0\nremaining_high: 0\n"), { nodePath: path.join(temp, "missing-node") }), /did not exit normally/);
 

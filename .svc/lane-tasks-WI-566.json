@@ -531,7 +531,7 @@
     },
     {
       "id": 10,
-      "status": "in_progress",
+      "status": "completed",
       "skill": "review-gate",
       "subject": "run mandatory G5 universal review protocol",
       "blocked_by": [
@@ -541,17 +541,75 @@
       "skill_receipt": {
         "skill": "review-gate",
         "loaded_at": "2026-09-02T06:18:33.972Z",
-        "loaded_via": "manual"
-      }
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-09-02T06:23:30.662Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-566-g5-review.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SelfJudgment",
+            "ts": "2026-09-02T06:23:30.798Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-566-g5-review.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-CrossReview",
+            "ts": "2026-09-02T06:23:30.934Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-566-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConvergenceCheck",
+            "ts": "2026-09-02T06:23:31.071Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-566-g5-review.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-GateDecision",
+            "ts": "2026-09-02T06:23:31.206Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-566-g5-review.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-02T06:23:31.341Z"
     },
     {
       "id": 6,
-      "status": "pending",
+      "status": "in_progress",
       "skill": "review-exec",
       "subject": "independent review of frozen WI-566 candidate",
       "blocked_by": [
         10
-      ]
+      ],
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-09-02T06:23:31.619Z",
+        "loaded_via": "manual"
+      }
     },
     {
       "id": 7,

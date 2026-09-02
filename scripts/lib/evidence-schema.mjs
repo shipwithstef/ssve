@@ -14,6 +14,10 @@ export function validateEvidenceSchema(value, schema, rootSchema = schema, locat
     const branches = schema.anyOf.map((branch) => validateEvidenceSchema(value, branch, rootSchema, location));
     if (!branches.some((errors) => errors.length === 0)) return [`${location}: no anyOf branch matched`];
   }
+  if (schema.allOf) {
+    const errors = schema.allOf.flatMap((branch) => validateEvidenceSchema(value, branch, rootSchema, location));
+    if (errors.length) return errors;
+  }
   if (Object.prototype.hasOwnProperty.call(schema, "const") && canonical(value) !== canonical(schema.const)) return [`${location}: const mismatch`];
   const errors = [];
   const types = Array.isArray(schema.type) ? schema.type : schema.type ? [schema.type] : [];
@@ -33,6 +37,7 @@ export function validateEvidenceSchema(value, schema, rootSchema = schema, locat
   if (Array.isArray(value)) {
     if (schema.minItems !== undefined && value.length < schema.minItems) errors.push(`${location}: below minItems`);
     if (schema.maxItems !== undefined && value.length > schema.maxItems) errors.push(`${location}: above maxItems`);
+    if (schema.uniqueItems === true && new Set(value.map(canonical)).size !== value.length) errors.push(`${location}: duplicate items violate uniqueItems`);
     if (schema.items) value.forEach((entry, index) => errors.push(...validateEvidenceSchema(entry, schema.items, rootSchema, `${location}[${index}]`)));
   }
   return errors;

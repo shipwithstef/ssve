@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "bounded-exit disposition evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "wi", "candidate_digest", "finding_ids", "rubric_ids", "verification_method", "result", "result_artifact"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "wi": { "type": "string", "minLength": 1 },
+    "candidate_digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "finding_ids": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "rubric_ids": { "type": "array", "uniqueItems": true, "items": { "type": "integer", "minimum": 1 } },
+    "verification_method": { "type": "string", "minLength": 1 },
+    "result": { "const": "pass" },
+    "result_artifact": { "$ref": "#/definitions/artifact" }
+  },
+  "anyOf": [
+    { "properties": { "finding_ids": { "minItems": 1 } } },
+    { "properties": { "rubric_ids": { "minItems": 1 } } }
+  ],
+  "definitions": {
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    }
+  }
+}

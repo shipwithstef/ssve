@@ -10,6 +10,7 @@ import { externalReviewCycleId, externalReviewCycleIdFromReceipt, listExternalRe
 export const BOUNDED_EXIT_HARD_CAP = 3;
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SCHEMA = JSON.parse(fs.readFileSync(path.resolve(HERE, "../../schemas/receipts/bounded-exit.schema.json"), "utf8"));
+const DISPOSITION_EVIDENCE_SCHEMA = JSON.parse(fs.readFileSync(path.resolve(HERE, "../../schemas/receipts/bounded-exit-evidence.schema.json"), "utf8"));
 const CHECKER_PATH = path.resolve(HERE, "../check-review-round-cap.mjs");
 const ALLOWED_DISPOSITIONS = new Set(["fixed", "accept-with-justification", "reject-with-justification"]);
 
@@ -43,6 +44,19 @@ function loadBoundRepositoryFile(root, artifact, label) {
   const bytes = fs.readFileSync(absolute);
   if (digest(bytes) !== artifact.sha256) throw new Error(`${label} digest mismatch`);
   return bytes;
+}
+
+function validateDispositionEvidence(root, artifact, { wi, candidateDigest, findingId = null, rubricId = null }) {
+  const bytes = loadBoundRepositoryFile(root, artifact, `bounded-exit disposition evidence ${findingId || rubricId}`);
+  let document;
+  try { document = JSON.parse(bytes.toString("utf8")); }
+  catch { throw new Error("bounded-exit disposition evidence is not valid JSON"); }
+  const schemaErrors = validateEvidenceSchema(document, DISPOSITION_EVIDENCE_SCHEMA);
+  if (schemaErrors.length) throw new Error(`bounded-exit disposition evidence schema: ${schemaErrors.slice(0, 4).join("; ")}`);
+  if (document.wi !== wi || document.candidate_digest !== candidateDigest) throw new Error("bounded-exit disposition evidence candidate/WI binding mismatch");
+  if (findingId && !document.finding_ids.includes(findingId)) throw new Error(`bounded-exit disposition evidence does not bind finding ${findingId}`);
+  if (rubricId && !document.rubric_ids.includes(rubricId)) throw new Error(`bounded-exit disposition evidence does not bind rubric ${rubricId}`);
+  loadBoundRepositoryFile(root, document.result_artifact, `bounded-exit disposition result ${findingId || rubricId}`);
 }
 
 function capResultDigest(result) {
@@ -147,13 +161,18 @@ export function validateBoundedExitAdjudication({ root, reviewKind, body, identi
   if (adjudication.cycle_id !== authoritativeCycleId) reasons.push("bounded-exit cycle identity is not derived from the launcher review lineage");
   if (adjudication.rounds_run !== rounds.length) reasons.push(`bounded-exit rounds_run=${adjudication.rounds_run} disagrees with ${rounds.length} launcher receipts`);
   if (body?.adversarial_review?.iteration_count !== rounds.length) reasons.push("adversarial_review.iteration_count disagrees with launcher receipts");
+  if (reviewKind === "exec" && rounds.some((round) => round.receipt?.candidate_digest !== candidateDigest)) reasons.push("bounded-exit exec rounds must all review the final promotion candidate digest");
+  if (reviewKind === "plan") {
+    if (body?.reviewed_plan_digest !== terminal?.receipt?.candidate_digest) reasons.push("bounded-exit reviewed_plan_digest must bind the terminal plan-review subject");
+    if (terminal?.receipt?.phase_guard?.plan_manifest_sha256 !== terminal?.receipt?.candidate_digest) reasons.push("bounded-exit terminal plan subject is not phase-guard bound");
+  }
 
   const requestIds = rounds.map((round) => String(round.receipt?.request_id || ""));
   const receiptDigests = rounds.map((round) => round.receiptSha);
   if (requestIds.some((requestId) => !requestId) || new Set(requestIds).size !== requestIds.length) reasons.push("bounded-exit launcher rounds must have unique request IDs");
   if (new Set(receiptDigests).size !== receiptDigests.length) reasons.push("bounded-exit launcher rounds must have unique receipt digests");
   try {
-    const inventory = listExternalReviewCycleProvenance({ receiptPath: rounds[0].receiptPath, wi, reviewKind, cycleId: adjudication.cycle_id, candidateDigest });
+    const inventory = listExternalReviewCycleProvenance({ receiptPath: rounds[0].receiptPath, wi, reviewKind, cycleId: adjudication.cycle_id, candidateDigests: rounds.map((round) => round.receipt?.candidate_digest) });
     if (inventory.length !== rounds.length) reasons.push(`bounded-exit declared ${rounds.length} round(s), but launcher authority issued ${inventory.length} for this candidate cycle`);
     const inventoryIds = inventory.map((entry) => entry.request_id);
     const inventoryDigests = inventory.map((entry) => entry.receipt_sha256);
@@ -171,6 +190,7 @@ export function validateBoundedExitAdjudication({ root, reviewKind, body, identi
       const declared = adjudication.round_identities[index];
       if (declared.round !== index + 1) reasons.push(`bounded-exit round ${index + 1} has a non-canonical ordinal`);
       if (declared.review_target_digest !== round.receipt.candidate_digest) reasons.push(`bounded-exit round ${index + 1} review target digest mismatch`);
+      if (reviewKind === "exec" && declared.review_target_digest !== candidateDigest) reasons.push(`bounded-exit exec round ${index + 1} does not bind the final promotion candidate`);
       if (declared.launcher_receipt_sha256 !== round.receiptSha) reasons.push(`bounded-exit round ${index + 1} launcher digest mismatch`);
       if (declared.findings_sha256 !== round.findingsSha) reasons.push(`bounded-exit round ${index + 1} findings digest mismatch`);
     });
@@ -228,7 +248,7 @@ export function validateBoundedExitAdjudication({ root, reviewKind, body, identi
     if (severity === "high") {
       if (!Array.isArray(entry.evidence) || entry.evidence.length === 0) reasons.push(`bounded-exit High ${entry.id} requires hash-verified evidence`);
       for (const artifact of entry.evidence || []) {
-        try { loadBoundRepositoryFile(root, artifact, `bounded-exit High ${entry.id} evidence`); }
+        try { validateDispositionEvidence(root, artifact, { wi, candidateDigest, findingId: entry.id }); }
         catch (error) { reasons.push(error.message); }
       }
     }
@@ -251,7 +271,7 @@ export function validateBoundedExitAdjudication({ root, reviewKind, body, identi
       if (!censusIds.includes(findingId)) reasons.push(`bounded-exit rubric ${entry.rubric_id} maps to undispositioned terminal finding ${findingId}`);
     }
     for (const artifact of entry.evidence || []) {
-      try { loadBoundRepositoryFile(root, artifact, `bounded-exit rubric ${entry.rubric_id} evidence`); }
+      try { validateDispositionEvidence(root, artifact, { wi, candidateDigest, rubricId: entry.rubric_id }); }
       catch (error) { reasons.push(error.message); }
     }
   }

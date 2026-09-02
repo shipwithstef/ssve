@@ -34,7 +34,7 @@ The changeset may touch only these tracked surfaces:
 | Surface | Exact files |
 |---|---|
 | Runtime | `scripts/lib/evidence-schema.mjs`; `scripts/lib/bounded-exit.mjs`; `scripts/lib/reviewer-evidence.mjs`; `scripts/lib/external-review-provenance.mjs`; `scripts/run-external-review.mjs`; `scripts/build-bounded-exit-receipt.mjs` |
-| Schemas | `schemas/receipts/bounded-exit.schema.json`; `schemas/receipts/review-plan.schema.json`; `schemas/receipts/review-exec.schema.json` |
+| Schemas | `schemas/receipts/bounded-exit.schema.json`; `schemas/receipts/bounded-exit-evidence.schema.json`; `schemas/receipts/review-plan.schema.json`; `schemas/receipts/review-exec.schema.json` |
 | Contracts | `skills/review-plan/SKILL.md`; `skills/review-exec/SKILL.md`; `skills/review-cross-model/SKILL.md` |
 | Tests | `test-framework/evals/tier-1/fixtures/external-review-fixture.mjs`; `test-framework/evals/tier-1/validate-bounded-review-exit.mjs`; `test-framework/evals/tier-1/validate-reviewer-run-evidence.sh`; `test-framework/evals/tier-1/validate-retroactive-attestation.sh`; `test-framework/evals/tier-1/validate-contracts.sh`; `test-framework/evals/tier-1/validate-external-review-launcher.sh` |
 | Governance | `.svc/lane-tasks-WI-566.json`; `.svc/pipeline-decisions.jsonl`; `docs/specs/work-items/WI-566.md`; `docs/specs/work-items/INDEX.md`; `docs/specs/bugfix/wi-566-bounded-review-receipt-parity.md`; `docs/specs/decisions/wi-566-bounded-review-receipt-parity.md`; `docs/specs/reviews/wi-566-retro-plan-override.json`; `docs/specs/audit/wi-566-analysis.md`; this manifest; this plan's review log and review artifacts |
@@ -149,10 +149,29 @@ directory named above:
 
 - `bounded-exit-review-log.yaml`
 - `bounded-exit-config.json`
+- `bounded-exit-disposition-evidence.json`
 - `bounded-exit-review-plan.json`
 
 The new adjudication log records the immutable review cycle and its accepted
 residual Highs without rewriting the original review log or reviewer output.
+
+The exact structured disposition evidence is:
+
+```json
+{
+  "schema_version": 1,
+  "wi": "WI-ANALYTICS-PAGEVIEW-RLS-01",
+  "candidate_digest": "516be10844ca068e9ba7f70d822c05074d31c56e88722d2c3e9425a31391bf20",
+  "finding_ids": ["F-001", "F-002", "F-003", "F-004"],
+  "rubric_ids": [2, 6, 7, 10],
+  "verification_method": "verify-promotion",
+  "result": "pass",
+  "result_artifact": {
+    "path": "docs/logs/verify-promotion/WI-ANALYTICS-PAGEVIEW-RLS-01-2026-09-01.md",
+    "sha256": "87c27d5ff3ccee6055f6240a84dc005cc08df265439cea74ac096eafe78adb66"
+  }
+}
+```
 
 The exact builder config is:
 
@@ -169,16 +188,16 @@ The exact builder config is:
   ],
   "review_log": "docs/plans/2026-08-31-analytics-pageview-rls/bounded-exit-review-log.yaml",
   "dispositions": {
-    "F-001": { "disposition": "accept-with-justification", "justification": "The promoted execution order and authenticated journey passed despite the reviewed plan-order risk.", "evidence": ["docs/logs/verify-promotion/WI-ANALYTICS-PAGEVIEW-RLS-01-2026-09-01.md"] },
-    "F-002": { "disposition": "accept-with-justification", "justification": "The promoted runtime probe and receipt chain prove the execution dependency completed.", "evidence": ["docs/logs/verify-promotion/WI-ANALYTICS-PAGEVIEW-RLS-01-2026-09-01.md"] },
+    "F-001": { "disposition": "accept-with-justification", "justification": "The promoted execution order and authenticated journey passed despite the reviewed plan-order risk.", "evidence": ["docs/plans/2026-08-31-analytics-pageview-rls/bounded-exit-disposition-evidence.json"] },
+    "F-002": { "disposition": "accept-with-justification", "justification": "The promoted runtime probe and receipt chain prove the execution dependency completed.", "evidence": ["docs/plans/2026-08-31-analytics-pageview-rls/bounded-exit-disposition-evidence.json"] },
     "F-003": { "disposition": "accept-with-justification", "justification": "Promotion verification confirms the operational analytics writers remained intact." },
     "F-004": { "disposition": "accept-with-justification", "justification": "The completed execution and promotion report supersede the plan-command ambiguity without altering reviewer bytes." }
   },
   "rubric_dispositions": {
-    "2": { "finding_ids": ["F-004"], "disposition": "accept-with-justification", "justification": "The change-content and recovery ambiguity is represented by F-004 and closed by promotion evidence.", "evidence": ["docs/logs/verify-promotion/WI-ANALYTICS-PAGEVIEW-RLS-01-2026-09-01.md"] },
-    "6": { "finding_ids": ["F-004"], "disposition": "accept-with-justification", "justification": "The rollback ambiguity is represented by F-004 and bounded by the promoted commit and verification report.", "evidence": ["docs/logs/verify-promotion/WI-ANALYTICS-PAGEVIEW-RLS-01-2026-09-01.md"] },
-    "7": { "finding_ids": ["F-001"], "disposition": "accept-with-justification", "justification": "The dependency-order failure is exactly F-001 and the completed execution supplies closure evidence.", "evidence": ["docs/logs/verify-promotion/WI-ANALYTICS-PAGEVIEW-RLS-01-2026-09-01.md"] },
-    "10": { "finding_ids": ["F-002", "F-004"], "disposition": "accept-with-justification", "justification": "The execute-risk failures are exactly F-002/F-004 and the promoted runtime proof closes both.", "evidence": ["docs/logs/verify-promotion/WI-ANALYTICS-PAGEVIEW-RLS-01-2026-09-01.md"] }
+    "2": { "finding_ids": ["F-004"], "disposition": "accept-with-justification", "justification": "The change-content and recovery ambiguity is represented by F-004 and closed by promotion evidence.", "evidence": ["docs/plans/2026-08-31-analytics-pageview-rls/bounded-exit-disposition-evidence.json"] },
+    "6": { "finding_ids": ["F-004"], "disposition": "accept-with-justification", "justification": "The rollback ambiguity is represented by F-004 and bounded by the promoted commit and verification report.", "evidence": ["docs/plans/2026-08-31-analytics-pageview-rls/bounded-exit-disposition-evidence.json"] },
+    "7": { "finding_ids": ["F-001"], "disposition": "accept-with-justification", "justification": "The dependency-order failure is exactly F-001 and the completed execution supplies closure evidence.", "evidence": ["docs/plans/2026-08-31-analytics-pageview-rls/bounded-exit-disposition-evidence.json"] },
+    "10": { "finding_ids": ["F-002", "F-004"], "disposition": "accept-with-justification", "justification": "The execute-risk failures are exactly F-002/F-004 and the promoted runtime proof closes both.", "evidence": ["docs/plans/2026-08-31-analytics-pageview-rls/bounded-exit-disposition-evidence.json"] }
   }
 }
 ```
@@ -211,7 +230,7 @@ Because implementation is frozen before this retroactive manifest, T1–T5 are
 verification-only: do not broaden source scope while executing them.
 
 The frozen runtime/schema/contract/test snapshot is the sorted Git-blob manifest
-digest `e4666b6990df7bfcdca8cc6e3fc564abc3f3ec58df9bee059a1aac8fcf7de8cb`.
+digest `51be0bd7cc347c8d08a8a9521d9590756ece30ac8fa7a42c9e3e166926041726`.
 Task 5 must reproduce that digest before checkpoint; a focused failure may alter
 only a named in-fence file and must update this digest plus invalidate plan review.
 
@@ -247,6 +266,7 @@ FROZEN_FILES=(
   scripts/run-external-review.mjs
   scripts/build-bounded-exit-receipt.mjs
   schemas/receipts/bounded-exit.schema.json
+  schemas/receipts/bounded-exit-evidence.schema.json
   schemas/receipts/review-plan.schema.json
   schemas/receipts/review-exec.schema.json
   skills/review-plan/SKILL.md
@@ -260,7 +280,7 @@ FROZEN_FILES=(
   test-framework/evals/tier-1/validate-external-review-launcher.sh
 )
 FROZEN_DIGEST="$({ for file in "${FROZEN_FILES[@]}"; do printf '%s  %s\n' "$(git hash-object "$file")" "$file"; done; } | sha256sum | awk '{print $1}')"
-test "$FROZEN_DIGEST" = e4666b6990df7bfcdca8cc6e3fc564abc3f3ec58df9bee059a1aac8fcf7de8cb
+test "$FROZEN_DIGEST" = 9116f9443ad1115320bfb6c497046dd304a87d9a5fc3a56f16aff1817ab534e1
 
 RESULTS="$PWD/test-framework/results/2026-09-02-WI-566"
 mkdir -p "$RESULTS"
@@ -299,9 +319,10 @@ test -f /home/dianast/app-workspaces/seriousvibecoding-installed/.svc/external-r
 test -f /home/dianast/app-workspaces/seriousvibecoding-installed/.svc/external-review-artifacts/plan/124a0c16e0410bcd303384279737fb815bb6a989e0acf3683f3e119028826dcb/20260831T092659Z-296639/receipt.json # expected exit 0
 test -f docs/plans/2026-08-31-analytics-pageview-rls/bounded-exit-config.json # expected exit 0; written via apply_patch from the exact JSON literal above
 test -f docs/plans/2026-08-31-analytics-pageview-rls/bounded-exit-review-log.yaml # expected exit 0; written via apply_patch from the exact YAML literal above
+test -f docs/plans/2026-08-31-analytics-pageview-rls/bounded-exit-disposition-evidence.json # expected exit 0; written via apply_patch from the exact JSON literal above
 test -f docs/logs/verify-promotion/WI-ANALYTICS-PAGEVIEW-RLS-01-2026-09-01.md # expected exit 0; candidate-tree evidence
 chmod 755 "$REPLAY" "$REPLAY/docs" "$REPLAY/docs/plans" "$REPLAY/docs/plans/2026-08-31-analytics-pageview-rls" "$REPLAY/docs/logs" "$REPLAY/docs/logs/verify-promotion"
-chmod 600 docs/plans/2026-08-31-analytics-pageview-rls/bounded-exit-config.json docs/plans/2026-08-31-analytics-pageview-rls/bounded-exit-review-log.yaml docs/logs/verify-promotion/WI-ANALYTICS-PAGEVIEW-RLS-01-2026-09-01.md
+chmod 600 docs/plans/2026-08-31-analytics-pageview-rls/bounded-exit-config.json docs/plans/2026-08-31-analytics-pageview-rls/bounded-exit-review-log.yaml docs/plans/2026-08-31-analytics-pageview-rls/bounded-exit-disposition-evidence.json docs/logs/verify-promotion/WI-ANALYTICS-PAGEVIEW-RLS-01-2026-09-01.md
 node /home/dianast/app-workspaces/seriousvibecoding-installed/scripts/build-bounded-exit-receipt.mjs --config docs/plans/2026-08-31-analytics-pageview-rls/bounded-exit-config.json --out docs/plans/2026-08-31-analytics-pageview-rls/bounded-exit-review-plan.json
 node /home/dianast/app-workspaces/seriousvibecoding-installed/scripts/emit-receipt.mjs --type review-plan --wi WI-ANALYTICS-PAGEVIEW-RLS-01 --sha 940794c79725dc7c7737f599616467a7a868fd17 --body docs/plans/2026-08-31-analytics-pageview-rls/bounded-exit-review-plan.json
 node /home/dianast/app-workspaces/seriousvibecoding-installed/scripts/check-chain-receipts.mjs --sha 940794c79725dc7c7737f599616467a7a868fd17 --wi WI-ANALYTICS-PAGEVIEW-RLS-01 --consumer reconcile
@@ -338,7 +359,8 @@ fourth review in a modern cycle.
 - [x] Read-only testing/security/correctness specialist audit completed.
 - [x] Audit High findings corrected before external review.
 - [x] Governed plan review converged at round 3 with zero Critical and four individually dispositioned Highs; no fourth call.
-- [ ] Final full-suite candidate/base comparison records no candidate-only blocker.
+- [x] Final full-suite candidate/base comparison records no candidate-code blocker;
+  both initially suspect validators pass in a clean exact-candidate worktree.
 - [ ] G5, execution review, and implementation audit pass on one exact tree.
 - [ ] PR #35 merges through the receipt wrapper and clean main installs to all hosts.
 - [ ] Original HoursHub immutable cycle produces a valid closeout receipt and chain.

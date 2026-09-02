@@ -150,7 +150,12 @@ export function verifyReviewerEvidence({ root = process.cwd(), reviewKind, body 
   } else {
     for (const round of rounds) {
       if (reviewKind === "exec" && round.receipt.candidate_digest !== body.candidate_digest) reasons.push(`launcher candidate digest mismatch: ${round.receiptPath}`);
-      if (reviewKind === "plan" && round.receipt.phase_guard?.plan_manifest_sha256 !== round.receipt.candidate_digest && round.receipt.candidate_digest !== body.candidate_digest) reasons.push(`launcher plan subject digest is neither phase-guard bound nor promotion-tree compatible: ${round.receiptPath}`);
+      if (reviewKind === "plan") {
+        if (round.receipt.phase_guard?.wi !== body.wi) reasons.push(`launcher plan WI does not match receipt WI: ${round.receiptPath}`);
+        if (round.receipt.phase_guard?.plan_manifest_sha256 !== round.receipt.candidate_digest) reasons.push(`launcher plan subject is not phase-guard bound: ${round.receiptPath}`);
+        const reviewedPlanDigest = body.reviewed_plan_digest || body.candidate_digest;
+        if (round.receipt.candidate_digest !== reviewedPlanDigest) reasons.push(`launcher plan subject does not match the receipt's reviewed plan digest: ${round.receiptPath}`);
+      }
       const findings = round.findings?.findings || [];
       if (findings.some((finding) => String(finding?.severity || "").toLowerCase() === "critical") ||
           (round.findings.verdict !== "pass-with-findings" && findings.some((finding) => String(finding?.severity || "").toLowerCase() === "high"))) {

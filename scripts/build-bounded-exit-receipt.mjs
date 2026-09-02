@@ -2,12 +2,15 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { candidateTreeIdentity, externalReviewCycleIdFromReceipt } from "./lib/external-review-provenance.mjs";
 import { evaluateReviewRoundCap } from "./lib/bounded-exit.mjs";
+import { validateEvidenceSchema } from "./lib/evidence-schema.mjs";
 import { verifyReviewerEvidence } from "./lib/reviewer-evidence.mjs";
 import { writeJsonAtomic } from "./state-io.mjs";
 
 const sha = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
+const frameworkRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const args = Object.fromEntries(process.argv.slice(2).reduce((rows, value, index, all) => value.startsWith("--") ? [...rows, [value.slice(2), all[index + 1]]] : rows, []));
 if (!args.config || !args.out) {
   console.error("usage: build-bounded-exit-receipt.mjs --config <json> --out <json>");
@@ -20,6 +23,7 @@ const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
 if (config.schema_version !== 1 || !["plan", "exec"].includes(config.review_kind) || !String(config.wi || "") || !/^[0-9a-f]{40}$/.test(String(config.candidate_sha || ""))) {
   throw new Error("bounded-exit builder config identity is invalid");
 }
+if (config.review_kind === "exec" && (typeof config.diff_hash !== "string" || config.diff_hash.length === 0)) throw new Error("bounded-exit exec builder requires diff_hash");
 if (!Array.isArray(config.launcher_receipts) || config.launcher_receipts.length < 1 || config.launcher_receipts.length > 3) throw new Error("bounded-exit builder requires one to three launcher receipts");
 const artifact = (file) => {
   const absolute = path.isAbsolute(file) ? path.resolve(file) : path.resolve(root, file);
@@ -40,6 +44,7 @@ if (rounds.some((round) => externalReviewCycleIdFromReceipt(round.receipt) !== c
 const terminal = rounds.at(-1);
 if (terminal.findings.verdict !== "fail") throw new Error("bounded-exit builder requires a terminal raw fail");
 const identity = candidateTreeIdentity(root, { candidateSha: config.candidate_sha });
+if (config.review_kind === "exec" && rounds.some((round) => round.receipt.candidate_digest !== identity.candidate_digest)) throw new Error("bounded-exit exec launcher rounds do not review the final promotion candidate");
 const reviewLog = artifact(config.review_log);
 const cap = evaluateReviewRoundCap(fs.readFileSync(path.resolve(root, reviewLog.path)));
 if (cap.exit_code !== 0) throw new Error(`review round cap rejected the configured log (exit ${cap.exit_code})`);
@@ -76,6 +81,7 @@ const body = {
   candidate_sha: config.candidate_sha,
   tree_hash: identity.tree_hash,
   candidate_digest: identity.candidate_digest,
+  ...(config.review_kind === "plan" ? { reviewed_plan_digest: terminal.receipt.candidate_digest } : {}),
   ...(config.review_kind === "exec" ? { diff_hash: config.diff_hash } : {}),
   self_review: config.self_review || { orchestrator: "codex", findings_count: 0, notes: "bounded-exit closeout" },
   adversarial_review: {
@@ -118,5 +124,8 @@ const body = {
 };
 const reasons = verifyReviewerEvidence({ root, reviewKind: config.review_kind, body });
 if (reasons.length) throw new Error(`bounded-exit receipt body rejected: ${reasons.join("; ")}`);
+const receiptSchema = JSON.parse(fs.readFileSync(path.join(frameworkRoot, "schemas", "receipts", `${config.review_kind === "plan" ? "review-plan" : "review-exec"}.schema.json`), "utf8"));
+const schemaReasons = validateEvidenceSchema(body, receiptSchema);
+if (schemaReasons.length) throw new Error(`bounded-exit receipt body schema rejected: ${schemaReasons.join("; ")}`);
 writeJsonAtomic(outPath, body, { mode: 0o600 });
 console.log(JSON.stringify({ status: "pass", out: path.relative(root, outPath), cycle_id: cycleId, rounds: rounds.length }));

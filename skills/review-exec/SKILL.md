@@ -245,7 +245,7 @@ For a terminal raw `fail`, attach `reviewer_evidence.bounded_exit` matching
 launcher/findings digests, candidate SHA/tree/digest, derived cycle ID, review
 log and deterministic cap result, plus exactly one census entry per terminal
 finding. Every High requires hash-verified `.svc/` or `docs/` evidence. Never
-Every terminal rubric failure requires an exact census entry mapped to
+rewrite reviewer bytes. Every terminal rubric failure requires an exact census entry mapped to
 dispositioned terminal finding IDs, with justification and hash-verified
 repository evidence. Unread dependencies and failed certifications still block.
 Never rewrite reviewer bytes. A Critical, stale/mutated candidate, missing/duplicate

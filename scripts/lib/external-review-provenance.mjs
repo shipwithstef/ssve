@@ -3,8 +3,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { getObject } from "./review-evidence-store.mjs";
+import { getObject, putObject } from "./review-evidence-store.mjs";
 import { acquireLock } from "../state-lock.mjs";
+import { familyOf } from "./cognitive-family.mjs";
 
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const sha=(bytes)=>crypto.createHash("sha256").update(bytes).digest("hex");
@@ -65,38 +66,75 @@ export function externalReviewCycleIdFromReceipt(receipt){
   return externalReviewCycleId({wi:guard.wi,reviewKind:receipt?.review_kind,candidateDigest:receipt?.candidate_digest,preExecutionBase:guard.pre_execution_base,overrideSha:guard.override?.actual_sha256||null});
 }
 function markerReceiptBytes(payload,label){
-  try{return secureFile(payload.receipt_path,label);}catch(pathError){
-    try{return getObject(payload.receipt_sha256,{start:process.cwd()}).bytes;}catch{return null;}
+  if(!/^[0-9a-f]{64}$/.test(String(payload.receipt_sha256||"")))return null;
+  try{const bytes=secureFile(payload.receipt_path,label);if(sha(bytes)===payload.receipt_sha256)return bytes;}catch{}
+  try{const bytes=getObject(payload.receipt_sha256,{start:process.cwd()}).bytes;return sha(bytes)===payload.receipt_sha256?bytes:null;}catch{return null;}
+}
+function reviewAuthority(receipt){
+  const author=familyOf(receipt?.effective_tuple?.orchestrator);
+  const reviewer=familyOf(receipt?.effective_tuple?.family||receipt?.effective_tuple?.host);
+  return author!=="unknown"&&reviewer!=="unknown"&&author!==reviewer?"independent":"advisory";
+}
+function receiptClassification(receipt){
+  const wi=String(receipt?.phase_guard?.wi||"").trim()||null;
+  return {review_kind:receipt?.review_kind||null,wi,review_cycle_id:wi?externalReviewCycleIdFromReceipt(receipt):null,review_authority:reviewAuthority(receipt),candidate_digest:receipt?.candidate_digest||null};
+}
+function classificationFile(directory,requestId){return path.join(directory,`${requestId}.json`);}
+function readClassification(directory,requestId,key){
+  const file=classificationFile(directory,requestId);if(!fs.existsSync(file))return null;
+  const marker=JSON.parse(secureFile(file,"external review cycle classification"));const {authority_hmac_sha256,...payload}=marker;const expected=crypto.createHmac("sha256",key).update(canonical(payload)).digest("hex");
+  if(typeof authority_hmac_sha256!=="string"||!/^[0-9a-f]{64}$/.test(authority_hmac_sha256)||!crypto.timingSafeEqual(Buffer.from(expected,"hex"),Buffer.from(authority_hmac_sha256,"hex")))throw new Error(`external review classification HMAC mismatch: ${requestId}`);
+  if(payload.schema_version!==1||payload.request_id!==requestId)throw new Error(`external review classification identity mismatch: ${requestId}`);return payload;
+}
+function mergeClassification(marker,indexed){
+  if(!indexed)return {...marker};
+  for(const key of ["request_id","candidate_digest","review_kind","wi","review_cycle_id","review_authority"]){
+    if(marker[key]!==undefined&&canonical(marker[key])!==canonical(indexed[key]))throw new Error(`external review classification conflicts with issuance marker: ${marker.request_id}`);
   }
+  return {...marker,...indexed};
+}
+function writeClassification(directory,payload,key){
+  const body={schema_version:1,request_id:payload.request_id,candidate_digest:payload.candidate_digest,review_kind:payload.review_kind,wi:payload.wi,review_cycle_id:payload.review_cycle_id,review_authority:payload.review_authority};
+  const record={...body,authority_hmac_sha256:crypto.createHmac("sha256",key).update(canonical(body)).digest("hex")};const file=classificationFile(directory,body.request_id);
+  if(fs.existsSync(file)){const existing=readClassification(directory,body.request_id,key);if(canonical(existing)!==canonical(body))throw new Error(`external review classification conflict: ${body.request_id}`);return existing;}
+  const fd=fs.openSync(file,fs.constants.O_CREAT|fs.constants.O_EXCL|fs.constants.O_WRONLY,0o600);try{fs.writeFileSync(fd,`${JSON.stringify(record,null,2)}\n`);fs.fsyncSync(fd);}finally{fs.closeSync(fd);}return body;
 }
 export function issueExternalReviewProvenance({receiptPath,packagePath,findingsPath}){
   const receiptBytes=secureFile(receiptPath,"external review receipt");const receipt=JSON.parse(receiptBytes);if(!UUID.test(String(receipt.request_id||"")))throw new Error("external review request id must be a UUID");
+  const immutableReceipt=putObject(receiptBytes);if(immutableReceipt.sha256!==sha(receiptBytes))throw new Error("external review receipt object digest mismatch");
   const packageBytes=secureFile(packagePath,"external review package");const findingsBytes=secureFile(findingsPath,"external review findings");
-  const root=externalReviewProvenanceRoot({receiptPath}),key=authorityKey(root,{create:true}),issuance=secureDirectory(path.join(root,"issuance"),"external review issuance directory",{create:true});
+  const root=externalReviewProvenanceRoot({receiptPath}),key=authorityKey(root,{create:true}),issuance=secureDirectory(path.join(root,"issuance"),"external review issuance directory",{create:true}),classifications=secureDirectory(path.join(root,"classifications"),"external review classification directory",{create:true});
   const release=acquireLock(path.join(root,"issuance-sequence"),{staleMs:60_000});
   try{
   const wi=String(receipt.phase_guard?.wi||"").trim()||null;
-  let reviewCycleId=null;try{reviewCycleId=wi?externalReviewCycleIdFromReceipt(receipt):null;}catch{}
+  const reviewCycleId=wi?externalReviewCycleIdFromReceipt(receipt):null;
+  const currentAuthority=reviewAuthority(receipt);
   let matchingLegacy=0, maxSequence=0;
-  for(const name of fs.readdirSync(issuance)){
+  if(currentAuthority==="independent")for(const name of fs.readdirSync(issuance)){
     if(!name.endsWith(".json"))continue;
     const marker=JSON.parse(secureFile(path.join(issuance,name),"external review issuance marker"));const {authority_hmac_sha256,...prior}=marker;const expected=crypto.createHmac("sha256",key).update(canonical(prior)).digest("hex");
     if(typeof authority_hmac_sha256!=="string"||!/^[0-9a-f]{64}$/.test(authority_hmac_sha256)||!crypto.timingSafeEqual(Buffer.from(expected,"hex"),Buffer.from(authority_hmac_sha256,"hex")))throw new Error(`external review issuance HMAC mismatch: ${name}`);
-    let priorKind=prior.review_kind;
+    const indexed=readClassification(classifications,prior.request_id,key);const known=mergeClassification(prior,indexed);
+    if(!reviewCycleId&&known.candidate_digest!==receipt.candidate_digest)continue;
+    if(reviewCycleId&&known.review_cycle_id&&known.review_cycle_id!==reviewCycleId)continue;
+    if(known.review_kind&&known.review_kind!==receipt.review_kind)continue;
+    if(known.wi&&known.wi!==wi)continue;
+    let priorKind=known.review_kind;
     let priorReceipt=null;
-    if(!priorKind||!prior.wi||!prior.review_cycle_id){const priorBytes=markerReceiptBytes(prior,"legacy external review inventory receipt");if(!priorBytes)continue;try{priorReceipt=JSON.parse(priorBytes);priorKind||=priorReceipt.review_kind;}catch{continue;}}
+    if(!priorKind||!known.wi||!known.review_cycle_id||!known.review_authority){const priorBytes=markerReceiptBytes(prior,"legacy external review inventory receipt");if(!priorBytes){const related=(known.review_kind===receipt.review_kind&&known.wi===wi)||known.candidate_digest===receipt.candidate_digest;if(related)throw new Error(`external review legacy receipt is unavailable or digest-mismatched: ${prior.request_id}`);continue;}try{priorReceipt=JSON.parse(priorBytes);const derived=writeClassification(classifications,{request_id:prior.request_id,...receiptClassification(priorReceipt)},key);Object.assign(known,mergeClassification(prior,derived));priorKind=known.review_kind;}catch(error){if(/classification conflict/.test(error.message))throw error;throw new Error(`external review legacy receipt is invalid: ${prior.request_id}`);}}
     if(priorKind!==receipt.review_kind)continue;
+    if(known.review_authority!=="independent")continue;
     if(reviewCycleId){
-      const priorWi=String(prior.wi||priorReceipt?.phase_guard?.wi||"").trim();
-      let priorCycle=prior.review_cycle_id||null;try{priorCycle||=priorReceipt?externalReviewCycleIdFromReceipt(priorReceipt):null;}catch{priorCycle=null;}
+      const priorWi=String(known.wi||"").trim();
+      const priorCycle=known.review_cycle_id||null;
       if(priorCycle!==reviewCycleId)continue;
     }else if(prior.candidate_digest!==receipt.candidate_digest)continue;
     matchingLegacy+=1;if(Number.isInteger(prior.cycle_sequence))maxSequence=Math.max(maxSequence,prior.cycle_sequence);
   }
   const cycleSequence=Math.max(matchingLegacy,maxSequence)+1;
   if(reviewCycleId&&cycleSequence>3)throw new Error(`external review cycle hard cap reached for ${receipt.review_kind}/${wi}`);
-  const payload={schema_version:1,request_id:receipt.request_id,candidate_digest:receipt.candidate_digest,review_kind:receipt.review_kind,wi,review_cycle_id:reviewCycleId,cycle_sequence:cycleSequence,package_sha256:sha(packageBytes),findings_sha256:sha(findingsBytes),receipt_sha256:sha(receiptBytes),receipt_path:fs.realpathSync(receiptPath),package_path:fs.realpathSync(packagePath),findings_path:fs.realpathSync(findingsPath),launcher_version:receipt.launcher_version,effective_tuple:receipt.effective_tuple,issued_at:new Date().toISOString()};
-  const marker={...payload,authority_hmac_sha256:crypto.createHmac("sha256",key).update(canonical(payload)).digest("hex")};const file=path.join(issuance,`${receipt.request_id}.json`);const fd=fs.openSync(file,fs.constants.O_CREAT|fs.constants.O_EXCL|fs.constants.O_WRONLY,0o600);try{fs.writeFileSync(fd,`${JSON.stringify(marker,null,2)}\n`);fs.fsyncSync(fd);}finally{fs.closeSync(fd);}return file;
+  const payload={schema_version:1,request_id:receipt.request_id,candidate_digest:receipt.candidate_digest,review_kind:receipt.review_kind,wi,review_cycle_id:reviewCycleId,review_authority:currentAuthority,cycle_sequence:currentAuthority==="independent"?cycleSequence:null,package_sha256:sha(packageBytes),findings_sha256:sha(findingsBytes),receipt_sha256:sha(receiptBytes),receipt_path:fs.realpathSync(receiptPath),package_path:fs.realpathSync(packagePath),findings_path:fs.realpathSync(findingsPath),launcher_version:receipt.launcher_version,effective_tuple:receipt.effective_tuple,issued_at:new Date().toISOString()};
+  const marker={...payload,authority_hmac_sha256:crypto.createHmac("sha256",key).update(canonical(payload)).digest("hex")};const file=path.join(issuance,`${receipt.request_id}.json`);const fd=fs.openSync(file,fs.constants.O_CREAT|fs.constants.O_EXCL|fs.constants.O_WRONLY,0o600);try{fs.writeFileSync(fd,`${JSON.stringify(marker,null,2)}\n`);fs.fsyncSync(fd);}finally{fs.closeSync(fd);}writeClassification(classifications,payload,key);return file;
   }finally{release();}
 }
 function bytesOrFile(fileOrBytes, label, explicitBytes) {
@@ -124,7 +162,7 @@ export function verifyExternalReviewProvenance({receiptPath,packagePath,findings
 export function listExternalReviewProvenance({receiptPath,candidateDigest,reviewKind}){
   if(!/^[0-9a-f]{64}$/.test(String(candidateDigest||"")))throw new Error("external review inventory candidate digest is invalid");
   if(!["plan","exec","design"].includes(reviewKind))throw new Error("external review inventory kind is invalid");
-  const root=externalReviewProvenanceRoot({receiptPath}),key=authorityKey(root),issuance=secureDirectory(path.join(root,"issuance"),"external review issuance directory");
+  const root=externalReviewProvenanceRoot({receiptPath}),key=authorityKey(root),issuance=secureDirectory(path.join(root,"issuance"),"external review issuance directory"),classifications=secureDirectory(path.join(root,"classifications"),"external review classification directory",{create:true});
   const rows=[];
   for(const name of fs.readdirSync(issuance).sort()){
     if(!name.endsWith(".json"))continue;
@@ -147,26 +185,31 @@ export function listExternalReviewProvenance({receiptPath,candidateDigest,review
   return rows;
 }
 
-export function listExternalReviewCycleProvenance({receiptPath,wi,reviewKind,cycleId}){
+export function listExternalReviewCycleProvenance({receiptPath,wi,reviewKind,cycleId,candidateDigests=[]}){
   if(!/^[0-9a-f]{64}$/.test(String(cycleId||"")))throw new Error("external review cycle identity is invalid");
-  const root=externalReviewProvenanceRoot({receiptPath}),key=authorityKey(root),issuance=secureDirectory(path.join(root,"issuance"),"external review issuance directory");
-  const rows=[];
+  const root=externalReviewProvenanceRoot({receiptPath}),key=authorityKey(root),issuance=secureDirectory(path.join(root,"issuance"),"external review issuance directory"),classifications=secureDirectory(path.join(root,"classifications"),"external review classification directory",{create:true});
+  const rows=[];const declaredDigests=new Set(candidateDigests);
   for(const name of fs.readdirSync(issuance).sort()){
     if(!name.endsWith(".json"))continue;
     const marker=JSON.parse(secureFile(path.join(issuance,name),"external review issuance marker"));
     const {authority_hmac_sha256,...payload}=marker;
     const expected=crypto.createHmac("sha256",key).update(canonical(payload)).digest("hex");
     if(typeof authority_hmac_sha256!=="string"||!/^[0-9a-f]{64}$/.test(authority_hmac_sha256)||!crypto.timingSafeEqual(Buffer.from(expected,"hex"),Buffer.from(authority_hmac_sha256,"hex")))throw new Error(`external review issuance HMAC mismatch: ${name}`);
-    if(payload.review_cycle_id&&payload.review_cycle_id!==cycleId)continue;
+    const indexed=readClassification(classifications,payload.request_id,key);const known=mergeClassification(payload,indexed);
+    if(known.review_cycle_id&&known.review_cycle_id!==cycleId)continue;
+    if(known.review_kind&&known.review_kind!==reviewKind)continue;
+    if(known.wi&&known.wi!==wi)continue;
+    if(known.review_authority==="advisory")continue;
     const receiptBytes=markerReceiptBytes(payload,`external review inventory receipt ${payload.request_id}`);
-    if(!receiptBytes){if(payload.review_cycle_id===cycleId)throw new Error(`external review cycle receipt is unavailable: ${payload.request_id}`);continue;}
-    if(sha(receiptBytes)!==payload.receipt_sha256){if(payload.review_cycle_id===cycleId)throw new Error(`external review inventory receipt digest mismatch: ${payload.request_id}`);continue;}
+    if(!receiptBytes){const related=known.review_cycle_id===cycleId||(known.review_kind===reviewKind&&known.wi===wi)||declaredDigests.has(known.candidate_digest);if(related)throw new Error(`external review ${known.review_cycle_id?"cycle":"legacy"} receipt is unavailable or digest-mismatched: ${payload.request_id}`);continue;}
     const receipt=JSON.parse(receiptBytes);
-    if(receipt.request_id!==payload.request_id||receipt.candidate_digest!==payload.candidate_digest){if(payload.review_cycle_id===cycleId)throw new Error(`external review inventory receipt identity mismatch: ${payload.request_id}`);continue;}
-    const markerKind=payload.review_kind||receipt.review_kind;
-    const markerWi=String(payload.wi||receipt.phase_guard?.wi||"").trim();
+    if(receipt.request_id!==payload.request_id||receipt.candidate_digest!==payload.candidate_digest)throw new Error(`external review inventory receipt identity mismatch: ${payload.request_id}`);
+    if(!indexed&&(!known.review_kind||!known.wi||!known.review_cycle_id||!known.review_authority)){const derived=writeClassification(classifications,{request_id:payload.request_id,...receiptClassification(receipt)},key);Object.assign(known,mergeClassification(payload,derived));}
+    const markerKind=known.review_kind||receipt.review_kind;
+    const markerWi=String(known.wi||receipt.phase_guard?.wi||"").trim();
     if(markerKind!==reviewKind||markerWi!==wi)continue;
-    let markerCycle=payload.review_cycle_id||null;try{markerCycle||=externalReviewCycleIdFromReceipt(receipt);}catch{continue;}
+    if((known.review_authority||reviewAuthority(receipt))!=="independent")continue;
+    let markerCycle=known.review_cycle_id||null;try{markerCycle||=externalReviewCycleIdFromReceipt(receipt);}catch{throw new Error(`external review legacy receipt cannot be classified: ${payload.request_id}`);}
     if(markerCycle!==cycleId)continue;
     rows.push({request_id:payload.request_id,receipt_sha256:payload.receipt_sha256,candidate_digest:payload.candidate_digest,issued_at:payload.issued_at,cycle_sequence:Number.isInteger(payload.cycle_sequence)?payload.cycle_sequence:null});
   }
