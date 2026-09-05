@@ -2,7 +2,7 @@
   "wi": "WI-567",
   "lane": "bugfix",
   "created": "2026-09-05T12:26:29.847Z",
-  "status": "in_progress",
+  "status": "completed",
   "delivery_graph": {
     "compiler_version": 1,
     "user_intent": "Correct negation-blind active-intent stop detection while preserving affirmative stop and WI isolation semantics",
@@ -425,7 +425,7 @@
     {
       "id": 4,
       "subject": "execute-changeset: delivery graph required step",
-      "status": "in_progress",
+      "status": "completed",
       "blocked_by": [
         3
       ],
@@ -441,7 +441,7 @@
     {
       "id": 5,
       "subject": "review-gate: delivery graph required step",
-      "status": "pending",
+      "status": "completed",
       "blocked_by": [
         4
       ],
@@ -452,7 +452,7 @@
     {
       "id": 6,
       "subject": "review-exec: delivery graph required step",
-      "status": "pending",
+      "status": "completed",
       "blocked_by": [
         5
       ],
@@ -463,7 +463,7 @@
     {
       "id": 7,
       "subject": "audit-implementation: delivery graph required step",
-      "status": "pending",
+      "status": "completed",
       "blocked_by": [
         6
       ],
@@ -474,7 +474,7 @@
     {
       "id": 8,
       "subject": "land-changeset: delivery graph required step",
-      "status": "pending",
+      "status": "completed",
       "blocked_by": [
         7
       ],
@@ -485,7 +485,7 @@
     {
       "id": 9,
       "subject": "verify-promotion: delivery graph required step",
-      "status": "pending",
+      "status": "completed",
       "blocked_by": [
         8
       ],

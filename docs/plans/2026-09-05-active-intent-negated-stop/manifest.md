@@ -2,7 +2,7 @@
 
 **Spec:** `docs/specs/work-items/WI-567.md`
 **Branch:** `bugfix/WI-567-active-intent-negated-stop`
-**Status:** SIMULATED
+**Status:** VERIFIED
 **Base:** `origin/main` at `bead68b871c104a6328fe05ac695c3399440b8a7`
 **Created:** 2026-09-05
 **Execution mode:** inline
@@ -172,6 +172,6 @@ No unresolved FAIL or WARN remains.
 - [x] Mandatory delivery graph validates.
 - [x] Focused red/green proof captured.
 - [x] Complete Tier-1 executed: affected validators pass; 27 unrelated baseline failures recorded in WI-567.
-- [ ] Landing and promoted install verification complete.
+- [x] Landing and promoted install verification complete at `59d1280`; all nine hosts report zero drift.
 
 **Next:** `review-plan` for WI-567.

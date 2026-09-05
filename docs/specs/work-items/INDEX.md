@@ -1,7 +1,7 @@
 # Work Items Index
 
 - [WI-566](WI-566.md) — Hash-bound bounded-exit adjudication makes WI-491 three-round disposition receiptable without altering reviewer evidence or permitting Critical/fourth-round bypass (severity:high) — status:implementation-complete; review pending
-- [WI-567](WI-567.md) — Active-intent stop detection must respect negation while preserving affirmative stop and WI isolation semantics (severity:critical) — status:implementation-complete; promotion verification pending
+- [WI-567](WI-567.md) — Active-intent stop detection respects negation while preserving affirmative stop and WI isolation semantics (severity:critical) — status:VERIFIED (promoted `59d1280`; focused runtime replay + all-host zero drift)
 - [WI-568](WI-568.md) — Kimi preflight pause detection must respect negation context (severity:medium) — status:identified (follow-up to WI-567)
 - [WI-556](WI-556.md) — Final-SHA mandatory-skill coverage with terminating receipts: one binary yes/no per final commit via content-addressed `skill-coverage` note index + atomic merge finalization (severity:high) — status:VERIFIED-L3 (PR #20 squash e0cf0257, G7 complete)
 - [WI-555](WI-555.md) — Consumer-local reviewed retroactive receipt recovery: post-WI-472 gaps resolve ledger/bundle/review from `repoRootForCache()`, WI-472 framework-package authority unchanged (severity:high) — status:in_progress
