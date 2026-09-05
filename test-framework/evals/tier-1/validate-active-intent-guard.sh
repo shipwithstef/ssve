@@ -120,6 +120,46 @@ assert_blocked() {
   fi
 }
 
+# WI-567: exercise classifier behavior directly so a negated stop token cannot
+# silently re-enter wildcard suppression while the end-to-end hook fixtures stay
+# focused on persistence, continuation, and scope isolation.
+node --input-type=module - "$ROOT" <<'NODE'
+import assert from "node:assert/strict";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+
+const root = process.argv[2];
+const { classifyActiveIntent } = await import(
+  pathToFileURL(path.join(root, "hooks/lib/active-intent.mjs"))
+);
+
+const negated = [
+  "do not stop",
+  "never stop until all deliverables are verified",
+  "don't stop now",
+  "dont stop now",
+  "Do not yield or stop for manual confirmation until all deliverables, code changes, and proofs are verified"
+];
+for (const prompt of negated) {
+  const result = classifyActiveIntent(prompt);
+  assert.equal(result.suppress, false, `negated stop must not suppress: ${prompt}`);
+  assert.equal(result.classification, "none", `negated stop must remain ordinary intent: ${prompt}`);
+}
+
+for (const prompt of [
+  "stop",
+  "please stop now",
+  "never stop. Stop now",
+  "do not yield but stop now",
+  "do not continue, stop now"
+]) {
+  const result = classifyActiveIntent(prompt);
+  assert.equal(result.suppress, true, `affirmative stop must suppress: ${prompt}`);
+  assert.equal(result.classification, "stop", `affirmative stop classification drifted: ${prompt}`);
+}
+NODE
+echo "  Negated/affirmative classifier boundary: PASS"
+
 PHRASES=(
   "stop"
   "ignore this"

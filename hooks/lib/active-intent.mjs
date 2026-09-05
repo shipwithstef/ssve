@@ -115,6 +115,17 @@ function normalizeText(text) {
   return String(text || "").toLowerCase().replace(/\s+/g, " ").trim();
 }
 
+const NEGATED_STOP_SPAN = /\b(?:do\s+not|don['’]?t|dont|never)(?:\s+[\p{L}\p{N}_'’-]+){0,6}\s+stop\b/giu;
+const CONTRASTIVE_STOP = /\b(?:but|however|instead)\b/i;
+
+function hasAffirmativeStop(text) {
+  const withoutNegatedStops = String(text || "").replace(
+    NEGATED_STOP_SPAN,
+    (span) => (CONTRASTIVE_STOP.test(span) ? span : "")
+  );
+  return /\bstop\b/i.test(withoutNegatedStops);
+}
+
 export function detectReferencedWI(text) {
   const match = String(text || "").match(/\bWI[-\s]?(\d{2,5})\b/i);
   return match ? `WI-${match[1]}` : "";
@@ -141,8 +152,18 @@ export function classifyActiveIntent(text) {
     };
   }
 
+  if (hasAffirmativeStop(raw)) {
+    return {
+      classification: "stop",
+      suppress: true,
+      wi: referencedWi || "*",
+      reason: referencedWi
+        ? `stop suppresses ${referencedWi}`
+        : "stop suppresses stale WI continuation pressure"
+    };
+  }
+
   const suppressionPatterns = [
-    { classification: "stop", pattern: /\bstop\b/ },
     { classification: "scope-correction", pattern: /\bignore\s+(?:this|that|it|the\s+guard|the\s+hook|wi[-\s]?\d{2,5})\b/i },
     { classification: "scope-correction", pattern: /\bwhat\s+(?:are|r)\s+(?:you|u|oyu)\s+doing\b/i },
     { classification: "unrelated", pattern: /\bunrelated\b/i },

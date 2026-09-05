@@ -1,0 +1,35 @@
+review_log:
+  plan: docs/plans/2026-09-05-active-intent-negated-stop/manifest.md
+  tier1:
+    script: scripts/verify-plan-mechanical.sh
+    exit_code: 0
+    issues: 0
+  tier2:
+    reviewer: codex-sol-high
+    reviewer_family: openai
+    rubric_score: 4
+    receipt: .svc/external-review-artifacts/plan/846dc6d1b7b79a500cb510f3f0dab41b009777b7d489dd77fd70ff0753deba85/20260905T123100Z-1168586/receipt.json
+    findings: [F-001, F-002, F-003, F-004, F-005]
+  responses:
+    - id: F-001
+      disposition: ACCEPT
+      justification: Added exact bugfix lane and every mandatory skill/artifact state.
+    - id: F-002
+      disposition: ACCEPT
+      justification: Moved all-host install/drift ownership exclusively to post-promotion AC-6 proof.
+    - id: F-003
+      disposition: ACCEPT
+      justification: Recorded the actual red assertion log and deterministic resume rule.
+    - id: F-004
+      disposition: ACCEPT
+      justification: Specified delimiter, six-token association, contrastive, and remaining-stop precedence with fixtures.
+    - id: F-005
+      disposition: ACCEPT
+      justification: Added pre-commit reviewed-diff and post-landing commit-scoped rollback paths including host reconvergence.
+  lens_rechecks: []
+  terminal_state: REVISED_AND_REVIEWED
+  self_review_passes: 1
+  self_review_digest: 846dc6d1b7b79a500cb510f3f0dab41b009777b7d489dd77fd70ff0753deba85
+  rounds_run: 1
+  unresolved_critical: 0
+  remaining_high: 0
