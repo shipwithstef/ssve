@@ -780,9 +780,7 @@ If the file does not exist, create it before proceeding to Step 1. Follow the de
 In addition to the Markdown design system, the agent MUST generate a machine-readable `docs/specs/ui/tokens.json` following the **W3C DTCG 1.0** standard. This ensures 1:1 token parity across all hosts (Gemini, Claude, Codex).
 
 **Vibe Contract (Motion Schema):**
-The agent must generate a `docs/specs/ui/vibe-contract.json` that defines the technical **Motion Schema** for the "Signature Hook" selected in `design-ux`.
-- Include: `easing_curve`, `visual_grit`, `interaction_physics`.
-- This contract is the definitive source of truth for high-fidelity implementation.
+Read the Signature Hook disposition from `design-ux`. For `existing-pattern-retained`, carry the existing motion/accessibility tokens and verify the affected states; do not invent new decorative physics or require a new motion schema. For a selected new interaction, generate `docs/specs/ui/vibe-contract.json` with its applicable motion parameters (including easing and interaction behavior), reduced-motion/accessibility behavior and performance checks. Keep the technical contract tied to the approved interaction and current design tokens.
 
 ### Step 0c: UX→UI Traceability Table
 

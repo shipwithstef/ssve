@@ -1,138 +1,50 @@
-# Product-Question Format (shared reference)
+# Product decisions (shared contract)
 
-**What this is:** The mandatory format for product questions asked by any svc skill (validate-feature, write-spec, design-ux, design-tech, plan-changeset, execute-changeset, review-gate, test-journeys, diagnose-bug, audit-ac, sync-spec-code, route-workflow).
+Use this contract when a skill encounters an unresolved consequential product decision. Depth follows the decision's consequences; question counts and decorative analysis are not evidence of quality.
 
-**Why it exists:** Without structure, product questions become surface-level yes/no exchanges that miss critical dimensions. Shipped features end up with broken edge cases the agent should have flagged. This format ensures every decision is auditable, grounded in competitor reality, and accompanied by its own risk + success + cost + persona + reversibility + innovation analysis.
+## Ground the decision before asking
 
-**Origin:** User feedback during Example Marketplace WI-099 session 2026-04-21. Demonstrative first output at `docs/specs/work-items/WI-099-questions.md` in that repo.
+Read current owner instructions and accepted decisions, the relevant current spec/AC/journeys and personas, and actual implementation evidence. Follow the dependencies that affect the requested behavior. Reuse evidence already loaded while checking its freshness. Code shows what happens; it does not approve what should happen. A stale spec is not automatically authoritative over a newer owner decision, and existing code is not automatically the desired design.
 
----
+Expose conflicts between intended behavior, observed behavior and owner scope. Investigate missing relevant evidence before concluding there are no decisions. Mark unresolved facts as unknown; do not invent competitor behavior, numeric benchmarks or quota balances. Research only gaps that matter to the decision.
 
-## The 12-section template (in order)
+A **consequential decision** materially changes user outcomes, scope, acceptance criteria, compatibility or data handling, significant cost, or a hard-to-reverse commitment. An outcome request does not silently resolve a conflicting storage, compatibility or release policy. Resolve that conflict explicitly before dependent implementation.
 
-Every product question asked during any phase uses this structure:
+## Use judgment proportional to the consequence
 
-### 1. Plain translation
-The question in the **owner's / customer's / user's voice**, not technical language. Example: "When I send a Flash Offer, who gets the push notification on their phone?"
+For a real decision, present a plain-language choice and recommendation supported by:
 
-### 2. 5 considerations (owner + customer POV)
-Five distinct product dimensions that affect the decision, written in plain language. Examples: consent, relevance, platform reputation, acquisition vs. retention, customer overwhelm.
+- Relevant evidence and conflicts, including current spec and actual code.
+- Meaningful alternatives and the reason for the recommendation.
+- Persona/user fit and affected journeys, states and accessibility needs.
+- Material risk, cost, reversibility and mitigation.
+- A measurable success signal appropriate to the outcome.
+- Useful innovation: consider a better approach when it improves this user task; explain why to adopt, defer or retain the established solution.
 
-### 3. 5 competitors — what they actually do
-Five NAMED companies + specifics of their implementation. Include both positive (they do it well) and negative (they tried, failed, retired) examples when available. Prefer direct competitors + adjacent-industry references. Use real market behavior, not fabricated facts.
+Combine these dimensions in concise prose or a table. Expand only where the decision needs it. There is no fixed heading, question, consideration or competitor count. Verified competitor examples are useful when they change the choice; internal policy conflicts do not require unrelated competitor research. Do not invent novelty to fill a template or replace product-specific UX with a generic pattern list.
 
-### 4. Justification
-The reasoning from considerations + competitor patterns. Explains the emerging direction.
+## Resolve only what remains unresolved
 
-### 5. Risk / counter-argument
-The strongest case AGAINST the emerging direction. What would someone opposed to this decision say? Includes mitigation.
+Carry forward explicit task authorization and clear accepted decisions. Existing AGREE/OVERRIDE history remains valid when its accepted meaning is clear; do not require those literal keywords again. The agent may resolve reversible implementation details within authorized scope, recording the rationale in the existing brief/plan. Consequential owner choices remain owner choices; silence and elapsed time are never approval.
 
-### 6. Success signal
-One measurable, falsifiable indicator that tells us the decision was right within 30-90 days. Example: "Push-to-claim conversion > 8% (industry benchmark 5-7%)."
+Independent questions may be grouped outside the signed runtime flow. Within product-outcome runs, preserve `references/owner-decision-runtime-v2.md` and `skills/decide/SKILL.md`: use the configured signed decision/delegation boundary, deduplication and mode. This reference does not grant new signing or release authority.
 
-### 7. Cost/effort
-T-shirt size (XS / S / M / L / XL) + 1-line reason. XS = no code or trivial change; XL = multi-week effort.
+When a consequential decision arises, record its question, evidence, alternatives/recommendation, real resolution and phase in the existing canonical decision artifact or `docs/specs/features/<feature>-questions.md` / `docs/specs/work-items/<WI>-questions.md`. Read that history on resume. Do not create an empty companion when no consequential decision arose. Do not convert an unresolved entry to resolved merely to advance.
 
-### 8. Persona fit
-Which personas this decision serves most (P1 / P4 / P6 etc. — refer to `docs/specs/personas/` in the project). Explicitly flag any net-negative impact on any persona.
+## Promotion predicate
 
-### 9. Reversibility
-Bezos framework — **one-way door** (hard to reverse, e.g., schema change in production) vs **two-way door** (easy to revert, e.g., UI flow). Inform confidence weighting.
+Apply the same predicate at review-gate G1, design-ux UX-REVIEWED, write-spec/design-tech BASELINED, and plan-changeset SIMULATED:
 
-### 10. Innovation layer
-Three parts:
-- **(a) Industry-proven next-level move** — what leaders are piloting but not yet mainstream. Named example.
-- **(b) Agent's creative take** — a novel idea the agent generates based on first-principles reasoning. Must be concrete enough to implement.
-- **(c) Judgment** — for each of (a) and (b): **ADOPT NOW** / **ADOPT IN V2** / **ADOPT IN V3** / **DEFER** / **REJECT**, with a short reason.
+1. Relevant acceptance criteria and user/system states have supporting evidence or explicit scoped limitations that do not invalidate the proposed phase.
+2. No unresolved consequential decision blocks that phase's dependent work.
+3. Every required owner decision has a real resolution under the applicable authority contract.
 
-### 11. Decision (synthesis — MUST be last after all analysis)
-The recommendation that synthesizes everything above. **Decision explicitly incorporates any innovations from step 10 that were judged ADOPT**, and explains WHY (which consideration / risk / competitor pattern they address). The Decision is not a standalone assertion; it reads as a conclusion that follows from the preceding 10 sections.
+Missing relevant evidence is not proof of zero decisions: investigate it and surface consequential uncertainty. An absent companion is acceptable only when no consequential decisions arose or their resolutions are preserved in the existing canonical decision artifact. A resolved, fully grounded feature can advance with zero new questions. There is no numeric question floor. Other applicable quality and release checks still apply.
 
-### 12. Phase tag
-Which pipeline phase the question arose during: `validate-feature` / `write-spec` / `design-ux` / `design-ui` / `design-tech` / `plan-changeset` / `execute-changeset` / `review-gate` / `test-journeys` / etc.
+## Examples
 
----
+An already-authorized local category filter with current ACs and established empty/loading/error/accessibility patterns needs no repeated persistence question. Preserve those states and verify the actual filter path.
 
-## Coverage rules
+A request for cross-device restoration conflicting with an accepted no-account-storage boundary needs a real persistence decision. Surface the conflict, explain storage/fallback/clear semantics and affected ACs, recommend an option, and block dependent implementation until resolved. Do not research unrelated competitors to fill a quota.
 
-**Per feature (minimum):**
-- **≥ 20 customer-facing questions** (if the feature has any user-visible surface)
-- **≥ 20 system-facing questions** (persistence, race conditions, cross-entity, cost, observability, deployment)
-- **Total: ≥ 40 questions answered** before a spec is BASELINED, a technical design is FINAL, or a plan-changeset manifest is SIMULATED.
-
-Fewer = incomplete spec; refuse to proceed. Document the gap explicitly.
-
----
-
-## Process rules
-
-**1. Agent recommends first.** No open yes/no fishing. Follow the 12-section template with the agent's current best recommendation synthesized at step 11. User overrides if they disagree; default reply "AGREE" suffices.
-
-**2. Convergence before advance.** Next question cannot start until the current one is explicitly confirmed (`AGREE` / counter-answer that the agent acknowledges + updates Decision + re-confirms). Never advance on ambiguous signals.
-
-**3. Persistent per-feature companion file.** Questions accumulate in `docs/specs/features/<feature>-questions.md` (or `docs/specs/work-items/<WI>-questions.md`) as a living log. Phase-tagged so questions from different pipeline phases co-exist. Resumed sessions read this file first.
-
-**4. Promotion gates check the companion file.**
-- `write-spec` can't flip DRAFT → BASELINED unless all `phase: validate-feature` and `phase: write-spec` questions are AGREE.
-- `design-ux` adds its own questions, blocks UX-REVIEWED until those are AGREE.
-- `design-tech` adds its questions, blocks BASELINED until those are AGREE.
-- `plan-changeset` simulation step reads the companion file; manifest cannot reach SIMULATED unless questions in all covered phases are AGREE.
-- `review-gate` G1 checks completeness.
-
-**5. Innovation-from-questions compounds.** Every Q's innovation-layer ADOPT-IN-V2 / ADOPT-IN-V3 judgment becomes a candidate for `docs/framework/OPEN-PROPOSALS.md` "Innovation backlog" section (or project equivalent). Avoids innovation rot — ideas become trackable candidates without demanding immediate action.
-
-**6. Recommend+synthesize flow, not dimension list.** When the agent displays a question to the user, the 12 sections appear as HUMAN-READABLE REASONING, not a tech checklist. Language stays in the owner's / customer's voice, not jargon. Technical details go in sub-bullets or collapsed "Technical notes" — skippable for the PM.
-
----
-
-## Bulk-review protocol
-
-Users review in batches:
-
-```
-Q8 AGREE
-Q9 OVERRIDE → <what they want changed>
-Q10-Q20 AGREE
-Q21 OVERRIDE → <change>
-Q22-Q47 AGREE
-```
-
-Agent applies OVERRIDEs (updates Decision + reconciles Risk/Success/Cost sections as needed), re-confirms each changed Q, then marks the feature's question set as complete for that phase.
-
----
-
-## Canonical reference implementation
-
-See `docs/specs/work-items/WI-099-questions.md` in the Example Marketplace repo (`archived-contributor/example-marketplace`) for 47 questions in this format. Use as template when applying this pattern to new features in other repos.
-
----
-
-## When this format applies
-
-| Phase | Typical question count | Examples |
-|---|---|---|
-| `validate-feature` | 5-10 | Is this worth building? Persona fit? Competitive differentiation? |
-| `write-spec` | 20-40 (bulk) | User stories, acceptance criteria edge cases, data model shape, lifecycle states |
-| `design-ux` | 10-20 | Screen flows, state machines, empty/error/loading states |
-| `design-ui` | 5-10 | Component variants, typography, responsive breakpoints |
-| `design-tech` | 10-20 | Architecture trade-offs, concurrency, scalability, cost |
-| `plan-changeset` | 2-5 | Phasing, task ordering, rollback plan (simulation step) |
-| `execute-changeset` | 1-5 | Implementation-surfaced unknowns (e.g., "API doesn't support X, fall back to Y?") |
-| `review-gate` | 3-5 | Missed edge cases, convergence, ship vs. block |
-| `test-journeys` | 2-5 | Coverage gaps, reality-vs-spec drift surfaced by live run |
-| `diagnose-bug` | 3-5 | Root cause, user impact, fix vs. work-around |
-
-Cumulative across phases ≥ 40 questions per feature; the `<feature>-questions.md` companion file accumulates them phase-tagged.
-
----
-
-## Why this is mandatory (not optional)
-
-Product bugs that slip past specs usually fail one of the 12 sections:
-- Missing competitor reference → team reinvents a failed pattern
-- Missing risk section → failure mode ships unmitigated
-- Missing success signal → feature ships without measurement, no feedback loop
-- Missing reversibility → one-way-door decision made lightly
-- Missing innovation judgment → creative improvement rots forever in someone's head
-
-Evidence: Example Marketplace 2026-04-21 session — WI-091 and WI-093 shipped with 2 post-launch schema-drift bugs (WI-097, WI-098) + 1 tier-differentiator mgmt-UI gap. All three were structurally catch-able via this format at spec time. Past sessions without the format produced these drifts repeatedly.
+Retain a worthwhile deferred innovation in the existing project backlog when useful; do not create another mandatory ledger. Historical question logs remain historical evidence, not a minimum template for future work.

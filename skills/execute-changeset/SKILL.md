@@ -63,7 +63,7 @@ Resolve the execution harness BEFORE touching files: `bash scripts/resolve-model
 
 ## Product Questions — MANDATORY format
 
-Implementation-surfaced unknowns needing a product decision follow `_shared/product-question-format.md`, appended with `phase: execute-changeset`, surfaced for AGREE/OVERRIDE — never buried as a silent code choice.
+Surface implementation discoveries that change consequential product choices; do not hide them as code decisions. Follow `_shared/product-question-format.md` with `phase: execute-changeset`. Reuse accepted decisions and task authorization; ask only unresolved consequential owner choices. Record real decisions in the existing companion or canonical decision artifact. No empty companion or numeric question floor is required. Unresolved consequential decisions block dependent work.
 
 ## Inputs
 

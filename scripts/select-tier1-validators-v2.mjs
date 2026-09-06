@@ -5,6 +5,33 @@ import path from "node:path";
 
 const CONTRACTS = [
   {
+    "validator": "validate-skill-judgment.mjs",
+    "inputs": [
+      "_shared/product-question-format.md",
+      "agents/strategic-reviewer.md",
+      "references/elimination-gate-protocol.md",
+      "skills/audit-ac/SKILL.md",
+      "skills/design-tech/SKILL.md",
+      "skills/design-ui/SKILL.md",
+      "skills/design-ux/SKILL.md",
+      "skills/diagnose-bug/SKILL.md",
+      "skills/execute-changeset/SKILL.md",
+      "skills/manage-finops/SKILL.md",
+      "skills/manage-finops/references/finops-spec-template.md",
+      "skills/plan-changeset/SKILL.md",
+      "skills/review-gate/SKILL.md",
+      "skills/route-workflow/SKILL.md",
+      "skills/strategic-decision/SKILL.md",
+      "skills/svc-advisor/SKILL.md",
+      "skills/sync-spec-code/SKILL.md",
+      "skills/test-journeys/SKILL.md",
+      "skills/validate-feature/SKILL.md",
+      "skills/write-spec/SKILL.md",
+      "test-framework/evals/tier-1/validate-skill-judgment.mjs",
+      "test-framework/fixtures/skill-judgment/behavior.json"
+    ]
+  },
+  {
     validator: "validate-execution-controller-v2.mjs",
     inputs: [
       "schemas/execution-task-capsule-v2.schema.json",

@@ -88,7 +88,7 @@ verify-promotion       → VERIFIED (PROVE: tests pass, QA complete)
 
 ## Product Questions — MANDATORY format
 
-When this skill asks any product question (architecture trade-offs, concurrency, scalability, cost), follow `_shared/product-question-format.md` — 12 sections per question. Append to `docs/specs/features/<feature>-questions.md` with `phase: design-tech`. **Gating rule:** spec cannot flip → BASELINED unless `phase: design-tech` questions are all AGREE.
+Ground architecture, concurrency, scalability and cost choices in the current spec and affected implementation dependencies. Follow `_shared/product-question-format.md` with `phase: design-tech`. Reuse accepted decisions and task authorization; ask only unresolved consequential owner choices. Record real decisions in the existing companion or canonical decision artifact. No empty companion or numeric question floor is required. Unresolved consequential decisions block dependent work. BASELINED requires the shared promotion predicate.
 
 ## Discussion Artifact Pre-Flight
 

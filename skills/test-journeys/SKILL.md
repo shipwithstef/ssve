@@ -60,7 +60,7 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P4-
 
 ## Product Questions — MANDATORY format
 
-When reality during a journey run surfaces a spec gap or product ambiguity (e.g., "the account has no tier limits — what's the intended behavior?"), capture as a question in `_shared/product-question-format.md` with `phase: test-journeys`. Append to the feature's companion file. Never silently assume what the spec implies.
+When a journey surfaces undefined behavior, compare current ACs with observed behavior; do not invent the expected result. Follow `_shared/product-question-format.md` with `phase: test-journeys`. Reuse accepted decisions and task authorization; ask only unresolved consequential owner choices. Record real decisions in the existing companion or canonical decision artifact. No empty companion or numeric question floor is required. Unresolved consequential decisions block dependent work.
 
 ---
 

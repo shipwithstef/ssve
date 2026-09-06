@@ -40,11 +40,9 @@ To provide deep expertise in cloud financial operations (FinOps), enabling infor
 
 **Announce at start:** "I'm using `manage-finops` to optimize costs, select platforms, and project ROI."
 
-## The 12-section template (MANDATORY for proposals)
+## Consequential cost decisions
 
-Every platform selection, pricing recommendation, or MMR improvement proposal MUST follow the structure defined in `_shared/product-question-format.md`. This includes Plain Translation, 5 Considerations, 5 Competitors, Justification, Risk, Success Signal, Cost/Effort, Persona Fit, Reversibility, Innovation Layer, Decision, and Phase Tag.
-
-Failing to use this format results in "yes/no" guesswork that misses critical financial risks.
+Use `_shared/product-question-format.md` for unresolved platform, pricing or cost choices. Ground recommendations in verified current pricing, actual usage/code and owner constraints. Preserve meaningful alternatives, cost/risk, persona fit, reversibility and success signals without fixed competitor or question counts. Reuse accepted decisions; do not invent balances or conversion estimates to fill an analysis template.
 
 ## The FinOps Spec (MANDATORY for system-wide estimations)
 

@@ -66,7 +66,7 @@ All six phase commands (P1-ContextAndModeSelection … P6-SelfVerifyHandoff, ids
 
 ## Product Questions — MANDATORY format
 
-Every product question follows `_shared/product-question-format.md` (12 sections), accumulated phase-tagged in `docs/specs/features/<feature>-questions.md`. **Gating:** DRAFT → BASELINED requires all `validate-feature` + `write-spec` phase questions AGREE AND ≥40 total (≥20 customer + ≥20 system).
+Resolve spec and acceptance-criteria ambiguity from current evidence; expose conflicting owner intent or implementation. Follow `_shared/product-question-format.md` with `phase: write-spec`. Reuse accepted decisions and task authorization; ask only unresolved consequential owner choices. Record real decisions in the existing companion or canonical decision artifact. No empty companion or numeric question floor is required. Unresolved consequential decisions block dependent work. BASELINED requires the shared promotion predicate.
 
 ## Discussion Artifact Pre-Flight
 

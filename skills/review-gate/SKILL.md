@@ -82,7 +82,7 @@ The protocol forces adversarial reasoning — an agent must argue with itself, t
 
 ## Product Questions — MANDATORY format
 
-When G1 (spec gate) runs, verify the companion file `docs/specs/features/<feature>-questions.md` exists AND contains ≥40 questions in the format at `_shared/product-question-format.md` AND all are AGREE. Missing or incomplete = GATE FAIL. For all other gates, any NEW product question surfaced during review must use the 12-section format with `phase: review-gate`.
+At G1, apply the shared promotion predicate to actual AC/state evidence and consequential decision resolutions; review other gates for newly surfaced decisions. Follow `_shared/product-question-format.md` with `phase: review-gate`. Reuse accepted decisions and task authorization; ask only unresolved consequential owner choices. Record real decisions in the existing companion or canonical decision artifact. No empty companion or numeric question floor is required. Unresolved consequential decisions block dependent work.
 
 ## Why This Protocol Exists
 

@@ -69,7 +69,7 @@ AC status (QA, E2E coverage) lives in the spec, not in separate files.
 
 ## Product Questions — MANDATORY format
 
-When an AC is vague or missing and the product intent is ambiguous, raise as a question in `_shared/product-question-format.md` rather than inventing the answer. Append to `docs/specs/features/<feature>-questions.md` with `phase: audit-ac`. Vague-AC rewriting must preserve product intent captured via these questions.
+When acceptance criteria are vague or missing, preserve established product intent and expose consequential ambiguity before rewriting. Follow `_shared/product-question-format.md` with `phase: audit-ac`. Reuse accepted decisions and task authorization; ask only unresolved consequential owner choices. Record real decisions in the existing companion or canonical decision artifact. No empty companion or numeric question floor is required. Unresolved consequential decisions block dependent work.
 
 ---
 

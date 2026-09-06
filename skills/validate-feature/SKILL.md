@@ -4,7 +4,7 @@ version: "1.0"
 handles_concerns:
   - feature-validation-closeout
 description: >-
-  First stop for any new feature idea — cross-validates against personas, journeys, and specs, asks the 8 business questions, produces a Feature Ship Brief, and routes to the right downstream skill. Use when: "what if we built X", "I have a feature idea", "should we add", "validate this idea". Also: "new feature", "should we add", "I have a feature idea".
+  First stop for any new feature idea — cross-validates against personas, journeys, and specs, resolves consequential business decisions, produces a Feature Ship Brief, and routes to the right downstream skill. Use when: "what if we built X", "I have a feature idea", "should we add", "validate this idea". Also: "new feature", "should we add", "I have a feature idea".
 phases:
   - id: P1-TaskGraphSetup
     trigger: always
@@ -19,26 +19,26 @@ phases:
     evidence_kind: command_output
     required_for_completion: true
   - id: P3-GateMarketValidation
-    trigger: always
+    trigger: unresolved-market-or-business-evidence
     reads: ["context scan findings", "last30days output", "research output", "analyze-competitors.data.json"]
     writes: ["docs/specs/features/*-brief.md"]
     evidence_kind: file
-    required_for_completion: true
+    required_for_completion: false
   - id: P4-BusinessBrief
-    trigger: always
+    trigger: new-or-materially-changed-business-brief
     reads: ["business question answers", "feature-ship-brief-template.md"]
     writes: ["docs/specs/features/*-brief.md"]
     evidence_kind: file
-    required_for_completion: true
+    required_for_completion: false
   - id: P5-CrossValidationShipDecision
-    trigger: always
+    trigger: new-or-materially-changed-ship-decision
     reads: ["docs/specs/features/*-brief.md", "personas", "journeys", "specs", "kill signals K1-K7"]
     writes: ["docs/specs/features/*-brief.md", ".svc/pipeline-decisions.jsonl"]
     evidence_kind: file
-    required_for_completion: true
+    required_for_completion: false
   - id: P6-RouteFinalize
     trigger: always
-    reads: ["docs/specs/features/*-brief.md", ".svc/lane-tasks-<WI>.json"]
+    reads: ["existing brief or canonical authorized scope", ".svc/lane-tasks-<WI>.json"]
     writes: [".svc/lane-tasks-<WI>.json", "docs/specs/work-items/INDEX.md"]
     evidence_kind: command_output
     required_for_completion: true
@@ -73,7 +73,7 @@ captures the strategic bet, user problem, success condition, and MVP hypothesis.
 
 This skill does three things that jumping straight to design misses:
 1. **Checks what already exists** — specs, personas, journeys that relate to this idea
-2. **Validates the business case** — 8 structured questions that force honest answers
+2. **Validates the business case** — evidence-backed business dimensions and unresolved consequential choices
 3. **Routes to the right next skill** — based on what the discovery learned
 
 **Core principle:** Understand why before how. A feature that solves the wrong problem
@@ -83,7 +83,7 @@ perfectly is worse than no feature at all.
 
 ## Product Questions — MANDATORY format
 
-When this skill asks any product question, follow `_shared/product-question-format.md` — 12 sections per question (plain translation, 5 considerations, 5 competitors, justification, risk, success signal, cost, persona fit, reversibility, innovation layer, decision-as-synthesis, phase tag). Accumulate in `docs/specs/features/<feature>-questions.md` (or project equivalent), phase-tagged. Coverage floor: ≥20 customer-facing + ≥20 system-facing per feature before a spec is BASELINED. Canonical reference: `docs/specs/work-items/WI-099-questions.md` in example-marketplace repo.
+Ground the business case in current owner scope, persona/journey/spec evidence and actual relevant code. Follow `_shared/product-question-format.md` with `phase: validate-feature`. Reuse accepted decisions and task authorization; ask only unresolved consequential owner choices. Record real decisions in the existing companion or canonical decision artifact. No empty companion or numeric question floor is required. Unresolved consequential decisions block dependent work.
 
 ## Repository Mode Gate
 
@@ -95,33 +95,7 @@ Before Step 0, detect repository mode from `REPO_MODES.md` and state it.
   structure before proposing consolidation.
 
 <HARD-GATE>
-Do NOT ask about implementation, architecture, data models, tech stack, or effort until:
-1. The context scan is complete
-2. All business questions are answered (or skipped — see escape hatch below)
-3. The Feature Ship Brief is written and confirmed
-
-If the user mentions technical details, acknowledge and park them:
-"Good to know — I'll hold that for the technical design phase. Let's nail the business case first."
-
-If they push back, restate once: "I want to make sure the business case is solid before we
-design the system — technical choices should follow from the problem definition. A couple more
-questions and we'll be there."
-
-If they push a second time, the gate is absolute — hold without argument and return to the
-next business question.
-
-**ESCAPE HATCH — when Step 0 reveals this is NOT a new feature:**
-
-If the context scan (Step 0) reveals any of these, skip the business questions entirely:
-- **Concept fragmentation** — two components with different names creating the same entity
-- **Pipeline break** — UI exists but bypasses validation/security that the consumer side depends on
-- **Missing journey for existing functionality** — the code works, it just has no journey or spec
-
-In these cases, this is a fix/consolidation task, not a new feature. Present your Step 0
-findings directly and route to the appropriate skill (`diagnose-bug` for broken behavior,
-`plan-changeset` for bounded implementation planning, `write-journeys` for a missing
-journey, `audit-ac` for missing ACs). Don't force 8 business questions on a problem
-the codebase already fully defines.
+Before proposing implementation, ground the problem, intended user outcome and scope in the context scan and Feature Ship Brief. Reuse an existing accepted brief or clear founder instruction for an already-authorized bounded change. Cover relevant business dimensions from evidence; only unresolved consequential choices require owner input. Do not ignore supplied technical facts, repeat answered questions, or insist on new confirmation of existing authorization. Missing consequential evidence or conflicting scope blocks dependent work under the shared promotion predicate.
 </HARD-GATE>
 
 ---
@@ -148,7 +122,7 @@ digraph feature_discovery {
     scan [label="Step 0: Context scan\n(specs, personas, journeys, vision)"];
     existing [label="Related artifact found?" shape=diamond];
     surface [label="Surface what exists\nask: update or start fresh?"];
-    questions [label="Step 1: Business questions\n(8 Qs, one at a time,\nskip what scan answered)"];
+    questions [label="Step 1: Business questions\n(consequential decisions,\nskip what scan answered)"];
     brief [label="Step 2: Present brief\n(section by section)"];
     crossval [label="Step 3: Cross-validate\n(persona match, journey fit,\nspec conflicts)"];
     verdict [label="Step 3b: Ship Decision\n(evidence-weighted scoring)" shape=diamond];
@@ -229,9 +203,9 @@ full greenfield feature lane. Process task IDs are composite: `{T}.1` through
       "process_tasks": [
         { "id": "1.1", "name": "validate-feature|context-scan",        "status": "in_progress", "blocked_by": [],      "subject": "Scan project for existing artifacts: WI, spec, brief, journeys, ACs related to this idea" },
         { "id": "1.2", "name": "validate-feature|escape-check",        "status": "pending",     "blocked_by": ["1.1"], "subject": "[CONDITIONAL] HARD-GATE: standalone/greenfield? If yes, set 1.3–1.7 to skipped, go to 1.8" },
-        { "id": "1.3", "name": "validate-feature|market-check",        "status": "pending",     "blocked_by": ["1.2"], "subject": "Gather market signals via last30days + competitor research (Q3/Q4 proxy)" },
-        { "id": "1.4", "name": "validate-feature|business-questions",  "status": "pending",     "blocked_by": ["1.3"], "subject": "Step 1: 8 business questions with user — problem, persona, evidence, alternatives" },
-        { "id": "1.5", "name": "validate-feature|brief-present",       "status": "pending",     "blocked_by": ["1.4"], "subject": "Step 2: present validation brief to user, confirm direction before proceeding" },
+        { "id": "1.3", "name": "validate-feature|market-check",        "status": "pending",     "blocked_by": ["1.2"], "subject": "Resolve applicable market uncertainty; reuse current evidence when sufficient" },
+        { "id": "1.4", "name": "validate-feature|business-questions",  "status": "pending",     "blocked_by": ["1.3"], "subject": "Step 1: unresolved business decisions with user — problem, persona, evidence, alternatives" },
+        { "id": "1.5", "name": "validate-feature|brief-present",       "status": "pending",     "blocked_by": ["1.4"], "subject": "Step 2: reuse or present brief; resolve only consequential open choices" },
         { "id": "1.6", "name": "validate-feature|cross-validate",      "status": "pending",     "blocked_by": ["1.5"], "subject": "Step 3: cross-validate against existing specs, journeys, ACs, market position" },
         { "id": "1.7", "name": "validate-feature|ship-decision",       "status": "pending",     "blocked_by": ["1.6"], "subject": "Step 3b: evaluate K1–K7 kill signals → ship / no-ship / pivot verdict" },
         { "id": "1.8", "name": "validate-feature|route",               "status": "pending",     "blocked_by": ["1.7"], "subject": "Step 4: write WI file + route to write-spec or escalate to strategic/technical skill" },
@@ -261,13 +235,11 @@ After completing {T}.1 (context-scan), evaluate the HARD-GATE condition:
 - If the project is standalone/greenfield with no existing product → set tasks
   {T}.3 through {T}.7 to `"status": "skipped"` in the JSON file AND in the
   Claude task system. Proceed directly to {T}.8 (route).
-- If the project has existing context → leave {T}.3–{T}.7 as `"pending"` and
-  continue normally.
+- If the project has existing context → evaluate the applicability below; retain relevant cross-validation and routing, and skip only work whose evidence is already sufficient.
 
-**Why market-check before business questions ({T}.3 before {T}.4):** Market
-signals (last30days data, competitor presence) ground Q3 (evidence of demand)
-and Q4 (market timing) with real data. Running market-check first means the
-business questions are answered with evidence, not instinct.
+**Market-check applicability:** Run market research before a business decision only when current evidence leaves consequential demand, timing, differentiation, or ship uncertainty. Tool availability does not itself justify research. For an already-authorized bounded change, reuse accepted scope and current AC/persona/spec/code evidence; do not create a new market-validation cycle or rescore its business case without new contradictory evidence.
+
+**Apply the context-scan result to the existing graph:** P2 records whether P3–P5 apply and why. For a bounded authorized change with sufficient current evidence, mark non-applicable process tasks using the existing conditional-skip convention and continue relevant cross-validation and routing. Do not fabricate executed phase receipts or new brief artifacts. A new idea, missing consequential evidence, or a material conflict still requires the applicable business work; authorization alone is not evidence of demand. P6 accepts the existing brief or canonical owner scope as its routing input.
 
 ---
 
@@ -329,9 +301,9 @@ LANE TASKS (lane-tasks-<WI>.json, persisted, all platforms)
 PROCESS TASKS (embedded in lane task {T}, UI mirror in Claude Code)
   {T}.1  validate-feature|context-scan       ← Step 0 (always first)
   {T}.2  validate-feature|escape-check       ← HARD-GATE (dynamic: may skip {T}.3–{T}.7)
-  {T}.3  validate-feature|market-check       ← last30days + competitor signals
-  {T}.4  validate-feature|business-questions ← Step 1 (8 Qs, runs on real data)
-  {T}.5  validate-feature|brief-present      ← Step 2 (user confirms direction)
+  {T}.3  validate-feature|market-check       ← applicable market evidence gaps only
+  {T}.4  validate-feature|business-questions ← Step 1 (relevant dimensions, grounded in real data)
+  {T}.5  validate-feature|brief-present      ← Step 2 (reuse accepted scope; resolve open choices)
   {T}.6  validate-feature|cross-validate     ← Step 3 (spec/journey alignment)
   {T}.7  validate-feature|ship-decision      ← Step 3b (K1–K7 kill signals)
   {T}.8  validate-feature|route              ← Step 4 (write WI + route)
@@ -344,9 +316,9 @@ PROCESS TASKS (embedded in lane task {T}, UI mirror in Claude Code)
 |---|---|---|
 | {T}.1 context-scan | Step 0 | Full context scan before anything |
 | {T}.2 escape-check | HARD-GATE | Dynamic: sets {T}.3–{T}.7 to skipped if fires |
-| {T}.3 market-check | Step 1 (Q3/Q4 proxy) | last30days + competitor data |
-| {T}.4 business-questions | Step 1 (full) | All 8 Qs, grounded in {T}.3 data |
-| {T}.5 brief-present | Step 2 | User reviews and confirms brief |
+| {T}.3 market-check | Step 1 (Q3/Q4 proxy) | Relevant existing evidence or targeted research for an open market question |
+| {T}.4 business-questions | Step 1 (full) | Relevant business dimensions and unresolved choices, grounded in {T}.3 data |
+| {T}.5 brief-present | Step 2 | Accepted scope reused; unresolved consequential choices resolved |
 | {T}.6 cross-validate | Step 3 | Alignment with existing specs/journeys |
 | {T}.7 ship-decision | Step 3b | K1–K7 kill signals → verdict |
 | {T}.8 route | Step 4 | Write WI or escalate |
@@ -522,7 +494,7 @@ This step behaves differently based on invocation mode.
 
 ### Guided Mode (standalone or `--progressive` without `--auto-approve`)
 
-Ask questions one at a time. Listen fully before moving on.
+Ask only unresolved consequential owner choices. Group independent questions when useful outside the signed `decide` flow; preserve that flow when applicable.
 
 **Scale to what the user already said AND what the codebase reveals** — if the context scan,
 the codebase grep, or the user's initial message already answered a question, skip it.
@@ -553,7 +525,7 @@ RECOMMENDATION (based on research): [finding-informed answer]
 
 Answer questions yourself using this priority:
 
-1. **Codebase evidence** — what the context scan revealed (strongest signal)
+1. **Current owner intent plus spec/code evidence** — use the context scan; expose conflicts rather than treating existing code as approval
 2. **Persona/journey data** — what existing artifacts say about this user/problem
 3. **Domain conventions** — what the industry pattern suggests (from training data)
 4. **Research** — if 1-3 leave uncertainty, invoke the `research` skill, take decision based on finding
@@ -566,10 +538,9 @@ Q4: What's the bet?
 → [answer] — source: research finding (docs/specs/research-log.md, 2026-04-04)
 ```
 
-Auto mode does NOT skip questions — it answers them. Every question still gets a recorded
-answer. The brief must be complete.
+Auto mode covers relevant business dimensions from evidence without manufacturing question entries. Record unresolved consequential choices; do not assume a consequential owner answer outside the existing signed delegation. The brief must substantiate scope and success criteria.
 
-### The 8 Questions
+### Business dimensions (evidence coverage, not a question quota)
 
 | # | Question | What you're learning |
 |---|----------|----------------------|
@@ -596,7 +567,7 @@ Do NOT research what the codebase already answers. Do NOT research general knowl
 
 If `/last30days` is available (installed via
 [mvanhorn/last30days-skill](https://github.com/mvanhorn/last30days-skill)),
-use it to ground business questions in real-world data from the past 30 days.
+use it only when an unresolved consequential market question needs current external evidence. Existing adequate evidence for a bounded change does not trigger a fresh search.
 This replaces LLM training data guesswork with actual engagement signals from
 Reddit, HN, X, YouTube, and Polymarket.
 
@@ -652,9 +623,9 @@ In auto mode: if research can't resolve a question, mark it as a gap with the re
 
 ---
 
-## Step 2: Present the Brief (Section by Section)
+## Step 2: Present or Reuse the Brief
 
-Present each section, ask "Does this capture it correctly?" after each. Revise before proceeding.
+Reuse an accepted brief or bounded owner scope when it already covers the relevant outcome and acceptance criteria. For a new or materially changed brief, present the substantive sections together; ask only about unresolved consequential choices. Do not request section-by-section confirmation. `human_checkpoint: true` applies to those unresolved choices, not to reaffirming existing authorization. The following sections are evidence dimensions, not mandatory questions or a requirement to expand a bounded change into a new strategic bet.
 
 1. **The Bet** — strategic thesis in 2-3 sentences
 2. **Who / Problem** — user + pain, specific and concrete
@@ -671,7 +642,7 @@ Use the template at `feature-ship-brief-template.md` for the final document form
 
 ## Step 3: Cross-Validation
 
-After the brief is confirmed, cross-reference it against the project's existing artifacts.
+Cross-reference the current brief or accepted bounded scope against the project's relevant existing artifacts and actual code. Reuse current evidence; expose new conflicts without reopening settled decisions.
 Report findings honestly — this is the skill's unique value over jumping to design.
 
 ### Persona validation
@@ -950,12 +921,12 @@ When a PIVOT is recommended (or when the user requests alternatives after NO-SHI
 
 ## Step 4: Write, Commit, and Route
 
-### Write the brief
+### Write or reuse the brief
 
-Save to the project's spec directory: `docs/specs/features/YYYY-MM-DD-<feature-name>-brief.md`
+When P4 applies, save to the project's spec directory: `docs/specs/features/YYYY-MM-DD-<feature-name>-brief.md`
 using the template. Include a `## Cross-Validation` section at the end with findings from Step 3.
 
-Commit to git.
+Include new or changed brief content in the governed changeset. When P4 does not apply, cite existing canonical scope and cross-validation evidence; do not create or commit a duplicate brief.
 
 ### Route to the right downstream skill
 
@@ -969,7 +940,7 @@ Based on what the discovery learned, recommend the best next step:
 | Standard product feature, clear scope, personas exist | **/brainstorming** (or **write-spec** in svc) — "The business case is solid. Let me invoke brainstorming with this brief as context for technical design." |
 | Big strategic bet, uncertain market, startup-level risk | **/explore-solutions** — "This is a significant bet with uncertain direction. Let me invoke /explore-solutions to map the viable strategic options before committing to design." |
 | Multiple viable architectures, unclear technical approach | **/explore-solutions** — "The what is clear but the how has multiple paradigms. Let me invoke /explore-solutions to map the technical options." |
-| Small scope, obvious implementation, no design needed | **plan-changeset** then **execute-changeset** — "This is small enough to plan directly. Want me to invoke plan-changeset with the brief as input?" |
+| Small scope, obvious implementation, no design needed | **plan-changeset** then **execute-changeset** — Reuse the accepted scope and continue the authorized plan/review/execute chain; ask only if implementation itself has not been authorized. |
 | Brief has gaps, persona doesn't exist yet | **Pause** — "Before design, I'd suggest: (1) /build-personas to create a persona for [user type], (2) then come back to route to brainstorming." |
 | Feature has UI components, needs visual exploration | **/brainstorming** then **design-ux** — "This has significant UI work. Let me invoke brainstorming to explore visual directions, then route to design-ux for the full spec." |
 | Concept fragmentation or pipeline break — not a new feature | **diagnose-bug** or **plan-changeset** — "This isn't a new feature. It's a broken pipeline / naming mess. Skip the brief, identify the fix scope, then plan the implementation directly." |
@@ -1060,7 +1031,7 @@ When invoked with `--audit` to review existing ship briefs:
 
 ## Phase Receipt Contract
 
-After loading this skill into the lane task graph, emit receipts for each required phase before marking the task complete:
+After loading this skill into the lane task graph, emit receipts for required phases actually executed before marking the task complete. P3–P5 commands below are conditional examples: execute only when the P2 applicability decision triggers that phase and actual evidence exists. Omit non-applicable phase receipts; never manufacture brief files to satisfy an example.
 
 ```bash
 node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P1-TaskGraphSetup --evidence command_output:.svc/validate-feature-task-graph.log
@@ -1123,16 +1094,16 @@ Before declaring done, verify:
 
 | # | Check | How | PASS/FAIL |
 |---|-------|-----|-----------|
-| 1 | Ship brief file exists | `ls docs/specs/features/*-brief.md` | |
-| 2 | Ship brief has scope and priority sections | grep for Scope and Priority headings in brief | |
-| 3 | No unresolved questions | grep for TBD, TODO, open questions in brief | |
-| 4 | Kill signals scored | Ship Decision section exists with K1-K7 results AND a terminal decision of SHIP / SHIP WITH WARNINGS / PIVOT / DEFER / NO-SHIP | |
+| 1 | Canonical scope evidence exists | New/changed brief when P4 applies; otherwise cite the existing accepted brief or bounded owner scope with current ACs | |
+| 2 | Scope and priority are grounded | Verify applicable brief sections or equivalent accepted scope; no duplicate document required | |
+| 3 | No unresolved consequential decisions for dependent work | Inspect decision evidence; distinguish harmless deferred details from blocking choices | |
+| 4 | Applicable ship decision substantiated | When P5 applies, verify K1-K7 and SHIP / SHIP WITH WARNINGS / PIVOT / DEFER / NO-SHIP. Otherwise verify accepted scope remains consistent with current evidence; record non-applicability without rescoring | |
 | 4a | If DEFER: milestone named, builder-profile constraint cited, revisit trigger specified | grep for "Milestone:", "Builder-Profile Constraint", "Revisit Trigger" in brief | |
 | 5 | Domain context used in assessment | If domain-profile.md exists, brief references domain patterns | |
-| 6 | Competitor context used in K3 | If analyze-competitors.md exists, K3 cites specific competitors | |
+| 6 | Relevant competitor evidence used | If K3 is applicable, cite relevant current evidence; existence of competitor data alone does not require new research | |
 | 7 | Pillars Coverage Matrix checkpoint (delta mode / brownfield extension) | In Lane 3 (brownfield feature extension), the target feature spec must already have a Pillars Coverage Matrix per `references/pillars-coverage-matrix.md`. If the existing spec lacks it, flag as drift and require `sync-spec-code` OR author the matrix now as baseline. In Lane 1 (greenfield), the matrix is authored by `write-spec` and checked there — this check is a no-op. | |
 | 8 | Task graph written | `test -f .svc/lane-tasks-<WI>.json` — file must exist with Task {T} entry | |
-| 9 | All process tasks completed | In lane-tasks-<WI>.json, all 9 `validate-feature|*` process_tasks must be `completed` or `skipped` (skipped valid for {T}.3–{T}.7 on escape-hatch path) | |
+| 9 | All process tasks completed | In lane-tasks-<WI>.json, all 9 `validate-feature|*` process_tasks must be `completed` or `skipped` (skipped valid for escape-hatch or documented context-scan non-applicability; do not skip relevant cross-validation) | |
 
 If any check FAILs, fix before continuing. If a fix requires upstream changes, stop and report.
 

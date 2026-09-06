@@ -67,7 +67,7 @@ flagging RESOLVED references that have gone stale.
 
 ## Product Questions — MANDATORY format
 
-When drift is found between spec claim and code reality (e.g., tier-differentiator feature with no mgmt UI; fields referenced in code that don't exist in entity schema), the resolution ("update spec to match code" vs "update code to match spec" vs "extend schema to reflect intent") is a product decision. Frame via `_shared/product-question-format.md` with `phase: sync-spec-code`. Silent-reconcile is forbidden.
+Expose spec/code drift and follow affected dependencies; do not silently choose existing code over intended behavior or stale specs over current owner decisions. Follow `_shared/product-question-format.md` with `phase: sync-spec-code`. Reuse accepted decisions and task authorization; ask only unresolved consequential owner choices. Record real decisions in the existing companion or canonical decision artifact. No empty companion or numeric question floor is required. Unresolved consequential decisions block dependent work.
 
 ---
 

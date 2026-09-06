@@ -36,7 +36,7 @@ phases:
   - { id: P2-ResearchDimensionsAndEvidence, required_for_completion: true, evidence: "DIMENSIONS.md records HARD/SOFT dimensions and evidence sources" }
   - { id: P3-OptionEnumerationAndEscapeHatch, required_for_completion: true, evidence: "OPTIONS.md written and escape-hatch analysis recorded" }
   - { id: P4-EliminationGates, required_for_completion: true, evidence: "SURVIVORS.md applies HARD gates before scoring" }
-  - { id: P5-SurvivorQuestionnaire, required_for_completion: true, evidence: "QUESTIONNAIRE.md applies the 12-section format per survivor" }
+  - { id: P5-SurvivorQuestionnaire, required_for_completion: true, evidence: "QUESTIONNAIRE.md compares each survivor using the shared decision evidence contract" }
   - { id: P6-FunnelAdjustedEVModel, required_for_completion: true, evidence: "EV-MODEL.md or per-profile EV models written" }
   - { id: P7-AdversarialReview, required_for_completion: true, evidence: "REVIEW.md from strategic-reviewer produced and findings handled" }
   - { id: P8-DecisionSynthesisAndPipelineLog, required_for_completion: true, evidence: "DECISION.md written and pipeline decision log appended" }
@@ -95,7 +95,7 @@ multi-year impact. Typical triggers:
 ## Related framework primitives
 
 - `_shared/constraint-profiles.md` — canonical decision contexts (Bootstrapper / Self-financed / Funded / Enterprise)
-- `_shared/product-question-format.md` — the 12-section format applied in Phase 4
+- `_shared/product-question-format.md` — the decision evidence contract applied in Phase 4
 - `references/elimination-gate-protocol.md` — the HARD/SOFT gate pattern applied in Phase 3
 - `agents/strategic-reviewer.md` — the adversarial reviewer invoked in Phase 6
 
@@ -110,7 +110,7 @@ multi-year impact. Typical triggers:
 | 2 | Option enumeration (≥10 diverse) | EXEC | OPTIONS.md |
 | 2.5 | Should we build this at all? escape hatch | STRAT | (appended to DIMENSIONS.md) |
 | 3 | Elimination gates | EXEC | SURVIVORS.md |
-| 4 | 12-section questionnaire per survivor | STRAT | QUESTIONNAIRE.md |
+| 4 | Evidence-backed comparison per survivor | STRAT | QUESTIONNAIRE.md |
 | 5 | Funnel-adjusted EV model | PLAN | EV-MODEL.md |
 | 6 | Adversarial review | REVIEW | REVIEW.md |
 | 7 | Decision synthesis | STRAT | DECISION.md |
@@ -334,42 +334,11 @@ Write SURVIVORS.md with two sections:
 Target survivor count: 3-8. If >8, gates too loose; if <3, gates too tight or decision is
 unusually constrained — sanity-check your gates.
 
-## Phase 4 — 12-section questionnaire per survivor
+## Phase 4 — Evidence-backed survivor comparison
 
-For each survivor, apply the canonical 12-section format from `_shared/product-question-format.md`
-EXACTLY AS DEFINED. Do not modify the shared format.
+Compare each survivor using `_shared/product-question-format.md`: evidence, meaningful tradeoffs, recommendation rationale, persona fit, material risk/cost/reversibility, success signals and useful innovation. This is comparison work, not a requirement to ask the owner one question per option. Reuse resolved constraints; route only unresolved consequential owner choices through the applicable `decide` contract.
 
-Wrap each per-option block with:
-
-**Before the 12 sections — Constraint Profile Validity header:**
-```markdown
-## Constraint Profile Validity
-Valid for: <profile name + overrides>
-Under different profile, section 8 (Persona Fit) and section 5 (Risk) may re-weight.
-```
-
-**The 12 canonical sections** (reference only — authoritative text in `_shared/product-question-format.md`):
-1. Plain Translation
-2. 5 Considerations (user perspective)
-3. 5 Competitors (adjacent alternatives)
-4. Justification
-5. Risk
-6. Success Signal
-7. Cost / Effort — **include funnel-impact cost per Phase 5**
-8. Persona Fit — against the declared profile
-9. Reversibility
-10. Innovation Layer
-11. Decision-as-Synthesis
-12. Phase Tag = `strategic-decision`
-
-**After the 12 sections — Adoption Timing footer:**
-```markdown
-## Adoption Timing
-Adopt: Now / Next / Later / Never
-Rationale: tie to EV-MODEL.md cells or revisit triggers.
-```
-
-Write QUESTIONNAIRE.md with per-survivor blocks organized for side-by-side reading.
+Write QUESTIONNAIRE.md for compatibility, with substantive per-survivor comparison blocks. Retain a Constraint Profile Validity header (profile plus overrides; identify which risks/personas change under another profile) and an Adoption Timing footer (Now / Next / Later / Never, tied to EV-MODEL.md or revisit triggers). Include funnel-impact cost evidence where relevant to Phase 5; mark unknown inputs instead of manufacturing precise values. No fixed section or competitor count.
 
 ## Phase 5 — Funnel-adjusted EV model
 
@@ -487,7 +456,7 @@ EV dominates because grounded in data. Qualitative vetoes, doesn't vote.
 - DIMENSIONS.md — what dimensions matter
 - OPTIONS.md — N options enumerated
 - SURVIVORS.md — cleared elimination gates
-- QUESTIONNAIRE.md — 12-section per survivor
+- QUESTIONNAIRE.md — Evidence-backed comparison per survivor
 - EV-MODEL.md — funnel-adjusted P&L
 - REVIEW.md — adversarial stress test
 
@@ -544,7 +513,7 @@ node scripts/pipeline-log.mjs append \
 | 4 | ≥10 options enumerated (≥30 if broad) | count rows in OPTIONS.md | |
 | 5 | Escape-hatch section present | grep "Escape Hatch Analysis" in DIMENSIONS.md | |
 | 6 | Elimination gates applied before questionnaire | SURVIVORS.md exists; fewer rows than OPTIONS.md | |
-| 7 | Every survivor has 12 canonical sections + Validity header + Adoption Timing footer | per-survivor header count in QUESTIONNAIRE.md | |
+| 7 | Every survivor has substantive shared-contract evidence + Validity header + Adoption Timing footer | inspect per-survivor evidence and unresolved consequential decisions in QUESTIONNAIRE.md | |
 | 8 | Funnel-impact cost in EV model | EV-MODEL.md contains `P(complete) × LTV` term, not just unit cost | |
 | 9 | Adversarial review via strategic-reviewer agent (not plan-reviewer, not review-gate) | REVIEW.md exists; YAML cites `reviewer: strategic-reviewer` | |
 | 10 | Revisit triggers concrete (≥2 rows) | DECISION.md §Revisit Triggers has ≥2 rows with numeric or qualitative conditions | |
@@ -620,7 +589,7 @@ the contract is identical:
 - **Constraint-profile-first.** Decisions without declared profile produce wrong answers silently.
 - **Elimination before scoring.** Apply HARD gates first; cheaper, reduces scoring work by 60-80%.
 - **Funnel cost > infra cost at scale.** Completion rate × LTV dominates raw API pricing at real SaaS scale.
-- **EV drives, qualitative vetoes.** Numbers grounded in research lead; 12-section is disqualifier not vote.
+- **EV drives, qualitative vetoes.** Numbers grounded in research lead; qualitative evidence can disqualify an option; it is not a vote.
 - **Adversarial review is non-optional.** Output has no credibility without it.
 - **Revisit triggers are concrete, not "review periodically."** Numeric or qualitative thresholds only.
 - **File-state is source of truth.** Artifacts are durable across sessions and hosts.

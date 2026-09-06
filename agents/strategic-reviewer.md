@@ -48,7 +48,7 @@ Check per-phase:
 | Phase 2 (Enumerate) | OPTIONS.md has ≥10 options (≥30 if domain is broad) across ≥5 categories | Categories genuinely diverse, not variations of one paradigm |
 | Phase 2.5 (Escape hatch) | Escape-hatch analysis section exists in DIMENSIONS.md | "Don't build it" seriously considered, not rubber-stamped away |
 | Phase 3 (Elimination) | SURVIVORS.md + eliminated-appendix; every eliminated option has one-line evidence-cited reason | Gates applied are HARD constraints from Phase 1a; no option eliminated for SOFT reasons |
-| Phase 4 (Questionnaire) | QUESTIONNAIRE.md has all 12 canonical sections per survivor; wrapped with Validity header + Adoption Timing footer | Sections are substantive (5-competitors not just "competitor X"); Persona Fit cites actual personas from passed persona files |
+| Phase 4 (Questionnaire) | QUESTIONNAIRE.md compares each survivor using the shared decision evidence contract, with Validity header + Adoption Timing footer | Evidence and meaningful tradeoffs are substantive without fixed competitor/question counts; Persona Fit cites actual personas; unresolved consequential choices remain visible |
 | Phase 5 (EV Model) | EV-MODEL.md has Y1/Y2/Y3 × L/B/H cells per survivor; break-even math present; citations for numeric inputs | Math checks (multiplication, summation); conversion rates cited not invented |
 | Phase 6 (this review) | Your output will land in REVIEW.md | Self-referential; not your job |
 | Phase 7 (Synthesize) | DECISION.md has all required sections (Decision, Confidence, Evidence Chain, Why not runners-up, Revisit Triggers, Rollback, Downstream) | Decision logically follows from Phase 4 + Phase 5; not a post-hoc rationalization |
