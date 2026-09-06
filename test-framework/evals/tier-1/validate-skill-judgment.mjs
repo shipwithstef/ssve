@@ -23,6 +23,7 @@ const consumers = [...markdownFiles('skills'), ...markdownFiles('agents'), ...ma
 const staleQuota = /12[- ](?:section|canonical sections)|(?:≥|>=)\s*40|(?:≥|>=)\s*20\s*(?:customer|system)|(?:all|asks the|Step 1:)\s*8\s*(?:business|Qs)|5[- ]competitors|all (?:are )?AGREE/i;
 for (const file of consumers) {
   assert(!staleQuota.test(read(file)), `stale product-question contract: ${file}`);
+  assert(!/No unresolved questions \| grep for TBD, TODO/.test(read(file)), `placeholder presence must not block completion: ${file}`);
   assert(selectTier1Validators([file]).selected.includes('validate-skill-judgment.mjs'), `unmapped live consumer: ${file}`);
 }
 assert(consumers.includes('agents/strategic-reviewer.md'));
@@ -48,7 +49,7 @@ assert(!feature.includes('ask "Does this capture it correctly?" after each'));
 assert(!feature.includes('confirm direction before proceeding'));
 assert(!/section by section/i.test(feature));
 assert(feature.includes('For concept fragmentation'));
-for (const name of ['write-spec','design-ux','design-tech','plan-changeset']) {
+for (const name of ['write-spec','design-ux','design-tech','plan-changeset','review-gate','execute-changeset','design-ui','test-journeys','sync-spec-code','diagnose-bug']) {
   const contract = read(`skills/${name}/SKILL.md`);
   assert(!/No unresolved questions \| grep for TBD, TODO/.test(contract), `${name}: placeholder presence is not a consequential decision`);
   assert(contract.includes('block missing required AC/state/dependency evidence'));

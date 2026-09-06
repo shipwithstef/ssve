@@ -1352,7 +1352,7 @@ Before declaring done, verify:
 | 2 | Design system file exists | `test -f docs/specs/design-system.md` | |
 | 3 | Component specs reference design tokens (not ad-hoc values) | grep for hardcoded hex/px values in UI design file; should find only token references | |
 | 4 | Skip justified if applicable | If the feature has no visual surface (pure API/backend/background job): skip reason is logged in lane-tasks JSON and `pipeline-decisions.jsonl` with explicit justification referencing the no-visual-surface evidence; otherwise UI design file is substantive | |
-| 5 | No unresolved questions | grep for TBD, TODO, open questions in output file | |
+| 5 | No blocking unresolved consequential decisions | Apply the shared promotion predicate. Inspect TBD/TODO as evidence-gap warnings: block missing required AC/state/dependency evidence or a consequential owner choice; explicitly defer harmless details without manufacturing answers | |
 
 If any check FAILs, fix before continuing. If a fix requires upstream changes, stop and report.
 

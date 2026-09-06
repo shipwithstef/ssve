@@ -516,7 +516,7 @@ Before declaring done, verify:
 |---|-------|-----|-----------|
 | 1 | Specs have RESOLVED/DRIFT annotations | grep for RESOLVED, DRIFT, JOURNEY-GAP in updated spec files | |
 | 2 | Audit report produced | Output summary includes PLANNED->RESOLVED counts, drift flags, journey gaps | |
-| 3 | No unresolved questions | grep for TBD, TODO, open questions in updated specs | |
+| 3 | No blocking unresolved consequential decisions | Apply the shared promotion predicate. Inspect TBD/TODO as evidence-gap warnings: block missing required AC/state/dependency evidence or a consequential owner choice; explicitly defer harmless details without manufacturing answers | |
 
 If any check FAILs, fix before continuing. If a fix requires upstream changes, stop and report.
 

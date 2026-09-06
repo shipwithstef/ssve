@@ -244,7 +244,7 @@ Before declaring done, verify:
 |---|-------|-----|-----------|
 | 1 | Gate decision rendered | Output contains PASS, FAIL, or ESCALATE decision | |
 | 2 | Findings list produced | Structured findings list exists in review output | |
-| 3 | No unresolved questions | grep for TBD, TODO, open questions in review output | |
+| 3 | No blocking unresolved consequential decisions | Apply the shared promotion predicate. Inspect TBD/TODO as evidence-gap warnings: block missing required AC/state/dependency evidence or a consequential owner choice; explicitly defer harmless details without manufacturing answers | |
 | 4 | Visual evidence gate (browser-visible) | IF the feature touches browser-visible surfaces: `track-visuals` diff exists OR an explicit "no browser-visible surface" justification is logged. A review-gate PASS without visual evidence for a UI feature is a contract violation — FAIL the gate instead. | |
 | 5 | Review depth check | For changesets >5 files or >200 lines: review MUST produce ≥3 distinct findings OR an explicit "clean, no issues found" justification with evidence of thorough inspection. A 26-second review-gate on a large changeset is procedural box-checking — FAIL. | |
 | 6 | Cross-system proof checked | If the change crosses runtimes/origins/protocols/SDKs/storage layers, the System Contract Map and probe evidence validators passed; migration/path-swap fixes include old-path-fails / new-path-passes proof. | |

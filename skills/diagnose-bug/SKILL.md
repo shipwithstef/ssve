@@ -914,7 +914,7 @@ For an explicit report-only request with no project-file mutation authorized, ap
 |---|-------|-----|-----------|
 | 1 | Bugfix brief file exists | `test -f docs/specs/bugfix/<name>-brief.md` or brief section in work item | |
 | 2 | Has reproduction steps and root cause section | grep for "Reproduce", "Root cause", "Expected behavior" in brief | |
-| 3 | No unresolved questions | grep for TBD, TODO, open questions in brief | |
+| 3 | No blocking unresolved consequential decisions | Apply the shared promotion predicate. Inspect TBD/TODO as evidence-gap warnings: block missing required AC/state/dependency evidence or a consequential owner choice; explicitly defer harmless details without manufacturing answers | |
 | 4 | Pillar Revisit Audit run | grep for "Pillar Revisit Audit" section with all 8 pillars, each marked affected/unaffected with evidence | |
 | 5 | No unresolved `affected` pillars | Every `affected` pillar must be bundled into the fix OR filed as a follow-up WI with ID | |
 | 6 | Pattern scan run and documented | grep for "Pattern Scan" section with Scope/Findings/Followups OR explicit N/A justification | |
