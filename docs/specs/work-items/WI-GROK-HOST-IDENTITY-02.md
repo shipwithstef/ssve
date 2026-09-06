@@ -104,6 +104,19 @@ No HoursHub application or media path participates in the cause.
 | 7 | Cost model | unaffected | Local hook checks only; no paid service or scaling change. |
 | 8 | Operations & ownership | affected | Grok setup must converge foreign-hook compatibility and repair legacy synthetic leases deliberately. |
 
+## Affected Files
+
+- `scripts/wire-grok-hooks.mjs` — explicit native hook identity and compatibility settings.
+- `hooks/lib/resolve-wi.mjs` — shared authority host resolution.
+- `hooks/lib/pretool-decision-engine.mjs` — dispatcher bootstrap host propagation.
+- `scripts/svc-ensure-worktree.mjs` — bootstrap host/session binding.
+- `scripts/svc-authority.mjs` — authority CLI session identity.
+- `test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh` — native hook configuration fixture.
+- `test-framework/evals/tier-1/validate-codex-execution-integrity.sh` — bootstrap propagation fixture.
+
+This file census names the surfaces already described below; it does not claim
+that pending live Grok or HoursHub acceptance criteria have been rerun.
+
 ## Affected Artifacts
 
 - Grok hook wirer and TOML round-trip validator.

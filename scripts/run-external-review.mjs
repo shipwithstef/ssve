@@ -22,12 +22,12 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { WI_ID_RE } from "../hooks/lib/wi-id.mjs";
 import { loadReviewerPolicy, resolveExternalReviewer } from './review-topology-v2.mjs';
-import { candidateTreeIdentity, issueExternalReviewProvenance } from './lib/external-review-provenance.mjs';
+import { candidateTreeIdentity, issueExternalReviewProvenance, externalReviewCycleCapacity } from './lib/external-review-provenance.mjs';
 import { relocateTree } from './lib/review-evidence-store.mjs';
 
 import { reviewerAvailability, recordReviewerFailure } from './lib/reviewer-resources.mjs';
 
-const LAUNCHER_VERSION = '2.5.4';
+const LAUNCHER_VERSION = '2.5.5';
 export const EXTERNAL_REVIEW_LAUNCHER_VERSION = LAUNCHER_VERSION;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FINDINGS_SCHEMA = path.join(ROOT, 'schemas/external-review-findings.schema.json');
@@ -464,6 +464,23 @@ export function validateExternalReviewReceiptSemantics(receipt) {
   if (receipt.status === 'success' && receipt.review_kind !== 'capability-probe' && !/^[a-f0-9]{64}$/.test(receipt.findings_sha256 ?? '')) errors.push('$.findings_sha256: successful review must bind canonical findings bytes');
   if ((receipt.status === 'failure' || receipt.review_kind === 'capability-probe') && receipt.findings_sha256 !== null) errors.push('$.findings_sha256: failures and capability probes cannot claim findings');
   return errors;
+}
+
+export function externalReviewFailureReceipt(observedReceipt, diagnostic) {
+  const receipt = structuredClone(observedReceipt);
+  receipt.status = 'failure';
+  receipt.classification = 'internal_failure';
+  receipt.finished_at = new Date().toISOString();
+  receipt.protocol = { ...receipt.protocol, process_invocations: receipt.attempts.length,
+    terminal_reason: 'internal_failure', errors: [...(receipt.protocol?.errors || []), 'internal_failure'] };
+  receipt.route = { kind: 'hard_failure', switching_enabled: false, cli_fallback_configured: false, evidence: 'failure' };
+  receipt.cache = { ...receipt.cache, disposition: 'not_reusable', reusable: false };
+  receipt.artifacts = { ...receipt.artifacts, provider_findings: receipt.artifacts?.findings || null,
+    findings: null, internal_error: diagnostic };
+  // Raw findings and their original digest remain in pre-failure-receipt.json;
+  // the failure envelope must not claim certified findings or approval.
+  receipt.findings_sha256 = null;
+  return receipt;
 }
 
 async function processIdentity(pid = process.pid) {
@@ -1498,8 +1515,12 @@ async function main() {
   let capabilityArtifact = null;
   const reviewKind = options.reviewKind || (options.validateCapabilities ? 'capability-probe' : 'generic');
   let phaseGuardState = normalizePhaseGuard({ applicable: false, kind: reviewKind === 'generic' ? null : reviewKind, decision: 'not-applicable' });
+  const observedAttempts = [];
+  let observedResult = null;
+  let lastReceipt = null;
+  let issuedReceipt = null;
   const makeReceipt = (classification, overrides = {}) => {
-    const attempts = overrides.attempts || [];
+    const attempts = overrides.attempts || observedAttempts;
     const invocationTuple = Object.prototype.hasOwnProperty.call(overrides, 'invocationTuple')
       ? overrides.invocationTuple
       : attempts.length ? attempts.at(-1).tuple : null;
@@ -1544,18 +1565,45 @@ async function main() {
     });
   };
   const writeReceipt = async (receipt) => {
+    lastReceipt = structuredClone(receipt);
     const errors = [...validateSchema(receipt, receiptSchema), ...validateExternalReviewReceiptSemantics(receipt)];
     if (errors.length) throw new Error(`internal receipt schema failure: ${errors.join('; ')}`);
     await writeJson(receiptPath, receipt);
-    if (!fixture && receipt.status === 'success' && receipt.artifacts?.findings && receipt.artifacts?.package) issueExternalReviewProvenance({ receiptPath, packagePath: receipt.artifacts.package, findingsPath: receipt.artifacts.findings });
     if (!fixture && receipt.status === 'success') {
       relocateTree(artifactsDir, { kind: reviewKind, candidate_digest: receipt.candidate_digest || null });
     }
+    if (!fixture && receipt.status === 'success' && receipt.artifacts?.findings && receipt.artifacts?.package) {
+      issueExternalReviewProvenance({ receiptPath, packagePath: receipt.artifacts.package, findingsPath: receipt.artifacts.findings });
+      issuedReceipt = receipt;
+    }
   };
   emergencyReceipt = async (error) => {
+    if (issuedReceipt) {
+      error.issuedReviewPreserved = true;
+      return receiptPath;
+    }
     const diagnostic = path.join(artifactsDir, 'internal-error.txt');
     await writeFile(diagnostic, `${redactDiagnostic(error.message)}\n`, { mode: 0o600 });
-    const receipt = makeReceipt('internal_failure', { artifacts: { internal_error: diagnostic } });
+    const observed = lastReceipt || makeReceipt('internal_failure', {
+      effectiveTuple: observedResult?.effectiveTuple,
+      modelAttestation: observedResult?.modelAttestation,
+      usage: observedResult?.attempt?.usage,
+      protocol: observedResult ? { ...observedResult.protocol, process_invocations: observedAttempts.length } : undefined,
+    });
+    const originalPath = path.join(artifactsDir, 'pre-failure-receipt.json');
+    await writeJson(originalPath, observed);
+    // This runs before the cache-key lock is released. Remove only an entry
+    // published by this request, never another request's valid cached proof.
+    if (observed.cache?.entry) {
+      try {
+        const cached = JSON.parse(await readFile(path.join(observed.cache.entry, 'receipt.json'), 'utf8'));
+        if (cached.request_id === requestId) await rm(observed.cache.entry, { recursive: true });
+      } catch (cacheError) {
+        if (cacheError.code !== 'ENOENT') throw cacheError;
+      }
+    }
+    const receipt = externalReviewFailureReceipt(observed, diagnostic);
+    receipt.artifacts.pre_failure_receipt = originalPath;
     await writeReceipt(receipt);
     return receiptPath;
   };
@@ -1660,11 +1708,12 @@ async function main() {
   await mkdir(path.dirname(lockDir), { recursive: true, mode: 0o700 });
   let heartbeat;
   let poolLock = null;
+  let cycleLock = null;
   let heartbeatWork = Promise.resolve();
   try {
     await acquireLock(lockDir, staleSeconds, owner);
     heartbeat = setInterval(() => {
-      heartbeatWork = heartbeatWork.then(async () => { await refreshLock(lockDir, owner); if (poolLock) await refreshLock(poolLock, owner); }).catch(() => {});
+      heartbeatWork = heartbeatWork.then(async () => { await refreshLock(lockDir, owner); if (poolLock) await refreshLock(poolLock, owner); if (cycleLock) await refreshLock(cycleLock, owner); }).catch(() => {});
     }, heartbeatMs);
     heartbeat.unref();
   } catch {
@@ -1673,6 +1722,19 @@ async function main() {
   }
 
   try {
+    if (!fixture && !options.validateCapabilities) {
+      const prospective = makeReceipt('success', { effectiveTuple: requestedTuple });
+      const cycle = externalReviewCycleCapacity(prospective, { receiptPath });
+      if (cycle) {
+        try { await acquireLock(cycle.lock_path, staleSeconds, owner); cycleLock = cycle.lock_path; }
+        catch (error) { await finishFailure('lock_failure', { cacheKey, detail: error.message }); return; }
+        const capacity = externalReviewCycleCapacity(prospective, { receiptPath });
+        if (!capacity.allowed) {
+          await finishFailure('budget_exhausted', { cacheKey, detail: `review cycle ${capacity.cycle_id} has reached its three-round cap; disposition existing findings before any further paid review` });
+          return;
+        }
+      }
+    }
     const hit = options.validateCapabilities ? null : await cacheHit(entryDir, cacheKey, requestedTuple, reviewKind, options.candidateDigest ?? null, packageHash, findingsSchemaHash, ttlDays, findingsSchema, receiptSchema, fixture);
     if (hit) {
       await writeJson(findingsPath, hit.findings);
@@ -1754,8 +1816,9 @@ async function main() {
       return;
     }
 
-    const attempts = [];
+    const attempts = observedAttempts;
     const primaryResult = await invoke(requestedTuple, binary, packageBytes, reviewKind, schemaBytes, artifactsDir, 1, timeoutSeconds * 1000, reviewBudgetUsd, reviewerTurnCeiling);
+    observedResult = primaryResult;
     attempts.push(primaryResult.attempt);
     if (primaryResult.attempt.classification === 'success') {
       const validationErrors = validateFindings(primaryResult.findings, primaryResult.effectiveTuple, reviewKind, findingsSchema);
@@ -1852,6 +1915,7 @@ async function main() {
     }
     const fallbackTurnCeiling = await configuredTurnCeiling(fallbackTuple, resolvedReviewerConfigPath);
     const fallbackResult = await invoke(fallbackTuple, binary, packageBytes, reviewKind, schemaBytes, artifactsDir, 2, timeoutSeconds * 1000, fallbackBudgetUsd, fallbackTurnCeiling);
+    observedResult = fallbackResult;
     attempts.push(fallbackResult.attempt);
     const fallbackProtocol = { ...fallbackResult.protocol, process_invocations: attempts.length, configured_budget_usd: reviewBudgetUsd };
     if (fallbackResult.attempt.classification !== 'success') {
@@ -1881,9 +1945,23 @@ async function main() {
     });
     await writeReceipt(receipt);
     process.stdout.write(`${JSON.stringify({ ok: true, findings: findingsPath, receipt: receiptPath, cache_disposition: 'not_reusable' })}\n`);
+  } catch (error) {
+    // Preserve the completed provider call before releasing its cache/cycle
+    // locks. Otherwise an unissued success cache could be replayed in the gap.
+    const recoverWhileLocked = emergencyReceipt;
+    // The outer handler must never repeat cache cleanup after finally releases
+    // the lock, including when writing the recovery evidence itself fails.
+    emergencyReceipt = null;
+    try {
+      error.preservedReceiptPath = await recoverWhileLocked(error);
+    } catch (recoveryError) {
+      error.message += `; recovery failed: ${recoveryError.message}; process_invocations=${observedAttempts.length}; artifacts=${artifactsDir}`;
+    }
+    throw error;
   } finally {
     if (heartbeat) clearInterval(heartbeat);
     await heartbeatWork;
+    if (cycleLock) await releaseLock(cycleLock, owner);
     if (poolLock) await releaseLock(poolLock, owner);
     await releaseLock(lockDir, owner);
   }
@@ -1897,9 +1975,10 @@ const isMainModule = (() => {
 
 if (isMainModule) {
   main().catch(async (error) => {
-    let receipt = null;
-    try { receipt = emergencyReceipt ? await emergencyReceipt(error) : null; } catch {}
-    process.stderr.write(`external-review: internal failure: ${redactDiagnostic(error.message)}${receipt ? `; receipt=${receipt}` : ''}\n`);
+    let receipt = error.preservedReceiptPath || null;
+    try { if (emergencyReceipt) receipt = await emergencyReceipt(error); } catch {}
+    const failureStage = error.issuedReviewPreserved ? 'issued review preserved; output/cleanup failure' : 'internal failure';
+    process.stderr.write(`external-review: ${failureStage}: ${redactDiagnostic(error.message)}${receipt ? `; receipt=${receipt}` : ''}\n`);
     process.exitCode = 1;
   });
 }

@@ -83,15 +83,14 @@ echo ""
 # WI-453 (A1): tier-1 validators run as a bounded PARALLEL batch with results
 # aggregated AFTER the join (no in-loop shared counter), preserving the per-script
 # timeout, the PASS/FAIL/TIMEOUT counters, per-validator output, and exit semantics.
-# A small SEQUENTIAL pre-pass runs the validators that touch the REAL ~/.claude host
-# state (settings.json / symlinks / install) one-at-a-time, so parallelism can never
-# corrupt live host config. Concurrency override: TIER1_JOBS=<n> (default = CPUs).
+# Every validator gets private HOME/XDG/account roots and an offline provider
+# guard. Keep the existing sequential group until its timing/shared-resource
+# assumptions have been verified. Concurrency: TIER1_JOBS=<n> (default = CPUs).
 TIER1_JOBS="${TIER1_JOBS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)}"
 TIER1_RESULTS_DIR="$(mktemp -d)"
 
-# Host-state validators — must NOT run concurrently (race -> live host-config
-# corruption). Derived from a grep of real-$HOME / settings.json refs; the multi-run
-# no-loss verification (old-vs-new identical PASS/FAIL set) backstops any miss.
+# Retained serialization for host/receipt fixtures; isolation below applies to
+# both this group and the parallel group. These must never mutate live installs.
 TIER1_SEQUENTIAL_SET="
 validate-all-host-setup.sh
 validate-codex-zero-block-reads.sh
@@ -113,14 +112,19 @@ validate-rule-injection.sh
 # Run one validator -> per-script .out + .rc files. The `&& rc=0 || rc=$?` idiom
 # keeps a non-zero validator from aborting the caller under `set -e`.
 _tier1_run_one() {
-  local script="$1" name runner rc
+  local script="$1" name runner rc started finished
   name="$(basename "$script")"
   runner="bash"; [[ "$script" == *.mjs ]] && runner="node"
-  timeout "$VALIDATOR_TIMEOUT_SEC" "$runner" "$script" > "$TIER1_RESULTS_DIR/$name.out" 2>&1 && rc=0 || rc=$?
+  started="$(node -p 'Date.now()')"
+  timeout "$VALIDATOR_TIMEOUT_SEC" bash -c 'source "$1"; shift; svc_run_fixture "$@"' _ \
+    "$SCRIPT_DIR/tier-1/lib/fixture-home.sh" "$runner" "$script" \
+    > "$TIER1_RESULTS_DIR/$name.out" 2>&1 && rc=0 || rc=$?
+  finished="$(node -p 'Date.now()')"
   printf '%s' "$rc" > "$TIER1_RESULTS_DIR/$name.rc"
+  printf '%s' "$((finished - started))" > "$TIER1_RESULTS_DIR/$name.duration-ms"
 }
 export -f _tier1_run_one
-export VALIDATOR_TIMEOUT_SEC TIER1_RESULTS_DIR
+export VALIDATOR_TIMEOUT_SEC TIER1_RESULTS_DIR SCRIPT_DIR
 
 # Ordered validator list (sh then mjs — stable, matches the legacy output order).
 TIER1_ALL=()
@@ -195,6 +199,82 @@ if [[ "$SVC_TIER1_MODE" == "focused" ]]; then
   fi
 fi
 
+# Optional machine-readable evidence. This never changes selection or skips a
+# gate. Capture both ends: unchanged HEAD alone does not identify dirty inputs.
+# Output must live outside the source inventory (ignored or outside the repo).
+_tier1_evidence() {
+  node --input-type=module - "$1" "$SCRIPT_DIR/../.." "$TIER1_RESULTS_DIR" "${SVC_TIER1_SUMMARY:-}" <<'NODE'
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+const [phase, rootArg, results, outputArg] = process.argv.slice(2);
+const root = fs.realpathSync(rootArg);
+const hash = value => crypto.createHash('sha256').update(value).digest('hex');
+const git = args => execFileSync('git', ['-C', root, ...args], { maxBuffer: 64 * 1024 * 1024 });
+const output = path.resolve(outputArg);
+// Resolve the existing parent so a symlink cannot disguise a source destination.
+const parent = fs.realpathSync(path.dirname(output));
+const destination = path.join(parent, path.basename(output));
+const relative = path.relative(root, destination);
+if (fs.existsSync(destination) && !fs.lstatSync(destination).isFile()) throw new Error('summary destination must be a regular file');
+if (relative === '' || (!relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative))) {
+  if (git(['ls-files', '-z', '--', relative]).length) throw new Error('summary cannot overwrite tracked source');
+  try { git(['check-ignore', '-q', '--', relative]); }
+  catch { throw new Error('summary inside repository must be gitignored'); }
+}
+const names = [...new Set(git(['ls-files', '-z', '--cached', '--others', '--exclude-standard']).toString().split('\0').filter(Boolean))].sort();
+const rows = names.map(name => {
+  const file = path.join(root, name);
+  let stat;
+  try { stat = fs.lstatSync(file); } catch (error) { if (error.code === 'ENOENT') return [name, 'missing']; throw error; }
+  if (stat.isSymbolicLink()) return [name, 'symlink', hash(fs.readlinkSync(file))];
+  if (stat.isFile()) return [name, stat.mode & 0o777, hash(fs.readFileSync(file))];
+  return [name, 'unsupported'];
+});
+const selected = fs.readFileSync(path.join(results, 'executed-validators.json'), 'utf8');
+const runtime = { node: process.version, platform: process.platform, arch: process.arch,
+  bash: execFileSync('bash', ['--version']).toString().split('\n')[0], git: git(['--version']).toString().trim() };
+// Hash configuration rather than publishing ambient paths or credentials.
+const config = Object.fromEntries(['PATH', 'HOME', 'TMPDIR', 'SVC_TIER1_MODE', 'SVC_TIER1_CHANGED_FILES', 'VALIDATOR_TIMEOUT_SEC', 'TIER1_JOBS', 'EVALS'].map(key => [key, process.env[key] ?? null]));
+const changedList = process.env.SVC_TIER1_CHANGED_FILES;
+if (changedList) config.changed_list_sha256 = hash(fs.readFileSync(changedList));
+const snapshot = { captured_at: new Date().toISOString(), source_root: root,
+  head: git(['rev-parse', 'HEAD']).toString().trim(), source_files: rows.length,
+  source_sha256: hash(JSON.stringify(rows)), index_sha256: hash(git(['ls-files', '--stage', '-z'])),
+  status_sha256: hash(git(['status', '--porcelain=v1', '-z', '--untracked-files=all'])),
+  selected_sha256: hash(selected), runtime, configuration_sha256: hash(JSON.stringify(config)),
+  unsupported_paths: rows.filter(row => row[1] === 'unsupported').map(row => row[0]) };
+const beforePath = path.join(results, 'inputs-before.json');
+if (phase === 'before') { fs.writeFileSync(beforePath, JSON.stringify(snapshot)); process.exit(0); }
+const before = JSON.parse(fs.readFileSync(beforePath));
+const comparable = value => { const { captured_at, ...identity } = value; return JSON.stringify(identity); };
+const validators = JSON.parse(selected).map(file => {
+  const name = path.basename(file);
+  const rc = Number(fs.readFileSync(path.join(results, `${name}.rc`), 'utf8'));
+  const duration_ms = Number(fs.readFileSync(path.join(results, `${name}.duration-ms`), 'utf8'));
+  if (!Number.isInteger(rc) || !Number.isFinite(duration_ms) || duration_ms < 0) throw new Error(`invalid result for ${name}`);
+  return { name, exit_code: rc, duration_ms, status: rc === 0 ? 'pass' : rc === 124 ? 'timeout' : 'fail',
+    output_sha256: hash(fs.readFileSync(path.join(results, `${name}.out`))) };
+});
+const summary = { schema_version: 1, tier: 1, before, after: snapshot,
+  inputs_stable: comparable(before) === comparable(snapshot),
+  fixture_scope: 'Private HOME/XDG/TMP and provider guards for each validator; candidate source remains shared.',
+  coverage_limitations: ['Inventory includes tracked and nonignored untracked source, not ignored files or external Git authority stores.', 'Matching snapshots do not detect transient changes restored during the run.', 'This summary does not itself authorize gate reuse or prove live installation.'],
+  validators, totals: { passed: validators.filter(v => v.status === 'pass').length,
+    failed: validators.filter(v => v.exit_code !== 0).length, timed_out: validators.filter(v => v.status === 'timeout').length },
+  elapsed_ms: Date.parse(snapshot.captured_at) - Date.parse(before.captured_at) };
+const temporary = `${destination}.${process.pid}.tmp`;
+try { fs.writeFileSync(temporary, JSON.stringify(summary, null, 2) + '\n', { flag: 'wx', mode: 0o600 }); fs.renameSync(temporary, destination); }
+finally { if (fs.existsSync(temporary)) fs.unlinkSync(temporary); }
+NODE
+}
+if [[ -n "${SVC_TIER1_SUMMARY:-}" ]]; then
+  node -e 'require("fs").writeFileSync(process.argv[1], JSON.stringify(process.argv.slice(2)))' "$TIER1_RESULTS_DIR/executed-validators.json" "${TIER1_ALL[@]}"
+  export SVC_TIER1_MODE TIER1_JOBS
+  _tier1_evidence before
+fi
+
 # Split: sequential pre-pass for host-state validators, parallel for the rest.
 TIER1_PARALLEL=()
 for script in "${TIER1_ALL[@]}"; do
@@ -232,6 +312,7 @@ for script in "${TIER1_ALL[@]}"; do
   fi
   echo ""
 done
+if [[ -n "${SVC_TIER1_SUMMARY:-}" ]]; then _tier1_evidence after; fi
 [[ ${KEEP_TIER1_RESULTS:-0} == 1 ]] || rm -rf "$TIER1_RESULTS_DIR"
 
 echo ">>> Tier 1 Result: $TIER1_PASS scripts passed, $TIER1_FAIL failed ($TIER1_TIMEOUT timed out)"

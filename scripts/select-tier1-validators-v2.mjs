@@ -175,6 +175,10 @@ const CONTRACTS = [
     inputs: ["schemas/reviewer-policy-v2.schema.json", "schemas/review-topology-v2.schema.json", "scripts/review-topology-v2.mjs", "skills/review-exec/SKILL.md", "test-framework/evals/tier-1/validate-review-topology-v2.mjs"]
   },
   {
+    validator: "validate-clean-main-followup.mjs",
+    inputs: ["scripts/run-external-review.mjs", "scripts/lib/external-review-provenance.mjs", "scripts/lib/review-evidence-store.mjs", "scripts/validate-plan-contract.mjs", "scripts/verify-plan-mechanical.sh", "scripts/verify-file-persistence.sh", "test-framework/evals/tier-1/validate-clean-main-followup.mjs"]
+  },
+  {
     validator: "validate-external-review-launcher.sh",
     inputs: ["schemas/external-review-findings.schema.json", "schemas/external-review-receipt.schema.json", "schemas/reviewer-policy-v2.schema.json", "scripts/review-topology-v2.mjs", "scripts/run-external-review.mjs", "test-framework/evals/tier-1/validate-external-review-launcher.sh"]
   },

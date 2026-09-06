@@ -790,7 +790,7 @@ cp "$ROOT/skills/review-cross-model/SKILL.md" "$TMP/runtime-copy/skills/review-c
 printf schema-version-key | node "$TMP/runtime-copy/scripts/run-external-review.mjs" --orchestrator claude --review-kind exec --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/key-schema-1" > "$TMP/key-schema-1.summary"
 printf '\n' >> "$TMP/runtime-copy/schemas/external-review-findings.schema.json"
 printf schema-version-key | node "$TMP/runtime-copy/scripts/run-external-review.mjs" --orchestrator claude --review-kind exec --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/key-schema-2" > "$TMP/key-schema-2.summary"
-sed -i 's/const LAUNCHER_VERSION = '\''2.5.4'\''/const LAUNCHER_VERSION = '\''2.5.5'\''/' "$TMP/runtime-copy/scripts/run-external-review.mjs"
+sed -i -E "s/const LAUNCHER_VERSION = '[^']+'/const LAUNCHER_VERSION = '999.0.0-fixture'/" "$TMP/runtime-copy/scripts/run-external-review.mjs"
 printf schema-version-key | node "$TMP/runtime-copy/scripts/run-external-review.mjs" --orchestrator claude --review-kind exec --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/key-launcher-2" > "$TMP/key-launcher-2.summary"
 expect "changed findings schema and launcher version each force a fresh cache key" test "$(grep -c '^codex$' "$SVC_FAKE_LOG/calls")" -eq 3
 

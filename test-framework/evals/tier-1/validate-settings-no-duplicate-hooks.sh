@@ -11,6 +11,10 @@
 
 set -u
 
+# Keep standalone invocation isolated from active host/session state.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/fixture-home.sh"
+svc_require_fixture "$@"
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
@@ -41,10 +45,10 @@ SCRATCH=$(mktemp -d)
 echo '{}' > "$SCRATCH/settings1.json"
 cp "$SCRATCH/settings1.json" "$SCRATCH/settings2.json"
 # Fresh settings after 1 run
-node "$WIRE" --skills-path "$SCRATCH" --settings "$SCRATCH/settings1.json" >/dev/null 2>&1 || true
+node "$WIRE" --skills-path "$SCRATCH" --settings "$SCRATCH/settings1.json" >/dev/null 2>&1 || { fail "wirer invocation failed"; exit 1; }
 # Same settings after 2 runs
 cp "$SCRATCH/settings1.json" "$SCRATCH/settings2.json"
-node "$WIRE" --skills-path "$SCRATCH" --settings "$SCRATCH/settings2.json" >/dev/null 2>&1 || true
+node "$WIRE" --skills-path "$SCRATCH" --settings "$SCRATCH/settings2.json" >/dev/null 2>&1 || { fail "wirer invocation failed"; exit 1; }
 if diff -q "$SCRATCH/settings1.json" "$SCRATCH/settings2.json" >/dev/null 2>&1; then
   pass "idempotent: 2 runs produce identical settings.json"
 else
@@ -96,9 +100,11 @@ else
   fail "deny-capable PreToolUse overlap on mutation tools ($OVERLAP)"
 fi
 
+# Check the generated private installation settings, never the operator's HOME.
+# The standalone fixture wrapper guarantees this HOME belongs to this test.
+mkdir -p "$HOME/.claude"
+cp "$SCRATCH/settings1.json" "$HOME/.claude/settings.json"
 rm -rf "$SCRATCH"
-
-# Duplicate-hook check on real settings (if present)
 SETTINGS="$HOME/.claude/settings.json"
 if [ -r "$SETTINGS" ]; then
   DUPES=$(python3 - <<EOF
@@ -126,7 +132,7 @@ EOF
     fail "~/.claude/settings.json has $DUPES duplicate hook entries — run ./setup --host claude to dedup"
   fi
 else
-  pass "~/.claude/settings.json not present — dedup check N/A"
+  fail "generated fixture settings are missing"
 fi
 
 echo ""

@@ -49,17 +49,24 @@ done
 
 case "$MODE" in
   git-status)
-    # Check all staged and modified files
-    while IFS= read -r line; do
+    # Porcelain -z keeps literal filenames and both index/worktree columns.
+    # Capture first so a failing git command cannot look like an empty PASS.
+    status_file="$(mktemp)"
+    trap 'rm -f -- "$status_file"' EXIT
+    git status --porcelain=v1 -z --untracked-files=all > "$status_file"
+    while IFS= read -r -d '' line; do
       status="${line:0:2}"
       file="${line:3}"
-      # Only check added, modified, or untracked files
-      if [[ "$status" =~ ^[AM?] ]]; then
+      # In -z mode a rename/copy destination comes first, followed by the
+      # original path as another NUL record. Never treat that origin as a file.
+      if [[ "$status" =~ [RC] ]]; then
+        IFS= read -r -d '' original_path || { echo 'ERROR: incomplete Git rename/copy record' >&2; exit 1; }
+      fi
+      [[ "$status" == *D* ]] && continue
+      if [[ "$status" == '??' || "$status" =~ [AMRTCU] ]]; then
         FILES+=("$file")
       fi
-    # Expand untracked directories to their real file entries. The default
-    # condensed `?? path/` row is a directory, not a missing persisted file.
-    done < <(git status --short --untracked-files=all)
+    done < "$status_file"
     ;;
   manifest)
     # Extract file paths from a plan-changeset manifest

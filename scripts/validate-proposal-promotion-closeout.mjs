@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
+import { isValidWiId } from "../hooks/lib/wi-id.mjs";
 
 const args = process.argv.slice(2);
 let root = process.cwd();
@@ -86,6 +87,17 @@ if (!exists(triagePath)) {
     }
     if (!hasOpen && !hasDone) {
       errors.push(`${proposal}: triage entry has no matching proposal source file`);
+    }
+
+    if (Object.hasOwn(entry, "backlog_wi")) {
+      if (entry.accepted_wi || entry.rejected_reason || entry.deferred_until) errors.push(`${proposal}: backlog_wi conflicts with another disposition`);
+      if (!hasOpen) errors.push(`${proposal}: backlog_wi requires an open proposal source`);
+      if (!isValidWiId(entry.backlog_wi) || !exists(`docs/specs/work-items/${entry.backlog_wi}.md`)) errors.push(`${proposal}: backlog_wi must name an existing canonical WI`);
+      else {
+        const status=readText(`docs/specs/work-items/${entry.backlog_wi}.md`).match(/^\*\*Status:\*\*\s*(.+)$/mi)?.[1] || "";
+        if (!/^(backlog|pending|blocked|identified|in_progress|in-progress|in progress|planned|draft)\b/i.test(status)) errors.push(`${proposal}: backlog_wi must have an explicit unfinished status`);
+      }
+      if (!isNonEmptyString(entry.reason)) errors.push(`${proposal}: backlog_wi requires a reason`);
     }
 
     if (!isNonEmptyString(entry.accepted_wi)) continue;

@@ -7,6 +7,18 @@ first and update it after.
 Skills that read this: `route-workflow`, `improve-framework`, `evolve-framework`, `blend-external`, `test-framework`, `create-skill`
 Skills that update this: same list + any manual framework change
 
+## Unreleased follow-up: review launcher recovery
+
+WI-FW-CLEAN-MAIN-FOLLOWUP-01 adds a pre-invocation check of the existing signed
+three-round inventory, serialized by a cycle lock through issuance. A later
+internal failure preserves completed attempts, route/usage, and raw findings in
+a non-approving failure envelope plus its pre-failure receipt; a success cache
+published by that failed request is removed under its cache lock. Offline stub
+fixtures cover cap exhaustion, concurrent last-slot requests, issuance failure,
+and cache retry. This source change does not approve the earlier overrun or
+claim landing/installation; the original three issued reviews and fourth paid
+call remain preserved in the task review log.
+
 ## Skill judgment and applicable context (WI-FW-SKILL-JUDGMENT-01)
 
 The shared product decision contract and live consumers replace question/competitor quotas with evidence-backed unresolved consequential decisions. Current spec/code conflicts, persona fit, relevant alternatives, risk/reversibility, success signals and useful innovation remain required when relevant; signed owner decisions and release checks are preserved. Existing decisions do not require repeated AGREE keywords or empty companion files.
@@ -58,7 +70,7 @@ Installation retains the existing shared scripts directory across provisioned ho
 - **Rules:** 48 registered in `skills-manifest.json` `rulesRegistry.entries`, exact parity with `rules/**/*.md` on disk (verified 2026-08-26, WI-FW-DOCS-AUDIT-01; per-rule scope/type/injection metadata lives in the registry — this file no longer keeps a hand-count breakdown that rots)
 - **Hooks:** 14 hooks across all 13 Kimi lifecycle events — PreToolUse (×5: workflow-guard, phase-boundary, bash-guard, lane-tasks-pre-validator, skill-artifact-authenticity), PostToolUse (×2: lane-tasks-validator, stop-quality), PostToolUseFailure (lane-tasks-failure), UserPromptSubmit (preflight-guard), Stop (task-completion-guard with anti-loop), StopFailure (error-logger), SessionStart (auto-recovery), SessionEnd (final-checkpoint), SubagentStart (pre-flight), SubagentStop (state-merge), PreCompact (checkpoint), PostCompact (recovery), Notification (gate-alert)
 - **Claude hooks:** 21 hooks auto-wired by `setup --host claude` (was 2: eval-gate only). Full lifecycle coverage: PreToolUse (×6), PostToolUse (×6), PostToolUseFailure, Stop (×2), UserPromptSubmit, SessionStart, SessionEnd, StopFailure, SubagentStart, SubagentStop, PreCompact, PostCompact, Notification.
-- **Test infrastructure:** 365 tier-1 scripts, 62 tier-1.5 comprehension prompts (56 skills covered), 36 registered tier-2 integration scenarios (58% skill coverage), **journey skills have 2 registered tier-2 scenarios (`test-journeys-runtime`, `write-journeys-generate`)**, 5 fixture projects (greenfield/brownfield/bugfix/drift/refactor), **tier-3 judge operational but coverage is 1/36 scenarios (2.8%)** (completeness/actionability/consistency scoring via kimi --print --yolo -p; only `diagnose-bug-typo` has been judged as of 2026-04-30)
+- **Test infrastructure:** 366 tier-1 scripts, 62 tier-1.5 comprehension prompts (56 skills covered), 36 registered tier-2 integration scenarios (58% skill coverage), **journey skills have 2 registered tier-2 scenarios (`test-journeys-runtime`, `write-journeys-generate`)**, 5 fixture projects (greenfield/brownfield/bugfix/drift/refactor), **tier-3 judge operational but coverage is 1/36 scenarios (2.8%)** (completeness/actionability/consistency scoring via kimi --print --yolo -p; only `diagnose-bug-typo` has been judged as of 2026-04-30)
 - **Execution Controller v2 (WI-368, merged at `0d75cb1d`):** one digest-bound product graph and canonical layer inventory feed an append-only runtime journal, durable leases, real argv/effect execution, CAS evidence consumption, owner/memory/company adapters, release/rollback/live/observation lifecycle, host projections, N/N-1 migration, mutation proof and cutover gate. Local simulation uses `SIMULATED_*` states and cannot close delivery/outcome or prove the 60-minute SLO. Default cutover remains disabled until an explicitly authorized real Sample direction-to-live canary and rollback proof. WI-529 closes two integration seams without weakening that boundary: mandatory chain schemas represent the actual AGY reviewer identity, and the effective serialized Codex mutation dispatcher is launcher-routed and setup-verified.
 - **Last lint:** PASS (2026-08-10 — manifest mirrors report 103 included and 59 router-core skills during WI-368 local candidate validation). The generic product pipeline-integrity script remains a baseline-inapplicable check for this framework root because both frozen base and candidate intentionally have no root `vision.md`.
 
@@ -709,3 +721,27 @@ Resolved gaps are archived (audit trail) at
 to keep this live file under the WI-362 50KB ceiling. The Known Gaps table above
 holds only actionable open items. (Link target materialized 2026-08-26,
 WI-FW-DOCS-AUDIT-01 — previously referenced but never committed.)
+
+### Unreleased follow-up: isolated evaluation and phase validation
+
+WI-FW-CLEAN-MAIN-FOLLOWUP-01 remains in progress and is not installed or landed.
+The candidate adds explicit plan-phase validation while preserving strict
+execution defaults, private HOME/XDG/provider state for Tier-1 invocations,
+fixture-only dead-pointer repair tests, and fixed-clock freshness checks.
+Source-derived video skill context/continuation and two native mirrors are
+reconciled. MiMo and Claude-hook capability summaries now have fresh primary
+source provenance; unsupported old claims are withdrawn, not backdated.
+Focused recovery/phase/isolation tests: 18 passed. Sol advisory checks passed
+for the bounded launcher, phase and evaluator changes. Full corpus, remaining
+historical repairs, independent review, clean main and all-host installation
+are still required; this entry does not waive the recorded plan-cycle overrun.
+
+### Unreleased: deterministic Claude managed-hook convergence
+
+The clean-main follow-up replaces additive Claude hook migration/dedup with
+managed-command rebuild through the existing ownership classifier. Legacy
+mutation hooks converge to the consolidated engine; foreign commands and mixed
+entry metadata survive. Subtraction-only all-disabled updates persist through
+the existing backup and atomic write path. Isolated cutover (44), compatibility
+(25), and generated-settings duplicate (8) checks pass. These are source-fixture
+results, not installed-source or whole-program release approval.

@@ -9,14 +9,21 @@ PASS=0
 FAIL=0
 ERRORS=""
 
-SKILLS=$(find "$REPO_ROOT" -mindepth 2 -maxdepth 2 -name SKILL.md \
-  -not -path "$REPO_ROOT/.worktrees/*" \
-  -not -path "$REPO_ROOT/node_modules/*" \
-  -printf '%h\n' | sed "s#^$REPO_ROOT/##" | sort)
+SKILLS=$(node --input-type=module - "$REPO_ROOT/skills-manifest.json" <<'JS'
+import fs from 'node:fs';
+const skills=JSON.parse(fs.readFileSync(process.argv[2], 'utf8')).includedSkills;
+if (!Array.isArray(skills) || !skills.length || skills.some(s=>typeof s !== 'string' || !/^[a-z0-9-]+$/.test(s))) throw new Error('invalid or empty skill registry');
+console.log(skills.join('\n'));
+JS
+)
 
 for skill in $SKILLS; do
   SKILL_FILE="$REPO_ROOT/skills/$skill/SKILL.md"
-  [[ ! -f "$SKILL_FILE" ]] && continue
+  if [[ ! -f "$SKILL_FILE" ]]; then
+    ERRORS+="  FAIL: $skill — registered skill file missing\n"
+    FAIL=$((FAIL + 1))
+    continue
+  fi
 
   FRONTMATTER=$(awk '/^---$/{n++; next} n==1{print} n>=2{exit}' "$SKILL_FILE")
 

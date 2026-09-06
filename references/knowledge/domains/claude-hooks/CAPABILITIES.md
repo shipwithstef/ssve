@@ -1,44 +1,20 @@
-# Claude Code Hooks
+# Claude Code hooks — verified integration guidance
 
-**Source:** https://code.claude.com/docs/en/hooks
-**Last verified:** 2026-04-23
+**Verified:** 2026-09-06 against the [official hooks reference](https://code.claude.com/docs/en/hooks). Retrieval hashes are in `.sources.jsonl`.
 
-The most feature-rich hook system among the four supported svc hosts.
+## Verified capabilities
 
-## Capabilities
+- Handlers support `command`, `http`, `mcp_tool`, `prompt`, and `agent` types. Command handlers receive event JSON on stdin and return results through stdout and exit status.
+- Event-specific schemas define matching and decision behavior. Consult the relevant event before assigning a blocker or observer role; do not reuse one event’s response shape for another.
+- Command hooks support asynchronous execution. Prompt and agent handlers invoke models, so they are not zero-token substitutes for local checks.
+- Hook configuration can restrict when a handler runs. The current reference documents both matcher behavior and handler conditions.
 
-- **28 Lifecycle Events** (not 3, not 11, not 27 — the actual count is 28). Full list in [events.md](details/events.md).
-- **5 Hook Types**: `command` (shell), `http` (REST endpoint), `mcp_tool` (call an MCP tool), `prompt` (ask a Claude model to decide), `agent` (spawn a subagent). Unique to Claude — other hosts only support `command`.
-- **JSON Wire Protocol**: Input JSON on stdin; output JSON on stdout when exit 0.
-- **Modern Decision Format** shared with Kimi and Codex: `hookSpecificOutput.permissionDecision` with values `allow | deny | ask | defer`.
-- **Legacy Format Still Supported**: top-level `{decision: "approve"|"block", reason}` maps to modern: approve→allow, block→deny.
-- **Decision Merge Precedence**: `deny > defer > ask > allow` when multiple hooks return different decisions.
-- **Async Hooks**: `async: true` runs in background without blocking; `asyncRewake: true` additionally wakes Claude with stderr-as-system-reminder on exit 2.
-- **Rich Matcher DSL**: `*`/`""` = all; alphanumeric+pipe = exact/pipe-list; anything else = regex. Plus `if` field with permission-rule syntax (`Bash(git push *)`) for command-level narrowing on tool events.
-- **Environment Variables Injected**: `CLAUDE_PROJECT_DIR`, `CLAUDE_PLUGIN_ROOT`, `CLAUDE_PLUGIN_DATA`, `CLAUDE_ENV_FILE`, `CLAUDE_CODE_REMOTE`.
-- **Persistent Env via `CLAUDE_ENV_FILE`**: SessionStart/CwdChanged/FileChanged hooks can append `export X=Y` lines that become available in all subsequent Bash commands.
-- **Parallel Execution with Dedup**: identical command strings / URLs auto-deduplicated.
-- **Fail-Open Semantics**: non-0-non-2 exit codes continue execution; missing JSON at exit 0 allows tool.
-- **Output Capping**: context-injected output (`additionalContext`, `systemMessage`, plain stdout) capped at 10,000 chars; overflow saved to file.
+## SSVE operating guidance
 
-## Blockers vs Observers
+Use command hooks for deterministic ownership, parsing, and focused validation. Reserve model evaluation for judgments that require it. Measure invocation frequency and latency; keep recovery actionable and bounded. Validate settings against the host’s actual supported schema before installation.
 
-**Can block:**
-- `PreToolUse` (deny/defer)
-- `PermissionRequest` (deny)
-- `UserPromptSubmit`, `UserPromptExpansion` (block)
-- `Stop`, `SubagentStop`, `PostToolBatch`, `PreCompact`, `TeammateIdle`, `TaskCreated`, `TaskCompleted`, `ConfigChange` (block via exit 2)
-- `Elicitation`, `ElicitationResult` (accept/decline/cancel)
-- `WorktreeCreate` (any non-zero exit)
+## Historical material
 
-**Observers only (cannot block):**
-- `SessionStart`, `SessionEnd`, `InstructionsLoaded`, `PostToolUse`, `PostToolUseFailure`, `Notification`, `SubagentStart`, `CwdChanged`, `FileChanged`, `PostCompact`, `StopFailure`, `PermissionDenied`, `WorktreeRemove`
+The old “28 events” census and cross-host superiority claims are withdrawn. This retrieval verifies this capability summary only. Existing `details/` files are historical snapshots, not current schema authority; reverify a detail against official documentation before using it.
 
-## L3 Detail Files
-
-- [events.md](details/events.md) — All 28 events with input/output schemas
-- [decision-format.md](details/decision-format.md) — Modern vs legacy decision shapes, merge precedence
-
-> Index corrected 2026-08-26 (WI-FW-DOCS-AUDIT-01): a previously listed
-> `details/configuration.md` was never extracted; settings.json / matcher DSL
-> facts live in this body and in [events.md](details/events.md).
+Public documentation retrieval did not invoke Claude or change any live host settings.

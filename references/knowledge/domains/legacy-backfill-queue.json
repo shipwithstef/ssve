@@ -10,7 +10,6 @@
   ],
   "domains": [
     { "domain": "namecheap", "owner": "research", "due": "2026-06-10", "status": "legacy-unverified", "action": "backfill-or-retire" },
-    { "domain": "mimo", "owner": "research", "due": "2026-06-10", "status": "legacy-unverified", "action": "backfill-or-retire" },
     { "domain": "gemini-cli-hooks", "owner": "research", "due": "2026-06-10", "status": "legacy-unverified", "action": "backfill-or-retire" },
     { "domain": "gcp-mcp", "owner": "research", "due": "2026-06-10", "status": "legacy-unverified", "action": "backfill-or-retire" },
     { "domain": "google-ai-pro", "owner": "research", "due": "2026-06-10", "status": "legacy-unverified", "action": "backfill-or-retire" },
@@ -18,7 +17,6 @@
     { "domain": "resend", "owner": "research", "due": "2026-06-10", "status": "legacy-unverified", "action": "backfill-or-retire" },
     { "domain": "capacitor", "owner": "research", "due": "2026-06-10", "status": "legacy-unverified", "action": "backfill-or-retire" },
     { "domain": "devops-mcp", "owner": "research", "due": "2026-06-10", "status": "legacy-unverified", "action": "backfill-or-retire" },
-    { "domain": "claude-hooks", "owner": "research", "due": "2026-06-10", "status": "legacy-unverified", "action": "backfill-or-retire" },
     { "domain": "claude-design", "owner": "research", "due": "2026-06-10", "status": "legacy-unverified", "action": "backfill-or-retire" },
     { "domain": "codex", "owner": "research", "due": "2026-06-10", "status": "legacy-unverified", "action": "backfill-or-retire" }
   ]

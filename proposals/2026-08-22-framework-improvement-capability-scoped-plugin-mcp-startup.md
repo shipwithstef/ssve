@@ -1,12 +1,13 @@
 # Framework improvement: capability-scoped plugin MCP startup for external executors
 
+backlog_wi: WI-FW-CAPABILITY-MCP-STARTUP-RESIDUALS-01
+reason: Track startup capability scoping with the existing dispatch resolver backlog; this is not a completion claim.
+
 **Status:** DRAFT — route with WI-551 or a focused follow-up
 **Date:** 2026-08-22
 **Category:** external-agent isolation / credential UX / resource efficiency
 **Severity: high —** irrelevant authenticated provider surfaces and OAuth UI are exposed to tasks that never requested them.
 **Plan-changeset class:** hot-path
-**deferred_until:** 2026-09-05
-**reason:** Triage with WI-551's single dispatch resolver before deciding whether to fold it in or promote a focused follow-up.
 
 ## Gap
 

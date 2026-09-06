@@ -2,14 +2,22 @@
 # Tier-1: the staleness→refresh closure (WI-432). `expertise.mjs refresh-scan` scans every registered SME
 # bank and emits ONE idempotent, propose-only refresh trigger per STALE bank (never auto-refreshes).
 set -uo pipefail
-cd "$(dirname "$0")/../../.." || exit 1
-EX="scripts/expertise.mjs"; DOM="references/knowledge/domains/startup-saas-finance"
+ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+REFRESH_FIXTURE="$(mktemp -d)"
+trap 'rm -rf -- "$REFRESH_FIXTURE"' EXIT
+mkdir -p "$REFRESH_FIXTURE/references/knowledge/domains"
+cp "$ROOT/skills-manifest.json" "$REFRESH_FIXTURE/"
+cp -a "$ROOT/references/knowledge/domains/startup-saas-finance" "$REFRESH_FIXTURE/references/knowledge/domains/"
+cd "$REFRESH_FIXTURE" || exit 1
+EX="$ROOT/scripts/expertise.mjs"; DOM="references/knowledge/domains/startup-saas-finance"
+# Keep the reproduction stale regardless of the live bank refresh date.
+printf '2000-01-01 (fixture)\n' > "$DOM/.version"
 pass=0; fail=0
 ok(){ pass=$((pass+1)); echo "  ✓ $1"; }
 no(){ fail=$((fail+1)); echo "  ✗ $1"; }
 
 # 1. scan emits a trigger for the known-stale bank (startup-saas-finance, .version 2026-03-01)
-T="$(mktemp)"
+T="$REFRESH_FIXTURE/stale.jsonl"; : > "$T"
 node "$EX" refresh-scan --out "$T" >/dev/null 2>&1
 grep -q '"domain":"startup-saas-finance"' "$T" 2>/dev/null && ok "refresh-scan emits a trigger for the STALE bank" || no "no trigger for the stale bank"
 
@@ -22,13 +30,13 @@ node "$EX" refresh-scan --out "$T" >/dev/null 2>&1
 [ "$(wc -l < "$T")" = "$before" ] && ok "re-scan is idempotent (no duplicate trigger for an open domain)" || no "re-scan duplicated the trigger"
 
 # 4. NEGATIVE — a FRESH bank yields NO trigger (temporarily make the bank fresh, scan a clean out, restore)
-B="$(mktemp)"; cp "$DOM/.version" "$B"; trap 'cp "$B" "$DOM/.version"' EXIT   # restore even on interrupt/timeout
+B="$REFRESH_FIXTURE/version-before"; cp "$DOM/.version" "$B"
 printf '%s (test)\n' "$(date -u +%Y-%m-%d)" > "$DOM/.version"
-T2="$(mktemp)"; node "$EX" refresh-scan --out "$T2" >/dev/null 2>&1; rc=$?
+T2="$REFRESH_FIXTURE/fresh.jsonl"; : > "$T2"; node "$EX" refresh-scan --out "$T2" >/dev/null 2>&1; rc=$?
 if [ "$rc" != "0" ]; then no "refresh-scan crashed (exit $rc) on the FRESH control"
 elif grep -q '"domain":"startup-saas-finance"' "$T2" 2>/dev/null; then no "FRESH bank still triggered a refresh"
 else ok "FRESH bank yields no refresh trigger (negative control)"; fi
-cp "$B" "$DOM/.version"; trap - EXIT
+cp "$B" "$DOM/.version"
 
 echo ""
 echo "knowledge-refresh-scan: $pass passed, $fail failed"

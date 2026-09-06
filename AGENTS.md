@@ -169,7 +169,8 @@ ln -s ../../hooks/svc-pre-commit-multi-host-check.sh .git/hooks/pre-commit
 ### Testing
 ```bash
 # Tier 1 only — no paid LLM. Focused checks are normally <10s; the complete
-# corpus can take several minutes. Run it before every commit.
+# corpus can take several minutes. Require it at the release/commit boundary;
+# reuse only verified matching input-bound evidence as described below.
 bash test-framework/evals/run-all-evals.sh
 
 # Full suite — tiers 1.5, 2, and 3. Requires `claude` or `kimi` CLI + LLM tokens.
@@ -439,7 +440,7 @@ Agent format: YAML frontmatter (`name`, `description`, `model`, `tools`, `harnes
 - When framework behavior changes, keep `skills-manifest.json`, router logic, and any affected doctrine or state files in sync.
 - Prefer updating the **smallest set of skills** needed, then prove the change with evals.
 - Run `node scripts/lint-skills-manifest.mjs` after any manifest, README, or routing change.
-- Run `bash test-framework/evals/run-all-evals.sh` before committing skill changes.
+- Require passing `bash test-framework/evals/run-all-evals.sh` evidence before committing skill changes. Reuse only when source/input hashes, validator set, command options, runtime, and relevant environment match the candidate; otherwise rerun. Focused iteration does not replace this release gate.
 - **Post-commit verification:** After any commit, re-run at least the relevant tier-1 validators to confirm the committed state still passes. Do not assume pre-commit validation is sufficient — file state can shift between staging and commit.
 - **File persistence verification:** After any batch of WriteFile/StrReplaceFile calls that creates or modifies 3+ files, run `bash scripts/verify-file-persistence.sh --from-git-status` before proceeding. If it reports MISSING files, re-create them using Shell-based writes (heredoc) instead of WriteFile/StrReplaceFile — this is the recovery pattern for post-compaction persistence failures.
 - Keep edits small and local. Do not refactor multiple skills in one commit unless the change is a cross-cutting convention update.

@@ -9,6 +9,10 @@
 #   - Preserves behavior from the pre-port .js version
 
 set -u
+
+# Keep standalone invocation isolated from active host/session state.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/fixture-home.sh"
+svc_require_fixture "$@"
 REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 GUARD="$REPO_ROOT/hooks/svc-workflow-guard.mjs"
 

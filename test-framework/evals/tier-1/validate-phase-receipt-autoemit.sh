@@ -3,6 +3,10 @@
 # Fixture graph + synthetic PostToolUse payloads through the hook; positive
 # auto-emission + anti-hollowing negatives + guard round-trip.
 set -u
+
+# Keep standalone invocation isolated from active host/session state.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/fixture-home.sh"
+svc_require_fixture "$@"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 HOOK="$REPO_ROOT/hooks/svc-phase-receipt-autoemit.mjs"

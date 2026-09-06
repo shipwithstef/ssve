@@ -40,13 +40,13 @@ EOF
 # 1. Absolute path input should produce ~-prefixed output
 # =============================================================================
 ABS_DRYRUN=$(node "$WIRE_SCRIPT" --skills-path "$HOME/.kimi/skills" --config "$TMP_CONFIG" --dry-run 2>&1 || true)
-if echo "$ABS_DRYRUN" | grep -q "~/.kimi/skills/hooks/kimi/"; then
+if grep -q "~/.kimi/skills/hooks/kimi/" <<< "$ABS_DRYRUN"; then
   pass "absolute path input produces ~-prefixed commands"
 else
   fail "absolute path should produce ~-prefixed commands (output missing ~/.kimi/skills/)"
 fi
 
-if echo "$ABS_DRYRUN" | grep -q "$HOME/.kimi/skills/hooks/kimi/"; then
+if grep -q "$HOME/.kimi/skills/hooks/kimi/" <<< "$ABS_DRYRUN"; then
   fail "absolute path should NOT produce hardcoded absolute commands"
 else
   pass "absolute path does not produce hardcoded absolute commands"
@@ -55,14 +55,14 @@ fi
 # =============================================================================
 # 2. Tilde path input should NOT produce garbage paths
 # =============================================================================
-TILDE_DRYRUN=$(node "$WIRE_SCRIPT" --skills-path ~/.kimi/skills --config "$TMP_CONFIG" --dry-run 2>&1 || true)
-if echo "$TILDE_DRYRUN" | grep -q "$(pwd)/~/.kimi/skills"; then
+TILDE_DRYRUN=$(node "$WIRE_SCRIPT" --skills-path '~/.kimi/skills' --config "$TMP_CONFIG" --dry-run 2>&1 || true)
+if grep -q "$(pwd)/~/.kimi/skills" <<< "$TILDE_DRYRUN"; then
   fail "tilde path should NOT produce garbage paths like $(pwd)/~/.kimi/skills"
 else
   pass "tilde path does not produce garbage cwd-prefixed paths"
 fi
 
-if echo "$TILDE_DRYRUN" | grep -q "~/.kimi/skills/hooks/kimi/"; then
+if grep -q "~/.kimi/skills/hooks/kimi/" <<< "$TILDE_DRYRUN"; then
   pass "tilde path input produces correct ~-prefixed commands"
 else
   fail "tilde path should produce correct ~-prefixed commands"
@@ -71,9 +71,9 @@ fi
 # =============================================================================
 # 3. Against a freshly wired config: no duplicates detected
 # =============================================================================
-node "$WIRE_SCRIPT" --skills-path ~/.kimi/skills --config "$TMP_CONFIG" >/dev/null
-DUP_DRYRUN=$(node "$WIRE_SCRIPT" --skills-path ~/.kimi/skills --config "$TMP_CONFIG" --dry-run 2>&1 || true)
-if echo "$DUP_DRYRUN" | grep -q "No changes needed"; then
+node "$WIRE_SCRIPT" --skills-path '~/.kimi/skills' --config "$TMP_CONFIG" >/dev/null
+DUP_DRYRUN=$(node "$WIRE_SCRIPT" --skills-path '~/.kimi/skills' --config "$TMP_CONFIG" --dry-run 2>&1 || true)
+if grep -q "No changes needed" <<< "$DUP_DRYRUN"; then
   pass "dry-run against freshly wired config detects no duplicates"
 else
   fail "dry-run should detect no duplicates against freshly wired config (output: $DUP_DRYRUN)"
@@ -82,7 +82,7 @@ fi
 # =============================================================================
 # 4. Duplicate last svc hook must not delete following user TOML tables
 # =============================================================================
-node "$WIRE_SCRIPT" --skills-path ~/.kimi/skills --config "$TAIL_CONFIG" >/dev/null
+node "$WIRE_SCRIPT" --skills-path '~/.kimi/skills' --config "$TAIL_CONFIG" >/dev/null
 node - "$TAIL_CONFIG" <<'NODE'
 const fs = require("fs");
 const file = process.argv[2];
@@ -92,7 +92,7 @@ const stop = blocks.find((block) => block.includes("svc-kimi-task-completion-gua
 if (!stop) throw new Error("missing completion guard fixture");
 fs.writeFileSync(file, `${text.trimEnd()}\n\n${stop.trim()}\n\n[settings]\nmodel = "user-owned"\n\n[providers.custom]\nendpoint = "https://user.invalid"\n`);
 NODE
-node "$WIRE_SCRIPT" --skills-path ~/.kimi/skills --config "$TAIL_CONFIG" >/dev/null
+node "$WIRE_SCRIPT" --skills-path '~/.kimi/skills' --config "$TAIL_CONFIG" >/dev/null
 if grep -q '^model = "user-owned"$' "$TAIL_CONFIG" \
   && grep -q '^endpoint = "https://user.invalid"$' "$TAIL_CONFIG" \
   && [ "$(grep -c 'svc-kimi-task-completion-guard' "$TAIL_CONFIG")" -eq 1 ]; then

@@ -1,5 +1,8 @@
 # Framework Docs Audit Findings — WI-FW-DOCS-AUDIT-01 (2026-08-26)
 
+backlog_wi: WI-FW-CLEAN-MAIN-FOLLOWUP-01
+reason: Current follow-up owns evidence and metadata reconciliation. Historical claims below are retained, not recertified; no missing historical WI or execution evidence is fabricated.
+
 Mechanical audit of framework documentation drift. Method: relative-link
 walker over all repo `.md` files, count reconciliation (disk vs manifest vs
 authority-doc claims), host-table vs `provision/hosts/*.json` diff, and

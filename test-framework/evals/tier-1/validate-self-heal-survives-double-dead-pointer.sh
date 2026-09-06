@@ -9,19 +9,16 @@
 # After WI-134 (Strategy 3 filesystem scan), the hook should still locate
 # the canonical repo via ~/app-workspaces/* scan and self-heal silently.
 #
-# Safety contract:
-#   - Backs up the live install state BEFORE any mutation.
-#   - `trap restore_state EXIT INT TERM` — state is restored on every exit
-#     path (PASS, FAIL, Ctrl-C, SIGTERM, error trap, hard kill of parent).
-#   - Restoration is verified at end: the live `.source-repo` must match the
-#     pre-test value byte-for-byte.
-#
-# Exit 0 if: no Claude install (skip), OR both pointers were deliberately
-# dead, the hook ran, and the install was repaired (post-state ==
-# pre-state) AND no `[svc-session-start] WARN` line appeared.
-# Exit 1 otherwise.
-
+# Safety contract: run only under a private fixture HOME. Install and break a
+# disposable canonical source, then demand exact recovery; never touch the
+# operator's installed pointers or accept a skip as recovery evidence.
 set -u
+FIXTURE_FRAMEWORK_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+if [ "${SVC_TIER1_FIXTURE_HOME:-}" != "$HOME" ]; then
+  . "$FIXTURE_FRAMEWORK_ROOT/test-framework/evals/tier-1/lib/fixture-home.sh"
+  svc_run_fixture bash "$0" "$@"
+  exit "$?"
+fi
 
 PASS=0
 FAIL=0
@@ -114,136 +111,55 @@ else
 fi
 rm -rf "$ARGV_HOME"
 
+# Build a canonical disposable Git source containing the candidate bytes. Its
+# durable path is owned by the fixture; deleting it cannot affect any session.
+FIXTURE_SOURCE="$HOME/app-workspaces/seriousvibecoding"
+mkdir -p "$FIXTURE_SOURCE"
+python3 - "$SELF487_REPO" "$FIXTURE_SOURCE" <<'PY_COPY'
+import os, pathlib, shutil, subprocess, sys
+root, target = map(pathlib.Path, sys.argv[1:])
+files = subprocess.check_output(['git', '-C', str(root), 'ls-files', '-z', '--cached', '--others', '--exclude-standard']).split(b'\0')
+for raw in set(files):
+    if not raw: continue
+    rel = pathlib.Path(os.fsdecode(raw))
+    if rel.parts[0] in ('.git', '.svc', '.worktrees') or str(rel).startswith('test-framework/results/'): continue
+    source = root / rel
+    if not source.exists() and not source.is_symlink(): continue
+    destination = target / rel
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if source.is_symlink(): destination.symlink_to(os.readlink(source))
+    elif source.is_file(): shutil.copy2(source, destination)
+PY_COPY
+if [ "$?" -ne 0 ]; then fail "could not snapshot candidate source"; exit 1; fi
+git -C "$FIXTURE_SOURCE" init -q
+git -C "$FIXTURE_SOURCE" add .
+git -C "$FIXTURE_SOURCE" -c user.name=Fixture -c user.email=fixture@example.invalid -c commit.gpgsign=false commit -qm 'isolated self-heal source'
+if ! "$FIXTURE_SOURCE/setup" --host claude > "$HOME/setup.log" 2>&1; then
+  cat "$HOME/setup.log"
+  fail "could not install disposable source"
+  exit 1
+fi
 SKILLS_DIR="$HOME/.claude/skills"
-if [ ! -d "$SKILLS_DIR" ]; then
-  pass "$SKILLS_DIR does not exist — skipping (fresh contributor environment OK)"
-  echo ""
-  echo "  PASS — all $PASS assertions passed"
-  exit 0
-fi
-
-# Resolve the canonical repo via the live install, before we deliberately break it.
 LIVE_POINTER="$SKILLS_DIR/.source-repo"
-if [ ! -f "$LIVE_POINTER" ]; then
-  pass "no .source-repo at $LIVE_POINTER — skipping (no canonical install detected)"
-  echo ""
-  echo "  PASS — all $PASS assertions passed"
-  exit 0
-fi
-ORIG_POINTER_VAL="$(cat "$LIVE_POINTER")"
-if [ ! -x "$ORIG_POINTER_VAL/setup" ] || [ ! -f "$ORIG_POINTER_VAL/hooks/svc-session-start-healthcheck.mjs" ]; then
-  pass "live .source-repo does not look like a canonical svc repo — skipping"
-  echo ""
-  echo "  PASS — all $PASS assertions passed"
-  exit 0
-fi
-
-# Resolve the worktree-aware hook to test against. Default to the live install,
-# but allow the validator to be run from a worktree where the hook was just
-# modified (so this test exercises the in-development version, not a stale one).
-# Candidate suites exercise the hook under test; post-merge/live callers may
-# still pin an installed root explicitly through HOOK_REPO_ROOT_OVERRIDE.
-HOOK_REPO_ROOT="${HOOK_REPO_ROOT_OVERRIDE:-$SELF487_REPO}"
-HOOK_PATH="$HOOK_REPO_ROOT/hooks/svc-session-start-healthcheck.mjs"
-if [ ! -f "$HOOK_PATH" ]; then
-  fail "expected hook at $HOOK_PATH (override via HOOK_REPO_ROOT_OVERRIDE)"
-  echo "  $FAIL failed, $PASS passed"
-  exit 1
-fi
-pass "exercising hook at $HOOK_PATH"
-
-# Backup the parts of the install we are about to mutate.
-BACKUP_DIR="$(mktemp -d -t svc-wi134-XXXXXX)"
-cp -p "$LIVE_POINTER" "$BACKUP_DIR/source-repo"
-
 SCRIPTS_LINK="$SKILLS_DIR/scripts"
-HAD_SCRIPTS_LINK=0
-SCRIPTS_LINK_TARGET=""
-if [ -L "$SCRIPTS_LINK" ]; then
-  HAD_SCRIPTS_LINK=1
-  SCRIPTS_LINK_TARGET="$(readlink "$SCRIPTS_LINK")"
-fi
-
-restore_state() {
-  local rc=$?
-  # Always attempt restore — silent on success, loud on failure.
-  if [ -f "$BACKUP_DIR/source-repo" ]; then
-    cp -p "$BACKUP_DIR/source-repo" "$LIVE_POINTER" 2>/dev/null
-  fi
-  if [ "$HAD_SCRIPTS_LINK" = 1 ]; then
-    rm -f "$SCRIPTS_LINK" 2>/dev/null
-    ln -s "$SCRIPTS_LINK_TARGET" "$SCRIPTS_LINK" 2>/dev/null
-  fi
-  rm -rf "$BACKUP_DIR" 2>/dev/null
-  # Verify restoration matched pre-test state.
-  local post
-  post="$(cat "$LIVE_POINTER" 2>/dev/null || echo "")"
-  if [ "$post" != "$ORIG_POINTER_VAL" ]; then
-    echo "  ✗ RESTORE FAILED: $LIVE_POINTER is '$post', expected '$ORIG_POINTER_VAL'" >&2
-    echo "    Manual recovery: echo '$ORIG_POINTER_VAL' > '$LIVE_POINTER' && cd '$ORIG_POINTER_VAL' && ./setup --host claude" >&2
-    return 1
-  fi
-  return $rc
-}
-trap restore_state EXIT INT TERM
-
-pass "backed up live install state to $BACKUP_DIR"
-
-# Step 1: deliberately point .source-repo at a known-dead path.
-DEAD_PATH="/tmp/svc-wi134-deliberately-dead-$$/.worktrees/wi-134-fake"
-echo "$DEAD_PATH" > "$LIVE_POINTER"
-pass "deliberately set .source-repo to dead worktree path: $DEAD_PATH"
-
-# Step 2: deliberately repoint scripts symlink at a known-dead path.
-if [ "$HAD_SCRIPTS_LINK" = 1 ]; then
-  rm -f "$SCRIPTS_LINK"
-  ln -s "$DEAD_PATH/scripts" "$SCRIPTS_LINK"
-  pass "deliberately repointed scripts symlink to dead worktree path"
-fi
-
-# Step 3: run the hook. Capture stderr to inspect for WARN-or-repair signal.
-HOOK_LOG="$(mktemp -t svc-wi134-hook-XXXXXX.log)"
-SVC_HOST=claude SVC_SELF_HEAL_DISABLE="" timeout 300 node "$HOOK_PATH" </dev/null 2>"$HOOK_LOG"
+[ "$(cat "$LIVE_POINTER")" = "$FIXTURE_SOURCE" ] || { fail "fixture setup chose another source"; exit 1; }
+[ -L "$SCRIPTS_LINK" ] || { fail "fixture setup did not link scripts"; exit 1; }
+DEAD_PATH="$HOME/absent-source/.worktrees/deleted"
+printf '%s\n' "$DEAD_PATH" > "$LIVE_POINTER"
+rm "$SCRIPTS_LINK"
+ln -s "$DEAD_PATH/scripts" "$SCRIPTS_LINK"
+SVC_HOST=claude SVC_SELF_HEAL_DISABLE="" timeout 90 node "$FIXTURE_SOURCE/hooks/svc-session-start-healthcheck.mjs" </dev/null 2>"$HOME/self-heal.log"
 HOOK_EXIT=$?
-HOOK_OUT="$(cat "$HOOK_LOG" 2>/dev/null)"
-rm -f "$HOOK_LOG"
-
-if [ "$HOOK_EXIT" != 0 ]; then
-  fail "hook exited non-zero ($HOOK_EXIT) — must always exit 0 to never block sessions"
-fi
-
-if echo "$HOOK_OUT" | grep -qE "Could not detect repo root for auto-repair"; then
-  fail "Strategy 3 did not fire — hook printed the 'could not detect repo root' WARN"
-fi
-
-if echo "$HOOK_OUT" | grep -qE "self-heal: repaired"; then
-  pass "hook self-healed via Strategy 3 (filesystem scan)"
+if [ "$HOOK_EXIT" -eq 0 ] && grep -q 'self-heal: repaired' "$HOME/self-heal.log" \
+  && [ "$(cat "$LIVE_POINTER")" = "$FIXTURE_SOURCE" ] \
+  && [ "$(readlink "$SCRIPTS_LINK")" = "$FIXTURE_SOURCE/scripts" ]; then
+  pass "durable fixture receipt recovers both dead pointers to the exact canonical source"
 else
-  # Acceptable: hook detected nothing dangling because the install was already
-  # consistent under the dead pointers (rare). In that case, the WARN check
-  # above already proves Strategy 3 wasn't needed AND wasn't bypassed via warn.
-  if echo "$HOOK_OUT" | grep -qE "Strategy 3: .* ambiguous canonical candidates"; then
-    fail "Strategy 3 found multiple ambiguous candidates — needs SVC_REPO_SEARCH_PATHS to disambiguate"
-  else
-    pass "hook ran without WARN — Strategy 3 path either fired silently or was not needed"
-  fi
+  cat "$HOME/self-heal.log"
+  fail "double-dead-pointer fixture did not restore both exact targets"
 fi
-
-# Step 4: confirm post-test state. The trap restores .source-repo regardless
-# of the hook's behavior, but we verify the post-test pointer here so a
-# self-heal that wrote a NEW (still canonical) value gets credit.
-POST_POINTER_VAL="$(cat "$LIVE_POINTER" 2>/dev/null || echo "")"
-if [[ "$POST_POINTER_VAL" == *"/.worktrees/"* ]]; then
-  fail "post-test .source-repo still worktree-pathed: $POST_POINTER_VAL"
-elif [ -d "$POST_POINTER_VAL" ] && [ -x "$POST_POINTER_VAL/setup" ]; then
-  pass "post-test .source-repo points at a canonical svc repo: $POST_POINTER_VAL"
-fi
-
-echo ""
-if [ "$FAIL" = 0 ]; then
-  echo "  PASS — all $PASS assertions passed"
+if [ "$FAIL" -eq 0 ]; then
+  echo "PASS — isolated self-heal recovery, source-loss denial, and untrusted-source rejection"
   exit 0
-else
-  echo "  $FAIL failed, $PASS passed"
-  exit 1
 fi
+exit 1

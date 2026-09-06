@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Keep standalone invocation isolated from active host/session state.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/fixture-home.sh"
+svc_require_fixture "$@"
+
 REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 SOURCE_ROOT="$REPO_ROOT/skills"
 PASS=0
@@ -44,10 +48,10 @@ fixture="$(mktemp -d)"
 trap 'rm -rf "$fixture"' EXIT
 mkdir -p "$fixture/home" "$fixture/target"
 HOME="$fixture/home" SVC_SETUP_VALIDATE_ONLY=1 bash "$REPO_ROOT/setup" --host codex >"$fixture/setup.out"
-if rg -q "103 skills discovered" "$fixture/setup.out"; then
+if rg -q "${#manifest_skills[@]} skills discovered" "$fixture/setup.out"; then
   pass
 else
-  fail "setup did not discover all 103 packaged skills"
+  fail "setup did not discover all ${#manifest_skills[@]} registered packaged skills"
 fi
 
 fixture_repo="$fixture/repo"

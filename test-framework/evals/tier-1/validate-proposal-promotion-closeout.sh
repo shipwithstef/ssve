@@ -170,6 +170,32 @@ else
   fail "validator accepts archived proposal with WI and residual map"
 fi
 
+# Backlog ownership is not formal promotion; accepted closeout stays strict.
+cp -R "$TMP_ROOT/open" "$TMP_ROOT/backlog"
+printf '# WI-DONE\n\n**Status:** VERIFIED\n' > "$TMP_ROOT/backlog/docs/specs/work-items/WI-DONE.md"
+for scenario in valid missing-wi missing-reason conflicting wrong-type empty terminal; do
+  node --input-type=module - "$TMP_ROOT/backlog/proposals/triage.json" "$scenario" <<'JS'
+import fs from 'node:fs';
+const [p,scenario]=process.argv.slice(2);const c=JSON.parse(fs.readFileSync(p));
+const e={backlog_wi:'WI-001',reason:'Existing unfinished WI owns this proposal; no execution approval.'};
+if(scenario==='missing-wi')e.backlog_wi='WI-NOT-THERE';
+if(scenario==='missing-reason')delete e.reason;
+if(scenario==='conflicting')e.accepted_wi='WI-001';
+if(scenario==='wrong-type')e.backlog_wi=7;
+if(scenario==='empty')e.backlog_wi='';
+if(scenario==='terminal')e.backlog_wi='WI-DONE';
+c.entries['2026-05-01-example.md']=e;fs.writeFileSync(p,JSON.stringify(c));
+JS
+  result=0
+  node scripts/validate-proposal-promotion-closeout.mjs --root "$TMP_ROOT/backlog" >"$TMP_ROOT/backlog-$scenario.out" 2>&1 || result=$?
+  if [[ "$scenario" == valid && "$result" == 0 ]] || [[ "$scenario" != valid && "$result" != 0 ]]; then
+    pass "backlog disposition $scenario"
+  else
+    cat "$TMP_ROOT/backlog-$scenario.out"
+    fail "backlog disposition $scenario"
+  fi
+done
+
 if node scripts/validate-proposal-promotion-closeout.mjs >/tmp/svc-proposal-repo.out 2>&1; then
   pass "repo proposal promotion closeout passes"
 else

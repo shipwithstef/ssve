@@ -62,24 +62,24 @@ print("YES" if l01["blocks"].get("acs_inherited_from") == "Phase 0" else "NO")')
 [ "$INHERIT_CHECK" = "YES" ] && pass "AC inheritance fires for P0.1 (AC-04.3)" || fail "AC inheritance did not fire on P0.1"
 
 # --- Dry-run emit field assertions (AC-01.2) -----------------------------
-TMPDIR=$(mktemp -d)
-cp "$FIX_PHASED" "$TMPDIR/proposal.md"
-DRYRUN=$(node "$EMIT" "$TMPDIR/proposal.md" --dry-run --wi-dir "$TMPDIR/wis" --decisions-log "$TMPDIR/decisions.jsonl" 2>/dev/null)
+PROPOSAL_FIXTURE_DIR=$(mktemp -d)
+cp "$FIX_PHASED" "$PROPOSAL_FIXTURE_DIR/proposal.md"
+DRYRUN=$(node "$EMIT" "$PROPOSAL_FIXTURE_DIR/proposal.md" --dry-run --wi-dir "$PROPOSAL_FIXTURE_DIR/wis" --decisions-log "$PROPOSAL_FIXTURE_DIR/decisions.jsonl" 2>/dev/null)
 EMITTED_COUNT=$(echo "$DRYRUN" | python3 -c 'import json,sys; print(len(json.load(sys.stdin)["emitted"]))')
 [ "$EMITTED_COUNT" = "3" ] && pass "dry-run emits 3 WIs from phased fixture" || fail "dry-run emitted $EMITTED_COUNT WIs (expected 3)"
 
 # --- Full-emit round-trip + AC-01.2 field check --------------------------
-rm -rf "$TMPDIR"
-TMPDIR=$(mktemp -d)
-mkdir "$TMPDIR/proposals"
-cp "$FIX_PHASED" "$TMPDIR/proposals/proposal.md"
-cd "$TMPDIR"
+rm -rf "$PROPOSAL_FIXTURE_DIR"
+PROPOSAL_FIXTURE_DIR=$(mktemp -d)
+mkdir "$PROPOSAL_FIXTURE_DIR/proposals"
+cp "$FIX_PHASED" "$PROPOSAL_FIXTURE_DIR/proposals/proposal.md"
+cd "$PROPOSAL_FIXTURE_DIR"
 node "$EMIT" "proposals/proposal.md" --wi-dir "wis" --decisions-log "decisions.jsonl" > /dev/null 2>&1
 cd - > /dev/null
 
 # Each emitted WI must have: Type, Status DRAFT, Severity, Filed date, Source with §, Lane, Goal (single authoritative section, WI-100), Non-Goals, AC, File Impact
 EMIT_OK=0
-for wi in "$TMPDIR/wis"/WI-*.md; do
+for wi in "$PROPOSAL_FIXTURE_DIR/wis"/WI-*.md; do
   grep -q "^\*\*Type:\*\*"        "$wi" || { fail "missing Type in $(basename $wi)"; continue; }
   grep -q "^\*\*Status:\*\* DRAFT" "$wi" || { fail "missing Status:DRAFT in $(basename $wi)"; continue; }
   grep -q "^\*\*Severity:\*\*"    "$wi" || { fail "missing Severity in $(basename $wi)"; continue; }
@@ -97,18 +97,18 @@ done
 [ "$EMIT_OK" = "3" ] && pass "all 3 emitted WIs have every required field (AC-01.2)" || fail "only $EMIT_OK/3 WIs had all fields"
 
 # Archive check (AC-02.1, AC-02.2)
-[ -f "$TMPDIR/proposals/done/proposal.md" ] && pass "proposal moved to proposals/done/ (AC-02.1)" || fail "proposal not moved to done/"
-grep -q "^\*\*Promoted to:\*\*" "$TMPDIR/proposals/done/proposal.md" && pass "Promoted-to trailer appended (AC-02.2)" || fail "trailer missing"
+[ -f "$PROPOSAL_FIXTURE_DIR/proposals/done/proposal.md" ] && pass "proposal moved to proposals/done/ (AC-02.1)" || fail "proposal not moved to done/"
+grep -q "^\*\*Promoted to:\*\*" "$PROPOSAL_FIXTURE_DIR/proposals/done/proposal.md" && pass "Promoted-to trailer appended (AC-02.2)" || fail "trailer missing"
 
 # Decision log (AC-02.3)
-[ -f "$TMPDIR/decisions.jsonl" ] && grep -q '"mode":"from-proposal"' "$TMPDIR/decisions.jsonl" && pass "decision log entry appended (AC-02.3)" || fail "decision log entry missing"
+[ -f "$PROPOSAL_FIXTURE_DIR/decisions.jsonl" ] && grep -q '"mode":"from-proposal"' "$PROPOSAL_FIXTURE_DIR/decisions.jsonl" && pass "decision log entry appended (AC-02.3)" || fail "decision log entry missing"
 
 # --- Idempotency case A: re-run is no-op ---------------------------------
-cd "$TMPDIR"
+cd "$PROPOSAL_FIXTURE_DIR"
 node "$EMIT" "proposals/done/proposal.md" --wi-dir "wis" --decisions-log "decisions.jsonl" > /dev/null 2>&1
 cd - > /dev/null
 WI_COUNT_BEFORE=3
-WI_COUNT_AFTER=$(ls "$TMPDIR/wis"/WI-*.md 2>/dev/null | wc -l)
+WI_COUNT_AFTER=$(ls "$PROPOSAL_FIXTURE_DIR/wis"/WI-*.md 2>/dev/null | wc -l)
 [ "$WI_COUNT_AFTER" = "$WI_COUNT_BEFORE" ] && pass "idempotency case A: no duplicate WIs on re-run" || fail "idempotency broken: $WI_COUNT_BEFORE → $WI_COUNT_AFTER"
 
 # --- Self-exclusion (AC-01.1 amendment) ----------------------------------
@@ -133,7 +133,7 @@ EMITTED_NEW=$(ls "$TMPDIR2/wis"/WI-*.md 2>/dev/null | wc -l)
 # WI-999 pre-exists + 2 new = 3 total
 if [ "$SKIPPED" = "1" ] && [ "$EMITTED_NEW" = "3" ]; then pass "self-exclusion: P0.1 skipped, 2 new WIs emitted"; else fail "self-exclusion broken (skipped=$SKIPPED, total=$EMITTED_NEW)"; fi
 
-rm -rf "$TMPDIR" "$TMPDIR2"
+rm -rf "$PROPOSAL_FIXTURE_DIR" "$TMPDIR2"
 
 # --- Atomic WI allocation (WI-098) --------------------------------------
 # If another process reserved WI-001.md between nextWiNumber() and write, the

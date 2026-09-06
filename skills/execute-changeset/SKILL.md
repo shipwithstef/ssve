@@ -250,6 +250,16 @@ repo** before citing them as yours.
 Zero quality loss: the full suite still runs before closure — what disappears
 is running the full suite to validate a single task or stage.
 
+Use focused mapped checks during iteration. At the release boundary, require a
+complete passing validation run for the candidate. Reuse that result only when
+its recorded source/input hashes, validator set, command options, runtime and
+relevant environment still match; elapsed time or an earlier green message is
+not evidence. A changed input, actual failure, or gate requiring fresh external
+state invalidates the affected result. Missing provenance requires a new run.
+Keep post-commit relevant checks and actual post-promotion/install verification.
+Unknown/global and unmapped-surface test selection retain their full-coverage
+semantics. Never treat provider unavailability or skipped tests as passing.
+
 ### Step 3: Two-stage holistic review
 
 One review of the FULL diff after all tasks — **Pass 1: spec/AC compliance (BLOCKING — full AC coverage, no orphaned code, distrust checkpoint messages, fix gaps and re-run before proceeding); Pass 2: code quality/cross-file consistency only after Pass 1 passes** — protocol, deviation rules, and loop-back rules (spec/UX/UI/tech defects route back before continuing): `references/process-details.md`.

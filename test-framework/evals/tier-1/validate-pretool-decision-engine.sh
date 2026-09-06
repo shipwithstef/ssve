@@ -2,6 +2,10 @@
 # WI-FW-HOOKS-SAFETY-01 T02/AC-2: unified pre-tool observation decision engine.
 # Hermetic: temp dirs only, no network, no LLM, no repository-state writes.
 set -euo pipefail
+
+# Keep standalone invocation isolated from active host/session state.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/fixture-home.sh"
+svc_require_fixture "$@"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
@@ -140,10 +144,10 @@ git -C "$TMP" init -q 2>/dev/null || true
 mkdir -p "$TMP/rt" && chmod 700 "$TMP/rt"
 S1="$(SVC_RUNTIME_DIR="$TMP/rt" node --input-type=module -e '
 import { evaluateSelfHealAuthority } from "'"$ENGINE"'";
-// no turn identifier in payload → TURN_UNPROVABLE, never eligible
+// Session fallback supplies a stable turn, but no authority record exists.
 const r = evaluateSelfHealAuthority({session_id:"s9",cwd:"'"$TMP"'"}, process.env, {repo_root:"'"$TMP"'"});
 console.log(r.reason_code)')"
-[[ "$S1" == "TURN_UNPROVABLE" ]] && ok "missing turn identifier is ineligible for self-heal" || bad "turn gate ($S1)"
+[[ "$S1" == "PROMPT_AUTHORITY_ABSENT" ]] && ok "session turn fallback cannot fabricate prompt authority" || bad "turn gate ($S1)"
 S2="$(SVC_RUNTIME_DIR="$TMP/rt" node --input-type=module - <<NODE
 import fs from "node:fs";
 import { evaluateSelfHealAuthority } from "$ENGINE";
@@ -161,6 +165,25 @@ console.log(r.reason_code);
 NODE
 )"
 [[ "$S2" == "AUTH_TUPLE_REPO_MISMATCH" ]] && ok "cross-repository authority tuple is ineligible" || bad "repo tuple gate ($S2)"
+
+S3="$(SVC_RUNTIME_DIR="$TMP/rt" node --input-type=module - <<NODE
+import fs from "node:fs";
+import { evaluateSelfHealAuthority } from "$ENGINE";
+import { hookContext, authorityPath } from "$ROOT/hooks/codex/lib/codex-hook-context.mjs";
+const payload = {session_id: "s9-resume", cwd: "$TMP"};
+const ctx = hookContext(payload, process.env);
+if (ctx.turn_id !== "session:s9-resume") throw new Error("unexpected fallback turn");
+fs.mkdirSync(ctx.session_dir, {recursive: true});
+fs.writeFileSync(authorityPath(ctx), JSON.stringify({
+  schema_version: 1, session_id: payload.session_id, turn_id: ctx.turn_id,
+  recorded_at: new Date().toISOString(), continuation_intent: "resume",
+  explicit_wi: "WI-FIXTURE-RESUME", repo_root: "$TMP",
+}));
+const r = evaluateSelfHealAuthority(payload, process.env, {repo_root: "$TMP"});
+console.log(r.eligible && r.wi === "WI-FIXTURE-RESUME" ? r.reason_code : "unexpected");
+NODE
+)"
+[[ "$S3" == "FRESH_POSITIVE_INTENT" ]] && ok "session fallback accepts exact fresh positive authority" || bad "session fallback ($S3)"
 
 printf '\nT02 decision engine: %s passed, %s failed\n' "$PASS" "$FAIL"
 [[ "$FAIL" -eq 0 ]]

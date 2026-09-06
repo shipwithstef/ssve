@@ -3,6 +3,10 @@
 # references/pipeline-decisions-schema.json (minimal fields + patterns).
 set -euo pipefail
 
+# Keep standalone invocation isolated from active host/session state.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/fixture-home.sh"
+svc_require_fixture "$@"
+
 REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 LOG="$REPO_ROOT/.svc/pipeline-decisions.jsonl"
 

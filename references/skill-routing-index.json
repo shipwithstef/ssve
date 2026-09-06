@@ -753,7 +753,7 @@
     {
       "skill": "execute-changeset",
       "path": "skills/execute-changeset/SKILL.md",
-      "content_hash": "f38f7561129be524535878372ac37e8f11388a7e93fac4591f5971db26171487",
+      "content_hash": "8040fd6bc80e46d567e4249c83030a28682f9ecd0f7b4c92ad490b105ec72a0a",
       "description": "Use after plan-changeset has produced a manifest and task graph. Triggers on \"execute the plan\", \"implement the changeset\", \"run the tasks\", \"start building\", or when a plan-changeset manifest exists and is ready for execution.",
       "aliases": [],
       "positive_triggers": [],
@@ -933,7 +933,7 @@
     {
       "skill": "improve-framework",
       "path": "skills/improve-framework/SKILL.md",
-      "content_hash": "4e2f542d28c8cf962fbe9a2b3582d3e74dc696ee33dc07b77c6aea691bc4ea07",
+      "content_hash": "e3569ab42c32668741dbbe0d4271b4cac8c1e65eb6457cee274176cbdbb4e8d2",
       "description": "Use when the svc framework itself needs fixing or improving. Triggers on \"improve the framework\", \"run self-improvement\", \"close framework gaps\", \"use the framework to improve itself\", after test-framework finds failures, after repeated reviews uncover drift, when a blend source shipped updates, or when pending proposals exist in proposals/.",
       "aliases": [],
       "positive_triggers": [],
@@ -1005,7 +1005,7 @@
     {
       "skill": "land-changeset",
       "path": "skills/land-changeset/SKILL.md",
-      "content_hash": "a19c84ee39c2b5329d79c298d7d44dc289f8d58b452764660f59c0bedd59cc3a",
+      "content_hash": "06c872f8bc52bc337a08c6bbe2b6b1b5cd2fe859ca3205f703f2e8f35397e4de",
       "description": "Use when an executed change set has been validated (tests, E2E, review all pass in the worktree) and is ready to land on main — validates manifest coverage, pushes branch, opens PR, merges via squash, cleans up worktree",
       "aliases": [],
       "positive_triggers": [],
@@ -1308,7 +1308,7 @@
     {
       "skill": "produce-ad-video",
       "path": "skills/produce-ad-video/SKILL.md",
-      "content_hash": "4cfa5429ff59adc6bcca1bc5602786cd1d3b61313e96c13ca7a77c2876cbe9de",
+      "content_hash": "1e6d5117bf66ea7d5b4a3c1f31d823353bec7cd1a5f56918c1af897a31ee0158",
       "description": "Render and finish an ad/launch/promo video from a beat sheet or an existing picture cut: image-to-video shots, VO + one ducked music bed, ffmpeg assemble, listen/spectrogram QA, and VM delivery. Use when producing or remuxing a video ad, fixing pumping/whistle/too-hot/silent audio, stitching I2V clips, burning captions, or writing masters to ~/delivery. Complements ad-video-script (that skill writes the beat sheet; this one makes the file). Use even if they say \"fix the video\", \"Grok I2V\", \"remux audio\", or \"delivery the masters\".",
       "aliases": [],
       "positive_triggers": [],

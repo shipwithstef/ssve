@@ -2,6 +2,10 @@
 # Tier-1: validate WI-314 capability blocker and deprecated-foundation gates.
 set -euo pipefail
 
+# Keep standalone invocation isolated from active host/session state.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/fixture-home.sh"
+svc_require_fixture "$@"
+
 REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
@@ -185,11 +189,10 @@ fi
 
 HOOK_TMP="$TMP/hook"
 mkdir -p "$HOOK_TMP/hooks/lib" "$HOOK_TMP/scripts/lib" "$HOOK_TMP/references"
-cp "$REPO_ROOT/hooks/svc-inertia-check.mjs" "$HOOK_TMP/hooks/"
-cp "$REPO_ROOT/hooks/lib/hook-payload.mjs" "$HOOK_TMP/hooks/lib/"
-cp "$REPO_ROOT/hooks/lib/operation-scope.mjs" "$HOOK_TMP/hooks/lib/"
-cp "$REPO_ROOT/hooks/lib/hook-decision.mjs" "$HOOK_TMP/hooks/lib/"
-cp "$REPO_ROOT/scripts/lib/deprecated-foundations.mjs" "$HOOK_TMP/scripts/lib/"
+# Stage the actual runtime surface, including transitive imports. A selected
+# list of old helpers silently stops testing the hook when imports change.
+cp -R "$REPO_ROOT/hooks/." "$HOOK_TMP/hooks/"
+cp -R "$REPO_ROOT/scripts/." "$HOOK_TMP/scripts/"
 cp "$REPO_ROOT/references/deprecated-foundations.json" "$HOOK_TMP/references/"
 
 PAYLOAD='{"tool_name":"Write","tool_input":{"file_path":"src/legacy.ts","content":"fetch(\"https://maps.googleapis.com/maps/api/place/details/json\")"}}'

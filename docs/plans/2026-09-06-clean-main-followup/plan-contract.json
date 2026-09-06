@@ -1,0 +1,642 @@
+{
+  "schema_version": 1,
+  "base_sha": "848693c4c7e1abc5636479b26b1dd9b37844c2b2",
+  "manifest": "docs/plans/2026-09-06-clean-main-followup/manifest.md",
+  "risk_flags": [
+    "cross_runtime_integration",
+    "external_state_writer",
+    "runtime_concurrency"
+  ],
+  "ownership": [
+    {
+      "task": "T1",
+      "paths": [
+        "test-framework/evals/run-all-evals.sh",
+        "test-framework/evals/tier-1/lib/fixture-home.sh",
+        "test-framework/evals/tier-1/validate-capability-blocker-inertia.sh",
+        "test-framework/evals/tier-1/validate-claude-wirer-cutover.sh",
+        "test-framework/evals/tier-1/validate-consumer-evidence-root.sh",
+        "test-framework/evals/tier-1/validate-knowledge-legacy-backfill.sh",
+        "test-framework/evals/tier-1/validate-pipeline-decisions-recent.sh",
+        "test-framework/evals/tier-1/validate-pipeline-decisions-schema.sh",
+        "test-framework/evals/tier-1/validate-pretool-decision-engine.sh",
+        "test-framework/evals/tier-1/validate-proposal-triage-sla.sh",
+        "test-framework/evals/tier-1/validate-self-heal-survives-double-dead-pointer.sh",
+        "test-framework/evals/tier-1/validate-session-contract-freshness.sh",
+        "test-framework/evals/tier-1/validate-skills-source-layout.sh",
+        "test-framework/evals/tier-1/validate-workflow-guard.sh",
+        "test-framework/evals/tier-1/validate-all-host-setup.sh",
+        "test-framework/evals/tier-1/validate-codex-zero-block-reads.sh",
+        "test-framework/evals/tier-1/validate-claude-skills-symlinks.sh",
+        "test-framework/evals/tier-1/validate-codex-execution-integrity.sh",
+        "test-framework/evals/tier-1/validate-settings-no-duplicate-hooks.sh",
+        "test-framework/evals/tier-1/validate-settings-write-guard.sh",
+        "test-framework/evals/tier-1/validate-setup-worktree-canonical-resolution.sh",
+        "test-framework/evals/tier-1/validate-source-repo-not-worktree.sh",
+        "test-framework/evals/tier-1/validate-no-svc-residue.sh",
+        "test-framework/evals/tier-1/validate-phase-receipt-autoemit.sh",
+        "test-framework/evals/tier-1/validate-rule-injection.sh",
+        "test-framework/evals/tier-1/validate-plan-product-safety.sh",
+        "scripts/wire-hooks.mjs",
+        "test-framework/evals/tier-1/validate-wire-hooks-variant-dedup.sh",
+        "test-framework/evals/tier-1/validate-self-verify-sections.sh",
+        "test-framework/evals/tier-1/validate-capture-idea-from-proposal.sh",
+        "test-framework/evals/tier-1/validate-cross-host-hook-conformance.sh",
+        "test-framework/evals/tier-1/validate-skill-router.sh",
+        "test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh",
+        "scripts/validate-proposal-promotion-closeout.mjs",
+        "test-framework/evals/tier-1/validate-proposal-promotion-closeout.sh",
+        "skills/improve-framework/SKILL.md",
+        "test-framework/evals/tier-1/validate-chain-receipts-schema.sh",
+        "test-framework/evals/tier-1/validate-manifest-integrity-stamp.sh",
+        "test-framework/evals/tier-1/validate-knowledge-refresh-scan.sh",
+        "test-framework/evals/tier-1/validate-rename-schema-drill.sh",
+        "test-framework/evals/tier-1/validate-wire-kimi-hooks-paths.sh"
+      ]
+    },
+    {
+      "task": "T2",
+      "paths": [
+        "scripts/lib/external-review-provenance.mjs",
+        "scripts/validate-plan-contract.mjs",
+        "scripts/verify-plan-mechanical.sh",
+        "scripts/verify-file-persistence.sh",
+        "test-framework/evals/tier-1/validate-clean-main-followup.mjs",
+        "scripts/select-tier1-validators-v2.mjs",
+        "scripts/run-external-review.mjs",
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+        "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs"
+      ]
+    },
+    {
+      "task": "T3",
+      "paths": [
+        "skills/produce-ad-video/SKILL.md",
+        "references/context-loading-registry.json",
+        "references/knowledge/domains/mimo/CAPABILITIES.md",
+        "references/knowledge/domains/mimo/.sources.jsonl",
+        "references/knowledge/domains/claude-hooks/CAPABILITIES.md",
+        "references/knowledge/domains/claude-hooks/.sources.jsonl",
+        "references/knowledge/domains/legacy-backfill-queue.json",
+        "references/knowledge/source-heuristics.global.jsonl",
+        ".svc/lane-tasks-WI-567.json",
+        ".svc/lane-tasks-WI-SSVE-ARCHITECTURE-EVOLUTION-02.json",
+        ".svc/lane-tasks-WI-FW-SWARM-COORDINATION-01.json",
+        ".svc/pipeline-decisions.jsonl",
+        "docs/specs/work-items/WI-GROK-HOST-IDENTITY-02.md",
+        "references/skill-routing-index.json",
+        "proposals/2026-08-22-framework-improvement-capability-scoped-plugin-mcp-startup.md",
+        "proposals/2026-08-26-framework-docs-audit-findings.md",
+        "proposals/2026-08-26-framework-improvement-advisor-knowledge.md",
+        "proposals/2026-08-26-framework-improvement-codex-svc-host-adhoc-dispatch.md",
+        "proposals/2026-08-26-framework-improvement-owner-lease-24h-slide-renew.md",
+        "proposals/2026-08-30-framework-improvement-configured-reviewer-transports.md",
+        ".claude/agents/ad-video-producer.md",
+        ".claude/agents/strategic-reviewer.md",
+        "proposals/triage.json",
+        ".svc/lane-tasks-WI-FW-ADVISOR-KNOWLEDGE-01.json",
+        ".svc/lane-tasks-WI-FW-HOOKS-SAFETY-01.json",
+        ".svc/lane-tasks-WI-FW-SKILLS-ROUTING-01.json"
+      ]
+    },
+    {
+      "task": "T4",
+      "paths": [
+        "AGENTS.md",
+        "DOCTRINE.md",
+        "FRAMEWORK-STATE.md",
+        "skills/execute-changeset/SKILL.md",
+        "skills/land-changeset/SKILL.md",
+        "docs/plans/2026-09-06-clean-main-followup/manifest.md",
+        "docs/plans/2026-09-06-clean-main-followup/plan-contract.json",
+        "docs/plans/2026-09-06-clean-main-followup/roadmap.md",
+        "docs/plans/2026-09-06-clean-main-followup/dispositions.json",
+        "docs/specs/audit/clean-main-followup.md",
+        ".gitignore",
+        "docs/plans/2026-09-06-clean-main-followup/review-log.yaml",
+        "docs/specs/work-items/WI-FW-CLEAN-MAIN-FOLLOWUP-01.md",
+        "docs/specs/work-items/WI-FW-DELIVERY-EVIDENCE-RESIDUALS-01.md",
+        "docs/specs/work-items/WI-FW-DESIGN-INTEGRATIONS-RESIDUALS-01.md",
+        "docs/specs/work-items/WI-FW-CONTROLLER-CUTOVER-RESIDUALS-01.md",
+        "docs/specs/work-items/WI-FW-CAPABILITY-MCP-STARTUP-RESIDUALS-01.md",
+        "docs/specs/work-items/INDEX.md"
+      ]
+    }
+  ],
+  "resource_writers": [
+    {
+      "resource": "quota",
+      "ordering": "Before a paid invocation acquire the existing cycle lock and check available cycle capacity plus owner-selected route exclusions; retain lock through issuance.",
+      "compensation": "Paid usage cannot be refunded by the framework. Preserve actual attempts, tuple, output and failure status; stop unavailable routes and never claim a failed call approved.",
+      "property_sweep": "Isolated cap-before-launch, concurrent-last-slot, post-provider failure and cache replay tests; task resource policy excludes unavailable routes."
+    },
+    {
+      "resource": "counter",
+      "ordering": "Cycle issuance sequence is counted under the existing shared cycle lock before invocation; marker/classification preparation is atomic and idempotent for actual issued identity.",
+      "compensation": "Retain issued/raw failure history; no decrement, deletion or relabeling of the historical fourth call. Unissued cache cleanup remains locked and request-owned.",
+      "property_sweep": "Concurrent last-slot, failed classification preparation, issued stdout failure, archive tamper and outer recovery retry regressions."
+    }
+  ],
+  "claims": [
+    {
+      "kind": "absence",
+      "denominator": 0,
+      "evidence": {
+        "artifact": "docs/plans/2026-09-06-clean-main-followup/manifest.md",
+        "verification": "diff-manifest-parity"
+      }
+    },
+    {
+      "kind": "unused",
+      "denominator": 0,
+      "evidence": {
+        "artifact": "docs/plans/2026-09-06-clean-main-followup/plan-contract.json",
+        "verification": "executable-consumers"
+      }
+    }
+  ],
+  "executables": [
+    {
+      "path": "test-framework/evals/run-all-evals.sh",
+      "consumers": [
+        {
+          "path": "scripts/validate-main-green.sh",
+          "query": "run-all-evals.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/lib/fixture-home.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "fixture-home.sh"
+        },
+        {
+          "path": "test-framework/evals/tier-1/validate-pipeline-decisions-schema.sh",
+          "query": "lib/fixture-home.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-capability-blocker-inertia.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-claude-wirer-cutover.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-consumer-evidence-root.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-knowledge-legacy-backfill.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-pipeline-decisions-recent.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-pipeline-decisions-schema.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-pretool-decision-engine.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-proposal-triage-sla.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-self-heal-survives-double-dead-pointer.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-session-contract-freshness.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-skills-source-layout.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-workflow-guard.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-all-host-setup.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-codex-zero-block-reads.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-claude-skills-symlinks.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-codex-execution-integrity.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-settings-no-duplicate-hooks.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-settings-write-guard.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-setup-worktree-canonical-resolution.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-source-repo-not-worktree.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-no-svc-residue.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-phase-receipt-autoemit.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-rule-injection.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "scripts/lib/external-review-provenance.mjs",
+      "consumers": [
+        {
+          "path": "scripts/run-external-review.mjs",
+          "query": "./lib/external-review-provenance.mjs"
+        }
+      ]
+    },
+    {
+      "path": "scripts/validate-plan-contract.mjs",
+      "consumers": [
+        {
+          "path": "scripts/verify-plan-mechanical.sh",
+          "query": "validate-plan-contract.mjs"
+        }
+      ]
+    },
+    {
+      "path": "scripts/verify-plan-mechanical.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/tier-1/validate-clean-main-followup.mjs",
+          "query": "verify-plan-mechanical.sh"
+        }
+      ]
+    },
+    {
+      "path": "scripts/verify-file-persistence.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/tier-1/validate-clean-main-followup.mjs",
+          "query": "verify-file-persistence.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-clean-main-followup.mjs",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.mjs"
+        }
+      ]
+    },
+    {
+      "path": "scripts/select-tier1-validators-v2.mjs",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "select-tier1-validators-v2.mjs"
+        },
+        {
+          "path": "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs",
+          "query": "../../../scripts/select-tier1-validators-v2.mjs"
+        }
+      ]
+    },
+    {
+      "path": "scripts/run-external-review.mjs",
+      "consumers": [
+        {
+          "path": "test-framework/evals/tier-1/validate-clean-main-followup.mjs",
+          "query": "run-external-review.mjs"
+        },
+        {
+          "path": "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+          "query": "scripts/run-external-review.mjs"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.mjs"
+        }
+      ]
+    },
+    {
+      "path": "scripts/wire-hooks.mjs",
+      "consumers": [
+        {
+          "path": "setup",
+          "query": "wire-hooks.mjs"
+        },
+        {
+          "path": "test-framework/evals/tier-1/validate-claude-wirer-cutover.sh",
+          "query": "wire-hooks.mjs"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-wire-hooks-variant-dedup.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-self-verify-sections.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-capture-idea-from-proposal.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-cross-host-hook-conformance.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-skill-router.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "scripts/validate-proposal-promotion-closeout.mjs",
+      "consumers": [
+        {
+          "path": "test-framework/evals/tier-1/validate-proposal-promotion-closeout.sh",
+          "query": "validate-proposal-promotion-closeout.mjs"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-proposal-promotion-closeout.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-chain-receipts-schema.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-manifest-integrity-stamp.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-knowledge-refresh-scan.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-plan-product-safety.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-rename-schema-drill.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-wire-kimi-hooks-paths.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "\"$SCRIPT_DIR/tier-1\"/*.sh"
+        }
+      ]
+    }
+  ],
+  "resource_review": {
+    "verification": "changed-executable-census",
+    "denominator": 49,
+    "disposition": "declared-risky-resource-writers",
+    "evidence": ".svc/clean-main-review/changed-executable-census.json; per-path hashes and writer effects; launcher/cycle/host-settings tests in .svc/clean-main-review/t2-current-tests.log and wirer evidence. Not release approval."
+  },
+  "external_writer": {
+    "immutable_baseline": ".git/svc-review-evidence/preservation/WI-FW-CLEAN-MAIN-FOLLOWUP-01",
+    "rolling_rollback": ".svc/clean-main-review/rollback/relocations-before-operation.json",
+    "read_failure_policy": "abort affected write and retain diagnostic on unreadable/ambiguous source; never proceed with guessed replacement bytes",
+    "file_mode_preservation": "capture and verify original bytes/modes; existing state-io and installer transactional restore"
+  },
+  "volatile_paths": [
+    ".svc/session-contract.jsonl",
+    ".svc/authorization-events.jsonl",
+    ".svc/clean-main-review",
+    ".svc/lane-tasks-WI-FW-CLEAN-MAIN-FOLLOWUP-01.json"
+  ],
+  "concurrency": {
+    "atomic_primitive": "mkdir_exclusive",
+    "owner_key": "existing authority root plus derived review cycle ID; existing launcher owner token/PID/boot identity controls heartbeat lock",
+    "concurrent_invoke_behavior": "Serialize independent same-cycle invocations; re-read the authenticated issuance inventory under the exclusive cycle lock, retain ownership through final marker commit, deny paid invocation at capacity. Cache-key and account-pool locks retain their existing ownership order.",
+    "stale_lock_cleanup": "Existing launcher lockReclaimable, owner token and heartbeat semantics; no blind deletion of a live owner.",
+    "concurrency_test": "test-framework/evals/tier-1/validate-clean-main-followup.mjs"
+  }
+}

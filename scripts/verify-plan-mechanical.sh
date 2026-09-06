@@ -23,18 +23,46 @@
 set -u   # explicit fail tracking, no auto-exit on nonzero
 
 PLAN="${1:-}"
-REPO_ROOT="${2:-$(pwd)}"
-if [ -z "$PLAN" ] || [ ! -r "$PLAN" ]; then
-  echo "usage: verify-plan-mechanical.sh <plan-manifest> [repo-root]" >&2
-  exit 2
-fi
-
+REPO_ROOT="$(pwd)"
+PHASE="execution"
+ROOT_SEEN=0
+PHASE_SEEN=0
+usage() { echo "usage: verify-plan-mechanical.sh <plan-manifest> [repo-root] [--phase plan|execution]" >&2; exit 2; }
+[ -n "$PLAN" ] && [ -r "$PLAN" ] || usage
+shift
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --phase)
+      [ "$PHASE_SEEN" -eq 0 ] && [ "$#" -ge 2 ] || usage
+      case "$2" in plan|execution) PHASE="$2" ;; *) usage ;; esac
+      PHASE_SEEN=1; shift 2 ;;
+    --*) usage ;;
+    *) [ "$ROOT_SEEN" -eq 0 ] || usage
+       REPO_ROOT="$1"; ROOT_SEEN=1; shift ;;
+  esac
+done
+PLAN="$(cd "$(dirname "$PLAN")" && pwd)/$(basename "$PLAN")"
+SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT" || { echo "repo root not accessible: $REPO_ROOT" >&2; exit 2; }
+REPO_ROOT="$(pwd)"
+PLAN_CONTRACT="$(dirname "$PLAN")/plan-contract.json"
 
 FAIL=0
 REPORT=""
 
 report() { REPORT="${REPORT}${1}"$'\n'; FAIL=$((FAIL+1)); }
+
+DEFERRED_PATHS=""
+if [ "$PHASE" = "plan" ] && [ -f "$PLAN_CONTRACT" ]; then
+  if ! DEFERRED_PATHS=$(node --input-type=module - "$SCRIPT_ROOT/scripts/validate-plan-contract.mjs" "$PLAN_CONTRACT" "$REPO_ROOT" <<'NODE'
+import fs from 'node:fs';
+import { pathToFileURL } from 'node:url';
+const { planDeferredPaths } = await import(pathToFileURL(process.argv[2]));
+const contract = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
+for (const file of planDeferredPaths(contract, { root: process.argv[4] })) console.log(file);
+NODE
+  ); then report "C1-FAIL: cannot validate declared future paths"; fi
+fi
 
 # ── Check 1: file paths resolve ───────────────────────────────────────────
 # Extract paths from markdown code spans that look like files (contain / and .)
@@ -46,6 +74,7 @@ while IFS= read -r path; do
   # Only verify paths that look repo-relative (no leading /, has / inside)
   case "$path" in /*) continue ;; */*) ;; *) continue ;; esac
   if [ ! -e "$path" ]; then
+    if [ "$PHASE" = "plan" ] && printf '%s\n' "$DEFERRED_PATHS" | grep -Fxq -- "$path"; then continue; fi
     report "C1-FAIL: path does not exist: $path"
   fi
 done < <(grep -oE '`[^` ]+\.(js|jsx|ts|tsx|md|json|sh|yaml|yml|py|go|rs|css|html|vue)`' "$PLAN" \
@@ -159,7 +188,7 @@ if [ -f "$PLAN_CONTRACT" ]; then
   # risk-triggered sections (concurrency, external_writer, lossless_rmw,
   # idempotent_rewriter) whenever plan-contract.json declares the matching
   # risk_flags — same call, no separate invocation needed.
-  if ! node scripts/validate-plan-contract.mjs "$PLAN_CONTRACT" "$REPO_ROOT"; then
+  if ! node "$SCRIPT_ROOT/scripts/validate-plan-contract.mjs" "$PLAN_CONTRACT" "$REPO_ROOT" --phase "$PHASE"; then
     report "C10-FAIL: adjacent product-safety plan contract is invalid"
   fi
 fi
@@ -191,7 +220,7 @@ if [ -n "$RISK_LINE" ]; then
 fi
 
 if [ "$FAIL" -eq 0 ]; then
-  echo "TIER-1 PASS: all mechanical checks passed for $PLAN"
+  echo "TIER-1 PASS ($PHASE): all mechanical checks passed for $PLAN"
   exit 0
 else
   echo "TIER-1 FAIL: $FAIL issue(s) detected"

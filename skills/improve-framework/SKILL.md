@@ -215,11 +215,20 @@ bash test-framework/evals/tier-1/validate-proposal-triage-sla.sh
 
 The gate requires every direct `proposals/*.md` file that has reached the
 `proposals/triage.json` `max_open_days` window to carry one disposition:
-`accepted_wi`, `rejected_reason`, or `deferred_until` metadata. Metadata may
+`accepted_wi`, `backlog_wi`, `rejected_reason`, or `deferred_until` metadata.
+Use `backlog_wi` plus a reason for an open proposal already owned by a real WI;
+this records unfinished work and never authorizes dispatch or overrides a freeze.
+Do not combine it with another disposition. Use `accepted_wi` only for formal
+promotion with the existing archive, residual-map, and ledger closeout. Metadata may
 live in the proposal body or in `proposals/triage.json`. `proposals/done/` is
 outside the open-proposal SLA because implemented proposals belong there.
 
-If pending (non-BLOCKED) proposals exist (blend plans, evolution proposals, improvement records
+Before selecting a `backlog_wi` proposal, read that WI and its dependencies.
+Preserve freezes and explicit do-not-dispatch instructions. A backlog pointer
+is not a new execution authorization; follow the current task scope and priority.
+Do not start an unrelated backlog item merely because its proposal is present.
+
+If applicable pending (non-BLOCKED) proposals exist (blend plans, evolution proposals, improvement records
 not yet implemented), they ARE the evidence — skip Step 2 and Step 3 and route
 directly to Step 5 (Pick Implementation Route).
 

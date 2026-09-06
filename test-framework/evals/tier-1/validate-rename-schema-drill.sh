@@ -7,6 +7,14 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
+# The failure drill must not rename a schema used by concurrent validators.
+SOURCE_ROOT="$ROOT"
+ROOT="$TMP/runtime"
+mkdir -p "$ROOT"
+for surface in scripts hooks schemas references; do
+  cp -a "$SOURCE_ROOT/$surface" "$ROOT/$surface"
+done
+cp "$SOURCE_ROOT/skills-manifest.json" "$ROOT/skills-manifest.json"
 VICTIM="$ROOT/schemas/receipts/verify-promotion.schema.json"
 test -f "$VICTIM" || { echo "  ✗ victim schema missing"; exit 1; }
 
