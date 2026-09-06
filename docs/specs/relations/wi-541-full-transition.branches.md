@@ -1,4 +1,4 @@
-Derived-at: 01e7021b8b51fea6a11d4ebe5de5a931b7b1acfa
+Derived-at: f24a7add94ea8f78a87f736dcc7cb8f9183eb59a
 Scope-paths:
   - scripts/**
   - hooks/**
@@ -45,3 +45,6 @@ Scope-paths:
 
 ## Time, retry & concurrency
 - IN: three-round review cap, generation-bound recovery, crash-forward transitions, atomic task updates, pairwise-disjoint stream ownership.
+
+## Revalidation for session recovery
+Cited entry points and callers rechecked at the Derived-at source. ensure-worktree still owns bootstrap/recovery, with exact already-bound resume now consuming complete authority; launcher remains the governed review entry point and adds the reviewer-resources helper. Policy, receipt, generation and host-install boundaries remain in their cited owners. Earlier program outcome/child-status lines describe their historical scope, not a claim that the current full corpus is green. Current test census is recorded in `docs/specs/audit/session-recovery-analysis.md`.

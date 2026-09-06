@@ -1,5 +1,5 @@
 {
-  "stamped_at": "41ff0c713116d13402c4dd219cd5898d57154678",
+  "stamped_at": "f24a7add94ea8f78a87f736dcc7cb8f9183eb59a",
   "imports": {
     ".svc/lane-tasks-WI-541.json": [],
     "hooks/codex/svc-codex-pretool-dispatcher.mjs": [
@@ -15,6 +15,7 @@
       "../hooks/codex/lib/bootstrap-marker.mjs",
       "../hooks/codex/lib/session-handoff.mjs",
       "../hooks/lib/resolve-wi.mjs",
+      "../hooks/lib/validate-task-graph-shape.mjs",
       "../hooks/lib/wi-id.mjs",
       "./lib/chain-policy.mjs",
       "node:child_process",

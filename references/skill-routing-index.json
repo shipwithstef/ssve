@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "compiled_from": {
-    "manifest_sha256": "55b14b41041ce86c1704deb6853efc9ccef16542767ea66c5c747e97f48d3240",
+    "manifest_sha256": "336fc25d406a065a1dc9ea4a23fb5f0723b4fdc1f0445772e4a59d67c6fb0a37",
     "overrides_sha256": "ffe50a0a60e4feebe57a229aae3cb6fb4eae19dba97ed0099ed6ead998c48d93",
     "concern_registry_sha256": "6c336c8832c4907ee78413a2b7d377b790bb55bba180783d2164892a130ea507"
   },
@@ -9,8 +9,8 @@
     {
       "skill": "ad-video-script",
       "path": "skills/ad-video-script/SKILL.md",
-      "content_hash": "61d07a476e1d954a38784ab9de2830419987949fbf666a629e54fb9fc03e05eb",
-      "description": "Performance ad-video script writer modeled on a Senior Direct-Response Creative Strategist. Reads the ACTUAL product first (landing page / spec), picks the right ICP + scenario + placement + awareness stage, then writes a modular script AND a render-ready BEAT SHEET (6 × ~10s beats with per-beat first-frame image-prompt, motion-prompt, persistent-character lock, and last-frame seeding) — because no video model renders a coherent 60s clip in one shot (Veo 8s; Runway/Kling/Pika ~10s). Emits one base script, or many variants when ≥2 placements or awareness stages qualify. Emits the beat sheet for rendering — manually today, or by the planned ad-video-producer agent (WI-402). Use when \"ad video script\", \"video ad\", \"UGC script\", \"promo video script\", \"60 second ad\", \"make an ad for <product>\", or any WI tagged ad-video / performance-creative.",
+      "content_hash": "44c387741ca8c1228a7b6e8afc95e02a2494a6c92caf558dd3e1aee8baa26329",
+      "description": "Performance ad-video script writer modeled on a Senior Direct-Response Creative Strategist. Reads the ACTUAL product first (landing page / spec), picks the right ICP + scenario + placement + awareness stage, then writes a modular script AND a render-ready BEAT SHEET (6 × ~10s beats with per-beat first-frame image-prompt, motion-prompt, persistent-character lock, and last-frame seeding) — because no video model renders a coherent 60s clip in one shot (Veo 8s; Runway/Kling/Pika ~10s). Emits one base script, or many variants when ≥2 placements or awareness stages qualify. Hands the beat sheet to `produce-ad-video` (WI-402) to render. Use when \"ad video script\", \"video ad\", \"UGC script\", \"promo video script\", \"60 second ad\", \"make an ad for <product>\", or any WI tagged ad-video / performance-creative. Do not use for remux/I2V/audio-fix of an existing cut — that is `produce-ad-video`.",
       "aliases": [],
       "positive_triggers": [],
       "negative_triggers": [],
@@ -315,7 +315,7 @@
     {
       "skill": "capability-concierge",
       "path": "skills/capability-concierge/SKILL.md",
-      "content_hash": "e678e3dc0ebe748f63cb011a0ff581f11226819ccc042cf95d4636bdff80b249",
+      "content_hash": "f13867e4486fe63998d08585bec41b6d96357677d20942269039e3246e09a531",
       "description": "Standing meta-orchestrator that reads the builder's capability registry (WI-104) and cross-project state snapshot (WI-105) and produces a ranked list of recommendations through three lenses: (1) ship-the-current-project, (2) idle-resource, (3) side-earning. Every recommendation cites the registry entry and snapshot row it came from — no hallucinated capabilities. Use when: \"what should I do next\", \"what's my best move\", \"route my resources\", \"what am I under-using\", \"how do I ship Example Marketplace\", or when any session wants a cross-resource + cross-project view of what to deploy where.",
       "aliases": [],
       "positive_triggers": [],
@@ -405,7 +405,7 @@
     {
       "skill": "cos",
       "path": "skills/cos/SKILL.md",
-      "content_hash": "714f4a1495dfab4d7078e78c4d0325d80995f9bad5c2d36770b1364683c0c573",
+      "content_hash": "1a7ac58bdc63fd1d007a3c6ca03600b1949931294b9acef9fd59b34ec32987fc",
       "description": "Chief-of-staff synthesis. Use when: \"/cos\", \"company briefing\", \"executive operating review\", \"company priorities\". Routes specialist analysis to its owner.",
       "aliases": [],
       "positive_triggers": [],
@@ -627,7 +627,7 @@
     {
       "skill": "diagnose-bug",
       "path": "skills/diagnose-bug/SKILL.md",
-      "content_hash": "dd5f9ed30697bd1811583e878bab32d45f5809c7428e6cbce1bf3638e80d29df",
+      "content_hash": "7aa729f9e76fdedab5fe01af570bfcec13aef9f972f60ec4031595c8ccbe7ca0",
       "description": "Root-cause-first bug and regression planning for svc repos. Use when a work item describes broken behavior, a regression, or a production issue that needs correction without forcing full feature-spec authoring. Produces an implementation-ready bugfix brief with reproduction, root cause, expected behavior, smallest safe fix surface, and proof-of-fix plan.",
       "aliases": [
         "root cause",
@@ -1306,6 +1306,24 @@
       "required_rules": []
     },
     {
+      "skill": "produce-ad-video",
+      "path": "skills/produce-ad-video/SKILL.md",
+      "content_hash": "4cfa5429ff59adc6bcca1bc5602786cd1d3b61313e96c13ca7a77c2876cbe9de",
+      "description": "Render and finish an ad/launch/promo video from a beat sheet or an existing picture cut: image-to-video shots, VO + one ducked music bed, ffmpeg assemble, listen/spectrogram QA, and VM delivery. Use when producing or remuxing a video ad, fixing pumping/whistle/too-hot/silent audio, stitching I2V clips, burning captions, or writing masters to ~/delivery. Complements ad-video-script (that skill writes the beat sheet; this one makes the file). Use even if they say \"fix the video\", \"Grok I2V\", \"remux audio\", or \"delivery the masters\".",
+      "aliases": [],
+      "positive_triggers": [],
+      "negative_triggers": [],
+      "domains": [],
+      "actions": [],
+      "objects": [],
+      "repo_signals": [],
+      "lane_roles": [],
+      "invocation_policy": "suggest-only",
+      "risk": "low",
+      "requires": [],
+      "required_rules": []
+    },
+    {
       "skill": "product-lead",
       "path": "skills/product-lead/SKILL.md",
       "content_hash": "690cb884d380a7ed813fd0412e3dbeaa78957e38f86a7544d1fb7bae1a5dd76e",
@@ -1431,7 +1449,7 @@
     {
       "skill": "review-cross-model",
       "path": "skills/review-cross-model/SKILL.md",
-      "content_hash": "4bbe2968bef6e84511483f8277232352e8ad406d397789038e89798afe263abf",
+      "content_hash": "5c2e066d91dfa3bc2fe19235ef1f5c3f1290c77eee5137eb85e1cacf1f62b1a6",
       "description": "Adversarial code review using the canonical deterministic external-review launcher. Sends diff + goals + spec to the second model, gets findings back, then Claude evaluates each finding: accept with justification or reject with justification. Back and forth until all remaining findings are medium severity max. Use when \"cross-model review\", \"second opinion\", \"codex review\", \"adversarial review\", or when `review-gate` leaves residual risk on changes involving new data models or integrations.",
       "aliases": [],
       "positive_triggers": [],
@@ -1449,7 +1467,7 @@
     {
       "skill": "review-exec",
       "path": "skills/review-exec/SKILL.md",
-      "content_hash": "da53c5ca0fd778df617ba18466ebf6e65689a8289ce8e10924f7498f851d8f0e",
+      "content_hash": "2a99a18cd15d0a25bdd6836564aaf3fb5a867c36af22440d99b4f76674475e5d",
       "description": "Mandatory G5-enforcing gate. Self-review + adversarial review of the executed diff before land. Delegates to `review-cross-model` for the second-model invocation through `scripts/run-external-review.mjs`, with the requested owner-configured topology and tuple provenance exposed by `scripts/review-topology-v2.mjs`. Same-family Sol remains advisory; the configured different-family external station owns independent release authority. Emits SHA-keyed receipt at `.svc/receipts/<sha>/review-exec.json` and updates the consolidated git note on `refs/notes/svc-receipts`. Use after `execute-changeset` produces an exec-record receipt, before `land-changeset` opens the PR.",
       "aliases": [],
       "positive_triggers": [],
@@ -1485,7 +1503,7 @@
     {
       "skill": "review-plan",
       "path": "skills/review-plan/SKILL.md",
-      "content_hash": "b05121118baf9da701ce65940b4957a4f1d783badb0529b99cd1ee51a9e2f1d9",
+      "content_hash": "f3ac7706c31db044abe1b74e9a997ca3cd355362027d6ac8c5ab4e0ecadcebf7",
       "description": "Plan-level adversarial review gate. Runs after plan-changeset produces a manifest + task graph and BEFORE any execute-changeset dispatch. Two gates: (1) compiled mechanical/coverage checks — free, in-session; (2) one holistic adversarial review via the canonical external-review launcher with structured findings and a tuple receipt. Corrections recheck only invalidated lenses; disputed product/security authority routes to the owner, not a second model. Iteration loop with justified accept/reject responses — same discipline on both sides. Use when: plan-changeset manifest exists and is about to be promoted. Blocks promotion until all findings have resolutions.",
       "aliases": [],
       "positive_triggers": [],
@@ -1570,7 +1588,7 @@
     {
       "skill": "route-workflow",
       "path": "skills/route-workflow/SKILL.md",
-      "content_hash": "f513564a257c2968bb9445eab39e56ad0e0ee889cbc086dddb8caf4e767f50c1",
+      "content_hash": "94b791761f99e32edde25c090354a2bd5c20b1f853bd34aef5367e6d6f55e9dd",
       "description": "Universal entry point for any work. Routes freeform intent to the right svc skill based on repo state, change type, and current project artifacts. Handles: \"do this\", \"build this\", \"I want to\", \"help me with\", \"make me a\", \"ship this\", \"fix this\", or ANY freeform description of work; also handles explicit routing questions like \"what should I do next\", \"which skill do I run\", \"what's the right order\", and \"what lane is this\".",
       "aliases": [
         "what should I do next",
@@ -1690,7 +1708,7 @@
     {
       "skill": "svc-advisor",
       "path": "skills/svc-advisor/SKILL.md",
-      "content_hash": "f61c8d07fb1cdc13c995fc8dadc9dbe3d97b8da29e31ac7a553ce918d70255d7",
+      "content_hash": "bd286e65e5cddff9f3ed8de97ed45522288932ce29b0c9fa0ae972cb0d7db161",
       "description": "Answer questions about the svc framework grounded in stored knowledge — not improvised. Use when the user asks \"is svc good at X?\", \"how does svc handle Y?\", \"what's missing for Z scenario?\", \"compare svc to gstack/superpowers for X\", \"is there a skill for X?\", \"what do you think about this case?\", or any question about framework quality, capability, or coverage on a specific scenario. Always invoke this before giving an opinion about the framework — your improvised answer will be weaker than what the analyzed knowledge says.",
       "aliases": [],
       "positive_triggers": [],
@@ -1888,7 +1906,7 @@
     {
       "skill": "write-e2e",
       "path": "skills/write-e2e/SKILL.md",
-      "content_hash": "4be435d1e81f1aaed522948291941bbe487106ee894ff440f6fa969d56874dec",
+      "content_hash": "cdd8dc2f2def6d6c7a33d66ea59abea37c77277af37224e384a8a583989487d7",
       "description": "Write E2E tests that behave exactly like a real user in a real browser — click what users click, see what users see, never use shortcuts a user can't use. Use when writing new E2E tests, reviewing test code, fixing flaky tests, or expanding test coverage. Triggers on \"write e2e\", \"add tests\", \"test this feature\", \"fix flaky test\", \"e2e coverage\", \"playwright test\", \"acceptance test\", or when the user wants automated tests for a feature. This skill does NOT cover demo video recording (use demo-recorder for that).",
       "aliases": [],
       "positive_triggers": [],

@@ -47,6 +47,8 @@ rubric="\"rubric_score\":10,"; [[ "${SVC_FAKE_OMIT_RUBRIC:-0}" == 1 ]] && rubric
 finding="{\"schema_version\":1,\"review_kind\":\"${SVC_REVIEW_KIND:-generic}\",${rubric}\"rubric_failures\":null,\"dependencies_needing_read\":null,\"reviewer\":{\"host\":\"codex\",\"family\":\"openai\",\"model\":\"$model\",\"effort\":\"$effort\"},\"verdict\":\"pass\",\"summary\":\"fixture pass\",\"findings\":[],\"certifications\":[${cert:-}]}"
 if [[ "${SVC_FAKE_OUTPUT:-valid}" == malformed ]]; then finding="{bad"; fi
 printf "%s" "$finding" > "$last"
+# A recoverable stream error must not override the final successful turn.
+node -e "console.log(JSON.stringify({type:\"error\",message:\"Network error (recovered)\"}))"
 if [[ "${SVC_FAKE_OMIT_RUNTIME_MODEL:-0}" == 1 ]]; then
   printf "%s\n" "{\"type\":\"turn.completed\",\"usage\":{\"input_tokens\":10,\"output_tokens\":5}}"
 else
@@ -772,6 +774,10 @@ rm -rf "$SVC_FAKE_LOG" "$TMP/cache" "$TMP/runtime-copy"; mkdir -p "$SVC_FAKE_LOG
 cp "$LAUNCHER" "$TMP/runtime-copy/scripts/run-external-review.mjs"
 cp "$ROOT/scripts/review-topology-v2.mjs" "$TMP/runtime-copy/scripts/review-topology-v2.mjs"
 cp "$ROOT/scripts/resolve-dispatch.mjs" "$TMP/runtime-copy/scripts/resolve-dispatch.mjs"
+cp "$ROOT/scripts/state-io.mjs" "$TMP/runtime-copy/scripts/state-io.mjs"
+cp "$ROOT/scripts/lib/reviewer-resources.mjs" "$TMP/runtime-copy/scripts/lib/reviewer-resources.mjs"
+cp "$ROOT/hooks/lib/process-liveness.mjs" "$TMP/runtime-copy/hooks/lib/process-liveness.mjs"
+cp "$ROOT/schemas/reviewer-policy-v2.schema.json" "$TMP/runtime-copy/schemas/reviewer-policy-v2.schema.json"
 cp "$ROOT/scripts/state-lock.mjs" "$TMP/runtime-copy/scripts/state-lock.mjs"
 cp "$ROOT/schemas/dispatch-policy.schema.json" "$TMP/runtime-copy/schemas/dispatch-policy.schema.json"
 cp "$ROOT/scripts/lib/json-schema-validator.mjs" "$ROOT/scripts/lib/external-review-provenance.mjs" "$ROOT/scripts/lib/review-evidence-store.mjs" "$ROOT/scripts/lib/cognitive-family.mjs" "$TMP/runtime-copy/scripts/lib/"
@@ -784,7 +790,7 @@ cp "$ROOT/skills/review-cross-model/SKILL.md" "$TMP/runtime-copy/skills/review-c
 printf schema-version-key | node "$TMP/runtime-copy/scripts/run-external-review.mjs" --orchestrator claude --review-kind exec --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/key-schema-1" > "$TMP/key-schema-1.summary"
 printf '\n' >> "$TMP/runtime-copy/schemas/external-review-findings.schema.json"
 printf schema-version-key | node "$TMP/runtime-copy/scripts/run-external-review.mjs" --orchestrator claude --review-kind exec --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/key-schema-2" > "$TMP/key-schema-2.summary"
-sed -i 's/const LAUNCHER_VERSION = '\''2.5.3'\''/const LAUNCHER_VERSION = '\''2.5.4'\''/' "$TMP/runtime-copy/scripts/run-external-review.mjs"
+sed -i 's/const LAUNCHER_VERSION = '\''2.5.4'\''/const LAUNCHER_VERSION = '\''2.5.5'\''/' "$TMP/runtime-copy/scripts/run-external-review.mjs"
 printf schema-version-key | node "$TMP/runtime-copy/scripts/run-external-review.mjs" --orchestrator claude --review-kind exec --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$TMP/out/key-launcher-2" > "$TMP/key-launcher-2.summary"
 expect "changed findings schema and launcher version each force a fresh cache key" test "$(grep -c '^codex$' "$SVC_FAKE_LOG/calls")" -eq 3
 
@@ -1240,6 +1246,8 @@ if [[ "$RUNTIME_ONLY" != true ]]; then
   expect "all active adapters name the canonical launcher" bash -c "rg -q 'run-external-review.mjs' '$ROOT/scripts/review-plan-codex.sh' && rg -q 'run-external-review.mjs' '$ROOT/scripts/blind-floor-judge.sh' && rg -q 'run-external-review.mjs' '$ROOT/scripts/prompt-floor-judge.sh'"
   expect "active review contracts contain no static always-Fable policy and explain provider route separation" bash -c "! rg -n 'Codex (orchestrator )?→ Fable 5/high|Codex-orchestrated review requests Fable 5/high' '$ROOT/skills/review-plan/SKILL.md' '$ROOT/skills/review-exec/SKILL.md' '$ROOT/skills/review-cross-model/SKILL.md' '$ROOT/references/plan-review-protocol.md' '$ROOT/CLAUDE.md' && rg -q 'same-process' '$ROOT/skills/review-cross-model/SKILL.md' '$ROOT/references/plan-review-protocol.md' '$ROOT/CLAUDE.md'"
 fi
+
+expect "session recovery resource and terminal fixtures" node --test "$ROOT/test-framework/tests/session-recovery.test.mjs"
 
 printf '\n  %s failed, %s passed\n' "$FAIL" "$PASS"
 test "$FAIL" -eq 0

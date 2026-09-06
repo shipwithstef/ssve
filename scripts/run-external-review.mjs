@@ -21,11 +21,13 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { WI_ID_RE } from "../hooks/lib/wi-id.mjs";
-import { resolveExternalReviewer } from './review-topology-v2.mjs';
+import { loadReviewerPolicy, resolveExternalReviewer } from './review-topology-v2.mjs';
 import { candidateTreeIdentity, issueExternalReviewProvenance } from './lib/external-review-provenance.mjs';
 import { relocateTree } from './lib/review-evidence-store.mjs';
 
-const LAUNCHER_VERSION = '2.5.3';
+import { reviewerAvailability, recordReviewerFailure } from './lib/reviewer-resources.mjs';
+
+const LAUNCHER_VERSION = '2.5.4';
 export const EXTERNAL_REVIEW_LAUNCHER_VERSION = LAUNCHER_VERSION;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FINDINGS_SCHEMA = path.join(ROOT, 'schemas/external-review-findings.schema.json');
@@ -451,7 +453,12 @@ export function validateExternalReviewReceiptSemantics(receipt) {
     if (receipt.invocation_tuple?.host === 'claude' && receipt.model_attestation?.level !== 'server_observed') errors.push('$.model_attestation.level: Claude success requires server_observed');
     if (['codex', 'agy', 'cursor', 'grok'].includes(receipt.invocation_tuple?.host) && !['requested_accepted', 'server_observed'].includes(receipt.model_attestation?.level)) errors.push('$.model_attestation.level: Codex/AGY/Cursor/Grok success requires requested_accepted or server_observed');
   }
-  if (receipt.policy?.source === 'schedule' && receipt.route?.kind === 'explicit_profile_primary') errors.push('$.route.kind: scheduled policy cannot be explicit primary');
+  if (receipt.status === 'success' && receipt.invocation_tuple?.host === 'cursor' && receipt.review_kind !== 'capability-probe') {
+    const a = receipt.model_attestation;
+    if (a?.requested_model !== receipt.invocation_tuple.model || a?.observed_models?.some(model => model !== receipt.invocation_tuple.model)) errors.push('Cursor model attestation mismatch');
+    if (receipt.route?.kind !== 'cache_hit' && receipt.invocation_tuple.model !== 'cursor-auto' && a?.evidence !== 'cursor_plan_mode_exact_model_argv_plus_successful_json_exit_no_server_model_echo') errors.push('Cursor exact-route evidence missing');
+  }
+  if (receipt.policy?.source === 'schedule'  && receipt.route?.kind === 'explicit_profile_primary') errors.push('$.route.kind: scheduled policy cannot be explicit primary');
   if (receipt.policy?.source === 'explicit-selection' && receipt.route?.kind === 'scheduled_primary') errors.push('$.route.kind: explicit policy cannot be scheduled primary');
   if (receipt.policy?.source === 'owner-config' && receipt.review_kind !== 'capability-probe' && !/^[a-f0-9]{64}$/.test(receipt.candidate_digest ?? '')) errors.push('$.candidate_digest: owner-configured review must bind the frozen candidate');
   if (receipt.status === 'success' && receipt.review_kind !== 'capability-probe' && !/^[a-f0-9]{64}$/.test(receipt.findings_sha256 ?? '')) errors.push('$.findings_sha256: successful review must bind canonical findings bytes');
@@ -481,20 +488,50 @@ async function processStartToken(pid = process.pid) {
   return (await processIdentity(pid)).token;
 }
 
-function classifyProviderFailure(stdout, stderr, timedOut) {
+// Only the last terminal envelope controls the outcome. A provider may recover
+// from an intermediate stream error before emitting its final successful result.
+function providerTerminalFailure(stdout) {
+  let events;
+  try { events = [JSON.parse(stdout)]; }
+  catch { events = stdout.trim().split(/\r?\n/).flatMap(line => { try { return [JSON.parse(line)]; } catch { return []; } }); }
+  const event = events.findLast(event => event && (
+    ['result', 'error', 'turn.completed', 'turn.failed', 'response.completed', 'response.failed'].includes(event.type) ||
+    typeof event.is_error === 'boolean' || ['error', 'success'].includes(event.status)));
+  if (!event) return null;
+  if (['turn.failed', 'response.failed'].includes(event.type)) return { ...event, type: 'error' };
+  return ((event.is_error === true && event.subtype !== 'success' && event.status !== 'success') || event.type === 'error' || event.status === 'error') ? event : null;
+}
+
+export function classifyProviderFailure(stdout, stderr, timedOut) {
   if (timedOut) return 'timeout';
   const structuredCodes = [];
+  const terminalMessages = [];
   let structuredTerminalClassification = null;
   for (const line of `${stdout}\n${stderr}`.split(/\r?\n/)) {
     try {
       const parsed = JSON.parse(line);
-      if (parsed?.error && typeof parsed.error === 'object') {
+      if (parsed?.error && typeof parsed.error === 'object' && (parsed.type === 'error' || parsed.is_error === true || parsed.status === 'error' || (!parsed.type && !parsed.status))) {
         for (const candidate of [parsed.error.code, parsed.error.type]) if (typeof candidate === 'string') structuredCodes.push(candidate.toLowerCase());
+      }
+      if ((parsed?.is_error === true && parsed.subtype !== 'success' && parsed.status !== 'success') || parsed?.type === 'error' || parsed?.status === 'error') {
+        for (const message of [parsed.result, parsed.error?.message, parsed.message]) if (typeof message === 'string') terminalMessages.push(message);
       }
       if (parsed?.type === 'result' && parsed.is_error === true && parsed.terminal_reason === 'api_error' && parsed.api_error_status === 403 && typeof parsed.result === 'string' && /^Your organization has disabled Claude subscription access for Claude Code\b/.test(parsed.result)) structuredTerminalClassification = 'model_entitlement';
     } catch {}
   }
   if (structuredTerminalClassification) return structuredTerminalClassification;
+  const terminalRules = [
+    ['authentication', /^(?:error:\s*)?(?:not logged in\b|please (?:run \/login|log in)\b|authentication (?:required|failed)\b|unauthenticated\b|invalid api key\b)/i],
+    ['shared_quota', /^(?:error:\s*)?(?:quota (?:exhausted|exceeded)\b|usage limit (?:reached|exceeded)\b|insufficient credits\b|credit balance\b)/i],
+    ['model_entitlement', /^(?:error:\s*)?(?:model entitlement required\b|not entitled to\b|subscription (?:required|unavailable)\b)/i],
+    ['provider_overload', /^(?:error:\s*)?(?:provider overloaded\b|overloaded\b|service unavailable\b|temporarily unavailable\b)/i],
+    ['network', /^(?:error:\s*)?(?:network error\b|connection refused\b|econnreset\b|enotfound\b)/i],
+    ['config_invalid', /^(?:error:\s*)?(?:invalid configuration\b|configuration error\b)/i],
+  ];
+  for (const message of terminalMessages) {
+    const classified = terminalRules.find(([, rule]) => rule.test(message.trim()));
+    if (classified) return classified[0];
+  }
   const joinedCodes = structuredCodes.join(' ');
   const diagnostics = `${joinedCodes}\n${stderr}`.toLowerCase();
   const forbiddenRules = [
@@ -502,8 +539,8 @@ function classifyProviderFailure(stdout, stderr, timedOut) {
     ['schema_turn_budget', /(?:^|\b)(?:max turns reached|maximum turns reached)(?:\b|$)/],
     ['model_entitlement', /(?:^|\b)(?:ineligibletiererror|ineligible tier|client is no longer supported for gemini code assist)(?:\b|$)/],
     ['model_unavailable', /(?:^|\b)invalid model selection(?:\b|$)/],
-    ['authentication', /(?:^|\b)(?:authentication|unauthenticated|unauthorized|invalid api key|login required|oauth)(?:\b|$)/],
-    ['shared_quota', /(?:^|\b)(?:shared quota|quota exhausted|credit balance|billing limit|insufficient credits)(?:\b|$)/],
+    ['authentication', /(?:^|\b)(?:authentication|unauthenticated|unauthorized|invalid api key|login required|not logged in|oauth)(?:\b|$)/],
+    ['shared_quota', /(?:^|\b)(?:shared[_ -]?quota|quota[_ -]?(?:exhausted|exceeded)|insufficient[_ -]?quota|credit balance|billing limit|insufficient credits)(?:\b|$)/],
     ['network', /(?:^|\b)(?:network|econnreset|enotfound|eai_again|connection refused|connection timed out|dns)(?:\b|$)/],
     ['capability', /(?:^|\b)(?:unknown option|unrecognized option|unexpected argument|invalid configuration key|unsupported flag)(?:\b|$)/],
   ];
@@ -1152,7 +1189,10 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
   if (result.spawnError) classification = 'capability';
   if (!result.cancelled && !result.timedOut && !result.spawnError) {
     try {
-      if (tuple.host === 'codex') {
+      const terminal = providerTerminalFailure(result.stdout.toString('utf8'));
+      if (terminal) {
+        classification = classifyProviderFailure(JSON.stringify(terminal), result.stderr.toString('utf8'), false);
+      } else if (tuple.host === 'codex') {
         if (result.code === 0) findings = JSON.parse(await readFile(finalFile, 'utf8'));
         const observedModels = [];
         for (const line of result.stdout.toString('utf8').trim().split(/\r?\n/).filter(Boolean)) {
@@ -1207,7 +1247,8 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
         usage = outer.usage && typeof outer.usage === 'object' ? outer.usage : {};
         protocol = { ...protocol, terminal_reason: typeof outer.subtype === 'string' ? outer.subtype : null };
         if (result.code === 0 && outer.subtype === 'success' && !outer.is_error) {
-          modelAttestation = { level: 'requested_accepted', requested_model: tuple.model, observed_models: [], evidence: tuple.model === 'cursor-auto' ? 'cursor_plan_mode_auto_alias_plus_successful_json_exit_no_server_model_echo' : 'cursor_plan_mode_exact_model_argv_plus_successful_json_exit_no_server_model_echo' };
+          modelAttestation = { level: 'requested_accepted', requested_model: tuple.model, observed_models: typeof outer.model === 'string' ? [outer.model] : [], evidence: tuple.model === 'cursor-auto' ? 'cursor_plan_mode_auto_alias_plus_successful_json_exit_no_server_model_echo' : 'cursor_plan_mode_exact_model_argv_plus_successful_json_exit_no_server_model_echo' };
+          if (modelAttestation.observed_models.some(model => model !== tuple.model)) classification = 'model_mismatch';
         } else if (result.code === 0) classification = 'schema_invalid';
         if (findings) await writeJson(finalFile, findings);
       } else if (tuple.host === 'grok') {
@@ -1401,6 +1442,7 @@ async function main() {
   const packageBytes = packageBundle.bytes;
   if (!options.validateCapabilities) await writeFile(packagePath, packageBytes, { mode: 0o600 });
   let resolvedPolicy = null;
+  let resourcePolicy;
   let policyError = null;
   let resolvedReviewerConfigPath = options.reviewerConfig || null;
   try {
@@ -1423,9 +1465,13 @@ async function main() {
       unavailableStations: process.env.SVC_DISPATCH_UNAVAILABLE_STATIONS || '',
     });
     resolvedReviewerConfigPath = external.topology.config_path || resolvedReviewerConfigPath;
+    const resourceSnapshot = loadReviewerPolicy(resolvedReviewerConfigPath);
+    if (resourceSnapshot.sha256 !== external.topology.config_sha256) throw new Error('owner policy changed during resolution; retry with stable policy bytes');
+    resourcePolicy = resourceSnapshot.policy.resource_policy;
     resolvedPolicy = {
       tuple: external.tuple,
       fallback: null,
+      stationContract: { id: external.station.id, authority: external.station.authority, identity_requirement: external.station.identity_requirement || null },
       metadata: {
         version: external.topology.schema_version || 1,
         profile: `${external.topology.mode}:${external.station.id}`,
@@ -1607,17 +1653,18 @@ async function main() {
 
   const packageHash = sha256(packageBytes);
   const findingsSchemaHash = sha256(schemaBytes);
-  const cacheKey = contentKey([packageBytes, canonical(requestedTuple), reviewKind, options.candidateDigest ?? '', schemaBytes, LAUNCHER_VERSION, fixture ? 'fixture:1' : 'fixture:0']);
+  const cacheKey = contentKey([packageBytes, canonical(requestedTuple), reviewKind, options.candidateDigest ?? '', schemaBytes, LAUNCHER_VERSION, canonical({ policy: resolvedPolicy.metadata.selection_sha256, station: resolvedPolicy.stationContract }), fixture ? 'fixture:1' : 'fixture:0']);
   const entryDir = path.join(cacheRoot, cacheKey);
   const lockDir = path.join(cacheRoot, 'locks', `${cacheKey}.lock`);
   const owner = { hostname: hostname(), pid: process.pid, process_start_token: await processStartToken(), owner_token: randomUUID(), heartbeat_at: new Date().toISOString() };
   await mkdir(path.dirname(lockDir), { recursive: true, mode: 0o700 });
   let heartbeat;
+  let poolLock = null;
   let heartbeatWork = Promise.resolve();
   try {
     await acquireLock(lockDir, staleSeconds, owner);
     heartbeat = setInterval(() => {
-      heartbeatWork = heartbeatWork.then(() => refreshLock(lockDir, owner)).catch(() => {});
+      heartbeatWork = heartbeatWork.then(async () => { await refreshLock(lockDir, owner); if (poolLock) await refreshLock(poolLock, owner); }).catch(() => {});
     }, heartbeatMs);
     heartbeat.unref();
   } catch {
@@ -1657,6 +1704,20 @@ async function main() {
       }
     }
 
+    const resourceContext = { configPath: resolvedReviewerConfigPath, policySha256: resolvedPolicy.metadata.selection_sha256, resource: resourcePolicy, tuple: requestedTuple };
+    const pool = resourcePolicy?.routes.find(row => row.host === requestedTuple.host && row.model === requestedTuple.model)?.pool_id;
+    if (pool) {
+      const targetLock = path.join(path.dirname(resolvedReviewerConfigPath), `.review-pool-${sha256(pool)}.lock`);
+      try { await acquireLock(targetLock, staleSeconds, owner); poolLock = targetLock; }
+      catch (error) { await finishFailure('lock_failure', { cacheKey, detail: error.message }); return; }
+    }
+    let availability;
+    try { availability = reviewerAvailability(resourceContext); }
+    catch (error) { await finishFailure('config_invalid', { cacheKey, detail: error.message }); return; }
+    if (!availability.allowed) {
+      await finishFailure(availability.classification, { cacheKey, detail: availability.reason || `access pool ${availability.pool_id} is unavailable; newer owner observation or explicit retry_after required` });
+      return;
+    }
     let binary;
     try {
       const transport = reviewTransport(requestedTuple.host);
@@ -1771,6 +1832,7 @@ async function main() {
     }
 
     const classification = primaryResult.attempt.classification;
+    recordReviewerFailure({ ...resourceContext, classification });
     if (!configuredFallback || requestedTuple.orchestrator !== 'codex' || requestedTuple.host !== 'claude' || requestedTuple.model !== 'claude-fable-5' || !configuredFallback.eligible_after.includes(classification)) {
       await finishFailure(classification, { cacheKey, attempts, fallback: { eligible: false, used: false, reason: classification }, protocol: primaryResult.protocol, modelAttestation: primaryResult.modelAttestation, cache: { disposition: 'not_reusable', reusable: false, entry: entryDir } });
       return;
@@ -1822,6 +1884,7 @@ async function main() {
   } finally {
     if (heartbeat) clearInterval(heartbeat);
     await heartbeatWork;
+    if (poolLock) await releaseLock(poolLock, owner);
     await releaseLock(lockDir, owner);
   }
 }

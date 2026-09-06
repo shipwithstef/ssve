@@ -82,6 +82,61 @@ if printf '%s' "$APPROVED_OUT" | grep -q "\"absolute_worktree\":\"$EXTROOT\""; t
   ok "registered external worktree adopted beneath approved root"
 else bad "approved external adoption failed: $(tail -1 "$TMP/ext.err" 2>/dev/null || echo none)"; fi
 
+# A complete same-session tuple is durable exact-target authorization.
+for resume_attempt in 1 2; do
+  RESUME_OUT="$(cd "$REPO" && SVC_SESSION_ID=22222222-2222-4222-8222-000000000002 node "$ROOT/scripts/svc-ensure-worktree.mjs" --wi WI-FW-HOOKS-SAFETY-02 --branch "$EXT_BRANCH" --json 2>"$TMP/resume.err" || true)"
+  if [[ "$RESUME_OUT" == *'"resumed":true'* && "$RESUME_OUT" == *'"claim_generation":1'* ]]; then
+    ok "registered external same-session resume $resume_attempt without root environment"
+  else bad "same-session durable authorization lost: $(tail -1 "$TMP/resume.err")"; fi
+done
+
+# Model a parent UID change after initial adoption without privileged chown.
+cat > "$TMP/foreign-parent.mjs" <<'JS'
+import fs from 'node:fs';
+const original = fs.lstatSync;
+fs.lstatSync = function(file, ...args) {
+  const stat = original.call(this, file, ...args);
+  if (String(file) !== process.env.SVC_FIXTURE_FOREIGN_PARENT) return stat;
+  const foreign = Object.create(stat); foreign.uid = process.getuid() + 1; return foreign;
+};
+JS
+PARENT_GRAPH="$EXTROOT/.svc/lane-tasks-WI-FW-HOOKS-SAFETY-02.json"
+cp "$PARENT_GRAPH" "$TMP/parent-graph.saved"
+PARENT_ERR="$(cd "$REPO" && SVC_FIXTURE_FOREIGN_PARENT="$TMP/approved-roots" SVC_SESSION_ID=22222222-2222-4222-8222-000000000002 node --import "$TMP/foreign-parent.mjs" "$ROOT/scripts/svc-ensure-worktree.mjs" --wi WI-FW-HOOKS-SAFETY-02 --branch "$EXT_BRANCH" --json 2>&1 >/dev/null || true)"
+[[ "$PARENT_ERR" == *WORKTREE_ROOT_UNAPPROVED* ]] && cmp -s "$PARENT_GRAPH" "$TMP/parent-graph.saved" && ok "foreign-owned immediate parent denied without state repair" || bad "foreign parent accepted or graph changed"
+
+# Invalid identity and malformed/released state never gain root approval.
+WRONG_WI_ERR="$(cd "$REPO" && SVC_SESSION_ID=22222222-2222-4222-8222-000000000002 node "$ROOT/scripts/svc-ensure-worktree.mjs" --wi WI-OTHER-01 --branch "$EXT_BRANCH" --json 2>&1 >/dev/null || true)"
+[[ "$WRONG_WI_ERR" == *WORKTREE_ROOT_UNAPPROVED* ]] && ok "same session wrong WI retains root denial" || bad "wrong WI unexpectedly authorized"
+GRAPH="$EXTROOT/.svc/lane-tasks-WI-FW-HOOKS-SAFETY-02.json"
+cp "$GRAPH" "$TMP/graph.saved"
+printf '{malformed' > "$GRAPH"
+CORRUPT_ERR="$(cd "$REPO" && SVC_SESSION_ID=22222222-2222-4222-8222-000000000002 node "$ROOT/scripts/svc-ensure-worktree.mjs" --wi WI-FW-HOOKS-SAFETY-02 --branch "$EXT_BRANCH" --json 2>&1 >/dev/null || true)"
+[[ "$CORRUPT_ERR" == *WORKTREE_ROOT_UNAPPROVED* && "$(cat "$GRAPH")" == '{malformed' ]] && ok "corrupt graph denied without target repair" || bad "corrupt graph was accepted or rewritten"
+cp "$TMP/graph.saved" "$GRAPH"
+BINDING="$(node --input-type=module -e 'import {bindingPath} from "'"$ROOT"'/hooks/lib/wi-claim.mjs";console.log(bindingPath(process.argv[1],"22222222-2222-4222-8222-000000000002"))' "$EXTROOT")"
+cp "$BINDING" "$TMP/binding.saved"
+node -e 'const fs=require("fs");const p=process.argv[1],v=JSON.parse(fs.readFileSync(p));v.released_at=new Date().toISOString();fs.writeFileSync(p,JSON.stringify(v));' "$BINDING"
+RELEASED_ERR="$(cd "$REPO" && SVC_SESSION_ID=22222222-2222-4222-8222-000000000002 node "$ROOT/scripts/svc-ensure-worktree.mjs" --wi WI-FW-HOOKS-SAFETY-02 --branch "$EXT_BRANCH" --json 2>&1 >/dev/null || true)"
+[[ "$RELEASED_ERR" == *WORKTREE_ROOT_UNAPPROVED* ]] && ok "released binding cannot grant external root" || bad "released binding unexpectedly authorized"
+cp "$TMP/binding.saved" "$BINDING"
+
+FOREIGN_ERR="$(cd "$REPO" && SVC_SESSION_ID=33333333-3333-4333-8333-000000000003 node "$ROOT/scripts/svc-ensure-worktree.mjs" --wi WI-FW-HOOKS-SAFETY-02 --branch "$EXT_BRANCH" --json 2>&1 >/dev/null || true)"
+[[ "$FOREIGN_ERR" == *WORKTREE_ROOT_UNAPPROVED* ]] && ok "foreign session same WI denied" || bad "foreign session same WI unexpectedly authorized"
+MARKER="$(node --input-type=module -e 'import {markerPathFor} from "'"$ROOT"'/hooks/codex/lib/bootstrap-marker.mjs";console.log(markerPathFor(process.argv[1],"WI-FW-HOOKS-SAFETY-02"))' "$REPO")"
+mkdir -p "$(dirname "$MARKER")"
+printf '{}' > "$MARKER"
+MARKER_ERR="$(cd "$REPO" && SVC_SESSION_ID=22222222-2222-4222-8222-000000000002 node "$ROOT/scripts/svc-ensure-worktree.mjs" --wi WI-FW-HOOKS-SAFETY-02 --branch "$EXT_BRANCH" --json 2>&1 >/dev/null || true)"
+[[ "$MARKER_ERR" == *WORKTREE_ROOT_UNAPPROVED* && "$(cat "$MARKER")" == '{}' ]] && ok "resume approval does not authorize forward completion or erase marker" || bad "marker recovery unexpectedly authorized"
+rm "$MARKER"
+
+mv "$EXTROOT/.svc" "$EXTROOT/.svc-saved"
+ln -s .svc-saved "$EXTROOT/.svc"
+SYMLINK_ERR="$(cd "$REPO" && SVC_SESSION_ID=22222222-2222-4222-8222-000000000002 node "$ROOT/scripts/svc-ensure-worktree.mjs" --wi WI-FW-HOOKS-SAFETY-02 --branch "$EXT_BRANCH" --json 2>&1 >/dev/null || true)"
+[[ "$SYMLINK_ERR" == *WORKTREE_ROOT_UNAPPROVED* && -L "$EXTROOT/.svc" ]] && ok "unsafe state ancestry denied without repairing symlink" || bad "unsafe state ancestry unexpectedly authorized"
+rm "$EXTROOT/.svc"
+mv "$EXTROOT/.svc-saved" "$EXTROOT/.svc"
+
 # same external worktree WITHOUT approved root stays fail-closed, no mutation
 UNAPPROVED_ERR="$(cd "$REPO" && SVC_SESSION_ID=33333333-3333-4333-8333-000000000003 node "$ROOT/scripts/svc-ensure-worktree.mjs" --wi WI-FW-HOOKS-SAFETY-03 --branch "$EXT_BRANCH" --json 2>&1 >/dev/null || true)"
 if printf '%s' "$UNAPPROVED_ERR" | grep -q "containment root"; then

@@ -6,10 +6,14 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {
+  cursorIndependentEligible,
   resolveDispatchExternalReviewer,
   resolveDispatchModel,
   resolveDispatchReviewTopology,
 } from '../../../scripts/resolve-dispatch.mjs';
+
+// Owner resource observations must not leak into offline fixture policy selection.
+delete process.env.SVC_DISPATCH_UNAVAILABLE_STATIONS;
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'svc-wi551-'));
 const policyPath = path.join(tmp, 'dispatch-policy.json');
@@ -338,9 +342,9 @@ const geminiExplicitStationAsk = resolveDispatchExternalReviewer({
 });
 assert.equal(geminiExplicitStationAsk.station.id, 'agy-gemini-3.7-high');
 
-const cursorAutoLaunderingPolicy = structuredClone(policy);
+const cursorAutoLaunderingPolicy = structuredClone(basePolicy);
 cursorAutoLaunderingPolicy.modes['mixed-grok-cursor'].review.exec.stations.push({ id: 'cursor-auto', kind: 'external', required: true, authority: 'independent', tuple: { host: 'cursor', family: 'multi', model: 'cursor-auto', effort: 'high' } });
-const cursorAutoLaunderingPath = path.join(root, 'cursor-auto-laundering.json');
+const cursorAutoLaunderingPath = path.join(tmp, 'cursor-auto-laundering.json');
 writeJson(cursorAutoLaunderingPath, cursorAutoLaunderingPolicy);
 assert.throws(
   () => resolveDispatchReviewTopology({ configPath: cursorAutoLaunderingPath, orchestrator: 'grok', phase: 'exec' }),
@@ -348,3 +352,13 @@ assert.throws(
 );
 
 console.log('validate-dispatch-resolver-wi551: PASS (AC-551-1..9 + proposal AC-10 replay matrix)');
+
+assert.equal(cursorIndependentEligible({ identity_requirement: 'requested_accepted', tuple: { host: 'cursor', family: 'xai', model: 'cursor-grok-4.6-high', effort: 'high' } }), true);
+assert.equal(cursorIndependentEligible({ identity_requirement: 'requested_accepted', tuple: { host: 'cursor', family: 'multi', model: 'cursor-auto', effort: 'high' } }), false);
+
+const exactCursorPolicy = structuredClone(cursorAutoLaunderingPolicy);
+Object.assign(exactCursorPolicy.modes['mixed-grok-cursor'].review.exec.stations.at(-1), {
+  identity_requirement: 'requested_accepted', tuple: { host: 'cursor', family: 'xai', model: 'cursor-grok-4.6-high', effort: 'high' }
+});
+writeJson(cursorAutoLaunderingPath, exactCursorPolicy);
+assert.ok(resolveDispatchReviewTopology({ configPath: cursorAutoLaunderingPath, orchestrator: 'codex', phase: 'exec' }).stations.some(s => s.identity_requirement === 'requested_accepted'));
