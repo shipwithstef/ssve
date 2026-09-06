@@ -39,6 +39,12 @@ Reuse exact complete session authority for registered worktree resume; generate 
 | T3 | MODIFY | test-framework/evals/tier-1/validate-retroactive-attestation.sh |
 | T3 | MODIFY | test-framework/evals/tier-1/validate-stop-hook-session-isolation.sh |
 
+| T4 | MODIFY | docs/specs/relations/wi-541-full-transition.branches.md |
+| T4 | MODIFY | docs/specs/relations/wi-548-host-parity.branches.md |
+
+| T4 | MODIFY | docs/specs/relations/wi-541-full-transition.branches.md.imports.json |
+| T4 | MODIFY | docs/specs/relations/wi-548-host-parity.branches.md.imports.json |
+
 ## Task Graph
 | Task | Work | Dependencies | AC | Validation |
 |---|---|---|---|---|
@@ -117,3 +123,7 @@ Full offline suite ran once: 339 pass / 25 fail / zero timeout. Targeted clean-b
 F009 accepted and corrected after final plan round: separate passing slice/installation commands from the observed nonzero corpus result and preserve enforced landing gates. No fourth plan review; bound this correction and its verification through the existing bounded-exit contract, then review the final executed candidate normally.
 
 Execution review EXEC-001/002 accepted and fixed: select the last process-terminal envelope so recovered intermediate stream errors do not override a successful Codex/Claude terminal result; classify only the failing terminal object. The existing launcher fake Codex now emits a recovered error before turn.completed and the full launcher fixture passes. Exact resume calls secureAncestorChain on only the immediate parent-to-target segment (no parent approval); a mocked foreign-UID parent regression rejects and preserves the graph. These changes invalidate the prior execution candidate and receive a new final execution review.
+
+Landing preflight found two inherited stale branch indexes. Re-walk their cited paths and entry-point/authority roles, preserve historical scope/status claims as historical, and re-stamp to f24a7ad. This small dependent documentation correction restores the existing branch-index gate; it does not waive validation or rewrite historical receipts. The final cumulative execution review includes these documentation-only changes.
+
+DOC-01 correction: branch-index import-shape sidecars are regenerated using branch-index-freshness --stamp-imports along with Markdown stamps. check-branch-index --all now exits 0. The review dispatched before this sidecar correction was canceled as an invalidated candidate; its evidence is preserved and cannot approve the final tree. No runtime code changed.

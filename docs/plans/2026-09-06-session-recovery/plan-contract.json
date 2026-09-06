@@ -46,7 +46,11 @@
         "docs/plans/2026-09-06-session-recovery/manifest.md",
         "docs/plans/2026-09-06-session-recovery/plan-contract.json",
         "references/skill-routing-index.json",
-        "docs/specs/audit/session-recovery-analysis.md"
+        "docs/specs/audit/session-recovery-analysis.md",
+        "docs/specs/relations/wi-541-full-transition.branches.md",
+        "docs/specs/relations/wi-548-host-parity.branches.md",
+        "docs/specs/relations/wi-541-full-transition.branches.md.imports.json",
+        "docs/specs/relations/wi-548-host-parity.branches.md.imports.json"
       ]
     }
   ],

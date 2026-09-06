@@ -1,6 +1,6 @@
 # Branch index — portable host-parity program
 
-Derived-at: a65e9f8b77581f8b508f3e1c852d013a8a0d0f96
+Derived-at: f24a7add94ea8f78a87f736dcc7cb8f9183eb59a
 Scope-paths:
   - docs/specs/architecture/wi-548-*.md
   - docs/specs/features/framework-portable-host-parity.md
@@ -60,3 +60,6 @@ Scope-paths:
 - Planning PR only for WI-548
 - Children 545/549-552/546 landed via PR #13 (`50a3440a`); WI-553 still review-then-land
 - PR #10 landed (`223436ab`); PR #11/#12 landed WI-547
+
+## Revalidation for session recovery
+Cited entry points and callers rechecked at the Derived-at source. ensure-worktree still owns bootstrap/recovery, with exact already-bound resume now consuming complete authority; launcher remains the governed review entry point and adds the reviewer-resources helper. Policy, receipt, generation and host-install boundaries remain in their cited owners. Earlier program outcome/child-status lines describe their historical scope, not a claim that the current full corpus is green. Current test census is recorded in `docs/specs/audit/session-recovery-analysis.md`.
