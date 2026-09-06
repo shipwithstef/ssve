@@ -117,7 +117,7 @@
     {
       "skill": "audit-ac",
       "path": "skills/audit-ac/SKILL.md",
-      "content_hash": "45270e90792149537704cde2b5fdd9baba2ea9788bd93e6523d3539f7161ac13",
+      "content_hash": "8dabaf82813be843e383327301953209fd9d676b37e67e5407de3bb790e98968",
       "description": "On-demand audit of feature specs to ensure every User Story has complete, testable acceptance criteria. Rewrites vague ACs and writes missing ones. Two modes: (1) single feature — \"audit-ac feature-learning\" or \"check ACs for matching\", (2) all features — \"audit-ac\" or \"audit all specs\". Triggers on: \"audit-ac\", \"check the ACs for [feature]\", \"audit the spec\", \"are the ACs complete\", \"make sure all ACs are defined\", \"prep [feature] for QA\".",
       "aliases": [],
       "positive_triggers": [],
@@ -549,7 +549,7 @@
     {
       "skill": "design-tech",
       "path": "skills/design-tech/SKILL.md",
-      "content_hash": "fe11b93e91c2c3bb9571c6106244f154f0d0c0db86790d77a6a1c3598ac6f025",
+      "content_hash": "469836306b41d40de0611302c757f568918e2cb6bcef957f8cf827d5f414ad6a",
       "description": "Use when you have a DESIGNED feature spec (after UX and UI design) and need to define architecture, tech choices, and component design before implementation",
       "aliases": [
         "technical design",
@@ -591,7 +591,7 @@
     {
       "skill": "design-ui",
       "path": "skills/design-ui/SKILL.md",
-      "content_hash": "49e60441c7e423cd88cee06a5dd80b5f3dba31ea3cda6871460e890f57af3e3b",
+      "content_hash": "1cd12edd69aba71a70fa49405efb28b6967d1f7a692410847beedd8ec75ddeae",
       "description": "Use when a UX-REVIEWED feature spec needs visual design — produces component specifications, design token usage, and responsive layout before technical design",
       "aliases": [],
       "positive_triggers": [],
@@ -609,7 +609,7 @@
     {
       "skill": "design-ux",
       "path": "skills/design-ux/SKILL.md",
-      "content_hash": "edf22fd144207b5fd668b4350ba1913f7caafe4ab5b85ccd2686eb9442459db2",
+      "content_hash": "772876aa68dfb17e2c1902c98d6cdadd0f77862d0148452bf8d72f00276cc61c",
       "description": "Use when a DRAFT feature spec needs UX design — produces screen flows, state machines, information hierarchy, and interaction patterns before any visual design",
       "aliases": [],
       "positive_triggers": [],
@@ -627,7 +627,7 @@
     {
       "skill": "diagnose-bug",
       "path": "skills/diagnose-bug/SKILL.md",
-      "content_hash": "7aa729f9e76fdedab5fe01af570bfcec13aef9f972f60ec4031595c8ccbe7ca0",
+      "content_hash": "1c067b8ec77bd9b200aadb15f189915ec49ffcd430a06aa66a7c908179408eb6",
       "description": "Root-cause-first bug and regression planning for svc repos. Use when a work item describes broken behavior, a regression, or a production issue that needs correction without forcing full feature-spec authoring. Produces an implementation-ready bugfix brief with reproduction, root cause, expected behavior, smallest safe fix surface, and proof-of-fix plan.",
       "aliases": [
         "root cause",
@@ -753,7 +753,7 @@
     {
       "skill": "execute-changeset",
       "path": "skills/execute-changeset/SKILL.md",
-      "content_hash": "24ec5022a3886dd004f0c0f5716fe73907b3deeebbf469de0cb852161caaa11d",
+      "content_hash": "f38f7561129be524535878372ac37e8f11388a7e93fac4591f5971db26171487",
       "description": "Use after plan-changeset has produced a manifest and task graph. Triggers on \"execute the plan\", \"implement the changeset\", \"run the tasks\", \"start building\", or when a plan-changeset manifest exists and is ready for execution.",
       "aliases": [],
       "positive_triggers": [],
@@ -1077,7 +1077,7 @@
     {
       "skill": "manage-finops",
       "path": "skills/manage-finops/SKILL.md",
-      "content_hash": "44a12cf3636a2cb2f88d96ded57e605138cad9c742dc4e005a7ffe2eee9d4ef1",
+      "content_hash": "21c93d7d0833198ab9d65b24835335be048fd50fd94e8a581bdc3051f6e6d35f",
       "description": "FinOps for cloud selection, cost optimization, and solo-dev launch budgets. Use when: hosting recommendations, provider pricing comparisons (Hetzner/AWS/GCP/Vercel/Railway), \"what will my monthly cost be\", \"free tier cliff\", \"is this API affordable at scale\". Also: \"how much should I budget for launch\", \"AWS vs Hetzner\", \"Vercel vs Netlify pricing\". Long forms: \"what will my monthly cost be at 10k users\", \"is Google Places API affordable at scale\", \"when do we hit the free tier cliff\", \"AWS vs Hetzner for a Node.js API\", \"Vercel vs Netlify pricing for my stack\".",
       "aliases": [
         "hosting cost",
@@ -1236,7 +1236,7 @@
     {
       "skill": "plan-changeset",
       "path": "skills/plan-changeset/SKILL.md",
-      "content_hash": "f61a47a070e2dbd196528cb07983ab26610638653ca83990afd838ffae4fc092",
+      "content_hash": "13f09ca882abea9bb318b46ce79e5954d736f3bcab7feb669f2e28d11aac9dfc",
       "description": "Use when you have a BASELINED feature spec with technical design and need to produce the implementation plan for branch-first execution — task graph, file set, validation plan, checkpoints, and AC/test mapping",
       "aliases": [],
       "positive_triggers": [],
@@ -1485,7 +1485,7 @@
     {
       "skill": "review-gate",
       "path": "skills/review-gate/SKILL.md",
-      "content_hash": "8cad61150d7eb25619f5212073676b93d7feec34e1eb12db25d422f58ec5c6ac",
+      "content_hash": "4b6262be2587f46bc2570745253cea479fd18dd8e04d83113f67d4c00aeab2c7",
       "description": "Use at every review gate (G1-G7) to run the universal 5-step review protocol — self-review, self-judgment, cross-review, convergence check, and gate decision — producing structured, parseable findings that block or pass artifact state transitions",
       "aliases": [],
       "positive_triggers": [],
@@ -1588,7 +1588,7 @@
     {
       "skill": "route-workflow",
       "path": "skills/route-workflow/SKILL.md",
-      "content_hash": "94b791761f99e32edde25c090354a2bd5c20b1f853bd34aef5367e6d6f55e9dd",
+      "content_hash": "0135f9f35c53c0d1c0330230ca28ef2c12d4a6a2ab5837ebcfbb935cc5507c81",
       "description": "Universal entry point for any work. Routes freeform intent to the right svc skill based on repo state, change type, and current project artifacts. Handles: \"do this\", \"build this\", \"I want to\", \"help me with\", \"make me a\", \"ship this\", \"fix this\", or ANY freeform description of work; also handles explicit routing questions like \"what should I do next\", \"which skill do I run\", \"what's the right order\", and \"what lane is this\".",
       "aliases": [
         "what should I do next",
@@ -1655,7 +1655,7 @@
     {
       "skill": "strategic-decision",
       "path": "skills/strategic-decision/SKILL.md",
-      "content_hash": "e8602404f60272691293c25e6a31efbd9c4629bdabd5d38c7a0c7f22c8c82484",
+      "content_hash": "698d5485f5614c0bde8a3efc143d751c3d60dfc435145943ee26d2cfc10eb918",
       "description": "N-way strategic trade study spanning features, vendors, or years — build-vs-buy, framework/database/hosting/AI-model/payment-provider selection, pricing model, strategic pivot. Use when: \"which X should I use\", \"compare providers\", \"trade study\", \"strategic decision\". NOT for within-feature architecture (design-tech owns that). Also: \"N-way decision\", \"pick vendor\", \"compare options before committing\".",
       "aliases": [
         "trade study",
@@ -1708,7 +1708,7 @@
     {
       "skill": "svc-advisor",
       "path": "skills/svc-advisor/SKILL.md",
-      "content_hash": "bd286e65e5cddff9f3ed8de97ed45522288932ce29b0c9fa0ae972cb0d7db161",
+      "content_hash": "04fa23588aca41a515e52bd88930c0752a09a0569922eb5a7cbe5416fff6ac42",
       "description": "Answer questions about the svc framework grounded in stored knowledge — not improvised. Use when the user asks \"is svc good at X?\", \"how does svc handle Y?\", \"what's missing for Z scenario?\", \"compare svc to gstack/superpowers for X\", \"is there a skill for X?\", \"what do you think about this case?\", or any question about framework quality, capability, or coverage on a specific scenario. Always invoke this before giving an opinion about the framework — your improvised answer will be weaker than what the analyzed knowledge says.",
       "aliases": [],
       "positive_triggers": [],
@@ -1726,7 +1726,7 @@
     {
       "skill": "sync-spec-code",
       "path": "skills/sync-spec-code/SKILL.md",
-      "content_hash": "c435cae71c8e9c0a34f9e7340144f9bc2bf56428f99786250306063a4be23c58",
+      "content_hash": "83aeef9716821b906958cf5e6b78b0c9a34055ae0ab91bdd25680c1a27d91460",
       "description": "Audit feature specs against the actual codebase to find drift — PLANNED items now implemented, RESOLVED references pointing at dead files/lines — and update Implementation Notes. Single-feature or all-features mode. Use when: \"does the spec reflect the code\", \"sync-spec-code\", \"audit spec vs code\". Also: \"check for spec drift\", \"check if spec is up to date\", \"sync spec to code\". Single-feature form: \"sync-spec-code feature-learning\"; also \"are the implementation notes current\".",
       "aliases": [],
       "positive_triggers": [],
@@ -1816,7 +1816,7 @@
     {
       "skill": "test-journeys",
       "path": "skills/test-journeys/SKILL.md",
-      "content_hash": "be40f8a81d4f4811ba348f52ac08d46019e22b62d65e112d70d2a89fade55b8c",
+      "content_hash": "3497e185aa4e02607e05909c60b240f2e22e7a544284230d48d78e285aee93da",
       "description": "Journey-first manual QA that validates real user flows against journey scenarios and mapped acceptance criteria. Use when the user says \"run QA by journey\", \"validate journeys\", \"manual QA pass\", \"regression pass\", \"smoke test with ACs\", or \"verify this flow on staging/local/prod\". This skill verifies runtime behavior at any reachable URL (localhost, preview, staging, production), captures evidence, and writes QA status back to feature spec AC tables.",
       "aliases": [],
       "positive_triggers": [],
@@ -1870,8 +1870,8 @@
     {
       "skill": "validate-feature",
       "path": "skills/validate-feature/SKILL.md",
-      "content_hash": "24ab91ebe196acca0389b04803f0f07735ab8520b46aebe01151ad7b91e7f32c",
-      "description": "First stop for any new feature idea — cross-validates against personas, journeys, and specs, asks the 8 business questions, produces a Feature Ship Brief, and routes to the right downstream skill. Use when: \"what if we built X\", \"I have a feature idea\", \"should we add\", \"validate this idea\". Also: \"new feature\", \"should we add\", \"I have a feature idea\".",
+      "content_hash": "07099be3b72eaa107997fd12b389d6c9f14d072042930d144bc853ec11e4cf6d",
+      "description": "First stop for any new feature idea — cross-validates against personas, journeys, and specs, resolves consequential business decisions, produces a Feature Ship Brief, and routes to the right downstream skill. Use when: \"what if we built X\", \"I have a feature idea\", \"should we add\", \"validate this idea\". Also: \"new feature\", \"should we add\", \"I have a feature idea\".",
       "aliases": [],
       "positive_triggers": [],
       "negative_triggers": [],
@@ -1942,7 +1942,7 @@
     {
       "skill": "write-spec",
       "path": "skills/write-spec/SKILL.md",
-      "content_hash": "85a266b8f305e44188a065061698f376ad80f63c8d7b24d15df95a75117f2227",
+      "content_hash": "2be7cc945e3a4786691fbfb393429078f40da719dc232f9511b84a71dc118ab0",
       "description": "Use when defining a new feature or change — produces a DRAFT feature spec with user stories, ACs, and journeys before any technical design or code. Supports greenfield new-feature work and brownfield delta-spec work for extensions, bugfix behavior, and contract changes.",
       "aliases": [
         "specify feature",

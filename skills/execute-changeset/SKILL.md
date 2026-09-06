@@ -63,7 +63,7 @@ Resolve the execution harness BEFORE touching files: `bash scripts/resolve-model
 
 ## Product Questions — MANDATORY format
 
-Implementation-surfaced unknowns needing a product decision follow `_shared/product-question-format.md`, appended with `phase: execute-changeset`, surfaced for AGREE/OVERRIDE — never buried as a silent code choice.
+Surface implementation discoveries that change consequential product choices; do not hide them as code decisions. Follow `_shared/product-question-format.md` with `phase: execute-changeset`. Reuse accepted decisions and task authorization; ask only unresolved consequential owner choices. Record real decisions in the existing companion or canonical decision artifact. No empty companion or numeric question floor is required. Unresolved consequential decisions block dependent work.
 
 ## Inputs
 
@@ -351,7 +351,7 @@ Before declaring done, verify:
 | 2 | No TODO/FIXME in committed code | `grep -r 'TODO\|FIXME' <changed-files>` returns empty | |
 | 3 | Validation commands passed | All task-level and branch-level validation commands exit 0 | |
 | 4 | TDD skip justified if applicable | If TDD was skipped for type-defs, configs, or scaffolding: skip reason is logged in lane-tasks JSON and `pipeline-decisions.jsonl` with the specific files/tasks that were exempted and why | |
-| 5 | No unresolved questions | grep for TBD, TODO, open questions in manifest or committed code | |
+| 5 | No blocking unresolved consequential decisions | Apply the shared promotion predicate. Inspect TBD/TODO as evidence-gap warnings: block missing required AC/state/dependency evidence or a consequential owner choice; explicitly defer harmless details without manufacturing answers | |
 | 6 | Structured evidence target classified | For any task that changes browser-visible behavior, its completion receipt records `target_class: browser-visible`, a non-`V0` `evidence_level`, and runtime `evidence_artifacts` per `references/phase-receipts.md`. | |
 | 7 | Old-path-fails / new-path-passes proof attached | If the changeset migrates, swaps, bypasses, or routes through a different code path to fix an observed symptom, attach probe JSON showing the old path fails and the new path passes against the same input. Validate with `node scripts/validate-cross-system-probe-evidence.mjs --evidence <path>`. | |
 | 8 | Pre/post validation loop recorded | For corrective or acceptance-critical changes, cite the exact pre-change command/output, post-change rerun, comparison classification, iteration count, and `node scripts/validate-pre-post-validation-evidence.mjs --evidence <path>` result per `references/pre-post-validation-loop.md`; otherwise record why the loop is N/A. | |

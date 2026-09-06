@@ -67,7 +67,7 @@ flagging RESOLVED references that have gone stale.
 
 ## Product Questions — MANDATORY format
 
-When drift is found between spec claim and code reality (e.g., tier-differentiator feature with no mgmt UI; fields referenced in code that don't exist in entity schema), the resolution ("update spec to match code" vs "update code to match spec" vs "extend schema to reflect intent") is a product decision. Frame via `_shared/product-question-format.md` with `phase: sync-spec-code`. Silent-reconcile is forbidden.
+Expose spec/code drift and follow affected dependencies; do not silently choose existing code over intended behavior or stale specs over current owner decisions. Follow `_shared/product-question-format.md` with `phase: sync-spec-code`. Reuse accepted decisions and task authorization; ask only unresolved consequential owner choices. Record real decisions in the existing companion or canonical decision artifact. No empty companion or numeric question floor is required. Unresolved consequential decisions block dependent work.
 
 ---
 
@@ -516,7 +516,7 @@ Before declaring done, verify:
 |---|-------|-----|-----------|
 | 1 | Specs have RESOLVED/DRIFT annotations | grep for RESOLVED, DRIFT, JOURNEY-GAP in updated spec files | |
 | 2 | Audit report produced | Output summary includes PLANNED->RESOLVED counts, drift flags, journey gaps | |
-| 3 | No unresolved questions | grep for TBD, TODO, open questions in updated specs | |
+| 3 | No blocking unresolved consequential decisions | Apply the shared promotion predicate. Inspect TBD/TODO as evidence-gap warnings: block missing required AC/state/dependency evidence or a consequential owner choice; explicitly defer harmless details without manufacturing answers | |
 
 If any check FAILs, fix before continuing. If a fix requires upstream changes, stop and report.
 

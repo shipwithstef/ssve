@@ -73,7 +73,7 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 
 ## Product Questions — MANDATORY format
 
-When this skill asks any product question (screen flows, empty/error/loading states, interaction patterns), follow `_shared/product-question-format.md` — 12 sections per question. Append to `docs/specs/features/<feature>-questions.md` with `phase: design-ux`. **Gating rule:** spec cannot flip → UX-REVIEWED unless `phase: design-ux` questions are all AGREE.
+Ground screen flows, empty/error/loading states and interactions in current personas, journeys, ACs and actual code. Follow `_shared/product-question-format.md` with `phase: design-ux`. Reuse accepted decisions and task authorization; ask only unresolved consequential owner choices. Record real decisions in the existing companion or canonical decision artifact. No empty companion or numeric question floor is required. Unresolved consequential decisions block dependent work. UX-REVIEWED requires the shared promotion predicate.
 
 ## Discussion Artifact Pre-Flight
 
@@ -171,24 +171,13 @@ Read `docs/specs/domain-profile.md` if available — domain constraints affect U
 
 Read `docs/specs/analyze-competitors.md` if available — competitor UX patterns inform what users already expect and where to differentiate.
 
-### Step 1.5: Signature Interaction Discovery (Masterclass UI)
+### Step 1.5: Applicable interaction improvement
 
-The agent must autonomously conceive a "Signature Hook" that makes the UI unique and "alive." This is an automated activity that moves beyond generic components.
+Start from the mapped persona task, current journey/ACs and existing interaction. Retain the established pattern when it already serves this bounded change. A distinctive interaction earns its place by improving a concrete user outcome, not by being decorative or novel.
 
-**The Creative Director's Menu:**
-Propose 3 distinct hooks from the library below that align with the Vision:
-- **Precision Dials**: Digital knobs with inertial momentum and friction.
-- **Liquid Glass**: Refractive state-transitions using advanced backdrop filters.
-- **Dead-Front UI**: Components that "ignite" with a high-precision glow.
-- **Tactile Maximus**: 3D-sculpted geometry with squishy physics.
+When evidence suggests a useful improvement, compare meaningful alternatives (including retaining the existing pattern) against task success, accessibility, reduced-motion behavior, responsiveness, performance and implementation cost. Recommend the strongest approach within authorized scope; route consequential scope changes through the shared decision contract. Do not force a decorative menu, a fixed proposal count or an unsupported aesthetic score.
 
-**Autonomous Selection Protocol (Standalone Mode):**
-In standalone mode, the agent uses an internal **Actor-Critic Loop** to rate each proposal against the **Aesthetic Scoring Rubric** (Precision, Resonance, Novelty, Efficiency, Maturity).
-1. **Parallel Pitch**: Actor pitches 3 hooks.
-2. **Blind Critique**: Critic scores each (0-100).
-3. **Winner**: The hook with the highest score (Target 90+) is **Auto-Selected** as the project's Signature Hook.
-
-Record the winner in the UX Design document and ensure its technical requirements are passed to `design-ui`.
+Record a **Signature Hook** decision for downstream compatibility: `existing-pattern-retained` with rationale, or the selected improvement with evidence, affected states/ACs and technical requirements for `design-ui`. Useful innovation remains welcome when it improves the actual product task.
 
 ### Step 2: Screen Inventory
 
@@ -437,18 +426,13 @@ Write the complete UX design to `docs/specs/ux/<feature-name>.md`:
 
 ---
 
-## Signature Hook (Masterclass UI)
+## Signature Hook (interaction decision)
 
-**Autonomous Discovery (Step 1.5):**
-The agent (as Creative Director) pitched 3 hooks from the Signature Interaction Menu:
-1. [Hook 1 Name]: [Brief Description]
-2. [Hook 2 Name]: [Brief Description]
-3. [Hook 3 Name]: [Brief Description]
-
-**Autonomous Selection:**
-- **Winner**: [The Auto-Selected Hook]
-- **Target Aesthetic Score**: [Aggregate Score, e.g. 94/100]
-- **Critic's Note**: [Why this hook won resonance with the Vision]
+- **Disposition:** existing-pattern-retained / selected improvement
+- **User task and evidence:** [persona, journey, current spec/code behavior]
+- **Rationale and meaningful alternative:** [why this choice fits the authorized scope]
+- **Verification:** [affected ACs/states, accessibility/reduced motion, performance]
+- **UI handoff:** [existing tokens/pattern, or new interaction requirements]
 
 ---
 
@@ -658,7 +642,7 @@ Before declaring done, verify:
 | 4 | Flow Diagram section present | grep for "## Flow Diagrams" in output file | |
 | 5 | Loading/error/empty states defined for each screen | Every screen's state machine includes LOADING, ERROR, and EMPTY states | |
 | 6 | Skip justified if applicable | If this is an Enabler/Integration with no UX surface: skip reason is logged in lane-tasks JSON and `pipeline-decisions.jsonl` with explicit justification; otherwise UX design file is substantive | |
-| 7 | No unresolved questions | grep for TBD, TODO, open questions in output file | |
+| 7 | No blocking unresolved consequential decisions | Apply the shared promotion predicate. Inspect TBD/TODO as evidence-gap warnings: block missing required AC/state/dependency evidence or a consequential owner choice; explicitly defer harmless details without manufacturing answers | |
 
 If any check FAILs, fix before continuing. If a fix requires upstream changes, stop and report.
 

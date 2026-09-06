@@ -53,6 +53,7 @@ check("proposal selects complete v2 focused closure", () => {
     "validate-runtime-state-model-v2.mjs",
     "validate-runtime-v2.mjs",
     "validate-sample-shadow-replay-v2.mjs",
+    "validate-skill-judgment.mjs",
     "validate-skill-runtime-contracts-v2.mjs",
     "validate-story-receipt-delivery-projection-v2.mjs",
     "validate-tier1-selector-v2.mjs",
@@ -150,6 +151,20 @@ check("surface with no contract match returns an EMPTY selection (runner fails l
 check("surface traversal attempt is rejected rather than widened", () => {
   const result = selectTier1ValidatorsForSurfaces(["../outside/repo"]);
   assert.equal(result.valid, false);
+});
+
+
+
+check("skill judgment consumers select the focused contract", () => {
+  for (const input of ["_shared/product-question-format.md", "skills/svc-advisor/SKILL.md", "skills/diagnose-bug/SKILL.md", "agents/strategic-reviewer.md", "skills/design-ui/SKILL.md"]) {
+    const changed = selectTier1Validators([input]);
+    assert.equal(changed.fallback_full, false);
+    assert(changed.selected.includes("validate-skill-judgment.mjs"), input);
+    assert(selectTier1ValidatorsForSurfaces([input]).selected.includes("validate-skill-judgment.mjs"), input);
+  }
+  assert.equal(selectTier1Validators(["future/unmapped-skill.md"]).fallback_full, true);
+  assert.equal(selectTier1Validators(["AGENTS.md"]).fallback_full, true);
+  assert.deepEqual(selectTier1ValidatorsForSurfaces(["definitely-unmapped-skill-judgment-surface"]).selected, []);
 });
 
 if (process.exitCode) process.stderr.write(`tier1 selector v2: ${passed} passed, failures present\n`);

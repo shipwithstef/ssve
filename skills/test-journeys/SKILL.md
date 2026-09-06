@@ -60,7 +60,7 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P4-
 
 ## Product Questions — MANDATORY format
 
-When reality during a journey run surfaces a spec gap or product ambiguity (e.g., "the account has no tier limits — what's the intended behavior?"), capture as a question in `_shared/product-question-format.md` with `phase: test-journeys`. Append to the feature's companion file. Never silently assume what the spec implies.
+When a journey surfaces undefined behavior, compare current ACs with observed behavior; do not invent the expected result. Follow `_shared/product-question-format.md` with `phase: test-journeys`. Reuse accepted decisions and task authorization; ask only unresolved consequential owner choices. Record real decisions in the existing companion or canonical decision artifact. No empty companion or numeric question floor is required. Unresolved consequential decisions block dependent work.
 
 ---
 
@@ -668,7 +668,7 @@ Before declaring done, verify:
 |---|-------|-----|-----------|
 | 1 | QA column in AC tables updated | grep for QA status markers in `docs/specs/features/<name>.md` | |
 | 2 | Evidence captured under track-visuals path | `test -d .svc/visuals/<WI>/` and `.png` files present | |
-| 3 | No unresolved questions | grep for TBD, TODO, open questions in updated specs | |
+| 3 | No blocking unresolved consequential decisions | Apply the shared promotion predicate. Inspect TBD/TODO as evidence-gap warnings: block missing required AC/state/dependency evidence or a consequential owner choice; explicitly defer harmless details without manufacturing answers | |
 | 4 | Scenario inventory terminal | every entry in `scenarios.json` has `status != "pending"` and any skipped entry has `skip_reason ∈ {infeasible, user-approved}` with `wi_path` set when infeasible | |
 | 5 | WI files created for every HIGH/CRITICAL finding | `ls docs/work-items/WI-*-<date>-*.md` count ≥ count of HIGH/CRITICAL in SUMMARY.md | |
 | 6 | Visual-AC screenshots cited | `grep -E '✅.*screenshot=' <spec>.md \| wc -l` ≥ count of visual ACs marked ✅ | |

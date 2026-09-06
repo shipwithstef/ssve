@@ -131,6 +131,12 @@ persists in a consistent accessible state (the worktree), and (d) is re-loaded
 into the attention window at each checkpoint to prevent positional attention
 decay.
 
+## Consequential decisions and applicable work
+
+Quality comes from relevant evidence and judgment, not question totals. Apply `_shared/product-question-format.md`: carry current owner authorization and accepted decisions forward; compare relevant current specs, ACs, journeys/personas and actual code/dependencies; expose conflicts and resolve consequential owner choices before dependent work. Retain meaningful alternatives, risk/reversibility, measurable success and useful innovation without forcing competitor counts or decorative UX. Existing signed `decide` and release authority contracts remain controlling.
+
+Load the evidence needed for the task. The installed skill corpus is not the worker's loaded context; measure actual reads separately. Pilot applicability summaries derive from source phase contracts and preserve triggered verification. Use focused existing validator selection during iteration; unknown/global changed inputs retain full fallback and an explicitly requested unmapped surface remains a runner error. Full release validation and truthful failure attribution remain required.
+
 ## The Core Principle
 
 **Progressive narrowing eliminates non-determinism.**

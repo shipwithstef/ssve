@@ -147,8 +147,8 @@ Options that cleared all HARD gates under constraint profile <profile>:
 
 ## Protocol for SOFT constraints
 
-SOFT constraints are NOT applied here. They go to the scoring phase (12-section
-questionnaire per survivor, EV model across survivors). Keep hard and soft separate — mixing
+SOFT constraints are NOT applied here. They go to the scoring phase (evidence-backed
+comparison per survivor, EV model across survivors). Keep hard and soft separate — mixing
 them causes scoring drift.
 
 ## When to revisit gates
@@ -167,7 +167,7 @@ Target: 3-8 survivors for subsequent scoring.
 ## See also
 
 - `_shared/constraint-profiles.md` — canonical profiles that drive gate thresholds
-- `_shared/product-question-format.md` — 12-section format applied to survivors post-gate
+- `_shared/product-question-format.md` — decision evidence contract applied to survivors post-gate
 - `strategic-decision/SKILL.md` Phase 3 — the main consumer of this protocol
 - `explore-solutions/SKILL.md` Phase 3 — older implementation of the pattern, embedded in one skill
 - `validate-feature/SKILL.md` K1-K7 — binary kill-signals; conceptually the same pattern

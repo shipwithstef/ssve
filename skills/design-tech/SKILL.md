@@ -88,7 +88,7 @@ verify-promotion       → VERIFIED (PROVE: tests pass, QA complete)
 
 ## Product Questions — MANDATORY format
 
-When this skill asks any product question (architecture trade-offs, concurrency, scalability, cost), follow `_shared/product-question-format.md` — 12 sections per question. Append to `docs/specs/features/<feature>-questions.md` with `phase: design-tech`. **Gating rule:** spec cannot flip → BASELINED unless `phase: design-tech` questions are all AGREE.
+Ground architecture, concurrency, scalability and cost choices in the current spec and affected implementation dependencies. Follow `_shared/product-question-format.md` with `phase: design-tech`. Reuse accepted decisions and task authorization; ask only unresolved consequential owner choices. Record real decisions in the existing companion or canonical decision artifact. No empty companion or numeric question floor is required. Unresolved consequential decisions block dependent work. BASELINED requires the shared promotion predicate.
 
 ## Discussion Artifact Pre-Flight
 
@@ -852,7 +852,7 @@ Before declaring done, verify:
 | 1 | Feature spec status is BASELINED | grep for "BASELINED" in `docs/specs/features/<name>.md` | |
 | 2 | Technical design section exists | grep for "## Technical Design" or "## Implementation Notes" in feature spec | |
 | 3 | Feasibility matrix covers all ACs | Every AC from the spec has a row in the feasibility matrix | |
-| 4 | No unresolved questions | grep for TBD, TODO, open questions in feature spec technical design section | |
+| 4 | No blocking unresolved consequential decisions | Apply the shared promotion predicate. Inspect TBD/TODO as evidence-gap warnings: block missing required AC/state/dependency evidence or a consequential owner choice; explicitly defer harmless details without manufacturing answers | |
 | 5 | Cost Model sub-section present and filled | grep for "### Cost Model" in feature spec Technical Design; verify all rows populated (compute, storage, bandwidth, external APIs, background jobs) + scaling trigger points + first-month/year-1 projection. Zero-cost claim must have justification. | |
 | 6 | Operations & Ownership sub-section present and filled | grep for "### Operations & Ownership" in feature spec Technical Design; verify all rows populated (owner, on-call, SLA/SLO, error budget, monitoring, alerting, dashboard, runbook, failure modes, recovery, backup/restore, dependency failure impact). "Best effort" is acceptable but must be explicit. | |
 

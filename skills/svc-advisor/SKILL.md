@@ -14,13 +14,13 @@ description: >
 phases:
   - id: P1-QuestionClassification
     trigger: always
-    reads: ["user question", "calling context"]
+    reads: ["user question", "calling context", "phase triggers and evidence applicability"]
     writes: []
     evidence_kind: command_output
     required_for_completion: true
   - id: P2-KnowledgeIndexLoad
     trigger: always
-    reads: ["references/advisor/framework-knowledge-index.md", "references/knowledge/svc/CAPABILITIES.md", "references/knowledge/INDEX.md"]
+    reads: ["relevant block of references/advisor/framework-knowledge-index.md"]
     writes: []
     evidence_kind: command_output
     required_for_completion: true
@@ -29,13 +29,13 @@ phases:
     reads: ["references/advisor/framework-knowledge-index.md Verify commands"]
     writes: [".svc/svc-advisor-fact-verification.log"]
     evidence_kind: command_output
-    required_for_completion: true
+    required_for_completion: false
   - id: P3-RelevantEvidenceLoad
-    trigger: always
-    reads: ["references/knowledge/svc/details/*.md", "FRAMEWORK-STATE.md", "competitor CAPABILITIES.md files"]
+    trigger: additional-evidence-needed
+    reads: ["only detail, framework state or competitor evidence needed beyond the advisor index"]
     writes: []
     evidence_kind: command_output
-    required_for_completion: true
+    required_for_completion: false
   - id: P4-CitedAnswerComposition
     trigger: always
     reads: ["loaded knowledge evidence", "citation requirements"]
@@ -44,7 +44,7 @@ phases:
     required_for_completion: true
   - id: P5-StalenessCompetitiveContext
     trigger: always
-    reads: ["Last updated lines", "docs/specs/analyze-competitors.data.json", "references/templates/competitive-context-block.md"]
+    reads: ["dates on cited evidence", "relevant competitor data only for comparison questions"]
     writes: ["assistant response"]
     evidence_kind: command_output
     required_for_completion: true
@@ -57,8 +57,8 @@ phases:
 inputs:
   required:
     - { path: "references/advisor/framework-knowledge-index.md", artifact: advisor-index }
-    - { path: "references/knowledge/svc/CAPABILITIES.md", artifact: svc-capabilities }
   optional:
+    - { path: "references/knowledge/svc/CAPABILITIES.md", artifact: svc-capabilities }
     - { path: "references/knowledge/svc/details/*.md", artifact: svc-details }
     - { path: "references/knowledge/gstack/CAPABILITIES.md", artifact: gstack-capabilities }
     - { path: "references/knowledge/superpowers/CAPABILITIES.md", artifact: superpowers-capabilities }
@@ -94,12 +94,22 @@ Reading them first produces grounded, consistent, cross-session answers.
 
 ---
 
+## Applicability (derived from the phase contract)
+
+| Source phase | Apply when | Required work |
+|---|---|---|
+| P1-QuestionClassification, P2-KnowledgeIndexLoad | Always | Classify the question, record evidence/branch selection, read the relevant advisor index block. |
+| P2b-MechanicalFactVerification | counts-or-wiring-claims | Run the index Verify command for every asserted count/wiring fact. |
+| P3-RelevantEvidenceLoad | additional-evidence-needed | Load only evidence needed beyond the index; no automatic capability/detail sweep. |
+| P4-CitedAnswerComposition, P5-StalenessCompetitiveContext, P6-SelfVerifyContinuation | Always | Cite the answer, check freshness of cited evidence, verify grounding and close the current task. Competitor context requires relevance. |
+
+P1 records which conditional branches apply and why the evidence suffices. Optional phase metadata permits an untriggered branch to be absent; it does not excuse skipping triggered verification. Record actual conditional phase evidence only when executed. Never fabricate skipped receipts.
+
 ## Process
 
 ### Step 1: Classify the question
 
-All question types below resolve through Step 2's canonical advisor index
-first; the CAPABILITIES/detail files named here are the depth layer.
+All question types resolve through Step 2's canonical advisor index first. The depth layer below is conditional on that index being insufficient; these are navigation hints, not required reads.
 
 | Question type | What to load |
 |---|---|
@@ -126,10 +136,9 @@ fact block.
    `.svc/svc-advisor-fact-verification.log` as phase evidence.
 2. The index supersedes `svc/CAPABILITIES.md` count lines where they disagree;
    known-stale pack claims are flagged inside the index itself.
-3. Then continue with the domain detail files below for depth.
+3. If the verified index block answers the question, compose the cited answer. Load domain detail only for an unresolved evidence need.
 
-Read `references/knowledge/svc/CAPABILITIES.md` next — it's the Layer-2 detail index.
-Then read the specific detail file(s) that cover the question's domain:
+When more evidence is needed, use `references/knowledge/svc/CAPABILITIES.md` as the Layer-2 detail index, then load only the relevant detail:
 
 | Domain | Detail file |
 |---|---|
@@ -162,17 +171,13 @@ Citation format: `references/knowledge/svc/CAPABILITIES.md § Pre-Pipeline` or
 
 ### Step 4: Flag staleness
 
-Check the `Last updated` line in the CAPABILITIES.md you read. If it's more than
+Check dates only on evidence actually cited, including the used index block and any CAPABILITIES.md you read. Disclose missing dates; do not load an otherwise irrelevant file just to check its date. If it's more than
 30 days old, note it: "This analysis is from [date] — re-run `research` on svc if
 you need current state."
 
-### Step 5: Auto-surface Competitive Context (per WI-140 KNOW-01..03 + WI-142 GROUND-13)
+### Step 5: Relevant competitive context
 
-When `docs/specs/analyze-competitors.data.json` exists for this project, append a `## Competitive Context` block to the answer using the template at `references/templates/competitive-context-block.md`. **WI-142 change:** auto-surface is no longer gated on topic-match against `references/knowledge/competitive-domains.json` — domain matching is now a *priority hint* that escalates the block's prominence, not a gate that decides whether to surface at all. Domain miss → still surface the block, with a generic landscape summary; domain match → surface the matching competitor mechanics first.
-
-Source: project's `docs/specs/analyze-competitors.data.json`. If missing or stale per `validate-competitor-analysis-freshness.sh`, surface a stale-data warning rather than fabricating context (KNOW-03).
-
-Domain-match examples (drive prominence, not surfacing): query mentions "loyalty", "rewards", "POS integration", "card-link", "fraud prevention", "enrollment flow", "checkout", "verification" → priority surface with matching mechanics first.
+Include competitive context only when it helps answer the actual comparison or product-domain question. Existing project competitor data alone does not make it relevant. For a relevant comparison, use `docs/specs/analyze-competitors.data.json` and `references/templates/competitive-context-block.md` as needed; disclose missing/stale evidence instead of fabricating a landscape summary. A narrow count/wiring answer needs its source and mechanical verification, not unrelated competitors.
 
 ---
 
@@ -206,13 +211,13 @@ Never silently improvise when the knowledge is absent — that defeats the purpo
 | 1 | Answer is grounded | Confirm every material claim cites a loaded knowledge file or clearly says the stored knowledge does not cover it. | |
 | 2 | Relevant scope was loaded only | Verify advisor index plus only the detail or competitor files needed for the question were read. | |
 | 3 | Staleness was handled | Check each cited capabilities file's last-updated date AND each used index block's Derived-at date; disclose if stale. | |
-| 4 | Competitive context rule applied | If project competitor data exists, confirm the competitive-context block or stale-data warning was included. | |
+| 4 | Competitive context rule applied | If competitor context is relevant, confirm the evidence-backed block or scoped missing/stale-data disclosure; otherwise omit it. | |
 | 5 | Counts mechanically verified | Every asserted count/wiring fact was re-derived via its index Verify command with output logged to `.svc/svc-advisor-fact-verification.log`, not quoted from memory. | |
 | 6 | Citation format respected | Material claims carry `path § section` citations; no "the knowledge says so" without a path. | |
 
 ## Phase Receipt Contract
 
-After loading this skill into the lane task graph, emit receipts for each required phase before marking the task complete:
+After loading this skill into a lane task graph, emit actual receipts for required phases and any triggered conditional phases. P1 records selection; P2b/P3 below run only when their triggers apply:
 
 ```bash
 node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P1-QuestionClassification --evidence command_output:.svc/svc-advisor-question-classification.log
@@ -226,54 +231,13 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 
 ## Pipeline Continuation
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+### Task-graph mode (when authorized; source of truth: `.svc/lane-tasks-<WI>.json`)
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth.
-- Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
-  is ONLY performed when running in the parent/top-level session. Detect via:
-  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
-  check fails, skip host mirroring — file state is the durable record; the
-  orchestrator parent will re-read and re-mirror after the subagent returns.
-- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
-  graceful; it's silent drift between the subagent's intent and the host UI.
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume. In the parent Codex session, mirror only the active step in `update_plan`. These instructions apply only when a task graph is authorized; report-only and terminal-answer boundaries below remain controlling.
 
-### Chaining
+Read and update `.svc/lane-tasks-<WI>.json` first when invoked from a task graph. Complete the current task only after the cited answer and actual required phase evidence are ready. Follow `references/task-graph-chaining-protocol.md` for authorized handoffs: evaluate the next task's conditions, persist its status and load its skill before work; host UI is a parent-session mirror, and subagents do not call TaskUpdate.
 
-**Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`):**
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth.
-- Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
-  is ONLY performed when running in the parent/top-level session. Detect via:
-  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
-  check fails, skip host mirroring — file state is the durable record; the
-  orchestrator parent will re-read and re-mirror after the subagent returns.
-- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
-  graceful; it's silent drift between the subagent's intent and the host UI.
-- This skill is usually terminal evidence or answer generation. If it was invoked from a task graph, update the current task only after the cited answer is ready.
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
-
----
+This skill normally returns a terminal answer. Do not turn an answer request into automatic backlog execution. Continue only when the caller authorized further work.
 
 ## Examples of Good Answers
 

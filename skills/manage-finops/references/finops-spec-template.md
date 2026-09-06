@@ -59,8 +59,8 @@ Which tools are we paying for NOW vs. LATER?
 
 ---
 
-## 6. Financial Decision Synthesis (The 12-Section Format)
-For major decisions (e.g., "Vercel vs. Hetzner"), use the **mandatory 12-section format** from `_shared/product-question-format.md`.
+## 6. Financial Decision Synthesis (Consequential Choices)
+For major decisions (e.g., "Vercel vs. Hetzner"), use the **consequential decision evidence contract** from `_shared/product-question-format.md`.
 
 ---
 

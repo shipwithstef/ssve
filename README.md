@@ -643,7 +643,7 @@ Mode contract and detection logic: [`REPO_MODES.md`](REPO_MODES.md)
 - `test-journeys` — Journey-first QA against a live URL
 - `track-topology-diff` — Post-apply structural state-graph snapshot + diff. Phase 15 of infra-* lanes. From WI-SPINE-004. — Knowledge Spine recall gate. Reads stack-profile + caller's `requires_topics[]` and injects the minimal Spine slice across L1 world / L2 project intent / L3 learnings / L4 decisions / L5 identity. Logs every recall to `.svc/knowledge-recall.jsonl`. Phase A: advisory. Phase E: blocking for `infra-*` lanes. Anti-rediscovery foundation per proposal `2026-04-30-infra-project-support.md` § 3.
 - `track-visuals` — Capture and diff screenshots across breakpoints
-- `validate-feature` — Validate a feature idea with 8 business questions + kill signal gate
+- `validate-feature` — Validate a feature idea with relevant business evidence, consequential decisions and a kill signal
 - `verify-promotion` — Post-merge verification (spec-sync + QA + E2E)
 - `write-e2e` — Write E2E test files from journey docs
 - `write-journeys` — Generate BDD journey docs with AC traceability

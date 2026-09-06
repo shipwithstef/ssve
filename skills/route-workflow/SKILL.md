@@ -85,7 +85,7 @@ Operational detail moved out of the hot path: `references/hot-path-operational-d
 **Chain preflight:** `node scripts/svc-reconcile.mjs` runs before routing (see `references/chain-receipt-contract.md`); refuses on unaccounted commits when `.svc/chain-policy.json` is `refuse`. Build a bounded context plan before routing: start from the session contract, active WI or explicit artifact, use `.svc/spec-index.json`, work-item indexes, and manifest metadata to follow relevant dependencies, then read every artifact that can change the route. Do not bulk-read unrelated specs, and do not stop at a single obvious file when the index points to a dependent spec, validator, review, or WI. See `_shared/before-starting.md`.
 
 ## Product Questions
-For feature-class intent, tell downstream skills that product questions use `_shared/product-question-format.md` with the 12-section format and the >=20 customer + >=20 system coverage floor.
+For feature-class intent, forward current owner authorization, relevant spec/code evidence and unresolved consequential decisions. Follow `_shared/product-question-format.md` with `phase: route-workflow`. Reuse accepted decisions and task authorization; ask only unresolved consequential owner choices. Record real decisions in the existing companion or canonical decision artifact. No empty companion or numeric question floor is required. Unresolved consequential decisions block dependent work.
 
 ### Pre-Routing Typo Normalization
 Use `references/intent-normalization.md` before lane classification. Record `normalized_intent`, `normalization_applied`, and `normalization_evidence` when normalization affects routing. Route from the normalized interpretation, not the noisy surface form.

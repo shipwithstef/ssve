@@ -12,7 +12,7 @@ description: >
   brief with reproduction, root cause, expected behavior, smallest safe fix surface,
   and proof-of-fix plan.
 phases:
-  - { id: P1-Inputs, trigger: always, reads: [], writes: [], evidence_kind: command_output, required_for_completion: true }
+  - { id: P1-Inputs, trigger: always, reads: ["latest reproduction", "current expected behavior and spec/code conflicts", "affected dependencies and applicable mode"], writes: [], evidence_kind: command_output, required_for_completion: true }
   - { id: P2-Reproduction, trigger: always, reads: [], writes: [], evidence_kind: file, required_for_completion: true }
   - { id: P3-RootCause, trigger: always, reads: [], writes: [], evidence_kind: file, required_for_completion: true }
   - { id: P4-FixPlan, trigger: always, reads: [], writes: [], evidence_kind: file, required_for_completion: true }
@@ -32,7 +32,7 @@ chain:
   human_checkpoint: false
 ---
 
-> **Cognitive routing:** 🧠 [STRAT-OPUS] + 🌐 [DISC-SEARCH] — root-cause reasoning is Opus-class; pair with web_search for live dependency/issue tracker data. See `references/model-routing.md`.
+> **Cognitive routing:** Root-cause reasoning uses the configured executor. Start from local reproduction/spec/code evidence; use authorized research only for consequential unresolved external facts. Resolve routes through `references/model-routing.md`, not a hardcoded provider.
 
 # Bugfix Brief
 
@@ -45,6 +45,14 @@ This skill is influenced by systematic debugging approaches: reproduce first, is
 the fault, reason about root cause, then define the correction and verification.
 
 **Announce at start:** "I'm using the diagnose-bug skill to plan a root-cause-first fix."
+
+## Applicability (derived from P1-P5 and the mode branches)
+
+- **P1-Inputs:** Select the latest reproduction, current expected behavior, relevant spec/code conflicts and affected dependencies. Record which mode and conditional investigations apply.
+- **P2-Reproduction / P3-RootCause:** Reproduce and trace the causal path; supersede older theories when newer evidence contradicts them. Follow dependent callers/writers that can change the diagnosis.
+- **P4-FixPlan / P5-PillarRevisit:** Define the smallest complete correction and focused proof-of-fix; retain the risk/pillar and Self-Verify contracts below.
+- E2E/live-device evidence depends on the affected user/platform surface. Cross-system tracing, deployment pre-check, bisect and external research apply only when the diagnosis requires them. Existing sufficient local evidence does not require a paid provider.
+- An explicit owner request for diagnosis only or no edits controls the scope. Do not activate implementation or deploy merely because paths auto-deploy. Report-only requests do not authorize project-file mutation; when a task graph is already authorized, retain unexecuted downstream work as pending with the owner-scope limitation recorded, not falsely completed. The deployment pre-check selects the later implementation route only when implementation is authorized.
 
 ## Phase Receipt Contract
 
@@ -61,7 +69,7 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P5-
 
 ## Product Questions — MANDATORY format
 
-When the root cause of a bug requires a product decision ("fix it properly = schema migration; work around = client-side patch — which?"), frame in `_shared/product-question-format.md` with `phase: diagnose-bug`. Surface the options to user with decision synthesis before coding the fix.
+When diagnosis exposes an unresolved consequential product decision, use `_shared/product-question-format.md` with `phase: diagnose-bug`. Reuse clear owner authorization and accepted behavior; expose current spec/code conflicts and meaningful alternatives before dependent coding. Do not ask again when the accepted spec already determines the restoration. No question quota or empty companion is required.
 
 ## When To Use
 
@@ -75,7 +83,7 @@ When the root cause of a bug requires a product decision ("fix it properly = sch
 | Flag | Behavior |
 |------|----------|
 | *(none)* | Full Lane 4 — diagnosis + implementation tasks created, all pending, stop hook enforces completion |
-| `--diagnose-only` | Diagnosis + Changeset Brief only. Creates task graph with Tasks 2-3 (plan-changeset, execute-changeset) marked `manual` so stop hook doesn't block on them. Use when implementation CANNOT be performed by `execute-changeset` alone — e.g. the fix lives in a resource that requires an external deploy step (Base44 **pages** via `coding/write`, Base44 **entity schemas** via `coding/write`, Shopify app metadata, Cloudflare zone config via API). Do NOT use for resources that auto-deploy from git push alone (Base44 **backend functions**, Base44 **components**, Vercel-on-push repos, Cloudflare Workers with git integration) — those fit normal `execute-changeset`. Run the Auto-Deploy Pre-check (see Step 0 below) before setting this flag. |
+| `--diagnose-only` | Diagnosis + Changeset Brief only. Creates task graph with Tasks 2-3 (plan-changeset, execute-changeset) marked `manual` so stop hook doesn't block on them. Use when implementation CANNOT be performed by `execute-changeset` alone — e.g. the fix lives in a resource that requires an external deploy step (Base44 **pages** via `coding/write`, Base44 **entity schemas** via `coding/write`, Shopify app metadata, Cloudflare zone config via API). When the owner has authorized implementation, do NOT select this platform-handoff mode for resources that auto-deploy from git push alone (Base44 **backend functions**, Base44 **components**, Vercel-on-push repos, Cloudflare Workers with git integration) — those fit normal `execute-changeset`. Run the Auto-Deploy Pre-check (see Step 0 below) before setting this flag. |
 | `mode: e2e-test` / `--mode=e2e-test` | Diagnose a failing, flaky, or misleading E2E/Playwright test. Read the latest trace/screenshot/error first, bisect whether the failure persists, check helper-app parity, tenant/scope setup, transient assertions, and selector ambiguity before proposing app or test changes. |
 | `--retroactive` | Retroactive mode — reads committed diff instead of reproducing from broken state. Equivalent to "code is already in main." |
 | `--progressive` | Chain immediately to next skill after self-verify passes. |
@@ -230,11 +238,11 @@ hook treats `manual` as non-blocking — the user implements via their platform
 
 **Auto-Deploy Pre-check (MANDATORY before setting `--diagnose-only`):**
 
-Before setting the flag, inspect the file paths in the Changeset Brief against the project's auto-deploy matrix:
+First honor an explicit owner diagnosis-only/no-edit boundary: finish the requested report and stop before implementation; do not run this routing pre-check to override that boundary. Otherwise, when implementation is authorized, inspect target paths against the project's auto-deploy matrix:
 
 1. Read `docs/specs/router-context.md` if it exists. It should contain a "Deployment / Runtime Contract" section listing which resource categories auto-deploy from `git push` vs which require an external call.
 2. For each changed file path, classify as `auto-deploys` or `needs-external-call`.
-3. **If ALL paths auto-deploy from `git push` alone:** do NOT set `--diagnose-only`. Run the normal Lane 4. `execute-changeset` handles the implementation; `git push` IS the deploy.
+3. **If implementation is authorized and ALL paths auto-deploy from `git push` alone:** do NOT set `--diagnose-only`. Run the normal Lane 4. `execute-changeset` handles the implementation; `git push` IS the deploy.
 4. **If ANY path needs an external call:** set `--diagnose-only`. The brief routes to platform-specific implementation.
 5. **If `router-context.md` does not exist:** default conservatively to `--diagnose-only` AND file a drift WI routed to `onboard-repo` (router-context is required repo-local routing contract per `route-workflow` Session Setup).
 
@@ -892,32 +900,21 @@ Emitted at the end of the skill when `--diagnose-only` is active. Replaces the
 
 ## Pipeline Continuation
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth.
-- Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
-  is ONLY performed when running in the parent/top-level session. Detect via:
-  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
-  check fails, skip host mirroring — file state is the durable record; the
-  orchestrator parent will re-read and re-mirror after the subagent returns.
-- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
-  graceful; it's silent drift between the subagent's intent and the host UI.
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+### Task-graph mode (when authorized; source of truth: `.svc/lane-tasks-<WI>.json`)
+
+Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume. In the parent Codex session, mirror only the active step in `update_plan`. These instructions apply only when a task graph is authorized; report-only and terminal-answer boundaries below remain controlling.
+
+When a task graph is authorized, read and update `.svc/lane-tasks-<WI>.json` first. Complete the diagnosis only after the brief and actual required phase evidence are ready. Follow `references/task-graph-chaining-protocol.md` for task status, conditions, skill loading and parent-only UI mirroring; subagents do not call TaskUpdate. Preserve the explicit owner diagnosis-only/no-edit boundary and the mode-specific handoffs below.
 
 ### Self-Verify
 
-Before declaring done, verify:
+For an explicit report-only request with no project-file mutation authorized, apply the substantive reasoning checks to the report; file/task-graph persistence checks are not applicable. State that scope and leave implementation unexecuted; do not fabricate phase receipts or files. Otherwise, before declaring done, verify:
 
 | # | Check | How | PASS/FAIL |
 |---|-------|-----|-----------|
 | 1 | Bugfix brief file exists | `test -f docs/specs/bugfix/<name>-brief.md` or brief section in work item | |
 | 2 | Has reproduction steps and root cause section | grep for "Reproduce", "Root cause", "Expected behavior" in brief | |
-| 3 | No unresolved questions | grep for TBD, TODO, open questions in brief | |
+| 3 | No blocking unresolved consequential decisions | Apply the shared promotion predicate. Inspect TBD/TODO as evidence-gap warnings: block missing required AC/state/dependency evidence or a consequential owner choice; explicitly defer harmless details without manufacturing answers | |
 | 4 | Pillar Revisit Audit run | grep for "Pillar Revisit Audit" section with all 8 pillars, each marked affected/unaffected with evidence | |
 | 5 | No unresolved `affected` pillars | Every `affected` pillar must be bundled into the fix OR filed as a follow-up WI with ID | |
 | 6 | Pattern scan run and documented | grep for "Pattern Scan" section with Scope/Findings/Followups OR explicit N/A justification | |
@@ -936,15 +933,7 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ### Chaining
 
-**Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`):**
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Apply the canonical task-graph protocol above. If the owner requested diagnosis only or no edits, return the requested diagnosis and stop before implementation; the platform-routing branch below does not override that scope.
 
 **`--diagnose-only` mode (after self-verify passes):**
 1. Emit the Changeset Brief (see format above)

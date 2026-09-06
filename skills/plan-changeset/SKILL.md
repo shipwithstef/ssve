@@ -79,7 +79,7 @@ The changeset contains precise, context-rich code blueprints for every planned f
 
 ## Product Questions — MANDATORY format
 
-Product questions during simulation follow `_shared/product-question-format.md`, appended to `docs/specs/features/<feature>-questions.md` with `phase: plan-changeset`. **Gating:** manifest cannot reach SIMULATED unless the question file shows ≥40 accumulated AND all AGREE.
+During simulation, expose consequential scope, sequencing or rollback decisions using current spec and code evidence. Follow `_shared/product-question-format.md` with `phase: plan-changeset`. Reuse accepted decisions and task authorization; ask only unresolved consequential owner choices. Record real decisions in the existing companion or canonical decision artifact. No empty companion or numeric question floor is required. Unresolved consequential decisions block dependent work. SIMULATED requires the shared promotion predicate.
 
 ## Step 0 — Problem Archetype Reasoning (BEFORE reading inputs)
 
@@ -287,7 +287,7 @@ Before declaring done, verify:
 | 4 | AC-to-test mapping complete | every AC maps to a test type | |
 | 5 | Simulation report appended | Simulation Report section in manifest | |
 | 6 | No unresolved FAIL in simulation | all FAIL items fixed or acknowledged | |
-| 7 | No unresolved questions | grep for TBD, TODO | |
+| 7 | No blocking unresolved consequential decisions | Apply the shared promotion predicate. Inspect TBD/TODO as evidence-gap warnings: block missing required AC/state/dependency evidence or a consequential owner choice; explicitly defer harmless details without manufacturing answers | |
 | 8 | Type/naming consistency across tasks | Scan all tasks for function names, type names, file paths, API endpoints, DB columns. Same entity must use the same name in every task. Flag drift (e.g., Task 2 says `clearLayers()`, Task 5 says `clearFullLayers()`). | |
 | 9 | Schema-migration consistency | If any task modifies an ORM schema file (prisma/schema.prisma, drizzle/*.ts, *.entity.ts), a migration task exists in the same or later plan | |
 | 10 | Base44/backend ground truth checked | If Base44 entity/schema/RLS/persistence behavior is in scope, manifest cites `audit-base44-entity-rls.mjs`, a live schema round-trip dump, or an explicit non-Base44 N/A reason | |

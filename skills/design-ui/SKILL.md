@@ -780,9 +780,7 @@ If the file does not exist, create it before proceeding to Step 1. Follow the de
 In addition to the Markdown design system, the agent MUST generate a machine-readable `docs/specs/ui/tokens.json` following the **W3C DTCG 1.0** standard. This ensures 1:1 token parity across all hosts (Gemini, Claude, Codex).
 
 **Vibe Contract (Motion Schema):**
-The agent must generate a `docs/specs/ui/vibe-contract.json` that defines the technical **Motion Schema** for the "Signature Hook" selected in `design-ux`.
-- Include: `easing_curve`, `visual_grit`, `interaction_physics`.
-- This contract is the definitive source of truth for high-fidelity implementation.
+Read the Signature Hook disposition from `design-ux`. For `existing-pattern-retained`, carry the existing motion/accessibility tokens and verify the affected states; do not invent new decorative physics or require a new motion schema. For a selected new interaction, generate `docs/specs/ui/vibe-contract.json` with its applicable motion parameters (including easing and interaction behavior), reduced-motion/accessibility behavior and performance checks. Keep the technical contract tied to the approved interaction and current design tokens.
 
 ### Step 0c: UX→UI Traceability Table
 
@@ -1354,7 +1352,7 @@ Before declaring done, verify:
 | 2 | Design system file exists | `test -f docs/specs/design-system.md` | |
 | 3 | Component specs reference design tokens (not ad-hoc values) | grep for hardcoded hex/px values in UI design file; should find only token references | |
 | 4 | Skip justified if applicable | If the feature has no visual surface (pure API/backend/background job): skip reason is logged in lane-tasks JSON and `pipeline-decisions.jsonl` with explicit justification referencing the no-visual-surface evidence; otherwise UI design file is substantive | |
-| 5 | No unresolved questions | grep for TBD, TODO, open questions in output file | |
+| 5 | No blocking unresolved consequential decisions | Apply the shared promotion predicate. Inspect TBD/TODO as evidence-gap warnings: block missing required AC/state/dependency evidence or a consequential owner choice; explicitly defer harmless details without manufacturing answers | |
 
 If any check FAILs, fix before continuing. If a fix requires upstream changes, stop and report.
 

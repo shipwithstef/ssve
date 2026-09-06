@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "evaluation": "offline native Sol High baseline, fixture-supplied facts; not release review",
+  "baseline_skill_commit": "6d4d8b07041e4afe8859820dbc0aac5f83f21f38",
+  "scenarios": [
+    {
+      "id": "A",
+      "prompt": "Fully authorized keyboard-accessible category filter on saved items. Client-side at most 100 local items, reuse tokens, URL-local persistence. Existing all/empty/loading/error patterns. Spec AC1 All default; AC2 match category; AC3 clear restores all; AC4 Tab/Enter/label. Current code has searchable list, category data and query helper. No backend/account/payment work or unresolved choice. State required action, owner questions, conflicts, UX states, accessibility and AC assessment.",
+      "baseline": {
+        "questions": 0,
+        "states": [
+          "loading",
+          "populated-all",
+          "populated-filtered",
+          "empty-collection",
+          "empty-results-clear",
+          "error"
+        ],
+        "accessibility": [
+          "label",
+          "Tab",
+          "Enter",
+          "predictable-focus",
+          "announce-result-change"
+        ],
+        "promotion_floor": "40 accumulated questions in shared contract; existing companion count unknown"
+      },
+      "invariants": [
+        "zero redundant owner questions",
+        "no numeric promotion floor",
+        "preserve baseline AC/UX/accessibility"
+      ],
+      "prompt_sha256": "694a1b06088057388d7f5ceafa2fc163a4f9ded2dbbee8a17e07b38c2bb59e1b"
+    },
+    {
+      "id": "B",
+      "prompt": "Same saved-items filter and AC1-4 as A, but founder requests cross-device persistence while accepted spec forbids account storage and current code has no preference store. State required action, owner decisions, conflicts and UX/AC consequences.",
+      "baseline": {
+        "questions": 1,
+        "conflicts": [
+          "owner request vs no account storage",
+          "cross-device vs URL-local",
+          "no preference store",
+          "All default vs restoration"
+        ],
+        "states": [
+          "hydration",
+          "no-preference",
+          "restored",
+          "empty-restored",
+          "invalid-category",
+          "signed-out",
+          "sync-error",
+          "offline",
+          "concurrent-conflict"
+        ]
+      },
+      "invariants": [
+        "surface consequential conflict and block dependent implementation",
+        "do not assume irreversible scope",
+        "preserve AC/UX/accessibility reasoning"
+      ],
+      "prompt_sha256": "d04aa84d22096699b487cf37348155f87b9c40f19fbf1534e6db5f33776f884a"
+    },
+    {
+      "id": "C",
+      "prompt": "How many first-party skills and what route mode? Authoritative supplied advisor index block: skills 104, invocation suggest-only, Verify node scripts/skill-router.mjs validate. Supplied command result identical. No competitor question. State additional required loads, phases and cited answer.",
+      "baseline": {
+        "additional_contract_loads": [
+          "references/knowledge/svc/CAPABILITIES.md",
+          "references/knowledge/svc/details/skills.md",
+          "references/knowledge/INDEX.md"
+        ],
+        "answer": "104; suggest-only; cites canonical index and mechanical verification"
+      },
+      "invariants": [
+        "source citation and mechanical verification retained",
+        "no irrelevant required detail/competitor loads",
+        "unknown evidence stays unknown"
+      ],
+      "prompt_sha256": "c9fd6836baaf48eff45b141c33ad36d02e449b29aee1cc28af2f78426004e002"
+    },
+    {
+      "id": "D",
+      "prompt": "Diagnose-only requested, no code edits. Old bug report said timeout; latest failing repro proves duplicate native presentation while first OS promise remains pending. Accepted spec requires one foreground permission sheet. Current code releases guard ownership on JS timeout; dependent camera also calls same guard. State latest root cause, affected path, required reasoning/artifacts, conditional work and next action.",
+      "baseline": {
+        "root_cause": "ownership ends on JS timeout rather than native promise settlement",
+        "affected_path": [
+          "permission",
+          "shared guard",
+          "timeout cleanup",
+          "pending native promise",
+          "camera caller",
+          "guard re-entry",
+          "duplicate presentation"
+        ],
+        "questions": 0,
+        "limitation": "auto-deploy precheck can override explicit diagnose-only request"
+      },
+      "invariants": [
+        "latest repro supersedes stale timeout theory",
+        "trace shared guard and dependent caller",
+        "no redundant product question",
+        "no implementation under diagnose-only request",
+        "keep risk/proof-of-fix reasoning"
+      ],
+      "prompt_sha256": "234062e7f43516fe3ae1a69bfbe2083da7e3a6a5cc3b5daca1dd5b285ac165a1"
+    }
+  ],
+  "baseline_actual_skill_bytes": {
+    "_shared/product-question-format.md": 8675,
+    "skills/validate-feature/SKILL.md": 68977,
+    "skills/design-ux/SKILL.md": 32265,
+    "skills/svc-advisor/SKILL.md": 19051,
+    "skills/diagnose-bug/SKILL.md": 62155
+  },
+  "limitations": [
+    "Baseline read only named skill files; supplied code/spec facts authoritative within fixture; no real product inspection.",
+    "Prompt text freezes the same scenario facts and output requirements for candidate replay; concise baseline observations transcribed from actual native reviewer output.",
+    "File bytes are not tokens or complete worker context."
+  ]
+}
