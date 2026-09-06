@@ -45,6 +45,10 @@ fi
 
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
+# Compare invocation effects, independent of existing changes in this candidate.
+for w in wire-kimi-hooks.mjs wire-hooks.mjs wire-cursor-hooks.mjs wire-codex-hooks.mjs wire-gemini-hooks.mjs; do
+  cp "$REPO_ROOT/scripts/$w" "$TMP/before-$w" || exit 1
+done
 SKILLS="$TMP/skills"
 mkdir -p "$SKILLS/hooks"
 CONFIG="$TMP/config.toml"
@@ -293,8 +297,8 @@ fi
 # Other host wirers must not be part of this change.
 OTHER_DIRTY=0
 for w in wire-kimi-hooks.mjs wire-hooks.mjs wire-cursor-hooks.mjs wire-codex-hooks.mjs wire-gemini-hooks.mjs; do
-  if git -C "$REPO_ROOT" diff --name-only -- "scripts/$w" | grep -q .; then
-    fail "out-of-scope wirer dirty: $w"
+  if ! cmp -s "$TMP/before-$w" "$REPO_ROOT/scripts/$w"; then
+    fail "Grok fixture changed another host wirer: $w"
     OTHER_DIRTY=1
   fi
 done

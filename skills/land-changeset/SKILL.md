@@ -127,7 +127,7 @@ Source: gstack ship/SKILL.md Step 3.45 (plan completion audit), MIT, Copyright 2
 
 **1c. Confirm checkpoint history** — all task checkpoints exist, ordering is sensible, no unfinished tasks.
 
-**1d. Run final validation commands** — execute the manifest's validation commands one last time. All must pass.
+**1d. Verify final validation evidence** — every manifest validation command must have passing evidence for the current candidate. Apply the input-bound reuse criteria below; rerun commands whose evidence is missing or invalidated.
 
 If any check fails, fix in the worktree before proceeding.
 
@@ -268,7 +268,17 @@ Example: `1.3.2.7` with PATCH bump becomes `1.3.3.0`.
 
 **2c. Test audit** with coverage diagram:
 
-Run the full test suite one final time. Report: total tests, passing, failing, new tests added.
+Require the full test suite at this release boundary. Use focused mapped checks during iteration. At the release boundary, require a
+complete passing validation run for the candidate. Reuse that result only when
+its recorded source/input hashes, validator set, command options, runtime and
+relevant environment still match; elapsed time or an earlier green message is
+not evidence. A changed input, actual failure, or gate requiring fresh external
+state invalidates the affected result. Missing provenance requires a new run.
+Keep post-commit relevant checks and actual post-promotion/install verification.
+Unknown/global and unmapped-surface test selection retain their full-coverage
+semantics. Never treat provider unavailability or skipped tests as passing.
+
+Report total tests, passing, failing, new tests added, and whether matching evidence was reused or a new run was required.
 If any tests fail: STOP — fix in worktree before proceeding.
 
 Then produce a code path coverage diagram for every changed source file:

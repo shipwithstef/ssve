@@ -7,6 +7,9 @@
 
 set -u
 
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/fixture-home.sh"
+svc_require_fixture "$@"
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 cd "$REPO_ROOT" || exit 1
@@ -46,14 +49,14 @@ env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE \
   node "$WIRER" --skills-path "$REPO_ROOT" --settings "$S1" > "$TMP/run1.log" 2>&1
 check "wire run 1 exits 0" test "$?" = "0"
 
-# WI-FW-HOOKS-SAFETY-01: fixture canonical Bash|Edit|Write loop-guard survives
-# dedup AND the registry adds the Agent-only coverage entry -> exactly 2.
-check "loop-guard collapsed to canonical + Agent coverage" test "$(q PreToolUse "sum('svc-loop-guard.mjs' in h.get('command','') for _,h in cmds)")" = "2"
+# Legacy mutation coverage moves into the single decision engine; Agent
+# coverage remains separately wired.
+check "loop-guard retains only Agent coverage" test "$(q PreToolUse "sum('svc-loop-guard.mjs' in h.get('command','') for _,h in cmds)")" = "1"
 check "surviving loop-guard is canonical (no payload token)" test "$(q PreToolUse "sum('svc-loop-guard.mjs' in h.get('command','') and 'TOOL_INPUT' in h.get('command','') for _,h in cmds)")" = "0"
-# Fixture-preserved trio: this validator proves the wirer PRESERVES existing
-# user settings; registry-level consolidation is asserted by the engine checks.
-check "workflow-guard trio preserved from fixture (3 entries)" test "$(q PreToolUse "sum('svc-workflow-guard.mjs' in h.get('command','') for _,h in cmds)")" = "3"
-check "trio flag sets intact (plain+phase-boundary+bash-guard)" test "$(q PreToolUse "sum('svc-workflow-guard.mjs' in h.get('command','') and '--phase-boundary' in h.get('command','') for _,h in cmds) + sum('svc-workflow-guard.mjs' in h.get('command','') and '--bash-guard' in h.get('command','') for _,h in cmds)")" = "2"
+# The fixture trio is framework-owned. User commands below must survive
+# unchanged while these obsolete direct mutation guards are removed.
+check "legacy workflow-guard trio removed" test "$(q PreToolUse "sum('svc-workflow-guard.mjs' in h.get('command','') for _,h in cmds)")" = "0"
+check "no separate legacy phase or bash guards" test "$(q PreToolUse "sum('svc-workflow-guard.mjs' in h.get('command','') and '--phase-boundary' in h.get('command','') for _,h in cmds) + sum('svc-workflow-guard.mjs' in h.get('command','') and '--bash-guard' in h.get('command','') for _,h in cmds)")" = "0"
 check "single deny-capable decision engine wired" test "$(q PreToolUse "sum('svc-codex-pretool-dispatcher.mjs' in h.get('command','') for _,h in cmds)")" = "1"
 check "loop-guard Agent coverage retained" test "$(q PreToolUse "sum(('Agent' in str(r).split('|')) and ('svc-loop-guard.mjs' in h.get('command','')) for r,h in cmds) >= 1")" = "1"
 check "post-tool heartbeat wired once" test "$(q PostToolUse "sum('svc-codex-posttool-heartbeat.mjs' in h.get('command','') for _,h in cmds)")" = "1"

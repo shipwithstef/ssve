@@ -2,7 +2,7 @@
   "schema_version": 1,
   "wi": "WI-FW-HOOKS-SAFETY-01",
   "lane": "framework",
-  "status": "completed",
+  "status": "blocked",
   "created": "2026-08-25T00:00:00.000Z",
   "tasks": [
     {
@@ -332,13 +332,12 @@
     },
     {
       "id": 6,
-      "status": "completed",
+      "status": "blocked",
       "skill": "verify-promotion",
       "subject": "verify promoted source and installed hooks",
       "blocked_by": [
         5
       ],
-      "completed_at": "2026-08-26T09:40:00.000Z",
       "skill_receipt": {
         "skill": "verify-promotion",
         "loaded_at": "2026-08-26T09:30:00.000Z",
@@ -366,7 +365,21 @@
           }
         ]
       },
-      "receipt": "promoted source main@c92f91b: 8/8 focused validators PASS; ./setup --all-hosts converged (kimi CLI verify env-gap only); drift zero across 9 hosts"
+      "receipt": "promoted source main@c92f91b: 8/8 focused validators PASS; ./setup --all-hosts converged (kimi CLI verify env-gap only); drift zero across 9 hosts",
+      "metadata": {
+        "historical_completion": {
+          "status": "completed",
+          "completed_at": "2026-08-26T09:40:00.000Z",
+          "original_graph_sha256": "2c23d725cc3c859be0617deefed63f2cc34e98e2e2541cd7a04387a5f095d967",
+          "task_id": 6
+        }
+      },
+      "blocked_reason": "Historical completion is unverified: required skill phase evidence was not located in the named artifacts or repository note census. Original graph bytes and reported historical work are preserved; no rerun or unmerge is claimed."
     }
-  ]
+  ],
+  "historical_reconciliation": {
+    "wi": "WI-FW-CLEAN-MAIN-FOLLOWUP-01",
+    "original_graph_sha256": "2c23d725cc3c859be0617deefed63f2cc34e98e2e2541cd7a04387a5f095d967",
+    "reason": "Withdraw unsupported skill completion only; retain historical code and receipts."
+  }
 }

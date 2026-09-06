@@ -1,5 +1,8 @@
 # Framework improvement: Codex ad-hoc dispatch must not lose SVC_HOST (WI-IOS pipeline kill)
 
+backlog_wi: WI-FW-CLEAN-MAIN-FOLLOWUP-01
+reason: Current follow-up owns evidence and metadata reconciliation. Historical claims below are retained, not recertified; no missing historical WI or execution evidence is fabricated.
+
 **Status:** DRAFT → DISPATCH ox
 **Date:** 2026-08-26
 **Source:** codex_WI-IOS-AZURE-PIPELINE-SETUP-01_finish_20260826.log

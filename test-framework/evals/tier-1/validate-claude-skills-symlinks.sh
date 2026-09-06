@@ -10,6 +10,10 @@
 
 set -u
 
+# Keep standalone invocation isolated from active host/session state.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/fixture-home.sh"
+svc_require_fixture "$@"
+
 SKILLS_DIR="$HOME/.claude/skills"
 
 PASS=0

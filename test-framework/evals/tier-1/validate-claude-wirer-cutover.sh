@@ -5,6 +5,10 @@
 # variant convergence in one run, and no isAlreadyWired remnant.
 set -u
 
+# Keep standalone invocation isolated from active host/session state.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/fixture-home.sh"
+svc_require_fixture "$@"
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 cd "$REPO_ROOT" || exit 1
@@ -12,6 +16,12 @@ cd "$REPO_ROOT" || exit 1
 WIRER="scripts/wire-hooks.mjs"
 TMP="$(mktemp -d /tmp/wi-e3-cutover.XXXXXX)"
 trap 'rm -rf "$TMP"' EXIT
+
+# Seed only the copied launcher surface that the wirer inspects. These tests
+# inspect generated commands; launcher execution is covered by enforcement tests.
+mkdir -p "$HOME/.svc/enforcement/1/bin"
+cp "$REPO_ROOT/bin/svc-enforce.mjs" "$HOME/.svc/enforcement/1/bin/svc-enforce"
+chmod 700 "$HOME/.svc/enforcement/1/bin/svc-enforce"
 
 PASS=0
 FAIL=0
@@ -117,6 +127,14 @@ settings = {
     ],
   }
 }
+settings["hooks"]["PreToolUse"].append({
+    "matcher": "Edit", "timeout": 17,
+    "hooks": [
+        {"type": "command", "command": f"node {hooks_dir}/svc-workflow-guard.mjs"},
+        {"type": "command", "command": "echo mixed-user", "timeout": 23},
+        {"type": "command", "command": f"echo '{root}/scripts/preflight.mjs'"},
+    ],
+})
 json.dump(settings, open(path, "w"), indent=2)
 open(path, "a").write("\n")
 PY
@@ -126,15 +144,29 @@ env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE \
   node "$WIRER" --skills-path "$REPO_ROOT" --settings "$S1" >"$TMP/run1.log" 2>&1
 check "legacy seed run exits 0" test "$?" = "0"
 check "legacy .js workflow-guard gone" test "$(q "$S1" PreToolUse "sum('svc-workflow-guard.js' in h.get('command','') for _,h in cmds)")" = "0"
-check "canonical .mjs workflow-guard present" test "$(q "$S1" PreToolUse "sum('svc-workflow-guard.mjs' in h.get('command','') and '--phase-boundary' not in h.get('command','') and '--bash-guard' not in h.get('command','') for _,h in cmds)")" = "1"
+check "one consolidated Claude pretool dispatcher" test "$(q "$S1" PreToolUse "sum('SVC_HOST=claude' in h.get('command','') and 'svc-codex-pretool-dispatcher.mjs' in h.get('command','') for _,h in cmds)")" = "1"
 check "argv payload token stripped from managed hooks" test "$(q "$S1" PreToolUse "sum('TOOL_INPUT' in h.get('command','') for _,h in cmds)")" = "0"
 check "vibe-auditor async adopted via rebuild" test "$(q "$S1" PostToolUse "sum('svc-vibe-auditor' in h.get('command','') and h.get('async') is True for _,h in cmds)")" = "1"
 check "loop-guard single canonical" test "$(q "$S1" PreToolUse "sum('svc-loop-guard.mjs' in h.get('command','') for _,h in cmds)")" = "1"
+
+check "no separately wired legacy mutation guards" test "$(q "$S1" PreToolUse "sum('svc-workflow-guard.mjs' in h.get('command','') for _,h in cmds)")" = "0"
+check "loop guard retains only Agent coverage" test "$(q "$S1" PreToolUse "sum(m == 'Agent' and 'svc-loop-guard.mjs' in h.get('command','') for m,h in cmds)")" = "1"
+check "Stop completion uses durable launcher" test "$(q "$S1" Stop "sum('svc-enforce svc-task-completion-guard' in h.get('command','') for _,h in cmds)")" = "1"
 
 # --- (b) foreign preservation ---
 check "foreign eslint preserved" test "$(q "$S1" PreToolUse "sum(h.get('command','')=='eslint --fix .' for _,h in cmds)")" = "1"
 check "foreign notify embedded-token preserved" test "$(q "$S1" Stop "sum('--payload=\$TOOL_INPUT' in h.get('command','') for _,h in cmds)")" = "1"
 check "foreign hooks/kimi path survives kimi safety-net (Cursor R2 F-003)" test "$(q "$S1" Stop "sum('hooks/kimi/' in h.get('command','') for _,h in cmds)")" = "1"
+
+check "mixed entry preserves foreign hook and metadata" python3 - "$S1" <<'PYMIX'
+import json,sys
+entries=json.load(open(sys.argv[1]))["hooks"]["PreToolUse"]
+e=next(e for e in entries if any(h.get("command")=="echo mixed-user" for h in e.get("hooks",[])))
+assert e["timeout"]==17
+assert next(h for h in e["hooks"] if h.get("command")=="echo mixed-user")["timeout"]==23
+assert len(e["hooks"])==2
+assert any(h.get("command","").startswith("echo '") for h in e["hooks"])
+PYMIX
 
 # --- (a) double-run byte-stability ---
 cp "$S1" "$TMP/snap1.json"
@@ -152,7 +184,21 @@ env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE \
 check "DISABLED run exits 0" test "$?" = "0"
 check "DISABLED omits loop-guard" test "$(q "$S_DIS" PreToolUse "sum('svc-loop-guard' in h.get('command','') for _,h in cmds)")" = "0"
 check "DISABLED omits vibe-auditor" test "$(q "$S_DIS" PostToolUse "sum('svc-vibe-auditor' in h.get('command','') for _,h in cmds)")" = "0"
-check "DISABLED still wires bash-guard" test "$(q "$S_DIS" PreToolUse "sum('--bash-guard' in h.get('command','') for _,h in cmds)")" = "1"
+check "DISABLED retains consolidated authority dispatcher" test "$(q "$S_DIS" PreToolUse "sum('svc-codex-pretool-dispatcher.mjs' in h.get('command','') for _,h in cmds)")" = "1"
+
+# A subtraction-only rebuild must persist even when no replacement is enabled.
+S_NONE="$TMP/all-disabled.json"
+cp "$S1" "$S_NONE"
+ALL_DISABLED=$(python3 - "$WIRER" <<'PYIDS'
+import re,sys
+print(",".join(sorted(set(re.findall(r'DISABLED\.has\("([^"]+)"\)',open(sys.argv[1]).read())))))
+PYIDS
+)
+SVC_DISABLED_HOOKS="$ALL_DISABLED" node "$WIRER" --skills-path "$REPO_ROOT" --settings "$S_NONE" >"$TMP/none.log" 2>&1
+check "all-disabled rebuild exits zero" test "$?" = "0"
+check "all-disabled removes managed guards" test "$(q "$S_NONE" PreToolUse "sum('svc-' in h.get('command','') or h.get('command','').startswith('node ') for _,h in cmds)")" = "0"
+check "all-disabled preserves foreign command" test "$(q "$S_NONE" PreToolUse "sum(h.get('command','') == 'eslint --fix .' for _,h in cmds)")" = "1"
+check "all-disabled removes managed Stop hook" test "$(q "$S_NONE" Stop "sum('svc-enforce' in h.get('command','') for _,h in cmds)")" = "0"
 
 # --- (d) PROFILE=minimal omits full-only ids ---
 S_MIN="$TMP/minimal-settings.json"
@@ -163,7 +209,7 @@ env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE \
 check "minimal profile run exits 0" test "$?" = "0"
 check "minimal omits workflow-guard plain" test "$(q "$S_MIN" PreToolUse "sum('svc-workflow-guard.mjs' in h.get('command','') and '--phase-boundary' not in h.get('command','') and '--bash-guard' not in h.get('command','') for _,h in cmds)")" = "0"
 check "minimal omits phase-boundary" test "$(q "$S_MIN" PreToolUse "sum('--phase-boundary' in h.get('command','') for _,h in cmds)")" = "0"
-check "minimal keeps bash-guard" test "$(q "$S_MIN" PreToolUse "sum('--bash-guard' in h.get('command','') for _,h in cmds)")" = "1"
+check "minimal keeps consolidated authority dispatcher" test "$(q "$S_MIN" PreToolUse "sum('svc-codex-pretool-dispatcher.mjs' in h.get('command','') for _,h in cmds)")" = "1"
 check "minimal omits stop-quality" test "$(q "$S_MIN" Stop "sum('svc-stop-quality.js' in h.get('command','') and '--check' in h.get('command','') for _,h in cmds)")" = "0"
 check "minimal omits vibe-auditor" test "$(q "$S_MIN" PostToolUse "sum('svc-vibe-auditor' in h.get('command','') for _,h in cmds)")" = "0"
 
@@ -213,7 +259,7 @@ env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE \
   node "$WIRER" --skills-path "$REPO_ROOT" --list-all >"$TMP/list-all.json" 2>&1
 check "list-all exits 0" test "$?" = "0"
 check "list-all emits hooks JSON" bash -c "grep -q '\"hooks\"' '$TMP/list-all.json'"
-check "list-all bash-guard command string" bash -c "grep -q 'svc-workflow-guard.mjs --bash-guard' '$TMP/list-all.json'"
+check "list-all consolidated dispatcher command" bash -c "grep -q 'svc-codex-pretool-dispatcher.mjs' '$TMP/list-all.json'"
 
 echo ""
 if [ "$FAIL" = 0 ]; then

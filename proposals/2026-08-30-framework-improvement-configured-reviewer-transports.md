@@ -1,5 +1,8 @@
 # Framework improvement: canonical transports for configured reviewers
 
+backlog_wi: WI-565
+reason: Existing transport work remains owned by WI-565; current exact-route review evidence is required before completion.
+
 **Status:** accepted — WI-565 executing
 **Date:** 2026-08-30
 **Category:** reviewer topology / host integration

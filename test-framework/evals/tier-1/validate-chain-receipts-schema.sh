@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Tier-1: every receipt validates against its JSON schema at schemas/receipts/.
+# Tier-1: receipt JSON and type-to-schema inventory integrity.
+# Full schema/chain semantics remain the canonical check-chain-receipts gate.
 # Promotion note: chain validation reads these schemas on every commit/push;
 # drift breaks the entire chain.
 
@@ -45,6 +46,21 @@ for (const dir of fs.readdirSync(RECEIPTS_DIR)) {
     const r = path.join(sub, file);
     try {
       const data = JSON.parse(fs.readFileSync(r, "utf8"));
+      // The canonical chain reader reserves envelope digests as integrity
+      // metadata, never a receipt slot (check-chain-receipts.mjs).
+      if (file === "digests.json") {
+        if (!data || typeof data !== "object" || Array.isArray(data) ||
+            Object.entries(data).some(([identity, digest]) => {
+              const [type, wi] = identity.split("::");
+              return !wi || !/^[a-z][a-z0-9-]*$/.test(type) ||
+                !fs.existsSync(path.join(SCHEMA_DIR, `${type}.schema.json`)) ||
+                typeof digest !== "string" || !/^(sha256:)?[a-f0-9]{64}$/.test(digest);
+            })) {
+          console.error(`FAIL: integrity index ${r} has invalid digest entries`);
+          fail = 1;
+        }
+        continue;
+      }
       const type = data.receipt_type;
       if (!type) {
         console.error(`FAIL: receipt ${r} has no receipt_type`);

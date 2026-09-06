@@ -2,7 +2,7 @@
   "wi": "WI-567",
   "lane": "bugfix",
   "created": "2026-09-05T12:26:29.847Z",
-  "status": "completed",
+  "status": "blocked",
   "delivery_graph": {
     "compiler_version": 1,
     "user_intent": "Correct negation-blind active-intent stop detection while preserving affirmative stop and WI isolation semantics",
@@ -425,73 +425,121 @@
     {
       "id": 4,
       "subject": "execute-changeset: delivery graph required step",
-      "status": "completed",
+      "status": "blocked",
       "blocked_by": [
         3
       ],
       "metadata": {
-        "skill": "execute-changeset"
+        "skill": "execute-changeset",
+        "historical_completion": {
+          "status": "completed",
+          "completed_at": null,
+          "original_graph_sha256": "359e9b0f1bdc23e0b9fc51df12ee1261c75b255b9c847b3f3febc422532752e0",
+          "task_id": 4
+        }
       },
       "skill_receipt": {
         "skill": "execute-changeset",
         "loaded_at": "2026-09-05T12:34:24.935Z",
         "loaded_via": "direct_skill_file"
-      }
+      },
+      "blocked_reason": "Historical completion is unverified: required skill phase evidence was not located in the named artifacts or repository note census. Original graph bytes and reported historical work are preserved; no rerun or unmerge is claimed."
     },
     {
       "id": 5,
       "subject": "review-gate: delivery graph required step",
-      "status": "completed",
+      "status": "blocked",
       "blocked_by": [
         4
       ],
       "metadata": {
-        "skill": "review-gate"
+        "skill": "review-gate",
+        "historical_completion": {
+          "status": "completed",
+          "completed_at": null,
+          "original_graph_sha256": "6422f0ede1c868461ba66f87d03c426d08d3bb06906672311d52353af3cd1a49",
+          "task_id": 5
+        },
+        "blocked_reason": "Historical gate completion is not substantiated by valid skill/phase evidence, or depends on such a gate. Original record is archived; this repair makes no new execution or approval claim."
       }
     },
     {
       "id": 6,
       "subject": "review-exec: delivery graph required step",
-      "status": "completed",
+      "status": "blocked",
       "blocked_by": [
         5
       ],
       "metadata": {
-        "skill": "review-exec"
+        "skill": "review-exec",
+        "historical_completion": {
+          "status": "completed",
+          "completed_at": null,
+          "original_graph_sha256": "6422f0ede1c868461ba66f87d03c426d08d3bb06906672311d52353af3cd1a49",
+          "task_id": 6
+        },
+        "blocked_reason": "Historical gate completion is not substantiated by valid skill/phase evidence, or depends on such a gate. Original record is archived; this repair makes no new execution or approval claim."
       }
     },
     {
       "id": 7,
       "subject": "audit-implementation: delivery graph required step",
-      "status": "completed",
+      "status": "blocked",
       "blocked_by": [
         6
       ],
       "metadata": {
-        "skill": "audit-implementation"
+        "skill": "audit-implementation",
+        "historical_completion": {
+          "status": "completed",
+          "completed_at": null,
+          "original_graph_sha256": "6422f0ede1c868461ba66f87d03c426d08d3bb06906672311d52353af3cd1a49",
+          "task_id": 7
+        },
+        "blocked_reason": "Historical gate completion is not substantiated by valid skill/phase evidence, or depends on such a gate. Original record is archived; this repair makes no new execution or approval claim."
       }
     },
     {
       "id": 8,
       "subject": "land-changeset: delivery graph required step",
-      "status": "completed",
+      "status": "blocked",
       "blocked_by": [
         7
       ],
       "metadata": {
-        "skill": "land-changeset"
+        "skill": "land-changeset",
+        "historical_completion": {
+          "status": "completed",
+          "completed_at": null,
+          "original_graph_sha256": "6422f0ede1c868461ba66f87d03c426d08d3bb06906672311d52353af3cd1a49",
+          "task_id": 8
+        },
+        "blocked_reason": "Historical gate completion is not substantiated by valid skill/phase evidence, or depends on such a gate. Original record is archived; this repair makes no new execution or approval claim."
       }
     },
     {
       "id": 9,
       "subject": "verify-promotion: delivery graph required step",
-      "status": "completed",
+      "status": "blocked",
       "blocked_by": [
         8
       ],
       "metadata": {
-        "skill": "verify-promotion"
+        "skill": "verify-promotion",
+        "historical_completion": {
+          "status": "completed",
+          "completed_at": null,
+          "original_graph_sha256": "6422f0ede1c868461ba66f87d03c426d08d3bb06906672311d52353af3cd1a49",
+          "task_id": 9
+        },
+        "blocked_reason": "Historical gate completion is not substantiated by valid skill/phase evidence, or depends on such a gate. Original record is archived; this repair makes no new execution or approval claim."
       }
     }
-  ]
+  ],
+  "updated_at": "2026-09-06T18:27:43.318Z",
+  "historical_reconciliation": {
+    "wi": "WI-FW-CLEAN-MAIN-FOLLOWUP-01",
+    "original_graph_sha256": "359e9b0f1bdc23e0b9fc51df12ee1261c75b255b9c847b3f3febc422532752e0",
+    "reason": "Withdraw unsupported skill completion only; retain historical code and receipts."
+  }
 }

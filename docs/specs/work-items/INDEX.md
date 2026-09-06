@@ -1,5 +1,11 @@
 # Work Items Index
 
+- [WI-FW-CLEAN-MAIN-FOLLOWUP-01](WI-FW-CLEAN-MAIN-FOLLOWUP-01.md) — Current recovery, UX integration and clean-main installation — status:in_progress
+- [WI-FW-DELIVERY-EVIDENCE-RESIDUALS-01](WI-FW-DELIVERY-EVIDENCE-RESIDUALS-01.md) — Source-specific routing and delivery evidence residual audit — status:backlog
+- [WI-FW-DESIGN-INTEGRATIONS-RESIDUALS-01](WI-FW-DESIGN-INTEGRATIONS-RESIDUALS-01.md) — Optional design integration F1–F8 reassessment — status:backlog
+- [WI-FW-CONTROLLER-CUTOVER-RESIDUALS-01](WI-FW-CONTROLLER-CUTOVER-RESIDUALS-01.md) — Controller provenance, canary and default-cutover evidence — status:backlog
+- [WI-FW-CAPABILITY-MCP-STARTUP-RESIDUALS-01](WI-FW-CAPABILITY-MCP-STARTUP-RESIDUALS-01.md) — Task-scoped MCP capability startup AC01–08 — status:backlog
+
 - [WI-566](WI-566.md) — Hash-bound bounded-exit adjudication makes WI-491 three-round disposition receiptable without altering reviewer evidence or permitting Critical/fourth-round bypass (severity:high) — status:implementation-complete; review pending
 - [WI-567](WI-567.md) — Active-intent stop detection respects negation while preserving affirmative stop and WI isolation semantics (severity:critical) — status:VERIFIED (promoted `59d1280`; focused runtime replay + all-host zero drift)
 - [WI-568](WI-568.md) — Kimi preflight pause detection must respect negation context (severity:medium) — status:identified (follow-up to WI-567)

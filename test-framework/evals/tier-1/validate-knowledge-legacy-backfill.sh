@@ -3,6 +3,10 @@
 # due date, and retirement rule.
 set -euo pipefail
 
+# Keep standalone invocation isolated from active host/session state.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/fixture-home.sh"
+svc_require_fixture "$@"
+
 REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 QUEUE="$REPO_ROOT/references/knowledge/domains/legacy-backfill-queue.json"
 PROVENANCE="$REPO_ROOT/test-framework/evals/tier-1/validate-knowledge-domain-provenance.sh"
@@ -22,7 +26,12 @@ else
   fail "legacy backfill queue is invalid JSON"
 fi
 
-warn_domains="$($PROVENANCE | sed -n 's/^  WARN: \([^ ]*\) .*/\1/p' | sort)"
+provenance_output="$($PROVENANCE 2>&1)" && provenance_rc=0 || provenance_rc=$?
+if [[ "$provenance_rc" -ne 0 ]]; then
+  fail "provenance validation failed (exit $provenance_rc)"
+  printf '%s\n' "$provenance_output"
+fi
+warn_domains="$(printf '%s\n' "$provenance_output" | sed -n 's/^  WARN: \([^ ]*\) .*/\1/p' | sort)"
 queue_domains="$(node -e '
 const q = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
 for (const item of q.domains || []) {

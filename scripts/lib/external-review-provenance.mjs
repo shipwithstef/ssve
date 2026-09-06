@@ -79,6 +79,21 @@ function receiptClassification(receipt){
   const wi=String(receipt?.phase_guard?.wi||"").trim()||null;
   return {review_kind:receipt?.review_kind||null,wi,review_cycle_id:wi?externalReviewCycleIdFromReceipt(receipt):null,review_authority:reviewAuthority(receipt),candidate_digest:receipt?.candidate_digest||null};
 }
+// Call while holding lock_path before a paid invocation, and retain that lock
+// through issuance. The existing signed inventory remains the round authority.
+export function externalReviewCycleCapacity(receipt, { receiptPath = null } = {}) {
+  const wi = String(receipt.phase_guard?.wi || '').trim();
+  if (!wi || reviewAuthority(receipt) !== 'independent') return null;
+  const cycleId = externalReviewCycleIdFromReceipt(receipt);
+  const root = externalReviewProvenanceRoot({ receiptPath });
+  authorityKey(root, { create: true });
+  secureDirectory(path.join(root, 'issuance'), 'external review issuance directory', { create: true });
+  secureDirectory(path.join(root, 'classifications'), 'external review classification directory', { create: true });
+  const rows = listExternalReviewCycleProvenance({ receiptPath, wi, reviewKind: receipt.review_kind, cycleId });
+  const issued = Math.max(rows.length, ...rows.map(row => row.cycle_sequence || 0));
+  return { cycle_id: cycleId, lock_path: path.join(root, `cycle-${cycleId}.lock`), issued,
+    remaining: Math.max(0, 3 - issued), allowed: issued < 3 };
+}
 function classificationFile(directory,requestId){return path.join(directory,`${requestId}.json`);}
 function readClassification(directory,requestId,key){
   const file=classificationFile(directory,requestId);if(!fs.existsSync(file))return null;
@@ -134,7 +149,20 @@ export function issueExternalReviewProvenance({receiptPath,packagePath,findingsP
   const cycleSequence=Math.max(matchingLegacy,maxSequence)+1;
   if(reviewCycleId&&cycleSequence>3)throw new Error(`external review cycle hard cap reached for ${receipt.review_kind}/${wi}`);
   const payload={schema_version:1,request_id:receipt.request_id,candidate_digest:receipt.candidate_digest,review_kind:receipt.review_kind,wi,review_cycle_id:reviewCycleId,review_authority:currentAuthority,cycle_sequence:currentAuthority==="independent"?cycleSequence:null,package_sha256:sha(packageBytes),findings_sha256:sha(findingsBytes),receipt_sha256:sha(receiptBytes),receipt_path:fs.realpathSync(receiptPath),package_path:fs.realpathSync(packagePath),findings_path:fs.realpathSync(findingsPath),launcher_version:receipt.launcher_version,effective_tuple:receipt.effective_tuple,issued_at:new Date().toISOString()};
-  const marker={...payload,authority_hmac_sha256:crypto.createHmac("sha256",key).update(canonical(payload)).digest("hex")};const file=path.join(issuance,`${receipt.request_id}.json`);const fd=fs.openSync(file,fs.constants.O_CREAT|fs.constants.O_EXCL|fs.constants.O_WRONLY,0o600);try{fs.writeFileSync(fd,`${JSON.stringify(marker,null,2)}\n`);fs.fsyncSync(fd);}finally{fs.closeSync(fd);}writeClassification(classifications,payload,key);return file;
+  const marker={...payload,authority_hmac_sha256:crypto.createHmac("sha256",key).update(canonical(payload)).digest("hex")};
+  const file=path.join(issuance,`${receipt.request_id}.json`);
+  // Prepare all fallible metadata first. An orphan classification is inert:
+  // only the final, complete issuance marker consumes a signed cycle slot.
+  writeClassification(classifications,payload,key);
+  const temporary=path.join(issuance,`.${receipt.request_id}.${crypto.randomUUID()}.tmp`);
+  try {
+    const fd=fs.openSync(temporary,fs.constants.O_CREAT|fs.constants.O_EXCL|fs.constants.O_WRONLY,0o600);
+    try { fs.writeFileSync(fd,`${JSON.stringify(marker,null,2)}\n`);fs.fsyncSync(fd); }
+    finally { fs.closeSync(fd); }
+    // Atomic, no-clobber commit: readers never observe a partial JSON marker.
+    fs.linkSync(temporary,file);
+  } finally { try { fs.unlinkSync(temporary); } catch {} }
+  return file;
   }finally{release();}
 }
 function bytesOrFile(fileOrBytes, label, explicitBytes) {
@@ -171,8 +199,8 @@ export function listExternalReviewProvenance({receiptPath,candidateDigest,review
     const expected=crypto.createHmac("sha256",key).update(canonical(payload)).digest("hex");
     if(typeof authority_hmac_sha256!=="string"||!/^[0-9a-f]{64}$/.test(authority_hmac_sha256)||!crypto.timingSafeEqual(Buffer.from(expected,"hex"),Buffer.from(authority_hmac_sha256,"hex")))throw new Error(`external review issuance HMAC mismatch: ${name}`);
     if(payload.candidate_digest!==candidateDigest)continue;
-    const receiptBytes=secureFile(payload.receipt_path,`external review inventory receipt ${payload.request_id}`);
-    if(sha(receiptBytes)!==payload.receipt_sha256)throw new Error(`external review inventory receipt digest mismatch: ${payload.request_id}`);
+    const receiptBytes=markerReceiptBytes(payload,`external review inventory receipt ${payload.request_id}`);
+    if(!receiptBytes)throw new Error(`external review inventory receipt is unavailable or digest-mismatched: ${payload.request_id}`);
     const receipt=JSON.parse(receiptBytes);
     if(receipt.request_id!==payload.request_id||receipt.candidate_digest!==candidateDigest)throw new Error(`external review inventory receipt identity mismatch: ${payload.request_id}`);
     if(receipt.review_kind!==reviewKind)continue;

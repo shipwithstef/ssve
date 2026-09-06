@@ -4,7 +4,7 @@
   "title": "Structured cross-model swarm coordination bus (single-writer event-sourced kernel, signed receipts, deterministic conflict ladder)",
   "lane": "framework",
   "branch": "feature-WI-563-swarm-coordination",
-  "status": "completed",
+  "status": "blocked",
   "created_at": "2026-08-25T22:10:33.439Z",
   "classification_note": "Bootstrap misclassified this graph as greenfield product work; corrected to framework lane per WI-FW prefix and central-framework implementation authority. Persona gate not applicable to framework-lane changes.",
   "tasks": [
@@ -171,48 +171,30 @@
     },
     {
       "id": 5,
-      "status": "completed",
+      "status": "blocked",
       "skill": "audit-implementation",
       "subject": "Implementation correctness audit vs plan ACs",
       "blocked_by": [
         4
       ],
-      "completed_at": "2026-08-26T08:44:42.000Z",
-      "skill_receipt": {
-        "skill": "audit-implementation",
-        "loaded_at": "2026-08-26T08:44:42.000Z",
-        "loaded_via": "manual",
-        "phases_executed": [
-          {
-            "id": "AC-coverage-matrix",
-            "evidence_artifacts": [
-              {
-                "type": "file",
-                "path": "docs/specs/audit-reports/WI-FW-SWARM-COORDINATION-01.md"
-              }
-            ]
-          },
-          {
-            "id": "tier1-corpus-evidence",
-            "evidence_artifacts": [
-              {
-                "type": "command_output",
-                "path": "/tmp/opencode/tier1-final-wi563.log"
-              }
-            ]
-          }
-        ]
+      "metadata": {
+        "historical_completion": {
+          "status": "completed",
+          "completed_at": "2026-08-26T08:44:42.000Z",
+          "original_graph_sha256": "c7a3df18b61c15d514fece821054ab434f279b0364c83f8c8a738d52ad222881",
+          "task_id": 5
+        },
+        "blocked_reason": "Historical gate completion is not substantiated by valid skill/phase evidence, or depends on such a gate. Original record is archived; this repair makes no new execution or approval claim."
       }
     },
     {
       "id": 6,
-      "status": "completed",
+      "status": "blocked",
       "skill": "land-changeset",
       "subject": "Land changeset to main with promotion evidence",
       "blocked_by": [
         5
       ],
-      "completed_at": "2026-08-26T08:57:30.000Z",
       "skill_receipt": {
         "skill": "land-changeset",
         "loaded_at": "2026-08-26T08:57:30.000Z",
@@ -246,7 +228,22 @@
             ]
           }
         ]
+      },
+      "metadata": {
+        "historical_completion": {
+          "status": "completed",
+          "completed_at": "2026-08-26T08:57:30.000Z",
+          "original_graph_sha256": "c7a3df18b61c15d514fece821054ab434f279b0364c83f8c8a738d52ad222881",
+          "task_id": 6
+        },
+        "blocked_reason": "Historical gate completion is not substantiated by valid skill/phase evidence, or depends on such a gate. Original record is archived; this repair makes no new execution or approval claim."
       }
     }
-  ]
+  ],
+  "updated_at": "2026-09-06T18:27:43.371Z",
+  "historical_reconciliation": {
+    "wi": "WI-FW-CLEAN-MAIN-FOLLOWUP-01",
+    "original_graph_sha256": "c7a3df18b61c15d514fece821054ab434f279b0364c83f8c8a738d52ad222881",
+    "reason": "Retain recorded product/code landing facts; withdraw unsupported workflow completion claims. No historical provider invocation or phase timestamp is fabricated."
+  }
 }

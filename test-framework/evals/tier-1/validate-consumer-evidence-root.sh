@@ -6,6 +6,10 @@
 # expected_runtime_budget: <10s, no network, no reviewer dispatch
 set -euo pipefail
 
+# Keep standalone invocation isolated from active host/session state.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/fixture-home.sh"
+svc_require_fixture "$@"
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 CHECKER="$ROOT/scripts/check-chain-receipts.mjs"
 
@@ -35,6 +39,8 @@ import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 
 const [root, tmp, checker] = process.argv.slice(2);
+const { EXTERNAL_REVIEW_LAUNCHER_VERSION } = await import(pathToFileURL(path.join(root, "scripts/run-external-review.mjs")));
+const wi = "WI-T554";
 const sha = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 const run = (cmd, args, opts = {}) => {
   const r = spawnSync(cmd, args, { encoding: "utf8", ...opts });
@@ -124,7 +130,7 @@ fs.writeFileSync(
 );
 const launcherReceipt = {
   schema_version: 2,
-  launcher_version: "2.4.0",
+  launcher_version: EXTERNAL_REVIEW_LAUNCHER_VERSION,
   cli_version: "fixture-cli",
   request_id: crypto.randomUUID(),
   review_kind: "plan",
@@ -192,18 +198,18 @@ const launcherReceipt = {
     evidence: "canonical launcher",
   },
   phase_guard: {
-    applicable: false,
+    applicable: true,
     kind: "plan",
-    decision: "not-applicable",
+    decision: "allow",
     reason: null,
-    wi: null,
-    pre_execution_base: null,
-    plan_manifest_sha256: null,
+    wi,
+    pre_execution_base: head,
+    plan_manifest_sha256: candidate,
     exec_record_present: null,
     exec_record_path: null,
     implementation_diverged: null,
     diverged_files: [],
-    base_resolved: null,
+    base_resolved: true,
     override: { ...nilOverride, kind: null },
   },
   package_context: {
@@ -227,7 +233,6 @@ const artifact = (file) => ({
   path: path.relative(consumer, file),
   sha256: sha(fs.readFileSync(file)),
 });
-const wi = "WI-T554";
 const ts = "2026-08-21T00:00:00.000Z";
 const reviewPlan = {
   receipt_type: "review-plan",

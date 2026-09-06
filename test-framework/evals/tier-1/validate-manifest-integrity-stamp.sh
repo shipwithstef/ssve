@@ -2,7 +2,15 @@
 # validate-manifest-integrity-stamp.sh — E2 manifest digest sidecar contract.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
-cd "$ROOT"
+# Stamp and corruption probes must not race other validators on real source.
+STAMP_FIXTURE="$(mktemp -d)"
+trap 'rm -rf -- "$STAMP_FIXTURE"' EXIT
+for directory in scripts skills rules provision references concerns agents; do
+  cp -a "$ROOT/$directory" "$STAMP_FIXTURE/$directory"
+done
+cp "$ROOT/"*.md "$ROOT/skills-manifest.json" "$STAMP_FIXTURE/"
+mkdir -p "$STAMP_FIXTURE/.svc"
+cd "$STAMP_FIXTURE"
 PASS=0; FAIL=0
 pass() { echo "  ✓ $1"; PASS=$((PASS+1)); }
 fail() { echo "  ✗ $1"; FAIL=$((FAIL+1)); }

@@ -1239,3 +1239,15 @@ training data, `references/domains/<framework>/` provides persistent reference
 material (conventions, testing patterns, version-specific gotchas). These are
 markdown files loaded by `execute-changeset` when the tech stack matches.
 They are NOT skills — they don't participate in the pipeline or manifest.
+
+## Validation cadence and evidence reuse
+
+Use focused mapped checks during iteration. At the release boundary, require a
+complete passing validation run for the candidate. Reuse that result only when
+its recorded source/input hashes, validator set, command options, runtime and
+relevant environment still match; elapsed time or an earlier green message is
+not evidence. A changed input, actual failure, or gate requiring fresh external
+state invalidates the affected result. Missing provenance requires a new run.
+Keep post-commit relevant checks and actual post-promotion/install verification.
+Unknown/global and unmapped-surface test selection retain their full-coverage
+semantics. Never treat provider unavailability or skipped tests as passing.

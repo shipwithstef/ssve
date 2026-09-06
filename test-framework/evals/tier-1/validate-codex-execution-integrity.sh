@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Keep standalone invocation isolated from active host/session state.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/fixture-home.sh"
+svc_require_fixture "$@"
+
 # Host-identity assertions must not inherit the shell that launched this suite.
 unset SVC_HOST GROK_SESSION_ID GROK_HOME GROK_CLI XAI_API_KEY
 

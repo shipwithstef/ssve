@@ -4,6 +4,10 @@
 
 set -euo pipefail
 
+# Keep standalone invocation isolated from active host/session state.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/fixture-home.sh"
+svc_require_fixture "$@"
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "$REPO_ROOT"
 
@@ -23,9 +27,11 @@ fail() {
 run_check() {
   local root="$1"
   local today="$2"
-  node - "$root" "$today" <<'NODE'
-const fs = require("node:fs");
-const path = require("node:path");
+  node --input-type=module - "$root" "$today" "$REPO_ROOT" <<'NODE'
+import fs from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+const { isValidWiId } = await import(pathToFileURL(path.join(process.argv[4], "hooks/lib/wi-id.mjs")));
 
 const root = process.argv[2];
 const todayText = process.argv[3];
@@ -50,7 +56,7 @@ function ageDays(fileName, today) {
 function extractBodyMetadata(body) {
   const metadata = {};
   for (const line of body.split("\n")) {
-    const match = line.match(/^\s*(?:\*\*)?(accepted_wi|rejected_reason|deferred_until|reason|blocked_reason)(?:\*\*)?\s*:\s*(.+?)\s*$/i);
+    const match = line.match(/^\s*(?:\*\*)?(accepted_wi|backlog_wi|rejected_reason|deferred_until|reason|blocked_reason)(?:\*\*)?\s*:\s*(.+?)\s*$/i);
     if (match && match[2].trim()) {
       metadata[match[1].toLowerCase()] = match[2].trim();
     }
@@ -64,16 +70,31 @@ function isNonEmptyString(value) {
 
 function validateDisposition(fileName, metadata, today, rootPath, errors) {
   const hasAccepted = isNonEmptyString(metadata.accepted_wi);
+  const hasBacklog = Object.hasOwn(metadata, "backlog_wi");
   const hasRejected = isNonEmptyString(metadata.rejected_reason);
   const hasDeferred = isNonEmptyString(metadata.deferred_until);
 
-  if (!hasAccepted && !hasRejected && !hasDeferred) {
-    errors.push(`${fileName}: missing accepted_wi, rejected_reason, or deferred_until`);
+  if (!hasAccepted && !hasBacklog && !hasRejected && !hasDeferred) {
+    errors.push(`${fileName}: missing accepted_wi, backlog_wi, rejected_reason, or deferred_until`);
     return;
   }
 
-  if (hasAccepted && !/^WI-\d+$/.test(metadata.accepted_wi)) {
-    errors.push(`${fileName}: accepted_wi must look like WI-NNN`);
+  if (hasBacklog) {
+    if (hasAccepted || hasRejected || hasDeferred) errors.push(`${fileName}: backlog_wi conflicts with another disposition`);
+    if (!isValidWiId(metadata.backlog_wi)) errors.push(`${fileName}: backlog_wi must use the canonical WI identifier grammar`);
+    else {
+      const wiPath=path.join(rootPath, "docs/specs/work-items", `${metadata.backlog_wi}.md`);
+      if (!fs.existsSync(wiPath)) errors.push(`${fileName}: backlog_wi ${metadata.backlog_wi} does not exist`);
+      else {
+        const status=fs.readFileSync(wiPath,"utf8").match(/^\*\*Status:\*\*\s*(.+)$/mi)?.[1] || "";
+        if (!/^(backlog|pending|blocked|identified|in_progress|in-progress|in progress|planned|draft)\b/i.test(status)) errors.push(`${fileName}: backlog_wi must have an explicit unfinished status`);
+      }
+    }
+    if (!isNonEmptyString(metadata.reason)) errors.push(`${fileName}: backlog_wi requires a reason`);
+  }
+
+  if (hasAccepted && !isValidWiId(metadata.accepted_wi)) {
+    errors.push(`${fileName}: accepted_wi must use the canonical WI identifier grammar`);
   }
 
   if (hasAccepted) {
@@ -187,7 +208,7 @@ printf '# Old proposal\n' > "$TMP_ROOT/missing/proposals/2026-05-01-old.md"
 cat > "$TMP_ROOT/missing/proposals/triage.json" <<'JSON'
 { "schema": 1, "max_open_days": 1, "max_defer_days": 14, "entries": {} }
 JSON
-if run_check "$TMP_ROOT/missing" "2026-05-10" >/tmp/proposal-triage-missing.out 2>&1; then
+if run_check "$TMP_ROOT/missing" "2026-05-10" >"$TMP_ROOT"/proposal-triage-missing.out 2>&1; then
   fail "self-test detects missing triage metadata"
 else
   pass "self-test detects missing triage metadata"
@@ -208,7 +229,7 @@ cat > "$TMP_ROOT/deferred/proposals/triage.json" <<'JSON'
   }
 }
 JSON
-if run_check "$TMP_ROOT/deferred" "2026-05-10" >/tmp/proposal-triage-deferred.out 2>&1; then
+if run_check "$TMP_ROOT/deferred" "2026-05-10" >"$TMP_ROOT"/proposal-triage-deferred.out 2>&1; then
   pass "self-test accepts future deferred_until with reason"
 else
   fail "self-test accepts future deferred_until with reason"
@@ -230,7 +251,7 @@ cat > "$TMP_ROOT/long-deferred-blocked/proposals/triage.json" <<'JSON'
   }
 }
 JSON
-if run_check "$TMP_ROOT/long-deferred-blocked" "2026-05-10" >/tmp/proposal-triage-long-blocked.out 2>&1; then
+if run_check "$TMP_ROOT/long-deferred-blocked" "2026-05-10" >"$TMP_ROOT"/proposal-triage-long-blocked.out 2>&1; then
   pass "self-test accepts long deferred_until with blocked_reason"
 else
   fail "self-test accepts long deferred_until with blocked_reason"
@@ -251,7 +272,7 @@ cat > "$TMP_ROOT/long-deferred-missing-blocker/proposals/triage.json" <<'JSON'
   }
 }
 JSON
-if run_check "$TMP_ROOT/long-deferred-missing-blocker" "2026-05-10" >/tmp/proposal-triage-long-missing.out 2>&1; then
+if run_check "$TMP_ROOT/long-deferred-missing-blocker" "2026-05-10" >"$TMP_ROOT"/proposal-triage-long-missing.out 2>&1; then
   fail "self-test rejects long deferred_until without blocked_reason"
 else
   pass "self-test rejects long deferred_until without blocked_reason"
@@ -263,23 +284,66 @@ printf '# WI-999\n' > "$TMP_ROOT/accepted/docs/specs/work-items/WI-999.md"
 cat > "$TMP_ROOT/accepted/proposals/triage.json" <<'JSON'
 { "schema": 1, "max_open_days": 1, "max_defer_days": 14, "entries": {} }
 JSON
-if run_check "$TMP_ROOT/accepted" "2026-05-10" >/tmp/proposal-triage-accepted.out 2>&1; then
+if run_check "$TMP_ROOT/accepted" "2026-05-10" >"$TMP_ROOT"/proposal-triage-accepted.out 2>&1; then
   pass "self-test accepts in-file accepted_wi metadata"
 else
   fail "self-test accepts in-file accepted_wi metadata"
 fi
 
+# Namespaced work items are canonical too; syntax does not prove existence.
+printf '# Named proposal\naccepted_wi: WI-FW-FIXTURE-01\n' > "$TMP_ROOT/accepted/proposals/2026-05-01-old.md"
+printf '# WI-FW-FIXTURE-01\n' > "$TMP_ROOT/accepted/docs/specs/work-items/WI-FW-FIXTURE-01.md"
+if run_check "$TMP_ROOT/accepted" "2026-05-10" >"$TMP_ROOT/named.out" 2>&1; then
+  pass "self-test accepts an existing namespaced WI"
+else
+  fail "self-test accepts an existing namespaced WI"
+fi
+rm "$TMP_ROOT/accepted/docs/specs/work-items/WI-FW-FIXTURE-01.md"
+if run_check "$TMP_ROOT/accepted" "2026-05-10" >"$TMP_ROOT/named-missing.out" 2>&1; then
+  fail "self-test rejects a missing namespaced WI"
+elif grep -q 'does not exist' "$TMP_ROOT/named-missing.out"; then
+  pass "self-test rejects a missing namespaced WI"
+else
+  fail "self-test rejects a missing namespaced WI for the wrong reason"
+fi
+
+make_fixture "$TMP_ROOT/backlog"
+printf '# Proposal\n' > "$TMP_ROOT/backlog/proposals/2026-05-01-old.md"
+printf '# WI-FW-BACKLOG\n\n**Status:** backlog\n' > "$TMP_ROOT/backlog/docs/specs/work-items/WI-FW-BACKLOG.md"
+printf '# WI-DONE\n\n**Status:** VERIFIED\n' > "$TMP_ROOT/backlog/docs/specs/work-items/WI-DONE.md"
+for scenario in valid missing-wi missing-reason conflicting wrong-type empty terminal; do
+  node --input-type=module - "$TMP_ROOT/backlog/proposals/triage.json" "$scenario" <<'JS'
+import fs from 'node:fs';const [p,scenario]=process.argv.slice(2);
+const e={backlog_wi:'WI-FW-BACKLOG',reason:'Owned unfinished work; preserve owner freeze.'};
+if(scenario==='missing-wi')e.backlog_wi='WI-MISSING';
+if(scenario==='missing-reason')delete e.reason;
+if(scenario==='conflicting')e.deferred_until='2026-05-11';
+if(scenario==='wrong-type'){e.backlog_wi=7;e.rejected_reason='wrong type must not be ignored';}
+if(scenario==='empty'){e.backlog_wi='';e.rejected_reason='empty must not be ignored';}
+if(scenario==='terminal')e.backlog_wi='WI-DONE';
+fs.writeFileSync(p,JSON.stringify({schema:1,max_open_days:1,max_defer_days:14,entries:{'2026-05-01-old.md':e}}));
+JS
+  result=0
+  run_check "$TMP_ROOT/backlog" "2026-05-10" >"$TMP_ROOT/backlog-$scenario.out" 2>&1 || result=$?
+  if [[ "$scenario" == valid && "$result" == 0 ]] || [[ "$scenario" != valid && "$result" != 0 ]]; then
+    pass "backlog disposition $scenario"
+  else
+    cat "$TMP_ROOT/backlog-$scenario.out"
+    fail "backlog disposition $scenario"
+  fi
+done
+
 TODAY="${PROPOSAL_TRIAGE_TODAY:-$(date -u +%F)}"
-if run_check "$REPO_ROOT" "$TODAY" >/tmp/proposal-triage-current.out 2>&1; then
-  cat /tmp/proposal-triage-current.out
+if run_check "$REPO_ROOT" "$TODAY" >"$TMP_ROOT"/proposal-triage-current.out 2>&1; then
+  cat "$TMP_ROOT"/proposal-triage-current.out
   pass "all SLA-aged open proposals have triage metadata"
 else
-  cat /tmp/proposal-triage-current.out
+  cat "$TMP_ROOT"/proposal-triage-current.out
   fail "all SLA-aged open proposals have triage metadata"
 fi
 
-if grep -Eq '^proposal-triage: [0-9]+/[0-9]+ direct proposals dispositioned$' /tmp/proposal-triage-current.out \
-  && awk -F'[:/ ]+' '/^proposal-triage:/{exit !($2==$3)}' /tmp/proposal-triage-current.out; then
+if grep -Eq '^proposal-triage: [0-9]+/[0-9]+ direct proposals dispositioned$' "$TMP_ROOT"/proposal-triage-current.out \
+  && awk -F'[:/ ]+' '/^proposal-triage:/{exit !($2==$3)}' "$TMP_ROOT"/proposal-triage-current.out; then
   pass "current validator prints a complete numerator/denominator"
 else
   fail "current validator does not prove numerator equals denominator"

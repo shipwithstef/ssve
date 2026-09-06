@@ -1,5 +1,8 @@
 # Proposal: Canonical Advisor Knowledge Pack — WI-FW-ADVISOR-KNOWLEDGE-01
 
+backlog_wi: WI-FW-CLEAN-MAIN-FOLLOWUP-01
+reason: Current follow-up owns evidence and metadata reconciliation. Historical claims below are retained, not recertified; no missing historical WI or execution evidence is fabricated.
+
 - **Date:** 2026-08-26
 - **Lane:** framework (svc-on-svc)
 - **Author:** WI-FW-ADVISOR-KNOWLEDGE-01 (owner override: heavy research + implement, human_checkpoint waived)

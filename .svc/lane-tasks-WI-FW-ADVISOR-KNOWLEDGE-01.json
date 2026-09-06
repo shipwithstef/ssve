@@ -2,11 +2,11 @@
   "wi": "WI-FW-ADVISOR-KNOWLEDGE-01",
   "lane": "framework",
   "created": "2026-08-26T11:38:53.336Z",
-  "status": "completed",
+  "status": "blocked",
   "tasks": [
     {
       "id": 1,
-      "status": "completed",
+      "status": "blocked",
       "skill": "route-workflow",
       "subject": "Research advisor knowledge surfaces + must-know facts",
       "blocked_by": [],
@@ -30,11 +30,20 @@
             ]
           }
         ]
-      }
+      },
+      "metadata": {
+        "historical_completion": {
+          "status": "completed",
+          "completed_at": null,
+          "original_graph_sha256": "390e63fa0e69a378fcbb1b3fed3fc263577322254160aa0ce1800f042ee7eea7",
+          "task_id": 1
+        }
+      },
+      "blocked_reason": "Historical completion is unverified: required skill phase evidence was not located in the named artifacts or repository note census. Original graph bytes and reported historical work are preserved; no rerun or unmerge is claimed."
     },
     {
       "id": 2,
-      "status": "completed",
+      "status": "blocked",
       "skill": "route-workflow",
       "subject": "Design proposal proposals/2026-08-26-framework-improvement-advisor-knowledge.md with gap evidence E1-E6",
       "blocked_by": [
@@ -56,7 +65,16 @@
             ]
           }
         ]
-      }
+      },
+      "metadata": {
+        "historical_completion": {
+          "status": "completed",
+          "completed_at": null,
+          "original_graph_sha256": "390e63fa0e69a378fcbb1b3fed3fc263577322254160aa0ce1800f042ee7eea7",
+          "task_id": 2
+        }
+      },
+      "blocked_reason": "Historical completion is unverified: required skill phase evidence was not located in the named artifacts or repository note census. Original graph bytes and reported historical work are preserved; no rerun or unmerge is claimed."
     },
     {
       "id": 3,
@@ -143,5 +161,10 @@
       }
     }
   ],
-  "schema_version": 1
+  "schema_version": 1,
+  "historical_reconciliation": {
+    "wi": "WI-FW-CLEAN-MAIN-FOLLOWUP-01",
+    "original_graph_sha256": "390e63fa0e69a378fcbb1b3fed3fc263577322254160aa0ce1800f042ee7eea7",
+    "reason": "Withdraw unsupported skill completion only; retain historical code and receipts."
+  }
 }

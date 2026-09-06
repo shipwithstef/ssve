@@ -28,13 +28,15 @@ command -v node >/dev/null || fail "node not on PATH"
 [ -f "$CORPUS" ] || fail "corpus missing: $CORPUS"
 [ -f references/skill-routing-index.json ] || fail "committed routing index missing — run scripts/compile-skill-router-index.mjs"
 
+cp references/skill-routing-index.json "$TMP/index-before.json"
+
 # ── 1. Byte-stability ────────────────────────────────────────────────────────
 node scripts/compile-skill-router-index.mjs --root "$ROOT" --check >/dev/null 2>"$TMP/drift.log" \
   || fail "committed index drifted from canonical inputs ($(cat "$TMP/drift.log" | tail -1))"
-node scripts/compile-skill-router-index.mjs --root "$ROOT" >"$TMP/a.json" 2>/dev/null
-node scripts/compile-skill-router-index.mjs --root "$ROOT" >"$TMP/b.json" 2>/dev/null
+node --input-type=module -e 'import {compile} from "./scripts/compile-skill-router-index.mjs"; process.stdout.write(compile(process.argv[1]));' "$ROOT" >"$TMP/a.json"
+node --input-type=module -e 'import {compile} from "./scripts/compile-skill-router-index.mjs"; process.stdout.write(compile(process.argv[1]));' "$ROOT" >"$TMP/b.json"
 cmp -s "$TMP/a.json" "$TMP/b.json" || fail "two compiles of identical inputs differ"
-git diff --quiet -- references/skill-routing-index.json || fail "recompile dirtied the committed artifact"
+cmp -s "$TMP/index-before.json" references/skill-routing-index.json || fail "recompile changed the input artifact"
 
 # ── 2. Malformed inputs fail loudly ─────────────────────────────────────────
 BAD="$TMP/bad-root"
@@ -206,11 +208,14 @@ fi
 # ── 6. Receipt redaction ─────────────────────────────────────────────────────
 SECRET_INTENT="TOPSECRET-INTENT-zqptoiwueyralfkjhgd"
 SVC_DIR="$TMP/receipt-root"
-mkdir -p "$SVC_DIR/.svc"
-cp references/skill-routing-index.json "$SVC_DIR/" 2>/dev/null || true
-node scripts/skill-router.mjs route --root "$ROOT" --intent "$SECRET_INTENT" --mode suggest >"$TMP/redact-decision.json"
+mkdir -p "$SVC_DIR/.svc" "$SVC_DIR/references" "$SVC_DIR/concerns"
+cp skills-manifest.json "$SVC_DIR/"
+cp -a skills "$SVC_DIR/skills"
+cp references/skill-routing-index.json references/skill-routing-overrides.json "$SVC_DIR/references/"
+cp concerns/REGISTRY.json "$SVC_DIR/concerns/"
+node scripts/skill-router.mjs route --root "$SVC_DIR" --intent "$SECRET_INTENT" --mode suggest >"$TMP/redact-decision.json"
 grep -q "$SECRET_INTENT" "$TMP/redact-decision.json" && fail "raw intent leaked into decision output"
-RECEIPTS="$ROOT/.svc/skill-router/decisions.jsonl"
+RECEIPTS="$SVC_DIR/.svc/skill-router/decisions.jsonl"
 [ -f "$RECEIPTS" ] || fail "receipt stream was not written"
 tail -1 "$RECEIPTS" | grep -q "$SECRET_INTENT" && fail "raw intent leaked into receipt stream"
 tail -1 "$RECEIPTS" | grep -Eq '"intent_fingerprint":"sha256:[0-9a-f]{16}"' || fail "receipt fingerprint malformed"

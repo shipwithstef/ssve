@@ -388,13 +388,19 @@
       "id": 9,
       "skill": "verify-promotion",
       "subject": "Post-merge G7 verification",
-      "status": "completed",
+      "status": "blocked",
       "blocked_by": [
         8
       ],
       "metadata": {
         "skill": "verify-promotion",
-        "wi": "WI-FW-SKILLS-ROUTING-01"
+        "wi": "WI-FW-SKILLS-ROUTING-01",
+        "historical_completion": {
+          "status": "completed",
+          "completed_at": "2026-08-26T00:47:37.840Z",
+          "original_graph_sha256": "12d7df460bd6f57af2a5f9ea619af2ae9f87e490bb63d832c906737c64dc22f3",
+          "task_id": 9
+        }
       },
       "skill_receipt": {
         "skill": "verify-promotion",
@@ -433,8 +439,13 @@
           }
         ]
       },
-      "completed_at": "2026-08-26T00:47:37.840Z"
+      "blocked_reason": "Historical completion is unverified: required skill phase evidence was not located in the named artifacts or repository note census. Original graph bytes and reported historical work are preserved; no rerun or unmerge is claimed."
     }
   ],
-  "status": "completed"
+  "status": "blocked",
+  "historical_reconciliation": {
+    "wi": "WI-FW-CLEAN-MAIN-FOLLOWUP-01",
+    "original_graph_sha256": "12d7df460bd6f57af2a5f9ea619af2ae9f87e490bb63d832c906737c64dc22f3",
+    "reason": "Withdraw unsupported skill completion only; retain historical code and receipts."
+  }
 }

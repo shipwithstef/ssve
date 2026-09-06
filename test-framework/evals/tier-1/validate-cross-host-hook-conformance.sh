@@ -144,6 +144,22 @@ while IFS=$'\t' read -r kind gate host pattern; do
     fi
     continue
   fi
+  if [[ "$host" == "claude" && "$gate" == "block-no-verify" ]]; then
+    if node --input-type=module - "$REPO_ROOT" <<'JS'
+import fs from 'node:fs';import {execFileSync} from 'node:child_process';import path from 'node:path';
+const root=process.argv[2];
+const raw=execFileSync(process.execPath,[path.join(root,'scripts/wire-hooks.mjs'),'--skills-path',root,'--list-all'],{encoding:'utf8'});
+const config=JSON.parse(raw.slice(raw.indexOf('{')));
+const dispatcher='hooks/codex/svc-codex-pretool-dispatcher.mjs';
+if(!config.hooks.PreToolUse.some(e=>e.matcher.split('|').includes('Bash') && e.hooks.some(h=>h.command.includes(dispatcher)))) process.exit(1);
+const source=fs.readFileSync(path.join(root,dispatcher),'utf8');
+if(!source.includes('["svc-workflow-guard.mjs","--bash-guard"]')) process.exit(1);
+JS
+    then pass "MUST gate $gate × $host: emitted Bash dispatcher routes bash guard"
+    else fail "MUST gate $gate × $host: consolidated route missing"
+    fi
+    continue
+  fi
   if grep -q -F "$pattern" "$wire"; then
     pass "$kind gate $gate × $host (pattern: $pattern)"
   else

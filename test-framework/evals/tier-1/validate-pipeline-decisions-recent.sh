@@ -1,64 +1,59 @@
 #!/usr/bin/env bash
-# Tier 1: Validate that pipeline-decisions.jsonl has entries from the last 24h.
-#
-# A session that produces framework changes but writes zero decision-log entries
-# breaks the audit trail. Origin: audit-session-execution finding F3 (May 6 2026).
-#
-# No LLM, <5s. Exit 0 if recent entries exist or file is missing/empty, 1 if stale.
+# Tier 1 exercises decision-log recency with a fixed clock. An old checkout is
+# not a failing software test. Operational check: --live [decision-log.jsonl].
 set -euo pipefail
-
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/fixture-home.sh"
+svc_require_fixture "$@"
 REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-LOG="$REPO_ROOT/.svc/pipeline-decisions.jsonl"
 
-MAX_AGE_HOURS=24
-MAX_AGE_SEC=$((MAX_AGE_HOURS * 3600))
+check_recency() {
+  node --input-type=module - "$1" "$2" <<'NODE'
+import fs from 'node:fs';
+const [file, nowText] = process.argv.slice(2);
+let text;
+try { text = fs.readFileSync(file, 'utf8'); }
+catch (error) { if (error.code === 'ENOENT') { console.log('No decision log yet'); process.exit(0); } throw error; }
+const lines = text.split(/\r?\n/).filter(line => line.trim());
+if (!lines.length) { console.log('No decisions yet'); process.exit(0); }
+try {
+  const event = JSON.parse(lines.at(-1));
+  const timestamp = Date.parse(event.ts || event.timestamp);
+  const now = Date.parse(nowText);
+  if (!Number.isFinite(timestamp) || !Number.isFinite(now)) throw new Error('invalid timestamp');
+  const age = now - timestamp;
+  if (age > 24 * 3600000) { console.error('Decision log is older than 24 hours'); process.exitCode = 1; }
+  else console.log('Decision log is within 24 hours');
+} catch (error) { console.error(`Invalid decision-log entry: ${error.message}`); process.exitCode = 1; }
+NODE
+}
 
-echo "=== Tier 1: Pipeline Decisions Recency ==="
-
-if [[ ! -f "$LOG" ]]; then
-  echo "  SKIP — .svc/pipeline-decisions.jsonl does not exist"
-  exit 0
+if [[ "${1:-}" == --live && $# -le 2 ]]; then
+  check_recency "${2:-$REPO_ROOT/.svc/pipeline-decisions.jsonl}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  exit "$?"
+elif [[ $# -gt 0 ]]; then
+  echo 'usage: validate-pipeline-decisions-recent.sh [--live [decision-log.jsonl]]' >&2
+  exit 2
 fi
 
-LINE_COUNT=$(wc -l < "$LOG" 2>/dev/null || echo 0)
-if [[ "$LINE_COUNT" -eq 0 ]]; then
-  echo "  SKIP — pipeline-decisions.jsonl is empty"
-  exit 0
-fi
-
-# Extract the most recent timestamp field
-LAST_LINE=$(tail -1 "$LOG" 2>/dev/null || true)
-TS=$(echo "$LAST_LINE" | grep -oE '"timestamp":"[^"]+"' | cut -d'"' -f4 || true)
-
-# Fallback: some entries use "ts" instead of "timestamp"
-if [[ -z "$TS" ]]; then
-  TS=$(echo "$LAST_LINE" | grep -oE '"ts":"[^"]+"' | cut -d'"' -f4 || true)
-fi
-
-if [[ -z "$TS" ]]; then
-  echo "  FAIL — cannot parse timestamp from last pipeline-decisions entry"
-  exit 1
-fi
-
-# Normalize and parse
-TS_NORMALIZED=$(echo "$TS" | sed 's/+[0-9][0-9]:[0-9][0-9]//')
-TS_EPOCH=$(date -d "$TS_NORMALIZED" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%S" "$TS_NORMALIZED" +%s 2>/dev/null || echo 0)
-
-if [[ "$TS_EPOCH" -eq 0 ]]; then
-  echo "  FAIL — cannot parse timestamp: $TS"
-  exit 1
-fi
-
-NOW=$(date +%s)
-AGE=$((NOW - TS_EPOCH))
-
-if [[ $AGE -gt $MAX_AGE_SEC ]]; then
-  AGE_HOURS=$((AGE / 3600))
-  echo "  FAIL — last pipeline-decisions entry is ${AGE_HOURS}h old (max ${MAX_AGE_HOURS}h)"
-  echo "    Last entry: $LAST_LINE"
-  exit 1
-else
-  AGE_HOURS=$((AGE / 3600))
-  echo "  PASS — last pipeline-decisions entry is ${AGE_HOURS}h old (recent)"
-  exit 0
-fi
+fixture="$(mktemp -d)"
+trap 'rm -rf -- "$fixture"' EXIT
+now='2026-09-06T12:00:00Z'
+probe() {
+  local name="$1" expected="$2" rc
+  check_recency "$fixture/decisions.jsonl" "$now" > "$fixture/result" 2>&1 && rc=0 || rc=$?
+  if [[ "$rc" -ne "$expected" ]]; then cat "$fixture/result"; echo "FAIL: $name (exit $rc, expected $expected)"; exit 1; fi
+  echo "PASS: $name"
+}
+probe missing 0
+: > "$fixture/decisions.jsonl"
+probe empty 0
+printf '%s\n' '{"ts":"2026-09-06T11:00:00Z"}' > "$fixture/decisions.jsonl"
+probe fresh 0
+printf '%s\n' '{"timestamp":"2026-09-05T15:00:00+03:00"}' > "$fixture/decisions.jsonl"
+probe 'legacy timestamp at exact 24h boundary, with timezone offset' 0
+printf '%s\n' '{"ts":"2026-09-05T11:59:59Z"}' > "$fixture/decisions.jsonl"
+probe stale 1
+printf '%s\n' '{"ts":"bad"}' > "$fixture/decisions.jsonl"
+probe 'invalid timestamp' 1
+printf '%s\n' 'invalid json' > "$fixture/decisions.jsonl"
+probe 'malformed entry' 1

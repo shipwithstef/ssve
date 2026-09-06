@@ -1,90 +1,28 @@
 #!/usr/bin/env bash
-# Tier 1: Validate that the session contract is fresh (<4h old).
-#
-# A stale session contract means the agent has lost track of what the current
-# session is for. This causes drift, ghost-completions, and incorrect backlog
-# dispatch. Origin: audit-session-execution finding F2 (May 6 2026).
-#
-# Threshold history:
-#   1h (original) — too tight for legitimate multi-hour focused sessions
-#     where tier-1 evals themselves take 3-4 minutes, narrowing the effective
-#     window further. Made the freshness check time-flaky (passed early in
-#     the session, failed late). Trapped fixes inside their own validator.
-#   4h (2026-05-13) — covers a typical long work session while still catching
-#     truly stale ones (overnight, resumed-days-later).
-#
-# No LLM, <5s. Exit 0 if fresh or missing, 1 if stale.
+# Tier 1: fixed-clock fixtures for the real session freshness hook.
+# Live session age remains an operational hook decision, never a software test
+# failure caused solely by leaving a checkout overnight.
 set -euo pipefail
 
+# Keep standalone invocation isolated from active host/session state.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/fixture-home.sh"
+svc_require_fixture "$@"
+
 REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-CONTRACT="$REPO_ROOT/.svc/session-contract.jsonl"
 HOOK="$REPO_ROOT/hooks/svc-session-contract-freshness.mjs"
-
-MAX_AGE_HOURS=4
-MAX_AGE_SEC=$((MAX_AGE_HOURS * 3600))
-LIVE_FAIL=0
-
-echo "=== Tier 1: Session Contract Freshness ==="
-
+echo "=== Tier 1: Session Contract Freshness Fixtures ==="
 if ! grep -Fq 'SVC_CONTRACT_MAX_AGE_HOURS || "4"' "$HOOK"; then
-  echo "  FAIL - hook default does not match validator max age (${MAX_AGE_HOURS}h)"
+  echo "FAIL: hook default must remain four hours"
   exit 1
 fi
-
-if [[ ! -f "$CONTRACT" ]]; then
-  echo "  SKIP — .svc/session-contract.jsonl does not exist"
-  exit 0
-fi
-
-LAST_LINE=$(tail -1 "$CONTRACT" 2>/dev/null || true)
-if [[ -z "$LAST_LINE" ]]; then
-  echo "  SKIP — session-contract.jsonl is empty"
-  exit 0
-fi
-
-# Extract timestamp
-TS=$(echo "$LAST_LINE" | grep -oE '"ts": ?"[^"]+"' | cut -d'"' -f4 || true)
-if [[ -z "$TS" ]]; then
-  echo "  FAIL — cannot parse timestamp from session contract"
-  exit 1
-fi
-
-# WI-558: mirrored from hooks/svc-session-contract-freshness.mjs checkFreshness().
-# TERMINAL rows = no wi AND an explicit non-wi boundary marker (user-request |
-# framework-evolution). Any row carrying a wi is ACTIVE; legacy/ambiguous rows
-# stay ACTIVE (fail closed).
-# NOTE: this branch only short-circuits the LIVE-repo age computation — the
-# hook-behavior fixtures below still run in every sweep (Codex re-review).
-BOUND_TO=$(echo "$LAST_LINE" | grep -oE '"bound_to":"[^"]+"' | cut -d'"' -f4 || true)
-BOUND_WI=$(echo "$LAST_LINE" | grep -oE '"wi":"[^"]+"' | cut -d'"' -f4 || true)
-LIVE_ROW_TERMINAL=0
-if [[ -z "$BOUND_WI" && ( "$BOUND_TO" == "user-request" || "$BOUND_TO" == "framework-evolution" ) ]]; then
-  LIVE_ROW_TERMINAL=1
-fi
-
-# Convert to epoch seconds (handle both +03:00 and Z formats)
-TS_NORMALIZED=$(echo "$TS" | sed 's/+[0-9][0-9]:[0-9][0-9]//')
-TS_EPOCH=$(date -d "$TS_NORMALIZED" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%S" "$TS_NORMALIZED" +%s 2>/dev/null || echo 0)
-
-if [[ "$TS_EPOCH" -eq 0 ]]; then
-  echo "  FAIL — cannot parse timestamp: $TS"
-  exit 1
-fi
-
-NOW=$(date +%s)
-AGE=$((NOW - TS_EPOCH))
-
-if [[ "$LIVE_ROW_TERMINAL" -eq 1 ]]; then
-  echo "  PASS — live last row is a terminal unbound boundary (no active WI binding to go stale)"
-elif [[ $AGE -gt $MAX_AGE_SEC ]]; then
-  AGE_HOURS=$((AGE / 3600))
-  echo "  FAIL — session contract is ${AGE_HOURS}h old (max ${MAX_AGE_HOURS}h)"
-  echo "    Last entry: $LAST_LINE"
-  LIVE_FAIL=1
-else
-  AGE_HOURS=$((AGE / 3600))
-  echo "  PASS — session contract is ${AGE_HOURS}h old (fresh)"
-fi
+CLOCK="$(mktemp)"
+printf '%s\n' 'Date.now = () => Date.parse("2026-09-06T12:00:00Z");' > "$CLOCK"
+cleanup() {
+  rm -f -- "$CLOCK"
+  [[ -z "${T:-}" ]] || rm -rf -- "$T" "$T-wt"
+  [[ -z "${T2:-}" ]] || rm -rf -- "$T2"
+}
+trap cleanup EXIT
 
 # --- WI-399 A3: hook scope-behavior fixtures (hermetic, <3s) -----------------
 # The hook gates the TARGET FILE's repo, only when svc-governed (.svc dir),
@@ -94,7 +32,7 @@ FIX_FAIL=0
 probe() {
   local name="$1"; local payload="$2"; local expected="$3"
   local actual
-  actual=$(echo "$payload" | node "$HOOK" >/dev/null 2>&1; echo $?)
+  actual=$(echo "$payload" | node --require "$CLOCK" "$HOOK" >/dev/null 2>&1; echo $?)
   if [[ "$actual" == "$expected" ]]; then
     echo "  PASS — $name (exit=$actual)"
   else
@@ -118,6 +56,26 @@ probe "stale contract in svc repo still blocks (negative fixture)" \
 probe "stale contract blocks Grok shell mutation" \
   "{\"tool_name\":\"run_terminal_command\",\"tool_input\":{\"command\":\"touch $T/grok.txt\"},\"cwd\":\"$T\",\"host\":\"grok\"}" 2
 
+# Exercise the live hook against fixed fresh/boundary/resume and terminal rows.
+for row in \
+  '{"ts":"2026-09-06T11:00:00Z","wi":"WI-FIXTURE"}' \
+  '{"ts":"2026-09-06T08:00:00Z","wi":"WI-FIXTURE"}' \
+  '{"ts":"2026-09-06T12:00:00Z","wi":"WI-RESUMED"}' \
+  '{"ts":"2026-01-01T00:00:00Z","bound_to":"user-request"}' \
+  '{"ts":"2026-01-01T00:00:00Z","bound_to":"framework-evolution"}'; do
+  printf '%s\n' "$row" > "$T/.svc/session-contract.jsonl"
+  probe "fresh/boundary/resumed or terminal binding passes: $row" \
+    "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$T/file.txt\",\"content\":\"x\"},\"cwd\":\"$T\"}" 0
+done
+for row in \
+  '{"ts":"2026-09-06T07:59:59Z","wi":"WI-FIXTURE"}' \
+  '{"ts":"2026-01-01T00:00:00Z","bound_to":"unknown"}'; do
+  printf '%s\n' "$row" > "$T/.svc/session-contract.jsonl"
+  probe "expired or ambiguous active binding blocks: $row" \
+    "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$T/file.txt\",\"content\":\"x\"},\"cwd\":\"$T\"}" 2
+done
+printf '%s\n' '{"ts":"2026-01-01T00:00:00Z","wi":"old"}' > "$T/.svc/session-contract.jsonl"
+
 # git repo WITHOUT .svc dir → not svc-governed → pass
 T2="$(mktemp -d)"
 git -C "$T2" init -q
@@ -132,14 +90,14 @@ if [[ -f "$T-wt/.svc/session-contract.jsonl" ]]; then
   probe "fresh-worktree bootstrap warns instead of blocking" \
     "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$T-wt/file.txt\",\"content\":\"x\"},\"cwd\":\"$T-wt\"}" 0
 else
-  echo "  SKIP — worktree fixture could not be created"
+  echo "  FAIL — worktree fixture could not be created"
+  FIX_FAIL=1
 fi
 git -C "$T" worktree remove --force "$T-wt" >/dev/null 2>&1 || true
 rm -rf "$T" "$T-wt" 2>/dev/null || true
 
-if [[ $FIX_FAIL -ne 0 || $LIVE_FAIL -ne 0 ]]; then
+if [[ $FIX_FAIL -ne 0 ]]; then
   [[ $FIX_FAIL -ne 0 ]] && echo "  FAIL — A3 scope-behavior fixtures failed"
-  [[ $LIVE_FAIL -ne 0 ]] && echo "  FAIL — live session contract freshness check failed"
   exit 1
 fi
 exit 0

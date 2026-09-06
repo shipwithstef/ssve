@@ -45,7 +45,7 @@ Turn a beat sheet (or a locked picture + stems) into masters a founder can watch
 
 `live-evidence: video-watch` — Playwright of a web page does not prove a `.mp4`. The gate is stills + spectrogram + ebur128 + founder sound-on/sound-off. See `references/delivery-and-watch.md`.
 
-## Before anything
+## Before Starting
 
 1. Read the beat sheet or the WI. Do not invent product features.
 2. If a cut already exists, **watch it** (1 s stills across the timeline, 0.25 s on the complained window). For audio complaints, capture spectrogram + ebur128 **before remixing, remuxing, or overwriting any artifact**. Read-only ffmpeg analysis and still extraction are allowed. `references/audio-house-lock.md`.
@@ -120,6 +120,14 @@ Same fps/size for every shot → `concat` copy → burn captions if the cut uses
 | 6 | Paid-media not self-PASSED | Receipt has `paid_media_status: PENDING_FOUNDER_WATCH`; no PASS without a separate founder ack of sound-on and sound-off | |
 
 ## Pipeline Continuation
+
+Follow the canonical task-graph chaining contract: see `references/task-graph-chaining-protocol.md`.
+
+### Task-graph mode (source of truth: `.svc/lane-tasks-<WI>.json`)
+
+Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume.
+In Codex, mirror only the active step in `update_plan`; other host views follow the shared contract.
+Preserve the sidecar's human checkpoint below; delivery does not imply paid-media approval.
 
 Sidecar. After delivery the terminal state is `WAITING_FOR_HUMAN` (`human_checkpoint`). Do not chain into `land-changeset` for binary masters unless the WI says so.
 

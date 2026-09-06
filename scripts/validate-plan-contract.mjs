@@ -41,7 +41,7 @@ function normalizedPrimitive(value) {
  * An unmatched section present without its flag is also rejected — the
  * contract must grow ONLY the matched sections, never more.
  */
-export function validateRiskSections(contract, root, errors) {
+export function validateRiskSections(contract, root, errors, { futurePaths = new Set() } = {}) {
   const flags = Array.isArray(contract.risk_flags) ? contract.risk_flags : [];
   for (const flag of flags) if (!RISK_FLAG_SET.has(flag)) errors.push(`unknown risk flag: ${flag}`);
   const has = (flag) => flags.includes(flag);
@@ -57,7 +57,7 @@ export function validateRiskSections(contract, root, errors) {
       else if (CHECK_THEN_WRITE_RE.test(normalizeProse(c.concurrent_invoke_behavior))) errors.push("concurrency.concurrent_invoke_behavior describes a check-then-write / exists-then-create race under runtime_concurrency (WI-542 shape) — use an atomic primitive instead");
       if (!hasText(c.stale_lock_cleanup)) errors.push("concurrency.stale_lock_cleanup is required");
       if (!hasText(c.concurrency_test)) errors.push("concurrency.concurrency_test is required");
-      else if (!concurrencyTestExists(c.concurrency_test, root)) errors.push("concurrency.concurrency_test must name an existing test file, not a placeholder such as none");
+      else if (!futurePaths.has(c.concurrency_test) && !concurrencyTestExists(c.concurrency_test, root)) errors.push("concurrency.concurrency_test must name an existing test file, not a placeholder such as none");
     }
   } else if (contract.concurrency !== undefined) {
     errors.push("plan-contract.concurrency is present without the runtime_concurrency flag — plan-contract.json grows only matched sections");
@@ -95,7 +95,7 @@ export function validateRiskSections(contract, root, errors) {
         if (seen.has(type)) errors.push(`lossless_rmw entry_types has a duplicate type: ${type}`);
         seen.add(type);
         if (!hasText(entry?.fixture)) { errors.push(`lossless_rmw entry type "${type}" has no fixture — "preserve user/unknown entries" requires a fixture per documented entry type (WI-542 shape)`); continue; }
-        if (!fs.existsSync(path.resolve(root, entry.fixture))) errors.push(`lossless_rmw fixture does not exist for entry type "${type}": ${entry.fixture}`);
+        if (!futurePaths.has(entry.fixture) && !fs.existsSync(path.resolve(root, entry.fixture))) errors.push(`lossless_rmw fixture does not exist for entry type "${type}": ${entry.fixture}`);
       }
     }
   } else if (contract.lossless_rmw !== undefined) {
@@ -173,8 +173,49 @@ function detectedResourceWriters(root, changedPaths, baseRef) {
   return detected;
 }
 
-export function validatePlanContract(contract, { root = process.cwd() } = {}) {
+export function readPlannedFiles(manifest) {
+  const rows = [];
+  const section = manifest.match(/## Files Planned\r?\n([\s\S]*?)\r?\n## Task Graph/)?.[1] || "";
+  for (const line of section.split("\n")) {
+    if (!/^\| T\d+ \|/.test(line)) continue;
+    const cells = line.split("|").map(cell => cell.trim().replaceAll("`", ""));
+    for (const file of String(cells[3] || "").split(";").map(value => value.trim()).filter(Boolean)) {
+      rows.push({ task: cells[1], operation: cells[2], path: file });
+    }
+  }
+  return rows;
+}
+
+function safePlannedPath(root, relative) {
+  const normalized = normalizedScope(relative);
+  if (normalized.includes("*")) throw new Error(`planned file must be exact: ${relative}`);
+  const canonicalRoot = fs.realpathSync(root);
+  let cursor = path.resolve(root, normalized);
+  while (!fs.existsSync(cursor)) {
+    // A dangling symlink is not a future directory or file.
+    try { if (fs.lstatSync(cursor).isSymbolicLink()) throw new Error(`planned path has a dangling symlink: ${relative}`); }
+    catch (error) { if (error.code !== "ENOENT") throw error; }
+    cursor = path.dirname(cursor);
+  }
+  const actual = fs.realpathSync(cursor);
+  if (actual !== canonicalRoot && !actual.startsWith(`${canonicalRoot}${path.sep}`)) throw new Error(`planned path escapes repository: ${relative}`);
+  if (cursor !== path.resolve(root, normalized) && !fs.statSync(cursor).isDirectory()) throw new Error(`planned path parent is not a directory: ${relative}`);
+  return normalized;
+}
+
+// Only explicit future files and the exact contract rollback output can be
+// absent during C1. C10 separately validates the full contract and ownership.
+export function planDeferredPaths(contract, { root = process.cwd() } = {}) {
+  const manifest = fs.readFileSync(path.resolve(root, contract.manifest), "utf8");
+  const paths = readPlannedFiles(manifest).filter(row => row.operation === "CREATE").map(row => safePlannedPath(root, row.path));
+  const rolling = contract.external_writer?.rolling_rollback;
+  if (hasText(rolling) && (contract.risk_flags || []).some(flag => ["external_state_writer", "idempotent_rewriter"].includes(flag))) paths.push(safePlannedPath(root, rolling));
+  return new Set(paths);
+}
+
+export function validatePlanContract(contract, { root = process.cwd(), phase = "execution" } = {}) {
   const errors = [];
+  if (!["plan", "execution"].includes(phase)) return ["phase must be plan or execution"];
   if (contract?.schema_version !== 1) errors.push("schema_version must be 1");
   if (!hasText(contract?.manifest)) errors.push("manifest is required");
   for (const key of ["ownership", "resource_writers", "claims", "executables"]) if (!Array.isArray(contract?.[key])) errors.push(`${key} must be an array`);
@@ -184,6 +225,30 @@ export function validatePlanContract(contract, { root = process.cwd() } = {}) {
   try { execFileSync("git", ["-C", root, "rev-parse", "--verify", "--end-of-options", `${diffBase}^{commit}`], { stdio: "ignore" }); }
   catch { errors.push(`base_sha is not a resolvable commit: ${diffBase}`); return errors; }
 
+  let manifest = "";
+  try { manifest = fs.readFileSync(path.resolve(root, contract.manifest), "utf8"); }
+  catch { errors.push(`manifest does not exist: ${contract.manifest}`); }
+  const rows = readPlannedFiles(manifest);
+  const planned = new Map();
+  const operations = new Map();
+  const futurePaths = new Set();
+  for (const row of rows) {
+    if (planned.has(row.path) && planned.get(row.path) !== row.task) errors.push(`manifest path ${row.path} has multiple owners: ${planned.get(row.path)}, ${row.task}`);
+    if (operations.has(row.path) && operations.get(row.path) !== row.operation) errors.push(`manifest path ${row.path} has conflicting operations`);
+    planned.set(row.path, row.task); operations.set(row.path, row.operation);
+    if (phase === "plan") {
+      try {
+        safePlannedPath(root, row.path);
+        if (!["CREATE", "MODIFY", "DELETE"].includes(row.operation)) errors.push(`unknown planned operation: ${row.operation}`);
+        if (row.operation === "CREATE") {
+          try {
+            execFileSync("git", ["-C", root, "cat-file", "-e", `${diffBase}:${row.path}`], { stdio: "ignore" });
+            errors.push(`CREATE path already exists in base: ${row.path}`);
+          } catch { futurePaths.add(row.path); }
+        } else if (!fs.existsSync(path.resolve(root, row.path))) errors.push(`${row.operation} path does not exist: ${row.path}`);
+      } catch (error) { errors.push(error.message); }
+    }
+  }
   const ownerScopes = [];
   for (const row of contract.ownership) {
     if (!hasText(row.task) || !Array.isArray(row.paths) || row.paths.length === 0) { errors.push("every ownership row requires task and paths"); continue; }
@@ -207,17 +272,22 @@ export function validatePlanContract(contract, { root = process.cwd() } = {}) {
   }
   for (const executable of contract.executables) {
     if (!hasText(executable.path) || !Array.isArray(executable.consumers) || executable.consumers.length === 0) { errors.push("every executable requires a path and named consumers"); invalidExecutableConsumers += 1; continue; }
-    if (hasText(executable.path) && !fs.existsSync(path.resolve(root, executable.path))) errors.push(`executable does not exist: ${executable.path}`);
+    if (hasText(executable.path) && !futurePaths.has(executable.path) && !fs.existsSync(path.resolve(root, executable.path))) errors.push(`executable does not exist: ${executable.path}`);
     let runtimeConsumer = false;
     const needles = executableNeedles(executable.path);
     for (const consumer of executable.consumers) {
       const consumerPath = typeof consumer === "string" ? consumer : consumer?.path;
       if (!hasText(consumerPath)) { errors.push(`executable ${executable.path} has malformed consumer evidence`); invalidExecutableConsumers += 1; continue; }
       const absolute = path.resolve(root, consumerPath);
-      let text = "";
-      try { text = fs.readFileSync(absolute, "utf8"); } catch { errors.push(`consumer does not exist: ${consumerPath}`); invalidExecutableConsumers += 1; continue; }
       const query = typeof consumer === "object" && hasText(consumer.query) ? consumer.query : null;
-      if (!(query ? text.includes(query) : needles.some((needle) => text.includes(needle)))) {
+      if (typeof consumer === "object" && consumer.query !== undefined && !query) {
+        errors.push(`consumer ${consumerPath} has malformed query`); invalidExecutableConsumers += 1;
+      }
+      const futureConsumer = phase === "plan" && (futurePaths.has(consumerPath) || (operations.get(consumerPath) === "MODIFY" && query));
+      let text = "";
+      try { text = fs.readFileSync(absolute, "utf8"); }
+      catch { if (!futurePaths.has(consumerPath)) { errors.push(`consumer does not exist: ${consumerPath}`); invalidExecutableConsumers += 1; continue; } }
+      if (!futureConsumer && !(query ? text.includes(query) : needles.some((needle) => text.includes(needle)))) {
         errors.push(`consumer ${consumerPath} has no direct reference to ${executable.path}`); invalidExecutableConsumers += 1;
       }
       if (/\.(?:mjs|cjs|js|sh)$/.test(consumerPath)) runtimeConsumer = true;
@@ -226,21 +296,6 @@ export function validatePlanContract(contract, { root = process.cwd() } = {}) {
   }
   let parityFailures = null; let changedForSafety = new Set();
   if (hasText(contract.manifest)) {
-    const manifestPath = path.resolve(root, contract.manifest);
-    let manifest = "";
-    try { manifest = fs.readFileSync(manifestPath, "utf8"); } catch { errors.push(`manifest does not exist: ${contract.manifest}`); }
-    const planned = new Map();
-    const section = manifest.match(/## Files Planned\n([\s\S]*?)\n## Task Graph/)?.[1] || "";
-    for (const line of section.split("\n")) {
-      if (!/^\| T\d+ \|/.test(line)) continue;
-      const cells = line.split("|").map((cell) => cell.trim());
-      const task = cells[1]; const fileCell = String(cells[3] || "").replaceAll("`", "");
-      for (const raw of fileCell.split(";")) {
-        const p = raw.trim(); if (!p || /\s/.test(p)) continue;
-        if (planned.has(p) && planned.get(p) !== task) errors.push(`manifest path ${p} has multiple owners: ${planned.get(p)}, ${task}`);
-        planned.set(p, task);
-      }
-    }
     for (const [plannedPath, task] of planned) {
       let normalized; try { normalized = normalizedScope(plannedPath); } catch (error) { errors.push(error.message); continue; }
       const matches = ownerScopes.filter((owner) => scopeMatches(owner.scope, normalized));
@@ -249,7 +304,7 @@ export function validatePlanContract(contract, { root = process.cwd() } = {}) {
     }
     for (const owner of ownerScopes) if (![...planned.keys()].some((plannedPath) => { try { return scopeMatches(owner.scope, normalizedScope(plannedPath)); } catch { return false; } })) errors.push(`contract ownership scope has no manifest path: ${owner.task}:${owner.scope}`);
     try {
-      const changed = diffPaths(root, diffBase);
+      const changed = phase === "execution" ? diffPaths(root, diffBase) : new Set();
       // Census/writer detection must see the FULL changeset even when parity
       // excludes volatile session state — filter a COPY for parity only.
       changedForSafety = new Set(changed);
@@ -272,7 +327,7 @@ export function validatePlanContract(contract, { root = process.cwd() } = {}) {
       for (const changedPath of [...changed]) if (isVolatile(changedPath)) changed.delete(changedPath);
       for (const plannedPath of [...planned.keys()]) if (isVolatile(plannedPath)) planned.delete(plannedPath);
       const undeclared = [...changed].filter((changedPath) => !planned.has(changedPath)).sort();
-      const unchanged = [...planned.keys()].filter((plannedPath) => !changed.has(plannedPath)).sort();
+      const unchanged = phase === "execution" ? [...planned.keys()].filter((plannedPath) => !changed.has(plannedPath)).sort() : [];
       parityFailures = undeclared.length + unchanged.length;
       for (const changedPath of undeclared) errors.push(`changed path is undeclared in manifest ownership table: ${changedPath}`);
       for (const plannedPath of unchanged) errors.push(`manifest path has no actual change: ${plannedPath}`);
@@ -281,7 +336,7 @@ export function validatePlanContract(contract, { root = process.cwd() } = {}) {
 
   const changedExecutables = [...changedForSafety].filter((relative) => /\.(?:[cm]?[jt]sx?|py|go|rs|sql|sh)$/.test(relative));
   const review = contract.resource_review;
-  if (review.verification !== "changed-executable-census" || !Number.isInteger(review.denominator) || review.denominator !== changedExecutables.length || !hasText(review.evidence)) {
+  if (review.verification !== "changed-executable-census" || !Number.isInteger(review.denominator) || review.denominator < 0 || (phase === "execution" && review.denominator !== changedExecutables.length) || !hasText(review.evidence)) {
     errors.push(`resource_review must cite changed-executable-census with denominator ${changedExecutables.length} and direct evidence`);
   }
   if (!["no-risky-resource-writers", "declared-risky-resource-writers"].includes(review.disposition)) errors.push("resource_review has an invalid disposition");
@@ -301,26 +356,35 @@ export function validatePlanContract(contract, { root = process.cwd() } = {}) {
       try { const count = directProposalCount(root); if (count !== claim.denominator) errors.push(`all claim denominator ${claim.denominator} does not match ${count} direct proposals`); }
       catch (error) { errors.push(`cannot verify proposal claim: ${error.message}`); }
     } else if (evidence.verification === "diff-manifest-parity") {
-      if (claim.denominator !== parityFailures) errors.push(`absence claim denominator ${claim.denominator} does not match ${parityFailures ?? "unavailable"} manifest parity failures`);
+      if (phase === "execution" && claim.denominator !== parityFailures) errors.push(`absence claim denominator ${claim.denominator} does not match ${parityFailures ?? "unavailable"} manifest parity failures`);
     } else if (evidence.verification === "executable-consumers") {
-      if (claim.denominator !== invalidExecutableConsumers) errors.push(`unused claim denominator ${claim.denominator} does not match ${invalidExecutableConsumers} invalid executable consumers`);
+      if (phase === "execution" && claim.denominator !== invalidExecutableConsumers) errors.push(`unused claim denominator ${claim.denominator} does not match ${invalidExecutableConsumers} invalid executable consumers`);
     } else if (hasText(evidence.verification)) {
       errors.push(`unknown claim verification: ${evidence.verification}`);
     }
   }
-  validateRiskSections(contract, root, errors);
+  validateRiskSections(contract, root, errors, { futurePaths });
   return errors;
 }
 
 export function run(argv = process.argv.slice(2)) {
   const file = argv[0];
-  if (!file) { process.stderr.write("usage: validate-plan-contract.mjs <plan-contract.json> [root]\n"); return 2; }
+  if (!file || file.startsWith("--")) { process.stderr.write("usage: validate-plan-contract.mjs <plan-contract.json> [root] [--phase plan|execution]\n"); return 2; }
   try {
-    const root = path.resolve(argv[1] || process.cwd());
+    let rootArg; let phase = "execution"; let phaseSeen = false;
+    for (let index = 1; index < argv.length; index++) {
+      const arg = argv[index];
+      if (arg === "--phase") {
+        if (phaseSeen || !["plan", "execution"].includes(argv[index + 1])) throw new Error("--phase requires one plan|execution value and cannot be repeated");
+        phaseSeen = true; phase = argv[++index];
+      } else if (arg.startsWith("--") || rootArg !== undefined) throw new Error(`unexpected argument: ${arg}`);
+      else rootArg = arg;
+    }
+    const root = path.resolve(rootArg || process.cwd());
     const contract = JSON.parse(fs.readFileSync(path.resolve(file), "utf8"));
-    const errors = validatePlanContract(contract, { root });
+    const errors = validatePlanContract(contract, { root, phase });
     if (errors.length) { errors.forEach((e) => process.stderr.write(`[plan-contract] ${e}\n`)); return 1; }
-    process.stdout.write(`PLAN CONTRACT PASS: ${contract.ownership.length} owner streams, ${contract.claims.length} claims, ${contract.executables.length} executables\n`);
+    process.stdout.write(`PLAN CONTRACT PASS (${phase}): ${contract.ownership.length} owner streams, ${contract.claims.length} claims, ${contract.executables.length} executables\n`);
     return 0;
   } catch (error) { process.stderr.write(`[plan-contract] ${error.message}\n`); return 2; }
 }

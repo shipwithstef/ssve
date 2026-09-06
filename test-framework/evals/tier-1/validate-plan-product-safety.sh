@@ -36,22 +36,16 @@ node -e 'const fs=require("fs");const p=process.argv[1],c=require(p);c.base_sha=
 node "$ROOT/scripts/validate-plan-contract.mjs" "$WRITER_CONTRACT" "$WRITER" >/dev/null
 node -e 'const fs=require("fs");const p=process.argv[1],c=require(p);c.base_sha="missing-base";fs.writeFileSync(p,JSON.stringify(c))' "$WRITER_CONTRACT"
 if node "$ROOT/scripts/validate-plan-contract.mjs" "$WRITER_CONTRACT" "$WRITER" >/dev/null 2>&1; then echo "unresolvable plan base accepted" >&2; exit 1; fi
-# WI-562: validate the ACTIVE plan contract (latest dated docs/plans/*/plan-contract.json)
-# rather than a hardcoded WI-558 path — any landed branch's newest contract must
-# be internally consistent against its own changeset.
-# ACTIVE plan contract = the NEWEST-COMMITTED docs/plans/*/plan-contract.json.
-# Lexicographic name order is wrong when a branch carries multiple plans
-# (WI-SSVE-ARCHITECTURE-EVOLUTION-02: "2026-08-24-ssve-*" sorts before
-# "2026-08-24-wi562-*" while being the active changeset). Git commit date is
-# deterministic per checkout and matches "active" semantics.
-ACTIVE_CONTRACT="$(
-  for c in docs/plans/*/plan-contract.json; do
-    [ -f "$c" ] || continue
-    printf '%s %s\n' "$(git log -1 --format=%ct -- "$c" 2>/dev/null || echo 0)" "$c"
-  done | sort -rn | head -1 | cut -d' ' -f2-
-)"
-if [[ -z "$ACTIVE_CONTRACT" ]]; then echo "FAIL: no docs/plans/*/plan-contract.json found" >&2; exit 1; fi
-node scripts/validate-plan-contract.mjs "$ACTIVE_CONTRACT" "$ROOT"
+# Validate a named candidate against its own base, independently of whichever
+# historical plan was committed most recently. The release gate separately runs
+# verify-plan-mechanical.sh on the actual current candidate in execution mode.
+node -e 'const fs=require("fs");const p=process.argv[1],c=require(p);c.base_sha=process.argv[2];fs.writeFileSync(p,JSON.stringify(c))' "$WRITER_CONTRACT" "$WRITER_BASE"
+node "$ROOT/scripts/validate-plan-contract.mjs" "$WRITER_CONTRACT" "$WRITER" >/dev/null
+printf 'unplanned change\n' > "$WRITER/unplanned.txt"
+if node "$ROOT/scripts/validate-plan-contract.mjs" "$WRITER_CONTRACT" "$WRITER" >"$TMP/candidate-parity.out" 2>&1; then
+  echo "FAIL: current candidate accepted an undeclared change" >&2; exit 1
+fi
+grep -q 'changed path is undeclared.*unplanned.txt' "$TMP/candidate-parity.out"
 # WI-558 negative: volatile_paths is fail-closed — entries outside .svc/ are
 # rejected and can never silence code parity or the executable census.
 VOL_CONTRACT="$TMP/volatile-contract.json"; VOL_ROOT="$TMP/vol-root"; mkdir -p "$VOL_ROOT/scripts" "$VOL_ROOT/docs"

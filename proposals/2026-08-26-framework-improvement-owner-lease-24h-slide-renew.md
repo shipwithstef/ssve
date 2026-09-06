@@ -1,5 +1,8 @@
 # Framework improvement: owner override lease — 24h default + slide-on-activity renew
 
+backlog_wi: WI-FW-CLEAN-MAIN-FOLLOWUP-01
+reason: Current follow-up owns evidence and metadata reconciliation. Historical claims below are retained, not recertified; no missing historical WI or execution evidence is fabricated.
+
 **Status:** DRAFT
 **Date:** 2026-08-26
 **Source:** Azure VM fleet incident 2026-08-25/26 — eight Codex SSVE lanes died mid-finish when `SVC OWNER OVERRIDE` mutation lease expired after 15 minutes (hard cap 30 minutes) while BREAK-GLASS and WI claims remained valid for 24h.
@@ -8,7 +11,7 @@
 **Plan-changeset class:** hot-path (framework hooks, no consumer schema)
 
 <!--
-accepted_wi: WI-FW-OWNER-LEASE-01
+historical_accepted_wi: WI-FW-OWNER-LEASE-01
 -->
 
 ## Method
