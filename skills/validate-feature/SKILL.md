@@ -123,7 +123,7 @@ digraph feature_discovery {
     existing [label="Related artifact found?" shape=diamond];
     surface [label="Surface what exists\nask: update or start fresh?"];
     questions [label="Step 1: Business questions\n(consequential decisions,\nskip what scan answered)"];
-    brief [label="Step 2: Present brief\n(section by section)"];
+    brief [label="Step 2: Reuse or present brief\n(consequential open choices only)"];
     crossval [label="Step 3: Cross-validate\n(persona match, journey fit,\nspec conflicts)"];
     verdict [label="Step 3b: Ship Decision\n(evidence-weighted scoring)" shape=diamond];
     route [label="Step 4: Route to\ndownstream skill" shape=diamond];
@@ -202,7 +202,7 @@ full greenfield feature lane. Process task IDs are composite: `{T}.1` through
       "blocked_by": [],
       "process_tasks": [
         { "id": "1.1", "name": "validate-feature|context-scan",        "status": "in_progress", "blocked_by": [],      "subject": "Scan project for existing artifacts: WI, spec, brief, journeys, ACs related to this idea" },
-        { "id": "1.2", "name": "validate-feature|escape-check",        "status": "pending",     "blocked_by": ["1.1"], "subject": "[CONDITIONAL] HARD-GATE: standalone/greenfield? If yes, set 1.3–1.7 to skipped, go to 1.8" },
+        { "id": "1.2", "name": "validate-feature|escape-check",        "status": "pending",     "blocked_by": ["1.1"], "subject": "[CONDITIONAL] P2 applicability: bootstrap missing context or bounded repair/consolidation with sufficient evidence; skip only non-applicable business work and route" },
         { "id": "1.3", "name": "validate-feature|market-check",        "status": "pending",     "blocked_by": ["1.2"], "subject": "Resolve applicable market uncertainty; reuse current evidence when sufficient" },
         { "id": "1.4", "name": "validate-feature|business-questions",  "status": "pending",     "blocked_by": ["1.3"], "subject": "Step 1: unresolved business decisions with user — problem, persona, evidence, alternatives" },
         { "id": "1.5", "name": "validate-feature|brief-present",       "status": "pending",     "blocked_by": ["1.4"], "subject": "Step 2: reuse or present brief; resolve only consequential open choices" },
@@ -238,6 +238,8 @@ After completing {T}.1 (context-scan), evaluate the HARD-GATE condition:
 - If the project has existing context → evaluate the applicability below; retain relevant cross-validation and routing, and skip only work whose evidence is already sufficient.
 
 **Market-check applicability:** Run market research before a business decision only when current evidence leaves consequential demand, timing, differentiation, or ship uncertainty. Tool availability does not itself justify research. For an already-authorized bounded change, reuse accepted scope and current AC/persona/spec/code evidence; do not create a new market-validation cycle or rescore its business case without new contradictory evidence.
+
+For concept fragmentation, an existing pipeline break, or a missing journey describing existing functionality, P2 reuses the established expected behavior and skips P3–P5 when no new consequential business uncertainty exists. Route to diagnose-bug, plan-changeset, write-journeys or audit-ac according to the actual gap; retain relevant dependency and spec/code conflict checks.
 
 **Apply the context-scan result to the existing graph:** P2 records whether P3–P5 apply and why. For a bounded authorized change with sufficient current evidence, mark non-applicable process tasks using the existing conditional-skip convention and continue relevant cross-validation and routing. Do not fabricate executed phase receipts or new brief artifacts. A new idea, missing consequential evidence, or a material conflict still requires the applicable business work; authorization alone is not evidence of demand. P6 accepts the existing brief or canonical owner scope as its routing input.
 

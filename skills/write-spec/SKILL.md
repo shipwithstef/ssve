@@ -180,7 +180,7 @@ Before declaring done, verify:
 | 4 | Spec has System Dependencies section | grep for "System Dependencies" heading in spec | |
 | 5 | Vision-to-spec traceability check | verify vision concepts map to ACs in spec | |
 | 6 | Zero-state AC exists (Feature type) | grep for ZERO AC in spec (Feature type only) | |
-| 7 | No unresolved questions | grep for TBD, TODO, open questions in spec | |
+| 7 | No blocking unresolved consequential decisions | Apply the shared promotion predicate. Inspect TBD/TODO as evidence-gap warnings: block missing required AC/state/dependency evidence or a consequential owner choice; explicitly defer harmless details without manufacturing answers | |
 | 8 | Scope bounded by competitors | If analyze-competitors.md exists, spec doesn't re-invent competitor strengths | |
 | 9 | Pillars Coverage Matrix present and complete | grep for "## Pillars Coverage Matrix" section in spec + verify all 8 pillars populated with explicit state (`[NEW]`, `[UPDATED]`, `[UNCHANGED — VERIFIED]`, or `[N/A — justified]`). No blank cells, no TODO, no "skipped". See `references/pillars-coverage-matrix.md`. | |
 | 10 | Task graph written | `test -f .svc/lane-tasks-<WI>.json` — file must exist with Task {T} entry and process_tasks | |

@@ -549,7 +549,7 @@
     {
       "skill": "design-tech",
       "path": "skills/design-tech/SKILL.md",
-      "content_hash": "ca34549ecf423ee90f89745d49a933b4b1837a30bdd6c7e83d27c8c517959efd",
+      "content_hash": "469836306b41d40de0611302c757f568918e2cb6bcef957f8cf827d5f414ad6a",
       "description": "Use when you have a DESIGNED feature spec (after UX and UI design) and need to define architecture, tech choices, and component design before implementation",
       "aliases": [
         "technical design",
@@ -609,7 +609,7 @@
     {
       "skill": "design-ux",
       "path": "skills/design-ux/SKILL.md",
-      "content_hash": "62c2ce4c61156706723a8b3ff7ad711f4c39ccbba06fe6a7218faed45e88aa18",
+      "content_hash": "772876aa68dfb17e2c1902c98d6cdadd0f77862d0148452bf8d72f00276cc61c",
       "description": "Use when a DRAFT feature spec needs UX design — produces screen flows, state machines, information hierarchy, and interaction patterns before any visual design",
       "aliases": [],
       "positive_triggers": [],
@@ -1236,7 +1236,7 @@
     {
       "skill": "plan-changeset",
       "path": "skills/plan-changeset/SKILL.md",
-      "content_hash": "352bb776a457b588667f819d08e22b2ebf3ef0292ef25a875e6eaf573b0a374b",
+      "content_hash": "13f09ca882abea9bb318b46ce79e5954d736f3bcab7feb669f2e28d11aac9dfc",
       "description": "Use when you have a BASELINED feature spec with technical design and need to produce the implementation plan for branch-first execution — task graph, file set, validation plan, checkpoints, and AC/test mapping",
       "aliases": [],
       "positive_triggers": [],
@@ -1870,7 +1870,7 @@
     {
       "skill": "validate-feature",
       "path": "skills/validate-feature/SKILL.md",
-      "content_hash": "a2b10bd97db5617e1350456c4a97e6ce37298277e3431615a786c74dfd319d36",
+      "content_hash": "07099be3b72eaa107997fd12b389d6c9f14d072042930d144bc853ec11e4cf6d",
       "description": "First stop for any new feature idea — cross-validates against personas, journeys, and specs, resolves consequential business decisions, produces a Feature Ship Brief, and routes to the right downstream skill. Use when: \"what if we built X\", \"I have a feature idea\", \"should we add\", \"validate this idea\". Also: \"new feature\", \"should we add\", \"I have a feature idea\".",
       "aliases": [],
       "positive_triggers": [],
@@ -1942,7 +1942,7 @@
     {
       "skill": "write-spec",
       "path": "skills/write-spec/SKILL.md",
-      "content_hash": "9d62d58fb8b2633bde39721db0a7459e7f72d6bb61e308446fcba54e11f39924",
+      "content_hash": "2be7cc945e3a4786691fbfb393429078f40da719dc232f9511b84a71dc118ab0",
       "description": "Use when defining a new feature or change — produces a DRAFT feature spec with user stories, ACs, and journeys before any technical design or code. Supports greenfield new-feature work and brownfield delta-spec work for extensions, bugfix behavior, and contract changes.",
       "aliases": [
         "specify feature",

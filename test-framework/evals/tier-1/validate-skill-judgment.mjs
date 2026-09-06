@@ -46,6 +46,13 @@ function phases(text) {
 const feature = read('skills/validate-feature/SKILL.md');
 assert(!feature.includes('ask "Does this capture it correctly?" after each'));
 assert(!feature.includes('confirm direction before proceeding'));
+assert(!/section by section/i.test(feature));
+assert(feature.includes('For concept fragmentation'));
+for (const name of ['write-spec','design-ux','design-tech','plan-changeset']) {
+  const contract = read(`skills/${name}/SKILL.md`);
+  assert(!/No unresolved questions \| grep for TBD, TODO/.test(contract), `${name}: placeholder presence is not a consequential decision`);
+  assert(contract.includes('block missing required AC/state/dependency evidence'));
+}
 for (const id of ['P3-GateMarketValidation','P4-BusinessBrief','P5-CrossValidationShipDecision']) {
   const phase = phases(feature).find(p => p.id === id);
   assert(phase && phase.trigger !== 'always' && !phase.required, `${id}: bounded accepted work must not force a new business cycle`);
@@ -54,7 +61,7 @@ assert(feature.includes('authorization alone is not evidence of demand'));
 assert(feature.includes('Do not fabricate executed phase receipts'));
 assert(feature.includes('P3–P5 commands below are conditional examples'));
 assert(feature.includes('Otherwise verify accepted scope remains consistent'));
-assert(!feature.includes('| 1 | Ship brief file exists |')); 
+assert(!feature.includes('| 1 | Ship brief file exists |'));
 const advisor = read('skills/svc-advisor/SKILL.md');
 const diagnosis = read('skills/diagnose-bug/SKILL.md');
 const ap = phases(advisor), dp = phases(diagnosis);

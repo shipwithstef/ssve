@@ -642,7 +642,7 @@ Before declaring done, verify:
 | 4 | Flow Diagram section present | grep for "## Flow Diagrams" in output file | |
 | 5 | Loading/error/empty states defined for each screen | Every screen's state machine includes LOADING, ERROR, and EMPTY states | |
 | 6 | Skip justified if applicable | If this is an Enabler/Integration with no UX surface: skip reason is logged in lane-tasks JSON and `pipeline-decisions.jsonl` with explicit justification; otherwise UX design file is substantive | |
-| 7 | No unresolved questions | grep for TBD, TODO, open questions in output file | |
+| 7 | No blocking unresolved consequential decisions | Apply the shared promotion predicate. Inspect TBD/TODO as evidence-gap warnings: block missing required AC/state/dependency evidence or a consequential owner choice; explicitly defer harmless details without manufacturing answers | |
 
 If any check FAILs, fix before continuing. If a fix requires upstream changes, stop and report.
 
