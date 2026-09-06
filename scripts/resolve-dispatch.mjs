@@ -113,15 +113,22 @@ function validateTuple(tuple, scope) {
   if (!EFFORTS.has(tuple.effort)) fail(`${scope} tuple.effort must be one of: ${[...EFFORTS].join(', ')}`);
 }
 
+export function cursorIndependentEligible(station) {
+  const t = station?.tuple;
+  return station?.identity_requirement === 'requested_accepted' && t?.host === 'cursor' &&
+    t.family === 'xai' && t.model === 'cursor-grok-4.6-high' && t.effort === 'high';
+}
+
 function validateStation(station, scope) {
   if (!isObject(station)) fail(`${scope} station must be an object`);
   if (typeof station.id !== 'string' || !station.id.trim()) fail(`${scope} station.id is required`);
   if (!STATION_KINDS.has(station.kind)) fail(`${scope} station.kind is invalid`);
   if (typeof station.required !== 'boolean') fail(`${scope} station.required must be boolean`);
   if (!STATION_AUTHORITIES.has(station.authority)) fail(`${scope} station.authority is invalid`);
+  if (station.identity_requirement !== undefined && !['requested_accepted', 'server_observed'].includes(station.identity_requirement)) fail(`${scope}/${station.id} invalid identity requirement`);
   validateTuple(station.tuple, `${scope}/${station.id}`);
   if (station.tuple.host === 'cursor' && station.tuple.model === 'cursor-auto' && station.tuple.family !== 'multi') fail(`${scope}/${station.id} Cursor Auto family must be multi because the provider family is not attested`);
-  if (station.kind === 'external' && station.authority === 'independent' && station.tuple.host === 'cursor') fail(`${scope}/${station.id} Cursor cannot be independent because its runtime provider family is not attested`);
+  if (station.kind === 'external' && station.authority === 'independent' && station.tuple.host === 'cursor' && !cursorIndependentEligible(station)) fail(`${scope}/${station.id} Cursor cannot be independent because its runtime provider family is not attested`);
 }
 
 function validateDispatchPolicy(policy) {
@@ -371,6 +378,7 @@ function normalizeStation(station, index) {
     kind: station.kind,
     required: station.required,
     authority: station.authority,
+    ...(station.identity_requirement === undefined ? {} : { identity_requirement: station.identity_requirement }),
     tuple: station.tuple,
     max_invocations: station.max_invocations ?? null,
     round_trip: station.round_trip ?? null,

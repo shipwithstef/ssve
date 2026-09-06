@@ -9,6 +9,7 @@ mkdir -p "$TMP/repo/scripts/lib" "$TMP/repo/schemas/receipts" "$TMP/repo/docs/sp
 cp "$ROOT/scripts/check-chain-receipts.mjs" "$ROOT/scripts/check-review-round-cap.mjs" "$ROOT/scripts/state-io.mjs" "$ROOT/scripts/derive-receipt-tier.mjs" "$ROOT/scripts/quick-fix-eligibility.mjs" "$TMP/repo/scripts/"
 cp "$ROOT/scripts/run-external-review.mjs" "$TMP/repo/scripts/"
 cp "$ROOT/scripts/lib/normalize-ac-table.mjs" "$ROOT/scripts/lib/cognitive-family.mjs" "$ROOT/scripts/lib/reviewer-evidence.mjs" "$ROOT/scripts/lib/external-review-provenance.mjs" "$ROOT/scripts/lib/bounded-exit.mjs" "$ROOT/scripts/lib/evidence-schema.mjs" "$TMP/repo/scripts/lib/"
+cp "$ROOT/scripts/lib/reviewer-resources.mjs" "$TMP/repo/scripts/lib/"
 cp "$ROOT/scripts/lib/history-epoch.mjs" "$TMP/repo/scripts/lib/"
 mkdir -p "$TMP/repo/docs/specs/privacy"
 cp "$ROOT/docs/specs/privacy/history-epoch.json" "$TMP/repo/docs/specs/privacy/"

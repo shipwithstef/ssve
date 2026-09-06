@@ -7,6 +7,36 @@ first and update it after.
 Skills that read this: `route-workflow`, `improve-framework`, `evolve-framework`, `blend-external`, `test-framework`, `create-skill`
 Skills that update this: same list + any manual framework change
 
+## Session recovery and reviewer availability (WI-FW-SESSION-RECOVERY-01)
+
+Registered external worktrees with a complete exact same-session tuple resume
+without repeating SVC_APPROVED_WORKTREE_ROOTS. Initial adoption still requires
+an approved root; the fallback never grants the parent directory or recovers
+foreign/released/malformed authority. Existing hooks share that tuple resolver.
+
+Generate task reviewer policy with `review-topology-v2.mjs create-policy` using
+an input containing orchestrator, self tuple, advisory stations and reviewer.
+Self-review is inserted before external review in both phases. Optional
+`resource_policy` maps exact host/model routes to owner-defined account pools;
+owner observations live only in the digest-bound policy. Runtime sibling
+`<policy>.resources.json` stores failure-only observations. Unknown balances
+remain null. Newer owner observations or explicit reset times permit retries;
+changing model names or policy digests alone does not clear a pool failure.
+Per-pool launch locking prevents concurrent candidates repeating an account
+failure. This is task-configured state, not a replacement capability registry.
+
+Cursor independent review requires owner opt-in identity_requirement
+`requested_accepted` and exact cursor/xai/cursor-grok-4.6-high/high in either
+policy format. Receipts disclose requested CLI routing, not server-attested
+identity; Auto remains advisory. Cache identity includes the policy and station.
+Parsed terminal errors classify authentication, entitlement, quota, overload,
+network and configuration separately; successful quoted diagnostics stay content.
+
+Focused proof: `node --test test-framework/tests/session-recovery.test.mjs`
+and `bash test-framework/evals/tier-1/validate-literal-branch-worktree.sh`.
+The full launcher compatibility suite includes the focused resource fixtures.
+Installation retains the existing shared scripts directory across provisioned hosts.
+
 ## Current State
 
 - **Skills:** 104 (`skills-manifest.json` is authoritative; 2026-08-28 added `produce-ad-video`. WI-507 added the 15 terminal company operating brains on 2026-07-22: `cos`, `growth-lead`, `fin-analyst`, `product-lead`, `market-intel`, `counsel`, `security-ops`, `customer-cs`, `revops`, `comms`, `tax-auditor`, `privacy-dpo`, `infra-sre`, `procurement`, and `growth-eng`)

@@ -143,6 +143,10 @@ launderedPinnedCursor.modes.fast.orchestrators.codex.exec.stations.push({ id: 'c
 const launderedPinnedCursorFile = path.join(root, 'laundered-pinned-cursor.json'); fs.writeFileSync(launderedPinnedCursorFile, `${JSON.stringify(launderedPinnedCursor)}\n`, { mode: 0o600 });
 assert.throws(() => resolveReviewTopology({ configPath: launderedPinnedCursorFile, orchestrator: 'codex', phase: 'exec' }), /Cursor cannot be independent because its runtime provider family is not attested/);
 
+launderedPinnedCursor.modes.fast.orchestrators.codex.exec.stations.at(-1).identity_requirement = 'requested_accepted';
+fs.writeFileSync(launderedPinnedCursorFile, JSON.stringify(launderedPinnedCursor), { mode: 0o600 });
+assert.equal(resolveReviewTopology({ configPath: launderedPinnedCursorFile, orchestrator: 'codex', phase: 'exec' }).stations.at(-1).tuple.model, 'cursor-grok-4.6-high');
+
 const falseCursorFamily = structuredClone(policy);
 falseCursorFamily.modes.fast.orchestrators.codex.exec.stations.push({ id: 'cursor-auto', kind: 'external', required: true, authority: 'advisory', tuple: { host: 'cursor', family: 'anthropic', model: 'cursor-auto', effort: 'high' } });
 const falseCursorFamilyFile = path.join(root, 'false-cursor-family.json'); fs.writeFileSync(falseCursorFamilyFile, `${JSON.stringify(falseCursorFamily)}\n`, { mode: 0o600 });

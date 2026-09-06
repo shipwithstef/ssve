@@ -83,6 +83,12 @@ Derived-at for all blocks: **2026-08-26** unless stated otherwise
 
 ## 6. Resource & ceremony governors
 
+Derived-at: **2026-09-06** (WI-FW-SESSION-RECOVERY-01). Exact registered
+same-session resume and task-scoped reviewer pool observations are documented
+in `FRAMEWORK-STATE.md § Session recovery and reviewer availability`. Cursor
+independence requires the explicit exact-route identity contract; Auto is advisory.
+Verify with `node --test test-framework/tests/session-recovery.test.mjs`.
+
 | Governor | What it controls | Authority |
 |---|---|---|
 | Capability registry `~/.svc/capabilities/registry.json` | Per-builder paid/free resource inventory: sub-budgets, quotas, reset cadence, last-verified | `skills/capability-registry/SKILL.md` |

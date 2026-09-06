@@ -38,6 +38,7 @@ import {
   worktreeLeafFor,
   needsDerivedWorktreeLeaf,
   isApprovedExistingWorktreeRoot,
+  secureAncestorChain,
 } from "../hooks/lib/literal-branch.mjs";
 const SHA_RE = /^[0-9a-f]{40}$/;
 const CROSS_HOST_TTL_MS = 24 * 3_600_000;
@@ -501,6 +502,28 @@ function result({ wi, branch, baseSha, worktree, owner, graphPath, generation, c
 // checkout, never an ambiguous candidate — by running the SAME locked
 // transaction used for ordinary ensure/resume, so every foreign/stale/
 // generation conflict keeps its fail-closed semantics.
+// A root allowlist is needed for first adoption. A complete existing tuple is
+// already authorization for this exact registered target, not for its parent.
+function stateProbePath(worktree) { return path.join(worktree, ".svc", ".svc-state-probe"); }
+
+function existingResumeApproval({ repo, wi, branch, owner, worktree, env }) {
+  const approval = isApprovedExistingWorktreeRoot(worktree, repo.root, env);
+  if (approval.ok) return approval;
+  try {
+    const targetInfo = fs.lstatSync(worktree);
+    if (!targetInfo.isDirectory() || targetInfo.isSymbolicLink() || (process.getuid && targetInfo.uid !== process.getuid())) return approval;
+    const binding = readSessionBinding(worktree, owner);
+    if (!binding || binding.released_at || binding.wi !== wi || binding.branch !== branch) return approval;
+    if (fs.existsSync(markerPathFor(repo.root, wi))) return approval;
+    if (fs.realpathSync(worktree) !== worktree || !secureAncestorChain(path.dirname(worktree), worktree).ok ||
+        !secureAncestors(worktree, path.join(worktree, ".svc", ".svc-state-probe"))) return approval;
+    const verified = verifyCompleteTuple({ repo, wi, branch, owner, worktree,
+      graphP: path.join(worktree, ".svc", `lane-tasks-${wi}.json`), marker: null, env });
+    if (verified.ok) return { ok: true, root: worktree, source: "existing-exact-authority" };
+  } catch { /* Malformed or missing authority retains the original refusal. */ }
+  return approval;
+}
+
 export function adoptExistingWorktree(options = {}, env = process.env) {
   const wi = String(options.wi || "");
   if (!WI_RE.test(wi)) throw new Error(`SELF_HEAL_INELIGIBLE: invalid WI identifier (${wi || "empty"})`);
@@ -543,9 +566,9 @@ export function adoptExistingWorktree(options = {}, env = process.env) {
   const relativeWorktree = path.relative(path.join(repo.root, ".worktrees"), target.path);
   const insideDefaultRoot = !!relativeWorktree && !relativeWorktree.startsWith("..") && !path.isAbsolute(relativeWorktree);
   if (!insideDefaultRoot) {
-    const approval = isApprovedExistingWorktreeRoot(target.path, repo.root, env);
+    const approval = existingResumeApproval({ repo, wi, branch: target.branch, owner, worktree: target.path, env });
     if (!approval.ok) throw new Error(`SELF_HEAL_INELIGIBLE (${approval.reason_code || "WORKTREE_ROOT_UNAPPROVED"}: ${approval.reason})`);
-    if (!secureAncestors(approval.root, target.path)) {
+    if (!secureAncestors(approval.root, approval.root === target.path ? path.join(target.path, ".svc", ".svc-state-probe") : target.path)) {
       throw new Error("SELF_HEAL_INELIGIBLE: unsafe approved worktree path (symlinked or foreign-owned ancestor)");
     }
   } else if (!secureAncestors(repo.root, target.path)) {
@@ -605,7 +628,7 @@ function transaction({ repo, wi, branch, from, owner, host, env }) {
     // canonical root with a same-UID, symlink-free ancestry chain. Unapproved
     // roots stay fail-closed and are never auto-approved.
     if (registeredBranch) {
-      const approval = isApprovedExistingWorktreeRoot(registeredBranch.path, repo.root, env);
+      const approval = existingResumeApproval({ repo, wi, branch, owner, worktree: registeredBranch.path, env });
       if (!approval.ok) {
         throw new Error(`registered requested branch is outside the repository .worktrees containment root (${approval.reason_code || "WORKTREE_ROOT_UNAPPROVED"}: ${approval.reason})`);
       }
@@ -622,7 +645,7 @@ function transaction({ repo, wi, branch, from, owner, host, env }) {
   // canonical root (repo-root-relative containment does not apply there), and
   // the same same-UID/no-symlink guarantees are enforced from that root.
   if (!insideDefaultRoot && approvedExternalRoot) {
-    const externalChain = secureAncestors(approvedExternalRoot, worktree);
+    const externalChain = secureAncestors(approvedExternalRoot, approvedExternalRoot === worktree ? stateProbePath(worktree) : worktree);
     if (!externalChain) throw new Error("unsafe approved worktree path: an ancestor beneath the approved root is a symlink or not owned by the current user");
   } else if (!secureAncestors(repo.root, worktree)) {
     throw new Error("unsafe worktree path: an ancestor directory is a symlink or not owned by the current user");

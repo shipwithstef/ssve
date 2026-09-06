@@ -3,12 +3,24 @@
   "$id": "https://seriousvibecoding.dev/schemas/dispatch-policy.schema.json",
   "title": "Owner dispatch policy",
   "type": "object",
-  "required": ["schema_version", "authority", "default_mode", "modes"],
+  "required": [
+    "schema_version",
+    "authority",
+    "default_mode",
+    "modes"
+  ],
   "additionalProperties": false,
   "properties": {
-    "schema_version": { "const": 1 },
-    "authority": { "const": "repository-owner" },
-    "default_mode": { "type": "string", "minLength": 1 },
+    "schema_version": {
+      "const": 1
+    },
+    "authority": {
+      "const": "repository-owner"
+    },
+    "default_mode": {
+      "type": "string",
+      "minLength": 1
+    },
     "entitlements": {
       "type": "object",
       "additionalProperties": true
@@ -17,14 +29,20 @@
       "type": "object",
       "additionalProperties": {
         "type": "array",
-        "items": { "type": "string", "minLength": 1 }
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "allow": {
       "type": "object",
       "additionalProperties": {
         "type": "array",
-        "items": { "type": "string", "minLength": 1 }
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "fallback": {
@@ -37,37 +55,114 @@
         "type": "object",
         "additionalProperties": true
       }
+    },
+    "resource_policy": {
+      "type": "object",
+      "required": [
+        "routes",
+        "observations"
+      ],
+      "properties": {
+        "routes": {
+          "type": "array"
+        },
+        "observations": {
+          "type": "object"
+        }
+      }
     }
   },
   "$defs": {
     "tuple": {
       "type": "object",
-      "required": ["host", "family", "model", "effort"],
+      "required": [
+        "host",
+        "family",
+        "model",
+        "effort"
+      ],
       "additionalProperties": false,
       "properties": {
-        "host": { "type": "string", "minLength": 1 },
-        "family": { "type": "string", "minLength": 1 },
-        "model": { "type": "string", "minLength": 1 },
+        "host": {
+          "type": "string",
+          "minLength": 1
+        },
+        "family": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
         "effort": {
           "type": "string",
-          "enum": ["low", "medium", "high", "xhigh", "max", "provider-managed"]
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+            "provider-managed"
+          ]
         }
       }
     },
     "station": {
       "type": "object",
-      "required": ["id", "kind", "required", "authority", "tuple"],
+      "required": [
+        "id",
+        "kind",
+        "required",
+        "authority",
+        "tuple"
+      ],
       "additionalProperties": true,
       "properties": {
-        "id": { "type": "string", "minLength": 1 },
-        "kind": { "type": "string", "enum": ["inline-self", "subagent", "external"] },
-        "required": { "type": "boolean" },
-        "authority": { "type": "string", "enum": ["advisory", "independent"] },
-        "tuple": { "$ref": "#/$defs/tuple" },
-        "max_invocations": { "type": "integer", "minimum": 1 },
-        "round_trip": { "type": "boolean" },
-        "fallback_only": { "type": "boolean" },
-        "explicit_request_only": { "type": "boolean" }
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "inline-self",
+            "subagent",
+            "external"
+          ]
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "authority": {
+          "type": "string",
+          "enum": [
+            "advisory",
+            "independent"
+          ]
+        },
+        "tuple": {
+          "$ref": "#/$defs/tuple"
+        },
+        "max_invocations": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "round_trip": {
+          "type": "boolean"
+        },
+        "fallback_only": {
+          "type": "boolean"
+        },
+        "explicit_request_only": {
+          "type": "boolean"
+        },
+        "identity_requirement": {
+          "enum": [
+            "requested_accepted",
+            "server_observed"
+          ]
+        }
       }
     }
   }

@@ -6,7 +6,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validate } from './lib/json-schema-validator.mjs';
-import { resolveDispatchExternalReviewer, resolveDispatchReviewTopology } from './resolve-dispatch.mjs';
+import { cursorIndependentEligible, resolveDispatchExternalReviewer, resolveDispatchReviewTopology } from './resolve-dispatch.mjs';
+
+import { validateResourcePolicy } from './lib/reviewer-resources.mjs';
+import { writeJsonAtomic } from './state-io.mjs';
 
 const DEFAULT_DISPATCH_CONFIG = path.join(os.homedir(), '.svc', 'dispatch-policy.json');
 const DEFAULT_LEGACY_CONFIG = path.join(os.homedir(), '.svc', 'reviewer-policy-v2.json');
@@ -62,11 +65,12 @@ function validatePhaseLegacy(phase, orchestrator, phaseName) {
     if (!station?.id || ids.has(station.id)) fail(`${orchestrator}/${phaseName} station ids must be unique`);
     ids.add(station.id);
     if (!STATION_KINDS.has(station.kind) || typeof station.required !== 'boolean' || !['advisory', 'independent'].includes(station.authority)) fail(`${orchestrator}/${phaseName}/${station.id} station contract is invalid`);
+    if (station.identity_requirement !== undefined && !['requested_accepted', 'server_observed'].includes(station.identity_requirement)) fail('invalid identity requirement');
     validateTupleLegacy(station.tuple, station, orchestrator);
     if (station.kind === 'inline-self' && station.authority !== 'advisory') fail(`${orchestrator}/${phaseName}/${station.id} self-review cannot be independent`);
     if (station.kind === 'subagent' && station.authority !== 'advisory') fail(`${orchestrator}/${phaseName}/${station.id} subagent cannot be independent release authority`);
     if (station.kind === 'external' && station.authority === 'independent' && HOST_FAMILY[orchestrator] && station.tuple.family === HOST_FAMILY[orchestrator]) fail(`${orchestrator}/${phaseName}/${station.id} independent external authority must be different-family`);
-    if (station.kind === 'external' && station.authority === 'independent' && station.tuple.host === 'cursor') fail(`${orchestrator}/${phaseName}/${station.id} Cursor cannot be independent because its runtime provider family is not attested`);
+    if (station.kind === 'external' && station.authority === 'independent' && station.tuple.host === 'cursor' && !cursorIndependentEligible(station)) fail(`${orchestrator}/${phaseName}/${station.id} Cursor cannot be independent because its runtime provider family is not attested`);
   }
   if (phase.stations[0].kind !== 'inline-self') fail(`${orchestrator}/${phaseName} must start with inline self-review`);
   if (phase.release_authority && HOST_FAMILY[orchestrator] && !phase.stations.some(station => station.kind === 'external' && station.required && station.authority === 'independent' && station.tuple.family !== HOST_FAMILY[orchestrator])) fail(`${orchestrator}/${phaseName} release authority requires a required different-family external station`);
@@ -86,6 +90,15 @@ function loadLegacyReviewerPolicy(configPath = null) {
   const bytes = fs.readFileSync(file);
   let policy;
   try { policy = JSON.parse(bytes); } catch { fail(`owner config is not valid JSON: ${file}`); }
+  validateReviewerPolicy(policy);
+  return { file, sha256: hash(bytes), policy };
+}
+
+export function validateReviewerPolicy(policy) {
+  const schema = JSON.parse(fs.readFileSync(path.join(SCHEMA_ROOT, 'reviewer-policy-v2.schema.json'), 'utf8'));
+  const result = validate(schema, policy);
+  if (!result.valid) fail(result.errors.join('; '));
+  validateResourcePolicy(policy.resource_policy);
   if (policy.schema_version !== 2 || policy.authority !== 'repository-owner' || typeof policy.default_mode !== 'string' || !policy.modes?.[policy.default_mode]) fail('owner config header/default mode is invalid');
   for (const [modeName, mode] of Object.entries(policy.modes)) {
     if (!mode?.orchestrators || typeof mode.orchestrators !== 'object') fail(`${modeName} has no orchestrators`);
@@ -95,7 +108,16 @@ function loadLegacyReviewerPolicy(configPath = null) {
       for (const phaseName of ['plan', 'exec']) validatePhaseLegacy(phases?.[phaseName], orchestrator, phaseName);
     }
   }
-  return { file, sha256: hash(bytes), policy };
+}
+
+export function createReviewerPolicy({ orchestrator, self, advisories = [], reviewer, resource_policy }) {
+  const stations = [{ id: 'self', kind: 'inline-self', required: true, authority: 'advisory', tuple: self }, ...advisories, reviewer];
+  const phase = { release_authority: reviewer?.authority === 'independent', stations };
+  const policy = { schema_version: 2, authority: 'repository-owner', default_mode: 'production',
+    modes: { production: { orchestrators: { [orchestrator]: { plan: structuredClone(phase), exec: structuredClone(phase) } } } },
+    ...(resource_policy === undefined ? {} : { resource_policy }) };
+  validateReviewerPolicy(policy);
+  return policy;
 }
 
 export function loadReviewerPolicy(configPath = null) {
@@ -104,6 +126,7 @@ export function loadReviewerPolicy(configPath = null) {
   try { bytes = fs.readFileSync(file); } catch (error) { fail(`cannot read owner config ${file}: ${error.code || error.message}`); }
   let policy;
   try { policy = JSON.parse(bytes); } catch { fail(`owner config is not valid JSON: ${file}`); }
+  validateResourcePolicy(policy.resource_policy);
   if (policy.schema_version === 1) {
     return { file, sha256: hash(bytes), policy, format: 'dispatch-v1' };
   }
@@ -244,6 +267,18 @@ function validateExternalReceipt(report, station, candidateDigest, topology) {
   if (report.status === 'pass' && (receipt.status !== 'success' || !['success', 'cache_hit'].includes(receipt.classification) || !['owner_config_primary', 'cache_hit'].includes(receipt.route?.kind))) fail(`external station ${station.id} does not carry a successful canonical launcher receipt`);
   if (report.status === 'unavailable' && (receipt.status !== 'failure' || receipt.classification !== report.classification)) fail(`external station ${station.id} unavailable classification does not match its receipt`);
   if (receipt.status !== 'success') return null;
+  if (station.identity_requirement) {
+    const a = receipt.model_attestation;
+    const replay = receipt.route?.kind === 'cache_hit' && a?.level === 'cache_replay';
+    if (a?.requested_model !== station.tuple.model || !Array.isArray(a.observed_models) || a.observed_models.some(model => model !== station.tuple.model) ||
+        (!replay && ![station.identity_requirement, 'server_observed'].includes(a.level)) ||
+        (station.identity_requirement === 'server_observed' && a.observed_models.length === 0)) fail('external station identity requirement not met');
+    for (const t of [receipt.requested_tuple, receipt.invocation_tuple, receipt.effective_tuple]) {
+      if (t?.host !== station.tuple.host || t?.family !== station.tuple.family || t?.model !== station.tuple.model || t?.effort !== station.tuple.effort) fail('external station identity tuple mismatch');
+    }
+    if (station.tuple.host === 'cursor' && !replay && a.level === 'requested_accepted' && a.evidence !== 'cursor_plan_mode_exact_model_argv_plus_successful_json_exit_no_server_model_echo') fail('Cursor exact-route evidence missing');
+  }
+
   const findingsPath = receipt.artifacts?.findings;
   if (typeof findingsPath !== 'string' || !path.isAbsolute(findingsPath)) fail(`external station ${station.id} successful receipt requires an absolute findings artifact`);
   let findingsInfo;
@@ -349,7 +384,18 @@ function args(argv) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const { command, options } = args(process.argv.slice(2));
-  if (command === 'plan') {
+  if (command === 'create-policy') {
+    if (!options.input || !options.out) fail('create-policy requires --input and --out');
+    const policy = createReviewerPolicy(JSON.parse(fs.readFileSync(options.input, 'utf8')));
+    const out = path.resolve(options.out);
+    fs.mkdirSync(path.dirname(out), { recursive: true, mode: 0o700 });
+    const parent = fs.lstatSync(path.dirname(out));
+    if (parent.isSymbolicLink() || (parent.mode & 0o022) || (process.getuid && parent.uid !== process.getuid())) fail('policy directory must be protected and owned');
+    if (fs.existsSync(out) && (!fs.lstatSync(out).isFile() || fs.lstatSync(out).isSymbolicLink())) fail('policy output must be a regular file');
+    writeJsonAtomic(out, policy);
+    fs.chmodSync(out, 0o600);
+    process.stdout.write(`${JSON.stringify({ ok: true, policy: out })}\n`);
+  } else if (command === 'plan') {
     process.stdout.write(`${JSON.stringify(resolveReviewTopology({
       configPath: options.config,
       mode: options.mode,

@@ -9,6 +9,17 @@ set -euo pipefail
 echo "=== Tier 1: Stop hook WI-scoped session isolation ==="
 
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+# A governed execution worktree can carry a real owner binding. Keep fixture
+# identities and accumulator writes in a clone, never in the operator session.
+SOURCE_ROOT="$ROOT"
+FIXTURE_DIR="$(mktemp -d)"
+trap 'rm -rf "$FIXTURE_DIR"' EXIT
+git clone -q --shared "$SOURCE_ROOT" "$FIXTURE_DIR/repo"
+ROOT="$FIXTURE_DIR/repo"
+cp -a "$SOURCE_ROOT/hooks/." "$ROOT/hooks/"
+cp -a "$SOURCE_ROOT/scripts/." "$ROOT/scripts/"
+cp -a "$SOURCE_ROOT/schemas/." "$ROOT/schemas/"
+cd "$ROOT"
 SVC_DIR="${ROOT}/.svc"
 mkdir -p "$SVC_DIR"
 
