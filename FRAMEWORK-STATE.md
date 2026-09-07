@@ -7,6 +7,15 @@ first and update it after.
 Skills that read this: `route-workflow`, `improve-framework`, `evolve-framework`, `blend-external`, `test-framework`, `create-skill`
 Skills that update this: same list + any manual framework change
 
+## Receipt cleanup compatibility (WI-FW-RECEIPT-CLEANUP-01)
+
+Compatible issued launcher 2.5.4 receipts retain current schema, provenance,
+candidate and bounded-review checks. Bounded adjudication artifacts now resolve
+from the existing hash-addressed archive, with corruption distinct from absence.
+Actual PR36/PR37 note chains pass using the correction without changing signed
+bytes or original review verdicts. Final release, installation and worktree
+cleanup remain subject to this WI's review/landing/verification gates.
+
 ## UX proposal graduation (WI-FW-UX-GRADUATION-01)
 
 The on-demand `propose-ux-improvements` skill grounds a bounded region review in

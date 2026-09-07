@@ -1,0 +1,529 @@
+{
+  "schema_version": 1,
+  "wi": "WI-FW-RECEIPT-CLEANUP-01",
+  "lane": "bugfix",
+  "status": "in_progress",
+  "created": "2026-09-07T04:42:17.646Z",
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "route-workflow",
+      "subject": "Invoke: /route-workflow",
+      "status": "completed",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-09-07T04:56:03.530Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-09-07T06:20:00.783Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/receipt-cleanup-review/route-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-09-07T06:20:00.957Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/receipt-cleanup-review/route-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-09-07T06:20:01.125Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipt-cleanup-review/route-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-09-07T06:20:01.290Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/receipt-cleanup-review/route-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-09-07T06:20:01.463Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipt-cleanup-review/route-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-09-07T06:20:01.633Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/receipt-cleanup-review/route-evidence.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-07T06:20:01.802Z"
+    },
+    {
+      "id": 2,
+      "skill": "diagnose-bug",
+      "subject": "Invoke: /diagnose-bug",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "diagnose-bug",
+        "loaded_at": "2026-09-07T06:19:30.377Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-Inputs",
+            "ts": "2026-09-07T06:20:01.973Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/receipt-cleanup-review/diagnosis.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-Reproduction",
+            "ts": "2026-09-07T06:20:02.143Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipt-cleanup-review/diagnosis.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-RootCause",
+            "ts": "2026-09-07T06:20:02.313Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipt-cleanup-review/diagnosis.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-FixPlan",
+            "ts": "2026-09-07T06:20:02.484Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipt-cleanup-review/diagnosis.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-PillarRevisit",
+            "ts": "2026-09-07T06:20:02.657Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipt-cleanup-review/diagnosis.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-07T06:20:02.826Z"
+    },
+    {
+      "id": 3,
+      "skill": "plan-changeset",
+      "subject": "Invoke: /plan-changeset",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-09-07T06:19:30.548Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-09-07T06:20:02.999Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/receipt-cleanup-review/plan-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-09-07T06:20:03.164Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/receipt-cleanup-review/plan-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-09-07T06:20:03.333Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipt-cleanup-review/plan-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-09-07T06:20:03.499Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipt-cleanup-review/plan-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-09-07T06:20:03.672Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/receipt-cleanup-review/plan-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-09-07T06:20:03.849Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/receipt-cleanup-review/plan-evidence.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-07T06:20:04.018Z"
+    },
+    {
+      "id": 4,
+      "skill": "review-plan",
+      "subject": "Invoke: /review-plan",
+      "status": "completed",
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-09-07T06:19:30.714Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-09-07T06:20:04.191Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/receipt-cleanup-review/plan-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-09-07T06:20:04.361Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/receipt-cleanup-review/plan-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-09-07T06:20:04.531Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipt-cleanup-review/cursor-plan-r2/findings.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-09-07T06:20:04.698Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipt-cleanup-review/plan-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-09-07T06:20:04.867Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipt-cleanup-review/plan-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-09-07T06:20:05.034Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/receipt-cleanup-review/plan-evidence.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-07T06:20:05.204Z"
+    },
+    {
+      "id": 5,
+      "skill": "execute-changeset",
+      "subject": "Invoke: /execute-changeset",
+      "status": "completed",
+      "blocked_by": [
+        4
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-09-07T06:20:05.394Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-09-07T06:36:32.668Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/receipt-cleanup-review/exec-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-09-07T06:36:32.843Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipt-cleanup-review/exec-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-09-07T06:36:33.021Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/receipt-cleanup-review/exec-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-09-07T06:36:33.202Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/receipt-cleanup-review/exec-evidence.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-07T06:36:33.380Z"
+    },
+    {
+      "id": 6,
+      "skill": "review-exec",
+      "subject": "Invoke: /review-exec",
+      "status": "completed",
+      "blocked_by": [
+        5
+      ],
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-09-07T06:36:33.559Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-09-07T08:05:09.788Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipt-cleanup-review/review-exec-body.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-09-07T08:05:09.978Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipt-cleanup-review/review-exec-body.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-09-07T08:05:10.169Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipt-cleanup-review/review-exec-body.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-IterationLoop",
+            "ts": "2026-09-07T08:05:10.353Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipt-cleanup-review/review-exec-body.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerdictAndReceiptFinalize",
+            "ts": "2026-09-07T08:05:10.536Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipt-cleanup-review/review-exec-body.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-07T08:05:10.712Z"
+    },
+    {
+      "id": 7,
+      "skill": "audit-implementation",
+      "subject": "Invoke: /audit-implementation",
+      "status": "completed",
+      "blocked_by": [
+        6
+      ],
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-09-07T08:05:10.897Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextScopeConcern",
+            "ts": "2026-09-07T08:05:11.259Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipt-cleanup-review/audit-implementation-body.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecialistDispatchCoverageLedger",
+            "ts": "2026-09-07T08:05:11.438Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipt-cleanup-review/audit-implementation-body.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-HypothesisGeneration",
+            "ts": "2026-09-07T08:05:11.615Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipt-cleanup-review/audit-implementation-body.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-SubsystemBehaviorAudit",
+            "ts": "2026-09-07T08:05:11.792Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipt-cleanup-review/audit-implementation-body.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-FindingsConvergenceReport",
+            "ts": "2026-09-07T08:05:11.974Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipt-cleanup-review/audit-implementation-body.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-09-07T08:05:12.149Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipt-cleanup-review/audit-implementation-body.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-07T08:05:12.329Z"
+    },
+    {
+      "id": 8,
+      "skill": "land-changeset",
+      "subject": "Invoke: /land-changeset",
+      "status": "in_progress",
+      "blocked_by": [
+        7
+      ],
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-09-07T08:05:12.507Z",
+        "loaded_via": "manual"
+      }
+    },
+    {
+      "id": 9,
+      "skill": "verify-promotion",
+      "subject": "Invoke: /verify-promotion",
+      "status": "pending",
+      "blocked_by": [
+        8
+      ]
+    }
+  ]
+}

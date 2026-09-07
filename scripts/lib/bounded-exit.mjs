@@ -6,6 +6,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { validateEvidenceSchema } from "./evidence-schema.mjs";
 import { externalReviewCycleId, externalReviewCycleIdFromReceipt, listExternalReviewCycleProvenance } from "./external-review-provenance.mjs";
+import { getObject, lookupRelocation, reviewEvidenceStoreRoot } from "./review-evidence-store.mjs";
 
 export const BOUNDED_EXIT_HARD_CAP = 3;
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -15,6 +16,24 @@ const CHECKER_PATH = path.resolve(HERE, "../check-review-round-cap.mjs");
 const ALLOWED_DISPOSITIONS = new Set(["fixed", "accept-with-justification", "reject-with-justification"]);
 
 const digest = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
+
+function privateArchivePath(store, file) {
+  const relative = path.relative(store, file);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) throw new Error("bounded archive path escapes store");
+  const segments = relative.split(path.sep);
+  let cursor = store;
+  for (let index = -1; index < segments.length; index += 1) {
+    if (index >= 0) cursor = path.join(cursor, segments[index]);
+    let stat;
+    try { stat = fs.lstatSync(cursor); }
+    catch (error) { if (error.code === "ENOENT") return false; throw error; }
+    if (stat.isSymbolicLink() || fs.realpathSync(cursor) !== cursor) throw new Error("bounded archive path is insecure: symlink");
+    if ((stat.mode & 0o022) !== 0) throw new Error("bounded archive path is group/other writable");
+    if (typeof process.getuid === "function" && stat.uid !== process.getuid()) throw new Error("bounded archive path is foreign-owned");
+    if (index < segments.length - 1 ? !stat.isDirectory() : !stat.isFile()) throw new Error("bounded archive path has an invalid file type");
+  }
+  return true;
+}
 
 export function boundedExitCycleId({ reviewKind, wi, candidateDigest = null, preExecutionBase = null, overrideSha = null }) {
   return externalReviewCycleId({ reviewKind, wi, candidateDigest, preExecutionBase, overrideSha });
@@ -31,6 +50,21 @@ function loadBoundRepositoryFile(root, artifact, label) {
   if (!(relative.startsWith(`.svc${path.sep}`) || relative.startsWith(`docs${path.sep}`))) {
     throw new Error(`${label} must live under .svc/ or docs/`);
   }
+  // The enclosing adjudication binds these bytes by digest. Prefer immutable
+  // repository-shared evidence so worktree removal does not erase authority.
+  // A conflicting mapping or damaged object is never local-fallback absence.
+  const store = reviewEvidenceStoreRoot(repository);
+  const objectPath = path.join(store, "objects", artifact.sha256.slice(0, 2), artifact.sha256.slice(2));
+  for (const historical of new Set([artifact.path, absolute])) {
+    const relocationPath = path.join(store, "relocations", `${digest(Buffer.from(historical.trim()))}.json`);
+    if (!privateArchivePath(store, relocationPath)) continue;
+    const relocation = lookupRelocation(historical, { start: repository });
+    if (!relocation) throw new Error(`${label} relocation disappeared`);
+    if (relocation.sha256 !== artifact.sha256) throw new Error(`${label} relocation digest mismatch`);
+    if (!privateArchivePath(store, objectPath)) throw new Error(`${label} relocated object is missing`);
+    return getObject(artifact.sha256, { start: repository }).bytes;
+  }
+  if (privateArchivePath(store, objectPath)) return getObject(artifact.sha256, { start: repository }).bytes;
   let cursor = repository;
   for (const [index, segment] of relative.split(path.sep).entries()) {
     cursor = path.join(cursor, segment);

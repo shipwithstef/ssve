@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { createExternalReviewFixture } from "./fixtures/external-review-fixture.mjs";
 import { boundedExitCycleId, evaluateReviewRoundCap, validateBoundedExitAdjudication } from "../../../scripts/lib/bounded-exit.mjs";
 import { candidateTreeIdentity, listExternalReviewCycleProvenance } from "../../../scripts/lib/external-review-provenance.mjs";
+import { putObject, putRelocation, getObject } from "../../../scripts/lib/review-evidence-store.mjs";
 import { verifyReviewerEvidence } from "../../../scripts/lib/reviewer-evidence.mjs";
 
 const frameworkRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -28,9 +29,10 @@ const finding = (id, severity) => ({ id, severity, claim: `${id} claim`, analysi
 const terminalFindings = [finding("H-1", "high"), finding("H-2", "high"), finding("H-3", "high"), finding("M-1", "medium")];
 
 function artifact(file) { return { path: path.relative(temp, file), sha256: sha(fs.readFileSync(file)) }; }
-function fixtureSet(reviewKind, count = 3, lastFindings = terminalFindings, { wi = "WI-HOURSHUB-POSTHOG", targetDigests = [], rubricFailures = [] } = {}) {
+function fixtureSet(reviewKind, count = 3, lastFindings = terminalFindings, { wi = "WI-HOURSHUB-POSTHOG", targetDigests = [], rubricFailures = [], launcherVersion } = {}) {
   return Array.from({ length: count }, (_, index) => createExternalReviewFixture({
     frameworkRoot,
+    launcherVersion,
     repo: temp,
     reviewKind,
     candidateSha,
@@ -302,7 +304,7 @@ const staleExecBody = boundedBody("exec", staleExecRounds, "WI-STALE-EXEC");
 assert.match(verifyReviewerEvidence({ root: temp, reviewKind: "exec", body: staleExecBody }).join("\n"), /exec rounds must all review the final promotion candidate digest/);
 
 const builderExecWi = "WI-BUILDER-EXEC";
-const builderExecRounds = fixtureSet("exec", 3, terminalFindings, { wi: builderExecWi });
+const builderExecRounds = fixtureSet("exec", 3, terminalFindings, { wi: builderExecWi, launcherVersion: "2.5.4" });
 boundedBody("exec", builderExecRounds, builderExecWi);
 const builderExecConfig = { schema_version: 1, review_kind: "exec", wi: builderExecWi, candidate_sha: candidateSha, launcher_receipts: builderExecRounds.map((round) => round.receiptPath), review_log: path.relative(temp, path.join(temp, ".svc", "bounded-exit", "exec", "review-log.yaml")), dispositions: Object.fromEntries(terminalFindings.map((row) => [row.id, { disposition: "accept-with-justification", justification: `Disposition for ${row.id} is tied to immutable candidate evidence.`, ...(row.severity === "high" ? { evidence: [path.relative(temp, path.join(temp, ".svc", "bounded-exit", "exec", "disposition-evidence.json"))] } : {}) }])) };
 const builderExecConfigPath = path.join(temp, ".svc", "bounded-exit", "builder-exec-config.json");
@@ -315,6 +317,10 @@ fs.writeFileSync(builderExecConfigPath, JSON.stringify(builderExecConfig), { mod
 const builtExec = spawnSync(process.execPath, [path.join(frameworkRoot, "scripts/build-bounded-exit-receipt.mjs"), "--config", path.relative(temp, builderExecConfigPath), "--out", path.relative(temp, builderExecOutPath)], { cwd: temp, encoding: "utf8" });
 assert.equal(builtExec.status, 0, `bounded-exit exec builder failed: ${builtExec.stderr}`);
 assert.equal(JSON.parse(fs.readFileSync(builderExecOutPath, "utf8")).diff_hash, builderExecConfig.diff_hash);
+const legacyBuiltBody = JSON.parse(fs.readFileSync(builderExecOutPath));
+const legacyEmitted = spawnSync(process.execPath, [path.join(frameworkRoot, "scripts/emit-receipt.mjs"), "--type", "review-exec", "--wi", builderExecWi, "--sha", candidateSha, "--no-note"], { cwd: temp, input: JSON.stringify(legacyBuiltBody), encoding: "utf8" });
+assert.equal(legacyEmitted.status, 0, `legacy builder/emitter boundary: ${legacyEmitted.stderr}`);
+
 
 const legacyCorruptionWi = "WI-LEGACY-CORRUPTION";
 const legacyCorruptionRounds = fixtureSet("plan", 3, terminalFindings, { wi: legacyCorruptionWi, targetDigests: ["legacy-1", "legacy-2", "legacy-3"].map((value) => sha(Buffer.from(value))) });
@@ -348,3 +354,63 @@ assert.throws(() => createExternalReviewFixture({ frameworkRoot, repo: temp, rev
 assert.throws(() => evaluateReviewRoundCap(Buffer.from("rounds_run: 0\nunresolved_critical: 0\nremaining_high: 0\n"), { nodePath: path.join(temp, "missing-node") }), /did not exit normally/);
 
 console.log("PASS: bounded review exits are candidate-bound, cap-bound, census-complete, and preserve existing pass evidence");
+
+// Historical formats are issued once by the fixture authority, not relabeled.
+// Earlier negative cases intentionally poison their isolated issuance index.
+process.env.SVC_EXTERNAL_REVIEW_ISSUANCE_ROOT = path.join(temp, ".svc/archive-test-authority");
+process.env.SVC_REVIEW_EVIDENCE_STORE = path.join(temp, ".svc/archive-test-objects");
+const archivedWi = "WI-ARCHIVED-BOUNDED";
+const archivedRounds = fixtureSet("exec", 3, terminalFindings, { wi: archivedWi, launcherVersion: "2.5.4" });
+const archivedBody = boundedBody("exec", archivedRounds, archivedWi);
+const archivedCheck = () => verifyReviewerEvidence({ root: temp, reviewKind: "exec", body: archivedBody });
+assert.deepEqual(archivedCheck(), [], "compatible producer evidence remains valid");
+const boundedDir = path.join(temp, ".svc/bounded-exit/exec");
+const stored = fs.readdirSync(boundedDir).map(name => {
+  const file = path.join(boundedDir, name);
+  return { file, bytes: fs.readFileSync(file), object: putObject(fs.readFileSync(file), { start: temp }) };
+});
+const log = stored.find(row => row.file.endsWith("review-log.yaml"));
+const relocationDir = path.join(process.env.SVC_REVIEW_EVIDENCE_STORE, "relocations");
+fs.mkdirSync(relocationDir, { mode: 0o700 });
+const relocationFile = path.join(relocationDir, `${sha(Buffer.from(archivedBody.reviewer_evidence.bounded_exit.review_log.path))}.json`);
+fs.symlinkSync(path.join(temp, "nonexistent-relocation"), relocationFile);
+fs.unlinkSync(log.object.path);
+assert.match(archivedCheck().join("\n"), /insecure|symlink/, "dangling relocation cannot become absent and accept the local copy");
+fs.unlinkSync(relocationFile);
+putObject(log.bytes, { start: temp });
+fs.chmodSync(log.object.path, 0o666);
+assert.match(archivedCheck().join("\n"), /writable/, "writable archive cannot bypass local restrictions");
+fs.chmodSync(log.object.path, 0o600);
+fs.chmodSync(process.env.SVC_REVIEW_EVIDENCE_STORE, 0o777);
+assert.match(archivedCheck().join("\n"), /writable/, "writable store must fail before local fallback");
+fs.chmodSync(process.env.SVC_REVIEW_EVIDENCE_STORE, 0o700);
+
+fs.unlinkSync(log.object.path);
+assert.deepEqual(archivedCheck(), [], "absent bare object permits a secure matching local file");
+putObject(log.bytes, { start: temp });
+fs.renameSync(log.object.path, `${log.object.path}.saved`);
+fs.symlinkSync(`${log.object.path}.saved`, log.object.path);
+assert.match(archivedCheck().join("\n"), /insecure/, "symlinked object cannot use a valid local fallback");
+fs.unlinkSync(log.object.path);
+fs.renameSync(`${log.object.path}.saved`, log.object.path);
+
+// A corrupt object must not silently fall back to the valid private local copy.
+fs.writeFileSync(log.object.path, "corrupt object");
+assert.match(archivedCheck().join("\n"), /tamper|digest/, "bare-object corruption is not absence");
+fs.writeFileSync(log.object.path, log.bytes);
+for (const row of stored) fs.unlinkSync(row.file);
+assert.deepEqual(archivedCheck(), [], "log, disposition and nested result survive deleted originals");
+fs.unlinkSync(log.object.path);
+assert.notEqual(archivedCheck().length, 0, "missing archived and local log fails");
+putObject(log.bytes, { start: temp });
+const wrong = putObject(Buffer.from("wrong relocation"), { start: temp });
+putRelocation({ historical_path: archivedBody.reviewer_evidence.bounded_exit.review_log.path, sha256: wrong.sha256 }, { start: temp });
+assert.match(archivedCheck().join("\n"), /relocation.*mismatch/, "conflicting relocation cannot fall back to correct bare object");
+
+for (const version of ["2.5.3", "99.0.0"]) {
+  const wi = `WI-UNSUPPORTED-${version.replaceAll(".", "-")}`;
+  const rounds = fixtureSet("exec", 3, terminalFindings, { wi, launcherVersion: version });
+  const body = boundedBody("exec", rounds, wi);
+  assert.match(verifyReviewerEvidence({ root: temp, reviewKind: "exec", body }).join("\n"), /launcher version.*unsupported/);
+}
+console.log("PASS: supported producer and archived bounded evidence retain fail-closed checks");
