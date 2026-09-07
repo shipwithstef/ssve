@@ -208,3 +208,19 @@ See:
 - This plan: `<plan-file-path>` (mandatory chain rollout)
 - `rules/plan-changeset-trigger.md` (when the chain fires)
 - `references/plan-review-protocol.md` (review protocol)
+
+### Compatible producer receipts and bounded evidence archives
+
+The verifier accepts launcher 2.5.4 alongside current 2.5.5 because their successful
+receipt semantics are unchanged. The version allowance does not skip current
+schema, real invocation, model route, signed issuance, candidate/WI, findings or
+complete round-census checks. Unknown producer versions remain unsupported.
+Production evidence is never relabeled to make it current.
+
+Bounded adjudication logs, disposition documents and nested result artifacts may
+resolve from the existing repository-shared immutable evidence store using their
+bound hashes. Logical paths must remain under repository .svc/ or docs/. A
+relocation conflict, corrupt object or insecure object fails; it cannot fall back
+to a mutable local copy. Only a truly absent bare object permits the existing
+secure local-path check. Archive and verify evidence before worktree cleanup,
+then run actual receipt and provenance checks after removal.

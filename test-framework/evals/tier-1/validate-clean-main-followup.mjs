@@ -208,7 +208,7 @@ test('fault after marker commit preserves the signed success bytes and reports i
   } finally { process.env = previous; }
 });
 
-test('single-candidate and cycle inventory survive deleted receipt paths; corrupt archive fails closed', async () => {
+for (const launcherVersion of [launcher.EXTERNAL_REVIEW_LAUNCHER_VERSION, "2.5.4"]) test(`single-candidate and cycle inventory survive deleted ${launcherVersion} receipt paths; corrupt archive fails closed`, async () => {
   const { getObject } = await import('../../../scripts/lib/review-evidence-store.mjs');
   const previous = { ...process.env };
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'svc-archived-review-'));
@@ -217,7 +217,7 @@ test('single-candidate and cycle inventory survive deleted receipt paths; corrup
     process.env.SVC_EXTERNAL_REVIEW_ISSUANCE_ROOT = path.join(repo, 'authority');
     process.env.SVC_REVIEW_EVIDENCE_STORE = path.join(repo, 'objects');
     execFileSync('git', ['init', '-q', repo]);
-    const fixture = createExternalReviewFixture({ frameworkRoot, repo, reviewKind: 'plan', wi: 'WI-FIXTURE-ARCHIVE', tupleOverride: tuple, candidateDigestOverride: 'c'.repeat(64), preExecutionBaseOverride: 'b'.repeat(40) });
+    const fixture = createExternalReviewFixture({ frameworkRoot, repo, launcherVersion, reviewKind: 'plan', wi: 'WI-FIXTURE-ARCHIVE', tupleOverride: tuple, candidateDigestOverride: 'c'.repeat(64), preExecutionBaseOverride: 'b'.repeat(40) });
     const receipt = JSON.parse(fs.readFileSync(fixture.receiptPath));
     const before = provenance.listExternalReviewProvenance({ receiptPath: fixture.receiptPath, candidateDigest: fixture.candidateDigest, reviewKind: 'plan' });
     fs.unlinkSync(fixture.receiptPath);

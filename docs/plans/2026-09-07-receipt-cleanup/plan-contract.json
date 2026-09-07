@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "manifest": "docs/plans/2026-09-07-receipt-cleanup/manifest.md",
+  "base_sha": "ecb217291f0b5fa8f588ded6c5f1845d4281a515",
+  "risk_flags": [],
+  "ownership": [
+    {
+      "task": "T1",
+      "paths": [
+        "scripts/lib/reviewer-evidence.mjs",
+        "scripts/lib/bounded-exit.mjs"
+      ]
+    },
+    {
+      "task": "T2",
+      "paths": [
+        "test-framework/evals/tier-1/validate-bounded-review-exit.mjs",
+        "test-framework/evals/tier-1/validate-clean-main-followup.mjs",
+        "test-framework/evals/tier-1/validate-learning-lifecycle.sh",
+        "test-framework/evals/tier-1/fixtures/external-review-fixture.mjs"
+      ]
+    },
+    {
+      "task": "T3",
+      "paths": [
+        "references/chain-receipt-contract.md",
+        "FRAMEWORK-STATE.md",
+        "docs/plans/2026-09-07-receipt-cleanup/manifest.md",
+        "docs/plans/2026-09-07-receipt-cleanup/plan-contract.json",
+        "docs/plans/2026-09-07-receipt-cleanup/dirty-inventory.json",
+        "docs/plans/2026-09-07-receipt-cleanup/review-log.json"
+      ]
+    }
+  ],
+  "resource_review": {
+    "verification": "changed-executable-census",
+    "denominator": 6,
+    "disposition": "no-risky-resource-writers",
+    "evidence": "Two read-only production consumers, three isolated validators and one isolated fixture constructor. Existing operational writer contracts apply to setup, promotion, archive and cleanup; no new production resource writer."
+  },
+  "resource_writers": [],
+  "claims": [],
+  "executables": [
+    {
+      "path": "scripts/lib/reviewer-evidence.mjs",
+      "consumers": [
+        {
+          "path": "scripts/check-chain-receipts.mjs",
+          "query": "verifyReviewerEvidence"
+        },
+        {
+          "path": "scripts/emit-receipt.mjs",
+          "query": "verifyReviewerEvidence"
+        },
+        {
+          "path": "scripts/build-bounded-exit-receipt.mjs",
+          "query": "verifyReviewerEvidence"
+        },
+        {
+          "path": "scripts/learning-lifecycle.mjs",
+          "query": "verifyReviewerEvidence"
+        }
+      ]
+    },
+    {
+      "path": "scripts/lib/bounded-exit.mjs",
+      "consumers": [
+        {
+          "path": "scripts/lib/reviewer-evidence.mjs",
+          "query": "validateBoundedExitAdjudication"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-bounded-review-exit.mjs",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "tier-1"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-clean-main-followup.mjs",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "tier-1"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-learning-lifecycle.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "tier-1"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/fixtures/external-review-fixture.mjs",
+      "consumers": [
+        {
+          "path": "test-framework/evals/tier-1/validate-bounded-review-exit.mjs",
+          "query": "createExternalReviewFixture"
+        },
+        {
+          "path": "test-framework/evals/tier-1/validate-learning-lifecycle.sh",
+          "query": "createExternalReviewFixture"
+        }
+      ]
+    }
+  ],
+  "volatile_paths": [
+    ".svc/lane-tasks-WI-FW-RECEIPT-CLEANUP-01.json",
+    ".svc/manifest-digest.json"
+  ]
+}

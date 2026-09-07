@@ -5,7 +5,7 @@ import { candidateTreeIdentity, issueExternalReviewProvenance } from "../../../.
 import { EXTERNAL_REVIEW_LAUNCHER_VERSION } from "../../../../scripts/run-external-review.mjs";
 
 const sha = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
-export function createExternalReviewFixture({ frameworkRoot, repo, reviewKind = "exec", candidateSha = null, candidateDigestOverride = null, preExecutionBaseOverride = undefined, tupleOverride = null, wi = "WI-HOURSHUB-POSTHOG", roundLabel = "fixture", verdict = "pass", findings: findingRows = [], rubricFailures = [], dependenciesNeedingRead = [], certifications = [] }) {
+export function createExternalReviewFixture({ frameworkRoot, repo, reviewKind = "exec", candidateSha = null, candidateDigestOverride = null, preExecutionBaseOverride = undefined, tupleOverride = null, wi = "WI-HOURSHUB-POSTHOG", roundLabel = "fixture", verdict = "pass", findings: findingRows = [], rubricFailures = [], dependenciesNeedingRead = [], certifications = [], launcherVersion = EXTERNAL_REVIEW_LAUNCHER_VERSION }) {
   const candidateDigest=candidateDigestOverride||candidateTreeIdentity(repo,{candidateSha}).candidate_digest;
   process.env.SVC_EXTERNAL_REVIEW_PROVENANCE_FIXTURE="1";process.env.SVC_EXTERNAL_REVIEW_ISSUANCE_ROOT ||= path.join(repo,".svc","external-review-authority-fixture");process.env.SVC_REVIEW_EVIDENCE_STORE ||= path.join(repo,".svc","review-evidence-store");
   const dir = path.join(repo, ".svc/external-review-artifacts", reviewKind, candidateDigest, roundLabel); fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
@@ -22,6 +22,8 @@ export function createExternalReviewFixture({ frameworkRoot, repo, reviewKind = 
     protocol: { process_invocations: 1, configured_turn_ceiling: null, configured_budget_usd: null, reported_turns: null, stop_reason: null, terminal_reason: null, errors: [] }, route: { kind: "owner_config_primary", switching_enabled: false, cli_fallback_configured: false, evidence: "requested_primary" }, effective_effort: { value: "high", provenance: "requested" }, model_attestation: { level: "requested_accepted", requested_model: tuple.model, observed_models: [], evidence: "canonical fixture" },
     phase_guard: { applicable: false, kind: reviewKind, decision: "not-applicable", reason: null, wi, pre_execution_base: preExecutionBaseOverride === undefined ? candidateSha : preExecutionBaseOverride, plan_manifest_sha256: reviewKind === "plan" ? candidateDigest : null, exec_record_present: null, exec_record_path: null, implementation_diverged: null, diverged_files: [], base_resolved: true, override: { ...nilOverride, kind: null } },
     package_context: { version: 1, context_root: repo, base_package_sha256: sha(fs.readFileSync(packagePath)), files: [] }, cache: { disposition: "published", reusable: true, entry: null }, artifacts: { findings: output, receipt: receiptPath, package: packagePath }, usage: { agy_transport_receipt: transportPath, agy_transport_receipt_sha256: sha(fs.readFileSync(transportPath)) }, reviewer_run: { commands: [command], output_artifacts: [output] } };
+  // Model a producer format before signing, never rewrite issued evidence.
+  receipt.launcher_version = launcherVersion;
   fs.writeFileSync(receiptPath, JSON.stringify(receipt), { mode: 0o600 });
   issueExternalReviewProvenance({receiptPath,packagePath,findingsPath:output});
   const artifact = (file) => ({ path: path.relative(repo, file), sha256: sha(fs.readFileSync(file)) });

@@ -31,8 +31,24 @@ node --input-type=module - "$ROOT" "$TMP/repo" "$CANDIDATE_SHA" "$OUTCOME_SHA" <
 import crypto from 'node:crypto';import fs from 'node:fs';import path from 'node:path';import {pathToFileURL} from 'node:url';
 const [root,repo,candidateSha,outcomeSha]=process.argv.slice(2);const {createExternalReviewFixture}=await import(pathToFileURL(path.join(root,'test-framework/evals/tier-1/fixtures/external-review-fixture.mjs')));const external=createExternalReviewFixture({frameworkRoot:root,repo,reviewKind:'exec',candidateSha});const candidateDigest=external.candidateDigest;const verdictPath='docs/specs/rules-evaluation/learning-fixture/verdict.json';const verdictSha=crypto.createHash('sha256').update(fs.readFileSync(path.join(repo,verdictPath))).digest('hex');
 const adapter={schema_version:2,skill:'evaluate-rule',learning_key:'legacy-id',candidate_sha:candidateSha,outcome_sha256:outcomeSha,verdict_path:verdictPath,verdict_sha256:verdictSha,candidate_digest:candidateDigest,self_review:{orchestrator:'codex',findings_count:0,notes:'evaluate-rule self review'},reviewer_evidence:external.reviewerEvidence};fs.writeFileSync(path.join(repo,'.svc/evaluations/legacy-id.json'),JSON.stringify(adapter));
+for (const [label, launcherVersion] of [['legacy','2.5.4'],['unsupported','99.0.0']]) {
+ const fixture=createExternalReviewFixture({frameworkRoot:root,repo,reviewKind:'exec',candidateSha,wi:`WI-LEARNING-${label.toUpperCase()}`,roundLabel:label,launcherVersion});
+ const body={...adapter,reviewer_evidence:fixture.reviewerEvidence};
+ fs.writeFileSync(path.join(repo,`.svc/evaluations/${label}.json`),JSON.stringify(body));
+ if(label==='legacy') {
+  const tampered=structuredClone(body);
+  tampered.reviewer_evidence.launcher_receipts[0].sha256='0'.repeat(64);
+  fs.writeFileSync(path.join(repo,'.svc/evaluations/tampered-producer.json'),JSON.stringify(tampered));
+ }
+}
 NODE_ADAPTER
 node "$ROOT/scripts/learning-lifecycle.mjs" elevate --root "$TMP/repo" --key legacy-id --evaluation "$TMP/repo/.svc/evaluations/legacy-id.json" >/dev/null
+node "$ROOT/scripts/learning-lifecycle.mjs" elevate --root "$TMP/repo" --key legacy-id --evaluation "$TMP/repo/.svc/evaluations/legacy.json" >/dev/null
+for invalid in unsupported tampered-producer; do
+  if node "$ROOT/scripts/learning-lifecycle.mjs" elevate --root "$TMP/repo" --key legacy-id --evaluation "$TMP/repo/.svc/evaluations/$invalid.json" > "$TMP/$invalid.out" 2> "$TMP/$invalid.err"; then
+    echo "$invalid review received learning authority" >&2; exit 1
+  fi
+done
 node --input-type=module - "$ROOT" "$TMP/repo" <<'NODE'
 import {pathToFileURL} from 'node:url'; import path from 'node:path';
 const {hasFrameworkLearningCredit}=await import(pathToFileURL(path.join(process.argv[2],'scripts/learning-lifecycle.mjs')));
