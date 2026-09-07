@@ -236,7 +236,7 @@ review_log:
   unresolved_critical: <int>   # machine-readable; any > 0 blocks promotion
   remaining_high: <int>        # machine-readable; each must be enumerated below
   bounded_exit:                # REQUIRED when rounds_run == 3 and remaining_high > 0
-    disposition: accept-with-justification | reject-with-justification
+    disposition: fixed | accept-with-justification | reject-with-justification
     residual_highs:            # one entry PER remaining High (count must equal remaining_high)
       - "<remaining High #1 + why accepted/rejected>"
       - "<remaining High #2 + why accepted/rejected>"
@@ -277,7 +277,16 @@ round-cap result digest, and a complete terminal findings census. Every High
 needs non-empty justification plus hash-verified `.svc/` or `docs/` evidence.
 Every terminal rubric failure also needs one exact census entry mapped to
 dispositioned terminal finding IDs, with justification and hash-verified
-repository evidence. Unread dependencies and failed certifications still block.
+repository evidence. Unread dependencies still block. At exactly round three,
+failed plan certifications can close only through the optional
+`certification_failure_census`: exact signed key/family/reviewed-plan digest,
+non-Critical findings all dispositioned `fixed`, and hash-verified evidence
+binding each certification and mapped finding to the corrected final candidate.
+Unmapped, malformed, stale or unfixed certifications still block. Failed exec
+certifications remain blocking. Preserve raw verdicts; emit `pass-with-acks`.
+Use `build-bounded-exit-receipt.mjs` with explicit `certification_dispositions`;
+never hand-edit signed reviewer output. High findings require the log's `fixed`
+disposition to match every terminal High census entry.
 Any Critical, stale candidate, omitted/duplicate finding or rubric failure,
 wrong digest, or more
 than three launcher receipts fails closed. Existing raw `pass` and

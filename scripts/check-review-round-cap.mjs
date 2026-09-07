@@ -39,7 +39,7 @@ function halt(msg) { process.stderr.write(`check-review-round-cap: ESCALATED (ha
 function ok(msg) { process.stdout.write(`check-review-round-cap: OK — ${msg}\n`); process.exit(0); }
 
 const CAP = 3;
-const ALLOWED_DISPOSITIONS = new Set(["accept-with-justification", "reject-with-justification"]);
+const ALLOWED_DISPOSITIONS = new Set(["fixed", "accept-with-justification", "reject-with-justification"]);
 
 // Parse an integer that MUST appear exactly once as `key: <int>` on its own line.
 // Returns {value} on success or {error} — never guesses / falls back to 0.

@@ -1,5 +1,14 @@
 # Framework State
 
+## Plan certification recovery
+
+WI-FW-PLAN-CERTIFICATION-01 adds fixed-only certification adjudication at plan
+round three through the existing bounded-exit contracts. Exact signed reviewer
+identity and candidate-bound correction proof remain required. The round-cap
+checker recognizes fixed High log dispositions; execution certification vetoes
+remain intact. Release evidence remains in the per-SHA chain receipts.
+
+
 This file is the framework's self-knowledge. It mutates with every change.
 Any skill that analyzes, evolves, or blends the framework MUST read this
 first and update it after.

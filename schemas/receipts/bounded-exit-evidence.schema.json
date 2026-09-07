@@ -5,6 +5,14 @@
   "additionalProperties": false,
   "required": ["schema_version", "wi", "candidate_digest", "finding_ids", "rubric_ids", "verification_method", "result", "result_artifact"],
   "properties": {
+    "certification_keys": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
     "schema_version": { "const": 1 },
     "wi": { "type": "string", "minLength": 1 },
     "candidate_digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
