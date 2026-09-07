@@ -1,0 +1,235 @@
+{
+  "schema_version": 1,
+  "wi": "WI-FW-RELEASE-STATE-01",
+  "lane": "framework",
+  "status": "in_progress",
+  "created": "2026-09-07T08:29:19.102Z",
+  "tasks": [
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "route-workflow",
+      "subject": "Invoke: /route-workflow",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-09-07T08:34:18.867Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-09-07T08:34:19.294Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/release-state-review/route-plan-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-09-07T08:34:19.534Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/release-state-review/route-plan-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-09-07T08:34:19.736Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/release-state-review/route-plan-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-09-07T08:34:19.928Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/release-state-review/route-plan-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-09-07T08:34:20.114Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/release-state-review/route-plan-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-09-07T08:34:20.318Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/release-state-review/route-plan-evidence.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-07T08:34:20.534Z"
+    },
+    {
+      "id": 2,
+      "status": "completed",
+      "skill": "plan-changeset",
+      "subject": "Invoke: /plan-changeset",
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-09-07T08:34:20.718Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-09-07T10:24:42.461Z"
+    },
+    {
+      "id": 3,
+      "status": "completed",
+      "skill": "review-plan",
+      "subject": "Invoke: /review-plan",
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-09-07T10:24:42.642Z",
+        "loaded_via": "activate-skill",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-09-07T10:27:43.124Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/release-state-review/review-plan-bounded-plan.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-09-07T10:27:43.289Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/release-state-review/review-plan-bounded-plan.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-09-07T10:27:43.454Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/release-state-review/review-plan-bounded-plan.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-09-07T10:27:43.619Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/release-state-review/review-plan-bounded-plan.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-09-07T10:27:43.783Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/release-state-review/review-plan-bounded-plan.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-09-07T10:27:43.953Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/release-state-review/review-plan-bounded-plan.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-07T10:27:44.125Z"
+    },
+    {
+      "id": 4,
+      "status": "in_progress",
+      "skill": "execute-changeset",
+      "subject": "Invoke: /execute-changeset",
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-09-07T10:27:44.294Z",
+        "loaded_via": "activate-skill"
+      }
+    },
+    {
+      "status": "pending",
+      "skill": "review-gate",
+      "subject": "Invoke: /review-gate",
+      "id": 5,
+      "blocked_by": [
+        4
+      ]
+    },
+    {
+      "id": 6,
+      "status": "pending",
+      "skill": "review-exec",
+      "subject": "Invoke: /review-exec",
+      "blocked_by": [
+        5
+      ]
+    },
+    {
+      "id": 7,
+      "status": "pending",
+      "skill": "audit-implementation",
+      "subject": "Invoke: /audit-implementation",
+      "blocked_by": [
+        6
+      ]
+    },
+    {
+      "id": 8,
+      "status": "pending",
+      "skill": "land-changeset",
+      "subject": "Invoke: /land-changeset",
+      "blocked_by": [
+        7
+      ]
+    },
+    {
+      "id": 9,
+      "status": "pending",
+      "skill": "verify-promotion",
+      "subject": "Invoke: /verify-promotion",
+      "blocked_by": [
+        8
+      ]
+    }
+  ]
+}
