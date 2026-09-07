@@ -96,7 +96,12 @@ for (const scenario of fixture.scenarios) {
   assert.equal(hash(scenario.prompt), scenario.prompt_sha256, `${scenario.id}: frozen prompt changed without hash`);
   assert(scenario.invariants.length >= 3);
 }
-assert.equal(JSON.parse(read('skills-manifest.json')).includedSkills.length, 104);
+const registeredSkills = JSON.parse(read('skills-manifest.json')).includedSkills;
+const sourceSkills = fs.readdirSync(path.join(root, 'skills'), {withFileTypes:true})
+  .filter(entry => entry.isDirectory() && fs.existsSync(path.join(root, 'skills', entry.name, 'SKILL.md')))
+  .map(entry => entry.name);
+assert.equal(new Set(registeredSkills).size, registeredSkills.length);
+assert.deepEqual([...registeredSkills].sort(), sourceSkills.sort());
 assert.equal(selectTier1Validators(['future/unmapped-skill.md']).fallback_full, true);
 assert.equal(selectTier1Validators(['AGENTS.md']).fallback_full, true);
 assert.deepEqual(selectTier1ValidatorsForSurfaces(['definitely-unmapped-skill-judgment-surface']).selected, []);

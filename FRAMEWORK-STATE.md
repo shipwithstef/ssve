@@ -7,6 +7,16 @@ first and update it after.
 Skills that read this: `route-workflow`, `improve-framework`, `evolve-framework`, `blend-external`, `test-framework`, `create-skill`
 Skills that update this: same list + any manual framework change
 
+## UX proposal graduation (WI-FW-UX-GRADUATION-01)
+
+The on-demand `propose-ux-improvements` skill grounds a bounded region review in
+current spec, code, persona job and rendered evidence. It permits change, retention
+or missing-evidence outcomes, with illustrative after artifacts only for proposed
+visual changes. It adds no compulsory lane step. Existing source-derived routing,
+context-family registration and focused validators cover the 105th skill. Original
+draft variants remain archived; source release and all-host installation require
+the Stage B/C gates and are not claimed by this implementation note.
+
 ## Unreleased follow-up: review launcher recovery
 
 WI-FW-CLEAN-MAIN-FOLLOWUP-01 adds a pre-invocation check of the existing signed
@@ -59,7 +69,7 @@ Installation retains the existing shared scripts directory across provisioned ho
 
 ## Current State
 
-- **Skills:** 104 (`skills-manifest.json` is authoritative; 2026-08-28 added `produce-ad-video`. WI-507 added the 15 terminal company operating brains on 2026-07-22: `cos`, `growth-lead`, `fin-analyst`, `product-lead`, `market-intel`, `counsel`, `security-ops`, `customer-cs`, `revops`, `comms`, `tax-auditor`, `privacy-dpo`, `infra-sre`, `procurement`, and `growth-eng`)
+- **Skills:** 105 (`skills-manifest.json` is authoritative; 2026-08-28 added `produce-ad-video`. WI-507 added the 15 terminal company operating brains on 2026-07-22: `cos`, `growth-lead`, `fin-analyst`, `product-lead`, `market-intel`, `counsel`, `security-ops`, `customer-cs`, `revops`, `comms`, `tax-auditor`, `privacy-dpo`, `infra-sre`, `procurement`, and `growth-eng`)
   - **External-grade skills (WI-CLN-2 / §2.6):** `wsl2-audio` (host-specific troubleshooting) and `suno-architect` (creative/music) are in `includedSkills` but are external-grade — host-specific or creative rather than core pipeline. They stay in the manifest (the structure validator errors on any top-level SKILL.md dir absent from `includedSkills`) and are NOT in `corePackForRouting`, `pipeline`, or any lane. Treat them as host/creative addons, not framework signal.
 - **Review gates:** 7 (G1-G7)
 - **Lanes:** 7 (greenfield, brownfield-conversion, brownfield-feature, bugfix, drift, refactor, framework) + pre-lane skills (`strategic-decision` operates above lanes — output names downstream lane)
@@ -70,7 +80,7 @@ Installation retains the existing shared scripts directory across provisioned ho
 - **Rules:** 48 registered in `skills-manifest.json` `rulesRegistry.entries`, exact parity with `rules/**/*.md` on disk (verified 2026-08-26, WI-FW-DOCS-AUDIT-01; per-rule scope/type/injection metadata lives in the registry — this file no longer keeps a hand-count breakdown that rots)
 - **Hooks:** 14 hooks across all 13 Kimi lifecycle events — PreToolUse (×5: workflow-guard, phase-boundary, bash-guard, lane-tasks-pre-validator, skill-artifact-authenticity), PostToolUse (×2: lane-tasks-validator, stop-quality), PostToolUseFailure (lane-tasks-failure), UserPromptSubmit (preflight-guard), Stop (task-completion-guard with anti-loop), StopFailure (error-logger), SessionStart (auto-recovery), SessionEnd (final-checkpoint), SubagentStart (pre-flight), SubagentStop (state-merge), PreCompact (checkpoint), PostCompact (recovery), Notification (gate-alert)
 - **Claude hooks:** 21 hooks auto-wired by `setup --host claude` (was 2: eval-gate only). Full lifecycle coverage: PreToolUse (×6), PostToolUse (×6), PostToolUseFailure, Stop (×2), UserPromptSubmit, SessionStart, SessionEnd, StopFailure, SubagentStart, SubagentStop, PreCompact, PostCompact, Notification.
-- **Test infrastructure:** 366 tier-1 scripts, 62 tier-1.5 comprehension prompts (56 skills covered), 36 registered tier-2 integration scenarios (58% skill coverage), **journey skills have 2 registered tier-2 scenarios (`test-journeys-runtime`, `write-journeys-generate`)**, 5 fixture projects (greenfield/brownfield/bugfix/drift/refactor), **tier-3 judge operational but coverage is 1/36 scenarios (2.8%)** (completeness/actionability/consistency scoring via kimi --print --yolo -p; only `diagnose-bug-typo` has been judged as of 2026-04-30)
+- **Test infrastructure:** 367 tier-1 scripts, 62 tier-1.5 comprehension prompts (56 skills covered), 36 registered tier-2 integration scenarios (58% skill coverage), **journey skills have 2 registered tier-2 scenarios (`test-journeys-runtime`, `write-journeys-generate`)**, 5 fixture projects (greenfield/brownfield/bugfix/drift/refactor), **tier-3 judge operational but coverage is 1/36 scenarios (2.8%)** (completeness/actionability/consistency scoring via kimi --print --yolo -p; only `diagnose-bug-typo` has been judged as of 2026-04-30)
 - **Execution Controller v2 (WI-368, merged at `0d75cb1d`):** one digest-bound product graph and canonical layer inventory feed an append-only runtime journal, durable leases, real argv/effect execution, CAS evidence consumption, owner/memory/company adapters, release/rollback/live/observation lifecycle, host projections, N/N-1 migration, mutation proof and cutover gate. Local simulation uses `SIMULATED_*` states and cannot close delivery/outcome or prove the 60-minute SLO. Default cutover remains disabled until an explicitly authorized real Sample direction-to-live canary and rollback proof. WI-529 closes two integration seams without weakening that boundary: mandatory chain schemas represent the actual AGY reviewer identity, and the effective serialized Codex mutation dispatcher is launcher-routed and setup-verified.
 - **Last lint:** PASS (2026-08-10 — manifest mirrors report 103 included and 59 router-core skills during WI-368 local candidate validation). The generic product pipeline-integrity script remains a baseline-inapplicable check for this framework root because both frozen base and candidate intentionally have no root `vision.md`.
 

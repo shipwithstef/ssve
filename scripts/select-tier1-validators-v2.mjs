@@ -5,6 +5,17 @@ import path from "node:path";
 
 const CONTRACTS = [
   {
+    validator: "validate-ux-graduation.mjs",
+    inputs: [
+      "skills/propose-ux-improvements/SKILL.md",
+      "references/context-loading-registry.json",
+      "references/skill-runtime-contracts-v2.json",
+      "skills/route-workflow/references/intent-routing.md",
+      "test-framework/evals/fixtures/ux-graduation.json",
+      "test-framework/evals/tier-1/validate-ux-graduation.mjs"
+    ]
+  },
+  {
     "validator": "validate-skill-judgment.mjs",
     "inputs": [
       "_shared/product-question-format.md",

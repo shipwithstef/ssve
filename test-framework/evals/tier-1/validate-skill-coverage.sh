@@ -54,9 +54,28 @@ node --input-type=module -e 'import("'$ROOT'/scripts/lib/skill-coverage.mjs").th
 
 # S-presence-gate: checker --coverage on a SHA without any coverage receipt is
 # clean (no table rows, exit reflects chain completeness only) and fast.
-OUT="$(mktemp)"; trap 'rm -f "$OUT"' EXIT
+OUT="$(mktemp)"
+COVERAGE_FIXTURE="$(mktemp -d)"
+trap 'rm -f "$OUT"; rm -rf "$COVERAGE_FIXTURE"' EXIT
+# HEAD in the developer repo may already carry coverage after a valid promotion.
+# Use a fresh isolated commit with no notes or mirrored receipts.
+git -C "$COVERAGE_FIXTURE" init -q
+git -C "$COVERAGE_FIXTURE" -c user.name=Fixture -c user.email=fixture@example.invalid -c core.hooksPath=/dev/null -c commit.gpgsign=false commit --allow-empty -qm 'coverage absence fixture'
+COVERAGE_SHA="$(git -C "$COVERAGE_FIXTURE" rev-parse HEAD)"
 SINCE=$(date +%s%N)
-node "$ROOT/scripts/check-chain-receipts.mjs" --sha "$(git -C "$ROOT" rev-parse HEAD)" --coverage >"$OUT" 2>&1 || true
+set +e
+(cd "$COVERAGE_FIXTURE" && node "$ROOT/scripts/check-chain-receipts.mjs" --sha "$COVERAGE_SHA" --coverage) >"$OUT" 2>&1
+COVERAGE_RC=$?
+set -e
+[ "$COVERAGE_RC" -eq 1 ] || fail "coverage probe expected missing-chain exit 1, got $COVERAGE_RC"
+[ ! -s "$OUT" ] || fail "coverage probe produced unexpected diagnostics or coverage rows"
+node --input-type=module - "$ROOT/scripts/check-chain-receipts.mjs" "$COVERAGE_FIXTURE" "$COVERAGE_SHA" <<'NODE'
+import { spawnSync } from 'node:child_process';
+const run = spawnSync(process.execPath, [process.argv[2], '--sha', process.argv[4]], {cwd:process.argv[3], encoding:'utf8'});
+if (![0, 1].includes(run.status)) throw Error(`checker failed: ${run.stderr}`);
+const result = JSON.parse(run.stdout);
+if (result.results?.length !== 1 || result.results[0].sha !== process.argv[4]) throw Error('checker did not inspect isolated SHA');
+NODE
 if grep -q "^coverage target" "$OUT"; then fail "presence-gate leaked rows on non-coverage SHA"; fi
 ELAPSED_MS=$(( ($(date +%s%N)-SINCE)/1000000 ))
 [ "$ELAPSED_MS" -lt 5000 ] || fail "presence-gate probe too slow (${ELAPSED_MS}ms)"

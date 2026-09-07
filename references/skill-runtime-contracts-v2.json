@@ -1,6 +1,7 @@
 {
   "schema_version": "skill-runtime-contracts-v2",
   "contracts": [
+    { "skill": "propose-ux-improvements", "artifact": "ux-improvement-proposal", "consumers": ["route-workflow"], "condition": "proposal is accepted and owner authorizes continuation", "invalidation": "steer, relevant spec, code or rendered evidence changes" },
     { "skill": "analyze-competitors", "artifact": "analyze-competitors", "consumers": ["analyze-domain", "catalog-domain-capabilities", "build-personas", "write-vision", "write-spec"], "condition": "competitor evidence is applicable", "invalidation": "source or market digest changes" },
     { "skill": "analyze-domain", "artifact": "domain-profile", "consumers": ["catalog-domain-capabilities", "build-personas", "write-vision", "write-spec", "design-ux", "design-ui"], "condition": "domain constraints are applicable", "invalidation": "domain evidence digest changes" },
     { "skill": "catalog-domain-capabilities", "artifact": "capability-catalog", "consumers": ["write-vision", "write-spec", "plan-changeset"], "condition": "domain has catalogued capabilities", "invalidation": "capability registry digest changes" },

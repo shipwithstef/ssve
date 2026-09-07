@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "purpose": "Synthetic inputs for reviewer judgment; deterministic checks verify contract coverage, not model quality.",
+  "scenarios": [
+    {
+      "id": "redundant-action",
+      "steer": "The two help launchers in this dashboard region seem repetitive.",
+      "persona_job": "A new operator opens contextual help without leaving the dashboard.",
+      "spec": "HELP-01: provide an accessible contextual-help launcher; no status summary is required in this region.",
+      "code": "IconButton.onClick = openHelp; CardButton.onClick = openHelp; both pass the same dashboard topic and preserve keyboard access.",
+      "observation": "Synthetic rendered-state fixture: both controls are visible at 390px, have the same Help label, and show no other information; the remaining launcher fits at this viewport.",
+      "expected_outcome": "propose-change",
+      "decision_evidence": "Same action, topic and information; retain accessible discoverability in the surviving launcher.",
+      "forbidden_claims": ["Fewer controls alone proves better UX", "This synthetic fixture is live product evidence"]
+    },
+    {
+      "id": "distinct-status",
+      "steer": "The assistant icon and suggestion card look similar. Can we remove the card?",
+      "persona_job": "A returning operator monitors pending approvals before opening the assistant.",
+      "spec": "DASH-02: show pending approval count and latest result without opening a modal; assistant launcher opens a new conversation.",
+      "code": "IconButton.onClick = openNewConversation; StatusCard renders pendingCount and latestResult, and links to approvalQueue.",
+      "observation": "Synthetic rendered-state fixture: icon and card share an avatar, but card displays 3 pending approvals and Last sync complete; icon alone exposes neither.",
+      "expected_outcome": "retain-current",
+      "decision_evidence": "Distinct job, data and destination; visual similarity does not duplicate status information.",
+      "forbidden_claims": ["Delete the status card because the avatar repeats", "The launcher preserves all status information"]
+    },
+    {
+      "id": "missing-rendered-evidence",
+      "steer": "This mobile dashboard feels crowded; simplify its action region.",
+      "persona_job": "An operator scans current work and starts a new task on mobile.",
+      "spec": "DASH-03: show current work and a primary start action at mobile widths.",
+      "code": "Dashboard renders StatusSummary and StartButton; CSS uses responsive breakpoint classes whose runtime container width is unknown.",
+      "observation": null,
+      "expected_outcome": "evidence-needed",
+      "decision_evidence": "Need a capture at the affected viewport and state to determine crowding and visibility; code alone does not establish rendered friction.",
+      "forbidden_claims": ["A screenshot was captured", "The mock is an observation", "The improvement is verified"]
+    }
+  ]
+}

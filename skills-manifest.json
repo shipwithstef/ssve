@@ -159,7 +159,8 @@
     "write-journeys",
     "write-spec",
     "write-vision",
-    "wsl2-audio"
+    "wsl2-audio",
+    "propose-ux-improvements"
   ],
   "skillMetadata": {
     "dispatch-waves": {
