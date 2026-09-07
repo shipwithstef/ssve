@@ -199,6 +199,27 @@
         "bounded_exit": {
           "type": "object",
           "description": "Optional WI-566 adjudication, validated fail-closed against schemas/receipts/bounded-exit.schema.json when the terminal launcher round has a non-passing verdict."
+        },
+        "cache_sources": {
+          "type": "array",
+          "description": "For each signed cache replay, bind its receipt digest to the original signed primary receipt. Commands and outputs remain those of that verified source; replay must record zero new calls.",
+          "items": {
+            "type": "object",
+            "required": [
+              "replay_sha256",
+              "source"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "replay_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "source": {
+                "$ref": "#/definitions/artifact"
+              }
+            }
+          }
         }
       }
     },

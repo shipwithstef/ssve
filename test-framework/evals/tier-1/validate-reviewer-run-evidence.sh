@@ -45,6 +45,42 @@ const realDir=path.join(repo,".svc/external-review-artifacts/real");const symlin
 assert.notEqual(run({...base,reviewer_evidence:{...base.reviewer_evidence,launcher_receipts:[{path:path.relative(repo,path.join(symlinkDir,"receipt.json")),sha256:sha(fs.readFileSync(path.join(realDir,"receipt.json")))}]}}).status,0,"symlinked evidence subtree passed");
 const good=run(base);assert.equal(good.status,0,good.stderr);
 const {verifyReviewerEvidence}=await import(pathToFileURL(path.join(root,"scripts/lib/reviewer-evidence.mjs")));assert.deepEqual(verifyReviewerEvidence({root:repo,reviewKind:"plan",body:{...base,schema_version:3}}),[]);
+// A cache replay has no new provider call; it must retain a separately signed source.
+const cacheSourcePath=path.join(dir,"cache-source.json");
+const cacheSource={...receipt,request_id:crypto.randomUUID(),phase_guard:{...receipt.phase_guard,wi:null,plan_manifest_sha256:null},artifacts:{...receipt.artifacts,receipt:cacheSourcePath}};
+fs.writeFileSync(cacheSourcePath,JSON.stringify(cacheSource),{mode:0o600});issueExternalReviewProvenance({receiptPath:cacheSourcePath,packagePath,findingsPath:output});
+const sourceArtifact=artifact(cacheSourcePath);
+const replayPath=path.join(dir,"cache-replay.json");
+const replay={...cacheSource,phase_guard:{...receipt.phase_guard,wi:"WI-CACHE"},request_id:crypto.randomUUID(),classification:"cache_hit",attempts:[],
+ protocol:{...receipt.protocol,process_invocations:0,terminal_reason:"cache_hit"},
+ route:{kind:"cache_hit",switching_enabled:false,cli_fallback_configured:false,evidence:"cache_receipt_replay"},
+ model_attestation:{...receipt.model_attestation,level:"cache_replay",evidence:"validated_content_addressed_receipt"},
+ cache:{...receipt.cache,disposition:"hit"},artifacts:{...receipt.artifacts,receipt:replayPath},reviewer_run:{commands:[],output_artifacts:[]}};
+fs.writeFileSync(replayPath,JSON.stringify(replay),{mode:0o600});issueExternalReviewProvenance({receiptPath:replayPath,packagePath,findingsPath:output});
+const replayArtifact=artifact(replayPath);
+const cached={...base,wi:"WI-CACHE",schema_version:3,reviewer_evidence:{...base.reviewer_evidence,launcher_receipts:[replayArtifact],cache_sources:[{replay_sha256:replayArtifact.sha256,source:sourceArtifact}]}};
+const check=body=>verifyReviewerEvidence({root:repo,reviewKind:"plan",body});
+assert.deepEqual(check(cached),[]);
+// The historical source may be unbound; the selected replay may never be unbound.
+for(const field of ["wi","plan_manifest_sha256"]){
+ const badPath=path.join(dir,`cache-missing-${field}.json`);
+ const bad={...replay,request_id:crypto.randomUUID(),phase_guard:{...replay.phase_guard,[field]:null},artifacts:{...replay.artifacts,receipt:badPath}};
+ fs.writeFileSync(badPath,JSON.stringify(bad),{mode:0o600});issueExternalReviewProvenance({receiptPath:badPath,packagePath,findingsPath:output});
+ const badArtifact=artifact(badPath);
+ const b=structuredClone(cached);b.reviewer_evidence.launcher_receipts=[badArtifact];b.reviewer_evidence.cache_sources=[{replay_sha256:badArtifact.sha256,source:sourceArtifact}];
+ assert.ok(check(b).length,`unbound selected replay accepted: ${field}`);
+}
+
+for(const [name,change] of [
+ ["missing source",b=>delete b.reviewer_evidence.cache_sources],
+ ["tampered source",b=>b.reviewer_evidence.cache_sources[0].source.sha256="0".repeat(64)],
+ ["wrong replay",b=>b.reviewer_evidence.cache_sources[0].replay_sha256="0".repeat(64)],
+ ["duplicate source",b=>b.reviewer_evidence.cache_sources.push(b.reviewer_evidence.cache_sources[0])],
+ ["forged command",b=>b.reviewer_evidence.commands=[{binary:"forged",argv:[]}]],
+ ["wrong WI",b=>b.wi="WI-OTHER"],
+ ["wrong candidate",b=>b.candidate_digest="0".repeat(64)],
+ ["missing output",b=>b.reviewer_evidence.output_artifacts=[]],
+]){const b=structuredClone(cached);change(b);assert.ok(check(b).length,`cache replay accepted ${name}`);}
 NODE
 node -e 'const fs=require("fs"),path=require("path");const f=fs.readdirSync(path.join(process.argv[1],".svc/receipts"))[0];const r=require(path.join(process.argv[1],".svc/receipts",f,"review-plan.json"));if(r.schema_version!==3)process.exit(1)' "$TMP"
 echo "PASS: schema-v3 review receipts require candidate-bound launcher receipts, exact commands, hash-bound outputs, and deletion proof"

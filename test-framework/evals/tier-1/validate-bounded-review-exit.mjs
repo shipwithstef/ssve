@@ -8,8 +8,8 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createExternalReviewFixture } from "./fixtures/external-review-fixture.mjs";
 import { boundedExitCycleId, evaluateReviewRoundCap, validateBoundedExitAdjudication } from "../../../scripts/lib/bounded-exit.mjs";
-import { candidateTreeIdentity, listExternalReviewCycleProvenance } from "../../../scripts/lib/external-review-provenance.mjs";
 import { hasFrameworkLearningCredit } from "../../../scripts/learning-lifecycle.mjs";
+import { candidateTreeIdentity, issueExternalReviewProvenance, listExternalReviewCycleProvenance } from "../../../scripts/lib/external-review-provenance.mjs";
 import { putObject, putRelocation, getObject } from "../../../scripts/lib/review-evidence-store.mjs";
 import { verifyReviewerEvidence } from "../../../scripts/lib/reviewer-evidence.mjs";
 
@@ -273,6 +273,46 @@ for (const reviewKind of ["plan", "exec"]) {
     assert.match(verifyReviewerEvidence({ root: temp, reviewKind, body }).join("\n"), /passing launcher verdict contains failed reviewer certifications/, `${reviewKind} ${verdict} cannot contradict a failed certification`);
   }
 }
+// Non-passing cached rounds remain unsupported, even with a full bounded census.
+const cachedWi = "WI-CACHED-BOUNDED";
+const cachedRounds = fixtureSet("exec", 2, terminalFindings, { wi: cachedWi });
+const cachedSource = cachedRounds[1];
+const cachedSourceReceipt = JSON.parse(fs.readFileSync(cachedSource.receiptPath));
+const cachedReceiptPath = path.join(path.dirname(cachedSource.receiptPath), "cached-terminal.json");
+const cachedReceipt = { ...cachedSourceReceipt, request_id: crypto.randomUUID(), classification: "cache_hit", attempts: [],
+  protocol: { ...cachedSourceReceipt.protocol, process_invocations: 0, terminal_reason: "cache_hit" },
+  route: { kind: "cache_hit", switching_enabled: false, cli_fallback_configured: false, evidence: "cache_receipt_replay" },
+  model_attestation: { ...cachedSourceReceipt.model_attestation, level: "cache_replay", evidence: "validated_content_addressed_receipt" },
+  cache: { ...cachedSourceReceipt.cache, disposition: "hit" },
+  artifacts: { ...cachedSourceReceipt.artifacts, receipt: cachedReceiptPath }, reviewer_run: { commands: [], output_artifacts: [] } };
+fs.writeFileSync(cachedReceiptPath, JSON.stringify(cachedReceipt), { mode: 0o600 });
+issueExternalReviewProvenance({ receiptPath: cachedReceiptPath, packagePath: cachedSourceReceipt.artifacts.package, findingsPath: cachedSource.output });
+cachedRounds.push({ ...cachedSource, receiptPath: cachedReceiptPath });
+const cachedBody = boundedBody("exec", cachedRounds, cachedWi);
+cachedBody.reviewer_evidence.cache_sources = [{ replay_sha256: artifact(cachedReceiptPath).sha256, source: artifact(cachedSource.receiptPath) }];
+assert.match(verifyReviewerEvidence({ root: temp, reviewKind: "exec", body: cachedBody }).join("\n"), /cached non-passing reviews are unsupported/, "bounded disposition must not imply support for cached failing reviews");
+const cachedWithoutDisposition = structuredClone(cachedBody); delete cachedWithoutDisposition.reviewer_evidence.bounded_exit;
+assert.match(verifyReviewerEvidence({ root: temp, reviewKind: "exec", body: cachedWithoutDisposition }).join("\n"), /bounded-exit adjudication is required/);
+
+// A cached passing verdict still rejects failed certifications at the selected replay.
+const cachedCertWi = "WI-CACHED-PASS-CERTIFICATION";
+const cachedCertSource = createExternalReviewFixture({ frameworkRoot, repo: temp, reviewKind: "exec", candidateSha, wi: cachedCertWi, roundLabel: cachedCertWi, verdict: "pass", certifications: [{ key: "must-not-pass", certified: false, reviewer_family: "google", for_content_sha: identity.candidate_digest }] });
+const cachedCertSourceReceipt = JSON.parse(fs.readFileSync(cachedCertSource.receiptPath));
+const cachedCertPath = path.join(path.dirname(cachedCertSource.receiptPath), "cached-pass.json");
+const cachedCertReceipt = { ...cachedCertSourceReceipt, request_id: crypto.randomUUID(), classification: "cache_hit", attempts: [],
+  protocol: { ...cachedCertSourceReceipt.protocol, process_invocations: 0, terminal_reason: "cache_hit" },
+  route: cachedReceipt.route, model_attestation: cachedReceipt.model_attestation,
+  cache: { ...cachedCertSourceReceipt.cache, disposition: "hit" },
+  artifacts: { ...cachedCertSourceReceipt.artifacts, receipt: cachedCertPath }, reviewer_run: { commands: [], output_artifacts: [] } };
+fs.writeFileSync(cachedCertPath, JSON.stringify(cachedCertReceipt), { mode: 0o600 });
+issueExternalReviewProvenance({ receiptPath: cachedCertPath, packagePath: cachedCertSourceReceipt.artifacts.package, findingsPath: cachedCertSource.output });
+const cachedCertBody = { wi: cachedCertWi, candidate_digest: identity.candidate_digest,
+  self_review: { orchestrator: "codex", findings_count: 0, notes: "fixture" },
+  reviewer_evidence: { ...cachedCertSource.reviewerEvidence, launcher_receipts: [artifact(cachedCertPath)],
+    cache_sources: [{ replay_sha256: artifact(cachedCertPath).sha256, source: artifact(cachedCertSource.receiptPath) }] } };
+const cachedCertErrors = verifyReviewerEvidence({ root: temp, reviewKind: "exec", body: cachedCertBody }).join("\n");
+assert.match(cachedCertErrors, /passing launcher verdict contains failed reviewer certifications/);
+assert.doesNotMatch(cachedCertErrors, /cache source invalid/, "historical source authentication must not adjudicate the selected replay's certification");
 
 const multiRevisionWi = "WI-HOURSHUB-MULTI-REVISION";
 const multiRevisionDigests = ["revision-1", "revision-2", "revision-3"].map((value) => sha(Buffer.from(value)));

@@ -83,7 +83,11 @@ function selfBindHolds(repository, entry, receipt, receiptBytes) {
   return false;
 }
 
-export function verifyReviewerEvidence({ root = process.cwd(), reviewKind, body }) {
+export function verifyReviewerEvidence(args) {
+  return verifyReviewerEvidenceInternal(args);
+}
+
+function verifyReviewerEvidenceInternal({ root = process.cwd(), reviewKind, body }, replaySource = false) {
   const reasons = []; const repository = fs.realpathSync(path.resolve(root));
   const evidence = body?.reviewer_evidence;
   let identity = null;
@@ -100,12 +104,34 @@ export function verifyReviewerEvidence({ root = process.cwd(), reviewKind, body 
   for (const entry of evidence.launcher_receipts) {
     try {
       const loaded = secureArtifact(repository, entry, { extraPaths: [entry.path, path.resolve(repository, entry.path)] }); const bytes = loaded.bytes; const receipt = JSON.parse(bytes.toString("utf8"));
+      let runReceipt = receipt;
+      if (receipt.classification === "cache_hit") {
+        if (replaySource) throw new Error("nested cache replay source is forbidden");
+        const sources = evidence.cache_sources;
+        if (!Array.isArray(sources)) throw new Error("cache replay requires hash-bound source receipt");
+        const matches = sources.filter(source => source.replay_sha256 === entry.sha256);
+        if (matches.length !== 1) throw new Error("cache replay requires exactly one source receipt");
+        const sourceEntry = matches[0].source;
+        const sourceLoaded = secureArtifact(repository, sourceEntry);
+        const source = JSON.parse(sourceLoaded.bytes.toString("utf8"));
+        if (source.classification !== "success" || source.cache?.disposition !== "published" || source.cache?.reusable !== true || source.fallback?.used !== false) throw new Error("cache source is not a published primary review");
+        for (const key of ["candidate_digest", "review_kind", "package_sha256", "findings_sha256", "findings_schema_sha256", "cache_key", "effective_tuple", "requested_tuple", "invocation_tuple"]) {
+          if (!sameJson(source[key], receipt[key])) throw new Error(`cache source mismatch: ${key}`);
+        }
+        const sourceBody = { ...body, reviewer_evidence: { ...evidence, cache_sources: [], launcher_receipts: [sourceEntry],
+          commands: source.reviewer_run?.commands,
+          output_artifacts: (source.reviewer_run?.output_artifacts || []).map(file => ({ path: file, sha256: artifactDigest(repository, file) })) } };
+        const sourceErrors = verifyReviewerEvidenceInternal({ root: repository, reviewKind, body: sourceBody }, true);
+        if (sourceErrors.length) throw new Error(`cache source invalid: ${sourceErrors.join("; ")}`);
+        if (receipt.attempts?.length !== 0 || receipt.protocol?.process_invocations !== 0 || receipt.reviewer_run?.commands?.length !== 0 || receipt.reviewer_run?.output_artifacts?.length !== 0) throw new Error("cache replay must not invent provider calls");
+        runReceipt = source;
+      }
       const schemaErrors = validateEvidenceSchema(receipt, EXTERNAL_RECEIPT_SCHEMA);
       if (schemaErrors.length) throw new Error(`launcher receipt schema invalid: ${schemaErrors.slice(0, 3).join("; ")}`);
       const semanticErrors = validateExternalReviewReceiptSemantics(receipt);
       if (semanticErrors.length) throw new Error(`launcher receipt semantics invalid: ${semanticErrors.slice(0, 3).join("; ")}`);
       if (!SUPPORTED_LAUNCHER_VERSIONS.has(receipt.launcher_version)) reasons.push(`launcher version is unsupported: ${entry.path}`);
-      if (receipt.fixture_mode !== false || !Array.isArray(receipt.attempts) || receipt.attempts.length === 0) reasons.push(`launcher receipt is not a real external attempt: ${entry.path}`);
+      if (receipt.fixture_mode !== false || !Array.isArray(runReceipt.attempts) || runReceipt.attempts.length === 0) reasons.push(`launcher receipt is not a real external attempt: ${entry.path}`);
       if (!selfBindHolds(repository, entry, receipt, bytes)) reasons.push(`launcher receipt does not self-bind its canonical path: ${entry.path}`);
       if (receipt.findings_schema_sha256 !== digest(fs.readFileSync(path.join(SCHEMA_DIR, "external-review-findings.schema.json")))) reasons.push(`launcher findings schema digest mismatch: ${entry.path}`);
       if (receipt.status !== "success" || !["success", "cache_hit"].includes(receipt.classification)) reasons.push(`launcher receipt is not a successful review: ${entry.path}`);
@@ -114,12 +140,13 @@ export function verifyReviewerEvidence({ root = process.cwd(), reviewKind, body 
       if(!packageArtifact.bytes.includes(Buffer.from(receipt.candidate_digest)))reasons.push(`launcher package does not contain its review target digest: ${entry.path}`);
       const findingsEntry = { path: receipt.artifacts?.findings, sha256: receipt.findings_sha256 };
       const findingsBytes = secureArtifact(repository, findingsEntry, { extraPaths: [receipt.artifacts?.findings] }); const findings = JSON.parse(findingsBytes.bytes.toString("utf8"));
+      if (receipt.classification === "cache_hit" && !["pass", "pass-with-findings"].includes(findings.verdict)) reasons.push(`cached non-passing reviews are unsupported; retain original review rounds for disposition: ${entry.path}`);
       const findingsSchemaErrors = validateEvidenceSchema(findings, EXTERNAL_FINDINGS_SCHEMA);
       if (findingsSchemaErrors.length) reasons.push(`launcher findings schema invalid: ${findingsSchemaErrors.slice(0, 3).join("; ")}`);
       if (findings.review_kind !== reviewKind) reasons.push(`launcher findings review_kind=${findings.review_kind} expected ${reviewKind}: ${entry.path}`);
       const orchestrator = receipt.effective_tuple?.orchestrator; const reviewerFamily = familyOf(receipt.effective_tuple?.family || receipt.effective_tuple?.host); const authorFamily = familyOf(body.self_review?.orchestrator);
       if (orchestrator !== body.self_review?.orchestrator || authorFamily === "unknown" || reviewerFamily === "unknown" || authorFamily === reviewerFamily) reasons.push(`launcher reviewer is not independently cross-family: ${entry.path}`);
-      if (!Array.isArray(receipt.reviewer_run?.commands) || receipt.reviewer_run.commands.length === 0 || !Array.isArray(receipt.reviewer_run?.output_artifacts) || receipt.reviewer_run.output_artifacts.length === 0) reasons.push(`launcher receipt lacks a concrete reviewer_run: ${entry.path}`);
+      if (!Array.isArray(runReceipt.reviewer_run?.commands) || runReceipt.reviewer_run.commands.length === 0 || !Array.isArray(runReceipt.reviewer_run?.output_artifacts) || runReceipt.reviewer_run.output_artifacts.length === 0) reasons.push(`launcher receipt lacks a concrete reviewer_run: ${entry.path}`);
       if (receipt.effective_tuple?.host === "agy") {
         try {
           const transportPath = receipt.usage?.agy_transport_receipt || "";
@@ -131,8 +158,8 @@ export function verifyReviewerEvidence({ root = process.cwd(), reviewKind, body 
       }
       const attemptCommands = receipt.attempts.map((attempt) => attempt.command).filter(Boolean);
       if (!sameJson(receipt.reviewer_run?.commands, attemptCommands)) reasons.push(`launcher reviewer_run commands do not match attempts: ${entry.path}`);
-      launcherCommands.push(...(receipt.reviewer_run?.commands || []));
-      launcherOutputs.push(...(receipt.reviewer_run?.output_artifacts || []).map((value) => artifactDigest(repository, value)));
+      launcherCommands.push(...(runReceipt.reviewer_run?.commands || []));
+      launcherOutputs.push(...(runReceipt.reviewer_run?.output_artifacts || []).map((value) => artifactDigest(repository, value)));
       rounds.push({ receipt, receiptPath: loaded.absolute, receiptSha: digest(bytes), findings, findingsSha: digest(findingsBytes.bytes) });
       // 7bca62f regression: receiptPath must remain a STRING. bytesOrFile()
       // prefers the explicit bytes, but externalReviewProvenanceRoot() derives
@@ -149,24 +176,25 @@ export function verifyReviewerEvidence({ root = process.cwd(), reviewKind, body 
     } catch (error) { reasons.push(`cannot verify launcher receipt ${entry?.path || "<missing>"}: ${error.message}`); }
   }
   const terminalIsNonPassing = rounds.length > 0 && !String(rounds.at(-1)?.findings?.verdict || "").startsWith("pass");
-  if (terminalIsNonPassing) {
+  // Source recursion proves authenticity; disposition belongs to the selected replay.
+  if (terminalIsNonPassing && !replaySource) {
     reasons.push(...validateBoundedExitAdjudication({ root: repository, reviewKind, body, identity, rounds }));
   } else {
     const terminalCertifications = rounds.at(-1)?.findings?.certifications;
-    if (Array.isArray(terminalCertifications) && terminalCertifications.some((certification) => certification?.certified !== true)) {
+    if (!replaySource && Array.isArray(terminalCertifications) && terminalCertifications.some((certification) => certification?.certified !== true)) {
       reasons.push("passing launcher verdict contains failed reviewer certifications");
     }
     for (const round of rounds) {
       if (reviewKind === "exec" && round.receipt.candidate_digest !== body.candidate_digest) reasons.push(`launcher candidate digest mismatch: ${round.receiptPath}`);
       if (reviewKind === "plan") {
-        if (round.receipt.phase_guard?.wi !== body.wi) reasons.push(`launcher plan WI does not match receipt WI: ${round.receiptPath}`);
-        if (round.receipt.phase_guard?.plan_manifest_sha256 !== round.receipt.candidate_digest) reasons.push(`launcher plan subject is not phase-guard bound: ${round.receiptPath}`);
+        if ((!replaySource || round.receipt.phase_guard?.wi != null) && round.receipt.phase_guard?.wi !== body.wi) reasons.push(`launcher plan WI does not match receipt WI: ${round.receiptPath}`);
+        if ((!replaySource || round.receipt.phase_guard?.plan_manifest_sha256 != null) && round.receipt.phase_guard?.plan_manifest_sha256 !== round.receipt.candidate_digest) reasons.push(`launcher plan subject is not phase-guard bound: ${round.receiptPath}`);
         const reviewedPlanDigest = body.reviewed_plan_digest || body.candidate_digest;
         if (round.receipt.candidate_digest !== reviewedPlanDigest) reasons.push(`launcher plan subject does not match the receipt's reviewed plan digest: ${round.receiptPath}`);
       }
       const findings = round.findings?.findings || [];
-      if (findings.some((finding) => String(finding?.severity || "").toLowerCase() === "critical") ||
-          (round.findings.verdict !== "pass-with-findings" && findings.some((finding) => String(finding?.severity || "").toLowerCase() === "high"))) {
+      if (!replaySource && (findings.some((finding) => String(finding?.severity || "").toLowerCase() === "critical") ||
+          (round.findings.verdict !== "pass-with-findings" && findings.some((finding) => String(finding?.severity || "").toLowerCase() === "high")))) {
         reasons.push("launcher findings contain unresolved Critical/High");
       }
     }
