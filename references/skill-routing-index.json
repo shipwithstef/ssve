@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "compiled_from": {
-    "manifest_sha256": "336fc25d406a065a1dc9ea4a23fb5f0723b4fdc1f0445772e4a59d67c6fb0a37",
+    "manifest_sha256": "1b98fad7bec60939f90ce3a7091b9a7b44c356499f16c33e58f27160875d75d9",
     "overrides_sha256": "ffe50a0a60e4feebe57a229aae3cb6fb4eae19dba97ed0099ed6ead998c48d93",
     "concern_registry_sha256": "6c336c8832c4907ee78413a2b7d377b790bb55bba180783d2164892a130ea507"
   },
@@ -1328,6 +1328,24 @@
       "path": "skills/product-lead/SKILL.md",
       "content_hash": "690cb884d380a7ed813fd0412e3dbeaa78957e38f86a7544d1fb7bae1a5dd76e",
       "description": "Product decisions. Use when: \"product priority\", \"which feature\", \"validate product problem\", \"roadmap tradeoff\". Not implementation design.",
+      "aliases": [],
+      "positive_triggers": [],
+      "negative_triggers": [],
+      "domains": [],
+      "actions": [],
+      "objects": [],
+      "repo_signals": [],
+      "lane_roles": [],
+      "invocation_policy": "suggest-only",
+      "risk": "low",
+      "requires": [],
+      "required_rules": []
+    },
+    {
+      "skill": "propose-ux-improvements",
+      "path": "skills/propose-ux-improvements/SKILL.md",
+      "content_hash": "fcf5c13e1db734bd5b8c988653e070c763297e0b08b4eaf5ad761fec1c827b9e",
+      "description": "Use when a founder asks to improve a named region of an existing interface, questions a redundant control, or wants a focused UX improvement proposal. For a whole-flow competitive teardown use explore-ux; for broken behavior use diagnose-bug; for a new feature use validate-feature.",
       "aliases": [],
       "positive_triggers": [],
       "negative_triggers": [],

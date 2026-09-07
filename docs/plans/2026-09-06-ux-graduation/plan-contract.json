@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "manifest": "docs/plans/2026-09-06-ux-graduation/manifest.md",
+  "base_sha": "c790b42c29821bc0ba106e5a851aa42e495fc7d4",
+  "risk_flags": [],
+  "ownership": [
+    {
+      "task": "T1",
+      "paths": [
+        "skills/propose-ux-improvements/SKILL.md",
+        "skills-manifest.json",
+        "README.md",
+        "AGENTS.md",
+        "FRAMEWORK-STATE.md",
+        "references/skill-routing-index.json",
+        "references/context-loading-registry.json",
+        "EXTERNAL_ADDONS.md",
+        "CLAUDE.md"
+      ]
+    },
+    {
+      "task": "T2",
+      "paths": [
+        "skills/route-workflow/references/intent-routing.md",
+        "references/skill-runtime-contracts-v2.json",
+        "scripts/select-tier1-validators-v2.mjs",
+        "test-framework/evals/tier-1/validate-ux-graduation.mjs",
+        "test-framework/evals/fixtures/ux-graduation.json",
+        "test-framework/evals/tier-1/validate-skill-judgment.mjs",
+        "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs",
+        "test-framework/evals/tier-1/validate-skill-coverage.sh"
+      ]
+    },
+    {
+      "task": "T3",
+      "paths": [
+        "proposals/2026-08-26-framework-improvement-ux-improve-mode-skills.md",
+        "docs/specs/work-items/WI-FW-UX-GRADUATION-01.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/audit/ux-graduation.md",
+        "docs/plans/2026-09-06-clean-main-followup/roadmap.md",
+        "docs/plans/2026-09-06-ux-graduation/manifest.md",
+        "docs/plans/2026-09-06-ux-graduation/plan-contract.json",
+        "docs/plans/2026-09-06-ux-graduation/review-log.json"
+      ]
+    }
+  ],
+  "resource_review": {
+    "verification": "changed-executable-census",
+    "denominator": 5,
+    "disposition": "no-risky-resource-writers",
+    "evidence": "Five executable surfaces: existing selector, UX validator, skill census validator, selector expectation test and isolated coverage-absence fixture. No production receipt implementation changes."
+  },
+  "resource_writers": [],
+  "claims": [],
+  "executables": [
+    {
+      "path": "scripts/select-tier1-validators-v2.mjs",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "select-tier1-validators-v2.mjs"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-ux-graduation.mjs",
+      "consumers": [
+        {
+          "path": "scripts/select-tier1-validators-v2.mjs",
+          "query": "validate-ux-graduation.mjs"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-skill-judgment.mjs",
+      "consumers": [
+        {
+          "path": "scripts/select-tier1-validators-v2.mjs",
+          "query": "validate-skill-judgment.mjs"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "tier-1"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-skill-coverage.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "tier-1"
+        }
+      ]
+    }
+  ],
+  "volatile_paths": [
+    ".svc/lane-tasks-WI-FW-UX-GRADUATION-01.json",
+    ".svc/manifest-digest.json"
+  ]
+}

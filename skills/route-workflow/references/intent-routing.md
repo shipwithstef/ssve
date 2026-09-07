@@ -34,6 +34,7 @@ implementation detail, not a resolution rule.
 
 | User says something like... | Intent | Route to |
 |-----------------------------|--------|----------|
+| "improve this dashboard region", "is this control redundant?", "propose a UX improvement here" | Bounded existing-region UX assessment | `propose-ux-improvements` (terminal; route accepted changes only with owner authorization) |
 | "build me a ...", "I want to make a ...", "create a ..." | New product/app | Lane 1 (Greenfield) via `write-vision` |
 | "I have an idea for ...", "what if we built ..." | Idea validation | `validate-feature` |
 | "store this idea", "put this in the backlog", "just an idea", "I have idea I want to realise", "I have an idea I want to build", "add to backlog", "remember this for later", "park this idea", "quick capture", "write this down" | Idea intake (no validation) | `capture-idea` |

@@ -134,6 +134,7 @@ Validator: `test-framework/evals/tier-1/validate-visual-skills-have-live-evidenc
 - `write-spec`
 - `write-vision`
 - `wsl2-audio`
+- `propose-ux-improvements`
 <!-- svc:generated:end external-core-pack -->
 
 ## External-grade skills shipped inside `includedSkills` (WI-CLN-2 / §2.6)

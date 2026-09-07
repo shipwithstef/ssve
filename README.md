@@ -650,6 +650,7 @@ Mode contract and detection logic: [`REPO_MODES.md`](REPO_MODES.md)
 - `write-spec` — Write feature spec with user stories and ACs
 - `write-vision` — Create or refine the product vision
 - `wsl2-audio` — Set up, diagnose, and fix audio/voice mode on WSL2
+- `propose-ux-improvements` — Assess a named UI region or redundant control using current spec, code and rendered evidence
 <!-- svc:generated:end readme-included-skills -->
 
 Framework lane rule of thumb:
