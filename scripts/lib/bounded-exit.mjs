@@ -80,7 +80,7 @@ function loadBoundRepositoryFile(root, artifact, label) {
   return bytes;
 }
 
-function validateDispositionEvidence(root, artifact, { wi, candidateDigest, findingId = null, rubricId = null }) {
+function validateDispositionEvidence(root, artifact, { wi, candidateDigest, findingId = null, rubricId = null, certificationKey = null, findingIds = [] }) {
   const bytes = loadBoundRepositoryFile(root, artifact, `bounded-exit disposition evidence ${findingId || rubricId}`);
   let document;
   try { document = JSON.parse(bytes.toString("utf8")); }
@@ -90,6 +90,10 @@ function validateDispositionEvidence(root, artifact, { wi, candidateDigest, find
   if (document.wi !== wi || document.candidate_digest !== candidateDigest) throw new Error("bounded-exit disposition evidence candidate/WI binding mismatch");
   if (findingId && !document.finding_ids.includes(findingId)) throw new Error(`bounded-exit disposition evidence does not bind finding ${findingId}`);
   if (rubricId && !document.rubric_ids.includes(rubricId)) throw new Error(`bounded-exit disposition evidence does not bind rubric ${rubricId}`);
+  if (certificationKey) {
+    if (!document.certification_keys?.includes(certificationKey)) throw new Error(`bounded-exit evidence does not bind certification ${certificationKey}`);
+    if (findingIds.some((id) => !document.finding_ids.includes(id))) throw new Error(`bounded-exit certification ${certificationKey} evidence omits mapped findings`);
+  }
   loadBoundRepositoryFile(root, document.result_artifact, `bounded-exit disposition result ${findingId || rubricId}`);
 }
 
@@ -263,7 +267,16 @@ export function validateBoundedExitAdjudication({ root, reviewKind, body, identi
   const terminalFindings = Array.isArray(terminal.findings?.findings) ? terminal.findings.findings : [];
   const terminalRubricFailures = Array.isArray(terminal.findings?.rubric_failures) ? terminal.findings.rubric_failures : [];
   if (Array.isArray(terminal.findings?.dependencies_needing_read) && terminal.findings.dependencies_needing_read.length > 0) reasons.push("bounded-exit cannot admit unread dependencies outside the finding census");
-  if (Array.isArray(terminal.findings?.certifications) && terminal.findings.certifications.some((certification) => certification?.certified !== true)) reasons.push("bounded-exit cannot admit failed reviewer certifications outside the finding census");
+  const certifications = Array.isArray(terminal.findings?.certifications) ? terminal.findings.certifications : [];
+  const failedCertifications = certifications.filter((certification) => certification?.certified !== true);
+  const certificationCensus = adjudication.certification_failure_census || [];
+  if (failedCertifications.length && (reviewKind !== "plan" || rounds.length !== BOUNDED_EXIT_HARD_CAP)) {
+    reasons.push("bounded-exit cannot admit failed reviewer certifications outside plan round three");
+  }
+  if (!failedCertifications.length && Object.hasOwn(adjudication, "certification_failure_census")) {
+    reasons.push("bounded-exit certification census supplied without failed certifications");
+  }
+  if (certificationCensus.length !== failedCertifications.length) reasons.push("bounded-exit certification census does not cover the exact failed certification count");
   const findingIds = terminalFindings.map((finding) => String(finding?.id || ""));
   if (findingIds.some((id) => !id)) reasons.push("terminal findings contain a missing ID");
   if (new Set(findingIds).size !== findingIds.length) reasons.push("terminal findings contain duplicate IDs");
@@ -291,6 +304,39 @@ export function validateBoundedExitAdjudication({ root, reviewKind, body, identi
     const id = String(finding?.id || "");
     if (id && !censusIds.includes(id)) reasons.push(`bounded-exit census omitted terminal finding ${id}`);
     if (String(finding?.severity || "").toLowerCase() === "critical") reasons.push(`bounded-exit cannot admit unresolved Critical finding ${id || "<missing-id>"}`);
+  }
+  // A failed certification is stronger than an ordinary finding: only a proved
+  // fix can close it, and only in the final plan round. Retain both identities:
+  // raw certification -> reviewed plan; correction evidence -> final candidate.
+  const certificationKeys = certifications.map((row) => row?.key);
+  if (failedCertifications.length && new Set(certificationKeys).size !== certificationKeys.length) reasons.push("bounded-exit terminal certifications contain duplicate keys");
+  const failedByKey = new Map(failedCertifications.map((row) => [row?.key, row]));
+  const censusKeys = certificationCensus.map((row) => row.key);
+  if (new Set(censusKeys).size !== censusKeys.length) reasons.push("bounded-exit certification census contains duplicate keys");
+  const findingCensusById = new Map(adjudication.findings_census.map((row) => [row.id, row]));
+  for (const certification of failedCertifications) {
+    if (certification?.certified !== false || typeof certification.key !== "string" || !certification.key.trim() ||
+        typeof certification.reviewer_family !== "string" || !certification.reviewer_family.trim() ||
+        certification.reviewer_family !== terminal.findings?.reviewer?.family ||
+        !/^[0-9a-f]{64}$/.test(String(certification.for_content_sha || "")) ||
+        certification.for_content_sha !== terminal.receipt.candidate_digest) {
+      reasons.push("bounded-exit failed certification has malformed or mismatched signed identity");
+    }
+    if (!censusKeys.includes(certification?.key)) reasons.push(`bounded-exit certification census omitted ${certification?.key}`);
+  }
+  for (const entry of certificationCensus) {
+    const certification = failedByKey.get(entry.key);
+    if (!certification) { reasons.push(`bounded-exit certification census contains unknown failed certification ${entry.key}`); continue; }
+    if (entry.reviewer_family !== certification.reviewer_family || entry.for_content_sha !== certification.for_content_sha) reasons.push(`bounded-exit certification ${entry.key} signed identity mismatch`);
+    if (entry.disposition !== "fixed" || !entry.justification.trim()) reasons.push(`bounded-exit certification ${entry.key} requires a justified fixed disposition`);
+    for (const id of entry.finding_ids) {
+      const finding = byId.get(id);
+      if (!finding || String(finding.severity).toLowerCase() === "critical" || findingCensusById.get(id)?.disposition !== "fixed") reasons.push(`bounded-exit certification ${entry.key} requires fixed non-Critical terminal finding ${id}`);
+    }
+    for (const artifact of entry.evidence) {
+      try { validateDispositionEvidence(root, artifact, { wi, candidateDigest, certificationKey: entry.key, findingIds: entry.finding_ids }); }
+      catch (error) { reasons.push(error.message); }
+    }
   }
   const rubricIds = adjudication.rubric_failure_census.map((entry) => entry.rubric_id);
   if (new Set(rubricIds).size !== rubricIds.length) reasons.push("bounded-exit rubric-failure census contains duplicate rubric IDs");

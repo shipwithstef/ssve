@@ -23,6 +23,19 @@ echo "=== Tier 1: bounded review-round cap (WI-491) ==="
 test -f "$CHECK" && ok "enforcement script exists" || bad "enforcement script missing"
 node --check "$CHECK" 2>/dev/null && ok "enforcement script parses" || bad "enforcement script syntax error"
 
+# Fixed log dispositions are syntactically valid; admission still requires the
+# candidate-bound bounded-exit verifier. Critical/cap failures remain below.
+cat > "$TMP/fixed.yaml" <<'EOF'
+rounds_run: 3
+unresolved_critical: 0
+remaining_high: 1
+bounded_exit:
+  disposition: fixed
+  residual_highs:
+    - H-1
+EOF
+[ "$(rc_of node "$CHECK" --log "$TMP/fixed.yaml")" = 0 ] && ok "fixed High log supported" || bad "fixed High log rejected"
+
 # ---------- Numeric CLI API ----------
 # HARD cap: any run past 3 rounds is a violation REGARDLESS of later disposition (the WI-486 9-round bug).
 [ "$(rc_of node "$CHECK" --rounds 9 --remaining-high 6 --dispositioned-high 6 --unresolved-critical 0)" = 1 ] \

@@ -72,6 +72,29 @@ const rubricFailureCensus = (terminal.findings.rubric_failures || []).map((rubri
     evidence: (declared.evidence || []).map(artifact),
   };
 });
+let certificationFailureCensus;
+const failedCertifications = (terminal.findings.certifications || []).filter((row) => row?.certified !== true);
+if (failedCertifications.length || Object.hasOwn(config, "certification_dispositions")) {
+  if (config.review_kind !== "plan" || rounds.length !== 3 || !failedCertifications.length) throw new Error("certification dispositions require failed plan certifications at round three");
+  const declared = config.certification_dispositions;
+  if (!Array.isArray(declared) || declared.length !== failedCertifications.length) throw new Error("certification dispositions must cover the exact failed certification count");
+  const allowedKeys = new Set(["key", "finding_ids", "disposition", "justification", "evidence"]);
+  if (declared.some((row) => !row || typeof row !== "object" || Object.keys(row).some((key) => !allowedKeys.has(key)))) throw new Error("certification disposition contains unsupported fields; identity is derived from signed findings");
+  if (new Set(declared.map((row) => row.key)).size !== declared.length) throw new Error("duplicate certification disposition key");
+  certificationFailureCensus = declared.map((row) => {
+    const certification = failedCertifications.find((item) => item?.key === row.key);
+    if (!certification) throw new Error(`unknown failed certification ${row.key}`);
+    return {
+      key: certification.key,
+      reviewer_family: certification.reviewer_family,
+      for_content_sha: certification.for_content_sha,
+      finding_ids: row.finding_ids,
+      disposition: row.disposition,
+      justification: row.justification,
+      evidence: (row.evidence || []).map(artifact),
+    };
+  });
+}
 const commands = rounds.flatMap((round) => round.receipt.reviewer_run?.commands || []);
 const outputArtifacts = rounds.flatMap((round) => (round.receipt.reviewer_run?.output_artifacts || []).map(artifact));
 const body = {
@@ -119,6 +142,7 @@ const body = {
       check_review_round_cap: { exit_code: cap.exit_code, result_digest: cap.result_digest },
       findings_census: findingsCensus,
       rubric_failure_census: rubricFailureCensus,
+      ...(certificationFailureCensus ? { certification_failure_census: certificationFailureCensus } : {}),
     },
   },
 };

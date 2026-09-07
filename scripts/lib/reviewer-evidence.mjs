@@ -152,6 +152,10 @@ export function verifyReviewerEvidence({ root = process.cwd(), reviewKind, body 
   if (terminalIsNonPassing) {
     reasons.push(...validateBoundedExitAdjudication({ root: repository, reviewKind, body, identity, rounds }));
   } else {
+    const terminalCertifications = rounds.at(-1)?.findings?.certifications;
+    if (Array.isArray(terminalCertifications) && terminalCertifications.some((certification) => certification?.certified !== true)) {
+      reasons.push("passing launcher verdict contains failed reviewer certifications");
+    }
     for (const round of rounds) {
       if (reviewKind === "exec" && round.receipt.candidate_digest !== body.candidate_digest) reasons.push(`launcher candidate digest mismatch: ${round.receiptPath}`);
       if (reviewKind === "plan") {

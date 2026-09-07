@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { createExternalReviewFixture } from "./fixtures/external-review-fixture.mjs";
 import { boundedExitCycleId, evaluateReviewRoundCap, validateBoundedExitAdjudication } from "../../../scripts/lib/bounded-exit.mjs";
 import { candidateTreeIdentity, listExternalReviewCycleProvenance } from "../../../scripts/lib/external-review-provenance.mjs";
+import { hasFrameworkLearningCredit } from "../../../scripts/learning-lifecycle.mjs";
 import { putObject, putRelocation, getObject } from "../../../scripts/lib/review-evidence-store.mjs";
 import { verifyReviewerEvidence } from "../../../scripts/lib/reviewer-evidence.mjs";
 
@@ -20,7 +21,10 @@ execFileSync("git", ["init", "-q", temp]);
 execFileSync("git", ["-C", temp, "config", "user.name", "fixture"]);
 execFileSync("git", ["-C", temp, "config", "user.email", "fixture@example.invalid"]);
 fs.writeFileSync(path.join(temp, "candidate.txt"), "immutable candidate\n");
-execFileSync("git", ["-C", temp, "add", "candidate.txt"]);
+const learningVerdictPath = "docs/specs/rules-evaluation/cert-fixture/verdict.json";
+fs.mkdirSync(path.dirname(path.join(temp, learningVerdictPath)), { recursive: true });
+fs.writeFileSync(path.join(temp, learningVerdictPath), JSON.stringify({ rule_path: "fixture.md", scope: "global", verdict: "adopt-as-is", tier2_ran: true, tier2_verdict: "confirmed" }));
+execFileSync("git", ["-C", temp, "add", "candidate.txt", learningVerdictPath]);
 execFileSync("git", ["-C", temp, "commit", "-qm", "candidate"]);
 const candidateSha = execFileSync("git", ["-C", temp, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
 const identity = candidateTreeIdentity(temp, { candidateSha });
@@ -113,6 +117,161 @@ function boundedBody(reviewKind, rounds, wi = "WI-HOURSHUB-POSTHOG") {
       },
     },
   };
+}
+
+// Fixed certification closure retains the old plan digest and the corrected
+// candidate digest as distinct authorities. Use signed producer fixtures.
+const certWi = "WI-PLAN-CERTIFICATION";
+const certDigest = sha(Buffer.from("reviewed-plan-before-correction"));
+const certRows = [
+  { key: "high-proof", certified: false, reviewer_family: "google", for_content_sha: certDigest },
+  { key: "medium-proof", certified: false, reviewer_family: "google", for_content_sha: certDigest },
+];
+const certRounds = Array.from({ length: 3 }, (_, i) => createExternalReviewFixture({ frameworkRoot, repo: temp, reviewKind: "plan", candidateSha, candidateDigestOverride: certDigest, wi: certWi, roundLabel: `cert-${i}`, verdict: "fail", findings: terminalFindings, certifications: i === 2 ? certRows : [] }));
+const certBody = boundedBody("plan", certRounds, certWi);
+const certDir = path.join(temp, ".svc/bounded-exit/plan");
+const certLog = path.join(certDir, "review-log.yaml");
+fs.writeFileSync(certLog, fs.readFileSync(certLog, "utf8").replace("accept-with-justification", "fixed"), { mode: 0o600 });
+const certEvidence = path.join(certDir, "disposition-evidence.json");
+const certEvidenceBody = JSON.parse(fs.readFileSync(certEvidence));
+certEvidenceBody.certification_keys = certRows.map(row => row.key);
+fs.writeFileSync(certEvidence, JSON.stringify(certEvidenceBody), { mode: 0o600 });
+const certExit = certBody.reviewer_evidence.bounded_exit;
+certExit.review_log = artifact(certLog);
+const certCap = evaluateReviewRoundCap(fs.readFileSync(certLog));
+assert.equal(certCap.exit_code, 0, "fixed High log disposition must be recognized");
+certExit.check_review_round_cap = { exit_code: certCap.exit_code, result_digest: certCap.result_digest };
+certExit.findings_census.forEach(row => { row.disposition = "fixed"; row.evidence = [artifact(certEvidence)]; });
+certExit.certification_failure_census = certRows.map((row, i) => ({ key: row.key, reviewer_family: row.reviewer_family, for_content_sha: row.for_content_sha, finding_ids: [i ? "M-1" : "H-1"], disposition: "fixed", justification: "Candidate-bound correction proves the named certification and finding.", evidence: [artifact(certEvidence)] }));
+const certRawHashes = certRounds.map(row => [artifact(row.receiptPath).sha256, artifact(row.output).sha256]);
+const checkCert = body => verifyReviewerEvidence({ root: temp, reviewKind: "plan", body });
+assert.deepEqual(checkCert(certBody), [], "fixed High and Medium certifications close with exact proof");
+const certDirectRounds = certRounds.map(row => ({ receipt: JSON.parse(fs.readFileSync(row.receiptPath)), receiptPath: row.receiptPath, receiptSha: artifact(row.receiptPath).sha256, findings: JSON.parse(fs.readFileSync(row.output)), findingsSha: artifact(row.output).sha256 }));
+assert.deepEqual(validateBoundedExitAdjudication({ root: temp, reviewKind: "plan", body: certBody, identity, rounds: certDirectRounds }), []);
+for (const mutate of [
+  exit => { delete exit.certification_failure_census; },
+  exit => { exit.certification_failure_census.pop(); },
+  exit => { exit.certification_failure_census.push(structuredClone(exit.certification_failure_census[0])); },
+  exit => { exit.certification_failure_census[0].key = "unknown"; },
+  exit => { exit.certification_failure_census[0].reviewer_family = "xai"; },
+  exit => { exit.certification_failure_census[0].for_content_sha = identity.candidate_digest; },
+  exit => { exit.certification_failure_census[0].for_content_sha = artifact(certRounds.at(-1).output).sha256; },
+  exit => { exit.certification_failure_census[0].finding_ids = ["unknown"]; },
+  exit => { exit.certification_failure_census[0].finding_ids = ["H-1", "H-1"]; },
+  exit => { exit.certification_failure_census[0].disposition = "accept-with-justification"; },
+  exit => { exit.findings_census[3].disposition = "reject-with-justification"; },
+  exit => { exit.certification_failure_census[0].evidence = []; },
+]) {
+  const body = structuredClone(certBody); mutate(body.reviewer_evidence.bounded_exit);
+  assert.notEqual(checkCert(body).length, 0, "invalid certification census must reject");
+}
+for (const mutate of [
+  doc => { delete doc.certification_keys; },
+  doc => { doc.certification_keys = ["another-key"]; },
+  doc => { doc.finding_ids = ["M-1"]; },
+  doc => { doc.candidate_digest = certDigest; },
+  doc => { doc.result_artifact.sha256 = "0".repeat(64); },
+]) {
+  const doc = structuredClone(certEvidenceBody); mutate(doc);
+  const file = path.join(certDir, "invalid-cert-evidence.json"); fs.writeFileSync(file, JSON.stringify(doc), { mode: 0o600 });
+  const body = structuredClone(certBody); body.reviewer_evidence.bounded_exit.certification_failure_census[0].evidence = [artifact(file)];
+  assert.notEqual(checkCert(body).length, 0, "missing/stale/corrupt certification proof rejects");
+}
+for (const mutate of [
+  rows => { rows.at(-1).findings.certifications[0].for_content_sha = null; },
+  rows => { rows.at(-1).findings.certifications[0].reviewer_family = null; },
+  rows => { rows.at(-1).findings.certifications.push(rows.at(-1).findings.certifications[0]); },
+  rows => { rows.at(-1).findings.findings[0].severity = "critical"; },
+  rows => { rows.pop(); },
+]) {
+  const rows = structuredClone(certDirectRounds); mutate(rows);
+  assert.notEqual(validateBoundedExitAdjudication({ root: temp, reviewKind: "plan", body: certBody, identity, rounds: rows }).length, 0);
+}
+const certConfig = { schema_version: 1, review_kind: "plan", wi: certWi, candidate_sha: candidateSha, launcher_receipts: certRounds.map(row => row.receiptPath), review_log: certLog, dispositions: Object.fromEntries(terminalFindings.map(row => [row.id, { disposition: "fixed", justification: "Correction verified.", evidence: [certEvidence] }])), certification_dispositions: certExit.certification_failure_census.map(row => ({ key: row.key, finding_ids: row.finding_ids, disposition: "fixed", justification: row.justification, evidence: [certEvidence] })) };
+const certConfigPath = path.join(certDir, "cert-config.json"), certOut = path.join(certDir, "cert-built.json");
+function buildCert(config) {
+  fs.writeFileSync(certConfigPath, JSON.stringify(config), { mode: 0o600 });
+  return spawnSync(process.execPath, [path.join(frameworkRoot, "scripts/build-bounded-exit-receipt.mjs"), "--config", certConfigPath, "--out", certOut], { cwd: temp, encoding: "utf8" });
+}
+const certBuilt = buildCert(certConfig); assert.equal(certBuilt.status, 0, certBuilt.stderr);
+const certBuiltBody = JSON.parse(fs.readFileSync(certOut)); assert.deepEqual(checkCert(certBuiltBody), []);
+for (const mutate of [
+  config => { delete config.certification_dispositions; },
+  config => { config.certification_dispositions.pop(); },
+  config => { config.certification_dispositions[1].key = config.certification_dispositions[0].key; },
+  config => { config.certification_dispositions[0].key = "unknown"; },
+  config => { config.certification_dispositions[0].reviewer_family = "google"; },
+  config => { config.certification_dispositions[0].for_content_sha = certDigest; },
+  config => { config.review_kind = "exec"; config.diff_hash = "fixture"; },
+]) {
+  const config = structuredClone(certConfig); mutate(config); assert.notEqual(buildCert(config).status, 0);
+}
+const certEmitted = spawnSync(process.execPath, [path.join(frameworkRoot, "scripts/emit-receipt.mjs"), "--type", "review-plan", "--wi", certWi, "--sha", candidateSha, "--no-note"], { cwd: temp, input: JSON.stringify(certBuiltBody), encoding: "utf8" });
+assert.equal(certEmitted.status, 0, certEmitted.stderr);
+// The plan scaffold is historical schema1; the reviewed receipt under test is
+// the actual schema3 emitter output. Exercise the checker, not just its library.
+const certMirror = path.join(temp, ".svc/receipts", candidateSha.slice(0, 7));
+fs.writeFileSync(path.join(certMirror, "plan-manifest.json"), JSON.stringify({ receipt_type: "plan-manifest", schema_version: 1, wi: certWi, mode: "inline", scope: {}, dependencies: [], decision_trace: [], task_graph: [], validation_plan: [], risk_rollback: {}, timestamp: "2026-09-02T00:00:00.000Z", execution_command_sequence: [] }));
+const publishCertFixture = review => {
+  const envelope = {
+    [`slot::plan-manifest::${certWi}::${candidateSha}`]: JSON.parse(fs.readFileSync(path.join(certMirror, "plan-manifest.json"))),
+    [`slot::review-plan::${certWi}::${candidateSha}`]: review,
+  };
+  execFileSync("git", ["-C", temp, "notes", "--ref=svc-receipts", "add", "-f", "-m", JSON.stringify(envelope), candidateSha], { stdio: "pipe" });
+};
+publishCertFixture(JSON.parse(fs.readFileSync(path.join(certMirror, "review-plan.json"))));
+const certChain = () => spawnSync(process.execPath, [path.join(frameworkRoot, "scripts/check-chain-receipts.mjs"), "--sha", candidateSha, "--wi", certWi, "--consumer", "stop", "--expected-stage", "review-plan"], { cwd: temp, encoding: "utf8" });
+const certChainResult = certChain(); assert.equal(certChainResult.status, 0, certChainResult.stdout + certChainResult.stderr);
+const certMirrorPath = path.join(certMirror, "review-plan.json");
+const emittedBody = JSON.parse(fs.readFileSync(certMirrorPath));
+const tamperedBody = structuredClone(emittedBody); tamperedBody.reviewer_evidence.bounded_exit.certification_failure_census[0].key = "tampered";
+publishCertFixture(tamperedBody); assert.notEqual(certChain().status, 0, "checker must reject altered certification binding");
+publishCertFixture(emittedBody);
+assert.deepEqual(certRounds.map(row => [artifact(row.receiptPath).sha256, artifact(row.output).sha256]), certRawHashes, "adjudication never rewrites signed reviewer artifacts");
+
+const noCertRows = structuredClone(certDirectRounds); noCertRows.at(-1).findings.certifications = [];
+assert.match(validateBoundedExitAdjudication({ root: temp, reviewKind: "plan", body: certBody, identity, rounds: noCertRows }).join("\n"), /census supplied without failed certifications/);
+
+const earlyWi = "WI-EARLY-CERTIFICATION";
+const earlyRounds = Array.from({ length: 2 }, (_, i) => createExternalReviewFixture({ frameworkRoot, repo: temp, reviewKind: "plan", candidateSha, candidateDigestOverride: certDigest, wi: earlyWi, roundLabel: `early-cert-${i}`, verdict: "fail", findings: terminalFindings, certifications: i === 1 ? certRows : [] }));
+const earlyBody = boundedBody("plan", earlyRounds, earlyWi);
+assert.match(verifyReviewerEvidence({ root: temp, reviewKind: "plan", body: earlyBody }).join("\n"), /failed reviewer certifications outside plan round three/, "signed early-round failure cannot use the census");
+
+
+const execCertWi = "WI-EXEC-CERTIFICATION";
+const execCertRows = [{ key: "exec-proof", certified: false, reviewer_family: "google", for_content_sha: identity.candidate_digest }];
+const execCertRounds = Array.from({ length: 3 }, (_, i) => createExternalReviewFixture({ frameworkRoot, repo: temp, reviewKind: "exec", candidateSha, wi: execCertWi, roundLabel: `exec-cert-${i}`, verdict: "fail", findings: terminalFindings, certifications: i === 2 ? execCertRows : [] }));
+const execCertBody = boundedBody("exec", execCertRounds, execCertWi);
+assert.match(verifyReviewerEvidence({ root: temp, reviewKind: "exec", body: execCertBody }).join("\n"), /failed reviewer certifications outside plan round three/);
+const execCertConfig = { ...certConfig, review_kind: "exec", diff_hash: sha(Buffer.from("exec-cert-diff")), wi: execCertWi, launcher_receipts: execCertRounds.map(row => row.receiptPath) };
+assert.notEqual(buildCert(execCertConfig).status, 0, "builder must reject failed exec certification adjudication");
+const learningKey = "cert-learning";
+const learningOutcomePath = path.join(temp, ".svc/learning-outcomes/cert.json");
+const learningAdapterPath = path.join(temp, ".svc/evaluations/cert.json");
+fs.mkdirSync(path.dirname(learningOutcomePath), { recursive: true, mode: 0o700 });
+fs.mkdirSync(path.dirname(learningAdapterPath), { recursive: true, mode: 0o700 });
+fs.writeFileSync(learningOutcomePath, JSON.stringify({ candidate_sha: candidateSha, evidence: [artifact(path.join(temp, "candidate.txt"))] }), { mode: 0o600 });
+const learningPass = createExternalReviewFixture({ frameworkRoot, repo: temp, reviewKind: "exec", candidateSha, wi: "WI-CERT-LEARNING-PASS", roundLabel: "learning-pass" });
+const learningBase = { schema_version: 2, skill: "evaluate-rule", learning_key: learningKey, candidate_sha: candidateSha, outcome_sha256: artifact(learningOutcomePath).sha256, verdict_path: learningVerdictPath, verdict_sha256: artifact(path.join(temp, learningVerdictPath)).sha256, candidate_digest: identity.candidate_digest, self_review: { orchestrator: "codex", findings_count: 0, notes: "fixture" }, reviewer_evidence: learningPass.reviewerEvidence };
+function learningCredit(adapter) {
+  fs.writeFileSync(learningAdapterPath, JSON.stringify(adapter), { mode: 0o600 });
+  const outcomeSha = artifact(learningOutcomePath).sha256;
+  fs.writeFileSync(path.join(temp, ".svc/learning-lifecycle.jsonl"), [
+    { key: learningKey, event: "consumption", decision: "used", outcome_receipt: path.relative(temp, learningOutcomePath), outcome_sha256: outcomeSha },
+    { key: learningKey, event: "elevated", source_outcome_sha256: outcomeSha, evaluation: path.relative(temp, learningAdapterPath), evaluation_sha256: artifact(learningAdapterPath).sha256, candidate_sha: candidateSha },
+  ].map(JSON.stringify).join("\n") + "\n");
+  return hasFrameworkLearningCredit(temp, learningKey);
+}
+assert.equal(learningCredit(learningBase), true, "learning fixture reaches independent review with valid prerequisites");
+assert.equal(learningCredit({ ...execCertBody, ...learningBase, reviewer_evidence: execCertBody.reviewer_evidence }), false, "learning consumer cannot elevate failed exec certifications");
+
+for (const reviewKind of ["plan", "exec"]) {
+  for (const verdict of ["pass", "pass-with-findings"]) {
+    const wi = `WI-INCONSISTENT-${reviewKind.toUpperCase()}-${verdict.toUpperCase()}`;
+    const fixture = createExternalReviewFixture({ frameworkRoot, repo: temp, reviewKind, candidateSha, wi, roundLabel: wi, verdict, certifications: [{ key: "must-not-pass", certified: false, reviewer_family: "google", for_content_sha: identity.candidate_digest }] });
+    const body = { wi, candidate_digest: identity.candidate_digest, reviewed_plan_digest: identity.candidate_digest, self_review: { orchestrator: "codex", findings_count: 0, notes: "fixture" }, reviewer_evidence: fixture.reviewerEvidence };
+    assert.match(verifyReviewerEvidence({ root: temp, reviewKind, body }).join("\n"), /passing launcher verdict contains failed reviewer certifications/, `${reviewKind} ${verdict} cannot contradict a failed certification`);
+  }
 }
 
 const multiRevisionWi = "WI-HOURSHUB-MULTI-REVISION";

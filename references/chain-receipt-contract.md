@@ -224,3 +224,17 @@ relocation conflict, corrupt object or insecure object fails; it cannot fall bac
 to a mutable local copy. Only a truly absent bare object permits the existing
 secure local-path check. Archive and verify evidence before worktree cleanup,
 then run actual receipt and provenance checks after removal.
+
+### Plan-only fixed certification census
+`reviewer_evidence.bounded_exit.certification_failure_census` is optional for
+legacy/no-failure receipts and required for failed plan certifications at exactly
+round three. Its exact key/family/content identity binds the signed terminal
+review subject, while disposition evidence binds the corrected final candidate.
+Every mapped non-Critical finding must be fixed; all keys and mapped finding IDs
+must appear in hash-verified evidence whose nested result also verifies. The
+schema-aware builder accepts only key, finding_ids, disposition=fixed,
+justification and evidence paths in certification_dispositions, deriving family
+and content SHA from original findings. Unknown, missing, duplicate, malformed,
+stale or unfixed entries fail. Exec certification failures never use this path.
+The same verifier governs builder, emitter, checker and learning consumers.
+Raw launcher verdicts remain unchanged; bounded closeout emits pass-with-acks.

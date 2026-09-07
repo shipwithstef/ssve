@@ -155,7 +155,7 @@ complex plan, so "loop until zero High" is unreachable and forbidden. Run at mos
 **3** adversarial rounds. After round 3 (never start round 4):
 - **Unresolved Critical remain →** escalate to the owner; Criticals always block.
 - **Only High/Medium/Low remain →** the loop TERMINATES. Every remaining High is
-  dispositioned now (`accept-with-justification` = logged execution-time risk in
+  dispositioned now (`fixed` with candidate-bound proof, `accept-with-justification` = logged execution-time risk in
   `review-log.yaml`, or `reject-with-justification`), and the plan PROMOTES. A
   flat rubric_score across rounds is a diminishing-returns signal — apply the cap,
   do not re-loop. (Origin: WI-486 plan looped 9 rounds on 6 persistent High / 0
@@ -198,3 +198,16 @@ Expected per plan: compiled Gate 1 once, one holistic Gate 2, and only changed-l
 - Not a taste review. Reviewers check determinism, completeness, correctness — not "is this the prettiest architecture."
 - Not a security audit. `review-security` is separate; review-plan's only security-ish check is forbidden-pattern scanning.
 - Not a lane-level review. Pipeline-level architectural review happens at G3/G5 via `review-gate`; this is specifically the plan-is-unambiguous-before-MiMo-executes gate.
+
+### Fixed plan certification closeout
+At exactly three authoritative plan rounds, failed certifications may be closed
+with `certification_failure_census` in the existing bounded-exit receipt. Each
+entry must exactly match the signed key, reviewer family and reviewed plan SHA;
+map only to fixed non-Critical terminal findings; and carry hash-verified proof
+binding the certification key and every mapped finding to the corrected final
+candidate and nested result bytes. The builder derives signed identity fields.
+Missing, extra, duplicate, stale, malformed, unfixed or unmapped entries reject.
+All terminal Highs must match the single `fixed` review-log disposition. The
+round-cap checker validates log shape; the common evidence verifier authorizes
+admission. Unread dependencies and failed execution certifications still block.
+Keep raw findings and issuance history unchanged; the closeout is pass-with-acks.
