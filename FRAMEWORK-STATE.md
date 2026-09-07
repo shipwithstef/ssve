@@ -22,8 +22,10 @@ Compatible issued launcher 2.5.4 receipts retain current schema, provenance,
 candidate and bounded-review checks. Bounded adjudication artifacts now resolve
 from the existing hash-addressed archive, with corruption distinct from absence.
 Actual PR36/PR37 note chains pass using the correction without changing signed
-bytes or original review verdicts. Final release, installation and worktree
-cleanup remain subject to this WI's review/landing/verification gates.
+bytes or original review verdicts. PR40 merged at `6809a074`; the 2026-09-07
+G7 closeout verified clean canonical main, all nine installed hosts with zero
+drift, and removal of the six named worktrees. Per-SHA verification receipts
+are published in `refs/notes/svc-receipts`.
 
 ## UX proposal graduation (WI-FW-UX-GRADUATION-01)
 
@@ -32,10 +34,10 @@ current spec, code, persona job and rendered evidence. It permits change, retent
 or missing-evidence outcomes, with illustrative after artifacts only for proposed
 visual changes. It adds no compulsory lane step. Existing source-derived routing,
 context-family registration and focused validators cover the 105th skill. Original
-draft variants remain archived; source release and all-host installation require
-the Stage B/C gates and are not claimed by this implementation note.
+draft variants remain archived. PR39 merged at `ecb2172`; its G7 delivery was
+verified on descendant baseline `6809a074` at the 2026-09-07 nine-host closeout.
 
-## Unreleased follow-up: review launcher recovery
+## Released follow-up: review launcher recovery
 
 WI-FW-CLEAN-MAIN-FOLLOWUP-01 adds a pre-invocation check of the existing signed
 three-round inventory, serialized by a cycle lock through issuance. A later
@@ -43,9 +45,10 @@ internal failure preserves completed attempts, route/usage, and raw findings in
 a non-approving failure envelope plus its pre-failure receipt; a success cache
 published by that failed request is removed under its cache lock. Offline stub
 fixtures cover cap exhaustion, concurrent last-slot requests, issuance failure,
-and cache retry. This source change does not approve the earlier overrun or
-claim landing/installation; the original three issued reviews and fourth paid
-call remain preserved in the task review log.
+and cache retry. PR38 merged at `c790b42`; its G7 delivery was verified on
+descendant baseline `6809a074` on 2026-09-07. Release does not approve the
+earlier overrun: the original three issued reviews and fourth paid call
+remain preserved in the task review log.
 
 ## Skill judgment and applicable context (WI-FW-SKILL-JUDGMENT-01)
 
@@ -750,21 +753,25 @@ to keep this live file under the WI-362 50KB ceiling. The Known Gaps table above
 holds only actionable open items. (Link target materialized 2026-08-26,
 WI-FW-DOCS-AUDIT-01 — previously referenced but never committed.)
 
-### Unreleased follow-up: isolated evaluation and phase validation
+### Released follow-up: isolated evaluation and phase validation
 
-WI-FW-CLEAN-MAIN-FOLLOWUP-01 remains in progress and is not installed or landed.
-The candidate adds explicit plan-phase validation while preserving strict
+WI-FW-CLEAN-MAIN-FOLLOWUP-01 merged in PR38 at `c790b42` and was G7-verified
+on installed descendant baseline `6809a074` on 2026-09-07.
+The implementation adds explicit plan-phase validation while preserving strict
 execution defaults, private HOME/XDG/provider state for Tier-1 invocations,
 fixture-only dead-pointer repair tests, and fixed-clock freshness checks.
 Source-derived video skill context/continuation and two native mirrors are
 reconciled. MiMo and Claude-hook capability summaries now have fresh primary
 source provenance; unsupported old claims are withdrawn, not backdated.
 Focused recovery/phase/isolation tests: 18 passed. Sol advisory checks passed
-for the bounded launcher, phase and evaluator changes. Full corpus, remaining
-historical repairs, independent review, clean main and all-host installation
-are still required; this entry does not waive the recorded plan-cycle overrun.
+for the bounded launcher, phase and evaluator changes. Pre-merge validation
+of the receipt-cleanup working tree recorded 367 passed validators with zero
+failures/timeouts. The later G7 closeout separately verified clean main and
+nine-host installation. All five merged receipt chains
+also passed after worktree cleanup. The recorded plan-cycle overrun remains
+part of the historical evidence; release does not waive it.
 
-### Unreleased: deterministic Claude managed-hook convergence
+### Released: deterministic Claude managed-hook convergence
 
 The clean-main follow-up replaces additive Claude hook migration/dedup with
 managed-command rebuild through the existing ownership classifier. Legacy
@@ -772,4 +779,8 @@ mutation hooks converge to the consolidated engine; foreign commands and mixed
 entry metadata survive. Subtraction-only all-disabled updates persist through
 the existing backup and atomic write path. Isolated cutover (44), compatibility
 (25), and generated-settings duplicate (8) checks pass. These are source-fixture
-results, not installed-source or whole-program release approval.
+results. Whole-program delivery was separately verified at the 2026-09-07
+closeout on baseline `6809a074`, with all nine provisioned hosts resolving
+that installed source at zero drift.
+Cursor review identity remains exact-route `requested_accepted`, without a
+server model echo; unobserved provider quota balances remain unknown.
