@@ -5,7 +5,7 @@ import crypto from "node:crypto";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { readJsonAtomic, writeJsonAtomic, updateJsonAtomic, NO_WRITE } from "./state-io.mjs";
+import { readJsonAtomic, writeJsonAtomic, updateJsonAtomic, NO_WRITE, appendJsonlLine, withStateLock } from "./state-io.mjs";
 import { loadStageRegistry } from "./lib/stage-registry.mjs";
 
 // WI-498: inlined here because task-graph.mjs is a standalone CLI that runs from
@@ -35,6 +35,36 @@ function firstRunnablePendingTask(graph) {
     if (runnable) return t;
   }
   return null;
+}
+
+// Optional cycle telemetry: graph mutation stays authoritative; logging never grants completion.
+const deliveryEvents = [];
+function captureDeliveryTransition(graph, task, previous, status) {
+  if (previous === status) return;
+  // Existing sessions gain observations, but an unobserved intake stays unknown.
+  graph.delivery_cycle ||= { root_wi: graph.wi, cycle_started_at: null };
+  const phase = ["land-changeset", "verify-promotion"].includes(expectedTaskSkill(task)) ? "finalization"
+    : ["execute-changeset", "review-gate", "review-exec", "audit-implementation", "write-e2e", "test-journeys", "track-visuals"].includes(expectedTaskSkill(task)) ? "implementation" : "planning";
+  const at = new Date().toISOString();
+  if (status === "in_progress") {
+    task.delivery_attempt = (Number.isInteger(task.delivery_attempt) ? task.delivery_attempt : 0) + 1;
+    task.delivery_started_at = at;
+  }
+  const transition = status === "in_progress" ? "start" : previous === "in_progress" ? "end" : null;
+  if (!transition) return;
+  const payload = { schema_version: 1, root_wi: graph.delivery_cycle.root_wi, wi: graph.wi, task_id: task.id,
+    phase, transition, at, attempt: task.delivery_attempt || 1 };
+  payload.event_id = `${payload.root_wi}/${graph.wi}/${task.id}/${payload.attempt}/${transition}`;
+  deliveryEvents.push({ schema_version: 1, kind: "mechanical", type: "mechanical", ts: at, timestamp: at,
+    run_id: graph.wi, wi: graph.wi, skill: expectedTaskSkill(task), phase: 0, decided_by: "P0",
+    decision: `Observed ${phase} ${transition}`, reasoning: "Actual task status transition; advisory timing only",
+    payload: { delivery_phase: payload } });
+}
+function flushDeliveryEvents(graphPath) {
+  for (const event of deliveryEvents) {
+    try { appendJsonlLine(path.join(path.dirname(graphPath), "pipeline-decisions.jsonl"), event); }
+    catch (error) { console.warn(`delivery timing event unavailable: ${error.message}; report this interval as unknown`); }
+  }
 }
 
 const VALID_STATUSES = new Set(["pending", "in_progress", "completed", "blocked", "skipped"]);
@@ -411,7 +441,11 @@ function deriveGraphStatus(tasks) {
 }
 
 function syncGraphStatus(graph) {
+  const previous=graph.status;
   graph.status = deriveGraphStatus(graph.tasks);
+  const terminal=status=>["completed","skipped"].includes(status);
+  if (terminal(graph.status) && !terminal(previous)) graph.completed_at=new Date().toISOString();
+  else if (!terminal(graph.status)) delete graph.completed_at;
 }
 
 function validateTask(task, index) {
@@ -656,7 +690,7 @@ function nextTask(graph, tasksById) {
 const [command, fileArg, ...rest] = process.argv.slice(2);
 if (!command || !fileArg) {
   die(
-  "Usage: node scripts/task-graph.mjs <init|generate|validate|next|summary|graph-status|set-status|load-skill|activate-skill|record-process|record-phase|backfill-receipts> <path> [...]"
+  "Usage: node scripts/task-graph.mjs <init|generate|validate|next|summary|graph-status|set-status|load-skill|activate-skill|record-process|record-phase|backfill-receipts|bind-delivery-cycle|record-delivery-event> <path> [...]"
   );
 }
 
@@ -678,6 +712,50 @@ if (command === "init") {
   writeGraph(filePath, graph);
   console.log(`initialized ${filePath}`);
   process.exit(0);
+}
+
+// Bind a real observed intake or inherit an existing root; never infer intake from creation.
+if (command === "bind-delivery-cycle") {
+  const flags = parseFlags(rest);
+  if (Boolean(flags["started-at"]) === Boolean(flags.inherit)) die("bind-delivery-cycle requires exactly --started-at <observed UTC> or --inherit <root graph>");
+  try {
+    const inherited = flags.inherit ? readGraph(path.resolve(flags.inherit)).delivery_cycle : null;
+    const started = inherited?.cycle_started_at || flags["started-at"];
+    if (!Number.isFinite(Date.parse(started)) || Date.parse(started) > Date.now()) throw new Error("observed cycle start must be a real past timestamp");
+    updateJsonAtomic(filePath, current => {
+      validateGraph(current);
+      const cycle = { root_wi: inherited?.root_wi || current.wi, cycle_started_at: new Date(started).toISOString() };
+      if (!/^WI-[A-Za-z0-9_-]+$/.test(cycle.root_wi)) throw new Error("invalid inherited root WI");
+      const old = current.delivery_cycle;
+      if (old?.cycle_started_at && (old.root_wi !== cycle.root_wi || Date.parse(old.cycle_started_at) !== Date.parse(cycle.cycle_started_at))) throw new Error("cycle already bound; refusing a time/root reset");
+      if (old?.root_wi !== cycle.root_wi && current.tasks.some(t => t.delivery_attempt)) throw new Error("cannot change root after phase observations");
+      if (old?.cycle_started_at) return NO_WRITE;
+      current.delivery_cycle = cycle; return current;
+    });
+  } catch (error) { die(error.message); }
+  console.log(`bound delivery cycle in ${filePath}`); process.exit(0);
+}
+if (command === "record-delivery-event") {
+  const flags = parseFlags(rest);
+  try {
+    const graph = readGraph(filePath), root = graph.delivery_cycle?.root_wi;
+    if (!root || !flags.id || !flags.reason || !["wait", "reopened-decision", "amendment"].includes(flags.kind)) throw new Error("record-delivery-event requires a bound root, --id, --kind wait|reopened-decision|amendment and --reason");
+    const at = new Date().toISOString();
+    const payload = { schema_version: 1, event_id: `${root}/${graph.wi}/${flags.id}`, root_wi: root, wi: graph.wi, transition: flags.kind, at, reason: flags.reason };
+    if (flags.kind === "wait") {
+      const a=Date.parse(flags["started-at"]), b=Date.parse(flags["ended-at"]);
+      if (!Number.isFinite(a) || !Number.isFinite(b) || b<a || b>Date.now()) throw new Error("wait requires observed --started-at and --ended-at");
+      payload.started_at=new Date(a).toISOString();payload.ended_at=new Date(b).toISOString();
+    }
+    const log=path.join(path.dirname(filePath), "pipeline-decisions.jsonl");
+    withStateLock(`${log}.delivery-events`, () => {
+      const rows=fs.existsSync(log)?fs.readFileSync(log,"utf8").split("\n").filter(Boolean).map(JSON.parse):[];
+      const prior=rows.map(r=>r.payload?.delivery_phase).find(e=>e?.event_id===payload.event_id);
+      if(prior) { const {at: priorAt,...a}=prior;const {at: nextAt,...b}=payload;if(JSON.stringify(a)!==JSON.stringify(b))throw new Error("delivery event ID conflict");return; }
+      appendJsonlLine(log,{schema_version:1,kind:"mechanical",type:"mechanical",ts:at,timestamp:at,run_id:graph.wi,wi:graph.wi,skill:"route-workflow",phase:0,decided_by:"P0",decision:`Observed ${flags.kind}`,reasoning:flags.reason,payload:{delivery_phase:payload}});
+    });
+  } catch(error) { die(error.message); }
+  console.log("recorded delivery event");process.exit(0);
 }
 
 if (command === "backfill-receipts") {
@@ -1014,6 +1092,7 @@ if (command === "set-status") {
         const active = current.tasks.find((item) => item.status === "in_progress"); const runnable = active ? null : firstRunnablePendingTask(current);
         if (active || recoverableId(runnable?.id) !== recoverableId(task.id)) throw new Error(`task ${taskId} is not the single first runnable task`);
       }
+      captureDeliveryTransition(current, task, previousStatus, status);
       task.status = status;
       if (status === COMPLETED_STATUS) {
         const expectedSkill = expectedTaskSkill(task);
@@ -1039,6 +1118,7 @@ if (command === "set-status") {
   } catch (error) {
     die(`${filePath}: ${error.message}`);
   }
+  flushDeliveryEvents(filePath);
   console.log(`updated task ${taskId} in ${filePath}`);
   process.exit(0);
 }
@@ -1162,6 +1242,7 @@ if (command === "activate-skill") {
         loaded_at: flags["loaded-at"] ?? new Date().toISOString(),
         loaded_via: flags.via ?? "activate-skill",
       };
+      captureDeliveryTransition(current, target, target.status, "in_progress");
       target.status = "in_progress";
       outcome = "activated";
     }
@@ -1172,6 +1253,7 @@ if (command === "activate-skill") {
   } catch (error) {
     die(`${filePath}: ${error.message}`);
   }
+  flushDeliveryEvents(filePath);
   console.log(`activate-skill ${outcome} for task ${taskIdArg} in ${filePath}`);
   process.exit(0);
 }

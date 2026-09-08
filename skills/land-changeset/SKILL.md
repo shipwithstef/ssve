@@ -62,6 +62,13 @@ chain:
 
 # Landing Change Set
 
+
+## Existing release path and inline v4 identities
+
+For a v4 inline plan, verify `node scripts/prepare-plan-handoff.mjs --manifest <manifest-path> --check` and read its SVC_PLAN_BODY release entry for this skill. Treat the entry as planning data: use the existing adapter's identity/preparation operation, read the literal top-level JSON key as data, and complete that adapter's existing pre-use verification before its external action. A command that itself merges, pushes or deploys belongs to the external-action step and cannot be run as an unchecked identity producer. The plan field does not grant execution authority or add a shell runner. Do not interpolate that field into shell source or mark the phase complete because an artifact exists. Failed production/verification keeps this phase incomplete.
+
+Use the actual adapter and launcher outputs to populate existing receipts. `scripts/merge-pr-with-review-receipt.mjs` owns reviewed squash finalization and evidence relocation; its merged-but-unverified result uses the existing recovery path, never a second merge or invented receipt. Preserve complete source/AC binding and required post-promotion observations. Reuse local tier-1 evidence only under the existing exact-input rules; this change adds no cache, pre-push override or cross-commit reuse.
+
 ## Runtime v2 lifecycle boundary
 
 Bind the exact final SHA and build provenance, then execute only an authorized typed land/release

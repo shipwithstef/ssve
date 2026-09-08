@@ -57,6 +57,12 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P4-
 
 Read **as needed** (`_shared/before-starting.md`): `docs/specs/project-state.md`, `~/.svc/builder-profile.md`, `docs/specs/domain-profile.md`, the feature spec (ACs the implementation must satisfy). The change set is the branch state, not markdown code payloads.
 
+## Original requirement handoff
+
+For a v4 inline plan, run `node scripts/prepare-plan-handoff.mjs --manifest <manifest> --check` before implementation, then `--task <task-id>` for each task. Read the emitted original AC section and hash-bound UX/technical excerpts. Treat its AC IDs as the attention guide; never replace the original temporal, manual-choice, transaction or performance clauses with a short digest. A stale hash stops that task for correction and affected-lens review.
+
+Use normal bounded repository reads to inspect current local code after prerequisites complete; such reads are runtime context, not reviewed context_refs. Keep exact write authority and existing delegation/containment. Local reversible elaboration inside the task needs no new plan review; consequential discoveries reopen the affected decision and proof. A release producer description is handled only by its named existing land/verify skill and pre-use checks; it is not an implementation-task status or a second scheduler.
+
 ## Step 0 — MANDATORY dispatch preflight (hard rule, 2026-04-20)
 
 Resolve the execution harness BEFORE touching files: `bash scripts/resolve-model.sh EXEC --json`. Honor the active profile (svc-default → Claude Sonnet direct; keyed MiMo profiles delegate; missing keys fall back per preflight). Full profile branches, MiMo delegation mechanics, and fallback table: `references/dispatch-preflight.md`.
@@ -272,7 +278,7 @@ Before freezing the review surface, re-run the impact guard against the final st
 
 ### Branch Index Re-stamp (§3)
 
-If the scope has a genesis index (`docs/specs/relations/<scope>.branches.md`), append this stage's findings to its axis sections and re-stamp `Derived-at` to the final staged-diff sha before handing off — the same append-and-restamp discipline `plan-changeset` applies at its own close. Also re-run `node scripts/branch-index-freshness.mjs --stamp-imports <index-path>` at this point — imports may have changed during execution, and a re-stamp without a matching `--stamp-imports` run leaves the sidecar describing pre-execution code. As at `plan-changeset`, move any row this execution contradicts to a `## Superseded` tail section rather than deleting it (G6).
+If this scope has a genesis branch index, run `node scripts/check-branch-index.mjs --index <index-path>` first. When it is FRESH and this stage discovered no changed facts, retain the existing `Derived-at` and import hashes without writing. A newer HEAD alone is not a reason to stamp. If cited facts/imports are stale, re-inspect the affected facts, preserve contradicted rows in `## Superseded`, then update `Derived-at` and run `node scripts/branch-index-freshness.mjs --stamp-imports <index-path>`. New substantive findings are appended to the same index and reviewed under the existing contract. Never restamp merely to silence a failing check.
 
 ## Checkpoints
 

@@ -1,0 +1,1023 @@
+{
+  "captured_at": "2026-09-07T18:28:50.506597+00:00",
+  "scope": "Bounded historical samples; not all reviews or all elapsed time. Receipt assertions are not independent runtime verification.",
+  "receipt_censuses": {
+    "account": {
+      "rows": [
+        {
+          "path": "analytics-a11y-amendment/round1/receipt.json",
+          "id": "832d4c12-3b9f-4a01-b60f-298e0f013789",
+          "start": "2026-09-06T21:00:49.759Z",
+          "finish": "2026-09-06T21:01:56.381Z",
+          "seconds": 66.622,
+          "status": "success",
+          "model": "gpt-5.6-sol",
+          "candidate": "98b4f8eefa78706e1706176c183002dfae4b7095b068c5ce0eb8fabaa7b917d9",
+          "package": "825112b73374c840e3840b9004753a8d506303acb573beba548f1afba4dc4111",
+          "invocations": 1,
+          "verdict": "fail",
+          "findings": [
+            {
+              "id": "F-001",
+              "severity": "high",
+              "claim": "The amendment lacks an owned browser-test repair that proves the Usage control’s accessible name and preserved interaction behavior on desktop and Mobile Chrome."
+            }
+          ],
+          "sha256": "64992209cd97ae50c13aea0c186479796825527d8eac25c8f5fda2a4743df9e6"
+        },
+        {
+          "path": "analytics-a11y-amendment/round2/receipt.json",
+          "id": "97e16edf-eedb-452b-9cb9-b7a7f9575484",
+          "start": "2026-09-06T21:03:53.520Z",
+          "finish": "2026-09-06T21:03:53.528Z",
+          "seconds": 0.008,
+          "status": "override_invalid",
+          "model": "gpt-5.6-sol",
+          "candidate": "689ba35f98938d99a7ecb9fd543c516d19dfa2fdff35b3780786dc37745900e8",
+          "package": "cc1482a5dbd5ed7c162dff009c23ac250f53d365dd638fc4d161e07562c25959",
+          "invocations": 0,
+          "verdict": null,
+          "findings": [],
+          "sha256": "a0f14b3f420f405e3d2aa99091cc9f7fdbdb03d4143b467609338866cdc7dfde"
+        },
+        {
+          "path": "analytics-a11y-amendment/round2-bound/receipt.json",
+          "id": "52f0be13-d676-475b-9fe4-c89b65db8890",
+          "start": "2026-09-06T21:04:37.145Z",
+          "finish": "2026-09-06T21:04:54.465Z",
+          "seconds": 17.32,
+          "status": "success",
+          "model": "gpt-5.6-sol",
+          "candidate": "689ba35f98938d99a7ecb9fd543c516d19dfa2fdff35b3780786dc37745900e8",
+          "package": "cc1482a5dbd5ed7c162dff009c23ac250f53d365dd638fc4d161e07562c25959",
+          "invocations": 1,
+          "verdict": "pass",
+          "findings": [],
+          "sha256": "6609af72842ea68b57c8c61d3ff22e84e32394a2b9c629a39898aef5b7325df0"
+        },
+        {
+          "path": "dependency-resume-amendment-20260907/independent-round1/receipt.json",
+          "id": "8d6cc1c2-198c-4f16-973f-cce8601feb42",
+          "start": "2026-09-07T09:25:06.109Z",
+          "finish": "2026-09-07T09:25:06.133Z",
+          "seconds": 0.024,
+          "status": "config_invalid",
+          "model": null,
+          "candidate": "dd35d27364102cfcb004d64ff8332d9934d813bf84e9c7b31ae5e5cf9dbd3d9b",
+          "package": "dca0b7737a95a2ba72d65ca1230674a231fe15c12f86180dfd16ecc1e0cef028",
+          "invocations": 0,
+          "verdict": null,
+          "findings": [],
+          "sha256": "5b57f0414c45be97653df90444fdcecf774af0bb6a8c53cc8255097920f64f33"
+        },
+        {
+          "path": "dependency-resume-amendment-20260907/independent-round1-retry1/receipt.json",
+          "id": "4afbd914-038f-4702-b8f1-68aea84e4fe9",
+          "start": "2026-09-07T09:25:43.000Z",
+          "finish": "2026-09-07T09:34:51.750Z",
+          "seconds": 548.75,
+          "status": "success",
+          "model": "grok-4.6",
+          "candidate": "dd35d27364102cfcb004d64ff8332d9934d813bf84e9c7b31ae5e5cf9dbd3d9b",
+          "package": "dca0b7737a95a2ba72d65ca1230674a231fe15c12f86180dfd16ecc1e0cef028",
+          "invocations": 1,
+          "verdict": "fail",
+          "findings": [
+            {
+              "id": "F-001",
+              "severity": "high",
+              "claim": "Setting resumable=true on the three apply-api steps does not make API remaining-effect resume work through the host adapter the controller actually calls."
+            },
+            {
+              "id": "F-002",
+              "severity": "high",
+              "claim": "Planned vendor tests do not prove the hosted api fat-router can execute the committed bundles; equal 253 type diagnostics and isolated fixtures are not hosted runtime compatibility."
+            },
+            {
+              "id": "F-003",
+              "severity": "medium",
+              "claim": "Default/configured telemetry tests are not observable after the optional import is folded into a static bundle."
+            },
+            {
+              "id": "F-004",
+              "severity": "medium",
+              "claim": "Type-cache isolation and no-follow materialization are policy text, not T4 proof commands, while typecheck logs still show registry Download attempts."
+            }
+          ],
+          "sha256": "df0835828f842c39b1e5132c45d6844e30cf77014b1f640f9f5facecc79de027"
+        },
+        {
+          "path": "dependency-resume-amendment-20260907/independent-round2/receipt.json",
+          "id": "220df30c-a288-44ad-9d22-191626a427d0",
+          "start": "2026-09-07T09:37:51.082Z",
+          "finish": "2026-09-07T09:44:24.887Z",
+          "seconds": 393.805,
+          "status": "success",
+          "model": "grok-4.6",
+          "candidate": "0cbddde59477d52d09916491405a8f734bb92dfdb0bbeedd44e1a5e2e4aadb06",
+          "package": "23156dcaffdbd88511321b09735d78af3b63f2b145f8cfcf0de3631655e143ce",
+          "invocations": 1,
+          "verdict": "fail",
+          "findings": [
+            {
+              "id": "F-001",
+              "severity": "high",
+              "claim": "T4 fat-router-boot still mixes a hosted staging/production canary into a local --verify case that is required to exit 0 before land, and that case also forbids hosted calls."
+            }
+          ],
+          "sha256": "b8de086467f401d24288930e821842e2132a266999748e7d92dcf67e2deeac70"
+        },
+        {
+          "path": "dependency-resume-amendment-20260907/independent-round3/receipt.json",
+          "id": "1bad8657-a8f2-4ac4-a7fb-6177fdba465f",
+          "start": "2026-09-07T09:47:12.448Z",
+          "finish": "2026-09-07T09:54:54.155Z",
+          "seconds": 461.707,
+          "status": "success",
+          "model": "grok-4.6",
+          "candidate": "e67cf6557d8017be8a3350038f6f0b97d999d1f843e7372e10e9917d83f831b2",
+          "package": "d2c9d532734bda0801a452d8d537e145ac1cf247f8e2dcc30a415e8dc3519024",
+          "invocations": 1,
+          "verdict": "pass-with-findings",
+          "findings": [
+            {
+              "id": "F-001",
+              "severity": "medium",
+              "claim": "The four-path registration repair updates planned_paths to 97, but load-bearing future-path denominators still say nine extra paths and 84."
+            }
+          ],
+          "sha256": "83ca8361ece4bf042a8ef34d9aecfcaebe006707196c1703e730e06c119eb003"
+        },
+        {
+          "path": "launcher/receipt.json",
+          "id": "7805437e-4fb9-4063-a901-0879a7366212",
+          "start": "2026-09-06T10:22:24.890Z",
+          "finish": "2026-09-06T10:25:51.676Z",
+          "seconds": 206.786,
+          "status": "success",
+          "model": "gpt-5.6-sol",
+          "candidate": "933c36922052b69872e77795df2d435b5c1937e1d9bd306f67c40794d3d4382e",
+          "package": "9af956f9c3efe8898de6f02244060704e7d7eb079ddc9eae5dc94c423ab65776",
+          "invocations": 1,
+          "verdict": "fail",
+          "findings": [
+            {
+              "id": "F-001",
+              "severity": "high",
+              "claim": "The 42 acceptance criteria are not mapped to concrete tests and evidence producers."
+            },
+            {
+              "id": "F-002",
+              "severity": "high",
+              "claim": "The plan defers its exact scope and one-owner-per-path contract until after implementation."
+            },
+            {
+              "id": "F-003",
+              "severity": "high",
+              "claim": "The inline task graph lacks the commands, outputs, and exit criteria needed for deterministic execution."
+            },
+            {
+              "id": "F-004",
+              "severity": "high",
+              "claim": "Brownfield-feature lane compliance is not established."
+            },
+            {
+              "id": "F-005",
+              "severity": "high",
+              "claim": "The task order permits tracked candidate changes after the final Astra/Sol review."
+            },
+            {
+              "id": "F-006",
+              "severity": "high",
+              "claim": "The current AMC-OFF-06 contract still requires Grok while the planned final gate makes Grok optional."
+            },
+            {
+              "id": "F-007",
+              "severity": "high",
+              "claim": "The External State Lifecycle rows are not coupled to actual scripts, checks, and durable resume artifacts."
+            },
+            {
+              "id": "F-008",
+              "severity": "high",
+              "claim": "Rollback is not concrete or commit-scoped for the production release surface."
+            },
+            {
+              "id": "F-009",
+              "severity": "high",
+              "claim": "The migration identity remains provisional even though the reviewed scope and contract hard-code a filename."
+            },
+            {
+              "id": "F-010",
+              "severity": "medium",
+              "claim": "Professional translation approval is required for completion but is not a gated dependency with authoritative evidence."
+            }
+          ],
+          "sha256": "940ba79528a5b6f8855488081e547baae232d50c7e8f33ea8c01286026db2ab8"
+        },
+        {
+          "path": "launcher-recovery/receipt.json",
+          "id": "d51b3cac-5407-4e4e-9f47-8b5aab632cfe",
+          "start": "2026-09-06T11:51:47.364Z",
+          "finish": "2026-09-06T11:52:04.728Z",
+          "seconds": 17.364,
+          "status": "success",
+          "model": "gpt-5.6-sol",
+          "candidate": "c1e0a9beb0ba9a3e4bfe67554202e81d5be263affd3fee1982a8f5fa10e54972",
+          "package": "40637bac85cbb83cd245cbb2f888f6979c08caaf18bebd6ec76ea1ff948c5de2",
+          "invocations": 1,
+          "verdict": "pass",
+          "findings": [],
+          "sha256": "914e5788415a1daaf98632fc62128c0726874bc7c01513dfe8ab95242a816be0"
+        },
+        {
+          "path": "launcher-round2/receipt.json",
+          "id": "4290635a-0684-4c50-bc9c-cd7950008fd2",
+          "start": "2026-09-06T10:45:57.109Z",
+          "finish": "2026-09-06T10:48:01.506Z",
+          "seconds": 124.397,
+          "status": "success",
+          "model": "gpt-5.6-sol",
+          "candidate": "3434194586c8965ad8b2e2ce259e08fb9f8f426a34755a8bda111a5cb15600cc",
+          "package": "fe0fdf3cf3e9f8c26181e2381c0734032ff8ce7bf31d71d06b7079355bdb096c",
+          "invocations": 1,
+          "verdict": "fail",
+          "findings": [
+            {
+              "id": "F-001",
+              "severity": "high",
+              "claim": "Required hosted, performance, and physical-native evidence still lacks executable producers in the release tasks."
+            },
+            {
+              "id": "F-003",
+              "severity": "high",
+              "claim": "The release command graph does not deterministically propagate state digests or stop on durable waiting states."
+            },
+            {
+              "id": "F-004",
+              "severity": "high",
+              "claim": "The mandatory scoped security review remains narrative metadata rather than an owned executable gate."
+            },
+            {
+              "id": "F-006",
+              "severity": "high",
+              "claim": "Activation can proceed while the plan's own central release-authority gate remains explicitly pending."
+            },
+            {
+              "id": "F-007",
+              "severity": "high",
+              "claim": "The cross-host serialization contract cannot be proven by the planned process and test contract."
+            },
+            {
+              "id": "F-008",
+              "severity": "medium",
+              "claim": "The staging rollback drill still omits the required compatibility canary while the prior API/frontend artifacts are restored."
+            }
+          ],
+          "sha256": "a495825d4db1095d96aa36babad7222633bdd931dc749a16a8cda6ceb94f5c20"
+        },
+        {
+          "path": "launcher-round3/receipt.json",
+          "id": "2fc4f31f-84f0-4d5a-be76-8c913a20f8cb",
+          "start": "2026-09-06T11:41:16.187Z",
+          "finish": "2026-09-06T11:42:08.009Z",
+          "seconds": 51.822,
+          "status": "success",
+          "model": "gpt-5.6-sol",
+          "candidate": "0954b297154d8144ac9f1f85fa05db228b5dcbb67c38320f57b3eb2fea32cfc4",
+          "package": "29b2a76bc4cfb7a305b17dacc877cf0cdea734c1b9cc5d8f6e10477770c0684c",
+          "invocations": 1,
+          "verdict": "fail",
+          "findings": [
+            {
+              "id": "F-006",
+              "severity": "high",
+              "claim": "The central release-authority gate consumes an aggregate input that no task produces or validates."
+            }
+          ],
+          "sha256": "cc84328391dfd8a7f4157964ce3981fb78e05ff214229e24e77d6317a4a89c2e"
+        },
+        {
+          "path": "main1080-plan-amendment/independent-round1/receipt.json",
+          "id": "a062c91d-9b8e-4ade-aeba-edc10d9ebbe9",
+          "start": "2026-09-07T03:44:09.292Z",
+          "finish": "2026-09-07T03:51:03.859Z",
+          "seconds": 414.567,
+          "status": "success",
+          "model": "grok-4.6",
+          "candidate": "12d8fa13f9ee8a48c2736e47d710198ce1ff5b045b28889738843a2c15905d6a",
+          "package": "168c57ac0fadbbf073ea86b8f630627c352a5fef5a9830db7d6ccb99e354b7a8",
+          "invocations": 1,
+          "verdict": "fail",
+          "findings": [
+            {
+              "id": "F-001",
+              "severity": "high",
+              "claim": "The T4-I Git sequence still has no successful, content-bound path through the known overlapping MAIN1080 rebase conflicts and saved-index restoration."
+            },
+            {
+              "id": "F-002",
+              "severity": "high",
+              "claim": "The reviewed Azure queue helper silently defaults to staging, so the frozen production targetEnvironment default is not the queued identity."
+            },
+            {
+              "id": "F-003",
+              "severity": "medium",
+              "claim": "plan-contract.json still publishes a stale ownership census that omits MAIN1080-owned paths already listed in planned_paths."
+            },
+            {
+              "id": "F-004",
+              "severity": "medium",
+              "claim": "Semantic-only MAIN1080 paths Layout.jsx and supervisor.py have no hashed resolution and no T4-I argv, only a later “review iOS semantics” prose gate."
+            }
+          ],
+          "sha256": "ceac1d1f0d11c263ed66d6fb6149bb9326d515a8c4445ee83600ab5acbf2cf26"
+        },
+        {
+          "path": "main1080-plan-amendment/independent-round2/receipt.json",
+          "id": "e1211543-633e-4069-a064-4b55add9c7b3",
+          "start": "2026-09-07T04:06:12.528Z",
+          "finish": "2026-09-07T04:10:00.569Z",
+          "seconds": 228.041,
+          "status": "schema_invalid",
+          "model": "grok-4.6",
+          "candidate": "3c1f34d52f9fe74da3de4f2dfcf9dc20c8789ce2598f690e60acd95d5867dd74",
+          "package": "8929ce599c856402e9eb09872d18e93c4cfc1db917f58c3a69e837da87d57420",
+          "invocations": 1,
+          "verdict": null,
+          "findings": [],
+          "sha256": "c0caef9c68ae2620a5ba68fdc77d0f87d89e531fd741972e4bedb11cddde0d9a"
+        },
+        {
+          "path": "main1080-plan-amendment/independent-round2-retry1/receipt.json",
+          "id": "236ff4a5-ee43-4f7e-857c-3e5f620bfedf",
+          "start": "2026-09-07T04:20:47.029Z",
+          "finish": "2026-09-07T04:26:50.424Z",
+          "seconds": 363.395,
+          "status": "success",
+          "model": "grok-4.6",
+          "candidate": "3c1f34d52f9fe74da3de4f2dfcf9dc20c8789ce2598f690e60acd95d5867dd74",
+          "package": "8929ce599c856402e9eb09872d18e93c4cfc1db917f58c3a69e837da87d57420",
+          "invocations": 1,
+          "verdict": "pass-with-findings",
+          "findings": [
+            {
+              "id": "F-007",
+              "severity": "medium",
+              "claim": "T4-I freeze, census, and receipt-binding still lack frozen checker modes, so post-integration actual-table refresh is not command-complete."
+            }
+          ],
+          "sha256": "967eeb9d73f1d410c04422d9546a70c123dec41b4debac74820cfe179abdb0eb"
+        },
+        {
+          "path": "main1080-plan-amendment/independent-round3/receipt.json",
+          "id": "b7d15e03-cb8a-442c-99da-cd3284afe7cf",
+          "start": "2026-09-07T04:31:00.775Z",
+          "finish": "2026-09-07T04:37:05.006Z",
+          "seconds": 364.231,
+          "status": "success",
+          "model": "grok-4.6",
+          "candidate": "e0e0829a4ab8e13d8edede4c582864e9cc348569e7fc0aa767779d992fa85378",
+          "package": "330f53cd0cdd562333d20067b9306739272534a70c45abfbb19113bf37640d07",
+          "invocations": 1,
+          "verdict": "pass",
+          "findings": [],
+          "sha256": "784a9a76e424fda1dd7c3c3ae7fe3eef7e2eb39ada49fc9d6787a3939788e03d"
+        },
+        {
+          "path": "main1080-plan-amendment/round1-bound/receipt.json",
+          "id": "91d33e93-f045-4ef5-9811-976affe18a70",
+          "start": "2026-09-06T22:29:42.397Z",
+          "finish": "2026-09-06T22:32:22.152Z",
+          "seconds": 159.755,
+          "status": "success",
+          "model": "gpt-5.6-sol",
+          "candidate": "252dad3a73be2f4bceaea2cb505ed169dab4c99896247f4cb2f04832b9842231",
+          "package": "6d91564b3ab1846d1101be84223994bce8f1878be7bbe9c52ac7e4f33dcb7898",
+          "invocations": 1,
+          "verdict": "fail",
+          "findings": [
+            {
+              "id": "F-001",
+              "severity": "high",
+              "claim": "The MAIN1080 integration and candidate-base freeze are not assigned to an explicit task or dependency edge."
+            },
+            {
+              "id": "F-002",
+              "severity": "high",
+              "claim": "The production API artifact-marker obligation has no concrete, reviewable proof interface in the supplied plan package."
+            },
+            {
+              "id": "F-003",
+              "severity": "high",
+              "claim": "Current-task staged-scope enforcement is described in prose but is not bound to a machine-readable frozen candidate base."
+            },
+            {
+              "id": "F-004",
+              "severity": "medium",
+              "claim": "Native target/runtime correctness depends on an executable helper omitted from the amendment's reviewer inputs."
+            }
+          ],
+          "sha256": "a952a2d5687b0b5505397e9386fe1a1f71870f95ff7ac22bc2cb5e822e82d02d"
+        },
+        {
+          "path": "main1080-plan-amendment/round2-bound/receipt.json",
+          "id": "db1425db-78fc-40ba-a076-2414921766f7",
+          "start": "2026-09-06T22:49:32.439Z",
+          "finish": "2026-09-06T22:51:15.049Z",
+          "seconds": 102.61,
+          "status": "success",
+          "model": "gpt-5.6-sol",
+          "candidate": "15cb1b04c23bb92dbc6bead2cf749f6f6ce587a36c0247723984e0692b4c5cc6",
+          "package": "6446654736b8c3775781945c83bef366feccda1a5e1e294d6f69d9b4c6842826",
+          "invocations": 1,
+          "verdict": "fail",
+          "findings": [
+            {
+              "id": "F-002",
+              "severity": "high",
+              "claim": "The concrete API artifact protocol still permits a marker-only success to falsely identify the previously served API artifact."
+            },
+            {
+              "id": "F-003",
+              "severity": "high",
+              "claim": "The frozen scope base is captured after rebasing the committed candidate, so committed candidate changes can vanish from the exact Git-set census."
+            }
+          ],
+          "sha256": "25b9b0781fefe36a7fc2b2bf1cea1d07f155a47586dcdf2cb3bd67cae5ef459a"
+        },
+        {
+          "path": "main1080-plan-amendment/round3-bound/receipt.json",
+          "id": "e0b80228-c1cc-43e6-a464-7c7f5467f134",
+          "start": "2026-09-06T22:53:45.777Z",
+          "finish": "2026-09-06T22:55:27.154Z",
+          "seconds": 101.377,
+          "status": "success",
+          "model": "gpt-5.6-sol",
+          "candidate": "cf4539810ba0bbbfa52ca71b88920542fade6ec1456afabb97302ad0de12a4e6",
+          "package": "a76bad4c06648689f619d2ac4097b8a913843cf6793c46255bcdba0b553fe719",
+          "invocations": 1,
+          "verdict": "fail",
+          "findings": [
+            {
+              "id": "F-005",
+              "severity": "high",
+              "claim": "The integration contract predicts rebase conflicts but its exact Git sequence cannot deterministically reach the reconciled candidate or staged-equality receipt."
+            }
+          ],
+          "sha256": "1800eea7c28c893b803b35d40088b808a97d0b50503dd72f8a64764c2a894177"
+        },
+        {
+          "path": "main1081-reconciliation/owner-approved-supplement/review/receipt.json",
+          "id": "69dbc6bd-808c-4b1e-9a28-2feeb7930537",
+          "start": "2026-09-07T13:08:42.484Z",
+          "finish": "2026-09-07T13:14:22.786Z",
+          "seconds": 340.302,
+          "status": "success",
+          "model": "grok-4.6",
+          "candidate": "e3b628b152c24328fd006ac60816c10f8737863e44c6f11c2d3ab48fc1c50f55",
+          "package": "472f8543d366a9407ce1af94aaad7151804153b05a8926447d58c3e3dd64e53c",
+          "invocations": 1,
+          "verdict": "pass",
+          "findings": [],
+          "sha256": "d7146324fdfd15a79bae01154fbeaa681cbb09a708b602333605bc875ffffc68"
+        },
+        {
+          "path": "main1081-reconciliation/revocation-rendered-proof/receipt.json",
+          "id": "/home/dianast/app-workspaces/hourshub-worktrees/wt-lane-account-customer-billing-live/.svc/evidence/account-completion-plan/main1081-reconciliation/revocation-rendered-proof/receipt.json",
+          "start": null,
+          "finish": null,
+          "seconds": 0,
+          "status": null,
+          "model": null,
+          "candidate": "",
+          "package": "",
+          "invocations": null,
+          "verdict": null,
+          "findings": [],
+          "sha256": "4358df4feb23e70b4ad1ff4bda304db444997bf13b15a1b2735c82d363dedc54"
+        },
+        {
+          "path": "main1081-reconciliation/round1/receipt.json",
+          "id": "e3afddfb-cf20-4ca8-8d4f-70efa93d873b",
+          "start": "2026-09-07T11:03:01.993Z",
+          "finish": "2026-09-07T11:08:34.225Z",
+          "seconds": 332.232,
+          "status": "success",
+          "model": "grok-4.6",
+          "candidate": "0646162eca3dbec0a43a0f45c019f3c1c2183051208b54f58a357acc492548cd",
+          "package": "2c6b7e7267a81d4877ffa534cdb0213dd84b72433b4be7856dbbad5795e7cd33",
+          "invocations": 1,
+          "verdict": "fail",
+          "findings": [
+            {
+              "id": "F-001",
+              "severity": "high",
+              "claim": "Layout conflict semantics are internally in tension and are not a binary merge recipe."
+            },
+            {
+              "id": "F-002",
+              "severity": "high",
+              "claim": "Uncommitted android/app/build.gradle overlap will likely fail patch replay, and the plan has no expected result bytes."
+            },
+            {
+              "id": "F-003",
+              "severity": "high",
+              "claim": "MAIN1081 lineage validation is conditional, which is a fake-pass gate."
+            },
+            {
+              "id": "F-004",
+              "severity": "high",
+              "claim": "Backup, isolated merge, replay, and transfer are not a copy-pasteable non-interactive sequence."
+            },
+            {
+              "id": "F-005",
+              "severity": "medium",
+              "claim": "The claim that #1081 adds no SQL migrations is unprobed."
+            },
+            {
+              "id": "F-006",
+              "severity": "medium",
+              "claim": "INDEX.md is a planned overlap with no owner, and named verification suites have no mapped commands."
+            }
+          ],
+          "sha256": "0f078fed32bd2c690dc98578e81135017a0b048e75fd881b826750a4b4df3f7e"
+        },
+        {
+          "path": "main1081-reconciliation/round3/receipt.json",
+          "id": "9fad5fae-e48b-42b7-ad08-e252817b8139",
+          "start": "2026-09-07T12:35:22.307Z",
+          "finish": "2026-09-07T12:35:38.684Z",
+          "seconds": 16.377,
+          "status": "schema_invalid",
+          "model": "grok-4.6",
+          "candidate": "85abd286c5890130b6ebe69d3ae802baaf02b4d1052b90319cd3893bb3adc1f9",
+          "package": "7b0b7bce9dd5d86a0c44f6776e925348017567535162232e14be7f25d55f8532",
+          "invocations": 1,
+          "verdict": null,
+          "findings": [],
+          "sha256": "1ed7e793d2496dc67acba7b372b94d6fe72a577892578e9e58f684407c9891e0"
+        },
+        {
+          "path": "main1081-reconciliation/round3-delivery-retry/receipt.json",
+          "id": "4b419889-c560-405f-b428-a7ab68ffef87",
+          "start": "2026-09-07T12:36:31.233Z",
+          "finish": "2026-09-07T12:36:31.242Z",
+          "seconds": 0.009,
+          "status": "input_invalid",
+          "model": "grok-4.6",
+          "candidate": "85abd286c5890130b6ebe69d3ae802baaf02b4d1052b90319cd3893bb3adc1f9",
+          "package": "c40f177c28563b0cc39908f2396a1ff415883b8ab94a72c488b8db04510d2de3",
+          "invocations": 0,
+          "verdict": null,
+          "findings": [],
+          "sha256": "7ae016a5cbf68b90f4c6a52799cbca7357350dac7650ef5127ae45e14d805a54"
+        },
+        {
+          "path": "main1081-reconciliation/round3-delivery-retry2/receipt.json",
+          "id": "230d5978-d909-413d-a3e7-4a51632614aa",
+          "start": "2026-09-07T12:36:53.039Z",
+          "finish": "2026-09-07T12:49:58.905Z",
+          "seconds": 785.866,
+          "status": "success",
+          "model": "grok-4.6",
+          "candidate": "85abd286c5890130b6ebe69d3ae802baaf02b4d1052b90319cd3893bb3adc1f9",
+          "package": "b3930bf84fbc1a2ff0cacae1e081ac7b3f1c41954890ade3cd5ac819ce282387",
+          "invocations": 1,
+          "verdict": "fail",
+          "findings": [
+            {
+              "id": "F-003",
+              "severity": "high",
+              "claim": "MAIN1081 lineage is still not a fail-closed mandatory T4 gate in the plan the executor is told to follow."
+            }
+          ],
+          "sha256": "eced177863008974fb73230f6026046586dede41d96798d24f9135cadfd8fc03"
+        },
+        {
+          "path": "play-amendment-review/round1/receipt.json",
+          "id": "cc564a06-dfe5-4bb5-8162-67216fec6a8f",
+          "start": "2026-09-06T18:22:44.219Z",
+          "finish": "2026-09-06T18:24:49.567Z",
+          "seconds": 125.348,
+          "status": "schema_invalid",
+          "model": "gpt-5.6-sol",
+          "candidate": "60000ebe20fe943e58901e40ae39bc32700320c13a2d8bc74ec74352d1aa6307",
+          "package": "51a5c140e9a64b84632057e5135037e12162ef9a236e34e08ef64b22210f3d65",
+          "invocations": 1,
+          "verdict": null,
+          "findings": [],
+          "sha256": "79b244f1a35b94616f6610125349aa114e633b877b0d1fba1de60ff71b8f919b"
+        },
+        {
+          "path": "play-amendment-review/round2/receipt.json",
+          "id": "62b295e7-f602-4616-9ccb-ced156e69c05",
+          "start": "2026-09-06T18:28:55.436Z",
+          "finish": "2026-09-06T18:31:56.873Z",
+          "seconds": 181.437,
+          "status": "success",
+          "model": "gpt-5.6-sol",
+          "candidate": "60000ebe20fe943e58901e40ae39bc32700320c13a2d8bc74ec74352d1aa6307",
+          "package": "47e2965e0b0b426552e65a2ade817f144bea489304c95953953cad07e75a5d2d",
+          "invocations": 1,
+          "verdict": "fail",
+          "findings": [
+            {
+              "id": "AMC-AMEND-F-001",
+              "severity": "high",
+              "claim": "Production authority or canary failures cannot execute the promised immediate flag-off containment through the immutable phase graph."
+            },
+            {
+              "id": "AMC-AMEND-F-002",
+              "severity": "high",
+              "claim": "Ambiguous Play creation/upload initialization and later expiry of a completed edit can permanently wedge the immutable release identity."
+            },
+            {
+              "id": "AMC-AMEND-F-003",
+              "severity": "high",
+              "claim": "The exclusive completion-receipt contract does not require atomic no-clobber publication, so a crash can leave an unreadable receipt that cannot be recovered or replaced."
+            },
+            {
+              "id": "AMC-AMEND-F-004",
+              "severity": "high",
+              "claim": "The release-manifest bootstrap contract is contradictory because the initial immutable manifest is required to bind provider identities that do not exist until later phase steps."
+            },
+            {
+              "id": "AMC-AMEND-F-005",
+              "severity": "high",
+              "claim": "The consequential host-to-Play adapter interface has no exact owner, signature, or dependency edge despite exclusive file ownership."
+            },
+            {
+              "id": "AMC-AMEND-F-006",
+              "severity": "medium",
+              "claim": "The executable/resource inventory contract reports a 17-file executable denominator while declaring zero executable entries, so the current gate does not prove consumers or resource ownership."
+            }
+          ],
+          "sha256": "c91804117019921d99043a8d3e61bcf9a1e38f53e7d1b60ca8cbea854f38da2a"
+        },
+        {
+          "path": "play-amendment-review/round3/receipt.json",
+          "id": "4cd14166-4a8e-4687-8150-f0f120013514",
+          "start": "2026-09-06T18:49:04.372Z",
+          "finish": "2026-09-06T18:49:56.385Z",
+          "seconds": 52.013,
+          "status": "success",
+          "model": "gpt-5.6-sol",
+          "candidate": "81c982e45c678f583b87cc9908a58a1a4736c5ae3e6a8f9a1cf8dda8a5b157bb",
+          "package": "c591a5a73c1f97899ab2a56e4e78df7fa14b741d7e36cf376ae2d2bf947b0152",
+          "invocations": 1,
+          "verdict": "pass",
+          "findings": [],
+          "sha256": "26c800a4601067866280ba30c60fc163831ad6f51366063c78162833334ced0a"
+        }
+      ],
+      "unreadable": [
+        [
+          "/home/dianast/app-workspaces/hourshub-worktrees/wt-lane-account-customer-billing-live/.svc/evidence/account-completion-plan/main1081-reconciliation/round2/receipt.json",
+          "JSONDecodeError"
+        ]
+      ]
+    },
+    "ios": {
+      "rows": [
+        {
+          "path": "round1/receipt.json",
+          "id": "cbd05f3a-cd63-4355-8405-3833d4ea6140",
+          "start": "2026-09-07T06:28:12.157Z",
+          "finish": "2026-09-07T06:28:12.173Z",
+          "seconds": 0.016,
+          "status": "config_invalid",
+          "model": null,
+          "candidate": "1b04755be8f94540e1d753325bc047804da4ed5ecc817c9772191712fba0985b",
+          "package": "997421f7ddd5952d9762b60e79ff356d73f6937754f2a63520a54c2615ccf43d",
+          "invocations": 0,
+          "verdict": null,
+          "findings": [],
+          "sha256": "6aa8243d0abbc09e2836796a60fd6fd689648657bb9b95a7c07adb1b09ea6a64"
+        },
+        {
+          "path": "round1-run/receipt.json",
+          "id": "ab34f12d-9327-445a-80d0-37ff181c7c00",
+          "start": "2026-09-07T06:28:25.322Z",
+          "finish": "2026-09-07T06:34:49.200Z",
+          "seconds": 383.878,
+          "status": "success",
+          "model": "grok-4.6",
+          "candidate": "1b04755be8f94540e1d753325bc047804da4ed5ecc817c9772191712fba0985b",
+          "package": "997421f7ddd5952d9762b60e79ff356d73f6937754f2a63520a54c2615ccf43d",
+          "invocations": 1,
+          "verdict": "fail",
+          "findings": [
+            {
+              "id": "F-001",
+              "severity": "high",
+              "claim": "The AC-to-task table is a copy-paste wall that contradicts the task graph and the accepted R3 test-ownership contract, including assigning physical native frames to source/fixture tasks and omitting T7 from ND-12."
+            },
+            {
+              "id": "F-002",
+              "severity": "high",
+              "claim": "T5’s required unit gate includes existing map-startup and ios-map-location-runtime tests that no task is allowed to modify, while T2’s whole job is changing those tests’ production subjects."
+            },
+            {
+              "id": "F-003",
+              "severity": "high",
+              "claim": "ND-09 requires translated actionable scout failures, but translations.jsx is T3-exclusive while T6 is a parallel writer after T0 and has no path to those strings."
+            },
+            {
+              "id": "F-004",
+              "severity": "high",
+              "claim": "T2 and T3 done-criteria require rendered/fixture journeys that T5 owns and that cannot run until after T2 and T3 complete, creating a checkpoint deadlock."
+            },
+            {
+              "id": "F-005",
+              "severity": "medium",
+              "claim": "T1 creates both src/lib/discoveryState.js and src/lib/discoveryState.jsx with no stated role split, so the shared controller can be duplicated or imported from the wrong module."
+            }
+          ],
+          "sha256": "dc1ba90471b5e75b603ec0e37b89fcfe2cd56d6f46b615fcfd1f5821f2003a05"
+        },
+        {
+          "path": "round2-corrected-run/receipt.json",
+          "id": "fec4052b-641a-4983-b801-3e1cf0d7a564",
+          "start": "2026-09-07T06:36:07.369Z",
+          "finish": "2026-09-07T06:43:30.794Z",
+          "seconds": 443.425,
+          "status": "success",
+          "model": "grok-4.6",
+          "candidate": "d54638a159f6454e0e1eece9243cbed4d0e2b6301fed1e4b877744bed4e32746",
+          "package": "0ea8e9f0c326f69c8edd0d7703cbf2447b09afb2dac9103e75c183aff6c091d4",
+          "invocations": 1,
+          "verdict": "fail",
+          "findings": [
+            {
+              "id": "F-001",
+              "severity": "high",
+              "claim": "T6’s Playwright command requires a T5-owned config that the execution sequence has not created."
+            },
+            {
+              "id": "F-002",
+              "severity": "high",
+              "claim": "T5 is still both isolated fixture proof and live Mapbox provider rendering."
+            },
+            {
+              "id": "F-003",
+              "severity": "high",
+              "claim": "T7 is still an execute-graph task with non-task blockers and no runnable commands."
+            },
+            {
+              "id": "F-004",
+              "severity": "high",
+              "claim": "The Simulation Report uses a worktree source walk as evidence for live launch-gate state."
+            },
+            {
+              "id": "F-005",
+              "severity": "medium",
+              "claim": "T0, T1, T7, and the closeout suites lack copy-pasteable validation commands with expected exits."
+            },
+            {
+              "id": "F-006",
+              "severity": "medium",
+              "claim": "T6 requires an authenticated GET on the fat-router but does not say how that method is registered."
+            }
+          ],
+          "sha256": "18aabd0377e7ed069aedc7d7764ad99e5e31925e011d74df375bfb7c93c59a78"
+        },
+        {
+          "path": "round2-run/receipt.json",
+          "id": "977a327f-5970-41f1-bdd6-e9b90a7b26e9",
+          "start": "2026-09-07T06:35:41.698Z",
+          "finish": "2026-09-07T06:35:41.706Z",
+          "seconds": 0.008,
+          "status": "input_invalid",
+          "model": "grok-4.6",
+          "candidate": "c0c749cd770d19fbea429374beab065ca5140211b39549a843455d49fa20d6bc",
+          "package": "7cf449a2e88ae917e63c415493a398e377ba1adf15fff7dcd0e48ca7a6d07d08",
+          "invocations": 0,
+          "verdict": null,
+          "findings": [],
+          "sha256": "3c9d3b6c4bee67a9bf4b372c1e278007cfef5ecd495321c3b3e7a733d8e97f47"
+        },
+        {
+          "path": "round3-run/receipt.json",
+          "id": "4785e965-8a7b-438a-96b7-eae17361d1f9",
+          "start": "2026-09-07T07:49:36.866Z",
+          "finish": "2026-09-07T07:56:58.842Z",
+          "seconds": 441.976,
+          "status": "success",
+          "model": "grok-4.6",
+          "candidate": "9f997b4a08fadd16e0e3c61e74980b9d9fbde73934ba6fe178380f35b5108b0b",
+          "package": "d2440b4d29fea9f7e6250a03344768fcbe4d2eeafd741629cec9b3ef42d484e4",
+          "invocations": 1,
+          "verdict": "fail",
+          "findings": [
+            {
+              "id": "F-001",
+              "severity": "high",
+              "claim": "T6’s rendered Scout fixture is still scheduled before the T5 helper it now depends on, and R3 independence was never withdrawn."
+            },
+            {
+              "id": "F-002",
+              "severity": "medium",
+              "claim": "T5 no longer requires live Mapbox, but the offline map harness still has no owned path, so T5 can still hit the network/GPU or invent an unowned stub."
+            },
+            {
+              "id": "F-003",
+              "severity": "medium",
+              "claim": "T7 is correctly outside execute-changeset, but the handoff bash still leaves SHA, canary secrets, and the intake GET/PATCH for the operator to invent."
+            }
+          ],
+          "sha256": "b5c1b56a29d6b323732c935eb10b958a8029aad2f9752cc878d3905c654bc048"
+        }
+      ],
+      "unreadable": []
+    }
+  },
+  "error_resume_gaps": [
+    {
+      "source": "ios",
+      "path": "/home/dianast/.codex/sessions/2026/09/06/rollout-2026-09-06T13-30-12-01a076e9-8bfc-72d2-b0d7-9fe8e34c2123.jsonl",
+      "error_line": 2680,
+      "stopped": "2026-09-07T06:43:51.778Z",
+      "code": "usage_limit_exceeded",
+      "error": "You've hit your usage limit. Visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at Sep 12th, 2026 11:20 AM.",
+      "resumed": "2026-09-07T07:47:08.695Z",
+      "resume_line": 2682,
+      "gap_minutes": 63.282
+    },
+    {
+      "source": "multicontext",
+      "path": "/home/dianast/.codex/sessions/2026/09/06/rollout-2026-09-06T09-21-04-01a07605-754d-7a83-bfbe-70efdb565f93.jsonl",
+      "error_line": 18858,
+      "stopped": "2026-09-07T06:47:19.757Z",
+      "code": "usage_limit_exceeded",
+      "error": "You've hit your usage limit. Visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at Sep 12th, 2026 11:20 AM.",
+      "resumed": "2026-09-07T07:00:37.956Z",
+      "resume_line": 18860,
+      "gap_minutes": 13.303
+    },
+    {
+      "source": "ssve",
+      "path": "/home/dianast/.codex/sessions/2026/09/06/rollout-2026-09-06T08-24-39-01a075d1-d054-76e1-ac57-279b0f3e5c0d.jsonl",
+      "error_line": 2806,
+      "stopped": "2026-09-06T12:03:54.378Z",
+      "code": "server_overloaded",
+      "error": "Selected model is at capacity. Please try a different model.",
+      "resumed": "2026-09-06T12:55:25.674Z",
+      "resume_line": 2809,
+      "gap_minutes": 51.522
+    },
+    {
+      "source": "ssve",
+      "path": "/home/dianast/.codex/sessions/2026/09/06/rollout-2026-09-06T08-24-39-01a075d1-d054-76e1-ac57-279b0f3e5c0d.jsonl",
+      "error_line": 14303,
+      "stopped": "2026-09-07T06:43:52.149Z",
+      "code": "usage_limit_exceeded",
+      "error": "You've hit your usage limit. Visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at Sep 12th, 2026 11:20 AM.",
+      "resumed": "2026-09-07T07:00:48.232Z",
+      "resume_line": 14311,
+      "gap_minutes": 16.935
+    }
+  ],
+  "git_note_samples": [
+    {
+      "repo": "/home/dianast/app-workspaces/seriousvibecoding",
+      "sha": "6809a074b6f47e3046b71e71234f1d1c0cfbdbb0",
+      "note_sha256": "af993bcb28bf528c5c1653ca57f5d8e773716aca2cda9f25fe4344c26b8a584b",
+      "slots": [
+        {
+          "slot": "slot::plan-manifest::WI-FW-RECEIPT-CLEANUP-01::6809a074b6f47e3046b71e71234f1d1c0cfbdbb0",
+          "verdict": null,
+          "timestamp": "2026-09-07T08:11:37.389Z",
+          "findings": []
+        },
+        {
+          "slot": "slot::review-plan::WI-FW-RECEIPT-CLEANUP-01::6809a074b6f47e3046b71e71234f1d1c0cfbdbb0",
+          "verdict": "pass-with-acks",
+          "timestamp": "2026-09-07T08:11:37.538Z",
+          "findings": []
+        },
+        {
+          "slot": "slot::exec-record::WI-FW-RECEIPT-CLEANUP-01::6809a074b6f47e3046b71e71234f1d1c0cfbdbb0",
+          "verdict": null,
+          "timestamp": "2026-09-07T08:11:37.892Z",
+          "findings": []
+        },
+        {
+          "slot": "slot::review-exec::WI-FW-RECEIPT-CLEANUP-01::6809a074b6f47e3046b71e71234f1d1c0cfbdbb0",
+          "verdict": "pass",
+          "timestamp": "2026-09-07T08:11:38.027Z",
+          "findings": []
+        },
+        {
+          "slot": "slot::audit-implementation::WI-FW-RECEIPT-CLEANUP-01::6809a074b6f47e3046b71e71234f1d1c0cfbdbb0",
+          "verdict": "pass",
+          "timestamp": "2026-09-07T08:11:38.391Z",
+          "findings": []
+        },
+        {
+          "slot": "slot::skill-coverage::WI-FW-RECEIPT-CLEANUP-01::6809a074b6f47e3046b71e71234f1d1c0cfbdbb0",
+          "verdict": "pass",
+          "timestamp": "2026-09-07T11:05:12.222Z",
+          "findings": []
+        },
+        {
+          "slot": "slot::verify-promotion::WI-FW-RECEIPT-CLEANUP-01::6809a074b6f47e3046b71e71234f1d1c0cfbdbb0",
+          "verdict": "pass",
+          "timestamp": "2026-09-07T08:26:11.116705+00:00",
+          "findings": []
+        }
+      ]
+    },
+    {
+      "repo": "/home/dianast/app-workspaces/seriousvibecoding",
+      "sha": "811d56de12529651dde68ba4ad9c56027ed1a5e6",
+      "note_sha256": "4700073732660fca199ec2c38d31498fc0dc451cfa8b70a59df722c234bb1333",
+      "slots": [
+        {
+          "slot": "slot::plan-manifest::WI-FW-PLAN-CERTIFICATION-01::811d56de12529651dde68ba4ad9c56027ed1a5e6",
+          "verdict": null,
+          "timestamp": "2026-09-07T10:14:16.465Z",
+          "findings": []
+        },
+        {
+          "slot": "slot::review-plan::WI-FW-PLAN-CERTIFICATION-01::811d56de12529651dde68ba4ad9c56027ed1a5e6",
+          "verdict": "pass-with-acks",
+          "timestamp": "2026-09-07T10:14:16.596Z",
+          "findings": []
+        },
+        {
+          "slot": "slot::exec-record::WI-FW-PLAN-CERTIFICATION-01::811d56de12529651dde68ba4ad9c56027ed1a5e6",
+          "verdict": null,
+          "timestamp": "2026-09-07T10:14:16.982Z",
+          "findings": []
+        },
+        {
+          "slot": "slot::review-exec::WI-FW-PLAN-CERTIFICATION-01::811d56de12529651dde68ba4ad9c56027ed1a5e6",
+          "verdict": "pass",
+          "timestamp": "2026-09-07T10:14:17.105Z",
+          "findings": []
+        },
+        {
+          "slot": "slot::audit-implementation::WI-FW-PLAN-CERTIFICATION-01::811d56de12529651dde68ba4ad9c56027ed1a5e6",
+          "verdict": "pass",
+          "timestamp": "2026-09-07T10:14:17.471Z",
+          "findings": []
+        },
+        {
+          "slot": "slot::skill-coverage::WI-FW-PLAN-CERTIFICATION-01::811d56de12529651dde68ba4ad9c56027ed1a5e6",
+          "verdict": "pass",
+          "timestamp": null,
+          "findings": []
+        },
+        {
+          "slot": "slot::verify-promotion::WI-FW-PLAN-CERTIFICATION-01::811d56de12529651dde68ba4ad9c56027ed1a5e6",
+          "verdict": "pass",
+          "timestamp": "2026-09-07T10:21:33.005327+00:00",
+          "findings": []
+        }
+      ]
+    },
+    {
+      "repo": "/home/dianast/app-workspaces/seriousvibecoding",
+      "sha": "f24a7add94ea8f78a87f736dcc7cb8f9183eb59a",
+      "note_sha256": "39b37a77ff7b15c224c49e702737a98c5ef91c60b1b0ec88bf2b2cc005b7be4a",
+      "slots": [
+        {
+          "slot": "slot::plan-manifest::WI-FW-SESSION-RECOVERY-01::f24a7add94ea8f78a87f736dcc7cb8f9183eb59a",
+          "verdict": null,
+          "timestamp": "2026-09-06T09:56:11.229Z",
+          "findings": []
+        },
+        {
+          "slot": "slot::review-plan::WI-FW-SESSION-RECOVERY-01::f24a7add94ea8f78a87f736dcc7cb8f9183eb59a",
+          "verdict": "pass-with-acks",
+          "timestamp": "2026-09-06T10:28:22.200Z",
+          "findings": []
+        },
+        {
+          "slot": "slot::exec-record::WI-FW-SESSION-RECOVERY-01::f24a7add94ea8f78a87f736dcc7cb8f9183eb59a",
+          "verdict": null,
+          "timestamp": "2026-09-06T10:11:19.076Z",
+          "findings": []
+        },
+        {
+          "slot": "slot::review-exec::WI-FW-SESSION-RECOVERY-01::f24a7add94ea8f78a87f736dcc7cb8f9183eb59a",
+          "verdict": "pass-with-acks",
+          "timestamp": "2026-09-06T10:17:41.347Z",
+          "findings": []
+        },
+        {
+          "slot": "slot::audit-implementation::WI-FW-SESSION-RECOVERY-01::f24a7add94ea8f78a87f736dcc7cb8f9183eb59a",
+          "verdict": "pass-with-acks",
+          "timestamp": "2026-09-06T10:18:01.813Z",
+          "findings": [
+            {
+              "id": "BASELINE-001",
+              "severity": "info",
+              "claim": "20 full-corpus failures reproduced on unchanged f9ec209; five slice-state failures corrected; no all-green claim"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

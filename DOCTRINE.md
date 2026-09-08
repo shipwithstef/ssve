@@ -5,6 +5,14 @@
 > A development methodology for the agentic era, grounded in the operational
 > limitations of large language models.
 
+## Whole-solution planning and delivery cost
+
+Close consequential product/UX/technical choices before implementation; preserve the original requirements through execution. A reversible local helper is not a missing product decision. Explicit inline plan-manifest v4 uses one authored AC/task/proof mapping and generated views, with hash-bound original context. Dispatch retains complete packets. Ready-now commands remain executable; existing land/verify adapters resolve future release identities under their established pre-use checks. See `skills/plan-changeset/references/manifest-templates.md`.
+
+Keep fresh branch indexes byte-identical when no facts changed. Reinspect and review stale cited facts; never restamp merely because HEAD advanced. Use the existing one holistic review plus changed-lens corrections and bounded round cap. Do not substitute local/source checks for necessary UX, device, hosted or performance observations.
+
+The owner's established-feature target is 30 minutes planning, 120 minutes implementation including tests/reviews/repairs, and 10 minutes finalization. Observe the cumulative root-WI cycle from first feature work; resumes, amendments and new host sessions do not reset it. Report external waits and unknown gaps honestly. Timing is a target, never a bypass or a reason to abandon authorized work. A known larger platform/release/observation envelope is explicit during planning. No 5x result is claimed without comparable actual delivery measurements.
+
 ## The Problem This Solves
 
 Large language models generate code through pattern matching against training
@@ -1251,3 +1259,5 @@ state invalidates the affected result. Missing provenance requires a new run.
 Keep post-commit relevant checks and actual post-promotion/install verification.
 Unknown/global and unmapped-surface test selection retain their full-coverage
 semantics. Never treat provider unavailability or skipped tests as passing.
+
+Delivery report recovery: retain three substantive review rounds. The launcher repairs a malformed/incomplete report once within its original timeout, preserving raw attempts and source judgments. Enforced dollar limits require known remaining spend; transports without that facility report no dollar guarantee and cannot retry under an explicit dollar cap. A verified zero-call cache replay is historical evidence, not another review. Real source failures and authority limits still block.

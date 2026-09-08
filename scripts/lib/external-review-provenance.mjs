@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { isZeroCallReviewReplay } from "./review-report-recovery.mjs";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -90,7 +91,7 @@ export function externalReviewCycleCapacity(receipt, { receiptPath = null } = {}
   secureDirectory(path.join(root, 'issuance'), 'external review issuance directory', { create: true });
   secureDirectory(path.join(root, 'classifications'), 'external review classification directory', { create: true });
   const rows = listExternalReviewCycleProvenance({ receiptPath, wi, reviewKind: receipt.review_kind, cycleId });
-  const issued = Math.max(rows.length, ...rows.map(row => row.cycle_sequence || 0));
+  const issued = rows.filter(row => row.counts_as_round !== false).length;
   return { cycle_id: cycleId, lock_path: path.join(root, `cycle-${cycleId}.lock`), issued,
     remaining: Math.max(0, 3 - issued), allowed: issued < 3 };
 }
@@ -124,7 +125,7 @@ export function issueExternalReviewProvenance({receiptPath,packagePath,findingsP
   const wi=String(receipt.phase_guard?.wi||"").trim()||null;
   const reviewCycleId=wi?externalReviewCycleIdFromReceipt(receipt):null;
   const currentAuthority=reviewAuthority(receipt);
-  let matchingLegacy=0, maxSequence=0;
+  let matchingLegacy=0, maxSequence=0, substantiveRounds=0;
   if(currentAuthority==="independent")for(const name of fs.readdirSync(issuance)){
     if(!name.endsWith(".json"))continue;
     const marker=JSON.parse(secureFile(path.join(issuance,name),"external review issuance marker"));const {authority_hmac_sha256,...prior}=marker;const expected=crypto.createHmac("sha256",key).update(canonical(prior)).digest("hex");
@@ -144,10 +145,12 @@ export function issueExternalReviewProvenance({receiptPath,packagePath,findingsP
       const priorCycle=known.review_cycle_id||null;
       if(priorCycle!==reviewCycleId)continue;
     }else if(prior.candidate_digest!==receipt.candidate_digest)continue;
+    const countedBytes=markerReceiptBytes(prior,"external review round classification");
+    if(!countedBytes||!isZeroCallReviewReplay(JSON.parse(countedBytes)))substantiveRounds+=1;
     matchingLegacy+=1;if(Number.isInteger(prior.cycle_sequence))maxSequence=Math.max(maxSequence,prior.cycle_sequence);
   }
   const cycleSequence=Math.max(matchingLegacy,maxSequence)+1;
-  if(reviewCycleId&&cycleSequence>3)throw new Error(`external review cycle hard cap reached for ${receipt.review_kind}/${wi}`);
+  if(reviewCycleId&&currentAuthority==="independent"&&!isZeroCallReviewReplay(receipt)&&substantiveRounds>=3)throw new Error(`external review cycle hard cap reached for ${receipt.review_kind}/${wi}`);
   const payload={schema_version:1,request_id:receipt.request_id,candidate_digest:receipt.candidate_digest,review_kind:receipt.review_kind,wi,review_cycle_id:reviewCycleId,review_authority:currentAuthority,cycle_sequence:currentAuthority==="independent"?cycleSequence:null,package_sha256:sha(packageBytes),findings_sha256:sha(findingsBytes),receipt_sha256:sha(receiptBytes),receipt_path:fs.realpathSync(receiptPath),package_path:fs.realpathSync(packagePath),findings_path:fs.realpathSync(findingsPath),launcher_version:receipt.launcher_version,effective_tuple:receipt.effective_tuple,issued_at:new Date().toISOString()};
   const marker={...payload,authority_hmac_sha256:crypto.createHmac("sha256",key).update(canonical(payload)).digest("hex")};
   const file=path.join(issuance,`${receipt.request_id}.json`);
@@ -239,7 +242,7 @@ export function listExternalReviewCycleProvenance({receiptPath,wi,reviewKind,cyc
     if((known.review_authority||reviewAuthority(receipt))!=="independent")continue;
     let markerCycle=known.review_cycle_id||null;try{markerCycle||=externalReviewCycleIdFromReceipt(receipt);}catch{throw new Error(`external review legacy receipt cannot be classified: ${payload.request_id}`);}
     if(markerCycle!==cycleId)continue;
-    rows.push({request_id:payload.request_id,receipt_sha256:payload.receipt_sha256,candidate_digest:payload.candidate_digest,issued_at:payload.issued_at,cycle_sequence:Number.isInteger(payload.cycle_sequence)?payload.cycle_sequence:null});
+    rows.push({request_id:payload.request_id,receipt_sha256:payload.receipt_sha256,candidate_digest:payload.candidate_digest,issued_at:payload.issued_at,counts_as_round:!isZeroCallReviewReplay(receipt),cycle_sequence:Number.isInteger(payload.cycle_sequence)?payload.cycle_sequence:null});
   }
   if(rows.length===0)return rows;
   if(rows.every((row)=>row.cycle_sequence!==null)&&new Set(rows.map((row)=>row.cycle_sequence)).size===rows.length){

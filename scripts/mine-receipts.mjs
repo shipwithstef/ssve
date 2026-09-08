@@ -45,6 +45,7 @@ function args() {
   const a = process.argv.slice(2); const o = { _: [] };
   for (let i = 0; i < a.length; i++) {
     if (a[i] === "--stats") o.stats = true;
+    else if (a[i] === "--delivery-cycle") o.deliveryCycle = a[++i];
     else if (a[i] === "--tier") o.tier = a[++i];
     else if (a[i] === "--demotion-list") o.demotion = true;
     else if (a[i] === "--learning-fires") o.fires = true;
@@ -287,8 +288,83 @@ function readRuleHits() {
   return readFileSync(p, "utf8").split("\n").filter(Boolean).map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
 }
 
+// Cumulative wall-clock evidence, not inferred CPU time or a delivery gate.
+function intervalUnion(intervals) {
+  const sorted = intervals.filter(([a,b]) => Number.isFinite(a) && Number.isFinite(b) && b >= a).sort((a,b) => a[0]-b[0]);
+  const merged=[];
+  for(const [a,b] of sorted) { const last=merged.at(-1); if(last && a<=last[1])last[1]=Math.max(last[1],b);else merged.push([a,b]); }
+  return merged;
+}
+const intervalDuration = intervals => intervalUnion(intervals).reduce((sum,[a,b])=>sum+b-a,0);
+export function deliveryCycleReport({cycle,events,now}) {
+  const start=Date.parse(cycle?.cycle_started_at),end=Date.parse(now),problems=[];
+  const validClock=Number.isFinite(start)&&Number.isFinite(end)&&end>=start;
+  const intervalFits=(a,b)=>Number.isFinite(a)&&Number.isFinite(b)&&Number.isFinite(end)&&b>=a&&b<=end&&(!Number.isFinite(start)||a>=start);
+  const unique=new Map();let duplicates=0;
+  for(const envelope of events) {
+    const e=envelope?.payload?.delivery_phase;
+    if(!e || e.root_wi!==cycle?.root_wi)continue;
+    if(e.schema_version!==1 || !e.event_id || !Number.isFinite(Date.parse(e.at))) {problems.push('malformed delivery event');continue;}
+    if(unique.has(e.event_id)) {duplicates++;if(JSON.stringify(unique.get(e.event_id))!==JSON.stringify(e))problems.push(`conflicting event ${e.event_id}`);continue;}
+    unique.set(e.event_id,e);
+  }
+  const phases={planning:[],implementation:[],finalization:[]},waits=[],active=new Map();let retries=0,reopened=0,amendments=0;
+  for(const e of [...unique.values()].sort((a,b)=>Date.parse(a.at)-Date.parse(b.at))) {
+    if(['reopened-decision','amendment'].includes(e.transition)) {
+      if(!e.reason || !intervalFits(Date.parse(e.at),Date.parse(e.at)))problems.push(`unattributable decision event ${e.event_id}`);
+      else if(e.transition==='reopened-decision')reopened++;else amendments++;
+      continue;
+    }
+    if(e.transition==='wait') {
+      const a=Date.parse(e.started_at),b=Date.parse(e.ended_at);
+      if(!e.reason||!Number.isFinite(a)||!Number.isFinite(b)||b<a){problems.push(`invalid explicit wait ${e.event_id}`);continue;}
+      if(intervalFits(a,b))waits.push([a,b]);else problems.push(`wait outside cycle ${e.event_id}`);
+      continue;
+    }
+    if(!Object.hasOwn(phases,e.phase)||!['start','end'].includes(e.transition)){problems.push(`unknown phase/transition ${e.event_id}`);continue;}
+    const at=Date.parse(e.at),key=`${e.event_id.split('/').slice(0,-1).join('/') || e.task_id}/${e.phase}/${e.attempt||1}`;
+    // ID producer prefixes may differ; task+attempt+phase is the interval identity.
+    const taskKey=`${e.wi||e.event_id.split('/')[1]||''}/${e.task_id}/${e.phase}/${e.attempt||1}`;
+    if(e.transition==='start') {if(active.has(taskKey))problems.push(`duplicate start ${key}`);active.set(taskKey,at);if(e.attempt>1)retries++;}
+    else if(active.has(taskKey)) {
+      const a=active.get(taskKey);active.delete(taskKey);
+      if(intervalFits(a,at))phases[e.phase].push([a,at]);else problems.push(`interval outside cycle ${e.event_id}`);
+    } else problems.push(`end without start ${e.event_id}`);
+  }
+  const phase_ms=Object.fromEntries(Object.entries(phases).map(([k,v])=>[k,intervalDuration(v)]));
+  const total_elapsed_ms=validClock?end-start:null;
+  const unknown_ms=validClock?Math.max(0,total_elapsed_ms-intervalDuration([...Object.values(phases).flat(),...waits])):null;
+  const budgets={planning:30,implementation:120,finalization:10};
+  const target_missed=Object.fromEntries(Object.entries(budgets).map(([k,m])=>[k,phase_ms[k]>m*60000?true:(!validClock||unknown_ms>0||problems.length||active.size)?null:false]));
+  return {root_wi:cycle?.root_wi||null,total_elapsed_ms,phase_ms,observed_external_wait_ms:intervalDuration(waits),unknown_ms,
+    observed_retries:retries,observed_reopened_decisions:reopened,observed_amendments:amendments,duplicate_events:duplicates,unclosed_intervals:active.size,target_minutes:budgets,target_missed,problems,
+    interpretation:'Observed phase intervals are wall time, including work and waits. Missing intervals are unknown; timing never authorizes a gate bypass.'};
+}
+function readDeliveryCycle(wi,now) {
+  if(!/^WI-[A-Za-z0-9_-]+$/.test(wi))throw new Error('invalid delivery-cycle WI');
+  const dir=join(REPO_ROOT,'.svc');const cycles=[],graphs=[];
+  for(const name of readdirSync(dir).filter(n=>/^lane-tasks-.*\.json$/.test(n))) {
+    try {const g=JSON.parse(readFileSync(join(dir,name),'utf8'));if(g.delivery_cycle?.root_wi===wi){cycles.push(g.delivery_cycle);graphs.push(g);}}catch { /* unrelated malformed graphs confer no timing */ }
+  }
+  const starts=cycles.map(c=>c.cycle_started_at).filter(t=>Number.isFinite(Date.parse(t))).sort((a,b)=>Date.parse(a)-Date.parse(b));
+  const cycle={root_wi:wi,...(starts.length?{cycle_started_at:starts[0]}:{})};
+  const events=[];let malformed=0;
+  const log=join(dir,'pipeline-decisions.jsonl');
+  if(existsSync(log))for(const line of readFileSync(log,'utf8').split('\n').filter(Boolean)){try{events.push(JSON.parse(line));}catch{malformed++;}}
+  const completed=graphs.length>0 && graphs.every(g=>['completed','skipped'].includes(g.status));
+  const ends=graphs.map(g=>g.completed_at).filter(t=>Number.isFinite(Date.parse(t))).sort((a,b)=>Date.parse(a)-Date.parse(b));
+  const endpoint=completed?(ends.length===graphs.length?ends.at(-1):null):(now||new Date().toISOString());
+  const report=deliveryCycleReport({cycle,events,now:endpoint});
+  if(completed && !endpoint)report.problems.push('historical completion boundary unknown; task timestamps and current time are not substitutes');
+  if(malformed)report.problems.push(`${malformed} malformed log rows; attribution unknown`);
+  if(new Set(starts).size>1)report.problems.push('cycle start disagreement across related graphs; earliest recorded start retained');
+  if(report.problems.length)for(const phase of Object.keys(report.target_missed))if(report.target_missed[phase]!==true)report.target_missed[phase]=null;
+  return report;
+}
+
 function main() {
   const o = args();
+  if (o.deliveryCycle) { process.stdout.write(JSON.stringify(readDeliveryCycle(o.deliveryCycle,o.now),null,2)+"\n"); return; }
 
   if (o.tier) {
     const agg = aggregate(readEnvelopes());

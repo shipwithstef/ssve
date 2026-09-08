@@ -18,16 +18,17 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import path from 'node:path';
+import { reportRepairKind, isIncompleteReviewReport, reportRepairPrompt, validateReportRepair, hasNegativeReviewEvidence, remainingReportRepairBudget } from './lib/review-report-recovery.mjs';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { WI_ID_RE } from "../hooks/lib/wi-id.mjs";
 import { loadReviewerPolicy, resolveExternalReviewer } from './review-topology-v2.mjs';
-import { candidateTreeIdentity, issueExternalReviewProvenance, externalReviewCycleCapacity } from './lib/external-review-provenance.mjs';
+import { candidateTreeIdentity, issueExternalReviewProvenance, externalReviewCycleCapacity, verifyExternalReviewProvenance } from './lib/external-review-provenance.mjs';
 import { relocateTree } from './lib/review-evidence-store.mjs';
 
 import { reviewerAvailability, recordReviewerFailure } from './lib/reviewer-resources.mjs';
 
-const LAUNCHER_VERSION = '2.5.5';
+const LAUNCHER_VERSION = '2.5.6';
 export const EXTERNAL_REVIEW_LAUNCHER_VERSION = LAUNCHER_VERSION;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FINDINGS_SCHEMA = path.join(ROOT, 'schemas/external-review-findings.schema.json');
@@ -406,6 +407,7 @@ function validateSchema(value, schema, root = schema, location = '$') {
 
 function validateFindings(findings, tuple, reviewKind, schema) {
   const errors = validateSchema(findings, schema);
+  if (isIncompleteReviewReport(findings) || reportRepairKind(findings)) errors.push('$.report: incomplete or unbound certification scope requires repair');
   if (findings?.review_kind !== reviewKind) errors.push('$.review_kind: does not match request');
   if (reviewKind === 'plan' && !Number.isInteger(findings?.rubric_score)) errors.push('$.rubric_score: plan review requires an integer score from 0 through 10');
   if (findings?.reviewer) {
@@ -686,7 +688,7 @@ async function capabilityCheck(tuple, binary, timeoutMs) {
       : tuple.host === 'cursor'
         ? ['--print', '--output-format', '--mode', '--model', '--sandbox', '--workspace', '--trust']
         : tuple.host === 'grok'
-          ? ['--prompt-file', '--cwd', '--model', '--reasoning-effort', '--permission-mode', '--disable-web-search', '--no-subagents', '--max-turns', '--json-schema', '--output-format']
+          ? ['--verbatim', '--prompt-file', '--cwd', '--model', '--reasoning-effort', '--permission-mode', '--disable-web-search', '--no-subagents', '--max-turns', '--json-schema', '--output-format']
           : ['--print', '--model', '--effort', '--safe-mode', '--tools', '--strict-mcp-config', '--mcp-config', '--permission-mode', '--no-session-persistence', '--disable-slash-commands', '--no-chrome', '--settings', '--json-schema', '--output-format', '--max-budget-usd'];
   let result;
   try {
@@ -1062,7 +1064,7 @@ async function releaseLock(lockDir, owner) {
   } catch {}
 }
 
-async function cacheHit(entryDir, cacheKey, tuple, reviewKind, candidateDigest, packageHash, findingsSchemaHash, ttlDays, findingsSchema, receiptSchema, fixture) {
+async function cacheHit(entryDir, cacheKey, tuple, reviewKind, candidateDigest, packageHash, findingsSchemaHash, ttlDays, findingsSchema, receiptSchema, fixture, inputPackageBytes) {
   try {
     const entryStat = await lstat(entryDir);
     if (!entryStat.isDirectory() || entryStat.isSymbolicLink()) return null;
@@ -1074,7 +1076,21 @@ async function cacheHit(entryDir, cacheKey, tuple, reviewKind, candidateDigest, 
     if (receipt.launcher_version !== LAUNCHER_VERSION || receipt.fixture_mode !== fixture || receipt.review_kind !== reviewKind || receipt.candidate_digest !== candidateDigest || receipt.cache_key !== cacheKey || receipt.package_sha256 !== packageHash || receipt.findings_schema_sha256 !== findingsSchemaHash || receipt.findings_sha256 !== sha256(findingsBytes) || validateSchema(receipt, receiptSchema).length || validateExternalReviewReceiptSemantics(receipt).length || validateFindings(findings, tuple, reviewKind, findingsSchema).length) return null;
     if (receipt.status !== 'success' || receipt.classification !== 'success' || receipt.fallback.used || !receipt.cache.reusable || receipt.cache.disposition !== 'published' || receipt.cache.entry !== entryDir) return null;
     if (!tupleEqual(receipt.requested_tuple, tuple) || !tupleEqual(receipt.invocation_tuple, tuple) || !tupleEqual(receipt.effective_tuple, tuple)) return null;
-    if (receipt.attempts.length !== 1 || receipt.attempts[0].index !== 1 || receipt.attempts[0].classification !== 'success' || !tupleEqual(receipt.attempts[0].tuple, tuple)) return null;
+    // Reuse the existing issuer proof for every production cache shape. Its
+    // authority is the durable store, never a path supplied by the cache.
+    if (!fixture) verifyExternalReviewProvenance({
+      receiptBytes: await readFile(path.join(entryDir, 'receipt.json')),
+      packageBytes: inputPackageBytes,
+      findingsBytes,
+    });
+    if (![1, 2].includes(receipt.attempts.length) || receipt.attempts.some((attempt, index) => attempt.index !== index + 1 || !tupleEqual(attempt.tuple, tuple))) return null;
+    if (receipt.attempts.length === 1) {
+      if (receipt.attempts[0].classification !== 'success') return null;
+    } else {
+      const [original, repaired] = receipt.attempts;
+      if (!['success', 'schema_invalid'].includes(original.classification) || original.exit_code !== 0 || repaired.classification !== 'success' || !repaired.artifacts?.repair_input) return null;
+
+    }
     return { receipt, findings };
   } catch { return null; }
 }
@@ -1185,7 +1201,7 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
     packageBytes = Buffer.concat([reviewInstruction, packageBytes]);
     const promptFile = path.join(artifactsDir, `${prefix}-grok-prompt.txt`);
     await writeFile(promptFile, packageBytes, { mode: 0o600 });
-    args = ['--prompt-file', promptFile, '--cwd', path.resolve(process.env.SVC_EXTERNAL_REVIEW_CONTEXT_ROOT || process.cwd()), '--model', tuple.model, '--reasoning-effort', tuple.effort, '--permission-mode', 'plan', '--disable-web-search', '--no-subagents', '--max-turns', String(turnCeiling || DEFAULT_GROK_MAX_TURNS), '--json-schema', inlineSchema, '--output-format', 'json'];
+    args = ['--verbatim', '--prompt-file', promptFile, '--cwd', path.resolve(process.env.SVC_EXTERNAL_REVIEW_CONTEXT_ROOT || process.cwd()), '--model', tuple.model, '--reasoning-effort', tuple.effort, '--permission-mode', 'plan', '--disable-web-search', '--no-subagents', '--max-turns', String(turnCeiling || DEFAULT_GROK_MAX_TURNS), '--json-schema', inlineSchema, '--output-format', 'json'];
   } else {
     args = [];
     result = { code: null, signal: null, timedOut: false, stdout: Buffer.alloc(0), stderr: Buffer.from(`no review transport for host ${tuple.host}`), spawnError: true };
@@ -1709,6 +1725,7 @@ async function main() {
   let heartbeat;
   let poolLock = null;
   let cycleLock = null;
+  let cycleCapacity = null;
   let heartbeatWork = Promise.resolve();
   try {
     await acquireLock(lockDir, staleSeconds, owner);
@@ -1728,14 +1745,10 @@ async function main() {
       if (cycle) {
         try { await acquireLock(cycle.lock_path, staleSeconds, owner); cycleLock = cycle.lock_path; }
         catch (error) { await finishFailure('lock_failure', { cacheKey, detail: error.message }); return; }
-        const capacity = externalReviewCycleCapacity(prospective, { receiptPath });
-        if (!capacity.allowed) {
-          await finishFailure('budget_exhausted', { cacheKey, detail: `review cycle ${capacity.cycle_id} has reached its three-round cap; disposition existing findings before any further paid review` });
-          return;
-        }
+        cycleCapacity = externalReviewCycleCapacity(prospective, { receiptPath });
       }
     }
-    const hit = options.validateCapabilities ? null : await cacheHit(entryDir, cacheKey, requestedTuple, reviewKind, options.candidateDigest ?? null, packageHash, findingsSchemaHash, ttlDays, findingsSchema, receiptSchema, fixture);
+    const hit = options.validateCapabilities ? null : await cacheHit(entryDir, cacheKey, requestedTuple, reviewKind, options.candidateDigest ?? null, packageHash, findingsSchemaHash, ttlDays, findingsSchema, receiptSchema, fixture, packageBytes);
     if (hit) {
       await writeJson(findingsPath, hit.findings);
       const findingsSha256 = sha256(await readFile(findingsPath));
@@ -1755,6 +1768,10 @@ async function main() {
       });
       await writeReceipt(receipt);
       process.stdout.write(`${JSON.stringify({ ok: true, findings: findingsPath, receipt: receiptPath, cache_disposition: 'hit' })}\n`);
+      return;
+    }
+    if (cycleCapacity && !cycleCapacity.allowed) {
+      await finishFailure('budget_exhausted', { cacheKey, detail: `review cycle ${cycleCapacity.cycle_id} has reached its three-round cap; disposition existing findings before any further paid review` });
       return;
     }
     if (!options.validateCapabilities) {
@@ -1817,9 +1834,42 @@ async function main() {
     }
 
     const attempts = observedAttempts;
-    const primaryResult = await invoke(requestedTuple, binary, packageBytes, reviewKind, schemaBytes, artifactsDir, 1, timeoutSeconds * 1000, reviewBudgetUsd, reviewerTurnCeiling);
+    const invocationStarted = Date.now();
+    let primaryResult = await invoke(requestedTuple, binary, packageBytes, reviewKind, schemaBytes, artifactsDir, 1, timeoutSeconds * 1000, reviewBudgetUsd, reviewerTurnCeiling);
     observedResult = primaryResult;
     attempts.push(primaryResult.attempt);
+    const repairKind = primaryResult.attempt.classification === 'success' && primaryResult.routeKind === 'exact_primary'
+      ? reportRepairKind(primaryResult.findings)
+      : primaryResult.attempt.classification === 'schema_invalid' && primaryResult.attempt.exit_code === 0 && !hasNegativeReviewEvidence(primaryResult.findings) ? 'incomplete' : null;
+    if (repairKind) {
+      const original = primaryResult.findings;
+      const remainingMs = timeoutSeconds * 1000 - (Date.now() - invocationStarted);
+      const spent = primaryResult.attempt.usage?.total_cost_usd;
+      const remainingBudget = remainingReportRepairBudget(requestedTuple.host, reviewBudgetUsd, spent, process.env.SVC_EXTERNAL_REVIEW_MAX_BUDGET_USD !== undefined);
+      if (remainingMs > 0 && (remainingBudget === null || remainingBudget > 0)) {
+        const correction = Buffer.from(reportRepairPrompt(original, repairKind));
+        const repairPackage = repairKind === 'incomplete' ? Buffer.concat([correction, packageBytes]) : correction;
+        const repairInput = path.join(artifactsDir, 'report-repair-input.bin');
+        await writeFile(repairInput, repairPackage, { mode: 0o600 });
+        const repaired = await invoke(requestedTuple, binary, repairPackage, reviewKind, schemaBytes, artifactsDir, 2, remainingMs, remainingBudget ?? reviewBudgetUsd, reviewerTurnCeiling);
+        repaired.attempt.artifacts.repair_input = repairInput;
+        attempts.push(repaired.attempt);
+        const repairErrors = repaired.attempt.classification === 'success' ? validateReportRepair(original, repaired.findings, repairKind) : [];
+        if (repairErrors.length) {
+          await finishFailure('schema_invalid', { cacheKey, attempts, detail: repairErrors.join('; '), protocol: { ...repaired.protocol, process_invocations: attempts.length }, cache: { disposition: 'not_reusable', reusable: false, entry: entryDir } });
+          return;
+        }
+        primaryResult = repaired;
+        primaryResult.protocol = { ...repaired.protocol, process_invocations: attempts.length };
+        // Preserve total observed cost; never hide the first provider call.
+        if (typeof spent === 'number' && typeof repaired.attempt.usage?.total_cost_usd === 'number') primaryResult.receiptUsage = { ...repaired.attempt.usage, total_cost_usd: spent + repaired.attempt.usage.total_cost_usd };
+        observedResult = primaryResult;
+        if (primaryResult.attempt.classification !== 'success') {
+          await finishFailure(primaryResult.attempt.classification, { cacheKey, attempts, protocol: primaryResult.protocol, cache: { disposition: 'not_reusable', reusable: false, entry: entryDir } });
+          return;
+        }
+      }
+    }
     if (primaryResult.attempt.classification === 'success') {
       const validationErrors = validateFindings(primaryResult.findings, primaryResult.effectiveTuple, reviewKind, findingsSchema);
       if (validationErrors.length) {
@@ -1838,7 +1888,7 @@ async function main() {
           hasFindings: true,
           findingsSha256,
           cache: { disposition: 'not_reusable', reusable: false, entry: entryDir },
-          usage: primaryResult.attempt.usage,
+          usage: primaryResult.receiptUsage || primaryResult.attempt.usage,
           protocol: primaryResult.protocol,
           route: { kind: 'provider_safety_route', switching_enabled: primaryResult.switchingEnabled, cli_fallback_configured: false, evidence: 'provider_model_usage_envelope_inferred' },
           effectiveEffort: { value: null, provenance: 'provider-managed' },
@@ -1856,7 +1906,7 @@ async function main() {
         hasFindings: true,
         findingsSha256,
         cache: { disposition: 'published', reusable: true, entry: entryDir },
-        usage: primaryResult.attempt.usage,
+        usage: primaryResult.receiptUsage || primaryResult.attempt.usage,
         protocol: primaryResult.protocol,
         route: { kind: primaryRoute, switching_enabled: requestedTuple.model === 'claude-fable-5', cli_fallback_configured: false, evidence: 'requested_primary' },
         modelAttestation: primaryResult.modelAttestation,
@@ -1883,7 +1933,7 @@ async function main() {
           findingsSha256,
           cache: { disposition: 'not_reusable', reusable: false, entry: entryDir },
           artifacts: { cache_publish_error: diagnostic },
-          usage: primaryResult.attempt.usage,
+          usage: primaryResult.receiptUsage || primaryResult.attempt.usage,
           protocol: primaryResult.protocol,
           route: { kind: primaryRoute, switching_enabled: requestedTuple.model === 'claude-fable-5', cli_fallback_configured: false, evidence: 'requested_primary' },
           modelAttestation: primaryResult.modelAttestation,

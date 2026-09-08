@@ -155,6 +155,10 @@ reruns this step only when its relevant lens digest changed. Record
 The one gap pass never substitutes for the independent holistic plan review; it
 drains cheap defects before that review without paying for repeated full rereads.
 
+### Inline readiness boundary
+
+Use the mode-aware rubric in references/plan-review-protocol.md. For inline, reject missing consequential behavior, state ownership, interfaces, proof or scope; do not reject absent code blueprints or harmless local choices. Explicit v4 release producer descriptions replace guessed future shell identities. Require original AC/UX/technical context, not only a concise digest. Dispatch keeps complete packets. Keep the integer transport, owner reviewer topology and one holistic review plus invalidated-lens corrections.
+
 ### Step 2 — Tier 2: Primary adversarial review (cross-model preferred)
 
 Build the plan package, then invoke the sole external-review adapter. The

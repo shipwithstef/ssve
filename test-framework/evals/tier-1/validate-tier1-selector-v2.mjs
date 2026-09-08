@@ -33,6 +33,7 @@ check("proposal selects complete v2 focused closure", () => {
     "validate-concern-compiler-v2.mjs",
     "validate-continuation-lifecycle-wi552.mjs",
     "validate-control-value-audit-v2.mjs",
+    "validate-delivery-planning.sh",
     "validate-dispatch-resolver-wi551.mjs",
     "validate-execution-controller-v2.mjs",
     "validate-external-review-launcher.sh",

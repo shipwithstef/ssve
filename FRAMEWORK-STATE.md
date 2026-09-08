@@ -1,5 +1,9 @@
 # Framework State
 
+## Whole-solution planning (WI-FW-DELIVERY-TRADEOFFS-01)
+
+Implementation: explicit inline v4 preserves original AC/context, generates mappings, and describes future release identities through existing land/verify adapters. Legacy/dispatch receipts remain supported. Fresh-index producers avoid stamp-only writes; additive root-WI timing reports retries, waits and unknown gaps against 30/120/10. The proposed new tier-1 cache was removed after review found no demonstrated first-delivery reuse edge. Sol High and Grok High passed the final plan. Release/install evidence will be recorded in the existing per-SHA chain; no measured 5x claim is made.
+
 ## Plan certification recovery
 
 WI-FW-PLAN-CERTIFICATION-01 adds fixed-only certification adjudication at plan
@@ -101,7 +105,7 @@ Installation retains the existing shared scripts directory across provisioned ho
 - **Rules:** 48 registered in `skills-manifest.json` `rulesRegistry.entries`, exact parity with `rules/**/*.md` on disk (verified 2026-08-26, WI-FW-DOCS-AUDIT-01; per-rule scope/type/injection metadata lives in the registry — this file no longer keeps a hand-count breakdown that rots)
 - **Hooks:** 14 hooks across all 13 Kimi lifecycle events — PreToolUse (×5: workflow-guard, phase-boundary, bash-guard, lane-tasks-pre-validator, skill-artifact-authenticity), PostToolUse (×2: lane-tasks-validator, stop-quality), PostToolUseFailure (lane-tasks-failure), UserPromptSubmit (preflight-guard), Stop (task-completion-guard with anti-loop), StopFailure (error-logger), SessionStart (auto-recovery), SessionEnd (final-checkpoint), SubagentStart (pre-flight), SubagentStop (state-merge), PreCompact (checkpoint), PostCompact (recovery), Notification (gate-alert)
 - **Claude hooks:** 21 hooks auto-wired by `setup --host claude` (was 2: eval-gate only). Full lifecycle coverage: PreToolUse (×6), PostToolUse (×6), PostToolUseFailure, Stop (×2), UserPromptSubmit, SessionStart, SessionEnd, StopFailure, SubagentStart, SubagentStop, PreCompact, PostCompact, Notification.
-- **Test infrastructure:** 367 tier-1 scripts, 62 tier-1.5 comprehension prompts (56 skills covered), 36 registered tier-2 integration scenarios (58% skill coverage), **journey skills have 2 registered tier-2 scenarios (`test-journeys-runtime`, `write-journeys-generate`)**, 5 fixture projects (greenfield/brownfield/bugfix/drift/refactor), **tier-3 judge operational but coverage is 1/36 scenarios (2.8%)** (completeness/actionability/consistency scoring via kimi --print --yolo -p; only `diagnose-bug-typo` has been judged as of 2026-04-30)
+- **Test infrastructure:** 368 tier-1 scripts, 62 tier-1.5 comprehension prompts (56 skills covered), 36 registered tier-2 integration scenarios (58% skill coverage), **journey skills have 2 registered tier-2 scenarios (`test-journeys-runtime`, `write-journeys-generate`)**, 5 fixture projects (greenfield/brownfield/bugfix/drift/refactor), **tier-3 judge operational but coverage is 1/36 scenarios (2.8%)** (completeness/actionability/consistency scoring via kimi --print --yolo -p; only `diagnose-bug-typo` has been judged as of 2026-04-30)
 - **Execution Controller v2 (WI-368, merged at `0d75cb1d`):** one digest-bound product graph and canonical layer inventory feed an append-only runtime journal, durable leases, real argv/effect execution, CAS evidence consumption, owner/memory/company adapters, release/rollback/live/observation lifecycle, host projections, N/N-1 migration, mutation proof and cutover gate. Local simulation uses `SIMULATED_*` states and cannot close delivery/outcome or prove the 60-minute SLO. Default cutover remains disabled until an explicitly authorized real Sample direction-to-live canary and rollback proof. WI-529 closes two integration seams without weakening that boundary: mandatory chain schemas represent the actual AGY reviewer identity, and the effective serialized Codex mutation dispatcher is launcher-routed and setup-verified.
 - **Last lint:** PASS (2026-08-10 — manifest mirrors report 103 included and 59 router-core skills during WI-368 local candidate validation). The generic product pipeline-integrity script remains a baseline-inapplicable check for this framework root because both frozen base and candidate intentionally have no root `vision.md`.
 
@@ -784,3 +788,6 @@ closeout on baseline `6809a074`, with all nine provisioned hosts resolving
 that installed source at zero drift.
 Cursor review identity remains exact-route `requested_accepted`, without a
 server model echo; unobserved provider quota balances remain unknown.
+
+### Delivery report recovery — implementation under validation
+The owner requested automatic recovery from release-blocking review protocol errors. Adds one bounded same-model report correction, strict judgment preservation, Grok verbatim input, and zero-call cache accounting without deleting signed history. No live installation or measured5x claim until actual promotion evidence.

@@ -180,7 +180,7 @@ duplicate its content here. If the two ever disagree, the prompt file wins.
    ```
 
    **A stale index fails the contract, which fails the audit.** That is the point: the index
-   cannot silently rot, and any commit touching the scope forces a re-walk.
+   cannot silently rot. Use the existing cited-fact/import freshness result: stale facts require a re-walk; FRESH with no new findings requires no write or restamp. A newer HEAD alone is not stale evidence.
 
    ⚠️ **The instrument is not the system.** `scripts/audit-<scope>-contract.mjs` must NOT be
    one of its own index's `Scope-paths`. Including it makes every edit to the audit tooling

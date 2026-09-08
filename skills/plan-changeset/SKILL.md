@@ -135,6 +135,14 @@ Record the resolved mode in two places, both read by the chain:
 
 Default when unsure: **`dispatch`** (author the blueprints). Only claim `inline` when the orchestrator itself will apply the change with context loaded.
 
+## Whole-solution readiness for inline execution
+
+Before coding settle the user-visible states (including empty/error/loading), state owner and lifetime, manual versus automatic intent, shared API/HTTP and transaction semantics, concurrency, migrations, exact write envelope, proof kind for each important promise, and the established release/recovery path. Probe only uncertainties that could invalidate this approach.
+
+A decision is consequential when reversing it changes user behavior/data/authority, another behavior part, delivery strategy, or a major proof. Apply that rule to retry/idempotency, caching, accessibility and performance. Local reversible helpers, naming and implementation details stay with execution within the declared files. Discovering one new consequential issue reopens its affected decision/lens, not every completed phase. Do not substitute source/unit evidence for browser, device, hosted or performance observations required by the feature.
+
+For new inline plans use the v4 body/projection protocol in `references/manifest-templates.md` after `node scripts/prepare-plan-handoff.mjs --capabilities` passes. Keep legacy v1–3 and dispatch contracts valid; unsupported/mixed consumers require continuing the existing contract or a complete package update. Required checks/reviews remain. Use the original clauses at handoff; a condensed AC digest is navigation only.
+
 ## Manifest Contents (templates: `references/manifest-templates.md`)
 
 1. **Header** — spec path, branch (lane convention), Status DRAFTED→…→VERIFIED lifecycle, base SHA, timestamp
@@ -142,7 +150,7 @@ Default when unsure: **`dispatch`** (author the blueprints). Only claim `inline`
 3. **Files Planned** table + **3a. Changeset Blueprint** (dispatch mode only — full payloads/diff blueprints, NO placeholders; SKIPPED on the inline path per Execution Mode above)
 4. **Task Graph** — id, title, files, deps, AC coverage, validation command, checkpoint, parallel group
 5. **AC-to-Task** + 6. **AC-to-Test** mapping (Unit/E2E/Manual/N-A-with-reason) + 6a. **Prerequisite Alignment Matrix** (UX/UI/tech/style/persona traces — concrete persona IDs, never "all users")
-7. **Validation Plan** + 7a. **Execution Command Sequence** (copy-pasteable bash: worktree, deps, patches, tests, checkpoints w/ trailers, receipts; RECOVERY_IF_FAIL blocks)
+7. **Validation Plan** + 7a. **Execution Command Sequence** (legacy/dispatch: copy-pasteable bash; explicit inline v4: ready-now commands and established-release producer/verifier descriptions, never invented future IDs)
 8. **Checkpoint Plan** + 9. **Promotion Readiness Checklist** (incl. schema-drift check: ORM file modified ⇒ migration task exists, else pre-flight blocker)
 
 ## External State Lifecycle (MANDATORY)
@@ -204,7 +212,7 @@ Log the plan as a `mechanical` decision (manifest path = the plan) and the G2 ou
 
 ### Branch Index Append (§3)
 
-If the scope has a genesis index (`docs/specs/relations/<scope>.branches.md`, created by `write-spec`), append this stage's findings to its axis sections and re-stamp `Derived-at` to the manifest's HEAD sha at close — do not open a separate planning-only document. Run `node scripts/branch-index-freshness.mjs --stamp-imports <index-path>` alongside the re-stamp, so the §3f#3 import-shape check has a current recording to diff against; an un-run stamp is a silent no-op at check time, not a failure, but skipping it defeats the check's purpose. At this restamp, move any row this stage's diff contradicts to a `## Superseded` tail section rather than deleting it (G6) — keeps the index bounded and honest instead of an unbounded append-only log.
+If this scope has a genesis branch index, run `node scripts/check-branch-index.mjs --index <index-path>` first. When it is FRESH and this stage discovered no changed facts, retain the existing `Derived-at` and import hashes without writing. A newer HEAD alone is not a reason to stamp. If cited facts/imports are stale, re-inspect the affected facts, preserve contradicted rows in `## Superseded`, then update `Derived-at` and run `node scripts/branch-index-freshness.mjs --stamp-imports <index-path>`. New substantive findings are appended to the same index and reviewed under the existing contract. Never restamp merely to silence a failing check.
 
 ## Handoff
 
@@ -312,11 +320,11 @@ On new delivery-graph signals, emit `skill_outcome` per `references/skill-outcom
 
 ## Chain Receipt Emission (Mandatory Chain)
 
-This skill emits receipt type `plan-manifest` per `references/chain-receipt-contract.md`: written to `.svc/receipts/staging/<tree-hash>/plan-manifest.json` pre-commit (post-commit hook promotes to the SHA mirror + consolidated git note on `refs/notes/svc-receipts`). Emit via `scripts/emit-receipt.mjs --type plan-manifest --wi <WI> --sha <SHA> --body <file>`. Self-verify: receipt exists, passes `schemas/receipts/plan-manifest.schema.json`, reflected in the consolidated note.
+This skill emits receipt type `plan-manifest` per `references/chain-receipt-contract.md`: written to `.svc/receipts/staging/<tree-hash>/plan-manifest.json` pre-commit (post-commit hook promotes to the SHA mirror + consolidated git note on `refs/notes/svc-receipts`). Before commit, stage the reviewed manifest, spec and context, then emit via `node scripts/emit-receipt.mjs --type plan-manifest --wi <WI> --body <file>` with **no `--sha`**: the emitter validates and binds the Git index candidate. Reserve `--sha <exact-committed-SHA>` for intentional post-commit issuance against that committed source. Self-verify staging placement before commit, then schema validity and the consolidated note after promotion.
 
-**Pipeline baton (WI-381) — emit at `schema_version: 3`.** After `review-plan` PASS, distill the spec's acceptance criteria into the receipt's `ac_digests` so the 5 downstream chain skills read a one-page nav index instead of re-reading the whole spec:
+**Pipeline baton — legacy/dispatch emit `schema_version: 3`; new supported inline plans emit version 4.** After `review-plan` PASS, distill the spec's acceptance criteria into the receipt's `ac_digests` so the 5 downstream chain skills read a one-page nav index instead of re-reading the whole spec:
 - `ac_digests.spec_path` — the authoritative spec (e.g. `docs/specs/features/<name>.md`, or the WI doc for framework work).
 - `ac_digests.spec_ac_table_sha256` — `SPEC=docs/specs/features/<name>.md node -e 'import("./scripts/lib/normalize-ac-table.mjs").then(m=>console.log(m.acTableSha256(require("fs").readFileSync(process.env.SPEC,"utf8"))))'`. This hash-binds the baton to the spec AC table; `check-chain-receipts` recomputes it and FAILS if the ACs are revised after distillation (forcing a re-distill).
 - `ac_digests.entries[]` — one `{ac_id, digest, anchor}` per AC; `digest` is a one-line attention router, NEVER the authoritative text. The live spec at `spec_path` remains the sole AC source.
 - `mocked_deps[]` — `{dep, reason, mock_location}` for anything the plan stubs (optional).
-Regenerate the baton on any manifest/AC revision — it can only carry reviewed content. Legacy v1/v2 plan-manifests without the baton stay valid (grandfathered).
+For v4, author the full receipt body once inside SVC_PLAN_BODY, compute the AC binding before review, and run prepare-plan-handoff --write --out .svc/external-review-artifacts/plan-handoff/body.json to generate views and the emitter input. Do not independently author duplicate AC/task/test mappings or regenerate reviewed fields silently. Regenerate the baton on any manifest/AC revision — it can only carry reviewed content. Legacy v1/v2 plan-manifests without the baton stay valid (grandfathered).

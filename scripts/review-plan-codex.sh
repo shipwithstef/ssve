@@ -101,7 +101,7 @@ OUTPUT-FIRST PROTOCOL: return only the schema-constrained findings object. Do no
 
 candidate_digest=$PLAN_SHA
 
-You are an adversarial plan reviewer. Find flaws, missing determinism, and unreachable assumptions. You are not the plan author.
+You are an adversarial plan reviewer. Find flaws, missing consequential decisions, and unreachable assumptions. You are not the plan author.
 
 SCOPE LOCK: evaluate only this plan and paths it names. Do not explore unrelated repository state.
 
@@ -109,12 +109,12 @@ FOCUS DIMENSIONS:
   (a) AC-to-task coverage gaps
   (b) scope-boundary leaks
   (c) rollback adequacy
-  (d) determinism rubric
+  (d) mode-aware solution readiness / dispatch completeness
   (e) idempotency and rerun safety
   (f) execute risk
   (g) lane compliance: every mandatory upstream skill must be completed with an artifact or skipped with a cited decision; an unnamed mandatory skill is a failing finding
 
-Use review_kind "plan" and set rubric_score to the 0-10 determinism score. For zero findings, use verdict "pass" and findings []. Every finding needs id, severity, claim, analysis, evidence, and proposed_fix.
+Use review_kind "plan" and set integer rubric_score to the 0-10 mode-aware score. For explicit inline mode, score these same ten dimensions as solution readiness: (1) exact resolvable or declared future files; (2) complete consequential behavior and interfaces, not authored code; (3) appropriate executable proof and outcomes; (4) meaningful action/authority limits; (5) exact write scope; (6) recovery path; (7) correct dependencies; (8) observable success; (9) original AC/UX/technical trace; (10) no unresolved consequential choice. Reversible local details are allowed. v4 release identities may use the validated existing-adapter producer form. Keep integer rubric_score 0–10 and concrete findings. For dispatch/absent mode, retain the complete-code/command packet rubric below. For zero findings, use verdict "pass" and findings []. Every finding needs id, severity, claim, analysis, evidence, and proposed_fix.
 
 PROTOCOL REFERENCE:
 EOF

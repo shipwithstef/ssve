@@ -41,6 +41,11 @@ chain:
 
 # Workflow Compass
 
+## Cumulative delivery timing
+At first feature-specific work, retain the actual UTC observation and run `node scripts/task-graph.mjs bind-delivery-cycle <graph> --started-at <observed-UTC>` once the graph exists. Related amendments use `--inherit <root-graph>` before activation; resumes never reset it. A missing historical start stays unknown. The writer observes actual phase transitions, including tests/QA, even for previously uninstrumented graphs; it never invents intake from creation.
+Record explicit waits or reopened decisions with `node scripts/task-graph.mjs record-delivery-event <graph> --id <stable-id> --kind <wait|reopened-decision|amendment> --reason <actual-reason>`; waits also require observed `--started-at` and `--ended-at`. Operated device QA is work. Unrecorded gaps stay unknown.
+Inspect `node scripts/mine-receipts.mjs --delivery-cycle <root-WI> --json`: overlapping intervals are unioned, related WIs remain cumulative, and completed cycles stop at actual completion. 30/120/10 minutes is a target for planning/build/finalization, never a gate bypass or permission to abandon work. Declare concrete larger release/observation needs during planning.
+
 ## Hot Path
 1. Read the latest `.svc/session-contract.jsonl`; do not refresh it yet.
 2. Normalize intent, then classify follow-ups before changing goals.
