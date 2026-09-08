@@ -9,6 +9,11 @@ import { externalReviewCycleId, externalReviewCycleIdFromReceipt, listExternalRe
 import { getObject, lookupRelocation, reviewEvidenceStoreRoot } from "./review-evidence-store.mjs";
 
 export const BOUNDED_EXIT_HARD_CAP = 3;
+export function isPlanCertificationCloseout(reviewKind, findings) {
+  return reviewKind === 'plan' && ['pass', 'pass-with-findings'].includes(findings?.verdict)
+    && Array.isArray(findings?.certifications) && findings.certifications.some(row => row?.certified !== true);
+}
+
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SCHEMA = JSON.parse(fs.readFileSync(path.resolve(HERE, "../../schemas/receipts/bounded-exit.schema.json"), "utf8"));
 const DISPOSITION_EVIDENCE_SCHEMA = JSON.parse(fs.readFileSync(path.resolve(HERE, "../../schemas/receipts/bounded-exit-evidence.schema.json"), "utf8"));
@@ -177,7 +182,9 @@ export function validateBoundedExitAdjudication({ root, reviewKind, body, identi
   if (!Array.isArray(rounds) || rounds.length === 0) return ["bounded-exit requires verified launcher rounds"];
   if (rounds.length > BOUNDED_EXIT_HARD_CAP) reasons.push(`bounded-exit forbids more than ${BOUNDED_EXIT_HARD_CAP} launcher rounds`);
   const terminal = rounds.at(-1);
-  if (String(terminal?.findings?.verdict || "") !== "fail") reasons.push("bounded-exit is only admissible for a terminal raw fail verdict");
+  const terminalVerdict = String(terminal?.findings?.verdict || "");
+  const planCertificationCorrection = isPlanCertificationCloseout(reviewKind, terminal?.findings);
+  if (terminalVerdict !== "fail" && !planCertificationCorrection) reasons.push("bounded-exit requires a raw fail or a plan with failed certifications");
   if (body?.verdict !== "pass-with-acks") reasons.push("bounded-exit receipt verdict must be pass-with-acks");
 
   const wi = String(body?.wi || "");

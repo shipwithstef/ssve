@@ -793,7 +793,9 @@ expect "cache replay is bound to key and package/schema hashes" test "$(grep -c 
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache" "$TMP/runtime-copy"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache" "$TMP/runtime-copy/scripts/lib" "$TMP/runtime-copy/schemas" "$TMP/runtime-copy/references" "$TMP/runtime-copy/skills/review-exec" "$TMP/runtime-copy/skills/review-cross-model" "$TMP/runtime-copy/hooks/lib" "$TMP/runtime-copy/skills/research/scripts"
 cp "$LAUNCHER" "$TMP/runtime-copy/scripts/run-external-review.mjs"
-cp "$ROOT/scripts/lib/review-report-recovery.mjs" "$TMP/runtime-copy/scripts/lib/"
+cp "$ROOT/scripts/lib/review-report-recovery.mjs" "$ROOT/scripts/lib/review-inputs.mjs" "$ROOT/scripts/lib/plan-manifest-contract.mjs" "$ROOT/scripts/lib/normalize-ac-table.mjs" "$ROOT/scripts/lib/evidence-schema.mjs" "$TMP/runtime-copy/scripts/lib/"
+mkdir -p "$TMP/runtime-copy/schemas/receipts"
+cp "$ROOT/schemas/receipts/plan-manifest.schema.json" "$TMP/runtime-copy/schemas/receipts/"
 cp "$ROOT/scripts/review-topology-v2.mjs" "$TMP/runtime-copy/scripts/review-topology-v2.mjs"
 cp "$ROOT/scripts/resolve-dispatch.mjs" "$TMP/runtime-copy/scripts/resolve-dispatch.mjs"
 cp "$ROOT/scripts/state-io.mjs" "$TMP/runtime-copy/scripts/state-io.mjs"

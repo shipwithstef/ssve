@@ -328,3 +328,7 @@ This skill emits receipt type `plan-manifest` per `references/chain-receipt-cont
 - `ac_digests.entries[]` — one `{ac_id, digest, anchor}` per AC; `digest` is a one-line attention router, NEVER the authoritative text. The live spec at `spec_path` remains the sole AC source.
 - `mocked_deps[]` — `{dep, reason, mock_location}` for anything the plan stubs (optional).
 For v4, author the full receipt body once inside SVC_PLAN_BODY, compute the AC binding before review, and run prepare-plan-handoff --write --out .svc/external-review-artifacts/plan-handoff/body.json to generate views and the emitter input. Do not independently author duplicate AC/task/test mappings or regenerate reviewed fields silently. Regenerate the baton on any manifest/AC revision — it can only carry reviewed content. Legacy v1/v2 plan-manifests without the baton stay valid (grandfathered).
+
+### Stable implementation handoff
+
+Freeze the validated inline v4 JSON before paid plan review. Express future release identities through the existing producer/verifier references; derive the eventual candidate from execution evidence rather than hardcoding an implementation SHA into the plan. A source correction that preserves ACs, write scope, dependencies and validation obligations does not itself require another plan review. Reuse only the existing exact plan review evidence; never rebind implementation approval to a changed candidate.

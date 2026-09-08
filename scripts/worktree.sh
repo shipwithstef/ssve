@@ -671,7 +671,10 @@ $(git diff --stat "main...$branch_name" 2>/dev/null)" 2>&1 || pr_rc=$?
     echo ""
     echo "=== Auto-merge ==="
     local _mrc=0
-    node "$REPO_ROOT/scripts/merge-pr-with-review-receipt.mjs" --root "$REPO_ROOT" --pr "$pr_number" --squash --delete-branch 2>&1 || _mrc=$?
+    local _merge_repo _merge_sha
+    _merge_repo=$(cd "$wt_path" && gh repo view --json nameWithOwner --jq .nameWithOwner) || { fail "Cannot bind promotion repository"; return 1; }
+    _merge_sha=$(git -C "$wt_path" rev-parse HEAD) || return 1
+    node "$REPO_ROOT/scripts/merge-pr-with-review-receipt.mjs" --root "$wt_path" --pr "$pr_number" --repo "$_merge_repo" --expected-repo "$_merge_repo" --expected-head "$branch_name" --expected-head-sha "$_merge_sha" --squash --delete-branch 2>&1 || _mrc=$?
     if [[ $_mrc -eq 0 ]]; then
       ok "PR #$pr_number merged"
       echo ""

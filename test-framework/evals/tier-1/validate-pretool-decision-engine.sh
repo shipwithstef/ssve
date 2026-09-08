@@ -51,27 +51,27 @@ N1="$(CMD="x" node --input-type=module -e '
 import { evaluatePreToolObservation } from "'"$ENGINE"'";
 const r=evaluatePreToolObservation({tool_name:"Bash",tool_input:{command:"git status"},cwd:"'"$TMP"'"});
 console.log(r.execution_input.command)')"
-[[ "$N1" == "git --no-optional-locks status" ]] && ok "git status normalized with top-level option" || bad "status normalization ($N1)"
+[[ "$N1" == "git --no-optional-locks --no-pager status" ]] && ok "git status normalized with top-level option" || bad "status normalization ($N1)"
 N2="$(node --input-type=module -e '
 import { evaluatePreToolObservation } from "'"$ENGINE"'";
 const r=evaluatePreToolObservation({tool_name:"Bash",tool_input:{command:"git rev-parse --show-toplevel && git status --short"},cwd:"'"$TMP"'"});
 console.log(r.execution_input.command)')"
-[[ "$N2" == "git rev-parse --show-toplevel && git --no-optional-locks status --short" ]] && ok "compound read normalizes only the git-status segment" || bad "compound normalization ($N2)"
+[[ "$N2" == "git --no-pager rev-parse --show-toplevel && git --no-optional-locks --no-pager status --short" ]] && ok "compound read normalizes only the git-status segment" || bad "compound normalization ($N2)"
 N3="$(node --input-type=module -e '
 import { evaluatePreToolObservation } from "'"$ENGINE"'";
 const r=evaluatePreToolObservation({tool_name:"Bash",tool_input:{command:"git -C /tmp/repo status"},cwd:"'"$TMP"'"});
 console.log(r.execution_input.command)')"
-[[ "$N3" == "git --no-optional-locks -C /tmp/repo status" ]] && ok "global-option position valid after insertion (-C preserved)" || bad "-C normalization ($N3)"
+[[ "$N3" == "git --no-optional-locks --no-pager -C /tmp/repo status" ]] && ok "global-option position valid after insertion (-C preserved)" || bad "-C normalization ($N3)"
 N4="$(node --input-type=module -e '
 import { evaluatePreToolObservation } from "'"$ENGINE"'";
-const r=evaluatePreToolObservation({tool_name:"Bash",tool_input:{command:"git --no-optional-locks diff"},cwd:"'"$TMP"'"});
+const r=evaluatePreToolObservation({tool_name:"Bash",tool_input:{command:"git --no-optional-locks --no-pager diff --no-ext-diff --no-textconv"},cwd:"'"$TMP"'"});
 console.log(JSON.stringify(r.execution_input))')"
 [[ "$N4" == "null" ]] && ok "already-normalized git argv is passed through untouched" || bad "double normalization ($N4)"
 N5="$(node --input-type=module -e '
 import { evaluatePreToolObservation } from "'"$ENGINE"'";
 const r=evaluatePreToolObservation({tool_name:"Bash",tool_input:{command:"cat file.txt; git status"},cwd:"'"$TMP"'"});
 console.log(JSON.stringify(r.execution_input.command))')"
-[[ "$N5" == '"cat file.txt; git --no-optional-locks status"' ]] && ok "mixed compound rewrites ONLY the git segment, operators preserved verbatim" || bad "cat;git status rewrite ($N5)"
+[[ "$N5" == '"cat file.txt; git --no-optional-locks --no-pager status"' ]] && ok "mixed compound rewrites ONLY the git segment, operators preserved verbatim" || bad "cat;git status rewrite ($N5)"
 N6="$(node --input-type=module -e '
 import { evaluatePreToolObservation } from "'"$ENGINE"'";
 const r=evaluatePreToolObservation({tool_name:"Bash",tool_input:{command:"cat file.txt"},cwd:"'"$TMP"'"});

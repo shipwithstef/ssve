@@ -519,6 +519,10 @@ function existingResumeApproval({ repo, wi, branch, owner, worktree, env }) {
         !secureAncestors(worktree, path.join(worktree, ".svc", ".svc-state-probe"))) return approval;
     const tuple = inspectV1AuthorityTuple({ wi, branch, worktree_root: worktree,
       repo_root: repo.root, session_id: owner, env });
+    // A deliberately released binding does not authorize an external root.
+    // Missing bindings after interruption remain recoverable from the exact claim.
+    const priorBinding = bindingPath(worktree, owner);
+    if (tuple.state === "current_unbound" && fs.existsSync(priorBinding) && JSON.parse(fs.readFileSync(priorBinding, "utf8")).released_at) return approval;
     const graph = JSON.parse(fs.readFileSync(path.join(worktree, ".svc", `lane-tasks-${wi}.json`), "utf8"));
     if (graph?.wi !== wi || !validateTaskGraphShape(graph).ok) return approval;
     if (["current_complete", "current_unbound", "reclaimable"].includes(tuple.state))

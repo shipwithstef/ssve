@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import path from "node:path";
 import os from "node:os";
+import fs from "node:fs";
+import { generatePrReviewReceipt } from "./lib/pr-review-receipt.mjs";
 import { publishReceiptNotes, readPublishedReceiptNote, mergeReceiptEnvelopes } from "./lib/publish-receipt-notes.mjs";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -78,6 +80,18 @@ function resolveRepo() {
   process.exit(2);
 }
 
+// Missing compatibility views are generated from proof, never synthesized approval.
+const existingPrReceipt = [path.join(root, '.svc/review-receipts', `pr-${pr}.json`), path.join(root, 'docs/specs/reviews', `pr-${pr}-review-gate.json`)].some(file => fs.existsSync(file));
+if (!dryRun && !existingPrReceipt && expectedRepo && expectedHead && expectedHeadSha) {
+  try {
+    if (resolveRepo() !== expectedRepo) throw new Error('Expected repository mismatch');
+    generatePrReviewReceipt({ root, pr, repo: expectedRepo, expectedHead, expectedSha: expectedHeadSha });
+  } catch (error) {
+    console.error(`[svc-pr-merge-review-receipt] Cannot derive PR receipt: ${error.message}`);
+    process.exit(1);
+  }
+}
+
 const validate = spawnSync(
   process.execPath,
   [path.join(__dirname, "validate-review-receipt.mjs"), "--root", root, "--pr", pr],
@@ -114,6 +128,7 @@ if (expectedRepo || expectedHead || expectedHeadSha) {
   }
 }
 ghArgs.push("--repo", repo);
+if (expectedHeadSha) ghArgs.push("--match-head-commit", expectedHeadSha);
 if (hasFlag("--squash")) ghArgs.push("--squash");
 if (hasFlag("--delete-branch")) ghArgs.push("--delete-branch");
 if (hasFlag("--rebase")) ghArgs.push("--rebase");

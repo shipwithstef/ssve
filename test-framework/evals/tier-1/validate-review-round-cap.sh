@@ -230,5 +230,27 @@ if grep -qE "bounded_exit.*when >3|record .*when >3" "$ROOT/references/plan-revi
   bad "protocol still ties bounded_exit to rounds_run>3 (forbidden 4th round)"
 else ok "protocol records bounded_exit at rounds_run==3, not >3"; fi
 
+# One discovery batch can contain parallel reviewers; follow-ups cannot restart it.
+for variant in good restart unrelated missing duplicate; do
+  cat > "$TMP/branch-$variant.yaml" <<'YAML'
+rounds_run: 2
+self_review_passes: 1
+unresolved_critical: 0
+remaining_high: 0
+discovery_batches: 1
+unlinked_followup_findings: 0
+YAML
+  case "$variant" in
+    restart) sed -i 's/discovery_batches: 1/discovery_batches: 2/' "$TMP/branch-$variant.yaml" ;;
+    unrelated) sed -i 's/unlinked_followup_findings: 0/unlinked_followup_findings: 1/' "$TMP/branch-$variant.yaml" ;;
+    missing) sed -i '/discovery_batches:/d' "$TMP/branch-$variant.yaml" ;;
+    duplicate) echo 'discovery_batches: 1' >> "$TMP/branch-$variant.yaml" ;;
+  esac
+  expected=1
+  [[ "$variant" == good ]] && expected=0
+  [ "$(rc_of node "$CHECK" --branch-once --log "$TMP/branch-$variant.yaml")" = "$expected" ] && ok "branch-once $variant" || bad "branch-once $variant"
+done
+[ "$(rc_of node "$CHECK" --branch-once --rounds 1)" = 2 ] && ok "branch-once requires recorded lineage" || bad "branch-once silently accepts numeric-only counters"
+
 printf '\n  %s passed, %s failed\n' "$PASS" "$FAIL"
 test "$FAIL" -eq 0
