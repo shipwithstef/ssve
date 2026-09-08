@@ -124,3 +124,30 @@ test('failed concurrent projection preserves prior output and the intervening au
   assert.notEqual(r.status,0);assert.match(r.stderr,/manifest changed/);assert.equal(fs.readFileSync(path.join(tmp,'.svc/body.json'),'utf8'),'prior output');assert.ok(fs.readFileSync(path.join(tmp,'plan.md'),'utf8').includes('Concurrent author edit.'));
  } finally {fs.rmSync(tmp,{recursive:true,force:true});}
 });
+
+
+test('review preflight validates the actual schema and includes declared source before dispatch', async () => {
+ const {prepareReviewInputs}=await import('../../scripts/lib/review-inputs.mjs');
+ const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'review-inputs-'));
+ try {
+  fs.writeFileSync(path.join(tmp,'spec.md'),spec);fs.mkdirSync(path.join(tmp,'src'));fs.writeFileSync(path.join(tmp,'src/choice.mjs'),'export const actual = true;');
+  const write=b=>fs.writeFileSync(path.join(tmp,'plan.json'),JSON.stringify(b));write(fixture());
+  assert.throws(()=>prepareReviewInputs(tmp,{planFile:'plan.json',reviewKind:'exec'}),/not staged/);
+  execFileSync('git',['init','-q',tmp]);
+  execFileSync('git',['-C',tmp,'add','src/choice.mjs']);
+  const prepared=prepareReviewInputs(tmp,{planFile:'plan.json',reviewKind:'exec'});
+  assert.ok(prepared.files.some(f=>f.label==='source:src/choice.mjs'&&f.bytes.toString().includes('actual')));
+  fs.writeFileSync(path.join(tmp,'src/choice.mjs'),'export const actual = false;');
+  assert.throws(()=>prepareReviewInputs(tmp,{planFile:'plan.json',reviewKind:'exec'}),/differs from staged/);
+  fs.writeFileSync(path.join(tmp,'src/choice.mjs'),'export const actual = true;');
+  const invalid=fixture();invalid.validation_plan[0].named_case='not a schema field';write(invalid);
+  assert.throws(()=>prepareReviewInputs(tmp,{planFile:'plan.json'}),/unexpected named_case/);
+  const artifacts=path.join(tmp,'must-not-be-created');
+  const bad=spawnSync(process.execPath,[path.join(root,'scripts/run-external-review.mjs'),'--preflight','--plan-file','plan.json','--review-kind','plan','--orchestrator','codex','--context-root',tmp,'--artifacts-dir',artifacts],{input:'review',encoding:'utf8'});
+  assert.notEqual(bad.status,0);assert.match(bad.stderr,/unexpected named_case/);assert.equal(fs.existsSync(artifacts),false);
+  const missing=fixture();missing.dependencies=[{artifact:'absent.mjs',citation:'absent.mjs:1'}];write(missing);assert.throws(()=>prepareReviewInputs(tmp,{planFile:'plan.json'}),/ENOENT/);
+  write(fixture());fs.unlinkSync(path.join(tmp,'src/choice.mjs'));assert.doesNotThrow(()=>prepareReviewInputs(tmp,{planFile:'plan.json',reviewKind:'plan'}));assert.throws(()=>prepareReviewInputs(tmp,{planFile:'plan.json',reviewKind:'exec'}),/Missing executed/);
+  fs.writeFileSync(path.join(tmp,'inputs.json'),JSON.stringify(['../outside']));assert.throws(()=>prepareReviewInputs(tmp,{contextFiles:'inputs.json'}),/repository-relative/);
+  fs.writeFileSync(path.join(tmp,'.env'),'secret');fs.writeFileSync(path.join(tmp,'inputs.json'),JSON.stringify(['.env']));assert.throws(()=>prepareReviewInputs(tmp,{contextFiles:'inputs.json'}),/Private environment/);
+ } finally {fs.rmSync(tmp,{recursive:true,force:true});}
+});

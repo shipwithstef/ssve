@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { candidateTreeIdentity, externalReviewCycleIdFromReceipt } from "./lib/external-review-provenance.mjs";
-import { evaluateReviewRoundCap } from "./lib/bounded-exit.mjs";
+import { evaluateReviewRoundCap, isPlanCertificationCloseout } from "./lib/bounded-exit.mjs";
 import { validateEvidenceSchema } from "./lib/evidence-schema.mjs";
 import { verifyReviewerEvidence } from "./lib/reviewer-evidence.mjs";
 import { writeJsonAtomic } from "./state-io.mjs";
@@ -42,7 +42,7 @@ const rounds = config.launcher_receipts.map((file) => {
 const cycleId = externalReviewCycleIdFromReceipt(rounds[0].receipt);
 if (rounds.some((round) => externalReviewCycleIdFromReceipt(round.receipt) !== cycleId)) throw new Error("launcher receipts do not share one review cycle");
 const terminal = rounds.at(-1);
-if (terminal.findings.verdict !== "fail") throw new Error("bounded-exit builder requires a terminal raw fail");
+if (terminal.findings.verdict !== "fail" && !isPlanCertificationCloseout(config.review_kind, terminal.findings)) throw new Error("bounded-exit builder requires a raw fail or failed plan certifications");
 const identity = candidateTreeIdentity(root, { candidateSha: config.candidate_sha });
 if (config.review_kind === "exec" && rounds.some((round) => round.receipt.candidate_digest !== identity.candidate_digest)) throw new Error("bounded-exit exec launcher rounds do not review the final promotion candidate");
 const reviewLog = artifact(config.review_log);

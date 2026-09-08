@@ -200,16 +200,44 @@ Pass through:
 
 review-cross-model returns its markdown output at `docs/specs/reviews/<name>-exec-cross-model.md` (existing path) PLUS — per the modification to review-cross-model in this plan — a structured JSON receipt that review-exec wraps with the self-review note and the pair record.
 
-**Wave mode (WI-382 — Claude host).** On a host with in-session Agent subagents, P3 does NOT run serially ahead of audit-implementation: review-exec, the G5 auditor, the audit specialists and the visual lens run as ONE read-only fan-out over a single frozen diff per `references/parallel-review-station.md`. The lenses return the `schemas/review-lens-finding.schema.json` shape; `scripts/review-station-merge.mjs` merges them mechanically (dedup-by-file:line, keep-highest-severity, no orchestrator re-adjudication); each lens keeps its own 3-round cap; a fix re-review re-freezes the diff and re-runs ONLY the originating lens (NEVER_GATE security/data-migration locations always keyed); receipts emit sequentially **post-barrier**. The cross-family pair, the P4 kickback ladder, and the P5 receipt below are unchanged — only the dispatch topology. **Non-Claude hosts keep the serial chain.** This is an in-class read-only fan-out (no S5 policy gate).
+**Wave mode (WI-382 — Claude host).** On a host with in-session Agent subagents, P3 does NOT run serially ahead of audit-implementation: review-exec, the G5 auditor, the audit specialists and the visual lens run as ONE read-only fan-out over a single frozen diff per `references/parallel-review-station.md`. The lenses return the `schemas/review-lens-finding.schema.json` shape; `scripts/review-station-merge.mjs` merges them mechanically (dedup-by-file:line, keep-highest-severity, no orchestrator re-adjudication); each lens keeps its own 3-round cap; a fix re-review re-freezes the diff and re-runs ONLY the originating lens (NEVER_GATE security/data-migration locations always keyed); receipts emit sequentially **post-barrier**. The cross-family pair, the P4 kickback ladder, and the P5 receipt below are unchanged — only the dispatch topology. **All hosts use one discovery batch; when the required reviewers can run concurrently, launch them together before edits. Do not serialize repeated full discovery passes.** This is an in-class read-only fan-out (no S5 policy gate).
 
 ### P4 — Iteration Loop (rejection protocol)
+
+### One discovery batch; corrections stay on the finding branch
+
+Run one full review of the frozen branch. If the owner topology requires two
+reviewers, launch them in parallel on the same snapshot: both cover the complete
+branch, with different emphasis (correctness/data/authority versus
+integration/failure paths/operability). Collect both results before changing code.
+Do not run a second full discovery pass after seeing the first reviewer output.
+Deduplicate findings into one numbered list, verify factual claims against source
+and tests, then implement the accepted fixes in one batch.
+
+Follow-ups may inspect only an original finding, its actual patch, and regressions
+caused by that patch. Every follow-up request names the parent finding IDs and the
+patch delta. Use focused deterministic checks first; a model recheck is conditional
+on unresolved judgment, not a mandatory extra round. Include sufficient dependency
+context to judge the patch, but explicitly prohibit rediscovery over unchanged code.
+An unrelated new idea goes to a separate post-delivery refinement list; it does not
+restart this gate. A newly proven imminent security/data-loss defect is escalated
+with concrete evidence, not used to authorize another broad review loop.
+
+The three-round limit is a ceiling on necessary corrective exchanges, never a target
+and never permission for three full reviews. Preserve the original finding census,
+reviewer receipts, dispositions and patch/test evidence. Before another dispatch,
+record `discovery_batches: 1` and `unlinked_followup_findings: 0` in the review log
+and run the round-cap guard with `--branch-once`. Count a parallel panel as one
+batch; record each reviewer's calls and cost separately. A declined or unnecessary
+recheck spends zero additional model calls. Owner spending limits take precedence.
+
 
 When CRITICAL or HIGH findings remain after an adversarial pass, choose the
 resolution path by finding cause / size:
 
 | Finding cause / size | Resolution path |
 |---|---|
-| ≤ 20-line fix, no structural change | **Patch in place.** Edit exec output, re-run P3 on the patched diff. Round count increments. |
+| ≤ 20-line fix, no structural change | **Patch in place.** Edit exec output, then verify only the parent finding and patch-caused regressions. Increment the round count only if a model recheck is necessary. |
 | > 20 lines OR structural change | **Re-execute.** Archive current exec-record, re-dispatch `execute-changeset` with reviewer findings as additional input. |
 | Finding traces to a plan flaw | **Re-plan.** Archive plan-manifest, kick back to `plan-changeset`. Chain restarts at G5. |
 
@@ -230,7 +258,7 @@ round 3 with residual Highs — a `bounded_exit` block enumerating them), then r
 the mechanical gate and capture its output:
 
 ```bash
-node scripts/check-review-round-cap.mjs --log docs/specs/reviews/<name>-exec-review-log.yaml
+node scripts/check-review-round-cap.mjs --branch-once --log docs/specs/reviews/<name>-exec-review-log.yaml
 ```
 
 Exit 0 = bounded and every High dispositioned → finalize `pass`; when the
@@ -371,3 +399,9 @@ small; the full graph belongs in lane-tasks).
 ## Automatic report recovery
 The canonical launcher permits at most one same-model report-repair attempt inside the original timeout. Claude repair requires trustworthy observed spend and uses the remaining enforced dollar ceiling. Other transports report no enforced dollar ceiling; if an explicit dollar cap was requested, they cannot retry automatically. Without such a cap, the bound is one correction and the remaining timeout, not a claimed dollar limit. It preserves both raw attempts and signs only the final validated report. Incomplete/malformed reports require normal validation after repair; parsed negative findings, failed certifications, rubric failures or unread dependencies prevent automatic completion. Certification-scope repair may only remove unbound false entries; verdict, findings, dependencies, summary and every bound certification remain identical. An actual negative source observation must remain and block; no local rewriting of reviewer output is allowed. Authorization, provider safety, model mismatch, missing proof and substantive defects are not recovery bypasses.
 A zero-invocation verified cache replay retains its signed issuance history but consumes no new adversarial round. The three-substantive-round cap remains; historical notes and counters are not erased. Grok receives the whole prompt with --verbatim. Do not ask the owner to authorize these mechanical recoveries.
+
+### Prepared source review
+
+Run launcher `--preflight --plan-file <validated-v4-json>` with the actual review arguments before paid dispatch; retain `--plan-file` for the real invocation. Stage the frozen source before preflight: declared tracked input bytes must match the candidate index. Explicit extra dependencies use `--context-files <json-array-file>`. The launcher packages those actual files, including available planned source and bound producers. Missing executed files require an explicit recorded base version for a deletion.
+
+Unscored Loading/Reviewing responses containing no findings, certifications, rubric failures or unread dependencies receive at most the existing one completion attempt, within the original budget. Preserve both raw attempts; substantive negative evidence is never erased. Scope certifications to observed current-phase obligations. Installation remains downstream.

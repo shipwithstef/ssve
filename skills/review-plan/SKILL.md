@@ -203,6 +203,34 @@ authority/effect proof, the one holistic plan reviewer and final execution revie
 
 ### Step 5 — Bounded lens convergence inside the one review stage
 
+### One discovery batch; corrections stay on the finding branch
+
+Run one full review of the frozen branch. If the owner topology requires two
+reviewers, launch them in parallel on the same snapshot: both cover the complete
+branch, with different emphasis (correctness/data/authority versus
+integration/failure paths/operability). Collect both results before changing code.
+Do not run a second full discovery pass after seeing the first reviewer output.
+Deduplicate findings into one numbered list, verify factual claims against source
+and tests, then implement the accepted fixes in one batch.
+
+Follow-ups may inspect only an original finding, its actual patch, and regressions
+caused by that patch. Every follow-up request names the parent finding IDs and the
+patch delta. Use focused deterministic checks first; a model recheck is conditional
+on unresolved judgment, not a mandatory extra round. Include sufficient dependency
+context to judge the patch, but explicitly prohibit rediscovery over unchanged code.
+An unrelated new idea goes to a separate post-delivery refinement list; it does not
+restart this gate. A newly proven imminent security/data-loss defect is escalated
+with concrete evidence, not used to authorize another broad review loop.
+
+The three-round limit is a ceiling on necessary corrective exchanges, never a target
+and never permission for three full reviews. Preserve the original finding census,
+reviewer receipts, dispositions and patch/test evidence. Before another dispatch,
+record `discovery_batches: 1` and `unlinked_followup_findings: 0` in the review log
+and run the round-cap guard with `--branch-once`. Count a parallel panel as one
+batch; record each reviewer's calls and cost separately. A declined or unnecessary
+recheck spends zero additional model calls. Owner spending limits take precedence.
+
+
 If accepted fixes change a reviewed semantic lens, send only that invalidated
 lens, prior finding and correction evidence back through the same review stage.
 At most three adversarial lens rounds may occur; this is remediation inside the
@@ -256,7 +284,7 @@ promote until the owner rules); every remaining High is enumerated in
 `bounded_exit`. Before writing `terminal_state`, prove the loop stayed bounded:
 
 ```bash
-node scripts/check-review-round-cap.mjs --log docs/plans/<date>-<name>/review-log.yaml
+node scripts/check-review-round-cap.mjs --branch-once --log docs/plans/<date>-<name>/review-log.yaml
 ```
 
 - **Exit 0** = bounded, 0 unresolved Critical, every remaining High enumerated +
@@ -437,3 +465,9 @@ Self-verify: `node scripts/check-chain-receipts.mjs --sha HEAD` shows this
 receipt type as present + schema-valid.
 
 Reference: `references/chain-receipt-contract.md`.
+
+### Input preflight and certification closeout
+
+Before paid review, run the canonical launcher with `--preflight --plan-file <validated-v4-json>` and the same reviewer, phase-binding, context and candidate-digest arguments as the actual invocation. Pass `--plan-file` again during review so the same schema validation and declared source packaging run on the consumed bytes. Put extra declared source paths in a JSON array passed as `--context-files`; do not silently omit missing dependencies. Preflight makes no reviewer call and does not certify credentials or approval.
+
+A terminal `pass`/`pass-with-findings` with failed plan certifications may use the same bounded closeout as raw `fail`: exactly three authoritative rounds, fixed non-Critical findings and complete candidate-bound certification proof. Use the canonical builder; all identity, census, unread-dependency and Critical checks still apply. Never reinterpret a failed execution certification this way.

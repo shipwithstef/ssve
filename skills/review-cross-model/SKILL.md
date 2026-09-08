@@ -116,8 +116,9 @@ Gather context for the second model:
 <list with brief purpose of each>
 ```
 
-Keep it under 50K tokens. If the diff is larger, split by subsystem and
-run multiple review rounds.
+Keep it under 50K tokens per package. If larger, prepare subsystem packets for
+the same initial review batch; do not turn packet boundaries into sequential
+rediscovery rounds.
 
 ### Step 2: Send to the Canonical Launcher
 
@@ -210,9 +211,38 @@ After first evaluation pass:
 
 1. Count remaining accepted findings by severity
 2. If any **Critical** or **High** → fix them in the worktree (or, for a High, disposition it — see the cap below)
-3. After fixes, re-send the updated diff to the second model
-4. Evaluate new findings
-5. Repeat, subject to the HARD 3-round cap below.
+3. Verify accepted fixes with focused checks and the original finding IDs.
+4. If judgment remains unresolved, recheck only that finding and patch-caused regressions.
+5. Park unrelated discoveries for post-delivery refinement; do not restart full review.
+
+### One discovery batch; corrections stay on the finding branch
+
+Run one full review of the frozen branch. If the owner topology requires two
+reviewers, launch them in parallel on the same snapshot: both cover the complete
+branch, with different emphasis (correctness/data/authority versus
+integration/failure paths/operability). Collect both results before changing code.
+Do not run a second full discovery pass after seeing the first reviewer output.
+Deduplicate findings into one numbered list, verify factual claims against source
+and tests, then implement the accepted fixes in one batch.
+
+Follow-ups may inspect only an original finding, its actual patch, and regressions
+caused by that patch. Every follow-up request names the parent finding IDs and the
+patch delta. Use focused deterministic checks first; a model recheck is conditional
+on unresolved judgment, not a mandatory extra round. Include sufficient dependency
+context to judge the patch, but explicitly prohibit rediscovery over unchanged code.
+An unrelated new idea goes to a separate post-delivery refinement list; it does not
+restart this gate. A newly proven imminent security/data-loss defect is escalated
+with concrete evidence, not used to authorize another broad review loop.
+
+The three-round limit is a ceiling on necessary corrective exchanges, never a target
+and never permission for three full reviews. Preserve the original finding census,
+reviewer receipts, dispositions and patch/test evidence. Before another dispatch,
+record `discovery_batches: 1` and `unlinked_followup_findings: 0` in the review log
+and run the round-cap guard with `--branch-once`. Count a parallel panel as one
+batch; record each reviewer's calls and cost separately. A declined or unnecessary
+recheck spends zero additional model calls. Owner spending limits take precedence.
+
+
 
 ### HARD 3-round cap and bounded exit (WI-491)
 
@@ -229,7 +259,7 @@ The loop is CONVERGED (terminates, change proceeds) as soon as **both** hold:
   `reject-with-justification`.
 
 Hard cap by round:
-- **Rounds 1–3:** fix or disposition findings each round; re-review.
+- **Round 1:** one full discovery batch. **Rounds 2–3 only if needed:** fix verification tied to original findings, never another full discovery pass.
 - **After round 3** (do NOT start a round 4):
   - **Unresolved Critical remain →** ESCALATE to the user/owner. Criticals always block; never auto-accept a Critical.
   - **Only High/Medium/Low remain →** the loop TERMINATES. Each remaining High MUST be dispositioned NOW (accept-with-justification as a logged execution-time risk, or reject-with-justification) and the change PROCEEDS. Do not run another round.
@@ -241,7 +271,7 @@ reached diminishing returns, not a signal to keep looping — apply the cap.
 you terminate, a `bounded_exit` (or escalation) block in the review-log. BEFORE
 starting any new round, if you have already completed round 3, STOP — do not
 dispatch a 4th round; disposition instead. The loop is guarded by
-`node scripts/check-review-round-cap.mjs --log <review-log>`, which FAILS a run
+`node scripts/check-review-round-cap.mjs --branch-once --log <review-log>`, which FAILS a run
 with `rounds_run > 3`, an unresolved Critical without escalation, or any remaining
 High lacking a documented disposition. A convergence/exec review is not complete
 until this check passes.
@@ -386,7 +416,7 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 | 1 | Review doc exists | `test -f docs/specs/reviews/<name>-cross-model.md` | |
 | 2 | No unresolved Critical | grep for `Critical` in accepted + not fixed; any unresolved Critical must be `terminal_state: ESCALATED_TO_USER` (blocks, never promotes) | |
 | 3 | Every remaining High dispositioned (NOT "no High remains") | each remaining High has accept-with-justification (logged risk) or reject-with-justification — Highs need not disappear | |
-| 4 | Round record + cap gate ran | `rounds_run<=3` recorded; `node scripts/check-review-round-cap.mjs --log <review-log>` exits 0 (or 3 = escalated Critical, which blocks) — capture its output before the verdict | |
+| 4 | Round record + cap gate ran | `rounds_run<=3` recorded; `node scripts/check-review-round-cap.mjs --branch-once --log <review-log>` exits 0 (or 3 = escalated Critical, which blocks) — capture its output before the verdict | |
 | 5 | Every rejection has evidence | each REJECT has a code citation | |
 
 ### Chaining

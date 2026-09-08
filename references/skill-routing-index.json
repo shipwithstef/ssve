@@ -1005,7 +1005,7 @@
     {
       "skill": "land-changeset",
       "path": "skills/land-changeset/SKILL.md",
-      "content_hash": "6caf59316df83418d1b292f658976729c51cb16893a26509ef7173fe460a155c",
+      "content_hash": "36726a1b6684a27bc7238369f2f7b836f12ab976434360f435f609066f881026",
       "description": "Use when an executed change set has been validated (tests, E2E, review all pass in the worktree) and is ready to land on main — validates manifest coverage, pushes branch, opens PR, merges via squash, cleans up worktree",
       "aliases": [],
       "positive_triggers": [],
@@ -1236,7 +1236,7 @@
     {
       "skill": "plan-changeset",
       "path": "skills/plan-changeset/SKILL.md",
-      "content_hash": "0ce8ffc005707516e9f6d27166a08b3c33554a58af8455cbff1f78638cb1d03d",
+      "content_hash": "fdbfdf8303b835e7ced6c9fa1f86ef2c661d82a49187feda1cf29d8201b07eaa",
       "description": "Use when you have a BASELINED feature spec with technical design and need to produce the implementation plan for branch-first execution — task graph, file set, validation plan, checkpoints, and AC/test mapping",
       "aliases": [],
       "positive_triggers": [],
@@ -1467,7 +1467,7 @@
     {
       "skill": "review-cross-model",
       "path": "skills/review-cross-model/SKILL.md",
-      "content_hash": "02deef91db0e92f2fca972172080654de600a1eb814fbcc172359de5d42579ba",
+      "content_hash": "ee026267c79c5648e38a0ac9f4f6c13b44149d94f084e8bdb5ba74d77e2b492d",
       "description": "Adversarial code review using the canonical deterministic external-review launcher. Sends diff + goals + spec to the second model, gets findings back, then Claude evaluates each finding: accept with justification or reject with justification. Back and forth until all remaining findings are medium severity max. Use when \"cross-model review\", \"second opinion\", \"codex review\", \"adversarial review\", or when `review-gate` leaves residual risk on changes involving new data models or integrations.",
       "aliases": [],
       "positive_triggers": [],
@@ -1485,7 +1485,7 @@
     {
       "skill": "review-exec",
       "path": "skills/review-exec/SKILL.md",
-      "content_hash": "822e824f6886ab8302ac696c79b871a9c3539ee72f59d1dae248ad6dcf76f0cd",
+      "content_hash": "dfe32dec93996ce989a805e0d89b6901f6bbcaec6746b062a8d0c9959c3f6ffb",
       "description": "Mandatory G5-enforcing gate. Self-review + adversarial review of the executed diff before land. Delegates to `review-cross-model` for the second-model invocation through `scripts/run-external-review.mjs`, with the requested owner-configured topology and tuple provenance exposed by `scripts/review-topology-v2.mjs`. Same-family Sol remains advisory; the configured different-family external station owns independent release authority. Emits SHA-keyed receipt at `.svc/receipts/<sha>/review-exec.json` and updates the consolidated git note on `refs/notes/svc-receipts`. Use after `execute-changeset` produces an exec-record receipt, before `land-changeset` opens the PR.",
       "aliases": [],
       "positive_triggers": [],
@@ -1521,7 +1521,7 @@
     {
       "skill": "review-plan",
       "path": "skills/review-plan/SKILL.md",
-      "content_hash": "f80813395c150f137a5958339c27c9830d678dd8143d74784200bffd4375da83",
+      "content_hash": "037df975f3f6d904cd42f47741ca55da561014f79cbe8ace949211562217db4f",
       "description": "Plan-level adversarial review gate. Runs after plan-changeset produces a manifest + task graph and BEFORE any execute-changeset dispatch. Two gates: (1) compiled mechanical/coverage checks — free, in-session; (2) one holistic adversarial review via the canonical external-review launcher with structured findings and a tuple receipt. Corrections recheck only invalidated lenses; disputed product/security authority routes to the owner, not a second model. Iteration loop with justified accept/reject responses — same discipline on both sides. Use when: plan-changeset manifest exists and is about to be promoted. Blocks promotion until all findings have resolutions.",
       "aliases": [],
       "positive_triggers": [],

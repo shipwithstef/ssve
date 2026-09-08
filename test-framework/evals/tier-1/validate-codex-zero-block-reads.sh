@@ -46,10 +46,10 @@ expect_allow "git status 2>&1" "file-descriptor duplication stays read-only"
 # `--no-optional-locks` normalization inside ONE engine decision — never an
 # `export` segment that a sibling classifier re-reads as a mutation.
 status_output="$(payload "git status" | HOME="$TMP/home" XDG_RUNTIME_DIR="$TMP/runtime" env -u SVC_SESSION_ID -u CODEX_SESSION_ID -u CODEX_THREAD_ID node "$HOOK")"
-if printf '%s' "$status_output" | grep -q 'git --no-optional-locks status'; then pass "authority-free git status disables optional index locks via argv normalization"; else fail "authority-free git status disables optional index locks ($status_output)"; fi
+if printf '%s' "$status_output" | grep -q 'git --no-optional-locks --no-pager status'; then pass "authority-free git status disables optional index locks via argv normalization"; else fail "authority-free git status disables optional index locks ($status_output)"; fi
 if printf '%s' "$status_output" | grep -q 'export GIT_OPTIONAL_LOCKS'; then fail "no export-prefix rewrite may remain ($status_output)"; else pass "export-prefix rewrite removed from observation path"; fi
 compound_status_output="$(payload "git rev-parse --show-toplevel && git status --short" | HOME="$TMP/home" XDG_RUNTIME_DIR="$TMP/runtime" env -u SVC_SESSION_ID -u CODEX_SESSION_ID -u CODEX_THREAD_ID node "$HOOK")"
-if printf '%s' "$compound_status_output" | grep -q 'git rev-parse --show-toplevel && git --no-optional-locks status --short'; then pass "optional-lock normalization covers only the segments that need it"; else fail "optional-lock normalization covers only the segments that need it ($compound_status_output)"; fi
+if printf '%s' "$compound_status_output" | grep -q 'git --no-pager rev-parse --show-toplevel && git --no-optional-locks --no-pager status --short'; then pass "optional-lock normalization covers only the segments that need it"; else fail "optional-lock normalization covers only the segments that need it ($compound_status_output)"; fi
 plain_read_output="$(payload "cat sample.txt" | HOME="$TMP/home" XDG_RUNTIME_DIR="$TMP/runtime" env -u SVC_SESSION_ID -u CODEX_SESSION_ID -u CODEX_THREAD_ID node "$HOOK")"
 if [ "$(printf '%s' "$plain_read_output" | tr -d '[:space:]')" = '{}' ]; then pass "non-git reads pass the original bytes through untouched"; else fail "non-git reads must not be rewritten ($plain_read_output)"; fi
 expect_allow "sort sample.txt" "sort without an output target stays read-only"

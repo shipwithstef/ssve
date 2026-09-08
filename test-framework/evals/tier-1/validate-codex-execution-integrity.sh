@@ -90,7 +90,7 @@ expect "dispatcher gives Grok marker precedence over hooks/codex fallback withou
   const grok=s.indexOf("process.env.GROK_SESSION_ID");
   const fallback=s.indexOf("path.basename(HERE)");
   if(grok<0||fallback<0||grok>fallback)process.exit(1);
-  if(!s.includes("command:`SVC_HOST=${hostId} ${encodeSimpleCommand(bootstrapArgv)}")||s.includes("SVC_SESSION_ID=${JSON.stringify(sid)}"))process.exit(1);
+  if(!s.includes("`SVC_HOST=${hostId} ${encodeSimpleCommand(bootstrapArgv)}`")||s.includes("SVC_SESSION_ID=${JSON.stringify(sid)}"))process.exit(1);
 ' "$ROOT/hooks/codex/svc-codex-pretool-dispatcher.mjs"
 expect "bootstrap parser accepts only the allowlisted propagated host prefix" node --input-type=module -e '
   import assert from "node:assert/strict";
@@ -267,6 +267,9 @@ INCIDENT_PAYLOAD="$(node -e 'process.stdout.write(JSON.stringify({session_id:pro
 printf '%s' "$INCIDENT_PAYLOAD" | SVC_CODEX_RUNTIME_DIR="$RUNTIME" node "$ROOT/hooks/codex/svc-codex-prompt-authority.mjs" >/dev/null
 expect "recorded foreign WI-479 Stop incident emits no continuation" bash -c "test \"\$(printf '%s' '$FOREIGN' | SVC_CODEX_RUNTIME_DIR='$RUNTIME' node '$ROOT/hooks/codex/svc-codex-stop-firewall.mjs')\" = '{}'"
 
+# Route inference requires a fresh authority record: a prior explicit WI now
+# intentionally persists across continuation prompts (session recovery).
+rm "$AUTH_FILE"
 ROUTE_PAYLOAD="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],turn_id:process.argv[2],cwd:process.argv[3],prompt:"continue"}))' "$SESSION" "$TURN" "$TEST_CWD")"
 printf '%s' "$ROUTE_PAYLOAD" | SVC_CODEX_RUNTIME_DIR="$RUNTIME" node "$ROOT/hooks/codex/svc-codex-prompt-authority.mjs" >/dev/null
 node -e 'const fs=require("fs");fs.writeFileSync(process.argv[1],JSON.stringify({timestamp:new Date(Date.now()+1000).toISOString(),session_token:process.argv[2],turn_id:process.argv[3],wi:"WI-485",repo_root:process.argv[4],worktree:process.argv[4]})+"\n")' "$CONTRACT" "$SESSION" "$TURN" "$TEST_CWD"
@@ -292,10 +295,10 @@ for payload in "$ADD_MUTATION" "$DELETE_MUTATION" "$EDIT_MUTATION" "$WRITE_MUTAT
 done
 
 READ="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],turn_id:process.argv[2],cwd:process.argv[3],tool_name:"Bash",tool_input:{command:"git status --short"}}))' "$SESSION" "$TURN" "$TEST_CWD")"
-expect "read-only Bash allowed without receipt" bash -c "test \"\$(printf '%s' '$READ' | SVC_CODEX_TASK_GRAPH='$GRAPH' SVC_CODEX_RUNTIME_DIR='$RUNTIME' node '$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs')\" = '{}'"
+expect "read-only Bash allowed without receipt" bash -c "test \"\$(printf '%s' '$READ' | SVC_CODEX_TASK_GRAPH='$GRAPH' SVC_CODEX_RUNTIME_DIR='$RUNTIME' node '$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs')\" = '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"updatedInput\":{\"command\":\"git --no-optional-locks --no-pager status --short\"}}}'"
 for shell_tool in Bash Shell run_shell_command shell run_terminal_command; do
   ALIAS_READ="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],turn_id:process.argv[2],cwd:process.argv[3],tool_name:process.argv[4],tool_input:{command:"git status --short"}}))' "$SESSION" "$TURN" "$TEST_CWD" "$shell_tool")"
-  expect "read-only $shell_tool is classified as Bash-shaped" bash -c "test \"\$(printf '%s' '$ALIAS_READ' | SVC_CODEX_TASK_GRAPH='$GRAPH' SVC_CODEX_RUNTIME_DIR='$RUNTIME' node '$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs')\" = '{}'"
+  expect "read-only $shell_tool is classified as Bash-shaped" bash -c "test \"\$(printf '%s' '$ALIAS_READ' | SVC_CODEX_TASK_GRAPH='$GRAPH' SVC_CODEX_RUNTIME_DIR='$RUNTIME' node '$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs')\" = '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"updatedInput\":{\"command\":\"git --no-optional-locks --no-pager status --short\"}}}'"
 done
 
 GROK_SHELL_PROBE="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],turn_id:process.argv[2],cwd:process.argv[3],tool_name:"run_terminal_command",tool_input:{command:"printf grok-owned-probe"}}))' "$SESSION" "$TURN" "$TEST_CWD")"
@@ -434,7 +437,7 @@ const fs=require("fs");
 const authority=JSON.parse(fs.readFileSync(process.argv[1]));
 const receipt=JSON.parse(fs.readFileSync(process.argv[2]));
 const exact=(value,keys)=>JSON.stringify(Object.keys(value).sort())===JSON.stringify(keys.sort());
-const authorityKeys=["schema_version","session_id","turn_id","prompt_hash","cwd","session_cwd","repo_root","governance_worktree","explicit_wi","continuation_intent","recorded_at"];
+const authorityKeys=["schema_version","session_id","turn_id","prompt_hash","cwd","session_cwd","repo_root","governance_worktree","explicit_wi","continuation_intent","authorization_prompt_hash","authorization_turn_id","recorded_at"];
 const receiptKeys=["schema_version","session_id","turn_id","task_graph","task_id","skill","skill_path","skill_sha256","worktree","authority_model","loaded_at"];
 if(receipt.authority_model!=="test-fixture")process.exit(1);
 process.exit(exact(authority,authorityKeys)&&exact(receipt,receiptKeys)?0:1);' "$AUTH_FILE" "$LOAD_FILE"
@@ -515,7 +518,7 @@ node -e 'const fs=require("fs");fs.writeFileSync(process.argv[1],JSON.stringify(
 
 # A proved read is allowed even when the pointed-at task graph is FOREIGN/ambiguous —
 # reads are classified before authority/inventory resolution (SIB-01/03/08).
-expect "read allowed before inventory even with a foreign task graph" bash -c "test \"\$(printf '%s' '$READ' | SVC_CODEX_TASK_GRAPH='$FOREIGN_GRAPH' SVC_CODEX_RUNTIME_DIR='$RUNTIME' node '$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs')\" = '{}'"
+expect "read allowed before inventory even with a foreign task graph" bash -c "test \"\$(printf '%s' '$READ' | SVC_CODEX_TASK_GRAPH='$FOREIGN_GRAPH' SVC_CODEX_RUNTIME_DIR='$RUNTIME' node '$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs')\" = '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"updatedInput\":{\"command\":\"git --no-optional-locks --no-pager status --short\"}}}'"
 
 # A governed mutation whose SVC_CODEX_TASK_GRAPH override points at a foreign graph
 # (not the tuple's derived graph) is denied — the override is a consistency
@@ -555,7 +558,7 @@ LOADER_WRONGTASK_OUT="$(printf '%s' "$LOADER_WRONGTASK_PAYLOAD" | SVC_CODEX_TASK
 expect "loader naming a non-first-runnable --task is denied even with no active task (EXEC-R2-002)" node -e 'const j=JSON.parse(process.argv[1]);process.exit(j.hookSpecificOutput?.permissionDecision==="deny"?0:1)' "$LOADER_WRONGTASK_OUT"
 # A read stays allowed regardless (reads gate before resolution).
 NO_TASK_READ="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],turn_id:process.argv[2],cwd:process.argv[3],tool_name:"Bash",tool_input:{command:"git status --short"}}))' "$SESSION" "$TURN" "$TEST_CWD")"
-expect "read allowed even with no in_progress task" bash -c "test \"\$(printf '%s' '$NO_TASK_READ' | SVC_CODEX_TASK_GRAPH='$NO_TASK_GRAPH' SVC_CODEX_RUNTIME_DIR='$RUNTIME' node '$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs')\" = '{}'"
+expect "read allowed even with no in_progress task" bash -c "test \"\$(printf '%s' '$NO_TASK_READ' | SVC_CODEX_TASK_GRAPH='$NO_TASK_GRAPH' SVC_CODEX_RUNTIME_DIR='$RUNTIME' node '$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs')\" = '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"updatedInput\":{\"command\":\"git --no-optional-locks --no-pager status --short\"}}}'"
 
 # --- WI-486 EXEC-R3-001: a FRESH bootstrap placeholder graph — the EXACT shape
 #     scripts/svc-ensure-worktree.mjs emits (NUMERIC task id, graph status == the
@@ -955,6 +958,7 @@ cp "$ROOT/hooks/codex/lib/session-handoff.mjs" "$WI494_MUT/boot/hooks/codex/lib/
 cp "$ROOT/hooks/lib/resolve-wi.mjs" "$WI494_MUT/boot/hooks/lib/resolve-wi.mjs"
 cp "$ROOT/hooks/lib/operation-scope.mjs" "$WI494_MUT/boot/hooks/lib/operation-scope.mjs"
 cp "$ROOT/hooks/lib/shell-tools.mjs" "$WI494_MUT/boot/hooks/lib/shell-tools.mjs"
+cp "$ROOT/hooks/lib/pretool-decision-engine.mjs" "$WI494_MUT/boot/hooks/lib/pretool-decision-engine.mjs"
 cp "$ROOT/hooks/lib/validate-task-graph-shape.mjs" "$WI494_MUT/boot/hooks/lib/validate-task-graph-shape.mjs"
 cp "$ROOT/hooks/lib/wi-claim.mjs" "$WI494_MUT/boot/hooks/lib/wi-claim.mjs"
 cp "$ROOT/hooks/lib/svc-runtime-root.mjs" "$WI494_MUT/boot/hooks/lib/svc-runtime-root.mjs"
@@ -1019,6 +1023,7 @@ cp "$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs" "$WI494_MUT/marker/hook
 cp "$ROOT/hooks/lib/resolve-wi.mjs" "$WI494_MUT/marker/hooks/lib/resolve-wi.mjs"
 cp "$ROOT/hooks/lib/operation-scope.mjs" "$WI494_MUT/marker/hooks/lib/operation-scope.mjs"
 cp "$ROOT/hooks/lib/shell-tools.mjs" "$WI494_MUT/marker/hooks/lib/shell-tools.mjs"
+cp "$ROOT/hooks/lib/pretool-decision-engine.mjs" "$WI494_MUT/marker/hooks/lib/pretool-decision-engine.mjs"
 cp "$ROOT/hooks/lib/validate-task-graph-shape.mjs" "$WI494_MUT/marker/hooks/lib/validate-task-graph-shape.mjs"
 cp "$ROOT/hooks/lib/wi-claim.mjs" "$WI494_MUT/marker/hooks/lib/wi-claim.mjs"
 # WI-562: wi-claim/authority-store import the shared liveness lib

@@ -87,3 +87,11 @@ test('a completed review discussing placeholder handling is not an incomplete re
  assert.equal(isIncompleteReviewReport(report),false);assert.equal(reportRepairKind(report),null);
  for(const summary of ['Placeholder until the source is read','Inspection in progress','Review is not yet complete'])assert.equal(isIncompleteReviewReport({...report,summary}),true);
 });
+
+
+test('observed unscored Loading responses complete once without hiding negative evidence', () => {
+ const progress={verdict:'fail',rubric_score:null,summary:'Loading bounded publisher diff and consumers for independent exec review.',findings:[],certifications:[],rubric_failures:null,dependencies_needing_read:null};
+ assert.equal(isIncompleteReviewReport(progress),true);
+ assert.equal(reportRepairKind(progress),'incomplete');
+ for(const change of [{rubric_score:0},{findings:[{severity:'high'}]},{certifications:[{certified:false}]},{rubric_failures:[1]},{dependencies_needing_read:['source.mjs']},{summary:'Loading failed because source is missing.'}])assert.equal(reportRepairKind({...progress,...change}),null);
+});

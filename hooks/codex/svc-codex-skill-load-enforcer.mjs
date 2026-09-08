@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { parseHookInput, hookContext, operationHookContext, isReadOnlyTool, activeTask, laneGraphs, skillReceiptPath, readJson, sha256, toolName, mutationPayload, resolveCanonicalSkill } from "./lib/codex-hook-context.mjs";
+import { parseHookInput, hookContext, operationHookContext, activeTask, laneGraphs, skillReceiptPath, readJson, sha256, toolName, mutationPayload, resolveCanonicalSkill } from "./lib/codex-hook-context.mjs";
 import { validateTaskGraphShape, recoverableId } from "../lib/validate-task-graph-shape.mjs";
 import { lexSimpleCommand } from "./lib/argv-lex.mjs";
 import { markerPathFor, readMarker, secureAncestors } from "./lib/bootstrap-marker.mjs";
@@ -12,8 +12,11 @@ import { validateLiteralBranchName } from "../lib/literal-branch.mjs";
 import { resolveAuthorityHost, resolveWI } from "../lib/resolve-wi.mjs";
 import { inspectBootstrapHandoff } from "./lib/session-handoff.mjs";
 import { isShellTool } from "../lib/shell-tools.mjs";
+import { evaluatePreToolObservation } from "../lib/pretool-decision-engine.mjs";
 
-function allow() { process.stdout.write("{}\n"); }
+function allow(updatedInput = null) {
+  process.stdout.write(JSON.stringify(updatedInput ? { hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "allow", updatedInput } } : {}) + "\n");
+}
 // WI-496: the running enforcer's OWN sibling copy of the worktree-ensure script --
 // the installed skills root in a provisioned host, the repo itself when the enforcer
 // runs from a framework checkout. Same trusted-source derivation as the WI-487
@@ -131,9 +134,31 @@ function deny(reason, active, ctx) {
   // installed sibling cannot be resolved -- never emit an unrunnable spelling.
   const installedLoader = installedLoadSkill();
   const loaderSpelling = installedLoader || "<UNRESOLVED: reinstall svc; codex-load-skill.mjs not found next to the enforcer>";
-  const command = active?.ok
-    ? `node ${loaderSpelling} --graph ${active.graph_path} --task ${active.task.id} --skill ${active.task.metadata?.skill || active.task.skill}`
-    : bootstrapCmd;
+  let recovery = active?.ok ? active : null;
+  let ownedGraphMessage = null;
+  if (!recovery && ctx?.repo_root) {
+    const ownedPaths = laneGraphs(ctx.repo_root);
+    if (ownedPaths.length) {
+      ownedGraphMessage = "existing owned work item has no unambiguous runnable task; inspect its task state and unresolved blockers, do not create another worktree";
+      if (ownedPaths.length === 1) {
+        try {
+          const stat = fs.lstatSync(ownedPaths[0]);
+          if (!stat.isFile() || stat.isSymbolicLink() || stat.uid !== process.getuid()) throw new Error("insecure graph");
+          const graph = JSON.parse(fs.readFileSync(ownedPaths[0], "utf8"));
+          const valid = validateTaskGraphShape(graph).ok;
+          const blocked = graph.status === "blocked" || graph.tasks.some(t => t.status === "blocked");
+          const task = valid && !blocked ? firstRunnablePendingTask(graph) : null;
+          if (!valid) ownedGraphMessage = "existing owned task graph is malformed; repair its recorded state before mutation";
+          else if (graph.tasks.length > 0 && graph.tasks.every(t => ["completed", "skipped"].includes(t.status))) ownedGraphMessage = "existing owned work item is complete; route the new request before starting another task";
+          else if (blocked) ownedGraphMessage = "existing owned work item has unresolved blockers; inspect and resolve those blockers before resuming";
+          if (task && (task.metadata?.skill || task.skill)) recovery = { graph_path: fs.realpathSync(ownedPaths[0]), task };
+        } catch { /* An unreadable graph never becomes a bootstrap request. */ }
+      }
+    }
+  }
+  const command = recovery
+    ? `node ${loaderSpelling} --graph ${recovery.graph_path} --task ${recovery.task.id} --skill ${recovery.task.metadata?.skill || recovery.task.skill}`
+    : ownedGraphMessage || bootstrapCmd;
   process.stdout.write(`${JSON.stringify({ hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: `${reason}. Recovery: ${command}` } })}\n`);
 }
 
@@ -423,7 +448,8 @@ try {
 const payload = parseHookInput(fs.readFileSync(0, "utf8"));
 // Inspection is authority-free. Classify it before hookContext(), whose
 // sessionDir lookup may materialize runtime directories for governed writes.
-if (isReadOnlyTool(payload)) { allow(); process.exit(0); }
+const observation = evaluatePreToolObservation(payload);
+if (observation) { allow(observation.execution_input); process.exit(0); }
 let ctx;
 try { ctx = hookContext(payload); } catch (error) { deny(error.message, null); process.exit(0); }
 // WI-499 (session-id bridge): live Codex passes the session id in the PAYLOAD

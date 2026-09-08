@@ -52,7 +52,7 @@ function bashCommandOf(payload) {
 // Anything unrecognized before the subcommand means we do NOT normalize —
 // an unproven shape must never be rewritten.
 const GIT_GLOBAL_OPTS_WITH_VALUE = new Set(["-C", "-c", "--git-dir", "--work-tree", "--namespace", "--super-prefix"]);
-const GIT_GLOBAL_OPTS_STANDALONE = new Set(["--bare", "--no-pager", "--paginate", "-p", "--no-replace-objects", "--literal-pathspecs"]);
+const GIT_GLOBAL_OPTS_STANDALONE = new Set(["--no-optional-locks", "--bare", "--no-pager", "--paginate", "-p", "--no-replace-objects", "--literal-pathspecs"]);
 
 function gitSubcommandIndex(rest) {
   let index = 1;
@@ -77,17 +77,24 @@ function normalizeGitArgv(argv) {
     rest = rest.slice(1);
   }
   if (!rest.length || rest[0] !== "git") return null;
-  if (rest.includes("--no-optional-locks")) return null;
+
   // Walk recognized global options to find the subcommand position.
   const subcommandIndex = gitSubcommandIndex(rest);
   if (subcommandIndex < 0) return null;
   const subcommand = rest[subcommandIndex];
-  if (!GIT_OPTIONAL_LOCK_SUBCOMMANDS.has(subcommand)) return null;
-  // --no-optional-locks is itself a Git top-level option: inserting directly
-  // after `git` keeps every existing global option well-formed.
+  const flags = [];
+  if (GIT_OPTIONAL_LOCK_SUBCOMMANDS.has(subcommand) && !rest.slice(1, subcommandIndex).includes("--no-optional-locks")) flags.push("--no-optional-locks");
+  if (!rest.slice(1, subcommandIndex).includes("--no-pager")) flags.push("--no-pager");
   const next = [...argv];
-  next.splice(prefixLength + 1, 0, "--no-optional-locks");
-  return next;
+  next.splice(prefixLength + 1, 0, ...flags);
+  let changed = flags.length > 0;
+  if (["diff", "show", "log"].includes(subcommand)) {
+    const after = prefixLength + subcommandIndex + flags.length + 1;
+    const helpers = ["--no-ext-diff", "--no-textconv"].filter(flag => !rest.slice(subcommandIndex + 1).includes(flag));
+    next.splice(after, 0, ...helpers);
+    changed ||= helpers.length > 0;
+  }
+  return changed ? next : null;
 }
 
 // Build the normalized execution command for a PROVEN observation. Returns
@@ -101,7 +108,11 @@ export function normalizeObservationCommand(command) {
   if (!segments.length) return null;
   let normalized = source;
   let replacements = 0;
+  let cursor = 0;
   for (const rawSegment of segments) {
+    const index = normalized.indexOf(rawSegment, cursor);
+    if (index < 0) return null;
+    cursor = index + rawSegment.length;
     const classified = stripDevNullRedirections(rawSegment);
     if (!classified) continue;
     // EXTREV-EXEC-007: normalization must not change command semantics. The
@@ -117,9 +128,8 @@ export function normalizeObservationCommand(command) {
     const encoded = encodeSimpleCommand(nextArgv) + (rawTail ? ` ${rawTail}` : "");
     // Replace the EXACT segment text once, preserving every operator and any
     // byte outside the segment (semantics of ; | && || order are untouched).
-    const index = normalized.indexOf(rawSegment);
-    if (index < 0) return null;
     normalized = normalized.slice(0, index) + encoded + normalized.slice(index + rawSegment.length);
+    cursor = index + encoded.length;
     replacements += 1;
   }
   if (!replacements) return null;
@@ -173,10 +183,45 @@ export function evaluateSelfHealAuthority(payload, env = process.env, expected =
 // the engine, so every call is classified by exactly ONE entry point and the
 // dispatcher never re-classifies.
 const ULTRA_HOT_READ = /^sed\s+-n\s+(['"])(?:\d+|\$)(?:,(?:\d+|\$))?p\1\s+[A-Za-z0-9_./~][^;&|`$<>\s]*(?:\s+(?:[012]?>\s*\/dev\/null|[012]?>&[012]))*$/;
+// Add no-pager before proving service/log reads. A mutation such as restart
+// still fails the classifier and never receives this rewritten execution input.
+function normalizeServiceCommand(command) {
+  const segments = splitUnquoted(command);
+  if (!segments.length) return null;
+  let result = command, changed = false, cursor = 0;
+  for (const segment of segments) {
+    const index = result.indexOf(segment, cursor);
+    if (index < 0) return null;
+    cursor = index + segment.length;
+    const classified = stripDevNullRedirections(segment);
+    const parsed = lexSimpleCommand(classified);
+    if (!parsed?.ok) return null;
+    const argv = parsed.argv;
+    if (!["systemctl", "journalctl"].includes(argv[0]) || argv.includes("--no-pager")) continue;
+    const next = [argv[0], "--no-pager", ...argv.slice(1)];
+    if (!assertArgvRoundTrip(next).ok) return null;
+    const tail = segment.trimEnd().slice(classified.length).trim();
+    const encoded = encodeSimpleCommand(next) + (tail ? ` ${tail}` : "");
+    result = result.slice(0, index) + encoded + result.slice(index + segment.length);
+    cursor = index + encoded.length;
+    changed = true;
+  }
+  return changed ? result : null;
+}
+
 export function evaluatePreToolObservation(payload, env = process.env) {
   void env;
   const started = Date.now();
-  if (!isReadOnlyTool(payload)) return null;
+  const originalShell = bashCommandOf(payload);
+  const commandField = originalShell.input && Object.hasOwn(originalShell.input, "command") ? "command" : "cmd";
+  // Conflicting command aliases must not authorize a different command from
+  // the one the host will execute.
+  if (originalShell.input?.command !== undefined && originalShell.input?.cmd !== undefined && originalShell.input.command !== originalShell.input.cmd) return null;
+  const serviceCommand = isShellTool(toolName(payload || {})) ? normalizeServiceCommand(originalShell.command) : null;
+  const classifiedPayload = serviceCommand && originalShell.key
+    ? { ...payload, [originalShell.key]: { ...originalShell.input, [commandField]: serviceCommand } }
+    : payload;
+  if (!isReadOnlyTool(classifiedPayload)) return null;
   const name = toolName(payload);
   const originalDigest = digestPayload(payload);
   const base = {
@@ -192,7 +237,7 @@ export function evaluatePreToolObservation(payload, env = process.env) {
   if (!isShellTool(name)) {
     return { ...base, execution_input: null, operation: { repo_id: null, worktree_root: null, targets: [] }, latency_ms: Date.now() - started };
   }
-  const { input, key, command } = bashCommandOf(payload);
+  const { input, key, command } = bashCommandOf(classifiedPayload);
   if (!input || typeof input !== "object" || !key) {
     return { ...base, execution_input: null, operation: { repo_id: null, worktree_root: null, targets: [] }, latency_ms: Date.now() - started };
   }
@@ -202,10 +247,15 @@ export function evaluatePreToolObservation(payload, env = process.env) {
   // complete argv-aware normalization below.
   if (!ULTRA_HOT_READ.test(command.trim())) {
     const normalized = normalizeObservationCommand(command);
-    const nextInput = normalized && normalized !== command ? { ...input, command: normalized } : null;
+    const finalCommand = normalized || command;
+    const nextInput = finalCommand !== originalShell.command ? { ...input, [commandField]: finalCommand } : null;
+    if (nextInput && Object.hasOwn(input, "command") && Object.hasOwn(input, "cmd")) {
+      nextInput.command = finalCommand;
+      nextInput.cmd = finalCommand;
+    }
     return {
       ...base,
-      reason_code: nextInput ? "OBSERVATION_PROVEN_GIT_NORMALIZED" : "OBSERVATION_PROVEN",
+      reason_code: serviceCommand && normalized ? "OBSERVATION_PROVEN_PAGER_AND_GIT_NORMALIZED" : serviceCommand ? "OBSERVATION_PROVEN_PAGER_DISABLED" : nextInput ? "OBSERVATION_PROVEN_GIT_NORMALIZED" : "OBSERVATION_PROVEN",
       execution_input: nextInput,
       operation: { repo_id: null, worktree_root: null, targets: [] },
       latency_ms: Date.now() - started,

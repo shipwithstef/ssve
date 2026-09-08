@@ -1,8 +1,12 @@
 # Framework State
 
+## Read-only observation and pending-task recovery (WI-FW-READONLY-OBSERVATION-01)
+
+The incident patch recognizes strict local systemctl observation verbs and journalctl query options without WI/lease/task state, disables pagers before classification, and preserves the host's cmd/command input field. Service mutations, journal maintenance, cursor-file writes, redirection and arbitrary scripts remain governed. Existing owned pending graphs receive the exact canonical skill-loader recovery command; blocked/terminal graphs never masquerade as missing worktrees. Source regressions and a non-executing replay of the actual map-session denial are recorded under `.svc/external-review-artifacts/readonly-observation`. Release, installed-hook verification and restoring the owner's disabled PreToolUse hook are separate from source-test success.
+
 ## Session recovery correction (WI-FW-SESSION-RECOVERY-02)
 
-Candidate implementation preserves an authorized WI across status follow-ups, resumes exact registered legacy tuples, and recovers an expired/dead v2 controller whose old checkout disappeared. Foreign live owners and ambiguous worktrees remain denied. Recovery loads the existing active skill and preserves its authorization envelope, including after interruption. Remote Git inspection works without a WI; missing mutation receipts remain observable. Source regression evidence and release status are recorded in `docs/plans/session-recovery.md`; installation and product-session recovery must not be inferred from this entry.
+Candidate implementation preserves an authorized WI across status follow-ups, resumes exact registered legacy tuples, and recovers an expired/dead v2 controller whose old checkout disappeared. Foreign live owners and ambiguous worktrees remain denied. Recovery loads the existing active skill and preserves its authorization envelope, including after interruption. Local Git inspection works without a WI; remote Git commands remain governed because configured transport helpers may execute code; missing mutation receipts remain observable. Source regression evidence and release status are recorded in `docs/plans/session-recovery.md`; installation and product-session recovery must not be inferred from this entry.
 
 ## Whole-solution planning (WI-FW-DELIVERY-TRADEOFFS-01)
 
@@ -109,7 +113,7 @@ Installation retains the existing shared scripts directory across provisioned ho
 - **Rules:** 48 registered in `skills-manifest.json` `rulesRegistry.entries`, exact parity with `rules/**/*.md` on disk (verified 2026-08-26, WI-FW-DOCS-AUDIT-01; per-rule scope/type/injection metadata lives in the registry — this file no longer keeps a hand-count breakdown that rots)
 - **Hooks:** 14 hooks across all 13 Kimi lifecycle events — PreToolUse (×5: workflow-guard, phase-boundary, bash-guard, lane-tasks-pre-validator, skill-artifact-authenticity), PostToolUse (×2: lane-tasks-validator, stop-quality), PostToolUseFailure (lane-tasks-failure), UserPromptSubmit (preflight-guard), Stop (task-completion-guard with anti-loop), StopFailure (error-logger), SessionStart (auto-recovery), SessionEnd (final-checkpoint), SubagentStart (pre-flight), SubagentStop (state-merge), PreCompact (checkpoint), PostCompact (recovery), Notification (gate-alert)
 - **Claude hooks:** 21 hooks auto-wired by `setup --host claude` (was 2: eval-gate only). Full lifecycle coverage: PreToolUse (×6), PostToolUse (×6), PostToolUseFailure, Stop (×2), UserPromptSubmit, SessionStart, SessionEnd, StopFailure, SubagentStart, SubagentStop, PreCompact, PostCompact, Notification.
-- **Test infrastructure:** 368 tier-1 scripts, 62 tier-1.5 comprehension prompts (56 skills covered), 36 registered tier-2 integration scenarios (58% skill coverage), **journey skills have 2 registered tier-2 scenarios (`test-journeys-runtime`, `write-journeys-generate`)**, 5 fixture projects (greenfield/brownfield/bugfix/drift/refactor), **tier-3 judge operational but coverage is 1/36 scenarios (2.8%)** (completeness/actionability/consistency scoring via kimi --print --yolo -p; only `diagnose-bug-typo` has been judged as of 2026-04-30)
+- **Test infrastructure:** 370 tier-1 scripts, 62 tier-1.5 comprehension prompts (56 skills covered), 36 registered tier-2 integration scenarios (58% skill coverage), **journey skills have 2 registered tier-2 scenarios (`test-journeys-runtime`, `write-journeys-generate`)**, 5 fixture projects (greenfield/brownfield/bugfix/drift/refactor), **tier-3 judge operational but coverage is 1/36 scenarios (2.8%)** (completeness/actionability/consistency scoring via kimi --print --yolo -p; only `diagnose-bug-typo` has been judged as of 2026-04-30)
 - **Execution Controller v2 (WI-368, merged at `0d75cb1d`):** one digest-bound product graph and canonical layer inventory feed an append-only runtime journal, durable leases, real argv/effect execution, CAS evidence consumption, owner/memory/company adapters, release/rollback/live/observation lifecycle, host projections, N/N-1 migration, mutation proof and cutover gate. Local simulation uses `SIMULATED_*` states and cannot close delivery/outcome or prove the 60-minute SLO. Default cutover remains disabled until an explicitly authorized real Sample direction-to-live canary and rollback proof. WI-529 closes two integration seams without weakening that boundary: mandatory chain schemas represent the actual AGY reviewer identity, and the effective serialized Codex mutation dispatcher is launcher-routed and setup-verified.
 - **Last lint:** PASS (2026-08-10 — manifest mirrors report 103 included and 59 router-core skills during WI-368 local candidate validation). The generic product pipeline-integrity script remains a baseline-inapplicable check for this framework root because both frozen base and candidate intentionally have no root `vision.md`.
 
@@ -799,3 +803,18 @@ The owner requested automatic recovery from release-blocking review protocol err
 ### 2026-09-08 — Promotion finalization recovery follow-up
 
 PR45 exposed a stale `svc-receipts-remote-view` cache rejection after a successful merge. The follow-up removes that shared cache dependency, resumes already-merged PR finalization against the PR candidate identity, verifies before publishing, and bases each notes publication on the complete remote history. Normal push rejection retries preserve concurrent collaborators; conflicting slots remain denied. Eight real-Git regressions cover publisher concurrency and conflicts, already-merged retry, fresh clones with absent candidate objects and a distinct HEAD, delayed GitHub metadata, and stale partial local receipts. The 19 existing merge-guard checks pass; real PR45 finalization recovered. Follow-up release and host installation are recorded separately, not implied here.
+
+### 2026-09-08 interrupted repair recovery
+
+Recovered the unmerged digest-map publication correction and the 20 staged repair-workflow changes from `bugfix-session-recovery` into the owned `bugfix-readonly-observation` worktree. The original source remains intact; generated plan artifacts in its repair-workflow evidence directory were zero bytes and are regenerated from surviving source, not treated as approvals. Focused recovery tests passed; final review, publication and all-host installation are separate release obligations.
+
+### Review scope correction after operator stop
+
+The owner stopped sequential rediscovery and additional paid review calls. New
+review-plan, review-exec and review-cross-model runs perform one discovery batch
+on the frozen branch; required reviewers run in parallel with different emphasis.
+Consolidate their findings before fixes. Follow-ups verify only original finding
+branches and patch-caused regressions; unrelated improvements are post-delivery
+refinement. The branch-once round guard rejects another discovery batch or unlinked
+follow-up scope. This correction is locally validated; no new paid review was run
+for it. Existing source evidence and failed/terminated reviewer reports are retained.

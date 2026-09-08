@@ -6,7 +6,7 @@ import { familyOf } from "./cognitive-family.mjs";
 import { EXTERNAL_REVIEW_LAUNCHER_VERSION, validateExternalReviewReceiptSemantics } from "../run-external-review.mjs";
 import { candidateTreeIdentity, verifyExternalReviewProvenance } from "./external-review-provenance.mjs";
 import { getObject, lookupRelocation, resolveEvidenceBytes } from "./review-evidence-store.mjs";
-import { validateBoundedExitAdjudication } from "./bounded-exit.mjs";
+import { validateBoundedExitAdjudication, isPlanCertificationCloseout } from "./bounded-exit.mjs";
 import { validateEvidenceSchema } from "./evidence-schema.mjs";
 
 export { validateEvidenceSchema } from "./evidence-schema.mjs";
@@ -19,7 +19,7 @@ const EXTERNAL_FINDINGS_SCHEMA = JSON.parse(fs.readFileSync(path.join(SCHEMA_DIR
 // 2.5.5 changed cycle locking/atomic issuance, not the successful receipt
 // contract. Compatibility still requires all schema, semantic and signed
 // provenance checks below; version strings alone never grant authority.
-const SUPPORTED_LAUNCHER_VERSIONS = new Set([EXTERNAL_REVIEW_LAUNCHER_VERSION, "2.5.5", "2.5.4"]);
+const SUPPORTED_LAUNCHER_VERSIONS = new Set([EXTERNAL_REVIEW_LAUNCHER_VERSION, "2.5.6", "2.5.5", "2.5.4"]);
 
 function localCheckoutArtifact(root, value, { externalOnly = true } = {}) {
   const absolute = path.isAbsolute(value.path) ? path.resolve(value.path) : path.resolve(root, value.path);
@@ -177,7 +177,9 @@ function verifyReviewerEvidenceInternal({ root = process.cwd(), reviewKind, body
   }
   const terminalIsNonPassing = rounds.length > 0 && !String(rounds.at(-1)?.findings?.verdict || "").startsWith("pass");
   // Source recursion proves authenticity; disposition belongs to the selected replay.
-  if (terminalIsNonPassing && !replaySource) {
+  const needsPlanCertificationCloseout = body.reviewer_evidence?.bounded_exit
+    && isPlanCertificationCloseout(reviewKind, rounds.at(-1)?.findings);
+  if ((terminalIsNonPassing || needsPlanCertificationCloseout) && !replaySource) {
     reasons.push(...validateBoundedExitAdjudication({ root: repository, reviewKind, body, identity, rounds }));
   } else {
     const terminalCertifications = rounds.at(-1)?.findings?.certifications;

@@ -104,6 +104,14 @@ if (logPath) {
   try { text = fs.readFileSync(logPath, "utf8"); }
   catch { usage(`cannot read ${logPath}`); }
 
+  if (process.argv.includes("--branch-once")) {
+    const batches = requireIntField(text, "discovery_batches");
+    if (batches.error) fail(batches.error);
+    if (batches.value !== 1) fail("branch-once requires exactly one discovery batch; run parallel reviewers before edits, never restart full discovery");
+    const unlinked = requireIntField(text, "unlinked_followup_findings");
+    if (unlinked.error) fail(unlinked.error);
+    if (unlinked.value !== 0) fail("follow-ups must link to original findings or patch-caused regressions; park unrelated findings for refinement");
+  }
   const r = requireIntField(text, "rounds_run"); if (r.error) fail(r.error); rounds = r.value;
   const uc = requireIntField(text, "unresolved_critical"); if (uc.error) fail(uc.error); unresolvedCritical = uc.value;
   const rh = requireIntField(text, "remaining_high"); if (rh.error) fail(rh.error); remainingHigh = rh.value;
@@ -142,6 +150,7 @@ if (logPath) {
   }
   ok(`rounds_run=${rounds} within the ${CAP}-round cap; no unresolved Critical; all ${remainingHigh} remaining High enumerated + dispositioned`);
 } else {
+  if (process.argv.includes("--branch-once")) usage("--branch-once requires --log with discovery and finding-lineage counters");
   rounds = Number(arg("--rounds"));
   remainingHigh = Number(arg("--remaining-high") ?? "0");
   dispositionedHigh = Number(arg("--dispositioned-high") ?? "0");

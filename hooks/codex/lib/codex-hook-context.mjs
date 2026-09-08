@@ -285,11 +285,10 @@ function isSafeGit(argv) {
   const subcommand = tokens[index];
   const args = tokens.slice(index + 1);
   if (subcommand === "ls-remote" && args.some(token => token.startsWith("-u") || token.startsWith("--upload-pack") || token.startsWith("--exec") || token.includes("::"))) return false;
-  const alwaysRead = new Set(["status", "log", "diff", "show", "rev-parse", "ls-files", "ls-tree", "ls-remote"]);
-  const branchRead = subcommand === "branch" && (args.length === 0 || args.some((token) =>
-    token === "--show-current" || token === "--list" || token === "-a" || token === "-r" ||
-    token.startsWith("--list=") || token.startsWith("--contains") || token.startsWith("--merged") ||
-    token.startsWith("--no-contains") || token.startsWith("--no-merged") || token.startsWith("--points-at")));
+  const alwaysRead = new Set(["status", "log", "diff", "show", "rev-parse", "ls-files", "ls-tree"]);
+  const branchRead = subcommand === "branch" && (args.length === 0 || args.some(token =>
+    ["--show-current", "--list", "-a", "-r", "--all", "--remotes", "--contains", "--merged", "--no-contains", "--no-merged", "--points-at"].includes(token) || /^--(?:list|contains|merged|no-contains|no-merged|points-at)=/.test(token))) &&
+    observationOptions(["branch", ...args], new Set(["--show-current", "--list", "-a", "-r", "--all", "--remotes", "-v", "-vv", "--verbose", "--no-color", "--ignore-case", "--omit-empty", "--column", "--no-column"]), new Set(["--format", "--sort", "--contains", "--merged", "--no-contains", "--no-merged", "--points-at", "--color"]), () => true);
   const worktreeRead = subcommand === "worktree" && args[0] === "list";
   if (!alwaysRead.has(subcommand) && !branchRead && !worktreeRead) return false;
   return !args.some((token) =>
@@ -301,10 +300,58 @@ function isSafeGit(argv) {
   );
 }
 
+// Local service/log observations. Unknown flags remain governed: journalctl's
+// cursor-file writes and systemctl's remote/image modes cannot be inferred safe.
+// Require no-pager in the classifier itself; the decision engine may add it
+// before classification, but standalone hook consumers must also be safe.
+function observationOptions(argv, flags, values, operand) {
+  for (let i = 1; i < argv.length; i++) {
+    const token = argv[i];
+    if (flags.has(token)) continue;
+    const equal = token.indexOf("=");
+    const option = equal > 0 ? token.slice(0, equal) : token;
+    if (values.has(option)) {
+      const value = equal > 0 ? token.slice(equal + 1) : argv[++i];
+      if (!value || value.startsWith("-")) return false;
+      continue;
+    }
+    if (token.startsWith("-") || !operand(token)) return false;
+  }
+  return true;
+}
+
+function isSafeSystemObservation(argv) {
+  if (!["systemctl", "journalctl"].includes(argv[0]) || !argv.includes("--no-pager")) return false;
+  const flags = new Set(["--no-pager", "--system", "--user", "--all", "-a", "--quiet", "-q", "--no-ask-password"]);
+  if (argv[0] === "systemctl") {
+    for (const flag of ["--full", "-l", "--plain", "--value", "--failed", "--reverse", "--no-legend"]) flags.add(flag);
+    const values = new Set(["--property", "-p", "-P", "--type", "-t", "--state", "--lines", "-n", "--output", "-o"]);
+    const verbs = new Set(["show", "status", "cat", "is-active", "is-enabled", "is-failed", "is-system-running", "get-default", "list-units", "list-unit-files", "list-jobs", "list-timers", "list-sockets", "list-dependencies"]);
+    let verb = null;
+    const ok = observationOptions(argv, flags, values, token => {
+      if (!verb) { verb = token; return verbs.has(token); }
+      return true; // Remaining operands are unit names/patterns, never more verbs.
+    });
+    return ok && verb !== null;
+  }
+  for (const flag of ["--reverse", "-r", "--utc", "--no-hostname", "--no-full", "--no-tail", "--show-cursor", "--list-boots", "--disk-usage", "--verify", "--header", "--fields", "-N", "--dmesg", "-k", "--boot", "-b"]) flags.add(flag);
+  const values = new Set(["--unit", "-u", "--user-unit", "--since", "-S", "--until", "-U", "--identifier", "-t", "--priority", "-p", "--output", "-o", "--output-fields", "--lines", "-n", "--grep", "-g", "--directory", "-D", "--file", "--field", "-F", "--cursor", "-c", "--after-cursor"]);
+  // Boot offsets are optional values. Accept the explicit = form and a signed
+  // integer immediately after --boot/-b, without treating arbitrary options as it.
+  const normalized = [];
+  for (let i = 0; i < argv.length; i++) {
+    const token = argv[i];
+    if (/^--boot=[A-Za-z0-9+-]+$/.test(token)) { normalized.push("--boot"); continue; }
+    normalized.push(token);
+    if (["--boot", "-b"].includes(token) && /^[+-]?\d+$/.test(argv[i + 1] || "")) i++;
+  }
+  return observationOptions(normalized, flags, values, token => /^[A-Z_][A-Z_0-9]*=/.test(token) || token === "+");
+}
+
 function isSafeSort(argv) {
   if (argv[0] !== "sort") return false;
   return !argv.slice(1).some((token) =>
-    token === "-o" || token.startsWith("-o") ||
+    /^-[^-]*o/.test(token) ||
     token === "--output" || token.startsWith("--output=") ||
     token === "--compress-program" || token.startsWith("--compress-program="));
 }
@@ -332,7 +379,7 @@ function isSafeUniq(argv) {
 function isSafeFile(argv) {
   if (argv[0] !== "file") return false;
   return !argv.slice(1).some((token) =>
-    token.startsWith("-C") || token === "--compile" || token.startsWith("--compile="));
+    /^-[^-]*C/.test(token) || token === "--compile" || token.startsWith("--compile="));
 }
 
 function isSafeSed(argv) {
@@ -492,7 +539,7 @@ export function isReadOnlyTool(ctx) {
     return isSafeGit(readArgv) || isSafeRg(decoded) || isSafeFind(decoded)
       || isSafeSort(readArgv) || isSafeUniq(readArgv) || isSafeFile(readArgv)
       || isSafeSed(readArgv) || isSafeJq(readArgv) || isSafeVersionProbe(readArgv)
-      || isSafeAz(readArgv)
+      || isSafeAz(readArgv) || isSafeSystemObservation(readArgv)
       || SAFE_BASH.some((pattern) => pattern.test(decoded));
   });
 }

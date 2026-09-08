@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
+import { WI_ID_RE } from '../../hooks/lib/wi-id.mjs';
 
 // Each attempt starts from the entire remote notes history. A normal push is
 // the concurrency check; a competing publisher causes a bounded fresh retry.
@@ -55,9 +56,34 @@ export function readPublishedReceiptNote(root, sha) {
   } finally { git(['update-ref', '-d', ref]); }
 }
 
+function validateDigestMap(value) {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid receipt digests map');
+  for (const [identity, digest] of Object.entries(value)) {
+    const parts = identity.split('::');
+    if (![2, 3].includes(parts.length) || !/^[a-z][a-z0-9-]*$/.test(parts[0]) || !WI_ID_RE.test(parts[1]) || (parts.length === 3 && !parts[2].trim()) || typeof digest !== 'string' || !/^[0-9a-f]{64}$/.test(digest)) throw new Error(`Invalid receipt digest entry: ${identity}`);
+  }
+}
+
 export function mergeReceiptEnvelopes(remote, local) {
+  for (const envelope of [remote, local]) if (Object.hasOwn(envelope, 'digests')) validateDigestMap(envelope.digests);
   const merged = { ...remote };
         for (const [slot, body] of Object.entries(local)) {
+          // Canonical emitters append integrity entries as each receipt lands.
+          // Merge identities, never replace the previously published digest map.
+          if (slot === 'digests') {
+            const prior = Object.hasOwn(merged, slot) ? merged[slot] : {};
+            const isMap = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+            if (!isMap(prior) || !isMap(body)) throw new Error('Invalid receipt digests map');
+            const digests = { ...prior };
+            for (const [identity, digest] of Object.entries(body)) {
+              if (Object.hasOwn(digests, identity) && digests[identity] !== digest) {
+                throw new Error(`Conflicting receipt digest for ${identity}`);
+              }
+              Object.defineProperty(digests, identity, { value: digest, enumerable: true, configurable: true, writable: true });
+            }
+            merged[slot] = digests;
+            continue;
+          }
           // Recomputed coverage has the same evidence but a new wall-clock
           // timestamp. Preserve the published receipt when that alone differs.
           if (body?.receipt_type === 'skill-coverage' && merged[slot]?.receipt_type === 'skill-coverage') {

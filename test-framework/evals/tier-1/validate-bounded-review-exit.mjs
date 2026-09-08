@@ -127,7 +127,7 @@ const certRows = [
   { key: "high-proof", certified: false, reviewer_family: "google", for_content_sha: certDigest },
   { key: "medium-proof", certified: false, reviewer_family: "google", for_content_sha: certDigest },
 ];
-const certRounds = Array.from({ length: 3 }, (_, i) => createExternalReviewFixture({ frameworkRoot, repo: temp, reviewKind: "plan", candidateSha, candidateDigestOverride: certDigest, wi: certWi, roundLabel: `cert-${i}`, verdict: "fail", findings: terminalFindings, certifications: i === 2 ? certRows : [] }));
+const certRounds = Array.from({ length: 3 }, (_, i) => createExternalReviewFixture({ frameworkRoot, repo: temp, reviewKind: "plan", candidateSha, candidateDigestOverride: certDigest, wi: certWi, roundLabel: `cert-${i}`, verdict: i === 2 ? "pass-with-findings" : "fail", findings: terminalFindings, certifications: i === 2 ? certRows : [] }));
 const certBody = boundedBody("plan", certRounds, certWi);
 const certDir = path.join(temp, ".svc/bounded-exit/plan");
 const certLog = path.join(certDir, "review-log.yaml");

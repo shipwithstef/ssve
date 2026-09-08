@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { publishReceiptNotes } from '../../scripts/lib/publish-receipt-notes.mjs';
+import { publishReceiptNotes, mergeReceiptEnvelopes } from '../../scripts/lib/publish-receipt-notes.mjs';
 
 function fixture(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'svc-notes-recovery-'));
@@ -26,6 +26,45 @@ function fixture(t) {
   const read = (sha) => JSON.parse(git(path.join(dir,'remote'),'notes','--ref=svc-receipts','show',sha));
   return { dir, a,b,git,one,two,read };
 }
+
+test('canonical emission and later publication preserve receipts and their integrity entries', t => {
+  const f = fixture(t);
+  const emitter = new URL('../../scripts/emit-receipt.mjs', import.meta.url).pathname;
+  function emit(wi) {
+    const bodyFile = path.join(f.dir, `${wi}.json`);
+    fs.writeFileSync(bodyFile, JSON.stringify({
+      receipt_type: 'verify-promotion', schema_version: 1, wi,
+      timestamp: new Date().toISOString(), verdict: 'pass',
+      p3_target_type: 'install-validation', p3_outcome: 'pass',
+      passes: { p1_promotion_evidence: 'fixture', p2_spec_ac_verification: 'fixture',
+        p3_runtime_validation: 'fixture', p4_state_closeout: 'fixture' },
+    }));
+    execFileSync(process.execPath, [emitter, '--type', 'verify-promotion', '--wi', wi,
+      '--sha', f.one, '--body', bodyFile], { cwd: f.a, stdio: 'pipe' });
+    return JSON.parse(f.git(f.a, 'notes', '--ref=svc-receipts', 'show', f.one));
+  }
+  const first = emit('WI-TEST-ONE');
+  publishReceiptNotes(f.a, { [f.one]: first });
+  const second = emit('WI-TEST-TWO');
+  assert.equal(Object.keys(second.digests).length, 2);
+  publishReceiptNotes(f.a, { [f.one]: second });
+  assert.deepEqual(f.read(f.one), second);
+  publishReceiptNotes(f.b, { [f.one]: first }); // A stale publisher cannot discard newer proof.
+  assert.deepEqual(f.read(f.one), second);
+  const before = f.git(path.join(f.dir, 'remote'), 'rev-parse', 'refs/notes/svc-receipts');
+  const identity = Object.keys(first.digests)[0];
+  assert.throws(() => publishReceiptNotes(f.b, { [f.one]: {
+    digests: { [identity]: '0'.repeat(64) },
+  } }), /Conflicting receipt digest/);
+  assert.equal(f.git(path.join(f.dir, 'remote'), 'rev-parse', 'refs/notes/svc-receipts'), before);
+  const remote = path.join(f.dir, 'remote');
+  f.git(remote, 'config', 'user.email', 'test@example.invalid');
+  f.git(remote, 'config', 'user.name', 'Test');
+  f.git(remote, 'notes', '--ref=svc-receipts', 'add', '-m', '{"digests":null}', f.two);
+  const malformedRef = f.git(remote, 'rev-parse', 'refs/notes/svc-receipts');
+  assert.throws(() => publishReceiptNotes(f.a, { [f.two]: { digests: first.digests } }), /Invalid receipt digests map/);
+  assert.equal(f.git(remote, 'rev-parse', 'refs/notes/svc-receipts'), malformedRef);
+});
 
 test('stale local cache and divergent local notes cannot discard remote collaborators', t => {
   const f = fixture(t);
@@ -117,4 +156,9 @@ for (const [lag,stale] of [[false,false],[true,false],[false,true]]) test(`fresh
   assert.deepEqual(JSON.parse(f.git(fresh,'notes','--ref=svc-receipts','show',squash)),{sentinel:{candidate},...(stale?{localOnly:true}:{})});
   assert.doesNotMatch(fs.readFileSync(log,'utf8'),/pr merge|^api /m);
   assert.throws(()=>f.read(squash)); // Incomplete proof never published.
+});
+
+for (const map of [null, [], {bad: 'a'.repeat(64)}, {'review-exec::WI-PROBE': 7}, {'review-exec::WI-PROBE': null}, {'review-exec::WI-PROBE': 'abc'}, {'review-exec::WI-PROBE': 'z'.repeat(64)}, {'review-exec::WI-PROBE::': 'a'.repeat(64)}]) test(`malformed local and inherited digest entries are refused: ${JSON.stringify(map)}`, () => {
+  assert.throws(() => mergeReceiptEnvelopes({}, {digests: map}), /Invalid receipt digest/);
+  assert.throws(() => mergeReceiptEnvelopes({digests: map}, {other: {pass: true}}), /Invalid receipt digest/);
 });
