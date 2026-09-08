@@ -1,0 +1,299 @@
+{
+  "files": [
+    {
+      "task": "T1",
+      "action": "MODIFY",
+      "path": "skills/plan-changeset/SKILL.md"
+    },
+    {
+      "task": "T1",
+      "action": "MODIFY",
+      "path": "skills/plan-changeset/references/manifest-templates.md"
+    },
+    {
+      "task": "T1",
+      "action": "MODIFY",
+      "path": "skills/review-plan/SKILL.md"
+    },
+    {
+      "task": "T1",
+      "action": "MODIFY",
+      "path": "references/plan-review-protocol.md"
+    },
+    {
+      "task": "T1",
+      "action": "MODIFY",
+      "path": "scripts/review-plan-codex.sh"
+    },
+    {
+      "task": "T1",
+      "action": "MODIFY",
+      "path": "scripts/review-plan-kimi.sh"
+    },
+    {
+      "task": "T1",
+      "action": "MODIFY",
+      "path": "scripts/verify-plan-mechanical.sh"
+    },
+    {
+      "task": "T1",
+      "action": "MODIFY",
+      "path": "schemas/receipts/plan-manifest.schema.json"
+    },
+    {
+      "task": "T1",
+      "action": "MODIFY",
+      "path": "scripts/emit-receipt.mjs"
+    },
+    {
+      "task": "T1",
+      "action": "MODIFY",
+      "path": "scripts/check-chain-receipts.mjs"
+    },
+    {
+      "task": "T1",
+      "action": "MODIFY",
+      "path": "skills/execute-changeset/SKILL.md"
+    },
+    {
+      "task": "T1",
+      "action": "MODIFY",
+      "path": "skills/execute-changeset/references/subagent-dispatch.md"
+    },
+    {
+      "task": "T1",
+      "action": "MODIFY",
+      "path": "references/chain-receipt-contract.md"
+    },
+    {
+      "task": "T1",
+      "action": "CREATE",
+      "path": "scripts/lib/plan-manifest-contract.mjs"
+    },
+    {
+      "task": "T1",
+      "action": "CREATE",
+      "path": "scripts/prepare-plan-handoff.mjs"
+    },
+    {
+      "task": "T1",
+      "action": "CREATE",
+      "path": "test-framework/tests/delivery-plan-contract.test.mjs"
+    },
+    {
+      "task": "T2",
+      "action": "MODIFY",
+      "path": "skills/land-changeset/SKILL.md"
+    },
+    {
+      "task": "T2",
+      "action": "MODIFY",
+      "path": "skills/verify-promotion/SKILL.md"
+    },
+    {
+      "task": "T3",
+      "action": "MODIFY",
+      "path": "skills/route-workflow/SKILL.md"
+    },
+    {
+      "task": "T3",
+      "action": "MODIFY",
+      "path": "scripts/task-graph.mjs"
+    },
+    {
+      "task": "T3",
+      "action": "MODIFY",
+      "path": "scripts/mine-receipts.mjs"
+    },
+    {
+      "task": "T3",
+      "action": "MODIFY",
+      "path": "skills/write-spec/SKILL.md"
+    },
+    {
+      "task": "T3",
+      "action": "CREATE",
+      "path": "test-framework/tests/delivery-cycle-accounting.test.mjs"
+    },
+    {
+      "task": "T4",
+      "action": "MODIFY",
+      "path": "DOCTRINE.md"
+    },
+    {
+      "task": "T4",
+      "action": "MODIFY",
+      "path": "FRAMEWORK-STATE.md"
+    },
+    {
+      "task": "T4",
+      "action": "CREATE",
+      "path": "test-framework/evals/tier-1/validate-delivery-planning.sh"
+    },
+    {
+      "task": "T1",
+      "action": "MODIFY",
+      "path": "agents/plan-reviewer.md"
+    },
+    {
+      "task": "T3",
+      "action": "MODIFY",
+      "path": "skills/audit-feature/SKILL.md"
+    },
+    {
+      "task": "T3",
+      "action": "MODIFY",
+      "path": "skills/align-feature/SKILL.md"
+    },
+    {
+      "task": "T4",
+      "action": "MODIFY",
+      "path": "scripts/select-tier1-validators-v2.mjs"
+    },
+    {
+      "task": "T4",
+      "action": "CREATE",
+      "path": "docs/plans/2026-09-07-delivery-planning/simulation.log"
+    },
+    {
+      "task": "T4",
+      "action": "CREATE",
+      "path": "docs/plans/2026-09-07-delivery-planning/plan-contract.json"
+    },
+    {
+      "task": "T4",
+      "action": "CREATE",
+      "path": "docs/plans/2026-09-07-delivery-planning/proposal-findings.json"
+    },
+    {
+      "task": "T4",
+      "action": "CREATE",
+      "path": "docs/plans/2026-09-07-delivery-planning/pilot.md"
+    },
+    {
+      "task": "T4",
+      "action": "CREATE",
+      "path": "docs/plans/2026-09-07-delivery-planning/planned-files.json"
+    },
+    {
+      "task": "T4",
+      "action": "CREATE",
+      "path": "docs/plans/2026-09-07-delivery-planning/manifest.md"
+    },
+    {
+      "task": "T4",
+      "action": "CREATE",
+      "path": "docs/specs/work-items/WI-FW-DELIVERY-TRADEOFFS-01.md"
+    },
+    {
+      "task": "T4",
+      "action": "CREATE",
+      "path": "docs/specs/reviews/delivery-planning-proposal-cross-model.md"
+    },
+    {
+      "task": "T4",
+      "action": "CREATE",
+      "path": "docs/specs/reviews/delivery-planning-plan-cross-model.md"
+    },
+    {
+      "task": "T4",
+      "action": "CREATE",
+      "path": "docs/analysis/2026-09-07-delivery-historical-evidence.json"
+    },
+    {
+      "task": "T4",
+      "action": "CREATE",
+      "path": "docs/analysis/2026-09-07-delivery-speed-tradeoffs.md"
+    },
+    {
+      "task": "T4",
+      "action": "CREATE",
+      "path": "docs/analysis/2026-09-07-planning-purpose-redesign.md"
+    },
+    {
+      "task": "T4",
+      "action": "MODIFY",
+      "path": ".claude/agents/plan-reviewer.md"
+    },
+    {
+      "task": "T4",
+      "action": "MODIFY",
+      "path": "references/skill-routing-index.json"
+    },
+    {
+      "task": "T4",
+      "action": "MODIFY",
+      "path": "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs"
+    },
+    {
+      "task": "T4",
+      "action": "MODIFY",
+      "path": "docs/specs/relations/wi-541-full-transition.branches.md"
+    },
+    {
+      "task": "T4",
+      "action": "MODIFY",
+      "path": "scripts/run-external-review.mjs"
+    },
+    {
+      "task": "T4",
+      "action": "CREATE",
+      "path": "scripts/lib/review-report-recovery.mjs"
+    },
+    {
+      "task": "T4",
+      "action": "MODIFY",
+      "path": "scripts/lib/external-review-provenance.mjs"
+    },
+    {
+      "task": "T4",
+      "action": "MODIFY",
+      "path": "scripts/lib/bounded-exit.mjs"
+    },
+    {
+      "task": "T4",
+      "action": "MODIFY",
+      "path": "scripts/lib/reviewer-evidence.mjs"
+    },
+    {
+      "task": "T4",
+      "action": "MODIFY",
+      "path": "test-framework/evals/tier-1/validate-external-review-launcher.sh"
+    },
+    {
+      "task": "T4",
+      "action": "MODIFY",
+      "path": "test-framework/evals/tier-1/validate-retroactive-attestation.sh"
+    },
+    {
+      "task": "T4",
+      "action": "CREATE",
+      "path": "test-framework/tests/review-report-recovery.test.mjs"
+    },
+    {
+      "task": "T4",
+      "action": "MODIFY",
+      "path": "skills/review-exec/SKILL.md"
+    },
+    {
+      "task": "T4",
+      "action": "MODIFY",
+      "path": "skills/review-cross-model/SKILL.md"
+    },
+    {
+      "task": "T4",
+      "action": "MODIFY",
+      "path": "test-framework/evals/tier-1/validate-clean-main-followup.mjs"
+    },
+    {
+      "task": "T4",
+      "action": "MODIFY",
+      "path": "docs/specs/relations/wi-548-host-parity.branches.md"
+    },
+    {
+      "task": "T4",
+      "action": "MODIFY",
+      "path": "docs/specs/relations/wi-548-host-parity.branches.md.imports.json"
+    }
+  ]
+}

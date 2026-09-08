@@ -1,4 +1,4 @@
-Derived-at: f24a7add94ea8f78a87f736dcc7cb8f9183eb59a
+Derived-at: 0af2a520be4954d7ddbfc70d850e7aaba5888581
 Scope-paths:
   - scripts/**
   - hooks/**
@@ -48,3 +48,6 @@ Scope-paths:
 
 ## Revalidation for session recovery
 Cited entry points and callers rechecked at the Derived-at source. ensure-worktree still owns bootstrap/recovery, with exact already-bound resume now consuming complete authority; launcher remains the governed review entry point and adds the reviewer-resources helper. Policy, receipt, generation and host-install boundaries remain in their cited owners. Earlier program outcome/child-status lines describe their historical scope, not a claim that the current full corpus is green. Current test census is recorded in `docs/specs/audit/session-recovery-analysis.md`.
+
+## Delivery planning revalidation
+The anchor is the existing reviewed Git source tree, not a predicted release commit. Rechecked the cited planning, routing and execution contracts: dispatch retains complete task packets and generation-bound transport; inline planning resolves consequential behavior before implementation and generates AC/task/test mappings. Original requirement clauses and targeted reads reach execution. Routing retains the existing graph/activation path and records cumulative delivery timing. Controller, containment, compiler, hook and installer ownership are unchanged. This historical index is navigation; release outcomes require the current WI receipts.

@@ -46,6 +46,11 @@ if [[ -n "${SVC_FAKE_CERT_KEY:-}" ]]; then cert="{\"key\":\"$SVC_FAKE_CERT_KEY\"
 rubric="\"rubric_score\":10,"; [[ "${SVC_FAKE_OMIT_RUBRIC:-0}" == 1 ]] && rubric=""
 finding="{\"schema_version\":1,\"review_kind\":\"${SVC_REVIEW_KIND:-generic}\",${rubric}\"rubric_failures\":null,\"dependencies_needing_read\":null,\"reviewer\":{\"host\":\"codex\",\"family\":\"openai\",\"model\":\"$model\",\"effort\":\"$effort\"},\"verdict\":\"pass\",\"summary\":\"fixture pass\",\"findings\":[],\"certifications\":[${cert:-}]}"
 if [[ "${SVC_FAKE_OUTPUT:-valid}" == malformed ]]; then finding="{bad"; fi
+if [[ "${SVC_FAKE_REPORT_REPAIR:-}" == scope || "${SVC_FAKE_REPORT_REPAIR:-}" == drift ]]; then
+  if [[ "$last" != *attempt-2* ]]; then finding="${finding/\"certifications\":[]/\"certifications\":[{\"key\":\"all-host-setup\",\"certified\":false,\"reviewer_family\":\"openai\",\"for_content_sha\":null}]}";
+  elif [[ "$SVC_FAKE_REPORT_REPAIR" == drift ]]; then finding="${finding/fixture pass/changed verdict explanation}"; fi
+fi
+if [[ "${SVC_FAKE_REPORT_REPAIR:-}" == placeholder && "$last" != *attempt-2* ]]; then finding="${finding/fixture pass/Placeholder until review is complete}"; fi
 printf "%s" "$finding" > "$last"
 # A recoverable stream error must not override the final successful turn.
 node -e "console.log(JSON.stringify({type:\"error\",message:\"Network error (recovered)\"}))"
@@ -143,7 +148,7 @@ node -e "process.stdout.write(JSON.stringify({type:\"result\",subtype:\"success\
 ' > "$TMP/bin/cursor-agent"
 
 printf '%s\n' '#!/usr/bin/env bash' 'set -euo pipefail' '
-if [[ "${1:-}" == "--help" ]]; then if [[ "${SVC_FAKE_GROK_CAPABILITY_MISSING:-0}" == 1 ]]; then printf "%s\n" "--prompt-file --cwd --model"; else printf "%s\n" "--prompt-file --cwd --model --reasoning-effort --permission-mode --disable-web-search --no-subagents --max-turns --json-schema --output-format"; fi; exit 0; fi
+if [[ "${1:-}" == "--help" ]]; then if [[ "${SVC_FAKE_GROK_CAPABILITY_MISSING:-0}" == 1 ]]; then printf "%s\n" "--prompt-file --cwd --model"; else printf "%s\n" "--verbatim --prompt-file --cwd --model --reasoning-effort --permission-mode --disable-web-search --no-subagents --max-turns --json-schema --output-format"; fi; exit 0; fi
 if [[ "${1:-}" == "--version" ]]; then printf "%s\n" "grok 1.0.13 fixture"; exit 0; fi
 mkdir -p "$SVC_FAKE_LOG"
 printf "%s\n" "$*" >> "$SVC_FAKE_LOG/grok.argv"
@@ -235,6 +240,21 @@ run_review() {
   printf '%s' "$package" | node "$LAUNCHER" --orchestrator "$orchestrator" --review-kind plan --candidate-digest "$LAUNCHER_CANDIDATE" --artifacts-dir "$out"
 }
 receipt_from_summary() { node -e 'const fs=require("fs");const s=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));process.stdout.write(s.receipt)' "$1"; }
+
+for REPAIR in scope placeholder drift; do
+  rm -rf "$SVC_FAKE_LOG"; mkdir -p "$SVC_FAKE_LOG"
+  set +e
+  SVC_FAKE_REPORT_REPAIR="$REPAIR" run_review claude "report-repair-$REPAIR" "$TMP/out/report-repair-$REPAIR" > "$TMP/report-repair-$REPAIR.summary" 2> "$TMP/report-repair-$REPAIR.err"
+  REPAIR_RC=$?
+  set -e
+  expect "report $REPAIR uses exactly two same-model attempts" node -e 'const r=require(process.argv[1]);if(r.attempts.length!==2||r.protocol.process_invocations!==2||r.fallback.used||r.attempts.some(a=>a.tuple.host!=="codex"))process.exit(1)' "$TMP/out/report-repair-$REPAIR/receipt.json"
+  if [[ "$REPAIR" == drift ]]; then
+    expect "report repair cannot change source judgment" test "$REPAIR_RC" -ne 0
+  else
+    expect "report $REPAIR recovers without operator approval" test "$REPAIR_RC" -eq 0
+  fi
+done
+
 
 # WI-506 RED/GREEN probe: the mandatory blend-external planning outputs are
 # planning evidence, not executable implementation. Keep this exact allowlist
@@ -654,7 +674,8 @@ for FAILURE in schema model; do
   RC=$?
   set -e
   EXPECTED="$([[ "$FAILURE" == schema ]] && printf schema_invalid || printf model_mismatch)"
-  expect "$EXPECTED hard-fails without Opus" bash -c "test '$RC' -ne 0 && test \"\$(wc -l < '$SVC_FAKE_LOG/calls')\" -eq 1 && test \"\$(node -e 'process.stdout.write(require(process.argv[1]).classification)' '$TMP/out/$FAILURE/receipt.json')\" = '$EXPECTED'"
+  EXPECTED_CALLS=1 # malformed Claude envelope has no trustworthy remaining dollar budget
+  expect "$EXPECTED hard-fails without Opus" bash -c "test '$RC' -ne 0 && test \"\$(wc -l < '$SVC_FAKE_LOG/calls')\" -eq '$EXPECTED_CALLS' && test \"\$(node -e 'process.stdout.write(require(process.argv[1]).classification)' '$TMP/out/$FAILURE/receipt.json')\" = '$EXPECTED'"
 done
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
@@ -772,6 +793,7 @@ expect "cache replay is bound to key and package/schema hashes" test "$(grep -c 
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache" "$TMP/runtime-copy"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache" "$TMP/runtime-copy/scripts/lib" "$TMP/runtime-copy/schemas" "$TMP/runtime-copy/references" "$TMP/runtime-copy/skills/review-exec" "$TMP/runtime-copy/skills/review-cross-model" "$TMP/runtime-copy/hooks/lib" "$TMP/runtime-copy/skills/research/scripts"
 cp "$LAUNCHER" "$TMP/runtime-copy/scripts/run-external-review.mjs"
+cp "$ROOT/scripts/lib/review-report-recovery.mjs" "$TMP/runtime-copy/scripts/lib/"
 cp "$ROOT/scripts/review-topology-v2.mjs" "$TMP/runtime-copy/scripts/review-topology-v2.mjs"
 cp "$ROOT/scripts/resolve-dispatch.mjs" "$TMP/runtime-copy/scripts/resolve-dispatch.mjs"
 cp "$ROOT/scripts/state-io.mjs" "$TMP/runtime-copy/scripts/state-io.mjs"

@@ -79,6 +79,8 @@ YOUR OUTPUT MUST BE:
   - If zero findings, emit: rubric_score: 10 / rubric_failures: [] / findings: []
   - Every finding must have: id, claim, severity, analysis (multi-line), evidence (at least one concrete check), proposed_fix.
 
+For explicit inline mode, score these same ten dimensions as solution readiness: (1) exact resolvable or declared future files; (2) complete consequential behavior and interfaces, not authored code; (3) appropriate executable proof and outcomes; (4) meaningful action/authority limits; (5) exact write scope; (6) recovery path; (7) correct dependencies; (8) observable success; (9) original AC/UX/technical trace; (10) no unresolved consequential choice. Reversible local details are allowed. v4 release identities may use the validated existing-adapter producer form. Keep integer rubric_score 0–10 and concrete findings. For dispatch/absent mode, retain the complete-code/command packet rubric below.
+
 DETERMINISM RUBRIC — score each 0 or 1:
   1. Every file path absolute + resolvable
   2. Every change content-complete (actual code or diff, not vague descriptions)

@@ -46,6 +46,10 @@ import { verifyReviewerEvidence } from "./lib/reviewer-evidence.mjs";
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const SCHEMA_DIR = join(SCRIPT_DIR, "..", "schemas", "receipts");
 const SLOT_PREFIX = "slot::";
+export const PLAN_MANIFEST_MAX_VERSION = 4;
+const planContract = existsSync(join(SCRIPT_DIR, "lib/plan-manifest-contract.mjs"))
+  ? await import("./lib/plan-manifest-contract.mjs") : null;
+
 
 function fail(msg, code = 2) {
   console.error(`emit-receipt: ${msg}`);
@@ -165,7 +169,7 @@ function loadSchema(type) {
   catch (e) { throw new Error(`schema unavailable: ${type} (${e.message})`); }
 }
 
-function validateReceipt(type, body) {
+function validateReceipt(type, body, sourceSha = null) {
   let schema;
   try {
     schema = loadSchema(type);
@@ -177,6 +181,20 @@ function validateReceipt(type, body) {
   }
   if (body.receipt_type !== type) {
     return { valid: false, reasons: [`receipt_type=${body.receipt_type} expected ${type}`] };
+  }
+  if (type === "plan-manifest") {
+    if (!Number.isInteger(body.schema_version) || body.schema_version < 1 || body.schema_version > PLAN_MANIFEST_MAX_VERSION) return { valid: false, reasons: ["unsupported plan schema_version"] };
+    if (body.schema_version === 4) {
+      if (!planContract) return { valid: false, reasons: ["v4 plan helper unavailable"] };
+      try {
+        planContract.packageCapabilities();
+        const candidate = sourceSha || git(["write-tree"]);
+        if (!candidate) throw new Error("cannot freeze v4 candidate tree");
+        const readSpec = (p) => execFileSync("git", ["show", `${candidate}:${p}`], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+        const result = planContract.validatePlanBody(body, { readSpec });
+        if (!result.ok) return { valid: false, reasons: result.errors };
+      } catch (error) { return { valid: false, reasons: [error.message] }; }
+    }
   }
   let required = schema.required || [];
   // WI-381: the plan-manifest pipeline baton (ac_digests) is required only for
@@ -354,9 +372,11 @@ export function resolveMirrorPaths({ type, wi, phase = null, targetShaOverride =
 }
 
 export function writeReceiptMirror({ type, wi, body, phase = null, targetShaOverride = null }) {
-  const v = validateReceipt(type, body);
-  if (!v.valid) throw new Error(`receipt invalid: ${v.reasons.join("; ")}`);
   const resolved = resolveMirrorPaths({ type, wi, phase, targetShaOverride });
+  const candidate = targetShaOverride || resolved.tree_hash;
+  const v = validateReceipt(type, body, candidate);
+  if (!v.valid) throw new Error(`receipt invalid: ${v.reasons.join("; ")}`);
+  if (type === "plan-manifest" && body.schema_version === 4 && !targetShaOverride && git(["write-tree"]) !== candidate) throw new Error("candidate index changed during v4 validation; retry");
   writeJsonAtomic(resolved.mirror_path, body);
   // Compatibility alias: preserve historical <type>.json readers only when this
   // does not clobber a different WI's receipt.
@@ -415,7 +435,7 @@ function main() {
     } catch { /* fail-open here only means families stay as-is → check-chain re-derives + verifies */ }
   }
 
-  const v = validateReceipt(args.type, body);
+  const v = validateReceipt(args.type, body, explicitTargetSha);
   if (!v.valid) fail(`receipt invalid: ${v.reasons.join("; ")}`, 1);
 
   let targetSha = explicitTargetSha;

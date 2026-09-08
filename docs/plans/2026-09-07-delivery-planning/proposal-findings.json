@@ -1,0 +1,254 @@
+{
+  "proposal_sha256": "a9d9aff7337490c7bf2cf4e2dc0169e4b0cfcc88d9139570784e8275a2acc73d",
+  "findings": [
+    {
+      "reviewer": "sol-high",
+      "id": "F-001",
+      "severity": "high",
+      "claim": "The proposal’s mechanisms are plausibly beneficial, but the claimed cycle compression is not causally supported at the scale of the 20–30-hour problem.",
+      "analysis": "The proposal correctly avoids claiming that observed review intervals equal total session time and explicitly calls 5× a target. Yet its implementation focus is chiefly plan detail, review criteria, schema acceptance of deferred values, and downstream-consumer compatibility. The historical evidence identifies other potentially dominant causes: repeated release-infrastructure construction, session interruption after quota errors, stale installed framework sources, schema or transport retries, integration amendments, and evidence restamping. The excerpt ranks release-path reuse and adoption of already-landed recovery fixes ahead of review optimization. Planning redesign can remove real waste, but it is not by itself a causal account of a reduction from 20–30 hours to 160 minutes. The risk is not that the proposal is unimplemented; it is that success could be declared after shortening planning while the dominant execution and finalization costs remain.",
+      "evidence": [
+        "planning-purpose-redesign.md:152-159 limits the smallest framework change mainly to plan, review, schema, and consumer behavior.",
+        "planning-purpose-redesign.md:161-168 lists falsifiers and admits that equal-scope comparison has not been run and 5× is only a target.",
+        "planning-purpose-redesign.md:170-180 defines the 30/120/10 objective and includes rework while separating visible external waiting.",
+        "delivery-speed-tradeoffs.md excerpt:91-99 ranks release-infrastructure reuse, adoption of landed receipt/recovery fixes, and evidence reuse ahead of review optimization.",
+        "delivery-speed-tradeoffs.md excerpt:3-10 reports 90.94 minutes of launcher intervals in a bounded Multicontext sample but expressly rejects attributing the full run or a 5× gain to review or caching alone.",
+        "delivery-speed-tradeoffs.md excerpt:12-25 shows long post-error-to-resume intervals that are neither reviewer thinking time nor measured provider downtime."
+      ],
+      "proposed_fix": "Frame the causal hypothesis as three bounded interventions: solution-first planning with deferred local detail; reuse of an established release path with automatic evidence capture; and elimination of invalidated full-review or retry work. In the pilot, reconstruct a coarse timeline from existing session and receipt timestamps, label active work versus external waiting, and identify which intervention removed each avoided step. Treat a miss of 30/120/10 as a result with a named cause, not as permission to reset the clock or shrink scope.",
+      "disposition": "ACCEPT. Treat planning, established release reuse and removal of redundant rework as three causal interventions. No speed claim from launcher minutes; cumulative timing is AC-DP-07."
+    },
+    {
+      "reviewer": "sol-high",
+      "id": "F-002",
+      "severity": "high",
+      "claim": "The boundary between decisions planning must close and details execution may decide is directionally right but too subjective to prevent either late architectural rework or renewed full-plan ceremony.",
+      "analysis": "The proposal names obvious global decisions—product behavior, UX, state ownership, public interfaces, transaction boundaries, migrations, and release strategy—and obvious local details such as helper names. Expensive failures commonly sit between those poles: cache invalidation, error semantics, pagination or batching shape, component-state placement, retry and idempotency behavior, query shape, accessibility interaction, render lifecycle, and performance-sensitive data flow. A reviewer can classify these after the fact as either local or shared. Stronger planning prevents rework when it closes decisions with high propagation cost or validates assumptions capable of invalidating the approach. It cannot prevent rework caused by emergent integration behavior, misleading APIs, device/runtime differences, or performance characteristics visible only during execution. The current wording risks optimistic deferral by a fast planner and retrospective scope expansion by a strict reviewer.",
+      "evidence": [
+        "planning-purpose-redesign.md:74-77 separates the whole solution from the next verifiable part but provides no explicit test for intermediate decisions.",
+        "planning-purpose-redesign.md:81-86 defines readiness partly by whether an unknown makes the next part dangerous or useless, while the owner clarification requires the whole product and technical solution to be closed.",
+        "planning-purpose-redesign.md:88-96 gives re-review triggers for shared APIs, transactions, data, writers, product promises, and external effects, but omits several cross-cutting non-public decisions with substantial propagation cost.",
+        "planning-purpose-redesign.md:182-188 adds concurrency, failure, and release concerns but still relies on judgment without stating how reversibility, propagation, or evidence uncertainty determine the boundary.",
+        "planning-purpose-redesign.md:54-58 correctly states that simulation cannot reveal native behavior, usability, or races and calls for decisive probes."
+      ],
+      "proposed_fix": "Add one compact decision rule to the existing manifest: settle before execution any choice whose reversal would change user-visible behavior, authority or data semantics, more than one verifiable part, the delivery strategy, or the validity of a major test. Also settle assumptions with a credible chance of invalidating the chosen approach, using the smallest decisive probe. Leave choices to the executor when they are reversible within one part and preserve all established contracts. Include representative middle cases—retry/idempotency, error semantics, accessibility interaction, state placement, and query/render performance—so planners must classify them rather than automatically specify or defer them.",
+      "disposition": "ACCEPT. Use reversal propagation across user behavior/data/authority, another behavior part, release or decisive proof; classify retry/cache/error/accessibility/state/performance explicitly."
+    },
+    {
+      "reviewer": "sol-high",
+      "id": "F-003",
+      "severity": "high",
+      "claim": "The 30-minute planning target conflicts with the breadth of mandatory decisions unless the proposal defines what prior artifacts may be trusted and how stale or missing prerequisites affect the clock.",
+      "analysis": "The clarified target requires product behavior, UX, architecture, interfaces, critical interactions, tests, and delivery path to be closed in roughly 30 minutes. That is achievable for a well-understood feature only when prior vision, specification, UX, and technical decisions remain usable and planning performs synthesis rather than rediscovery. For novel cross-platform, payment, migration, or provider work, decisive feasibility probes alone can consume the budget. The proposal wisely says unresolved architecture must not be concealed to meet the target, but it does not fully resolve whether such a cycle is an honest target miss, a pre-feature discovery activity that still counts, or evidence that the feature definition is too broad. Without that decision, operators can game the metric by moving discovery before “planning start,” while reviewers can pressure premature closure.",
+      "evidence": [
+        "planning-purpose-redesign.md:172 says the clock includes additional planning rounds, amendments, and retries and cannot reset with a new WI or session.",
+        "planning-purpose-redesign.md:174-180 assigns about 30 minutes to the entire solution and delivery path while requiring missing access or release tooling to be discovered during planning.",
+        "planning-purpose-redesign.md:184 says planning reuses accumulated domain, UX, and technical decisions rather than rediscovering them.",
+        "planning-purpose-redesign.md:188 proposes a 10/10/10 internal split but says unresolved architecture must not be concealed to hit the target.",
+        "planning-purpose-redesign.md:204-208 says over-budget causes remain visible and scope is not silently reduced."
+      ],
+      "proposed_fix": "State that timing starts with the first feature-specific reasoning or probe, including prerequisite discovery, and that prior canonical artifacts may be reused only while applicable to the candidate. Define two honest outcomes: “ready within target” and “target miss—blocking uncertainty named.” A miss may lead to owner-approved rescoping or continued work, but it retains the original feature’s cumulative elapsed time. Add these semantics to the existing success section rather than creating a new gate.",
+      "disposition": "ACCEPT. First feature-specific reasoning/probe starts the clock; prior knowledge is reusable only while applicable; unknown historical time remains unknown."
+    },
+    {
+      "reviewer": "sol-high",
+      "id": "F-004",
+      "severity": "medium",
+      "claim": "The proposal does not identify precisely enough which current plan fields and review dimensions are removed, derived, retained, or conditional, so implementation could preserve most of the cost under new wording.",
+      "analysis": "The critique correctly traces why detailed plans existed: WI-347 protected against drift and enabled a low-context executor; WI-386 removed inline blueprint duplication; command determinism and recovery supported mechanical handoff and safe delivery. For a competent inline Astra with repository context, full code payloads and complete branch-to-merge command transcription are worse than competent default behavior because they consume planning time, duplicate code authorship, freeze incidental choices, and create contradictions. File scope, dependency ordering, validation intent, rollback for risky external changes, and delivery authority still retain value. The proposal says readiness should replace universal concretization and that schemas, validators, and consumers must accept producer-bound future values, but the current schema still requires an execution command sequence and the protocol still scores complete commands through merge. Without a field-by-field transition, implementation is likely to become additive compatibility: a new narrative layered over the old required arrays and rubric.",
+      "evidence": [
+        "planning-purpose-redesign.md:25-32 explains that WI-347 optimized for a strong planner plus low-context executor and that inline execution has different needs.",
+        "planning-purpose-redesign.md:36-44 distinguishes valuable early resolution of migrations, targets, and rollback from impossible future identifiers.",
+        "planning-purpose-redesign.md:98-110 proposes solution-quality review and removal of numerical determinism scoring but does not enumerate exact current dimensions retained or retired.",
+        "planning-purpose-redesign.md:152-159 calls for coordinated skill, prompt, schema, validator, and consumer changes and warns that changing one SKILL.md is insufficient.",
+        "plan-review-protocol.md:53-67 still requires nine dimensions, including a determinism rubric and copy-pasteable commands from branch creation through merge.",
+        "plan-manifest.schema.json:5 and 72-82 require execution_command_sequence for every receipt; lines 8-18 condition only blueprints on inline mode."
+      ],
+      "proposed_fix": "Add a compact migration matrix rather than a new artifact. For inline mode, remove blueprint completeness and full branch-to-merge command transcription. Retain scoped files for the current part, behavioral-part dependencies, AC mapping, validation intent, applicable risk and rollback, and delivery-adapter identity. Derive task, AC, and dependency views from one canonical record. Require exact commands immediately before their action or for a genuine handoff. Retain the detailed contract in dispatch mode until the executor receives sufficient product context and targeted read authority to replace it safely.",
+      "disposition": "ACCEPT. Manifest transition matrix enumerates current fields and graders; schema/emitter/checker/prompt changes are one deployable slice."
+    },
+    {
+      "reviewer": "sol-high",
+      "id": "F-005",
+      "severity": "medium",
+      "claim": "The “next verifiable part” model remains inconsistent with the owner’s whole-solution requirement and could reintroduce rolling micro-plans and review churn.",
+      "analysis": "The opening clarification says the later 30/120/10 section supersedes earlier next-slice-only wording and requires the whole product and technical solution to be closed before execution. Much of the proposal still defines readiness by the next part, requires exact files and commands only for the first part, and leaves later task internals to be specified immediately before work. This can work if later parts have stable contracts and only local realization remains. It becomes another process story if each boundary triggers renewed code reading, task rewriting, scope approval, or semantic review. Section 110 says local clarification does not require external review, which helps, but the distinction should be explicit: approve the full solution once; treat part elaboration as execution work unless a consequential decision changes.",
+      "evidence": [
+        "planning-purpose-redesign.md:5 says the whole product and technical solution must be closed before execution and supersedes next-slice-only wording.",
+        "planning-purpose-redesign.md:70-77 defines two levels, with detailed files and calls only for the next verifiable part.",
+        "planning-purpose-redesign.md:79-86 defines readiness around danger or uselessness of the next part.",
+        "planning-purpose-redesign.md:110 says local elaboration does not create a mandatory external review and a consequential decision change is the trigger.",
+        "planning-purpose-redesign.md:127 says later files are specified immediately before work.",
+        "planning-purpose-redesign.md:182-188 more clearly defines the decisions that the whole plan must settle."
+      ],
+      "proposed_fix": "Rewrite the earlier readiness language to match the clarification: before execution, the full solution must have stable behavioral parts, interfaces, ownership, sequence, acceptance evidence, and delivery path; only the current part needs exact file and call detail. State that elaborating a later part is execution work within the 120-minute budget and cannot reopen solution review unless it crosses the consequential-change rule.",
+      "disposition": "ACCEPT. Whole-solution closure before execution; elaborating local details belongs to execution and does not restart review."
+    },
+    {
+      "reviewer": "sol-high",
+      "id": "F-006",
+      "severity": "medium",
+      "claim": "Product, UX, and performance quality is named as retained, but the proposal needs a concrete safeguard against replacing real observations with fast surrogate checks under the time budget.",
+      "analysis": "The proposal’s strongest quality idea is distinguishing source inspection, unit, browser, physical-device, and hosted-runtime evidence and choosing evidence according to the user requirement. It also preserves native rendering, concurrency tests, UX states, and relevant performance checks in its examples. These elements should remain. Cross-discipline planning can improve solutions by connecting state ownership to UX continuity, transaction semantics to visible failure states, and render/data architecture to observable performance before code is written. The danger is that “relevant” and “smallest probe” can be interpreted to fit 120 minutes, recreating the historical problem in which a browser viewport stood in for iPhone evidence and a unit test stood in for performance. Competent default Astra would often inspect and test the actual risky surface; SSVE must not become faster by accepting weaker proxies.",
+      "evidence": [
+        "planning-purpose-redesign.md:54-58 limits simulation and requires the smallest safe probe of uncertain external behavior.",
+        "planning-purpose-redesign.md:120-127 preserves browser interaction, native rendering, lifecycle checks, server behavior, staging, and signed-native evidence in the iOS example.",
+        "planning-purpose-redesign.md:168 requires equal-scope UX and relevant performance comparison.",
+        "planning-purpose-redesign.md:174-180 includes UX and performance validation in the 120-minute implementation budget and disallows a hidden fourth budget.",
+        "delivery-speed-tradeoffs.md excerpt:80-89 documents that a 360×844 browser run did not prove physical iPhone behavior and that a unit test did not measure latency or smoothness."
+      ],
+      "proposed_fix": "For each material user promise, record the observation class in the existing evidence record and one sentence explaining why it is sufficient. If the required environment is unavailable within the target, report a target miss or an explicitly unverified promise; do not downgrade to a surrogate and call it complete. Keep cross-discipline plan review focused on a few causal links: UX state to state owner, failure state to server or transaction semantics, and performance promise to measurable runtime observation.",
+      "disposition": "ACCEPT. Observation kind and sufficiency are fixed from the promise; unavailable required observations remain unverified and cannot pass on substitutes."
+    },
+    {
+      "reviewer": "sol-high",
+      "id": "F-007",
+      "severity": "medium",
+      "claim": "The proposed pilot direction is sound but remains too broad to falsify whether planning redesign improves delivery rather than merely selecting an easier feature.",
+      "analysis": "The proposal asks for comparison against competent default execution and current SSVE with the same model and access, measuring equal scope, rework, UX, and performance. That is the correct falsification direction. It does not specify case selection, protection against framework-version or external-availability confounding, or which results reject rather than merely amend the hypothesis. A broad benchmark program would be disproportionate, but a cherry-picked easy fix would be uninformative. Existing evidence already offers a practical test case: a completed feature with known plan-induced dependency defects and established evidence requirements can be replayed from a clean snapshot or reconstructed as a bounded planning and execution exercise.",
+      "evidence": [
+        "planning-purpose-redesign.md:129-150 maps the proposal retrospectively to 14 known iOS findings and explicitly says this is not a blind benchmark.",
+        "planning-purpose-redesign.md:161-168 supplies useful falsifiers and asks for same-scope comparison but leaves pilot design open.",
+        "planning-purpose-redesign.md:204-208 requires cumulative timing, visible rework, preserved AC, UX, and performance, and honest over-budget causes.",
+        "delivery-speed-tradeoffs.md excerpt:3-10 and 29-42 provide existing receipts and commit-level evidence that can anchor a small comparison without a new telemetry system."
+      ],
+      "proposed_fix": "Run one paired pilot on an already completed medium-complexity feature slice with known acceptance and evidence requirements, preferably one implicated by the iOS dependency findings but not dependent on unavailable store processing. Use the same Astra model, repository snapshot, access, and final evidence bar. Compare current inline SSVE with proposed inline SSVE; add competent default Astra as a third arm only if affordable, otherwise use a short default plan as a qualitative floor. Reuse existing transcript, receipt, Git, and test timestamps. Predeclare failure conditions: a lost AC, weaker UX or performance observation, a consequential decision reopened during execution, repeated part-level reviews, or no material reduction in active critical-path time. An honest miss should revise the hypothesis, not create another universal framework.",
+      "disposition": "ACCEPT WITH BOUNDARY. Paper replay before schema work; one paired same-input pilot before claiming acceleration. Legitimate new discoveries are classified, not forbidden; preventable known-contract reopening or repeated micro-review is failure."
+    },
+    {
+      "reviewer": "grok-high",
+      "id": "P-001",
+      "severity": "high",
+      "claim": "30/120/10 plus a 5× target is not a causal reduction of the observed 20–30 hour cycles; without a work class it will either cut quality or fail the budget.",
+      "analysis": "The load-bearing owner model is a ~160-minute feature cycle that still closes the whole product/UX/technical solution before execution (proposal lines 5 and 170–188). The companion tradeoffs sample does not support that as a transformation of the same programs. Multicontext launcher intervals sum to 90.94 minutes across 23 invocations; iOS plan reviews sum to 21.15 minutes. Quota/resume gaps are 13–63 minutes and are not additive developer time. The same companion file states that Multicontext still included 42 ACs, billing boundaries, migrations, multiple platforms, translations, and observation, that this does not justify 20–30 hour execution, and that a 24-hour observation cannot complete within two hours. H5 further shows a large share of ‘review cost’ was repairing a release architecture the feature itself introduced. Stronger planning quality can prevent the ASTRA-M03 class of error (a generic ‘billing is context-bound’ miss of a two-transaction race) by spending the minutes currently burned on invented SHAs and merge bash. That is a real but bounded saving. It does not make Play/TestFlight/device/24h-observation programs fit in 160 minutes. If skills encode 30/120/10 as a universal SLO, agents will declare the whole solution closed after a thin four-row table (the iOS illustration explicitly does not certify ND-01–12 coverage) and push concurrency, native interaction, and release-path choice into ‘local detail’. That is the quality loss. The author’s own falsification bullet (first useful result earlier, final fixes eat the saving) is the likely outcome unless the budget is scoped to a work class.",
+      "evidence": [
+        "docs/analysis/2026-09-07-planning-purpose-redesign.md:5,170-180 — owner cycle is ~30 min planning, ≤120 min implementation, ≤10 min finalization; total ~160 min with environment ready.",
+        "docs/analysis/2026-09-07-planning-purpose-redesign.md:168 — 5× remains a target, not a result; comparison with default execution is ‘not done here’.",
+        "docs/analysis/2026-09-07-delivery-speed-tradeoffs.md H1 — Multicontext 90.94 min launcher intervals; iOS 21.15 min; 20 candidate digests / 23 package hashes; cache-hit not reported.",
+        "docs/analysis/2026-09-07-delivery-speed-tradeoffs.md:236-244 — 42 ACs and 24-hour observation; ‘No multiplier or universal two-hour promise is established by this document.’",
+        "docs/analysis/2026-09-07-delivery-speed-tradeoffs.md H5 — Play amendment findings F-001–F-005 are defects of a new release orchestrator, not proof that Absolute Plan dictation was the 20–30h driver."
+      ],
+      "proposed_fix": "Keep 30/120/10 as an SLO only for a declared work class: known shipped surface, existing release adapter, no new store/device/platform, no new orchestrator. For anything else the whole-solution plan must state the realistic envelope and the specific dependency (device proof, store processing, spike, 24h observation) instead of implying 160 minutes. Do not write 30/120/10 into plan-changeset or review-plan as a failing gate. Measure active critical path, external wait, and reopened decisions separately, as the proposal already says, and treat 5× as an aspiration until a same-scope comparison exists.",
+      "disposition": "ACCEPT WITH BOUNDARY. 30/120/10 remains the owner target, not a universal gate. A new platform or required observation must have a named larger envelope; this cannot excuse avoidable agent overhead or reset feature time."
+    },
+    {
+      "reviewer": "grok-high",
+      "id": "P-002",
+      "severity": "high",
+      "claim": "The proposed plan form will still fail current review/schema/linter graders; changing skill prose without replacing dimension h, rubric point 10, and required command sequences is a no-op.",
+      "analysis": "The author correctly names this (smallest-change item 2) and then leaves the replacement unspecified. Today’s contract still requires a copy-pasteable Execution Command Sequence from worktree through merge (plan-changeset output item 7a; protocol dimension h). The Kimi/Codex determinism rubric still scores point 2 (content-complete code/diff), point 3 (every validation command + expected exit), and point 10 (no variables for the executor to guess; ‘decide later’ absent). review-plan-codex.sh still demands an integer rubric_score. schemas/receipts/plan-manifest.schema.json still requires execution_command_sequence. A plan that defers later-slice internals and uses producer-bound pending identities is exactly what point 10 and dimension h reject. WI-386 already skipped blueprints on the inline path; the leftover tax is these graders, not §3a. If implementation edits only plan-changeset wording, the next iOS-like plan will collect the same command/ID/closeout findings (R2 F-003, F-005, R3 F-003) and the amendment mill continues. Competent inline Astra does not need merge-to-bash in the plan; it does need a named producer and a block on external effects without a validated value. That replacement must ship in the launcher prompt, protocol dimensions, and schema in the same slice.",
+      "evidence": [
+        "references/plan-review-protocol.md dimensions d and h — determinism rubric plus ‘all shell commands copy-pasteable … from branch creation to merge’.",
+        "scripts/review-plan-kimi.sh DETERMINISM RUBRIC points 2, 3, 10 — content-complete changes; validation command + exit code; ‘No variables for executor to guess (“decide later” / “figure out” absent)’.",
+        "scripts/review-plan-codex.sh — still requires rubric_score as the 0–10 determinism score.",
+        "skills/plan-changeset/SKILL.md:145 — 7a Execution Command Sequence remains a required manifest section even on inline.",
+        "schemas/receipts/plan-manifest.schema.json required[] — execution_command_sequence is mandatory; blueprints are the only WI-386-conditional field.",
+        "docs/analysis/2026-09-07-planning-purpose-redesign.md:154-157 — author admits skill-word changes fail if the launcher still grades another standard, then does not specify the new grade."
+      ],
+      "proposed_fix": "In one slice, replace dimension h with ‘next-slice commands are copy-pasteable and non-interactive; later slices name producer, verifier, and blocked external effect’. Replace rubric point 10 with ‘no undecided must-settle item; deferred items have a producer and a pre-use check’. Keep points that still pay (AC trace, non-cyclic deps, rollback, scope envelope, measurable success). Allow execution_command_sequence entries with value pending plus producer/verifier; do not drop the field. Stop requiring a numeric determinism score as a promotion predicate for inline plans. Do not use the old 10-point rubric as a reason to reject this proposal, and do not leave it in force after adopting the proposal.",
+      "disposition": "ACCEPT. Keep the execution sequence field; inline may use a typed producer/verifier action, dispatch keeps concrete commands. Change all actual consumers and nullable inline readiness score together."
+    },
+    {
+      "reviewer": "grok-high",
+      "id": "P-003",
+      "severity": "high",
+      "claim": "‘Whole solution closed / local detail later’ has no closed must-settle list and no file-set envelope, so the WI-347 drift hole reopens under a new name.",
+      "analysis": "WI-347 exists because cheap executors invented internals and drifted from product behavior. The proposal is right that a simpler helper inside the same behavior is not that defect, and right that inventing a Play request ID is the opposite defect. It does not give implementers a closed list of which class a decision is. The whole-solution table lists user result, UX/business constraints, approach, all ACs, shared interfaces, sequence, release conditions, and critical unknowns. It does not require an included/excluded file envelope, evidence kind per important AC, transaction/concurrency invariant, or HTTP/route contracts. The iOS example then shows four outcome rows and says later slices keep ‘result, interface dependencies, and proof’ while files are named immediately before work. If later slices have no file envelope, every file is ‘outside allowed scope’ and the extension rule (line 93) becomes a standing amendment mill. Conversely, if ‘local’ is allowed to include route method, translation ownership, or who owns map state, R2 F-006 and R1 F-005 happen again. Stronger up-front planning prevents rework only for cross-cutting decisions; it did not prevent GET registration from being missed in a detailed iOS plan. The middle is: settle invariants, owners, envelopes, and proof kinds; leave helper names and later-slice argv for the moment of use.",
+      "evidence": [
+        "docs/specs/work-items/WI-347.md Problem/Impact — Absolute Plan was added to stop executor discretion causing spec/code drift and unrun tests, via full payloads and command sequences for a zero-context executor.",
+        "docs/analysis/2026-09-07-planning-purpose-redesign.md:72-75 — whole-solution vs next-slice table; later-slice internals not authored in advance.",
+        "docs/analysis/2026-09-07-planning-purpose-redesign.md:88-96 — discovery table distinguishes helper vs shared API vs product promise, but is not a mechanical must-settle checklist.",
+        "docs/analysis/2026-09-07-planning-purpose-redesign.md:120-127 — iOS illustration is four parts; ‘the table here is an illustration and by itself does not certify full AC coverage’.",
+        "docs/analysis/2026-09-07-planning-purpose-redesign.md:145 — R2 F-006 (missing GET registration) is kept as a prior shared-API decision, which the 30-minute pass must actually produce, not merely classify."
+      ],
+      "proposed_fix": "Publish a closed must-settle list in the existing plan-review protocol, not a new ledger: user-visible states; state owner and Back/Clear vs automatic; shared APIs/routes/methods; transaction/concurrency boundaries; migrations; included/excluded file envelope; evidence kind per important AC (unit/browser/device/hosted); release path (reuse vs new infra); rollback/authority for external effects; named critical unknowns and whether a probe runs now. Everything else may be local. Later slices refine files and commands inside the envelope; crossing the envelope is a recorded extension before edit. Reject ‘outcome-only’ later slices.",
+      "disposition": "ACCEPT WITH CORRECTION. Enumerate must-settle categories plus propagation rule, rather than claiming an exhaustive list of every possible decision. Preserve exact file write bounds before mutation."
+    },
+    {
+      "reviewer": "grok-high",
+      "id": "P-004",
+      "severity": "high",
+      "claim": "The first implementation list omits the execute-changeset template that strips acceptance criteria, which the proposal itself identifies as the meaning-loss mechanism.",
+      "analysis": "The SSVE handoff example (proposal lines 192–194) is the cleanest causal story in the document: the standard implementor template removes high-level specifications, forbids reading other files, then tells the worker to search for existing solutions. That is worse than competent default Astra, which reads nearby code and keeps the user-visible constraint in mind. Whole-solution planning cannot survive that handoff. The ‘smallest meaningful change’ list (lines 154–159) only names plan-changeset, review-plan, launcher prompt, schema/validators, and downstream consumers. If those change and the template still ships AC-stripped zero-context packets, inline Astra may be fine in the parent session, but any dispatched child will re-invent behavior. Adaptive Context Enrichment already restores spec/AC mappings for 1M windows and then the default template takes them back out. The smallest technical replacement is to keep write bounds, allow targeted reads, and pass the applicable original constraints. That is cheaper than restoring Absolute Plan blueprints and is the actual quality-preservation move.",
+      "evidence": [
+        "skills/execute-changeset/references/subagent-dispatch.md:76-84 — ‘Do NOT grep, find, or scan’; ‘Do NOT read files not listed’; TDD and style contract only.",
+        "skills/execute-changeset/references/subagent-dispatch.md:118 — ‘All high-level specifications (Acceptance Criteria, Tech Design, UX, UI) are completely stripped’.",
+        "docs/analysis/2026-09-07-planning-purpose-redesign.md:192-194 — proposal says keep applicable original conditions and allowed targeted reads with unchanged write bounds; calls this a template defect, not a proven cause of the billing race.",
+        "docs/analysis/2026-09-07-planning-purpose-redesign.md:154-159 — numbered first slice does not include execute-changeset/subagent-dispatch.md."
+      ],
+      "proposed_fix": "Put the execute template in the first implementation slice: pass the applicable AC/UX constraints and allowed target reads; keep disjoint write bounds and ‘do not scan the repo’. Do not restore full CREATE payloads for inline. If dispatch mode remains supported, it must receive the must-settle packet, not a code-only blueprint with ACs stripped.",
+      "disposition": "ACCEPT. Executor template and applicable original AC/UX context are part of the first contract slice."
+    },
+    {
+      "reviewer": "grok-high",
+      "id": "P-005",
+      "severity": "medium",
+      "claim": "The 14 iOS findings mapping is a useful retrospective, not proof the new format would have caught the product defects; several need probes or tracing, not less dictation.",
+      "analysis": "The author labels this ‘not a blind benchmark’. That honesty should constrain the claim. Circular T2/T3/T5 and parallel ownership of translations/fixtures are process-created and the proposed ‘behavior owns its tests; shared files stay serial’ fix is the right smallest replacement versus competent default (do not fake parallelism). R2 F-004 (source walk as live state) and H7 (device:done at 360×844; perf:done as a unit test) are evidence-kind lies; renaming simulation and requiring a probe when the plan depends on uncertain external behavior is the quality-preserving move. R1 F-005 (two controllers, unclear roles) and R2 F-006 (GET registration) are not created by Absolute Plan templates; a detailed plan still missed them. Those fall to whole-solution tracing or a tiny spike. If the 30-minute budget spends its challenge slot on rubric theater, they will be missed again. Do not sell the format change as coverage of all 14.",
+      "evidence": [
+        "docs/analysis/2026-09-07-planning-purpose-redesign.md:129-131 — retrospective mapping, not a blind benchmark, not proof the new process would have found them.",
+        "docs/analysis/2026-09-07-planning-purpose-redesign.md:138-147 — F-004/F-001/F-003 are artificial graph problems; F-005/F-006 remain ‘subject of plan review’ / ‘prior shared API decision’.",
+        "docs/analysis/2026-09-07-planning-purpose-redesign.md:56-58 — simulation checks files/exports/imports; does not prove Mapbox, usable UI, or races.",
+        "docs/analysis/2026-09-07-delivery-speed-tradeoffs.md H7 — receipts mark device/perf done on browser viewport and unit tests, not physical iPhone or measured latency."
+      ],
+      "proposed_fix": "Split historical findings into four buckets in the existing analysis file: process-created graph, invented future values, evidence-kind substitution, and missed product/API facts. Only the first two are solved by this format. For the last two, require a named proof kind and, when the approach depends on uncertain native/provider behavior, the smallest safe probe whose result can change the approach. Do not add a mandatory spike for known fixes.",
+      "disposition": "ACCEPT. Historical findings classified into process graph, future identity, observation mismatch, missed product/API fact. Only the first two are directly removed by representation changes."
+    },
+    {
+      "reviewer": "grok-high",
+      "id": "P-006",
+      "severity": "medium",
+      "claim": "Dispatch/lean-executor remains a live fail-closed path; deferring internals there recreates the WI-347 failure the Absolute Plan was built for.",
+      "analysis": "plan-changeset still defaults to dispatch when unsure, and unmarked plan-manifest receipts fail closed to required blueprints. The proposal argues standalone Astra with code already loaded has different needs, which is true for the documented ‘only mode used in practice’. It also says detailed handoff contracts remain for executors that actually need them, without a decision procedure. If later implementation relaxes inline command completeness and someone actually dispatches a zero-context child, the child gets neither Absolute Plan payloads nor product constraints (P-004). Competent default for a dumb executor is still a complete packet. The middle is: inline uses whole-solution + next-slice; dispatch keeps a complete next-slice packet (files, commands, tests, applicable ACs). Do not silently apply deferred-detail to dispatch.",
+      "evidence": [
+        "skills/plan-changeset/SKILL.md:125-137 — dispatch vs inline; default when unsure is dispatch; absent mode fails closed to blueprints.",
+        "schemas/receipts/plan-manifest.schema.json allOf/if — blueprints required unless mode is present and equal to inline.",
+        "docs/analysis/2026-09-07-planning-purpose-redesign.md:27,154 — Absolute Plan was an optimization for cheap zero-context executors; ‘detailed handoff contracts remain for an executor that actually needs them’ with no rule for detecting that need."
+      ],
+      "proposed_fix": "Gate deferred internals on mode==inline in the same schema if/then that already gates blueprints. Dispatch continues to require a complete next-slice packet including applicable ACs. Record mode before planning, as WI-386 already requires.",
+      "disposition": "ACCEPT. Deferred execution entries require explicit inline mode and the new receipt version; absent/dispatch mode keeps its existing complete blueprint contract."
+    },
+    {
+      "reviewer": "grok-high",
+      "id": "P-007",
+      "severity": "medium",
+      "claim": "‘Derive task/AC views from the canonical record’ is right, but the generator and fail-closed live-spec bind are unspecified and can become the third ledger the proposal refuses.",
+      "analysis": "R1 F-001 (AC table contradicts the task graph) is a real transcription bug. WI-381 already has ac_digests as a navigation index hash-bound to the live spec; the spec remains authoritative. Adding another human-maintained mapping table is how 561 673 bytes of Multicontext contracts happened. The proposal says do not create a third ledger or workflow language, then asks validators and execute consumers to accept a new refinement model. If the canonical record is not named (spec AC table vs manifest task graph vs plan-contract.json) and a generator is not reused, agents will hand-write a fourth view. Specialized risk contracts (WI-553 concurrency/external-writer sections) should stay; they protect something the AC table does not. Derived views must be generated and rejected when they drift from spec_ac_table_sha256.",
+      "evidence": [
+        "docs/analysis/2026-09-07-planning-purpose-redesign.md:62-66 — four Multicontext artifacts 561 673 bytes; task-contract 7 657 lines; propose derived machine views, no third ledger.",
+        "schemas/receipts/plan-manifest.schema.json ac_digests — already a navigation index; live spec is sole AC source; hash-bound via spec_ac_table_sha256.",
+        "skills/plan-changeset/SKILL.md:144-145,198-199 — AC-to-task, AC-to-test, prerequisite matrix, plus optional plan-contract.json already duplicate mapping."
+      ],
+      "proposed_fix": "Generate AC↔task↔test rows from the spec AC table and the task graph; fail closed on spec_ac_table_sha256 mismatch. Stop requiring a separately authored duplicate matrix in the human plan. Keep plan-contract.json only for matched WI-553 risk flags. Do not add a new mapping language.",
+      "disposition": "PARTIAL ACCEPT. Generate mappings from canonical task/validation records and authoritative spec, with hash binding. Reject restricting plan-contract.json to risk flags ONLY: existing product/resource-writer, ownership and claim triggers remain necessary and unchanged."
+    },
+    {
+      "reviewer": "grok-high",
+      "id": "P-008",
+      "severity": "medium",
+      "claim": "Ten-minute finalization and this planning-form change are the wrong 5× lever compared with reuse of an existing release path and automatic restamp.",
+      "analysis": "H3 shows stamp-only commits that change Derived-at/stamped_at with no new behavior. H5 shows review findings generated by building a host controller plus Play adapter inside the feature. H6 shows receipt/recovery already landed in SSVE PRs #40/#41 and a Medium that the plan should not re-author land-changeset flags. The companion priority list ranks: stop rebuilding release infra; bring landed receipt recovery into the session; auto-derive stamps; earlier named product observations; only then optimize reviews. This proposal is item 5, plus a 10-minute closeout that cannot contain land/verify, all-host install, signed native, or store processing. The proposal is honest that external wait stays in visible total time and that a new universal release controller must not be built as part of feature finalization. That rule should be a first-slice constraint, not a hope, or 10 minutes will be spent re-deriving promotion flags and failing dimension h again (R2 F-003/F-005).",
+      "evidence": [
+        "docs/analysis/2026-09-07-delivery-speed-tradeoffs.md H3 — 79e7ef01→98585d69 and similar pairs are restamp-only.",
+        "docs/analysis/2026-09-07-delivery-speed-tradeoffs.md H5-H6 and priority list items 1–5 — release-infra rebuild outranks reviewer-minute cuts; PR #40 Medium: plan need not copy every promotion flag if land already executes the contract.",
+        "docs/analysis/2026-09-07-planning-purpose-redesign.md:198-202 — closeout assumes tests and implementation review are already done; forbids a new release controller; if mechanical checks exceed 10 minutes, optimize that path rather than rename the time."
+      ],
+      "proposed_fix": "In the whole-solution release row, require ‘reuse named existing land/verify/adapter; in-feature orchestrator is out of scope unless the WI is that infra’. Treat store/device/observation as a separate visible wait class, not as 10-minute agent work. Automate restamp on the existing index tool rather than planning it. Do not sequence this methodology change as the 5× program ahead of those.",
+      "disposition": "ACCEPT WITH BOUNDARY. Use existing release adapters, conditional index refresh and actual input-bound evidence. Real required device proof is active work if operated by an agent; only real provider/observation waiting is external wait."
+    },
+    {
+      "reviewer": "grok-high",
+      "id": "P-009",
+      "severity": "low",
+      "claim": "Falsification is named but not turned into a small existing-evidence pilot; schema work should wait on that.",
+      "analysis": "The request asked for a practical small falsification using existing evidence and for honest target failures. Lines 161–168 list good refutation conditions and then say the comparison is not done. Paid new review experiments are unnecessary. The iOS three-round findings and the current launcher prompt are enough. If a two-part rewrite of only the URL-state slice, scored against a one-shot prompt that uses the must-settle list instead of dimension h, still loses AC coverage or still invites a fourth review round, the format is not ready. If the only findings that disappear are invented IDs and circular task edges, implement those two replacements first and stop.",
+      "evidence": [
+        "docs/analysis/2026-09-07-planning-purpose-redesign.md:161-168 — four refutation bullets; comparison with competent default and current SSVE ‘is not done here’.",
+        "docs/analysis/2026-09-07-delivery-speed-tradeoffs.md:247-250 — use existing pre-fix snapshots; reviewers in a future comparison must not see historical findings first; do not run paid experiments as part of writing the analysis.",
+        "E6 in the tradeoffs inventory — iOS findings.json rounds 1–3 and review-log.yaml already exist."
+      ],
+      "proposed_fix": "Before any schema or protocol edit: rewrite only the first iOS verifiable part (navigation URL state) as whole-solution + next-slice; classify which of the 14 findings would still apply; do not show reviewers the historical table in that exercise if a live re-score is used. If using paper classification only, mark it as such. Implement first the two buckets that vanish (invented future values, circular graph). Treat target failure (no 5×, budget overrun on Multicontext-class work) as expected unless the work class in P-001 is respected.",
+      "disposition": "ACCEPT. A paper replay is recorded now before schema changes, explicitly not blind or a performance benchmark; implementation requires the named counterexample fixtures and one paired pilot before a speed claim."
+    }
+  ]
+}

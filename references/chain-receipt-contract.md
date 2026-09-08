@@ -238,3 +238,9 @@ and content SHA from original findings. Unknown, missing, duplicate, malformed,
 stale or unfixed entries fail. Exec certification failures never use this path.
 The same verifier governs builder, emitter, checker and learning consumers.
 Raw launcher verdicts remain unchanged; bounded closeout emits pass-with-acks.
+
+## Inline plan-manifest version 4
+
+New supported inline plans author the complete body once in the manifest's SVC_PLAN_BODY block. prepare-plan-handoff validates/projects it; emit-receipt remains the only canonical writer. Version 4 requires explicit inline mode, linked AC/task/proof mappings, original AC binding, immutable context hashes and ready-now commands or established land/verify producer descriptions. No new receipt family, task-result ledger or authority bypass is introduced.
+
+The helper and emitter check same-source schema/consumer capability before v4 issuance. The checker validates against the target Git candidate, not cwd AC text. Missing support rejects v4; valid v1–3 and current running-session pins retain their contracts. Old binaries cannot be retroactively taught to reject v4: only fully updated packages issue it. An AC or immutable-context change invalidates handoff and requires an explicit reviewed correction.

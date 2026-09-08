@@ -1,0 +1,546 @@
+{
+  "schema_version": 1,
+  "wi": "WI-FW-DELIVERY-TRADEOFFS-01",
+  "lane": "framework",
+  "status": "in_progress",
+  "created": "2026-09-07T17:51:29.575Z",
+  "tasks": [
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "route-workflow",
+      "subject": "route workflow",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-09-07T17:57:48.294Z",
+        "loaded_via": "file-read",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-09-07T20:45:55.995Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/delivery-planning-source-analysis.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-09-07T20:45:56.168Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/delivery-planning-source-analysis.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-09-07T20:45:56.338Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/delivery-planning-source-analysis.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-09-07T20:45:56.506Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/delivery-planning-source-analysis.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-09-07T20:45:56.677Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/delivery-planning-source-analysis.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-09-07T20:45:56.849Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/delivery-planning-source-analysis.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-07T17:57:48.487Z"
+    },
+    {
+      "id": 11,
+      "skill": "write-spec",
+      "subject": "Bind existing framework contract-change requirements",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "write-spec",
+        "loaded_at": "2026-09-07T20:17:15.039Z",
+        "loaded_via": "file-read",
+        "phases_executed": [
+          {
+            "id": "P1-ContextAndModeSelection",
+            "ts": "2026-09-07T20:17:15.206Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-FW-DELIVERY-TRADEOFFS-01.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiscussionPreflightAndAlternatives",
+            "ts": "2026-09-07T20:17:15.372Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-FW-DELIVERY-TRADEOFFS-01.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-StoryAcceptanceCriteriaDraft",
+            "ts": "2026-09-07T20:17:15.540Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-FW-DELIVERY-TRADEOFFS-01.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ScopeReviewDecisionLog",
+            "ts": "2026-09-07T20:17:15.705Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-FW-DELIVERY-TRADEOFFS-01.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-JourneySyncDependencyQueue",
+            "ts": "2026-09-07T20:17:15.876Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-FW-DELIVERY-TRADEOFFS-01.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyHandoff",
+            "ts": "2026-09-07T20:17:16.040Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-FW-DELIVERY-TRADEOFFS-01.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-07T20:17:16.202Z"
+    },
+    {
+      "id": 2,
+      "skill": "design-tech",
+      "subject": "Technical design and existing consumer compatibility",
+      "status": "completed",
+      "blocked_by": [
+        11
+      ],
+      "skill_receipt": {
+        "skill": "design-tech",
+        "loaded_at": "2026-09-07T20:17:16.373Z",
+        "loaded_via": "file-read",
+        "phases_executed": [
+          {
+            "id": "P1-SpecJourneyDiscussionPreflight",
+            "ts": "2026-09-07T20:23:29.012Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/delivery-planning-source-analysis.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-CodebasePatternAnalysis",
+            "ts": "2026-09-07T20:23:29.180Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/delivery-planning-source-analysis.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ArchitectureAlternativesAndDiagrams",
+            "ts": "2026-09-07T20:23:29.344Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-FW-DELIVERY-TRADEOFFS-01.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-CostOpsFeasibilityRiskDesign",
+            "ts": "2026-09-07T20:23:29.512Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-FW-DELIVERY-TRADEOFFS-01.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-G4ReviewAndDecisionLogging",
+            "ts": "2026-09-07T20:23:29.676Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/delivery-planning-plan-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-BaselinedSpecSelfVerify",
+            "ts": "2026-09-07T20:23:29.845Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-FW-DELIVERY-TRADEOFFS-01.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-07T20:23:30.008Z"
+    },
+    {
+      "id": 3,
+      "skill": "plan-changeset",
+      "subject": "plan-changeset",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-09-07T20:23:30.180Z",
+        "loaded_via": "file-read",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-09-07T20:23:30.347Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/delivery-planning-source-analysis.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-09-07T20:23:30.519Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/delivery-planning-source-analysis.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-09-07T20:23:30.696Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-09-07-delivery-planning/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-09-07T20:23:30.888Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-09-07-delivery-planning/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-09-07T20:28:20.054Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/delivery-plan-final-mechanical.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-09-07T20:28:20.230Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/delivery-plan-final-mechanical.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-07T20:28:20.402Z"
+    },
+    {
+      "id": 4,
+      "skill": "review-plan",
+      "subject": "review-plan",
+      "status": "completed",
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-09-07T20:28:20.567Z",
+        "loaded_via": "file-read",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-09-07T20:28:20.734Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/delivery-plan-final-mechanical.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-09-07T20:28:20.899Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/delivery-planning-plan-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-09-07T20:28:21.062Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/delivery-planning-plan-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-09-07T20:28:21.240Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/delivery-planning-plan-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-09-07T20:28:21.412Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/delivery-planning-plan-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-09-07T20:28:21.590Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/delivery-plan-final-mechanical.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-07T20:28:21.766Z"
+    },
+    {
+      "id": 5,
+      "skill": "execute-changeset",
+      "subject": "execute-changeset",
+      "status": "completed",
+      "blocked_by": [
+        4
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-09-07T20:28:21.932Z",
+        "loaded_via": "file-read",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-09-07T20:28:22.111Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/external-review-artifacts/delivery-planning-local/delivery-planning-exec-profile.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-09-07T21:23:31.888Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/delivery-planning-local/execution-checkpoint.patch"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-09-07T21:23:32.065Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/delivery-focused-round2.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-09-07T21:23:32.245Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/delivery-mechanical-round2.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-07T21:23:32.425Z"
+    },
+    {
+      "id": 6,
+      "skill": "review-gate",
+      "subject": "review-gate",
+      "status": "in_progress",
+      "blocked_by": [
+        5
+      ],
+      "skill_receipt": {
+        "skill": "review-gate",
+        "loaded_at": "2026-09-07T21:23:32.602Z",
+        "loaded_via": "activate-skill",
+        "phases_executed": [
+          {
+            "id": "P1-GateContextChecklistConcernScan",
+            "ts": "2026-09-07T22:43:38.404Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/external-review-artifacts/delivery-planning-local/self-review-final.txt"
+              }
+            ]
+          },
+          {
+            "id": "P2-SelfReviewFindings",
+            "ts": "2026-09-07T22:43:38.573Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/external-review-artifacts/delivery-planning-local/self-review-final.txt"
+              }
+            ]
+          },
+          {
+            "id": "P3-SelfJudgment",
+            "ts": "2026-09-07T22:43:38.822Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/external-review-artifacts/delivery-planning-local/self-review-final.txt"
+              }
+            ]
+          }
+        ]
+      },
+      "delivery_attempt": 2,
+      "delivery_started_at": "2026-09-08T05:08:00.754Z"
+    },
+    {
+      "id": 7,
+      "skill": "review-exec",
+      "subject": "review-exec",
+      "status": "pending",
+      "blocked_by": [
+        6
+      ]
+    },
+    {
+      "id": 8,
+      "skill": "audit-implementation",
+      "subject": "audit-implementation",
+      "status": "pending",
+      "blocked_by": [
+        7
+      ]
+    },
+    {
+      "id": 9,
+      "skill": "land-changeset",
+      "subject": "land-changeset",
+      "status": "pending",
+      "blocked_by": [
+        8
+      ]
+    },
+    {
+      "id": 10,
+      "skill": "verify-promotion",
+      "subject": "verify-promotion",
+      "status": "pending",
+      "blocked_by": [
+        9
+      ]
+    }
+  ],
+  "authorization_boundary": "Owner authorized implementation and normal delivery after plan review; open-source preparation is outside this changeset.",
+  "flags": [
+    "config_schema_migration",
+    "cross_runtime_integration"
+  ],
+  "persona_coverage": {
+    "status": "not_required",
+    "reason": "Internal framework contract-change enabler. Existing owner and planning/execution/review consumers are explicitly described in the WI; no new customer persona is introduced."
+  },
+  "delivery_cycle": {
+    "root_wi": "WI-FW-DELIVERY-TRADEOFFS-01",
+    "cycle_started_at": null
+  }
+}

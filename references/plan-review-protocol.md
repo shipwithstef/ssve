@@ -59,12 +59,14 @@ Reviewers must cover all nine dimensions. Lane compliance (dimension g) was adde
 | a | AC-to-task coverage gaps | Do all spec ACs map to at least one task in the plan? |
 | b | Scope-boundary leaks | Does any task touch a file outside the declared `touches:` list? |
 | c | Rollback adequacy | Is there a concrete, commit-scoped revert path? |
-| d | Determinism rubric | Score the 10-point rubric (see kimi reviewer script for the canonical list). |
+| d | Mode-aware readiness | Inline: score whole-solution readiness and original requirement preservation; local reversible code details are allowed. Dispatch/absent: retain complete-packet determinism. Integer score 0–10 in both. |
 | e | Idempotency / re-run safety | What happens if a task is re-run after partial completion? |
 | f | Execute-risk | What will actually break during execute-changeset? |
 | g | **Lane compliance** | For the declared lane, list every mandatory upstream skill. Is each either completed (cite artifact) or skipped-with-justification (cite `.svc/pipeline-decisions.jsonl`)? An unnamed lane skill = **REJECT** finding. |
-| h | **Command Determinism** | Are all shell commands copy-pasteable, non-interactive, correct, and complete from branch creation to merge? |
+| h | **Executable actions** | Legacy/dispatch: complete concrete shell sequence. Explicit inline v4: validate ready-now commands and existing land/verify producer descriptions; future identities must be produced and verified at their action boundary, never invented. |
 | i | **Blueprint Completeness** | **Dispatch mode (`mode: dispatch` / unset):** does copying the blueprints produce a lint-clean and fully compiled codebase state? An absent/incomplete blueprint = REJECT. **Inline mode (`mode: inline`, WI-386):** §3a is intentionally skipped — do NOT raise a missing-blueprint finding; instead verify the manifest still gives the orchestrator enough (file set + task graph + execution sequence) to apply the change with its already-loaded context. |
+
+For explicit inline mode, score these same ten dimensions as solution readiness: (1) exact resolvable or declared future files; (2) complete consequential behavior and interfaces, not authored code; (3) appropriate executable proof and outcomes; (4) meaningful action/authority limits; (5) exact write scope; (6) recovery path; (7) correct dependencies; (8) observable success; (9) original AC/UX/technical trace; (10) no unresolved consequential choice. Reversible local details are allowed. v4 release identities may use the validated existing-adapter producer form. Keep integer rubric_score 0–10 and concrete findings. For dispatch/absent mode, retain the complete-code/command packet rubric below.
 
 ## Finding format
 

@@ -4,6 +4,41 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 
 const CONTRACTS = [
+{
+  "validator": "validate-delivery-planning.sh",
+  "inputs": [
+    "scripts/lib/review-report-recovery.mjs",
+    "test-framework/tests/review-report-recovery.test.mjs",
+    "agents/plan-reviewer.md",
+    "references/chain-receipt-contract.md",
+    "references/plan-review-protocol.md",
+    "schemas/receipts/plan-manifest.schema.json",
+    "scripts/check-chain-receipts.mjs",
+    "scripts/emit-receipt.mjs",
+    "scripts/lib/plan-manifest-contract.mjs",
+    "scripts/mine-receipts.mjs",
+    "scripts/prepare-plan-handoff.mjs",
+    "scripts/review-plan-codex.sh",
+    "scripts/review-plan-kimi.sh",
+    "scripts/select-tier1-validators-v2.mjs",
+    "scripts/task-graph.mjs",
+    "scripts/verify-plan-mechanical.sh",
+    "skills/align-feature/SKILL.md",
+    "skills/audit-feature/SKILL.md",
+    "skills/execute-changeset/SKILL.md",
+    "skills/execute-changeset/references/subagent-dispatch.md",
+    "skills/land-changeset/SKILL.md",
+    "skills/plan-changeset/SKILL.md",
+    "skills/plan-changeset/references/manifest-templates.md",
+    "skills/review-plan/SKILL.md",
+    "skills/route-workflow/SKILL.md",
+    "skills/verify-promotion/SKILL.md",
+    "skills/write-spec/SKILL.md",
+    "test-framework/evals/tier-1/validate-delivery-planning.sh",
+    "test-framework/tests/delivery-cycle-accounting.test.mjs",
+    "test-framework/tests/delivery-plan-contract.test.mjs"
+  ]
+},
   {
     validator: "validate-ux-graduation.mjs",
     inputs: [

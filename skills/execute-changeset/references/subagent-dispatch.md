@@ -9,8 +9,7 @@
 | **Orchestrator** | Opus 4.8 | medium | Reads manifest, identifies groups, spawns subagents via `scripts/dispatch-worker.sh`, runs holistic review |
 | **Implementor** | resolver-routed (`resolve-model.sh EXEC` — Sonnet 4.6 under svc-default per WI-357) | high | Receives task + file constraints, writes test → writes code → runs test → commits |
 
-The orchestrator does NOT write code. It coordinates. Implementor subagents
-write code. This separation means the orchestrator (Opus) spends tokens
+On the explicitly selected dispatch path, the orchestrator coordinates and implementor subagents write code. Inline execution remains controller-owned. This separation means the orchestrator (Opus) spends tokens
 on decisions, and the EXEC-resolved model (Sonnet under svc-default per WI-357; MiMo under keyed profiles) spends tokens on generation.
 
 **CRITICAL ORCHESTRATOR CONSTRAINT:** Mutating children MUST be launched through the durable delegation and containment path. Persist the parent-to-child edge before launch, use a stable child principal and one-time acceptance token, and explicitly pass the file scope. If host capability validation denies child mutation, execute under the controller.
@@ -67,6 +66,10 @@ recomputes ancestry, file set, diff digest, validation, and cleanliness, and
 merges sequentially. A conflict becomes `merge_rejected` and is remediated as a
 serialized controller task.
 
+### Original clauses before dispatch
+
+Alongside the complete dispatch blueprint, include the applicable ORIGINAL AC/UX/technical text and source references. Preserve temporal behavior, manual overrides, ownership, transaction and performance constraints verbatim. Read targeted imports within the permitted repository context; never treat read permission as a widened write grant. Dispatch still requires a complete task packet and durable isolated delegation. Inline's later local elaboration is not permission to send an incomplete child packet.
+
 ### Subagent context (what each implementor receives)
 
 Each implementor subagent gets ONLY what it needs. The orchestrator constructs
@@ -77,9 +80,8 @@ You are implementing one task from a feature implementation plan.
 
 ## Your constraints
 - Write code ONLY for the files listed below. Do not create files not in the file list.
-- Do NOT grep, find, or scan the codebase. You have all the context you need below.
-- Do NOT read files not listed in your context. If you encounter an unknown import,
-  report it back to the orchestrator — do not resolve it yourself.
+- Read targeted in-repo imports and relevant callers when needed; avoid broad rescans.
+- Read permission never widens the exact write list or delegated worktree boundary.
 - Follow the style contract exactly. Do not invent conventions.
 - TDD: write the test FIRST, run it (must FAIL), then write implementation (must PASS).
 - Search before building: when a task requires infrastructure, middleware, or
@@ -95,6 +97,11 @@ You are implementing one task from a feature implementation plan.
 
 ## Style contract
 [INSERT docs/specs/style-contract.md content]
+
+## Original requirements and reviewed context
+[INSERT applicable original AC/UX/technical clauses verbatim with source references;
+for inline v4 use prepare-plan-handoff --task output. Dispatch retains its complete
+packet below; the v4-only helper is not a legacy/dispatch receipt reader.]
 
 ## Changeset Blueprint
 [INSERT the precise, context-rich diff or CREATE payload from the manifest's Changeset Blueprint section for this task]
@@ -115,12 +122,11 @@ You are implementing one task from a feature implementation plan.
 [INSERT the validation command for this task]
 ```
 
-This is ~10K tokens or less per subagent. All high-level specifications (Acceptance Criteria, Tech Design, UX, UI) are completely stripped to isolate the implementer and prevent token context degradation.
-
-**The "do not scan" constraint is critical.** Without it, a Sonnet subagent
-encountering an unfamiliar import will grep the entire codebase to resolve it,
-wasting 20-50K tokens. The constraint forces it to report back instead, letting
-the orchestrator provide the specific file on demand.
+Keep the handoff bounded around this task. Preserve original consequential clauses;
+short digests guide navigation and never replace those requirements. Resolve unknown
+imports with targeted reads inside the repository; escalate only missing authority
+or a consequential contract conflict. Do not force an orchestrator round trip for a
+read the implementor can safely perform.
 
 ### Adaptive Context Enrichment (1M Models)
 

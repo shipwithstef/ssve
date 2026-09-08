@@ -80,10 +80,10 @@ const fs = require('node:fs');
 if (process.argv.includes('--help')) console.log('--print --mode --output-format --model --sandbox --workspace --trust');
 else if (process.argv.includes('--version')) console.log('2026.09-fixture');
 else {
-  fs.readFileSync(0); fs.appendFileSync(${JSON.stringify(calls)}, 'called\\n');
+  const packageText=fs.readFileSync(0,'utf8'); fs.appendFileSync(${JSON.stringify(calls)}, 'called\\n');
   if (process.env.SVC_TEST_DELAY_MS) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, Number(process.env.SVC_TEST_DELAY_MS));
   if (process.env.SVC_TEST_POISON_ISSUANCE === '1') fs.chmodSync(${JSON.stringify(authority)}, 0o777);
-  console.log(JSON.stringify({subtype:'success', usage:{inputTokens:123, outputTokens:45}, result:JSON.stringify({schema_version:1,review_kind:'plan',rubric_score:10,rubric_failures:[],dependencies_needing_read:[],reviewer:{host:'cursor',family:'xai',model:'cursor-grok-4.6-high',effort:'high'},verdict:'pass',summary:'Offline stub only',findings:[],certifications:[]})}));
+  console.log(JSON.stringify({subtype:'success', usage:{inputTokens:123, outputTokens:45}, result:JSON.stringify({schema_version:1,review_kind:'plan',rubric_score:10,rubric_failures:[],dependencies_needing_read:process.env.SVC_TEST_UNREAD_DEP==='1'?['missing-proof.md']:[],reviewer:{host:'cursor',family:'xai',model:'cursor-grok-4.6-high',effort:'high'},verdict:'pass',summary:process.env.SVC_TEST_REPORT_PLACEHOLDER==='1'?'Placeholder until source review is complete':'Offline stub only',findings:[],certifications:process.env.SVC_TEST_REPORT_SCOPE==='1'&&!packageText.includes('Correct only the certification scope')?[{key:'unobserved-install',certified:false,reviewer_family:'xai',for_content_sha:null}]:[]})}));
 }
 `, { mode: 0o700 });
   const policy = createReviewerPolicy({ orchestrator: 'codex', self: { host: 'current', family: 'openai', model: 'gpt-6-astra', effort: 'medium' }, advisories: [], reviewer: { id: 'cursor', kind: 'external', required: true, authority: 'independent', identity_requirement: 'requested_accepted', tuple: { host: tuple.host, family: tuple.family, model: tuple.model, effort: tuple.effort } } });
@@ -292,7 +292,8 @@ test('a cache replay cannot steal the slot held by an in-flight paid review', { 
   replay.args[replay.args.length - 1] = replay.out;
   const [paidResult, cacheResult] = await Promise.all([paid, asyncRun(replay)]);
   assert.equal(paidResult.receipt.classification, 'success', paidResult.stderr);
-  assert.equal(cacheResult.receipt.classification, 'budget_exhausted', cacheResult.stderr);
+  assert.equal(cacheResult.receipt.classification, 'cache_hit', cacheResult.stderr);
+  assert.equal(cacheResult.code, 0, 'zero-call replay succeeds without taking the paid slot');
   assert.equal(cacheResult.receipt.protocol.process_invocations, 0);
   assert.equal(fs.readFileSync(f.calls, 'utf8').trim().split('\n').length, 2);
 });
@@ -595,4 +596,60 @@ test('parallel stamp, refresh and router validators leave shared source bytes an
   const results = await Promise.allSettled(['validate-manifest-integrity-stamp.sh', 'validate-knowledge-refresh-scan.sh', 'validate-skill-router.sh'].map(name => run('bash', [path.join(frameworkRoot, 'test-framework/evals/tier-1', name)], { cwd: frameworkRoot, timeout: 20000, maxBuffer: 1024 * 1024 })));
   assert.deepEqual(snapshot(), before, 'even restored temporary writes would change mtime');
   for (const result of results) assert.equal(result.status, 'fulfilled', result.reason?.stderr || result.reason?.message);
+});
+
+test('a repaired report survives invocation cleanup and replays at capacity with zero calls', async t => {
+ const f=await launcherFixture(t,2);
+ const repair=f.options('one',{SVC_TEST_REPORT_SCOPE:'1'});
+ const result=spawnSync(process.execPath,repair.args,repair.options);
+ assert.equal(result.status,0,result.stderr);
+ const originalBytes=fs.readFileSync(path.join(repair.out,'receipt.json'));
+ const original=JSON.parse(originalBytes);
+ assert.equal(original.attempts.length,2);
+ assert.equal(original.protocol.process_invocations,2);
+ const cachedReceiptPath=path.join(original.cache.entry,'receipt.json');
+ assert.deepEqual(fs.readFileSync(cachedReceiptPath),originalBytes);
+ fs.rmSync(repair.out,{recursive:true});
+ fs.mkdirSync(path.join(f.repo,'.svc','external-review-authority-fixture'),{mode:0o700}); // incidental fixture directory cannot redirect production trust
+ const replay=f.options('one');replay.out=path.join(f.repo,'.svc','repaired-replay');replay.args[replay.args.length-1]=replay.out;
+ const cached=spawnSync(process.execPath,replay.args,replay.options);
+ assert.equal(cached.status,0,cached.stderr);
+ const receipt=JSON.parse(fs.readFileSync(path.join(replay.out,'receipt.json')));
+ assert.equal(receipt.classification,'cache_hit');assert.equal(receipt.protocol.process_invocations,0);
+ assert.equal(fs.readFileSync(f.calls,'utf8').trim().split('\n').length,2);
+ assert.deepEqual(fs.readFileSync(cachedReceiptPath),originalBytes,'cache source stays byte-identical after invocation cleanup');
+ const forged=JSON.parse(originalBytes);forged.attempts[0].classification='schema_invalid';
+ fs.writeFileSync(cachedReceiptPath,JSON.stringify(forged));
+ replay.args[replay.args.length-1]=path.join(f.repo,'.svc','forged-cache-replay');
+ const rejected=spawnSync(process.execPath,replay.args,replay.options);
+ assert.notEqual(rejected.status,0,'changed cache receipt cannot reuse the original issuance signature');
+ assert.equal(fs.readFileSync(f.calls,'utf8').trim().split('\n').length,2,'forged cache at cap never launches another review');
+ const downgraded=JSON.parse(originalBytes);downgraded.attempts= [downgraded.attempts[0]];downgraded.protocol.process_invocations=1;
+ fs.writeFileSync(cachedReceiptPath,JSON.stringify(downgraded));
+ replay.args[replay.args.length-1]=path.join(f.repo,'.svc','downgraded-cache-replay');
+ assert.notEqual(spawnSync(process.execPath,replay.args,replay.options).status,0,'truncating attempts cannot bypass signed proof');
+ assert.equal(fs.readFileSync(f.calls,'utf8').trim().split('\n').length,2);
+});
+
+test('an explicit dollar ceiling prevents repair on a transport that cannot enforce it', async t => {
+ for(const mode of ['SVC_TEST_REPORT_SCOPE','SVC_TEST_REPORT_PLACEHOLDER']) {
+  const f=await launcherFixture(t);
+  const repair=f.options('one',{[mode]:'1',SVC_EXTERNAL_REVIEW_MAX_BUDGET_USD:'50'});
+  const result=spawnSync(process.execPath,repair.args,repair.options);
+  assert.notEqual(result.status,0,mode+' must not publish an unrepaired report');
+  const receipt=JSON.parse(fs.readFileSync(path.join(repair.out,'receipt.json')));
+  assert.equal(receipt.classification,'schema_invalid');
+  assert.equal(receipt.protocol.process_invocations,1);
+  assert.equal(receipt.protocol.configured_budget_usd,null,'unsupported ceiling is not claimed as enforced');
+  assert.equal(fs.readFileSync(f.calls,'utf8').trim().split('\n').length,1);
+ }
+});
+
+test('a placeholder with unread proof cannot be published when automatic completion is refused', async t => {
+ const f=await launcherFixture(t);
+ const invocation=f.options('one',{SVC_TEST_REPORT_PLACEHOLDER:'1',SVC_TEST_UNREAD_DEP:'1'});
+ const result=spawnSync(process.execPath,invocation.args,invocation.options);
+ assert.notEqual(result.status,0);
+ const receipt=JSON.parse(fs.readFileSync(path.join(invocation.out,'receipt.json')));
+ assert.equal(receipt.classification,'schema_invalid');assert.equal(receipt.protocol.process_invocations,1);
 });

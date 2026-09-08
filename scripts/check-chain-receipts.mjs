@@ -798,7 +798,11 @@ function loadSchema(receiptType) {
   }
 }
 
-function validateReceipt(receiptType, receipt, sha = null) {
+export const PLAN_MANIFEST_MAX_VERSION = 4;
+const planContract = existsSync(join(SCRIPT_DIR, "lib/plan-manifest-contract.mjs"))
+  ? await import("./lib/plan-manifest-contract.mjs") : null;
+
+export function validateReceipt(receiptType, receipt, sha = null) {
   // Minimal in-process validator: checks required keys + receipt_type.
   // Full JSON Schema validation can be plugged in later; for now,
   // verify required fields per the schema's "required" array.
@@ -813,6 +817,16 @@ function validateReceipt(receiptType, receipt, sha = null) {
   }
   if (receipt.receipt_type !== receiptType) {
     return { valid: false, reasons: [`receipt_type=${receipt.receipt_type} expected ${receiptType}`] };
+  }
+  if (receiptType === "plan-manifest") {
+    if (!Number.isInteger(receipt.schema_version) || receipt.schema_version < 1 || receipt.schema_version > PLAN_MANIFEST_MAX_VERSION) return { valid: false, reasons: ["unsupported plan schema_version"] };
+    if (receipt.schema_version === 4) {
+      if (!planContract || !sha) return { valid: false, reasons: ["v4 requires shared plan validator and explicit Git candidate"] };
+      const result = planContract.validatePlanBody(receipt, {
+        readSpec: (p) => execFileSync("git", ["show", `${sha}:${p}`], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }),
+      });
+      if (!result.ok) return { valid: false, reasons: result.errors };
+    }
   }
   let required = schema.required || [];
   // WI-381: ac_digests (the pipeline baton) is required only for v3+ plan-manifests;

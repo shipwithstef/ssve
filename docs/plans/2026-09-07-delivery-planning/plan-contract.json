@@ -1,0 +1,341 @@
+{
+  "schema_version": 1,
+  "manifest": "docs/plans/2026-09-07-delivery-planning/manifest.md",
+  "base_sha": "22a78dd1a792f625ef3dc609e4b9932d19a2e46a",
+  "risk_flags": [
+    "config_schema_migration",
+    "cross_runtime_integration"
+  ],
+  "ownership": [
+    {
+      "task": "T1",
+      "paths": [
+        "skills/plan-changeset/SKILL.md",
+        "skills/plan-changeset/references/manifest-templates.md",
+        "skills/review-plan/SKILL.md",
+        "references/plan-review-protocol.md",
+        "scripts/review-plan-codex.sh",
+        "scripts/review-plan-kimi.sh",
+        "scripts/verify-plan-mechanical.sh",
+        "schemas/receipts/plan-manifest.schema.json",
+        "scripts/emit-receipt.mjs",
+        "scripts/check-chain-receipts.mjs",
+        "skills/execute-changeset/SKILL.md",
+        "skills/execute-changeset/references/subagent-dispatch.md",
+        "references/chain-receipt-contract.md",
+        "scripts/lib/plan-manifest-contract.mjs",
+        "scripts/prepare-plan-handoff.mjs",
+        "test-framework/tests/delivery-plan-contract.test.mjs",
+        "agents/plan-reviewer.md"
+      ]
+    },
+    {
+      "task": "T2",
+      "paths": [
+        "skills/land-changeset/SKILL.md",
+        "skills/verify-promotion/SKILL.md"
+      ]
+    },
+    {
+      "task": "T3",
+      "paths": [
+        "skills/route-workflow/SKILL.md",
+        "scripts/task-graph.mjs",
+        "scripts/mine-receipts.mjs",
+        "skills/write-spec/SKILL.md",
+        "test-framework/tests/delivery-cycle-accounting.test.mjs",
+        "skills/audit-feature/SKILL.md",
+        "skills/align-feature/SKILL.md"
+      ]
+    },
+    {
+      "task": "T4",
+      "paths": [
+        "DOCTRINE.md",
+        "FRAMEWORK-STATE.md",
+        "test-framework/evals/tier-1/validate-delivery-planning.sh",
+        "scripts/select-tier1-validators-v2.mjs",
+        "docs/plans/2026-09-07-delivery-planning/simulation.log",
+        "docs/plans/2026-09-07-delivery-planning/plan-contract.json",
+        "docs/plans/2026-09-07-delivery-planning/proposal-findings.json",
+        "docs/plans/2026-09-07-delivery-planning/pilot.md",
+        "docs/plans/2026-09-07-delivery-planning/planned-files.json",
+        "docs/plans/2026-09-07-delivery-planning/manifest.md",
+        "docs/specs/work-items/WI-FW-DELIVERY-TRADEOFFS-01.md",
+        "docs/specs/reviews/delivery-planning-proposal-cross-model.md",
+        "docs/specs/reviews/delivery-planning-plan-cross-model.md",
+        "docs/analysis/2026-09-07-delivery-historical-evidence.json",
+        "docs/analysis/2026-09-07-delivery-speed-tradeoffs.md",
+        "docs/analysis/2026-09-07-planning-purpose-redesign.md",
+        ".claude/agents/plan-reviewer.md",
+        "references/skill-routing-index.json",
+        "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs",
+        "docs/specs/relations/wi-541-full-transition.branches.md",
+        "scripts/run-external-review.mjs",
+        "scripts/lib/review-report-recovery.mjs",
+        "scripts/lib/external-review-provenance.mjs",
+        "scripts/lib/bounded-exit.mjs",
+        "scripts/lib/reviewer-evidence.mjs",
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+        "test-framework/evals/tier-1/validate-retroactive-attestation.sh",
+        "test-framework/tests/review-report-recovery.test.mjs",
+        "skills/review-exec/SKILL.md",
+        "skills/review-cross-model/SKILL.md",
+        "test-framework/evals/tier-1/validate-clean-main-followup.mjs",
+        "docs/specs/relations/wi-548-host-parity.branches.md",
+        "docs/specs/relations/wi-548-host-parity.branches.md.imports.json"
+      ]
+    }
+  ],
+  "resource_review": {
+    "verification": "changed-executable-census",
+    "denominator": 23,
+    "disposition": "declared-risky-resource-writers",
+    "evidence": "Census of 23 executables in planned-files.json; review provenance updates the signed issuance inventory, not product inventory."
+  },
+  "resource_writers": [
+    {
+      "resource": "inventory",
+      "ordering": "Hold existing cycle and issuance locks; verify signed prior receipts before counting substantive rounds; append raw issuance sequence atomically after fallible metadata writes.",
+      "compensation": "Preserve existing signed history. Failed issuance must not publish a partial marker; never rewrite prior receipts or reset counters to recover.",
+      "property_sweep": "Signed provenance fixtures verify repeated zero-call cache replay, three substantive rounds, denied fourth invocation, cache replay at capacity, and unchanged original receipt bytes; existing provenance tests cover invalid or missing evidence."
+    }
+  ],
+  "claims": [],
+  "executables": [
+    {
+      "path": "scripts/review-plan-codex.sh",
+      "consumers": [
+        {
+          "path": "scripts/select-tier1-validators-v2.mjs",
+          "query": "review-plan-codex.sh"
+        }
+      ]
+    },
+    {
+      "path": "scripts/review-plan-kimi.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/tier-1/validate-review-plan-readonly.sh",
+          "query": "review-plan-kimi.sh"
+        }
+      ]
+    },
+    {
+      "path": "scripts/verify-plan-mechanical.sh",
+      "consumers": [
+        {
+          "path": "scripts/select-tier1-validators-v2.mjs",
+          "query": "verify-plan-mechanical.sh"
+        }
+      ]
+    },
+    {
+      "path": "scripts/emit-receipt.mjs",
+      "consumers": [
+        {
+          "path": "scripts/quick-fix-eligibility.mjs",
+          "query": "emit-receipt.mjs"
+        },
+        {
+          "path": "scripts/task-graph.mjs",
+          "query": "emit-receipt.mjs"
+        }
+      ]
+    },
+    {
+      "path": "scripts/check-chain-receipts.mjs",
+      "consumers": [
+        {
+          "path": "scripts/task-graph.mjs",
+          "query": "check-chain-receipts.mjs"
+        },
+        {
+          "path": "scripts/emit-receipt.mjs",
+          "query": "check-chain-receipts.mjs"
+        }
+      ]
+    },
+    {
+      "path": "scripts/lib/plan-manifest-contract.mjs",
+      "consumers": [
+        {
+          "path": "scripts/emit-receipt.mjs",
+          "query": "plan-manifest-contract.mjs"
+        },
+        {
+          "path": "scripts/check-chain-receipts.mjs",
+          "query": "plan-manifest-contract.mjs"
+        }
+      ]
+    },
+    {
+      "path": "scripts/prepare-plan-handoff.mjs",
+      "consumers": [
+        {
+          "path": "scripts/verify-plan-mechanical.sh",
+          "query": "prepare-plan-handoff.mjs"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/tests/delivery-plan-contract.test.mjs",
+      "consumers": [
+        {
+          "path": "test-framework/evals/tier-1/validate-delivery-planning.sh",
+          "query": "delivery-plan-contract.test.mjs"
+        }
+      ]
+    },
+    {
+      "path": "scripts/task-graph.mjs",
+      "consumers": [
+        {
+          "path": "scripts/partition-task-graph.mjs",
+          "query": "task-graph.mjs"
+        },
+        {
+          "path": "scripts/codex-load-skill.mjs",
+          "query": "task-graph.mjs"
+        }
+      ]
+    },
+    {
+      "path": "scripts/mine-receipts.mjs",
+      "consumers": [
+        {
+          "path": "test-framework/evals/tier-1/validate-slot-envelope-mining.sh",
+          "query": "mine-receipts.mjs"
+        },
+        {
+          "path": "test-framework/evals/tier-1/validate-gate-telemetry.sh",
+          "query": "mine-receipts.mjs"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/tests/delivery-cycle-accounting.test.mjs",
+      "consumers": [
+        {
+          "path": "test-framework/evals/tier-1/validate-delivery-planning.sh",
+          "query": "delivery-cycle-accounting.test.mjs"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-delivery-planning.sh",
+      "consumers": [
+        {
+          "path": "scripts/select-tier1-validators-v2.mjs",
+          "query": "validate-delivery-planning.sh"
+        }
+      ]
+    },
+    {
+      "path": "scripts/select-tier1-validators-v2.mjs",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "select-tier1-validators-v2.mjs"
+        },
+        {
+          "path": "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs",
+          "query": "select-tier1-validators-v2.mjs"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "tier-1"
+        }
+      ]
+    },
+    {
+      "path": "scripts/run-external-review.mjs",
+      "consumers": [
+        {
+          "path": "scripts/review-plan-codex.sh",
+          "query": "run-external-review.mjs"
+        }
+      ]
+    },
+    {
+      "path": "scripts/lib/review-report-recovery.mjs",
+      "consumers": [
+        {
+          "path": "scripts/run-external-review.mjs",
+          "query": "review-report-recovery.mjs"
+        }
+      ]
+    },
+    {
+      "path": "scripts/lib/external-review-provenance.mjs",
+      "consumers": [
+        {
+          "path": "scripts/run-external-review.mjs",
+          "query": "external-review-provenance.mjs"
+        }
+      ]
+    },
+    {
+      "path": "scripts/lib/bounded-exit.mjs",
+      "consumers": [
+        {
+          "path": "scripts/lib/reviewer-evidence.mjs",
+          "query": "bounded-exit.mjs"
+        }
+      ]
+    },
+    {
+      "path": "scripts/lib/reviewer-evidence.mjs",
+      "consumers": [
+        {
+          "path": "scripts/emit-receipt.mjs",
+          "query": "reviewer-evidence.mjs"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "tier-1"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-retroactive-attestation.sh",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "tier-1"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/tests/review-report-recovery.test.mjs",
+      "consumers": [
+        {
+          "path": "test-framework/evals/tier-1/validate-delivery-planning.sh",
+          "query": "review-report-recovery.test.mjs"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-clean-main-followup.mjs",
+      "consumers": [
+        {
+          "path": "test-framework/evals/run-all-evals.sh",
+          "query": "tier-1"
+        }
+      ]
+    }
+  ],
+  "volatile_paths": [
+    ".svc/"
+  ]
+}

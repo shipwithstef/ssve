@@ -140,14 +140,12 @@ for tool in node npm git jq gh codex opencode claude; do
   fi
 done
 
-# ── Check 7: fenced shell block under ## Execution Command Sequence ────────
-# WI-386 reconciliation: C7 (Execution Command Sequence) stays MANDATORY in BOTH
-# execution modes — the inline path still needs a copy-pasteable bash pipeline; only
-# §3a Changeset Blueprint (and therefore C8's MODIFY-diff fences below, which fire
-# solely when `<<<<<<< BEFORE` markers exist) is mode-conditional. So an inline-mode
-# manifest legitimately carries no diff blueprints (C8 simply finds no markers and is
-# a no-op) yet must still pass C7 and C9.
-if ! grep -q '## Execution Command Sequence' "$PLAN"; then
+# ── Check 7: explicit v4 inline contract, otherwise legacy shell sequence ──
+if grep -q '^<!-- SVC_PLAN_BODY -->$' "$PLAN"; then
+  if ! node "$SCRIPT_ROOT/scripts/prepare-plan-handoff.mjs" --manifest "$PLAN" --check; then
+    report "C7-FAIL: explicit inline v4 handoff is invalid"
+  fi
+elif ! grep -q '## Execution Command Sequence' "$PLAN"; then
   report "C7-FAIL: '## Execution Command Sequence' section is missing"
 else
   has_seq=$(awk '/## Execution Command Sequence/{flag=1; next} /^#/{flag=0} flag' "$PLAN" | grep -cE '^```(bash|sh)$' || true)

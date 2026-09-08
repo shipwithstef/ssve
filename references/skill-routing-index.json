@@ -27,7 +27,7 @@
     {
       "skill": "align-feature",
       "path": "skills/align-feature/SKILL.md",
-      "content_hash": "fae5ddf3e23ce8b6926c3cd56b2047f227e88a9d024649702930ae95dc2d9caf",
+      "content_hash": "049a1495ca04e3aac37542c91dc2caae82f41aa0b3d636dd9916097c2108f8e3",
       "description": "Execute the story-receipts chain for one WI until the validator prints STORY ALIGNED — the fixing counterpart of /audit-feature. Walks every required stage in order (personas → validate/intent card → spec → skills/design-ux/ui/device → journeys → ac → implement → e2e → test-run → spec-sync → visuals → qa-companion → ledger → marketing → pricing), each through its owning skill, recording a tracked receipt per stage. Use when the founder says \"align <feature>\", \"оправи <feature> по веригата\", \"continue the chain for WI-X\", \"fix it the receipted way\", or after /audit-feature produced a receipts file.",
       "aliases": [],
       "positive_triggers": [],
@@ -153,7 +153,7 @@
     {
       "skill": "audit-feature",
       "path": "skills/audit-feature/SKILL.md",
-      "content_hash": "646fdfb646fbe39b87740b226816723da1079dfbad7903b880595f371be7385f",
+      "content_hash": "06225ee22a3bea479903d6ce94891717fed1882c963c0b305455822f4016d77f",
       "description": "Run the full drift audit on one feature or journey — the complete machinery built for quiet hours: Pass A (19-layer census, 13 detectors, grounding script) + Pass B (independent verification agents), producing the relation ledger, seeded story-receipts chain, WI drafts and the matrix-first report. Use when the founder says \"audit <feature>\", \"провери <feature/journey>\", \"drift audit X\", \"is J07 aligned\", \"verify journey\", or names any feature/journey they want checked before go-live. Findings only — never fixes.",
       "aliases": [],
       "positive_triggers": [],
@@ -753,7 +753,7 @@
     {
       "skill": "execute-changeset",
       "path": "skills/execute-changeset/SKILL.md",
-      "content_hash": "8040fd6bc80e46d567e4249c83030a28682f9ecd0f7b4c92ad490b105ec72a0a",
+      "content_hash": "7c460371c77cfa8e486e5eaa832a9c297fcabec4d9021209ab751cb91047d4b4",
       "description": "Use after plan-changeset has produced a manifest and task graph. Triggers on \"execute the plan\", \"implement the changeset\", \"run the tasks\", \"start building\", or when a plan-changeset manifest exists and is ready for execution.",
       "aliases": [],
       "positive_triggers": [],
@@ -1005,7 +1005,7 @@
     {
       "skill": "land-changeset",
       "path": "skills/land-changeset/SKILL.md",
-      "content_hash": "06c872f8bc52bc337a08c6bbe2b6b1b5cd2fe859ca3205f703f2e8f35397e4de",
+      "content_hash": "6caf59316df83418d1b292f658976729c51cb16893a26509ef7173fe460a155c",
       "description": "Use when an executed change set has been validated (tests, E2E, review all pass in the worktree) and is ready to land on main — validates manifest coverage, pushes branch, opens PR, merges via squash, cleans up worktree",
       "aliases": [],
       "positive_triggers": [],
@@ -1236,7 +1236,7 @@
     {
       "skill": "plan-changeset",
       "path": "skills/plan-changeset/SKILL.md",
-      "content_hash": "13f09ca882abea9bb318b46ce79e5954d736f3bcab7feb669f2e28d11aac9dfc",
+      "content_hash": "0ce8ffc005707516e9f6d27166a08b3c33554a58af8455cbff1f78638cb1d03d",
       "description": "Use when you have a BASELINED feature spec with technical design and need to produce the implementation plan for branch-first execution — task graph, file set, validation plan, checkpoints, and AC/test mapping",
       "aliases": [],
       "positive_triggers": [],
@@ -1467,7 +1467,7 @@
     {
       "skill": "review-cross-model",
       "path": "skills/review-cross-model/SKILL.md",
-      "content_hash": "5c2e066d91dfa3bc2fe19235ef1f5c3f1290c77eee5137eb85e1cacf1f62b1a6",
+      "content_hash": "02deef91db0e92f2fca972172080654de600a1eb814fbcc172359de5d42579ba",
       "description": "Adversarial code review using the canonical deterministic external-review launcher. Sends diff + goals + spec to the second model, gets findings back, then Claude evaluates each finding: accept with justification or reject with justification. Back and forth until all remaining findings are medium severity max. Use when \"cross-model review\", \"second opinion\", \"codex review\", \"adversarial review\", or when `review-gate` leaves residual risk on changes involving new data models or integrations.",
       "aliases": [],
       "positive_triggers": [],
@@ -1485,7 +1485,7 @@
     {
       "skill": "review-exec",
       "path": "skills/review-exec/SKILL.md",
-      "content_hash": "2a99a18cd15d0a25bdd6836564aaf3fb5a867c36af22440d99b4f76674475e5d",
+      "content_hash": "822e824f6886ab8302ac696c79b871a9c3539ee72f59d1dae248ad6dcf76f0cd",
       "description": "Mandatory G5-enforcing gate. Self-review + adversarial review of the executed diff before land. Delegates to `review-cross-model` for the second-model invocation through `scripts/run-external-review.mjs`, with the requested owner-configured topology and tuple provenance exposed by `scripts/review-topology-v2.mjs`. Same-family Sol remains advisory; the configured different-family external station owns independent release authority. Emits SHA-keyed receipt at `.svc/receipts/<sha>/review-exec.json` and updates the consolidated git note on `refs/notes/svc-receipts`. Use after `execute-changeset` produces an exec-record receipt, before `land-changeset` opens the PR.",
       "aliases": [],
       "positive_triggers": [],
@@ -1521,7 +1521,7 @@
     {
       "skill": "review-plan",
       "path": "skills/review-plan/SKILL.md",
-      "content_hash": "97fc4fcbe5c398bfd8b4f18c37d615b4a4015ffc5223e6d3902cb5b935e41ee1",
+      "content_hash": "f80813395c150f137a5958339c27c9830d678dd8143d74784200bffd4375da83",
       "description": "Plan-level adversarial review gate. Runs after plan-changeset produces a manifest + task graph and BEFORE any execute-changeset dispatch. Two gates: (1) compiled mechanical/coverage checks — free, in-session; (2) one holistic adversarial review via the canonical external-review launcher with structured findings and a tuple receipt. Corrections recheck only invalidated lenses; disputed product/security authority routes to the owner, not a second model. Iteration loop with justified accept/reject responses — same discipline on both sides. Use when: plan-changeset manifest exists and is about to be promoted. Blocks promotion until all findings have resolutions.",
       "aliases": [],
       "positive_triggers": [],
@@ -1606,7 +1606,7 @@
     {
       "skill": "route-workflow",
       "path": "skills/route-workflow/SKILL.md",
-      "content_hash": "0135f9f35c53c0d1c0330230ca28ef2c12d4a6a2ab5837ebcfbb935cc5507c81",
+      "content_hash": "feddaabd8028026dd117ae5da17e405ea6985f95e382de8678bc7fbef8306aff",
       "description": "Universal entry point for any work. Routes freeform intent to the right svc skill based on repo state, change type, and current project artifacts. Handles: \"do this\", \"build this\", \"I want to\", \"help me with\", \"make me a\", \"ship this\", \"fix this\", or ANY freeform description of work; also handles explicit routing questions like \"what should I do next\", \"which skill do I run\", \"what's the right order\", and \"what lane is this\".",
       "aliases": [
         "what should I do next",
@@ -1906,7 +1906,7 @@
     {
       "skill": "verify-promotion",
       "path": "skills/verify-promotion/SKILL.md",
-      "content_hash": "cf22159add4e779de166b7fcfbb765d94aa402bbd8a9b20328db2d1cc7371ba8",
+      "content_hash": "bc68cff37bc82f6b54605767c9db51a4248477c25e9acff450d1b785358061e8",
       "description": "Use after a reviewed branch has been promoted to verify that the promoted implementation matches specs, passes tests, satisfies acceptance criteria, and closes the loop back into spec/journey state — triggers G7 review",
       "aliases": [],
       "positive_triggers": [],
@@ -1960,7 +1960,7 @@
     {
       "skill": "write-spec",
       "path": "skills/write-spec/SKILL.md",
-      "content_hash": "2be7cc945e3a4786691fbfb393429078f40da719dc232f9511b84a71dc118ab0",
+      "content_hash": "794cee998647d2a5d1d1e196d9e37afd30343ae293db7b3441b585656ad225d6",
       "description": "Use when defining a new feature or change — produces a DRAFT feature spec with user stories, ACs, and journeys before any technical design or code. Supports greenfield new-feature work and brownfield delta-spec work for extensions, bugfix behavior, and contract changes.",
       "aliases": [
         "specify feature",

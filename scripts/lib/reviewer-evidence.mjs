@@ -19,7 +19,7 @@ const EXTERNAL_FINDINGS_SCHEMA = JSON.parse(fs.readFileSync(path.join(SCHEMA_DIR
 // 2.5.5 changed cycle locking/atomic issuance, not the successful receipt
 // contract. Compatibility still requires all schema, semantic and signed
 // provenance checks below; version strings alone never grant authority.
-const SUPPORTED_LAUNCHER_VERSIONS = new Set([EXTERNAL_REVIEW_LAUNCHER_VERSION, "2.5.4"]);
+const SUPPORTED_LAUNCHER_VERSIONS = new Set([EXTERNAL_REVIEW_LAUNCHER_VERSION, "2.5.5", "2.5.4"]);
 
 function localCheckoutArtifact(root, value, { externalOnly = true } = {}) {
   const absolute = path.isAbsolute(value.path) ? path.resolve(value.path) : path.resolve(root, value.path);

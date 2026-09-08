@@ -210,7 +210,7 @@ export function validateBoundedExitAdjudication({ root, reviewKind, body, identi
   if (requestIds.some((requestId) => !requestId) || new Set(requestIds).size !== requestIds.length) reasons.push("bounded-exit launcher rounds must have unique request IDs");
   if (new Set(receiptDigests).size !== receiptDigests.length) reasons.push("bounded-exit launcher rounds must have unique receipt digests");
   try {
-    const inventory = listExternalReviewCycleProvenance({ receiptPath: rounds[0].receiptPath, wi, reviewKind, cycleId: adjudication.cycle_id, candidateDigests: rounds.map((round) => round.receipt?.candidate_digest) });
+    const inventory = listExternalReviewCycleProvenance({ receiptPath: rounds[0].receiptPath, wi, reviewKind, cycleId: adjudication.cycle_id, candidateDigests: rounds.map((round) => round.receipt?.candidate_digest) }).filter(row => row.counts_as_round !== false);
     if (inventory.length !== rounds.length) reasons.push(`bounded-exit declared ${rounds.length} round(s), but launcher authority issued ${inventory.length} for this candidate cycle`);
     const inventoryIds = inventory.map((entry) => entry.request_id);
     const inventoryDigests = inventory.map((entry) => entry.receipt_sha256);

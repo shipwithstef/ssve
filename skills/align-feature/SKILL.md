@@ -61,9 +61,7 @@ If this file and story-receipts.md disagree, story-receipts.md wins.
    freshness stamp, and one session produced five confidently-wrong claims about facts that
    were already in the repo.
 
-   **And when the story changes in-scope code, the index goes stale — by design.** Re-walk the
-   affected axes and re-stamp `Derived-at` **before** the closing PR, or the contract fails and
-   the story cannot print STORY ALIGNED.
+   **Use the existing freshness check after the story changes code.** When it remains FRESH and there are no new facts, keep the index byte-identical. If cited facts/imports are stale, re-walk affected axes and re-stamp `Derived-at` before the closing PR. Never stamp only because HEAD changed or to silence a failing contract.
 
 1. **Resolve** the story: `docs/specs/receipts/<WI>.receipts.json` (create from TEMPLATE if
    the WI exists but has no receipts). Read the WI doc + **the branch index** + any DECISION card.

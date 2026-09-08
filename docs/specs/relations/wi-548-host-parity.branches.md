@@ -1,6 +1,6 @@
 # Branch index — portable host-parity program
 
-Derived-at: f24a7add94ea8f78a87f736dcc7cb8f9183eb59a
+Derived-at: edc2819f0bb9ccfdb5246478917ba01cdc0f0584
 Scope-paths:
   - docs/specs/architecture/wi-548-*.md
   - docs/specs/features/framework-portable-host-parity.md
@@ -63,3 +63,6 @@ Scope-paths:
 
 ## Revalidation for session recovery
 Cited entry points and callers rechecked at the Derived-at source. ensure-worktree still owns bootstrap/recovery, with exact already-bound resume now consuming complete authority; launcher remains the governed review entry point and adds the reviewer-resources helper. Policy, receipt, generation and host-install boundaries remain in their cited owners. Earlier program outcome/child-status lines describe their historical scope, not a claim that the current full corpus is green. Current test census is recorded in `docs/specs/audit/session-recovery-analysis.md`.
+
+## Delivery report recovery revalidation
+The launcher still owns governed review and uses the existing receipt writer/checker and durable authority. Its added report-recovery helper classifies incomplete reports and preserves source judgment during a bounded correction; it introduces no new host, policy owner or receipt family. These source changes are reviewed and committed at the Derived-at SHA. The import sidecar records that inspected dependency; historical WI release statements above keep their original scope.
