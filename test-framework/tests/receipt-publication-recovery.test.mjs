@@ -89,7 +89,7 @@ test('already merged PR skips merge and freshness, binds candidate instead of ch
   assert.throws(()=>f.git(path.join(f.dir,'remote'),'rev-parse','--verify','refs/notes/svc-receipts'));
 });
 
-for (const lag of [false,true]) test(`fresh clone recovers exact candidate object and published proof; GitHub lag=${lag}`, t => {
+for (const [lag,stale] of [[false,false],[true,false],[false,true]]) test(`fresh clone recovers exact candidate object and published proof; GitHub lag=${lag}, stale local=${stale}`, t => {
   const f=fixture(t);
   fs.writeFileSync(path.join(f.a,'feature.txt'),'reviewed feature');
   f.git(f.a,'add','feature.txt');f.git(f.a,'commit','-m','candidate');
@@ -102,6 +102,7 @@ for (const lag of [false,true]) test(`fresh clone recovers exact candidate objec
   f.git(fresh,'config','user.email','test@example.invalid');f.git(fresh,'config','user.name','Test');
   assert.throws(()=>f.git(fresh,'cat-file','-e',candidate));
   fs.writeFileSync(path.join(fresh,'other.txt'),'unrelated checkout head');f.git(fresh,'add','other.txt');f.git(fresh,'commit','-m','different HEAD');
+  if (stale) f.git(fresh,'notes','--ref=svc-receipts','add','-m','{"localOnly":true}',candidate);
   const bin=path.join(f.dir,'bin');fs.mkdirSync(bin);const log=path.join(f.dir,'gh-calls');
   const meta={state:'MERGED',baseRefOid:f.two,headRefOid:candidate,headRefName:'feature',mergeCommit:{oid:squash}};
   const first={...meta,mergeCommit:lag?null:meta.mergeCommit};
@@ -113,7 +114,7 @@ for (const lag of [false,true]) test(`fresh clone recovers exact candidate objec
     assert.equal(e.status,3,e.stdout+e.stderr);assert.match(e.stdout,/already merged/);assert.match(e.stderr,/coverage verify failed/);return true;
   });
   assert.equal(f.git(fresh,'rev-parse',`${candidate}^{tree}`),tree);
-  assert.deepEqual(JSON.parse(f.git(fresh,'notes','--ref=svc-receipts','show',squash)),{sentinel:{candidate}});
+  assert.deepEqual(JSON.parse(f.git(fresh,'notes','--ref=svc-receipts','show',squash)),{sentinel:{candidate},...(stale?{localOnly:true}:{})});
   assert.doesNotMatch(fs.readFileSync(log,'utf8'),/pr merge|^api /m);
   assert.throws(()=>f.read(squash)); // Incomplete proof never published.
 });

@@ -15,7 +15,7 @@ export function publishReceiptNotes(root, envelopes, { attempts = 5 } = {}) {
   try {
     for (let attempt = 0; attempt < attempts; attempt++) {
       const remote = git(['ls-remote', 'origin', remoteRef]).stdout.trim().split(/\s/)[0];
-      git(['update-ref', '-d', ref]);
+      if (attempt > 0) git(['update-ref', '-d', ref]);
       if (remote) {
         if (!/^[0-9a-f]{40}$/.test(remote)) throw new Error('Invalid remote notes identity');
         git(['fetch', '--no-tags', 'origin', remote]);
@@ -24,20 +24,7 @@ export function publishReceiptNotes(root, envelopes, { attempts = 5 } = {}) {
       for (const [sha, envelope] of Object.entries(envelopes)) {
         if (!/^[0-9a-f]{40}$/.test(sha)) throw new Error('Invalid receipt commit identity');
         const existing = git(['notes', `--ref=${ref}`, 'show', sha], true);
-        const merged = existing.status === 0 ? JSON.parse(existing.stdout) : {};
-        for (const [slot, body] of Object.entries(envelope)) {
-          // Recomputed coverage has the same evidence but a new wall-clock
-          // timestamp. Preserve the published receipt when that alone differs.
-          if (body?.receipt_type === 'skill-coverage' && merged[slot]?.receipt_type === 'skill-coverage') {
-            const { generated_at: oldTime, ...oldProof } = merged[slot];
-            const { generated_at: newTime, ...newProof } = body;
-            if (isDeepStrictEqual(oldProof, newProof)) continue;
-          }
-          if (Object.hasOwn(merged, slot) && !isDeepStrictEqual(merged[slot], body)) {
-            throw new Error(`Conflicting receipt for ${sha}:${slot}`);
-          }
-          merged[slot] = body;
-        }
+        const merged = mergeReceiptEnvelopes(existing.status === 0 ? JSON.parse(existing.stdout) : {}, envelope);
         git(['notes', `--ref=${ref}`, 'add', '-f', '-m', JSON.stringify(merged), sha]);
       }
       const pushed = git(['push', 'origin', `${ref}:${remoteRef}`], true);
@@ -66,4 +53,22 @@ export function readPublishedReceiptNote(root, sha) {
     const note = git(['notes', `--ref=${ref}`, 'show', sha]);
     return note.status === 0 ? JSON.parse(note.stdout) : {};
   } finally { git(['update-ref', '-d', ref]); }
+}
+
+export function mergeReceiptEnvelopes(remote, local) {
+  const merged = { ...remote };
+        for (const [slot, body] of Object.entries(local)) {
+          // Recomputed coverage has the same evidence but a new wall-clock
+          // timestamp. Preserve the published receipt when that alone differs.
+          if (body?.receipt_type === 'skill-coverage' && merged[slot]?.receipt_type === 'skill-coverage') {
+            const { generated_at: oldTime, ...oldProof } = merged[slot];
+            const { generated_at: newTime, ...newProof } = body;
+            if (isDeepStrictEqual(oldProof, newProof)) continue;
+          }
+          if (Object.hasOwn(merged, slot) && !isDeepStrictEqual(merged[slot], body)) {
+            throw new Error(`Conflicting receipt for ${slot}`);
+          }
+          merged[slot] = body;
+        }
+  return merged;
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import path from "node:path";
 import os from "node:os";
-import { publishReceiptNotes, readPublishedReceiptNote } from "./lib/publish-receipt-notes.mjs";
+import { publishReceiptNotes, readPublishedReceiptNote, mergeReceiptEnvelopes } from "./lib/publish-receipt-notes.mjs";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
@@ -278,11 +278,13 @@ const squashTree = gitOut(["rev-parse", `${oid}^{tree}`]);
 if (!squashTree || !candidateTree) finalizeFail("candidate or squash tree unresolvable");
 if (candidateTree !== squashTree) finalizeFail(`tree divergence: candidate ${candidateTree.slice(0, 12)} vs squash ${squashTree.slice(0, 12)}`);
 
-let candidateEnvelopeRaw = gitOut(["notes", "--ref=svc-receipts", "show", CANDIDATE_SHA]);
-if (!candidateEnvelopeRaw) {
-  try { candidateEnvelopeRaw = JSON.stringify(readPublishedReceiptNote(root, CANDIDATE_SHA)); }
-  catch (e) { finalizeFail(`candidate receipt recovery failed: ${e.message}`); }
-}
+let candidateEnvelopeRaw;
+try {
+  const local = gitOut(["notes", "--ref=svc-receipts", "show", CANDIDATE_SHA]);
+  candidateEnvelopeRaw = JSON.stringify(mergeReceiptEnvelopes(
+    readPublishedReceiptNote(root, CANDIDATE_SHA), local ? JSON.parse(local) : {},
+  ));
+} catch (e) { finalizeFail(`candidate receipt recovery failed: ${e.message}`); }
 let remapped = {};
 try { remapped = candidateEnvelopeRaw ? JSON.parse(candidateEnvelopeRaw) : {}; }
 catch (e) { finalizeFail(`candidate envelope unreadable: ${e.message}`); }
