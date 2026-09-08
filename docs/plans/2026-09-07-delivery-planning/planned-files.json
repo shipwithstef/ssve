@@ -284,6 +284,16 @@
       "task": "T4",
       "action": "MODIFY",
       "path": "test-framework/evals/tier-1/validate-clean-main-followup.mjs"
+    },
+    {
+      "task": "T4",
+      "action": "MODIFY",
+      "path": "docs/specs/relations/wi-548-host-parity.branches.md"
+    },
+    {
+      "task": "T4",
+      "action": "MODIFY",
+      "path": "docs/specs/relations/wi-548-host-parity.branches.md.imports.json"
     }
   ]
 }

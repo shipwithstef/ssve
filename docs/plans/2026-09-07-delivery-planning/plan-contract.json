@@ -81,7 +81,9 @@
         "test-framework/tests/review-report-recovery.test.mjs",
         "skills/review-exec/SKILL.md",
         "skills/review-cross-model/SKILL.md",
-        "test-framework/evals/tier-1/validate-clean-main-followup.mjs"
+        "test-framework/evals/tier-1/validate-clean-main-followup.mjs",
+        "docs/specs/relations/wi-548-host-parity.branches.md",
+        "docs/specs/relations/wi-548-host-parity.branches.md.imports.json"
       ]
     }
   ],

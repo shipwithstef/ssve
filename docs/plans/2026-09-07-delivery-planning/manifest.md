@@ -83,6 +83,8 @@ Invariants: canonical spec authority; unchanged required delivery chain and owne
 | T4 | MODIFY | skills/review-exec/SKILL.md | Automatic bounded report recovery and compatibility |
 | T4 | MODIFY | skills/review-cross-model/SKILL.md | Automatic bounded report recovery and compatibility |
 | T4 | MODIFY | test-framework/evals/tier-1/validate-clean-main-followup.mjs | Verify cache replay preserves the concurrent paid slot |
+| T4 | MODIFY | docs/specs/relations/wi-548-host-parity.branches.md | Refresh inspected launcher import metadata |
+| T4 | MODIFY | docs/specs/relations/wi-548-host-parity.branches.md.imports.json | Refresh inspected launcher import metadata |
 
 Planning provenance is explicitly owned by T4 in this same changeset: this plan directory, the WI, review reports and analysis files below are included in the implementation diff census. Use the single stated base_sha throughout. There is no pre-implementation documentation checkpoint or predicted future SHA; ordinary task checkpoints retain the same base. Runtime .svc state remains volatile under existing authority.
 
@@ -316,3 +318,6 @@ The existing WI-541 index was stale before this branch against three cited skill
 Resume the same delivery WI; do not restart the product plan. The owner explicitly requested that a transport/report blocker recover automatically. T4 adds AC-DP-11: one repair inside the original timeout and transport-supported budget (unknown Claude spend or an explicit unsupported dollar ceiling prevents retry; no dollar guarantee is claimed for uncapped CLI transports), exact judgment preservation for scope-only edits, ordinary validation for incomplete output, and no new substantive round for a zero-call cache replay. Preserve signed raw history, three real review rounds, auth/model/safety refusals and actual source failures. No global approval bypass or new service/receipt family is introduced. The final execution review covers this localized amendment; earlier immutable reviews remain historical evidence. Tests: the existing launcher fixture exercises actual correction calls and rejected judgment drift; the focused delivery wrapper includes signed cache-history/capacity and semantic-negative tests.
 
 | AC-DP-11 | T4 | validate-delivery-planning.sh; validate-external-review-launcher.sh |
+
+### Post-commit import-index closeout
+The recovery helper also changes the import shape recorded by the historical WI-548 index. Reinspect its generic launcher/receipt/authority claims against committed implementation edc2819f0bb9ccfdb5246478917ba01cdc0f0584, retain those claims, and regenerate only its Derived-at/import metadata. This T4 closeout adds no executable change; original full368-validator evidence remains scoped to the implementation commit. Run mechanical plan, index and manifest checks for this documentation-only follow-up.
