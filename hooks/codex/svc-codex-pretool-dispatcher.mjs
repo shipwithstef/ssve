@@ -49,10 +49,20 @@ try{if(path.basename(HERE)==="codex")return "codex";}catch{}
 return "";}
 function sidOf(p) { return String(p.session_id || p.sessionId || p.thread_id || p.threadId || process.env.SVC_SESSION_ID || process.env.GROK_SESSION_ID || process.env.CODEX_THREAD_ID || process.env.CODEX_SESSION_ID || ""); }
 function worktreeRows(repo) { return (spawnSync("git",["-C",repo,"worktree","list","--porcelain"],{encoding:"utf8"}).stdout||"").split(/\r?\n/).filter(x=>x.startsWith("worktree ")).map(x=>x.slice(9)); }
-function baton(repo,sid,payload) { if(!repo)return null; const found=[]; try { for(const root of new Set([repo,...worktreeRows(repo)])){ const candidate=fs.realpathSync(root); const dir=path.join(candidate,".svc","bindings"); try { for(const n of fs.readdirSync(dir)){ if(!n.endsWith(".json"))continue; const f=path.join(dir,n),s=fs.lstatSync(f); if(!s.isFile()||s.isSymbolicLink())continue; const b=JSON.parse(fs.readFileSync(f,"utf8")); if(b.session_id===sid&&b.role==="mutating"&&!b.released_at)found.push({worktree:fs.realpathSync(b.worktree_root),binding:b}); } } catch {} } if(!found.length){ for(const root of new Set([repo,...worktreeRows(repo)])){ const candidate=fs.realpathSync(root); const resolved=resolveWI({...payload,cwd:candidate,session_id:sid},{...process.env,SVC_REQUIRE_SESSION_BINDING:"1"}); if(resolved.authority&&resolved.tuple?.worktree_root===candidate)found.push({worktree:candidate,binding:null}); } } } catch {} return found.length===1?found[0]:found.length>1?{conflict:true}:null; }
+function baton(repo,sid,payload) { if(!repo)return null; const found=[]; try { for(const root of new Set([repo,...worktreeRows(repo)])){ const candidate=fs.realpathSync(root); const dir=path.join(candidate,".svc","bindings"); try { for(const n of fs.readdirSync(dir)){ if(!n.endsWith(".json"))continue; const f=path.join(dir,n),s=fs.lstatSync(f); if(!s.isFile()||s.isSymbolicLink())continue; const b=JSON.parse(fs.readFileSync(f,"utf8")); if(b.session_id===sid&&b.role==="mutating"&&!b.released_at)found.push({worktree:fs.realpathSync(b.worktree_root),binding:b}); } } catch {} } if(!found.length){ for(const root of new Set([repo,...worktreeRows(repo)])){ const candidate=fs.realpathSync(root); const resolved=resolveWI({...payload,cwd:candidate,session_id:sid},{...process.env,SVC_REQUIRE_SESSION_BINDING:"1"}); if(resolved.authority&&resolved.tuple?.worktree_root===candidate)found.push({worktree:candidate,binding:resolved.tuple}); } } } catch {} return found.length===1?found[0]:found.length>1?{conflict:true}:null; }
 function child(spec,payload){const name=spec[0]==="codex"?spec[1]:spec[0];const disabled=String(process.env.SVC_DISABLED_HOOKS||"").split(",").map(s=>s.trim()).filter(Boolean);// EXTREV-R3-008: selective disabling follows the consolidated contract.
 if(disabled.some(d=>name===d||name===d+".mjs"||name.startsWith(d)))return "";const a=spec[0]==="codex"?[path.join(HERE,spec[1])]:[path.join(HOOK_ROOT,spec[0])];if(spec[0]!=="codex")a.push(...spec.slice(1));const r=spawnSync(process.execPath,a,{input:JSON.stringify(payload),encoding:"utf8",env:{...process.env,SVC_CODEX_DISPATCHER_CHILD:"1"}});if(r.status!==0)return r.stderr?.trim()||"Codex preflight denied the operation";const t=String(r.stdout||"").trim();if(!t)return "";// EXTREV-R3-005: a child that emits garbage must never be read as allow.
 try{const j=JSON.parse(t.split(/\r?\n/).filter(Boolean).at(-1));return (j?.hookSpecificOutput?.permissionDecision||j?.decision)==="deny"?(j.hookSpecificOutput?.permissionDecisionReason||j.reason||"Codex preflight denied the operation"):"";}catch{return "child emitted an unparseable decision; failing closed";}}
+async function loadRecoverySkill(worktree,gate,input,ctx,sid){
+const ensureModule=await import("../../scripts/svc-ensure-worktree.mjs");
+const recovery=ensureModule.prepareRecoveredSession({worktree:worktree,wi:gate.wi,sessionId:sid,turnId:ctx.turn_id,authorization:gate,agentId:payload.agent_id||payload.agentId||process.env.SVC_AGENT_ID||null});
+const loader=encodeSimpleCommand([process.execPath,path.resolve(HERE,"..","..","scripts","codex-load-skill.mjs"),"--graph",recovery.graphPath,"--task",String(recovery.taskId),"--skill",recovery.skill,"--turn",String(ctx.turn_id||"")]);
+if(input && (Object.hasOwn(input,"command") || Object.hasOwn(input,"cmd"))){
+const field=Object.hasOwn(input,"cmd")?"cmd":"command";
+process.stdout.write(JSON.stringify({systemMessage:"SSVE restored the authorized WI. This call loads its current skill; the original operation has not run. Read the skill output, then retry the original operation.",hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"allow",updatedInput:{...input,[field]:loader,workdir:worktree}}})+"\n");process.exit(0);
+}
+deny(`SSVE restored the authorized WI. Load its current skill before retrying: ${loader}`);
+}
 try { const key=payload.tool_input?"tool_input":payload.toolInput?"toolInput":payload.arguments?"arguments":"args";{// WI-FW-HOOKS-SAFETY-01 (FP-03/EXTREV-EXEC-008): ONE engine decision. The
 // original input is
 // per-Git-argv `--no-optional-locks` normalization — never an `export`
@@ -61,10 +71,27 @@ const observation=evaluatePreToolObservation(payload);if(observation){if(observa
 // The default-checkout requirement is evaluated against the repository the
 // EXPLICIT operation evidence resolves to when present; session cwd is
 // context, never mutation authority.
-const bootstrapScope=scope.explicit_workdir&&scope.explicit_workdir.present?scope.operation_repository:scope.session_repository;if(!repo||!bootstrapScope||!bootstrapScope.default_worktree_root||bootstrapScope.worktree_root!==bootstrapScope.default_worktree_root)deny("bootstrap must start from the repository default checkout");const base=boot.from==="origin/main"?(spawnSync("git",["-C",repo,"rev-parse","origin/main"],{encoding:"utf8"}).stdout||"").trim():boot.from;if(!/^[0-9a-f]{40}$/.test(base))deny("bootstrap base did not resolve to an exact commit");const handoff=createBootstrapHandoff({session_id:sid,host:hostId,repo_root:repo,wi:boot.wi,branch:boot.branch,base});const ensure=path.resolve(HERE,"..","..","scripts","svc-ensure-worktree.mjs");const bootstrapArgv=["node",ensure,"--wi",boot.wi,"--branch",boot.branch,"--from",base,"--authority-v2",...(boot.json?["--json"]:[]),...(boot.print_cd?["--print-cd"]:[]),"--handoff",handoff.nonce];effective={...effective,[key]:{...effective[key],command:`SVC_HOST=${hostId} ${encodeSimpleCommand(bootstrapArgv)}`,workdir:repo}};}else if(boot?.handoff){if(Object.keys(boot.identity||{}).length!==1||boot.identity.SVC_HOST!==hostId)deny("bootstrap handoff host identity mismatch");}
+// An existing WI is a resume, even when an older recovery hint called it bootstrap.
+const resumeGate=evaluateSelfHealAuthority(payload,process.env,{repo_root:repo});
+if(!b?.worktree&&resumeGate.eligible&&resumeGate.wi===boot.wi&&worktreeRows(repo).some(w=>fs.existsSync(path.join(w,".svc",`lane-tasks-${boot.wi}.json`)))){
+const ensureModule=await import("../../scripts/svc-ensure-worktree.mjs");
+const adopted=ensureModule.adoptExistingWorktree({wi:boot.wi,cwd:repo,prepareSession:true},{...process.env,SVC_SESSION_ID:sid,SVC_AGENT_ID:payload.agent_id||payload.agentId||process.env.SVC_AGENT_ID||""});
+await loadRecoverySkill(adopted.absolute_worktree,resumeGate,input,ctx,sid);
+}
+const bootstrapScope=scope.explicit_workdir&&scope.explicit_workdir.present?scope.operation_repository:scope.session_repository;if(!repo||!bootstrapScope||!bootstrapScope.default_worktree_root||bootstrapScope.worktree_root!==bootstrapScope.default_worktree_root)deny(`New-worktree bootstrap must use workdir ${bootstrapScope?.default_worktree_root||"the repository default checkout"}. For an existing WI, resume its registered worktree; the agent should perform this routing.`);const base=boot.from==="origin/main"?(spawnSync("git",["-C",repo,"rev-parse","origin/main"],{encoding:"utf8"}).stdout||"").trim():boot.from;if(!/^[0-9a-f]{40}$/.test(base))deny("bootstrap base did not resolve to an exact commit");const handoff=createBootstrapHandoff({session_id:sid,host:hostId,repo_root:repo,wi:boot.wi,branch:boot.branch,base});const ensure=path.resolve(HERE,"..","..","scripts","svc-ensure-worktree.mjs");const bootstrapArgv=["node",ensure,"--wi",boot.wi,"--branch",boot.branch,"--from",base,"--authority-v2",...(boot.json?["--json"]:[]),...(boot.print_cd?["--print-cd"]:[]),"--handoff",handoff.nonce];effective={...effective,[key]:{...effective[key],[Object.hasOwn(input||{},"cmd")?"cmd":"command"]:`SVC_HOST=${hostId} ${encodeSimpleCommand(bootstrapArgv)}`,workdir:repo}};}else if(boot?.handoff){if(Object.keys(boot.identity||{}).length!==1||boot.identity.SVC_HOST!==hostId)deny("bootstrap handoff host identity mismatch");}
 const finalScope=resolveOperationScope(effective,{host:hostId,env:process.env});if(!finalScope.ok)deny(`invalid bound mutation scope (${finalScope.contradictions[0]?.code||"scope contradiction"})`);const finalRepo=finalScope.operation_repository?.worktree_root||repo;const explicitAuth=effective[key]?.svc_authorization;const auth=authorizeObservedAction({root:finalRepo,command:mutationPayload(effective),annotation:explicitAuth});if(!auth.allow)deny(auth.reason);const lease=readOwnerLease(finalRepo,sid,process.env);const defaultRoot=finalScope.operation_repository?.default_worktree_root||"";if(lease&&(!b?.worktree||lease.worktree_root===b.worktree)&&(!defaultRoot||lease.worktree_root!==defaultRoot||finalScope.framework_maintenance)){renewOwnerLease(finalRepo,sid,process.env);allow(effective!==payload?effective[key]:null);process.exit(0);}if(!b?.worktree&&!boot){
 // WI-FW-HOOKS-SAFETY-01 (FP-05/AC-3): ONE exact self-heal attempt when fresh positive prompt authority agrees; otherwise an actionable denial that never prescribes a command this same policy path would block.
-const gate=evaluateSelfHealAuthority(payload,process.env,{repo_root:repo});if(!gate.eligible)deny(`mutation requires a bound WI worktree (AUTH_BINDING_MISSING_SELF_HEAL_INELIGIBLE: ${gate.reason_code}); recovery: say ‘work on <WI>’ from the worktree or arm SVC OWNER OVERRIDE.`);let adopted=null;try{const ensureModule=await import("../../scripts/svc-ensure-worktree.mjs");adopted=ensureModule.adoptExistingWorktree({wi:gate.wi,cwd:repo},{...process.env,SVC_SESSION_ID:sid});}catch(error){deny(`self-heal refused without mutation (${error.message})`);}if(adopted){b=baton(repo,sid,payload);if(b?.conflict)deny("multiple active bindings for this session after self-heal; recovery: select one WI explicitly.");if(b?.worktree&&input&&typeof input==="object"&&!scope.explicit_workdir.present)effective={...payload,[key]:{...input,workdir:b.worktree}};}if(!b?.worktree)deny("self-heal completed but the binding did not resolve; recovery: re-run the operation from the worktree.");}
+const gate=evaluateSelfHealAuthority(payload,process.env,{repo_root:repo});if(!gate.eligible)deny(`mutation requires a bound WI worktree (AUTH_BINDING_MISSING_SELF_HEAL_INELIGIBLE: ${gate.reason_code}); recovery: say ‘work on <WI>’ from the worktree or arm SVC OWNER OVERRIDE.`);let adopted=null;try{const ensureModule=await import("../../scripts/svc-ensure-worktree.mjs");adopted=ensureModule.adoptExistingWorktree({wi:gate.wi,cwd:repo,prepareSession:true},{...process.env,SVC_SESSION_ID:sid,SVC_AGENT_ID:payload.agent_id||payload.agentId||process.env.SVC_AGENT_ID||""});}catch(error){deny(`self-heal could not complete (${error.message})`);}if(adopted)await loadRecoverySkill(adopted.absolute_worktree,gate,input,ctx,sid);
+deny("self-heal completed but the binding did not resolve; inspect the WI ownership before retrying.");}
+// A crash after controller recovery must not strand the now-owned session.
+// Reuse the actual enforcer's receipt decision instead of duplicating its rules.
+if(b?.worktree&&!boot){
+const gate=evaluateSelfHealAuthority(payload,process.env,{repo_root:repo});
+if(gate.eligible&&gate.wi===b.binding?.wi){
+const receiptProblem=child(["codex","svc-codex-skill-load-enforcer.mjs"],effective);
+if(/missing or insecure Codex skill-load receipt|Codex skill-load receipt mismatch|governed mutation denied without an owned in_progress task/.test(receiptProblem))await loadRecoverySkill(b.worktree,gate,input,ctx,sid);
+}
+}
 // WI-FW-HOOKS-SAFETY-01 (T04/AC-4): due lease renewal is part of the SAME
 // authorization check for bound mutations — continuity without escalation.
 // A stale or failed renewal denies the mutation instead of allowing work on
@@ -83,7 +110,7 @@ if(b?.worktree&&b.binding&&b.binding.wi){
 try{
 const stateRoot=authorityStateRoot(b.worktree,process.env);
 const repoId=repositoryId(b.worktree);
-const principal=principalId({host:hostId,session_id:sid});
+const principal=principalId({host:hostId,session_id:sid,agent_id:payload.agent_id||payload.agentId||process.env.SVC_AGENT_ID||null});
 currentLease=readController({stateRoot,repoId,wi:b.binding.wi});
 if(currentLease&&currentLease.state==="active"&&String(currentLease.controller_principal)===principal&&renewalDue(currentLease)){
 const renewed=renewControllerIfCurrent({stateRoot,repoId,wi:b.binding.wi,worktreeRoot:b.worktree,principal:currentLease.controller_principal,leaseId:currentLease.lease_id,generation:Number(currentLease.generation)});
@@ -98,7 +125,7 @@ currentLease=renewed.lease||currentLease;
 if(b?.worktree&&b?.binding?.wi){
 const stateRoot=authorityStateRoot(b.worktree,process.env);
 const repoId=repositoryId(b.worktree);
-const principal=principalId({host:hostId,session_id:sid});
+const principal=principalId({host:hostId,session_id:sid,agent_id:payload.agent_id||payload.agentId||process.env.SVC_AGENT_ID||null});
 let live=null;
 try{live=readController({stateRoot,repoId,wi:b.binding.wi});}catch(e){deny(`controller state unreadable (${e.message}); recovery: re-arm authority with ‘work on ${b.binding.wi}’.`);}
 // A null read means NO v2 state exists yet (fresh adoption runs on the v1
@@ -120,7 +147,7 @@ try{
 const toolUseId=String(payload.tool_use_id||payload.toolUseId||"");
 if(toolUseId&&b?.worktree&&b?.binding?.wi){
 const originalDigest=canonicalOriginalDigest(mutationPayload(effective));
-writeToolCallReceipt({session_id:sid,tool_use_id:toolUseId,host:hostId,original_digest,classification:"mutation",lease:{repo_id:repositoryId(b.worktree),wi:b.binding.wi,worktree_root:b.worktree,principal:principalId({host:hostId,session_id:sid}),lease_id:currentLease?String(currentLease.lease_id):null,generation:currentLease?Number(currentLease.generation):null},env:process.env});
+writeToolCallReceipt({session_id:sid,tool_use_id:toolUseId,host:hostId,original_digest:originalDigest,classification:"mutation",lease:{repo_id:repositoryId(b.worktree),wi:b.binding.wi,worktree_root:b.worktree,principal:principalId({host:hostId,session_id:sid,agent_id:payload.agent_id||payload.agentId||process.env.SVC_AGENT_ID||null}),lease_id:currentLease?String(currentLease.lease_id):null,generation:currentLease?Number(currentLease.generation):null},env:process.env});
 }
 }catch{}
 allow(effective!==payload?effective[key]:null);}catch(e){deny(`Codex preflight failed closed: ${e.message}`);}

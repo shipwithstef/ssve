@@ -107,3 +107,14 @@ export function isValidTaskGraphShape(doc) {
 }
 
 export default { validateTaskGraphShape, isValidTaskGraphShape, recoverableId, VALID_TASK_STATUSES, VALID_GRAPH_STATUSES };
+
+// Same ordering as the canonical first-task loader: an existing active task,
+// otherwise the first pending task whose blockers are all completed.
+export function selectRecoveryTask(graph) {
+  if (!validateTaskGraphShape(graph).ok) return null;
+  const active = graph.tasks.filter(task => task.status === 'in_progress');
+  if (active.length) return active.length === 1 ? active[0] : null;
+  const byId = new Map(graph.tasks.map(task => [String(task.id), task]));
+  return graph.tasks.find(task => task.status === 'pending' &&
+    (task.blocked_by || []).every(id => byId.get(String(id))?.status === 'completed')) || null;
+}

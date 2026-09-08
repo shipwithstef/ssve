@@ -6,6 +6,7 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { freezeDelegations } from "./delegation-authority.mjs";
 import { normalizeClaimOwner } from "./claim-owner.mjs";
+import { validateTaskGraphShape, selectRecoveryTask } from "./validate-task-graph-shape.mjs";
 // WI-562 IP-H5: liveness primitives unified into one source.
 import { processStartToken, ownerProcessIdentity, processIsAlive } from "./process-liveness.mjs";
 export { processStartToken, ownerProcessIdentity, processIsAlive };
@@ -542,7 +543,9 @@ export function takeoverController({ stateRoot, repoId, wi, principal, expectedP
   });
 }
 
-export function recoverController({ stateRoot, repoId, wi, principal, reason, evidence = {}, ttlMs = DEFAULT_TTL_MS, now = Date.now() }) {
+export function recoverController({ stateRoot, repoId, wi, principal, reason, worktreeRoot = null, expectedGeneration = null, evidence = {}, ttlMs = DEFAULT_TTL_MS, now = Date.now() }) {
+  reason = requireString(reason, "recovery reason");
+  principal = requireString(principal, "recovery principal");
   const paths = pathsFor(stateRoot, repoId, wi);
   return withLock(paths.root, paths.key, () => {
     const lease = assertLease(readJson(paths.lease, { required: true }), { repoId, wi });
@@ -552,8 +555,32 @@ export function recoverController({ stateRoot, repoId, wi, principal, reason, ev
     const expired = evidence.expired === true && Date.parse(lease.expires_at) <= now;
     const sameHostDead = evidence.same_host_dead === true && ownerAlive === false;
     if (!expired && !sameHostDead) throw new Error("recovery requires positive dead-owner evidence or lease expiry");
+    if (expectedGeneration !== null && lease.generation !== expectedGeneration) throw new Error("recovery generation changed; inspect again");
+    let target = lease.worktree_root;
+    if (worktreeRoot && path.resolve(worktreeRoot) !== path.resolve(target)) {
+      if (fs.existsSync(target)) throw new Error("old controller worktree still exists; explicit handover required");
+      target = fs.realpathSync(worktreeRoot);
+      assertNoFollowDirectoryPath(worktreeRoot, { requireFinalOwner: true });
+      if (repositoryId(target) !== repoId) throw new Error("recovery target belongs to another repository");
+      const rows = execFileSync('git', ['-C', target, 'worktree', 'list', '--porcelain'], { encoding: 'utf8' });
+      if (!rows.split('\n').includes(`worktree ${target}`) || target === path.dirname(commonGitDir(target))) throw new Error("recovery requires a registered non-default worktree");
+      const claim = readJson(path.join(target, '.svc', 'claims', `${wi}.claim.json`), { required: true });
+      const bindingsDir = path.join(target, '.svc', 'bindings');
+      const bindings = fs.readdirSync(bindingsDir).filter(n => n.endsWith('.json')).map(n => readJson(path.join(bindingsDir, n), { required: true }));
+      const matches = bindings.filter(b => !b.released_at && b.role === 'mutating');
+      if (matches.length !== 1 || matches[0].session_id !== claim.session_id || matches[0].generation !== claim.generation || matches[0].wi !== wi || matches[0].worktree_root !== target || matches[0].branch !== claim.branch) throw new Error('recovery target binding mismatch');
+      const candidates = rows.split('\n').filter(v => v.startsWith('worktree ')).map(v => v.slice(9)).filter(w => fs.existsSync(path.join(w, '.svc', `lane-tasks-${wi}.json`)));
+      if (candidates.length !== 1 || candidates[0] !== target) throw new Error('recovery target selection is ambiguous');
+      const branch = execFileSync('git', ['-C', target, 'branch', '--show-current'], { encoding: 'utf8' }).trim();
+      if (claim.schema_version !== 1 || claim.wi !== wi || claim.role !== 'mutating' || claim.worktree_root !== target || claim.branch !== branch || fs.realpathSync(claim.repo_root) !== path.dirname(commonGitDir(target))) throw new Error("recovery target claim mismatch");
+      const renewed = Date.parse(claim.renewed_at || claim.started_at);
+      const ttl = Number(claim.ttl_hours);
+      if (!Number.isFinite(renewed) || !Number.isFinite(ttl) || ttl <= 0 || renewed + ttl * 3600000 > now) throw new Error("recovery target claim is live or uncertain");
+      const graph = readJson(path.join(target, '.svc', `lane-tasks-${wi}.json`), { required: true });
+      if (graph.wi !== wi || !validateTaskGraphShape(graph).ok || !selectRecoveryTask(graph)) throw new Error("recovery target graph is ambiguous");
+    }
     const next = {
-      ...lease, controller_principal: principal, generation: lease.generation + 1,
+      ...lease, worktree_root: target, controller_principal: principal, generation: lease.generation + 1,
       owner_process: ownerProcessIdentity(),
       renewed_at: iso(now), expires_at: iso(now + ttlMs), backend_revision: lease.backend_revision + 1,
     };
@@ -563,14 +590,14 @@ export function recoverController({ stateRoot, repoId, wi, principal, reason, ev
       schema_version: 1, receipt_id: crypto.randomUUID(), kind: "recovery", lease_id: lease.lease_id,
       repo_id: repoId, wi, old_controller_principal: lease.controller_principal,
       new_controller_principal: principal, old_generation: lease.generation,
-      new_generation: next.generation, evidence: { ...evidence, reason: requireString(reason, "recovery reason"), frozen_delegations }, completed_at: iso(now),
+      new_generation: next.generation, old_worktree_root: lease.worktree_root, new_worktree_root: next.worktree_root, evidence: { ...evidence, reason, frozen_delegations }, completed_at: iso(now),
     };
     const receipt_path = writeLifecycleReceipt(paths, receipt);
     writeHandoffRecord(paths, {
       kind: "recovery", wi, repo_id: repoId, lease_id: lease.lease_id,
       generation: next.generation, old_generation: lease.generation,
       principal, predecessor_principal: lease.controller_principal,
-      worktree_realpath: lease.worktree_root || "",
+      worktree_realpath: next.worktree_root || "",
       base_sha: typeof lease.base_sha === "string" ? lease.base_sha : "",
       ttl_ms: ttlMs,
       evidence_digests: digestEvidence({ ...evidence, reason: requireString(reason, "recovery reason"), frozen_delegations }),

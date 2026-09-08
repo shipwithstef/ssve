@@ -22,7 +22,7 @@ import {
   readController,
   authorityStateRoot,
 } from "../lib/authority-store.mjs";
-import { mutationPayload } from "./lib/codex-hook-context.mjs";
+import { mutationPayload, isReadOnlyTool } from "./lib/codex-hook-context.mjs";
 
 function parsePayload(raw) {
   try {
@@ -89,7 +89,7 @@ async function main() {
   });
   // Typed no-ops stay observable but can never block an already-completed
   // result nor grant anything.
-  if (!consumed.ok) { emit({ systemMessage: `svc post-tool: heartbeat no-op (${consumed.reason})` }); return; }
+  if (!consumed.ok) { emit(consumed.reason === "receipt_missing" && isReadOnlyTool(payload) ? {} : { systemMessage: `svc post-tool: heartbeat no-op (${consumed.reason})` }); return; }
 
   const leaseInfo = consumed.receipt?.lease;
   try {
