@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "wi": "WI-FW-PROCESS-SKILL-01",
+  "lane": "bugfix",
+  "status": "in_progress",
+  "created": "2026-09-08T20:32:37.896Z",
+  "tasks": [
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "route-workflow",
+      "subject": "route workflow",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-09-08T20:33:59.052Z",
+        "loaded_via": "codex-load-skill"
+      },
+      "delivery_attempt": 1,
+      "delivery_started_at": "2026-09-08T20:33:59.052Z"
+    },
+    {
+      "id": 2,
+      "skill": "execute-changeset",
+      "subject": "Repair declared process-skill resolution and regression coverage",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-09-08T20:33:59.966Z",
+        "loaded_via": "codex-load-skill"
+      },
+      "delivery_attempt": 1,
+      "delivery_started_at": "2026-09-08T20:33:59.966Z",
+      "completed_at": "2026-09-08T20:38:41.050Z"
+    },
+    {
+      "id": 3,
+      "skill": "review-exec",
+      "subject": "Review this bounded fix against original defect and authority invariants",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-09-08T20:38:41.215Z",
+        "loaded_via": "manual"
+      },
+      "delivery_attempt": 1,
+      "delivery_started_at": "2026-09-08T20:38:41.381Z",
+      "metadata": {
+        "review_outcome": {
+          "self_review": "pass",
+          "independent_review": "not-run-owner-spending-limit",
+          "canonical_g5": "not-claimed",
+          "evidence": ".svc/external-state/process-skill/self-review.md"
+        }
+      },
+      "completed_at": "2026-09-08T20:39:34.676Z"
+    },
+    {
+      "id": 4,
+      "skill": "land-changeset",
+      "subject": "Publish tested process-skill correction",
+      "status": "in_progress",
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-09-08T20:39:34.869Z",
+        "loaded_via": "manual"
+      },
+      "delivery_attempt": 1,
+      "delivery_started_at": "2026-09-08T20:39:35.036Z"
+    },
+    {
+      "id": 5,
+      "skill": "verify-promotion",
+      "subject": "Install on all hosts and verify affected session recovery",
+      "status": "pending",
+      "blocked_by": [
+        4
+      ]
+    }
+  ],
+  "delivery_cycle": {
+    "root_wi": "WI-FW-PROCESS-SKILL-01",
+    "cycle_started_at": null
+  }
+}

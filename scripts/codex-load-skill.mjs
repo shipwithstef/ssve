@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { findRepoRoot, sessionDir, skillReceiptPath, atomicWriteJson, readJson, sha256, resolveCanonicalSkill } from "../hooks/codex/lib/codex-hook-context.mjs";
-import { validateTaskGraphShape, recoverableId } from "../hooks/lib/validate-task-graph-shape.mjs";
+import { validateTaskGraphShape, recoverableId, taskSkillForLoad } from "../hooks/lib/validate-task-graph-shape.mjs";
 import { resolveWI } from "../hooks/lib/resolve-wi.mjs";
 
 function fail(message, code = 2) { process.stderr.write(`${message}\n`); process.exit(code); }
@@ -38,7 +38,7 @@ if (!shape.ok) fail(`malformed task graph: ${shape.reason}`);
 // (string OR number), so a bootstrap placeholder's numeric `1` and a string id
 // both resolve identically — the same domain the enforcer and receipt check use.
 const task = graph.tasks?.find((item) => recoverableId(item.id) !== null && recoverableId(item.id) === recoverableId(args.task));
-const expected = task?.metadata?.skill || task?.skill;
+const expected = taskSkillForLoad(task);
 if (!task || expected !== args.skill) fail("graph/task/declared skill mismatch");
 const sid = process.env.SVC_CODEX_TEST_MODE === "1"
   ? (process.env.CODEX_SESSION_ID || process.env.CODEX_THREAD_ID || "")

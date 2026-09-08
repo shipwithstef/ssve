@@ -818,3 +818,8 @@ branches and patch-caused regressions; unrelated improvements are post-delivery
 refinement. The branch-once round guard rejects another discovery batch or unlinked
 follow-up scope. This correction is locally validated; no new paid review was run
 for it. Existing source evidence and failed/terminated reviewer reports are retained.
+
+
+## Process-task skill recovery — WI-FW-PROCESS-SKILL-01
+
+The Codex skill-load and recovery paths now recognize explicit `process_skill` declarations without reclassifying those tasks as mandatory lane stages. Missing declarations produce a diagnostic instead of `--skill undefined`. Session, task, graph, canonical-skill and ownership checks remain in force. Regression coverage exercises the actual account-completion task shape for pending and active recovery, incorrect-skill refusal and the native dispatcher → loader → receipt → mutation path. This corrects a format omitted from PR 47's recovery coverage; transcript corruption is separate.

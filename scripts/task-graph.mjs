@@ -405,6 +405,16 @@ function expectedTaskSkill(task) {
   return null;
 }
 
+// Standalone copy of taskSkillForLoad in hooks/lib/validate-task-graph-shape.mjs.
+// Use only for loading, not lane coverage or mandatory-stage classification.
+function taskSkillForLoad(task) {
+  for (const value of [task?.metadata?.skill, task?.skill, task?.process_skill]) {
+    if (value == null || value === "") continue;
+    return typeof value === "string" && value.trim() ? value : null;
+  }
+  return null;
+}
+
 function compactString(value) {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -1157,7 +1167,7 @@ if (command === "load-skill") {
       validateGraph(current);
       const task = current.tasks.find((item) => item.id === taskId);
       if (!task) throw new Error(`task ${taskId} not found`);
-      const expectedSkill = expectedTaskSkill(task);
+      const expectedSkill = taskSkillForLoad(task);
       if (expectedSkill && skillName !== expectedSkill) {
         throw new Error(`task ${taskId} expects skill ${expectedSkill}, received ${skillName}`);
       }
@@ -1206,7 +1216,7 @@ if (command === "activate-skill") {
     if (!target) {
       throw new Error(`task ${taskIdArg} not found`);
     }
-    const expectedSkill = expectedTaskSkill(target);
+    const expectedSkill = taskSkillForLoad(target);
     if (expectedSkill && skillName !== expectedSkill) {
       throw new Error(`task ${taskIdArg} expects skill ${expectedSkill}, received ${skillName}`);
     }
