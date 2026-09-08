@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import path from "node:path";
 import os from "node:os";
+import { publishReceiptNotes, readPublishedReceiptNote } from "./lib/publish-receipt-notes.mjs";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
@@ -94,6 +95,8 @@ if (validate.status !== 0) {
 
 if (validate.stdout) process.stdout.write(validate.stdout);
 
+let alreadyMerged = false;
+let mergedOid = null;
 const ghArgs = ["pr", "merge", pr];
 const repo = resolveRepo();
 if (expectedRepo || expectedHead || expectedHeadSha) {
@@ -208,7 +211,7 @@ for (const banned of ["--rebase", "--merge", "--auto"]) {
   }
 }
 {
-  const pre = spawnSync("gh", ["pr", "view", pr, "--repo", repo, "--json", "baseRefOid,headRefName,headRefOid"], { encoding: "utf8" });
+  const pre = spawnSync("gh", ["pr", "view", pr, "--repo", repo, "--json", "baseRefOid,headRefName,headRefOid,state,mergeCommit"], { encoding: "utf8" });
   if (pre.status !== 0 || !pre.stdout) {
     console.error("[svc-finalize] BLOCKED: cannot verify PR freshness (gh pr view failed). Merge refused to prevent stale-base coverage mismatch.");
     process.exit(2);
@@ -216,7 +219,10 @@ for (const banned of ["--rebase", "--merge", "--auto"]) {
   try {
     const meta = JSON.parse(pre.stdout);
     if (!/^[0-9a-f]{40}$/.test(meta.baseRefOid || "") || !/^[0-9a-f]{40}$/.test(meta.headRefOid || "")) throw new Error("PR base/head OIDs are missing");
-    const compare = spawnSync("gh", ["api", `repos/${repo}/compare/${meta.baseRefOid}...${meta.headRefOid}`, "--jq", ".behind_by"], { encoding: "utf8" });
+    alreadyMerged = meta.state === "MERGED";
+    mergedOid = alreadyMerged ? meta.mergeCommit?.oid : null;
+    if (!/^[0-9a-f]{40}$/.test(mergedOid || "")) mergedOid = null;
+    const compare = alreadyMerged ? { status: 0, stdout: "0" } : spawnSync("gh", ["api", `repos/${repo}/compare/${meta.baseRefOid}...${meta.headRefOid}`, "--jq", ".behind_by"], { encoding: "utf8" });
     const rawBehindBy = String(compare.stdout ?? "").trim();
     if (compare.status !== 0 || !/^(0|[1-9]\d*)$/.test(rawBehindBy)) throw new Error("GitHub compare did not return a valid behind_by count");
     const behindBy = Number(rawBehindBy);
@@ -231,7 +237,8 @@ for (const banned of ["--rebase", "--merge", "--auto"]) {
   }
 }
 
-const merge = spawnSync("gh", ghArgs, { cwd: os.tmpdir(), stdio: "inherit" });
+const merge = alreadyMerged ? { status: 0 } : spawnSync("gh", ghArgs, { cwd: os.tmpdir(), stdio: "inherit" });
+if (alreadyMerged) console.log("[svc-finalize] PR already merged; resuming receipt finalization");
 // ---------------------------------------------------------------------------
 // WI-556 atomic merge finalization (replaces the bare exit). Contract:
 //   exit 0 = merged AND coverage verified; exit 2 = pre-merge block (above);
@@ -249,7 +256,7 @@ function gitOut(args) { const r = gitAt(args); return r.status === 0 ? r.stdout.
 
 if (merge.status !== 0) process.exit(merge.status || 1);
 
-let oid = null;
+let oid = mergedOid;
 for (let attempt = 0; attempt < 5 && !oid; attempt++) {
   if (attempt > 0) sleepMs(2000);
   const view = spawnSync("gh", ["pr", "view", pr, "--repo", repo, "--json", "mergeCommit,state"], { encoding: "utf8" });
@@ -259,33 +266,26 @@ for (let attempt = 0; attempt < 5 && !oid; attempt++) {
 }
 if (!oid || !/^[0-9a-f]{40}$/.test(oid)) finalizeFail("mergeCommit unavailable after bounded poll");
 
-if (gitAt(["fetch", "--no-tags", "origin", oid, "refs/notes/svc-receipts:refs/notes/svc-receipts-remote-view"]).status !== 0)
-  finalizeFail(`fetch of ${oid.slice(0, 12)} + notes ref failed`);
-
-const candidateTree = gitOut(["rev-parse", "HEAD^{tree}"]);
+const CANDIDATE_SHA = expectedHeadSha || globalThis.__wi556HeadOid;
+if (!/^[0-9a-f]{40}$/.test(CANDIDATE_SHA || "")) finalizeFail("candidate SHA unavailable from PR identity");
+if (gitAt(["fetch", "--no-tags", "origin", oid, CANDIDATE_SHA]).status !== 0) {
+  // GitHub retains the reviewed pull-request head after its branch is deleted.
+  if (gitAt(["fetch", "--no-tags", "origin", oid, `refs/pull/${pr}/head`]).status !== 0)
+    finalizeFail("candidate and squash fetch failed");
+}
+const candidateTree = gitOut(["rev-parse", `${CANDIDATE_SHA}^{tree}`]);
 const squashTree = gitOut(["rev-parse", `${oid}^{tree}`]);
-if (!squashTree) finalizeFail("squash tree unresolvable after fetch");
+if (!squashTree || !candidateTree) finalizeFail("candidate or squash tree unresolvable");
 if (candidateTree !== squashTree) finalizeFail(`tree divergence: candidate ${candidateTree.slice(0, 12)} vs squash ${squashTree.slice(0, 12)}`);
 
-const candidateEnvelopeRaw = gitOut(["notes", "--ref=svc-receipts", "show", "HEAD"]);
+let candidateEnvelopeRaw = gitOut(["notes", "--ref=svc-receipts", "show", CANDIDATE_SHA]);
+if (!candidateEnvelopeRaw) {
+  try { candidateEnvelopeRaw = JSON.stringify(readPublishedReceiptNote(root, CANDIDATE_SHA)); }
+  catch (e) { finalizeFail(`candidate receipt recovery failed: ${e.message}`); }
+}
 let remapped = {};
 try { remapped = candidateEnvelopeRaw ? JSON.parse(candidateEnvelopeRaw) : {}; }
 catch (e) { finalizeFail(`candidate envelope unreadable: ${e.message}`); }
-const CANDIDATE_SHA = expectedHeadSha || globalThis.__wi556HeadOid ||
-  (() => { // --root REPO_ROOT points at main checkout, not the candidate worktree.
-    const wt = gitOut(["worktree","list","--porcelain"]);
-    for (const block of wt.split("\n\n")) {
-      if (!block) continue;
-      const lines = block.split("\n");
-      const branchLine = lines.find(l=>l.startsWith("branch "));
-      if (branchLine && branchLine.includes("WI-556")) {
-        const wtPath = lines.find(l=>l.startsWith("worktree "));
-        if (wtPath) return gitAt(["-C",wtPath.replace("worktree ",""),"rev-parse","HEAD"]).trim();
-      }
-    }
-    return gitOut(["rev-parse","HEAD"]);
-  })();
-if (!/^[0-9a-f]{40}$/.test(CANDIDATE_SHA)) finalizeFail("candidate SHA unresolvable from expected-head binding or PR metadata");
 for (const key of Object.keys(remapped)) {
   if (!key.startsWith("slot::")) continue;
   const parts = key.split("::");
@@ -349,22 +349,6 @@ for (const key of Object.keys(remapped)) {
     if (w.status !== 0) finalizeFail(`notes write failed: ${w.stderr}`);
   };
   writeNote();
-  let published = false;
-  for (let attempt = 0; attempt < 5 && !published; attempt++) {
-    const lease = gitOut(["rev-parse", "refs/notes/svc-receipts-remote-view"]) || "";
-    const pushArgs = ["push", "origin", "refs/notes/svc-receipts:refs/notes/svc-receipts"];
-    const LEASE_FLAG = "-" + "-force-with-lease=";
-    if (lease) pushArgs.push(`${LEASE_FLAG}refs/notes/svc-receipts:${lease}`);
-    const pushRes = spawnSync("git", pushArgs, { cwd: root, encoding: "utf8" });
-    if (pushRes.status === 0) { published = true; break; }
-    gitAt(["fetch", "--no-tags", "origin", "refs/notes/svc-receipts:refs/notes/svc-receipts-remote-view"]);
-    try {
-      const remoteForOid = gitOut(["notes", "--ref=svc-receipts-remote-view", "show", oid]);
-      remapped = { ...(remoteForOid ? JSON.parse(remoteForOid) : {}), ...remapped };
-      writeNote();
-    } catch (e) { finalizeFail(`envelope re-merge failed: ${e.message}`); }
-  }
-  if (!published) finalizeFail("CAS publish exhausted retries");
 
   const pathMod = await import("node:path");
   const verify = spawnSync(process.execPath, [pathMod.join(__dirname, "check-chain-receipts.mjs"), "--sha", oid], { cwd: root, encoding: "utf8" });
@@ -372,6 +356,13 @@ for (const key of Object.keys(remapped)) {
     console.error(`[svc-finalize] coverage verify failed:\n${verify.stdout}${verify.stderr}`);
     process.exit(3);
   }
+  try {
+    await publishReceiptNotes(root, {
+      [CANDIDATE_SHA]: JSON.parse(candidateEnvelopeRaw || "{}"),
+      [oid]: remapped,
+    });
+  } catch (e) { finalizeFail(`receipt publication failed: ${e.message}`); }
+
   console.log(`[svc-finalize] DONE ${oid} coverage=${coverageAdded ? "published" : "skipped(no tracked graph)"}`);
   process.exit(0);
 })();
