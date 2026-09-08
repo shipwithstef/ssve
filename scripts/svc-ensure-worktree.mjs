@@ -28,7 +28,7 @@ import { authorityJson, resolveAuthorityHost, resolveWI } from "../hooks/lib/res
 import { markerPathFor, readMarker, secureAncestors } from "../hooks/codex/lib/bootstrap-marker.mjs";
 import { consumeBootstrapHandoff } from "../hooks/codex/lib/session-handoff.mjs";
 import { resolveChainPolicy } from "./lib/chain-policy.mjs";
-import { validateTaskGraphShape, selectRecoveryTask } from "../hooks/lib/validate-task-graph-shape.mjs";
+import { validateTaskGraphShape, selectRecoveryTask, taskSkillForLoad } from "../hooks/lib/validate-task-graph-shape.mjs";
 
 import { WI_ID_RE as WI_RE } from "../hooks/lib/wi-id.mjs";
 // WI-FW-HOOKS-SAFETY-01 (FP-01/FP-02): Git-valid slash branches validate as
@@ -539,7 +539,7 @@ function inspectRecoverySession(worktree, wi) {
   if (!validateTaskGraphShape(graph).ok || graph.wi !== wi) throw new Error('recovery graph mismatch');
   const task = selectRecoveryTask(graph);
   if (!task) throw new Error('recovery has no unambiguous runnable task');
-  const skill = task.metadata?.skill || task.skill;
+  const skill = taskSkillForLoad(task);
   if (!skill) throw new Error('active task has no declared skill');
   const contractPath = path.join(worktree, '.svc', 'session-contract.jsonl');
   const st = fs.lstatSync(contractPath);

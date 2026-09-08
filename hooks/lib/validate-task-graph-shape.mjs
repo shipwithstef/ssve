@@ -36,6 +36,16 @@ export function recoverableId(id) {
   return null;
 }
 
+// Runtime skill loading accepts explicit process-task declarations as well as
+// lane declarations. This does not reclassify a process task as a lane task.
+export function taskSkillForLoad(task) {
+  for (const value of [task?.metadata?.skill, task?.skill, task?.process_skill]) {
+    if (value == null || value === "") continue;
+    return typeof value === "string" && value.trim() ? value : null;
+  }
+  return null;
+}
+
 // validateTaskGraphShape(doc) -> { ok, reason }
 // `doc` is the ALREADY-PARSED graph object (callers own JSON.parse + its failure).
 export function validateTaskGraphShape(doc) {

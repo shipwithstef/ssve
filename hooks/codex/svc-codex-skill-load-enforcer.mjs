@@ -4,7 +4,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseHookInput, hookContext, operationHookContext, activeTask, laneGraphs, skillReceiptPath, readJson, sha256, toolName, mutationPayload, resolveCanonicalSkill } from "./lib/codex-hook-context.mjs";
-import { validateTaskGraphShape, recoverableId } from "../lib/validate-task-graph-shape.mjs";
+import { validateTaskGraphShape, recoverableId, taskSkillForLoad } from "../lib/validate-task-graph-shape.mjs";
 import { lexSimpleCommand } from "./lib/argv-lex.mjs";
 import { markerPathFor, readMarker, secureAncestors } from "./lib/bootstrap-marker.mjs";
 import { WI_ID_RE } from "../lib/wi-id.mjs";
@@ -151,13 +151,17 @@ function deny(reason, active, ctx) {
           if (!valid) ownedGraphMessage = "existing owned task graph is malformed; repair its recorded state before mutation";
           else if (graph.tasks.length > 0 && graph.tasks.every(t => ["completed", "skipped"].includes(t.status))) ownedGraphMessage = "existing owned work item is complete; route the new request before starting another task";
           else if (blocked) ownedGraphMessage = "existing owned work item has unresolved blockers; inspect and resolve those blockers before resuming";
-          if (task && (task.metadata?.skill || task.skill)) recovery = { graph_path: fs.realpathSync(ownedPaths[0]), task };
+          if (task && taskSkillForLoad(task)) recovery = { graph_path: fs.realpathSync(ownedPaths[0]), task };
         } catch { /* An unreadable graph never becomes a bootstrap request. */ }
       }
     }
   }
+  if (recovery && !taskSkillForLoad(recovery.task)) {
+    ownedGraphMessage = "active task has no valid skill declaration; restore its skill or process_skill from the approved task graph";
+    recovery = null;
+  }
   const command = recovery
-    ? `node ${loaderSpelling} --graph ${recovery.graph_path} --task ${recovery.task.id} --skill ${recovery.task.metadata?.skill || recovery.task.skill}`
+    ? `node ${loaderSpelling} --graph ${recovery.graph_path} --task ${recovery.task.id} --skill ${taskSkillForLoad(recovery.task)}`
     : ownedGraphMessage || bootstrapCmd;
   process.stdout.write(`${JSON.stringify({ hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: `${reason}. Recovery: ${command}` } })}\n`);
 }
@@ -167,7 +171,7 @@ function isExactSkillLoad(payload, active, ctx) {
   const command = mutationPayload(payload).trim();
   if (!command || /[;&|`$<>\n'"\\]/.test(command)) return false;
   const tokens = command.split(/\s+/);
-  const expectedSkill = String(active.task.metadata?.skill || active.task.skill || "");
+  const expectedSkill = String(taskSkillForLoad(active.task) || "");
   if (tokens.length !== 8 && tokens.length !== 10) return false;
   if (tokens[0] !== "node" || !isLoaderToken(tokens[1], ctx)) return false;  // WI-496: relative OR installed-absolute loader
   if (tokens[2] !== "--graph" || tokens[3] !== active.graph_path) return false;
@@ -251,7 +255,7 @@ function isSkillLoaderShape(payload, ctx, env = process.env) {
   const target = firstRunnablePendingTask(graph);
   if (!target) return false;
   if (recoverableId(tokens[5]) === null || recoverableId(tokens[5]) !== recoverableId(target.id)) return false;
-  const expectedSkill = String(target.metadata?.skill || target.skill || "");
+  const expectedSkill = String(taskSkillForLoad(target) || "");
   if (!expectedSkill || tokens[7] !== expectedSkill) return false;
   if (tokens.length === 10 && tokens[9] !== ctx.turn_id) return false;
   return true;
@@ -503,7 +507,7 @@ if (grokShell && !loaderShaped) { allow(); process.exit(0); }
 if (!ctx.session_id || !ctx.session_dir) { deny("missing Codex session identity for governed mutation", active, ctx); process.exit(0); }
 const receipt = readJson(skillReceiptPath(ctx));
 if (!receipt) { deny("missing or insecure Codex skill-load receipt", active, ctx); process.exit(0); }
-const expectedSkill = String(active.task.metadata?.skill || active.task.skill || "");
+const expectedSkill = String(taskSkillForLoad(active.task) || "");
 let actualHash = "";
 let actualPath = "";
 try { actualHash = sha256(fs.readFileSync(receipt.skill_path, "utf8")); } catch {}

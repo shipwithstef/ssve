@@ -9,6 +9,7 @@ import {bootstrapController,writeControllerForTest,authorityStateRoot,repository
 import {writeSessionBinding} from '../../hooks/lib/wi-claim.mjs';
 import {adoptExistingWorktree,prepareRecoveredSession} from '../../scripts/svc-ensure-worktree.mjs';
 import {isReadOnlyTool} from '../../hooks/codex/lib/codex-hook-context.mjs';
+import {taskSkillForLoad} from '../../hooks/lib/validate-task-graph-shape.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const wi='WI-RECOVERY-TEST-01',oldSid='019a0000-0000-7000-8000-000000000001',sid='019a0000-0000-7000-8000-000000000002';
 function fixture({v2=true}={}){
@@ -52,10 +53,17 @@ test('real prompt hook retains resume across clarification, revokes on stop',()=
  }finally{fs.rmSync(f.tmp,{recursive:true,force:true});}
 });
 
-for (const [bootstrap,pending] of [[false,false],[true,false],[false,true]]) test(`native dispatcher restores state and routes exactly to loader before original mutation (bootstrap=${bootstrap}, pending=${pending})`,()=>{
+for (const [bootstrap,pending,processSkill] of [[false,false],[true,false],[false,true],[false,false,"execute-changeset"],[false,true,"execute-changeset"]]) test(`native dispatcher restores state and routes exactly to loader before original mutation (bootstrap=${bootstrap}, pending=${pending}, processSkill=${processSkill || "none"})`,()=>{
  const f=fixture();try{
   const runtime=path.join(f.tmp,'runtime');fs.mkdirSync(runtime,{mode:0o700});const env={...f.env,SVC_CODEX_RUNTIME_DIR:runtime};
   if(pending){const gp=path.join(f.target,'.svc',`lane-tasks-${wi}.json`);const graph=JSON.parse(fs.readFileSync(gp));graph.tasks[0].status='pending';graph.status='pending';fs.writeFileSync(gp,JSON.stringify(graph));}
+  if(processSkill){
+   const gp=path.join(f.target,'.svc',`lane-tasks-${wi}.json`);const graph=JSON.parse(fs.readFileSync(gp));
+   graph.tasks[0]={id:4,subject:'Database migration identity, null denial and exact release helper',status:pending?'pending':'in_progress',blocked_by:[],phase:'implementation',process_skill:processSkill,parent_task:18};
+   if(!pending)graph.tasks[0].skill_receipt={skill:processSkill,loaded_at:'2026-09-06T18:55:38.207Z',loaded_via:'reviewed-inline-execution'};
+   graph.tasks.push({id:18,subject:'Complete implementation',skill:processSkill,status:'pending',blocked_by:[4]});
+   fs.writeFileSync(gp,JSON.stringify(graph));
+  }
   const payload={cwd:f.target,session_id:sid,turn_id:'native',tool_use_id:'native-1',tool_name:'exec_command',tool_input:{cmd:bootstrap?`node ${path.join(root,'scripts/svc-ensure-worktree.mjs')} --wi ${wi} --branch fix/recovery`:'touch recovery-probe',workdir:f.target}};
   const prompt=spawnSync(process.execPath,[path.join(root,'hooks/codex/svc-codex-prompt-authority.mjs')],{env,input:JSON.stringify({...payload,prompt:`Resume ${wi} in this worktree.`}),encoding:'utf8'});assert.equal(prompt.status,0);
   const dispatch=()=>{const r=spawnSync(process.execPath,[path.join(root,'hooks/codex/svc-codex-pretool-dispatcher.mjs')],{env,input:JSON.stringify(payload),encoding:'utf8'});assert.equal(r.status,0,r.stderr);return JSON.parse(r.stdout);};
@@ -63,6 +71,12 @@ for (const [bootstrap,pending] of [[false,false],[true,false],[false,true]]) tes
   // Simulate interruption after lease/contract recovery but before skill load.
   payload.tool_input.cmd='touch recovery-probe';
   const interrupted=dispatch();assert.equal(interrupted.hookSpecificOutput?.permissionDecision,'allow',JSON.stringify(interrupted));assert.match(interrupted.hookSpecificOutput.updatedInput.cmd,/codex-load-skill/);assert.equal(readController(f.ctx).generation,2);
+  if(processSkill){
+   assert.match(interrupted.hookSpecificOutput.updatedInput.cmd,/--task 4 --skill execute-changeset/);
+   const gp=path.join(f.target,'.svc',`lane-tasks-${wi}.json`),before=fs.readFileSync(gp);
+   const wrong=spawnSync(process.execPath,[path.join(root,'scripts/codex-load-skill.mjs'),'--graph',gp,'--task','4','--skill','land-changeset'],{cwd:f.target,env,encoding:'utf8'});
+   assert.notEqual(wrong.status,0);assert.deepEqual(fs.readFileSync(gp),before);
+  }
   const loaded=spawnSync('bash',['-c',interrupted.hookSpecificOutput.updatedInput.cmd],{cwd:f.target,env,encoding:'utf8'});assert.equal(loaded.status,0,loaded.stderr);
   const again=dispatch();assert.notEqual(again.hookSpecificOutput?.permissionDecision,'deny',JSON.stringify(again));assert.ok(!again.hookSpecificOutput?.updatedInput?.cmd?.includes('codex-load-skill'),JSON.stringify(again));
  }finally{fs.rmSync(f.tmp,{recursive:true,force:true});}
@@ -107,4 +121,28 @@ test('missing session contract refuses before controller transfer',()=>{
 
 test('agent-scoped principal agrees with resolver during controller recovery',()=>{
  const f=fixture();try{const env={...f.env,SVC_AGENT_ID:'recovery-agent'};const r=adoptExistingWorktree({wi,cwd:f.target,prepareSession:true},env);assert.equal(r.authority_v2.lease.controller_principal,principalId({host:'codex',session_id:sid,agent_id:'recovery-agent'}));}finally{fs.rmSync(f.tmp,{recursive:true,force:true});}
+});
+
+test('process skill resolution preserves explicit precedence and rejects absent or malformed declarations',()=>{
+ assert.equal(taskSkillForLoad({process_skill:'execute-changeset'}),'execute-changeset');
+ assert.equal(taskSkillForLoad({skill:'review-exec',process_skill:'execute-changeset'}),'review-exec');
+ assert.equal(taskSkillForLoad({metadata:{skill:'plan-changeset'},skill:'review-exec',process_skill:'execute-changeset'}),'plan-changeset');
+ for(const task of [{phase:'implementation',subject:'execute-changeset'}, {}, {process_skill:4}, {process_skill:' '}, {skill:{},process_skill:'execute-changeset'}]) assert.equal(taskSkillForLoad(task),null);
+});
+
+test('missing declaration never renders an undefined skill recovery command',()=>{
+ const f=fixture();try{
+  adoptExistingWorktree({wi,cwd:f.target},f.env);
+  const gp=path.join(f.target,'.svc',`lane-tasks-${wi}.json`),graph=JSON.parse(fs.readFileSync(gp));
+  delete graph.tasks[0].skill;fs.writeFileSync(gp,JSON.stringify(graph));
+  const runtime=path.join(f.tmp,'runtime');fs.mkdirSync(runtime,{mode:0o700});
+  const out=spawnSync(process.execPath,[path.join(root,'hooks/codex/svc-codex-skill-load-enforcer.mjs')],{
+   cwd:f.target,env:{...f.env,SVC_CODEX_RUNTIME_DIR:runtime},encoding:'utf8',
+   input:JSON.stringify({cwd:f.target,session_id:sid,tool_name:'exec_command',tool_input:{cmd:'touch never-executed',workdir:f.target}}),
+  });
+  assert.equal(out.status,0,out.stderr);const result=JSON.parse(out.stdout);
+  assert.equal(result.hookSpecificOutput.permissionDecision,'deny');
+  assert.match(result.hookSpecificOutput.permissionDecisionReason,/no valid skill declaration/);
+  assert.doesNotMatch(result.hookSpecificOutput.permissionDecisionReason,/--skill undefined|bootstrap one/);
+ }finally{fs.rmSync(f.tmp,{recursive:true,force:true});}
 });
