@@ -795,3 +795,7 @@ server model echo; unobserved provider quota balances remain unknown.
 
 ### Delivery report recovery — implementation under validation
 The owner requested automatic recovery from release-blocking review protocol errors. Adds one bounded same-model report correction, strict judgment preservation, Grok verbatim input, and zero-call cache accounting without deleting signed history. No live installation or measured5x claim until actual promotion evidence.
+
+### 2026-09-08 — Promotion finalization recovery follow-up
+
+PR45 exposed a stale `svc-receipts-remote-view` cache rejection after a successful merge. The follow-up removes that shared cache dependency, resumes already-merged PR finalization against the PR candidate identity, verifies before publishing, and bases each notes publication on the complete remote history. Normal push rejection retries preserve concurrent collaborators; conflicting slots remain denied. Eight real-Git regressions cover publisher concurrency and conflicts, already-merged retry, fresh clones with absent candidate objects and a distinct HEAD, delayed GitHub metadata, and stale partial local receipts. The 19 existing merge-guard checks pass; real PR45 finalization recovered. Follow-up release and host installation are recorded separately, not implied here.
