@@ -214,7 +214,7 @@ export function explicitWI(text) {
   return isValidWiId(cand) ? cand : "";
 }
 
-export function continuationIntent(text) {
+export function continuationIntent(text, { distinguishNegative = false } = {}) {
   const value = String(text || "");
   const continuationVerb = "(?:continue|continuing|resume|resuming|finish|finishing|complete|completing)";
   // WI-FW-HOOKS-SAFETY-01: `work on <WI>` is the canonical positive imperative
@@ -246,7 +246,7 @@ export function continuationIntent(text) {
     new RegExp(`\\b(?:${continuationVerb}|${workVerb})\\s+(?:later|another\\s+time|tomorrow|next\\s+week|after\\s+that)\\b`, "i"),
     new RegExp(`\\b(?:is|are|was|were)\\s+not\\s+(?:to\\s+be\\s+)?(?:${continuationVerb}|${workVerb})\\b`, "i"),
   ];
-  if (negativeIntent.some((pattern) => pattern.test(scopeText) || pattern.test(verbWindow))) return "none";
+  if (negativeIntent.some((pattern) => pattern.test(scopeText) || pattern.test(verbWindow))) return distinguishNegative ? "negative" : "none";
   if (/\bend[_ -]?to[_ -]?end\b/i.test(scopeText)) return "end_to_end";
   if (new RegExp(continuationVerb, "i").test(verbWindow) && /\bresume\b/i.test(verbWindow)) return "resume";
   if (new RegExp(continuationVerb, "i").test(verbWindow) && /\bcontinue\b/i.test(verbWindow)) return "continue";
@@ -284,7 +284,8 @@ function isSafeGit(argv) {
   }
   const subcommand = tokens[index];
   const args = tokens.slice(index + 1);
-  const alwaysRead = new Set(["status", "log", "diff", "show", "rev-parse", "ls-files", "ls-tree"]);
+  if (subcommand === "ls-remote" && args.some(token => token.startsWith("-u") || token.startsWith("--upload-pack") || token.startsWith("--exec") || token.includes("::"))) return false;
+  const alwaysRead = new Set(["status", "log", "diff", "show", "rev-parse", "ls-files", "ls-tree", "ls-remote"]);
   const branchRead = subcommand === "branch" && (args.length === 0 || args.some((token) =>
     token === "--show-current" || token === "--list" || token === "-a" || token === "-r" ||
     token.startsWith("--list=") || token.startsWith("--contains") || token.startsWith("--merged") ||

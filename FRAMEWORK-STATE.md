@@ -1,5 +1,9 @@
 # Framework State
 
+## Session recovery correction (WI-FW-SESSION-RECOVERY-02)
+
+Candidate implementation preserves an authorized WI across status follow-ups, resumes exact registered legacy tuples, and recovers an expired/dead v2 controller whose old checkout disappeared. Foreign live owners and ambiguous worktrees remain denied. Recovery loads the existing active skill and preserves its authorization envelope, including after interruption. Remote Git inspection works without a WI; missing mutation receipts remain observable. Source regression evidence and release status are recorded in `docs/plans/session-recovery.md`; installation and product-session recovery must not be inferred from this entry.
+
 ## Whole-solution planning (WI-FW-DELIVERY-TRADEOFFS-01)
 
 Implementation: explicit inline v4 preserves original AC/context, generates mappings, and describes future release identities through existing land/verify adapters. Legacy/dispatch receipts remain supported. Fresh-index producers avoid stamp-only writes; additive root-WI timing reports retries, waits and unknown gaps against 30/120/10. The proposed new tier-1 cache was removed after review found no demonstrated first-delivery reuse edge. Sol High and Grok High passed the final plan. Release/install evidence will be recorded in the existing per-SHA chain; no measured 5x claim is made.

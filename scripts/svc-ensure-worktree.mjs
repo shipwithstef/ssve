@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 import crypto from "node:crypto";
+import { appendJsonlLine } from "./state-io.mjs";
+import { authorityStateRoot, repositoryId, readController, recoverController, resumeController, principalId, processIsAlive } from '../hooks/lib/authority-store.mjs';
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -22,11 +24,11 @@ import {
   writeSessionBinding,
   migrateSessionBindingToV2,
 } from "../hooks/lib/wi-claim.mjs";
-import { authorityJson, resolveAuthorityHost } from "../hooks/lib/resolve-wi.mjs";
+import { authorityJson, resolveAuthorityHost, resolveWI } from "../hooks/lib/resolve-wi.mjs";
 import { markerPathFor, readMarker, secureAncestors } from "../hooks/codex/lib/bootstrap-marker.mjs";
 import { consumeBootstrapHandoff } from "../hooks/codex/lib/session-handoff.mjs";
 import { resolveChainPolicy } from "./lib/chain-policy.mjs";
-import { validateTaskGraphShape } from "../hooks/lib/validate-task-graph-shape.mjs";
+import { validateTaskGraphShape, selectRecoveryTask } from "../hooks/lib/validate-task-graph-shape.mjs";
 
 import { WI_ID_RE as WI_RE } from "../hooks/lib/wi-id.mjs";
 // WI-FW-HOOKS-SAFETY-01 (FP-01/FP-02): Git-valid slash branches validate as
@@ -512,16 +514,48 @@ function existingResumeApproval({ repo, wi, branch, owner, worktree, env }) {
   try {
     const targetInfo = fs.lstatSync(worktree);
     if (!targetInfo.isDirectory() || targetInfo.isSymbolicLink() || (process.getuid && targetInfo.uid !== process.getuid())) return approval;
-    const binding = readSessionBinding(worktree, owner);
-    if (!binding || binding.released_at || binding.wi !== wi || binding.branch !== branch) return approval;
     if (fs.existsSync(markerPathFor(repo.root, wi))) return approval;
     if (fs.realpathSync(worktree) !== worktree || !secureAncestorChain(path.dirname(worktree), worktree).ok ||
         !secureAncestors(worktree, path.join(worktree, ".svc", ".svc-state-probe"))) return approval;
-    const verified = verifyCompleteTuple({ repo, wi, branch, owner, worktree,
-      graphP: path.join(worktree, ".svc", `lane-tasks-${wi}.json`), marker: null, env });
-    if (verified.ok) return { ok: true, root: worktree, source: "existing-exact-authority" };
+    const tuple = inspectV1AuthorityTuple({ wi, branch, worktree_root: worktree,
+      repo_root: repo.root, session_id: owner, env });
+    const graph = JSON.parse(fs.readFileSync(path.join(worktree, ".svc", `lane-tasks-${wi}.json`), "utf8"));
+    if (graph?.wi !== wi || !validateTaskGraphShape(graph).ok) return approval;
+    if (["current_complete", "current_unbound", "reclaimable"].includes(tuple.state))
+      return { ok: true, root: worktree, source: "existing-exact-authority" };
   } catch { /* Malformed or missing authority retains the original refusal. */ }
   return approval;
+}
+
+function inspectRecoverySession(worktree, wi) {
+  const graphPath = path.join(worktree, '.svc', `lane-tasks-${wi}.json`);
+  const graphStat = fs.lstatSync(graphPath);
+  if (!graphStat.isFile() || graphStat.isSymbolicLink() || !secureAncestors(worktree, graphPath)) throw new Error('recovery graph is insecure');
+  const graph = JSON.parse(fs.readFileSync(graphPath, 'utf8'));
+  if (!validateTaskGraphShape(graph).ok || graph.wi !== wi) throw new Error('recovery graph mismatch');
+  const task = selectRecoveryTask(graph);
+  if (!task) throw new Error('recovery has no unambiguous runnable task');
+  const skill = task.metadata?.skill || task.skill;
+  if (!skill) throw new Error('active task has no declared skill');
+  const contractPath = path.join(worktree, '.svc', 'session-contract.jsonl');
+  const st = fs.lstatSync(contractPath);
+  if (!st.isFile() || st.isSymbolicLink() || st.uid !== process.getuid()) throw new Error('recovery contract is insecure');
+  const lines = fs.readFileSync(contractPath, 'utf8').trim().split(/\r?\n/).filter(Boolean);
+  const previous = JSON.parse(lines.at(-1));
+  if (previous.wi !== wi) throw new Error('recovery contract names another WI');
+  return { graphPath, taskId: task.id, skill, contractPath, previous };
+}
+
+export function prepareRecoveredSession({ worktree, wi, sessionId, turnId, authorization, agentId = null }) {
+  if (!authorization?.eligible || authorization.wi !== wi) throw new Error('recovery requires current session authorization');
+  const owned = resolveWI({ cwd: worktree, session_id: sessionId, agent_id: agentId }, { ...process.env, SVC_SESSION_ID: sessionId, SVC_REQUIRE_SESSION_BINDING: "1" });
+  if (!owned.authority || owned.wi !== wi || owned.tuple?.worktree_root !== worktree) throw new Error("recovery requires the current owned worktree");
+  const { graphPath, taskId, skill, contractPath, previous } = inspectRecoverySession(worktree, wi);
+  if (previous.recovery_session !== sessionId || previous.recovery_turn !== turnId) {
+    appendJsonlLine(contractPath, { ...previous, ts: new Date().toISOString(), skill,
+      recovery_session: sessionId, recovery_turn: turnId, recovery_kind: 'authorized-resume' });
+  }
+  return { graphPath, taskId, skill };
 }
 
 export function adoptExistingWorktree(options = {}, env = process.env) {
@@ -560,6 +594,23 @@ export function adoptExistingWorktree(options = {}, env = process.env) {
   const branchCheck = validateLiteralBranchName(target.branch);
   if (!branchCheck.ok) {
     throw new Error(`SELF_HEAL_INELIGIBLE: registered branch for ${wi} is not a Git-valid literal ref (BRANCH_REF_INVALID: ${branchCheck.reason})`);
+  }
+  // Prove that recovery can reach its loader before transferring ownership.
+  // Legacy direct adoption keeps its historical bootstrap behavior; the
+  // dispatcher requests the stricter complete-session preflight.
+  if (options.prepareSession) inspectRecoverySession(target.path, wi);
+  const v2ctx = { stateRoot: authorityStateRoot(target.path, env), repoId: repositoryId(target.path), wi };
+  const controller = readController(v2ctx);
+  if (controller) {
+    const principal = principalId({ host: resolveAuthorityHost({}, env), session_id: owner, agent_id: env.SVC_AGENT_ID || null });
+    const lease = controller.controller_principal === principal && controller.worktree_root === target.path
+      ? resumeController({ ...v2ctx, principal, worktreeRoot: target.path })
+      : recoverController({ ...v2ctx, principal, worktreeRoot: target.path, expectedGeneration: controller.generation,
+          reason: 'Authorized resume of the unique registered WI worktree',
+          evidence: { expired: Date.parse(controller.expires_at) <= Date.now(), same_host_dead: processIsAlive(controller.owner_process) === false } }).lease;
+    const verified = verifyCompleteTuple({ repo, wi, branch: target.branch, owner, worktree: target.path, graphP: graphPathFor(target), marker: null, env });
+    if (!verified.ok) throw new Error(`recovery tuple verification failed: ${verified.reason}`);
+    return { wi, branch: target.branch, absolute_worktree: target.path, owner_session: owner, graph_path: graphPathFor(target), resumed: true, authority_v2: { lease } };
   }
   // Approved-root containment + same-UID/no-symlink ancestry, identical to the
   // bootstrap transaction's authorization surface.
