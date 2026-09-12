@@ -1,0 +1,501 @@
+{
+  "base_sha": "e50a64431955cac787c39161f03a18021386086f",
+  "files": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "493117c0a6ea6833ecd2083f58a2a8e749e33226304b6a5fca1ec5aaab158439",
+      "ranges": [
+        [
+          215,
+          232
+        ],
+        [
+          265,
+          282
+        ],
+        [
+          439,
+          456
+        ]
+      ]
+    },
+    {
+      "path": "CLAUDE.md",
+      "sha256": "42b8728066f4ab2eb1ca257260b3ae3324ef0ac860f53435c4a6b0441625c4db",
+      "ranges": [
+        [
+          72,
+          89
+        ]
+      ]
+    },
+    {
+      "path": "FRAMEWORK-STATE.md",
+      "sha256": "c8747a1a90dcc6c6bdcefa2375f160c434d3d371c79297ff5e002f1685b7f1ed",
+      "ranges": [
+        [
+          19,
+          36
+        ]
+      ]
+    },
+    {
+      "path": "_shared/before-starting.md",
+      "sha256": "03d2f3a64974177cf10313816294ceba6f78bdb92ad89d2007b51827f099cbc4",
+      "ranges": [
+        [
+          1,
+          65
+        ]
+      ]
+    },
+    {
+      "path": "_shared/product-question-format.md",
+      "sha256": "841589d99a3a1a0e981f13277e63695499ea3f0f48a4414445321fc692870bea",
+      "ranges": [
+        [
+          1,
+          50
+        ]
+      ]
+    },
+    {
+      "path": "agents/svc-stage-exec.md",
+      "sha256": "3a5e39e585dddb74e9bacee679cc5c53338d41035b194899161710cd9ce63d1c",
+      "ranges": [
+        [
+          1,
+          56
+        ]
+      ]
+    },
+    {
+      "path": "references/chain-receipt-contract.md",
+      "sha256": "efd16f525671c6a88b239d54d6d641cf3f2d645ba3624b6a9cb2e36d0a4bd822",
+      "ranges": [
+        [
+          55,
+          78
+        ]
+      ]
+    },
+    {
+      "path": "references/context-budget.md",
+      "sha256": "f823f66d55fe629c198308e00e13bc817ad6ede6562e52a7675ad169dc356beb",
+      "ranges": [
+        [
+          11,
+          28
+        ],
+        [
+          42,
+          59
+        ]
+      ]
+    },
+    {
+      "path": "references/runtime-continuation-v2.md",
+      "sha256": "2e581d171a7b7d127665ca0993b80797d8d64733f4146668341d35d41d084dd6",
+      "ranges": [
+        [
+          1,
+          15
+        ]
+      ]
+    },
+    {
+      "path": "rules/common/question-fatigue.md",
+      "sha256": "b0def9e425961be70fcd6c3e2ba7ed2da0d4db499fd1eda96d32381575f84a7c",
+      "ranges": [
+        [
+          16,
+          33
+        ]
+      ]
+    },
+    {
+      "path": "rules/common/research-before-build.md",
+      "sha256": "ea830569ba1ad5b7da58ea23cd7e407d2157e6a3d2bdd34dee098af112d1266e",
+      "ranges": [
+        [
+          1,
+          26
+        ]
+      ]
+    },
+    {
+      "path": "rules/verify-state-before-context.md",
+      "sha256": "1b181a93192001cea01472a33bf540420984f605a000f4f8e57e819b737b504b",
+      "ranges": [
+        [
+          1,
+          61
+        ]
+      ]
+    },
+    {
+      "path": "skills/ad-video-script/SKILL.md",
+      "sha256": "44c387741ca8c1228a7b6e8afc95e02a2494a6c92caf558dd3e1aee8baa26329",
+      "ranges": [
+        [
+          3,
+          20
+        ]
+      ]
+    },
+    {
+      "path": "skills/align-feature/SKILL.md",
+      "sha256": "049a1495ca04e3aac37542c91dc2caae82f41aa0b3d636dd9916097c2108f8e3",
+      "ranges": [
+        [
+          18,
+          25
+        ]
+      ]
+    },
+    {
+      "path": "skills/analyze-domain/SKILL.md",
+      "sha256": "bb27c141bd0824ad5004f86544ea192c2b34da8a5984f4402c23b93d828e5b52",
+      "ranges": [
+        [
+          1,
+          20
+        ],
+        [
+          294,
+          359
+        ]
+      ]
+    },
+    {
+      "path": "skills/analyze-marketing/SKILL.md",
+      "sha256": "f3bd52b6ec7ee9e4e6ae1772b20d61d3af080884383ebd83bde59e96db073c9e",
+      "ranges": [
+        [
+          3,
+          20
+        ]
+      ]
+    },
+    {
+      "path": "skills/audit-coverage/SKILL.md",
+      "sha256": "e3865f275681bf6ddbeca29de5f8a3fd5348137fe286f2227bcc33b5b2d442e3",
+      "ranges": [
+        [
+          4,
+          5
+        ]
+      ]
+    },
+    {
+      "path": "skills/blind-control-plan/SKILL.md",
+      "sha256": "8b22a7d080aab81d62f76803d8bbd174fd889a9f4b804986482ec2342b73a899",
+      "ranges": [
+        [
+          6,
+          14
+        ]
+      ]
+    },
+    {
+      "path": "skills/comms/SKILL.md",
+      "sha256": "9c71d8a7353f393623ea4da16cc8b3c66f8b85eebc1e45d39bb9d2f4341e2296",
+      "ranges": [
+        [
+          28,
+          45
+        ]
+      ]
+    },
+    {
+      "path": "skills/craft-prompt/SKILL.md",
+      "sha256": "61ba6d06a91d0eb5ff1ec5aa261d7a06b352223e70eeb399524b2ffefa0f39ac",
+      "ranges": [
+        [
+          7,
+          15
+        ]
+      ]
+    },
+    {
+      "path": "skills/decide/SKILL.md",
+      "sha256": "b78e5f8b50f4e6ac909d743c3359e508581b133ac5650646ea5d859f696ed2b5",
+      "ranges": [
+        [
+          15,
+          32
+        ]
+      ]
+    },
+    {
+      "path": "skills/design-logo/SKILL.md",
+      "sha256": "145fee22a5cc13e0ba24f20d1184ce941040645ada7e5d00af3d11653d9b55e8",
+      "ranges": [
+        [
+          11,
+          20
+        ]
+      ]
+    },
+    {
+      "path": "skills/evaluate-rule/SKILL.md",
+      "sha256": "093977a7dc9d0755799820febf7d3500567acb3ad0afcb4bdcaa3061b2356b20",
+      "ranges": [
+        [
+          1,
+          20
+        ],
+        [
+          47,
+          74
+        ],
+        [
+          81,
+          130
+        ],
+        [
+          314,
+          395
+        ]
+      ]
+    },
+    {
+      "path": "skills/execute-changeset/SKILL.md",
+      "sha256": "7c460371c77cfa8e486e5eaa832a9c297fcabec4d9021209ab751cb91047d4b4",
+      "ranges": [
+        [
+          33,
+          50
+        ],
+        [
+          252,
+          283
+        ]
+      ]
+    },
+    {
+      "path": "skills/execute-changeset/references/process-details.md",
+      "sha256": "569f9cac0bcf78bb50378a3435479db5dacb77c3d3a7fbce5d40eaaed423a3a1",
+      "ranges": [
+        [
+          23,
+          40
+        ]
+      ]
+    },
+    {
+      "path": "skills/manage-learnings/SKILL.md",
+      "sha256": "abb559f002b7ae1295433bce223e38a85f2a18a627a0302fe52dfc7d014aa719",
+      "ranges": [
+        [
+          3,
+          20
+        ]
+      ]
+    },
+    {
+      "path": "skills/mine-builder/SKILL.md",
+      "sha256": "0e7a6d516d003e4765c0561ace5f2ed5163a4dc55bbd564721a9ee6fd9928f09",
+      "ranges": [
+        [
+          4,
+          21
+        ],
+        [
+          80,
+          112
+        ]
+      ]
+    },
+    {
+      "path": "skills/plan-blast-radius/SKILL.md",
+      "sha256": "ffb44cc27e03d9981fa3c1cd604c9ef6b250c5dbbc9a1571087da393630d4b40",
+      "ranges": [
+        [
+          4,
+          13
+        ],
+        [
+          55,
+          72
+        ]
+      ]
+    },
+    {
+      "path": "skills/plan-changeset/SKILL.md",
+      "sha256": "fdbfdf8303b835e7ced6c9fa1f86ef2c661d82a49187feda1cf29d8201b07eaa",
+      "ranges": [
+        [
+          65,
+          82
+        ],
+        [
+          102,
+          137
+        ],
+        [
+          237,
+          254
+        ]
+      ]
+    },
+    {
+      "path": "skills/research/SKILL.md",
+      "sha256": "98955474f820ec276bb4cf0def70ed6d1496b94209faf2bf79169223807a53af",
+      "ranges": [
+        [
+          8,
+          17
+        ]
+      ]
+    },
+    {
+      "path": "skills/reverse-engineer/SKILL.md",
+      "sha256": "4d81c8fe02cddcb29d3eeb1b7efcfa92183dedc1b7a4fc7d7e9b826ab27e6926",
+      "ranges": [
+        [
+          4,
+          21
+        ]
+      ]
+    },
+    {
+      "path": "skills/review-exec/SKILL.md",
+      "sha256": "dfe32dec93996ce989a805e0d89b6901f6bbcaec6746b062a8d0c9959c3f6ffb",
+      "ranges": [
+        [
+          7,
+          16
+        ],
+        [
+          137,
+          154
+        ]
+      ]
+    },
+    {
+      "path": "skills/review-plan/SKILL.md",
+      "sha256": "037df975f3f6d904cd42f47741ca55da561014f79cbe8ace949211562217db4f",
+      "ranges": [
+        [
+          9,
+          18
+        ],
+        [
+          91,
+          108
+        ]
+      ]
+    },
+    {
+      "path": "skills/review-security/SKILL.md",
+      "sha256": "d87c6721ac890e158035760c4cd41be392d2339804fc339f76f17d0c3a16127d",
+      "ranges": [
+        [
+          5,
+          22
+        ]
+      ]
+    },
+    {
+      "path": "skills/roadmap-evaluation/SKILL.md",
+      "sha256": "49ad0353fc75f30dde8db5f959ae8d2edfee6e3b6ad350a3cc39fe2e172db74d",
+      "ranges": [
+        [
+          1,
+          17
+        ]
+      ]
+    },
+    {
+      "path": "skills/route-workflow/SKILL.md",
+      "sha256": "feddaabd8028026dd117ae5da17e405ea6985f95e382de8678bc7fbef8306aff",
+      "ranges": [
+        [
+          1,
+          24
+        ],
+        [
+          52,
+          69
+        ],
+        [
+          114,
+          131
+        ]
+      ]
+    },
+    {
+      "path": "skills/route-workflow/references/autorun-orchestrator.md",
+      "sha256": "f04e740213629502756f0a749a587b2e630977acfd8cd92dc7f13074b048c8b5",
+      "ranges": [
+        [
+          32,
+          66
+        ]
+      ]
+    },
+    {
+      "path": "skills/route-workflow/references/task-graph-protocol.md",
+      "sha256": "0581dde7a3a807d3ff00e443f5a7ce6dd88aa326034a3f9a62dd590d63580b3f",
+      "ranges": [
+        [
+          415,
+          432
+        ],
+        [
+          487,
+          504
+        ]
+      ]
+    },
+    {
+      "path": "skills/security-ops/SKILL.md",
+      "sha256": "a575774683d2d252ff5e21da10ece33d490d02ff3ad4a082025402e594d2474d",
+      "ranges": [
+        [
+          1,
+          17
+        ]
+      ]
+    },
+    {
+      "path": "skills/svc-advisor/SKILL.md",
+      "sha256": "04fa23588aca41a515e52bd88930c0752a09a0569922eb5a7cbe5416fff6ac42",
+      "ranges": [
+        [
+          6,
+          23
+        ],
+        [
+          97,
+          107
+        ]
+      ]
+    },
+    {
+      "path": "skills/sync-work-items/SKILL.md",
+      "sha256": "8b9a1c29f562ec490934e3b1db6f9bcfd71861b9e1555ecb940847fe798ab69f",
+      "ranges": [
+        [
+          1,
+          20
+        ],
+        [
+          176,
+          251
+        ]
+      ]
+    },
+    {
+      "path": "skills/write-e2e/SKILL.md",
+      "sha256": "cdd8dc2f2def6d6c7a33d66ea59abea37c77277af37224e384a8a583989487d7",
+      "ranges": [
+        [
+          4,
+          21
+        ]
+      ]
+    }
+  ]
+}

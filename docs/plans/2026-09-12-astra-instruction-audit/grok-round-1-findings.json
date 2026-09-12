@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "review_kind": "plan",
+  "rubric_score": 6,
+  "rubric_failures": [
+    2,
+    5,
+    8,
+    10
+  ],
+  "dependencies_needing_read": [
+    "inventory.json — exact descriptions_over_600 membership, counting method, and per-file hashes for the P1 twelve",
+    "references/model-routing.md — full P3 target; excerpt pack has no complete file",
+    "rules/common/model-selection.md — full P3 target and always-injected rule",
+    "skills/analyze-domain/SKILL.md — confirm whether ## Before Starting exists outside the continuation tail",
+    "skills/evaluate-rule/SKILL.md — same Before Starting check; confirm Process/When-to-skip bounds for the P1/P2 no-touch zone",
+    "skills/sync-work-items/SKILL.md — same Before Starting check",
+    "test-framework/evals/tier-1/validate-skill-before-starting.sh — activation on substantive edit of older skills",
+    "scripts/generate-manifest-mirrors.mjs — output path list if P3 runs the generator",
+    "test-framework/evals/tier-1/validate-skill-judgment.mjs — whether counterexamples can live in fixtures alone",
+    "references/skill-routing-index.json / its compiler — parsed-description comparison claimed by P1"
+  ],
+  "reviewer": {
+    "host": "grok",
+    "family": "xai",
+    "model": "grok-4.6",
+    "effort": "xhigh"
+  },
+  "verdict": "pass-with-findings",
+  "summary": "The proposal is a valid unapproved documentation/metadata pilot, not an execution packet. Self-review correctly narrowed several original overclaims (R4 deep-interview, R8 mass root rewrite, R9 identical-block deletion, S8 test-cadence cut, static-size-as-cost, session-equals-resolver, inline-relabel of a cheaper executor) and correctly added R15. D1–D12 stay outside the executor envelope, and the plan does not recommend dropping independent review, audit-implementation, full release validation, post-commit checks, all-host install proof, or live post-deploy evidence. I do not rubber-stamp S10 as a real authority contradiction: autorun ‘P0 decides’ is the owner stop, not a license to skip SEV-1/2 checkpoints. The first slice is not ready to authorize execute-changeset. P1 does not freeze description-level safety/opt-in/exclusion clauses before a cheaper model may classify them as movable ‘procedural narration.’ P2’s AC4 (‘one unambiguous continuation contract’) contradicts its own conflict-parking rule and can leave the weaker always-TaskUpdate block first. Later handoff still allows mode=inline when a different cheaper model implements, which is the S6/D8 failure mode. P2 substantive SKILL.md edits can arm validate-skill-before-starting.sh and force out-of-envelope procedure, and the skill-judgment validator script itself is inside the write envelope.",
+  "findings": [
+    {
+      "id": "F-001",
+      "severity": "high",
+      "claim": "P1 tells a cheaper executor to move ‘procedural narration’ out of descriptions without a frozen inventory of trigger, exclusion, opt-in, and approval-boundary clauses, so safety-bearing routing text can leave the always-visible description.",
+      "analysis": "AC2 requires preserving every positive condition, automatic lane condition, exclusion, and approval boundary. P1 simultaneously orders the implementer to ‘Move provider/receipt detail, history and procedural narration into the corresponding existing body section.’ Several of the twelve descriptions mix applicability with load-bearing gates that a host or cheap router sees only in frontmatter: plan-blast-radius states SEV-1/2 force human_checkpoint regardless of autorun; blind-control-plan is WARN/shadow default OFF unless dual-track is armed; craft-prompt says it does NOT route svc work; evaluate-rule says always use before registering a rule; review-exec states same-family Sol is advisory and the configured different-family station owns independent release authority. Those are invocation prerequisites/exclusions, not beat-sheet or provider inventory. The promised before/after map is an output, so an executor can rationalize dropped phrases after the edit. Original R5 was about truncation hiding Use-when; the fix is to keep the selection and stop conditions at the front, not to relocate them. Self-review SR-04 already warned that frontmatter trigger edits are behavioral; this slice still lacks a mechanical preserve-list.",
+      "evidence": [
+        "manifest.reviewed-v1.md P1: ‘Move provider/receipt detail, history and procedural narration into the corresponding existing body section’ and ‘No arbitrary character target is a completion gate’",
+        "manifest.reviewed-v1.md AC2: frontloading preserves every existing positive condition, automatic lane condition, exclusion and approval boundary",
+        "skills/plan-blast-radius/SKILL.md:9-10: ‘SEV-1 and SEV-2 force `human_checkpoint: true` regardless of autorun’",
+        "skills/blind-control-plan/SKILL.md:10-12: ‘v1 is WARN/shadow, default OFF (armed via .svc/chain-policy.json dual_track:\"measured\")’",
+        "skills/craft-prompt/SKILL.md:14-15: ‘Does NOT route svc work (that is route-workflow's Prompt Composer)’",
+        "skills/evaluate-rule/SKILL.md:12-13: ‘Always use before registering a rule in `rulesRegistry`’",
+        "skills/review-exec/SKILL.md:12-13: ‘Same-family Sol remains advisory; the configured different-family external station owns independent release authority’",
+        "self-review.md SR-04: frontmatter trigger changes can change behavior; first batch must keep applicability unchanged"
+      ],
+      "proposed_fix": "Before any P1 edit, freeze a per-skill clause inventory from baseline e50a6443: explicit requests, automatic conditions, exclusions, default-OFF/opt-in, owner/SEV/approval boundaries, and specialist non-overlap lines. Require the new description to contain every inventory item verbatim (or a recorded equivalent that does not drop meaning). Classify SEV checkpoints, default-OFF, ‘does not route’, independent-review authority, and ‘always use before registering’ as description-level prerequisites, not movable procedural narration. Treat the before/after map as proof against that inventory, not as a substitute for it. Do not change generic false-positive triggers (R2/D1) while frontloading."
+    },
+    {
+      "id": "F-002",
+      "severity": "high",
+      "claim": "P2’s success criterion AC4 requires one unambiguous continuation contract, but the process parks material conflicts and can leave the weaker ‘always TaskUpdate’ instruction as the first block a cheaper executor follows.",
+      "analysis": "analyze-domain, evaluate-rule, and sync-work-items each repeat ‘Task-graph mode’ three times. The first block tells Claude Code to mirror with TaskList/TaskUpdate. The second block restricts mirroring to the parent session, forbids subagent TaskUpdate, and is the canonical child-containment rule. Those are not duplicate equivalent obligations (self-review SR-01). P2 says keep the union of non-conflicting obligations and, if blocks conflict materially, leave the disputed lines for D2/D3 rather than inventing policy. D2 is completion vs approval; D3 is relevant reads. Host-mirroring/subagent TaskUpdate is authority/containment (S4/D7). AC4 still requires ‘each pilot skill has one unambiguous local continuation contract.’ Parking both conflicting lines fails AC4; unioning them without a winner also fails AC4; deleting the stronger parent-only rule would weaken AGENTS.md child containment. A cheaper isolated executor that stops at the first ‘Task-graph mode’ heading will emit TaskUpdate from a child. That is execute-risk, not a documentation nit.",
+      "evidence": [
+        "skills/analyze-domain/SKILL.md:300-308: first Task-graph block ‘In Claude Code: mirror file state with TaskList / TaskUpdate’",
+        "skills/analyze-domain/SKILL.md:314-320: second block ‘Host UI mirroring … is ONLY performed when running in the parent/top-level session’ and ‘Subagents MUST NOT attempt TaskUpdate calls’",
+        "skills/evaluate-rule/SKILL.md:320-345 and skills/sync-work-items/SKILL.md:182-207: the same first-vs-second-block split",
+        "manifest.reviewed-v1.md P2: ‘if two blocks conflict materially, leave the disputed lines for D2/D3 rather than inventing a new policy’",
+        "manifest.reviewed-v1.md AC4: ‘each pilot skill has one unambiguous local continuation contract’",
+        "manifest.reviewed-v1.md D2/D3: authorization/report-only/questions and relevant reads — neither is subagent host-mirroring",
+        "self-review.md SR-01: 44 heading variants are not 44 identical procedures; retain unique obligations before deletion"
+      ],
+      "proposed_fix": "Rewrite AC4 to a mechanically testable predicate. Either (a) keep the already-canonical stronger parent-only / no-subagent-TaskUpdate rule (AGENTS.md child containment and the second local block) and record the weaker first-block ‘always mirror’ line as superseded local drift — this is alignment to existing authority, not a new policy — or (b) do not claim unambiguity: leave both lines, list the conflict under D7, and change AC4 to ‘no unique obligation dropped; remaining conflicts enumerated and not silently resolved.’ Never park this under D2/D3. Proof is one remaining local continuation block plus a conflict ledger, not a regex collapse."
+    },
+    {
+      "id": "F-003",
+      "severity": "high",
+      "claim": "The intended Astra-plans / cheaper-model-implements split is stated, but the future implementation mode is not pinned, so a later handoff can still label a different executor `inline` and skip dispatch blueprints.",
+      "analysis": "plan-changeset makes §3a mandatory on dispatch, skips blueprints only when the same orchestrator applies the change with context already loaded, and fail-closes unmarked mode to dispatch. Original S6 and self-review SR-07 / D8 correctly forbid relabeling a separate cheaper executor as inline. This document says it is not yet a certified inline-v4 or legacy-dispatch receipt and that CREATE/MODIFY should be frozen later using ‘the selected executor's supported plan-manifest contract.’ That leaves the mode choice open at the exact moment a cheaper model would implement P1–P4. Description/continuation/prose edits look tempting to mark inline because ‘the planner already has context.’ If the implementer is not that planner, blueprints are the cheaper model’s contract. Priority (5) of this review is exactly that misuse. The current planning request need not include blueprints; it must not leave a hole that drops them at execute authorization.",
+      "evidence": [
+        "manifest.reviewed-v1.md Outcome: ‘Astra High for reasoning and planning … a separately selected cheaper model implements’",
+        "manifest.reviewed-v1.md Files Planned: ‘This document is a reviewable proposed scope; it is not yet a generated, schema-certified inline-v4 or legacy-dispatch receipt’",
+        "skills/plan-changeset/SKILL.md:129-136: dispatch → §3a mandatory; inline only when the orchestrator itself applies the change; ‘Default when unsure: dispatch’; absent mode fails closed to dispatch",
+        "self-review.md SR-07: ‘The newer inline-v4 path cannot be used to relabel a different executor as inline’",
+        "manifest.reviewed-v1.md D8: keep legacy blueprints until consumer/schema compatibility and behavior tests pass — unapproved, so the pilot must not rely on a new handoff"
+      ],
+      "proposed_fix": "Add a pre-exec constraint now: if the implementer is not the same orchestrator with the plan context already loaded, mode=dispatch and the selected executor’s CREATE/MODIFY or blueprint contract is required; mode=inline is forbidden for a different cheaper model. Same-session Astra applying its own reviewed edits may use inline. Do not treat this advisory Grok review as that freeze. Keep D8 as the separate later evaluation of a cross-model handoff."
+    },
+    {
+      "id": "F-004",
+      "severity": "high",
+      "claim": "P2’s substantive SKILL.md edits can arm validate-skill-before-starting.sh on older skills, forcing new mandatory procedure (out of envelope) or a skipped/greenwashed validator.",
+      "analysis": "_shared/before-starting.md makes the Before Starting section mandatory for skills authored on or after 2026-04-28 and says older skills are exempt until they receive a substantive edit, at which point the validator becomes blocking. P2 is a substantive body edit of analyze-domain, evaluate-rule, and sync-work-items. The supplied tails show Pipeline Continuation / Process / Chaining and no ## Before Starting. P4 lists validate-skill-before-starting.sh as required later proof. P1/P2 also forbid introducing new mandatory steps. That is a trap: run the validator and fail, then add a Before Starting section (D3-relevant new procedure, envelope leak); or skip/waive it and still claim AC7. The plan never maps current Before Starting presence for the three pilots or says ‘absence is not in-scope to fix.’",
+      "evidence": [
+        "_shared/before-starting.md:64-65: ‘Older skills are exempt (advisory mode) until they receive a substantive edit; at that point the validator becomes blocking for them as well.’",
+        "manifest.reviewed-v1.md P2 exact targets: analyze-domain, evaluate-rule, sync-work-items SKILL.md",
+        "manifest.reviewed-v1.md P1: ‘do not introduce new mandatory steps or remove a conditional invocation’",
+        "manifest.reviewed-v1.md Validation plan includes bash test-framework/evals/tier-1/validate-skill-before-starting.sh",
+        "source-evidence.md excerpts for those three skills: Process/Pipeline Continuation/Chaining/Post-Compaction Recovery with no ## Before Starting heading in the supplied tails"
+      ],
+      "proposed_fix": "Before execute, record Before Starting presence for the three P2 files. If the section is missing, either drop that file from this pilot or park adding the shared-guide section under D3 with an explicit envelope amendment. Do not treat a new before-starting failure as in-pilot cleanup, and do not label a skipped or inherited failure as passing (the plan already says this for baseline failures; apply it here)."
+    },
+    {
+      "id": "F-005",
+      "severity": "high",
+      "claim": "The pilot write envelope includes validate-skill-judgment.mjs, so a cheaper executor can change matcher logic until frontloaded descriptions pass instead of adding failing-then-passing fixtures.",
+      "analysis": "P1’s proof is parsed description and routing behavior, not character length. That is the right class of proof. The Files Planned list allows edits to the existing validator script and its behavior.json ‘only when applicable counterexamples are needed.’ Counterexamples belong in fixtures. Editing the matcher can hide a lost exclusion or a newly gained generic trigger (exactly AC2’s risk). That weakens the cheaper-executor and review contract the way a provider-fidelity test that only asserts success would. The plan’s ‘no new always-on checklist’ rule does not prevent loosening the existing one.",
+      "evidence": [
+        "manifest.reviewed-v1.md Files Planned: ‘the existing test-framework/evals/tier-1/validate-skill-judgment.mjs and its test-framework/fixtures/skill-judgment/behavior.json only when applicable counterexamples are needed’",
+        "manifest.reviewed-v1.md P1: ‘compare the actual parsed description and routing behavior, not just character length’",
+        "manifest.reviewed-v1.md AC2: must not silently narrow security/review/router eligibility",
+        "manifest.reviewed-v1.md Outcome: ‘Do not add … a new always-on checklist’ — does not freeze the existing matcher"
+      ],
+      "proposed_fix": "Remove validate-skill-judgment.mjs from the modification envelope. Allow only additive behavior.json rows that distinguish preserved positives, preserved exclusions/approval boundaries, and non-target negatives. Any matcher/compiler change is a scope reopen, not a pilot fix. Bind those fixtures to the frozen clause inventory from F-001."
+    },
+    {
+      "id": "F-006",
+      "severity": "medium",
+      "claim": "P3 both forbids changing generated mirrors by hand and allows running the existing generator, whose outputs are not in the stated write envelope.",
+      "analysis": "P3’s named files are CLAUDE.md, plan-changeset/SKILL.md, execute-changeset/SKILL.md, references/model-routing.md, and rules/common/model-selection.md. CLAUDE.md contains svc:generated model tables. The plan says do not overwrite generated mirror blocks manually: use the existing generator or leave a labelled registry-default table intact. The generator, if run from a model-routing source correction, typically refreshes multiple host entry files (not only CLAUDE.md). Those files are absent from ‘the union of P1’s twelve, P2’s three, and P3’s five.’ An implementer who runs the generator either leaks the envelope or ships a partial mirror set. An implementer who hand-edits the generated table violates P3. This is an unresolved consequential execute choice (rubric point 10) inside an otherwise correct ‘no policy/registry pin change’ constraint.",
+      "evidence": [
+        "manifest.reviewed-v1.md P3 exact targets: CLAUDE.md, skills/plan-changeset/SKILL.md, skills/execute-changeset/SKILL.md, references/model-routing.md, rules/common/model-selection.md",
+        "manifest.reviewed-v1.md P3: ‘Do not overwrite generated mirror blocks manually: use the existing generator for an applicable source correction or leave a correctly labelled registry-default table intact’",
+        "manifest.reviewed-v1.md Files Planned: ‘The pilot's source modification envelope is the union of P1's twelve SKILL.md files, P2's three SKILL.md files, and P3's five files’ plus listed supporting paths — no other host markdown mirrors",
+        "CLAUDE.md generated table vs execute-changeset/SKILL.md:38 ‘Sonnet 4.6 since WI-357’ vs CLAUDE.md:77 hardcoded Opus 4.8 co-author"
+      ],
+      "proposed_fix": "Pick one path in the plan text: (1) do not run the generator; replace only non-generated prose with cognitive-role + effective-policy language and label remaining generated tables as registry defaults, or (2) name every generator output path in the envelope and review that diff. Keep model-registry.json, dispatch-policy.json, reviewer-policy-v2.json, agent pins, and station lists untouched as already stated."
+    },
+    {
+      "id": "F-007",
+      "severity": "medium",
+      "claim": "evaluate-rule is in both P1 and P2 and contains parked D5 methodology (age-only reuse and same-context ‘unbiased’ baseline) adjacent to the allowed edits, with no no-touch zone.",
+      "analysis": "Original R12/R13 are real: Step 1 reads the rule, then Step 2c says elicit the default before the rule contaminates it; skip if last_evaluated is less than 90 days old regardless of model/effort/host. Self-review correctly sent those to D5, not this pilot. The same file is a P1 description target and a P2 continuation target. A cheaper executor already in the file can ‘clean up’ When to skip and Process while collapsing duplicate Task-graph blocks. That would implement an unapproved owner decision and can fabricate an isolated-baseline design the plan explicitly forbids. Shared-file serial order P1→P2 is not enough without an explicit no-touch list.",
+      "evidence": [
+        "manifest.reviewed-v1.md: evaluate-rule is in the P1 twelve and the P2 three; ‘evaluate-rule is shared by P1 and P2’",
+        "skills/evaluate-rule/SKILL.md:61-62: ‘last_evaluated is less than 90 days old → skip; the prior verdict stands’",
+        "skills/evaluate-rule/SKILL.md:86-124: ‘Read the rule file’ then ‘the default is elicited before the rule contaminates it’ / ‘do NOT look at the rule while writing pass 1’",
+        "manifest.reviewed-v1.md D5: isolate baseline context; bind reuse to rule/model/effort/host/scenario; ‘Do not pretend self-report proves behavior improvement’ — UNAPPROVED",
+        "self-review.md R12/R13 dispositions: D5 only"
+      ],
+      "proposed_fix": "In the P1/P2 task text, mark evaluate-rule ‘When to skip’, Process steps 1–2 (bias isolation), and any last_evaluated reuse rule as a no-touch zone for this pilot. Allowed edits: description frontload that preserves ‘Always use before registering a rule’, plus continuation-tail duplicate collapse under the F-002 conflict rule. Any D5 change is a separate authorized scope."
+    },
+    {
+      "id": "F-008",
+      "severity": "medium",
+      "claim": "P1 applies description frontloading to all twelve over-600 skills, including review-plan, review-exec, and research, which is larger than the minimum viable proof and puts chain-gate routing metadata in the first cheaper-executor batch.",
+      "analysis": "The original recommendation was to start with trigger precision and duplicate removal. Self-review SR-11 narrowed large-root/mode work to a three-skill continuation pilot; P2 follows that. P1 does not stage the same way: it includes the two G5/G4-adjacent review gates and research, whose descriptions carry independent-review topology, promotion blocking, and uncertainty-triggered invocation. The frontload mechanic is already fully present in ad-video-script (procedure before Use-when ~character 639), design-logo, align-feature, and analyze-marketing. Those four would prove clause preservation and routing-index regeneration without touching gate selection text. Including review-plan/review-exec in the same serial batch means a P1 mistake blocks P2/P3 and can alter when mandatory chain skills are offered. Census membership of the twelve is also unverified here because inventory.json was not in the review pack (see dependencies_needing_read).",
+      "evidence": [
+        "manifest.reviewed-v1.md P1 exact set includes review-plan, review-exec, research, evaluate-rule, plan-blast-radius, blind-control-plan",
+        "self-review.md SR-11: ‘Narrow R8 to a three-skill pilot’ — not applied to P1",
+        "skills/ad-video-script/SKILL.md:5-16: procedural beat-sheet text before ‘Use when’",
+        "skills/review-plan/SKILL.md:10-18: gate process plus ‘Blocks promotion until all findings have resolutions’ inside the description",
+        "skills/review-exec/SKILL.md:8-16: topology/provenance/receipt path inside the description",
+        "initial-audit.md recommendation: start with trigger precision, duplicate removal, stale-model prose, conditional context loading"
+      ],
+      "proposed_fix": "Split P1. Wave 1: non-gate skills that clearly put procedure before Use-when (at least ad-video-script, design-logo, align-feature, analyze-marketing). After the frozen clause inventory and routing fixtures pass, a later authorized wave may include review-plan, review-exec, research, and evaluate-rule. Verify the twelve-name list against inventory.json before any wave; a mismatch is a plan correction, as the plan already says."
+    },
+    {
+      "id": "F-009",
+      "severity": "low",
+      "claim": "Self-review and D7 treat autorun ‘P0 decides’ versus plan-blast-radius ‘HUMAN CHECKPOINT REQUIRED’ as a contradictory authority hole; the supplied autorun rows present P0 as the owner stop, so a later ‘correction’ could add churn or a second stop without relaxing or strengthening anything.",
+      "analysis": "This is a self-review challenge, not a first-slice defect. plan-blast-radius body requires a human checkpoint for SEV-1/2 regardless of autorun. The autorun table says stop, ask the user to approve SEV classification, P0 decides, and calls classification deterministic. Other autorun rows use P0 as the human operator (‘P0 merges’, ‘P0 reviews diffs’). If P0 is the owner, the table already implements the skill’s hard stop. Original S10’s ‘potential unauthorized destructive execution’ overstated the conflict unless a definition of P0 as the autonomous agent exists outside the supplied excerpt. D7 is unapproved and says ‘No new mutation permission,’ which is the right boundary; it should not instruct an executor to ‘correct the autorun table’ as if SEV approval were currently missing. I accept S4, S11, and S12 as real stale-prose/authority issues; I reject S10 as confirmed contradiction on this evidence.",
+      "evidence": [
+        "skills/route-workflow/references/autorun-orchestrator.md:54: ‘plan-blast-radius | Stop, ask user to approve SEV classification | P0 decides (SEV classification is deterministic from terraform plan / helm diff)’",
+        "skills/route-workflow/references/autorun-orchestrator.md:38: land-changeset ‘P0 merges (solo mode) or opens PR and stops (team mode)’",
+        "skills/plan-blast-radius/SKILL.md:60-61: SEV-1/2 ‘HUMAN CHECKPOINT REQUIRED regardless of autorun mode’",
+        "self-review.md S10 disposition: ‘Confirmed contradictory table entries’ → D7",
+        "manifest.reviewed-v1.md D7: ‘Reconcile stale planning/worktree, SEV, mock/live, and stale-task-cleanup prose to current stronger authority’"
+      ],
+      "proposed_fix": "In D7, split S10 from S4/S11/S12. Do not authorize autorun-table edits for blast-radius unless a later read of the P0 definition shows P0 is the autonomous orchestrator rather than the owner. Keep explicit SEV-1/2 human approval as-is. This does not block the P1–P4 pilot, which correctly leaves D7 unapproved."
+    }
+  ],
+  "certifications": []
+}

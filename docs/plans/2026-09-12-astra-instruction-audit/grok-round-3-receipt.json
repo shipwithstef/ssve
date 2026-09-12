@@ -1,0 +1,281 @@
+{
+  "schema_version": 2,
+  "launcher_version": "2.5.7",
+  "cli_version": "grok 1.0.30 (04b7ffed98c6) [stable]",
+  "request_id": "d41de622-f353-4dd0-9b32-994af4e9c1ce",
+  "review_kind": "plan",
+  "candidate_digest": "61470df9eb61224a5749fee0ea0247564d8f356f98b7964951d92c810046aae7",
+  "package_sha256": "a038737544a85fcad7f5687db994f57822f4f975aac5c8a054c5af5d97db0b51",
+  "findings_schema_sha256": "bf012594cbd4a0500398beeb506538f5d6050379e0d6e31a30628cf55eb5a3fa",
+  "findings_sha256": "71955a79195bc558598716a62cfac475f7d4a3d97e92523371049c6f5fb726f4",
+  "cache_key": "66b717b26d38065524cd36dc19ced680318441715e1552a0abbb3662c955e851",
+  "fixture_mode": false,
+  "started_at": "2026-09-12T13:41:44.717Z",
+  "finished_at": "2026-09-12T13:43:34.023Z",
+  "status": "success",
+  "classification": "success",
+  "requested_tuple": {
+    "orchestrator": "codex",
+    "host": "grok",
+    "family": "xai",
+    "model": "grok-4.6",
+    "effort": "xhigh"
+  },
+  "invocation_tuple": {
+    "orchestrator": "codex",
+    "host": "grok",
+    "family": "xai",
+    "model": "grok-4.6",
+    "effort": "xhigh"
+  },
+  "effective_tuple": {
+    "orchestrator": "codex",
+    "host": "grok",
+    "family": "xai",
+    "model": "grok-4.6",
+    "effort": "xhigh"
+  },
+  "attempts": [
+    {
+      "index": 1,
+      "tuple": {
+        "orchestrator": "codex",
+        "host": "grok",
+        "family": "xai",
+        "model": "grok-4.6",
+        "effort": "xhigh"
+      },
+      "started_at": "2026-09-12T13:41:51.749Z",
+      "finished_at": "2026-09-12T13:43:34.021Z",
+      "exit_code": 0,
+      "classification": "success",
+      "command": {
+        "binary": "grok",
+        "argv": [
+          "--verbatim",
+          "--prompt-file",
+          "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-astra-instruction-audit/.svc/astra-instruction-audit/grok-review-v3/attempt-1-grok-prompt.txt",
+          "--cwd",
+          "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-astra-instruction-audit",
+          "--model",
+          "grok-4.6",
+          "--reasoning-effort",
+          "xhigh",
+          "--permission-mode",
+          "plan",
+          "--disable-web-search",
+          "--no-subagents",
+          "--max-turns",
+          "100",
+          "--json-schema",
+          "{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"$id\":\"https://seriousvibecoding.dev/schemas/external-review-findings-v1\",\"title\":\"SVC external review findings\",\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"schema_version\",\"review_kind\",\"rubric_score\",\"rubric_failures\",\"dependencies_needing_read\",\"reviewer\",\"verdict\",\"summary\",\"findings\",\"certifications\"],\"properties\":{\"schema_version\":{\"type\":\"integer\",\"enum\":[1]},\"review_kind\":{\"type\":\"string\"},\"rubric_score\":{\"type\":[\"integer\",\"null\"],\"enum\":[0,1,2,3,4,5,6,7,8,9,10,null]},\"rubric_failures\":{\"type\":[\"array\",\"null\"],\"items\":{\"type\":\"integer\"}},\"dependencies_needing_read\":{\"type\":[\"array\",\"null\"],\"items\":{\"type\":\"string\"}},\"reviewer\":{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"host\",\"family\",\"model\",\"effort\"],\"properties\":{\"host\":{\"type\":\"string\",\"enum\":[\"codex\",\"claude\",\"agy\",\"cursor\",\"grok\"]},\"family\":{\"type\":\"string\",\"enum\":[\"openai\",\"anthropic\",\"google\",\"xai\",\"multi\"]},\"model\":{\"type\":\"string\"},\"effort\":{\"type\":\"string\",\"enum\":[\"low\",\"medium\",\"high\",\"xhigh\",\"max\",\"provider-managed\"]}}},\"verdict\":{\"type\":\"string\",\"enum\":[\"pass\",\"fail\",\"pass-with-findings\"]},\"summary\":{\"type\":\"string\"},\"findings\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"id\",\"severity\",\"claim\",\"analysis\",\"evidence\",\"proposed_fix\"],\"properties\":{\"id\":{\"type\":\"string\"},\"severity\":{\"type\":\"string\",\"enum\":[\"critical\",\"high\",\"medium\",\"low\",\"info\"]},\"claim\":{\"type\":\"string\"},\"analysis\":{\"type\":\"string\"},\"evidence\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}},\"proposed_fix\":{\"type\":\"string\"}}}},\"certifications\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"key\",\"certified\",\"reviewer_family\",\"for_content_sha\"],\"properties\":{\"key\":{\"type\":\"string\"},\"certified\":{\"type\":\"boolean\"},\"reviewer_family\":{\"type\":[\"string\",\"null\"]},\"for_content_sha\":{\"type\":[\"string\",\"null\"]}}}}}}",
+          "--output-format",
+          "json"
+        ]
+      },
+      "artifacts": {
+        "events": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-astra-instruction-audit/.svc/astra-instruction-audit/grok-review-v3/attempt-1-events.jsonl",
+        "stderr": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-astra-instruction-audit/.svc/astra-instruction-audit/grok-review-v3/attempt-1-stderr.log",
+        "findings": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-astra-instruction-audit/.svc/astra-instruction-audit/grok-review-v3/attempt-1-findings.json"
+      },
+      "usage": {
+        "input_tokens": 107778,
+        "cache_read_input_tokens": 5376,
+        "cache_creation_input_tokens": 0,
+        "output_tokens": 5120,
+        "reasoning_tokens": 4044,
+        "total_tokens": 118274,
+        "modelUsage": {
+          "grok-4.6-build": {
+            "inputTokens": 107778,
+            "outputTokens": 5120,
+            "cacheReadInputTokens": 5376,
+            "cacheCreationInputTokens": 0,
+            "modelCalls": 1,
+            "costUSD": 0.08464776
+          }
+        },
+        "total_cost_usd": 0.08464776
+      }
+    }
+  ],
+  "reviewer_run": {
+    "commands": [
+      {
+        "binary": "grok",
+        "argv": [
+          "--verbatim",
+          "--prompt-file",
+          "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-astra-instruction-audit/.svc/astra-instruction-audit/grok-review-v3/attempt-1-grok-prompt.txt",
+          "--cwd",
+          "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-astra-instruction-audit",
+          "--model",
+          "grok-4.6",
+          "--reasoning-effort",
+          "xhigh",
+          "--permission-mode",
+          "plan",
+          "--disable-web-search",
+          "--no-subagents",
+          "--max-turns",
+          "100",
+          "--json-schema",
+          "{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"$id\":\"https://seriousvibecoding.dev/schemas/external-review-findings-v1\",\"title\":\"SVC external review findings\",\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"schema_version\",\"review_kind\",\"rubric_score\",\"rubric_failures\",\"dependencies_needing_read\",\"reviewer\",\"verdict\",\"summary\",\"findings\",\"certifications\"],\"properties\":{\"schema_version\":{\"type\":\"integer\",\"enum\":[1]},\"review_kind\":{\"type\":\"string\"},\"rubric_score\":{\"type\":[\"integer\",\"null\"],\"enum\":[0,1,2,3,4,5,6,7,8,9,10,null]},\"rubric_failures\":{\"type\":[\"array\",\"null\"],\"items\":{\"type\":\"integer\"}},\"dependencies_needing_read\":{\"type\":[\"array\",\"null\"],\"items\":{\"type\":\"string\"}},\"reviewer\":{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"host\",\"family\",\"model\",\"effort\"],\"properties\":{\"host\":{\"type\":\"string\",\"enum\":[\"codex\",\"claude\",\"agy\",\"cursor\",\"grok\"]},\"family\":{\"type\":\"string\",\"enum\":[\"openai\",\"anthropic\",\"google\",\"xai\",\"multi\"]},\"model\":{\"type\":\"string\"},\"effort\":{\"type\":\"string\",\"enum\":[\"low\",\"medium\",\"high\",\"xhigh\",\"max\",\"provider-managed\"]}}},\"verdict\":{\"type\":\"string\",\"enum\":[\"pass\",\"fail\",\"pass-with-findings\"]},\"summary\":{\"type\":\"string\"},\"findings\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"id\",\"severity\",\"claim\",\"analysis\",\"evidence\",\"proposed_fix\"],\"properties\":{\"id\":{\"type\":\"string\"},\"severity\":{\"type\":\"string\",\"enum\":[\"critical\",\"high\",\"medium\",\"low\",\"info\"]},\"claim\":{\"type\":\"string\"},\"analysis\":{\"type\":\"string\"},\"evidence\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}},\"proposed_fix\":{\"type\":\"string\"}}}},\"certifications\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"key\",\"certified\",\"reviewer_family\",\"for_content_sha\"],\"properties\":{\"key\":{\"type\":\"string\"},\"certified\":{\"type\":\"boolean\"},\"reviewer_family\":{\"type\":[\"string\",\"null\"]},\"for_content_sha\":{\"type\":[\"string\",\"null\"]}}}}}}",
+          "--output-format",
+          "json"
+        ]
+      }
+    ],
+    "output_artifacts": [
+      "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-astra-instruction-audit/.svc/astra-instruction-audit/grok-review-v3/attempt-1-events.jsonl",
+      "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-astra-instruction-audit/.svc/astra-instruction-audit/grok-review-v3/attempt-1-stderr.log",
+      "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-astra-instruction-audit/.svc/astra-instruction-audit/grok-review-v3/attempt-1-findings.json"
+    ]
+  },
+  "fallback": {
+    "eligible": false,
+    "used": false,
+    "reason": null
+  },
+  "override": {
+    "used": true,
+    "authority": "repository-owner",
+    "source": "Current user message in Codex thread 01a0959f-d722-7c11-a66e-ed7edf6ffddc: self review this and get review from grok xhigh also then create a worktree and save the plan inside",
+    "path": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-astra-instruction-audit/.svc/astra-instruction-audit/grok-xhigh-override.json",
+    "expected_sha256": "4857946058e6178db9e88361731c2709a6762c1664010a519821dde65a20f8fd",
+    "actual_sha256": "4857946058e6178db9e88361731c2709a6762c1664010a519821dde65a20f8fd"
+  },
+  "policy": {
+    "version": 2,
+    "profile": "governed-triple:grok-high",
+    "source": "owner-config",
+    "resolved_at": "2026-09-12T13:41:44.717Z",
+    "effective_window": {
+      "starts_at": null,
+      "ends_at": null
+    },
+    "cutover_utc": null,
+    "cutover_local": null,
+    "timezone": null,
+    "selection_sha256": "373ae8811d84db55fe4baf3a828ac4e834a3fc66012aa5bcad437a920740cd30",
+    "selection_expires_at": null,
+    "selection_authority": "repository-owner"
+  },
+  "protocol": {
+    "process_invocations": 1,
+    "configured_turn_ceiling": 100,
+    "configured_budget_usd": null,
+    "reported_turns": 1,
+    "stop_reason": "end_turn",
+    "terminal_reason": "end_turn",
+    "errors": []
+  },
+  "route": {
+    "kind": "owner_config_primary",
+    "switching_enabled": false,
+    "cli_fallback_configured": false,
+    "evidence": "requested_primary"
+  },
+  "effective_effort": {
+    "value": "xhigh",
+    "provenance": "requested"
+  },
+  "model_attestation": {
+    "level": "server_observed",
+    "requested_model": "grok-4.6",
+    "observed_models": [
+      "grok-4.6-build"
+    ],
+    "evidence": "grok_modelUsage"
+  },
+  "phase_guard": {
+    "applicable": true,
+    "kind": "plan",
+    "decision": "allow",
+    "reason": "pre_execution_state_verified",
+    "wi": "WI-FW-ASTRA-INSTRUCTION-AUDIT-01",
+    "pre_execution_base": "e50a64431955cac787c39161f03a18021386086f",
+    "plan_manifest_sha256": "ce196e393878e5f5c58b3960b7df90e4f13f791d80420b145ba4754d9ce426e8",
+    "exec_record_present": false,
+    "exec_record_path": null,
+    "implementation_diverged": false,
+    "diverged_files": [],
+    "base_resolved": true,
+    "override": {
+      "used": false,
+      "authority": null,
+      "source": null,
+      "path": null,
+      "expected_sha256": null,
+      "actual_sha256": null,
+      "kind": null
+    }
+  },
+  "package_context": {
+    "version": 1,
+    "context_root": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-astra-instruction-audit",
+    "base_package_sha256": "7e88835fe620a18da0b7e41ab46aa87bbe35eb4a1dd44b5b8103472d31cd5ffe",
+    "files": [
+      {
+        "path": "target:AGENTS.md",
+        "sha256": "493117c0a6ea6833ecd2083f58a2a8e749e33226304b6a5fca1ec5aaab158439",
+        "bytes": 27779
+      },
+      {
+        "path": "target:CLAUDE.md",
+        "sha256": "42b8728066f4ab2eb1ca257260b3ae3324ef0ac860f53435c4a6b0441625c4db",
+        "bytes": 11576
+      },
+      {
+        "path": "framework:skills/review-plan/SKILL.md",
+        "sha256": "037df975f3f6d904cd42f47741ca55da561014f79cbe8ace949211562217db4f",
+        "bytes": 29286
+      },
+      {
+        "path": "framework:skills/review-cross-model/SKILL.md",
+        "sha256": "ee026267c79c5648e38a0ac9f4f6c13b44149d94f084e8bdb5ba74d77e2b492d",
+        "bytes": 26485
+      },
+      {
+        "path": "framework:references/plan-review-protocol.md",
+        "sha256": "4fd586e19fc1cb1098f294d0c01c4c98aba0c12f1d7ec95c4709c977ba4aa430",
+        "bytes": 12596
+      },
+      {
+        "path": "framework:rules/plan-changeset-trigger.md",
+        "sha256": "63385c5d1d31e0afb83118184bbe8c5ff20fabf2f9c815a1d81679d3b956ebba",
+        "bytes": 3661
+      }
+    ]
+  },
+  "cache": {
+    "disposition": "published",
+    "reusable": true,
+    "entry": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-astra-instruction-audit/.svc/external-review-cache/v1/66b717b26d38065524cd36dc19ced680318441715e1552a0abbb3662c955e851"
+  },
+  "artifacts": {
+    "findings": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-astra-instruction-audit/.svc/astra-instruction-audit/grok-review-v3/findings.json",
+    "receipt": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-astra-instruction-audit/.svc/astra-instruction-audit/grok-review-v3/receipt.json",
+    "package": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-astra-instruction-audit/.svc/astra-instruction-audit/grok-review-v3/review-package.bin",
+    "capabilities": "/home/dianast/app-workspaces/seriousvibecoding/.worktrees/feature-astra-instruction-audit/.svc/astra-instruction-audit/grok-review-v3/capabilities.log"
+  },
+  "usage": {
+    "input_tokens": 107778,
+    "cache_read_input_tokens": 5376,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 5120,
+    "reasoning_tokens": 4044,
+    "total_tokens": 118274,
+    "modelUsage": {
+      "grok-4.6-build": {
+        "inputTokens": 107778,
+        "outputTokens": 5120,
+        "cacheReadInputTokens": 5376,
+        "cacheCreationInputTokens": 0,
+        "modelCalls": 1,
+        "costUSD": 0.08464776
+      }
+    },
+    "total_cost_usd": 0.08464776
+  }
+}

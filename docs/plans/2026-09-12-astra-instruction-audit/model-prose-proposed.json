@@ -1,0 +1,114 @@
+{
+  "base_sha": "e50a64431955cac787c39161f03a18021386086f",
+  "scope": "Proposal only. Do not apply without later implementation authorization. Exact hunks, no executor-authored wording.",
+  "no_touch": [
+    "All content outside the exact before/after hunks",
+    "All YAML frontmatter in P3 skill files",
+    "Execution Mode / WI-386 / WI-347, section 3a, blueprint requirements and skip conditions, receipt mode fail-closed semantics, DISPATCH=mimo-pro|sonnet identifiers",
+    "All svc:generated blocks including markers",
+    "All manually mirrored profile/model-ID tables except the exact Host-Specific Resolutions replacement",
+    "Context Window Management and machine-parsed KIMI_DETACHED_CAPS",
+    "All actual model registries, policies, station lists and agent pins",
+    "Do not copy observed Sol High / Grok High session defaults into framework defaults"
+  ],
+  "hunks": [
+    {
+      "path": "CLAUDE.md",
+      "base_source_sha256": "42b8728066f4ab2eb1ca257260b3ae3324ef0ac860f53435c4a6b0441625c4db",
+      "line": 77,
+      "before": "- Co-author trailer: use the ACTIVE orchestrator model \u2014 currently `Co-Authored-By: Claude Opus 4.8 (1M context) <contact-cd29c5ac34@example.invalid>`",
+      "after": "- Co-author trailer: derive the ACTIVE orchestrator/model at commit time; never hardcode a different host or model family into the receipt or trailer."
+    },
+    {
+      "path": "CLAUDE.md",
+      "base_source_sha256": "42b8728066f4ab2eb1ca257260b3ae3324ef0ac860f53435c4a6b0441625c4db",
+      "line": 82,
+      "before": "This framework uses **profiles** to map cognitive labels to execution harnesses. The default profile for Claude Code is **`svc-default`** \u2014 the framework's proven multi-harness mixing.",
+      "after": "This framework uses **profiles** to map cognitive labels to execution harnesses. `references/model-registry.json` supplies profile defaults. Resolve the effective assignment for the active repository, WI and session with `bash scripts/resolve-model.sh <LABEL> --json`; respect the existing owner policy and applicable overrides."
+    },
+    {
+      "path": "CLAUDE.md",
+      "base_source_sha256": "42b8728066f4ab2eb1ca257260b3ae3324ef0ac860f53435c4a6b0441625c4db",
+      "line": 87,
+      "before": "# \u2192 harness: claude, model: claude-sonnet-5, effort: high (svc-default per WI-470)",
+      "after": "# Inspect the resolved harness, model and effort for the active repository, WI and session."
+    },
+    {
+      "path": "CLAUDE.md",
+      "base_source_sha256": "42b8728066f4ab2eb1ca257260b3ae3324ef0ac860f53435c4a6b0441625c4db",
+      "line": 90,
+      "before": "### svc-default Profile (Production)",
+      "after": "### svc-default Profile (Registry Defaults)"
+    },
+    {
+      "path": "CLAUDE.md",
+      "base_source_sha256": "42b8728066f4ab2eb1ca257260b3ae3324ef0ac860f53435c4a6b0441625c4db",
+      "line": 104,
+      "before": "> \u26a0\ufe0f Model IDs single-sourced from `references/model-registry.json` \u2014 refreshed by **WI-357** (2026-06-06; EXEC\u2192Sonnet 4.6) then **WI-470** (2026-06-30; EXEC+REVIEW\u2192Sonnet 5, effort:high declared, claude-api-verified). Table generation pending WI-364 \u2014 until then edit the registry first, then sync mirrors.",
+      "after": "> The generated table records `svc-default` registry defaults, not a live session assignment. Resolve the effective tuple through `scripts/resolve-model.sh`. The cognitive REVIEW role is separate from the owner-selected external review station topology."
+    },
+    {
+      "path": "skills/plan-changeset/SKILL.md",
+      "base_source_sha256": "fdbfdf8303b835e7ced6c9fa1f86ef2c661d82a49187feda1cf29d8201b07eaa",
+      "line": 70,
+      "before": "> **Cognitive routing:** \ud83d\udcd0 [PLAN-OPUS] \u2014 architectural blueprinting demands Opus 4.8 for strict dependency graphs. See `references/model-routing.md`.",
+      "after": "> **Cognitive routing:** \ud83d\udcd0 [PLAN] \u2014 architectural blueprinting and dependency planning. Resolve the effective harness, model and effort with `bash scripts/resolve-model.sh PLAN --json` in the active repository/WI/session context. See `references/model-routing.md`."
+    },
+    {
+      "path": "skills/execute-changeset/SKILL.md",
+      "base_source_sha256": "7c460371c77cfa8e486e5eaa832a9c297fcabec4d9021209ab751cb91047d4b4",
+      "line": 38,
+      "before": "> **Cognitive routing:** \u2699\ufe0f [EXEC] \u2014 high-volume file editing per the svc-default profile (Sonnet 4.6 since WI-357). See `references/model-routing.md`.",
+      "after": "> **Cognitive routing:** \u2699\ufe0f [EXEC] \u2014 high-volume file editing. Resolve the effective harness, model and effort with `bash scripts/resolve-model.sh EXEC --json` in the active repository/WI/session context. See `references/model-routing.md`."
+    },
+    {
+      "path": "references/model-routing.md",
+      "base_source_sha256": "d506fa762aad20b950601c105d85b038a5a6379cf610480c709ad9982b453aa3",
+      "line": 3,
+      "before": "> **MIRROR:** model IDs/tables below mirror `references/model-registry.json` (single source). Edit the registry first, then sync this file. Cross-check: WI-357 validation command. Full generation pending WI-364.",
+      "after": "> **MIRROR:** model IDs/tables below are registry defaults from `references/model-registry.json`. Generated regions are maintained by `scripts/generate-manifest-mirrors.mjs`; resolve live assignments with `scripts/resolve-model.sh` instead of treating these tables as the current session route."
+    },
+    {
+      "path": "references/model-routing.md",
+      "base_source_sha256": "d506fa762aad20b950601c105d85b038a5a6379cf610480c709ad9982b453aa3",
+      "line": 11,
+      "before": "Skills reference **cognitive labels** (e.g., `[STRAT]`, `[EXEC]`). The framework resolves each label via `scripts/resolve-model.sh`, which reads the active **profile** from `references/model-registry.json`.",
+      "after": "Skills reference **cognitive labels** (e.g., `[STRAT]`, `[EXEC]`). Resolve the effective harness, model and effort with `bash scripts/resolve-model.sh <LABEL> --json` in the active repository/WI/session context. The registry supplies defaults; existing owner policy and applicable overrides determine the effective route. The cognitive `[REVIEW]` role is separate from the owner-selected external review station topology."
+    },
+    {
+      "path": "references/model-routing.md",
+      "base_source_sha256": "d506fa762aad20b950601c105d85b038a5a6379cf610480c709ad9982b453aa3",
+      "line": 17,
+      "before": "A profile defines which harness handles each cognitive label. The framework ships with five profiles:",
+      "after": "A profile defines which harness handles each cognitive label. The following table describes registry profile defaults; consult the registry for its complete profile set and the resolver for the effective assignment."
+    },
+    {
+      "path": "references/model-routing.md",
+      "base_source_sha256": "d506fa762aad20b950601c105d85b038a5a6379cf610480c709ad9982b453aa3",
+      "line": 27,
+      "before": "**Profile selection:**",
+      "after": "**Registry profile examples (effective routing may include owner/WI/session overrides):**"
+    },
+    {
+      "path": "rules/common/model-selection.md",
+      "base_source_sha256": "43461978be1dc2ee95f0f73d72d96b495e32c3da6321f60bf69c71b2a2f9dada",
+      "line": 11,
+      "before": "> **MIRROR:** model IDs/tables below mirror `references/model-registry.json` (single source). Edit the registry first, then sync this file. Cross-check: WI-357 validation command. Full generation pending WI-364.",
+      "after": "> **MIRROR:** generated model-label references come from `references/model-registry.json`. Preserve generated regions and resolve live assignments through `scripts/resolve-model.sh`. Registry defaults are not a fixed assignment for every host or session."
+    },
+    {
+      "path": "rules/common/model-selection.md",
+      "base_source_sha256": "43461978be1dc2ee95f0f73d72d96b495e32c3da6321f60bf69c71b2a2f9dada",
+      "line": 41,
+      "before": "## Host-Specific Resolutions\n\n| Label | Claude Code | Kimi CLI | Gemini CLI | Codex CLI | OpenCode CLI |\n|-------|-------------|----------|------------|-----------|--------------|\n| **[STRAT]** | Claude Opus 4.8 | `kimi-for-coding` + thinking ON | Gemini 2.5 Pro | o3 | MiMo V2.5-Pro |\n| **[PLAN]** | Claude Opus 4.8 | `kimi-for-coding` + thinking ON | Gemini 2.5 Pro | o3 | MiMo V2.5-Pro |\n| **[EXEC]** | Claude Sonnet 4.6 | `kimi-for-coding` + thinking OFF | Gemini 2.5 Flash | codex | MiMo V2.5 |\n| **[REVIEW]** | Claude Sonnet 4.6 | `kimi-for-coding` + thinking ON | Gemini 2.5 Pro | codex | MiMo V2.5-Pro |\n| **[SENSE]** | Claude Opus 4.8 | `kimi-for-coding` + thinking ON | Gemini 2.5 Pro | gpt-4o | MiMo V2.5-Pro |\n| **[PASS]** | Claude Haiku 4.5 | `kimi-for-coding` + thinking OFF | Gemini 2.5 Flash | gpt-4o-mini | MiMo V2.5 |\n\nFor full details see `references/model-routing.md` and `references/model-registry.json`.",
+      "after": "## Effective Model Resolution\n\nFor the actual task role, run `bash scripts/resolve-model.sh <LABEL> --json` in the active repository/WI/session context and use the returned harness, model and effort. Use the cognitive labels above; `references/model-registry.json` supplies profile defaults, and existing owner policy and applicable overrides determine the effective route.\n\nDo not infer the active assignment from a host name or a historical model table. The cognitive `[REVIEW]` role does not select or replace the external review stations required by the owner's review policy. See `references/model-routing.md` for the role interface."
+    },
+    {
+      "path": "rules/common/model-selection.md",
+      "base_source_sha256": "43461978be1dc2ee95f0f73d72d96b495e32c3da6321f60bf69c71b2a2f9dada",
+      "line": 69,
+      "before": "- Designing a multi-agent system \u2192 assign Haiku to worker agents by default\n- Orchestrator agent \u2192 Sonnet\n- One-shot deep reasoning tasks (architectural decisions, plan evaluation) \u2192 Opus",
+      "after": "- Worker tasks \u2192 choose the cognitive label for the actual task and resolve its effective assignment; retain any existing explicit agent pin and delegation boundary.\n- Orchestration \u2192 retain the active session's model; do not replace it from a generic default sentence.\n- Strategy and planning \u2192 resolve `[STRAT]` or `[PLAN]` for the actual task. Changes to owner model policy remain separate decisions."
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+scope: advisory-proposal-only
+rounds_run: 3
+discovery_batches: 1
+unlinked_followup_findings: 0
+unresolved_critical: 0
+remaining_high: 0
+self_review_passes: 3
+terminal_state: ADVISORY_REVIEW_COMPLETE
+round_1:
+  status: completed
+  review_family: cross
+  rubric_score: 6
+  findings: grok-round-1-findings.json
+  receipt: grok-round-1-receipt.json
+round_2:
+  status: completed
+  review_family: cross
+  rubric_score: 7
+  findings: grok-round-2-findings.json
+  receipt: grok-round-2-receipt.json
+  lineage: F-010 extends F-001/F-003 exact-scope concerns; F-011 is caused by the narrowed P1 scope
+round_3:
+  status: completed
+  review_family: cross
+  rubric_score: 8
+  findings: grok-round-3-findings.json
+  receipt: grok-round-3-receipt.json
+  lineage: F-012 is the residual adjacent wording in the F-010 frozen-patch review
+bounded_exit:
+  disposition: accept-with-justification
+  residual_highs: []
+  residual_medium: F-012; exact self-reviewed addendum, verify actual implementation diff later

@@ -1,0 +1,136 @@
+--- a/CLAUDE.md
++++ b/CLAUDE.md
+@@ -74,20 +74,20 @@
+ ### Commit Rules
+ 
+ - Author: `s7an-it <angelovsan@gmail.com>` (configured in repo `.git/config`)
+-- Co-author trailer: use the ACTIVE orchestrator model — currently `Co-Authored-By: Claude Opus 4.8 (1M context) <contact-cd29c5ac34@example.invalid>`
++- Co-author trailer: derive the ACTIVE orchestrator/model at commit time; never hardcode a different host or model family into the receipt or trailer.
+ - Branch protection is on — direct push bypasses with warning
+ 
+ ### Profile-Based Model Routing
+ 
+-This framework uses **profiles** to map cognitive labels to execution harnesses. The default profile for Claude Code is **`svc-default`** — the framework's proven multi-harness mixing.
++This framework uses **profiles** to map cognitive labels to execution harnesses. `references/model-registry.json` supplies profile defaults. Resolve the effective assignment for the active repository, WI and session with `bash scripts/resolve-model.sh <LABEL> --json`; respect the existing owner policy and applicable overrides.
+ 
+ ```bash
+ # What harness + model should I use for execution right now?
+ bash scripts/resolve-model.sh EXEC --json
+-# → harness: claude, model: claude-sonnet-5, effort: high (svc-default per WI-470)
++# Inspect the resolved harness, model and effort for the active repository, WI and session.
+ ```
+ 
+-### svc-default Profile (Production)
++### svc-default Profile (Registry Defaults)
+ 
+ <!-- svc:generated:begin claude-md-svc-default — edit skills-manifest.json / references/model-registry.json, then run: node scripts/generate-manifest-mirrors.mjs --write -->
+ | Label | Harness | Model |
+@@ -101,7 +101,7 @@
+ | **[PASS]** | Claude | Haiku 4.5 |
+ <!-- svc:generated:end claude-md-svc-default -->
+ 
+-> ⚠️ Model IDs single-sourced from `references/model-registry.json` — refreshed by **WI-357** (2026-06-06; EXEC→Sonnet 4.6) then **WI-470** (2026-06-30; EXEC+REVIEW→Sonnet 5, effort:high declared, claude-api-verified). Table generation pending WI-364 — until then edit the registry first, then sync mirrors.
++> The generated table records `svc-default` registry defaults, not a live session assignment. Resolve the effective tuple through `scripts/resolve-model.sh`. The cognitive REVIEW role is separate from the owner-selected external review station topology.
+ 
+ MiMo is an **execution harness**, not an orchestrator. Since WI-470, svc-default pins the EXEC + REVIEW subagents to **Sonnet 5** — `svc-stage-exec`/`svc-stage-land`, `svc-journey-qa`, and the review agents `svc-lens-correctness`/`-security`/`-spec-fidelity`, `plan-reviewer`, `strategic-reviewer` (the PASS-tier `svc-lens-perf` stays Haiku) — with **high reasoning effort declared in the registry** (`output_config.effort:high`, surfaced via `resolve-model.sh EXEC --effort`). The model pin is what runtime honors today; the effort value is the routing *declaration* — consumers apply it via the Agent dispatch effort param (WI-399). It delegates only video/visual QA (SENSE) to MiMo when `MIMO_API_KEY` is set; MiMo-everything execution remains available via the `opencode-mimo` profile.
+ 
+--- a/skills/plan-changeset/SKILL.md
++++ b/skills/plan-changeset/SKILL.md
+@@ -67,7 +67,7 @@
+ The canonical DAG has exactly one plan review and one final review. Preserve all plan-specific
+ scope, dependency, proof, rollback and G5 obligations.
+ 
+-> **Cognitive routing:** 📐 [PLAN-OPUS] — architectural blueprinting demands Opus 4.8 for strict dependency graphs. See `references/model-routing.md`.
++> **Cognitive routing:** 📐 [PLAN] — architectural blueprinting and dependency planning. Resolve the effective harness, model and effort with `bash scripts/resolve-model.sh PLAN --json` in the active repository/WI/session context. See `references/model-routing.md`.
+ 
+ **Announce at start:** "I'm using the plan-changeset skill to produce the implementation plan."
+ 
+--- a/skills/execute-changeset/SKILL.md
++++ b/skills/execute-changeset/SKILL.md
+@@ -35,7 +35,7 @@
+ 
+ # Executing Change Set
+ 
+-> **Cognitive routing:** ⚙️ [EXEC] — high-volume file editing per the svc-default profile (Sonnet 4.6 since WI-357). See `references/model-routing.md`.
++> **Cognitive routing:** ⚙️ [EXEC] — high-volume file editing. Resolve the effective harness, model and effort with `bash scripts/resolve-model.sh EXEC --json` in the active repository/WI/session context. See `references/model-routing.md`.
+ 
+ **Announce at start:** "I'm using the execute-changeset skill to implement the planned changeset."
+ 
+--- a/references/model-routing.md
++++ b/references/model-routing.md
+@@ -1,6 +1,6 @@
+ # Cognitive Model Routing Taxonomy
+ 
+-> **MIRROR:** model IDs/tables below mirror `references/model-registry.json` (single source). Edit the registry first, then sync this file. Cross-check: WI-357 validation command. Full generation pending WI-364.
++> **MIRROR:** model IDs/tables below are registry defaults from `references/model-registry.json`. Generated regions are maintained by `scripts/generate-manifest-mirrors.mjs`; resolve live assignments with `scripts/resolve-model.sh` instead of treating these tables as the current session route.
+ 
+ This document defines the **host-agnostic** model selection strategy for Serious Vibe Coding. The framework separates:
+ 
+@@ -8,13 +8,13 @@
+ - **Execution Harness** — the model/system that handles each cognitive label
+ - **Profile** — the mapping from labels to harnesses
+ 
+-Skills reference **cognitive labels** (e.g., `[STRAT]`, `[EXEC]`). The framework resolves each label via `scripts/resolve-model.sh`, which reads the active **profile** from `references/model-registry.json`.
++Skills reference **cognitive labels** (e.g., `[STRAT]`, `[EXEC]`). Resolve the effective harness, model and effort with `bash scripts/resolve-model.sh <LABEL> --json` in the active repository/WI/session context. The registry supplies defaults; existing owner policy and applicable overrides determine the effective route. The cognitive `[REVIEW]` role is separate from the owner-selected external review station topology.
+ 
+ ---
+ 
+ ## Profiles
+ 
+-A profile defines which harness handles each cognitive label. The framework ships with five profiles:
++A profile defines which harness handles each cognitive label. The following table describes registry profile defaults; consult the registry for its complete profile set and the resolver for the effective assignment.
+ 
+ | Profile | Orchestrator | EXEC Harness | SENSE Harness | Best For |
+ |---------|-------------|--------------|---------------|----------|
+@@ -24,7 +24,7 @@
+ | **`codex-native`** | Codex CLI / app | **GPT-5.5** | **GPT-5.5** | Pure Codex. Best for Windows Codex app + WSL2 |
+ | **`kimi-orchestrator-mixed`** | Kimi | **MiMo-V2.5** | **MiMo-V2.5-Pro** | Kimi orchestrates + MiMo executes |
+ 
+-**Profile selection:**
++**Registry profile examples (effective routing may include owner/WI/session overrides):**
+ ```bash
+ # Auto-selected based on orchestrator host
+ # Kimi CLI → kimi-native
+--- a/rules/common/model-selection.md
++++ b/rules/common/model-selection.md
+@@ -8,7 +8,7 @@
+ 
+ # Model Selection for Agent Tasks
+ 
+-> **MIRROR:** model IDs/tables below mirror `references/model-registry.json` (single source). Edit the registry first, then sync this file. Cross-check: WI-357 validation command. Full generation pending WI-364.
++> **MIRROR:** generated model-label references come from `references/model-registry.json`. Preserve generated regions and resolve live assignments through `scripts/resolve-model.sh`. Registry defaults are not a fixed assignment for every host or session.
+ 
+ This framework uses **host-agnostic cognitive labels** instead of hardcoded model IDs. The resolver (`scripts/resolve-model.sh`) maps each label to the best model for the currently running host.
+ 
+@@ -38,18 +38,11 @@
+ | **[PASS]** | 🔁 | Mechanical extraction, reformatting, no reasoning | `scripts/resolve-model.sh PASS` |
+ <!-- svc:generated:end model-selection-cognitive-labels -->
+ 
+-## Host-Specific Resolutions
++## Effective Model Resolution
+ 
+-| Label | Claude Code | Kimi CLI | Gemini CLI | Codex CLI | OpenCode CLI |
+-|-------|-------------|----------|------------|-----------|--------------|
+-| **[STRAT]** | Claude Opus 4.8 | `kimi-for-coding` + thinking ON | Gemini 2.5 Pro | o3 | MiMo V2.5-Pro |
+-| **[PLAN]** | Claude Opus 4.8 | `kimi-for-coding` + thinking ON | Gemini 2.5 Pro | o3 | MiMo V2.5-Pro |
+-| **[EXEC]** | Claude Sonnet 4.6 | `kimi-for-coding` + thinking OFF | Gemini 2.5 Flash | codex | MiMo V2.5 |
+-| **[REVIEW]** | Claude Sonnet 4.6 | `kimi-for-coding` + thinking ON | Gemini 2.5 Pro | codex | MiMo V2.5-Pro |
+-| **[SENSE]** | Claude Opus 4.8 | `kimi-for-coding` + thinking ON | Gemini 2.5 Pro | gpt-4o | MiMo V2.5-Pro |
+-| **[PASS]** | Claude Haiku 4.5 | `kimi-for-coding` + thinking OFF | Gemini 2.5 Flash | gpt-4o-mini | MiMo V2.5 |
++For the actual task role, run `bash scripts/resolve-model.sh <LABEL> --json` in the active repository/WI/session context and use the returned harness, model and effort. Use the cognitive labels above; `references/model-registry.json` supplies profile defaults, and existing owner policy and applicable overrides determine the effective route.
+ 
+-For full details see `references/model-routing.md` and `references/model-registry.json`.
++Do not infer the active assignment from a host name or a historical model table. The cognitive `[REVIEW]` role does not select or replace the external review stations required by the owner's review policy. See `references/model-routing.md` for the role interface.
+ 
+ ## Context Window Management
+ 
+@@ -66,6 +59,6 @@
+ 
+ ## When to Apply
+ 
+-- Designing a multi-agent system → assign Haiku to worker agents by default
+-- Orchestrator agent → Sonnet
+-- One-shot deep reasoning tasks (architectural decisions, plan evaluation) → Opus
++- Worker tasks → choose the cognitive label for the actual task and resolve its effective assignment; retain any existing explicit agent pin and delegation boundary.
++- Orchestration → retain the active session's model; do not replace it from a generic default sentence.
++- Strategy and planning → resolve `[STRAT]` or `[PLAN]` for the actual task. Changes to owner model policy remain separate decisions.

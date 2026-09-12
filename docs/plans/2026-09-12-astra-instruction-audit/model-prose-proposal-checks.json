@@ -1,0 +1,37 @@
+[
+  {
+    "path": "CLAUDE.md",
+    "base_sha256": "42b8728066f4ab2eb1ca257260b3ae3324ef0ac860f53435c4a6b0441625c4db",
+    "proposed_sha256": "167a49f9b00255a43547c224f60cce0f75063e1660fa3028b782939207362c39",
+    "source_unchanged": true,
+    "generated_blocks_unchanged": true
+  },
+  {
+    "path": "skills/plan-changeset/SKILL.md",
+    "base_sha256": "fdbfdf8303b835e7ced6c9fa1f86ef2c661d82a49187feda1cf29d8201b07eaa",
+    "proposed_sha256": "ea1d4fdc6359b66d73ee97a72d8f8733ca471a6c81c3a9b844a582c55c245a22",
+    "source_unchanged": true,
+    "generated_blocks_unchanged": true
+  },
+  {
+    "path": "skills/execute-changeset/SKILL.md",
+    "base_sha256": "7c460371c77cfa8e486e5eaa832a9c297fcabec4d9021209ab751cb91047d4b4",
+    "proposed_sha256": "513ad149705864d3b33ad596c9691afa806f11872bf237ba28f690d66edad4f8",
+    "source_unchanged": true,
+    "generated_blocks_unchanged": true
+  },
+  {
+    "path": "references/model-routing.md",
+    "base_sha256": "d506fa762aad20b950601c105d85b038a5a6379cf610480c709ad9982b453aa3",
+    "proposed_sha256": "e7f7b1da074f5a89a967ca87e3e8d30786e6e8617b601fd84a7ce59e48109b1a",
+    "source_unchanged": true,
+    "generated_blocks_unchanged": true
+  },
+  {
+    "path": "rules/common/model-selection.md",
+    "base_sha256": "43461978be1dc2ee95f0f73d72d96b495e32c3da6321f60bf69c71b2a2f9dada",
+    "proposed_sha256": "03f93eefc823f88b0c6b880ab6ae5e6f2017ddc0d7cc06a80c5df5d15c5ed575",
+    "source_unchanged": true,
+    "generated_blocks_unchanged": true
+  }
+]

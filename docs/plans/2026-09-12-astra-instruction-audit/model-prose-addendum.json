@@ -1,0 +1,9 @@
+{
+  "id": "F-012-addendum",
+  "path": "CLAUDE.md",
+  "base_source_sha256": "42b8728066f4ab2eb1ca257260b3ae3324ef0ac860f53435c4a6b0441625c4db",
+  "line": 106,
+  "before": "MiMo is an **execution harness**, not an orchestrator. Since WI-470, svc-default pins the EXEC + REVIEW subagents to **Sonnet 5** \u2014 `svc-stage-exec`/`svc-stage-land`, `svc-journey-qa`, and the review agents `svc-lens-correctness`/`-security`/`-spec-fidelity`, `plan-reviewer`, `strategic-reviewer` (the PASS-tier `svc-lens-perf` stays Haiku) \u2014 with **high reasoning effort declared in the registry** (`output_config.effort:high`, surfaced via `resolve-model.sh EXEC --effort`). The model pin is what runtime honors today; the effort value is the routing *declaration* \u2014 consumers apply it via the Agent dispatch effort param (WI-399). It delegates only video/visual QA (SENSE) to MiMo when `MIMO_API_KEY` is set; MiMo-everything execution remains available via the `opencode-mimo` profile.",
+  "after": "MiMo is an **execution harness**, not an orchestrator. The `svc-default` registry and installed agent definitions declare their model and effort defaults; those declarations do not establish the effective assignment for every owner/WI/session. Resolve the actual role through `scripts/resolve-model.sh`, and preserve explicit agent pins and capability/dispatch checks. A declared effort is not proof of provider-observed effort; consumers must apply and record it through the supported dispatch interface. In `svc-default`, MiMo handles video/visual QA (SENSE) only when `MIMO_API_KEY` is set; the `opencode-mimo` profile provides the separate MiMo execution route.",
+  "review_status": "Self-reviewed after Grok round 3; not independently re-reviewed. No framework source edited."
+}

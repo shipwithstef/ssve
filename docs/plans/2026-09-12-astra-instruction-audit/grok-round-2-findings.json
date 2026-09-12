@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "review_kind": "plan",
+  "rubric_score": 7,
+  "rubric_failures": [
+    2,
+    5,
+    10
+  ],
+  "dependencies_needing_read": [],
+  "reviewer": {
+    "host": "grok",
+    "family": "xai",
+    "model": "grok-4.6",
+    "effort": "xhigh"
+  },
+  "verdict": "pass-with-findings",
+  "summary": "The revised proposed scope closes the five round-1 High findings as originally stated. P1 is now one exact ad-video description reorder with a frozen original/proposed pair; the twelve-description census is supplied and the other eleven stay untouched. P2 is a read-only obligation/conflict map, AC4 no longer claims unambiguous source, and parent-only / no-subagent-TaskUpdate stays explicit. Separate cheaper implementation is pinned to mode=dispatch with the existing CREATE/MODIFY/blueprint contract required before execute-changeset, and this document correctly does not call itself that packet. P2 SKILL.md edits are deferred; eligibility-checks.json plus validate-skill-before-starting.sh show the heading is missing on the three files while the validator still passes on creation-date/family coverage, which matches the corrected F-004 mechanical claim. Validator and behavior.json stay byte-identical (IDs A–D), the model-mirror generator is prohibited, evaluate-rule is fully read-only, and D1–D12 remain unapproved. Negative evidence: ad-video-description.proposed.txt is a sentence permutation of description-baseline.json (Use when + Do not use moved intact to the front; every other sentence retained; body stays byte-identical). F-009’s attempt to treat P0 as the human owner is correctly rejected: DOCTRINE.md:1037 defines P0 as the virtual founder; S10 stays a parked D7 textual conflict, not a pilot edit. Remaining actionable gaps are new, not restatements: P3 still has no frozen hunks, so a dispatch executor can rewrite plan-changeset/execute-changeset contract language while hunting ‘stale model prose’; P4 still requires a SEV/owner distinguishing case this ad-video-only edit cannot test. This advisory follow-up is not an implementation receipt, not owner review topology, and not land/verify/install proof. Do not start execute-changeset until the P3 replacements are frozen and the dispatch packet is complete.",
+  "findings": [
+    {
+      "id": "F-010",
+      "severity": "high",
+      "claim": "P3 still leaves the cheaper dispatch executor to invent which non-generated sentences to replace, including in plan-changeset/execute-changeset files whose nearby contract text is load-bearing for the F-003 dispatch pin.",
+      "analysis": "Round-1 F-001 is closed for descriptions because P1 now freezes exact original and proposed text. P3 did not get the same treatment. The envelope names five whole files and says ‘replace unsupported unconditional family/version requirements with cognitive role and effective-policy resolution,’ ‘correct only non-generated prose,’ ‘do not invent current model pins,’ freeze generated blocks, freeze manually mirrored profile/model-ID tables and KIMI_DETACHED_CAPS, and allow replacing only the Host-Specific Resolutions table. That is a constraint list, not a patch. A separate cheaper implementer under mandatory mode=dispatch will author those replacements as CREATE/MODIFY content. The supplied plan-changeset excerpt already mixes forbidden-looking model tokens with contract that this revision just made sacred: `DISPATCH=mimo-pro|sonnet` is a transport identifier, and ‘Opus-priced double-spend’ sits inside the inline-vs-dispatch rule that F-003 required to stay intact. An executor grepping for Sonnet/Opus/currently can rewrite Execution Mode, §3a, or fail-closed unmarked mode while believing it is deleting stale pins. The Outcome line that this session’s resolver maps PLAN to Sol High and EXEC to Grok High is an observation, not svc-default; if copied into CLAUDE.md or model-routing.md it would contradict the frozen generated tables (PLAN Opus 4.8, EXEC Sonnet 5) and smuggle unapproved D12 into documentation. Host-Specific Resolutions may be replaced, but no replacement text is frozen, so ‘do not invent pins’ is an honor system. This is unresolved consequential wording (rubric 10) and inexact write scope (rubric 5) inside files that also hold complete dispatch/inline behavior (rubric 2). It is not a demand for a certified v4 packet in this planning request; it is the same class of freeze P1 already performed, required before a later execution handoff authors P3.",
+      "evidence": [
+        "manifest.reviewed-v2.md P3: replace unsupported unconditional family/version requirements in CLAUDE.md, skills/plan-changeset/SKILL.md, skills/execute-changeset/SKILL.md, references/model-routing.md, rules/common/model-selection.md — no frozen before/after hunks",
+        "manifest.reviewed-v2.md P1 contrast: exact candidate frozen in ad-video-description.proposed.txt; P3 has no analogue",
+        "manifest.reviewed-v2.md Files Planned: for a separate cheaper implementer, mode=dispatch is mandatory and CREATE/MODIFY/blueprint must be complete before execute-changeset",
+        "skills/plan-changeset/SKILL.md:129: zero-context subagent (`DISPATCH=mimo-pro|sonnet`) — harness token inside Execution Mode, in a P3 target file",
+        "skills/plan-changeset/SKILL.md:129-136: dispatch → §3a mandatory; inline only when the same orchestrator applies the change; absent mode fails closed to dispatch",
+        "skills/plan-changeset/SKILL.md:131: ‘Opus-priced double-spend’ adjacent to the inline skip rule",
+        "manifest.reviewed-v2.md Outcome: ‘The current default resolver routes PLAN to Sol High and EXEC to Grok High; these observations do not describe all possible WI/session overrides’ versus frozen generated CLAUDE.md / model-routing svc-default tables (PLAN Opus 4.8, EXEC Sonnet 5)",
+        "rules/common/model-selection.md:41-50: non-generated Host-Specific Resolutions table may be replaced, but no proposed replacement text is supplied",
+        "followup-source-evidence.md generate-manifest-mirrors.mjs BLOCKS: CLAUDE.md, model-selection.md, model-routing.md generated regions correctly frozen; non-generated explanatory prose in those same files is still unbounded"
+      ],
+      "proposed_fix": "Before any later execution handoff, freeze P3 the way P1 is frozen: exact before/after hunks (or proposed.txt files) for every sentence that will change in the five files. Mark as no-touch: Execution Mode / WI-386 / WI-347, §3a blueprint skip vs mandatory, receipt mode fail-closed, `DISPATCH=mimo-pro|sonnet`, context-window guidance, generated svc:generated blocks, kimi-native and other manually mirrored profile/model-ID tables, and KIMI_DETACHED_CAPS. For Host-Specific Resolutions, freeze the replacement as role/resolver instructions that point at `scripts/resolve-model.sh` and the registry, with zero newly invented model pins. Do not paste this session’s Sol High / Grok High observation into framework defaults; keep D12 as an unapproved policy decision. P3 wording is planner work, not cheaper-executor invention."
+    },
+    {
+      "id": "F-011",
+      "severity": "medium",
+      "claim": "P4 still requires a protected-owner/SEV exclusion case that this ad-video-only P1 cannot change, so later proof can either leak into other descriptions or stamp AC2 using unchanged skills.",
+      "analysis": "Narrowing P1 to ad-video-script closed F-008 and the safety-clause half of F-001: the frozen proposed text only reorders that skill’s existing Use when, tagged-WI, and remux/I2V/audio-fix exclusion sentences. P4 nevertheless still lists ‘protected-owner/SEV exclusions survive description frontloading’ as a required distinguishing case, alongside the real ad-video cases (explicit invocation, negative non-target, tagged-WI, existing-cut exclusion). ad-video-script’s description has no SEV-1/2 human_checkpoint line and no owner-approval gate; those clauses live in untouched skills such as plan-blast-radius. A dispatch executor told to prove SEV survival has two bad paths: expand P1 to a SEV-bearing description (envelope leak, undoing F-008), or run a case against unchanged source and treat AC2’s security/approval boundary as demonstrated (vacuous proof). The validator/fixture freeze correctly prevents laundering that through skill-judgment IDs A–D; the leftover P4 case is still an executable success predicate that does not match the approved mutation. This is not a request to run paid Astra-vs-cheap benchmarks in this planning request; those stay unauthorized until a later implementation binds an existing evaluation transport. Trim the required cases to clauses this reorder actually moves.",
+      "evidence": [
+        "manifest.reviewed-v2.md P4: required distinguishing cases include ‘protected-owner/SEV exclusions survive description frontloading’ plus ad-video tagged-WI and remux/I2V/audio-fix exclusion",
+        "ad-video-description.proposed.txt: Use when / Do not use / beat-sheet prose only; no SEV, human_checkpoint, or owner-approval sentence",
+        "description-baseline.json skills/ad-video-script description: same clauses; SEV/human approval lives in skills/plan-blast-radius, which is outside this pilot",
+        "manifest.reviewed-v2.md P1: the other eleven descriptions are outside this pilot, including mandatory review/security/research routing text",
+        "manifest.reviewed-v2.md AC2: the exact reorder preserves every word of the existing ad-video description — not a SEV-bearing description"
+      ],
+      "proposed_fix": "Rewrite P4’s required distinguishing cases to the ad-video clauses actually reordered: explicit invocation phrases still match; tagged WI ad-video / performance-creative still routes; remux/I2V/audio-fix of an existing cut remains excluded to produce-ad-video; a negative non-target request does not gain this workflow. Park SEV/owner/default-OFF/independent-reviewer-authority cases for a later wave that has a per-clause map and an authorized description edit. Do not treat unchanged plan-blast-radius/review-exec text as proof that this frontload preserved those gates."
+    }
+  ],
+  "certifications": []
+}

@@ -1,0 +1,90 @@
+{
+  "base_sha": "e50a64431955cac787c39161f03a18021386086f",
+  "method": "Frozen complete description. All trigger/exclusion/opt-in/approval/authority clauses remain description-visible; current P1 changes sentence order only for ad-video-script.",
+  "descriptions_over_600": [
+    {
+      "path": "skills/ad-video-script/SKILL.md",
+      "source_sha256": "44c387741ca8c1228a7b6e8afc95e02a2494a6c92caf558dd3e1aee8baa26329",
+      "description": "Performance ad-video script writer modeled on a Senior Direct-Response Creative Strategist. Reads the ACTUAL product first (landing page / spec), picks the right ICP + scenario + placement + awareness stage, then writes a modular script AND a render-ready BEAT SHEET (6 \u00d7 ~10s beats with per-beat first-frame image-prompt, motion-prompt, persistent-character lock, and last-frame seeding) \u2014 because no video model renders a coherent 60s clip in one shot (Veo 8s; Runway/Kling/Pika ~10s). Emits one base script, or many variants when \u22652 placements or awareness stages qualify. Hands the beat sheet to `produce-ad-video` (WI-402) to render. Use when \"ad video script\", \"video ad\", \"UGC script\", \"promo video script\", \"60 second ad\", \"make an ad for <product>\", or any WI tagged ad-video / performance-creative. Do not use for remux/I2V/audio-fix of an existing cut \u2014 that is `produce-ad-video`.",
+      "description_sha256": "8893a8f3e7a2f204fe217b323fa8fb5596829f5684b4d23d3d2ee5de9b9d7fe6",
+      "before_starting_present": true
+    },
+    {
+      "path": "skills/align-feature/SKILL.md",
+      "source_sha256": "049a1495ca04e3aac37542c91dc2caae82f41aa0b3d636dd9916097c2108f8e3",
+      "description": "Execute the story-receipts chain for one WI until the validator prints STORY ALIGNED \u2014 the fixing counterpart of /audit-feature. Walks every required stage in order (personas \u2192 validate/intent card \u2192 spec \u2192 skills/design-ux/ui/device \u2192 journeys \u2192 ac \u2192 implement \u2192 e2e \u2192 test-run \u2192 spec-sync \u2192 visuals \u2192 qa-companion \u2192 ledger \u2192 marketing \u2192 pricing), each through its owning skill, recording a tracked receipt per stage. Use when the founder says \"align <feature>\", \"\u043e\u043f\u0440\u0430\u0432\u0438 <feature> \u043f\u043e \u0432\u0435\u0440\u0438\u0433\u0430\u0442\u0430\", \"continue the chain for WI-X\", \"fix it the receipted way\", or after /audit-feature produced a receipts file.",
+      "description_sha256": "c1f36b2be9a95f6deca68265135249a4bd37d2ae92e693ce6247d3f097ddb693",
+      "before_starting_present": false
+    },
+    {
+      "path": "skills/analyze-marketing/SKILL.md",
+      "source_sha256": "f3bd52b6ec7ee9e4e6ae1772b20d61d3af080884383ebd83bde59e96db073c9e",
+      "description": "Mine feature specs for marketing value and maintain the product marketing context. Use when: \"mine features\", \"marketing context\", \"positioning\", \"find our strongest marketing angles\", \"what should we market\", \"marketing ammunition\". Second mode \u2014 marketing-message validation: \"persona validation\", \"does our messaging work\", \"stress test the copy\", \"buyer perspective\", \"who are we actually talking to\". Also: \"feature mining\", \"extract marketing value\", \"update marketing context\". Also: \"what features should we highlight\", \"what's worth marketing\", \"marketing potential\", \"refresh marketing insights\", \"set up context\", \"feature value\".",
+      "description_sha256": "a1a8edeaf2031cce3b628d59c795b2cdbc165f9532572d063132e811aff1352f",
+      "before_starting_present": false
+    },
+    {
+      "path": "skills/audit-coverage/SKILL.md",
+      "source_sha256": "e3865f275681bf6ddbeca29de5f8a3fd5348137fe286f2227bcc33b5b2d442e3",
+      "description": "Audit a project against the svc canonical artifact catalog \u2014 classifies each artifact CANONICAL / FOREIGN / MISSING, produces docs/specs/coverage-audit.md plus ordered next-skill recommendations. Standalone or from onboard-repo Step 2.5. Use when: \"audit coverage\", \"what artifacts are missing\". Triggers: \"audit-coverage\", \"what svc artifacts are missing\", \"check brownfield alignment\". Contract: log then triage, do not fix as found. Also: \"check svc artifact coverage\", \"coverage gap audit\", \"are all canonical artifacts in place\", \"what alignment is needed\"; output includes a \"Coverage Gaps\" section.",
+      "description_sha256": "602364a73695b941003ba583c7777536bdf88399b61429a9a1053e26548574be",
+      "before_starting_present": false
+    },
+    {
+      "path": "skills/blind-control-plan/SKILL.md",
+      "source_sha256": "8b22a7d080aab81d62f76803d8bbd174fd889a9f4b804986482ec2342b73a899",
+      "description": "Best-of-2 retention floor that proves the framework plan is never worse than a bare-model \"blind\" plan. Generates a context-starved blind plan B, deterministically diffs it against the framework plan F, and \u2014 when F silently removes or weakens a correct B-element without an independent cross-family judge certifying a strict improvement \u2014 ships B verbatim (floor_verdict=blind-adopted). Emits a control-plan ROI receipt. v1 is WARN/shadow, default OFF (armed via .svc/chain-policy.json dual_track:\"measured\"); it is a gate, not a pipeline step. Use between plan-changeset and review-plan on infra-path + M+ plans when dual-track is armed. WI-410.",
+      "description_sha256": "7622fe4fa597c5b16c3d310e60d1b9cf25a0badbe286360d88e432f4cf6b0cf8",
+      "before_starting_present": false
+    },
+    {
+      "path": "skills/craft-prompt/SKILL.md",
+      "source_sha256": "61ba6d06a91d0eb5ff1ec5aa261d7a06b352223e70eeb399524b2ffefa0f39ac",
+      "description": "Craft a world-class, output-shaped prompt for a task AND prove it is never worse than a baseline/\"sheep\" prompt via a cheap best-of-2 floor. Use this whenever the user says \"craft me a prompt\", \"make this prompt better\", \"write a prompt that...\", \"beat this viral prompt\", or needs a high-leverage prompt for an arbitrary task \u2014 even if they don't say the word \"prompt-engineer\". It unlocks what the model already knows (persona, output-format, few-shot, constraints) via an authoring rubric, then runs a best-of-2 floor so the crafted prompt is never worse than the bare/viral baseline. WARN/shadow, default OFF \u2014 opt-in only. Does NOT route svc work (that is route-workflow's Prompt Composer); this CRAFTS a standalone output prompt.",
+      "description_sha256": "7a5c5d3a3905cc0f525b2c483543da16b5717c78e0d07138aff453858436ebf7",
+      "before_starting_present": false
+    },
+    {
+      "path": "skills/design-logo/SKILL.md",
+      "source_sha256": "145fee22a5cc13e0ba24f20d1184ce941040645ada7e5d00af3d11653d9b55e8",
+      "description": "Produce a brand mark + lockup pack as scalable SVG with iterative refinement toward world-class quality (\u226565/70 rubric, no designer-handoff exit). Use when creating, redesigning, or polishing a logo. Triggers on \"design a logo\", \"make a logo\", \"redesign the logo\", \"logo is bad\", \"10/10 logo\", \"world-class logo\", \"favicon\", \"wordmark\", or when downstream skills need a finalized identity. Outputs the full variant matrix + animation + brand-pattern set + icon-style sheet + app-context mockups. The skill terminates only at \u226565/70 with 5/5 love-test pass; plateaus trigger constraint escalation, never handoff.",
+      "description_sha256": "6ae3b4bfc7d1f1390e2f4df20d39bfaab33db0a6f5e7fe831ddf1f9ffb9264a8",
+      "before_starting_present": false
+    },
+    {
+      "path": "skills/evaluate-rule/SKILL.md",
+      "source_sha256": "093977a7dc9d0755799820febf7d3500567acb3ad0afcb4bdcaa3061b2356b20",
+      "description": "Use when deciding whether a candidate rule file (for CLAUDE.md / AGENTS.md injection) earns its per-turn token cost, or whether it merely restates Claude's default behaviour. Triggers on \"evaluate this rule\", \"should we adopt this rule\", \"is this rule worth it\", \"check if this rule beats the default\", \"rule evaluation\", \"evaluate a rule pack\", \"audit rules/\", \"prevent rule inflation\", \"does this rule change behaviour\", \"gate a blended rule pack before adoption\", or whenever new rule files are being considered for `rules/` or `~/.claude/rules/`. Always use before registering a rule in `rulesRegistry`.",
+      "description_sha256": "d35ea07b7147c6580b835891118e4f9fedfbfd34fc4ebb188406fbaa38293473",
+      "before_starting_present": false
+    },
+    {
+      "path": "skills/plan-blast-radius/SKILL.md",
+      "source_sha256": "ffb44cc27e03d9981fa3c1cd604c9ef6b250c5dbbc9a1571087da393630d4b40",
+      "description": "Pre-apply impact classifier for infra changes. Reads `terraform plan` JSON / `helm diff` output, classifies each change by destruction risk + cross- resource dependency depth into SEV-1 (destructive) / SEV-2 (in-place mutation of stateful) / SEV-3 (in-place stateless) / SEV-4 (additive). SEV-1 and SEV-2 force `human_checkpoint: true` regardless of autorun. Use when: any infra-* lane reaches phase 8 (between plan-changeset and review-plan); user mentions \"blast radius\", \"what could break\", \"is this safe to apply\", \"SEV tier classification\". Source: proposals/done/2026-04-30-infra-project-support.md \u00a7 6.2.",
+      "description_sha256": "be86507b7cda02ecac930ff23379b75dc123ecaa6bf18199e6acba26f4d1dd21",
+      "before_starting_present": false
+    },
+    {
+      "path": "skills/research/SKILL.md",
+      "source_sha256": "98955474f820ec276bb4cf0def70ed6d1496b94209faf2bf79169223807a53af",
+      "description": "On-demand, lightweight in-flow research when a skill or workflow encounters uncertainty about an API, library, framework version, pattern, or domain concept. Discovers via GitHub + package registries FIRST, then vendor docs, then WebSearch last; tiers source credibility and triangulates load-bearing claims across \u22652 independent sources; date-bounds volatile facts; reads/writes per-domain source heuristics; hands off multi-source / high-stakes / contested questions to the external `deep-research` plugin. Logs findings to docs/specs/research-log.md. Use when: \"research\", \"look up\", \"find out\", \"how does X work\", \"what's the best practice for\", or when any skill declares uncertainty. Also works standalone.",
+      "description_sha256": "4914f1f10b0a09cb1fe16c21a4f4e19537d7151ba19f1b0479cef655bcfd25bd",
+      "before_starting_present": true
+    },
+    {
+      "path": "skills/review-exec/SKILL.md",
+      "source_sha256": "dfe32dec93996ce989a805e0d89b6901f6bbcaec6746b062a8d0c9959c3f6ffb",
+      "description": "Mandatory G5-enforcing gate. Self-review + adversarial review of the executed diff before land. Delegates to `review-cross-model` for the second-model invocation through `scripts/run-external-review.mjs`, with the requested owner-configured topology and tuple provenance exposed by `scripts/review-topology-v2.mjs`. Same-family Sol remains advisory; the configured different-family external station owns independent release authority. Emits SHA-keyed receipt at `.svc/receipts/<sha>/review-exec.json` and updates the consolidated git note on `refs/notes/svc-receipts`. Use after `execute-changeset` produces an exec-record receipt, before `land-changeset` opens the PR.",
+      "description_sha256": "51e338a8e6d49ae7c2646099f37dc15e6237158f41c7d87f33e1e216386c775d",
+      "before_starting_present": true
+    },
+    {
+      "path": "skills/review-plan/SKILL.md",
+      "source_sha256": "037df975f3f6d904cd42f47741ca55da561014f79cbe8ace949211562217db4f",
+      "description": "Plan-level adversarial review gate. Runs after plan-changeset produces a manifest + task graph and BEFORE any execute-changeset dispatch. Two gates: (1) compiled mechanical/coverage checks \u2014 free, in-session; (2) one holistic adversarial review via the canonical external-review launcher with structured findings and a tuple receipt. Corrections recheck only invalidated lenses; disputed product/security authority routes to the owner, not a second model. Iteration loop with justified accept/reject responses \u2014 same discipline on both sides. Use when: plan-changeset manifest exists and is about to be promoted. Blocks promotion until all findings have resolutions.",
+      "description_sha256": "24bcce6bc3997e6f59e06f3d59630a2b79c04c5ef489e34ca767aa8a4e7065b6",
+      "before_starting_present": false
+    }
+  ]
+}

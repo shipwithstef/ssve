@@ -1,0 +1,36 @@
+{
+  "files": {
+    "ad-video-script": {
+      "before_starting_present": true
+    },
+    "design-logo": {
+      "before_starting_present": false
+    },
+    "align-feature": {
+      "before_starting_present": false
+    },
+    "analyze-marketing": {
+      "before_starting_present": false
+    },
+    "analyze-domain": {
+      "before_starting_present": false
+    },
+    "evaluate-rule": {
+      "before_starting_present": false
+    },
+    "sync-work-items": {
+      "before_starting_present": false
+    },
+    "plan-changeset": {
+      "before_starting_present": true
+    },
+    "execute-changeset": {
+      "before_starting_present": true
+    }
+  },
+  "before_starting_baseline_validator": {
+    "exit_code": 0,
+    "stdout": "validate-skill-before-starting: 113 passed, 0 failed, 0 advisory"
+  },
+  "limitation": "Validator checks created dates/family registry coverage, not substantive-edit history; the shared textual rule still needs reconciliation. No gate waived."
+}

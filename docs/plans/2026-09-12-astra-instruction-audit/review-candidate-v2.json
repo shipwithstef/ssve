@@ -1,0 +1,34 @@
+{
+  "candidate_digest": "ab857072ef99692d4991842cf64010ff67da720928fa5747c6039e4ae3de54e6",
+  "candidate_files": [
+    {
+      "path": "manifest.reviewed-v2.md",
+      "sha256": "a3a5452aadd527e8494c4e7bd827e73fb5442542ed11fa3de768d9058ca9f079"
+    },
+    {
+      "path": "review-disposition.reviewed-v2.md",
+      "sha256": "3d6fef0e5c4a03e04b968c2db75e705da50500560f999966b097c3567c98233c"
+    },
+    {
+      "path": "description-baseline.json",
+      "sha256": "b2fb1c1bdfa407339b2f6e0ebff6c6f91af8cccaf2b521e8cb6349a695a1f6b8"
+    },
+    {
+      "path": "ad-video-description.proposed.txt",
+      "sha256": "3879ce8cad526a7f525ac7c5d428530214c6b2254f549742f47af66d38c3b740"
+    },
+    {
+      "path": "eligibility-checks.json",
+      "sha256": "6a71e80091ae95c15543d0bb191383741f99b79dbc1ece3326f27c3993aabec6"
+    },
+    {
+      "path": "followup-source-evidence.md",
+      "sha256": "5f05d5dc12876ab396b10aed611a9e65f0f6652cfeea4612615cd71ff9e8bf48"
+    },
+    {
+      "path": "grok-round-1-findings.json",
+      "sha256": "b09c9ac439cdda38c4249178c35f20cc8c882a4769172489e6322960785a3ad6"
+    }
+  ],
+  "hash_method": "same sorted-key compact UTF-8 list method as round 1"
+}

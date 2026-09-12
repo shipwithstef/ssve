@@ -1,0 +1,30 @@
+{
+  "candidate_digest": "f59cc48067d351eb886eb5cb752cf95e86bae79faf7699f987ddbe7d404bb612",
+  "hash_method": "sha256 of JSON.stringify-equivalent sorted-key compact UTF-8 candidate_files list in its recorded order",
+  "candidate_files": [
+    {
+      "path": "initial-audit.md",
+      "sha256": "f75dc5a1a4dd6c7c7238d17d28e7391d4ddbc2e64b10ce016103e86ac9bc75a7"
+    },
+    {
+      "path": "self-review.md",
+      "sha256": "51bb9780b7de7d77395c34bc0f11b8132b624120f3b739ab7238342014344c0c"
+    },
+    {
+      "path": "manifest.reviewed-v1.md",
+      "sha256": "ad992a02e7acf78cfe1470edb79bee74751818d8ff86ed6caac39e82cac34f36"
+    },
+    {
+      "path": "source-evidence.md",
+      "sha256": "2860beb01089bcb8bba237adc5c3616c95e1213969c9e97b2c4b20f65ff8dbe6"
+    },
+    {
+      "path": "source-evidence-index.json",
+      "sha256": "0013adbc2f33da433aba0fe672d5ee7aafd9f2423b755cd306b58c531442b0e0"
+    },
+    {
+      "path": "inventory.json",
+      "sha256": "f8b695665fded8f02496f4125bc491881099320af5271a315ad6e02d75e69e0f"
+    }
+  ]
+}
