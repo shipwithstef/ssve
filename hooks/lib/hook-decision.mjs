@@ -85,6 +85,18 @@ export function emitDecision({
     process.exit(decision === DENY ? 2 : 0);
   }
 
+  // Cursor: { permission, user_message, additional_context, updated_input }
+  if (host === "cursor") {
+    const out = {
+      permission: decision === DENY ? "deny" : decision === ASK ? "ask" : "allow",
+      ...(reason && { user_message: reason }),
+      ...(additionalContext && { additional_context: additionalContext }),
+      ...(updatedInput && { updated_input: updatedInput }),
+    };
+    process.stdout.write(JSON.stringify(out));
+    process.exit(0);
+  }
+
   // Codex does not implement Claude's native `ask` permissionDecision.  A
   // Codex PreToolUse hook returning it is rejected by the host before the tool
   // can run.  Preserve the interactive ask contract for Claude, but fail closed

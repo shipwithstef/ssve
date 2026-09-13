@@ -79,6 +79,19 @@ function normalizeHostPayload(payload) {
       },
     };
   }
+  if (typeof payload.command === "string" && payload.command.trim()) {
+    const cwd = payload.cwd || payload.working_directory || (Array.isArray(payload.workspace_roots) && payload.workspace_roots[0]) || process.cwd();
+    return {
+      ...payload,
+      tool_name: "Shell",
+      tool_input: {
+        command: payload.command.trim(),
+        cwd,
+        ...(typeof payload.tool_input === "object" && payload.tool_input ? payload.tool_input : {}),
+      },
+      cwd,
+    };
+  }
   return payload;
 }
 
@@ -115,9 +128,9 @@ export function readHookPayload() {
   return {
     toolName,
     toolInput,
-    sessionId: payload.session_id || payload.sessionId || payload.session || "",
-    cwd: payload.cwd || payload.working_directory || process.cwd(),
-    session_cwd: payload.cwd || payload.working_directory || process.cwd(),
+    sessionId: payload.session_id || payload.sessionId || payload.conversation_id || payload.conversationId || payload.session || "",
+    cwd: payload.cwd || payload.working_directory || (Array.isArray(payload.workspace_roots) && payload.workspace_roots[0]) || process.cwd(),
+    session_cwd: payload.cwd || payload.working_directory || (Array.isArray(payload.workspace_roots) && payload.workspace_roots[0]) || process.cwd(),
     raw: payload,
   };
 }

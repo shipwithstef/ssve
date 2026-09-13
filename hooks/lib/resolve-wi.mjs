@@ -144,6 +144,7 @@ export function resolveAuthorityHost(payload = {}, env = process.env) {
   const knownHosts = new Set(["codex", "claude", "kimi", "gemini", "opencode", "mimo-code", "antigravity", "cursor", "grok"]);
   const wired = String(env.SVC_HOST || "").toLowerCase();
   if (wired) return knownHosts.has(wired) ? wired : "";
+  if (env.CURSOR_CONVERSATION_ID || env.CURSOR_AGENT || payload.conversation_id || payload.cursor_version) return "cursor";
   if (env.GROK_SESSION_ID) return "grok";
   const payloadHost = String(payload.host || "").toLowerCase();
   if (payloadHost) return knownHosts.has(payloadHost) ? payloadHost : "";

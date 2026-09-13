@@ -28,6 +28,8 @@
     }
   },
   "hook_events": [
+    "beforeSubmitPrompt",
+    "preToolUse",
     "beforeShellExecution",
     "afterFileEdit",
     "sessionStart",

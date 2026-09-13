@@ -57,11 +57,18 @@ export function buildCursorHookEntries(skillsPath) {
   const q = (p) => `"${p}"`;   // W-D: quote every interpolated path
 
   const entries = {
+    beforeSubmitPrompt: [],
+    preToolUse: [],
     beforeShellExecution: [],
     afterFileEdit: [],
     sessionStart: [],
     stop: [],
   };
+
+  if (!DISABLED.has("svc-cursor-ssve-adapter")) {
+    entries.beforeSubmitPrompt.push({ command: `${NODE_CMD} ${q(`${hooksDir}/cursor/svc-cursor-ssve-adapter.mjs`)} --before-submit-prompt` });
+    entries.preToolUse.push({ command: `${NODE_CMD} ${q(`${hooksDir}/cursor/svc-cursor-ssve-adapter.mjs`)} --pretool` });
+  }
 
   if (!DISABLED.has("svc-worktree-isolation-guard")) {
     entries.beforeShellExecution.push({ command: `${NODE_CMD} ${q(`${hooksDir}/svc-worktree-isolation-guard.mjs`)}` });
@@ -122,11 +129,15 @@ export function mergeCursorConfig(existingConfig, newEntries) {
         ? item
         : item?.command || item?.hooks?.[0]?.command || "";
       return isUserOwnedCommand(cmd);
+    }).map((item) => {
+      if (item && typeof item === "object" && !item.command && item.hooks?.[0]?.command) {
+        return { command: item.hooks[0].command };
+      }
+      return item;
     });
 
     const svcEntries = hookList.map((entry) => ({
-      matcher: "*",
-      hooks: [{ command: entry.command }],
+      command: entry.command,
     }));
 
     result.hooks[event] = [...nonSvcHooks, ...svcEntries];
