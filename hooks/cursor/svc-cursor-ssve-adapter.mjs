@@ -60,7 +60,9 @@ function sweep(repoRoot, currentDir, env) {
 function handleBeforeSubmitPrompt(payload) {
   try {
     const text = promptText(payload);
-    const match = String(text).split(/\r?\n/)[0].match(/^\s*SVC OWNER OVERRIDE:\s*(.+?)\s*$/i);
+    const match = String(text).match(/(?:^|\r?\n)\s*SVC OWNER OVERRIDE:\s*(.+?)(?:\r?\n|$)/i);
+    let overrideMessage = null;
+    let overrideWorktree = null;
     if (match) {
       const sid = sessionId(payload);
       const rawCwd = payload.cwd || (Array.isArray(payload.workspace_roots) && payload.workspace_roots[0]) || process.cwd();
@@ -71,9 +73,9 @@ function handleBeforeSubmitPrompt(payload) {
         process.stdout.write(JSON.stringify({ continue: false, user_message: "SVC owner override requires a repository and stable session" }) + "\n");
         process.exit(0);
       }
-      armOwnerLease({ repo_root: repo, worktree_root: worktree, wi: bound?.tuple?.wi || "owner-override", session_id: sid, reason: match[1] });
-      process.stdout.write(JSON.stringify({ continue: true, user_message: "SVC owner override armed for 24 hours in the selected worktree; it will expire automatically." }) + "\n");
-      process.exit(0);
+      armOwnerLease({ repo_root: repo, worktree_root: worktree, wi: bound?.tuple?.wi || explicitWI(text) || "owner-override", session_id: sid, reason: match[1] });
+      overrideMessage = "SVC owner override armed for 24 hours in the selected worktree; it will expire automatically.";
+      overrideWorktree = worktree;
     }
 
     const ctx = hookContext(payload);
@@ -81,7 +83,7 @@ function handleBeforeSubmitPrompt(payload) {
       const previous = readJson(authorityPath(ctx));
       const explicit = explicitWI(text);
       const classified = continuationIntent(text, { distinguishNegative: true });
-      const intent = classified === "negative" ? "none" : classified;
+      const intent = match && classified !== "negative" ? "resume" : (classified === "negative" ? "none" : classified);
       const revoked = classified === "negative" || /(?:^|[.!?\n]\s*)(?:please\s+)?(?:stop|pause|cancel|abandon)(?:\s+(?:that|it))?(?:\s+(?:this|the|current|active)\s+(?:task|work|wi|session))?(?:\s+(?:please|now))?[.!?\s]*$/i.test(text)
         || /\b(?:do not|don['’]?t)\s+(?:continue|resume|work|implement|change|modify|touch|edit|write)\b|\b(?:only\s+(?:inspect|read|explain|analy[sz]e)|read.only|leave\s+(?:it|everything|this)\s+unchanged|no\s+(?:changes|edits|mutations))\b/i.test(text);
       const sameGoal = !explicit && previous?.session_id === ctx.session_id &&
@@ -97,8 +99,8 @@ function handleBeforeSubmitPrompt(payload) {
         cwd: ctx.session_cwd || ctx.cwd,
         session_cwd: ctx.session_cwd || ctx.cwd,
         repo_root: ctx.repo_root,
-        governance_worktree: ctx.governance_worktree || null,
-        explicit_wi: sameGoal ? previous.explicit_wi : explicit,
+        governance_worktree: ctx.governance_worktree || overrideWorktree || null,
+        explicit_wi: sameGoal ? previous.explicit_wi : (explicit || (match ? (bound?.tuple?.wi || "owner-override") : null)),
         continuation_intent: revoked ? "none" : resumed ? intent : inherited ? previous.continuation_intent : intent,
         authorization_prompt_hash: inherited ? (previous.authorization_prompt_hash || previous.prompt_hash) : sha256(text),
         authorization_turn_id: inherited ? (previous.authorization_turn_id || previous.turn_id) : ctx.turn_id,
@@ -106,6 +108,8 @@ function handleBeforeSubmitPrompt(payload) {
       });
       sweep(ctx.repo_root, ctx.session_dir, process.env);
     }
+    process.stdout.write(JSON.stringify({ continue: true, ...(overrideMessage ? { user_message: overrideMessage } : {}) }) + "\n");
+    process.exit(0);
   } catch (err) {
     // Fail open for prompt submit so author can communicate even if advisory fails
     process.stderr.write(`[svc-cursor-adapter] prompt authority advisory: ${err.message}\n`);

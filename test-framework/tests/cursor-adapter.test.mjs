@@ -229,3 +229,78 @@ test('Cursor adapter: end-to-end prompt capture, lease recovery, skill loading, 
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 });
+
+test('Cursor adapter: SVC OWNER OVERRIDE arms lease and writes prompt-authority in same turn with multiline input', async () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'svc-cursor-override-'));
+  const repo = path.join(tmp, 'repo');
+  const target = path.join(repo, '.worktrees', 'wt-cursor-override');
+  fs.mkdirSync(repo);
+
+  const git = (...args) => execFileSync('git', ['-C', repo, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  git('init', '-b', 'main');
+  git('config', 'user.name', 'cursor-fixture');
+  git('config', 'user.email', 'cursor@example.invalid');
+  fs.writeFileSync(path.join(repo, 'seed.txt'), 'seed');
+  git('add', '.');
+  git('commit', '-qm', 'seed');
+  git('update-ref', 'refs/remotes/origin/main', 'HEAD');
+  fs.mkdirSync(path.join(repo, '.worktrees'));
+  git('worktree', 'add', '-b', 'fix/cursor-override', target);
+
+  const wi = 'WI-CURSOR-OVERRIDE-01';
+  const cursorSid = '5c8a9134-4b5b-4361-a5cf-5231c6a6552a';
+
+  fs.mkdirSync(path.join(target, '.svc'));
+  const graph = {
+    schema_version: 1,
+    wi,
+    lane: 'bugfix',
+    status: 'in_progress',
+    tasks: [{ id: 1, skill: 'execute-changeset', subject: 'Override test', status: 'in_progress', metadata: { skill: 'execute-changeset', wi }, blocked_by: [] }],
+  };
+  fs.writeFileSync(path.join(target, '.svc', `lane-tasks-${wi}.json`), JSON.stringify(graph, null, 2));
+  fs.writeFileSync(path.join(target, '.svc', 'session-contract.jsonl'), JSON.stringify({ wi, ts: new Date().toISOString(), authorization_envelope: { rules: [] } }) + '\n');
+
+  const env = {
+    SVC_HOST: 'cursor',
+    CURSOR_CONVERSATION_ID: cursorSid,
+    SVC_SESSION_ID: cursorSid,
+  };
+
+  const multilinePrompt = `<timestamp>2026-09-13T13:30:00Z</timestamp>
+<user_query>
+  SVC OWNER OVERRIDE: retain and resume active lease
+    for ${wi} in this session.
+    Work on
+    ${wi} and continue execute-changeset task 1.
+</user_query>`;
+
+  try {
+    const promptRes = runAdapter(
+      '--before-submit-prompt',
+      {
+        prompt: multilinePrompt,
+        conversation_id: cursorSid,
+        cwd: target,
+      },
+      env
+    );
+    assert.equal(promptRes.status, 0);
+    assert.equal(promptRes.json?.continue, true);
+    assert.match(promptRes.json?.user_message || '', /SVC owner override armed/i);
+
+    const { readOwnerLease } = await import('../../hooks/codex/lib/owner-lease.mjs');
+    const armed = readOwnerLease(target, cursorSid, process.env);
+    assert.ok(armed, 'owner-override.json must exist');
+    assert.equal(armed.wi, wi);
+
+    const { hookContext, authorityPath, readJson } = await import('../../hooks/codex/lib/codex-hook-context.mjs');
+    const ctx = hookContext({ cwd: target, conversation_id: cursorSid }, process.env);
+    const auth = readJson(authorityPath(ctx));
+    assert.ok(auth, 'prompt-authority.json must be written in the same turn');
+    assert.equal(auth.explicit_wi, wi);
+    assert.equal(auth.continuation_intent, 'resume');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
