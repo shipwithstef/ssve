@@ -134,8 +134,8 @@ function repoRootFor(worktreeRoot) {
 
 export function sessionId(hookPayload = {}, env = process.env) {
   return String(
-    hookPayload.session_id || hookPayload.sessionId || hookPayload.thread_id || hookPayload.threadId ||
-    env.SVC_SESSION_ID || env.GROK_SESSION_ID || env.CODEX_THREAD_ID || env.CODEX_SESSION_ID ||
+    hookPayload.session_id || hookPayload.sessionId || hookPayload.conversation_id || hookPayload.conversationId || hookPayload.thread_id || hookPayload.threadId ||
+    env.CURSOR_CONVERSATION_ID || env.CURSOR_SESSION_ID || env.SVC_SESSION_ID || env.GROK_SESSION_ID || env.CODEX_THREAD_ID || env.CODEX_SESSION_ID ||
     env.KIMI_SESSION_ID || env.CLAUDE_SESSION_ID || env.GEMINI_SESSION_ID || ""
   );
 }

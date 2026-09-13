@@ -100,7 +100,7 @@ function handleBeforeSubmitPrompt(payload) {
         session_cwd: ctx.session_cwd || ctx.cwd,
         repo_root: ctx.repo_root,
         governance_worktree: ctx.governance_worktree || overrideWorktree || null,
-        explicit_wi: sameGoal ? previous.explicit_wi : (explicit || (match ? (bound?.tuple?.wi || "owner-override") : null)),
+        explicit_wi: explicit || (sameGoal ? previous.explicit_wi : null) || ctx.governance_tuple?.wi || bound?.tuple?.wi || (match ? "owner-override" : null),
         continuation_intent: revoked ? "none" : resumed ? intent : inherited ? previous.continuation_intent : intent,
         authorization_prompt_hash: inherited ? (previous.authorization_prompt_hash || previous.prompt_hash) : sha256(text),
         authorization_turn_id: inherited ? (previous.authorization_turn_id || previous.turn_id) : ctx.turn_id,

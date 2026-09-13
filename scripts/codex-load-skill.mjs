@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { findRepoRoot, sessionDir, skillReceiptPath, atomicWriteJson, readJson, sha256, resolveCanonicalSkill } from "../hooks/codex/lib/codex-hook-context.mjs";
 import { validateTaskGraphShape, recoverableId, taskSkillForLoad } from "../hooks/lib/validate-task-graph-shape.mjs";
-import { resolveWI } from "../hooks/lib/resolve-wi.mjs";
+import { resolveWI, resolveAuthorityHost } from "../hooks/lib/resolve-wi.mjs";
 
 function fail(message, code = 2) { process.stderr.write(`${message}\n`); process.exit(code); }
 const args = {};
@@ -66,7 +66,7 @@ if (path.dirname(taskGraphReal) !== SELF_SCRIPTS_DIR || !fs.statSync(taskGraphRe
 // unchanged. A crash after activate-skill is forward-completed by exact retry.
 const ctx = { session_dir: sessionDir(worktree, sid, process.env) };
 const receiptPath = skillReceiptPath(ctx);
-let authority = resolveWI({ cwd: worktree, session_id: sid, host: process.env.SVC_HOST || "codex" }, {
+let authority = resolveWI({ cwd: worktree, session_id: sid, host: process.env.SVC_HOST || resolveAuthorityHost({}, process.env) }, {
   ...process.env, PWD: worktree, SVC_REQUIRE_SESSION_BINDING: "1",
 });
 let hermeticTestAuthority = false;

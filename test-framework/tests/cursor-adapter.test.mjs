@@ -152,7 +152,6 @@ test('Cursor adapter: end-to-end prompt capture, lease recovery, skill loading, 
   const env = {
     SVC_HOST: 'cursor',
     CURSOR_CONVERSATION_ID: cursorSid,
-    SVC_SESSION_ID: cursorSid,
   };
 
   try {
@@ -300,6 +299,120 @@ test('Cursor adapter: SVC OWNER OVERRIDE arms lease and writes prompt-authority 
     assert.ok(auth, 'prompt-authority.json must be written in the same turn');
     assert.equal(auth.explicit_wi, wi);
     assert.equal(auth.continuation_intent, 'resume');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('Cursor adapter: controller-v2 takeover without existing binding file resolves via resolveWI and baton', async () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'svc-cursor-v2-takeover-'));
+  const repo = path.join(tmp, 'repo');
+  const target = path.join(repo, '.worktrees', 'wt-cursor-takeover');
+  fs.mkdirSync(repo);
+
+  const git = (...args) => execFileSync('git', ['-C', repo, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  git('init', '-b', 'main');
+  git('config', 'user.name', 'cursor-fixture');
+  git('config', 'user.email', 'cursor@example.invalid');
+  fs.writeFileSync(path.join(repo, 'seed.txt'), 'seed');
+  git('add', '.');
+  git('commit', '-qm', 'seed');
+  git('update-ref', 'refs/remotes/origin/main', 'HEAD');
+  fs.mkdirSync(path.join(repo, '.worktrees'));
+  git('worktree', 'add', '-b', 'fix/cursor-v2', target);
+
+  const wi = 'WI-CURSOR-V2-01';
+  const oldSid = '01a07605-754d-7a83-bfbe-70efdb565f93';
+  const cursorSid = '2f538175-c2a2-461e-a2ab-29a7042adf73';
+
+  fs.mkdirSync(path.join(target, '.svc'));
+  fs.mkdirSync(path.join(target, '.svc', 'bindings'));
+  const graph = {
+    schema_version: 1,
+    wi,
+    lane: 'bugfix',
+    status: 'in_progress',
+    tasks: [
+      {
+        id: 1,
+        skill: 'execute-changeset',
+        subject: 'Cursor v2 takeover test',
+        status: 'in_progress',
+        metadata: { skill: 'execute-changeset', wi },
+        blocked_by: [],
+      },
+    ],
+  };
+  fs.writeFileSync(path.join(target, '.svc', `lane-tasks-${wi}.json`), JSON.stringify(graph, null, 2));
+  fs.writeFileSync(
+    path.join(target, '.svc', 'session-contract.jsonl'),
+    JSON.stringify({ wi, ts: new Date().toISOString(), authorization_envelope: { rules: [] } }) + '\n'
+  );
+
+  // Write old session binding to simulate post-reboot / handoff condition
+  fs.writeFileSync(
+    path.join(target, '.svc', 'bindings', `${oldSid.slice(0, 16)}.json`),
+    JSON.stringify({ schema_version: 1, session_id: oldSid, role: 'mutating', wi, repo_root: repo, worktree_root: target, branch: 'fix/cursor-v2', generation: 1 })
+  );
+
+  const { authorityStateRoot, bootstrapController, takeoverController, repositoryId, principalId } = await import('../../hooks/lib/authority-store.mjs');
+  const stateRoot = authorityStateRoot(target);
+  const repoId = repositoryId(target);
+  const oldPrincipal = principalId({ host: 'codex', session_id: oldSid });
+  const cursorPrincipal = principalId({ host: 'cursor', session_id: cursorSid });
+
+  bootstrapController({ stateRoot, repoId, wi, worktreeRoot: target, principal: oldPrincipal });
+  takeoverController({
+    stateRoot, repoId, wi, principal: cursorPrincipal,
+    expectedPrincipal: oldPrincipal, expectedGeneration: 1, reason: 'takeover for cursor session'
+  });
+
+  const env = {
+    SVC_HOST: 'cursor',
+    CURSOR_CONVERSATION_ID: cursorSid,
+  };
+
+  try {
+    const { resolveWI } = await import('../../hooks/lib/resolve-wi.mjs');
+    const res = resolveWI({ cwd: target, conversation_id: cursorSid }, { ...process.env, ...env, PWD: target, SVC_REQUIRE_SESSION_BINDING: '1' });
+    assert.equal(res.authority, true);
+    assert.equal(res.classification, 'owned');
+    assert.equal(res.tuple?.wi, wi);
+
+    // Prompt authority without re-typing WI inherits active WI from governance tuple
+    const promptRes = runAdapter(
+      '--before-submit-prompt',
+      {
+        prompt: 'continue working on this task and implement changes',
+        conversation_id: cursorSid,
+        cwd: target,
+      },
+      env
+    );
+    assert.equal(promptRes.status, 0);
+    assert.equal(promptRes.json?.continue, true);
+
+    const { hookContext, authorityPath, readJson } = await import('../../hooks/codex/lib/codex-hook-context.mjs');
+    const ctx = hookContext({ cwd: target, conversation_id: cursorSid }, { ...process.env, ...env });
+    const auth = readJson(authorityPath(ctx));
+    assert.ok(auth);
+    assert.equal(auth.explicit_wi, wi, 'must resolve explicit_wi from governance tuple');
+    assert.equal(auth.continuation_intent, 'continue');
+
+    // Pretool call should find baton via controller lease and rewrite to load-skill
+    const preMutation = runAdapter(
+      '--pretool',
+      {
+        tool_name: 'Shell',
+        tool_input: { command: 'echo "mutation" >> seed.txt' },
+        conversation_id: cursorSid,
+        cwd: target,
+      },
+      env
+    );
+    assert.equal(preMutation.status, 0);
+    assert.equal(preMutation.json?.permission, 'allow');
+    assert.match(preMutation.json?.updated_input?.command || '', /codex-load-skill/);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
