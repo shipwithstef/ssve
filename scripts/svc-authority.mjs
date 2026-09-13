@@ -29,7 +29,7 @@ function required(flags, name) {
 }
 
 function identity(flags, env = process.env) {
-  const trustedSession = String(env.SVC_SESSION_ID || env.GROK_SESSION_ID || env.CODEX_THREAD_ID || env.CODEX_SESSION_ID || env.CLAUDE_SESSION_ID || env.KIMI_SESSION_ID || env.GEMINI_SESSION_ID || "");
+  const trustedSession = String(env.CURSOR_CONVERSATION_ID || env.CURSOR_SESSION_ID || env.SVC_SESSION_ID || env.GROK_SESSION_ID || env.CODEX_THREAD_ID || env.CODEX_SESSION_ID || env.CLAUDE_SESSION_ID || env.KIMI_SESSION_ID || env.GEMINI_SESSION_ID || "");
   if (flags["--session-id"] && String(flags["--session-id"]) !== trustedSession) throw new Error("--session-id does not match trusted host session identity");
   if (flags["--host"] && String(flags["--host"]).toLowerCase() !== resolveAuthorityHost({}, env)) throw new Error("--host does not match trusted host identity");
   const host = resolveAuthorityHost({ host: flags["--host"] || null }, env);

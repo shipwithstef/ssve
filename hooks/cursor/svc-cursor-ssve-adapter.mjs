@@ -145,7 +145,8 @@ function handlePreTool(payload, { isShellExecEvent = false } = {}) {
     }
 
     // 2. Governed mutation dispatcher
-    const dispatcherPath = path.resolve(HERE, "..", "codex", "svc-codex-pretool-dispatcher.mjs");
+    const defaultDispatcherPath = path.resolve(HERE, "..", "codex", "svc-codex-pretool-dispatcher.mjs");
+    const dispatcherPath = process.env.SVC_CURSOR_DISPATCHER_OVERRIDE || defaultDispatcherPath;
     const result = spawnSync(process.execPath, [dispatcherPath], {
       input: JSON.stringify(normalized),
       encoding: "utf8",

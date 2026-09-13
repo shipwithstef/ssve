@@ -65,20 +65,18 @@ test('Cursor adapter: observation fast-path allows reads and rewrites git status
   assert.ok(gitStatusRes.json?.updated_input?.command?.includes('status'));
 });
 
-test('Cursor adapter: child dispatcher errors and unparseable output fail closed', () => {
+test('Cursor adapter: child dispatcher errors, empty output, and unparseable output fail closed', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'svc-cursor-err-'));
   try {
-    // Create a shadow dispatcher that emits invalid output
     const shadowDispatcher = path.join(tmp, 'shadow-dispatcher.mjs');
     fs.writeFileSync(shadowDispatcher, 'console.log("NOT_JSON_OUTPUT"); process.exit(0);');
 
-    // Run adapter with dispatcher overridden via PATH / node script trick
-    // We test how the adapter code handles child crash by pointing it to a crashing mock
     const crashDispatcher = path.join(tmp, 'crash-dispatcher.mjs');
     fs.writeFileSync(crashDispatcher, 'process.stderr.write("Fatal child crash\\n"); process.exit(2);');
 
-    // Test the adapter error branch by running a mutation tool input that reaches dispatcher
-    // but in an isolated environment where dispatcher fails
+    const emptyDispatcher = path.join(tmp, 'empty-dispatcher.mjs');
+    fs.writeFileSync(emptyDispatcher, 'process.exit(0);');
+
     const payload = {
       tool_name: 'Shell',
       tool_input: { command: 'touch dangerous_mutation.txt' },
@@ -86,11 +84,23 @@ test('Cursor adapter: child dispatcher errors and unparseable output fail closed
       cwd: tmp,
     };
 
-    // Dispatcher will exit non-zero since tmp is not a git repo with active WI authority
-    const res = runAdapter('--pretool', payload, { SVC_HOST: 'cursor' });
-    assert.equal(res.status, 0);
-    assert.equal(res.json?.permission, 'deny');
-    assert.ok(res.json?.user_message);
+    // 1. Unparseable stdout from dispatcher fails closed
+    const shadowRes = runAdapter('--pretool', payload, { SVC_HOST: 'cursor', SVC_CURSOR_DISPATCHER_OVERRIDE: shadowDispatcher });
+    assert.equal(shadowRes.status, 0);
+    assert.equal(shadowRes.json?.permission, 'deny');
+    assert.match(shadowRes.json?.user_message || '', /unparseable decision/i);
+
+    // 2. Child crash / non-zero exit from dispatcher fails closed
+    const crashRes = runAdapter('--pretool', payload, { SVC_HOST: 'cursor', SVC_CURSOR_DISPATCHER_OVERRIDE: crashDispatcher });
+    assert.equal(crashRes.status, 0);
+    assert.equal(crashRes.json?.permission, 'deny');
+    assert.match(crashRes.json?.user_message || '', /Fatal child crash/i);
+
+    // 3. Empty output from dispatcher fails closed
+    const emptyRes = runAdapter('--pretool', payload, { SVC_HOST: 'cursor', SVC_CURSOR_DISPATCHER_OVERRIDE: emptyDispatcher });
+    assert.equal(emptyRes.status, 0);
+    assert.equal(emptyRes.json?.permission, 'deny');
+    assert.match(emptyRes.json?.user_message || '', /child dispatcher emitted no output/i);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
@@ -114,7 +124,7 @@ test('Cursor adapter: end-to-end prompt capture, lease recovery, skill loading, 
   git('worktree', 'add', '-b', 'fix/cursor-e2e', target);
 
   const wi = 'WI-CURSOR-E2E-01';
-  const cursorSid = '01a07605-754d-7a83-bfbe-70efdb565f93'; // Real Cursor UUID format
+  const cursorSid = '2f538175-c2a2-461e-a2ab-29a7042adf73'; // Real Cursor conversation UUID format
 
   fs.mkdirSync(path.join(target, '.svc'));
   const graph = {

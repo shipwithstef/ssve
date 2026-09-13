@@ -138,7 +138,9 @@ function findMissingHookScripts(settingsPath, hooksSupported) {
 // invokes take an atomic exclusive claim at startup in a user-owned 0700 dir —
 // existsSync-then-write is racy under Grok parallel hook execution.
 function sessionIdFromEnv(env = process.env) {
-  return env.GROK_SESSION_ID
+  return env.CURSOR_CONVERSATION_ID
+    || env.CURSOR_SESSION_ID
+    || env.GROK_SESSION_ID
     || env.CLAUDE_SESSION_ID
     || env.CODEX_SESSION_ID
     || env.CODEX_THREAD_ID
