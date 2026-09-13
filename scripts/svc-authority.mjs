@@ -8,6 +8,7 @@ import {
   releaseController, repositoryId, resumeController, rollbackV1Migration, takeoverController,
 } from "../hooks/lib/authority-store.mjs";
 import { resolveAuthorityHost } from "../hooks/lib/resolve-wi.mjs";
+import { writeSessionBinding } from "../hooks/lib/wi-claim.mjs";
 
 function parseArgs(argv) {
   const positional = [];
@@ -51,6 +52,20 @@ function emit(value) {
   process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
 }
 
+function syncBinding(ctx, actor) {
+  try {
+    if (ctx.worktreeRoot && fs.existsSync(path.join(ctx.worktreeRoot, ".svc"))) {
+      writeSessionBinding({
+        worktree_root: ctx.worktreeRoot,
+        session_id: actor.session_id,
+        role: "mutating",
+        wi: ctx.wi,
+        host: actor.host,
+      });
+    }
+  } catch {}
+}
+
 export function run(argv = process.argv.slice(2), env = process.env) {
   const { positional, flags } = parseArgs(argv);
   const command = positional.join(" ");
@@ -58,23 +73,41 @@ export function run(argv = process.argv.slice(2), env = process.env) {
   const ctx = context(flags);
   if (command === "status") return emit({ lease: readController(ctx), state_root: ctx.stateRoot, repo_id: ctx.repoId });
   const actor = identity(flags, env);
-  if (command === "bootstrap") return emit(bootstrapController({ ...ctx, principal: actor.principal }));
-  if (command === "resume" || command === "renew") return emit(resumeController({ ...ctx, principal: actor.principal }));
+  if (command === "bootstrap") {
+    const res = bootstrapController({ ...ctx, principal: actor.principal });
+    syncBinding(ctx, actor);
+    return emit(res);
+  }
+  if (command === "resume" || command === "renew") {
+    const res = resumeController({ ...ctx, principal: actor.principal });
+    syncBinding(ctx, actor);
+    return emit(res);
+  }
   if (command === "handover prepare") {
     const intended = flags["--target-session-id"]
       ? principalId({ host: String(flags["--target-host"] || actor.host), session_id: String(flags["--target-session-id"]), agent_id: flags["--target-agent-id"] || null })
       : null;
     return emit(prepareHandover({ ...ctx, principal: actor.principal, intendedPrincipal: intended }));
   }
-  if (command === "handover accept") return emit(acceptHandover({ ...ctx, principal: actor.principal, token: required(flags, "--token") }));
-  if (command === "takeover") return emit(takeoverController({ ...ctx, principal: actor.principal,
-    expectedPrincipal: required(flags, "--expected-principal"),
-    expectedGeneration: Number(required(flags, "--expected-generation")), reason: required(flags, "--reason"),
-    ttlMs: Math.min(30 * 60_000, Math.max(1, Number(flags["--ttl-min"] || 15)) * 60_000) }));
+  if (command === "handover accept") {
+    const res = acceptHandover({ ...ctx, principal: actor.principal, token: required(flags, "--token") });
+    syncBinding(ctx, actor);
+    return emit(res);
+  }
+  if (command === "takeover") {
+    const res = takeoverController({ ...ctx, principal: actor.principal,
+      expectedPrincipal: required(flags, "--expected-principal"),
+      expectedGeneration: Number(required(flags, "--expected-generation")), reason: required(flags, "--reason"),
+      ttlMs: Math.min(30 * 60_000, Math.max(1, Number(flags["--ttl-min"] || 15)) * 60_000) });
+    syncBinding(ctx, actor);
+    return emit(res);
+  }
   if (command === "recover") {
     const evidencePath = required(flags, "--evidence");
     const evidence = JSON.parse(fs.readFileSync(path.resolve(evidencePath), "utf8"));
-    return emit(recoverController({ ...ctx, principal: actor.principal, reason: required(flags, "--reason"), evidence }));
+    const res = recoverController({ ...ctx, principal: actor.principal, reason: required(flags, "--reason"), evidence });
+    syncBinding(ctx, actor);
+    return emit(res);
   }
   if (command === "migrate") {
     return emit(migrateV1Claim({ ...ctx, claimPath: required(flags, "--claim"), host: actor.host }));

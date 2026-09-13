@@ -4,7 +4,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { lexSimpleCommand } from "./argv-lex.mjs";
-import { findSvcDir, resolveWI } from "../../lib/resolve-wi.mjs";
+import { findSvcDir, resolveWI, resolveAuthorityHost } from "../../lib/resolve-wi.mjs";
 import { validateTaskGraphShape } from "../../lib/validate-task-graph-shape.mjs";
 import { isValidWiId, WI_ID_BODY } from "../../lib/wi-id.mjs";
 import { resolveOperationScope } from "../../lib/operation-scope.mjs";
@@ -628,31 +628,45 @@ export function governanceBinding(payload, env = process.env) {
   const sessionRoot = findRepoRoot(sessionCwd);
   const sid = sessionId(payload, env);
   if (!sessionRoot || !sid) return null;
+  const host = payload?.host || env.SVC_HOST || resolveAuthorityHost(payload, env);
   const svcDir = findSvcDir(sessionRoot);
-  if (!svcDir) return null;
-  const bindingsDir = path.join(svcDir, "bindings");
   const matches = [];
-  try {
-    for (const name of fs.readdirSync(bindingsDir)) {
-      if (!name.endsWith(".json")) continue;
-      const file = path.join(bindingsDir, name);
-      const stat = fs.lstatSync(file);
-      if (!stat.isFile() || stat.isSymbolicLink()) continue;
-      const binding = JSON.parse(fs.readFileSync(file, "utf8"));
-      if (String(binding.session_id || "") !== sid || binding.released_at) continue;
-      if (String(binding.role || "") !== "mutating" || !path.isAbsolute(String(binding.worktree_root || ""))) continue;
-      let worktree;
-      try { worktree = fs.realpathSync(binding.worktree_root); } catch { continue; }
-      const resolved = resolveWI({ ...payload, cwd: worktree, session_id: sid, host: "codex" }, {
-        ...env, PWD: worktree, SVC_REQUIRE_SESSION_BINDING: "1",
-      });
-      if (!resolved.authority || resolved.classification !== "owned" || resolved.tuple?.worktree_root !== worktree) continue;
-      matches.push({ binding, tuple: resolved.tuple, worktree });
-    }
-  } catch {
-    return null;
+  if (svcDir) {
+    const bindingsDir = path.join(svcDir, "bindings");
+    try {
+      for (const name of fs.readdirSync(bindingsDir)) {
+        if (!name.endsWith(".json")) continue;
+        const file = path.join(bindingsDir, name);
+        const stat = fs.lstatSync(file);
+        if (!stat.isFile() || stat.isSymbolicLink()) continue;
+        const binding = JSON.parse(fs.readFileSync(file, "utf8"));
+        if (String(binding.session_id || "") !== sid || binding.released_at) continue;
+        if (String(binding.role || "") !== "mutating" || !path.isAbsolute(String(binding.worktree_root || ""))) continue;
+        let worktree;
+        try { worktree = fs.realpathSync(binding.worktree_root); } catch { continue; }
+        const resolved = resolveWI({ ...payload, cwd: worktree, session_id: sid, host }, {
+          ...env, PWD: worktree, SVC_REQUIRE_SESSION_BINDING: "1",
+        });
+        if (!resolved.authority || resolved.classification !== "owned" || resolved.tuple?.worktree_root !== worktree) continue;
+        matches.push({ binding, tuple: resolved.tuple, worktree });
+      }
+    } catch {}
   }
-  return matches.length === 1 ? matches[0] : null;
+  if (matches.length === 1) return matches[0];
+  if (matches.length > 1) return null;
+
+  // Controller-v2 fallback: when a lease is owned by this session but no v1
+  // session binding has been written to disk yet (e.g. fresh takeover/recovery),
+  // discover the active worktree and tuple via resolveWI.
+  try {
+    const resolved = resolveWI({ ...payload, cwd: sessionRoot, session_id: sid, host }, {
+      ...env, PWD: sessionRoot, SVC_REQUIRE_SESSION_BINDING: "1",
+    });
+    if (resolved.authority && resolved.classification === "owned" && resolved.tuple?.worktree_root) {
+      return { binding: resolved.binding || resolved.tuple, tuple: resolved.tuple, worktree: resolved.tuple.worktree_root };
+    }
+  } catch {}
+  return null;
 }
 
 export function hookContext(payload, env = process.env) {
@@ -675,7 +689,8 @@ export function hookContext(payload, env = process.env) {
 
 export function operationHookContext(payload, env = process.env) {
   const session = hookContext(payload, env);
-  const operation_scope = resolveOperationScope(payload, { host: "codex", env });
+  const host = payload?.host || env.SVC_HOST || resolveAuthorityHost(payload, env);
+  const operation_scope = resolveOperationScope(payload, { host, env });
   const repoRoot = operation_scope.operation_repository?.worktree_root || null;
   const sid = session.session_id;
   return {

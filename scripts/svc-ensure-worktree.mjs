@@ -861,6 +861,11 @@ function resumeExisting({ repo, wi, branch, from, owner, host, env, worktree, ma
             reason: 'Authorized resume of the unique registered WI worktree',
             evidence: { expired: Date.parse(controller.expires_at) <= Date.now(), same_host_dead: processIsAlive(controller.owner_process) === false } }).lease;
       const graph = ensureGraph(worktree, wi, branch);
+      writeSessionBinding({
+        worktree_root: worktree, session_id: owner, role: "mutating", wi, branch,
+        repo_root: repo.root, host: resolveAuthorityHost({}, env),
+        pid: ownerPid(env),
+      });
       const verified = verifyCompleteTuple({ repo, wi, branch, owner, worktree, graphP: graph.path, marker: null, env });
       if (!verified.ok) throw new Error(`recovery tuple verification failed: ${verified.reason}`);
       return result({ wi, branch, baseSha, worktree, owner, graphPath: graph.path, generation: Number(lease.generation), created: false, resumed: true, authority_v2: { lease } });
