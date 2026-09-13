@@ -11,7 +11,7 @@ function fail(message, code = 2) { process.stderr.write(`${message}\n`); process
 const args = {};
 for (let i = 2; i < process.argv.length; i += 1) {
   const key = process.argv[i];
-  if (["--graph", "--task", "--skill", "--turn", "--session"].includes(key)) args[key.slice(2)] = process.argv[++i];
+  if (["--graph", "--task", "--skill", "--turn", "--session", "--host"].includes(key)) args[key.slice(2)] = process.argv[++i];
 }
 if (!args.graph || !args.task || !args.skill) fail("Usage: node scripts/codex-load-skill.mjs --graph ABS --task N --skill NAME [--turn ID] [--session ID]");
 const requestedGraphPath = path.resolve(args.graph);
@@ -66,9 +66,22 @@ if (path.dirname(taskGraphReal) !== SELF_SCRIPTS_DIR || !fs.statSync(taskGraphRe
 // unchanged. A crash after activate-skill is forward-completed by exact retry.
 const ctx = { session_dir: sessionDir(worktree, sid, process.env) };
 const receiptPath = skillReceiptPath(ctx);
-let authority = resolveWI({ cwd: worktree, session_id: sid, host: process.env.SVC_HOST || resolveAuthorityHost({}, process.env) }, {
+const initialHost = args.host || process.env.SVC_HOST || resolveAuthorityHost({}, process.env);
+let authority = resolveWI({ cwd: worktree, session_id: sid, host: initialHost }, {
   ...process.env, PWD: worktree, SVC_REQUIRE_SESSION_BINDING: "1",
 });
+if ((!authority.authority || !authority.tuple) && !args.host && !process.env.SVC_HOST) {
+  for (const altHost of ["cursor", "grok", "codex", "claude"]) {
+    if (altHost === initialHost) continue;
+    const probe = resolveWI({ cwd: worktree, session_id: sid, host: altHost }, {
+      ...process.env, PWD: worktree, SVC_REQUIRE_SESSION_BINDING: "1",
+    });
+    if (probe.authority && probe.tuple) {
+      authority = probe;
+      break;
+    }
+  }
+}
 let hermeticTestAuthority = false;
 try { hermeticTestAuthority = process.env.NODE_ENV === "test" && process.env.SVC_CODEX_TEST_MODE === "1" && fs.realpathSync(process.env.SVC_CODEX_TEST_REPO || "") === worktree; } catch {}
 if ((!authority.authority || !authority.tuple) && hermeticTestAuthority) {

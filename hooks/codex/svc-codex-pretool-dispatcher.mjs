@@ -63,7 +63,7 @@ try{const j=JSON.parse(t.split(/\r?\n/).filter(Boolean).at(-1));return (j?.hookS
 async function loadRecoverySkill(worktree,gate,input,ctx,sid,host=""){
 const ensureModule=await import("../../scripts/svc-ensure-worktree.mjs");
 const recovery=ensureModule.prepareRecoveredSession({worktree:worktree,wi:gate.wi,sessionId:sid,turnId:ctx.turn_id,authorization:gate,agentId:payload.agent_id||payload.agentId||process.env.SVC_AGENT_ID||null});
-const loader=encodeSimpleCommand([process.execPath,path.resolve(HERE,"..","..","scripts","codex-load-skill.mjs"),"--graph",recovery.graphPath,"--task",String(recovery.taskId),"--skill",recovery.skill,"--turn",String(ctx.turn_id||""),"--session",sid]);
+const loader=encodeSimpleCommand([process.execPath,path.resolve(HERE,"..","..","scripts","codex-load-skill.mjs"),"--graph",recovery.graphPath,"--task",String(recovery.taskId),"--skill",recovery.skill,"--turn",String(ctx.turn_id||""),"--session",sid,...(host?["--host",host]:[])]);
 if(input && (Object.hasOwn(input,"command") || Object.hasOwn(input,"cmd"))){
 const field=Object.hasOwn(input,"cmd")?"cmd":"command";
 if(host==="cursor"){
