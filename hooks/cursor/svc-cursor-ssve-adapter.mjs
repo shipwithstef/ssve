@@ -152,15 +152,15 @@ function handlePreTool(payload, { isShellExecEvent = false } = {}) {
       env: { ...process.env, SVC_HOST: "cursor", CURSOR_CONVERSATION_ID: sid },
     });
 
-    if (result.status !== 0) {
-      const reason = result.stderr?.trim() || "Cursor pretool failed closed";
+    if (result.error || result.status !== 0) {
+      const reason = result.error?.message || result.stderr?.trim() || "Cursor pretool child process failed closed";
       process.stdout.write(JSON.stringify({ permission: "deny", user_message: reason }) + "\n");
       process.exit(0);
     }
 
     const stdout = String(result.stdout || "").trim();
     if (!stdout) {
-      process.stdout.write(JSON.stringify({ permission: "allow" }) + "\n");
+      process.stdout.write(JSON.stringify({ permission: "deny", user_message: "child dispatcher emitted no output; failing closed" }) + "\n");
       process.exit(0);
     }
 
@@ -242,7 +242,24 @@ function handleAfterFileEdit(payload) {
 function main() {
   const mode = process.argv[2] || "";
   const raw = readStdin();
-  const payload = parseHookInput(raw);
+  let payload;
+  if (raw && raw.trim()) {
+    try {
+      payload = JSON.parse(raw);
+      if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+        throw new Error("payload must be a JSON object");
+      }
+    } catch (err) {
+      if (mode === "--before-submit-prompt") {
+        process.stdout.write(JSON.stringify({ continue: false, user_message: `Cursor hook received malformed payload: ${err.message}` }) + "\n");
+        process.exit(0);
+      }
+      process.stdout.write(JSON.stringify({ permission: "deny", user_message: `Cursor hook received malformed payload: ${err.message}` }) + "\n");
+      process.exit(0);
+    }
+  } else {
+    payload = {};
+  }
 
   if (mode === "--before-submit-prompt") {
     handleBeforeSubmitPrompt(payload);
