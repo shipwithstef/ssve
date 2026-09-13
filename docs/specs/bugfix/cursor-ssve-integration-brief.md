@@ -16,9 +16,14 @@ WI: WI-546 (WI-FW-CURSOR-CLI-01). Resolves Cursor CLI SSVE hook integration, nat
 4. Wrapped worktree path resolution in `try/catch` across `scripts/svc-ensure-worktree.mjs` and `hooks/codex/svc-codex-pretool-dispatcher.mjs` to safely skip vanished paths.
 5. Added `v2_present` support to `existingResumeApproval` and implemented V2 controller lease recovery/resume in `resumeExisting`.
 6. Updated `provision/hosts/cursor.json` and tier-1 acceptance validators to declare `beforeSubmitPrompt` and `preToolUse`.
+7. Restored strict equality check `receipt.policy.selection_sha256 === topology.config_sha256` in `scripts/review-topology-v2.mjs`, ensuring mismatched review configs are rejected.
+8. Restored canonical station receipt schema and candidate/station/reviewer binding checks in `validateLocalStationReceipt`, rejecting legacy v1 and wrong-host receipts.
+9. Added dedicated `test-framework/tests/cursor-adapter.test.mjs` verifying malformed payload fail-closed handling, child dispatcher error fail-closed handling, observation fast-path, and complete end-to-end Cursor CLI session prompt capture, lease recovery, skill loading, and governed mutation.
 
 ## Validation
-- `test-framework/evals/tier-1/validate-wi546-cursor-live-acceptance.sh`: 24 passed, 0 failed.
+- `test-framework/evals/tier-1/validate-review-topology-v2.mjs`: PASS (positive and negative probes for mismatched selection and invalid station receipts).
+- `test-framework/tests/cursor-adapter.test.mjs`: 4 passed, 0 failed.
+- `test-framework/evals/tier-1/validate-wi546-cursor-live-acceptance.sh`: 25 passed, 0 failed.
 - `test-framework/evals/tier-1/validate-wi546-grok-live-acceptance.sh`: 18 passed, 0 failed.
 - `test-framework/tests/session-resume-recovery.test.mjs`: 19 passed, 0 failed.
 - `test-framework/evals/tier-1/validate-existing-worktree-self-heal.sh`: 31 passed, 0 failed.

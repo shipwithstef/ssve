@@ -369,6 +369,7 @@ run_child "WI-549 shared chain-policy" bash "$ROOT/test-framework/evals/tier-1/v
 run_child "WI-550 receipt identity + Stop/finalization" bash "$ROOT/test-framework/evals/tier-1/validate-receipt-identity-collision.sh"
 run_child "WI-551 dispatch no-remap" node "$ROOT/test-framework/evals/tier-1/validate-dispatch-resolver-wi551.mjs"
 run_child "WI-552 restart continuation (fake transport / cursor capability_limited)" node "$ROOT/test-framework/evals/tier-1/validate-continuation-lifecycle-wi552.mjs"
+run_child "Cursor SSVE adapter & transfer lifecycle" node "$ROOT/test-framework/tests/cursor-adapter.test.mjs"
 run_child "task-state persistence includes cursor" bash "$ROOT/test-framework/evals/tier-1/validate-task-graph-cross-host.sh"
 
 echo ""

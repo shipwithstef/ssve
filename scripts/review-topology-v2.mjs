@@ -262,7 +262,7 @@ function validateExternalReceipt(report, station, candidateDigest, topology) {
   const schemaResult = validate(EXTERNAL_RECEIPT_SCHEMA, receipt);
   if (!schemaResult.valid) fail(`external station ${station.id} receipt violates canonical schema: ${schemaResult.errors.join('; ')}`);
   const tuple = receipt.effective_tuple ?? receipt.requested_tuple;
-  if (receipt.schema_version !== 2 || receipt.candidate_digest !== candidateDigest || receipt.review_kind !== topology.phase || receipt.policy?.source !== 'owner-config' || !DIGEST.test(receipt.policy?.selection_sha256 ?? '')) fail(`external station ${station.id} receipt is not bound to the candidate/config/phase`);
+  if (receipt.schema_version !== 2 || receipt.candidate_digest !== candidateDigest || receipt.review_kind !== topology.phase || receipt.policy?.source !== 'owner-config' || receipt.policy?.selection_sha256 !== topology.config_sha256) fail(`external station ${station.id} receipt is not bound to the candidate/config/phase`);
   if (tuple?.host !== station.tuple.host || tuple?.family !== station.tuple.family || tuple?.model !== station.tuple.model || tuple?.effort !== station.tuple.effort) fail(`external station ${station.id} invocation tuple mismatch`);
   if (report.status === 'pass' && (receipt.status !== 'success' || !['success', 'cache_hit'].includes(receipt.classification) || !['owner_config_primary', 'cache_hit'].includes(receipt.route?.kind))) fail(`external station ${station.id} does not carry a successful canonical launcher receipt`);
   if (report.status === 'unavailable' && (receipt.status !== 'failure' || receipt.classification !== report.classification)) fail(`external station ${station.id} unavailable classification does not match its receipt`);
@@ -310,17 +310,9 @@ function validateLocalStationReceipt(report, station, candidateDigest) {
   if (!DIGEST.test(report.receipt_digest ?? '') || hash(bytes) !== report.receipt_digest) fail(`station ${station.id} receipt digest mismatch`);
   let receipt;
   try { receipt = JSON.parse(bytes); } catch { fail(`station ${station.id} receipt is not JSON`); }
-  const grokSelfExec = receipt.schema_version === 1 && receipt.review_kind === 'exec' && typeof receipt.wi === 'string'
-    && Array.isArray(receipt.findings) && ['pass', 'pass-with-findings'].includes(receipt.verdict);
-  if (!grokSelfExec) {
-    const schemaResult = validate(STATION_RECEIPT_SCHEMA, receipt);
-    if (!schemaResult.valid) fail(`station ${station.id} receipt violates canonical schema: ${schemaResult.errors.join('; ')}`);
-    if (receipt.station_id !== station.id || receipt.station_kind !== station.kind || receipt.candidate_digest !== candidateDigest || canonical(receipt.reviewer) !== canonical(station.tuple)) fail(`station ${station.id} receipt is not bound to the candidate/station/reviewer`);
-  } else {
-    if (receipt.candidate_digest !== candidateDigest) fail(`station ${station.id} receipt is not bound to the candidate/station/reviewer`);
-    if (receipt.reviewer?.family !== station.tuple.family || receipt.reviewer?.model !== station.tuple.model
-      || receipt.reviewer?.effort !== station.tuple.effort) fail(`station ${station.id} receipt is not bound to the candidate/station/reviewer`);
-  }
+  const schemaResult = validate(STATION_RECEIPT_SCHEMA, receipt);
+  if (!schemaResult.valid) fail(`station ${station.id} receipt violates canonical schema: ${schemaResult.errors.join('; ')}`);
+  if (receipt.station_id !== station.id || receipt.station_kind !== station.kind || receipt.candidate_digest !== candidateDigest || canonical(receipt.reviewer) !== canonical(station.tuple)) fail(`station ${station.id} receipt is not bound to the candidate/station/reviewer`);
   const critical = receipt.findings.filter(row => row.severity === 'critical').length;
   const high = receipt.findings.filter(row => row.severity === 'high').length;
   const pass = ['pass', 'pass-with-findings'].includes(receipt.verdict) && critical === 0 && high === 0;

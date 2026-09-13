@@ -155,4 +155,43 @@ assert.throws(() => resolveReviewTopology({ configPath: falseCursorFamilyFile, o
 const linkedConfig = path.join(root, 'linked.json'); fs.symlinkSync(config, linkedConfig);
 assert.throws(() => resolveReviewTopology({ configPath: linkedConfig, orchestrator: 'codex', phase: 'exec' }), /not a regular file|must not be a symlink/);
 
-console.log('validate-review-topology-v2: PASS (external config, host/phase routing, fast-local non-release panel, production independence, optional capability receipts, digest binding)');
+function rewriteReceipt(report, receipt) {
+  const bytes = Buffer.from(JSON.stringify(receipt) + '\n');
+  fs.writeFileSync(report.receipt_path, bytes, { mode: 0o600 });
+  report.receipt_digest = digest(bytes);
+}
+
+// Negative probe 1: external review receipt with mismatched selection_sha256 must be rejected
+const configMismatch = input('production');
+const extStationReport = configMismatch.stations.find(s => s.id === 'agy');
+const mismatchedConfigReceipt = JSON.parse(fs.readFileSync(extStationReport.receipt_path));
+mismatchedConfigReceipt.policy.selection_sha256 = '9'.repeat(64);
+rewriteReceipt(extStationReport, mismatchedConfigReceipt);
+assert.throws(() => aggregateReviewTopology(configMismatch), /external station agy receipt is not bound to the candidate\/config\/phase/);
+
+// Negative probe 2: local/subagent station receipt with legacy schema_version 1 or wrong host must be rejected
+const wrongLocalHost = input('production');
+const localSolReport = wrongLocalHost.stations.find(s => s.id === 'sol');
+rewriteReceipt(localSolReport, {
+  schema_version: 1, review_kind: 'exec', wi: 'WI-UNRELATED', candidate_digest: candidate,
+  reviewer: { ...localSolReport.reviewer, host: 'unrelated-host' }, verdict: 'pass', findings: []
+});
+assert.throws(() => aggregateReviewTopology(wrongLocalHost), /station sol receipt violates canonical schema/);
+
+// Negative probe 3: local station receipt with wrong station_id or station_kind must be rejected
+const wrongStationId = input('production');
+const selfReport = wrongStationId.stations.find(s => s.id === 'self');
+const badStationReceipt = JSON.parse(fs.readFileSync(selfReport.receipt_path));
+badStationReceipt.station_id = 'wrong-station';
+rewriteReceipt(selfReport, badStationReceipt);
+assert.throws(() => aggregateReviewTopology(wrongStationId), /station self receipt is not bound to the candidate\/station\/reviewer/);
+
+const wrongStationKind = input('production');
+const selfReportKind = wrongStationKind.stations.find(s => s.id === 'self');
+const badKindReceipt = JSON.parse(fs.readFileSync(selfReportKind.receipt_path));
+badKindReceipt.station_kind = 'subagent';
+rewriteReceipt(selfReportKind, badKindReceipt);
+assert.throws(() => aggregateReviewTopology(wrongStationKind), /station self receipt is not bound to the candidate\/station\/reviewer/);
+
+console.log('validate-review-topology-v2: PASS (external config, host/phase routing, fast-local non-release panel, production independence, optional capability receipts, digest binding, selection and station binding)');
+
