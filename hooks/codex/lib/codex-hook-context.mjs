@@ -227,31 +227,38 @@ export function continuationIntent(text, { distinguishNegative = false } = {}) {
   // EXTREV-R3-003: reuse the canonical WI body so NAMESPACED ids
   // (WI-FW-HOOKS-SAFETY-01) anchor the sentence scope, not just WI-123 forms.
   const wiMatch = value.match(new RegExp("(?<![A-Za-z0-9._:/-])" + WI_ID_BODY + "(?![A-Za-z0-9._:/-])"));
-  const scopeText = (() => {
-    if (!wiMatch) return value;
-    const sentences = value.split(/(?:[.!?\n]|\.\s)\s*/);
-    const hit = sentences.find((s) => new RegExp(`\\b${wiMatch[0].replace(/[-_]/g, "[-_]")}\\b`, "i").test(s));
-    return (hit || value).trim();
+  const sentences = (() => {
+    if (!wiMatch) return [value];
+    const parts = value.split(/(?:[.!?]|\n\s*\n|\.\s)\s*/);
+    const matching = parts.filter((s) => new RegExp(`\\b${wiMatch[0].replace(/[-_]/g, "[-_]")}\\b`, "i").test(s));
+    return matching.length ? matching : [value];
   })();
-  // Verbs must sit within ±60 chars of the WI token inside its own sentence.
-  const verbWindow = (() => {
-    if (!wiMatch) return scopeText;
-    const at = Math.max(0, scopeText.search(new RegExp(`\\b${wiMatch[0].replace(/[-_]/g, "[-_]")}\\b`, "i")));
-    if (at < 0) return "";
-    return scopeText.slice(Math.max(0, at - 60), at + wiMatch[0].length + 60);
-  })();
-  const negationLead = "(?:do\\s+not|don['’]?t|dont|won['’]?t|will\\s+not|can['’]?t|cannot|can['’]?t\\s+just|not\\s+going\\s+to|unable\\s+to|never|avoid|without|no\\s+need\\s+to|stop(?:\\s+trying\\s+to)?|refrain\\s+from|(?:we\\s+)?should\\s+not|(?:i(?:'d|\\s+would)\\s+rather|let['’]?s)\\s+not|i\\s+don['’]?t\\s+think\\s+we\\s+should|hold\\s+off\\s+(?:on)?|pause|postpone|defer|cancel|abandon|skip)";
-  const negativeIntent = [
-    new RegExp(`\\b${negationLead}\\s+(?:(?:try(?:ing)?|attempt(?:ing)?|plan(?:ning)?|need|want)\\s+to\\s+|bother\\s+with\\s+)?(?:${continuationVerb}|${workVerb})\\b`, "i"),
-    new RegExp(`\\b(?:${continuationVerb}|${workVerb})\\s+(?:later|another\\s+time|tomorrow|next\\s+week|after\\s+that)\\b`, "i"),
-    new RegExp(`\\b(?:is|are|was|were)\\s+not\\s+(?:to\\s+be\\s+)?(?:${continuationVerb}|${workVerb})\\b`, "i"),
-  ];
-  if (negativeIntent.some((pattern) => pattern.test(scopeText) || pattern.test(verbWindow))) return distinguishNegative ? "negative" : "none";
-  if (/\bend[_ -]?to[_ -]?end\b/i.test(scopeText)) return "end_to_end";
-  if (new RegExp(continuationVerb, "i").test(verbWindow) && /\bresume\b/i.test(verbWindow)) return "resume";
-  if (new RegExp(continuationVerb, "i").test(verbWindow) && /\bcontinue\b/i.test(verbWindow)) return "continue";
-  if (new RegExp(workVerb, "i").test(verbWindow)) return "work_on";
-  return "none";
+
+  const classifyOne = (scopeText) => {
+    const trimmed = scopeText.trim();
+    const at = wiMatch ? Math.max(0, trimmed.search(new RegExp(`\\b${wiMatch[0].replace(/[-_]/g, "[-_]")}\\b`, "i"))) : 0;
+    const verbWindow = wiMatch ? trimmed.slice(Math.max(0, at - 60), at + wiMatch[0].length + 60) : trimmed;
+    const negationLead = "(?:do\\s+not|don['’]?t|dont|won['’]?t|will\\s+not|can['’]?t|cannot|can['’]?t\\s+just|not\\s+going\\s+to|unable\\s+to|never|avoid|without|no\\s+need\\s+to|stop(?:\\s+trying\\s+to)?|refrain\\s+from|(?:we\\s+)?should\\s+not|(?:i(?:'d|\\s+would)\\s+rather|let['’]?s)\\s+not|i\\s+don['’]?t\\s+think\\s+we\\s+should|hold\\s+off\\s+(?:on)?|pause|postpone|defer|cancel|abandon|skip)";
+    const negativeIntent = [
+      new RegExp(`\\b${negationLead}\\s+(?:(?:try(?:ing)?|attempt(?:ing)?|plan(?:ning)?|need|want)\\s+to\\s+|bother\\s+with\\s+)?(?:${continuationVerb}|${workVerb})\\b`, "i"),
+      new RegExp(`\\b(?:${continuationVerb}|${workVerb})\\s+(?:later|another\\s+time|tomorrow|next\\s+week|after\\s+that)\\b`, "i"),
+      new RegExp(`\\b(?:is|are|was|were)\\s+not\\s+(?:to\\s+be\\s+)?(?:${continuationVerb}|${workVerb})\\b`, "i"),
+    ];
+    if (negativeIntent.some((pattern) => pattern.test(trimmed) || pattern.test(verbWindow))) return distinguishNegative ? "negative" : "none";
+    if (/\bend[_ -]?to[_ -]?end\b/i.test(trimmed)) return "end_to_end";
+    if (new RegExp(continuationVerb, "i").test(verbWindow) && /\bresume\b/i.test(verbWindow)) return "resume";
+    if (new RegExp(continuationVerb, "i").test(verbWindow) && /\bcontinue\b/i.test(verbWindow)) return "continue";
+    if (new RegExp(workVerb, "i").test(verbWindow)) return "work_on";
+    return "none";
+  };
+
+  let best = "none";
+  for (const s of sentences) {
+    const res = classifyOne(s);
+    if (res === "negative") return distinguishNegative ? "negative" : "none";
+    if (res !== "none" && best === "none") best = res;
+  }
+  return best;
 }
 
 const READ_ONLY_TOOLS = new Set(["Read", "Glob", "Grep", "Search", "View", "view_image"]);
