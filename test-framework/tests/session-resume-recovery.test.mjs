@@ -146,3 +146,27 @@ test('missing declaration never renders an undefined skill recovery command',()=
   assert.doesNotMatch(result.hookSpecificOutput.permissionDecisionReason,/--skill undefined|bootstrap one/);
  }finally{fs.rmSync(f.tmp,{recursive:true,force:true});}
 });
+
+test('writeSessionBinding with transfer_authorized: true adopts stale foreign claim at generation increment', () => {
+ const f = fixture();
+ try {
+  const newSid = '019a0000-0000-7000-8000-000000000099';
+  const blocked = writeSessionBinding({
+   worktree_root: f.target, repo_root: f.repo, wi, branch: 'fix/recovery',
+   session_id: newSid, role: 'mutating', host: 'codex',
+  });
+  assert.equal(blocked.ok, false);
+  assert.match(blocked.warning, /stale foreign claim/);
+
+  const authorized = writeSessionBinding({
+   worktree_root: f.target, repo_root: f.repo, wi, branch: 'fix/recovery',
+   session_id: newSid, role: 'mutating', host: 'codex', transfer_authorized: true,
+  });
+  assert.equal(authorized.ok, true, JSON.stringify(authorized));
+  assert.equal(authorized.binding.session_id, newSid);
+  assert.equal(authorized.binding.generation, 2);
+ } finally {
+  fs.rmSync(f.tmp, { recursive: true, force: true });
+ }
+});
+

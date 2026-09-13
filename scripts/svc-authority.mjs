@@ -61,6 +61,7 @@ function syncBinding(ctx, actor) {
         role: "mutating",
         wi: ctx.wi,
         host: actor.host,
+        transfer_authorized: true,
       });
     }
   } catch {}

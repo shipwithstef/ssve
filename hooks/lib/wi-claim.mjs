@@ -1232,6 +1232,7 @@ export function writeSessionBinding(opts = {}) {
         host: opts.host,
         pid: opts.pid,
         ttl_hours: opts.ttl_hours,
+        transfer_authorized: opts.transfer_authorized ?? false,
       });
       if (!claimed.ok) return claimed;
       claimPath = claimed.claim_path;
