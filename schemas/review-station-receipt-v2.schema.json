@@ -18,7 +18,7 @@
       "required": ["host", "family", "model", "effort"],
       "properties": {
         "host": { "type": "string", "minLength": 1 },
-        "family": { "enum": ["openai", "anthropic", "google"] },
+        "family": { "enum": ["openai", "anthropic", "google", "xai"] },
         "model": { "type": "string", "minLength": 1 },
         "effort": { "enum": ["low", "medium", "high", "xhigh", "max"] }
       }

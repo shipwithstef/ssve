@@ -66,7 +66,7 @@ assert.equal(m.hook_quirks?.tool_matcher_regex, false);
 assert.equal(m.hook_quirks?.decision_format, "exit-code-2-blocks");
 assert.match(String(m.task_graph?.task_ui || ""), /none/i);
 assert.equal(m.authority_capabilities?.fresh_session_launch?.enabled, false);
-assert.deepEqual(m.hook_events, ["beforeShellExecution", "afterFileEdit", "sessionStart", "stop"]);
+assert.deepEqual(m.hook_events, ["beforeSubmitPrompt", "preToolUse", "beforeShellExecution", "afterFileEdit", "sessionStart", "stop"]);
 assert.equal(m.wiring?.wirer, "scripts/wire-cursor-hooks.mjs");
 assert.ok((m.wiring?.governed_token || []).includes("svc-cursor-task-completion-guard"));
 NODE

@@ -11,9 +11,9 @@ function fail(message, code = 2) { process.stderr.write(`${message}\n`); process
 const args = {};
 for (let i = 2; i < process.argv.length; i += 1) {
   const key = process.argv[i];
-  if (["--graph", "--task", "--skill", "--turn"].includes(key)) args[key.slice(2)] = process.argv[++i];
+  if (["--graph", "--task", "--skill", "--turn", "--session"].includes(key)) args[key.slice(2)] = process.argv[++i];
 }
-if (!args.graph || !args.task || !args.skill) fail("Usage: node scripts/codex-load-skill.mjs --graph ABS --task N --skill NAME [--turn ID]");
+if (!args.graph || !args.task || !args.skill) fail("Usage: node scripts/codex-load-skill.mjs --graph ABS --task N --skill NAME [--turn ID] [--session ID]");
 const requestedGraphPath = path.resolve(args.graph);
 if (!path.isAbsolute(args.graph) || !fs.existsSync(requestedGraphPath)) fail("graph must be an existing absolute path");
 const testRepo = process.env.SVC_CODEX_TEST_MODE === "1" && process.env.SVC_CODEX_TEST_REPO
@@ -40,10 +40,10 @@ if (!shape.ok) fail(`malformed task graph: ${shape.reason}`);
 const task = graph.tasks?.find((item) => recoverableId(item.id) !== null && recoverableId(item.id) === recoverableId(args.task));
 const expected = taskSkillForLoad(task);
 if (!task || expected !== args.skill) fail("graph/task/declared skill mismatch");
-const sid = process.env.SVC_CODEX_TEST_MODE === "1"
+const sid = args.session || (process.env.SVC_CODEX_TEST_MODE === "1"
   ? (process.env.CODEX_SESSION_ID || process.env.CODEX_THREAD_ID || "")
-  : (process.env.CODEX_THREAD_ID || process.env.CODEX_SESSION_ID || "");
-if (!sid) fail("missing Codex session");
+  : (process.env.CURSOR_CONVERSATION_ID || process.env.SVC_SESSION_ID || process.env.GROK_SESSION_ID || process.env.CODEX_THREAD_ID || process.env.CODEX_SESSION_ID || ""));
+if (!sid) fail("missing session identity");
 const skillEvidence = resolveCanonicalSkill(worktree, args.skill, process.env);
 if (!skillEvidence) fail(`unreadable canonical skill: ${args.skill}`);
 const skillPath = skillEvidence.path;
@@ -66,7 +66,7 @@ if (path.dirname(taskGraphReal) !== SELF_SCRIPTS_DIR || !fs.statSync(taskGraphRe
 // unchanged. A crash after activate-skill is forward-completed by exact retry.
 const ctx = { session_dir: sessionDir(worktree, sid, process.env) };
 const receiptPath = skillReceiptPath(ctx);
-let authority = resolveWI({ cwd: worktree, session_id: sid, host: "codex" }, {
+let authority = resolveWI({ cwd: worktree, session_id: sid, host: process.env.SVC_HOST || "codex" }, {
   ...process.env, PWD: worktree, SVC_REQUIRE_SESSION_BINDING: "1",
 });
 let hermeticTestAuthority = false;

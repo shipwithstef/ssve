@@ -126,7 +126,10 @@ function worktreeRows(repoRoot) {
   for (const line of git(["worktree", "list", "--porcelain"], repoRoot).split(/\r?\n/)) {
     if (line.startsWith("worktree ")) {
       if (current) rows.push(current);
-      current = { path: fs.realpathSync(line.slice("worktree ".length)), branch: "" };
+      const raw = line.slice("worktree ".length);
+      let real = null;
+      try { real = fs.realpathSync(raw); } catch {}
+      current = real ? { path: real, branch: "" } : null;
     } else if (line.startsWith("branch ") && current) {
       current.branch = line.slice("branch refs/heads/".length);
     }
@@ -525,7 +528,7 @@ function existingResumeApproval({ repo, wi, branch, owner, worktree, env }) {
     if (tuple.state === "current_unbound" && fs.existsSync(priorBinding) && JSON.parse(fs.readFileSync(priorBinding, "utf8")).released_at) return approval;
     const graph = JSON.parse(fs.readFileSync(path.join(worktree, ".svc", `lane-tasks-${wi}.json`), "utf8"));
     if (graph?.wi !== wi || !validateTaskGraphShape(graph).ok) return approval;
-    if (["current_complete", "current_unbound", "reclaimable"].includes(tuple.state))
+    if (["current_complete", "current_unbound", "reclaimable", "v2_present"].includes(tuple.state))
       return { ok: true, root: worktree, source: "existing-exact-authority" };
   } catch { /* Malformed or missing authority retains the original refusal. */ }
   return approval;
@@ -847,6 +850,21 @@ function resumeExisting({ repo, wi, branch, from, owner, host, env, worktree, ma
       branch, repo_root: repo.root, env,
     });
     if (!finalized.ok) throw new Error(finalized.warning || "failed to forward-complete transferred worktree claim");
+  } else if (tuple.state === "v2_present") {
+    const v2ctx = { stateRoot: authorityStateRoot(worktree, env), repoId: repositoryId(worktree), wi };
+    const controller = tuple.controller || readController(v2ctx);
+    if (controller) {
+      const principal = principalId({ host: resolveAuthorityHost({}, env), session_id: owner, agent_id: env.SVC_AGENT_ID || null });
+      const lease = controller.controller_principal === principal && controller.worktree_root === worktree
+        ? resumeController({ ...v2ctx, principal, worktreeRoot: worktree })
+        : recoverController({ ...v2ctx, principal, worktreeRoot: worktree, expectedGeneration: controller.generation,
+            reason: 'Authorized resume of the unique registered WI worktree',
+            evidence: { expired: Date.parse(controller.expires_at) <= Date.now(), same_host_dead: processIsAlive(controller.owner_process) === false } }).lease;
+      const graph = ensureGraph(worktree, wi, branch);
+      const verified = verifyCompleteTuple({ repo, wi, branch, owner, worktree, graphP: graph.path, marker: null, env });
+      if (!verified.ok) throw new Error(`recovery tuple verification failed: ${verified.reason}`);
+      return result({ wi, branch, baseSha, worktree, owner, graphPath: graph.path, generation: Number(lease.generation), created: false, resumed: true, authority_v2: { lease } });
+    }
   } else if (tuple.state !== "current_complete") {
     throw new Error(`existing worktree authority conflict (${tuple.reason || tuple.state})`);
   }

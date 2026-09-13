@@ -24,11 +24,11 @@ export function parseHookInput(raw) {
 }
 
 export function sessionId(payload, env = process.env) {
-  return String(payload?.session_id || payload?.sessionId || env.CODEX_THREAD_ID || env.CODEX_SESSION_ID || "");
+  return String(payload?.session_id || payload?.sessionId || payload?.conversation_id || payload?.conversationId || env.CURSOR_CONVERSATION_ID || env.SVC_SESSION_ID || env.GROK_SESSION_ID || env.CODEX_THREAD_ID || env.CODEX_SESSION_ID || "");
 }
 
 export function turnId(payload, env = process.env) {
-  const explicit = String(payload?.turn_id || payload?.turnId || "");
+  const explicit = String(payload?.turn_id || payload?.turnId || payload?.generation_id || payload?.generationId || "");
   if (explicit) return explicit;
   const sid = sessionId(payload, env);
   return sid ? `session:${sid}` : "";
@@ -285,7 +285,7 @@ function isSafeGit(argv) {
   const subcommand = tokens[index];
   const args = tokens.slice(index + 1);
   if (subcommand === "ls-remote" && args.some(token => token.startsWith("-u") || token.startsWith("--upload-pack") || token.startsWith("--exec") || token.includes("::"))) return false;
-  const alwaysRead = new Set(["status", "log", "diff", "show", "rev-parse", "ls-files", "ls-tree"]);
+  const alwaysRead = new Set(["status", "log", "diff", "show", "rev-parse", "ls-files", "ls-tree", "ls-remote"]);
   const branchRead = subcommand === "branch" && (args.length === 0 || args.some(token =>
     ["--show-current", "--list", "-a", "-r", "--all", "--remotes", "--contains", "--merged", "--no-contains", "--no-merged", "--points-at"].includes(token) || /^--(?:list|contains|merged|no-contains|no-merged|points-at)=/.test(token))) &&
     observationOptions(["branch", ...args], new Set(["--show-current", "--list", "-a", "-r", "--all", "--remotes", "-v", "-vv", "--verbose", "--no-color", "--ignore-case", "--omit-empty", "--column", "--no-column"]), new Set(["--format", "--sort", "--contains", "--merged", "--no-contains", "--no-merged", "--points-at", "--color"]), () => true);
@@ -649,7 +649,8 @@ export function governanceBinding(payload, env = process.env) {
 }
 
 export function hookContext(payload, env = process.env) {
-  const cwd = path.resolve(payload?.cwd || payload?.working_directory || process.cwd());
+  const rawCwd = payload?.cwd || payload?.working_directory || (Array.isArray(payload?.workspace_roots) && payload.workspace_roots[0]) || process.cwd();
+  const cwd = path.resolve(rawCwd);
   const repoRoot = findRepoRoot(cwd);
   const sid = sessionId(payload, env);
   const turn = turnId(payload, env);

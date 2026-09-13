@@ -7,6 +7,7 @@ import { appendJsonlLine } from "./state-io.mjs";
 import { lexSimpleCommand } from "../hooks/codex/lib/argv-lex.mjs";
 
 function lastContract(root) {
+  if (!root || typeof root !== "string") return { state: "absent", contract: null };
   const file = path.join(path.resolve(root), ".svc", "session-contract.jsonl");
   if (!fs.existsSync(file)) return { state: "absent", contract: null };
   try {
@@ -132,6 +133,12 @@ export function classifyOutwardAction(command) {
 }
 
 export function authorizeObservedAction({ root, command, annotation }) {
+  if (!root || typeof root !== "string") {
+    const outward = classifyOutwardAction(command);
+    if (outward) return { allow: false, decision: "deny", reason: `outward action ${outward.kind} requires a repository root and authorization metadata`, outward };
+    if (!annotation) return { allow: true, decision: "local-allow", reason: "operation is not an observable outward mutation", outward: null };
+    return { allow: false, decision: "deny", reason: "explicit authorization requires a valid repository root" };
+  }
   const envelope = authorizationEnvelopeState(root);
   const outward = classifyOutwardAction(command);
   if (envelope.state === "invalid") return { allow: false, decision: "deny", reason: "session authorization contract is malformed", outward };
@@ -165,6 +172,7 @@ export function authorizeAction({ root, action, environment, purpose }) {
 }
 
 export function recordStopAuthorizationSummary(root) {
+  if (!root || typeof root !== "string") throw new Error("repository root must be a non-empty string");
   const loaded = lastContract(root); if (loaded.state === "invalid") throw new Error("session authorization contract is malformed");
   const parsed = rulesOf(loaded.contract); if (parsed.state === "invalid") throw new Error("typed authorization envelope is malformed or conflicting");
   const rules = parsed.rules; const eventsPath = path.join(root, ".svc", "authorization-events.jsonl");

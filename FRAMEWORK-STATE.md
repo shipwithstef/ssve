@@ -823,3 +823,9 @@ for it. Existing source evidence and failed/terminated reviewer reports are reta
 ## Process-task skill recovery — WI-FW-PROCESS-SKILL-01
 
 The Codex skill-load and recovery paths now recognize explicit `process_skill` declarations without reclassifying those tasks as mandatory lane stages. Missing declarations produce a diagnostic instead of `--skill undefined`. Session, task, graph, canonical-skill and ownership checks remain in force. Regression coverage exercises the actual account-completion task shape for pending and active recovery, incorrect-skill refusal and the native dispatcher → loader → receipt → mutation path. This corrects a format omitted from PR 47's recovery coverage; transcript corruption is separate.
+
+
+## Cursor CLI SSVE integration and authority recovery — WI-546
+
+The Cursor CLI SSVE integration now wires flat command hooks per Cursor CLI documentation, avoiding `190.index.js` parser failures. A dedicated `hooks/cursor/svc-cursor-ssve-adapter.mjs` provides prompt authority recording via `beforeSubmitPrompt` and safe mutation delegation via `preToolUse` with native `{ permission, user_message, updated_input }` output protocol. Worktree resolution in `svc-ensure-worktree.mjs` and `svc-codex-pretool-dispatcher.mjs` defensively ignores missing or unpruned paths, and external worktrees with active `controller-lease-v2` (`v2_present`) are approved and recovered cleanly without generation drift.
+
