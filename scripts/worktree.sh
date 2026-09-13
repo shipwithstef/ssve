@@ -68,7 +68,7 @@ fail() { echo -e "  ${RED}[FAIL]${NC} $1"; }
 info() { echo -e "  ${CYAN}[INFO]${NC} $1"; }
 
 _host_session_id() {
-  printf '%s' "${SVC_SESSION_ID:-${CODEX_THREAD_ID:-${CODEX_SESSION_ID:-${CLAUDE_SESSION_ID:-${KIMI_SESSION_ID:-${GEMINI_SESSION_ID:-}}}}}}"
+  printf '%s' "${SVC_SESSION_ID:-${CURSOR_CONVERSATION_ID:-${CODEX_THREAD_ID:-${CODEX_SESSION_ID:-${CLAUDE_SESSION_ID:-${KIMI_SESSION_ID:-${GEMINI_SESSION_ID:-}}}}}}}"
 }
 
 _derive_wi() {

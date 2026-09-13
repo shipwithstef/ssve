@@ -480,7 +480,7 @@ function findSvc(start) {
   }
   if (files.length === 0) { out("advisory", "", "", "", "worktree binding required but no binding exists"); return; }
   const session = String(input.session_id || input.sessionId || input.thread_id || input.threadId ||
-    process.env.SVC_SESSION_ID || process.env.CODEX_THREAD_ID || process.env.CODEX_SESSION_ID ||
+    process.env.CURSOR_CONVERSATION_ID || process.env.CURSOR_SESSION_ID || process.env.SVC_SESSION_ID || process.env.CODEX_THREAD_ID || process.env.CODEX_SESSION_ID ||
     process.env.CLAUDE_SESSION_ID || process.env.KIMI_SESSION_ID || process.env.GEMINI_SESSION_ID || "");
   if (!session) { out("advisory", "", "", "", "missing attributable current session"); return; }
   let authorityJson;

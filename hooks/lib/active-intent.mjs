@@ -91,6 +91,8 @@ export function sessionIdFromPayload(payload = {}, env = process.env) {
     payload.threadId,
     payload?.metadata?.session_id,
     payload?.metadata?.sessionId,
+    env.CURSOR_CONVERSATION_ID,
+    env.CURSOR_SESSION_ID,
     env.SVC_SESSION_ID,
     env.CODEX_THREAD_ID,
     env.CODEX_SESSION_ID,
