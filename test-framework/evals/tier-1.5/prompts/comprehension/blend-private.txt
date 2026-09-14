@@ -1,0 +1,10 @@
+Skill: blend-private
+
+Q: What are the three authorization categories in Phase 0 of blend-private, and what happens if none applies?
+A: Expected pattern: (1) sole author of source repo, (2) explicit rights from owner, (3) employer's repo with employment agreement permitting reuse. If none applies: STOP and tell user this skill is not appropriate.
+
+Q: What is the maximum allowed diff scope for blend-private, and where is the redaction map stored?
+A: Expected pattern: Diff scope must be ≤ 30% of target file. Redaction map is stored locally at `~/.svc/tmp-redaction-map-${REDACTION_DATE}.txt` (ephemeral, not tracked).
+
+Q: What is the ledger path for blend-private, and how does it differ from blend-external's ledger?
+A: Expected pattern: `~/.svc/private-blends.log` (local, global, not tracked). blend-external uses `references/blend-registry.json` which is tracked in the repo.

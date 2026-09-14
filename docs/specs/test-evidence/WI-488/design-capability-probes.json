@@ -1,0 +1,32 @@
+{
+  "probes": [
+    {
+      "id": "codex-cli-isolation-surface",
+      "hypothesis": "The installed Codex CLI can honor the required stdin, isolation, schema, and stream-separation contract without suppressing CODEX_HOME authentication.",
+      "confirmation_check": {
+        "predicate": "codex exec --help lists stdin behavior, --config, --model, --sandbox read-only, --skip-git-repo-check, --ephemeral, --ignore-user-config, --ignore-rules, --strict-config, --output-schema, --json, --output-last-message, and --color; ignore-user-config says auth still uses CODEX_HOME; a free --version parse with strict-config and model_reasoning_effort=high accepts the complete non-output argv prefix",
+        "result": "PASS"
+      },
+      "falsification_check": {
+        "predicate": "inspect help for any statement that ignore-user-config disables CODEX_HOME auth; run codex exec --strict-config -c model_reasoning_effort=high plus skip-git/ephemeral/ignore-user-config/ignore-rules/read-only/no-color with --version and require exit 0 before any model call",
+        "result": "PASS"
+      },
+      "verdict": "hypothesis-holds",
+      "evidence": "Codex CLI help plus free argv-parser command returned codex-cli-exec 0.144.4 on 2026-07-15; no model invocation occurred"
+    },
+    {
+      "id": "claude-cli-auth-safe-surface",
+      "hypothesis": "The installed Claude CLI can honor safe-mode, no-tool/no-MCP, plan-permission, non-persistent, one-turn, schema, timeout/budget-bounded review while retaining OAuth/keychain-compatible authentication.",
+      "confirmation_check": {
+        "predicate": "claude --help lists print, safe-mode, tools, strict-mcp-config, mcp-config, permission-mode plan, no-session-persistence, json-schema, output-format json, model, effort, max-budget-usd, disable-slash-commands, and no-chrome; a free --version parse accepts those controls plus max-turns 1; completed Fable-5/high G4 and review-plan primary invocations prove the same argv reaches schema-constrained runtime without a smoke call",
+        "result": "PASS"
+      },
+      "falsification_check": {
+        "predicate": "compare --bare help and confirm it disables OAuth/keychain reads; run the complete safe/no-tool/no-MCP/plan/non-persistent/one-turn/slash-off/browser-off/json/effort/model/budget prefix with --version and require exit 0 before any model call",
+        "result": "PASS"
+      },
+      "verdict": "hypothesis-holds",
+      "evidence": "Claude help plus free argv-parser command returned Claude Code 2.1.210 on 2026-07-15; actual Fable-5/high schema-constrained primary calls independently confirmed runtime acceptance"
+    }
+  ]
+}

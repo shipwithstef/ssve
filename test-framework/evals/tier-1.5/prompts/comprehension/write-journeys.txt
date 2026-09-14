@@ -1,0 +1,5 @@
+Q: What artifacts must write-journeys produce for generated journeys?
+A: Expected pattern: J*.feature.md journey files, JOURNEY_INDEX.md, AC coverage, persona coverage, and Layer 3 analysis.
+
+Q: What should write-journeys do with ungrounded preconditions?
+A: Expected pattern: identify them in Layer 3 analysis, trace producer journeys or missing UI, and route product gaps to validate-feature or implementation gaps to plan-changeset.

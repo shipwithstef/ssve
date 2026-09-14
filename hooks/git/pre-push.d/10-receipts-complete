@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# svc pre-push slot: verify chain receipts on the HEAD SHA only.
+# Intermediate commits are implementation detail — the squash is what ships.
+set -u
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+MODE="$(node "$REPO_ROOT/scripts/lib/chain-policy.mjs" --mode)"
+HAS_ISSUES="false"
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [[ -z "$local_sha" ]] && continue
+  [[ "$local_sha" == "0000000000000000000000000000000000000000" ]] && continue
+  case "$local_ref" in refs/notes/*) continue ;; esac
+  # HEAD-only: check only the tip commit, not every intermediate
+  RESULT="$(node scripts/check-chain-receipts.mjs --sha "$local_sha" --consumer push 2>/dev/null || true)"
+  OK="$(echo "$RESULT" | grep -o '"ok":[^,}]*' | head -1 | cut -d: -f2 | tr -d ' ')"
+  if [[ "$OK" != "true" ]]; then
+    HAS_ISSUES="true"
+    echo "svc chain: receipts incomplete for $local_sha" >&2
+    echo "$RESULT" >&2
+  fi
+done
+if [[ "$HAS_ISSUES" == "true" ]]; then
+  if [[ "$MODE" == "refuse" ]]; then
+    echo "svc chain: push refused. Run retroactive plan or use EMERGENCY_OVERRIDE." >&2
+    exit 1
+  fi
+  echo "svc chain: WARN-ONLY mode. Push proceeds." >&2
+fi
+exit 0

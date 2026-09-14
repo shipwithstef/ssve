@@ -1,0 +1,70 @@
+wi: WI-494
+gate: G6 review-exec (adversarial RE-REVIEW of the FROZEN exec diff — ITERATION 2)
+frozen_commit: 8e16de4718618e921386c6d1dc19d071b5c70683
+prior_iteration:
+  log: docs/specs/reviews/wi494-codex-enforcer-exec-review-log.yaml
+  frozen_commit: 1411f4eb73d1ea41e9b22ea7be9537ae5286f268
+  outcome: ESCALATED (2 critical + 2 high + 1 medium)
+reviewer:
+  launcher: scripts/run-external-review.mjs
+  requested_primary_tuple: {orchestrator: claude, host: codex, family: openai, model: gpt-5.6-sol, effort: high}
+  profile: codex-high (fixed-policy, policy_version 3)
+  receipt_route: exact_primary (status success; host=codex family=openai authoritative; model self-report field unreliable per known strict-schema quirk)
+  artifacts_dir: .svc/external-review-artifacts/exec/WI-494/rereview-20260717T184712Z-r1
+cap: 3-round HARD cap (WI-491); a CONFIRMED Critical escalates immediately — no drain rounds
+rounds_run: 1
+unresolved_critical: 1
+remaining_high: 1
+outcome: ESCALATED
+terminal_state: ESCALATED_TO_USER
+verdict: escalated
+self_review:
+  method: drove the REAL enforcer (hooks/codex/svc-codex-skill-load-enforcer.mjs) on a hermetic zero-state fixture with crafted PreToolUse payloads; reproduced round-1 vectors + new-hole probes; empirically tested gh -w=true against installed gh 2.83.2.
+  round1_closure_verified:
+    F001_nested_cwd_shadow: CLOSED (cwd=repo/nested now DENIES; symlinked-cwd-to-nested DENIES; legit repo-root bootstrap still ALLOWS — no over-block). SEE R2-F001 for a residual workdir-source concern.
+    F002_gh_web_cache: PARTIALLY CLOSED — see R2-F002 (the -w=true equals-spelling is a re-opened CONFIRMED critical).
+    F003_argocd_refresh: CLOSED (--refresh / --hard-refresh / --refresh=true all DENY; control app get ALLOWS).
+    F004_symlinked_parent: CLOSED for the PRE-PLANTED symlink vector (.svc and .svc/bootstrap-intent symlinks DENY). SEE R2-F004 for the residual non-atomic race.
+    F005_fixture: PARTIALLY CLOSED — see R2-F005 (graph-owned mutant probe reintroduced a vacuity).
+  other_probes_all_correct: gh --web after --, --method=POST, -XDELETE, gh run download, kubectl auth reconcile, kubectl cluster-info dump, kubectl get -w → all DENY; quoted reads + jsonpath quoted read → ALLOW; injection $(...) and redirect > → DENY.
+round_1:
+  round: 1
+  status: complete
+  verdict: fail
+  rubric_score: 2
+  findings: 4
+  artifact: .svc/external-review-artifacts/exec/WI-494/rereview-20260717T184712Z-r1/findings.json
+  dispositions:
+    - id: R2-F002
+      reviewer_severity: critical
+      adjudicated_severity: critical
+      disposition: ACCEPT (empirically CONFIRMED + REPRODUCED against real hook and installed gh 2.83.2)
+      claim: gh browser-execution hazard remains bypassable via the accepted short-boolean equals spelling -w=true; HAZARD_FLAGS.gh checks exact token -w but not -w=true.
+      confirmation: real enforcer classifies "gh repo view -w=true", "gh pr view 1 -w=true", "gh issue view 1 -w=true", "gh run view 1 -w=true" as read-only ALLOW. gh 2.83.2 accepts -w=true as --web and launched the configured browser (GH_BROWSER=echo printed "BROWSER-LAUNCHED https://github.com/..."). This is exactly the original F002 impact (arbitrary configured-program execution classified read-only) — F002 is NOT fully closed. Note --web=true IS caught (startsWith --web=); only the short -w=<bool> form leaks. -w1 / -wtrue are rejected by gh itself.
+      fix: reject -w plus -w=<value> wherever -w aliases --web, subcommand-aware (do NOT blanket-reject gh -w — gh run list uses -w as the read-only --workflow filter). Add -w=true negative fixtures for every admitted view subcommand.
+    - id: R2-F001
+      reviewer_severity: critical
+      adjudicated_severity: critical (PLAUSIBLE; not reproducible against the documented Codex hook contract)
+      disposition: ACCEPT-as-hardening (contract-dependent — cannot reproduce with the current documented payload, but the enforcer DOES allow a workdir-spoofed payload, so it fails open the moment the contract carries a per-call workdir)
+      claim: the F001 cwd fix checks the top-level session payload.cwd, not the Bash tool's effective per-call workdir; a call rooted at the repo with per-call workdir=<repo>/nested passes the guard while node resolves the shadow.
+      confirmation: hookContext (codex-hook-context.mjs:394-400) derives cwd ONLY from payload.cwd/working_directory; no hook reads tool_input.workdir. Drove the enforcer with top-level cwd=repo_root AND tool_input.workdir=repo/nested → ALLOW. HOWEVER svc's own documented Codex PreToolUse contract (references/knowledge/domains/codex-hooks/details/events.md) is tool_input:{command} ONLY with a single top-level cwd — under that contract payload.cwd IS the effective exec dir, so the guard holds and the bypass is not reproducible today. svc knowledge (domains/agent-harnesses/details/codex.md:19) already warns hook coverage is "not a complete enforcement boundary." The reviewer's stronger fix removes the risk entirely.
+      fix: bind authorization to an exact ABSOLUTE canonical script path (drop cwd dependence), or read+validate the effective workdir field and reject if absent/ambiguous/!=repo_root. This also permanently closes the round-1 F001 residual.
+    - id: R2-F004
+      reviewer_severity: high
+      adjudicated_severity: high
+      disposition: ACCEPT (confirmed real residual; same-uid TOCTOU — defense-in-depth, not the pre-planted-symlink vector which IS now closed)
+      claim: secureAncestors validation and the mkdir/openSync/rename/git-worktree-add/rmSync it protects are non-atomic (same-uid concurrent rename→symlink swap between check and use); missing segments are skipped widening the window; removeMarker and the post-worktree .svc/claims + .svc/bindings mkdirs have no ancestor revalidation.
+      confirmation: matches independent read — secureAncestors is a pathname lstat walk retaining no fd/inode identity; ensure-worktree re-checks before writeMarker/createWorktreeAndBranch but a race window remains before mkdirSync, and removeMarker (lines 248-250; called at 693/786) + the two post-git mkdirs (330-331) are unchecked. Requires a same-uid attacker racing sub-ms windows; the pre-planted-symlink vector (original F004) is closed.
+      fix: directory-handle-relative operations (openat/O_NOFOLLOW or a small native helper) with inode-identity pinning across ops; revalidate every remaining mutating path incl. marker removal and post-worktree mkdirs. OR accept-with-justification as same-uid defense-in-depth with a follow-up WI.
+    - id: R2-F005
+      reviewer_severity: medium
+      adjudicated_severity: medium
+      disposition: ACCEPT-partial (claim (b) confirmed vacuous; claim (a) is a documented intentional deviation)
+      claim: (a) Step 3 runs the absolute $ROOT script, not the relative authorized WI494_BOOT_CMD, so the e2e does not prove the authorized bytes execute; (b) Step 6 rm -rf $WI494_REPO deletes $WI494_WORKTREE before the later graph-owned mutant probe reuses it, so ctx.repo_root is null → enforcer allows early → the mutant probe passes vacuously.
+      confirmation: (a) DISPUTED — the validator comment (lines 461-465) deliberately invokes $ROOT's working-tree copy to test the in-progress file rather than the clone's committed copy; legitimate tradeoff, but it does weaken the exact-authorized-shape proof F005 was meant to establish. (b) CONFIRMED — rm at line 492 precedes the mutant probe at 769-779 (cwd=$WI494_WORKTREE, under the deleted repo); enforcer allows immediately when ctx.repo_root is null, so the "graph already owned (laneGraphs!=0)" mutant assertion passes without exercising laneGraphs — reintroducing the exact vacuity class F005 targeted.
+      fix: execute WI494_BOOT_CMD verbatim after authorization (or build the clone from the exact frozen commit); keep the owned fixture alive through mutation testing and assert graph+binding exist immediately before the probe.
+tier1:
+  scripts: 251/251 passed, 0 failed
+  dedicated_validator: validate-codex-execution-integrity.sh 206 passed, 0 failed
+  note: the promoted suite is green, but R2-F002 proves a green suite is not proof of closure — the -w=true vector has no fixture (per reviewer evidence), and R2-F005(b) is a vacuous probe inside the same suite.
+next: BLOCKED -> execute-changeset (iteration 3 of 3 cap). Fix R2-F002 (-w=true, the confirmed critical) as the gating item; harden R2-F001 (absolute canonical path) and R2-F004 (atomic parent walk) and R2-F005 (non-vacuous graph-owned probe + exact-shape e2e) in the same pass, then re-freeze and re-run review-exec (final iteration).

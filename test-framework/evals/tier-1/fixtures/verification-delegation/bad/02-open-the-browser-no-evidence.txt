@@ -1,0 +1,5 @@
+Closeout for the dropdown-positioning fix.
+
+Open the browser and check whether the dropdown opens above or below the trigger when there's not enough space below. I cannot verify this in the test environment because the test viewport is fixed.
+
+Check it yourself by clicking the user-menu button at the top-right of the dashboard.

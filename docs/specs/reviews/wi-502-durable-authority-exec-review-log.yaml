@@ -1,0 +1,41 @@
+review_log:
+  wi: WI-502
+  lane: framework
+  reviewer: fable-high (anthropic)
+  rounds_run: 3
+  unresolved_critical: 0
+  remaining_high: 0
+  round_1:
+    status: completed
+    verdict: pass-with-findings
+    request_id: 6387d5c5-293e-478d-969b-302d64e1e5fe
+    findings: 12
+    critical: 0
+    high: 1
+    response: "F-001 fixed; supported Medium/Low findings corrected; F-008 bounded by the documented containment boundary; F-011 rejected after source inspection; F-012 accepted for minimal-package compatibility."
+  round_2:
+    status: completed
+    verdict: pass-with-findings
+    request_id: 2541e791-94f3-4436-95e4-438ad4eaea3b
+    findings: 9
+    critical: 0
+    high: 1
+    response: "All supported findings fixed with negative fixtures; round 3 is the final hard-cap verification."
+  round_3:
+    status: completed
+    verdict: pass-with-findings
+    request_id: bb81c7f1-1e59-4e62-9be8-c68e8b02c098
+    findings: 7
+    critical: 0
+    high: 1
+    response: "The High and all three Medium findings were fixed locally with behavioral fixtures. Two actionable Low findings were also fixed. The Bash 4.3 empty-array portability concern and arbitrary subprocess reach-back remain bounded by the documented host-wrapper containment requirement. No fourth round is permitted."
+    bounded_exit:
+      - id: R3-F-006
+        severity: low
+        disposition: accepted
+        justification: "Provisioned hosts use modern Bash; unsupported harnesses now fail explicitly. Broad older-Bash portability belongs to a separate transport compatibility WI."
+      - id: R3-F-007
+        severity: low
+        disposition: accepted
+        justification: "PreTool syntax inspection cannot prove arbitrary subprocess containment; mutation-capable hosts must provide the declared sandbox or command wrapper."
+  terminal_state: CONVERGED_WITH_BOUNDED_LOW_RESIDUALS

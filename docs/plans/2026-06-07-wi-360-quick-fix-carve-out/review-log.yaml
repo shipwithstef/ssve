@@ -1,0 +1,29 @@
+review_log:
+  plan: docs/plans/2026-06-07-wi-360-quick-fix-carve-out/manifest.md
+  wi: WI-360
+  date: 2026-06-07
+  tier1: { script: scripts/verify-plan-mechanical.sh, latest_exit_code: 0, note: "first-pass clean (C1/C8 lessons encoded)" }
+  tier1_5_external_state: { result: PASS, checks: "3 rows; coupled row names schema requirement + verified consumption points; prose present" }
+  tier2_attempt:
+    reviewer: codex
+    delivery_failure: "session-hook corruption AGAIN (3rd occurrence; known class per WI-359 learning) — final message was hook-prose, zero YAML delivered"
+    disposition: "routed to gemini with FULL artifact per reviewer allowlist {codex, claude, gemini}"
+  tier2_effective:
+    reviewer: gemini
+    reviewer_family: google
+    rubric_score: 95
+    findings:
+      - { id: WI-360-PLAN-001, severity: low, claim: "possible type error if addedLines/removedLines are numbers", resolution: "REJECTED with citation — both are arrays in classifyDiff scope (quick-fix-eligibility.mjs:107-108 'const addedLines = []'); '.length' is correct; the numeric '0' in the empty-stage early return is a pre-existing inconsistency outside this WI's hunks" }
+    verdict: approve
+  tier3: { triggered: false, reason: "single-round speed lever; no dispute, no infra-surprise; verdict approve with only a rejected-LOW" }
+  terminal_state: APPROVED
+  plan_status_final: SIMULATED
+  g6_exec:
+    round1: { reviewer: codex, findings: 2, note: "delivered (no corruption this round)" }
+    round2: { G6-001: still-open-claimed (copy-gap), G6-002: confirmed-fixed }
+    dispute_resolution:
+      finding: "G6-001 residual: plain copies from denylisted sources"
+      orchestrator: "REJECT — copy mutates nothing (source untouched); destination = inert Add in non-executed docs tree; --find-copies-harder cost disproportionate; rename≠copy (rename DELETES the source)"
+      tiebreak: { reviewer: gemini, ruling: reject-upheld, reason: "no mutation of protected source; destination non-executable; zero security gain for the overhead" }
+    terminal: approve-with-upheld-rejection
+  validator_assertions_final: 15

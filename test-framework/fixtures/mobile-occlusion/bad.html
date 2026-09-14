@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: sans-serif; height: 200vh; }
+  /* Fixed bottom tab bar (like MobileNav): grows by the safe-area inset. */
+  .tabbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: #fff; border-top: 2px solid #ccc;
+  }
+  .tabbar .bar { height: 58px; display: flex; align-items: center; justify-content: space-around; }
+  .tabbar a { color: #333; text-decoration: none; }
+  /* BUG B1: FAB at a fixed 80px with NO safe-area term — on a device the tab bar
+     grows into it and covers its lower half. */
+  .fab {
+    position: fixed; right: 16px; bottom: 80px; z-index: 40;
+    background: #10b981; color: #fff; border: none; border-radius: 999px;
+    padding: 12px 16px; font-weight: 600;
+  }
+  /* BUG B2: a small fixed action button pinned near the bottom with no
+     safe-area padding — it sits under the home indicator. */
+  .logout {
+    position: fixed; left: 16px; bottom: 8px; z-index: 40;
+    background: #fff; border: 2px solid #a78bfa; border-radius: 8px; padding: 8px 14px;
+  }
+</style>
+</head>
+<body>
+  <header><h1>Discovery</h1></header>
+  <button class="fab" data-testid="scout-fab" aria-label="Scout a spot">+ Scout</button>
+  <button class="logout" data-testid="logout" aria-label="Log out">Log out</button>
+  <nav class="tabbar" aria-label="Bottom navigation">
+    <div class="bar">
+      <a href="#a">Explore</a><a href="#b">Map</a><a href="#c">Saved</a><a href="#d">Profile</a>
+    </div>
+  </nav>
+</body>
+</html>

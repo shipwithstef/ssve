@@ -1,0 +1,37 @@
+responses:
+  - finding_id: F-001
+    decision: ACCEPT
+    justification: The old shared Stop entry would run concurrently and bypass a separate firewall; additive user/repo layers make this the primary runtime risk.
+    action: Locked stable managed keys, absent-key pruning, removal of shared Stop/Kimi/authenticity Codex entries, effective-layer scan, and exactly-one-composite-Stop assertion.
+  - finding_id: F-002
+    decision: ACCEPT
+    justification: Later pillars must include prior verified promotions and worktree.sh defaults to HEAD without --from.
+    action: Replaced bulk T0 allocation with lazy per-pillar creation from current origin/main after the prior verify-promotion; anchored all commands and added --from origin/main.
+  - finding_id: F-003
+    decision: ACCEPT
+    justification: The baseline promised a Codex authenticity wrapper without a file or wirer action.
+    action: Locked the exact Codex skill-load gate as the authenticity gate and required removal of the shared authenticity entry from Codex only.
+  - finding_id: F-004
+    decision: ACCEPT
+    justification: Strict turn equality would create unnecessary reload friction during a single task.
+    action: Turn is audit evidence; same-session later turns remain valid only while task graph, task, worktree, skill, and hash are identical. Added the later-turn fixture.
+  - finding_id: F-005
+    decision: ACCEPT
+    justification: Gemini/OpenCode do not expose list-all and WI-485 may not modify their wirers.
+    action: Defined list-all for Claude/Kimi and source plus dry-run output/config hashes for Gemini/OpenCode, with installed-config hashes only.
+  - finding_id: F-006
+    decision: ACCEPT
+    justification: TINT runs after promotions, so worktree-local recovery is insufficient.
+    action: Added reverse-dependency ordinary reverts for squash commits, Codex trust refresh, aggregate retest, and receipts. Rejected only the reviewer's `-m 1` syntax because these are squash promotions, not merge commits.
+  - finding_id: F-007
+    decision: ACCEPT
+    justification: Canonical AC sources should not be self-authored only inside the plan.
+    action: Added and indexed WI-481 through WI-485 source files and declared them canonical; plan tables are mirrors.
+  - finding_id: F-008
+    decision: ACCEPT
+    justification: Runtime evidence needs explicit pass predicates and anchored execution.
+    action: Anchored cwd, annotated expected results, required a committed golden Codex trace, and defined an explicit N/A receipt when probe prerequisites are missing.
+  - finding_id: F-009
+    decision: ACCEPT
+    justification: The stale path/fact text was misleading and the inherited planning worktree predates the proposed P2 rule.
+    action: Corrected runtime homes and hook enablement fact; recorded the sibling planning worktree as a one-time inherited exception to be landed and removed before P2 is precedent.

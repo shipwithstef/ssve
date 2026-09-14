@@ -1,0 +1,10 @@
+Skill: review-security
+
+Q: What are the four steps of the review-security process?
+A: Expected pattern: Step 1 is OWASP Top 10 check, Step 2 is STRIDE threat model, Step 3 is supply chain audit, Step 4 is secrets archaeology.
+
+Q: What is the default confidence gate in review-security, and when should comprehensive mode be used?
+A: Expected pattern: Default mode uses an 8/10 gate (only findings scored 8+ appear in the main report). Comprehensive mode uses 2/10 gate for payments, medical data, or other high-consequence domains.
+
+Q: What output file does review-security produce?
+A: Expected pattern: It produces docs/specs/security/<feature-name>-review.md containing OWASP Top 10 table, STRIDE threat model table, supply chain summary, secrets summary, and a verdict section.

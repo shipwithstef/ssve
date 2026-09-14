@@ -1,0 +1,826 @@
+{
+  "schema_version": 1,
+  "skill": "review-plan",
+  "base_graph": {
+    "wi": "WI-FIXTURE-PHASE-INTEGRITY",
+    "lane": "framework",
+    "created": "2026-07-23T00:00:00Z",
+    "status": "completed",
+    "delivery_graph": {
+      "skipped_skills": []
+    },
+    "tasks": [
+      {
+        "id": 1,
+        "subject": "review-plan fixture task",
+        "status": "completed",
+        "metadata": {
+          "skill": "review-plan"
+        },
+        "skill_receipt": {
+          "skill": "review-plan",
+          "loaded_at": "2026-07-23T00:00:01Z",
+          "loaded_via": "fixture",
+          "phases_executed": [
+            {
+              "id": "P1-MechanicalPlanValidation",
+              "ts": "2026-07-23T00:00:02Z",
+              "evidence_artifacts": [
+                {
+                  "type": "command_output",
+                  "path": "__OS_TMP__/fixture-plan-tier1.log"
+                }
+              ]
+            },
+            {
+              "id": "P2-ExternalStateCouplingCheck",
+              "ts": "2026-07-23T00:00:03Z",
+              "evidence_artifacts": [
+                {
+                  "type": "command_output",
+                  "path": "__OS_TMP__/fixture-plan-external.log"
+                }
+              ]
+            },
+            {
+              "id": "P3-PrimaryAdversarialReview",
+              "ts": "2026-07-23T00:00:04Z",
+              "evidence_artifacts": [
+                {
+                  "type": "file",
+                  "path": "docs/plans/fixture-review.json"
+                }
+              ]
+            },
+            {
+              "id": "P4-ResponseTier3Decision",
+              "ts": "2026-07-23T00:00:05Z",
+              "evidence_artifacts": [
+                {
+                  "type": "file",
+                  "path": "docs/plans/fixture-review-log.yaml"
+                }
+              ]
+            },
+            {
+              "id": "P5-ReviewLogPersistence",
+              "ts": "2026-07-23T00:00:06Z",
+              "evidence_artifacts": [
+                {
+                  "type": "file",
+                  "path": "docs/plans/fixture-review-log.yaml"
+                }
+              ]
+            },
+            {
+              "id": "P6-SelfVerifyContinuation",
+              "ts": "2026-07-23T00:00:07Z",
+              "evidence_artifacts": [
+                {
+                  "type": "command_output",
+                  "path": ".svc/fixture-review-plan-self-verify.log"
+                }
+              ]
+            }
+          ]
+        },
+        "completed_at": "2026-07-23T00:00:08Z"
+      }
+    ]
+  },
+  "authorized_skip_entry": {
+    "skill": "review-plan",
+    "skip_condition_id": "review-plan:trivial-or-prior-reviewed",
+    "reason": "Equivalent reviewed plan already exists.",
+    "evidence": "docs/plans/fixture-review-log.yaml"
+  },
+  "scenarios": [
+    {
+      "id": "valid-current-executed",
+      "expected": {
+        "exit": 0,
+        "classification": "executed",
+        "reasons": []
+      }
+    },
+    {
+      "id": "valid-stable-posix-temporary-reference",
+      "artifact_patch": {
+        "phase_index": 0,
+        "artifact_index": 0,
+        "value": {
+          "path": "/tmp/recorded-on-prior-run.log"
+        }
+      },
+      "expected": {
+        "exit": 0,
+        "classification": "executed",
+        "reasons": []
+      }
+    },
+    {
+      "id": "valid-authorized-skip",
+      "task_patch": {
+        "skip_reason": "Equivalent reviewed plan already exists."
+      },
+      "delivery_authorization": true,
+      "expected": {
+        "exit": 0,
+        "classification": "authorized-skip",
+        "reasons": []
+      }
+    },
+    {
+      "id": "valid-normalized-authorized-skip-reason",
+      "task_patch": {
+        "skip_reason": "  EQUIVALENT   reviewed plan already exists!  "
+      },
+      "delivery_authorization": true,
+      "expected": {
+        "exit": 0,
+        "classification": "authorized-skip",
+        "reasons": []
+      }
+    },
+    {
+      "id": "authorized-skip-empty-phases",
+      "task_patch": {
+        "skip_reason": "Equivalent reviewed plan already exists."
+      },
+      "receipt_patch": {
+        "phases_executed": []
+      },
+      "delivery_authorization": true,
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "missing-phases"
+        ]
+      }
+    },
+    {
+      "id": "receipt-present-authorization-absent",
+      "task_patch": {
+        "skip_reason": "Claimed skip without delivery authorization."
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "skip-authorization-missing"
+        ]
+      }
+    },
+    {
+      "id": "authorization-present-receipt-absent",
+      "task_patch": {
+        "skip_reason": "Authorized but no execution receipt.",
+        "skill_receipt": null
+      },
+      "delivery_authorization": true,
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "missing-skill-receipt"
+        ]
+      }
+    },
+    {
+      "id": "empty-evidence-artifacts",
+      "phase_patch": {
+        "index": 0,
+        "value": {
+          "evidence_artifacts": []
+        }
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "empty-phase-evidence"
+        ]
+      }
+    },
+    {
+      "id": "dangling-unsafe-evidence-reference",
+      "artifact_patch": {
+        "phase_index": 0,
+        "artifact_index": 0,
+        "value": {
+          "path": "../../outside.log"
+        }
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "unsafe-evidence-path"
+        ]
+      }
+    },
+    {
+      "id": "malformed-phases-executed",
+      "receipt_patch": {
+        "phases_executed": "not-an-array"
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "malformed-phases"
+        ]
+      }
+    },
+    {
+      "id": "empty-phases-executed",
+      "receipt_patch": {
+        "phases_executed": []
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "missing-phases"
+        ]
+      }
+    },
+    {
+      "id": "prose-only-skip-claim",
+      "task_patch": {
+        "skip_reason": "Prose is not authorization.",
+        "skill_receipt": null
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "skip-authorization-missing"
+        ]
+      }
+    },
+    {
+      "id": "unregistered-skip-condition",
+      "task_patch": {
+        "skip_reason": "Condition is not registered."
+      },
+      "delivery_authorization": true,
+      "delivery_patch": {
+        "skip_condition_id": "review-plan:not-registered"
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "skip-condition-unregistered"
+        ]
+      }
+    },
+    {
+      "id": "empty-registry-applicability",
+      "task_patch": {
+        "skip_reason": "Registry condition is empty."
+      },
+      "delivery_authorization": true,
+      "registry_patch": {
+        "graph_level_skip_conditions": {
+          "review-plan:trivial-or-prior-reviewed": {
+            "applies_when": "",
+            "required_evidence": ""
+          }
+        }
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "skip-condition-inapplicable"
+        ]
+      }
+    },
+    {
+      "id": "receipt-skill-mismatch",
+      "receipt_patch": {
+        "skill": "execute-changeset"
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "receipt-skill-mismatch"
+        ]
+      }
+    },
+    {
+      "id": "missing-task-skill",
+      "task_patch": {
+        "metadata": {
+          "skill": ""
+        }
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "missing-task-skill"
+        ]
+      }
+    },
+    {
+      "id": "conflicting-task-skills",
+      "task_patch": {
+        "skill": "review-plan",
+        "metadata": {
+          "skill": "design-ui"
+        }
+      },
+      "receipt_patch": {
+        "skill": "design-ui"
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "task-skill-conflict"
+        ]
+      }
+    },
+    {
+      "id": "invalid-loaded-at",
+      "receipt_patch": {
+        "loaded_at": "2026-02-30T00:00:00Z"
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "invalid-loaded-at"
+        ]
+      }
+    },
+    {
+      "id": "invalid-loaded-via",
+      "receipt_patch": {
+        "loaded_via": ""
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "invalid-loaded-via"
+        ]
+      }
+    },
+    {
+      "id": "legacy-backfill-not-execution",
+      "receipt_patch": {
+        "loaded_via": "legacy-backfill"
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "legacy-backfill-not-execution"
+        ]
+      }
+    },
+    {
+      "id": "missing-phases",
+      "receipt_patch": {
+        "phases_executed": null
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "unsupported-legacy-receipt"
+        ]
+      }
+    },
+    {
+      "id": "empty-delivery-evidence",
+      "task_patch": {
+        "skip_reason": "Equivalent reviewed plan already exists."
+      },
+      "delivery_authorization": true,
+      "delivery_patch": {
+        "evidence": ""
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "skip-justification-missing"
+        ]
+      }
+    },
+    {
+      "id": "empty-delivery-reason",
+      "task_patch": {
+        "skip_reason": "Equivalent reviewed plan already exists."
+      },
+      "delivery_authorization": true,
+      "delivery_patch": {
+        "reason": ""
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "skip-justification-missing"
+        ]
+      }
+    },
+    {
+      "id": "delivery-authorization-missing-task-reason",
+      "delivery_authorization": true,
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "skip-justification-missing"
+        ]
+      }
+    },
+    {
+      "id": "wrong-skill-condition",
+      "task_patch": {
+        "skip_reason": "Equivalent reviewed plan already exists."
+      },
+      "delivery_authorization": true,
+      "registry_patch": {
+        "graph_level_skip_conditions": {
+          "review-plan:trivial-or-prior-reviewed": {
+            "skill": "design-ui"
+          }
+        }
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "skip-condition-wrong-skill"
+        ]
+      }
+    },
+    {
+      "id": "registry-entry-id-mismatch",
+      "task_patch": {
+        "skip_reason": "Equivalent reviewed plan already exists."
+      },
+      "delivery_authorization": true,
+      "registry_patch": {
+        "graph_level_skip_conditions": {
+          "review-plan:trivial-or-prior-reviewed": {
+            "id": "review-plan:other-condition"
+          }
+        }
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "skip-condition-unregistered"
+        ]
+      }
+    },
+    {
+      "id": "duplicate-delivery-authorization",
+      "task_patch": {
+        "skip_reason": "Equivalent reviewed plan already exists."
+      },
+      "delivery_authorization": true,
+      "duplicate_delivery_authorization": true,
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "skip-authorization-ambiguous"
+        ]
+      }
+    },
+    {
+      "id": "contradictory-skip-reasons",
+      "task_patch": {
+        "skip_reason": "The task executed fully and was not skipped."
+      },
+      "delivery_authorization": true,
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "skip-reason-mismatch"
+        ]
+      }
+    },
+    {
+      "id": "non-string-skip-reason",
+      "task_patch": {
+        "skip_reason": 42
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "invalid-skip-reason",
+          "skip-authorization-missing"
+        ]
+      }
+    },
+    {
+      "id": "null-skip-reason",
+      "set_skip_reason_null": true,
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "invalid-skip-reason",
+          "skip-authorization-missing"
+        ]
+      }
+    },
+    {
+      "id": "empty-evidence-path",
+      "artifact_patch": {
+        "phase_index": 0,
+        "artifact_index": 0,
+        "value": {
+          "path": ""
+        }
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "unsafe-evidence-path"
+        ]
+      }
+    },
+    {
+      "id": "absolute-outside-temp-evidence",
+      "artifact_patch": {
+        "phase_index": 0,
+        "artifact_index": 0,
+        "value": {
+          "path": "/etc/passwd"
+        }
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "unsafe-evidence-path"
+        ]
+      }
+    },
+    {
+      "id": "uri-like-evidence-reference",
+      "artifact_patch": {
+        "phase_index": 0,
+        "artifact_index": 0,
+        "value": {
+          "path": "https://evil.invalid/evidence"
+        }
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "unsafe-evidence-path"
+        ]
+      }
+    },
+    {
+      "id": "windows-drive-relative-evidence-reference",
+      "artifact_patch": {
+        "phase_index": 0,
+        "artifact_index": 0,
+        "value": {
+          "path": "C:ambiguous-evidence.log"
+        }
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "unsafe-evidence-path"
+        ]
+      }
+    },
+    {
+      "id": "control-character-evidence-reference",
+      "artifact_patch": {
+        "phase_index": 0,
+        "artifact_index": 0,
+        "value": {
+          "path": "docs/specs/evidence\u0001.log"
+        }
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "unsafe-evidence-path"
+        ]
+      }
+    },
+    {
+      "id": "absolute-temporary-control-character-reference",
+      "artifact_patch": {
+        "phase_index": 0,
+        "artifact_index": 0,
+        "value": {
+          "path": "__OS_TMP__/evidence\nlog"
+        }
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "unsafe-evidence-path"
+        ]
+      }
+    },
+    {
+      "id": "temporary-screenshot-evidence",
+      "artifact_patch": {
+        "phase_index": 0,
+        "artifact_index": 0,
+        "value": {
+          "type": "screenshot",
+          "path": "/tmp/fixture.png"
+        }
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "unsafe-evidence-path"
+        ]
+      }
+    },
+    {
+      "id": "invalid-evidence-type",
+      "artifact_patch": {
+        "phase_index": 0,
+        "artifact_index": 0,
+        "value": {
+          "type": "database_row"
+        }
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "invalid-evidence-type"
+        ]
+      }
+    },
+    {
+      "id": "invalid-phase-timestamp",
+      "phase_patch": {
+        "index": 0,
+        "value": {
+          "ts": "not-a-timestamp"
+        }
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "invalid-phase-timestamp"
+        ]
+      }
+    },
+    {
+      "id": "valid-microsecond-phase-timestamp",
+      "phase_patch": {
+        "index": 0,
+        "value": {
+          "ts": "2026-07-23T00:00:02.123456Z"
+        }
+      },
+      "expected": {
+        "exit": 0,
+        "classification": "executed",
+        "reasons": []
+      }
+    },
+    {
+      "id": "impossible-calendar-timestamp",
+      "phase_patch": {
+        "index": 0,
+        "value": {
+          "ts": "2026-02-30T00:00:00Z"
+        }
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "invalid-phase-timestamp"
+        ]
+      }
+    },
+    {
+      "id": "invalid-phase-id",
+      "phase_patch": {
+        "index": 5,
+        "value": {
+          "id": "not-a-phase-id"
+        }
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid",
+        "reasons": [
+          "invalid-phase-id"
+        ]
+      }
+    }
+  ],
+  "legacy_scenarios": [
+    {
+      "id": "supported-git-proven-legacy",
+      "expected": {
+        "exit": 0,
+        "classification": "legacy-compatible"
+      }
+    },
+    {
+      "id": "unsupported-backdated-current-graph",
+      "new_graph_commit_date": "2026-05-10T15:59:59Z",
+      "expected": {
+        "exit": 1,
+        "classification": "invalid"
+      }
+    },
+    {
+      "id": "unsupported-exact-cutoff-graph",
+      "new_graph_commit_date": "2026-05-10T16:00:00Z",
+      "expected": {
+        "exit": 1,
+        "classification": "invalid"
+      }
+    },
+    {
+      "id": "unsupported-replacement-ref-graph",
+      "new_graph_replace_attack": true,
+      "expected": {
+        "exit": 1,
+        "classification": "invalid"
+      }
+    },
+    {
+      "id": "unsupported-untracked-legacy-shape",
+      "new_graph_untracked": true,
+      "expected": {
+        "exit": 1,
+        "classification": "invalid"
+      }
+    },
+    {
+      "id": "malformed-pre-cutoff-legacy-extension",
+      "receipt_patch": {
+        "phases_executed": "malformed"
+      },
+      "expected": {
+        "exit": 1,
+        "classification": "invalid"
+      }
+    },
+    {
+      "id": "post-cutoff-task-in-old-graph",
+      "post_cutoff_insert": true,
+      "expected": {
+        "exit": 1,
+        "classification": "invalid"
+      }
+    },
+    {
+      "id": "post-cutoff-task-id-type-change",
+      "post_cutoff_id_string": true,
+      "expected": {
+        "exit": 1,
+        "classification": "invalid"
+      }
+    },
+    {
+      "id": "post-cutoff-task-skill-change",
+      "post_cutoff_skill_change": true,
+      "expected": {
+        "exit": 1,
+        "classification": "invalid"
+      }
+    },
+    {
+      "id": "post-cutoff-task-receipt-change",
+      "post_cutoff_receipt_change": true,
+      "expected": {
+        "exit": 1,
+        "classification": "invalid"
+      }
+    }
+  ]
+}

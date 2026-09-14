@@ -1,0 +1,134 @@
+{
+  "schema": 1,
+  "wi": "WI-314",
+  "sources": [
+    "proposals/done/2026-04-25-capability-blocker-auto-diagnosis.md",
+    "proposals/done/2026-04-25-inertia-detection-deprecated-api-check.md"
+  ],
+  "findings": [
+    {
+      "source": "proposals/done/2026-04-25-capability-blocker-auto-diagnosis.md",
+      "id": "P0-capability-blocker-auto-diagnosis",
+      "status": "covered",
+      "owner_wi": "WI-314",
+      "evidence": [
+        "references/capability-blockers.json",
+        "scripts/diagnose-capability-blocker.mjs",
+        "route-workflow/SKILL.md",
+        "test-framework/evals/tier-1/validate-capability-blocker-inertia.sh"
+      ]
+    },
+    {
+      "source": "proposals/done/2026-04-25-capability-blocker-auto-diagnosis.md",
+      "id": "P0-code-scan-before-design",
+      "status": "covered",
+      "owner_wi": "WI-314",
+      "evidence": [
+        "design-tech/SKILL.md",
+        "scripts/scan-deprecated-foundations.mjs"
+      ]
+    },
+    {
+      "source": "proposals/done/2026-04-25-capability-blocker-auto-diagnosis.md",
+      "id": "P1-base44-expired-token-recovery",
+      "status": "covered",
+      "owner_wi": "WI-314",
+      "evidence": [
+        "base44-environment/SKILL.md"
+      ]
+    },
+    {
+      "source": "proposals/done/2026-04-25-capability-blocker-auto-diagnosis.md",
+      "id": "P1-framework-gaps-jsonl-blocker-schema",
+      "status": "covered",
+      "owner_wi": "WI-326",
+      "evidence": [
+        "references/capability-blocker-ledger.md",
+        "scripts/validate-capability-blocker-ledger.mjs",
+        "scripts/diagnose-capability-blocker.mjs",
+        "test-framework/evals/tier-1/validate-capability-blocker-inertia.sh"
+      ]
+    },
+    {
+      "source": "proposals/done/2026-04-25-capability-blocker-auto-diagnosis.md",
+      "id": "P2-capability-preflight-skill",
+      "status": "covered",
+      "owner_wi": "WI-326",
+      "evidence": [
+        "capability-registry/SKILL.md",
+        "capability-concierge/SKILL.md",
+        "route-workflow/SKILL.md",
+        "docs/specs/work-items/WI-326.md"
+      ]
+    },
+    {
+      "source": "proposals/done/2026-04-25-inertia-detection-deprecated-api-check.md",
+      "id": "F-A-deprecated-foundations-registry",
+      "status": "covered",
+      "owner_wi": "WI-314",
+      "evidence": [
+        "references/deprecated-foundations.json"
+      ]
+    },
+    {
+      "source": "proposals/done/2026-04-25-inertia-detection-deprecated-api-check.md",
+      "id": "F-B-pretooluse-inertia-hook",
+      "status": "covered",
+      "owner_wi": "WI-314",
+      "evidence": [
+        "hooks/svc-inertia-check.mjs",
+        "hooks/hooks.json",
+        "scripts/wire-hooks.mjs",
+        "scripts/wire-kimi-hooks.mjs",
+        "scripts/wire-codex-hooks.mjs",
+        "scripts/wire-gemini-hooks.mjs"
+      ]
+    },
+    {
+      "source": "proposals/done/2026-04-25-inertia-detection-deprecated-api-check.md",
+      "id": "F-C-design-plan-registry-scan",
+      "status": "covered",
+      "owner_wi": "WI-314",
+      "evidence": [
+        "design-tech/SKILL.md",
+        "plan-changeset/SKILL.md"
+      ]
+    },
+    {
+      "source": "proposals/done/2026-04-25-inertia-detection-deprecated-api-check.md",
+      "id": "F-D-periodic-registry-refresh",
+      "status": "covered",
+      "owner_wi": "WI-327",
+      "evidence": [
+        "references/deprecated-foundations.json",
+        "references/deprecated-foundations-lifecycle.md",
+        "scripts/validate-deprecated-foundations-registry.mjs",
+        "test-framework/evals/tier-1/validate-capability-blocker-inertia.sh"
+      ]
+    },
+    {
+      "source": "proposals/done/2026-04-25-inertia-detection-deprecated-api-check.md",
+      "id": "F-E-first-hit-codebase-autoscan",
+      "status": "covered",
+      "owner_wi": "WI-327",
+      "evidence": [
+        "scripts/scan-deprecated-foundations.mjs",
+        "design-tech/SKILL.md",
+        "plan-changeset/SKILL.md",
+        "test-framework/evals/tier-1/validate-capability-blocker-inertia.sh"
+      ]
+    },
+    {
+      "source": "proposals/done/2026-04-25-inertia-detection-deprecated-api-check.md",
+      "id": "F-F-memory-promotion",
+      "status": "covered",
+      "owner_wi": "WI-327",
+      "evidence": [
+        "references/deprecated-foundations-lifecycle.md",
+        "scripts/validate-deprecated-foundation-findings.mjs",
+        "scripts/scan-deprecated-foundations.mjs",
+        "docs/specs/work-items/WI-327.md"
+      ]
+    }
+  ]
+}

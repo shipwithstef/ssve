@@ -1,0 +1,41 @@
+{
+  "wi": "WI-392",
+  "lane": "framework",
+  "title": "Intended-owner action-time guard (route tasks to owning skill/app)",
+  "delivery_tier": "full",
+  "status": "completed",
+  "created_at": "2026-06-08T18:56:39+03:00",
+  "tasks": [
+    {
+      "id": "t1-owner-index-lib",
+      "title": "hooks/lib/owner-index.mjs — load+match owners (manifest + project)",
+      "status": "completed"
+    },
+    {
+      "id": "t2-owner-inject-hook",
+      "title": "hooks/svc-owner-inject.mjs — PreToolUse additive owner reminder",
+      "status": "completed"
+    },
+    {
+      "id": "t3-owners-registry",
+      "title": "skills-manifest.json ownersRegistry rows + project .svc/task-owners.json + route-workflow P2 line",
+      "status": "completed"
+    },
+    {
+      "id": "t4-wire-perf",
+      "title": "wire-hooks.mjs + hooks.json register; perf-baseline PreToolUse 11→12",
+      "status": "completed"
+    },
+    {
+      "id": "t5-validator",
+      "title": "test-framework/evals/tier-1/validate-owner-injection.sh",
+      "status": "completed"
+    },
+    {
+      "id": "review-exec",
+      "title": "G6 cross-model adversarial review (Gemini fallback)",
+      "status": "completed"
+    }
+  ],
+  "archived_note": "WI-392 merged via PR #57 (2026-06-08); archived by WI-399 run1 — tracked copy tripped lane-tasks-integrity in fresh checkouts; task-level receipts were not recorded during the marathon run (status was \"review\" mid-flight when committed)."
+}

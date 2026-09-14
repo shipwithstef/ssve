@@ -1,0 +1,309 @@
+{
+  "wi": "WI-350",
+  "lane": "framework",
+  "created": "2026-05-29T13:45:20Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "route-workflow: route Example Marketplace PostHog E2E marker proposal to framework implementation",
+      "status": "completed",
+      "metadata": {
+        "skill": "route-workflow",
+        "normalized_intent": "Complete the accepted Example Marketplace proposal by updating the shared test-journeys skill with provider-visible analytics and replay evidence requirements."
+      },
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-05-29T13:45:20Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-05-29T13:54:07.634Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/session-contract.jsonl"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-05-29T13:54:07.794Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/pipeline-decisions.jsonl"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-05-29T13:54:07.847Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-350.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-05-29T13:54:07.907Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/pipeline-decisions.jsonl"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-05-29T13:54:07.968Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-350.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-05-29T13:54:08.040Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-350.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-29T13:45:20Z"
+    },
+    {
+      "id": 2,
+      "subject": "test-journeys: encode analytics/replay provider evidence contract",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "test-journeys"
+      },
+      "skill_receipt": {
+        "skill": "test-journeys",
+        "loaded_at": "2026-05-29T13:45:20Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-Inputs",
+            "ts": "2026-05-29T13:54:08.103Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "test-journeys/SKILL.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-RuntimeExecution",
+            "ts": "2026-05-29T13:54:08.160Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "bash-test-framework-evals-tier-1-validate-test-journeys-provider-analytics.sh"
+              }
+            ]
+          },
+          {
+            "id": "P3-EvidenceCapture",
+            "ts": "2026-05-29T13:54:08.236Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-350.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ACClassification",
+            "ts": "2026-05-29T13:54:08.303Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-350.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-29T13:47:43.874Z"
+    },
+    {
+      "id": 3,
+      "subject": "test-framework: add tier-1 regression validator for the analytics/replay contract",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "metadata": {
+        "skill": "test-framework"
+      },
+      "skill_receipt": {
+        "skill": "test-framework",
+        "loaded_at": "2026-05-29T13:45:20Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-TestModeSelection",
+            "ts": "2026-05-29T13:54:19.239Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "test-framework/SKILL.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-StaticOrScenarioRunnerExecution",
+            "ts": "2026-05-29T13:54:19.345Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "bash-test-framework-evals-run-all-evals.sh"
+              }
+            ]
+          },
+          {
+            "id": "P3-LiveAutopilotOrComparisonExecution",
+            "ts": "2026-05-29T13:54:19.396Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-350.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-MethodologyUsageAudit",
+            "ts": "2026-05-29T13:54:19.459Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-350.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-ResultsPersistenceGapRouting",
+            "ts": "2026-05-29T13:54:19.512Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-350.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-05-29T13:54:19.575Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-350.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-29T13:54:19.632Z"
+    },
+    {
+      "id": 4,
+      "subject": "land-changeset: validate, commit, push, and reconcile proposal status",
+      "status": "completed",
+      "blocked_by": [
+        3
+      ],
+      "metadata": {
+        "skill": "land-changeset",
+        "publication_recovered_at": "2026-05-29T14:09:00Z",
+        "publication_recovery": "Switched gh active account to s7an-it, confirmed ADMIN access to s7an-it/seriousvibecoding, and retried guarded publication.",
+        "previous_failed_publication_commands": [
+          "git push origin main",
+          "git ls-remote https://github.com/s7an-it/seriousvibecoding.git refs/heads/main",
+          "git ls-remote git@github.com:s7an-it/seriousvibecoding.git refs/heads/main"
+        ]
+      },
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-05-29T13:45:20Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-05-29T14:44:13.563Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-350.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-05-29T14:44:13.745Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "git-log-origin-main..HEAD"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-05-29T14:44:13.829Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "bash-test-framework-evals-run-all-evals.sh"
+              }
+            ]
+          },
+          {
+            "id": "P4-PushPrCreation",
+            "ts": "2026-05-29T14:44:13.935Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "git-push-origin-main"
+              }
+            ]
+          },
+          {
+            "id": "P5-MergeDecisionCleanup",
+            "ts": "2026-05-29T14:44:14.029Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/pipeline-decisions.jsonl"
+              }
+            ]
+          },
+          {
+            "id": "P6-SpecStatusSelfVerify",
+            "ts": "2026-05-29T14:44:14.101Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-350.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-29T14:44:21.488Z"
+    }
+  ]
+}

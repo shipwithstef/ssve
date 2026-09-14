@@ -1,0 +1,56 @@
+review:
+  work_item: WI-481
+  scope:
+    - docs/plans/2026-07-14-wi485-codex-execution-integrity/manifest.md
+    - docs/plans/2026-07-14-wi484-session-worktree-binding/manifest.md
+    - docs/plans/2026-07-14-wi482-default-checkout-isolation/manifest.md
+    - docs/plans/2026-07-14-wi483-mobile-worktree-builds/manifest.md
+    - docs/plans/2026-07-14-wi481-change-impact-triad-leaf/manifest.md
+  reviewer: codex-self-adversarial
+  reviewed_at: 2026-07-14T11:03:00Z
+  verdict: revised_ready_for_cross_model
+  mechanical:
+    manifests: 5
+    pass: 5
+    failures_remaining: 0
+  findings:
+    - id: SELF-001
+      severity: high
+      disposition: accepted_fixed
+      finding: Dispatch wording allowed helper-level variation without a deviation record.
+      fix: WI-485 now fixes statement-level behavior and requires recorded deviation before equivalent helper substitution.
+    - id: SELF-002
+      severity: blocker
+      disposition: accepted_fixed
+      finding: Universal impact enforcement named only Claude and Codex host wirers, leaving other hosts without a guaranteed boundary.
+      fix: WI-481 now adds a host-independent pre-commit dispatcher slot; host hooks are earlier feedback only.
+    - id: SELF-003
+      severity: high
+      disposition: accepted_fixed
+      finding: Default-checkout isolation would deny the command needed to create the first worktree.
+      fix: WI-482 defines a narrow bootstrap-isolation class limited to svc-ensure-worktree and git metadata/worktree creation.
+    - id: SELF-004
+      severity: high
+      disposition: accepted_fixed
+      finding: Failed release builds could make retry reuse or ambiguously consume a canonical code.
+      fix: WI-483 uses durable reserved, built, failed, and committed states; failed numbers remain consumed.
+    - id: SELF-005
+      severity: medium
+      disposition: accepted_fixed
+      finding: Leaf headers did not distinguish the planning snapshot from dependency-delayed execution bases.
+      fix: All leaves now record planning base 22df12e and require a fresh verified origin/main after dependencies.
+    - id: SELF-006
+      severity: high
+      disposition: accepted_fixed
+      finding: Temporary Codex fixtures could be misreported as real trusted runtime behavior.
+      fix: WI-485 adds a post-merge setup, hooks trust, controlled trace checkpoint and four distinct state fields.
+  cross_leaf_checks:
+    dependency_order: pass
+    shared_file_conflicts: pass_with_sequencing
+    identity_composition: pass
+    external_state_walk: pass
+    rollback: pass
+    ac_coverage: pass
+  residual_risks:
+    - Fable must decide whether statement-level CREATE blueprints are sufficient for a medium-reasoning zero-context executor or require literal source payloads.
+    - Host runtime trust remains a human checkpoint and cannot be proven during planning.

@@ -1,0 +1,876 @@
+{
+  "schema_version": 1,
+  "wi": "WI-472",
+  "lane": "framework",
+  "status": "completed",
+  "created": "2026-07-21T01:10:31.664Z",
+  "delivery_tier": "full",
+  "owner_session": "019f8237-e398-7440-bb55-b2122714368b",
+  "delivery_graph": {
+    "compiler_version": 1,
+    "user_intent": "Complete WI-472 in the canonical worktree, explicitly reconcile the historical receipt backlog through review without mass waivers, merge, and verify.",
+    "repo_mode": "convert",
+    "change_type": "framework",
+    "lane": "framework",
+    "delivery_mode": "end_to_end",
+    "delivery_tier": {
+      "mode": "full",
+      "selected_by": "route-workflow",
+      "rationale": "WI-472 changes the refuse-mode enforcement hot path and must preserve byte-identical gate semantics.",
+      "decision_log_ref": ".svc/pipeline-decisions.jsonl",
+      "validation_policy": {
+        "mandatory_skills": [
+          "improve-framework",
+          "plan-changeset",
+          "review-plan",
+          "execute-changeset",
+          "review-exec",
+          "audit-implementation",
+          "land-changeset",
+          "verify-promotion"
+        ],
+        "skippable_skills": [
+          "write-spec",
+          "design-tech",
+          "explore-solutions"
+        ],
+        "blocked_behind_explicit_override": []
+      }
+    },
+    "risk_flags": [
+      "infra-path",
+      "concurrency",
+      "hot-path",
+      "receipt-enforcement",
+      "historical-reconcile"
+    ],
+    "platform_contracts": [],
+    "evidence_families": {
+      "product": "satisfied",
+      "acceptance_criteria": "satisfied",
+      "journey": "n/a",
+      "visual": "n/a",
+      "runtime": "satisfied",
+      "plan_review": "satisfied",
+      "code_review": "satisfied",
+      "implementation_audit": "satisfied",
+      "deploy": "n/a",
+      "promotion": "satisfied",
+      "session_forensics": "satisfied",
+      "feature_validation_closeout": "n/a",
+      "provider_fidelity": "n/a"
+    },
+    "required_skills": [
+      "improve-framework",
+      "plan-changeset",
+      "review-plan",
+      "execute-changeset",
+      "review-exec",
+      "audit-implementation",
+      "land-changeset",
+      "verify-promotion"
+    ],
+    "conditional_mandatory_skills": [
+      {
+        "skill": "review-exec",
+        "signal": "mandatory-chain",
+        "reason": "Independent G6 review is mandatory for framework enforcement changes."
+      },
+      {
+        "skill": "audit-session-execution",
+        "signal": "historical-reconcile",
+        "reason": "The 72-commit backlog needs explicit evidence classification before any receipts are repaired."
+      }
+    ],
+    "optional_skills": [],
+    "skipped_skills": [
+      {
+        "skill": "write-spec",
+        "skip_condition_id": "existing-reviewed-spec",
+        "reason": "WI-471 and its judge-approved WI-472 packet already define the acceptance criteria and proof gates.",
+        "evidence": "docs/specs/work-items/WI-471.md and docs/analysis/framework-3x-proposals-2026-07-06.md"
+      },
+      {
+        "skill": "design-tech",
+        "skip_condition_id": "existing-reviewed-design",
+        "reason": "The approved WI-472 packet already selects bounded child-process calls, range batching, detached drive receipts, and strict watcher advancement.",
+        "evidence": "docs/analysis/framework-3x-proposals-2026-07-06.md#p1--wi-472--deterministic-bounded-reconcile-realistic-14-effort-m-net-new"
+      },
+      {
+        "skill": "explore-solutions",
+        "skip_condition_id": "prior-adversarial-selection",
+        "reason": "The architecture was selected by the WI-471 multi-lens review and final judge; this run implements that locked choice.",
+        "evidence": "docs/analysis/framework-3x-proposals-2026-07-06.md#judge-verdict"
+      }
+    ],
+    "verification_tiers": {
+      "local": [
+        "targeted-fixtures",
+        "tier-1",
+        "golden-output",
+        "mutation-red"
+      ],
+      "runtime": [
+        "five-live-preflight-p95",
+        "degraded-gh-hang"
+      ],
+      "production": []
+    },
+    "mutation_history": [
+      {
+        "ts": "2026-07-21T01:10:31.664Z",
+        "source": "route-workflow",
+        "action": "initial_compile",
+        "reason": "Compiled full WI-472 framework chain in the canonical worktree."
+      },
+      {
+        "ts": "2026-07-21T03:56:24.781Z",
+        "source": "classify-delivery-graph-closeout",
+        "action": "close_as_framework_complete",
+        "reason": "delivery_tier=full; all evidence families and required tasks are closed",
+        "affected_tasks": [],
+        "affected_evidence_families": [],
+        "validator_proof": "scripts/classify-delivery-graph-closeout.mjs --write"
+      }
+    ],
+    "closeout_classification_required": true,
+    "closeout_classification": "framework-complete",
+    "closeout_classification_reasons": [
+      "delivery_tier=full",
+      "all evidence families and required tasks are closed"
+    ],
+    "closeout_delivery_tier": "full"
+  },
+  "change_impact": {
+    "tier": "infra-path",
+    "reasons": [
+      "scripts/svc-reconcile.mjs runs at session entry and land closeout",
+      "receipt enforcement semantics",
+      "background process lifecycle and checkpoint mutation"
+    ],
+    "triad_owner_task": 4
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "route-workflow",
+      "subject": "Route WI-472 to the full framework chain in the sanctioned worktree and record the 72-commit refuse-mode backlog.",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-07-21T01:13:42.672Z",
+        "loaded_via": "codex",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-07-21T01:13:42.712Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-472.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-07-21T01:13:42.753Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-472.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-07-21T01:13:42.792Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-472.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-07-21T01:13:42.826Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-472.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-07-21T01:13:42.860Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-472.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-07-21T01:13:42.898Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-472.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-21T01:13:42.935Z"
+    },
+    {
+      "id": 2,
+      "status": "completed",
+      "skill": "improve-framework",
+      "subject": "Close the framework-improvement loop after promoted replay: record implementation, replay, state mutation, and remote synchronization.",
+      "blocked_by": [
+        10
+      ],
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-07-21T03:39:36.135Z",
+        "loaded_via": "codex-load-skill",
+        "output_artifact": "proposals/done/2026-07-21-framework-improvement-deterministic-bounded-reconcile.md",
+        "validation_output": "Post-merge replay verified; PR 161 promoted; zero-waiver 78-row reconciliation portable",
+        "phases_executed": [
+          {
+            "id": "P1-FrameworkRepoAndMemoryLoad",
+            "ts": "2026-07-21T03:39:51.834Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-repo-memory.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-PendingProposalAndEvidenceSelection",
+            "ts": "2026-07-21T03:39:51.865Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-evidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-DiagnosisAndDuplicateFilter",
+            "ts": "2026-07-21T03:39:51.900Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "proposals/done/2026-07-21-framework-improvement-deterministic-bounded-reconcile.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ImplementationRouteDecision",
+            "ts": "2026-07-21T03:39:51.931Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-route.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-ImplementationAndReplayVerification",
+            "ts": "2026-07-21T03:39:51.962Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-replay.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-ImprovementRecordAndStateMutation",
+            "ts": "2026-07-21T03:39:51.993Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "FRAMEWORK-STATE.md"
+              }
+            ]
+          },
+          {
+            "id": "P7-ProposalDoneAndRemoteSync",
+            "ts": "2026-07-21T03:39:52.026Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-remote-sync.log"
+              }
+            ]
+          },
+          {
+            "id": "P8-SelfVerifyContinuation",
+            "ts": "2026-07-21T03:39:52.062Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-21T03:39:52.094Z"
+    },
+    {
+      "id": 3,
+      "status": "completed",
+      "skill": "audit-session-execution",
+      "subject": "Classify every unaccounted historical commit using commit, PR, note, and receipt evidence; produce a reviewable reconciliation ledger with no mass waiver.",
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "audit-session-execution",
+        "loaded_at": "2026-07-21T01:14:52.930Z",
+        "loaded_via": "codex",
+        "phases_executed": [
+          {
+            "id": "P1-AuditTargetResolution",
+            "ts": "2026-07-21T01:23:04.920Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "proposals/2026-07-21-session-audit-wi-472-reconcile-backlog.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-HarnessModelProfile",
+            "ts": "2026-07-21T01:23:04.957Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "proposals/2026-07-21-session-audit-wi-472-reconcile-backlog.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-ExpectedContractReconstruction",
+            "ts": "2026-07-21T01:23:04.995Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "proposals/2026-07-21-session-audit-wi-472-reconcile-backlog.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ActualExecutionTimeline",
+            "ts": "2026-07-21T01:23:05.030Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "proposals/2026-07-21-session-audit-wi-472-reconcile-backlog.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-ForensicAntiPatternSweep",
+            "ts": "2026-07-21T01:23:05.064Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "proposals/2026-07-21-session-audit-wi-472-reconcile-backlog.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-FaultDomainReport",
+            "ts": "2026-07-21T01:23:05.099Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "proposals/2026-07-21-session-audit-wi-472-reconcile-backlog.md"
+              }
+            ]
+          },
+          {
+            "id": "P7-SelfVerifyContinuation",
+            "ts": "2026-07-21T01:23:05.133Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-session-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-21T01:23:05.173Z"
+    },
+    {
+      "id": 4,
+      "status": "completed",
+      "skill": "plan-changeset",
+      "subject": "Plan bounded reconcile, backlog remediation, golden-output parity, mutation-red validators, and rollback.",
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-07-21T01:23:05.209Z",
+        "loaded_via": "codex",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-07-21T01:29:25.693Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-archetype.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-07-21T01:29:25.728Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-scope.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-07-21T01:29:25.764Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-21-wi472-deterministic-bounded-reconcile/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-07-21T01:29:25.799Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-21-wi472-deterministic-bounded-reconcile/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-07-21T01:29:25.832Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-07-21T01:29:25.865Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-21T01:29:25.897Z"
+    },
+    {
+      "id": 5,
+      "status": "completed",
+      "skill": "review-plan",
+      "subject": "Adversarially review WI-472 plan and historical reconciliation policy to convergence.",
+      "blocked_by": [
+        4
+      ],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-07-21T01:29:25.932Z",
+        "loaded_via": "codex",
+        "output_artifact": "docs/plans/2026-07-21-wi472-deterministic-bounded-reconcile/review-log.yaml",
+        "validation_output": ".svc/review-plan-self-verify.log",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-07-21T01:42:27.308Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-plan-mechanical.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-07-21T01:42:27.454Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-plan-external-state-check.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-07-21T01:42:27.589Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-21-wi472-deterministic-bounded-reconcile/review-round-2-responses.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-07-21T01:42:27.734Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-21-wi472-deterministic-bounded-reconcile/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-07-21T01:42:27.871Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-21-wi472-deterministic-bounded-reconcile/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-21T01:42:28.029Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-plan-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-21T01:42:28.197Z"
+    },
+    {
+      "id": 6,
+      "status": "completed",
+      "skill": "execute-changeset",
+      "subject": "Implement the reviewed WI-472 manifest and explicit reviewed backlog repairs.",
+      "blocked_by": [
+        5
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-07-21T01:42:55.808Z",
+        "loaded_via": "codex-load-skill",
+        "output_artifact": "scripts/svc-reconcile.mjs",
+        "validation_output": "docs/specs/test-evidence/WI-472/pre-post-validation.json",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-07-21T01:44:22.277Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-dispatch-preflight.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-07-21T02:07:34.349Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "scripts/svc-reconcile.mjs"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-07-21T02:07:34.497Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-verification.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-07-21T02:07:34.638Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-checkpoint.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-21T02:07:34.799Z"
+    },
+    {
+      "id": 7,
+      "status": "completed",
+      "skill": "review-exec",
+      "subject": "Run independent G6 review of code, tests, and every historical reconciliation disposition.",
+      "blocked_by": [
+        6
+      ],
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-07-21T02:08:05.632Z",
+        "loaded_via": "codex-load-skill",
+        "output_artifact": "docs/specs/reviews/WI-472-g6-round3.json",
+        "validation_output": "docs/specs/reviews/wi-472-backlog-review.json",
+        "verdict": "pass",
+        "backlog_certifications": "78/78",
+        "review_request_id": "0851780c-2053-4c96-9bd3-af4b68e67a65"
+      },
+      "completed_at": "2026-07-21T02:41:45.000Z"
+    },
+    {
+      "id": 8,
+      "status": "completed",
+      "skill": "audit-implementation",
+      "subject": "Audit implementation and receipt backlog closure against every WI-472 acceptance criterion.",
+      "blocked_by": [
+        7
+      ],
+      "args": {
+        "mode": "full"
+      },
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-07-21T02:42:17.708Z",
+        "loaded_via": "codex",
+        "mode": "full",
+        "output_artifact": "docs/specs/audit/wi-472-implementation-analysis.md",
+        "validation_output": "READY TO LAND; no Critical or High findings",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextScopeConcern",
+            "ts": "2026-07-21T03:14:59.388Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-implementation-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecialistDispatchCoverageLedger",
+            "ts": "2026-07-21T03:14:59.426Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-472-implementation-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-HypothesisGeneration",
+            "ts": "2026-07-21T03:14:59.457Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-472-implementation-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-SubsystemBehaviorAudit",
+            "ts": "2026-07-21T03:14:59.489Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-implementation-subsystems.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-FindingsConvergenceReport",
+            "ts": "2026-07-21T03:14:59.521Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-472-implementation-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-21T03:14:59.554Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-implementation-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-21T03:15:08.993Z"
+    },
+    {
+      "id": 9,
+      "status": "completed",
+      "skill": "land-changeset",
+      "subject": "Land WI-472 through the sanctioned PR and receipt gates.",
+      "blocked_by": [
+        8
+      ],
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-07-21T03:17:00.000Z",
+        "loaded_via": "codex",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-07-21T03:23:37.575Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-07-21T03:23:37.605Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-diff-audit.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-07-21T03:23:37.635Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-validation.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-PushPrCreation",
+            "ts": "2026-07-21T03:32:54.617Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-pr.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-MergeDecisionCleanup",
+            "ts": "2026-07-21T03:32:54.654Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-merge.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SpecStatusSelfVerify",
+            "ts": "2026-07-21T03:32:54.688Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-21T03:32:54.720Z"
+    },
+    {
+      "id": 10,
+      "status": "completed",
+      "skill": "verify-promotion",
+      "subject": "Verify merged WI-472 behavior, bounded live preflights, clean reconcile, and promoted state.",
+      "blocked_by": [
+        9
+      ],
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-07-21T03:32:54.753Z",
+        "loaded_via": "codex-load-skill",
+        "output_artifact": "docs/specs/test-evidence/WI-472/post-promotion-verification.md",
+        "validation_output": "VERIFIED-L3; RC-01 through RC-10 pass on promoted tree",
+        "target_class": "headless-framework",
+        "evidence_level": "V2",
+        "evidence_artifacts": [
+          "docs/specs/test-evidence/WI-472/post-promotion-verification.md",
+          "docs/specs/test-evidence/WI-472/pre-post-validation.json"
+        ],
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-07-21T03:39:35.973Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-evidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-07-21T03:39:36.006Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/test-evidence/WI-472/post-promotion-verification.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-07-21T03:39:36.038Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-runtime.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-07-21T03:39:36.069Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-472.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-21T03:39:36.102Z"
+    }
+  ]
+}

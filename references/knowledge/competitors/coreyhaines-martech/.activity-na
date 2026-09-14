@@ -1,0 +1,4 @@
+blog-crawl not applicable: source is a GitHub skill repo, not a blog/product site.
+Activity is tracked mechanically via release tags — see .version (tag pin) and
+references/blend-registry.json upstream_ref_cmd ("gh release list -R coreyhaines31/marketingskills -L 1").
+Recorded 2026-07-13 (WI-476 re-blend).

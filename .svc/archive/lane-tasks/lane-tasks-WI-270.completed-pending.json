@@ -1,0 +1,40 @@
+{
+  "wi": "WI-270",
+  "lane": "framework",
+  "created": "2026-05-10T20:27:14Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Migrate blend-external skill contract",
+      "status": "completed",
+      "blocked_by": [],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T20:27:14Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T20:27:14Z"
+    },
+    {
+      "id": 2,
+      "subject": "Validate and close WI-270",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T20:27:14Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T20:28:31Z"
+    }
+  ]
+}

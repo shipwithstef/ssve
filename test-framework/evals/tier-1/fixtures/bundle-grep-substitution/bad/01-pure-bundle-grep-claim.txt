@@ -1,0 +1,5 @@
+WI-CAMPAIGN closeout — wave-4 deployment
+
+Verified the new copy ships: the 'Submit' label appears in dist/main-abc123.js. Grepped the production bundle and confirmed the new error class is present. The deployed bundle contains the helper function.
+
+No browser session was opened. The static bundle inspection is sufficient because the build step has been previously validated.

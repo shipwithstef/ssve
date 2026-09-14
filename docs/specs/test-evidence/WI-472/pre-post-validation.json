@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "acceptance_critical": true,
+  "selected_proof": {
+    "id": "wi472-focused-tier1-red-green",
+    "command": "bash test-framework/evals/tier-1/validate-svc-reconcile-golden.sh && bash test-framework/evals/tier-1/validate-svc-reconcile-legacy-binary.sh && bash test-framework/evals/tier-1/validate-svc-reconcile-bounded.sh && bash test-framework/evals/tier-1/validate-svc-reconcile-watcher-advance.sh && bash test-framework/evals/tier-1/validate-reconcile-backlog-review.sh && bash test-framework/evals/tier-1/validate-retroactive-attestation.sh",
+    "target": "canonical WI-472 worktree",
+    "environment": "local framework Tier-1"
+  },
+  "pre": {
+    "status": "fail",
+    "evidence": "Each validator failed before implementation: missing reconcile-core/backlog helper or direct unbounded child calls; captured in the execute-changeset session log."
+  },
+  "post": {
+    "status": "pass",
+    "evidence": "All six focused validators pass; timeout and watcher validators prove mutation red before green, while attestation tests reject tree, family, basis, extra-property, and shell-injection forgeries.",
+    "command": "bash test-framework/evals/tier-1/validate-svc-reconcile-golden.sh && bash test-framework/evals/tier-1/validate-svc-reconcile-legacy-binary.sh && bash test-framework/evals/tier-1/validate-svc-reconcile-bounded.sh && bash test-framework/evals/tier-1/validate-svc-reconcile-watcher-advance.sh && bash test-framework/evals/tier-1/validate-reconcile-backlog-review.sh && bash test-framework/evals/tier-1/validate-retroactive-attestation.sh",
+    "target": "canonical WI-472 worktree",
+    "environment": "local framework Tier-1"
+  },
+  "comparison": "fixed-by-change",
+  "iterations": [
+    {
+      "iteration": 1,
+      "fix_batch": "Add bounded reconcile core, detached outcome contract, range batching, reviewed backlog helper, and focused validators.",
+      "classification": "fixed-by-change",
+      "evidence": "Focused validator set passes; generated bundle contains 78 unique zero-waiver rows."
+    },
+    {
+      "iteration": 2,
+      "fix_batch": "Correct metadata/static compatibility and mutation-fixture import issues surfaced by repository validation.",
+      "classification": "fixed-by-change",
+      "evidence": "WI-472-specific failures cleared; full Tier-1 is 263/264 with only untouched WI-498 skip-integrity debt."
+    },
+    {
+      "iteration": 3,
+      "fix_batch": "Replace fabricated phase envelopes with tracked, tree-bound retroactive attestations after G6 rejection.",
+      "classification": "fixed-by-change",
+      "evidence": "Canonical G6 round 2 certified all 78 exact basis hashes; initial notes apply was rolled back when audit exposed fail-open attestation validation."
+    },
+    {
+      "iteration": 4,
+      "fix_batch": "Close audit blockers: recomputed tracked authority, argument-array child calls, package-bound review materialization, generation-owned drive state, strict discovery timeout, and expanded negative tests.",
+      "classification": "fixed-by-change",
+      "evidence": "Canonical final G6 round 3 returned zero Critical/High and 78/78 certifications; current and fresh-worktree range checks each report 156/156 accounted with 78 attestations."
+    }
+  ],
+  "runtime_evidence": {
+    "live_preflights": {
+      "wall_ms": [2036, 1727, 1790, 1796, 971],
+      "nearest_rank_p95_ms": 2036,
+      "threshold_ms": 10000,
+      "all_gh_available": true,
+      "all_unaccounted_zero": true,
+      "verdict": "pass"
+    },
+    "receipt_parity": {
+      "range": "985a8d5de2255288daaacda91c739e294b8a67d5..6b026ea9fbcee849e682d7aa47c3eec894512de3",
+      "canonical": {"total": 156, "failed": 0, "attested": 78},
+      "fresh_mirror_empty_worktree": {"total": 156, "failed": 0, "attested": 78},
+      "verdict": "pass"
+    },
+    "batch_per_sha_equivalence": {"rows": 78, "unaccounted_before_apply": 78, "sets_equal": true},
+    "notes_transaction": {"backup_oid": "73d42fff7d98c7fcfd19b19317625979c81f6b0d", "applied_oid": "0784e69b00f8911f5bc0bf9790fe186fc1bce448", "rows": 78, "zero_waivers": true}
+  },
+  "changed_signals": [
+    {"signal": "reconcile child calls can hang", "classification": "fixed-by-change", "acceptance_critical": true},
+    {"signal": "watcher advances across GitHub degradation", "classification": "fixed-by-change", "acceptance_critical": true},
+    {"signal": "portable historical denominator has 78 unresolved SHAs", "classification": "fixed-by-change", "acceptance_critical": true},
+    {"signal": "WI-498 completed registry tasks lack output_artifact/validation_output", "classification": "pre-existing", "acceptance_critical": false}
+  ]
+}

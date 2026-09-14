@@ -1,0 +1,7 @@
+WI-199 closeout for the wave-4 page rendering fix.
+
+Evidence: e2e/test-results/wi-199-wave-4/page.png — Playwright run id 28471 — V2.
+
+Playwright assertion at e2e/wave-4.spec.ts:42 passes: getByRole('button', { name: 'Submit' }).toBeVisible() resolves at 800ms post-mount. Live-DOM snapshot also captured at e2e/test-results/wi-199-wave-4/dom.html.
+
+Bundle inspection was performed for completeness — the new label appears in dist/main-abc123.js — but the load-bearing evidence is the screenshot and the Playwright run, not the static bundle.

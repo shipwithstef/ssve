@@ -1,0 +1,10 @@
+Skill: design-tech
+
+Q: What state does design-tech transition the feature spec to, and what two sections are mandatory in the output?
+A: Expected pattern: It transitions the feature spec to BASELINED. Two mandatory sections are Cost Model (covering compute, storage, bandwidth, external APIs, background jobs) and Operations & Ownership.
+
+Q: What triggers the scope reduction mechanism in design-tech?
+A: Expected pattern: Scope reduction is triggered when the plan requires 8+ new files or 2+ new classes/services.
+
+Q: What are the three adversarial review layer tags used in design-tech recommendations?
+A: Expected pattern: The three layers are [Layer 1] Tried-and-true, [Layer 2] New-and-popular, and [Layer 3] First-principles/EUREKA.

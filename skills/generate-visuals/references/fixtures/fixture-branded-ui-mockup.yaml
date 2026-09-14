@@ -1,0 +1,29 @@
+# Fixture: branded UI mockup brief (editable)
+#
+# Represents the design-ui invocation that needs an iterable mockup, not a
+# flat hero. Routes to Stitch MCP per the provider matrix (editable canvas
+# matters here). Used to E2E-test the Stitch path.
+
+slot: dashboard-overview
+class: branded-ui-mockup-editable
+style: clean-data-dense-trustworthy
+count: 2
+brand_context:
+  palette: [terra-cotta, warm-cream, espresso, deep-charcoal, accent-mint]
+  voice: trustworthy-warm-modern
+  forbid:
+    - dark-mode-default
+    - flashy-neon
+    - generic-saas-template-look
+viewport: 1440x900
+license: production-marketing
+
+# Expected provider routing:
+# Primary: Stitch MCP (mcp__stitch-builtin__generate_screen_from_text)
+# Fallback: Figma Make MCP (if Stitch quota exhausted)
+#
+# Expected output paths:
+# - docs/specs/hero-assets/dashboard-overview/candidates/stitch-screen-1.png
+# - docs/specs/hero-assets/dashboard-overview/candidates/stitch-screen-2.png
+# - docs/specs/hero-assets/dashboard-overview/provenance.yaml
+#   (with `editable_canvas_id:` field pointing to Stitch project)

@@ -1,0 +1,12 @@
+{
+  "validate-agy-launcher.sh": {
+    "cause_class": "network/live-canary",
+    "digest": "",
+    "note": "requires a live Fable canary / network; the hermetic env has neither. digest left empty: check-tier1-env-red-set.mjs enforces subset membership + require-pass; it recomputes+matches the normalized signature only when a non-empty digest is recorded."
+  },
+  "validate-codex-execution-integrity.sh": {
+    "cause_class": "host-machine-state",
+    "digest": "",
+    "note": "asserts the local ~/.codex hooks feature-flag + current PreToolUse-limit docs; both are host-machine state, not repo content."
+  }
+}

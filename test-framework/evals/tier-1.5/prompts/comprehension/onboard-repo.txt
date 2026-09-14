@@ -1,0 +1,10 @@
+Skill: onboard-repo
+
+Q: What is the core rule of onboard-repo, and what four files must exist before conversion is considered complete?
+A: Expected pattern: Core rule is "Log then triage. Do not fix as found." The four files are docs/specs/project-state.md, docs/specs/router-context.md, docs/specs/agent-topology.md, and docs/specs/work-items/INDEX.md.
+
+Q: What are the seven canonical work item types used by onboard-repo?
+A: Expected pattern: conversion, feature, bugfix, regression, refactor, drift, and chore.
+
+Q: What is the routing recommendation for each work item type in onboard-repo?
+A: Expected pattern: feature -> validate-feature then write-spec in delta mode; bugfix/regression -> diagnose-bug; drift -> sync-spec-code; conversion -> stay in conversion until mapped; chore/refactor -> implementation planning based on scope.

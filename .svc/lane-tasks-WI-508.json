@@ -1,0 +1,1506 @@
+{
+  "wi": "WI-508",
+  "lane": "framework",
+  "created": "2026-07-23T02:39:37.450Z",
+  "status": "completed",
+  "delivery_graph": {
+    "compiler_version": 1,
+    "user_intent": "Implement a framework-native Candidate Reservoir, Code Grounding Evaluator, and multi-role cos triage engine with isolated SQLite state and JSON mirrors",
+    "repo_mode": "convert",
+    "change_type": "framework",
+    "lane": "framework",
+    "delivery_mode": "end_to_end",
+    "delivery_tier": {
+      "mode": "full",
+      "selected_by": "route-workflow",
+      "rationale": "User explicitly required full delivery and the change adds a persistent state backend",
+      "decision_log_ref": ".svc/pipeline-decisions.jsonl",
+      "validation_policy": {
+        "mandatory_skills": [
+          "improve-framework",
+          "write-spec",
+          "write-journeys",
+          "audit-ac",
+          "design-tech",
+          "explore-solutions",
+          "plan-changeset",
+          "review-plan",
+          "execute-changeset",
+          "review-gate",
+          "review-exec",
+          "review-cross-model",
+          "review-security",
+          "audit-implementation",
+          "test-framework",
+          "land-changeset",
+          "verify-promotion"
+        ],
+        "skippable_skills": [],
+        "blocked_behind_explicit_override": []
+      }
+    },
+    "risk_flags": [
+      "data-model-change",
+      "backend-function",
+      "concurrency",
+      "filesystem-input"
+    ],
+    "platform_contracts": [],
+    "solution_confidence": {
+      "required": false,
+      "mode": "none",
+      "status": "not_required"
+    },
+    "compression": {
+      "ratio": 1,
+      "threshold": 2,
+      "rationale": "Full tier; no ceremony compression."
+    },
+    "evidence_families": {
+      "product": "satisfied",
+      "acceptance_criteria": "satisfied",
+      "journey": "satisfied",
+      "visual": "n/a",
+      "runtime": "satisfied",
+      "plan_review": "satisfied",
+      "code_review": "satisfied",
+      "implementation_audit": "satisfied",
+      "deploy": "n/a",
+      "promotion": "satisfied",
+      "session_forensics": "n/a",
+      "feature_validation_closeout": "n/a",
+      "provider_fidelity": "n/a"
+    },
+    "required_skills": [
+      "improve-framework",
+      "write-spec",
+      "write-journeys",
+      "audit-ac",
+      "design-tech",
+      "explore-solutions",
+      "plan-changeset",
+      "review-plan",
+      "execute-changeset",
+      "review-gate",
+      "review-exec",
+      "review-cross-model",
+      "review-security",
+      "audit-implementation",
+      "test-framework",
+      "land-changeset",
+      "verify-promotion"
+    ],
+    "conditional_mandatory_skills": [
+      {
+        "skill": "design-tech",
+        "signal": "technical-risk",
+        "reason": "A new SQLite persistence model and filesystem grounding require technical design."
+      },
+      {
+        "skill": "explore-solutions",
+        "signal": "hard-to-reverse-architecture",
+        "reason": "A new framework state backend is expensive to unwind and must be challenged."
+      },
+      {
+        "skill": "review-cross-model",
+        "signal": "security-cross-family-review",
+        "reason": "The concern scanner requires a different-family review for governed session state and filesystem trust boundaries."
+      },
+      {
+        "skill": "review-security",
+        "signal": "filesystem-input",
+        "reason": "Candidate-controlled target_files and local database paths require path and trust-boundary review."
+      },
+      {
+        "skill": "audit-implementation",
+        "signal": "technical-risk",
+        "reason": "Persistence, concurrency, and promotion-state behavior require implementation audit."
+      }
+    ],
+    "optional_skills": [],
+    "skipped_skills": [
+      {
+        "skill": "design-ux",
+        "skip_condition_id": "design-ux:registry-skip",
+        "reason": "Internal CLI only; no human interaction surface beyond documented commands.",
+        "evidence": "Planned surface is Node CLI, SQLite state, JSON mirror, and command fixtures; no screen or interaction design."
+      },
+      {
+        "skill": "design-ui",
+        "skip_condition_id": "design-ui:no-visual-surface",
+        "reason": "No browser-visible UI, markup, CSS, rendered assets, or visual state.",
+        "evidence": "The explicit target set contains only .mjs, .json, .md, and .svc configuration/state."
+      },
+      {
+        "skill": "track-visuals",
+        "skip_condition_id": "track-visuals:no-browser-visible-change",
+        "reason": "No browser-visible surface exists.",
+        "evidence": "Framework-internal CLI and data files only."
+      },
+      {
+        "skill": "test-journeys",
+        "skip_condition_id": "test-journeys:no-runtime-behavior-change",
+        "reason": "CLI integration fixtures and exact command replay provide the runtime proof; no browser journey exists.",
+        "evidence": "Acceptance commands are node scripts/candidate-harness.mjs rank/top/promote/reject invocations."
+      },
+      {
+        "skill": "write-e2e",
+        "skip_condition_id": "write-e2e:no-runtime-behavior-change",
+        "reason": "Focused CLI integration fixtures cover the runtime path without an application E2E surface.",
+        "evidence": "Hermetic temporary HOME/repository fixtures exercise the complete command boundary."
+      },
+      {
+        "skill": "base44-environment",
+        "skip_condition_id": "base44-environment:not-base44-deploy",
+        "reason": "No Base44 or deploy-affecting platform contract.",
+        "evidence": "SVC framework repository and local filesystem state only."
+      },
+      {
+        "skill": "audit-session-execution",
+        "skip_condition_id": "audit-session-execution:not-retroactive",
+        "reason": "This is a fresh, correctly routed WI rather than a retroactive or graph-mismatch run.",
+        "evidence": "Fresh WI-508 session contract, claim, binding, and task graph were created before target implementation."
+      }
+    ],
+    "verification_tiers": {
+      "local": [
+        "focused-candidate-harness",
+        "tier-1"
+      ],
+      "runtime": [
+        "targeted-cli-replay"
+      ],
+      "production": []
+    },
+    "mutation_history": [
+      {
+        "ts": "2026-07-23T02:39:37.450Z",
+        "source": "route-workflow",
+        "action": "initial_compile",
+        "reason": "Compiled the framework delivery graph at lane entry."
+      },
+      {
+        "ts": "2026-07-23T02:44:00Z",
+        "source": "route-workflow",
+        "action": "mandatory_chain_expansion",
+        "reason": "Added new-capability specification, architecture exploration, both independent review gates, security review, and final improve-framework closure around the compiler base graph."
+      },
+      {
+        "ts": "2026-07-23T06:53:05.555Z",
+        "source": "classify-delivery-graph-closeout",
+        "action": "close_as_framework_complete",
+        "reason": "delivery_tier=full; all evidence families and required tasks are closed",
+        "affected_tasks": [],
+        "affected_evidence_families": [],
+        "validator_proof": "scripts/classify-delivery-graph-closeout.mjs --write"
+      }
+    ],
+    "closeout_classification_required": true,
+    "closeout_classification": "framework-complete",
+    "closeout_classification_reasons": [
+      "delivery_tier=full",
+      "all evidence families and required tasks are closed"
+    ],
+    "closeout_delivery_tier": "full"
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "route-workflow: bind and route WI-508 candidate reservoir delivery",
+      "description": "Invoke: /route-workflow. Normalize the request, bind the canonical worktree, compile the full framework graph, classify Gemini residue, log skips, and establish evidence obligations.",
+      "activeForm": "Routing WI-508",
+      "status": "completed",
+      "blocked_by": [],
+      "metadata": {
+        "skill": "route-workflow"
+      },
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-07-23T02:42:53.590Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-07-23T02:42:53.687Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-session-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-07-23T02:42:53.812Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-intent.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-07-23T02:42:53.915Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-508.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-07-23T02:42:54.027Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-concern-gate.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-07-23T02:42:54.140Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-508.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-07-23T02:42:54.267Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T02:42:54.396Z"
+    },
+    {
+      "id": 2,
+      "subject": "improve-framework: close the Candidate Reservoir self-improvement loop",
+      "description": "Invoke: /improve-framework. Own the user-reported missing-capability evidence, improvement proposal, framework memory update, replay proof, and final remote-sync self-verify after task 16.",
+      "activeForm": "Closing the framework improvement loop",
+      "status": "completed",
+      "blocked_by": [
+        16
+      ],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-07-23T06:29:42.055Z",
+        "loaded_via": "activate-skill",
+        "phases_executed": [
+          {
+            "id": "P5-ImplementationAndReplayVerification",
+            "ts": "2026-07-23T06:30:35.952Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-replay.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-ImprovementRecordAndStateMutation",
+            "ts": "2026-07-23T06:30:35.991Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "FRAMEWORK-STATE.md"
+              }
+            ]
+          },
+          {
+            "id": "P7-ProposalDoneAndRemoteSync",
+            "ts": "2026-07-23T06:30:36.024Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-remote-sync.log"
+              }
+            ]
+          },
+          {
+            "id": "P8-SelfVerifyContinuation",
+            "ts": "2026-07-23T06:30:36.060Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T06:30:36.095Z"
+    },
+    {
+      "id": 3,
+      "subject": "write-spec: lock Candidate Reservoir CLI and storage acceptance criteria",
+      "description": "Invoke: /write-spec. Produce WI-508 and the master Candidate Harness architecture specification with exact CLI, schema, isolation, portability, scoring, grounding, decision-log, and 50-seed acceptance criteria.",
+      "activeForm": "Specifying the candidate harness",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "write-spec"
+      },
+      "process_tasks": [
+        {
+          "id": "3.1",
+          "name": "write-spec|type-classify",
+          "status": "completed",
+          "blocked_by": [],
+          "subject": "Classified as an internal Enabler in extend-feature mode."
+        },
+        {
+          "id": "3.2",
+          "name": "write-spec|context-scan",
+          "status": "completed",
+          "blocked_by": [
+            "3.1"
+          ],
+          "subject": "Scanned framework state, capabilities, specs, WI index, decision history, and candidate surface."
+        },
+        {
+          "id": "3.3",
+          "name": "write-spec|problem-frame",
+          "status": "completed",
+          "blocked_by": [
+            "3.2"
+          ],
+          "subject": "Framed pre-WI pollution, cross-project isolation, and missing deterministic triage."
+        },
+        {
+          "id": "3.4",
+          "name": "write-spec|story-draft",
+          "status": "completed",
+          "blocked_by": [
+            "3.3"
+          ],
+          "subject": "Drafted operator, grounding evaluator, role triage, and promotion consumers."
+        },
+        {
+          "id": "3.5",
+          "name": "write-spec|ac-draft",
+          "status": "completed",
+          "blocked_by": [
+            "3.4"
+          ],
+          "subject": "Drafted atomic happy/error/edge acceptance criteria and exact command contracts."
+        },
+        {
+          "id": "3.6",
+          "name": "write-spec|dep-check",
+          "status": "completed",
+          "blocked_by": [
+            "3.5"
+          ],
+          "subject": "Mapped Node SQLite, Git identity, local state, JSON mirror, and decision ledger dependencies."
+        },
+        {
+          "id": "3.7",
+          "name": "write-spec|spec-assemble",
+          "status": "completed",
+          "blocked_by": [
+            "3.6"
+          ],
+          "subject": "Assembled the feature spec, master plan, question ledger, decision log, and WI record."
+        },
+        {
+          "id": "3.8",
+          "name": "write-spec|scope-review",
+          "status": "completed",
+          "blocked_by": [
+            "3.7"
+          ],
+          "subject": "G0 Hold: complete for the narrow pre-WI reservoir scope; no project database, UI, or autonomous WI creation."
+        },
+        {
+          "id": "3.9",
+          "name": "write-spec|dep-queue",
+          "status": "completed",
+          "blocked_by": [
+            "3.8"
+          ],
+          "subject": "No separate dependency WIs; technical decisions proceed to design-tech and explore-solutions."
+        },
+        {
+          "id": "3.10",
+          "name": "write-spec|finalize",
+          "status": "completed",
+          "blocked_by": [
+            "3.9"
+          ],
+          "subject": "Prepared handoff to write-journeys and audit-ac before technical design."
+        }
+      ],
+      "skill_receipt": {
+        "skill": "write-spec",
+        "loaded_at": "2026-07-23T02:53:23.905Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-ContextAndModeSelection",
+            "ts": "2026-07-23T02:53:23.950Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/write-spec-context-mode.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiscussionPreflightAndAlternatives",
+            "ts": "2026-07-23T02:53:23.991Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/write-spec-discussion-alternatives.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-StoryAcceptanceCriteriaDraft",
+            "ts": "2026-07-23T02:53:24.037Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/candidate-reservoir.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ScopeReviewDecisionLog",
+            "ts": "2026-07-23T02:53:24.084Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/write-spec-scope-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-JourneySyncDependencyQueue",
+            "ts": "2026-07-23T02:53:24.134Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/write-spec-journey-sync.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyHandoff",
+            "ts": "2026-07-23T02:53:24.175Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/write-spec-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T02:53:24.237Z"
+    },
+    {
+      "id": 4,
+      "subject": "audit-ac: adversarially validate every Candidate Harness acceptance criterion",
+      "description": "Invoke: /audit-ac. Check that each user constraint is observable, testable, unambiguous, and mapped to a planned proof; repair spec gaps before architecture design.",
+      "activeForm": "Auditing Candidate Harness acceptance criteria",
+      "status": "completed",
+      "blocked_by": [
+        18
+      ],
+      "metadata": {
+        "skill": "audit-ac"
+      },
+      "skill_receipt": {
+        "skill": "audit-ac",
+        "loaded_at": "2026-07-23T02:58:55.679Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ModeSpecSelection",
+            "ts": "2026-07-23T02:58:55.711Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-ac-spec-selection.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecReadAndACDiscovery",
+            "ts": "2026-07-23T02:58:55.744Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-ac-discovery.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-FormatConversion",
+            "ts": "2026-07-23T02:58:55.777Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/candidate-reservoir.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ACQualityRewrite",
+            "ts": "2026-07-23T02:58:55.809Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/candidate-reservoir.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-EdgeCaseCoverage",
+            "ts": "2026-07-23T02:58:55.841Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/candidate-reservoir.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SummarySelfVerify",
+            "ts": "2026-07-23T02:58:55.878Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-ac-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T02:58:55.912Z"
+    },
+    {
+      "id": 5,
+      "subject": "design-tech: design isolated SQLite, JSON mirror, and grounding transactions",
+      "description": "Invoke: /design-tech. Baseline the local database schema, project identity fallback, import/export idempotency, filesystem trust boundary, score precision, state transitions, and concurrency semantics.",
+      "activeForm": "Designing Candidate Harness architecture",
+      "status": "completed",
+      "blocked_by": [
+        4
+      ],
+      "metadata": {
+        "skill": "design-tech"
+      },
+      "skill_receipt": {
+        "skill": "design-tech",
+        "loaded_at": "2026-07-23T02:58:43.093Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SpecJourneyDiscussionPreflight",
+            "ts": "2026-07-23T03:11:48.245Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/design-tech-preflight.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-CodebasePatternAnalysis",
+            "ts": "2026-07-23T03:11:48.277Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/design-tech-codebase-analysis.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ArchitectureAlternativesAndDiagrams",
+            "ts": "2026-07-23T03:11:48.309Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/plans/CANDIDATE_HARNESS_PLAN.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-CostOpsFeasibilityRiskDesign",
+            "ts": "2026-07-23T03:11:48.340Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/plans/CANDIDATE_HARNESS_PLAN.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-G4ReviewAndDecisionLogging",
+            "ts": "2026-07-23T03:11:48.372Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/design-tech-g4-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-BaselinedSpecSelfVerify",
+            "ts": "2026-07-23T03:11:48.409Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/candidate-reservoir.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T03:11:48.441Z"
+    },
+    {
+      "id": 6,
+      "subject": "explore-solutions: challenge the Candidate Reservoir persistence design",
+      "description": "Invoke: /explore-solutions. Compare viable persistence and mirror strategies, prototype the hard parts, and select the least fragile portable design before planning.",
+      "activeForm": "Challenging persistence alternatives",
+      "status": "completed",
+      "blocked_by": [
+        5
+      ],
+      "metadata": {
+        "skill": "explore-solutions"
+      },
+      "skill_receipt": {
+        "skill": "explore-solutions",
+        "loaded_at": "2026-07-23T03:11:48.508Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextProblemBrief",
+            "ts": "2026-07-23T03:13:55.168Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/explorations/candidate-reservoir/PROBLEM_BRIEF.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ParadigmResearchSolutionMap",
+            "ts": "2026-07-23T03:13:55.200Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/explorations/candidate-reservoir/SOLUTION_MAP.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-ACTradeoffAnalysis",
+            "ts": "2026-07-23T03:13:55.234Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/explorations/candidate-reservoir/ANALYSIS.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-FinalistPrototypeComparison",
+            "ts": "2026-07-23T03:13:55.264Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/explorations/candidate-reservoir/COMPARISON.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-DecisionAndTechDesignImpact",
+            "ts": "2026-07-23T03:13:55.303Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/explorations/candidate-reservoir/DECISION.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyAndContinuation",
+            "ts": "2026-07-23T03:13:55.342Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/explore-solutions-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T03:13:55.375Z"
+    },
+    {
+      "id": 7,
+      "subject": "plan-changeset: freeze the WI-508 implementation manifest",
+      "description": "Invoke: /plan-changeset. Produce a mechanically verifiable, task-ordered manifest for the harness, fixtures, seed dataset, state/config handling, docs, tests, and rollback.",
+      "activeForm": "Planning WI-508 implementation",
+      "status": "completed",
+      "blocked_by": [
+        6
+      ],
+      "metadata": {
+        "skill": "plan-changeset"
+      },
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-07-23T03:13:55.440Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-07-23T03:18:22.458Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-archetype.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-07-23T03:18:22.489Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-scope.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-07-23T03:18:22.521Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-23-candidate-reservoir/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-07-23T03:18:22.554Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-23-candidate-reservoir/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-07-23T03:18:22.590Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-07-23T03:18:22.625Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T03:18:22.656Z"
+    },
+    {
+      "id": 8,
+      "subject": "review-plan: independently attack the WI-508 plan",
+      "description": "Invoke: /review-plan. Run mechanical validation and the canonical independent adversarial plan review; block execution until every confirmed finding is resolved.",
+      "activeForm": "Reviewing the WI-508 plan",
+      "status": "completed",
+      "blocked_by": [
+        7
+      ],
+      "metadata": {
+        "skill": "review-plan"
+      },
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-07-23T03:18:22.723Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalValidation",
+            "ts": "2026-07-23T03:52:19.192Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/plan-tier1.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-07-23T03:52:19.222Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/plan-external-state-check.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReviews",
+            "ts": "2026-07-23T03:52:19.253Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/review-tier4.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerify",
+            "ts": "2026-07-23T03:52:19.352Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-plan-self-verify.log"
+              }
+            ]
+          },
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-07-23T03:52:29.518Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/plan-tier1.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-07-23T03:52:29.554Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/plan-external-state-check.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-07-23T03:52:29.584Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "/tmp/review-tier4.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-07-23T03:52:29.616Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-23-candidate-reservoir/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-07-23T03:52:29.657Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-23-candidate-reservoir/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-23T03:52:29.689Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-plan-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T03:52:19.386Z"
+    },
+    {
+      "id": 9,
+      "subject": "execute-changeset: implement and test the Candidate Harness",
+      "description": "Invoke: /execute-changeset. Apply only the frozen reviewed plan using red-green fixtures, then freeze the cumulative diff and exact test evidence.",
+      "activeForm": "Implementing the Candidate Harness",
+      "status": "completed",
+      "blocked_by": [
+        8
+      ],
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-07-23T03:52:29.720Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-07-23T04:17:36.183Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi508-exec-dispatch.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-07-23T04:17:36.219Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "scripts/candidate-harness.mjs"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-07-23T04:17:36.252Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi508-focused.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-07-23T04:17:36.285Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi508-risk.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-AuditRepairVerification",
+            "ts": "2026-07-23T05:25:21.273Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "test-framework/evals/tier-1/validate-candidate-harness.sh"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T05:25:21.306Z"
+    },
+    {
+      "id": 10,
+      "subject": "review-gate: G5 implementation/spec and coverage review",
+      "description": "Invoke: /review-gate. Review the frozen implementation against the spec, target scope, test depth, and code quality; block on substantive findings.",
+      "activeForm": "Running G5 implementation review",
+      "status": "completed",
+      "blocked_by": [
+        9
+      ],
+      "metadata": {
+        "skill": "review-gate"
+      },
+      "skill_receipt": {
+        "skill": "review-gate",
+        "loaded_at": "2026-07-23T05:25:21.340Z",
+        "loaded_via": "activate-skill",
+        "phases_executed": [
+          {
+            "id": "P6-AuditRepairReentry",
+            "ts": "2026-07-23T05:34:57.893Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/candidate-reservoir-analysis.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T05:34:57.924Z"
+    },
+    {
+      "id": 11,
+      "subject": "review-exec: G6 independent frozen-diff review",
+      "description": "Invoke: /review-exec. Resolve the adversarial reviewer tuple, run independent review over the exact frozen diff, and iterate within the three-round cap until PASS or owner halt.",
+      "activeForm": "Running G6 independent review",
+      "status": "completed",
+      "blocked_by": [
+        10
+      ],
+      "metadata": {
+        "skill": "review-exec"
+      },
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-07-23T05:34:57.960Z",
+        "loaded_via": "activate-skill",
+        "phases_executed": [
+          {
+            "id": "P6-AuditRepairHardCapReview",
+            "ts": "2026-07-23T05:53:38.284Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/candidate-reservoir-exec-cross-model.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T05:53:38.316Z"
+    },
+    {
+      "id": 12,
+      "subject": "review-security: audit candidate-controlled paths and local state boundaries",
+      "description": "Invoke: /review-security. Threat-model target_files, database location, symlinks, path escape, hostile JSON, decision-log injection, and cross-project data isolation.",
+      "activeForm": "Reviewing Candidate Harness security",
+      "status": "completed",
+      "blocked_by": [
+        17
+      ],
+      "metadata": {
+        "skill": "review-security"
+      },
+      "skill_receipt": {
+        "skill": "review-security",
+        "loaded_at": "2026-07-23T05:53:38.450Z",
+        "loaded_via": "activate-skill",
+        "phases_executed": [
+          {
+            "id": "P8-AuditRepairSecurityReentry",
+            "ts": "2026-07-23T05:56:51.292Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/security/candidate-reservoir-review.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T05:56:51.338Z"
+    },
+    {
+      "id": 13,
+      "subject": "audit-implementation: trace all WI-508 contracts through code and tests",
+      "description": "Invoke: /audit-implementation. Verify every consumer and AC across SQLite schema, mirror semantics, CLI transitions, filesystem grounding, decision logging, and seed completeness.",
+      "activeForm": "Auditing WI-508 implementation",
+      "status": "completed",
+      "blocked_by": [
+        12
+      ],
+      "metadata": {
+        "skill": "audit-implementation"
+      },
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-07-23T05:56:51.380Z",
+        "loaded_via": "activate-skill",
+        "phases_executed": [
+          {
+            "id": "P1-ContractTrace",
+            "ts": "2026-07-23T05:59:19.064Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/candidate-reservoir.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SystemReplay",
+            "ts": "2026-07-23T05:59:19.095Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-implementation-subsystems.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-SpecialistConvergence",
+            "ts": "2026-07-23T05:59:19.130Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/candidate-reservoir-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernCoverage",
+            "ts": "2026-07-23T05:59:19.169Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/security/candidate-reservoir-review.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-SelfVerify",
+            "ts": "2026-07-23T05:59:19.202Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-implementation-self-verify.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-ReadyToLand",
+            "ts": "2026-07-23T05:59:19.238Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/candidate-reservoir-analysis.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T05:59:19.272Z"
+    },
+    {
+      "id": 14,
+      "subject": "test-framework: run focused Candidate Harness replay and full Tier-1",
+      "description": "Invoke: /test-framework. Run the exact user ranking command, focused integration validator, syntax/schema checks, and aggregate Tier-1 with baseline failures classified independently.",
+      "activeForm": "Testing the framework",
+      "status": "completed",
+      "blocked_by": [
+        13
+      ],
+      "metadata": {
+        "skill": "test-framework"
+      },
+      "skill_receipt": {
+        "skill": "test-framework",
+        "loaded_at": "2026-07-23T05:59:19.309Z",
+        "loaded_via": "activate-skill",
+        "phases_executed": [
+          {
+            "id": "P1-TestModeSelection",
+            "ts": "2026-07-23T06:07:18.610Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/test-framework-mode.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-StaticOrScenarioRunnerExecution",
+            "ts": "2026-07-23T06:07:18.645Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/test-framework-runner.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-ResultsPersistenceGapRouting",
+            "ts": "2026-07-23T06:07:18.685Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "FRAMEWORK-STATE.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-23T06:07:18.722Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/test-framework-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T06:07:18.760Z"
+    },
+    {
+      "id": 15,
+      "subject": "land-changeset: publish the fully reviewed WI-508 change",
+      "description": "Invoke: /land-changeset. Audit the final diff and receipt envelope, push the branch, open and squash-merge the PR, then preserve exact post-merge evidence.",
+      "activeForm": "Landing WI-508",
+      "status": "completed",
+      "blocked_by": [
+        14
+      ],
+      "metadata": {
+        "skill": "land-changeset"
+      },
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-07-23T06:07:18.802Z",
+        "loaded_via": "activate-skill",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-07-23T06:09:12.835Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-07-23T06:09:12.888Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-diff-audit.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-07-23T06:09:12.948Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-validation.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-PushPrCreation",
+            "ts": "2026-07-23T06:22:31.854Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-pr.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-MergeDecisionCleanup",
+            "ts": "2026-07-23T06:22:31.886Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-merge.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SpecStatusSelfVerify",
+            "ts": "2026-07-23T06:22:31.924Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T06:22:31.958Z"
+    },
+    {
+      "id": 16,
+      "subject": "verify-promotion: replay Candidate Harness from promoted main",
+      "description": "Invoke: /verify-promotion. Re-run the exact rank/top/promote/reject flows from promoted source with isolated temporary state, confirm the 50-item mirror and project resolution, refresh installs if required, and close publication/worktree hygiene.",
+      "activeForm": "Verifying promoted WI-508",
+      "status": "completed",
+      "blocked_by": [
+        15
+      ],
+      "metadata": {
+        "skill": "verify-promotion"
+      },
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-07-23T06:22:31.996Z",
+        "loaded_via": "activate-skill",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-07-23T06:27:51.195Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-WI-508-promotion.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-07-23T06:27:51.230Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/verification/WI-508-promotion.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-07-23T06:27:51.261Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-WI-508-runtime.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-07-23T06:27:51.300Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/verification/WI-508-promotion.md"
+              }
+            ]
+          }
+        ],
+        "evidence_level": "V2",
+        "target_class": "data-only"
+      },
+      "completed_at": "2026-07-23T06:27:51.338Z"
+    },
+    {
+      "id": 17,
+      "subject": "review-cross-model: independently challenge the security-sensitive frozen diff",
+      "description": "Invoke: /review-cross-model. Obtain a different-family review of the exact frozen package for governed state, path containment, hostile JSON, concurrency, and cross-project isolation before security sign-off.",
+      "activeForm": "Running cross-model security review",
+      "status": "completed",
+      "blocked_by": [
+        11
+      ],
+      "metadata": {
+        "skill": "review-cross-model"
+      },
+      "skill_receipt": {
+        "skill": "review-cross-model",
+        "loaded_at": "2026-07-23T05:53:38.351Z",
+        "loaded_via": "activate-skill",
+        "phases_executed": [
+          {
+            "id": "P7-AuditRepairCanonicalReplay",
+            "ts": "2026-07-23T05:53:38.382Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/WI-508-g6-audit-repair-full/receipt.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T05:53:38.415Z"
+    },
+    {
+      "id": 18,
+      "subject": "write-journeys: define Candidate Harness system command journeys",
+      "description": "Invoke: /write-journeys. Wrap the DRAFT ACs in import/rank, top-N, promote, reject, invalid-input, and isolation scenarios without inventing a browser surface.",
+      "activeForm": "Writing Candidate Harness journeys",
+      "status": "completed",
+      "blocked_by": [
+        3
+      ],
+      "metadata": {
+        "skill": "write-journeys"
+      },
+      "skill_receipt": {
+        "skill": "write-journeys",
+        "loaded_at": "2026-07-23T02:56:18.017Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-InputAudit",
+            "ts": "2026-07-23T02:56:18.049Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/write-journeys-input-audit.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ScenarioGeneration",
+            "ts": "2026-07-23T02:56:18.082Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/journeys/J-FW-06-candidate-reservoir-triage.feature.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-Traceability",
+            "ts": "2026-07-23T02:56:18.116Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/candidate-reservoir.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-JourneyIndex",
+            "ts": "2026-07-23T02:56:18.149Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/journeys/JOURNEY_INDEX.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T02:56:18.184Z"
+    }
+  ]
+}

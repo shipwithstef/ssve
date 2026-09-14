@@ -1,0 +1,5 @@
+{
+  "schema": 1,
+  "purpose": "WI-395 main-green canary known-debt allowlist. Entries here are pre-existing tier-1 reds that are TRACKED (each with a WI), so the canary blocks NEW regressions without forcing a gate to be gutted. Empty = main is fully green.",
+  "known_red": []
+}

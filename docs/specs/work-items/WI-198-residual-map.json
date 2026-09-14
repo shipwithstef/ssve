@@ -1,0 +1,70 @@
+{
+  "schema": 1,
+  "wi": "WI-198",
+  "source_proposals": [
+    "proposals/done/2026-05-08-end-to-end-execution-without-permission-checkpoints.md"
+  ],
+  "status": "implemented-with-residuals",
+  "coverage": [
+    {
+      "source_proposal": "proposals/done/2026-05-08-end-to-end-execution-without-permission-checkpoints.md",
+      "proposal_item": "execution_mode=end_to_end is a first-class session-contract mode",
+      "status": "covered",
+      "owner_wi": "WI-198",
+      "evidence": [
+        "docs/specs/work-items/WI-198.md",
+        "_shared/session-contract.md",
+        "route-workflow/SKILL.md",
+        "test-framework/evals/tier-1/validate-end-to-end-stop-hook.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-08-end-to-end-execution-without-permission-checkpoints.md",
+      "proposal_item": "natural continuation under end-to-end mode should continue instead of pausing for permission",
+      "status": "covered",
+      "owner_wi": "WI-198",
+      "evidence": [
+        "hooks/svc-task-completion-guard.sh",
+        "test-framework/evals/tier-1/validate-end-to-end-stop-hook.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-08-end-to-end-execution-without-permission-checkpoints.md",
+      "proposal_item": "browser-visible verification under end-to-end mode must climb beyond cheap V0 proof when tools exist",
+      "status": "covered",
+      "owner_wi": "WI-199",
+      "evidence": [
+        "docs/specs/work-items/WI-199.md",
+        "docs/specs/work-items/WI-200.md",
+        "test-framework/evals/tier-1/validate-verification-delegation-guard.sh",
+        "test-framework/evals/tier-1/validate-verify-promotion-multi-pr-sampling.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-08-end-to-end-execution-without-permission-checkpoints.md",
+      "proposal_item": "parallel dispatch becomes the default for large same-shape WI waves",
+      "status": "covered",
+      "owner_wi": "WI-310",
+      "evidence": [
+        "docs/specs/work-items/WI-310.md",
+        "test-framework/evals/tier-1/validate-parallel-wi-dispatch.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-08-end-to-end-execution-without-permission-checkpoints.md",
+      "proposal_item": "auto-continuation decisions need typed audit records, recursion limits, and blast-radius thresholds",
+      "status": "child-wi",
+      "owner_wi": "WI-337",
+      "evidence": [
+        "docs/specs/work-items/WI-337.md",
+        "proposals/done/2026-05-08-end-to-end-execution-without-permission-checkpoints.md"
+      ]
+    }
+  ],
+  "residuals": [
+    {
+      "wi": "WI-337",
+      "title": "End-to-end continuation audit policy"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "session_id": "svc-impl-wi546-01a01070",
+  "model_id": "cursor-grok-4.6-high",
+  "usage_pool": "Cursor Grok 4.6 High",
+  "not": ["anthropic-sonnet", "fable", "opus", "codex", "composer-auto"],
+  "detect_host": "cursor",
+  "live_resolve_model_exec": {
+    "result": "fail-closed",
+    "reason": "owner dispatch policy missing (~/.svc/dispatch-policy.json)",
+    "remapped_to_sonnet": false
+  },
+  "fixture_exec_tuple": {
+    "host": "cursor",
+    "family": "xai",
+    "model": "cursor-grok-4.6-high",
+    "effort": "high"
+  }
+}

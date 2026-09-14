@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "created": "2026-05-11",
+  "owner_default": "research",
+  "status_values": ["legacy-unverified", "backfilled", "retired"],
+  "retirement_rules": [
+    "Backfill a domain by producing non-empty references/knowledge/domains/<domain>/.sources.jsonl from current source retrieval.",
+    "Mark a domain retired only when no active skill, manifest entry, work item, or project artifact requires that topic.",
+    "Until backfilled or retired, recall-stack-knowledge must label returned slices as legacy-unverified and treat claims as low-confidence."
+  ],
+  "domains": [
+    { "domain": "namecheap", "owner": "research", "due": "2026-06-10", "status": "legacy-unverified", "action": "backfill-or-retire" },
+    { "domain": "gemini-cli-hooks", "owner": "research", "due": "2026-06-10", "status": "legacy-unverified", "action": "backfill-or-retire" },
+    { "domain": "gcp-mcp", "owner": "research", "due": "2026-06-10", "status": "legacy-unverified", "action": "backfill-or-retire" },
+    { "domain": "google-ai-pro", "owner": "research", "due": "2026-06-10", "status": "legacy-unverified", "action": "backfill-or-retire" },
+    { "domain": "agent-evals", "owner": "research", "due": "2026-06-10", "status": "legacy-unverified", "action": "backfill-or-retire" },
+    { "domain": "resend", "owner": "research", "due": "2026-06-10", "status": "legacy-unverified", "action": "backfill-or-retire" },
+    { "domain": "capacitor", "owner": "research", "due": "2026-06-10", "status": "legacy-unverified", "action": "backfill-or-retire" },
+    { "domain": "devops-mcp", "owner": "research", "due": "2026-06-10", "status": "legacy-unverified", "action": "backfill-or-retire" },
+    { "domain": "claude-design", "owner": "research", "due": "2026-06-10", "status": "legacy-unverified", "action": "backfill-or-retire" },
+    { "domain": "codex", "owner": "research", "due": "2026-06-10", "status": "legacy-unverified", "action": "backfill-or-retire" }
+  ]
+}

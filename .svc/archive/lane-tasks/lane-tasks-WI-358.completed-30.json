@@ -1,0 +1,528 @@
+{
+  "wi": "WI-358",
+  "lane": "framework",
+  "status": "completed",
+  "created": "2026-06-06T20:55:53.500Z",
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "route-workflow",
+      "subject": "route-workflow: route WI-358 local pre-push tier-1 gate to framework lane full chain",
+      "status": "completed",
+      "metadata": {
+        "skill": "route-workflow",
+        "normalized_intent": "Build the scoped local pre-push tier-1 gate (cloud CI deferred until repo public) through the mandatory chain in a worktree; second WI of the evaluation cluster, sequential mode."
+      },
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-06-06T20:55:53.546Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-06-06T20:56:18.362Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-session-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-06-06T20:56:18.396Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-intent.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-06-06T20:56:18.431Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-358.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-06-06T20:56:18.465Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-concern-gate.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-06-06T20:56:18.499Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-358.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-06-06T20:56:18.533Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-self-verify.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": ".svc/lane-tasks-WI-358.json",
+        "validation_output": "framework lane full chain; concern scan 0 matches; capability diagnosis clean; reconcile ok"
+      },
+      "completed_at": "2026-06-06T20:56:18.604Z"
+    },
+    {
+      "id": 2,
+      "skill": "plan-changeset",
+      "subject": "plan-changeset: manifest for pre-push gate script (hot path: hooks/git/pre-push.d)",
+      "status": "completed",
+      "metadata": {
+        "skill": "plan-changeset"
+      },
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-06-06T21:09:02.970Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-06-06T21:09:03.005Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-archetype.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-06-06T21:09:03.038Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-scope.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-06-06T21:09:03.073Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-06-wi-358-tier1-pre-push-gate/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-06-06T21:09:03.144Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-simulation.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-06-06T21:09:03.189Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-adversarial.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-06-06T21:09:03.227Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-self-verify.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-06-06-wi-358-tier1-pre-push-gate/manifest.md",
+        "validation_output": "SIMULATED; mechanical exit 0; simulation 10/10 (sim-8 corrected with EVALS=0 pin); adversarial 10/10; validator 19 checks; 2 CREATEs 0 MODIFYs"
+      },
+      "completed_at": "2026-06-06T21:09:18.882Z"
+    },
+    {
+      "id": 3,
+      "skill": "review-plan",
+      "subject": "review-plan: adversarial plan review (codex primary)",
+      "status": "completed",
+      "metadata": {
+        "skill": "review-plan"
+      },
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-06-06T21:09:18.958Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-06-06T21:22:57Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "scripts/verify-plan-mechanical.sh docs/plans/2026-06-06-wi-358-tier1-pre-push-gate/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-06-06T21:22:57Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-06-wi-358-tier1-pre-push-gate/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-06-06T21:22:57Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-06-wi-358-tier1-pre-push-gate/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-06-06T21:22:57Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-06-wi-358-tier1-pre-push-gate/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-06-06T21:22:57Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-06-wi-358-tier1-pre-push-gate/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-06-06T21:22:57Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-358.json"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-06-06-wi-358-tier1-pre-push-gate/review-log.yaml",
+        "validation_output": "Tier-1 mechanical PASS; Tier-2 codex 6 findings resolved over 2 rounds (incl. reviewer-applied harness patch, audited+accepted); Tier-3 gemini 2 high findings fixed, round-2 verdict APPROVE. review-log terminal: APPROVED_ALL_TIERS. Validator 22 checks."
+      },
+      "completed_at": "2026-06-06T21:22:57Z"
+    },
+    {
+      "id": 4,
+      "skill": "execute-changeset",
+      "subject": "execute-changeset: implement gate in worktree per manifest",
+      "status": "completed",
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-06-06T21:33:05.803Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-06-06T21:47:13.743Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-preflight.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-06-06T21:47:13.771Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-apply.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-06-06T21:47:13.802Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-verification.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-06-06T21:47:13.833Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-checkpoint.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": ".worktrees/feature-wi-358-tier1-pre-push-gate (2 CREATEs @ 2aafdf11)",
+        "validation_output": "RED bedf1836 (20-fail) -> GREEN 2aafdf11 (22/22); probes 8/8 incl. live refuse-block exit 2; suite 195/195 with new validator; lint 0; diff == 2 planned files exact"
+      },
+      "completed_at": "2026-06-06T21:47:13.909Z"
+    },
+    {
+      "id": 5,
+      "skill": "review-exec",
+      "subject": "review-exec: G6 self+adversarial diff review",
+      "status": "completed",
+      "metadata": {
+        "skill": "review-exec"
+      },
+      "blocked_by": [
+        4
+      ],
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-06-06T21:47:13.976Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-06-06T22:02:52.747Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-exec-selfreview.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "/tmp/wi358-g6-out.txt + /tmp/wi358-g6-r2-out.txt (codex G6 rounds 1-2)",
+        "validation_output": "G6 codex: round-1 EXEC-001 reject (stdin starvation, verified real) + EXEC-002 medium (bypass channel); both fixed checkpoint-3 796470f6 (dispatcher stdin capture-replay; canonical pipeline-decisions bypass); round-2 approve, new_findings []. Integrated P7 proof: slot-10 + slot-15 both consumed replayed stdin through real installed dispatcher."
+      },
+      "completed_at": "2026-06-06T22:02:52.816Z"
+    },
+    {
+      "id": 6,
+      "skill": "audit-implementation",
+      "subject": "audit-implementation: correctness audit vs WI-358 goal + guardrails",
+      "status": "completed",
+      "metadata": {
+        "skill": "audit-implementation"
+      },
+      "blocked_by": [
+        5
+      ],
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-06-06T22:02:52.894Z",
+        "loaded_via": "manual",
+        "output_artifact": ".svc/receipts (audit-implementation receipt at landing) + pipeline-decisions entry",
+        "validation_output": "mode=light: scope EXACT-3 (2 CREATE + 1 MODIFY == amended manifest); AC spot-checks live (AC-01 integrated P7, AC-03 canonical ledger delta, AC-04 refuse exit 2); residue 0 (mktemp XXXXXX false-hit only; zero orphan dedicated-ledger refs); concern scan: none matched; post-amendment tier-1 195/195 — READY TO LAND"
+      },
+      "completed_at": "2026-06-06T22:07:53.824Z"
+    },
+    {
+      "id": 7,
+      "skill": "land-changeset",
+      "subject": "land-changeset: single-enveloped landing commit, PR, merge, cleanup",
+      "status": "completed",
+      "metadata": {
+        "skill": "land-changeset"
+      },
+      "blocked_by": [
+        6
+      ],
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-06-06T22:07:53.903Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-06-06T22:34:48.277Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-06-06T22:34:48.319Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-diff-audit.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-06-06T22:34:48.362Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-validation.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-PushPrCreation",
+            "ts": "2026-06-06T22:34:48.404Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-pr.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-MergeDecisionCleanup",
+            "ts": "2026-06-06T22:34:48.452Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-merge.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SpecStatusSelfVerify",
+            "ts": "2026-06-06T22:34:48.499Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-self-verify.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "PR #30 -> squash 57b30ed1 on main",
+        "validation_output": "live-fire push: gate ENGAGED -> suite 195/195 -> PASS, refs intact (LF-001 proven); merged via wrapper with receipt; envelope complete on squash; notes synced; worktree+branches cleaned"
+      },
+      "completed_at": "2026-06-06T22:34:48.648Z"
+    },
+    {
+      "id": 8,
+      "skill": "verify-promotion",
+      "subject": "verify-promotion: G7 post-land verification incl. live gate-fire proof + WI closeout",
+      "status": "completed",
+      "metadata": {
+        "skill": "verify-promotion"
+      },
+      "blocked_by": [
+        7
+      ],
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-06-06T22:34:48.741Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-06-06T22:41:26.167Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-evidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-06-06T22:41:26.217Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-ac.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-06-06T22:41:26.264Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-regression.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-06-06T22:41:26.313Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-closeout.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/specs/work-items/WI-358.md (VERIFIED) + docs/specs/reviews/wi-358-tier1-gate-cross-model.md",
+        "validation_output": "G7 PASS: 7/7 ACs live-evidenced; post-merge main suite 195/195; live-fire ENGAGED->PASS with ref-integrity check; envelope on landing+squash; VERIFIED"
+      },
+      "completed_at": "2026-06-06T22:41:26.415Z"
+    },
+    {
+      "id": 9,
+      "skill": "design-tech",
+      "subject": "design-tech: SKIPPED — single bash gate script; behavior contract carried in WI + manifest invariants",
+      "status": "skipped",
+      "skip_reason": "One pre-push hook script in the existing pre-push.d dispatcher pattern; no new components, data models, or integrations; constraints documented in WI-358 guardrails + manifest invariants. Skip per framework-lane skip conditions.",
+      "metadata": {
+        "skill": "design-tech"
+      }
+    }
+  ],
+  "delivery_graph": {
+    "closeout_classification": "runtime-accepted",
+    "closeout_classification_reasons": [
+      "missing delivery_graph"
+    ],
+    "mutation_history": [
+      {
+        "ts": "2026-06-06T22:43:06.119Z",
+        "source": "classify-delivery-graph-closeout",
+        "action": "close_as_runtime_accepted",
+        "reason": "missing delivery_graph",
+        "affected_tasks": [],
+        "affected_evidence_families": [],
+        "validator_proof": "scripts/classify-delivery-graph-closeout.mjs --write"
+      }
+    ]
+  }
+}

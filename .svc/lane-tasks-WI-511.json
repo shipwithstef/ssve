@@ -1,0 +1,1300 @@
+{
+  "schema_version": 1,
+  "wi": "WI-511",
+  "lane": "framework",
+  "status": "completed",
+  "created": "2026-07-23T22:06:59.554Z",
+  "solution_confidence_required": true,
+  "solution_confidence_mode": "design_auto",
+  "delivery_graph": {
+    "compiler_version": 1,
+    "user_intent": "Evaluate and implement only quality-preserving portions of the pasted SVC optimization proposal",
+    "repo_mode": "convert",
+    "change_type": "framework",
+    "lane": "framework",
+    "delivery_mode": "end_to_end",
+    "delivery_tier": {
+      "mode": "full",
+      "selected_by": "route-workflow",
+      "rationale": "A host hook and framework state lifecycle are high-risk surfaces; use the full mandatory chain.",
+      "decision_log_ref": ".svc/pipeline-decisions.jsonl",
+      "validation_policy": {
+        "mandatory_skills": [
+          "route-workflow",
+          "improve-framework",
+          "write-spec",
+          "research",
+          "design-tech",
+          "explore-solutions",
+          "plan-changeset",
+          "review-plan",
+          "execute-changeset",
+          "review-gate",
+          "review-exec",
+          "audit-implementation",
+          "test-framework",
+          "land-changeset",
+          "verify-promotion"
+        ],
+        "skippable_skills": [],
+        "blocked_behind_explicit_override": []
+      }
+    },
+    "risk_flags": [
+      "solution-confidence",
+      "framework-hot-path",
+      "host-hook",
+      "state-lifecycle",
+      "fail-closed"
+    ],
+    "platform_contracts": [],
+    "solution_confidence": {
+      "required": true,
+      "mode": "design_auto",
+      "status": "satisfied",
+      "artifact": "docs/specs/decisions/2026-07-24-wi-511-quality-preserving-optimizations/SOLUTION-CONFIDENCE.md",
+      "approved_at": null
+    },
+    "compression": {
+      "ratio": 1,
+      "threshold": 2,
+      "rationale": ""
+    },
+    "evidence_families": {
+      "product": "satisfied",
+      "acceptance_criteria": "satisfied",
+      "journey": "n/a",
+      "visual": "n/a",
+      "runtime": "satisfied",
+      "plan_review": "satisfied",
+      "code_review": "satisfied",
+      "implementation_audit": "satisfied",
+      "deploy": "n/a",
+      "promotion": "satisfied",
+      "session_forensics": "n/a",
+      "feature_validation_closeout": "n/a",
+      "provider_fidelity": "n/a"
+    },
+    "required_skills": [
+      "route-workflow",
+      "improve-framework",
+      "write-spec",
+      "research",
+      "design-tech",
+      "explore-solutions",
+      "plan-changeset",
+      "review-plan",
+      "execute-changeset",
+      "review-gate",
+      "review-exec",
+      "audit-implementation",
+      "test-framework",
+      "land-changeset",
+      "verify-promotion"
+    ],
+    "conditional_mandatory_skills": [
+      {
+        "skill": "design-tech",
+        "signal": "solution-confidence",
+        "reason": "The external optimization proposal must be falsified against current framework invariants before planning.",
+        "before": "plan-changeset"
+      },
+      {
+        "skill": "explore-solutions",
+        "signal": "solution-confidence",
+        "reason": "At least three materially different cleanup designs must be compared.",
+        "before": "plan-changeset"
+      }
+    ],
+    "optional_skills": [],
+    "skipped_skills": [
+      {
+        "skill": "design-ux",
+        "skip_condition_id": "design-ux:registry-skip",
+        "reason": "The accepted change is internal lifecycle cleanup for gitignored hook state and has no user interaction flow.",
+        "evidence": "WI-511 scope is hooks/svc-loop-guard.mjs plus a hermetic Tier-1 validator"
+      },
+      {
+        "skill": "design-ui",
+        "skip_condition_id": "design-ui:registry-skip",
+        "reason": "No visual or browser-rendered surface changes.",
+        "evidence": "No HTML, CSS, JSX, assets, or screenshot output is in scope"
+      },
+      {
+        "skill": "write-e2e",
+        "skip_condition_id": "write-e2e:registry-skip",
+        "reason": "A hermetic hook-process validator exercises the complete observable contract.",
+        "evidence": "The hook has stdin/stdout/filesystem behavior and no customer journey"
+      },
+      {
+        "skill": "track-visuals",
+        "skip_condition_id": "track-visuals:registry-skip",
+        "reason": "No visual output exists.",
+        "evidence": "Visual evidence family is n/a"
+      },
+      {
+        "skill": "test-journeys",
+        "skip_condition_id": "test-journeys:registry-skip",
+        "reason": "The internal hook lifecycle is proven by focused mutation-red fixtures and Tier-1.",
+        "evidence": "WI-511 acceptance criteria"
+      }
+    ],
+    "verification_tiers": {
+      "local": [
+        "tier-1"
+      ],
+      "runtime": [
+        "hook-process"
+      ],
+      "production": []
+    },
+    "mutation_history": [
+      {
+        "ts": "2026-07-23T22:10:00.000Z",
+        "source": "route-workflow",
+        "action": "initial_compile",
+        "reason": "Compiled the quality-preserving single-gap delivery graph before downstream mutation."
+      }
+    ],
+    "closeout_classification_required": true
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "route-workflow",
+      "subject": "route-workflow: triage the external optimization proposal and compile the full delivery graph",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-07-23T22:07:23.623Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-07-23T22:09:58.240Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-session-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-07-23T22:09:58.441Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-intent.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-07-23T22:09:58.507Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-511.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-07-23T22:09:58.576Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-concern-gate.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-07-23T22:09:58.633Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-511.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-07-23T22:09:58.690Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T22:09:58.745Z"
+    },
+    {
+      "id": 2,
+      "status": "completed",
+      "skill": "improve-framework",
+      "subject": "improve-framework: register the one evidence-backed stale loop-state lifecycle gap",
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-07-23T22:10:05.011Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-FrameworkRepoAndMemoryLoad",
+            "ts": "2026-07-23T22:11:28.807Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-repo-memory.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-PendingProposalAndEvidenceSelection",
+            "ts": "2026-07-23T22:11:28.987Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-evidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-DiagnosisAndDuplicateFilter",
+            "ts": "2026-07-23T22:11:29.090Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "proposals/2026-07-24-framework-improvement-stale-loop-state-lifecycle.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ImplementationRouteDecision",
+            "ts": "2026-07-23T22:11:29.172Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-route.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-ImplementationAndReplayVerification",
+            "ts": "2026-07-23T22:11:29.253Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-replay.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-ImprovementRecordAndStateMutation",
+            "ts": "2026-07-23T22:11:29.321Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "FRAMEWORK-STATE.md"
+              }
+            ]
+          },
+          {
+            "id": "P7-ProposalDoneAndRemoteSync",
+            "ts": "2026-07-23T22:11:29.389Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-remote-sync.log"
+              }
+            ]
+          },
+          {
+            "id": "P8-SelfVerifyContinuation",
+            "ts": "2026-07-23T22:11:29.471Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T22:11:29.557Z"
+    },
+    {
+      "id": 3,
+      "status": "completed",
+      "skill": "write-spec",
+      "subject": "write-spec: baseline WI-511 quality and cleanup acceptance criteria",
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "write-spec",
+        "loaded_at": "2026-07-23T22:11:29.915Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-ContextAndModeSelection",
+            "ts": "2026-07-23T22:12:11.161Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/write-spec-context-mode.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiscussionPreflightAndAlternatives",
+            "ts": "2026-07-23T22:12:11.260Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/write-spec-discussion-alternatives.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-StoryAcceptanceCriteriaDraft",
+            "ts": "2026-07-23T22:12:11.346Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-511.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ScopeReviewDecisionLog",
+            "ts": "2026-07-23T22:12:11.417Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/write-spec-scope-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-JourneySyncDependencyQueue",
+            "ts": "2026-07-23T22:12:11.469Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/write-spec-journey-sync.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyHandoff",
+            "ts": "2026-07-23T22:12:11.559Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/write-spec-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T22:12:11.626Z"
+    },
+    {
+      "id": 15,
+      "status": "completed",
+      "skill": "research",
+      "subject": "research: ground the optimization proposal in current local framework contracts and precedents",
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "research",
+        "loaded_at": "2026-07-23T22:13:00.000Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-InvocationReceiptModeFrame",
+            "ts": "2026-07-23T22:13:01.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/research-invocation-mode.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-KnowledgeLocalResolution",
+            "ts": "2026-07-23T22:13:02.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/research-local-knowledge.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ExternalResearchOrPrescope",
+            "ts": "2026-07-23T22:13:03.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/research-external-or-prescope.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-PersistenceProvenance",
+            "ts": "2026-07-23T22:13:04.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/decisions/2026-07-24-wi-511-quality-preserving-optimizations/SOLUTION-CONFIDENCE.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerificationLanding",
+            "ts": "2026-07-23T22:13:05.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/research-verification-landing.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyReturnControl",
+            "ts": "2026-07-23T22:13:06.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/research-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T22:13:07.000Z"
+    },
+    {
+      "id": 4,
+      "status": "completed",
+      "skill": "design-tech",
+      "subject": "design-tech: define bounded fail-open cleanup in the owning hook",
+      "blocked_by": [
+        15
+      ],
+      "skill_receipt": {
+        "skill": "design-tech",
+        "loaded_at": "2026-07-23T22:12:11.951Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-SpecJourneyDiscussionPreflight",
+            "ts": "2026-07-23T22:15:46.035Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/design-tech-preflight.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-CodebasePatternAnalysis",
+            "ts": "2026-07-23T22:15:46.204Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/design-tech-codebase-analysis.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ArchitectureAlternativesAndDiagrams",
+            "ts": "2026-07-23T22:15:46.278Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-511.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-CostOpsFeasibilityRiskDesign",
+            "ts": "2026-07-23T22:15:46.349Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-511.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-G4ReviewAndDecisionLogging",
+            "ts": "2026-07-23T22:15:46.413Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/design-tech-g4-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-BaselinedSpecSelfVerify",
+            "ts": "2026-07-23T22:15:46.461Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-511.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T22:15:46.540Z"
+    },
+    {
+      "id": 5,
+      "status": "completed",
+      "skill": "explore-solutions",
+      "subject": "explore-solutions: challenge startup cleanup against lazy and task-graph alternatives",
+      "blocked_by": [
+        4
+      ],
+      "skill_receipt": {
+        "skill": "explore-solutions",
+        "loaded_at": "2026-07-23T22:15:46.889Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextProblemBrief",
+            "ts": "2026-07-23T22:17:11.307Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/explorations/wi-511-loop-state-lifecycle/PROBLEM_BRIEF.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ParadigmResearchSolutionMap",
+            "ts": "2026-07-23T22:17:11.516Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/explorations/wi-511-loop-state-lifecycle/SOLUTION_MAP.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-ACTradeoffAnalysis",
+            "ts": "2026-07-23T22:17:11.590Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/explorations/wi-511-loop-state-lifecycle/ANALYSIS.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-FinalistPrototypeComparison",
+            "ts": "2026-07-23T22:17:11.652Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/explorations/wi-511-loop-state-lifecycle/COMPARISON.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-DecisionAndTechDesignImpact",
+            "ts": "2026-07-23T22:17:11.718Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/explorations/wi-511-loop-state-lifecycle/DECISION.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyAndContinuation",
+            "ts": "2026-07-23T22:17:11.780Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/explore-solutions-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T22:17:11.846Z"
+    },
+    {
+      "id": 6,
+      "status": "completed",
+      "skill": "plan-changeset",
+      "subject": "plan-changeset: produce the reviewed implementation manifest",
+      "blocked_by": [
+        5
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-07-23T22:17:22.398Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-07-23T22:24:06.300Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-archetype.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-07-23T22:24:06.474Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-scope.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-07-23T22:24:06.547Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-task-map.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-07-23T22:24:06.613Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-external-state.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-07-23T22:24:06.671Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-07-23T22:24:06.740Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T22:24:06.825Z"
+    },
+    {
+      "id": 7,
+      "status": "completed",
+      "skill": "review-plan",
+      "subject": "review-plan: independently challenge the implementation plan",
+      "blocked_by": [
+        6
+      ],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-07-23T22:24:06.889Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-07-23T22:40:57.780Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi511-plan-tier1-final.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-07-23T22:40:57.974Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-plan-external-state-check.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-07-23T22:40:58.073Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/plan/1dfc84dc1d0792f18e951d8203b835230260ffe8490fc3da65b5ce06bb4d8fb8/20260723T222549Z-3530856/findings.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-07-23T22:40:58.145Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-24-wi511-loop-state-lifecycle/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-07-23T22:40:58.228Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-24-wi511-loop-state-lifecycle/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-23T22:40:58.299Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-plan-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T22:40:58.361Z"
+    },
+    {
+      "id": 8,
+      "status": "completed",
+      "skill": "execute-changeset",
+      "subject": "execute-changeset: implement bounded stale loop-state pruning and fixtures",
+      "blocked_by": [
+        7
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-07-23T22:40:58.438Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-07-23T23:03:39.610Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-dispatch-preflight.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-07-23T23:03:39.755Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "hooks/lib/loop-guard-state-lifecycle.mjs"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-07-23T23:03:39.867Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-verification.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-07-23T23:03:40.109Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-checkpoint.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-24T01:05:49.038Z"
+    },
+    {
+      "id": 9,
+      "status": "completed",
+      "skill": "review-gate",
+      "subject": "review-gate: verify implementation against WI-511 acceptance criteria",
+      "blocked_by": [
+        8
+      ],
+      "skill_receipt": {
+        "skill": "review-gate",
+        "loaded_at": "2026-07-23T23:03:40.585Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-GateContextChecklistConcernScan",
+            "ts": "2026-07-23T23:12:16.532Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SelfReviewFindings",
+            "ts": "2026-07-23T23:12:17.179Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-self-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-SelfJudgment",
+            "ts": "2026-07-23T23:12:17.950Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-self-judgment.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-CrossReviewConvergence",
+            "ts": "2026-07-23T23:12:18.716Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-cross-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-GateDecisionBacklog",
+            "ts": "2026-07-23T23:12:19.372Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-decision.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-23T23:12:20.001Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-24T01:09:13.853Z"
+    },
+    {
+      "id": 10,
+      "status": "completed",
+      "skill": "review-exec",
+      "subject": "review-exec: run a different-family adversarial frozen-diff review",
+      "blocked_by": [
+        9
+      ],
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-07-23T23:12:54.484Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-07-24T00:48:49.836Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipts/staging/c03b778a6f84bd86e3c643af172643066710368c/review-exec-self.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-07-24T00:48:49.871Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-exec-pair.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-07-24T00:48:49.909Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-511-loop-state-lifecycle-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-IterationLoop",
+            "ts": "2026-07-24T00:48:49.945Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-511-loop-state-lifecycle-exec-review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerdictAndReceiptFinalize",
+            "ts": "2026-07-24T00:48:49.980Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-511-loop-state-lifecycle-exec-review-log.yaml"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-24T01:13:33.330Z"
+    },
+    {
+      "id": 11,
+      "status": "completed",
+      "skill": "audit-implementation",
+      "subject": "audit-implementation: audit lifecycle safety, scope, and mutation-red coverage",
+      "blocked_by": [
+        10
+      ],
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-07-24T00:49:04.090Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextScopeConcern",
+            "ts": "2026-07-24T01:13:45.520Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-implementation-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecialistDispatchCoverageLedger",
+            "ts": "2026-07-24T01:13:45.682Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-511-loop-state-lifecycle-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-HypothesisGeneration",
+            "ts": "2026-07-24T01:13:45.842Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-511-loop-state-lifecycle-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-SubsystemBehaviorAudit",
+            "ts": "2026-07-24T01:13:46.019Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-implementation-subsystems.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-FindingsConvergenceReport",
+            "ts": "2026-07-24T01:13:46.184Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-511-loop-state-lifecycle-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-24T01:13:46.399Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-implementation-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-24T01:13:46.566Z"
+    },
+    {
+      "id": 12,
+      "status": "completed",
+      "skill": "test-framework",
+      "subject": "test-framework: run focused hook tests and full Tier-1",
+      "blocked_by": [
+        11
+      ],
+      "metadata": {
+        "inapplicable_phases": [
+          {
+            "phase": "P3-LiveAutopilotOrComparisonExecution",
+            "reason": "No running application or live comparison surface exists for this framework-internal hook lifecycle change.",
+            "evidence": ".svc/test-framework-mode.log"
+          },
+          {
+            "phase": "P4-MethodologyUsageAudit",
+            "reason": "Methodology usage audit applies only to comparison mode; WI-511 selected static mode.",
+            "evidence": ".svc/test-framework-mode.log"
+          }
+        ]
+      },
+      "skill_receipt": {
+        "skill": "test-framework",
+        "loaded_at": "2026-07-24T01:14:00.263Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-TestModeSelection",
+            "ts": "2026-07-24T01:15:09.298Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/test-framework-mode.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-LiveAutopilotOrComparisonExecution",
+            "ts": "2026-07-24T01:21:24.295Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-511.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-MethodologyUsageAudit",
+            "ts": "2026-07-24T01:21:24.330Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-511.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-StaticOrScenarioRunnerExecution",
+            "ts": "2026-07-24T01:27:24.905Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/test-framework-full-tier1.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-ResultsPersistenceGapRouting",
+            "ts": "2026-07-24T01:27:25.071Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "FRAMEWORK-STATE.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-24T01:27:25.245Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/test-framework-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-24T01:27:25.434Z"
+    },
+    {
+      "id": 13,
+      "status": "completed",
+      "skill": "land-changeset",
+      "subject": "land-changeset: commit, push, review, and merge through the governed path",
+      "blocked_by": [
+        12
+      ],
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-07-24T01:27:34.884Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-07-24T01:31:36.149Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-07-24T01:31:36.310Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-diff-audit.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-07-24T01:31:36.482Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-validation.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-PushPrCreation",
+            "ts": "2026-07-24T01:42:22.515Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-pr.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-MergeDecisionCleanup",
+            "ts": "2026-07-24T01:45:02.922Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-merge.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SpecStatusSelfVerify",
+            "ts": "2026-07-24T01:45:03.081Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-24T01:45:03.241Z"
+    },
+    {
+      "id": 14,
+      "status": "completed",
+      "skill": "verify-promotion",
+      "subject": "verify-promotion: replay the hook and canonical reconcile from promoted main",
+      "blocked_by": [
+        13
+      ],
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-07-24T01:45:03.594Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-07-24T02:01:33.393Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-promotion.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-07-24T02:01:33.553Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-511.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-07-24T02:01:33.715Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-runtime.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-07-24T02:01:33.895Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-511.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-24T02:13:55.340Z"
+    }
+  ]
+}

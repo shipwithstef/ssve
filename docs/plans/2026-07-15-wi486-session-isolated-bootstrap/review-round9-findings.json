@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "review_kind": "plan",
+  "rubric_score": 3,
+  "rubric_failures": [
+    2,
+    3,
+    5,
+    6,
+    8
+  ],
+  "dependencies_needing_read": [],
+  "reviewer": {
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6-codex",
+    "effort": "high"
+  },
+  "verdict": "fail",
+  "summary": "The implementation decomposition is detailed, but the land/recovery path is not executable as written, the follow-up verification changeset bypasses genuine plan/exec review, compatibility authority wiring is missing from the task scope, and stale-bootstrap deletion provenance is insufficient.",
+  "findings": [
+    {
+      "id": "F-001",
+      "severity": "high",
+      "claim": "The main-advanced recovery path computes an empty cached diff and cannot resume at Step 4 as instructed.",
+      "analysis": "After Step 4, the candidate is already committed. If main advances, `git rebase origin/main` leaves the candidate in `HEAD` with an index matching `HEAD`. Consequently `git diff --cached \"$BASE\"` is empty: `--cached` compares the index to the new base, but the index is not repopulated merely by `git add` on unchanged committed files. The non-empty assertion therefore fails. Even if the hash were corrected, resuming at Step 4 would attempt another `git commit` with no staged changes. The recovery path also omits rerunning the full verification suite against the new base.",
+      "evidence": [
+        "Execution Sequence Step 4 commits the aggregate candidate before the freshness gate: `git commit -F \"$COMMIT_MSG_FILE\"`.",
+        "Step 6 then runs `git rebase origin/main`, followed by `git add -- $CODE_PATHS` and `git diff --cached \"$BASE\"`.",
+        "The recovery instruction says: `re-run STEP 3 ... then resume from STEP 4`, although Step 4 assumes an uncommitted staged candidate.",
+        "`RECOVERY_IF_FAIL` repeats that the rebased path resumes from Step 4 and does not require replaying Step 1."
+      ],
+      "proposed_fix": "Define a separate rebase recovery sequence. After rebasing, compute the candidate from `git diff \"$BASE\"..HEAD -- $CODE_PATHS`, assert it is non-empty, rerun Step 1 and both Step-3 reviews over that committed diff, amend or recreate the aggregate commit only if tracked evidence must change, regenerate SHA-bound receipts for the new HEAD, and then continue at the freshness check rather than re-entering the original Step 4."
+    },
+    {
+      "id": "F-002",
+      "severity": "high",
+      "claim": "Task 6b cannot deterministically bootstrap a second WI-486 worktree while the implementation worktree still owns the same WI.",
+      "analysis": "The bootstrap contract explicitly scans for a live same-WI owner and permits unchanged resume only for an exact matching worktree, branch, and base tuple. Step 8 requests the same WI with a different branch and worktree while `$ROOT` remains the active implementation worktree. No command releases its binding or claim, closes its session ownership, or removes the worktree before the second bootstrap. Under the plan's own conflict rules, this request must fail as a live same-WI conflict.",
+      "evidence": [
+        "Bootstrap step 2 requires: `Scan all linked-worktree bindings/claims for a live same-WI owner (conflict source)`.",
+        "Recovery says an exact complete same-session tuple resumes unchanged, while live foreign or differing state is a conflict.",
+        "Step 8 invokes `svc-ensure-worktree.mjs --wi WI-486 --branch framework-WI-486-verify-promotion ...` while `ROOT` is still defined as the 6a worktree.",
+        "No land-sequence command invokes the planned selective-release primitive or otherwise releases the 6a WI claim/binding."
+      ],
+      "proposed_fix": "Add an explicit, validated ownership handoff between Steps 7 and 8. Specify which claim/binding/worktree artifacts are released, require generation/session checks through the selective-release API, prove the implementation tree and receipt bodies remain available from a neutral location, and add a focused replay showing that the subsequent same-WI bootstrap succeeds without weakening live-owner conflict protection."
+    },
+    {
+      "id": "F-003",
+      "severity": "high",
+      "claim": "The final 6b commit is not validated after its lifecycle and evidence files are modified.",
+      "analysis": "Step 8 runs Tier 1 on the freshly promoted implementation before 6b changes the work-item status, index, feature evidence, lane graph, and test-evidence files. Step 9 then stages and commits those modifications without rerunning the task-graph, lane, Markdown, JSONL, diff, or full Tier-1 validators. Thus the actual follow-up commit can contain an invalid closed graph, inconsistent lifecycle state, malformed evidence, or Markdown failures even though the earlier promoted tree passed.",
+      "evidence": [
+        "Step 8 runs `run-all-evals.sh --tier1` before the Step-9 lifecycle edits are staged.",
+        "Step 9 stages `WI-486.md`, `INDEX.md`, `.svc/lane-tasks-WI-486.json`, feature evidence, and several new Markdown/JSON evidence files.",
+        "There is no validation command between that `git add` and `git commit`.",
+        "Task 6b claims validation includes closing the graph and writing evidence, but the command sequence validates only the pre-edit promoted tree."
+      ],
+      "proposed_fix": "After authoring every 6b file and before committing, run `git diff --check`, task-graph validation, lane validation, Markdown validation, JSON/JSONL validation as applicable, and the full required Tier-1 suite. Record output from that final candidate tree and make the 6b receipt bodies cite its exact tree or diff hash."
+    },
+    {
+      "id": "F-004",
+      "severity": "high",
+      "claim": "Task 6b fabricates passing review and audit receipts without performing the mandatory review-plan, review-exec, or audit work for that changeset.",
+      "analysis": "The plan correctly classifies 6b as non-exempt, yet it reuses the implementation plan receipts and constructs new passing exec/review/audit JSON bodies directly. No 6b-specific plan package is reviewed, no canonical external-review launcher runs on the 6b diff, no finding evaluation occurs, and no implementation audit is produced. The PR receipt names an in-session review gate, but there is no corresponding review command or artifact. Schema-valid self-assertions do not satisfy the mandatory chain.",
+      "evidence": [
+        "Step 9 states that 6b is non-exempt and must use its own sanctioned chain.",
+        "It nevertheless says `reuse convergence plan bodies` from the implementation changeset.",
+        "`vp-review-exec.json` is created directly with `result:\"pass\", verdict:\"pass\"` and no launcher identity or findings artifact.",
+        "`vp-audit.json` is created directly with `result:\"pass\"` and no audit evidence.",
+        "The 6b PR receipt declares reviewer `in-session review-gate`, but Step 9 contains no review-gate or external-review invocation."
+      ],
+      "proposed_fix": "Create a 6b-specific plan manifest or explicitly scoped plan addendum, run review-plan on it, freeze and hash the complete 6b diff, run the required review-exec/review-gate path and audit against that diff, resolve findings, and emit receipts only from those real artifacts. Do not reuse 6a plan/review bodies as evidence for a distinct non-exempt changeset."
+    },
+    {
+      "id": "F-005",
+      "severity": "high",
+      "claim": "The task graph does not wire task-state compatibility classification into the shared resolver that grants Codex mutation authority.",
+      "analysis": "The contract says only `supported` task state may participate in authority resolution. The compatibility classifier is not created until task 4, but the resolver and both Codex consumers are assigned only to task 2. Task 4's declared files omit the resolver and Codex consumers, while task 5 modifies only the Claude Stop consumer. Therefore no task is authorized to make the shared resolver reject legacy, malformed, future, unsafe, or lossy graphs. Implementing that requirement would either leave an AC uncovered or require an undeclared cross-task file modification.",
+      "evidence": [
+        "Task 2 files are `resolve-wi.mjs` and the two Codex authority consumers.",
+        "Task 4 creates `task-state-compatibility.mjs`, the migration CLI, schema, `.gitignore`, and its validator, but does not list `resolve-wi.mjs`.",
+        "The compatibility contract states: `Only supported may participate in authority resolution`.",
+        "Task 5 adopts compatibility behavior only in `hooks/svc-task-completion-guard.sh`."
+      ],
+      "proposed_fix": "Add `hooks/lib/resolve-wi.mjs` and any affected Codex consumer to task 4's file scope and checkpoint. Require the resolver to classify raw graph bytes through the new shared module before parsing/selecting a task, grant authority only for `supported`, and add Codex plus Claude parity fixtures for legacy-lossless, malformed, future, lossy, and unsafe-path graphs."
+    },
+    {
+      "id": "F-006",
+      "severity": "high",
+      "claim": "The bootstrap marker's path ledger does not prove that listed artifacts were created by its owner, so stale recovery can delete an artifact it did not create.",
+      "analysis": "The marker records intended paths before creation, making the ledger intentionally a superset. The `owner_token` exists only in the marker as described; the plan does not bind that token to the worktree, graph, claim, binding, or an independently durable creation record. A crash after recording intent but before creation leaves a listed absent path. If another actor later creates that path, the subset backstop still passes because the path is listed, and stale recovery is authorized to delete it. Repository locking prevents cooperating bootstrap calls from racing but does not prove provenance against other processes or manual creation.",
+      "evidence": [
+        "Deletion provenance says the path is appended and fsynced before the artifact is created.",
+        "The ledger is explicitly described as a superset and may list paths not created by the attempt.",
+        "Stale recovery deletes listed `created_paths[]` after checking only that matching artifacts are a subset of the list.",
+        "Although `owner_token` is said to prove authorship, no artifact schema or sidecar records that token and no recovery check compares it."
+      ],
+      "proposed_fix": "Track creation state separately from intent. For each artifact, retain a pending intent entry, create it exclusively, then atomically mark it `created` with verifiable provenance such as an owner token embedded in owned JSON artifacts and a token-bound sidecar for worktree/branch creation. Stale recovery must delete only entries marked created whose current artifact still matches the recorded token or creation identity; pending or mismatched entries must become ambiguous conflicts."
+    }
+  ],
+  "certifications": []
+}

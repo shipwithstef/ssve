@@ -1,0 +1,13 @@
+{
+  "skill": "write-spec",
+  "scenario": "spec output should include AC table with QA, E2E, Test columns and Status: DRAFT",
+  "conversation": [
+    { "role": "user", "content": "Author a feature spec for a notification preferences page where users toggle email vs in-app vs none per category." }
+  ],
+  "assertions": [
+    { "type": "regex", "value": "Status:[*\\s]*DRAFT" },
+    { "type": "regex", "value": "\\| AC \\| Description \\| QA \\| E2E \\| Test \\|" },
+    { "type": "contains", "value": "System Dependencies" },
+    { "type": "contains", "value": "Pillars Coverage Matrix" }
+  ]
+}

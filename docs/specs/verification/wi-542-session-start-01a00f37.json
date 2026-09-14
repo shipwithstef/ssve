@@ -1,0 +1,49 @@
+{
+  "session_id": "01a00f37-834e-7cc0-a78d-0ad67bf9218e",
+  "source": "/home/user/.grok/sessions/%2Fhome%2Fdianast%2Fapp-workspaces%2Fseriousvibecoding/01a00f37-834e-7cc0-a78d-0ad67bf9218e/updates.jsonl",
+  "line": 1,
+  "timestamp": 1786961692,
+  "event_name": "session_start",
+  "sessionUpdate": "hook_execution",
+  "promoted_sha": "a4d0efa319241c12b5bb108b00da28313826617d",
+  "note": "Post-merge Grok session that started after PR #9 was installed. Implement session 01a00e3b timed out and is not AC-542-7 evidence.",
+  "runs": [
+    {
+      "name": "user:session_start[0].hooks[0]",
+      "origin": "grok-native",
+      "status": "success",
+      "elapsed_ms": 326
+    },
+    {
+      "name": "global/settings:session_start[0].hooks[0]",
+      "origin": "claude-compat",
+      "status": "success",
+      "elapsed_ms": 77
+    },
+    {
+      "name": "global/settings:session_start[1].hooks[0]",
+      "origin": "claude-compat-healthcheck",
+      "status": "success",
+      "elapsed_ms": 203,
+      "previously": "timed out after 5000ms"
+    },
+    {
+      "name": "global/settings:session_start[2].hooks[0]",
+      "origin": "claude-compat",
+      "status": "success",
+      "elapsed_ms": 55
+    },
+    {
+      "name": "global/settings:session_start[3].hooks[0]",
+      "origin": "claude-compat",
+      "status": "success",
+      "elapsed_ms": 239
+    },
+    {
+      "name": "global/settings:session_start[4].hooks[0]",
+      "origin": "claude-compat",
+      "status": "success",
+      "elapsed_ms": 125
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "review_kind": "plan",
+  "rubric_score": 3,
+  "rubric_failures": [
+    1,
+    2,
+    3,
+    5,
+    6,
+    7,
+    8
+  ],
+  "dependencies_needing_read": [
+    "docs/specs/work-items/WI-506.md",
+    ".svc/lane-tasks-WI-506.json"
+  ],
+  "reviewer": {
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6-sol",
+    "effort": "xhigh"
+  },
+  "verdict": "fail",
+  "summary": "The architecture is substantially specified, but the executable plan is not deterministic. It contains invalid task references, omits two implementation tasks from the command sequence, claims rollback checkpoints that the sequence never creates, uses an overbroad staging path, and provides no artifact-level proof of framework-lane compliance. Promotion should remain blocked until the manifest and task graph agree.",
+  "findings": [
+    {
+      "id": "F-001",
+      "severity": "high",
+      "claim": "The AC mapping references a nonexistent task, so several criteria lack valid task ownership.",
+      "analysis": "The task graph defines task-6-docs but no task-5-docs. RP-01, RP-12, and RP-13 are assigned to task-5-docs in the AC-to-task mapping, and the production-file table assigns the integrity reference to the same nonexistent task. An executor or mechanical coverage checker cannot resolve those edges, making the claimed complete RP-01..RP-18 coverage false.",
+      "evidence": [
+        "Task graph defines task-5-review-phase and task-6-docs, but no task-5-docs.",
+        "AC-to-task mapping assigns RP-01, RP-12, and RP-13 to task-5-docs.",
+        "references/codex-hook-execution-integrity.md is assigned to task-5-docs in the file inventory."
+      ],
+      "proposed_fix": "Replace every task-5-docs reference with task-6-docs, then mechanically verify that every task identifier used in the file inventory, AC mapping, checkpoints, and lane graph resolves to exactly one task."
+    },
+    {
+      "id": "F-002",
+      "severity": "high",
+      "claim": "The execution command sequence never instructs the executor to implement task-5-review-phase or task-6-docs before committing.",
+      "analysis": "The sequence explicitly says to apply tasks 2–4 after the RED tests. It then runs only a subset of validators and immediately stages and commits. Although scripts/run-external-review.mjs appears in the git-add list, no command or instruction applies task 5, and none of the task-6 governance/documentation paths are staged. The sequence therefore cannot produce the declared complete changeset or satisfy RP-16..RP-18 and the documentation/state closeout criteria.",
+      "evidence": [
+        "Execution comment says: \"apply tasks 2-4 with apply_patch in dependency order.\"",
+        "No subsequent instruction applies task-5-review-phase or task-6-docs.",
+        "The commit stages scripts/run-external-review.mjs but omits the listed WI, contract-map, technical-design, decision, proposal, registry, knowledge, and FRAMEWORK-STATE.md outputs.",
+        "Receipt emission and downstream review cannot repair implementation or documentation files that were never produced."
+      ],
+      "proposed_fix": "Add explicit, ordered application steps for tasks 5 and 6. Add an exact final file inventory check and stage every intended task-6 output explicitly before the implementation-complete commit, or split the sequence into named commits whose contents match the checkpoint table."
+    },
+    {
+      "id": "F-003",
+      "severity": "high",
+      "claim": "The claimed checkpoint rollback strategy is unreachable because the command sequence creates only one implementation commit.",
+      "analysis": "The checkpoint table promises rollback anchors at tests-red, shared-resolver, consumer-parity, loader-transaction, and review-phase-classifier. The executable sequence creates only the final implementation-complete commit. Labels mentioned in prose do not provide commit-scoped rollback anchors, so recovery cannot revert to the prior checkpoint as claimed. This is especially material for a cross-cutting authority-state change.",
+      "evidence": [
+        "Checkpoint table lists six checkpoints with multiple \"Prior checkpoint\" rollback anchors.",
+        "Execution Command Sequence contains one git commit using checkpoint wi506-implementation-complete.",
+        "RECOVERY_IF_FAIL directs the executor to revert the last WI-506 checkpoint, but no commands create the preceding checkpoints."
+      ],
+      "proposed_fix": "Either add explicit non-interactive commit commands for each checkpoint and define the later squash procedure, or revise the rollback plan to use the base SHA plus path-scoped patches/evidence. Do not claim prior-checkpoint rollback anchors unless durable commit SHAs are actually created."
+    },
+    {
+      "id": "F-004",
+      "severity": "high",
+      "claim": "The staging command can include unrelated Tier-1 changes and does not prove the final diff matches the declared scope.",
+      "analysis": "The plan declares an exact production/test/governance inventory, but git add stages the entire test-framework/evals/tier-1 directory. In a reused, potentially dirty worktree this can capture unrelated files. Conversely, many declared governance paths are not staged. A preceding status display is not a clean-tree assertion, and git diff --cached --check validates whitespace rather than scope.",
+      "evidence": [
+        "The command uses `git add -- ... test-framework/evals/tier-1` rather than enumerating the ten planned validator paths.",
+        "The worktree is explicitly reused, and the sequence only prints `git status --short`; it does not halt on unrelated changes.",
+        "The promotion checklist claims the final diff inventory is limited to exact listed surfaces, but no command enforces that invariant."
+      ],
+      "proposed_fix": "Enumerate every planned test path in git add, enumerate the governance paths intended for the same commit, and add a fail-closed staged-path comparison against a manifest-owned allowlist before commit. Halt if any staged path is unlisted or any required path is absent."
+    },
+    {
+      "id": "F-005",
+      "severity": "high",
+      "claim": "The validation sequence does not execute the complete focused matrix promised by the plan.",
+      "analysis": "The task-level validation section names ten shell validators plus contract-map and lane validation. The execution sequence runs only six validators before committing. It omits the actionable-hook, all-host-install-migration, double-dead-pointer, external-review-launcher, contract-map, and lane checks, despite modifying fixtures and security-sensitive review classification covered by those commands. Deferring full Tier-1 does not replace targeted RED/GREEN evidence for task 5 or validate the task graph before execution.",
+      "evidence": [
+        "Task-level validation lists validate-actionable-hook-denial.sh, validate-all-host-install-migration.sh, validate-self-heal-survives-double-dead-pointer.sh, validate-external-review-launcher.sh, validate-system-contract-map.mjs, and validate-task-graph-lane.mjs.",
+        "None of those six commands appears in the executable pre-commit sequence.",
+        "Task 5's checkpoint requires provider-call/zero-spawn boundary proof, but its dedicated validator is omitted from the sequence."
+      ],
+      "proposed_fix": "Run every task-level command after its owning task and again from the combined final tree. Capture exit codes and logs by checkpoint. Keep full Tier-1 as an additional branch gate rather than a substitute for the omitted focused checks."
+    },
+    {
+      "id": "F-006",
+      "severity": "high",
+      "claim": "Framework-lane compliance is asserted without naming every mandatory upstream skill and citing its completion artifact or skip decision.",
+      "analysis": "The protocol requires an artifact or cited pipeline decision for every mandatory upstream lane skill. The manifest merely states that the graph contains plan review, execution, later gates, and verification. It does not enumerate the mandatory pre-execution framework-lane skills, their statuses, or the exact entries proving completion or justified skips. Named spec, design, exploration, and blend files do not by themselves prove that the corresponding lane tasks completed under the durable graph.",
+      "evidence": [
+        "Simulation report says: \"Framework graph already contains plan review, exec, G5/G6/security/audit/test/land/verify\" but cites no task IDs, statuses, receipts, or decision-log records.",
+        "The plan names `.svc/lane-tasks-WI-506.json` and `.svc/pipeline-decisions.jsonl` but provides no lane-compliance table sourced from them.",
+        "The review request states that an unnamed mandatory lane skill is a failing finding."
+      ],
+      "proposed_fix": "Add a lane-compliance table listing every mandatory framework-lane skill through plan-changeset, its task ID and status, and either its concrete artifact/receipt path or the exact `.svc/pipeline-decisions.jsonl` skip record. Validate the table against `.svc/lane-tasks-WI-506.json` before promotion."
+    },
+    {
+      "id": "F-007",
+      "severity": "medium",
+      "claim": "The test-surface count is internally inconsistent, weakening the claimed measured scope.",
+      "analysis": "The plan repeatedly describes eight existing fixture/activation validators, but the planned file table contains nine modified existing validator scripts in addition to the new focused validator. This makes it unclear whether one fixture was added accidentally, omitted from task ownership, or excluded from expected RED/GREEN accounting.",
+      "evidence": [
+        "Task graph says task-1 covers a new validator plus \"8 existing fixture/activation validators.\"",
+        "Simulation report says \"Eight named fixture validators exist.\"",
+        "The file table lists nine modified existing validators: first-task activation, default-checkout isolation, Codex execution integrity, session binding, task-state compatibility, actionable-hook denial, all-host install migration, double-dead-pointer self-heal, and external-review launcher."
+      ],
+      "proposed_fix": "Correct the count to nine and explicitly assign each validator to its owning task and RED/GREEN checkpoint, or remove the unintended validator from the planned surface."
+    },
+    {
+      "id": "F-008",
+      "severity": "high",
+      "claim": "The exceptional retroactive review authorization is listed as an output but has no deterministic creation or validation step.",
+      "analysis": "The plan proposes changing the review-phase classifier while relying on a fresh SHA-bound repository-owner authorization to break a classifier deadlock. That authorization is trust-sensitive, yet no task graph row, executable command, schema check, signature/owner verification, freshness check, or staging instruction creates and validates the named JSON. RP-18 describes desired receipt fields but does not establish how the authorization artifact itself is generated or bound before the classifier change executes.",
+      "evidence": [
+        "File inventory declares retro-plan-review-authorization.json as a fresh SHA-bound repository-owner authorization.",
+        "No task row explicitly owns creation or verification of that authorization artifact.",
+        "The execution sequence neither creates nor validates nor stages the authorization JSON.",
+        "RP-18 is mapped to task-5-review-phase and task-6-docs, but its proof is only described as an audit of a later canonical review receipt."
+      ],
+      "proposed_fix": "Assign the authorization artifact to a dedicated prerequisite step before task 5. Specify the canonical generator or exact schema, owner identity proof, source SHA and override SHA semantics, freshness window, validation command, and failure behavior. Require successful validation before changing or exercising the classifier, and stage the artifact explicitly in the reviewed plan set."
+    }
+  ],
+  "certifications": []
+}

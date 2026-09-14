@@ -1,0 +1,451 @@
+{
+  "wi": "WI-FW-SKILLS-ROUTING-01",
+  "lane": "framework",
+  "story_type": "framework",
+  "change_type": "framework",
+  "created": "2026-08-25T22:34:51.933Z",
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "write-spec",
+      "subject": "spec covered by WI product plan docs/specs/plans/wi-framework-skills-routing-plan.md",
+      "status": "skipped",
+      "blocked_by": [],
+      "skip_reason": "docs/specs/plans/wi-framework-skills-routing-plan.md (Proposed) sections 1/3/7 are the authoritative outcome/scope/verification contract",
+      "metadata": {
+        "skill": "write-spec",
+        "wi": "WI-FW-SKILLS-ROUTING-01"
+      }
+    },
+    {
+      "id": 2,
+      "skill": "plan-changeset",
+      "subject": "Produce changeset manifest (Waves 1-2 core scope), inline mode",
+      "status": "completed",
+      "blocked_by": [],
+      "metadata": {
+        "skill": "plan-changeset",
+        "wi": "WI-FW-SKILLS-ROUTING-01"
+      },
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-08-25T22:45:30.903Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-08-25T22:45:43.544Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-archetype.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-08-25T22:45:43.703Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-scope.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-08-25T22:45:43.861Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-25-wifw-skills-routing/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-08-25T22:45:44.009Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-25-wifw-skills-routing/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-08-25T22:45:44.149Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-25T22:45:44.292Z"
+    },
+    {
+      "id": 3,
+      "skill": "review-plan",
+      "subject": "Mechanical checks + external adversarial review of manifest",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "metadata": {
+        "skill": "review-plan",
+        "wi": "WI-FW-SKILLS-ROUTING-01"
+      },
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-08-25T23:35:24.967Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalVerification",
+            "ts": "2026-08-25T23:35:25.265Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-plan-outcome.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-25T23:35:25.114Z"
+    },
+    {
+      "id": 4,
+      "skill": "execute-changeset",
+      "subject": "Implement routing index compiler, router CLI, receipts, fixtures, tier-1 validator",
+      "status": "completed",
+      "blocked_by": [
+        3
+      ],
+      "metadata": {
+        "skill": "execute-changeset",
+        "wi": "WI-FW-SKILLS-ROUTING-01",
+        "required_process_steps": [
+          {
+            "skill": "test-journeys",
+            "mode": "tier-1-corpus"
+          },
+          {
+            "skill": "sync-spec-code",
+            "mode": "implementation-notes"
+          }
+        ]
+      },
+      "process_receipts": [
+        {
+          "skill": "test-journeys",
+          "mode": "tier-1-corpus",
+          "recorded_at": "2026-08-25T22:57:04.212Z",
+          "evidence": {
+            "type": "file",
+            "path": ".svc/skill-router-validator-run.log",
+            "sha256": "a3ecdbd8f840db505e9629b58a921586aa47c31f9b62caa9383905987b0a94ea"
+          }
+        },
+        {
+          "skill": "sync-spec-code",
+          "mode": "implementation-notes",
+          "recorded_at": "2026-08-25T22:57:04.452Z",
+          "evidence": {
+            "type": "file",
+            "path": "docs/specs/plans/wi-framework-skills-routing-plan.md",
+            "sha256": "6406341bdba041e008e51833c14b1d4f5702fe3c2d0c0f60b61b806bf549b794"
+          }
+        }
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-08-25T23:35:31.681Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-TaskExecution",
+            "ts": "2026-08-26T00:11:56.586Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/exec-phases.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-CheckpointVerification",
+            "ts": "2026-08-26T00:11:56.938Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/skill-router-validator-run.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ReceiptsAndContinuation",
+            "ts": "2026-08-26T00:11:57.210Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-outcome.log"
+              }
+            ]
+          },
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-08-26T00:16:03.863Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/exec-phases.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-08-26T00:16:04.013Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/exec-phases.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-08-26T00:16:04.167Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/skill-router-validator-run.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-08-26T00:16:04.324Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-outcome.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-25T23:35:31.832Z"
+    },
+    {
+      "id": 5,
+      "skill": "review-gate",
+      "subject": "G5 review of executed changes vs manifest",
+      "status": "completed",
+      "blocked_by": [
+        4
+      ],
+      "metadata": {
+        "skill": "review-gate",
+        "wi": "WI-FW-SKILLS-ROUTING-01"
+      },
+      "skill_receipt": {
+        "skill": "review-gate",
+        "loaded_at": "2026-08-25T23:35:31.983Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DiffVsManifest",
+            "ts": "2026-08-25T23:35:57.153Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-outcome.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-QualityScan",
+            "ts": "2026-08-25T23:35:57.288Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-gate-outcome.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-25T23:35:57.424Z"
+    },
+    {
+      "id": 6,
+      "skill": "review-exec",
+      "subject": "G6 self-review + external adversarial exec review",
+      "status": "completed",
+      "blocked_by": [
+        5
+      ],
+      "metadata": {
+        "skill": "review-exec",
+        "wi": "WI-FW-SKILLS-ROUTING-01"
+      },
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-08-25T23:35:57.570Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-AdversarialReview",
+            "ts": "2026-08-26T00:28:07.799Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-exec-outcome.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-26T00:28:07.490Z"
+    },
+    {
+      "id": 7,
+      "skill": "audit-implementation",
+      "subject": "Correctness audit vs verification contract section 7",
+      "status": "completed",
+      "blocked_by": [
+        6
+      ],
+      "metadata": {
+        "skill": "audit-implementation",
+        "wi": "WI-FW-SKILLS-ROUTING-01"
+      },
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-08-26T00:28:07.650Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-AcEvidenceMatrix",
+            "ts": "2026-08-26T00:28:57.760Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-FW-SKILLS-ROUTING-01.md"
+              }
+            ]
+          },
+          {
+            "id": "P1-AuditReport",
+            "ts": "2026-08-26T00:31:08.586Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-FW-SKILLS-ROUTING-01.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-26T00:28:57.916Z"
+    },
+    {
+      "id": 8,
+      "skill": "land-changeset",
+      "subject": "Push branch, PR, squash-merge",
+      "status": "completed",
+      "blocked_by": [
+        7
+      ],
+      "metadata": {
+        "skill": "land-changeset",
+        "wi": "WI-FW-SKILLS-ROUTING-01"
+      },
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-08-26T00:47:26.545Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-PushAndMerge",
+            "ts": "2026-08-26T00:47:26.696Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-outcome.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-26T00:47:26.850Z"
+    },
+    {
+      "id": 9,
+      "skill": "verify-promotion",
+      "subject": "Post-merge G7 verification",
+      "status": "blocked",
+      "blocked_by": [
+        8
+      ],
+      "metadata": {
+        "skill": "verify-promotion",
+        "wi": "WI-FW-SKILLS-ROUTING-01",
+        "historical_completion": {
+          "status": "completed",
+          "completed_at": "2026-08-26T00:47:37.840Z",
+          "original_graph_sha256": "12d7df460bd6f57af2a5f9ea619af2ae9f87e490bb63d832c906737c64dc22f3",
+          "task_id": 9
+        }
+      },
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-08-26T00:47:37.215Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-08-26T00:47:37.374Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/promotion-verification.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-08-26T00:47:37.533Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-FW-SKILLS-ROUTING-01.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-08-26T00:47:37.684Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/skill-router-validator-run.log"
+              }
+            ]
+          }
+        ]
+      },
+      "blocked_reason": "Historical completion is unverified: required skill phase evidence was not located in the named artifacts or repository note census. Original graph bytes and reported historical work are preserved; no rerun or unmerge is claimed."
+    }
+  ],
+  "status": "blocked",
+  "historical_reconciliation": {
+    "wi": "WI-FW-CLEAN-MAIN-FOLLOWUP-01",
+    "original_graph_sha256": "12d7df460bd6f57af2a5f9ea619af2ae9f87e490bb63d832c906737c64dc22f3",
+    "reason": "Withdraw unsupported skill completion only; retain historical code and receipts."
+  }
+}

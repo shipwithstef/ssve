@@ -1,0 +1,3 @@
+g6: { reviewer: gemini (codex empty 6th time), rubric: 5/5, verdict: approve,
+  notes: [ {low: "empty-array cleanup side-effect — beneficial"},
+    {medium-resolved: "lifecycle-dependency concern REFUTED with evidence — every removed kimi script self-disables on non-Kimi hosts (WI-127 Phase 1.5 header); they were spawn-cost no-ops on Claude; native coverage (learning-preload, healthcheck, session-end-log, pre-compact-snapshot, notification-surface, prompt-stale-state) unchanged; remaining lifecycle gaps pre-existed"} ] }

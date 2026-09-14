@@ -1,0 +1,185 @@
+{
+  "review_kind": "preland-implementation-and-process",
+  "reviewer": "claude-fable-5-thinking-high",
+  "reviewer_family": "anthropic",
+  "host": "cursor",
+  "fast": false,
+  "examined_impl": {
+    "origin_main": "30381c5c",
+    "wi553_head": "f57d1a93de6e466cffdb3e4dc64aab166294201e"
+  },
+  "verdict": "fail",
+  "rubric_score": 4,
+  "checked": [
+    "SESSION CONSTRAINT: all shell execution was rejected by the harness for this entire session. HEAD/origin-main shas verified via .git refs (refs/remotes/origin/main=30381c5c5e66, worktree branch ref=f57d1a93de6e); commit topology via the worktree reflog (.git/worktrees/feature-WI-553-risk-triggered-contracts/logs/HEAD). Files only readable in a checkout were reviewed; origin/main-only artifacts (WI-548.md, WI-549..553.md from PR #14, PR bodies, git notes on refs/notes/svc-receipts) could NOT be independently read and are marked as such below.",
+    "Branch shape: reflog shows 223436ab -> 72c4df27 (feat WI-553, round-1 reviewed) -> 3b7217be (fix) -> rebase onto origin/main 50a3440a -> 3d4131e0 + b83c6739 -> f57d1a93 ('resolve 546 receipt checker from script dir'). Round-2 exec review examined f57d1a93, i.e. the current HEAD including the last commit.",
+    "CGH-553-002 re-verified directly against HEAD code: scripts/compile-delivery-graph.mjs loadInput CLI branch (lines 78-106) builds the input object with no planned_files/files_planned/files key; line 421 reads input.planned_files so CLI compiles always emit planned_files: []; the documented compile command (skills/route-workflow/references/lane-model.md:136-142) has no --planned-files flag; scripts/task-graph.mjs ac553PlannedFiles (146-156) reads only graph.planned_files / delivery_graph.planned_files / delivery_graph.files with no live-diff scan; only the prompt-invoked scripts/validate-task-graph-lane.mjs (liveDiffFiles at 29, union at 215) sees live files. Finding CONFIRMED open.",
+    "CGH-553-003 closure re-verified: scripts/task-graph.mjs:126-128 receiptGateAppliesToGraph returns true unconditionally. Closed for real.",
+    "CGH-553-001/004 closure spot-checked: assertDesignTechRiskGate (task-graph.mjs:171-182) rejects missing design-tech and any skipped/completed-with-skip_reason disposition while effective flags exist, on the validate/set-status path. Closed for real (subject to the 002 implication gap).",
+    "CGH-553-005 re-verified: scripts/validate-plan-contract.mjs:13 CHECK_THEN_WRITE_RE still uses period-bounded [^.]{0,40}; line 45 applies it; the atomic-primitive allowlist (line 12, 42) remains the hard gate. Still open (MEDIUM).",
+    "SOL-R2-001 closure re-verified in the landed tree (worktree base = PR #13; WI-553 commits did not touch this file): scripts/check-chain-receipts.mjs:74-80 NOTE_REQUIRED_CONSUMERS = {stop, verify-promotion, final-report, push, reconcile}; checkSha (733-740) refuses non-note sources for those consumers. Mirror-as-authority closed for the named consumers.",
+    "SOL-R2-006 re-verified NOT closed in the landed tree: scripts/resolve-dispatch.mjs:197-206 — the scope.wi guard at line 200 only runs when scope.wi is a non-empty string; an overlay omitting scope.wi falls through to 'applied: true' at line 206 and applies to every WI (AC-551-4 leak).",
+    "No-silent-remap: consistent evidence across wi546-exec-cursor-grok-high.json (AC-546-6, CGH-005) and wi546-exec-cursor-sol-high.json (SOL-R2-008) that REVIEW_HOST_TRANSPORTS={codex,agy,claude} with no else-to-Claude, and resolve-model/dispatch fail-close on missing ~/.svc/dispatch-policy.json rather than remapping to Sonnet/Claude. Residual: shipped example policy requires cursor-host stations the launcher cannot transport (capability-limited required stations) — landed unfixed as acknowledged MEDIUM.",
+    "WI-553 receipts state: .svc/receipts under the worktree contains ONLY quick-fix receipts (f57d1a9, 3b7217b, 72c4df2, two staging trees); .svc/receipts/f57d1a9/quick-fix.json is eligible:false ('impact tier logic is never quick-fix', task-graph.mjs on the executable denylist). .svc/chain-policy.json mode=refuse. No plan-manifest/review-plan/exec-record/review-exec/audit-implementation envelope exists for any WI-553 commit.",
+    "WI-546 review chain read end-to-end: grok inline-self r1 pass_with_findings (6f6890d2, 2 HIGH NEEDS_FIX), Sol INDEPENDENT fail with 5 HIGH (same sha), remediation, grok inline-self r2 closeout pass (580478ff) closing SOL-R2-001..005 only.",
+    "Child lane-task state at land time: lane-tasks-WI-549 (exec in_progress, review-exec pending), lane-tasks-WI-552 (review-exec pending), lane-tasks-WI-546 (exec in_progress, review-exec pending), lane-tasks-WI-553 (review-exec in_progress, honestly annotated as deferred). No lane-tasks or review artifacts exist anywhere accessible for WI-545, WI-550, WI-551.",
+    "G7 evidence: .svc/verify-promotion-index.log last (only) entry is WI-507, verified_at 2026-07-23; no promotion-memory entry for anything in the WI-548 cluster. No .svc/receipts/50a3440/ or .svc/receipts/30381c5/ mirror exists in any accessible checkout.",
+    "Live-deployment drift: canonical checkout is behind origin/main (git status: behind 5) and hooks/grok/svc-grok-task-completion-guard.sh there is the 51-line pre-WI-545/546 fail-open variant (line 32: '|| true' swallows guard crash, unconditional exit 0) with an uncommitted local modification, while the landed version (68 lines, in the worktree tree) fail-closes on missing guard and non-zero guard exit (lines 32-66).",
+    "WI-553-out-of-#13 verified structurally: both WI-553 commits rebased onto 50a3440a as new non-empty commits (reflog lines 8-11) and the r2 exec review diffed f57d1a93 against base 50a3440a treating all WI-553 runtime as new — so 50a3440a does not contain the WI-553 runtime. PR #13 body itself could not be fetched this session.",
+    "AC-548-9 search: the string 'AC-548' appears in zero files in both the worktree and the canonical checkout; docs/specs/architecture/wi-548-capability-matrix.md exists but carries no AC-548-9/owner-gate artifact; .svc/authorization-events.jsonl contains only stop-authorization summaries with declared:0; no owner sign-off file under docs/specs/reviews or .svc."
+  ],
+  "missed_process": [
+    "verify-promotion (G7) for PR #13 (50a3440a) and PR #14 (30381c5c) — last promotion-memory entry is WI-507 dated 2026-07-23; nothing in the WI-548 cluster (545/546/547/549-552/548) has a G7 record",
+    "post-land operational refresh: canonical checkout pull + ./setup --host grok/cursor + check-install-drift — the canonical checkout is 5 commits behind with a dirty pre-fix fail-open Grok Stop guard, so the landed host-parity enforcement is not live on the machine it was written for",
+    "per-child review-exec closure for WI-545, WI-549, WI-550, WI-551, WI-552 — only the WI-546 composite review covers them; lane-tasks for 549/552/546 still show review-exec pending and exec in_progress despite the land",
+    "independent re-review of the remediated PR #13 tree — Sol's independent FAIL (5 HIGH) examined 6f6890d2; the closure of those HIGHs at 580478ff was attested only by a same-family inline-self reviewer (grok r2 closeout, independent:false); my spot-checks confirm SOL-R2-001/003-class closures are real in the landed code, but no independent reviewer ever confirmed them",
+    "disposition records for Sol MEDIUMs SOL-R2-006/007/008 — the r2 closeout reports only remaining_critical/high and silently drops the three MEDIUMs; SOL-R2-006 is confirmed still present on origin/main",
+    "AC-548-9 owner-gate sign-off artifact — no evidence anywhere accessible that the owner gate was exercised; cannot be treated as satisfied",
+    "chain receipt envelope (plan-manifest/review-plan/exec-record/review-exec/audit-implementation) for the WI-553 branch — refuse mode requires it before push/land; only an eligible:false quick-fix receipt exists (the deviation IS honestly disclosed in .svc/lane-tasks-WI-553.json)",
+    "PR #13 body correction — it lists feat(WI-553) while 50a3440a verifiably does not contain the WI-553 runtime; the release record is misleading until amended or superseded by an honest WI-548 closeout note",
+    "landed child WI specs available at review time — WI-548/549..553 specs landed only in PR #14 AFTER the implementation squash (PR #13), and are absent from the implementation worktree, so neither the exec reviews nor this pre-land review could diff implementation against a landed spec",
+    "verification of the durable git-notes envelope for the landed squash shas — no .svc mirror exists for 50a3440a/30381c5c and notes could not be read this session; a G7 run would have produced this evidence"
+  ],
+  "findings": [
+    {
+      "id": "FAB-548-001",
+      "severity": "HIGH",
+      "area": "implementation",
+      "claim": "CGH-553-002 is confirmed still open at f57d1a93: the implied-by-planned-files half of AC-553-2 cannot fire on any production path, so a WI-542-class change with undeclared flags still skips design-tech.",
+      "analysis": "Independently re-verified, not just relayed from the r2 review. The CLI branch of loadInput (compile-delivery-graph.mjs:82-105) constructs the input object with no planned_files/files_planned/files key, and the only documented compile invocation (lane-model.md:136-142) passes --wi/--lane/--change-type/--intent/--risk-flags/--out — so every production compile emits planned_files: [] via line 421. The mutation path that actually applies skips, task-graph.mjs, derives implication solely from ac553PlannedFiles (lines 146-156: graph.planned_files, delivery_graph.planned_files, delivery_graph.files) with no worktree/diff scan. The live-diff union exists only in validate-task-graph-lane.mjs:215, a prompt-invoked CLI outside the set-status/hook path — the exact insufficiency round 1 rejected. Net: an author who forgets to declare a flag on a hook/wirer/config-parser change gets empty effective flags at compile, skip time, and hook time; the mechanical backstop AC-553-2 was filed for never fires. This blocks landing WI-553 as-is.",
+      "evidence": [
+        "scripts/compile-delivery-graph.mjs:78-106",
+        "scripts/compile-delivery-graph.mjs:421",
+        "scripts/compile-delivery-graph.mjs:448",
+        "skills/route-workflow/references/lane-model.md:136-142",
+        "scripts/task-graph.mjs:146-156",
+        "scripts/task-graph.mjs:163-169",
+        "scripts/validate-task-graph-lane.mjs:29",
+        "scripts/validate-task-graph-lane.mjs:215",
+        "docs/specs/reviews/wi553-exec-cursor-grok-high-r2.json:28-48"
+      ],
+      "proposed_fix": "Map --planned-files (and input.planned_files via --input) through loadInput and add it to the documented compile command; make task-graph.mjs's inlined ac553PlannedFiles union a live git-diff file list (inline, no risk-flags.mjs import, honoring the reduced-copy constraint); add a fixture that compiles via the CLI (not the JS API), dirties a hook path, and expects set-status skip design-tech to refuse."
+    },
+    {
+      "id": "FAB-548-002",
+      "severity": "HIGH",
+      "area": "process",
+      "claim": "G7 verify-promotion was never run for PR #13 or PR #14, and the consequence is live: the canonical checkout still carries the pre-fix fail-open Grok Stop guard the whole cluster was created to eliminate.",
+      "analysis": "The promotion-memory index's only entry is WI-507 verified 2026-07-23 — nothing in the WI-548 cluster was ever G7-verified. The canonical checkout is 5 commits behind origin/main and hooks/grok/svc-grok-task-completion-guard.sh there is the 51-line pre-WI-545/546 variant: line 32 runs the core guard with '|| true' and stderr discarded, then falls through to unconditional exit 0 — a crashed or missing core guard allows Stop. The landed version (68 lines) fail-closes on missing guard and non-zero exit (SOL-E006 fix). The file is additionally locally modified (uncommitted M in git status), i.e. drift on a security-relevant guard in the canonical checkout. WI-546's own impl summary explicitly listed 'operator canonical-checkout refresh after this branch lands' as a leftover; that step, plus verify-promotion which would have caught it, never happened. Cross-host parity enforcement that only exists on origin/main but not in the live install is registration-only parity — the precise failure mode WI-546 was filed against.",
+      "evidence": [
+        ".svc/verify-promotion-index.log:1-11",
+        "hooks/grok/svc-grok-task-completion-guard.sh:32 (canonical checkout, fail-open '|| true' variant)",
+        "hooks/grok/svc-grok-task-completion-guard.sh:32-66 (worktree/landed fail-closed variant)",
+        ".svc/wi-546-impl-summary.md:47",
+        "git status snapshot: canonical checkout 'ahead 3, behind 5', 'M hooks/grok/svc-grok-task-completion-guard.sh'"
+      ],
+      "proposed_fix": "Run verify-promotion for 50a3440a and 30381c5c from the refreshed canonical checkout: pull origin/main, resolve or discard the uncommitted guard modification, ./setup --host grok --host cursor, check-install-drift --all-hosts, and record the G7 receipt + promotion-memory entries."
+    },
+    {
+      "id": "FAB-548-003",
+      "severity": "HIGH",
+      "area": "process",
+      "claim": "WI-553 has no chain receipt envelope while chain policy is refuse mode, and its own quick-fix receipt says eligible:false — the branch is mechanically unlandable and its independent review task is still open with a FAIL verdict.",
+      "analysis": "The branch carries only quick-fix receipts; .svc/receipts/f57d1a9/quick-fix.json states eligible:false with 'impact tier logic is never quick-fix' and denylisted paths (task-graph.mjs, tier-1 validator). .svc/chain-policy.json is refuse mode. So the 5-receipt envelope is required at push and none of it exists — no plan-manifest, review-plan, exec-record, review-exec, or audit-implementation. The deviation is honestly disclosed (lane-tasks note: direct implementation per explicit user instruction, review-exec 'genuinely deferred, not fabricated'), which is the right disclosure posture — but disclosure does not substitute for the envelope, and the one review that DOES exist (r2 exec, examined f57d1a93) is a FAIL with CGH-553-002 HIGH. Landing WI-553 requires: fixing FAB-548-001, a passing review-exec, and either the receipt envelope or an explicit receipted owner override.",
+      "evidence": [
+        ".svc/receipts/f57d1a9/quick-fix.json:5-14",
+        ".svc/chain-policy.json:2",
+        ".svc/lane-tasks-WI-553.json:22-32",
+        "docs/specs/reviews/wi553-exec-cursor-grok-high-r2.json:12"
+      ],
+      "proposed_fix": "After remediating FAB-548-001: run the chain skills (or an owner-authorized condensed equivalent) to emit plan-manifest/review-plan/exec-record, obtain a passing independent review-exec (closing the deferred lane task), emit audit-implementation, and only then land."
+    },
+    {
+      "id": "FAB-548-004",
+      "severity": "MEDIUM",
+      "area": "review-coverage",
+      "claim": "The tree that actually landed as PR #13 was never independently re-reviewed: the closure of Sol's 5 independent HIGHs was attested by a same-family inline-self reviewer, and Sol's 3 MEDIUMs were dropped from the closeout without any disposition.",
+      "analysis": "Sol (openai, independent:true) examined 6f6890d2 and returned fail with SOL-R2-001..005 HIGH plus 006/007/008 MEDIUM. The r2 closeout that declared the HIGHs closed examined 580478ff but is grok inline-self (independent:false) and reports only remaining_critical/remaining_high, silently omitting the MEDIUMs. My spot-checks confirm the HIGH closures are genuine in the landed code (NOTE_REQUIRED_CONSUMERS includes push/reconcile at check-chain-receipts.mjs:74-80; PASSING_VERDICTS enforcement exists at :81+), so this is a coverage/disposition gap rather than a false closure — but the framework's own G6 bar is adversarial independent review, and the final landed tree cleared it on self-attestation only.",
+      "evidence": [
+        "docs/specs/reviews/wi546-exec-cursor-sol-high.json:1-8",
+        "docs/specs/reviews/wi546-exec-r2-closeout.json:4-14",
+        "scripts/check-chain-receipts.mjs:74-80"
+      ],
+      "proposed_fix": "Adopt a rule that a FAIL from an independent reviewer can only be flipped by an independent (any different-family) re-examination of the remediated sha, and that closeouts must carry an explicit disposition for every finding of the round they close, including MEDIUM/LOW."
+    },
+    {
+      "id": "FAB-548-005",
+      "severity": "MEDIUM",
+      "area": "implementation",
+      "claim": "SOL-R2-006 landed unfixed on origin/main: a work overlay that omits scope.wi still applies to every WI, contrary to AC-551-4.",
+      "analysis": "In the landed resolve-dispatch.mjs (worktree base = PR #13 tree; WI-553 commits do not touch this file), parseOverlay guards WI mismatch only inside 'if (typeof scope.wi === string && scope.wi.trim())' (line 200). An overlay file with no scope.wi skips that block entirely and returns applied:true at line 206, so SVC_DISPATCH_WORK_OVERLAY can remap dispatch for unrelated WIs. The scoped-without-caller-WI refusal (line 201) is present, but the unscoped-global-leak half that both grok (CGH-003) and Sol (SOL-R2-006) flagged was never landed.",
+      "evidence": [
+        "scripts/resolve-dispatch.mjs:197-206",
+        "docs/specs/reviews/wi546-exec-cursor-sol-high.json:91-104",
+        "docs/specs/reviews/wi546-exec-cursor-grok-high.json:62-75"
+      ],
+      "proposed_fix": "Require every work overlay to declare a non-empty scope.wi matching the current WI; add the unscoped-overlay rejection fixture Sol proposed."
+    },
+    {
+      "id": "FAB-548-006",
+      "severity": "MEDIUM",
+      "area": "process",
+      "claim": "Children WI-545/549/550/551/552 have no per-child review artifacts, and the surviving lane-task graphs contradict the landed state: 549/552/546 all show review-exec pending and/or exec in_progress after the squash-land.",
+      "analysis": "The only review artifacts in the entire cluster are the wi546-* files (composite) and wi553-* files (unlanded). WI-545, WI-550, WI-551 have neither lane-tasks nor review files anywhere accessible; the review coverage they received is transitive, via WI-546's composed fixtures. That is a defensible composition strategy, but the task graphs were never closed to say so: lane-tasks-WI-549 has exec in_progress + review-exec pending, lane-tasks-WI-552 has review-exec pending, lane-tasks-WI-546 has exec in_progress + review-exec pending — all for work that is now on origin/main. The cross-host source of truth (per AGENTS.md section 9) currently asserts that landed work is unreviewed and unfinished; either the state is stale (likely, given the wi546 review files exist) or the review-exec gates were bypassed. Both readings demand a closeout pass.",
+      "evidence": [
+        ".svc/lane-tasks-WI-549.json:5-34",
+        ".svc/lane-tasks-WI-552.json:46-53",
+        ".svc/lane-tasks-WI-546.json:5-38",
+        "docs/specs/reviews/ (glob: only wi546-*, wi553-*, wi506-* artifacts exist)"
+      ],
+      "proposed_fix": "Run the state-hygiene closeout: mark the landed children's graphs completed with pointers to the composite WI-546 review artifacts (or explicit composed-coverage notes), and archive them per the merged-WI parity convention."
+    },
+    {
+      "id": "FAB-548-007",
+      "severity": "MEDIUM",
+      "area": "process",
+      "claim": "PR #13's release record is misleading: its body lists feat(WI-553) while 50a3440a verifiably does not contain the WI-553 runtime.",
+      "analysis": "The tree-level separation is verified: the worktree reflog shows both WI-553 commits rebased onto 50a3440a as new, non-empty commits immediately after the squash landed, and the r2 exec review diffed f57d1a93 against base 50a3440a treating every WI-553 runtime file as part of the diff — neither is possible if 50a3440a already contained them. Keeping 553 out of the squash was therefore CORRECT (it had a FAIL review), and the working-tree documentation is honest (wi-546-impl-summary: 'Did not finish leftover WI-553 staged files'; the 546 r1 review: 'unstaged WI-553 leftovers ignored'). What is not honest is the durable release record: a PR body claiming feat(WI-553) landed content it did not land. Caveat: the PR body itself could not be fetched this session (shell blocked); this relies on the launch context's quote of it, with the tree-level half independently verified.",
+      "evidence": [
+        ".git/worktrees/feature-WI-553-risk-triggered-contracts/logs/HEAD:8-12",
+        "docs/specs/reviews/wi553-exec-cursor-grok-high-r2.json:10-11",
+        ".svc/wi-546-impl-summary.md:13",
+        "docs/specs/reviews/wi546-exec-cursor-grok-high.json:28"
+      ],
+      "proposed_fix": "Amend the PR #13 description (or add a correcting comment) stating WI-553 was intentionally excluded pending review remediation, and reference the WI-553 branch; carry the same statement into the WI-548 closeout."
+    },
+    {
+      "id": "FAB-548-008",
+      "severity": "MEDIUM",
+      "area": "process",
+      "claim": "AC-548-9 (owner gate) has no satisfying artifact anywhere on this machine; it must be treated as NOT satisfied until one exists.",
+      "analysis": "The string 'AC-548' appears in zero files across both the implementation worktree and the canonical checkout — the AC is defined only in WI-548.md, which exists solely on origin/main (PR #14) and could not be read this session (all shell blocked, doc absent from every checkout). No owner sign-off artifact exists under docs/specs/reviews or .svc; .svc/authorization-events.jsonl contains only stop-authorization summaries with declared:0 through 2026-08-18T11:08. Two mitigating readings exist — the owner personally merged both PRs, and the umbrella cannot close anyway while WI-553 is unlanded, so the gate may be intended at final closure — but neither reading produces an artifact, and a gate that leaves no artifact cannot be audited. This review's own commissioning by the owner does not satisfy an AC it cannot even read.",
+      "evidence": [
+        "grep 'AC-548' across both checkouts: zero matches",
+        ".svc/authorization-events.jsonl:1-61",
+        "docs/specs/work-items/ in worktree and canonical checkout: WI-548.md absent from both"
+      ],
+      "proposed_fix": "Before closing WI-548: read AC-548-9 from origin/main, perform whatever it requires, and record a durable owner-gate artifact (a receipted sign-off file under docs/specs/reviews or an authorization event naming AC-548-9)."
+    },
+    {
+      "id": "FAB-548-009",
+      "severity": "MEDIUM",
+      "area": "implementation",
+      "claim": "CGH-553-005 remains open at f57d1a93: the check-then-write prose detector dies at a period, so trivially rephrased WI-542-shaped prose evades it.",
+      "analysis": "validate-plan-contract.mjs:13 still defines CHECK_THEN_WRITE_RE with [^.]{0,40} gaps, so 'Check if the file exists. Then write it.' and phrasings without then/before ('if missing, create it') pass line 45. The atomic-primitive allowlist (lines 12, 41-42) remains the real mechanical gate and is sound — a contract cannot pass without naming a genuine primitive — so severity stays MEDIUM, but the prose check as shipped gives false assurance and the r2 review already told this session's authors exactly that.",
+      "evidence": [
+        "scripts/validate-plan-contract.mjs:12-13",
+        "scripts/validate-plan-contract.mjs:41-47",
+        "docs/specs/reviews/wi553-exec-cursor-grok-high-r2.json:50-63"
+      ],
+      "proposed_fix": "Normalize concurrent_invoke_behavior (strip punctuation, collapse whitespace) before applying the regex, and require concurrency_test to name an existing file; keep the allowlist as the hard gate."
+    },
+    {
+      "id": "FAB-548-010",
+      "severity": "LOW",
+      "area": "process",
+      "claim": "The planning docs landed after the implementation: PR #14 (WI-548/549..553 specs) merged after PR #13, and the specs are absent from the implementation worktree, so no reviewer in this cluster could diff implementation against a landed spec.",
+      "analysis": "The WI-553 worktree (based on the PR #13 squash) contains WI-545/546/547 docs but not WI-548, WI-549, WI-550, WI-551, WI-552, or WI-553 — those exist only in the PR #14 commit at origin/main tip. Every exec review in this cluster, including this one, worked from proposals, impl summaries, and AC restatements rather than the canonical landed spec text. For a framework whose spine is spec-first progressive narrowing, landing specs behind the implementation inverts the pipeline and made AC-548-9 unverifiable (FAB-548-008).",
+      "evidence": [
+        "docs/specs/work-items/ in worktree: WI-545/546/547 present, WI-548..553 absent",
+        "origin/main tip 30381c5c = PR #14 'WI-548 planning docs only', merged after PR #13 50a3440a"
+      ],
+      "proposed_fix": "For future clusters, land (or at least commit to the feature branch) the WI specs before or with the implementation they govern; for this cluster, rebase the WI-553 branch onto origin/main so its final review can cite WI-553.md directly."
+    }
+  ]
+}

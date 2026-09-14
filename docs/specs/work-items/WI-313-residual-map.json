@@ -1,0 +1,122 @@
+{
+  "schema": 1,
+  "wi": "WI-313",
+  "source_proposals": [
+    "proposals/done/2026-04-22-strategic-decision-research-discipline.md",
+    "proposals/done/2026-04-28-launch-knowledge-update.md"
+  ],
+  "status": "implemented",
+  "coverage": [
+    {
+      "source_proposal": "proposals/done/2026-04-22-strategic-decision-research-discipline.md",
+      "proposal_item": "Phase 1b must scan local research artifacts before WebSearch or external research",
+      "status": "covered",
+      "evidence": [
+        "strategic-decision/SKILL.md",
+        "test-framework/evals/tier-1/validate-strategic-local-evidence.sh"
+      ],
+      "note": "Phase 1b now requires a Local Evidence Scan before external fetches, with source ordering, freshness/coverage gates, and gap-targeted external research."
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-22-strategic-decision-research-discipline.md",
+      "proposal_item": "Local evidence scan records source, date, depth, and covered dimensions in DIMENSIONS.md",
+      "status": "covered",
+      "evidence": [
+        "strategic-decision/SKILL.md",
+        "test-framework/evals/tier-1/validate-strategic-local-evidence.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-22-strategic-decision-research-discipline.md",
+      "proposal_item": "Freshness and quality gate reuses local sources when <=90 days old and >=80% covering",
+      "status": "covered",
+      "evidence": [
+        "strategic-decision/SKILL.md",
+        "test-framework/evals/tier-1/validate-strategic-local-evidence.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-22-strategic-decision-research-discipline.md",
+      "proposal_item": "Strategic reviewer raises a process finding when topic-matching local evidence was ignored",
+      "status": "covered",
+      "evidence": [
+        "agents/strategic-reviewer.md",
+        "test-framework/evals/tier-1/validate-strategic-local-evidence.sh"
+      ],
+      "note": "The reviewer now has explicit P-000 severity rules for ignored local evidence."
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-22-strategic-decision-research-discipline.md",
+      "proposal_item": "Strategic-decision self-verify includes local evidence discipline",
+      "status": "covered",
+      "evidence": [
+        "strategic-decision/SKILL.md",
+        "test-framework/evals/tier-1/validate-strategic-local-evidence.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-22-strategic-decision-research-discipline.md",
+      "proposal_item": "DECISION.md template includes research grounding",
+      "status": "covered",
+      "evidence": [
+        "strategic-decision/SKILL.md",
+        "test-framework/evals/tier-1/validate-strategic-local-evidence.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-28-launch-knowledge-update.md",
+      "proposal_item": "Startup program launch knowledge, including PostHog, should be captured",
+      "status": "covered",
+      "evidence": [
+        "references/knowledge/launch/INDEX.md",
+        "references/knowledge/launch/credit-programs/startup-programs.md",
+        "references/knowledge/launch/credit-programs/posthog-startups.md",
+        "test-framework/evals/tier-1/validate-launch-knowledge-freshness.sh"
+      ],
+      "note": "The proposal's old references/launch-knowledge path was superseded by references/knowledge/launch."
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-28-launch-knowledge-update.md",
+      "proposal_item": "Bulgaria jurisdiction launch knowledge should be captured",
+      "status": "covered",
+      "evidence": [
+        "references/knowledge/launch/INDEX.md",
+        "references/knowledge/launch/jurisdictions/bg.md",
+        "references/knowledge/launch/jurisdictions/bulgaria.md",
+        "test-framework/evals/tier-1/validate-launch-knowledge-freshness.sh"
+      ],
+      "note": "The current knowledge base includes both the extended Bulgaria founder file and the proposal-era Bulgaria company registration guide."
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-28-launch-knowledge-update.md",
+      "proposal_item": "Marketing tools launch knowledge should be captured",
+      "status": "covered",
+      "evidence": [
+        "references/knowledge/launch/INDEX.md",
+        "references/knowledge/launch/distribution/marketing-tools.md",
+        "test-framework/evals/tier-1/validate-launch-knowledge-freshness.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-28-launch-knowledge-update.md",
+      "proposal_item": "Cold outreach launch knowledge should be captured",
+      "status": "covered",
+      "evidence": [
+        "references/knowledge/launch/INDEX.md",
+        "references/knowledge/launch/distribution/cold-outreach.md",
+        "test-framework/evals/tier-1/validate-launch-knowledge-freshness.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-28-launch-knowledge-update.md",
+      "proposal_item": "Directory submission launch knowledge should be captured",
+      "status": "covered",
+      "evidence": [
+        "references/knowledge/launch/INDEX.md",
+        "references/knowledge/launch/distribution/directory-submissions.md",
+        "test-framework/evals/tier-1/validate-launch-knowledge-freshness.sh"
+      ]
+    }
+  ],
+  "residuals": []
+}

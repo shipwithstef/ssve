@@ -1,0 +1,26 @@
+responses:
+  reviewer: codex-orchestrator
+  evaluated_at: 2026-07-14T11:18:00Z
+  disposition: all_accepted_and_fixed
+  findings:
+    - {id: F-001, decision: ACCEPT, fix: WI-482 now bootstraps with existing worktree.sh; later leaves adopt ensure helper}
+    - {id: F-002, decision: ACCEPT, fix: TPLAN lands and hash-pins the docs-only planning bundle before T5A}
+    - {id: F-003, decision: ACCEPT, fix: program commands use every leaf's canonical framework-WI branch}
+    - {id: F-004, decision: ACCEPT, fix: P1 waits for P5 P4 P2 P3 and header matches}
+    - {id: F-005, decision: ACCEPT, fix: one-time promotion hashes separated from permanent hermetic tests}
+    - {id: F-006, decision: ACCEPT, fix: every leaf now has a per-file exact MODIFY anchor ledger}
+    - {id: F-007, decision: ACCEPT, fix: rule concern and content-coupled validator added and reconciled}
+    - {id: F-008, decision: ACCEPT, fix: Codex feature-flag validator added with hooks=true preservation}
+    - {id: F-009, decision: ACCEPT, fix: cleanup is owned by prompt-authority's opportunistic TTL sweep}
+    - {id: F-010, decision: ACCEPT, fix: one exact shared read-only list is defined and consumed by P2}
+    - {id: F-011, decision: ACCEPT, fix: current host table plus mandatory live-doc verification added}
+    - {id: F-012, decision: ACCEPT, fix: five promotion notes and bounded tier-1 versus targeted stress split added}
+    - {id: F-013, decision: ACCEPT, fix: mktemp directory replaces TMPDIR assumption}
+    - {id: F-014, decision: ACCEPT, fix: every contradictory WORKTREES row/section/sentence is enumerated}
+    - {id: F-015, decision: ACCEPT, fix: current-uid real-dir 0700 ancestors and 0600 receipts are mandatory}
+    - {id: F-016, decision: ACCEPT, fix: program P1 fence synced and skills-manifest explicit N/A added}
+    - {id: F-017, decision: ACCEPT, fix: controller labels tables non-authoritative summaries; canonical WIs govern}
+  verification:
+    mechanical_manifests: 5_of_5_pass
+    mechanical_program: pass
+    unresolved_blocker_high: 0

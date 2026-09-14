@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "acceptance_critical": true,
+  "selected_proof": {
+    "id": "J-AI-SAVE-001",
+    "command": "npx playwright test e2e/ai-save.spec.ts --project=chromium",
+    "target": "https://example-marketplace.app",
+    "environment": "production",
+    "fixture_account": "owner-stream-a",
+    "viewport": "desktop"
+  },
+  "pre": {
+    "status": "fail",
+    "evidence": "docs/specs/features/test-evidence/pre/scenarios.json"
+  },
+  "post": {
+    "status": "pass",
+    "evidence": "docs/specs/features/test-evidence/post/scenarios.json",
+    "command": "npx playwright test e2e/full-suite.spec.ts --project=chromium",
+    "target": "https://example-marketplace.app",
+    "environment": "production",
+    "fixture_account": "owner-stream-a",
+    "viewport": "desktop"
+  },
+  "comparison": "fixed-by-change",
+  "iterations": [
+    {
+      "iteration": 1,
+      "fix_batch": "batch-1",
+      "classification": "fixed-by-change",
+      "evidence": "docs/specs/features/test-evidence/post/SUMMARY.md"
+    }
+  ],
+  "changed_signals": [
+    {
+      "signal": "AI generated item persists in saved state",
+      "acceptance_critical": true,
+      "classification": "fixed-by-change"
+    }
+  ]
+}

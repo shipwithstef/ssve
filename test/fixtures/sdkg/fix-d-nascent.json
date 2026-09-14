@@ -1,0 +1,24 @@
+{
+  "generated": "2026-05-02",
+  "landscape_state": "nascent",
+  "category": "loyalty",
+  "competitors": [
+    {
+      "name": "Toast",
+      "tier": "direct",
+      "last_verified": "2026-05-02",
+      "earn_mechanism": "POS auto-accrue at checkout",
+      "enrollment_path": "POS-auto",
+      "merchant_cost": "$25/mo",
+      "pos_integrations": [
+        "Toast"
+      ],
+      "fraud_prevention": [
+        "POS"
+      ],
+      "customer_complaints": [
+        "Locked"
+      ]
+    }
+  ]
+}

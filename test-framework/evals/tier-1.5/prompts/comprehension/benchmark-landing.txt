@@ -1,0 +1,10 @@
+Skill: benchmark-landing
+
+Q: What is the Step 0 precondition before any scoring, and what is the minimum number of required samples?
+A: Expected pattern: Sample-capture precondition — at least 3 samples in `references/landing-bank/<sector>/` must have `hero.png` + `pattern.md`. If fewer than 3, HALT.
+
+Q: What is the gate threshold for benchmark-landing, and what happens when the aggregate score is below it?
+A: Expected pattern: Gate threshold is 7. Aggregate < 7 → BLOCK promotion. Orchestrator must iterate the design or write an override entry with justification.
+
+Q: How many dimensions are scored in the v2 rubric, and what is the heaviest-weighted dimension?
+A: Expected pattern: 10 dimensions in v2 rubric. Dimension 8 (vs. best-in-class anchor) is heaviest at weight 1.5.

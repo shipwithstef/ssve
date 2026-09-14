@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seriousvibecoding.dev/schemas/runtime-cutover-decision-v2.schema.json",
+  "title": "SVC runtime v2 cutover decision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "candidate_digest", "local_state", "publication", "production_proven", "slo_minutes", "required_speedup", "slo_status", "real_canary", "calibration", "rollback_proven", "cutover_authority_verified", "default_cutover", "blockers"],
+  "properties": {
+    "schema_version": { "const": "runtime-cutover-decision-v2" },
+    "candidate_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "local_state": { "enum": ["assembled", "locally-verified", "holistically-reviewed", "shadow-ready"] },
+    "publication": { "enum": ["uncommitted", "committed-local", "pushed", "merged", "installed"] },
+    "production_proven": { "type": "boolean" },
+    "slo_minutes": { "const": 60 },
+    "required_speedup": { "const": 24 },
+    "slo_status": { "enum": ["TARGET", "CANARY_PASS", "CANARY_FAIL"] },
+    "real_canary": {
+      "type": "object", "additionalProperties": false,
+      "required": ["authorized", "product", "baseline_feature_minutes", "direction_accepted_at", "live_verified_at", "active_minutes", "achieved_speedup", "evidence_ids"],
+      "properties": {
+        "authorized": { "type": "boolean" }, "product": { "type": ["string", "null"] },
+        "baseline_feature_minutes": { "type": ["number", "null"], "minimum": 1 },
+        "direction_accepted_at": { "type": ["string", "null"], "format": "date-time" },
+        "live_verified_at": { "type": ["string", "null"], "format": "date-time" },
+        "active_minutes": { "type": ["number", "null"], "minimum": 0 },
+        "achieved_speedup": { "type": ["number", "null"], "minimum": 0 },
+        "evidence_ids": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "calibration": {
+      "type": "object", "additionalProperties": false,
+      "required": ["comparable_runs", "measured_p95_active_minutes", "confidence", "evidence_ids"],
+      "properties": {
+        "comparable_runs": { "type": "integer", "minimum": 0 },
+        "measured_p95_active_minutes": { "type": ["number", "null"], "minimum": 0 },
+        "confidence": { "enum": ["LOW", "MEDIUM", "HIGH"] },
+        "evidence_ids": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "rollback_proven": { "type": "boolean" },
+    "cutover_authority_verified": { "const": false },
+    "default_cutover": { "type": "boolean" },
+    "blockers": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+  }
+}

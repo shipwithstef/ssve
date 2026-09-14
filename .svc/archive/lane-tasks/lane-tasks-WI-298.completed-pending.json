@@ -1,0 +1,387 @@
+{
+  "wi": "WI-298",
+  "lane": "framework",
+  "created": "2026-05-11T04:36:40.676Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Implement delivery graph schema and compiler helper",
+      "status": "completed",
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-11T04:36:40.762Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-FrameworkRepoAndMemoryLoad",
+            "ts": "2026-05-11T04:45:12.305Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-298-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-PendingProposalAndEvidenceSelection",
+            "ts": "2026-05-11T04:45:12.352Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-298-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-DiagnosisAndDuplicateFilter",
+            "ts": "2026-05-11T04:45:12.391Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-298-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ImplementationRouteDecision",
+            "ts": "2026-05-11T04:45:12.435Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-298-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-ImplementationAndReplayVerification",
+            "ts": "2026-05-11T04:45:12.478Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-298-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-ImprovementRecordAndStateMutation",
+            "ts": "2026-05-11T04:45:12.527Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-298-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P7-ProposalDoneAndRemoteSync",
+            "ts": "2026-05-11T04:45:12.569Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-298-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P8-SelfVerifyContinuation",
+            "ts": "2026-05-11T04:45:12.608Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-298-evidence.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-11T04:45:12.649Z"
+    },
+    {
+      "id": 2,
+      "subject": "Validate compiler fixtures and task graph compatibility",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "test-framework"
+      },
+      "skill_receipt": {
+        "skill": "test-framework",
+        "loaded_at": "2026-05-11T04:45:12.691Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-TestModeSelection",
+            "ts": "2026-05-11T04:45:12.734Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-298-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-StaticOrScenarioRunnerExecution",
+            "ts": "2026-05-11T04:45:12.774Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-298-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-LiveAutopilotOrComparisonExecution",
+            "ts": "2026-05-11T04:45:12.818Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-298-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-MethodologyUsageAudit",
+            "ts": "2026-05-11T04:45:12.862Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-298-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-ResultsPersistenceGapRouting",
+            "ts": "2026-05-11T04:45:12.904Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-298-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-05-11T04:45:12.950Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-298-evidence.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-11T04:45:12.994Z"
+    },
+    {
+      "id": 3,
+      "subject": "Review delivery graph compiler risk surface",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "metadata": {
+        "skill": "review-gate"
+      },
+      "skill_receipt": {
+        "skill": "review-gate",
+        "loaded_at": "2026-05-11T04:45:13.037Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-GateContextChecklistConcernScan",
+            "ts": "2026-05-11T04:45:13.083Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-298-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SelfReviewFindings",
+            "ts": "2026-05-11T04:45:13.127Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-298-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-SelfJudgment",
+            "ts": "2026-05-11T04:45:13.169Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-298-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-CrossReviewConvergence",
+            "ts": "2026-05-11T04:45:13.209Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-298-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-GateDecisionBacklog",
+            "ts": "2026-05-11T04:45:13.258Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-298-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-05-11T04:45:13.304Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-298-evidence.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-11T04:45:13.347Z"
+    },
+    {
+      "id": 4,
+      "subject": "Close WI-298 evidence and state",
+      "status": "completed",
+      "blocked_by": [
+        3
+      ],
+      "metadata": {
+        "skill": "verify-promotion"
+      },
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-05-11T04:45:13.390Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-05-11T04:45:13.441Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-298-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-05-11T04:45:13.491Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-298-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-05-11T04:45:13.540Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-298-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-05-11T04:45:13.590Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-298-evidence.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-11T04:45:13.642Z"
+    }
+  ],
+  "delivery_graph": {
+    "compiler_version": 1,
+    "user_intent": "Implement delivery graph schema and route-workflow compiler",
+    "repo_mode": "convert",
+    "change_type": "framework",
+    "lane": "framework",
+    "delivery_mode": "end_to_end",
+    "risk_flags": [
+      "concurrency"
+    ],
+    "platform_contracts": [],
+    "evidence_families": {
+      "product": "required",
+      "acceptance_criteria": "required",
+      "journey": "required",
+      "visual": "n/a",
+      "runtime": "n/a",
+      "plan_review": "required",
+      "code_review": "required",
+      "implementation_audit": "required",
+      "deploy": "n/a",
+      "promotion": "required",
+      "session_forensics": "n/a"
+    },
+    "required_skills": [
+      "improve-framework",
+      "plan-changeset",
+      "execute-changeset",
+      "review-gate",
+      "audit-implementation",
+      "land-changeset",
+      "verify-promotion",
+      "test-framework",
+      "design-tech"
+    ],
+    "conditional_mandatory_skills": [
+      {
+        "skill": "design-tech",
+        "signal": "technical-risk",
+        "reason": "Backend, data, integration, or concurrency risk requires technical design."
+      },
+      {
+        "skill": "audit-implementation",
+        "signal": "technical-risk",
+        "reason": "Technical-risk implementation requires implementation audit."
+      }
+    ],
+    "optional_skills": [],
+    "skipped_skills": [],
+    "verification_tiers": {
+      "local": [
+        "tier-1"
+      ],
+      "runtime": [],
+      "production": []
+    },
+    "mutation_history": [
+      {
+        "ts": "2026-05-11T04:36:40.723Z",
+        "source": "route-workflow",
+        "action": "initial_compile",
+        "reason": "Compiled delivery graph at lane entry before downstream mutation."
+      }
+    ],
+    "closeout_classification_required": true
+  }
+}

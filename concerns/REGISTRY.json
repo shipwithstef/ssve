@@ -1,0 +1,6071 @@
+{
+  "schema_version": 1,
+  "generated": "2026-08-26T00:01:17.715Z",
+  "universal_count": 116,
+  "concerns": [
+    {
+      "name": "acceptable-use-policy",
+      "domain": "legal",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/aup*",
+          "**/acceptable-use*"
+        ],
+        "diff_keywords": {},
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": []
+      },
+      "waiver_format": "PR body line: \"concern-waived: acceptable-use-policy — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": {},
+      "source_file": "concerns/acceptable-use-policy.md"
+    },
+    {
+      "name": "age-verification",
+      "domain": "privacy",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/age-gate*",
+          "**/components/**/AgeGate*"
+        ],
+        "diff_keywords": [
+          "ageGate",
+          "minAge",
+          "date_of_birth",
+          "COPPA"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: age-verification — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "pii-handling"
+      ],
+      "source_file": "concerns/age-verification.md"
+    },
+    {
+      "name": "alert-thresholds",
+      "domain": "observability",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/alerts/**",
+          "**/monitoring/**"
+        ],
+        "diff_keywords": [
+          "threshold:",
+          "alertCondition"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": []
+      },
+      "waiver_format": "PR body line: \"concern-waived: alert-thresholds — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": {},
+      "source_file": "concerns/alert-thresholds.md"
+    },
+    {
+      "name": "api-doc-coverage",
+      "domain": "docs",
+      "severity": "LOW",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/openapi.{yaml,json}",
+          "**/swagger*"
+        ],
+        "diff_keywords": {},
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": []
+      },
+      "waiver_format": "PR body line: \"concern-waived: api-doc-coverage — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": {},
+      "source_file": "concerns/api-doc-coverage.md"
+    },
+    {
+      "name": "api-key-management",
+      "domain": "auth",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/api-keys/**",
+          "**/functions/*apiKey*/**"
+        ],
+        "diff_keywords": [
+          "createApiKey",
+          "rotateApiKey",
+          "revokeApiKey",
+          "apiKeyHash"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: api-key-management — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "auth-surface",
+        "secrets-management"
+      ],
+      "source_file": "concerns/api-key-management.md"
+    },
+    {
+      "name": "auth-surface",
+      "domain": "auth",
+      "severity": "CRITICAL",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/auth/**",
+          "**/AuthContext*",
+          "**/AuthProvider*",
+          "**/middleware/auth*",
+          "**/login*",
+          "**/signup*",
+          "**/oauth*",
+          "**/passport*",
+          "**/session*",
+          "**/jwt*",
+          "**/functions/**/auth*",
+          "**/functions/**/login*",
+          "**/functions/**/session*"
+        ],
+        "diff_keywords": [
+          "OAuth",
+          "JWT",
+          "verify(.*)token",
+          "session\\\\.user",
+          "bcrypt",
+          "argon2",
+          "scrypt",
+          "refreshToken",
+          "accessToken",
+          "logout",
+          "loginViaEmailPassword",
+          "loginViaProvider",
+          "auth\\\\.me\\\\("
+        ],
+        "packages_imported": [
+          "bcrypt",
+          "bcryptjs",
+          "argon2",
+          "jsonwebtoken",
+          "passport",
+          "passport-*",
+          "@auth/*",
+          "next-auth",
+          "lucia",
+          "iron-session"
+        ],
+        "env_vars_referenced": [
+          "JWT_*",
+          "AUTH_*",
+          "SESSION_*",
+          "NEXTAUTH_*",
+          "OAUTH_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [
+          "post-fix-evidence-before-next-fix"
+        ],
+        "required_skills": [
+          "review-security"
+        ],
+        "optional_skills": [
+          "design-tech",
+          "review-cross-model"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: auth-surface — <reason>\"\nAcceptable reasons are narrow: copy-only change in error messages, accessibility\nattribute on auth form elements. Most edits to auth files do NOT qualify.",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-flow",
+        "refactor",
+        "dependency-update"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "session-management",
+        "token-rotation",
+        "oauth-callback",
+        "permission-elevation",
+        "rate-limiting"
+      ],
+      "source_file": "concerns/auth-surface.md"
+    },
+    {
+      "name": "auto-learning-capture",
+      "domain": "observability",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-12",
+      "last_reviewed": "2026-05-12",
+      "signals": {
+        "file_path_patterns": [
+          "hooks/svc-auto-capture-learnings.mjs",
+          "scripts/lib/learning-candidate-detector.mjs",
+          "scripts/lib/learning-dedup.mjs",
+          "scripts/lib/resolve-user-memory-path.mjs",
+          "scripts/capture-session-learnings.mjs",
+          "scripts/promote-auto-learnings.mjs",
+          "hooks/svc-learning-preload.mjs",
+          "references/schemas/auto-learning-candidate.schema.json",
+          "references/framework-learnings.jsonl",
+          "docs/learnings/learnings.jsonl",
+          ".svc/auto-learnings.jsonl",
+          ".svc/auto-learnings.draft.jsonl"
+        ],
+        "diff_keywords": [
+          "auto-learnings",
+          "learning-candidate",
+          "promote-auto-learnings",
+          "candidate_target",
+          "SVC_AUTO_LEARN"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": [
+          "SVC_AUTO_LEARN_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [
+          "learning-preload"
+        ],
+        "required_skills": [
+          "manage-learnings"
+        ],
+        "optional_skills": [
+          "audit-session-execution",
+          "improve-framework"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: auto-learning-capture — <reason>\"\nLogged as a taste decision in .svc/pipeline-decisions.jsonl.",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [],
+      "source_file": "concerns/auto-learning-capture.md"
+    },
+    {
+      "name": "billing-side-effect",
+      "domain": "business",
+      "severity": "CRITICAL",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/services/billing/**",
+          "**/functions/*invoice*/**"
+        ],
+        "diff_keywords": [
+          "createInvoice",
+          "chargeCustomer",
+          "recurringPayment"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: billing-side-effect — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "paid-payment-api"
+      ],
+      "source_file": "concerns/billing-side-effect.md"
+    },
+    {
+      "name": "blocking-io-on-hot-path",
+      "domain": "performance",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/server/**",
+          "**/api/**"
+        ],
+        "diff_keywords": [
+          "readFileSync",
+          "execSync",
+          "spawnSync"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: blocking-io-on-hot-path — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": {},
+      "source_file": "concerns/blocking-io-on-hot-path.md"
+    },
+    {
+      "name": "build-ship-alignment",
+      "domain": "infra",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/build.gradle",
+          "**/Info.plist",
+          "**/AndroidManifest.xml",
+          "**/capacitor.config.*",
+          "**/package.json",
+          "**/version.txt",
+          "**/VERSION",
+          "**/CHANGELOG.md",
+          "**/Dockerfile",
+          "**/Procfile",
+          "**/fly.toml",
+          "**/vercel.json",
+          "**/netlify.toml",
+          "**/build-artifacts/**",
+          "**/dist/**",
+          "**/.github/workflows/**",
+          "**/scripts/build*",
+          "**/scripts/deploy*",
+          "**/scripts/release*"
+        ],
+        "diff_keywords": [
+          "versionCode",
+          "versionName",
+          "CFBundleVersion",
+          "CFBundleShortVersionString",
+          "\\\"version\\\":",
+          "BUILD_CANARY_VERSION",
+          "deploy.*POST",
+          "POST.*deploy"
+        ],
+        "packages_imported": [],
+        "env_vars_referenced": []
+      },
+      "handled_by": {
+        "required_rules": [
+          "build-and-ship-alignment"
+        ],
+        "required_skills": [
+          "audit-implementation"
+        ],
+        "optional_skills": []
+      },
+      "waiver_format": "PR body line: \"concern-waived: build-ship-alignment — <reason>\"\nAcceptable: doc-only edit to CHANGELOG.md, comment-only diff in build files,\ntest-mode env var change.",
+      "fires_on": [
+        "version-bump",
+        "artifact-build",
+        "deploy-config-change",
+        "release-pipeline-edit"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "deploy-rollback-plan",
+        "canary-deploy",
+        "feature-flag-rollout"
+      ],
+      "source_file": "concerns/build-ship-alignment.md"
+    },
+    {
+      "name": "bundle-size-creep",
+      "domain": "performance",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/package.json"
+        ],
+        "diff_keywords": {},
+        "packages_imported": [
+          "lodash",
+          "moment",
+          "rxjs",
+          "three",
+          "d3"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: bundle-size-creep — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "critical-path-rendering"
+      ],
+      "source_file": "concerns/bundle-size-creep.md"
+    },
+    {
+      "name": "cache-eviction-policy",
+      "domain": "data",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/cache/**"
+        ],
+        "diff_keywords": [
+          "LRU",
+          "TTL",
+          "max:\\s*\\d+",
+          "maxSize:\\s*\\d+",
+          "evictionPolicy"
+        ],
+        "packages_imported": [
+          "lru-cache",
+          "ttlcache",
+          "node-cache"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: cache-eviction-policy — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "cache-strategy-symmetry",
+        "memory-leak"
+      ],
+      "source_file": "concerns/cache-eviction-policy.md"
+    },
+    {
+      "name": "cache-invalidation",
+      "domain": "data",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/cache/invalidate*",
+          "**/services/cache/**"
+        ],
+        "diff_keywords": [
+          "cache\\.delete",
+          "invalidate",
+          "queryClient\\.invalidate",
+          "revalidateTag",
+          "revalidatePath"
+        ],
+        "packages_imported": [
+          "@tanstack/react-query",
+          "swr"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: cache-invalidation — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "cache-strategy-symmetry",
+        "cache-eviction"
+      ],
+      "source_file": "concerns/cache-invalidation.md"
+    },
+    {
+      "name": "cache-strategy-symmetry",
+      "domain": "data",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/cache/**",
+          "**/services/cache/**"
+        ],
+        "diff_keywords": [
+          "fetchDbCandidates",
+          "cache\\.get",
+          "cache\\.set",
+          "redis\\.get",
+          "redis\\.set",
+          "memcached"
+        ],
+        "packages_imported": [
+          "redis",
+          "ioredis",
+          "memcached",
+          "lru-cache"
+        ],
+        "env_vars_referenced": [
+          "REDIS_*",
+          "CACHE_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: cache-strategy-symmetry — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "paid-external-api",
+        "cache-invalidation",
+        "cache-eviction"
+      ],
+      "source_file": "concerns/cache-strategy-symmetry.md"
+    },
+    {
+      "name": "canary-deploy",
+      "domain": "infra",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/.github/workflows/**"
+        ],
+        "diff_keywords": [
+          "canary",
+          "blue-green",
+          "percentage:\\s*\\d",
+          "traffic_split"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: canary-deploy — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "feature-flag-rollout"
+      ],
+      "source_file": "concerns/canary-deploy.md"
+    },
+    {
+      "name": "capacitor-native-bridge",
+      "domain": "ux",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/capacitor.config*",
+          "**/android/**",
+          "**/ios/**",
+          "**/capacitorInit*"
+        ],
+        "diff_keywords": [
+          "Capacitor\\.",
+          "@capacitor/",
+          "Plugins\\."
+        ],
+        "packages_imported": [
+          "@capacitor/*"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: capacitor-native-bridge — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "ios-android-parity",
+        "build-ship-alignment"
+      ],
+      "source_file": "concerns/capacitor-native-bridge.md"
+    },
+    {
+      "name": "ccpa-do-not-sell",
+      "domain": "privacy",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/ccpa/**"
+        ],
+        "diff_keywords": [
+          "doNotSell",
+          "CCPA",
+          "optOutSale"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: ccpa-do-not-sell — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "consent-management",
+        "pii-handling"
+      ],
+      "source_file": "concerns/ccpa-do-not-sell.md"
+    },
+    {
+      "name": "consent-management",
+      "domain": "privacy",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/consent/**"
+        ],
+        "diff_keywords": [
+          "consentGiven",
+          "optIn",
+          "optOut",
+          "cookieConsent"
+        ],
+        "packages_imported": [
+          "@cookieconsent/*",
+          "react-cookie-consent"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: consent-management — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "pii-handling",
+        "cookie-consent"
+      ],
+      "source_file": "concerns/consent-management.md"
+    },
+    {
+      "name": "cookie-consent",
+      "domain": "privacy",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/components/**/CookieBanner*",
+          "**/components/**/Consent*"
+        ],
+        "diff_keywords": [
+          "cookieConsent",
+          "analytics_consent"
+        ],
+        "packages_imported": [
+          "react-cookie-consent",
+          "@cookieconsent/*"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-ux"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: cookie-consent — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "consent-management"
+      ],
+      "source_file": "concerns/cookie-consent.md"
+    },
+    {
+      "name": "cors-policy",
+      "domain": "security",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/middleware/cors*",
+          "**/cors.config*"
+        ],
+        "diff_keywords": [
+          "Access-Control-Allow-Origin",
+          "cors\\(\\{",
+          "origin:\\s*['\\\"]\\*"
+        ],
+        "packages_imported": [
+          "cors"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: cors-policy — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "auth-surface"
+      ],
+      "source_file": "concerns/cors-policy.md"
+    },
+    {
+      "name": "critical-path-rendering",
+      "domain": "performance",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/index.html",
+          "**/_document.tsx",
+          "**/Layout.tsx",
+          "**/Layout.jsx"
+        ],
+        "diff_keywords": [
+          "<script",
+          "<link",
+          "preload",
+          "preconnect"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: critical-path-rendering — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "bundle-size-creep"
+      ],
+      "source_file": "concerns/critical-path-rendering.md"
+    },
+    {
+      "name": "cron-or-scheduled-job",
+      "domain": "infra",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/crons/**",
+          "**/scheduled/**",
+          "**/.github/workflows/cron*"
+        ],
+        "diff_keywords": [
+          "cron:\\s*['\\\"]",
+          "schedule:\\s*['\\\"]",
+          "setInterval"
+        ],
+        "packages_imported": [
+          "node-cron",
+          "agenda",
+          "bull"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: cron-or-scheduled-job — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": {},
+      "source_file": "concerns/cron-or-scheduled-job.md"
+    },
+    {
+      "name": "cryptography-touch",
+      "domain": "security",
+      "severity": "CRITICAL",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-07-10",
+      "signals": {
+        "file_path_patterns": [
+          "**/crypto/**",
+          "**/*hmac*",
+          "**/*hmac*/**",
+          "**/*signature*",
+          "**/*csrf*",
+          "**/*csrf*/**"
+        ],
+        "diff_keywords": [
+          "crypto\\.createCipher",
+          "crypto\\.createDecipher",
+          "AES-128-ECB",
+          "MD5",
+          "SHA-1\\b",
+          "crypto\\.randomBytes",
+          "crypto\\.subtle",
+          "createHmac",
+          "HMAC",
+          "subtle\\.(sign|verify)"
+        ],
+        "packages_imported": [
+          "crypto",
+          "bcrypt",
+          "argon2",
+          "scrypt",
+          "libsodium"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [
+          "review-security"
+        ],
+        "optional_skills": [
+          "review-cross-model"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: cryptography-touch — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "secrets-management"
+      ],
+      "source_file": "concerns/cryptography-touch.md"
+    },
+    {
+      "name": "csp-policy",
+      "domain": "security",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/csp*",
+          "**/headers.config*",
+          "**/next.config*"
+        ],
+        "diff_keywords": [
+          "Content-Security-Policy",
+          "unsafe-inline",
+          "unsafe-eval"
+        ],
+        "packages_imported": [
+          "helmet"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: csp-policy — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "xss-prevention"
+      ],
+      "source_file": "concerns/csp-policy.md"
+    },
+    {
+      "name": "currency-formatting",
+      "domain": "i18n",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/components/**",
+          "**/services/**"
+        ],
+        "diff_keywords": [
+          "toLocaleString.*currency",
+          "NumberFormat.*currency",
+          "formatCurrency"
+        ],
+        "packages_imported": [
+          "dinero.js",
+          "currency.js"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: currency-formatting — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "pricing-tier-touch",
+        "billing-side-effect"
+      ],
+      "source_file": "concerns/currency-formatting.md"
+    },
+    {
+      "name": "dark-mode-coverage",
+      "domain": "ux",
+      "severity": "LOW",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/components/**",
+          "**/styles/**"
+        ],
+        "diff_keywords": [
+          "dark:",
+          "prefers-color-scheme",
+          "useTheme"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-ui"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: dark-mode-coverage — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": {},
+      "source_file": "concerns/dark-mode-coverage.md"
+    },
+    {
+      "name": "data-deletion-cascade",
+      "domain": "data",
+      "severity": "CRITICAL",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/cascadeDelete*",
+          "**/functions/cascadeDelete/**",
+          "**/services/deletion/**"
+        ],
+        "diff_keywords": [
+          "ON DELETE CASCADE",
+          "cascadeDelete",
+          "deleteAccount",
+          "forceDelete"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: data-deletion-cascade — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "data-model-mutation",
+        "gdpr-deletion",
+        "pii-handling"
+      ],
+      "source_file": "concerns/data-deletion-cascade.md"
+    },
+    {
+      "name": "data-export-flow",
+      "domain": "data",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/services/export/**",
+          "**/functions/*export*/**",
+          "**/data-export/**"
+        ],
+        "diff_keywords": [
+          "userDataExport",
+          "gdprExport",
+          "streamToFile",
+          "csv\\.stringify"
+        ],
+        "packages_imported": [
+          "archiver",
+          "csv-stringify",
+          "json2csv"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: data-export-flow — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "pii-handling",
+        "gdpr-deletion"
+      ],
+      "source_file": "concerns/data-export-flow.md"
+    },
+    {
+      "name": "data-import-flow",
+      "domain": "data",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/services/import/**",
+          "**/functions/*import*/**"
+        ],
+        "diff_keywords": [
+          "bulkImport",
+          "parseCSV",
+          "streamFromS3"
+        ],
+        "packages_imported": [
+          "csv-parse",
+          "fast-csv"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech",
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: data-import-flow — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "data-model-mutation",
+        "rate-limiting"
+      ],
+      "source_file": "concerns/data-import-flow.md"
+    },
+    {
+      "name": "data-model-mutation",
+      "domain": "data",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/entities/*.json",
+          "**/entities/*.ts",
+          "**/migrations/**",
+          "**/schema/**",
+          "**/models/**",
+          "**/prisma/schema.prisma",
+          "**/drizzle/**",
+          "**/sequelize/migrations/**",
+          "**/*.sql"
+        ],
+        "diff_keywords": [
+          "CREATE TABLE",
+          "ALTER TABLE",
+          "DROP TABLE",
+          "ADD COLUMN",
+          "DROP COLUMN",
+          "RENAME COLUMN",
+          "addColumn",
+          "dropColumn",
+          "renameColumn",
+          "createTable",
+          "dropTable",
+          "z\\\\.object\\\\("
+        ],
+        "packages_imported": [
+          "drizzle-orm",
+          "@prisma/client",
+          "sequelize",
+          "typeorm",
+          "mongoose"
+        ],
+        "env_vars_referenced": []
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [
+          "design-tech"
+        ],
+        "optional_skills": [
+          "explore-solutions",
+          "review-security",
+          "review-cross-model"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: data-model-mutation — <reason>\"\nAcceptable: typo fix in a column comment, formatting-only diff in a schema file.",
+      "fires_on": [
+        "first-introduction",
+        "schema-change",
+        "new-entity",
+        "field-add",
+        "field-rename",
+        "field-drop"
+      ],
+      "fires_off": [
+        "**/test-fixtures/**",
+        "**/seed-data/**",
+        "**/*.test.*",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "pii-handling",
+        "migration-safety",
+        "data-deletion-cascade",
+        "cache-strategy-symmetry"
+      ],
+      "source_file": "concerns/data-model-mutation.md"
+    },
+    {
+      "name": "database-connection-pool",
+      "domain": "infra",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/db/pool*",
+          "**/db.config*"
+        ],
+        "diff_keywords": [
+          "poolSize",
+          "maxConnections",
+          "createPool"
+        ],
+        "packages_imported": [
+          "pg-pool",
+          "mysql2",
+          "better-sqlite3"
+        ],
+        "env_vars_referenced": [
+          "DATABASE_*",
+          "DB_POOL_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: database-connection-pool — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": {},
+      "source_file": "concerns/database-connection-pool.md"
+    },
+    {
+      "name": "database-migration",
+      "domain": "data",
+      "severity": "CRITICAL",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/migrations/**",
+          "**/db/migrate/**",
+          "**/prisma/migrations/**",
+          "**/drizzle/migrations/**",
+          "**/supabase/migrations/**"
+        ],
+        "diff_keywords": [
+          "CREATE TABLE",
+          "ALTER TABLE",
+          "DROP TABLE",
+          "CREATE INDEX",
+          "DROP INDEX",
+          "CONSTRAINT"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech",
+          "review-cross-model"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: database-migration — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "data-model-mutation",
+        "data-deletion-cascade"
+      ],
+      "source_file": "concerns/database-migration.md"
+    },
+    {
+      "name": "deep-link-handling",
+      "domain": "ux",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/deeplinks/**",
+          "**/AndroidManifest.xml",
+          "**/Info.plist"
+        ],
+        "diff_keywords": [
+          "intent-filter",
+          "CFBundleURLSchemes",
+          "universalLink",
+          "deepLink"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: deep-link-handling — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "oauth-callback",
+        "capacitor-native-bridge"
+      ],
+      "source_file": "concerns/deep-link-handling.md"
+    },
+    {
+      "name": "denormalization",
+      "domain": "data",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/entities/**",
+          "**/migrations/**"
+        ],
+        "diff_keywords": [
+          "_count\\b",
+          "_total\\b",
+          "cached_",
+          "denormalized"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: denormalization — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "data-model-mutation"
+      ],
+      "source_file": "concerns/denormalization.md"
+    },
+    {
+      "name": "dependency-audit",
+      "domain": "security",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/package.json",
+          "**/package-lock.json",
+          "**/yarn.lock",
+          "**/pnpm-lock.yaml",
+          "**/go.mod",
+          "**/Pipfile.lock",
+          "**/Cargo.lock"
+        ],
+        "diff_keywords": {},
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: dependency-audit — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "supply-chain-security"
+      ],
+      "source_file": "concerns/dependency-audit.md"
+    },
+    {
+      "name": "deploy-rollback-plan",
+      "domain": "infra",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/.github/workflows/release*",
+          "**/.github/workflows/deploy*",
+          "**/scripts/deploy*"
+        ],
+        "diff_keywords": [
+          "deploy",
+          "release",
+          "rollback",
+          "revert"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [
+          "build-and-ship-alignment"
+        ],
+        "required_skills": [],
+        "optional_skills": [
+          "audit-implementation"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: deploy-rollback-plan — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "build-ship-alignment"
+      ],
+      "source_file": "concerns/deploy-rollback-plan.md"
+    },
+    {
+      "name": "dmca-takedown",
+      "domain": "legal",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/dmca/**"
+        ],
+        "diff_keywords": [
+          "DMCA",
+          "takedown",
+          "counter-notice"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": []
+      },
+      "waiver_format": "PR body line: \"concern-waived: dmca-takedown — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": {},
+      "source_file": "concerns/dmca-takedown.md"
+    },
+    {
+      "name": "dns-or-tls-change",
+      "domain": "infra",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/dns/**",
+          "**/cloudflare/**",
+          "**/cert*"
+        ],
+        "diff_keywords": [
+          "CNAME",
+          "A record",
+          "TXT",
+          "DKIM",
+          "TLS",
+          "cert-manager"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": []
+      },
+      "waiver_format": "PR body line: \"concern-waived: dns-or-tls-change — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "build-ship-alignment"
+      ],
+      "source_file": "concerns/dns-or-tls-change.md"
+    },
+    {
+      "name": "e2e-coverage-for-flow",
+      "domain": "testing",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/e2e/**",
+          "**/tests/e2e/**",
+          "**/playwright.config*"
+        ],
+        "diff_keywords": [
+          "test\\(",
+          "describe\\(",
+          "page\\.goto"
+        ],
+        "packages_imported": [
+          "@playwright/test",
+          "cypress",
+          "puppeteer"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "write-e2e"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: e2e-coverage-for-flow — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": {},
+      "source_file": "concerns/e2e-coverage-for-flow.md"
+    },
+    {
+      "name": "error-tracking-emission",
+      "domain": "observability",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/error-handler*",
+          "**/sentry*"
+        ],
+        "diff_keywords": [
+          "Sentry\\.",
+          "rollbar",
+          "bugsnag",
+          "captureException"
+        ],
+        "packages_imported": [
+          "@sentry/*",
+          "rollbar",
+          "@bugsnag/*"
+        ],
+        "env_vars_referenced": [
+          "SENTRY_*",
+          "ROLLBAR_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": []
+      },
+      "waiver_format": "PR body line: \"concern-waived: error-tracking-emission — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "logging-policy"
+      ],
+      "source_file": "concerns/error-tracking-emission.md"
+    },
+    {
+      "name": "feature-flag-rollout",
+      "domain": "infra",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/feature-flags/**",
+          "**/flags/**",
+          "**/launchconfig*"
+        ],
+        "diff_keywords": [
+          "featureFlag",
+          "launchDarkly",
+          "unleash",
+          "flag\\.enabled"
+        ],
+        "packages_imported": [
+          "launchdarkly-node-server-sdk",
+          "unleash-client"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: feature-flag-rollout — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "canary-deploy",
+        "dark-launch"
+      ],
+      "source_file": "concerns/feature-flag-rollout.md"
+    },
+    {
+      "name": "feature-validation-closeout",
+      "domain": "testing",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-12",
+      "last_reviewed": "2026-05-12",
+      "signals": {
+        "file_path_patterns": [
+          "docs/specs/features/**",
+          "docs/specs/journeys/**",
+          "docs/specs/features/test-evidence/**"
+        ],
+        "diff_keywords": [
+          "acceptance criteria",
+          "user-facing",
+          "admin-facing",
+          "saved-state",
+          "FEATURE_VALIDATION_LEDGER",
+          "feature_validation_closeout"
+        ],
+        "packages_imported": [],
+        "env_vars_referenced": []
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [
+          "validate-feature",
+          "write-spec",
+          "review-gate",
+          "verify-promotion"
+        ],
+        "optional_skills": [
+          "audit-ac",
+          "write-journeys",
+          "write-e2e",
+          "test-journeys",
+          "track-visuals"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: feature-validation-closeout - <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/specs/work-items/**",
+        "**/docs/specs/features/test-evidence/*.template.md"
+      ],
+      "related_concerns": [
+        "e2e-test-coverage",
+        "journey-coverage"
+      ],
+      "source_file": "concerns/feature-validation-closeout.md"
+    },
+    {
+      "name": "flaky-test-quarantine",
+      "domain": "testing",
+      "severity": "LOW",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/test/**",
+          "**/__tests__/**"
+        ],
+        "diff_keywords": [
+          "test\\.skip",
+          "xtest",
+          "fdescribe",
+          "it\\.skip",
+          "\\@flaky"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": []
+      },
+      "waiver_format": "PR body line: \"concern-waived: flaky-test-quarantine — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": {},
+      "source_file": "concerns/flaky-test-quarantine.md"
+    },
+    {
+      "name": "gdpr-deletion",
+      "domain": "privacy",
+      "severity": "CRITICAL",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/gdpr/**",
+          "**/services/deletion/**",
+          "**/functions/*deleteAccount*/**"
+        ],
+        "diff_keywords": [
+          "gdprDelete",
+          "rightToErasure",
+          "eraseUser",
+          "tombstone"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: gdpr-deletion — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "pii-handling",
+        "data-deletion-cascade"
+      ],
+      "source_file": "concerns/gdpr-deletion.md"
+    },
+    {
+      "name": "github-api-touch",
+      "domain": "integration",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/scripts/**/github*",
+          "**/services/github/**",
+          "**/functions/*github*/**"
+        ],
+        "diff_keywords": [
+          "api\\.github\\.com",
+          "octokit",
+          "@octokit"
+        ],
+        "packages_imported": [
+          "@octokit/*",
+          "octokit"
+        ],
+        "env_vars_referenced": [
+          "GITHUB_*",
+          "GH_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: github-api-touch — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "paid-external-api"
+      ],
+      "source_file": "concerns/github-api-touch.md"
+    },
+    {
+      "name": "hipaa-control-touch",
+      "domain": "privacy",
+      "severity": "CRITICAL",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/hipaa/**",
+          "**/phi/**"
+        ],
+        "diff_keywords": [
+          "HIPAA",
+          "PHI\\b",
+          "protectedHealthInfo"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: hipaa-control-touch — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "pii-handling"
+      ],
+      "source_file": "concerns/hipaa-control-touch.md"
+    },
+    {
+      "name": "i18n-coverage",
+      "domain": "i18n",
+      "severity": "LOW",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/locales/**",
+          "**/i18n/**",
+          "**/translations/**"
+        ],
+        "diff_keywords": [
+          "t\\(\\s*['\\\"]",
+          "i18n\\.",
+          "useTranslation"
+        ],
+        "packages_imported": [
+          "i18next",
+          "react-i18next",
+          "next-i18next"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": []
+      },
+      "waiver_format": "PR body line: \"concern-waived: i18n-coverage — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": {},
+      "source_file": "concerns/i18n-coverage.md"
+    },
+    {
+      "name": "impersonation-flow",
+      "domain": "auth",
+      "severity": "CRITICAL",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/impersonate*",
+          "**/functions/*impersonate*/**"
+        ],
+        "diff_keywords": [
+          "impersonate",
+          "switchUser",
+          "actingAs"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: impersonation-flow — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "auth-surface",
+        "permission-elevation"
+      ],
+      "source_file": "concerns/impersonation-flow.md"
+    },
+    {
+      "name": "ios-android-parity",
+      "domain": "ux",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/ios/**",
+          "**/android/**",
+          "**/native/**"
+        ],
+        "diff_keywords": [
+          "Platform\\.OS",
+          "Platform\\.select",
+          "react-native"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: ios-android-parity — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": {},
+      "source_file": "concerns/ios-android-parity.md"
+    },
+    {
+      "name": "keyboard-navigation",
+      "domain": "ux",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/components/**"
+        ],
+        "diff_keywords": [
+          "onKeyDown",
+          "onKeyUp",
+          "tabIndex",
+          "focus\\(\\)"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-ux"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: keyboard-navigation — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "wcag-aa-compliance"
+      ],
+      "source_file": "concerns/keyboard-navigation.md"
+    },
+    {
+      "name": "lazy-load-strategy",
+      "domain": "performance",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/router/**",
+          "**/routes/**"
+        ],
+        "diff_keywords": [
+          "React\\.lazy",
+          "dynamic\\(\\(",
+          "import\\("
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: lazy-load-strategy — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "bundle-size-creep"
+      ],
+      "source_file": "concerns/lazy-load-strategy.md"
+    },
+    {
+      "name": "logging-policy",
+      "domain": "observability",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/logger*",
+          "**/logging/**"
+        ],
+        "diff_keywords": [
+          "console\\.log\\(",
+          "logger\\.",
+          "pino\\.",
+          "winston\\."
+        ],
+        "packages_imported": [
+          "pino",
+          "winston",
+          "bunyan",
+          "consola"
+        ],
+        "env_vars_referenced": [
+          "LOG_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: logging-policy — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "pii-handling"
+      ],
+      "source_file": "concerns/logging-policy.md"
+    },
+    {
+      "name": "memory-leak-risk",
+      "domain": "performance",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": {},
+        "diff_keywords": [
+          "setInterval\\(.*\\)",
+          "addEventListener\\(.*\\)",
+          "globalThis\\.\\w+\\s*=",
+          "__\\w+\\s*\\|\\|\\=\\s*new Map"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: memory-leak-risk — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "cache-eviction-policy"
+      ],
+      "source_file": "concerns/memory-leak-risk.md"
+    },
+    {
+      "name": "metrics-emission",
+      "domain": "observability",
+      "severity": "LOW",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/metrics/**"
+        ],
+        "diff_keywords": [
+          "StatsD",
+          "prometheus",
+          "datadog",
+          "cloudwatch:put"
+        ],
+        "packages_imported": [
+          "hot-shots",
+          "datadog-metrics",
+          "prom-client"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": []
+      },
+      "waiver_format": "PR body line: \"concern-waived: metrics-emission — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": {},
+      "source_file": "concerns/metrics-emission.md"
+    },
+    {
+      "name": "mfa-flow",
+      "domain": "auth",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/mfa/**",
+          "**/2fa/**",
+          "**/functions/*mfa*/**"
+        ],
+        "diff_keywords": [
+          "totp",
+          "otpauth",
+          "webauthn",
+          "authenticator",
+          "verifyMFA"
+        ],
+        "packages_imported": [
+          "otpauth",
+          "speakeasy",
+          "@simplewebauthn/*"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: mfa-flow — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "auth-surface"
+      ],
+      "source_file": "concerns/mfa-flow.md"
+    },
+    {
+      "name": "mobile-responsive",
+      "domain": "ux",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/components/**",
+          "**/styles/**"
+        ],
+        "diff_keywords": [
+          "sm:",
+          "md:",
+          "lg:",
+          "min-width",
+          "max-width",
+          "@media"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-ui"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: mobile-responsive — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": {},
+      "source_file": "concerns/mobile-responsive.md"
+    },
+    {
+      "name": "mocking-vs-fixtures",
+      "domain": "testing",
+      "severity": "LOW",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/__mocks__/**",
+          "**/test-utils/**"
+        ],
+        "diff_keywords": [
+          "vi\\.mock",
+          "jest\\.mock",
+          "sinon\\.stub"
+        ],
+        "packages_imported": [
+          "msw",
+          "nock"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": []
+      },
+      "waiver_format": "PR body line: \"concern-waived: mocking-vs-fixtures — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": {},
+      "source_file": "concerns/mocking-vs-fixtures.md"
+    },
+    {
+      "name": "n-plus-one-query",
+      "domain": "performance",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/services/**",
+          "**/api/**"
+        ],
+        "diff_keywords": [
+          "for\\s*\\(.*\\)\\s*\\{[\\s\\S]*await.*\\.findOne",
+          "forEach.*await.*\\.findOne",
+          "\\.map\\(.*async.*\\.findOne"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: n-plus-one-query — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "unbounded-query"
+      ],
+      "source_file": "concerns/n-plus-one-query.md"
+    },
+    {
+      "name": "number-locale",
+      "domain": "i18n",
+      "severity": "LOW",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/components/**"
+        ],
+        "diff_keywords": [
+          "toLocaleString",
+          "Intl\\.NumberFormat"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": []
+      },
+      "waiver_format": "PR body line: \"concern-waived: number-locale — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": {},
+      "source_file": "concerns/number-locale.md"
+    },
+    {
+      "name": "oauth-callback",
+      "domain": "auth",
+      "severity": "CRITICAL",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/oauth/**",
+          "**/functions/*oauth*/**",
+          "**/auth/callback*"
+        ],
+        "diff_keywords": [
+          "state\\b",
+          "code_verifier",
+          "redirect_uri",
+          "authorization_code"
+        ],
+        "packages_imported": [
+          "simple-oauth2",
+          "openid-client"
+        ],
+        "env_vars_referenced": [
+          "OAUTH_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [
+          "post-fix-evidence-before-next-fix"
+        ],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: oauth-callback — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "auth-surface"
+      ],
+      "source_file": "concerns/oauth-callback.md"
+    },
+    {
+      "name": "offline-capability",
+      "domain": "ux",
+      "severity": "LOW",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/sw.{ts,js}",
+          "**/service-worker*",
+          "**/offline*"
+        ],
+        "diff_keywords": [
+          "navigator\\.onLine",
+          "caches\\.open",
+          "workbox"
+        ],
+        "packages_imported": [
+          "workbox-*",
+          "idb"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: offline-capability — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": {},
+      "source_file": "concerns/offline-capability.md"
+    },
+    {
+      "name": "on-call-runbook",
+      "domain": "observability",
+      "severity": "LOW",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/runbooks/**",
+          "**/oncall/**"
+        ],
+        "diff_keywords": {},
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": []
+      },
+      "waiver_format": "PR body line: \"concern-waived: on-call-runbook — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "alert-thresholds"
+      ],
+      "source_file": "concerns/on-call-runbook.md"
+    },
+    {
+      "name": "open-redirect",
+      "domain": "security",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": {},
+        "diff_keywords": [
+          "window\\.location\\s*=\\s*[a-zA-Z_]*\\.url",
+          "redirect\\(\\s*req\\.",
+          "res\\.redirect\\(\\s*req\\."
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: open-redirect — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "xss-prevention"
+      ],
+      "source_file": "concerns/open-redirect.md"
+    },
+    {
+      "name": "paid-analytics-api",
+      "domain": "integration",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/services/analytics/**",
+          "**/functions/*track*/**"
+        ],
+        "diff_keywords": [
+          "posthog",
+          "mixpanel",
+          "amplitude",
+          "segment\\.com"
+        ],
+        "packages_imported": [
+          "posthog-js",
+          "posthog-node",
+          "mixpanel-browser",
+          "@amplitude/*",
+          "@segment/*"
+        ],
+        "env_vars_referenced": [
+          "POSTHOG_*",
+          "MIXPANEL_*",
+          "AMPLITUDE_*",
+          "SEGMENT_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "manage-finops",
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: paid-analytics-api — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "paid-external-api",
+        "pii-handling",
+        "consent-management"
+      ],
+      "source_file": "concerns/paid-analytics-api.md"
+    },
+    {
+      "name": "paid-cdn-egress",
+      "domain": "integration",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/cdn/**",
+          "**/services/cdn/**"
+        ],
+        "diff_keywords": [
+          "cloudfront\\.net",
+          "fastly\\.com",
+          "bunnycdn",
+          "cloudflare\\.com/r2"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": [
+          "CDN_*",
+          "FASTLY_*",
+          "BUNNY_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "manage-finops"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: paid-cdn-egress — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "paid-external-api"
+      ],
+      "source_file": "concerns/paid-cdn-egress.md"
+    },
+    {
+      "name": "paid-external-api",
+      "domain": "integration",
+      "severity": "CRITICAL",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/functions/*Lookup*/**",
+          "**/functions/places*/**",
+          "**/functions/openai*/**",
+          "**/functions/stripe*/**",
+          "**/functions/dodo*/**",
+          "**/functions/twilio*/**",
+          "**/functions/sendgrid*/**",
+          "**/functions/*payment*/**",
+          "**/functions/*checkout*/**",
+          "**/functions/*webhook*/**",
+          "**/functions/*billing*/**",
+          "**/integrations/**",
+          "**/services/billing/**",
+          "**/services/payments/**",
+          "**/services/email/**",
+          "**/services/sms/**",
+          "**/services/maps/**",
+          "**/services/llm/**"
+        ],
+        "diff_keywords": [
+          "googleapis\\\\.com",
+          "openai\\\\.com",
+          "stripe\\\\.com",
+          "twilio\\\\.com",
+          "sendgrid\\\\.com",
+          "places\\\\.googleapis",
+          "api\\\\.openai",
+          "api\\\\.anthropic",
+          "api\\\\.dodopayments",
+          "X-Goog-Api-Key",
+          "Authorization:.*Bearer.*sk-"
+        ],
+        "packages_imported": [
+          "openai",
+          "stripe",
+          "@stripe/*",
+          "twilio",
+          "sendgrid",
+          "@sendgrid/*",
+          "googleapis",
+          "@google-cloud/*",
+          "@anthropic-ai/sdk",
+          "dodopayments"
+        ],
+        "env_vars_referenced": [
+          "*_API_KEY",
+          "STRIPE_*",
+          "OPENAI_*",
+          "ANTHROPIC_*",
+          "GOOGLE_*_KEY",
+          "TWILIO_*",
+          "SENDGRID_*",
+          "DODO_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [
+          "manage-finops"
+        ],
+        "optional_skills": [
+          "design-tech",
+          "explore-solutions"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: paid-external-api — <reason>\"\nLogged as taste decision in .svc/pipeline-decisions.jsonl.\nAcceptable reasons: documentation-only change, test fixture update,\ncomment-only edit verified by line-level diff.",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/test/**",
+        "**/__tests__/**",
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "paid-llm-api",
+        "cache-strategy-symmetry",
+        "kill-switch-presence"
+      ],
+      "source_file": "concerns/paid-external-api.md"
+    },
+    {
+      "name": "paid-geocoding-api",
+      "domain": "integration",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/services/maps/**",
+          "**/services/location/**",
+          "**/functions/*geocode*/**",
+          "**/functions/*nearby*/**",
+          "**/functions/*address*/**"
+        ],
+        "diff_keywords": [
+          "places\\.googleapis",
+          "mapbox\\.com",
+          "maps\\.googleapis",
+          "searchNearby",
+          "reverseGeocode",
+          "autocomplete"
+        ],
+        "packages_imported": [
+          "@googlemaps/*",
+          "mapbox-gl",
+          "@mapbox/*"
+        ],
+        "env_vars_referenced": [
+          "GOOGLE_MAPS_*",
+          "GOOGLE_PLACES_*",
+          "MAPBOX_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "manage-finops"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: paid-geocoding-api — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "paid-external-api",
+        "cache-strategy-symmetry"
+      ],
+      "source_file": "concerns/paid-geocoding-api.md"
+    },
+    {
+      "name": "paid-llm-api",
+      "domain": "integration",
+      "severity": "CRITICAL",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/services/llm/**",
+          "**/agents/**",
+          "**/functions/*ai*/**",
+          "**/functions/*llm*/**",
+          "**/functions/*chat*/**",
+          "**/functions/*completion*/**"
+        ],
+        "diff_keywords": [
+          "api\\.openai",
+          "api\\.anthropic",
+          "gpt-[34]",
+          "claude-[34]",
+          "gemini-pro",
+          "X-Goog-Api-Key",
+          "OpenAI\\(",
+          "Anthropic\\("
+        ],
+        "packages_imported": [
+          "openai",
+          "@anthropic-ai/sdk",
+          "@google/generative-ai",
+          "cohere-ai",
+          "replicate"
+        ],
+        "env_vars_referenced": [
+          "OPENAI_*",
+          "ANTHROPIC_*",
+          "GEMINI_*",
+          "GOOGLE_GENERATIVE_AI_*",
+          "REPLICATE_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "manage-finops",
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: paid-llm-api — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "paid-external-api",
+        "cache-strategy-symmetry",
+        "kill-switch-presence"
+      ],
+      "source_file": "concerns/paid-llm-api.md"
+    },
+    {
+      "name": "paid-ml-inference-api",
+      "domain": "integration",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/services/ml/**",
+          "**/services/vision/**",
+          "**/services/speech/**",
+          "**/functions/*classify*/**",
+          "**/functions/*predict*/**"
+        ],
+        "diff_keywords": [
+          "replicate\\.run",
+          "huggingface",
+          "inference\\.endpoint",
+          "speech-to-text",
+          "translate"
+        ],
+        "packages_imported": [
+          "replicate",
+          "@huggingface/inference",
+          "@google-cloud/vision",
+          "@google-cloud/speech"
+        ],
+        "env_vars_referenced": [
+          "REPLICATE_*",
+          "HF_*",
+          "HUGGINGFACE_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "manage-finops"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: paid-ml-inference-api — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "paid-external-api"
+      ],
+      "source_file": "concerns/paid-ml-inference-api.md"
+    },
+    {
+      "name": "paid-notification-api",
+      "domain": "integration",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/services/email/**",
+          "**/services/sms/**",
+          "**/services/push/**",
+          "**/functions/*sendEmail*/**",
+          "**/functions/*sendSms*/**",
+          "**/functions/*notify*/**"
+        ],
+        "diff_keywords": [
+          "sendgrid",
+          "twilio",
+          "postmark",
+          "resend\\.com",
+          "mailgun",
+          "one_signal"
+        ],
+        "packages_imported": [
+          "@sendgrid/mail",
+          "twilio",
+          "postmark",
+          "resend",
+          "mailgun"
+        ],
+        "env_vars_referenced": [
+          "SENDGRID_*",
+          "TWILIO_*",
+          "POSTMARK_*",
+          "RESEND_*",
+          "MAILGUN_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "manage-finops",
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: paid-notification-api — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "paid-external-api",
+        "pii-handling",
+        "rate-limiting"
+      ],
+      "source_file": "concerns/paid-notification-api.md"
+    },
+    {
+      "name": "paid-ocr-vision-api",
+      "domain": "integration",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/services/ocr/**",
+          "**/services/vision/**",
+          "**/functions/*ocr*/**",
+          "**/functions/*receipt*/**",
+          "**/functions/*processReceipt*/**"
+        ],
+        "diff_keywords": [
+          "vision\\.googleapis",
+          "textract",
+          "rekognition",
+          "documentai"
+        ],
+        "packages_imported": [
+          "@google-cloud/vision",
+          "@aws-sdk/client-textract",
+          "@google-cloud/documentai"
+        ],
+        "env_vars_referenced": [
+          "GOOGLE_VISION_*",
+          "AWS_TEXTRACT_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "manage-finops",
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: paid-ocr-vision-api — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "paid-external-api",
+        "pii-handling"
+      ],
+      "source_file": "concerns/paid-ocr-vision-api.md"
+    },
+    {
+      "name": "paid-payment-api",
+      "domain": "integration",
+      "severity": "CRITICAL",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/services/payments/**",
+          "**/services/billing/**",
+          "**/functions/*checkout*/**",
+          "**/functions/*subscription*/**",
+          "**/functions/*invoice*/**",
+          "**/functions/dodo*/**",
+          "**/functions/stripe*/**"
+        ],
+        "diff_keywords": [
+          "stripe\\.com",
+          "paddle\\.com",
+          "dodopayments",
+          "createCheckoutSession",
+          "paymentIntent",
+          "subscription\\.",
+          "webhook"
+        ],
+        "packages_imported": [
+          "stripe",
+          "@stripe/*",
+          "dodopayments",
+          "@paddle/*",
+          "lemonsqueezy"
+        ],
+        "env_vars_referenced": [
+          "STRIPE_*",
+          "PADDLE_*",
+          "DODO_*",
+          "LEMONSQUEEZY_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security",
+          "manage-finops"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: paid-payment-api — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "paid-external-api",
+        "webhook-signature-verification",
+        "pii-handling"
+      ],
+      "source_file": "concerns/paid-payment-api.md"
+    },
+    {
+      "name": "paid-search-api",
+      "domain": "integration",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/services/search/**",
+          "**/functions/*search*/**"
+        ],
+        "diff_keywords": [
+          "algolia",
+          "meilisearch",
+          "typesense",
+          "elastic\\.cloud"
+        ],
+        "packages_imported": [
+          "algoliasearch",
+          "meilisearch",
+          "typesense"
+        ],
+        "env_vars_referenced": [
+          "ALGOLIA_*",
+          "MEILI_*",
+          "TYPESENSE_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "manage-finops"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: paid-search-api — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "paid-external-api"
+      ],
+      "source_file": "concerns/paid-search-api.md"
+    },
+    {
+      "name": "paid-storage-api",
+      "domain": "integration",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/services/storage/**",
+          "**/functions/*upload*/**",
+          "**/functions/*media*/**"
+        ],
+        "diff_keywords": [
+          "s3\\.amazonaws",
+          "storage\\.googleapis",
+          "r2\\.cloudflarestorage",
+          "putObject",
+          "getObject",
+          "createMultipart"
+        ],
+        "packages_imported": [
+          "@aws-sdk/client-s3",
+          "@google-cloud/storage",
+          "@cloudflare/r2"
+        ],
+        "env_vars_referenced": [
+          "AWS_*",
+          "S3_*",
+          "R2_*",
+          "GCS_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "manage-finops",
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: paid-storage-api — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "paid-external-api",
+        "data-deletion-cascade"
+      ],
+      "source_file": "concerns/paid-storage-api.md"
+    },
+    {
+      "name": "paid-streaming-api",
+      "domain": "integration",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/services/video/**",
+          "**/services/streaming/**",
+          "**/functions/*stream*/**"
+        ],
+        "diff_keywords": [
+          "mux\\.com",
+          "cloudflare\\.com/stream",
+          "livekit",
+          "agora\\.io"
+        ],
+        "packages_imported": [
+          "@mux/mux-node",
+          "livekit-server-sdk",
+          "agora-access-token"
+        ],
+        "env_vars_referenced": [
+          "MUX_*",
+          "LIVEKIT_*",
+          "AGORA_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "manage-finops"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: paid-streaming-api — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "paid-external-api"
+      ],
+      "source_file": "concerns/paid-streaming-api.md"
+    },
+    {
+      "name": "paid-translation-api",
+      "domain": "integration",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/services/i18n/**",
+          "**/functions/*translate*/**"
+        ],
+        "diff_keywords": [
+          "translate\\.googleapis",
+          "deepl",
+          "translator\\.azure"
+        ],
+        "packages_imported": [
+          "@google-cloud/translate",
+          "deepl-node"
+        ],
+        "env_vars_referenced": [
+          "DEEPL_*",
+          "GOOGLE_TRANSLATE_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "manage-finops"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: paid-translation-api — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "paid-external-api",
+        "i18n-coverage"
+      ],
+      "source_file": "concerns/paid-translation-api.md"
+    },
+    {
+      "name": "password-reset-flow",
+      "domain": "auth",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/password-reset*",
+          "**/forgot-password*",
+          "**/functions/*passwordReset*/**"
+        ],
+        "diff_keywords": [
+          "forgotPassword",
+          "resetPassword",
+          "sendResetEmail",
+          "tokenExpiry"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: password-reset-flow — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "auth-surface",
+        "paid-notification-api"
+      ],
+      "source_file": "concerns/password-reset-flow.md"
+    },
+    {
+      "name": "permission-elevation",
+      "domain": "auth",
+      "severity": "CRITICAL",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/admin/**",
+          "**/middleware/admin*",
+          "**/functions/*admin*/**"
+        ],
+        "diff_keywords": [
+          "isAdmin",
+          "requireAdmin",
+          "role\\s*===\\s*['\\\"]admin",
+          "sudo\\b"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: permission-elevation — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "auth-surface"
+      ],
+      "source_file": "concerns/permission-elevation.md"
+    },
+    {
+      "name": "pii-handling",
+      "domain": "privacy",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/entities/User*",
+          "**/entities/Customer*",
+          "**/entities/Profile*",
+          "**/entities/Employee*",
+          "**/services/email/**",
+          "**/services/sms/**",
+          "**/functions/**/sendEmail*",
+          "**/functions/**/sendSms*",
+          "**/gdpr/**",
+          "**/ccpa/**",
+          "**/privacy/**"
+        ],
+        "diff_keywords": [
+          "email",
+          "phone_number",
+          "phone\\\\b",
+          "address",
+          "first_name",
+          "last_name",
+          "full_name",
+          "date_of_birth",
+          "dob\\\\b",
+          "ssn",
+          "passport",
+          "national_id",
+          "ip_address",
+          "geolocation",
+          "location_history",
+          "user_agent",
+          "hashedPassword"
+        ],
+        "packages_imported": [],
+        "env_vars_referenced": []
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [
+          "review-security"
+        ],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: pii-handling — <reason>\"\nAcceptable: a non-PII field happens to share a keyword (e.g. an internal\n\"ip_address\" of a server, not a user). State why the field is not PII in\nthe waiver line.",
+      "fires_on": [
+        "first-introduction",
+        "new-pii-field",
+        "new-export-path",
+        "new-storage-target"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/docs/**",
+        "**/test-fixtures/**"
+      ],
+      "related_concerns": [
+        "data-model-mutation",
+        "data-deletion-cascade",
+        "gdpr-deletion",
+        "logging-policy",
+        "consent-management"
+      ],
+      "source_file": "concerns/pii-handling.md"
+    },
+    {
+      "name": "pricing-tier-touch",
+      "domain": "business",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/pricing/**",
+          "**/tiers/**",
+          "**/plans/**",
+          "**/components/**/Pricing*"
+        ],
+        "diff_keywords": [
+          "priceMonthly",
+          "tier:",
+          "plan:",
+          "pricingTier"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "pricing",
+          "manage-finops"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: pricing-tier-touch — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "paid-payment-api"
+      ],
+      "source_file": "concerns/pricing-tier-touch.md"
+    },
+    {
+      "name": "privacy-policy-touch",
+      "domain": "legal",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/privacy*",
+          "**/legal/privacy*"
+        ],
+        "diff_keywords": [
+          "Privacy Policy",
+          "data we collect",
+          "third-party processors"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": []
+      },
+      "waiver_format": "PR body line: \"concern-waived: privacy-policy-touch — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "pii-handling"
+      ],
+      "source_file": "concerns/privacy-policy-touch.md"
+    },
+    {
+      "name": "provider-fidelity",
+      "domain": "integration",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-12",
+      "last_reviewed": "2026-05-12",
+      "signals": {
+        "file_path_patterns": [
+          "docs/specs/features/**",
+          "docs/specs/features/test-evidence/**",
+          "**/provider/**",
+          "**/generation/**",
+          "**/ai/**"
+        ],
+        "diff_keywords": [
+          "primary provider",
+          "provider_fidelity",
+          "PROVIDER_FIDELITY_EVIDENCE",
+          "fallback",
+          "generated image",
+          "AI generation",
+          "saved outcome",
+          "source evidence"
+        ],
+        "packages_imported": [
+          "openai",
+          "@fal-ai/*",
+          "replicate",
+          "@google/genai"
+        ],
+        "env_vars_referenced": [
+          "*_API_KEY",
+          "*_TOKEN"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [
+          "write-spec",
+          "review-gate",
+          "verify-promotion"
+        ],
+        "optional_skills": [
+          "validate-feature",
+          "test-journeys",
+          "track-visuals"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: provider-fidelity - <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/specs/work-items/**",
+        "**/docs/specs/features/test-evidence/*.template.md"
+      ],
+      "related_concerns": [
+        "paid-llm-api",
+        "external-api-contract"
+      ],
+      "source_file": "concerns/provider-fidelity.md"
+    },
+    {
+      "name": "push-token-lifecycle",
+      "domain": "ux",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/push*",
+          "**/notifications/**"
+        ],
+        "diff_keywords": [
+          "fcm",
+          "apns",
+          "pushToken",
+          "deviceToken",
+          "registerForPushNotifications"
+        ],
+        "packages_imported": [
+          "@capacitor/push-notifications",
+          "firebase-admin"
+        ],
+        "env_vars_referenced": [
+          "FCM_*",
+          "APN_*",
+          "FIREBASE_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: push-token-lifecycle — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "pii-handling"
+      ],
+      "source_file": "concerns/push-token-lifecycle.md"
+    },
+    {
+      "name": "queue-backpressure",
+      "domain": "infra",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/queues/**",
+          "**/workers/**",
+          "**/jobs/**"
+        ],
+        "diff_keywords": [
+          "bullmq",
+          "sqs",
+          "pubsub",
+          "kafka"
+        ],
+        "packages_imported": [
+          "bullmq",
+          "@aws-sdk/client-sqs",
+          "@google-cloud/pubsub",
+          "kafkajs"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: queue-backpressure — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": {},
+      "source_file": "concerns/queue-backpressure.md"
+    },
+    {
+      "name": "rate-limiting",
+      "domain": "security",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/middleware/rate*",
+          "**/services/rate*"
+        ],
+        "diff_keywords": [
+          "rateLimit",
+          "tooManyRequests",
+          "leakyBucket",
+          "tokenBucket"
+        ],
+        "packages_imported": [
+          "express-rate-limit",
+          "@upstash/ratelimit",
+          "rate-limiter-flexible"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: rate-limiting — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "auth-surface",
+        "paid-external-api"
+      ],
+      "source_file": "concerns/rate-limiting.md"
+    },
+    {
+      "name": "reduced-motion",
+      "domain": "ux",
+      "severity": "LOW",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/components/**"
+        ],
+        "diff_keywords": [
+          "prefers-reduced-motion",
+          "animate",
+          "motion\\.",
+          "framer-motion"
+        ],
+        "packages_imported": [
+          "framer-motion",
+          "motion"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-ux"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: reduced-motion — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": {},
+      "source_file": "concerns/reduced-motion.md"
+    },
+    {
+      "name": "refund-flow",
+      "domain": "business",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/refunds/**",
+          "**/functions/*refund*/**"
+        ],
+        "diff_keywords": [
+          "createRefund",
+          "partialRefund",
+          "refundPolicy"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: refund-flow — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "billing-side-effect",
+        "paid-payment-api"
+      ],
+      "source_file": "concerns/refund-flow.md"
+    },
+    {
+      "name": "region-locking",
+      "domain": "privacy",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/geo-restrict*",
+          "**/middleware/geo*"
+        ],
+        "diff_keywords": [
+          "geoBlock",
+          "allowedCountries",
+          "GDPR.*EU",
+          "CCPA.*California"
+        ],
+        "packages_imported": [
+          "geoip-lite"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: region-locking — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "pii-handling"
+      ],
+      "source_file": "concerns/region-locking.md"
+    },
+    {
+      "name": "replay-protection",
+      "domain": "security",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/webhooks/**"
+        ],
+        "diff_keywords": [
+          "nonce",
+          "idempotency-key",
+          "jti\\b",
+          "eventTimestamp"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: replay-protection — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "webhook-receiver"
+      ],
+      "source_file": "concerns/replay-protection.md"
+    },
+    {
+      "name": "revenue-attribution",
+      "domain": "business",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/services/attribution/**"
+        ],
+        "diff_keywords": [
+          "utm_source",
+          "attribution",
+          "campaign\\b",
+          "first_touch",
+          "last_touch"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": []
+      },
+      "waiver_format": "PR body line: \"concern-waived: revenue-attribution — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "paid-analytics-api"
+      ],
+      "source_file": "concerns/revenue-attribution.md"
+    },
+    {
+      "name": "rtl-support",
+      "domain": "i18n",
+      "severity": "LOW",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/styles/**",
+          "**/components/**"
+        ],
+        "diff_keywords": [
+          "dir=\\s*['\\\"]rtl",
+          "logical-properties",
+          "inline-start",
+          "inline-end"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": []
+      },
+      "waiver_format": "PR body line: \"concern-waived: rtl-support — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "i18n-coverage"
+      ],
+      "source_file": "concerns/rtl-support.md"
+    },
+    {
+      "name": "screen-reader-flow",
+      "domain": "ux",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/components/**"
+        ],
+        "diff_keywords": [
+          "aria-live",
+          "aria-label",
+          "aria-describedby",
+          "role=\\s*['\\\"]alert"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-ux"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: screen-reader-flow — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "wcag-aa-compliance"
+      ],
+      "source_file": "concerns/screen-reader-flow.md"
+    },
+    {
+      "name": "secrets-management",
+      "domain": "security",
+      "severity": "CRITICAL",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/.env.example",
+          "**/secrets/**"
+        ],
+        "diff_keywords": [
+          "process\\.env\\.[A-Z_]*KEY",
+          "process\\.env\\.[A-Z_]*SECRET",
+          "process\\.env\\.[A-Z_]*TOKEN",
+          "apiKey:\\s*['\\\"]",
+          "secret:\\s*['\\\"]"
+        ],
+        "packages_imported": [
+          "dotenv"
+        ],
+        "env_vars_referenced": [
+          "*_SECRET",
+          "*_KEY",
+          "*_TOKEN",
+          "*_PASSWORD"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [
+          "destructive-git-ops"
+        ],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: secrets-management — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "auth-surface"
+      ],
+      "source_file": "concerns/secrets-management.md"
+    },
+    {
+      "name": "security-cross-family-review",
+      "domain": "security",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-07-10",
+      "last_reviewed": "2026-07-10",
+      "signals": {
+        "file_path_patterns": [
+          "**/auth/**",
+          "**/AuthContext*",
+          "**/AuthProvider*",
+          "**/middleware/auth*",
+          "**/login*",
+          "**/signup*",
+          "**/oauth*",
+          "**/session*",
+          "**/jwt*",
+          "**/*csrf*",
+          "**/*csrf*/**",
+          "**/*token*",
+          "**/*token*/**",
+          "**/*crypto*",
+          "**/*crypto*/**",
+          "**/*hmac*",
+          "**/*hmac*/**",
+          "**/*signature*",
+          "**/*signState*",
+          "**/*verifyState*",
+          "**/rls/**",
+          "**/policies/**",
+          "**/*.policy.sql",
+          "**/migrations/**",
+          "**/*cors*",
+          "**/*csp*",
+          "**/webhook*",
+          "**/secrets/**",
+          "**/*.secret.*"
+        ],
+        "diff_keywords": [
+          "crypto\\\\.subtle",
+          "createHmac",
+          "HMAC",
+          "timingSafeEqual",
+          "verify(.*)signature",
+          "verify(.*)token",
+          "b64url",
+          "base64url",
+          "JWT",
+          "Bearer ",
+          "service_role",
+          "\"USING\\\\s*\\\\(\"            # postgres RLS predicate",
+          "WITH CHECK",
+          "auth\\\\.getUser",
+          "auth\\\\.uid\\\\(\\\\)",
+          "webhook.*secret",
+          "X-.*-Secret"
+        ],
+        "env_vars_referenced": [
+          "*_SECRET",
+          "*_HMAC_*",
+          "*_SERVICE_ROLE_*",
+          "*_WEBHOOK_SECRET",
+          "JWT_*",
+          "AUTH_*",
+          "SESSION_*"
+        ]
+      },
+      "handled_by": {
+        "required_skills": [
+          "review-cross-model"
+        ],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: security-cross-family-review — <owner decision>\"\nMissing CLI capability is not a routine waiver: the canonical launcher emits\none actionable hard-failure receipt and the required gate halts. Any exception\nneeds explicit repository-owner authority and must cite that receipt. \"Looked\nfine to me\" and same-family review never satisfy the concern.",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-flow",
+        "refactor",
+        "dependency-update"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/e2e/**",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "auth-surface",
+        "cryptography-touch",
+        "cors-policy",
+        "csp-policy",
+        "api-key-management",
+        "ssrf-prevention",
+        "replay-protection",
+        "data-deletion-cascade"
+      ],
+      "source_file": "concerns/security-cross-family-review.md"
+    },
+    {
+      "name": "service-account-credentials",
+      "domain": "auth",
+      "severity": "CRITICAL",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/service-accounts/**"
+        ],
+        "diff_keywords": [
+          "google-service-account",
+          "service_account\\.json",
+          "IAM\\.assumeRole"
+        ],
+        "packages_imported": [
+          "google-auth-library",
+          "@google-cloud/iam"
+        ],
+        "env_vars_referenced": [
+          "GOOGLE_APPLICATION_CREDENTIALS",
+          "AWS_ROLE_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: service-account-credentials — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "auth-surface",
+        "secrets-management"
+      ],
+      "source_file": "concerns/service-account-credentials.md"
+    },
+    {
+      "name": "session-management",
+      "domain": "auth",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/session*",
+          "**/middleware/session*"
+        ],
+        "diff_keywords": [
+          "session\\.user",
+          "createSession",
+          "destroySession",
+          "cookie\\.set"
+        ],
+        "packages_imported": [
+          "iron-session",
+          "next-session",
+          "express-session"
+        ],
+        "env_vars_referenced": [
+          "SESSION_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [
+          "post-fix-evidence-before-next-fix"
+        ],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: session-management — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "auth-surface"
+      ],
+      "source_file": "concerns/session-management.md"
+    },
+    {
+      "name": "soc2-control-touch",
+      "domain": "privacy",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/audit-log*",
+          "**/functions/*audit*/**"
+        ],
+        "diff_keywords": [
+          "auditLog",
+          "soc2",
+          "changeLog",
+          "activityLog"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: soc2-control-touch — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "pii-handling"
+      ],
+      "source_file": "concerns/soc2-control-touch.md"
+    },
+    {
+      "name": "social-login",
+      "domain": "auth",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/auth/social/**",
+          "**/auth/google*",
+          "**/auth/apple*",
+          "**/auth/facebook*"
+        ],
+        "diff_keywords": [
+          "signInWithProvider",
+          "signInWithGoogle",
+          "signInWithApple",
+          "idToken"
+        ],
+        "packages_imported": [
+          "@react-native-google-signin/*",
+          "expo-apple-authentication"
+        ],
+        "env_vars_referenced": [
+          "GOOGLE_CLIENT_*",
+          "APPLE_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: social-login — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "auth-surface",
+        "oauth-callback"
+      ],
+      "source_file": "concerns/social-login.md"
+    },
+    {
+      "name": "social-media-api-touch",
+      "domain": "integration",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/services/social/**"
+        ],
+        "diff_keywords": [
+          "api\\.x\\.com",
+          "api\\.twitter",
+          "graph\\.facebook",
+          "linkedin\\.com/oauth",
+          "instagram\\.com/api"
+        ],
+        "packages_imported": [
+          "twitter-api-v2",
+          "instagrapi",
+          "linkedin-api-client"
+        ],
+        "env_vars_referenced": [
+          "TWITTER_*",
+          "X_*",
+          "FB_*",
+          "LINKEDIN_*",
+          "INSTAGRAM_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: social-media-api-touch — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "paid-external-api",
+        "auth-surface"
+      ],
+      "source_file": "concerns/social-media-api-touch.md"
+    },
+    {
+      "name": "sql-injection-prevention",
+      "domain": "security",
+      "severity": "CRITICAL",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/db/**",
+          "**/queries/**"
+        ],
+        "diff_keywords": [
+          "\\$\\{[^}]*\\}.*\\bSELECT\\b",
+          "\\+\\s*[`'\\\"]\\bSELECT\\b",
+          "rawQuery",
+          "unsafeRaw"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: sql-injection-prevention — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "auth-surface"
+      ],
+      "source_file": "concerns/sql-injection-prevention.md"
+    },
+    {
+      "name": "ssrf-prevention",
+      "domain": "security",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": {},
+        "diff_keywords": [
+          "fetch\\(\\s*req\\.",
+          "http\\.get\\(\\s*req\\.",
+          "axios\\.get\\(\\s*req\\.body"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: ssrf-prevention — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "auth-surface"
+      ],
+      "source_file": "concerns/ssrf-prevention.md"
+    },
+    {
+      "name": "subscription-state-machine",
+      "domain": "business",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/subscriptions/**"
+        ],
+        "diff_keywords": [
+          "subscription\\.status",
+          "cancelSubscription",
+          "reactivate",
+          "gracePeriod"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: subscription-state-machine — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "billing-side-effect"
+      ],
+      "source_file": "concerns/subscription-state-machine.md"
+    },
+    {
+      "name": "supply-chain-security",
+      "domain": "security",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/package.json",
+          "**/Dockerfile",
+          "**/.github/workflows/**"
+        ],
+        "diff_keywords": [
+          "curl.*\\|.*sh",
+          "wget.*\\|.*sh",
+          "unverified",
+          "integrity:"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: supply-chain-security — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "dependency-audit"
+      ],
+      "source_file": "concerns/supply-chain-security.md"
+    },
+    {
+      "name": "terms-of-service-touch",
+      "domain": "legal",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/terms*",
+          "**/ToS*",
+          "**/legal/terms*"
+        ],
+        "diff_keywords": [
+          "Terms of Service",
+          "arbitration clause",
+          "limitation of liability"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": []
+      },
+      "waiver_format": "PR body line: \"concern-waived: terms-of-service-touch — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": {},
+      "source_file": "concerns/terms-of-service-touch.md"
+    },
+    {
+      "name": "test-data-seeding",
+      "domain": "testing",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/fixtures/**",
+          "**/seed*",
+          "**/test-data/**"
+        ],
+        "diff_keywords": [
+          "createSeedUser",
+          "fixtureData",
+          "fakerjs"
+        ],
+        "packages_imported": [
+          "@faker-js/faker"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [
+          "helper-app-query-parity"
+        ],
+        "required_skills": [],
+        "optional_skills": []
+      },
+      "waiver_format": "PR body line: \"concern-waived: test-data-seeding — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": {},
+      "source_file": "concerns/test-data-seeding.md"
+    },
+    {
+      "name": "third-party-script-impact",
+      "domain": "performance",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/index.html",
+          "**/_document.tsx",
+          "**/Layout.*"
+        ],
+        "diff_keywords": [
+          "gtag",
+          "GA-",
+          "gtm\\.start",
+          "fbq\\(",
+          "pixel"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: third-party-script-impact — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "critical-path-rendering"
+      ],
+      "source_file": "concerns/third-party-script-impact.md"
+    },
+    {
+      "name": "timezone-handling",
+      "domain": "i18n",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/components/**",
+          "**/services/**"
+        ],
+        "diff_keywords": [
+          "new Date\\(",
+          "Date\\.now",
+          "toLocaleString",
+          "tz:",
+          "DateTime\\."
+        ],
+        "packages_imported": [
+          "date-fns-tz",
+          "luxon",
+          "dayjs"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: timezone-handling — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": {},
+      "source_file": "concerns/timezone-handling.md"
+    },
+    {
+      "name": "token-rotation",
+      "domain": "auth",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/auth/**"
+        ],
+        "diff_keywords": [
+          "refreshToken",
+          "rotateToken",
+          "JWT.*sign",
+          "iss\\b",
+          "aud\\b"
+        ],
+        "packages_imported": [
+          "jsonwebtoken",
+          "jose"
+        ],
+        "env_vars_referenced": [
+          "JWT_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: token-rotation — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "auth-surface"
+      ],
+      "source_file": "concerns/token-rotation.md"
+    },
+    {
+      "name": "tracing-spans",
+      "domain": "observability",
+      "severity": "LOW",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/tracing/**"
+        ],
+        "diff_keywords": [
+          "opentelemetry",
+          "tracer\\.start",
+          "span\\.end"
+        ],
+        "packages_imported": [
+          "@opentelemetry/*"
+        ],
+        "env_vars_referenced": [
+          "OTEL_*"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": []
+      },
+      "waiver_format": "PR body line: \"concern-waived: tracing-spans — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": {},
+      "source_file": "concerns/tracing-spans.md"
+    },
+    {
+      "name": "unbounded-query",
+      "domain": "performance",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/services/**"
+        ],
+        "diff_keywords": [
+          "\\.findMany\\(\\s*\\)",
+          "\\.find\\(\\s*\\{\\s*\\}\\s*\\)",
+          "\\.list\\(\\s*\\)",
+          "SELECT \\* FROM"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: unbounded-query — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "n-plus-one-query"
+      ],
+      "source_file": "concerns/unbounded-query.md"
+    },
+    {
+      "name": "upgrade-downgrade-prorate",
+      "domain": "business",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/billing/**"
+        ],
+        "diff_keywords": [
+          "proration",
+          "upgrade",
+          "downgrade",
+          "creditAmount"
+        ],
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-tech"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: upgrade-downgrade-prorate — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "subscription-state-machine"
+      ],
+      "source_file": "concerns/upgrade-downgrade-prorate.md"
+    },
+    {
+      "name": "user-doc-coverage",
+      "domain": "docs",
+      "severity": "LOW",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/docs/user/**",
+          "**/help/**"
+        ],
+        "diff_keywords": {},
+        "packages_imported": {},
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": []
+      },
+      "waiver_format": "PR body line: \"concern-waived: user-doc-coverage — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": {},
+      "source_file": "concerns/user-doc-coverage.md"
+    },
+    {
+      "name": "wcag-aa-compliance",
+      "domain": "ux",
+      "severity": "MEDIUM",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/components/**"
+        ],
+        "diff_keywords": [
+          "aria-",
+          "role=",
+          "tabIndex",
+          "alt=\\s*['\\\"]"
+        ],
+        "packages_imported": [
+          "@axe-core/*",
+          "eslint-plugin-jsx-a11y"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "design-ux"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: wcag-aa-compliance — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": {},
+      "source_file": "concerns/wcag-aa-compliance.md"
+    },
+    {
+      "name": "webhook-receiver",
+      "domain": "integration",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/functions/*webhook*/**",
+          "**/api/webhooks/**"
+        ],
+        "diff_keywords": [
+          "x-signature",
+          "webhook\\.verify",
+          "constructEvent",
+          "svix"
+        ],
+        "packages_imported": [
+          "svix",
+          "standardwebhooks"
+        ],
+        "env_vars_referenced": [
+          "*_WEBHOOK_SECRET"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: webhook-receiver — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "auth-surface",
+        "replay-protection"
+      ],
+      "source_file": "concerns/webhook-receiver.md"
+    },
+    {
+      "name": "webhook-signature-verification",
+      "domain": "security",
+      "severity": "CRITICAL",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/webhooks/**",
+          "**/functions/*webhook*/**"
+        ],
+        "diff_keywords": [
+          "constructEvent",
+          "verifySignature",
+          "webhook\\.verify",
+          "svix\\.verify"
+        ],
+        "packages_imported": [
+          "stripe",
+          "svix"
+        ],
+        "env_vars_referenced": [
+          "*_WEBHOOK_SECRET"
+        ]
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: webhook-signature-verification — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "webhook-receiver",
+        "replay-protection"
+      ],
+      "source_file": "concerns/webhook-signature-verification.md"
+    },
+    {
+      "name": "xss-prevention",
+      "domain": "security",
+      "severity": "HIGH",
+      "status": "active",
+      "created": "2026-05-07",
+      "last_reviewed": "2026-05-07",
+      "signals": {
+        "file_path_patterns": [
+          "**/components/**/*.{jsx,tsx,vue,svelte}"
+        ],
+        "diff_keywords": [
+          "dangerouslySetInnerHTML",
+          "innerHTML",
+          "eval\\(",
+          "Function\\(",
+          "document\\.write"
+        ],
+        "packages_imported": [
+          "dompurify",
+          "sanitize-html"
+        ],
+        "env_vars_referenced": {}
+      },
+      "handled_by": {
+        "required_rules": [],
+        "required_skills": [],
+        "optional_skills": [
+          "review-security"
+        ]
+      },
+      "waiver_format": "PR body line: \"concern-waived: xss-prevention — <reason>\"",
+      "fires_on": [
+        "first-introduction",
+        "bugfix-touching-call-shape",
+        "new-caller",
+        "refactor"
+      ],
+      "fires_off": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/docs/**"
+      ],
+      "related_concerns": [
+        "auth-surface",
+        "csp-policy"
+      ],
+      "source_file": "concerns/xss-prevention.md"
+    }
+  ],
+  "skill_claims": {
+    "paid-analytics-api": [
+      "analyze-marketing"
+    ],
+    "revenue-attribution": [
+      "analyze-marketing"
+    ],
+    "build-ship-alignment": [
+      "audit-implementation",
+      "platform-operating-architect",
+      "review-gate",
+      "review-plan"
+    ],
+    "paid-external-api": [
+      "capability-concierge",
+      "design-tech",
+      "diagnose-bug",
+      "explore-solutions",
+      "manage-finops",
+      "plan-capabilities",
+      "research",
+      "review-plan",
+      "strategic-decision"
+    ],
+    "data-model-mutation": [
+      "design-tech",
+      "explore-solutions",
+      "review-cross-model",
+      "review-gate",
+      "review-plan",
+      "strategic-decision"
+    ],
+    "dark-mode-coverage": [
+      "design-ui"
+    ],
+    "mobile-responsive": [
+      "design-ui",
+      "design-ux"
+    ],
+    "wcag-aa-compliance": [
+      "design-ux"
+    ],
+    "keyboard-navigation": [
+      "design-ux"
+    ],
+    "screen-reader-flow": [
+      "design-ux"
+    ],
+    "reduced-motion": [
+      "design-ux"
+    ],
+    "cookie-consent": [
+      "design-ux"
+    ],
+    "auth-surface": [
+      "diagnose-bug",
+      "review-cross-model",
+      "review-gate",
+      "review-plan",
+      "review-security"
+    ],
+    "oauth-callback": [
+      "diagnose-bug"
+    ],
+    "cache-strategy-symmetry": [
+      "explore-solutions"
+    ],
+    "terms-of-service-touch": [
+      "launch-knowledge"
+    ],
+    "privacy-policy-touch": [
+      "launch-knowledge"
+    ],
+    "acceptable-use-policy": [
+      "launch-knowledge"
+    ],
+    "gdpr-deletion": [
+      "launch-knowledge"
+    ],
+    "ccpa-do-not-sell": [
+      "launch-knowledge"
+    ],
+    "soc2-control-touch": [
+      "launch-knowledge"
+    ],
+    "hipaa-control-touch": [
+      "launch-knowledge"
+    ],
+    "auto-learning-capture": [
+      "manage-learnings"
+    ],
+    "paid-llm-api": [
+      "plan-capabilities",
+      "strategic-decision"
+    ],
+    "github-api-touch": [
+      "plan-capabilities"
+    ],
+    "social-media-api-touch": [
+      "plan-capabilities"
+    ],
+    "capacitor-native-bridge": [
+      "platform-operating-architect"
+    ],
+    "deploy-rollback-plan": [
+      "platform-operating-architect"
+    ],
+    "feature-flag-rollout": [
+      "platform-operating-architect"
+    ],
+    "dependency-audit": [
+      "research"
+    ],
+    "database-migration": [
+      "review-cross-model"
+    ],
+    "security-cross-family-review": [
+      "review-cross-model"
+    ],
+    "exec-output-adversarial": [
+      "review-exec"
+    ],
+    "chain-receipts-completeness": [
+      "review-exec"
+    ],
+    "pii-handling": [
+      "review-gate",
+      "review-security"
+    ],
+    "feature-validation-closeout": [
+      "review-gate",
+      "validate-feature",
+      "verify-promotion",
+      "write-spec"
+    ],
+    "provider-fidelity": [
+      "review-gate",
+      "verify-promotion",
+      "write-spec"
+    ],
+    "cryptography-touch": [
+      "review-security"
+    ],
+    "e2e-coverage-for-flow": [
+      "test-journeys",
+      "write-e2e"
+    ],
+    "flaky-test-quarantine": [
+      "test-journeys",
+      "write-e2e"
+    ],
+    "test-data-seeding": [
+      "write-e2e"
+    ],
+    "mocking-vs-fixtures": [
+      "write-e2e"
+    ]
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "wi": "WI-FIXTURE-BAD",
+  "lane": "framework",
+  "created": "2026-05-10T09:00:00Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Receipt with malformed extension fields — validator MUST surface advisories",
+      "status": "completed",
+      "metadata": { "skill": "diagnose-bug" },
+      "skill_receipt": {
+        "skill": "diagnose-bug",
+        "loaded_at": "2026-05-10T09:00:00Z",
+        "loaded_via": "skill_tool",
+        "evidence_level": "V99",
+        "target_class": "spaceship",
+        "phases_executed": "this should be an array"
+      },
+      "completed_at": "2026-05-10T09:00:00Z"
+    },
+    {
+      "id": 2,
+      "subject": "Receipt with V0 + browser-visible cross-check (Phase D will block)",
+      "status": "completed",
+      "blocked_by": [1],
+      "metadata": { "skill": "execute-changeset" },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-05-10T09:05:00Z",
+        "loaded_via": "manual",
+        "evidence_level": "V0",
+        "target_class": "browser-visible"
+      },
+      "completed_at": "2026-05-10T09:05:00Z"
+    },
+    {
+      "id": 3,
+      "subject": "Receipt with phases_executed containing malformed entries",
+      "status": "completed",
+      "blocked_by": [2],
+      "metadata": { "skill": "test-journeys" },
+      "skill_receipt": {
+        "skill": "test-journeys",
+        "loaded_at": "2026-05-10T09:10:00Z",
+        "loaded_via": "skill_tool",
+        "phases_executed": [
+          {
+            "id": "not-a-valid-phase-id",
+            "ts": "2026-05-10T09:10:30Z",
+            "evidence_artifacts": [
+              { "type": "telegram", "path": "" }
+            ]
+          },
+          {
+            "id": "P2-Reproduce",
+            "ts": "",
+            "evidence_artifacts": "should be array"
+          }
+        ]
+      },
+      "completed_at": "2026-05-10T09:10:00Z"
+    }
+  ]
+}

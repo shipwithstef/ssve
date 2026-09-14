@@ -1,0 +1,40 @@
+{
+  "wi": "WI-251",
+  "lane": "framework",
+  "created": "2026-05-10T18:44:52Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Migrate design-ui skill contract",
+      "status": "completed",
+      "blocked_by": [],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T18:44:52Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T18:45:30Z"
+    },
+    {
+      "id": 2,
+      "subject": "Validate and close WI-251",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T18:45:30Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T18:47:08Z"
+    }
+  ]
+}

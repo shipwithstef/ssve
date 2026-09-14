@@ -1,0 +1,25 @@
+review:
+  reviewer: Claude Fable 5
+  reviewed_at: 2026-07-14T11:15:00Z
+  verdict: REVISE
+  score: 6
+  review_complete: true
+  summary: Strong architecture and AC coverage, but the package was not yet safe for a medium zero-context executor because bootstrap, planning-bundle availability, branch names, P1 ordering, permanent invariance, MODIFY anchors, coupled validators, cleanup, allowlists, host APIs, tier-1 promotion notes, temp paths, docs scope, runtime-root security, and controller/leaf scope had inconsistencies.
+  findings:
+    - {id: F-001, severity: BLOCKER, target: WI-482, issue: birth worktree invoked the not-yet-created ensure helper}
+    - {id: F-002, severity: HIGH, target: program, issue: reviewed leafs existed only on the unlanded planning branch}
+    - {id: F-003, severity: HIGH, target: program, issue: controller and leaves used different branch/worktree names}
+    - {id: F-004, severity: HIGH, target: WI-481, issue: P1 could run before P2/P3 despite bootstrap and shared-file dependencies}
+    - {id: F-005, severity: HIGH, target: WI-485, issue: permanent non-Codex frozen hashes would conflict with later legitimate P2 wirer edits}
+    - {id: F-006, severity: HIGH, target: all leaves, issue: MODIFY targets lacked exact anchors and dispositions}
+    - {id: F-007, severity: HIGH, target: WI-483, issue: content-coupled build/ship validator and concern file were omitted}
+    - {id: F-008, severity: MEDIUM, target: WI-485, issue: Codex feature-flag validator was omitted}
+    - {id: F-009, severity: MEDIUM, target: WI-485, issue: promised SessionStart sweep had no owning artifact}
+    - {id: F-010, severity: MEDIUM, target: WI-485/WI-482, issue: read-only allowlist was unspecified and duplicated}
+    - {id: F-011, severity: MEDIUM, target: WI-482, issue: per-host event/matcher facts were deferred without a research gate}
+    - {id: F-012, severity: MEDIUM, target: all leaves, issue: five new tier-1 validators lacked promotion notes and bounded budgets}
+    - {id: F-013, severity: MEDIUM, target: WI-485, issue: TMPDIR-dependent fixture paths were unsafe}
+    - {id: F-014, severity: MEDIUM, target: WI-482, issue: WORKTREES contradictory rows were not exhaustively enumerated}
+    - {id: F-015, severity: MEDIUM, target: WI-485, issue: world-writable runtime-root ownership and mode behavior was unspecified}
+    - {id: F-016, severity: MEDIUM, target: program/WI-481, issue: controller P1 file fence was stale and manifest N/A missing}
+    - {id: F-017, severity: LOW, target: program, issue: AC summaries were described as verbatim mirrors despite paraphrase}

@@ -1,0 +1,88 @@
+{
+  "_version": 1,
+  "_comment": "WI-521 Batch A. THE single stage vocabulary (kills G4's four-vocabulary drift). The `stages` array order IS the canonical stage order — nothing else defines it: Batch C's blocked_by task-graph chaining and scripts/audit-story-receipts.mjs's print order both derive from this array's position, not from any other field. Derivation (quote-derived, never from memory): union of example-marketplace scripts/audit-story-receipts.mjs STAGES (28, main:main) + svc scripts/stage-activation.mjs stage names (12: 6 ESSENTIAL_STAGES + 6 DEFAULT_CONDITIONS keys) + the situational-stage trigger table in example-marketplace docs/specs/process/STORY-RECEIPTS.md, deduped by meaning (example-marketplace's single bundled `implement` stage decomposes into svc's plan/review-plan/implement/review-exec four-stage chain-receipt granularity; example-marketplace's `spec-sync` is the same stage under the same name — one entry each, not two).",
+  "stages": [
+    { "key": "vision", "class": "conditional", "owner_skill": "write-vision", "activation_condition": null, "trigger": null, "lane_skills": ["write-vision"], "artifact_set_names": [] },
+    { "key": "personas", "class": "conditional", "owner_skill": "build-personas", "activation_condition": null, "trigger": null, "lane_skills": ["build-personas"], "artifact_set_names": [] },
+    { "key": "validate", "class": "conditional", "owner_skill": "validate-feature", "activation_condition": null, "trigger": null, "lane_skills": ["validate-feature"], "artifact_set_names": [] },
+    { "key": "spec", "class": "conditional", "owner_skill": "write-spec", "activation_condition": null, "trigger": null, "lane_skills": ["write-spec"], "artifact_set_names": [] },
+    { "key": "design-ux", "class": "conditional", "owner_skill": "design-ux", "activation_condition": null, "trigger": null, "lane_skills": ["design-ux"], "artifact_set_names": [] },
+    { "key": "design-ui", "class": "conditional", "owner_skill": "design-ui", "activation_condition": null, "trigger": null, "lane_skills": ["design-ui", "web-design-guidelines"], "artifact_set_names": [] },
+    { "key": "device", "class": "conditional", "owner_skill": "track-visuals", "activation_condition": null, "trigger": null, "lane_skills": ["ionic-design", "capacitor-testing", "track-visuals"], "artifact_set_names": [] },
+    { "key": "journeys", "class": "conditional", "owner_skill": "write-journeys", "activation_condition": null, "trigger": null, "lane_skills": ["write-journeys"], "artifact_set_names": [] },
+    { "key": "impact", "class": "conditional", "owner_skill": "route-workflow", "activation_condition": null, "trigger": null, "lane_skills": ["route-workflow"], "artifact_set_names": [] },
+    { "key": "ac", "class": "conditional", "owner_skill": "audit-ac", "activation_condition": null, "trigger": null, "lane_skills": ["audit-ac"], "artifact_set_names": [] },
+    { "key": "security", "class": "conditional", "owner_skill": "review-security", "activation_condition": null, "trigger": null, "lane_skills": ["review-security", "review-cross-model"], "artifact_set_names": [] },
+    { "key": "compliance", "class": "conditional", "owner_skill": "privacy-dpo", "activation_condition": null, "trigger": null, "lane_skills": ["privacy-dpo"], "artifact_set_names": ["privacy/compliance", "data export"] },
+    { "key": "plan", "class": "essential", "owner_skill": "plan-changeset", "activation_condition": null, "trigger": null, "lane_skills": ["plan-changeset"], "artifact_set_names": [] },
+    { "key": "review-plan", "class": "essential", "owner_skill": "review-plan", "activation_condition": null, "trigger": null, "lane_skills": ["review-plan"], "artifact_set_names": [] },
+    { "key": "implement", "class": "essential", "owner_skill": "execute-changeset", "activation_condition": null, "trigger": null, "lane_skills": ["execute-changeset"], "artifact_set_names": [] },
+    { "key": "review-exec", "class": "essential", "owner_skill": "review-exec", "activation_condition": null, "trigger": null, "lane_skills": ["review-exec", "audit-implementation"], "artifact_set_names": [] },
+    { "key": "perf", "class": "conditional", "owner_skill": "capacitor-performance", "activation_condition": "perf", "trigger": null, "lane_skills": ["capacitor-performance"], "artifact_set_names": ["perf budgets"] },
+    { "key": "e2e", "class": "conditional", "owner_skill": "write-e2e", "activation_condition": null, "trigger": null, "lane_skills": ["write-e2e"], "artifact_set_names": [] },
+    { "key": "test-run", "class": "conditional", "owner_skill": "test-journeys", "activation_condition": null, "trigger": null, "lane_skills": ["test-journeys"], "artifact_set_names": [] },
+    { "key": "spec-sync", "class": "essential", "owner_skill": "sync-spec-code", "activation_condition": null, "trigger": null, "lane_skills": ["sync-spec-code"], "artifact_set_names": [] },
+    { "key": "live-proof", "class": "conditional", "owner_skill": "verify-promotion", "activation_condition": null, "trigger": null, "lane_skills": ["verify-promotion", "route-workflow"], "artifact_set_names": [] },
+    { "key": "analytics", "class": "conditional", "owner_skill": "analytics", "activation_condition": null, "trigger": null, "lane_skills": ["analytics"], "artifact_set_names": ["analytics"] },
+    { "key": "visuals", "class": "conditional", "owner_skill": "track-visuals", "activation_condition": "visuals", "trigger": null, "lane_skills": ["track-visuals"], "artifact_set_names": [] },
+    { "key": "device-proof", "class": "conditional", "owner_skill": "capacitor-testing", "activation_condition": "device-proof", "trigger": null, "lane_skills": ["capacitor-testing"], "artifact_set_names": ["device-proof", "store metadata", "push & permissions"] },
+    { "key": "qa-companion", "class": "conditional", "owner_skill": "test-journeys", "activation_condition": null, "trigger": null, "lane_skills": ["test-journeys"], "artifact_set_names": ["QA companion"] },
+    { "key": "ledger", "class": "conditional", "owner_skill": null, "activation_condition": null, "trigger": null, "lane_skills": [], "artifact_set_names": ["receipts"] },
+    { "key": "marketing", "class": "conditional", "owner_skill": "analyze-marketing", "activation_condition": "marketing", "trigger": null, "lane_skills": ["analyze-marketing"], "artifact_set_names": ["marketing context"] },
+    { "key": "pricing", "class": "conditional", "owner_skill": "pricing", "activation_condition": "pricing", "trigger": null, "lane_skills": ["pricing"], "artifact_set_names": ["pricing model", "monetisation", "fee/billing docs"] },
+    { "key": "landing-impact", "class": "conditional", "owner_skill": "landing-page", "activation_condition": null, "trigger": null, "lane_skills": ["landing-page"], "artifact_set_names": [] },
+    { "key": "finops", "class": "conditional", "owner_skill": "manage-finops", "activation_condition": null, "trigger": null, "lane_skills": ["manage-finops"], "artifact_set_names": ["finops"] },
+    { "key": "translations", "class": "conditional", "owner_skill": null, "activation_condition": "translations", "trigger": null, "lane_skills": [], "artifact_set_names": [] },
+    { "key": "index-restamp", "class": "essential", "owner_skill": "execute-changeset", "activation_condition": null, "trigger": null, "lane_skills": ["plan-changeset", "execute-changeset", "land-changeset"], "artifact_set_names": ["index"] },
+    { "key": "evasion", "class": "situational", "owner_skill": null, "activation_condition": null, "trigger": "a limit, quota, price or gate BECOMES ENFORCEABLE (something previously decorative starts binding)", "lane_skills": [], "artifact_set_names": [] },
+    { "key": "ab-testing", "class": "situational", "owner_skill": "ab-testing", "activation_condition": null, "trigger": "pricing/landing experiment wanted", "lane_skills": ["ab-testing"], "artifact_set_names": [] },
+    { "key": "seo-audit", "class": "situational", "owner_skill": "seo-audit", "activation_condition": null, "trigger": "public content / store listing changed", "lane_skills": ["seo-audit", "ai-seo", "aso"], "artifact_set_names": [] },
+    { "key": "demo-asset", "class": "situational", "owner_skill": null, "activation_condition": null, "trigger": "marketing demo asset needed", "lane_skills": [], "artifact_set_names": [] },
+    { "key": "test-debt", "class": "situational", "owner_skill": "audit-coverage", "activation_condition": null, "trigger": "test-debt suspected", "lane_skills": ["audit-coverage"], "artifact_set_names": [] },
+    { "key": "architecture-shift", "class": "situational", "owner_skill": "design-tech", "activation_condition": null, "trigger": "architecture shape changed", "lane_skills": ["track-topology-diff", "design-tech"], "artifact_set_names": [] },
+    { "key": "destructive-migration", "class": "situational", "owner_skill": null, "activation_condition": null, "trigger": "destructive migration planned", "lane_skills": [], "artifact_set_names": [] },
+    { "key": "go-live", "class": "situational", "owner_skill": "assess-market-readiness", "activation_condition": null, "trigger": "WHOLE-PRODUCT go-live verdict (once, not per story)", "lane_skills": ["assess-market-readiness"], "artifact_set_names": [] },
+    { "key": "capability-inventory", "class": "situational", "owner_skill": "capability-registry", "activation_condition": null, "trigger": "capability inventory maintenance (standing, feeds marketing/pricing stages)", "lane_skills": ["capability-registry", "capability-concierge"], "artifact_set_names": [] },
+    { "key": "native-release", "class": "situational", "owner_skill": null, "activation_condition": null, "trigger": "native release shipped", "lane_skills": [], "artifact_set_names": [] }
+  ],
+  "mandatory_chain_segments": [
+    {
+      "id": "seg-1-plan",
+      "steps": [
+        { "skill": "plan-changeset", "stage_key": "plan" },
+        { "skill": "review-plan", "stage_key": "review-plan" }
+      ],
+      "checkpoint_after_skill": "plan-changeset",
+      "emits": ["plan-manifest", "review-plan"]
+    },
+    {
+      "id": "seg-2-exec",
+      "steps": [
+        { "skill": "execute-changeset", "stage_key": "implement" },
+        { "skill": "review-exec", "stage_key": "review-exec" },
+        { "skill": "audit-implementation", "stage_key": null }
+      ],
+      "checkpoint_after_skill": "execute-changeset",
+      "emits": ["exec-record", "review-exec", "audit-implementation"]
+    },
+    {
+      "id": "seg-3-land",
+      "steps": [
+        { "skill": "land-changeset", "stage_key": null },
+        { "skill": "verify-promotion", "stage_key": "live-proof" }
+      ],
+      "checkpoint_after_skill": "land-changeset",
+      "emits": []
+    }
+  ],
+  "story_type_profiles": {
+    "feature": ["vision", "personas", "validate", "spec", "design-ux", "design-ui", "device", "journeys", "impact", "ac", "security", "compliance", "plan", "review-plan", "implement", "review-exec", "perf", "e2e", "test-run", "spec-sync", "live-proof", "analytics", "visuals", "device-proof", "qa-companion", "ledger", "marketing", "pricing", "landing-impact", "finops", "translations", "index-restamp"],
+    "bug": ["impact", "ac", "plan", "review-plan", "implement", "review-exec", "e2e", "test-run", "spec-sync", "live-proof", "qa-companion", "ledger", "marketing", "pricing", "index-restamp"],
+    "ui": ["design-ux", "design-ui", "device", "plan", "review-plan", "implement", "review-exec", "spec-sync", "visuals", "device-proof", "qa-companion", "ledger", "marketing", "landing-impact", "index-restamp"],
+    "copy": ["journeys", "plan", "review-plan", "implement", "review-exec", "spec-sync", "qa-companion", "marketing", "landing-impact", "translations", "index-restamp"],
+    "pricing": ["spec", "ac", "security", "plan", "review-plan", "implement", "review-exec", "e2e", "spec-sync", "qa-companion", "ledger", "marketing", "pricing", "landing-impact", "finops", "index-restamp"],
+    "migration": ["spec", "security", "plan", "review-plan", "implement", "review-exec", "spec-sync", "ledger", "index-restamp"],
+    "test": ["journeys", "plan", "review-plan", "implement", "review-exec", "e2e", "spec-sync", "ledger", "index-restamp"],
+    "framework": ["spec", "plan", "review-plan", "implement", "review-exec", "test-run", "spec-sync", "index-restamp", "ledger"]
+  }
+}

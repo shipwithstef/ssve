@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "review_kind": "plan",
+  "rubric_score": 6,
+  "rubric_failures": [
+    2,
+    3,
+    5,
+    8
+  ],
+  "dependencies_needing_read": [
+    "docs/plans/2026-07-22-wi506-runtime-root-portability/implementation-paths.txt",
+    "docs/plans/2026-07-22-wi506-runtime-root-portability/retro-plan-review-authorization.json",
+    "docs/plans/2026-07-22-wi506-runtime-root-portability/review-round1-receipt.json"
+  ],
+  "reviewer": {
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6-sol",
+    "effort": "high"
+  },
+  "verdict": "fail",
+  "summary": "The revision closes the prior task-graph and command-sequence gaps, but two trust boundaries remain insufficiently reviewable: the owner override is validated against a dynamically recomputed hash instead of the manifest-bound hash, and the opaque staging allowlist cannot be checked against the declared scope. The promised evidence checkpoints also remain operationally unspecified.",
+  "findings": [
+    {
+      "id": "F-014",
+      "severity": "high",
+      "claim": "The owner-review exception can be rebound to modified authorization bytes because the validation command never compares them with the manifest-declared authorization SHA.",
+      "analysis": "The review log declares a fixed authorization SHA-256, but the prerequisite recomputes AUTH_SHA from whatever bytes are currently at the authorization path and supplies that same value to the launcher as the expected hash. The receipt check then proves only that expected_sha256 equals actual_sha256. Those values will also agree after the authorization file is replaced with different, freshly timestamped content satisfying the field checks. Thus the command does not mechanically enforce the claimed immutable authorization or bind execution to the repository-owner artifact reviewed here.",
+      "evidence": [
+        "The review log declares `authorization_sha256: cf284b66a1f7d38e3391d8d256c093260e53035d3eb9f682a9af563b45f5ddad`.",
+        "The prerequisite assigns `AUTH_SHA` by hashing the current authorization file and immediately uses that value as `SVC_EXTERNAL_REVIEW_PHASE_OVERRIDE_SHA256`.",
+        "The receipt validator checks only `o.expected_sha256===o.actual_sha256`; it never requires either field to equal the manifest-declared SHA.",
+        "The manifest states that the authorization document is not regenerated during execution, but no command enforces that byte identity."
+      ],
+      "proposed_fix": "Set an immutable `EXPECTED_AUTH_SHA` to the manifest-declared digest, require the current file hash to equal it before invocation, and require both receipt override hashes to equal that same literal digest. Also validate the receipt's WI, source, and authorization path against the reviewed values."
+    },
+    {
+      "id": "F-015",
+      "severity": "high",
+      "claim": "The staged-path gate is hash-bound but still not reviewable because the allowlist bytes and literal-path semantics are absent from the review package.",
+      "analysis": "A digest prevents later mutation only after a reviewer has verified the committed bytes. This package provides the digest but not the contents of implementation-paths.txt, so it is impossible to establish that the allowlist exactly matches the listed implementation and governance surfaces or excludes review-only and downstream-only paths. In addition, `git add --pathspec-from-file` interprets entries as Git pathspecs; without inspecting or constraining the file, a glob or pathspec-magic entry could stage more than one literal path while the subsequent name comparison merely compares against the same opaque source.",
+      "evidence": [
+        "The execution sequence binds `implementation-paths.txt` to SHA-256 `220f5d0c630c7e4f7f45d72cf8599f0a45b3e4ed24e1de25eb9b5465be9896e9`.",
+        "The revised manifest does not reproduce the allowlist entries, and the supplied context does not include the allowlist artifact.",
+        "The staging command uses `git add --pathspec-from-file=\"$PATHS\"` without a demonstrated literal-only validation of each entry.",
+        "The file inventory contains lifecycle-dependent exclusions, including verify-promotion-only state and proposal moves, so semantic inspection of the allowlist is required."
+      ],
+      "proposed_fix": "Include the complete allowlist in the review package or embed its exact entries in the manifest, verify its digest in the plan receipt, and mechanically compare those entries with the reviewed file inventory. Reject blank lines, duplicates, pathspec magic, globs, absolute paths, and traversal; stage explicitly literal paths."
+    },
+    {
+      "id": "F-016",
+      "severity": "medium",
+      "claim": "The revised evidence checkpoints remain unreachable because the command sequence never records their promised pre-task diff hashes or focused GREEN logs.",
+      "analysis": "The plan correctly stops claiming intermediate Git commits, but it replaces them with evidence checkpoints that each supposedly record a pre-task diff hash and focused log under `.svc/`. Only three RED logs are created explicitly. Tasks 2 through 6 have no commands that snapshot the pre-task diff, capture their focused validation output, or bind that evidence to the named checkpoint. Recovery therefore still depends on an undocumented operator reconstruction rather than the stated anchors.",
+      "evidence": [
+        "The checkpoint plan says each checkpoint records a pre-task diff hash and focused log under `.svc/`.",
+        "The command sequence explicitly redirects only the three task-1 RED probes to `.svc/wi506-*-red.log`.",
+        "The GREEN validators run directly without `tee` or redirection, and no command computes or persists a pre-task diff hash for tasks 2 through 6.",
+        "`RECOVERY_IF_FAIL` instructs path-scoped correction but does not identify a persisted per-task diff artifact."
+      ],
+      "proposed_fix": "Add explicit checkpoint commands before and after tasks 2 through 6 that write a deterministic diff/tree hash, command list, exit status, and focused log to named `.svc` evidence files, or remove those evidence claims and describe recovery solely in terms of the reviewed final diff."
+    }
+  ],
+  "certifications": []
+}

@@ -1,0 +1,10 @@
+Skill: execute-changeset
+
+Q: What is the mandatory dispatch preflight value for execute-changeset, and what guard is required before starting work?
+A: Expected pattern: The mandatory dispatch preflight is DISPATCH=mimo-pro (default). A worktree guard is mandatory — execution runs inside a git worktree.
+
+Q: What is the 3-strike rule in execute-changeset, and what are the six checkpoint commit trailers?
+A: Expected pattern: The 3-strike rule means if a task is stuck after 3 attempts, escalate. The six checkpoint commit trailers are Constraint, Rejected, Directive, Confidence, Scope-risk, and Not-tested.
+
+Q: What is the TDD requirement for execute-changeset, and what are the exceptions?
+A: Expected pattern: TDD red-green is required — test first (must fail), then implement (must pass). Exceptions are types, config, migrations, and scaffolding.

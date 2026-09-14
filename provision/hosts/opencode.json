@@ -1,0 +1,130 @@
+{
+  "host": "opencode",
+  "name": "OpenCode CLI",
+  "skills_path": "~/.config/opencode/skills",
+  "rules_path": "~/.config/opencode/AGENTS.md",
+  "builder_profile_path": "~/.svc/builder-profile.md",
+  "capabilities": {
+    "skills": true,
+    "hooks": true,
+    "plugins": true,
+    "mcp": true,
+    "commands": true,
+    "agents": true
+  },
+  "runtime_ingress_v2": { "transport": "hook-adapter", "fallback": "cli-adapter", "canonical_journal": true, "projection_only": true },
+  "authority_capabilities": {
+    "stable_session_identity": true,
+    "stable_child_identity": true,
+    "identity_source": "session identity plus persisted dispatch child principal",
+    "filesystem_containment": "wrapper",
+    "containment_backend": "landlock",
+    "containment_launcher": "scripts/svc-contained-exec.mjs",
+    "containment_probe_required": true,
+    "mutating_child_execution": false,
+    "reason": "Current plugin is observational and cannot enforce delegated path scope before mutation.",
+    "fresh_session_launch": {
+      "enabled": false,
+      "reason": "No automatable fresh-session transport declared for this host yet (WI-552 migration note: disabled by default until a host manifest declares fresh_session_launch)."
+    }
+  },
+  "hook_events": [
+    "session.created",
+    "session.idle",
+    "session.compacted",
+    "tool.execute.before",
+    "tool.execute.after",
+    "shell.env"
+  ],
+  "hook_quirks": {
+    "config_file": "~/.config/opencode/opencode.json",
+    "config_format": "json",
+    "plugin_dir_global": "~/.config/opencode/plugins/",
+    "plugin_dir_project": ".opencode/plugins/",
+    "timeout_unit": "ms",
+    "skill_load_mode": "skill_tool",
+    "claude_compat": false,
+    "claude_skills_path": "~/.config/opencode/skills/",
+    "rules_mechanism": "instructions_array_and_agents_md",
+    "builtin_tools": [
+      "bash",
+      "edit",
+      "write",
+      "read",
+      "grep",
+      "glob",
+      "lsp",
+      "apply_patch",
+      "skill",
+      "todowrite",
+      "webfetch",
+      "websearch",
+      "question",
+      "task"
+    ],
+    "builtin_agents": [
+      "build",
+      "plan",
+      "general",
+      "explore"
+    ],
+    "agent_modes": [
+      "primary",
+      "subagent"
+    ],
+    "plan_agent_restricts_edits": true,
+    "multi_session": true,
+    "undo_redo": true,
+    "image_input": true
+  },
+  "task_graph": {
+    "task_ui": "todowrite",
+    "background_tasks": false,
+    "skill_load_mode": "skill_tool",
+    "native_task_read_tools": [
+      "todowrite"
+    ]
+  },
+  "infra_files": [
+    "DOCTRINE.md",
+    "REPO_MODES.md",
+    "WORKTREES.md",
+    "EXTERNAL_ADDONS.md",
+    "FRAMEWORK-STATE.md",
+    "skills-manifest.json",
+    "CONTRIBUTING.md"
+  ],
+  "infra_dirs": [
+    "scripts",
+    "references",
+    "proposals",
+    "examples",
+    "hooks",
+    "provision",
+    "agents",
+    "templates",
+    "_shared",
+    "concerns"
+  ],
+  "skip": [],
+  "post_install_commands": [
+    "node {skills_path}/scripts/wire-opencode-hooks.mjs --skills-path {skills_path}"
+  ],
+  "verify_commands": [
+    "test -f {skills_path}/route-workflow/SKILL.md",
+    "test -f {skills_path}/DOCTRINE.md",
+    "test -f {skills_path}/skills-manifest.json",
+    "test -f {skills_path}/scripts/worktree.sh",
+    "test -f ~/.config/opencode/plugins/svc-opencode-plugin.ts"
+  ],
+  "wiring": {
+    "hook_capable": true,
+    "wirer": "scripts/wire-opencode-hooks.mjs",
+    "wirer_via": "post_install",
+    "governed": false,
+    "governed_token": null,
+    "config_file": "~/.config/opencode/opencode.json",
+    "enforcement": "git-pre-commit",
+    "reason": "OpenCode exposes no command-hook registry equivalent to the pre-tool events other hosts use; pre-mutation enforcement is via hooks/git/pre-commit.d/10-default-checkout-isolation (checkout-bound by design), and the wired plugin is observational — there is no launcher-routable governed command to verify. Declared explicitly (not silently skipped)."
+  }
+}

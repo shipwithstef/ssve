@@ -1,0 +1,130 @@
+{
+  "receipt_type": "plan-manifest",
+  "schema_version": 3,
+  "wi": "WI-489",
+  "mode": "inline",
+  "lane": "framework",
+  "scope": {
+    "included": [
+      "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+      "schemas/external-review-receipt.schema.json",
+      "references/model-registry.json",
+      ".gitignore",
+      "scripts/run-external-review.mjs",
+      "scripts/resolve-adversarial-reviewer.sh",
+      "review-plan/SKILL.md",
+      "review-exec/SKILL.md",
+      "review-cross-model/SKILL.md",
+      "references/plan-review-protocol.md",
+      "CLAUDE.md",
+      "docs/specs/features/wi-489-reviewer-runtime-routing.md"
+    ],
+    "excluded": ["WI-486 implementation", "WI-487 implementation", "Example Marketplace features"],
+    "excluded_reason_per_path": {
+      "WI-486 implementation": "dependent work remains paused until WI-489 promotion",
+      "WI-487 implementation": "depends on WI-486 compatibility promotion",
+      "Example Marketplace features": "owner explicitly excluded this run"
+    }
+  },
+  "dependencies": [
+    {"artifact":"baselined WI-489 technical design","citation":"docs/specs/features/wi-489-reviewer-runtime-routing.md:279"},
+    {"artifact":"reviewer policy authority decision","citation":"docs/specs/decisions/wi-489-reviewer-runtime-routing.md:55"},
+    {"artifact":"secure profile selection decision","citation":"docs/specs/decisions/wi-489-reviewer-runtime-routing.md:71"},
+    {"artifact":"provider route attestation decision","citation":"docs/specs/decisions/wi-489-reviewer-runtime-routing.md:87"}
+  ],
+  "decision_trace": [
+    {"question":"Where is reviewer policy authoritative?","alternatives":["registry data","launcher constants","shell resolver constants"],"chosen":"registry data parsed by launcher","rationale":"one tracked policy authority prevents runtime and documentation drift","reversal_conditions":"a future typed policy module replaces the registry and every consumer delegates to it"},
+    {"question":"How is Fable restored operationally?","alternatives":["secure local selection","environment variable","tracked code edit"],"chosen":"launcher-managed secure local selection","rationale":"easy and receipted without inherited ambient configuration","reversal_conditions":"owner adopts a fleet-level signed policy service"},
+    {"question":"How is same-process Fable-to-Opus routing accepted?","alternatives":["controlled envelope plus runtime usage","private headers","model-authored identity"],"chosen":"controlled envelope plus runtime usage","rationale":"uses proven public controls and fails closed without trusting prose","reversal_conditions":"Claude exposes stable signed route metadata"}
+  ],
+  "task_graph": [
+    {"id":"task-1","blocked_by":[],"purpose":"fixture-first protocol contract"},
+    {"id":"task-2","blocked_by":["task-1"],"purpose":"policy and receipt contracts"},
+    {"id":"task-3","blocked_by":["task-2"],"purpose":"canonical runtime"},
+    {"id":"task-4","blocked_by":["task-3"],"purpose":"active consumer contracts"},
+    {"id":"task-5","blocked_by":["task-4"],"purpose":"freeze and provider/full-suite evidence"}
+  ],
+  "validation_plan": [
+    "targeted fixture-only external review replay",
+    "registry-resolver-launcher-receipt parity",
+    "receipt and task-graph validation",
+    "proposal/spec/work-item/Markdown/frontmatter/JSONL validation",
+    "git diff --check",
+    "full Tier-1 landing policy",
+    "one bounded canonical Fable/high frozen-diff review"
+  ],
+  "risk_rollback": {
+    "risk":"provider route or policy state could misstate effective reviewer, spend, or cache authority",
+    "rollback":"use reviewed planning HEAD plus refs/svc/checkpoints/WI-489 task objects before merge; after merge use a normal revert PR restoring policy, launcher, schemas, resolver, contracts, and tests together"
+  },
+  "timestamp": "2026-07-16T03:59:09Z",
+  "execution_command_sequence": [
+    {"step":1,"command":"bash test-framework/evals/tier-1/validate-external-review-launcher.sh","expected_outcome":"fixture-only protocol and route matrix passes"},
+    {"step":2,"command":"node scripts/validate-task-graph-lane.mjs .svc/lane-tasks-WI-489.json","expected_outcome":"framework lane complete"},
+    {"step":3,"command":"git diff --check","expected_outcome":"no whitespace errors"},
+    {"step":4,"command":"bash test-framework/evals/run-all-evals.sh","expected_outcome":"zero frozen/final failures"}
+  ],
+  "ac_digests": {
+    "spec_path": "docs/specs/features/wi-489-reviewer-runtime-routing.md",
+    "spec_ac_table_sha256": "f51339a6eca9d1fe66fd64bdeb8ef0d1cf1bffe80f87824b3a569e892023082b",
+    "entries": [
+      {"ac_id":"EXTREV-70","digest":"Claude CLI pins four agentic turns","anchor":"docs/specs/features/wi-489-reviewer-runtime-routing.md:96"},
+      {"ac_id":"EXTREV-71","digest":"multiple protocol turns remain one process invocation"},
+      {"ac_id":"EXTREV-72","digest":"two-turn schema handshake succeeds"},
+      {"ac_id":"EXTREV-73","digest":"structured max-turn result is schema_turn_budget"},
+      {"ac_id":"EXTREV-74","digest":"protocol receipt preserves ceiling and provider metrics"},
+      {"ac_id":"EXTREV-75","digest":"schema-turn exhaustion never falls back"},
+      {"ac_id":"EXTREV-76","digest":"schema re-prompts are bounded"},
+      {"ac_id":"EXTREV-77","digest":"timeout and dollar bounds span the process"},
+      {"ac_id":"EXTREV-78","digest":"primary invocation is the only probe"},
+      {"ac_id":"EXTREV-79","digest":"fable-high pins exact Fable 5 high"},
+      {"ac_id":"EXTREV-80","digest":"Fable primary has no CLI fallback model"},
+      {"ac_id":"EXTREV-81","digest":"refusal switching enabled and disable control scrubbed"},
+      {"ac_id":"EXTREV-82","digest":"inherited model remaps cannot alter Fable"},
+      {"ac_id":"EXTREV-83","digest":"controlled envelope plus same-process Opus usage attests route"},
+      {"ac_id":"EXTREV-84","digest":"Opus without route evidence is mismatch"},
+      {"ac_id":"EXTREV-85","digest":"receipt names provider safety route"},
+      {"ac_id":"EXTREV-86","digest":"requested Fable and effective Opus remain distinct"},
+      {"ac_id":"EXTREV-87","digest":"provider-managed effort provenance is explicit"},
+      {"ac_id":"EXTREV-88","digest":"provider safety route starts no second Opus"},
+      {"ac_id":"EXTREV-89","digest":"provider-route receipt is not Fable reusable"},
+      {"ac_id":"EXTREV-90","digest":"later Fable demand receives fresh primary"},
+      {"ac_id":"EXTREV-91","digest":"unexpected effective models fail closed"},
+      {"ac_id":"EXTREV-92","digest":"safeguard failure without findings never availability-falls back"},
+      {"ac_id":"EXTREV-93","digest":"pre-cutover schedule selects Fable"},
+      {"ac_id":"EXTREV-94","digest":"at-cutover schedule selects Opus"},
+      {"ac_id":"EXTREV-95","digest":"receipt renders UTC and Sofia cutover"},
+      {"ac_id":"EXTREV-96","digest":"opus-high pins exact Opus 4.8 high"},
+      {"ac_id":"EXTREV-97","digest":"scheduled Opus is primary not fallback"},
+      {"ac_id":"EXTREV-98","digest":"Fable never exceeds high"},
+      {"ac_id":"EXTREV-99","digest":"policy status is read-only and zero-spawn"},
+      {"ac_id":"EXTREV-100","digest":"one owner command activates Fable"},
+      {"ac_id":"EXTREV-101","digest":"local selection passes ownership mode schema and hash checks"},
+      {"ac_id":"EXTREV-102","digest":"receipt captures complete profile resolution"},
+      {"ac_id":"EXTREV-103","digest":"invalid selection fails before cache or provider"},
+      {"ac_id":"EXTREV-104","digest":"clear or expiry resumes schedule"},
+      {"ac_id":"EXTREV-105","digest":"Claude orchestrator remains Codex 5.6 sol high"},
+      {"ac_id":"EXTREV-106","digest":"policy makes no Fable pricing or entitlement claim"},
+      {"ac_id":"EXTREV-107","digest":"receipt v2 requires policy protocol route provenance"},
+      {"ac_id":"EXTREV-108","digest":"all route and selection sources are distinguishable"},
+      {"ac_id":"EXTREV-109","digest":"semantic validator rejects contradictory receipts"},
+      {"ac_id":"EXTREV-110","digest":"cache hits rerun semantic validation"},
+      {"ac_id":"EXTREV-111","digest":"only exact-primary no-fallback equality is reusable"},
+      {"ac_id":"EXTREV-112","digest":"provider and launcher fallback evidence stays non-reusable"},
+      {"ac_id":"EXTREV-113","digest":"new failure classes emit actionable recovery"},
+      {"ac_id":"EXTREV-114","digest":"receipts and diagnostics redact credentials"},
+      {"ac_id":"EXTREV-115","digest":"registry resolver launcher and receipt policy agree"},
+      {"ac_id":"EXTREV-116","digest":"fake Claude models intermediate schema boundary"},
+      {"ac_id":"EXTREV-117","digest":"Tier 1 makes zero paid calls"},
+      {"ac_id":"EXTREV-118","digest":"protocol matrix covers success and exhaustion"},
+      {"ac_id":"EXTREV-119","digest":"route matrix covers provenance models calls and cache"},
+      {"ac_id":"EXTREV-120","digest":"clock and selection lifecycle matrix is complete"},
+      {"ac_id":"EXTREV-121","digest":"active consumers use canonical launcher only"},
+      {"ac_id":"EXTREV-122","digest":"one bounded canonical Fable-high frozen-diff review proves runtime"},
+      {"ac_id":"EXTREV-123","digest":"promoted main passes targeted and full Tier 1","anchor":"docs/specs/features/wi-489-reviewer-runtime-routing.md:193"}
+    ]
+  },
+  "mocked_deps": [
+    {"dep":"Claude and Codex provider CLIs in Tier 1","reason":"deterministic zero-paid-call protocol and route coverage","mock_location":"test-framework/evals/tier-1/validate-external-review-launcher.sh"}
+  ]
+}

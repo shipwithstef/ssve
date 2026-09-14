@@ -1,0 +1,132 @@
+review_kind: plan
+wi: WI-505
+plan: docs/plans/2026-07-21-wi505-stale-binding-reclaim/manifest.md
+rounds_run: 3
+unresolved_critical: 0
+remaining_high: 0
+terminal_state: CONVERGED_WITH_BOUNDED_DISPOSITIONS
+
+round_1:
+  status: COMPLETED
+  reviewer_family: anthropic
+  reviewer_model: claude-opus-4-8
+  effort: high
+  profile: scheduled
+  profile_source: canonical-adapter
+  rubric_score: 6
+  verdict: pass-with-findings
+  receipt_path: .svc/external-review-artifacts/plan/620f968240ab39b8ece493b9ce71fa3b3d12447b9489d50d20aa720d63fb7b15/20260721T054005Z-218227/receipt.json
+  findings:
+    - id: F-001
+      severity: high
+      decision: ACCEPT
+      justification: Every claimed helper proof needs one persisted, runnable home.
+      action: Bind SR-03, SR-04, SR-06, SR-08, and SR-09 to inline Node heredoc cases inside the declared default-checkout fixture and its exact Bash invocation.
+    - id: F-002
+      severity: high
+      decision: ACCEPT
+      justification: The race fixture must establish that both attempts were based on generation 1 without production-only test hooks.
+      action: Use two fixture child processes that pre-read gen1, emit distinct ready markers, wait on one parent release marker, and then invoke the production locked transfer concurrently.
+    - id: F-003
+      severity: high
+      decision: ACCEPT
+      justification: The durable crash window is a load-bearing recovery state and clean-path idempotence is insufficient proof.
+      action: Manually construct claim B/gen2 plus transfer provenance, unreleased A/gen1, and no B binding; public ensure must retire A, bind B, and remain gen2.
+    - id: F-004
+      severity: medium
+      decision: ACCEPT
+      justification: Applying v2 exclusion to the existing direct transfer primitive changes a hot-path contract.
+      action: Record the complete transferClaim caller set and add direct no-v2 success plus v2 unchanged-byte denial regressions.
+    - id: F-006
+      severity: medium
+      decision: ACCEPT
+      justification: Local-only removal must be proven mechanically before deleting the coarse helper.
+      action: Record a scoped activeBindingOwner search and block removal if anything beyond the local definition/call appears.
+    - id: F-005
+      severity: low
+      decision: PARTIAL
+      justification: Portability is not the acceptance target because the owner mandated this exact machine-local failing command, but replay provenance must be explicit.
+      action: Keep the exact command and paths, label the replay owner-machine-only, and record resolved realpaths plus installed script SHA-256 at replay time.
+
+convergence_required: true
+convergence_reason: The plan mutates hooks, scripts, and .svc authority paths, so Tier 3 convergence is mandatory after accepted revisions.
+
+round_2:
+  status: COMPLETED
+  reviewer_family: anthropic
+  reviewer_model: claude-opus-4-8
+  effort: high
+  profile: scheduled
+  profile_source: canonical-adapter
+  rubric_score: 7
+  verdict: pass-with-findings
+  receipt_path: .svc/external-review-artifacts/plan/c7b5ae65d112793fefa7e105411f221736a50c8bc7a94b7b970f570bb6847e09/20260721T054612Z-224960/receipt.json
+  findings:
+    - id: F-001
+      severity: high
+      decision: ACCEPT
+      justification: Taxonomy row 12 was accidentally removed while de-duplicating the row during round-1 revision.
+      action: Restore exactly one coupled row 12 and keep all 15 taxonomy entries explicitly dispositioned.
+    - id: F-002
+      severity: medium
+      decision: ACCEPT
+      justification: Referenced validators should be proven on disk even though mechanical review and lane validation already executed them successfully.
+      action: Add a Simulation Report row naming task-graph.mjs, validate-task-graph-lane.mjs, and verify-file-persistence.sh and their observed PASS evidence.
+    - id: F-003
+      severity: medium
+      decision: ACCEPT
+      justification: Negative authority-safety and receipt-chain claims need reproducible commands.
+      action: Bind SR-13 to a changed-addition destructive-primitive rejection plus the existing digest oracle, and bind SR-14 to exact receipt check and sanctioned merge-wrapper commands.
+    - id: F-004
+      severity: low
+      decision: PARTIAL
+      justification: Live state drift is a real precondition risk, but the owner explicitly forbids treating a hermetic substitute as proof of promoted WI-496 recovery.
+      action: Add a promoted precondition guard with exact old owner, generation, coordinates, and positive staleness evidence; live drift blocks SR-15 and is reported rather than downgraded to a hermetic substitute.
+    - id: F-005
+      severity: low
+      decision: ACCEPT
+      justification: An always-run Tier-1 fixture must never be committed knowingly red.
+      action: Explicitly prohibit commits from proc-1 red through proc-2 and make the first commit-eligible checkpoint proc-3 green.
+
+round_3_required: true
+round_3_reason: The infra-path convergence cap permits one final review of the fully revised package; the partial F-004 disposition must be judged without weakening the owner-required live replay.
+
+round_3:
+  status: COMPLETED
+  reviewer_family: anthropic
+  reviewer_model: claude-opus-4-8
+  effort: high
+  profile: scheduled
+  profile_source: canonical-adapter
+  rubric_score: 8
+  verdict: pass-with-findings
+  bounded_exit: true
+  receipt_path: .svc/external-review-artifacts/plan/4508d927cda68b7d1be75052da8b0f4b9bb4e9119f98418017a8492ea9f2f5f8/20260721T055209Z-236474/receipt.json
+  findings:
+    - id: F-001
+      severity: medium
+      decision: ACCEPT
+      justification: Receipt and merge commands must derive fresh identifiers in the land phase rather than inherit placeholders or stale shell values.
+      action: Move the mutating merge command to an explicit land-only block and derive/validate HEAD SHA plus the open branch PR number immediately before use.
+    - id: F-002
+      severity: medium
+      decision: ACCEPT
+      justification: proc-4 cannot depend on the downstream proc-5 full-Tier-1 result.
+      action: Limit proc-4 state wording to focused-green proof, defer full-suite status to proc-5, and defer promoted status to live replay.
+    - id: F-003
+      severity: low
+      decision: ACCEPT
+      justification: A narrow regex is useful review telemetry but is not an authority or data-preservation oracle.
+      action: Make SR-12 digests and Git identities the authoritative SR-13 proof, demote the scan to advisory evidence, and constrain retirement to metadata-only atomic rename with no target unlink.
+    - id: F-004
+      severity: low
+      decision: ACCEPT
+      justification: The race guarantee depends on a concrete cross-process primitive, not the helper name alone.
+      action: Cite the UID-scoped O_CREAT plus O_EXCL lockfile critical section and require one gen2, one changed-generation denial, transfer provenance, and no gen3 as observable evidence.
+    - id: F-005
+      severity: low
+      decision: ACCEPT
+      justification: Forced checkpoints must preserve the red worktree without entering the repository-global stash or creating a red commit.
+      action: Require intact-worktree status plus binary-diff hash evidence and forbid stash, commit, push, or PR until proc-3 green.
+
+terminal_basis: Three canonical rounds completed, no unresolved critical/high finding remains, every final-round finding is accepted, and mechanical review must pass once more before receipt emission.

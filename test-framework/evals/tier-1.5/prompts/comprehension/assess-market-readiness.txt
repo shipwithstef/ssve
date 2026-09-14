@@ -1,0 +1,10 @@
+Skill: assess-market-readiness
+
+Q: What is the default assessment mode, and what is the realistic score ceiling for a first-time launch assessment?
+A: Expected pattern: Default mode is `launch`. Realistic ceiling is 78-82; win condition is 70+.
+
+Q: What are the 8 dimensions scored in assess-market-readiness, and which dimension has the heaviest weight in hackathon mode?
+A: Expected pattern: Product completeness, user value clarity, competitive position, visual quality, technical reliability, monetization readiness, distribution readiness, market timing. Visual quality has the heaviest weight in hackathon mode at 25%.
+
+Q: What is the required input artifact for assess-market-readiness, and what output file does it produce?
+A: Expected pattern: Required input is `docs/specs/vision.md`. Output is `docs/specs/readiness-assessment.md`.

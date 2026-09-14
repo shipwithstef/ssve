@@ -1,0 +1,32 @@
+# Fixture: license gate test — MUST exclude MiMo from production-marketing
+#
+# Tests Self-Verify check #6 (License constraint respected). If a brief carries
+# license: production-marketing, the skill must NEVER route to MiMo Token Plan
+# (per ToS). Expected behavior: MiMo provider rejected at provider-selection
+# step (not at brand-fit-scoring); fallback to codex CLI used.
+
+slot: feature-illustration
+class: branded-illustrations
+style: flat-friendly-business-process
+count: 4
+brand_context:
+  palette: [terra-cotta, warm-cream, espresso]
+  voice: trustworthy-warm-modern
+  forbid:
+    - cliche-handshake
+    - corporate-stock-character
+viewport: 800x800
+license: production-marketing
+
+# Expected provider routing:
+# Primary: Storyset (free, license-checked)
+# Forbidden: MiMo (Token Plan ToS violates production-marketing class)
+#
+# Expected provenance.yaml:
+# - storyset entries with `license_class: free-tier-with-attribution`
+#   AND `license_ok: true` (assuming attribution is wired)
+# - MUST NOT contain any `provider: mimo*` row
+#
+# If the skill misroutes to MiMo here, Self-Verify check #6 fails and the
+# candidate set is rejected. Use this fixture to validate the license gate
+# every time the provider matrix is touched.

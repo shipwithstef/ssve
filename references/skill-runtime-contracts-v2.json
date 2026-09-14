@@ -1,0 +1,33 @@
+{
+  "schema_version": "skill-runtime-contracts-v2",
+  "contracts": [
+    { "skill": "propose-ux-improvements", "artifact": "ux-improvement-proposal", "consumers": ["route-workflow"], "condition": "proposal is accepted and owner authorizes continuation", "invalidation": "steer, relevant spec, code or rendered evidence changes" },
+    { "skill": "analyze-competitors", "artifact": "analyze-competitors", "consumers": ["analyze-domain", "catalog-domain-capabilities", "build-personas", "write-vision", "write-spec"], "condition": "competitor evidence is applicable", "invalidation": "source or market digest changes" },
+    { "skill": "analyze-domain", "artifact": "domain-profile", "consumers": ["catalog-domain-capabilities", "build-personas", "write-vision", "write-spec", "design-ux", "design-ui"], "condition": "domain constraints are applicable", "invalidation": "domain evidence digest changes" },
+    { "skill": "catalog-domain-capabilities", "artifact": "capability-catalog", "consumers": ["write-vision", "write-spec", "plan-changeset"], "condition": "domain has catalogued capabilities", "invalidation": "capability registry digest changes" },
+    { "skill": "catalog-domain-capabilities", "artifact": "capability-catalog-data", "consumers": ["write-spec", "plan-changeset"], "condition": "machine capability data is produced", "invalidation": "catalog data digest changes" },
+    { "skill": "catalog-domain-capabilities", "artifact": "knowledge-layer-catalog", "consumers": ["write-vision", "write-spec"], "condition": "knowledge promotion is authorized", "invalidation": "source capability evidence changes" },
+    { "skill": "build-personas", "artifact": "personas", "consumers": ["write-vision", "write-spec", "design-ux", "design-ui"], "condition": "human actors exist", "invalidation": "persona evidence or target segment changes" },
+    { "skill": "build-personas", "artifact": "persona-index", "consumers": ["write-spec", "design-ux"], "condition": "persona set is produced", "invalidation": "persona membership changes" },
+    { "skill": "write-vision", "artifact": "vision", "consumers": ["write-spec"], "condition": "product direction is authorized", "invalidation": "owner direction or selected outcome changes" },
+    { "skill": "write-spec", "artifact": "feature-spec", "consumers": ["design-ux", "design-tech", "review-plan"], "condition": "feature is selected", "invalidation": "direction, outcome, AC, journey or concern changes" },
+    { "skill": "design-ux", "artifact": "ux-design", "consumers": ["design-ui", "design-tech", "review-plan"], "condition": "feature has user interaction", "invalidation": "journey, state or accessibility requirement changes" },
+    { "skill": "design-ui", "artifact": "ui-design", "consumers": ["design-tech", "review-plan"], "condition": "feature has visual interface", "invalidation": "UX or visual contract changes" },
+    { "skill": "design-ui", "artifact": "design-system", "consumers": ["design-tech", "review-plan"], "condition": "visual system is applicable", "invalidation": "token or component contract changes" },
+    { "skill": "design-ui", "artifact": "live-page-screenshots", "consumers": ["review-plan", "verify-promotion"], "condition": "browser-visible UI is applicable", "invalidation": "rendered UI or environment identity changes" },
+    { "skill": "design-tech", "artifact": "feature-spec", "consumers": ["plan-changeset", "review-plan"], "condition": "technical baseline is required", "invalidation": "architecture, provider or system contract changes" },
+    { "skill": "plan-changeset", "artifact": "implementation-manifest", "consumers": ["review-plan", "execute-changeset"], "condition": "change is not eligible quick-fix", "invalidation": "scope, plan lens or relevant source digest changes" }
+  ],
+  "continuation_dag": [
+    ["plan-changeset", "review-plan"],
+    ["review-plan", "execute-changeset"],
+    ["execute-changeset", "review-exec"],
+    ["review-exec", "audit-implementation"],
+    ["audit-implementation", "land-changeset"],
+    ["land-changeset", "verify-promotion"],
+    ["verify-promotion", "customer"],
+    ["verify-promotion", "owner"],
+    ["verify-promotion", "operations"],
+    ["verify-promotion", "metric"]
+  ]
+}

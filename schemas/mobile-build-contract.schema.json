@@ -1,0 +1,303 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seriousvibecoding.dev/schemas/mobile-build-contract.schema.json",
+  "title": "SVC mobile build adapter contract",
+  "description": "Declares the platform-neutral boundary between SVC mobile identity allocation and consumer-owned build tooling. Development identity state and canonical release state are deliberately separate.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "project",
+    "platforms",
+    "canonical_identity",
+    "development",
+    "release",
+    "commands"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "project": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "platforms": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": { "enum": ["android", "ios"] }
+    },
+    "canonical_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["application_id", "display_name"],
+      "properties": {
+        "application_id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 223,
+          "pattern": "^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)+$"
+        },
+        "bundle_id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 255,
+          "pattern": "^[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+$"
+        },
+        "display_name": { "type": "string", "minLength": 1, "maxLength": 64 }
+      }
+    },
+    "development": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id_suffix_template",
+        "label_template",
+        "artifact_template",
+        "state_file",
+        "max_code",
+        "signing_profile"
+      ],
+      "properties": {
+        "id_suffix_template": { "const": ".wt_{branch_slug}_{branch_hash}" },
+        "label_template": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\{branch_slug\\}.*\\{branch_hash\\}|\\{branch_hash\\}.*\\{branch_slug\\}"
+        },
+        "artifact_template": { "$ref": "#/$defs/development_artifact_template" },
+        "state_file": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?:\\.svc|\\.cache|build|tmp)/.+$"
+        },
+        "max_code": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2100000000
+        },
+        "signing_profile": { "enum": ["debug", "adhoc"] }
+      }
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ledger", "monotonic_floor_source", "artifact_template"],
+      "properties": {
+        "ledger": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?![/\\\\])(?![A-Za-z]:[\\\\/])(?!.*(?:^|[/\\\\])\\.\\.(?:[/\\\\]|$)).+$"
+        },
+        "monotonic_floor_source": { "enum": ["remote", "ledger", "max"] },
+        "artifact_template": { "$ref": "#/$defs/release_artifact_template" },
+        "max_code": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2100000000
+        }
+      }
+    },
+    "commands": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "prepare_dev",
+        "build_dev",
+        "inspect_artifact",
+        "allocate_release",
+        "build_release"
+      ],
+      "properties": {
+        "prepare_dev": { "$ref": "#/$defs/argv" },
+        "build_dev": { "$ref": "#/$defs/argv" },
+        "inspect_artifact": { "$ref": "#/$defs/argv" },
+        "allocate_release": { "$ref": "#/$defs/argv" },
+        "build_release": { "$ref": "#/$defs/argv" }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "platforms": { "contains": { "const": "ios" } } },
+        "required": ["platforms"]
+      },
+      "then": {
+        "properties": {
+          "canonical_identity": { "required": ["application_id", "bundle_id", "display_name"] }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "argv": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "release_artifact_template": {
+      "type": "string",
+      "minLength": 1,
+      "allOf": [
+        { "pattern": "\\{project\\}" },
+        { "pattern": "\\{code\\}" },
+        { "pattern": "\\{platform\\}" },
+        {
+          "anyOf": [
+            { "pattern": "\\{source_sha\\}" },
+            { "pattern": "\\{source_short_sha\\}" }
+          ]
+        }
+      ]
+    },
+    "development_artifact_template": {
+      "allOf": [
+        { "$ref": "#/$defs/release_artifact_template" },
+        { "pattern": "\\{branch_slug\\}" },
+        { "pattern": "\\{branch_hash\\}" },
+        { "pattern": "\\{timestamp\\}" }
+      ]
+    },
+    "adapter_output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "mode",
+        "project",
+        "platform",
+        "application_id",
+        "version_code",
+        "version_name",
+        "display_name",
+        "source_sha",
+        "timestamp"
+      ],
+      "properties": {
+        "schema_version": { "const": 1 },
+        "mode": { "enum": ["dev", "release"] },
+        "project": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "platform": { "enum": ["android", "ios"] },
+        "application_id": { "type": "string", "minLength": 1 },
+        "bundle_id": { "type": "string", "minLength": 1 },
+        "version_code": { "type": "integer", "minimum": 1, "maximum": 2100000000 },
+        "code": { "type": "integer", "minimum": 1, "maximum": 2100000000 },
+        "build_number": { "type": "integer", "minimum": 1, "maximum": 2100000000 },
+        "version_name": { "type": "string", "minLength": 1 },
+        "display_name": { "type": "string", "minLength": 1 },
+        "label": { "type": "string", "minLength": 1 },
+        "artifact": { "type": "string", "minLength": 1 },
+        "artifact_path": { "type": "string", "minLength": 1 },
+        "artifact_name": { "type": "string", "minLength": 1 },
+        "artifact_filename": { "type": "string", "minLength": 1, "pattern": "^[^/\\\\]+$" },
+        "artifact_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "source_sha": { "type": "string", "pattern": "^[0-9a-f]{7,64}$" },
+        "timestamp": { "type": "string", "pattern": "^[0-9]{8}T[0-9]{6}Z$" },
+        "branch_slug": { "type": "string", "pattern": "^[a-z0-9_]{1,18}$" },
+        "branch_hash": { "type": "string", "pattern": "^[0-9a-f]{8}$" },
+        "status": { "enum": ["built", "failed", "committed"] },
+        "allocation_status": { "enum": ["built", "failed", "committed"] },
+        "remote_floor": { "type": "integer", "minimum": 0, "maximum": 2100000000 },
+        "ledger_floor": { "type": "integer", "minimum": 0, "maximum": 2100000000 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "platform": { "const": "ios" } }, "required": ["platform"] },
+          "then": { "required": ["bundle_id", "build_number"] }
+        },
+        {
+          "if": { "properties": { "mode": { "const": "dev" } }, "required": ["mode"] },
+          "then": { "required": ["branch_slug", "branch_hash", "artifact_path", "artifact_sha256"] }
+        },
+        {
+          "if": { "properties": { "mode": { "const": "release" } }, "required": ["mode"] },
+          "then": {
+            "required": ["remote_floor", "ledger_floor"],
+            "anyOf": [
+              { "required": ["status"] },
+              { "required": ["allocation_status"] }
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "mode": { "const": "release" },
+              "status": { "enum": ["built", "committed"] }
+            },
+            "required": ["mode", "status"]
+          },
+          "then": { "required": ["artifact_path", "artifact_sha256"] }
+        },
+        {
+          "if": {
+            "properties": {
+              "mode": { "const": "release" },
+              "allocation_status": { "enum": ["built", "committed"] }
+            },
+            "required": ["mode", "allocation_status"]
+          },
+          "then": { "required": ["artifact_path", "artifact_sha256"] }
+        }
+      ]
+    },
+    "release_ledger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "last_canonical", "reservations"],
+      "properties": {
+        "schema_version": { "const": 1 },
+        "last_canonical": { "type": "integer", "minimum": 0, "maximum": 2100000000 },
+        "reservations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "code",
+              "status",
+              "created_at",
+              "remote_floor",
+              "ledger_floor",
+              "source_sha",
+              "platform",
+              "timestamp",
+              "artifact_filename"
+            ],
+            "properties": {
+              "code": { "type": "integer", "minimum": 1, "maximum": 2100000000 },
+              "status": { "enum": ["reserved", "built", "failed", "committed"] },
+              "created_at": { "type": "string", "format": "date-time" },
+              "updated_at": { "type": "string", "format": "date-time" },
+              "remote_floor": { "type": "integer", "minimum": 0, "maximum": 2100000000 },
+              "ledger_floor": { "type": "integer", "minimum": 0, "maximum": 2100000000 },
+              "source_sha": { "type": "string", "pattern": "^[0-9a-f]{7,64}$" },
+              "platform": { "enum": ["android", "ios"] },
+              "timestamp": { "type": "string", "pattern": "^[0-9]{8}T[0-9]{6}Z$" },
+              "artifact_filename": { "type": "string", "minLength": 1, "pattern": "^[^/\\\\]+$" },
+              "artifact_path": { "type": "string", "minLength": 1 },
+              "artifact_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": { "status": { "enum": ["built", "committed"] } },
+                  "required": ["status"]
+                },
+                "then": { "required": ["artifact_path", "artifact_sha256"] }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

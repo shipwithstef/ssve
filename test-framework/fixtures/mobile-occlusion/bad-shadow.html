@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: sans-serif; height: 200vh; }
+  /* A real action button, clear of the gesture zone (no safe-area problem): it is
+     occluded ONLY by a fixed bar that lives inside an open shadow root. */
+  .fab {
+    position: fixed; right: 16px; bottom: 200px; z-index: 40;
+    background: #10b981; color: #fff; border: none; border-radius: 999px;
+    padding: 14px 18px; font-weight: 600;
+  }
+  /* The web component host is NOT fixed (display:contents contributes no box) —
+     document.elementsFromPoint returns THIS host, not the fixed bar inside its
+     shadow root. Only piercing the open shadow root (MO-05) reveals the occluder. */
+  app-overlay { display: contents; }
+</style>
+</head>
+<body>
+  <header><h1>Discovery</h1></header>
+  <button class="fab" data-testid="scout-fab" aria-label="Scout a spot">+ Scout</button>
+
+  <app-overlay></app-overlay>
+  <script>
+    class AppOverlay extends HTMLElement {
+      constructor() {
+        super();
+        const root = this.attachShadow({ mode: 'open' });
+        root.innerHTML = `
+          <style>
+            /* Fixed panel that paints OVER the fab (higher z-index), covering it.
+               position:fixed is viewport-relative even inside a shadow root. */
+            .panel {
+              position: fixed; left: 0; right: 0; bottom: 0; height: 300px; z-index: 100;
+              background: rgba(20,20,25,0.96); color: #fff;
+              padding-bottom: env(safe-area-inset-bottom, 0px);
+            }
+          </style>
+          <div class="panel" role="dialog" aria-label="Promo panel">Big promo</div>`;
+      }
+    }
+    customElements.define('app-overlay', AppOverlay);
+  </script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+Skill: analyze-domain
+
+Q: What file does the analyze-domain skill produce, and what are the mandatory sections it must contain?
+A: Expected pattern: It produces docs/specs/domain-profile.md with mandatory sections including Industry, Tech Stack, Domain Concepts, Knowledge Gaps, External Skills, and Stack Convention Packs.
+
+Q: What are the required and previous/next skills in the greenfield lane for analyze-domain?
+A: Expected pattern: Required input is docs/specs/vision.md. In the greenfield lane it is position 2, previous skill is write-vision, next skill is analyze-competitors. It has progressive=true and auto-chains on self-verify pass.
+
+Q: What are the self-verify checks that analyze-domain must pass before declaring done?
+A: Expected pattern: The self-verify table has 5 checks: (1) profile exists, (2) industry and tech stack sections are present, (3) low-confidence areas were researched, (4) domain pack was created if warranted, (5) knowledge protocol conformance.

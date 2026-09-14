@@ -1,0 +1,209 @@
+review_log:
+  plan: docs/plans/2026-07-15-wi488-deterministic-external-reviewer/manifest.md
+  orchestrator: codex
+  required_reviewer: claude-fable-5
+  required_effort: high
+  tier1:
+    script: scripts/verify-plan-mechanical.sh
+    exit_code: 0
+    issues: 0
+  external_state_check:
+    exit_code: 0
+    result: "Touched taxonomy rows 3, 12, 14, and 15; untouched rows explicit; coupling wiring and auth recovery named."
+  attempts:
+    - attempt: 1
+      tuple: "claude-fable-5/high"
+      package: "manifest plus full lane graph on stdin"
+      timeout_seconds: 210
+      result: timeout
+      fallback: none
+      disposition: "No Opus invocation; timeout is not fallback-eligible."
+    - attempt: 2
+      tuple: "claude-fable-5/high"
+      package: "canonical manifest-only review package on stdin"
+      timeout_seconds: 300
+      result: success
+      runtime_model: claude-fable-5
+      runtime_effort: high
+      duration_ms: 216158
+      cost_usd: 1.190887
+      fallback: none
+  iteration_1:
+    reviewer: claude-fable-5
+    reviewer_family: anthropic
+    effort: high
+    rubric_score: 8
+    rubric_failures: [2, 5]
+    lane_compliance: PASS
+    findings:
+      - id: EXTREV-MAN-001
+        severity: medium
+        claim: "Exact HEAD==base guard makes checkpoint recovery reruns fail."
+        analysis: "After checkpoint 1, HEAD is no longer the base even though the recovery contract requires downstream replay."
+        evidence: "Execution sequence exact-HEAD assertion versus RECOVERY_IF_FAIL replay requirement."
+        proposed_fix: "Use a base-ancestry assertion that remains true across checkpoints."
+      - id: EXTREV-MAN-002
+        severity: medium
+        claim: "Upstream diagnosis/design/review/evidence artifacts and the plan lack Files Planned ownership."
+        analysis: "Untracked prerequisite evidence could be omitted from checkpoints while later receipts cite it."
+        evidence: "Prerequisite matrix paths absent from the original Files Planned table."
+        proposed_fix: "Add every upstream evidence artifact and the review log to task-1 inventory."
+      - id: EXTREV-MAN-003
+        severity: medium
+        claim: "Spend invariant overclaims a Codex monetary-budget control not present in Codex argv."
+        analysis: "Claude has max-budget-usd; Codex is bounded by timer and call count."
+        evidence: "Spend invariant versus provider-specific argv sections."
+        proposed_fix: "State provider-specific bounds and map their fixtures precisely."
+      - id: EXTREV-MAN-004
+        severity: low
+        claim: "Rollback lacks stash provenance and downstream-checkpoint invalidation."
+        analysis: "The executor cannot identify the stash and a reverted dependency invalidates later checkpoints."
+        evidence: "Rollback's unnamed stash and single-checkpoint wording."
+        proposed_fix: "Record immutable stash commit/contents and rebuild all dependent checkpoints."
+      - id: EXTREV-MAN-005
+        severity: low
+        claim: "A count-based full-suite comparison can hide a new failure when a baseline failure disappears."
+        analysis: "Session freshness is state-dependent, so cardinality is not regression identity."
+        evidence: "240/3 baseline wording and freshness caveat."
+        proposed_fix: "Use an exact failing-test allowlist and subset gate."
+      - id: EXTREV-MAN-006
+        severity: low
+        claim: "PID plus timestamp lock recovery is unsafe under PID reuse and foreign-host namespaces."
+        analysis: "PID liveness alone does not identify the launcher process across reuse or hosts."
+        evidence: "Cache section's original PID/timestamp rule."
+        proposed_fix: "Bind hostname, PID, start token, owner token, and timestamp; fixture PID reuse/foreign host."
+      - id: EXTREV-MAN-007
+        severity: low
+        claim: "Checkpoint timing and adjust-command-syntax wording are nondeterministic."
+        analysis: "The manifest both delays all commits until final review and relies on per-task commit anchors; it also leaves exact flags to execution."
+        evidence: "Checkpoint sentence and local-help adjustment clause."
+        proposed_fix: "Clarify per-task commits and pin actual scan/receipt commands."
+      - id: EXTREV-MAN-008
+        severity: low
+        claim: "Runtime cache has no retention or eviction lifecycle."
+        analysis: "Launcher-version and package churn leave unbounded regenerable artifacts."
+        evidence: "External-state row 15 and rollback-only deletion."
+        proposed_fix: "Add lock-safe TTL-based explicit cache GC and fixtures."
+    responses:
+      - finding_id: EXTREV-MAN-001
+        decision: ACCEPT
+        justification: "A lineage assertion preserves branch binding without invalidating checkpoint reruns."
+        action: "Replaced exact HEAD equality with base-is-ancestor validation."
+      - finding_id: EXTREV-MAN-002
+        decision: ACCEPT
+        justification: "Every cited prerequisite must be part of the landed evidence set."
+        action: "Added diagnosis, decisions, contract map, G4 review, both test-evidence files, manifest, and review log to task-1."
+      - finding_id: EXTREV-MAN-003
+        decision: ACCEPT
+        justification: "The installed Codex CLI exposes no monetary-budget flag; timeout plus one attempt is the honest bound."
+        action: "Made spend controls provider-specific and corrected the EXTREV-31 through 33 proof row."
+      - finding_id: EXTREV-MAN-004
+        decision: ACCEPT
+        justification: "The stash is deliberate external state and dependency reversions invalidate derived evidence."
+        action: "Recorded immutable stash commit, exact contents, and downstream checkpoint rebuild rule."
+      - finding_id: EXTREV-MAN-005
+        decision: ACCEPT
+        justification: "Failure identities, not counts, prevent a disappearing known failure from masking a regression."
+        action: "Pinned the three exact baseline validators and required post-failure-set subset comparison."
+      - finding_id: EXTREV-MAN-006
+        decision: ACCEPT
+        justification: "Process identity and host scope are required before a stale-lock decision is safe."
+        action: "Added hostname/PID/start/owner/timestamp lock identity and deterministic reuse/foreign-host fixtures."
+      - finding_id: EXTREV-MAN-007
+        decision: ACCEPT
+        justification: "Reviewed commands and checkpoint boundaries must be executable without interpretation."
+        action: "Clarified task-level checkpoint timing and pinned scan-concerns/check-chain-receipts syntax."
+      - finding_id: EXTREV-MAN-008
+        decision: ACCEPT
+        justification: "Regenerable runtime evidence still needs a bounded removal lifecycle."
+        action: "Added explicit lock-safe 30-day TTL GC command/configuration and held-lock fixtures."
+  iteration_2:
+    reviewer: claude-fable-5
+    reviewer_family: anthropic
+    effort: high
+    rubric_score: 9
+    rubric_failures: []
+    lane_compliance: PASS
+    cost_usd: 0.821819
+    findings:
+      - id: F1
+        severity: medium
+        claim: "Foreign-host stale-lock age was not constrained above legitimate two-attempt wall time."
+        response:
+          decision: ACCEPT
+          justification: "A foreign host cannot inspect local process identity, so an inequality plus owner heartbeat is required to prevent mid-call reclaim."
+          action: "Added 300-second per-attempt default, 720-second stale default, startup constraint stale >= 2*timeout+60, and 30-second owner-token heartbeat with fixtures."
+      - id: F2
+        severity: low
+        claim: "Task Graph AC ranges disagreed with the AC-to-Task mapping for EXTREV-19, 30, 63, and 64."
+        response:
+          decision: ACCEPT
+          justification: "Both tables are execution authority and must name identical task ownership."
+          action: "Removed EXTREV-19/30 from task-1 and EXTREV-63/64 from task-5; detailed mappings remain authoritative and consistent."
+      - id: F3
+        severity: low
+        claim: "Owner-override authority lacked a trust anchor."
+        response:
+          decision: ACCEPT
+          justification: "Self-declared provenance is audit logging, not authorization."
+          action: "Required repository-owner authority and exact byte match to out-of-band SVC_EXTERNAL_REVIEW_OWNER_OVERRIDE_SHA256, with missing/mismatch/unlisted fixtures."
+      - id: F4
+        severity: low
+        claim: "Kill-switch mechanism was not named in the manifest launcher contract."
+        response:
+          decision: ACCEPT
+          justification: "Adapters, docs, receipts, and fixtures need one exact operator-facing name."
+          action: "Named SVC_EXTERNAL_REVIEW_DISABLED=1 as the non-overridable pre-cache/pre-lock/pre-spawn switch and disabled receipt path."
+    dependencies_needing_read:
+      - docs/specs/test-evidence/WI-488/pre-change-tier1-baseline.md
+      - docs/specs/features/wi-488-deterministic-external-reviewer.md
+      - docs/plans/2026-07-15-wi488-deterministic-external-reviewer/review-log.yaml
+      - docs/specs/test-evidence/WI-488/design-capability-probes.json
+  iteration_3:
+    reviewer: claude-fable-5
+    reviewer_family: anthropic
+    effort: high
+    rubric_score: 9
+    rubric_failures: []
+    cost_usd: 1.882287
+    lane_compliance: PASS
+    external_state_check: PASS
+    findings:
+      - id: EXTREV-CONV-001
+        severity: low
+        claim: "EXTREV-65 remained in runtime-only task-2/task-4 coverage ranges."
+        response:
+          decision: ACCEPT
+          justification: "Inventory-exclusion proof belongs to tasks 5 and 6 only."
+          action: "Changed task-2 to EXTREV-01–56,63–64,66–69 and task-4 to EXTREV-12–56,60,62–64,66–69."
+      - id: EXTREV-CONV-002
+        severity: low
+        claim: "Capability probe predicates did not enumerate every frozen argv control."
+        response:
+          decision: ACCEPT
+          justification: "The complete command surface must be evidenced before keeping capability simulation at PASS."
+          action: "Expanded probes to all documented flags, added free strict-config/argv --version parser checks, and cited actual primary review acceptance for hidden max-turns without a smoke call."
+      - id: EXTREV-CONV-003
+        severity: low
+        claim: "Spec pillar matrix still referenced EXTREV-01 through EXTREV-65."
+        response:
+          decision: ACCEPT
+          justification: "The baselined evidence set contains four G4 AC additions and must consistently state 69."
+          action: "Updated the pillar row to EXTREV-01 through EXTREV-69."
+    dependencies_needing_read:
+      - docs/specs/contract-maps/wi-488-external-review-invocation.md
+      - docs/specs/reviews/wi-488-design-tech-g4.md
+  iteration_4:
+    reviewer: claude-fable-5
+    reviewer_family: anthropic
+    effort: high
+    rubric_score: 10
+    rubric_failures: []
+    cost_usd: 1.404458
+    lane_compliance: PASS
+    external_state_check: PASS
+    findings: []
+    dependencies_needing_read: []
+    verification: "EXTREV-65 task ownership, full capability probes, 69-AC consistency, all prior responses, all nine plan dimensions, and all 15 external-state taxonomy rows converged."
+  terminal_state: REVISED_AND_REVIEWED
+  receipt_emission: "Plan-manifest and review-plan payloads are complete; canonical staging emission is deferred until the frozen implementation tree exists so post-commit promotion binds them to the WI commit rather than the origin/main base SHA."

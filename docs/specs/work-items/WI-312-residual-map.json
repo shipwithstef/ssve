@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "wi": "WI-312",
+  "generated": "2026-05-11",
+  "sources": [
+    {
+      "proposal": "proposals/done/2026-04-25-deterministic-quality-hooks.md",
+      "findings": [
+        { "id": "G-1", "classification": "covered", "owner_wi": "WI-113", "evidence": "svc-lane-tasks-validator now blocks Edit-path completion without populated eval_matrix." },
+        { "id": "G-2", "classification": "covered", "owner_wi": "WI-184", "evidence": "svc-wi-pillars-check is hard-blocking for malformed VERIFIED WI files." },
+        { "id": "G-3", "classification": "covered", "owner_wi": "WI-323", "evidence": "Review receipt schema and svc bash guard now block gh pr merge without a valid review-gate receipt or logged bypass." },
+        { "id": "G-4", "classification": "covered", "owner_wi": "WI-114", "evidence": "svc-skill-artifact-authenticity blocks canonical skill-output writes without recent skill receipt." },
+        { "id": "G-5", "classification": "child-wi", "owner_wi": "WI-324", "evidence": "Base44 coding/write schema guard remains separate from the WI-308 backend verification pack." },
+        { "id": "G-6", "classification": "covered", "owner_wi": "WI-325", "evidence": "UserPromptSubmit prompt-progress audit warns on long in-progress lane tasks without waiting for Stop." },
+        { "id": "G-7", "classification": "covered", "owner_wi": "WI-116", "evidence": "SessionStart hook coverage check and lifecycle hooks were added in WI-116, then wired cross-host by WI-123." },
+        { "id": "G-8", "classification": "covered", "owner_wi": "WI-123", "evidence": "Host-agnostic hook wiring and loadability checks make canonical hook additions visible to wirers." },
+        { "id": "G-9", "classification": "covered", "owner_wi": "WI-323", "evidence": "PR merge gating now checks .svc or durable review-gate receipts and rejects self-review receipts." },
+        { "id": "G-10", "classification": "covered", "owner_wi": "WI-113", "evidence": "Edit-path lane-task completion now requires eval_matrix, closing the missing-matrix bypass." },
+        { "id": "G-11", "classification": "covered", "owner_wi": "WI-325", "evidence": "chain.requires is explicitly rejected; lane-task blocked_by plus task-graph next remains the prerequisite contract and is validator-backed." },
+        { "id": "G-12", "classification": "covered", "owner_wi": "WI-325", "evidence": "task-graph.mjs load-skill remains the canonical skill receipt emission path and set-status rejects completion without it." }
+      ]
+    },
+    {
+      "proposal": "proposals/done/2026-04-25-dynamic-deterministic-reliability-review.md",
+      "findings": [
+        { "id": "R-1", "classification": "covered", "owner_wi": "WI-116", "evidence": "Hook coverage spec and lifecycle hooks exist; WI-123 wires host-supported lifecycle entries." },
+        { "id": "R-2", "classification": "covered", "owner_wi": "WI-117", "evidence": "Pipeline-decision schema and canonical writer exist, with later state-io discipline in WI-195." },
+        { "id": "R-3", "classification": "covered", "owner_wi": "WI-118", "evidence": "references/canonical-gates.json plus validate-cross-host-hook-conformance.sh cover static cross-host gate wiring." },
+        { "id": "R-4", "classification": "covered", "owner_wi": "WI-302", "evidence": "Delivery graph replay/autorun proof now covers route-workflow autorun behavior beyond the earlier WI-119 static skeleton." },
+        { "id": "R-5", "classification": "covered", "owner_wi": "WI-195", "evidence": "state-io locking, atomic update, JSONL append helper, and validator discipline landed in WI-195." },
+        { "id": "R-6", "classification": "covered", "owner_wi": "WI-121", "evidence": "External-state lifecycle now spans plan, execute, review, and audit surfaces." },
+        { "id": "R-7", "classification": "covered", "owner_wi": "WI-185", "evidence": "Preflight hook is fail-closed for declared first-party contracts, with coverage from WI-179." },
+        { "id": "R-8", "classification": "covered", "owner_wi": "WI-115", "evidence": "ingest-guide tie-break now has selective-blend routing." }
+      ]
+    },
+    {
+      "proposal": "proposals/done/2026-04-29-completion-guard-historical-skip.md",
+      "findings": [
+        { "id": "H-1", "classification": "covered", "owner_wi": "WI-312", "evidence": "svc-task-completion-guard.sh now honors route-workflow decision-log entries with historical_skip:true for pre-enforcement completed WIs." }
+      ]
+    }
+  ]
+}

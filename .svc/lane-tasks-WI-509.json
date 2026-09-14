@@ -1,0 +1,1246 @@
+{
+  "schema_version": 1,
+  "wi": "WI-509",
+  "lane": "framework",
+  "created": "2026-07-23T12:57:09.043Z",
+  "status": "completed",
+  "authority_baton": {
+    "wi": "WI-509",
+    "branch": "framework-WI-509-reconcile-range-timeout",
+    "base_sha": "7dfe2c6292cd2bbde9330e0f74f126478c8252f1",
+    "worktree": "/workspace/seriousvibecoding/.worktrees/framework-WI-509-reconcile-range-timeout",
+    "owner_session": "019f8cd3-5ff3-7302-852c-1729ef9167eb",
+    "claim_generation": 1
+  },
+  "delivery_graph": {
+    "compiler_version": 1,
+    "user_intent": "Fix reconcile range validation so valid receipt history completes within the bounded preflight, then resume the phase-receipt skip-integrity repair.",
+    "repo_mode": "convert",
+    "change_type": "framework",
+    "lane": "framework",
+    "delivery_mode": "end_to_end",
+    "delivery_tier": {
+      "mode": "full",
+      "selected_by": "route-workflow",
+      "rationale": "The change touches the every-session fail-closed reconcile and receipt validator hot paths; full planning, review, audit, and promoted replay are mandatory.",
+      "decision_log_ref": ".svc/pipeline-decisions.jsonl",
+      "validation_policy": {
+        "mandatory_skills": [
+          "route-workflow",
+          "diagnose-bug",
+          "improve-framework",
+          "design-tech",
+          "plan-changeset",
+          "review-plan",
+          "execute-changeset",
+          "review-gate",
+          "review-exec",
+          "audit-implementation",
+          "test-framework",
+          "land-changeset",
+          "verify-promotion"
+        ],
+        "skippable_skills": [],
+        "blocked_behind_explicit_override": []
+      }
+    },
+    "risk_flags": [
+      "framework-hot-path",
+      "concurrency",
+      "performance",
+      "fail-closed-governance"
+    ],
+    "platform_contracts": [],
+    "solution_confidence": {
+      "required": false,
+      "mode": "none",
+      "status": "not_required"
+    },
+    "compression": {
+      "ratio": 1,
+      "threshold": 2,
+      "rationale": ""
+    },
+    "evidence_families": {
+      "product": "satisfied",
+      "acceptance_criteria": "satisfied",
+      "journey": "n/a",
+      "visual": "n/a",
+      "runtime": "satisfied",
+      "plan_review": "satisfied",
+      "code_review": "satisfied",
+      "implementation_audit": "satisfied",
+      "deploy": "n/a",
+      "promotion": "satisfied",
+      "session_forensics": "n/a",
+      "feature_validation_closeout": "n/a",
+      "provider_fidelity": "n/a"
+    },
+    "required_skills": [
+      "route-workflow",
+      "diagnose-bug",
+      "improve-framework",
+      "design-tech",
+      "plan-changeset",
+      "review-plan",
+      "execute-changeset",
+      "review-gate",
+      "review-exec",
+      "audit-implementation",
+      "test-framework",
+      "land-changeset",
+      "verify-promotion"
+    ],
+    "conditional_mandatory_skills": [
+      {
+        "skill": "design-tech",
+        "signal": "technical-risk",
+        "reason": "Backend, data, integration, or concurrency risk requires technical design."
+      },
+      {
+        "skill": "audit-implementation",
+        "signal": "technical-risk",
+        "reason": "Technical-risk implementation requires implementation audit."
+      }
+    ],
+    "optional_skills": [],
+    "skipped_skills": [],
+    "verification_tiers": {
+      "local": [
+        "tier-1"
+      ],
+      "runtime": [
+        "promoted-cli-replay"
+      ],
+      "production": []
+    },
+    "mutation_history": [
+      {
+        "ts": "2026-07-23T12:57:09.042Z",
+        "source": "route-workflow",
+        "action": "initial_compile",
+        "reason": "Compiled delivery graph at lane entry before downstream mutation."
+      },
+      {
+        "ts": "2026-07-23T14:46:50.970Z",
+        "source": "verify-promotion",
+        "action": "close_evidence_families",
+        "reason": "Promoted range and canonical reconcile replays satisfy product, acceptance, runtime, review, audit, and promotion evidence; customer journey and visual evidence are not applicable to the headless preflight."
+      },
+      {
+        "ts": "2026-07-23T14:47:20.646Z",
+        "source": "classify-delivery-graph-closeout",
+        "action": "close_as_runtime_accepted",
+        "reason": "delivery_tier=full; open evidence families: product, acceptance_criteria, journey, plan_review, code_review, implementation_audit, promotion",
+        "affected_tasks": [],
+        "affected_evidence_families": [],
+        "validator_proof": "scripts/classify-delivery-graph-closeout.mjs --write"
+      },
+      {
+        "ts": "2026-07-23T14:48:04.471Z",
+        "source": "classify-delivery-graph-closeout",
+        "action": "close_as_runtime_accepted",
+        "reason": "delivery_tier=full; all evidence families and required tasks are closed; WI-395 closeout gate: no main-green verdict — run scripts/validate-main-green.sh before recording closeout",
+        "affected_tasks": [],
+        "affected_evidence_families": [],
+        "validator_proof": "scripts/classify-delivery-graph-closeout.mjs --write"
+      }
+    ],
+    "closeout_classification_required": true,
+    "closeout_classification": "runtime-accepted",
+    "closeout_classification_reasons": [
+      "delivery_tier=full",
+      "all evidence families and required tasks are closed",
+      "WI-395 closeout gate: no main-green verdict — run scripts/validate-main-green.sh before recording closeout"
+    ],
+    "closeout_delivery_tier": "full"
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "route-workflow",
+      "subject": "route-workflow: bind WI-509 to the isolated framework worktree",
+      "status": "completed",
+      "blocked_by": [],
+      "metadata": {
+        "skill": "route-workflow"
+      },
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-07-23T12:59:09.848Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-07-23T12:59:09.899Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-session-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-07-23T12:59:09.949Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-intent.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-07-23T12:59:09.997Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-509.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-07-23T12:59:10.051Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-concern-gate.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-07-23T12:59:10.108Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-509.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-07-23T12:59:10.155Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T12:59:10.208Z"
+    },
+    {
+      "id": 2,
+      "skill": "diagnose-bug",
+      "subject": "diagnose-bug: reconcile range validation exceeds its bounded parent timeout",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "diagnose-bug"
+      },
+      "skill_receipt": {
+        "skill": "diagnose-bug",
+        "loaded_at": "2026-07-23T12:59:10.308Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-Inputs",
+            "ts": "2026-07-23T13:02:31.806Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/work-items/WI-509.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-Reproduction",
+            "ts": "2026-07-23T13:02:31.841Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-509.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RootCause",
+            "ts": "2026-07-23T13:02:31.881Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-509.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-FixPlan",
+            "ts": "2026-07-23T13:02:31.915Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-509.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-PillarRevisit",
+            "ts": "2026-07-23T13:02:31.961Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-509.md"
+              }
+            ]
+          }
+        ]
+      },
+      "process_tasks": [
+        {
+          "id": "2.1",
+          "name": "diagnose-bug|inputs",
+          "status": "completed",
+          "blocked_by": [],
+          "subject": "Load the canonical reconcile, receipt validator, checkpoint, and WI-472 evidence."
+        },
+        {
+          "id": "2.2",
+          "name": "diagnose-bug|reproduce",
+          "status": "completed",
+          "blocked_by": [
+            "2.1"
+          ],
+          "subject": "Reproduce the 20-second canonical timeout and the exact 166-of-166 direct range pass."
+        },
+        {
+          "id": "2.3",
+          "name": "diagnose-bug|classify",
+          "status": "completed",
+          "blocked_by": [
+            "2.2"
+          ],
+          "subject": "Classify the failure as an action bug in the receipt-range execution path."
+        },
+        {
+          "id": "2.4",
+          "name": "diagnose-bug|domain",
+          "status": "completed",
+          "blocked_by": [
+            "2.3"
+          ],
+          "subject": "Localize the defect to serial code execution rather than receipt data or checkpoint state."
+        },
+        {
+          "id": "2.5",
+          "name": "diagnose-bug|expected",
+          "status": "completed",
+          "blocked_by": [
+            "2.4"
+          ],
+          "subject": "Freeze bounded, ordered, fail-closed range behavior while preserving direct SHA behavior."
+        },
+        {
+          "id": "2.6",
+          "name": "diagnose-bug|root-cause",
+          "status": "completed",
+          "blocked_by": [
+            "2.5"
+          ],
+          "subject": "Trace immediate serial validation, growing history, and missing real-denominator latency coverage."
+        },
+        {
+          "id": "2.7",
+          "name": "diagnose-bug|pillar-audit",
+          "status": "completed",
+          "blocked_by": [
+            "2.6"
+          ],
+          "subject": "Audit all eight pillars and bind the evaluation matrix."
+        },
+        {
+          "id": "2.8",
+          "name": "diagnose-bug|pattern-scan",
+          "status": "completed",
+          "blocked_by": [
+            "2.7"
+          ],
+          "subject": "Scan receipt callers and reconcile child bounds for the same serial denominator."
+        },
+        {
+          "id": "2.9",
+          "name": "diagnose-bug|register-discoveries",
+          "status": "completed",
+          "blocked_by": [
+            "2.8"
+          ],
+          "subject": "Keep the independent WI-510 skip-integrity correction separate."
+        },
+        {
+          "id": "2.10",
+          "name": "diagnose-bug|brief",
+          "status": "completed",
+          "blocked_by": [
+            "2.9"
+          ],
+          "subject": "Write the implementation-ready WI-509 brief and proof plan."
+        }
+      ],
+      "eval_matrix": {
+        "product_fit": "unchanged: preserves receipt-complete governed workflows",
+        "journey": "n/a: internal headless session preflight",
+        "acceptance_criteria": "updated: RX-01 through RX-09",
+        "ux": "unchanged: reconcile diagnostics and exit semantics remain stable",
+        "ui": "n/a: no visual surface",
+        "tech_architecture": "updated: bounded ordered fail-closed receipt worker pool",
+        "cost_model": "updated: capped local CPU parallelism replaces excessive serial wall time",
+        "operations_ownership": "updated: promoted canonical reconcile replay and checkpoint proof"
+      },
+      "completed_at": "2026-07-23T13:02:32.006Z"
+    },
+    {
+      "id": 3,
+      "skill": "improve-framework",
+      "subject": "improve-framework: record and route the single reconcile performance gap",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-07-23T13:03:03.615Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-FrameworkRepoAndMemoryLoad",
+            "ts": "2026-07-23T13:03:27.405Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "FRAMEWORK-STATE.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-PendingProposalAndEvidenceSelection",
+            "ts": "2026-07-23T13:03:27.437Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/work-items/WI-509.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-DiagnosisAndDuplicateFilter",
+            "ts": "2026-07-23T13:03:27.471Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "proposals/2026-07-23-framework-improvement-reconcile-range-workers.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ImplementationRouteDecision",
+            "ts": "2026-07-23T13:03:27.512Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "proposals/2026-07-23-framework-improvement-reconcile-range-workers.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-ImplementationAndReplayVerification",
+            "ts": "2026-07-23T14:30:09.578Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-replay.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-ImprovementRecordAndStateMutation",
+            "ts": "2026-07-23T14:30:09.616Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "FRAMEWORK-STATE.md"
+              }
+            ]
+          },
+          {
+            "id": "P7-ProposalDoneAndRemoteSync",
+            "ts": "2026-07-23T14:30:09.656Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-remote-sync.log"
+              }
+            ]
+          },
+          {
+            "id": "P8-SelfVerifyContinuation",
+            "ts": "2026-07-23T14:30:09.694Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/improve-framework-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T14:30:09.732Z"
+    },
+    {
+      "id": 4,
+      "skill": "design-tech",
+      "subject": "design-tech: bounded parallel receipt-range validation",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "metadata": {
+        "skill": "design-tech",
+        "signal": "technical-risk"
+      },
+      "skill_receipt": {
+        "skill": "design-tech",
+        "loaded_at": "2026-07-23T13:03:27.585Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SpecJourneyDiscussionPreflight",
+            "ts": "2026-07-23T13:05:06.887Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/work-items/WI-509.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-CodebasePatternAnalysis",
+            "ts": "2026-07-23T13:05:06.921Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "scripts/check-chain-receipts.mjs"
+              }
+            ]
+          },
+          {
+            "id": "P3-ArchitectureAlternativesAndDiagrams",
+            "ts": "2026-07-23T13:05:06.957Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/tech/WI-509-reconcile-range-workers.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-CostOpsFeasibilityRiskDesign",
+            "ts": "2026-07-23T13:05:06.995Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/tech/WI-509-reconcile-range-workers.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-G4ReviewAndDecisionLogging",
+            "ts": "2026-07-23T13:05:07.037Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/pipeline-decisions.jsonl"
+              }
+            ]
+          },
+          {
+            "id": "P6-BaselinedSpecSelfVerify",
+            "ts": "2026-07-23T13:05:07.076Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/tech/WI-509-reconcile-range-workers.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T13:05:07.111Z"
+    },
+    {
+      "id": 5,
+      "skill": "plan-changeset",
+      "subject": "plan-changeset: receipt worker pool and fail-closed regression fixtures",
+      "status": "completed",
+      "blocked_by": [
+        4
+      ],
+      "metadata": {
+        "skill": "plan-changeset"
+      },
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-07-23T13:05:07.179Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-07-23T13:07:01.561Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/plans/2026-07-23-WI-509-reconcile-range-workers/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-07-23T13:07:01.599Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/tech/WI-509-reconcile-range-workers.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-07-23T13:07:01.632Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-23-WI-509-reconcile-range-workers/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-07-23T13:07:01.666Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-23-WI-509-reconcile-range-workers/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-07-23T13:07:01.700Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/lane-tasks-WI-509.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-07-23T13:07:01.732Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/plans/2026-07-23-WI-509-reconcile-range-workers/manifest.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T13:07:01.764Z"
+    },
+    {
+      "id": 6,
+      "skill": "review-plan",
+      "subject": "review-plan: adversarial review of the bounded concurrency plan",
+      "status": "completed",
+      "blocked_by": [
+        5
+      ],
+      "metadata": {
+        "skill": "review-plan"
+      },
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-07-23T13:07:01.838Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-07-23T13:20:08.822Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/plans/2026-07-23-WI-509-reconcile-range-workers/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-07-23T13:20:08.854Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/plans/2026-07-23-WI-509-reconcile-range-workers/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-07-23T13:20:08.891Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-23-WI-509-reconcile-range-workers/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-07-23T13:20:08.925Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-23-WI-509-reconcile-range-workers/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-07-23T13:20:08.960Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-23-WI-509-reconcile-range-workers/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-23T13:20:08.993Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/plans/2026-07-23-WI-509-reconcile-range-workers/review-log.yaml"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T13:20:09.024Z"
+    },
+    {
+      "id": 7,
+      "skill": "execute-changeset",
+      "subject": "execute-changeset: implement parallel range validation and tests",
+      "status": "completed",
+      "blocked_by": [
+        6
+      ],
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-07-23T13:20:09.092Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-07-23T13:35:14.418Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/plans/2026-07-23-WI-509-reconcile-range-workers/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-07-23T13:35:14.453Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "scripts/check-chain-receipts.mjs"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-07-23T13:35:14.489Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/verification/WI-509-pre-post-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-07-23T13:35:14.522Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/plans/2026-07-23-WI-509-reconcile-range-workers/manifest.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T13:35:14.557Z"
+    },
+    {
+      "id": 8,
+      "skill": "review-gate",
+      "subject": "review-gate: verify implementation against WI-509 acceptance criteria",
+      "status": "completed",
+      "blocked_by": [
+        7
+      ],
+      "metadata": {
+        "skill": "review-gate"
+      },
+      "skill_receipt": {
+        "skill": "review-gate",
+        "loaded_at": "2026-07-23T13:35:14.663Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-GateContextChecklistConcernScan",
+            "ts": "2026-07-23T13:36:43.262Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/reviews/WI-509-G5.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SelfReviewFindings",
+            "ts": "2026-07-23T13:36:43.297Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/reviews/WI-509-G5.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-SelfJudgment",
+            "ts": "2026-07-23T13:36:43.334Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/reviews/WI-509-G5.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-CrossReviewConvergence",
+            "ts": "2026-07-23T13:36:43.367Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/reviews/WI-509-G5.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-GateDecisionBacklog",
+            "ts": "2026-07-23T13:36:43.402Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/reviews/WI-509-G5.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-23T13:36:43.447Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/reviews/WI-509-G5.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T13:36:43.500Z"
+    },
+    {
+      "id": 9,
+      "skill": "review-exec",
+      "subject": "review-exec: adversarial review of the frozen implementation",
+      "status": "completed",
+      "blocked_by": [
+        8
+      ],
+      "metadata": {
+        "skill": "review-exec"
+      },
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-07-23T13:36:43.565Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-07-23T13:53:31.963Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/WI-509-G5.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-07-23T13:53:31.998Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/reviews/WI-509-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-07-23T13:53:32.029Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/WI-509-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-IterationLoop",
+            "ts": "2026-07-23T13:53:32.061Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/WI-509-exec-review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerdictAndReceiptFinalize",
+            "ts": "2026-07-23T13:53:32.095Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/WI-509-exec-review-log.yaml"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T13:53:32.126Z"
+    },
+    {
+      "id": 10,
+      "skill": "audit-implementation",
+      "subject": "audit-implementation: concurrency, determinism, and fail-closed audit",
+      "status": "completed",
+      "blocked_by": [
+        9
+      ],
+      "metadata": {
+        "skill": "audit-implementation"
+      },
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-07-23T13:53:32.192Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextScopeConcern",
+            "ts": "2026-07-23T14:04:20.833Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-implementation-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecialistDispatchCoverageLedger",
+            "ts": "2026-07-23T14:04:20.865Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/WI-509-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-HypothesisGeneration",
+            "ts": "2026-07-23T14:04:20.896Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/WI-509-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-SubsystemBehaviorAudit",
+            "ts": "2026-07-23T14:04:20.927Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-implementation-subsystems.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-FindingsConvergenceReport",
+            "ts": "2026-07-23T14:04:20.964Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/WI-509-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-23T14:04:20.996Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-implementation-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T14:04:21.027Z"
+    },
+    {
+      "id": 11,
+      "skill": "test-framework",
+      "subject": "test-framework: focused replay and full Tier-1",
+      "status": "completed",
+      "blocked_by": [
+        10
+      ],
+      "metadata": {
+        "skill": "test-framework"
+      },
+      "skill_receipt": {
+        "skill": "test-framework",
+        "loaded_at": "2026-07-23T14:04:21.091Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-TestModeSelection",
+            "ts": "2026-07-23T14:20:44.969Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/test-framework-mode.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-StaticOrScenarioRunnerExecution",
+            "ts": "2026-07-23T14:20:45.002Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/test-framework-runner.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-ResultsPersistenceGapRouting",
+            "ts": "2026-07-23T14:20:45.036Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "FRAMEWORK-STATE.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-23T14:20:45.068Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/test-framework-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T14:20:45.100Z"
+    },
+    {
+      "id": 12,
+      "skill": "land-changeset",
+      "subject": "land-changeset: push, review receipt, and squash merge",
+      "status": "completed",
+      "blocked_by": [
+        3,
+        11
+      ],
+      "metadata": {
+        "skill": "land-changeset"
+      },
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-07-23T14:30:09.801Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-07-23T14:31:00.194Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-07-23T14:31:00.226Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-diff-audit.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-07-23T14:31:00.259Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-validation.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-PushPrCreation",
+            "ts": "2026-07-23T14:31:00.294Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-pr.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-MergeDecisionCleanup",
+            "ts": "2026-07-23T14:39:09.696Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-merge.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SpecStatusSelfVerify",
+            "ts": "2026-07-23T14:39:10.338Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-23T14:39:11.307Z"
+    },
+    {
+      "id": 13,
+      "skill": "verify-promotion",
+      "subject": "verify-promotion: promoted main reconcile replay under 20 seconds",
+      "status": "completed",
+      "blocked_by": [
+        12
+      ],
+      "metadata": {
+        "skill": "verify-promotion"
+      },
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-07-23T14:39:11.823Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-07-23T14:46:50.844Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-WI-509-promotion.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-07-23T14:46:50.876Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/verification/WI-509-promotion.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-07-23T14:46:50.907Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-WI-509-runtime.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-07-23T14:46:50.939Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/verification/WI-509-promotion.md"
+              }
+            ]
+          }
+        ],
+        "target_class": "headless-framework",
+        "evidence_level": "V2",
+        "evidence_artifacts": [
+          "docs/specs/verification/WI-509-promotion.md",
+          "docs/specs/verification/WI-509-pre-post-evidence.json"
+        ]
+      },
+      "completed_at": "2026-07-23T14:46:50.970Z"
+    }
+  ]
+}

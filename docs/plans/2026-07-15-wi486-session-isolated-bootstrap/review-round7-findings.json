@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "review_kind": "plan",
+  "rubric_score": 3,
+  "rubric_failures": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9
+  ],
+  "dependencies_needing_read": [
+    "docs/specs/features/wi-486-session-isolated-bootstrap.md",
+    ".svc/lane-tasks-WI-486.json",
+    "docs/specs/decisions/wi-486-session-isolated-bootstrap.md",
+    "references/chain-receipt-contract.md",
+    "schemas/receipts/review-plan.schema.json",
+    "schemas/receipts/exec-record.schema.json"
+  ],
+  "reviewer": {
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5",
+    "effort": "xhigh"
+  },
+  "verdict": "fail",
+  "summary": "The plan has strong AC mapping and test intent, but it is not executable as written. Its task lifecycle crosses the commit boundary impossibly, stale-bootstrap cleanup lacks sufficient provenance, receipt bodies can be replaced with unverified synthetic content, and several required operations remain prose placeholders. These issues can produce destructive cleanup, false chain evidence, or a promoted tree that was never reviewed against its actual merge base.",
+  "findings": [
+    {
+      "id": "F-001",
+      "severity": "critical",
+      "claim": "Task 6 cannot truthfully be completed and committed because it includes post-commit land and promotion work while its task graph and lifecycle files are frozen before those events occur.",
+      "analysis": "Task 6 is defined as covering freeze, review, commit, receipts, land, and promoted verification. Step 4 commits `.svc/lane-tasks-WI-486.json`, the work-item, and the index before Steps 5–8 emit receipts, merge the PR, and verify promotion. Nevertheless, the Step-5 exec receipt already declares task-6 completed. The committed graph therefore either records completion before required phases happen or remains incomplete after promotion. Updating it afterward would create uncommitted state outside the declared aggregate commit. The same temporal conflict affects work-item lifecycle fields that are required to advance only with receipts.",
+      "evidence": [
+        "Task graph title: `task-6` is `Freeze, review the code diff, commit, receipt, land, and promoted-verify`.",
+        "Files Planned stages `.svc/lane-tasks-WI-486.json`, `WI-486.md`, and `INDEX.md` in the aggregate commit.",
+        "Land Sequence Step 4 commits before Step 5 receipt emission, Step 6 merge, and Step 8 promoted verification.",
+        "Step 5 constructs `exec-record` with `tasks_completed` containing `task-6` before land and promoted verification have occurred."
+      ],
+      "proposed_fix": "Split the lifecycle into separately representable phases. Complete and commit an execution/freeze task only after review-exec and audit evidence exist; make land and verify-promotion subsequent lane tasks whose durable evidence is recorded after each event. Do not claim task-6 completion in `exec-record` until every phase assigned to task-6 has actually completed. Define how post-merge work-item/task-graph state is persisted without fabricating it in the feature commit."
+    },
+    {
+      "id": "F-002",
+      "severity": "critical",
+      "claim": "The bootstrap-intent marker does not contain enough provenance to authorize selective deletion during stale recovery.",
+      "analysis": "The marker records requested identity and liveness fields, but it does not record an attempt identifier, preexisting-state snapshot, created-artifact ledger, or per-artifact digest. A stale marker therefore proves that a session intended to bootstrap a target, but not that the session created the branch, worktree, graph, claim, or binding currently found there. The proposed reclaim algorithm nevertheless deletes artifacts said to be attributed by that marker. This makes the core promise—remove only artifacts created by the failed attempt—unreachable and risks deleting preexisting or subsequently replaced state.",
+      "evidence": [
+        "The marker schema contains session, process, WI, branch, target worktree, base SHA, and timestamps, but no created-artifact ledger or before-state digests.",
+        "Recovery says stale intent state may `remove the stale marker and only the partial artifacts it attributes`.",
+        "Rollback requires removing `only artifacts this attempt created`.",
+        "`RECOVERY_IF_FAIL` references a `transaction ledger`, but no ledger path, schema, write ordering, or file appears in Files Planned or the transaction contract."
+      ],
+      "proposed_fix": "Define a durable attempt journal keyed by an unguessable attempt ID. Before each creation, record and fsync the observed precondition and intended operation; after creation, record the resulting identity/digest. Embed the attempt ID where possible in graph, claim, and binding artifacts. Permit stale deletion only when the journal proves the artifact was absent before the attempt and its current identity still matches the recorded result. Otherwise return AMBIGUOUS without deletion. Add the journal path/schema and failpoint tests to the declared file set and contract."
+    },
+    {
+      "id": "F-003",
+      "severity": "high",
+      "claim": "The declared compatibility API cannot classify malformed JSON bytes or implement the promised secure actionable/repeat marker behavior.",
+      "analysis": "`classifyTaskState` accepts an already parsed object, so syntactically malformed JSON can never reach it for classification. Separately, the module is declared pure and its exports contain no disposition-marker operation, while the runtime contract requires secure directory creation, atomic marker creation, and actionable-versus-repeat decisions. The plan does not identify which component owns those writes or define an atomic create-if-absent API. Implementers must invent an additional contract, creating host-parity and race risk.",
+      "evidence": [
+        "Declared export: `classifyTaskState(graphObject)`.",
+        "The same contract requires malformed JSON to produce `quarantine-recommended`.",
+        "The module is described as `pure, no writes`.",
+        "Runtime behavior requires a 0700/0600 marker whose first creation is actionable and whose existing identical marker is repeat-advisory, but no exported writer or owning entry point is specified."
+      ],
+      "proposed_fix": "Add a byte-oriented API such as `inspectTaskStateBytes(bytes, path)` that owns JSON parsing and returns quarantine diagnostics without throwing. Define a separate explicitly impure `recordCompatibilityDisposition(...)` API or module with exclusive atomic creation, permissions, race semantics, and return values. Name its consumer in Tasks 4–5 and add parallel-call fixtures proving exactly one actionable result."
+    },
+    {
+      "id": "F-004",
+      "severity": "high",
+      "claim": "Task 4 contains an undeclared `.gitignore` modification that violates the file-scope and staged-set contracts.",
+      "analysis": "The plan says Task 4 will add machine-local paths to `.gitignore` if absent, but `.gitignore` is not present in Files Planned, CODE_PATHS, or the stated staged-file authority. If the edit occurs, the declared-set assertion fails or the change remains as undisclosed residue. If it does not occur, the new runtime artifacts may become visible or accidentally staged, contradicting the machine-local contract.",
+      "evidence": [
+        "Files Planned says: `Task-4 adds these paths to .gitignore if absent`.",
+        "No `.gitignore` row exists in Files Planned.",
+        "`.gitignore` is absent from `CODE_PATHS` and from every explicitly enumerated staged category."
+      ],
+      "proposed_fix": "Inspect the existing ignore rules during planning. If coverage is already sufficient, replace the promised edit with an explicit validation command. Otherwise add `.gitignore` to Files Planned, task-4 scope, CODE_PATHS or an independently reviewed configuration set, the declared-file-set generator, and rollback coverage."
+    },
+    {
+      "id": "F-005",
+      "severity": "high",
+      "claim": "The execution and land sequence is not copy-paste deterministic because mandatory review, audit, evidence, lifecycle, and file-set operations are represented only by prose comments or alternatives.",
+      "analysis": "Several outputs required for the aggregate commit have no producing command or exact procedure. The sequence invokes the external reviewer but only comments that Claude will write review documents; review-gate and audit-implementation are not invoked; work-item/spec/index evidence updates are unspecified; and the declared-file-set generator is allowed to be either a sibling step or an inline command. These omissions leave substantive implementation and gate decisions to execution-time invention and make reruns non-idempotent.",
+      "evidence": [
+        "Declared-set generation is described as logic inside another script's `sibling step (or an inline task-1 command)`.",
+        "Step 3 uses comments such as `Claude writes docs/specs/reviews/...` rather than commands or an exact transformation contract.",
+        "Review-gate is described only as `the in-session 5-step decision`.",
+        "No command or bounded procedure creates the audit document, post-change evidence files, progress checkpoints, per-AC spec evidence, work-item state, or JSONL decisions before Step 4 stages them."
+      ],
+      "proposed_fix": "Provide one exact command or named skill invocation for every required artifact. Define deterministic scripts for declared-set generation and lifecycle/evidence updates, including inputs, overwrite/append behavior, validation, and rerun semantics. Add explicit review-exec, review-security, review-gate, and audit invocations with terminal-state checks before commit."
+    },
+    {
+      "id": "F-006",
+      "severity": "critical",
+      "claim": "The plan can overwrite authentic plan-review evidence with handcrafted receipt bodies that are neither compared to preserved bodies nor bound to the actual external-review artifacts.",
+      "analysis": "The Gate Ordering section says plan receipts are preserved and must retain their content hash. Step 5 nevertheless unconditionally rewrites both bodies. The review-plan body merely asserts pass/converged and names a reviewer; it does not derive from or verify the canonical launcher receipt, findings content hash, review log, or convergence package. Re-emitting this body onto HEAD and the merge SHA can create a formally present receipt envelope without proving that the reviewed plan is the plan committed.",
+      "evidence": [
+        "Gate Ordering requires preserved plan-receipt bodies to be re-emitted with `content-hash unchanged`.",
+        "Step 5 uses unconditional `cat >` commands for `plan-manifest.json` and `review-plan.json`.",
+        "The generated review-plan body is only `{\"receipt_type\":\"review-plan\",\"wi\":\"WI-486\",\"result\":\"pass\",\"reviewer\":\"gpt-5.6-sol high\",\"converged\":true}`.",
+        "No command compares regenerated bytes or hashes against the plan-phase bodies or canonical external-review receipt."
+      ],
+      "proposed_fix": "Make the plan-phase receipt bodies immutable inputs. Record their SHA-256 values and canonical launcher receipt/content hashes at convergence. In Task 6, fail if either body is missing or its hash differs; never regenerate it. Bind review-plan to the reviewed manifest hash, findings hash, launcher receipt, review-log terminal state, and requested/effective reviewer tuple according to the receipt schema before re-emission."
+    },
+    {
+      "id": "F-007",
+      "severity": "high",
+      "claim": "Migration failure and rollback semantics are internally inconsistent and do not deterministically preserve the original bytes.",
+      "analysis": "The flow mutates the source before after-state verification. It promises that exit 5 preserves the original and backup, but does not state whether or how the source is atomically restored after verification failure. The receipt vocabulary also changes between `terminal result` and rollback's `status == migrated`, so rollback discovery may select no migrations. These ambiguities affect the only destructive disk-rewrite path.",
+      "evidence": [
+        "Migration flow is `backup → transform → re-validate → emit receipt`.",
+        "Exit 5 is described as `verify-mismatch (preserves original + backup)` without a specified restore-before-exit operation.",
+        "Receipt contract names `terminal result ∈ {migrated, already-current, ineligible-fresh-foreign, failed}`.",
+        "Rollback searches receipts where `status == migrated`, a different field name."
+      ],
+      "proposed_fix": "Define the exact receipt schema field once and use it throughout. On any post-rename validation failure, atomically restore the verified backup bytes before returning, fsync the restored file and directory, verify the restored digest, and then emit a failed receipt containing both attempted-after and restored digests. Add failpoints after rename, after verification, and during restore, with explicit terminal states for each."
+    },
+    {
+      "id": "F-008",
+      "severity": "high",
+      "claim": "The reviewed and tested tree is pinned to an old base, but the PR may be squash-merged onto a newer main without re-review or pre-merge verification of the combined tree.",
+      "analysis": "The plan verifies only that the branch descends from the pinned base and contains no commits before the aggregate commit. It never freezes the destination main SHA at merge time or requires the branch to be rebased when main advances. A squash merge may therefore create a promoted tree containing intervening main changes that were absent from the reviewed diff and Tier-1 run. Step 8 detects incompatibility only after the change is already promoted.",
+      "evidence": [
+        "All review hashes and tests use pinned `$BASE = 99da8...`.",
+        "Step 6 creates and merges the PR without asserting that current `origin/main` still equals `$BASE` or testing a prospective merge tree.",
+        "`MERGE_SHA` is accepted and receipts are re-emitted immediately after merge.",
+        "The first full validation of the actual promoted tree occurs in Step 8, after merge."
+      ],
+      "proposed_fix": "Immediately before final review/merge, fetch main and require its SHA to equal the reviewed base. If it advanced, rebase or recreate the candidate on the new pinned base, rerun the full suite, recompute `REVIEWED_CODE_SHA`, repeat both external reviews and audit, and update receipt bindings. Alternatively construct and test the exact prospective merge tree and have the sanctioned merge command assert that GitHub produced that tree before attaching pass receipts."
+    }
+  ],
+  "certifications": [
+    {
+      "key": "scope_lock_observed",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "cec118e8824424b75cdac0c1307470bd4d5aa1bd1039dca9ac6e562ff5c2771d"
+    },
+    {
+      "key": "zero_findings_certification",
+      "certified": false,
+      "reviewer_family": "openai",
+      "for_content_sha": "cec118e8824424b75cdac0c1307470bd4d5aa1bd1039dca9ac6e562ff5c2771d"
+    }
+  ]
+}

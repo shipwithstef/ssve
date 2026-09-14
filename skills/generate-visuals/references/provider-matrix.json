@@ -1,0 +1,284 @@
+{
+  "$schema": "svc-generate-visuals-provider-matrix-v1",
+  "version": 1,
+  "lastUpdated": "2026-04-27",
+  "lastReviewed": "2026-04-27",
+  "rationale": "Machine-readable mirror of the markdown matrix in skills/generate-visuals/SKILL.md. Other skills (route-workflow, capability-concierge, audit-implementation) read this JSON to reason about provider selection without parsing markdown.",
+
+  "assetClasses": [
+    {
+      "class": "photoreal-lifestyle",
+      "description": "Photoreal hero / lifestyle imagery for marketing pages",
+      "primary": "codex-cli",
+      "fallback": ["gemini-nano-banana-pro", "imagen-4"],
+      "free": ["unsplash"],
+      "promotedAt": "2026-04-26",
+      "promotionReason": "Example Marketplace WI-116 production-validated codex CLI; gemini APIs returned 403/scope-insufficient"
+    },
+    {
+      "class": "branded-ui-mockup-editable",
+      "description": "Editable UI screen mockup (opens in canvas for follow-up edits)",
+      "primary": "stitch-mcp",
+      "fallback": ["figma-make-mcp"],
+      "free": []
+    },
+    {
+      "class": "branded-ui-mockup-flat",
+      "description": "One-shot flat UI mockup, not editable",
+      "primary": "codex-cli",
+      "fallback": ["stitch-mcp"],
+      "free": []
+    },
+    {
+      "class": "branded-variants-existing-ui",
+      "description": "Apply brand tokens from existing Figma project to new screens",
+      "primary": "figma-mcp",
+      "fallback": ["claude-design"],
+      "free": [],
+      "requires": ["existing Figma project with brand tokens"]
+    },
+    {
+      "class": "live-html-hero",
+      "description": "Interactive HTML/CSS/JS prototype rendered in canvas",
+      "primary": "claude-design",
+      "fallback": ["v0-manual"],
+      "free": []
+    },
+    {
+      "class": "product-ui-screenshot",
+      "description": "Screenshot of own app's actual UI",
+      "primary": "playwright-capture",
+      "fallback": ["track-visuals"],
+      "free": [],
+      "note": "Use track-visuals skill for project-owned pages; raw playwright for arbitrary URLs"
+    },
+    {
+      "class": "branded-illustrations",
+      "description": "Vector illustrations, animated SVG, friendly-style",
+      "primary": "storyset",
+      "fallback": ["codex-cli"],
+      "free": ["storyset"],
+      "licenseGate": "production-marketing brief MUST verify attribution wired or paid tier"
+    },
+    {
+      "class": "icons",
+      "description": "UI icon set for components",
+      "primary": "lucide-react",
+      "fallback": ["iconify"],
+      "free": ["lucide-react", "iconify"],
+      "note": "Code-level dep, not image generation"
+    },
+    {
+      "class": "hero-motion-video",
+      "description": "5-10s ambient or B-roll video for hero or trust section",
+      "primary": "veo-3-via-flow",
+      "fallback": ["remotion"],
+      "free": [],
+      "note": "Veo for organic/cinematic; Remotion for code-driven deterministic animation"
+    },
+    {
+      "class": "logo-mark-refinement",
+      "description": "Logo / mark cleanup or variants",
+      "primary": "codex-cli",
+      "fallback": ["imagen-4"],
+      "extraStep": "figma-cleanup recommended"
+    },
+    {
+      "class": "diagrams",
+      "description": "Architecture / flow / sequence diagrams",
+      "primary": "figma-mcp",
+      "fallback": ["mermaid-code"],
+      "free": ["mermaid-code"]
+    },
+    {
+      "class": "quick-iteration-variants",
+      "description": "Many variants of an existing image for fast iteration",
+      "primary": "codex-cli-parallel",
+      "fallback": ["mimo-v25-pro"],
+      "note": "MiMo allowed only when license is NOT production-marketing"
+    }
+  ],
+
+  "providers": {
+    "codex-cli": {
+      "auth": "ChatGPT-Plus or ChatGPT-Pro subscription",
+      "costModel": "per-message (counts against ChatGPT-sub budget)",
+      "doc": "providers/codex-image.md",
+      "available": true
+    },
+    "stitch-mcp": {
+      "auth": "Built-in MCP — no extra auth",
+      "costModel": "free during preview",
+      "doc": "providers/stitch-mcp.md",
+      "available": true
+    },
+    "figma-mcp": {
+      "auth": "Figma OAuth",
+      "costModel": "Figma plan dependent (Pro for unlimited Weave)",
+      "doc": "providers/figma-mcp.md",
+      "available": true
+    },
+    "figma-make-mcp": {
+      "auth": "Figma OAuth",
+      "costModel": "same as figma-mcp",
+      "doc": "providers/figma-mcp.md",
+      "available": true
+    },
+    "claude-design": {
+      "auth": "Claude account with Design beta",
+      "costModel": "separate budget from Claude Max — check ~/.svc/capabilities/registry.json",
+      "doc": "providers/claude-design.md",
+      "available": true
+    },
+    "gemini-nano-banana-pro": {
+      "auth": "Gemini Pro subscription",
+      "costModel": "Gemini Pro plan",
+      "doc": "providers/gemini-nano-banana.md",
+      "available": true,
+      "invocation": "manual-app-only"
+    },
+    "imagen-4": {
+      "auth": "Vertex AI service account with aiplatform.user role",
+      "costModel": "PAYG per image",
+      "doc": "providers/gemini-nano-banana.md",
+      "available": false,
+      "availabilityNote": "Requires GCP project setup beyond default svc provisioning"
+    },
+    "gpt-image-2": {
+      "auth": "OPENAI_API_KEY with image-generation scope + org verification",
+      "costModel": "PAYG per image (verify current OpenAI pricing — gpt-image-2 rates differ from -1 family)",
+      "doc": "providers/gpt-image.md",
+      "available": "conditional",
+      "availabilityNote": "PRIMARY OpenAI image model (released 2026-04-21). Available when project has explicit OPENAI_API_KEY and org verification has been completed.",
+      "preferenceRank": 1,
+      "fallbackTo": "gpt-image-1.5"
+    },
+    "gpt-image-1.5": {
+      "auth": "OPENAI_API_KEY with image-generation scope + org verification",
+      "costModel": "PAYG per image",
+      "doc": "providers/gpt-image.md",
+      "available": "conditional",
+      "availabilityNote": "FALLBACK ONLY — use when gpt-image-2 returns model_not_available_to_organization. Do not select directly.",
+      "preferenceRank": 2
+    },
+    "gpt-image-1": {
+      "auth": "OPENAI_API_KEY with image-generation scope + org verification",
+      "costModel": "PAYG: $0.04/1024² standard, $0.08/1792×1024 high (2026-Q2)",
+      "doc": "providers/gpt-image.md",
+      "available": "conditional",
+      "availabilityNote": "LEGACY — superseded by gpt-image-2 (2026-04-21). Retained for historical provenance compatibility only; do not select for new work.",
+      "preferenceRank": 99,
+      "deprecated": true
+    },
+    "storyset": {
+      "auth": "None for browse; account for attribution-stripped",
+      "costModel": "free with attribution / ~$10/mo paid",
+      "doc": "providers/storyset.md",
+      "available": true,
+      "invocation": "manual-app-only"
+    },
+    "veo-3-via-flow": {
+      "auth": "Gemini Pro with Flow access",
+      "costModel": "Gemini Pro plan + per-clip Flow cost",
+      "doc": "providers/veo-flow.md",
+      "available": true,
+      "invocation": "manual-app-only"
+    },
+    "remotion": {
+      "auth": "None — open-source code library",
+      "costModel": "free",
+      "doc": "skills:remotion",
+      "available": true,
+      "note": "Code-driven, not provider-driven; use when deterministic animation matters"
+    },
+    "mimo-v25-pro": {
+      "auth": "MiMo Token Plan ($39/mo) via opencode",
+      "costModel": "free under Token Plan budget",
+      "doc": "providers/mimo.md",
+      "available": true,
+      "licenseGate": "DEV-ONLY per ToS — forbidden for production-marketing class"
+    },
+    "lucide-react": {
+      "auth": "None — npm package",
+      "costModel": "free",
+      "available": true,
+      "note": "Already in Example Marketplace stack"
+    },
+    "iconify": {
+      "auth": "None",
+      "costModel": "free",
+      "available": true
+    },
+    "playwright-capture": {
+      "auth": "None — bundled with project tooling",
+      "costModel": "free",
+      "doc": "skills:track-visuals",
+      "available": true
+    },
+    "track-visuals": {
+      "auth": "None",
+      "costModel": "free (compact-output wrapper around playwright)",
+      "doc": "skills:track-visuals",
+      "available": true,
+      "scope": "project-owned pages only"
+    },
+    "unsplash": {
+      "auth": "None for browse",
+      "costModel": "free with attribution",
+      "available": true,
+      "invocation": "manual-browse",
+      "licenseGate": "Verify image-license + attribution per Unsplash terms before production use"
+    },
+    "v0-manual": {
+      "auth": "Vercel v0 account",
+      "costModel": "Vercel pricing dependent",
+      "available": "conditional",
+      "invocation": "manual-app-only"
+    },
+    "mermaid-code": {
+      "auth": "None",
+      "costModel": "free",
+      "available": true,
+      "note": "Code-driven; render via any markdown processor"
+    }
+  },
+
+  "licenseClasses": {
+    "production-marketing": {
+      "allowed": ["codex-cli", "stitch-mcp", "figma-mcp", "figma-make-mcp", "claude-design", "gemini-nano-banana-pro", "imagen-4", "gpt-image-2", "gpt-image-1.5", "gpt-image-1", "storyset", "veo-3-via-flow", "remotion", "lucide-react", "iconify", "playwright-capture", "track-visuals", "unsplash", "v0-manual", "mermaid-code"],
+      "forbidden": ["mimo-v25-pro"],
+      "forbidReason": "MiMo Token Plan ToS restricts to developer tooling; production marketing assets violate the license"
+    },
+    "development-only": {
+      "allowed": "all",
+      "forbidden": []
+    },
+    "internal": {
+      "allowed": "all",
+      "forbidden": []
+    }
+  },
+
+  "validationRules": [
+    {
+      "id": "must-route-by-class",
+      "description": "Every brief.class must match one of assetClasses[].class; reject brief if not"
+    },
+    {
+      "id": "license-gate-mimo",
+      "description": "If brief.license == production-marketing, MiMo provider MUST be filtered out before scoring"
+    },
+    {
+      "id": "primary-attempted-first",
+      "description": "Primary provider must be attempted before fallback; provenance log records attempts"
+    },
+    {
+      "id": "fallback-on-fail-only",
+      "description": "Fallback only used when primary errors / quota'd / returns wrong-stack output"
+    },
+    {
+      "id": "matrix-doc-sync",
+      "description": "This file must stay in sync with the markdown matrix in skills/generate-visuals/SKILL.md. When provider matrix changes, update both."
+    }
+  ]
+}

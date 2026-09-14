@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seriousvibecoding.dev/schemas/review-topology-v2.schema.json",
+  "title": "SVC review topology v2 aggregate input",
+  "type": "object",
+  "required": ["schema_version", "config_path", "config_sha256", "mode", "orchestrator", "phase", "candidate_digest", "stations"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": 2 },
+    "config_path": { "type": "string", "minLength": 1 },
+    "config_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "mode": { "type": "string", "minLength": 1 },
+    "orchestrator": { "enum": ["codex", "claude", "gemini"] },
+    "phase": { "enum": ["plan", "exec"] },
+    "candidate_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "stations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "status", "candidate_digest", "reviewer", "receipt_path", "receipt_digest", "capability_receipt_digest", "classification", "unresolved_critical", "undispositioned_high", "notes"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["pass", "fail", "unavailable", "skipped"] },
+          "candidate_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "reviewer": {
+            "type": "object",
+            "required": ["host", "family", "model", "effort"],
+            "additionalProperties": false,
+            "properties": {
+              "host": { "type": "string", "minLength": 1 },
+              "family": { "type": "string", "minLength": 1 },
+              "model": { "type": "string", "minLength": 1 },
+              "effort": { "enum": ["low", "medium", "high", "xhigh", "max", "provider-managed"] }
+            }
+          },
+          "receipt_path": { "type": ["string", "null"] },
+          "receipt_digest": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+          "capability_receipt_digest": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+          "classification": { "type": ["string", "null"] },
+          "unresolved_critical": { "type": "integer", "minimum": 0 },
+          "undispositioned_high": { "type": "integer", "minimum": 0 },
+          "notes": { "type": "string" }
+        }
+      }
+    }
+  }
+}

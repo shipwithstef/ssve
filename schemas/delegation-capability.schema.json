@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://serious-vibe-coding.local/schemas/delegation-capability.schema.json",
+  "title": "Scoped mutation delegation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "delegation_id", "parent_lease_id", "authority_generation", "repo_id",
+    "child_principal", "wi", "task_id", "skill", "wave_id", "inner_worktree",
+    "allowed_paths", "denied_paths", "base_sha", "issued_at", "expires_at",
+    "max_depth", "status", "token_hash"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "delegation_id": { "type": "string", "format": "uuid" },
+    "parent_lease_id": { "type": "string", "format": "uuid" },
+    "authority_generation": { "type": "integer", "minimum": 1 },
+    "repo_id": { "type": "string", "minLength": 1 },
+    "child_principal": { "type": "string", "minLength": 1 },
+    "wi": { "type": "string" },
+    "task_id": { "type": "string" },
+    "skill": { "type": "string", "minLength": 1 },
+    "wave_id": { "type": "string" },
+    "inner_worktree": { "type": "string" },
+    "allowed_paths": { "type": "array", "minItems": 1, "items": { "type": "string" }, "uniqueItems": true },
+    "denied_paths": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "validation_commands": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "base_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "issued_at": { "type": "string", "format": "date-time" },
+    "accepted_at": { "type": ["string", "null"], "format": "date-time" },
+    "expires_at": { "type": "string", "format": "date-time" },
+    "max_depth": { "type": "integer", "minimum": 0 },
+    "parent_delegation_id": { "type": ["string", "null"], "format": "uuid" },
+    "status": { "enum": ["issued", "accepted", "running", "completed", "merged", "failed", "revoked", "expired", "frozen"] },
+    "token_hash": { "type": "string" },
+    "skill_receipt_path": { "type": "string" },
+    "frozen_at": { "type": "string", "format": "date-time" },
+    "running_at": { "type": "string", "format": "date-time" },
+    "completed_at": { "type": "string", "format": "date-time" },
+    "merged_at": { "type": "string", "format": "date-time" },
+    "integration_mapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_head", "integration_before", "integration_commit"],
+      "properties": {
+        "source_head": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "integration_before": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "integration_commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+      }
+    },
+    "failed_at": { "type": "string", "format": "date-time" },
+    "revoked_at": { "type": "string", "format": "date-time" },
+    "expired_at": { "type": "string", "format": "date-time" },
+    "failure_reason": { "type": "string" }
+  }
+}

@@ -1,0 +1,210 @@
+{
+  "wi": "WI-140",
+  "lane": "framework",
+  "subject": "Environment-aware competitive cross-reference gates with deep-research mandate",
+  "source_proposal": "proposals/done/2026-05-01-competitive-awareness-gap.md",
+  "created": "2026-05-01",
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "write-spec",
+      "subject": "write-spec: feature spec for WI-140",
+      "status": "completed",
+      "blocked_by": [],
+      "process_tasks": [
+        {
+          "id": "1.1",
+          "name": "write-spec|type-classify",
+          "status": "completed",
+          "blocked_by": [],
+          "subject": "Step 0: classify as Enabler (consumers are svc skills, not human users)"
+        },
+        {
+          "id": "1.2",
+          "name": "write-spec|context-scan",
+          "status": "completed",
+          "blocked_by": [
+            "1.1"
+          ],
+          "subject": "Step 1 + Step 0b: scan analyze-competitors, validate-feature, write-spec, WI-131 prior art; mode = framework-extend"
+        },
+        {
+          "id": "1.3",
+          "name": "write-spec|problem-frame",
+          "status": "completed",
+          "blocked_by": [
+            "1.2"
+          ],
+          "subject": "Step 2: framework gap problem statement from proposal evidence"
+        },
+        {
+          "id": "1.4",
+          "name": "write-spec|story-draft",
+          "status": "completed",
+          "blocked_by": [
+            "1.3"
+          ],
+          "subject": "Step 3: 8 enabler stories — one per phase (diagnosis, schema, deep-research, gate, compensating-control, monitoring, brownfield-hook, knowledge-surface)"
+        },
+        {
+          "id": "1.5",
+          "name": "write-spec|ac-draft",
+          "status": "completed",
+          "blocked_by": [
+            "1.4"
+          ],
+          "subject": "Step 4: ACs per story — testable, includes landscape_state branch in gate ACs"
+        },
+        {
+          "id": "1.6",
+          "name": "write-spec|dep-check",
+          "status": "completed",
+          "blocked_by": [
+            "1.5"
+          ],
+          "subject": "Step 5: dependency mapping — analyze-competitors, validate-feature, write-spec, design-tech, onboard-repo, research, svc-advisor as consumers"
+        },
+        {
+          "id": "1.7",
+          "name": "write-spec|spec-assemble",
+          "status": "completed",
+          "blocked_by": [
+            "1.6"
+          ],
+          "subject": "Steps 6-8: write spec file, system-flow diagram, pillars matrix"
+        },
+        {
+          "id": "1.8",
+          "name": "write-spec|scope-review",
+          "status": "completed",
+          "blocked_by": [
+            "1.7"
+          ],
+          "subject": "G0: 9 prime directives + landscape_state coverage check"
+        },
+        {
+          "id": "1.9",
+          "name": "write-spec|dep-queue",
+          "status": "completed",
+          "blocked_by": [
+            "1.8"
+          ],
+          "subject": "Step 9: queue retroactive Example Marketplace audit as separate WI in example-marketplace repo"
+        },
+        {
+          "id": "1.10",
+          "name": "write-spec|finalize",
+          "status": "completed",
+          "blocked_by": [
+            "1.9"
+          ],
+          "subject": "Step 10: handoff to plan-changeset, mark task completed"
+        }
+      ],
+      "skill_receipt": {
+        "skill": "write-spec",
+        "loaded_at": "2026-05-04T15:04:36.277Z",
+        "loaded_via": "legacy-backfill"
+      }
+    },
+    {
+      "id": 2,
+      "skill": "design-tech",
+      "subject": "design-tech: technical decisions for shared gate engine, validator infra, hook extension, schema runtime",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "design-tech",
+        "loaded_at": "2026-05-04T15:04:36.277Z",
+        "loaded_via": "legacy-backfill"
+      }
+    },
+    {
+      "id": 3,
+      "skill": "plan-changeset",
+      "subject": "plan-changeset: produce branch-first task graph for 8 phases",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-05-04T15:04:36.277Z",
+        "loaded_via": "legacy-backfill"
+      }
+    },
+    {
+      "id": 4,
+      "skill": "review-plan",
+      "subject": "review-plan: adversarial review of changeset before execution",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-05-04T15:04:36.277Z",
+        "loaded_via": "legacy-backfill"
+      }
+    },
+    {
+      "id": 5,
+      "skill": "execute-changeset",
+      "subject": "execute-changeset: implement phases 1-7 in worktree",
+      "status": "completed",
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-05-04T15:04:36.277Z",
+        "loaded_via": "legacy-backfill"
+      }
+    },
+    {
+      "id": 6,
+      "skill": "review-gate",
+      "subject": "review-gate G3: pre-merge review",
+      "status": "completed",
+      "blocked_by": [
+        4
+      ],
+      "skill_receipt": {
+        "skill": "review-gate",
+        "loaded_at": "2026-05-04T15:04:36.277Z",
+        "loaded_via": "legacy-backfill"
+      }
+    },
+    {
+      "id": 7,
+      "skill": "land-changeset",
+      "subject": "land-changeset: promote to main",
+      "status": "completed",
+      "blocked_by": [
+        5
+      ],
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-05-04T15:04:36.277Z",
+        "loaded_via": "legacy-backfill"
+      }
+    },
+    {
+      "id": 8,
+      "skill": "verify-promotion",
+      "subject": "verify-promotion: confirm tier-1 validators pass on main",
+      "status": "completed",
+      "blocked_by": [
+        6
+      ],
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-05-04T15:04:36.277Z",
+        "loaded_via": "legacy-backfill"
+      }
+    }
+  ],
+  "status": "completed"
+}

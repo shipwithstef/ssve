@@ -1,0 +1,140 @@
+{
+  "verdict": "fail",
+  "rubric_score": 4,
+  "reviewer": "gpt-5.6-sol-high",
+  "reviewer_family": "openai",
+  "host": "cursor",
+  "independent": true,
+  "examined_sha": "6f6890d2415b8718e5579967db3e45402e12952e",
+  "findings": [
+    {
+      "id": "SOL-R2-001",
+      "severity": "HIGH",
+      "lens": "authority",
+      "claim": "Pre-push and reconcile still accept mirror-only receipt envelopes.",
+      "analysis": "Mirror rejection applies only to named NOTE_REQUIRED_CONSUMERS. Both L2 pre-push paths and both L3 reconcile paths invoke the checker without --consumer, so getReceiptsForSha falls back to gitignored mirrors and can return ok. A complete forged mirror can therefore authorize push or reconciliation without a durable git note.",
+      "evidence": [
+        "scripts/check-chain-receipts.mjs:407",
+        "scripts/check-chain-receipts.mjs:700",
+        "hooks/git/pre-push.d/10-receipts-complete:56",
+        "hooks/git/pre-push.d/10-receipts-complete:63",
+        "scripts/svc-reconcile.mjs:188",
+        "scripts/svc-reconcile.mjs:195"
+      ],
+      "proposed_fix": "Add explicit push and reconcile consumers, require note-sourced envelopes for them, and pass those consumers through SHA and range-worker calls. Add mirror-only negative fixtures for both callers."
+    },
+    {
+      "id": "SOL-R2-002",
+      "severity": "HIGH",
+      "lens": "authority",
+      "claim": "Identified continuation children fail open when the ledger is absent or cannot be found from their cwd.",
+      "analysis": "The hook only fail-closes identified children when lookup throws. The lookup returns forbidden:false when .svc/continuation is absent, no launched baton matches, or cwd points outside the parent ledger. The hook then exits successfully even when SVC_CONTINUATION_TOKEN identifies a continuation child, violating AC-552-4.",
+      "evidence": [
+        "hooks/svc-continuation-phase-guard.mjs:45",
+        "hooks/svc-continuation-phase-guard.mjs:49",
+        "hooks/svc-continuation-phase-guard.mjs:69",
+        "scripts/resolve-continuation.mjs:575",
+        "scripts/resolve-continuation.mjs:580",
+        "scripts/resolve-continuation.mjs:587"
+      ],
+      "proposed_fix": "For identified children, require a validated launched baton before allowing a forbidden skill. Resolve the ledger from token-bound canonical state rather than call cwd, and test missing-root, foreign-cwd, and no-matching-baton cases."
+    },
+    {
+      "id": "SOL-R2-003",
+      "severity": "HIGH",
+      "lens": "correctness",
+      "claim": "Canonical receipt checks accept failure verdicts as successful evidence.",
+      "analysis": "validateReceipt checks receipt_type and required-field presence but does not enforce verdict semantics. The final loop therefore reports ok when required receipts exist even if verify-promotion, review-exec, review-plan, or audit receipts carry failing/rejected verdicts. For example, verdict=fail is schema-valid for verify-promotion but must not authorize Stop, final-report, or promotion.",
+      "evidence": [
+        "scripts/check-chain-receipts.mjs:643",
+        "scripts/check-chain-receipts.mjs:673",
+        "scripts/check-chain-receipts.mjs:913",
+        "scripts/check-chain-receipts.mjs:921",
+        "schemas/receipts/verify-promotion.schema.json:22",
+        "schemas/receipts/verify-promotion.schema.json:24"
+      ],
+      "proposed_fix": "Define consumer-specific success predicates and require passing/approved verdicts plus passing outcome fields. Add negative fixtures containing structurally valid failure receipts for every transition consumer."
+    },
+    {
+      "id": "SOL-R2-004",
+      "severity": "HIGH",
+      "lens": "authority",
+      "claim": "Stop and final-report infer the required lifecycle stage from whichever receipts happen to exist.",
+      "analysis": "requiredTypesForStop selects plan-only, review-only, or exec-only requirements based on envelope contents. If lane tasks are incorrectly marked completed and only a plan-manifest exists, the canonical barrier passes, so task status effectively overrides absent downstream evidence. This contradicts AC-550-4/5.",
+      "evidence": [
+        "scripts/check-chain-receipts.mjs:529",
+        "scripts/check-chain-receipts.mjs:537",
+        "scripts/check-chain-receipts.mjs:543",
+        "scripts/check-chain-receipts.mjs:768",
+        "hooks/svc-task-completion-guard.sh:1135",
+        "hooks/svc-task-completion-guard.sh:1138"
+      ],
+      "proposed_fix": "Bind Stop/final-report to an expected transition derived independently of receipt presence. A completed WI must require its terminal closeout identity, while intermediate Stop checks must receive an explicit expected stage."
+    },
+    {
+      "id": "SOL-R2-005",
+      "severity": "HIGH",
+      "lens": "authority",
+      "claim": "The promotion indexer still treats gitignored mirrors as verified promotion authority.",
+      "analysis": "When no note exists, the indexer constructs an envelope from .svc/receipts and records a durable shared promotion-index entry after only local field checks. A forged ignored verify-promotion mirror can consequently become shared verified memory despite the contract stating mirrors are non-authoritative.",
+      "evidence": [
+        "references/chain-receipt-contract.md:9",
+        "references/chain-receipt-contract.md:12",
+        "scripts/svc-wi-promotion-indexer.mjs:100",
+        "scripts/svc-wi-promotion-indexer.mjs:105",
+        "scripts/svc-wi-promotion-indexer.mjs:147",
+        "scripts/svc-wi-promotion-indexer.mjs:154"
+      ],
+      "proposed_fix": "Remove mirror fallback from indexing and invoke the canonical checker with --consumer verify-promotion, requiring receipt_source=note before writing shared promotion memory."
+    },
+    {
+      "id": "SOL-R2-006",
+      "severity": "MEDIUM",
+      "lens": "determinism",
+      "claim": "A work overlay without scope.wi applies globally.",
+      "analysis": "WI mismatch protection runs only when scope.wi is present. An unscoped SVC_DISPATCH_WORK_OVERLAY is applied to every WI, contrary to AC-551-4's requirement that work overlays not leak between WIs.",
+      "evidence": [
+        "scripts/resolve-dispatch.mjs:193",
+        "scripts/resolve-dispatch.mjs:197",
+        "scripts/resolve-dispatch.mjs:200",
+        "scripts/resolve-dispatch.mjs:206",
+        "test-framework/evals/tier-1/validate-dispatch-resolver-wi551.mjs:154"
+      ],
+      "proposed_fix": "Require every work overlay to declare a non-empty scope.wi matching the current WI, and add an unscoped-overlay rejection fixture."
+    },
+    {
+      "id": "SOL-R2-007",
+      "severity": "MEDIUM",
+      "lens": "coverage",
+      "claim": "The Grok live fixture does not exercise the continuation controller launch path.",
+      "analysis": "Grok declares fresh_session_launch enabled while launch_command is null, so the controller correctly returns capability_limited. The live fixture separately runs grok -p and counts that as fresh-session proof; it does not test controller spawn, launch receipt, child identity, result consumption, or exactly-once resume. It also permits the live check to be skipped or fail without incrementing FAIL.",
+      "evidence": [
+        "provision/hosts/grok.json:25",
+        "provision/hosts/grok.json:29",
+        "scripts/resolve-continuation.mjs:390",
+        "scripts/resolve-continuation.mjs:397",
+        "test-framework/evals/tier-1/validate-wi546-grok-live-acceptance.sh:196",
+        "test-framework/evals/tier-1/validate-wi546-grok-live-acceptance.sh:207",
+        "test-framework/evals/tier-1/validate-wi546-grok-live-acceptance.sh:212"
+      ],
+      "proposed_fix": "Either provide and test a real Grok launch_command through resolve-continuation, including PID/result/duplicate-launch assertions, or declare the capability disabled and report WI-546 continuation acceptance as capability-limited."
+    },
+    {
+      "id": "SOL-R2-008",
+      "severity": "MEDIUM",
+      "lens": "release",
+      "claim": "The shipped dispatch example requires Cursor reviewers that the canonical review launcher cannot invoke.",
+      "analysis": "The explicit no-remap change is correct, but the transport registry supports only Codex, AGY, and Claude. The example makes Cursor Fable and Sol stations required for plan and exec, so using the shipped policy makes required production review stations capability-limit instead of running cursor-agent.",
+      "evidence": [
+        "scripts/run-external-review.mjs:35",
+        "scripts/run-external-review.mjs:42",
+        "scripts/run-external-review.mjs:1558",
+        "examples/dispatch-policy.example.json:52",
+        "examples/dispatch-policy.example.json:62",
+        "examples/dispatch-policy.example.json:92",
+        "examples/dispatch-policy.example.json:101"
+      ],
+      "proposed_fix": "Add an explicit cursor-agent transport preserving the requested Cursor model and non-fast mode, or change the example and capability matrix to mark those required stations unsupported."
+    }
+  ]
+}

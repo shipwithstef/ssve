@@ -1,0 +1,93 @@
+review_log:
+  plan: docs/plans/2026-07-16-wi491-bounded-review-loop/manifest.md
+  wi: WI-491
+  lane: framework
+  change_class: bugfix (infra-path — scripts/, test-framework/, references/, SKILL.md)
+
+  tier1:
+    script: scripts/verify-plan-mechanical.sh
+    exit_code: 0
+    issues: 0
+
+  # ---- Machine-readable round record (parsed by scripts/check-review-round-cap.mjs, fail-closed).
+  #      The ONE independent finished-code review is gpt-5.6-sol/high (openai) vs author Claude
+  #      (anthropic) — a different-family review, required by the high-risk change-impact-triad.
+  #      HARD-capped at 3 rounds; this WI's own fix. All findings resolved by disposition <= round 3.
+  rounds_run: 3
+  unresolved_critical: 0
+  remaining_high: 0
+
+  round_1:
+    reviewer: gpt-5.6-sol
+    reviewer_family: openai
+    effort: high
+    target: implementation draft (pre-freeze)
+    outcome: 5 findings (4 high, 1 medium) — ALL accepted and fixed in place.
+    findings_summary:
+      - "F-001 [high]: checker accepted >3 rounds if later dispositioned -> made a HARD cap (rounds_run>3 always fails)."
+      - "F-002 [high]: Critical could certify terminal without escalation -> unresolvedCritical needs explicit escalation."
+      - "F-003 [high]: parser did not prove every High dispositioned -> remainingHigh>dispositionedHigh fails."
+      - "F-004 [high]: review SKILL self-verify demanded HIGH disappear -> reworded to fixed-OR-dispositioned."
+      - "F-005 [medium]: checker existed but was unwired -> wired into review-cross-model + review-plan."
+
+  round_2:
+    reviewer: gpt-5.6-sol
+    reviewer_family: openai
+    effort: high
+    target: frozen staged diff (rev 1)
+    rubric_score: 3
+    receipt: .svc/review-artifacts/wi-491-exec/receipt.json
+    outcome: 4 findings (3 high, 1 medium) — ALL accepted and fixed in place.
+    findings:
+      - id: EXEC-001
+        severity: high
+        claim: "The --log parser was fail-OPEN: whole-file regexes let a bare bounded_exit mention, unrelated dispositions, prose/negated escalation, missing rounds_run, and NaN args all certify success."
+        response: ACCEPT
+        action: "Rewrote --log to fail-closed: rounds_run / unresolved_critical / remaining_high are required exactly-once non-negative integers; bounded_exit must ENUMERATE one residual_highs entry per remaining High with an allowed disposition; escalation only via exact terminal_state: ESCALATED_TO_USER; malformed numeric CLI args exit 2."
+      - id: EXEC-002
+        severity: high
+        claim: "An unresolved Critical with an escalation marker exited 0 (success), letting callers close the review despite BRL-03 (Criticals always block)."
+        response: ACCEPT
+        action: "Escalated unresolved Critical now HALTS with a distinct blocking exit 3 (never 0). review-plan/review-exec promote only when unresolved_critical == 0; exit 3 => terminal_state ESCALATED_TO_USER, no promotion."
+      - id: EXEC-003
+        severity: high
+        claim: "Contracts stayed internally contradictory (review-cross-model still required High to disappear; review-exec capped patches not rounds; no explicit checker-gate step; protocol said bounded_exit 'when >3')."
+        response: ACCEPT
+        action: "Normalized to one rule everywhere: <=3 adversarial rounds, unresolved Critical blocks, residual Highs dispositioned then proceed. review-cross-model summary/verdict/self-verify updated; review-exec P4 is now an adversarial-round cap with an explicit check-review-round-cap.mjs step before the verdict; protocol typo fixed to rounds_run==3."
+      - id: EXEC-004
+        severity: medium
+        claim: "The Tier-1 guard exercised only the trusted numeric CLI and one positive log fixture — none of the fail-open parser paths."
+        response: ACCEPT
+        action: "Added negative log fixtures for every fail-open case (missing/duplicate/oversized rounds_run, no bounded_exit, under-enumerated/empty residual_highs, prose escalation), boundary rounds 0/1/3/4, malformed NaN, escalated-Critical-blocks-with-exit-3, and obsolete-contract-language assertions. 26 assertions, all green."
+
+  round_3:
+    reviewer: gpt-5.6-sol
+    reviewer_family: openai
+    effort: high
+    target: frozen staged diff (rev 2 — post EXEC-001..004 fixes)
+    rubric_score: 3
+    receipt: .svc/review-artifacts/wi-491-exec-r3/receipt.json
+    outcome: 2 findings (both high) — FIXED at the cap and verified MECHANICALLY (tier-1), with NO 4th adversarial round. The 3-round cap limits adversarial REVIEW rounds; a mechanically-verifiable fix at the cap is permitted and is the strongest disposition.
+    findings:
+      - id: EXEC-005
+        severity: high
+        claim: "The --log checker trusted the declared rounds_run counter without cross-checking the actual round_N records, so a completed 4th round could pass with rounds_run:3."
+        response: ACCEPT
+        action: "Added a cross-check: any round_<N> record with N>3 fails; declared rounds_run must equal the number of round_N records; a round still 'status: PENDING' cannot certify a terminal pass. Guarded by 4 new tier-1 fixtures (f9-f12)."
+        verification: mechanical (tier-1 validate-review-round-cap.sh f9-f12), not a 4th review round.
+      - id: EXEC-006
+        severity: high
+        claim: "review-exec's Failure Modes row still said an unresolved Critical + 3 exhausted patches -> re-execute/re-plan, contradicting exit-3 escalation and allowing a post-cap Critical to keep looping."
+        response: ACCEPT
+        action: "Replaced the stale row: an unresolved Critical at any round (incl. the 3rd) records terminal_state: ESCALATED_TO_USER, returns exit 3, BLOCKS to the owner — never re-execute/re-plan to keep looping. Added a grep assertion to tier-1."
+        verification: grep assertion in tier-1 + review-exec Failure Modes table.
+
+  bounded_exit_note: >
+    Round 3 IS the cap and it terminated the loop: both round-3 Highs were fixed
+    and verified mechanically (tier-1), so remaining_high == 0 with NO 4th
+    adversarial review round. This is the disposition-terminal model in practice —
+    the loop converges by disposition at <= 3 rounds, never by the adversarial
+    reviewer running dry. rounds_run=3 == 3 round_N records; consistent.
+
+  terminal_state: PROMOTED
+  commit_sha: <filled at promotion time>

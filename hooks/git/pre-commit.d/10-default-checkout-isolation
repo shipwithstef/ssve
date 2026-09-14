@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Read-only/no-op commits are outside the policy. Every staged repository
+# mutation must be attributable to a bound linked worktree session.
+git diff --cached --quiet --exit-code && exit 0
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+node "$REPO_ROOT/hooks/svc-worktree-isolation-guard.mjs" --check-default-commit

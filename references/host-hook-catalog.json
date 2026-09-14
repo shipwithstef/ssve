@@ -1,0 +1,434 @@
+{
+  "$comment": "WI-562 IP-W3: declarative cross-host hook catalog. Per-hook entries for wirer-owned hooks (claude/cursor/grok generate entries FROM this catalog) plus capability truth for every hook-capable host (seed corpus for WI-563 IP-R6).",
+  "hosts": {
+    "claude": {
+      "hooks_capable": true,
+      "receipts": "auto-full",
+      "freeze_enforcement": "guard"
+    },
+    "kimi": {
+      "hooks_capable": true,
+      "receipts": "skills-only",
+      "freeze_enforcement": "verbs-only"
+    },
+    "codex": {
+      "hooks_capable": true,
+      "receipts": "skills-only",
+      "freeze_enforcement": "verbs-only"
+    },
+    "gemini": {
+      "hooks_capable": true,
+      "receipts": "skills-only",
+      "freeze_enforcement": "verbs-only"
+    },
+    "opencode": {
+      "hooks_capable": true,
+      "receipts": "skills-only",
+      "freeze_enforcement": "verbs-only"
+    },
+    "cursor": {
+      "hooks_capable": true,
+      "receipts": "auto-edits-only",
+      "freeze_enforcement": "verbs-only"
+    },
+    "grok": {
+      "hooks_capable": true,
+      "receipts": "auto-full",
+      "freeze_enforcement": "verbs-only"
+    }
+  },
+  "hooks": [
+    {
+      "id": "svc-bash-guard",
+      "hosts": [
+        "claude",
+        "kimi",
+        "codex",
+        "gemini",
+        "opencode",
+        "cursor",
+        "grok"
+      ],
+      "events": [
+        "PreToolUse"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-bash-guard.mjs",
+      "host_commands": {
+        "cursor": "node {NODE_Q} {HOOKS_DIR}/svc-bash-guard.mjs"
+      }
+    },
+    {
+      "id": "svc-workflow-guard",
+      "hosts": [
+        "claude"
+      ],
+      "events": [
+        "PreToolUse"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-workflow-guard.mjs",
+      "host_commands": {
+        "cursor": "node {NODE_Q} {HOOKS_DIR}/svc-workflow-guard.mjs --bash-guard",
+        "grok": "node {NODE_Q} {HOOKS_DIR}/svc-workflow-guard.mjs"
+      }
+    },
+    {
+      "id": "svc-worktree-isolation-guard",
+      "hosts": [
+        "claude"
+      ],
+      "events": [
+        "PreToolUse"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-worktree-isolation-guard.mjs",
+      "host_commands": {
+        "cursor": "node {NODE_Q} {HOOKS_DIR}/svc-worktree-isolation-guard.mjs",
+        "grok": "node {NODE_Q} {HOOKS_DIR}/svc-worktree-isolation-guard.mjs"
+      }
+    },
+    {
+      "id": "svc-phase-boundary-detector",
+      "hosts": [
+        "claude"
+      ],
+      "events": [
+        "PreToolUse"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-phase-boundary-detector.mjs",
+      "host_commands": {}
+    },
+    {
+      "id": "svc-skill-artifact-authenticity",
+      "hosts": [
+        "claude"
+      ],
+      "events": [
+        "PreToolUse"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-skill-artifact-authenticity.mjs",
+      "host_commands": {}
+    },
+    {
+      "id": "svc-lane-tasks-validator",
+      "hosts": [
+        "claude"
+      ],
+      "events": [
+        "PostToolUse"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-lane-tasks-validate-edit.mjs",
+      "host_commands": {}
+    },
+    {
+      "id": "svc-eval-gate-pre",
+      "hosts": [
+        "claude"
+      ],
+      "events": [
+        "PreToolUse"
+      ],
+      "command_template": "node {HOOKS_DIR}/eval-gate-pre.mjs",
+      "host_commands": {}
+    },
+    {
+      "id": "svc-session-start-healthcheck",
+      "hosts": [
+        "claude",
+        "cursor",
+        "grok"
+      ],
+      "events": [
+        "SessionStart"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-session-start-healthcheck.mjs",
+      "host_commands": {}
+    },
+    {
+      "id": "svc-stop-quality",
+      "hosts": [
+        "claude"
+      ],
+      "events": [
+        "Stop"
+      ],
+      "command_template": "node {HOOKS_DIR}/stop-quality.mjs",
+      "host_commands": {}
+    },
+    {
+      "id": "svc-task-completion-guard",
+      "hosts": [
+        "claude"
+      ],
+      "events": [
+        "Stop"
+      ],
+      "command_template": "node {HOOKS_DIR}/task-completion-guard.sh",
+      "host_commands": {}
+    },
+    {
+      "id": "svc-auto-capture-learnings",
+      "hosts": [
+        "claude"
+      ],
+      "events": [
+        "PostToolUse"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-auto-capture-learnings.mjs",
+      "host_commands": {}
+    },
+    {
+      "id": "svc-continuation-phase-guard",
+      "hosts": [
+        "claude",
+        "codex"
+      ],
+      "events": [
+        "PreToolUse"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-continuation-phase-guard.mjs",
+      "host_commands": {}
+    },
+    {
+      "id": "svc-delta-preload",
+      "hosts": [
+        "claude"
+      ],
+      "events": [
+        "SessionStart"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-delta-preload.mjs",
+      "host_commands": {}
+    },
+    {
+      "id": "svc-impact-triad-guard",
+      "hosts": [
+        "claude",
+        "cursor"
+      ],
+      "events": [
+        "PreToolUse"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-impact-triad-guard.mjs",
+      "host_commands": {
+        "cursor": "node {NODE_Q} \"{HOOKS_DIR}/svc-impact-triad-guard.mjs\""
+      }
+    },
+    {
+      "id": "svc-inertia-check",
+      "hosts": [
+        "claude",
+        "cursor"
+      ],
+      "events": [
+        "PostToolUse"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-inertia-check.mjs",
+      "host_commands": {
+        "cursor": "node {NODE_Q} \"{HOOKS_DIR}/svc-inertia-check.mjs\""
+      }
+    },
+    {
+      "id": "svc-lane-tasks-failure",
+      "hosts": [
+        "claude"
+      ],
+      "events": [
+        "Notification"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-lane-tasks-failure.mjs",
+      "host_commands": {}
+    },
+    {
+      "id": "svc-lane-tasks-validate-content",
+      "hosts": [
+        "claude",
+        "cursor"
+      ],
+      "events": [
+        "PostToolUse"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-lane-tasks-validate-content.mjs",
+      "host_commands": {
+        "cursor": "node {NODE_Q} \"{HOOKS_DIR}/svc-lane-tasks-validate-content.mjs\""
+      }
+    },
+    {
+      "id": "svc-lane-tasks-validate-edit",
+      "hosts": [
+        "claude",
+        "cursor"
+      ],
+      "events": [
+        "PostToolUse"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-lane-tasks-validate-edit.mjs",
+      "host_commands": {
+        "cursor": "node {NODE_Q} \"{HOOKS_DIR}/svc-lane-tasks-validate-edit.mjs\""
+      }
+    },
+    {
+      "id": "svc-learning-inject",
+      "hosts": [
+        "claude"
+      ],
+      "events": [
+        "UserPromptSubmit"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-learning-inject.mjs",
+      "host_commands": {}
+    },
+    {
+      "id": "svc-learning-preload",
+      "hosts": [
+        "claude",
+        "cursor"
+      ],
+      "events": [
+        "SessionStart"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-learning-preload.mjs",
+      "host_commands": {
+        "cursor": "node {NODE_Q} \"{HOOKS_DIR}/svc-learning-preload.mjs\""
+      }
+    },
+    {
+      "id": "svc-loop-guard",
+      "hosts": [
+        "claude"
+      ],
+      "events": [
+        "PreToolUse"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-loop-guard.mjs",
+      "host_commands": {}
+    },
+    {
+      "id": "svc-notification-surface",
+      "hosts": [
+        "claude"
+      ],
+      "events": [
+        "Notification"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-notification-surface.mjs",
+      "host_commands": {}
+    },
+    {
+      "id": "svc-owner-inject",
+      "hosts": [
+        "claude"
+      ],
+      "events": [
+        "SessionStart"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-owner-inject.mjs",
+      "host_commands": {}
+    },
+    {
+      "id": "svc-phase-receipt-autoemit",
+      "hosts": [
+        "claude",
+        "cursor",
+        "grok"
+      ],
+      "events": [
+        "PostToolUse"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-phase-receipt-autoemit.mjs",
+      "host_commands": {
+        "cursor": "node {NODE_Q} {HOOKS_DIR}/svc-phase-receipt-autoemit.mjs",
+        "grok": "node {HOOKS_DIR}/svc-phase-receipt-autoemit.mjs"
+      }
+    },
+    {
+      "id": "svc-pre-compact-snapshot",
+      "hosts": [
+        "claude"
+      ],
+      "events": [
+        "PreCompact"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-pre-compact-snapshot.mjs",
+      "host_commands": {}
+    },
+    {
+      "id": "svc-prompt-stale-state",
+      "hosts": [
+        "claude"
+      ],
+      "events": [
+        "UserPromptSubmit"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-prompt-stale-state.mjs",
+      "host_commands": {}
+    },
+    {
+      "id": "svc-rule-injector",
+      "hosts": [
+        "claude"
+      ],
+      "events": [
+        "UserPromptSubmit"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-rule-injector.mjs",
+      "host_commands": {}
+    },
+    {
+      "id": "svc-session-contract-freshness",
+      "hosts": [
+        "claude",
+        "cursor"
+      ],
+      "events": [
+        "PostToolUse"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-session-contract-freshness.mjs",
+      "host_commands": {
+        "cursor": "node {NODE_Q} \"{HOOKS_DIR}/svc-session-contract-freshness.mjs\""
+      }
+    },
+    {
+      "id": "svc-session-end-log",
+      "hosts": [
+        "claude"
+      ],
+      "events": [
+        "SessionEnd"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-session-end-log.mjs",
+      "host_commands": {}
+    },
+    {
+      "id": "svc-spec-index-update",
+      "hosts": [
+        "claude"
+      ],
+      "events": [
+        "PostToolUse"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-spec-index-update.mjs",
+      "host_commands": {}
+    },
+    {
+      "id": "svc-subagent-start",
+      "hosts": [
+        "claude"
+      ],
+      "events": [
+        "SubagentStart"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-subagent-start.mjs",
+      "host_commands": {}
+    },
+    {
+      "id": "svc-subagent-stop",
+      "hosts": [
+        "claude"
+      ],
+      "events": [
+        "SubagentStop"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-subagent-stop.mjs",
+      "host_commands": {}
+    }
+  ]
+}

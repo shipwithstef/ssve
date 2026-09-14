@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# svc pre-push slot: ensure refs/notes/svc-receipts is pushed alongside
+# the branch ref so receipts propagate to the remote.
+
+set -u
+
+# Recursion guard: if we're already pushing because of this slot, exit
+# immediately so the inner `git push` doesn't re-enter pre-push hooks.
+if [[ -n "${SVC_PUSH_NOTES_IN_FLIGHT:-}" ]]; then
+  exit 0
+fi
+
+# Best-effort push of notes ref. Failure is non-fatal (the branch push
+# proceeds; notes can sync on the next push). --no-verify on the inner
+# push is a defense in depth: even if the env-var guard is somehow not
+# inherited, we don't recurse.
+export SVC_PUSH_NOTES_IN_FLIGHT=1
+git push --no-verify origin "refs/notes/svc-receipts:refs/notes/svc-receipts" 2>/dev/null || true
+unset SVC_PUSH_NOTES_IN_FLIGHT
+
+exit 0

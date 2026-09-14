@@ -1,0 +1,113 @@
+{
+  "wi": "WI-072",
+  "lane": "framework",
+  "created": "2026-04-24T00:00:00Z",
+  "completed_at": "2026-04-24T00:00:00Z",
+  "status": "completed",
+  "spec": "docs/specs/work-items/WI-072.md",
+  "branch": "feature/WI-072-workflow-guard-port",
+  "merged_pr": "https://github.com/archived-contributor/seriousvibecoding/pull/3",
+  "merged_sha": "1629705",
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "execute-changeset",
+      "subject": "Port svc-workflow-guard.js to .mjs; consume shared libs",
+      "status": "completed",
+      "completed_at": "2026-04-24T00:00:00Z",
+      "completed_sha": "6bec8e8",
+      "blocked_by": [],
+      "files": [
+        "hooks/svc-workflow-guard.mjs (new)",
+        "test-framework/evals/tier-1/validate-workflow-guard.sh (new)"
+      ],
+      "validation_result": "16/16 PASS (validate-workflow-guard.sh); 11/11 PASS (validate-loop-guard.sh)",
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-04-24T00:00:00Z",
+        "loaded_via": "legacy-backfill"
+      }
+    },
+    {
+      "id": 2,
+      "skill": "execute-changeset",
+      "subject": "Flip wire scripts to .mjs, delete .js, verify dry-run",
+      "status": "completed",
+      "completed_at": "2026-04-24T00:00:00Z",
+      "completed_sha": "79af22c",
+      "blocked_by": [
+        1
+      ],
+      "files": [
+        "scripts/wire-hooks.mjs",
+        "scripts/wire-codex-hooks.mjs",
+        "scripts/wire-gemini-hooks.mjs",
+        "hooks/svc-workflow-guard.js (deleted)"
+      ],
+      "validation_result": "all dry-runs successful; migration of stale .js entries verified with synthetic fixture",
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-04-24T00:00:00Z",
+        "loaded_via": "legacy-backfill"
+      }
+    },
+    {
+      "id": 3,
+      "skill": "execute-changeset",
+      "subject": "Refactor lane-tasks-validator, lane-tasks-failure, eval-gate to readHookPayload()",
+      "status": "completed",
+      "completed_at": "2026-04-24T00:00:00Z",
+      "completed_sha": "1cc1827",
+      "blocked_by": [
+        1
+      ],
+      "files": [
+        "hooks/svc-lane-tasks-validator.mjs",
+        "hooks/svc-lane-tasks-failure.mjs",
+        "scripts/eval-gate.mjs"
+      ],
+      "validation_result": "all three use readHookPayload; inline _readStdin helpers removed; all 4 host envelope shapes fail-open correctly",
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-04-24T00:00:00Z",
+        "loaded_via": "legacy-backfill"
+      }
+    },
+    {
+      "id": 4,
+      "skill": "review-gate",
+      "subject": "G5 review — confirm no behavior change + all tests pass",
+      "status": "completed",
+      "completed_at": "2026-04-24T00:00:00Z",
+      "completed_sha": "54c9231",
+      "blocked_by": [
+        1,
+        2,
+        3
+      ],
+      "validation_result": "full tier-1 suite 16/16 scripts PASS; 4 regressions caught and fixed (claude-hook-e2e, kimi-hook-e2e, kimi workflow-guard wrapper exit-code handling, framework-self-management hooks.json assertion). New learning logged: g5-review-must-run-all-tier1 (confidence 9).",
+      "skill_receipt": {
+        "skill": "review-gate",
+        "loaded_at": "2026-04-24T00:00:00Z",
+        "loaded_via": "legacy-backfill"
+      }
+    },
+    {
+      "id": 5,
+      "skill": "land-changeset",
+      "subject": "Open PR, squash-merge to main, cleanup worktree",
+      "status": "completed",
+      "completed_at": "2026-04-24T00:00:00Z",
+      "completed_sha": "1629705",
+      "blocked_by": [
+        4
+      ],
+      "validation_result": "PR #3 squash-merged to main as 1629705; feature branch deleted on origin and locally; worktree removed",
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-04-24T00:00:00Z",
+        "loaded_via": "legacy-backfill"
+      }
+    }
+  ]
+}

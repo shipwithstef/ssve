@@ -1,0 +1,93 @@
+{
+  "skill_name": "write-journeys",
+  "evals": [
+    {
+      "id": 1,
+      "name": "no-technical-references",
+      "prompt": "Generate journey J01 for a new collaborator signing up and getting their first match. The project has feature specs at docs/specs/features/ covering feature-onboarding, profiles, feature-matching, and feature-collab.",
+      "expected_output": "Journey doc in user language with zero file names, DB columns, CSS selectors, component names, or code paths in scenario steps. AC IDs (like @AUTH-01) are the only technical elements.",
+      "assertions": [
+        {"text": "No .tsx or .ts file references in scenario steps", "type": "absence", "pattern": "\\.tsx|\\.ts"},
+        {"text": "No database column references (profiles., _at, _id patterns) in scenario steps", "type": "absence", "pattern": "profiles\\.|_at\\b|_id\\b|column|database|DB|localStorage|sessionStorage"},
+        {"text": "No CSS selectors or data attributes in scenario steps", "type": "absence", "pattern": "\\[data-|className|css|selector"},
+        {"text": "No code paths or route patterns in scenario steps", "type": "absence", "pattern": "/auth/|/collab/|/matching|:matchId|:userId"},
+        {"text": "AC IDs present as @XX-NN tags above scenarios", "type": "presence", "pattern": "`@[A-Z]+-\\d+`"},
+        {"text": "Has ## Behavior Specification section with Gherkin keywords", "type": "presence", "pattern": "# Scenario:|# Feature:|# Background:"},
+        {"text": "Uses Given/When/Then as list items", "type": "presence", "pattern": "- Given|- When|- Then|- And|- But"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "three-layer-analysis",
+      "prompt": "Generate journey J01 for the new collaborator first match flow. Include all three layers of analysis: what IS (from specs), what SHOULD BE (implementation status), and what's MISSING (product gaps and journey reasoning).",
+      "expected_output": "Journey with [LIVE]/[SPEC]/[PLANNED] status tags on scenarios, plus a Journey Analysis section with logical issues, missing transitions, and product gaps tables.",
+      "assertions": [
+        {"text": "Contains [LIVE] or [SPEC] or [PLANNED] status tags", "type": "presence", "pattern": "\\[LIVE\\]|\\[SPEC\\]|\\[PLANNED\\]"},
+        {"text": "Has Journey Analysis section", "type": "presence", "pattern": "## Journey Analysis"},
+        {"text": "Has Logical Issues table or subsection", "type": "presence", "pattern": "Logical Issues|Contradiction|Dead end|Wrong placement"},
+        {"text": "Has Missing Transitions table or subsection", "type": "presence", "pattern": "Missing Transition|undefined|no spec describes"},
+        {"text": "Has Product Gaps table or subsection", "type": "presence", "pattern": "Product Gap|user expects|what user"}
+      ]
+    },
+    {
+      "id": 3,
+      "name": "absolute-detail-not-abstract",
+      "prompt": "Generate journey J01 for signup to first match. Make sure scenarios are absolute - every step describes what the user sees, decides, and what happens.",
+      "expected_output": "Scenarios with specific UI detail (button labels, screen descriptions, visual indicators, timing) not abstract summaries like 'I see a loading state' or 'I get a match'.",
+      "assertions": [
+        {"text": "Scenarios mention specific button labels in quotes", "type": "presence", "pattern": "\"[A-Z][^\"]+\""},
+        {"text": "Scenarios describe what user sees on screen (visual detail)", "type": "presence", "pattern": "I see|visible|appears|shows|displays"},
+        {"text": "Scenarios include alternative outcomes (But/if clauses)", "type": "presence", "pattern": "- But|- And if|one of two things|either"},
+        {"text": "No generic steps like 'I get a match' without detail", "type": "quality_check"}
+      ]
+    },
+    {
+      "id": 4,
+      "name": "journey-reasoning-finds-issues",
+      "prompt": "Generate journey J01 and run Layer 3 analysis. The journey crosses feature-onboarding, profiles, feature-matching, and feature-collab. Find logical contradictions, dead ends, wrong placement, missing transitions, and redundancies across the end-to-end flow.",
+      "expected_output": "Layer 3 analysis identifies at least 3 specific findings: contradictions between specs, missing transitions between features, dead-end states, or sequencing problems. Each finding names where in the journey, what's wrong, and why it matters.",
+      "assertions": [
+        {"text": "Identifies at least 3 Layer 3 findings", "type": "count_min", "pattern": "F\\d+|G\\d+", "min": 3},
+        {"text": "Each finding specifies WHERE in the journey", "type": "quality_check"},
+        {"text": "Each finding explains WHY it matters for the user", "type": "quality_check"},
+        {"text": "Findings are user-facing problems, not technical debt", "type": "quality_check"}
+      ]
+    },
+    {
+      "id": 5,
+      "name": "auto-mode-coverage",
+      "prompt": "Run /write-journeys --auto on this project. Process all feature specs, identify all personas, generate all journeys until every persona has at least one journey and every user-facing feature spec is referenced. Don't stop until complete.",
+      "expected_output": "Multiple journey docs generated covering all personas. JOURNEY_INDEX.md written with coverage stats. Auto mode summary showing personas, journeys, AC coverage percentage, and Layer 3 findings count.",
+      "assertions": [
+        {"text": "JOURNEY_INDEX.md exists with persona table", "type": "presence", "pattern": "## Personas"},
+        {"text": "Multiple journey files created (at least 3)", "type": "count_min", "pattern": "J\\d+-.*\\.feature\\.md", "min": 3},
+        {"text": "Every persona has at least 1 journey", "type": "quality_check"},
+        {"text": "Coverage report shows AC percentage", "type": "presence", "pattern": "AC coverage|% of total"},
+        {"text": "Auto mode summary present", "type": "presence", "pattern": "JOURNEY SYNC COMPLETE|auto mode"}
+      ]
+    },
+    {
+      "id": 6,
+      "name": "pm-readable-no-code-knowledge-needed",
+      "prompt": "Generate journey J01. A product manager who has never seen the codebase should be able to read it and understand exactly what a new user experiences when signing up.",
+      "expected_output": "The journey reads like a product document. No engineering jargon. A PM can describe the experience back after reading it without asking any technical questions.",
+      "assertions": [
+        {"text": "No mention of Supabase, Firebase, Playwright, React, or any framework", "type": "absence", "pattern": "Supabase|Firebase|Playwright|React|TypeScript|Vite|Zustand"},
+        {"text": "No mention of API, endpoint, RPC, or backend", "type": "absence", "pattern": "\\bAPI\\b|endpoint|RPC|backend|frontend|middleware"},
+        {"text": "No mention of specific auth implementation details", "type": "absence", "pattern": "OAuth callback|session token|JWT|localStorage"},
+        {"text": "Uses plain English for system behavior", "type": "quality_check"}
+      ]
+    },
+    {
+      "id": 7,
+      "name": "bdd-scope-correct",
+      "prompt": "Generate journey J01. Include alternative paths but only those that are user behavior paths. Do NOT include emotional narration or infrastructure failure scenarios.",
+      "expected_output": "Alternative paths describe user choices (skip tour, cancel auth, no match found) but NOT emotional states or infrastructure failures.",
+      "assertions": [
+        {"text": "No emotional narration in scenarios", "type": "absence", "pattern": "excited|nervous|anxious|frustrated|happy|worried|confident"},
+        {"text": "No infrastructure failure scenarios", "type": "absence", "pattern": "server.*down|internet.*drop|network.*error|GitHub.*unavailable|outage"},
+        {"text": "Has user-choice alternative paths", "type": "presence", "pattern": "skip|cancel|alternative|instead"}
+      ]
+    }
+  ]
+}

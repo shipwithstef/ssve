@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "review-lens-finding",
+  "title": "Review-station lens finding set (WI-382)",
+  "description": "The schema-forced StructuredOutput each read-only review lens (subagent) returns to the post-exec parallel review station. The orchestrator NEVER re-parses free text (workflow-fanout-protocol.md): lenses emit this shape, scripts/review-station-merge.mjs merges it mechanically.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["lens_id", "findings"],
+  "properties": {
+    "lens_id": {
+      "type": "string",
+      "description": "Stable lens identity used for keyed re-review (AC1). One of: g5-auditor, codex-adversarial, audit-testing, audit-security, audit-data-migration, audit-performance, visual-lens (or a registered extension)."
+    },
+    "never_gate": {
+      "type": "boolean",
+      "description": "true for security / data-migration lenses — their findings stay keyed for fix re-review regardless of severity (NEVER_GATE coverage preserved)."
+    },
+    "rounds_used": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Iteration rounds this lens has consumed. Per-lens cap is 3 and INDEPENDENT — never a single merged counter (AC2)."
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["file", "line", "severity", "finding"],
+        "properties": {
+          "file": { "type": "string", "description": "repo-relative path the finding is at" },
+          "line": { "type": ["integer", "string"], "description": "line number (the dedup key is file:line)" },
+          "severity": { "type": "string", "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"] },
+          "finding": { "type": "string", "description": "the issue, concrete" },
+          "evidence": { "type": "string", "description": "why it is real (cite the diff)" }
+        }
+      }
+    }
+  }
+}

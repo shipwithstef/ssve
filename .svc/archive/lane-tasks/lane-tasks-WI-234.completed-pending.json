@@ -1,0 +1,40 @@
+{
+  "wi": "WI-234",
+  "lane": "framework",
+  "created": "2026-05-10T17:24:59.361Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Migrate write-e2e skill contract",
+      "status": "completed",
+      "blocked_by": [],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T17:25:09.163Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T17:26:35.035Z"
+    },
+    {
+      "id": 2,
+      "subject": "Validate and close WI-234",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T17:26:35.100Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T17:26:35.134Z"
+    }
+  ]
+}

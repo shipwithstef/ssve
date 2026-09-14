@@ -1,0 +1,583 @@
+{
+  "wi": "WI-363",
+  "lane": "framework",
+  "status": "completed",
+  "created": "2026-06-07T13:19:02Z",
+  "delivery_graph": {
+    "tier": "end_to_end",
+    "autorun": true,
+    "source": "route-workflow WI-363",
+    "speed_levers": "single-round reviews w/ escalation; suite=gated-push reuse; PHASE RECEIPTS LIVE PER TASK (WI-370 lesson)",
+    "closeout_classification": "framework-complete",
+    "closeout_classification_reasons": [
+      "delivery_tier=undeclared",
+      "all evidence families and required tasks are closed"
+    ],
+    "closeout_delivery_tier": "undeclared",
+    "mutation_history": [
+      {
+        "ts": "2026-06-07T14:20:32.814Z",
+        "source": "classify-delivery-graph-closeout",
+        "action": "close_as_framework_complete",
+        "reason": "delivery_tier=undeclared; all evidence families and required tasks are closed",
+        "affected_tasks": [],
+        "affected_evidence_families": [],
+        "validator_proof": "scripts/classify-delivery-graph-closeout.mjs --write"
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "route-workflow",
+      "subject": "route WI-363 phase-receipt automation pilot",
+      "status": "completed",
+      "metadata": {
+        "skill": "route-workflow"
+      },
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-06-07T13:19:02.084Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-06-07T13:19:02.140Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-session-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-06-07T13:19:02.180Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-intent.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-06-07T13:19:02.228Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-363.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-06-07T13:19:02.282Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-concern-gate.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-06-07T13:19:02.335Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-363.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-06-07T13:19:02.378Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-self-verify.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": ".svc/lane-tasks-WI-363.json",
+        "validation_output": "routed; 6 phases recorded live; dispatch plan-changeset"
+      },
+      "completed_at": "2026-06-07T13:19:02.511Z"
+    },
+    {
+      "id": 2,
+      "skill": "plan-changeset",
+      "subject": "plan: autoemit hook + pilot route-workflow + 2 validators + wiring",
+      "status": "completed",
+      "metadata": {
+        "skill": "plan-changeset"
+      },
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-06-07T13:19:02.618Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-06-07T13:21:20.654Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-archetype.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-06-07T13:21:20.697Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-scope.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-06-07T13:21:20.732Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-07-wi-363-phase-receipt-autoemit/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-06-07T13:21:20.767Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-simulation.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-06-07T13:21:20.805Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-adversarial.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-06-07T13:21:20.842Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-selfverify.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-06-07-wi-363-phase-receipt-autoemit/manifest.md",
+        "validation_output": "SIMULATED; mech 0; phases live"
+      },
+      "completed_at": "2026-06-07T13:21:20.915Z"
+    },
+    {
+      "id": 3,
+      "skill": "review-plan",
+      "subject": "G2 single-round",
+      "status": "completed",
+      "metadata": {
+        "skill": "review-plan"
+      },
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-06-07T13:21:20.993Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-06-07T13:24:53.421Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p3a.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-06-07T13:24:53.455Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p3b.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-06-07T13:24:53.489Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "/tmp/wi363-g2-out.txt"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-06-07T13:24:53.528Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p3d.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-06-07T13:24:53.565Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-07-wi-363-phase-receipt-autoemit/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-06-07T13:24:53.603Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/p3f.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-06-07-wi-363-phase-receipt-autoemit/review-log.yaml",
+        "validation_output": "APPROVED after REJECT->fix cycle (2 CRITICAL caught pre-execution)"
+      },
+      "completed_at": "2026-06-07T13:24:53.671Z"
+    },
+    {
+      "id": 4,
+      "skill": "execute-changeset",
+      "subject": "worktree TDD",
+      "status": "completed",
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-06-07T13:24:53.736Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-06-07T13:59:10.537Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-preflight.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-06-07T13:59:10.592Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-apply.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-06-07T13:59:10.636Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-verification.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-06-07T13:59:10.681Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-checkpoint.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": ".worktrees/feature-wi-363-phase-receipt-autoemit (7 files @ fabd1a44)",
+        "validation_output": "RED 7-fail -> GREEN 11/11; suite 199/199; EXACT-7; 3 bring-up fixes logged"
+      },
+      "completed_at": "2026-06-07T13:59:10.814Z"
+    },
+    {
+      "id": 5,
+      "skill": "review-exec",
+      "subject": "G6 single-round",
+      "status": "completed",
+      "metadata": {
+        "skill": "review-exec"
+      },
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-06-07T13:59:10.914Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-06-07T14:07:19.297Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-exec-selfreview.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "review-log g6 block",
+        "validation_output": "gemini 10/10 approve; 1 LOW folded"
+      },
+      "completed_at": "2026-06-07T14:07:19.388Z"
+    },
+    {
+      "id": 6,
+      "skill": "audit-implementation",
+      "subject": "light",
+      "status": "completed",
+      "metadata": {
+        "skill": "audit-implementation"
+      },
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-06-07T14:07:19.469Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextScopeConcern",
+            "ts": "2026-06-07T14:07:19.550Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-P1-UpstreamContextScopeConcern.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecialistDispatchCoverageLedger",
+            "ts": "2026-06-07T14:07:19.618Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-P2-SpecialistDispatchCoverageLedger.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-HypothesisGeneration",
+            "ts": "2026-06-07T14:07:19.666Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-P3-HypothesisGeneration.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-SubsystemBehaviorAudit",
+            "ts": "2026-06-07T14:07:19.717Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-P4-SubsystemBehaviorAudit.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-FindingsConvergenceReport",
+            "ts": "2026-06-07T14:07:19.763Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-P5-FindingsConvergenceReport.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-06-07T14:07:19.815Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-P6-SelfVerifyContinuation.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "pipeline-decisions audit entry",
+        "validation_output": "light: EXACT-7; residue 0; suite via landing gate"
+      },
+      "completed_at": "2026-06-07T14:07:19.902Z"
+    },
+    {
+      "id": 7,
+      "skill": "land-changeset",
+      "subject": "land",
+      "status": "completed",
+      "metadata": {
+        "skill": "land-changeset"
+      },
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-06-07T14:20:32.118202+00:00Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-06-07T14:21:10.301Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-P1-WorktreeManifestContext.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-06-07T14:21:10.350Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-P2-DiffTaskCompletionAudit.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-06-07T14:21:10.398Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-P3-FinalValidationCoverageAudit.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-PushPrCreation",
+            "ts": "2026-06-07T14:21:10.453Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-P4-PushPrCreation.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-MergeDecisionCleanup",
+            "ts": "2026-06-07T14:21:10.505Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-P5-MergeDecisionCleanup.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SpecStatusSelfVerify",
+            "ts": "2026-06-07T14:21:10.564Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-P6-SpecStatusSelfVerify.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "PR #35 -> squash 569ffd67",
+        "validation_output": "dual-engage gate PASS; merged; envelopes x2; notes synced; autoemit wired x2 live"
+      },
+      "completed_at": "2026-06-07T14:21:10.835Z"
+    },
+    {
+      "id": 8,
+      "skill": "verify-promotion",
+      "subject": "G7 + live auto-emission proof",
+      "status": "completed",
+      "metadata": {
+        "skill": "verify-promotion"
+      },
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-06-07T14:20:32.118202+00:00Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-06-07T14:21:10.615Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/vp-P1-PromotionEvidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-06-07T14:21:10.673Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/vp-P2-SpecACVerification.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-06-07T14:21:10.729Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/vp-P3-RuntimeRegression.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-06-07T14:21:10.783Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/vp-P4-StateCloseout.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "WI-363.md VERIFIED",
+        "validation_output": "G7: anti-hollowing validator-proven; live wiring confirmed; foreign-commit integration handled (WI-374 via carve-out)"
+      },
+      "completed_at": "2026-06-07T14:21:10.884Z"
+    },
+    {
+      "id": 9,
+      "skill": "design-tech",
+      "subject": "SKIPPED",
+      "status": "skipped",
+      "metadata": {
+        "skill": "design-tech"
+      },
+      "skip_reason": "Observable-evidence matching design fully specified in WI guardrails + phase-receipts.md canonical schema; hook reuses the guard's frontmatter parser pattern; no new architecture."
+    }
+  ]
+}

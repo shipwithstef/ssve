@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "wi": "WI-317",
+  "source_proposals": [
+    "proposals/done/2026-05-08-svc-doctor-consolidated-healthcheck.md"
+  ],
+  "status": "backlog-owned",
+  "coverage": [
+    {
+      "source_proposal": "proposals/done/2026-05-08-svc-doctor-consolidated-healthcheck.md",
+      "proposal_item": "consolidated svc doctor command scope, output contract, fix mode, machine-readable output, and tier-1 self-test",
+      "status": "partial",
+      "owner_wi": "WI-317",
+      "evidence": [
+        "docs/specs/work-items/WI-317.md",
+        "scripts/check-install-drift.sh",
+        "test-framework/evals/run-all-evals.sh",
+        "test-framework/evals/tier-1/validate-session-start-healthcheck-multi-host.sh"
+      ]
+    }
+  ],
+  "residuals": [
+    {
+      "wi": "WI-317",
+      "title": "svc doctor consolidated healthcheck"
+    }
+  ]
+}

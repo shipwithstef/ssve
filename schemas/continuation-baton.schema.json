@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seriousvibecoding.dev/schemas/continuation-baton.schema.json",
+  "title": "Restart-boundary continuation baton (WI-552)",
+  "type": "object",
+  "required": [
+    "schema_version", "wi", "run_id", "boundary", "max_launches",
+    "forbidden_phases", "dispatch_role", "implementation_session_id"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "enum": [1] },
+    "wi": { "type": "string" },
+    "run_id": { "type": "string" },
+    "task_graph_path": { "type": ["string", "null"] },
+    "next_task_id": { "type": ["string", "null"] },
+    "boundary": {
+      "type": "object",
+      "required": ["kind", "host", "event", "proof_query"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["fresh_process", "service_restart", "host_session_start", "post_install_bootstrap"]
+        },
+        "host": { "type": "string" },
+        "event": { "type": "string" },
+        "proof_query": { "type": "string" },
+        "not_before": { "type": ["string", "null"] }
+      }
+    },
+    "max_launches": { "type": "integer" },
+    "forbidden_phases": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "dispatch_role": { "type": "string", "enum": ["verify.restart"] },
+    "implementation_session_id": { "type": "string" }
+  }
+}

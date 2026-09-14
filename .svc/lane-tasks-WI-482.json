@@ -1,0 +1,388 @@
+{
+  "wi": "WI-482",
+  "lane": "framework",
+  "title": "Mandatory default-checkout isolation",
+  "created": "2026-07-14T19:02:03Z",
+  "source": "frozen-manifest",
+  "status": "completed",
+  "delivery_tier": {
+    "mode": "full"
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "execute-changeset",
+      "status": "completed",
+      "subject": "Implement frozen WI-482 default-checkout isolation manifest",
+      "metadata": {
+        "skill": "execute-changeset",
+        "wi": "WI-482"
+      },
+      "blocked_by": [],
+      "args": {
+        "mode": "dispatch"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-07-14T19:03:31.164Z",
+        "loaded_via": "manual",
+        "output_artifact": "hooks/svc-worktree-isolation-guard.mjs",
+        "validation_output": "focused isolation 8/8; binding 22/22; full tier-1 241/241",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-07-14T19:03:31.317Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "dispatch-three-bounded-slices"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-07-14T20:00:00.618Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "hooks/svc-worktree-isolation-guard.mjs"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-07-14T20:00:00.659Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi482-tier1-final.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-07-14T20:00:00.719Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "git-diff-cached-check"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T20:00:00.761Z"
+    },
+    {
+      "id": 2,
+      "skill": "review-exec",
+      "status": "completed",
+      "subject": "Adversarial review of default-checkout isolation",
+      "metadata": {
+        "skill": "review-exec",
+        "wi": "WI-482"
+      },
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-07-14T20:00:00.802Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-07-14T20:00:00.845Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-482-default-checkout-isolation-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-07-14T20:00:00.892Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "claude-fable-high"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-07-14T20:00:00.941Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-482-default-checkout-isolation-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-IterationLoop",
+            "ts": "2026-07-14T20:00:00.990Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "test-framework/evals/tier-1/validate-default-checkout-isolation.sh"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerdictAndReceiptFinalize",
+            "ts": "2026-07-14T20:00:01.036Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-482-default-checkout-isolation-exec-cross-model.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T20:00:01.092Z"
+    },
+    {
+      "id": 3,
+      "skill": "audit-implementation",
+      "status": "completed",
+      "subject": "Audit AC coverage and host isolation",
+      "metadata": {
+        "skill": "audit-implementation",
+        "wi": "WI-482"
+      },
+      "blocked_by": [
+        2
+      ],
+      "args": {
+        "mode": "full"
+      },
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-07-14T20:00:01.143Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "output_artifact": "docs/specs/audit/wi-482-default-checkout-isolation-analysis.md",
+        "validation_output": "all five ACs confirmed; Fable final APPROVE; full tier-1 241/241",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextScopeConcern",
+            "ts": "2026-07-14T20:00:01.186Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi482-default-checkout-isolation/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecialistDispatchCoverageLedger",
+            "ts": "2026-07-14T20:00:01.233Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-482-default-checkout-isolation-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-HypothesisGeneration",
+            "ts": "2026-07-14T20:00:01.278Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-482-default-checkout-isolation-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-SubsystemBehaviorAudit",
+            "ts": "2026-07-14T20:00:01.330Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/security/wi-482-default-checkout-isolation-review.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-FindingsConvergenceReport",
+            "ts": "2026-07-14T20:00:01.377Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-482-default-checkout-isolation-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-14T20:00:01.422Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi482-tier1-final.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T20:00:01.477Z"
+    },
+    {
+      "id": 4,
+      "skill": "land-changeset",
+      "status": "completed",
+      "subject": "Land WI-482 through reviewed PR",
+      "metadata": {
+        "skill": "land-changeset",
+        "wi": "WI-482"
+      },
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-07-14T20:00:14.179Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "output_artifact": "https://github.com/s7an-it/seriousvibecoding/pull/135",
+        "validation_output": "PR 135 squash-merged at 0ebe2efd; reviewed tree equals promoted tree",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-07-14T20:16:52.049Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi482-default-checkout-isolation/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-07-14T20:16:52.084Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "git-diff-origin-main-head"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-07-14T20:16:52.120Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi482-tier1-landing2.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-PushPrCreation",
+            "ts": "2026-07-14T20:16:52.159Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/review-receipts/pr-135.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-MergeDecisionCleanup",
+            "ts": "2026-07-14T20:30:03.943Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "PR-135-merged-0ebe2efd"
+              }
+            ]
+          },
+          {
+            "id": "P6-SpecStatusSelfVerify",
+            "ts": "2026-07-14T20:30:04.103Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "origin-main-tree-equals-reviewed-tree"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T20:30:04.155Z"
+    },
+    {
+      "id": 5,
+      "skill": "verify-promotion",
+      "status": "completed",
+      "subject": "Verify WI-482 post-merge",
+      "metadata": {
+        "skill": "verify-promotion",
+        "wi": "WI-482"
+      },
+      "blocked_by": [
+        4
+      ],
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-07-14T20:30:04.211Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "output_artifact": "docs/specs/verification/wi-482-default-checkout-isolation.md",
+        "validation_output": "all eight hosts drift-clean; focused 8/8 and binding 22/22; promoted Tier 1 241/241",
+        "target_class": "infra",
+        "evidence_level": "V2",
+        "evidence_artifacts": [
+          {
+            "type": "file",
+            "path": "docs/specs/verification/wi-482-default-checkout-isolation.md"
+          }
+        ],
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-07-14T20:30:04.276Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/verification/wi-482-default-checkout-isolation.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-07-14T20:30:04.333Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-482-default-checkout-isolation-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-07-14T20:30:04.389Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi482-postmerge-tier1.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-07-14T20:30:04.441Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/verification/wi-482-default-checkout-isolation.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T20:30:04.493Z"
+    }
+  ]
+}

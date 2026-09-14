@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "wi": "WI-FW-READONLY-OBSERVATION-01",
+  "lane": "bugfix",
+  "status": "in_progress",
+  "created": "2026-09-08T15:43:57.894Z",
+  "tasks": [
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "route-workflow",
+      "subject": "route workflow",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-09-08T16:46:24.464Z",
+        "loaded_via": "manual"
+      },
+      "delivery_attempt": 1,
+      "delivery_started_at": "2026-09-08T15:44:26.650Z",
+      "completed_at": "2026-09-08T16:46:24.636Z"
+    },
+    {
+      "id": 2,
+      "status": "completed",
+      "skill": "plan-changeset",
+      "subject": "plan-changeset actual delivery closeout",
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-09-08T16:46:24.808Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-09-08T16:46:24.982Z"
+    },
+    {
+      "id": 3,
+      "status": "completed",
+      "skill": "review-plan",
+      "subject": "review-plan actual delivery closeout",
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-09-08T16:46:25.157Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-09-08T16:46:25.329Z"
+    },
+    {
+      "id": 4,
+      "status": "completed",
+      "skill": "execute-changeset",
+      "subject": "execute-changeset actual delivery closeout",
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-09-08T16:46:25.502Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-09-08T16:46:25.673Z"
+    },
+    {
+      "id": 5,
+      "status": "completed",
+      "skill": "review-exec",
+      "subject": "review-exec actual delivery closeout",
+      "blocked_by": [
+        4
+      ],
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-09-08T16:46:25.847Z",
+        "loaded_via": "manual"
+      },
+      "delivery_attempt": 1,
+      "delivery_started_at": "2026-09-08T16:46:26.023Z",
+      "review_outcome": {
+        "source_verdict": "pass-with-findings",
+        "release_authorized": false,
+        "reason": "Two disputed exec certifications remain in immutable report; owner stopped additional paid calls. New owner-directed review-scope correction locally validated."
+      },
+      "completed_at": "2026-09-08T17:11:00.164Z"
+    },
+    {
+      "id": 6,
+      "status": "completed",
+      "skill": "audit-implementation",
+      "subject": "audit-implementation actual delivery closeout",
+      "blocked_by": [
+        5
+      ],
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-09-08T17:11:00.398Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-09-08T17:11:00.627Z"
+    },
+    {
+      "id": 7,
+      "status": "in_progress",
+      "skill": "land-changeset",
+      "subject": "land-changeset actual delivery closeout",
+      "blocked_by": [
+        6
+      ],
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-09-08T17:11:00.897Z",
+        "loaded_via": "manual"
+      },
+      "delivery_attempt": 1,
+      "delivery_started_at": "2026-09-08T17:11:01.209Z"
+    },
+    {
+      "id": 8,
+      "status": "pending",
+      "skill": "verify-promotion",
+      "subject": "verify-promotion actual delivery closeout",
+      "blocked_by": [
+        7
+      ]
+    }
+  ],
+  "delivery_cycle": {
+    "root_wi": "WI-FW-READONLY-OBSERVATION-01",
+    "cycle_started_at": null
+  },
+  "recovery_note": "Runtime stages reconstructed from actual preserved evidence after source freeze; timestamps are closeout observations, not invented historical execution times. The index retains the reviewed pre-release snapshot."
+}

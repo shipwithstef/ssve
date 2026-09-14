@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seriousvibecoding.dev/schemas/change-impact-triad.schema.json",
+  "title": "SVC change impact triad receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "wi", "session_id", "worktree_root", "task_graph",
+    "task_id", "diff_sha256", "risk_tier", "risk_reasons", "breaks_what",
+    "intended_behavior", "product_surface", "coverage_tasks",
+    "independent_review", "runtime_proof", "created_at"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "enum": [1, 2] },
+    "wi": { "type": "string", "pattern": "^WI-[A-Z0-9]+(-[A-Z0-9]+)*$" },
+    "session_id": { "type": "string", "minLength": 8, "maxLength": 160 },
+    "worktree_root": { "type": "string", "minLength": 1 },
+    "task_graph": { "type": "string", "minLength": 1 },
+    "task_id": { "type": ["integer", "string"], "pattern": "^[0-9]+$" },
+    "diff_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "risk_tier": { "enum": ["cosmetic", "logic", "high"] },
+    "risk_reasons": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "breaks_what": { "$ref": "#/$defs/triad_field" },
+    "intended_behavior": { "$ref": "#/$defs/triad_field" },
+    "product_surface": { "$ref": "#/$defs/triad_field" },
+    "coverage_tasks": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "status", "owner", "validation"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["completed", "blocked"] },
+          "owner": { "type": "string", "minLength": 1 },
+          "blocked_by": { "type": "array", "items": { "type": ["integer", "string"] } },
+          "validation": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "independent_review": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status", "executor_family", "reviewer_family", "artifacts"],
+      "properties": {
+        "status": { "enum": ["pass", "fail", "n/a", "deferred-to-final"] },
+        "executor_family": { "enum": ["openai", "anthropic", "google", "other", "n/a"] },
+        "reviewer_family": { "enum": ["openai", "anthropic", "google", "other", "n/a"] },
+        "artifacts": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "final_review_task_id": { "type": ["integer", "string"] },
+        "plan_digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "runtime_proof": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status", "kind", "artifacts"],
+      "properties": {
+        "status": { "enum": ["pass", "fail", "n/a"] },
+        "kind": { "enum": ["static", "mapped-test", "behavioral", "n/a"] },
+        "artifacts": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "subsumed_by": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["phase", "artifacts"],
+        "properties": {
+          "phase": { "type": "string", "minLength": 1 },
+          "artifacts": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+        }
+      }
+    },
+    "created_at": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "triad_field": {
+      "type": "object", "additionalProperties": false,
+      "required": ["answer", "sources", "evidence"],
+      "properties": {
+        "answer": { "type": "string", "minLength": 1 },
+        "sources": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "evidence": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+      }
+    }
+  }
+}

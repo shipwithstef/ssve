@@ -1,0 +1,28 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Make execution quiet + visualize results as HTML</title><style>
+:root{--bg:#0f1115;--card:#171a21;--line:#252a34;--fg:#e6e9ef;--mut:#9aa4b2;--done:#3fb950;--active:#58a6ff;--planned:#d29922;--warn:#f0883e}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:920px;margin:0 auto;padding:30px 22px 70px}
+h1{font-size:23px;margin:0 0 4px}h2{font-size:13px;margin:30px 0 12px;color:var(--mut);text-transform:uppercase;letter-spacing:.07em}
+.sub{color:var(--mut);font-size:13px}
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;border:1px solid var(--line)}
+.pill.done{color:var(--done);background:#0e1f14;border-color:#1c3a23}.pill.active{color:var(--active);background:#0c1a2e}.pill.planned{color:var(--planned);background:#1f1809}
+.result{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--done);border-radius:10px;padding:16px 18px;margin:14px 0;font-size:16px}
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:7px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.flow .step{padding:4px 11px;border-radius:7px;background:#10131a;border:1px solid var(--line);font-size:13px}.flow .arrow{color:var(--mut);font-size:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;margin:8px 0;overflow:hidden}.card.issue{border-left:3px solid var(--warn)}
+details>summary{cursor:pointer;padding:13px 16px;list-style:none}details>summary::-webkit-details-marker{display:none}details>summary:hover{background:#1b1f28}
+.body{padding:4px 16px 16px;color:var(--fg)}.body>div{padding:6px 0;border-top:1px solid var(--line)}
+.why{color:#bcd0ea}.cons{color:#e8d9b0}.alt{color:var(--mut)}
+b{color:#fff}
+</style></head><body><div class="wrap">
+<h1>Make execution quiet + visualize results as HTML</h1>
+<div class="sub">2026-06-20 06:46 - 3 decisions - open + expand each for the reasoning</div>
+<div class="result">Built a renderer + a framework rule so decisions and finished results render as a clean, expandable HTML (result + flow + each decision's choice / why / consequence) you open instead of scrolling the terminal. Thinking stays ON at full quality; the noise moves into subagents. <span class="pill done">done</span></div>
+<h2>The flow</h2><div class="flow"><span class="step">your complaint: terminal noise tires the brain</span><span class="arrow">to</span><span class="step">research Claude Code output controls</span><span class="arrow">to</span><span class="step">you caught the thinking-toggle mistake</span><span class="arrow">to</span><span class="step">verbose set false</span><span class="arrow">to</span><span class="step">build render-run-summary.mjs</span><span class="arrow">to</span><span class="step">add visualize-decisions rule</span><span class="arrow">to</span><span class="step">register + tier-1 + commit</span></div>
+<h2>Decisions - choice, why, consequence</h2>
+<div class="card"><details open><summary><span><b>Decision 1:</b> Hide execution via SUBAGENTS, not by disabling thinking</span></summary><div class="body"><div class="why"><b>Why:</b> disabling thinking removes reasoning depth (you verified) = quality loss. Subagents hide the tool-calls + thinking in their own context while doing the full work, then return only a summary.</div><div class="cons"><b>Consequence:</b> heavy work routes to subagents; you see a one-line dispatch + a clean result, never the 20 inner tool calls.</div><div class="alt"><b>Alternatives considered:</b> thinking:false (REJECTED — degrades quality); collapse tool output (kept, as verbose=false).</div></div></details></div><div class="card"><details><summary><span><b>Decision 2:</b> Visualize decisions/results as a self-contained HTML artifact</span></summary><div class="body"><div class="why"><b>Why:</b> you asked for reasoning + consequences + why, as flows, readable — not a terminal wall.</div><div class="cons"><b>Consequence:</b> new scripts/render-run-summary.mjs emits docs/status/&lt;run&gt;.html (offline, expandable).</div><div class="alt"><b>Alternatives considered:</b> --output-format json + jq (too raw for a human); Claude Code output-styles (confirmed NOT shipped).</div></div></details></div><div class="card"><details><summary><span><b>Decision 3:</b> Make it a FRAMEWORK RULE (visualize-decisions) + register it</span></summary><div class="body"><div class="why"><b>Why:</b> you said the framework should have a rule — so it is enforced every run, not when I happen to remember.</div><div class="cons"><b>Consequence:</b> rules/common/visualize-decisions.md + a rulesRegistry entry that auto-injects on closeout / decision signals.</div><div class="alt"><b>Alternatives considered:</b> a loose convention (REJECTED — not durable across sessions).</div></div></details></div>
+<h2>Issues on the way</h2>
+<div class="card issue"><div class="body"><b>! My first recommendation claimed 'thinking off only hides the display' — wrong.</b><div class="why"><b>Handled:</b> you caught it; corrected — thinking stays ON, noise is hidden via subagents instead.</div></div></div><div class="card issue"><div class="body"><b>! Session contract went stale (6h) mid-build.</b><div class="why"><b>Handled:</b> refreshed it before writing files.</div></div></div>
+<div class="sub" style="margin-top:28px">Generated by scripts/render-run-summary.mjs - per the <code>visualize-decisions</code> rule</div>
+</div></body></html>

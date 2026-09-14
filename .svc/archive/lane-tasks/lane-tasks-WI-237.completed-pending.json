@@ -1,0 +1,40 @@
+{
+  "wi": "WI-237",
+  "lane": "framework",
+  "created": "2026-05-10T17:38:24.680Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Migrate onboard-repo skill contract",
+      "status": "completed",
+      "blocked_by": [],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T17:38:34.946Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T17:39:56.687Z"
+    },
+    {
+      "id": 2,
+      "subject": "Validate and close WI-237",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T17:39:56.754Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T17:39:56.789Z"
+    }
+  ]
+}

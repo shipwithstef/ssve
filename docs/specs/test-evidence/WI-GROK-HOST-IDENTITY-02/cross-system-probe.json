@@ -1,0 +1,43 @@
+{
+  "probes": [
+    {
+      "id": "GROK-HOST-BOOTSTRAP-CONTINUITY",
+      "hypothesis": "Routing the same Grok session through the native dispatcher and bounded bootstrap identity prefix preserves host grok instead of falling back to the hooks/codex path.",
+      "change_reason": "Route bootstrap through explicit Grok host and session identity instead of the prior Codex fallback path.",
+      "requires_old_new_path_proof": true,
+      "same_input": "run_terminal_command payload with Grok session grok-probe-session, a repository default-checkout cwd, and canonical installed svc-ensure-worktree argv using origin/main.",
+      "confirmation_check": {
+        "predicate": "Patched consolidated dispatcher returns permissionDecision=allow and updatedInput.command starts with SVC_HOST=grok; the stable session is absent from shell text and carried by the private handoff.",
+        "result": "PASS"
+      },
+      "falsification_check": {
+        "predicate": "The shared parser rejects an unknown SVC_HOST and any arbitrary environment assignment before node, while the zero-state gate still denies non-bootstrap mutation.",
+        "result": "PASS"
+      },
+      "old_path": {
+        "command": "Run the live pre-change Example Marketplace Grok bootstrap followed by the first governed command.",
+        "result": "failing-state",
+        "observed": "Bootstrap minted the Codex principal and imported Claude hook slot 15 denied controller principal changed."
+      },
+      "new_path": {
+        "command": "bash test-framework/evals/tier-1/validate-codex-execution-integrity.sh",
+        "result": "PASS",
+        "observed": "205 passed, 0 failed, including exact Grok bootstrap allow/rewrite and execution, bound follow-on principal continuity, shell-metacharacter encoding, direct GROK_SESSION_ID principal stamping, unknown-host no-mutation denial, and generation-bound Grok takeover."
+      },
+      "verdict": "hypothesis-holds"
+    },
+    {
+      "id": "GROK-CONFIG-HOOK-EXCLUSIVITY",
+      "hypothesis": "Disabling Claude and Cursor hook compatibility only, while installing one native Grok dispatcher with explicit host commands, removes competing authority principals without losing unrelated configuration.",
+      "confirmation_check": {
+        "predicate": "Round-trip output has one compat table per vendor, hooks=false twice, one dispatcher matching run_terminal_command, and every SVC-owned Grok command prefixed SVC_HOST=grok.",
+        "result": "PASS"
+      },
+      "falsification_check": {
+        "predicate": "Three rewrites are byte-identical and user hooks, HTTP hooks, comments, unrelated keys, immutable backup, rolling rollback, and file mode remain preserved.",
+        "result": "PASS"
+      },
+      "verdict": "hypothesis-holds"
+    }
+  ]
+}

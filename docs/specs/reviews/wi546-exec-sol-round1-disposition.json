@@ -1,0 +1,20 @@
+{
+  "review_kind": "exec",
+  "round": 1,
+  "source": "docs/specs/reviews/wi546-exec-sol-high.json",
+  "reviewed_sha": "5a95ab3c9db00730862771fcd7f7e9aa4a119454",
+  "self_review": "docs/specs/reviews/wi546-exec-grok-high-self.json",
+  "independent_reviewer": "gpt-5.6-sol-high",
+  "independent_family": "openai",
+  "dispositions": [
+    { "id": "SOL-E001", "severity": "CRITICAL", "action": "fixed", "note": "Stop/verify/final-report require note-sourced envelopes; emit-receipt no longer merges mirrors into notes." },
+    { "id": "SOL-E002", "severity": "HIGH", "action": "fixed", "note": "run-external-review uses an explicit host transport registry; unknown/cursor/grok are capability_limited, never remapped to Claude." },
+    { "id": "SOL-E003", "severity": "HIGH", "action": "fixed", "note": "Non-fake launch with null launch_command is capability_limited; launch_receipted requires a pid." },
+    { "id": "SOL-E004", "severity": "HIGH", "action": "fixed", "note": "consume binds result.wi, requires event_status=success + artifacts + no failing ACs before closed_pass." },
+    { "id": "SOL-E005", "severity": "HIGH", "action": "fixed", "note": "Continuation children fail closed when the ledger is unreadable." },
+    { "id": "SOL-E006", "severity": "HIGH", "action": "fixed", "note": "Cursor/Grok Stop adapters preserve core exit status; missing/crash is exit 2." },
+    { "id": "SOL-E007", "severity": "CRITICAL", "action": "fixed", "note": "Session override requires a protected owner receipt file bound to override_sha256, WI, session, issued_at, expires_at. Inline JSON is refused." },
+    { "id": "SOL-E008", "severity": "HIGH", "action": "fixed", "note": "Scoped overlay without a caller WI is refused." },
+    { "id": "SOL-E009", "severity": "MEDIUM", "action": "reject", "note": "Prompt SHA typo only; examined SHA is the real 40-char HEAD 5a95ab3c9db00730862771fcd7f7e9aa4a119454." }
+  ]
+}

@@ -1,0 +1,55 @@
+review_log:
+  plan: docs/plans/2026-07-24-wi511-loop-state-lifecycle/manifest.md
+  tier1:
+    script: scripts/verify-plan-mechanical.sh
+    exit_code: 0
+    issues: 0
+  external_state:
+    exit_code: 0
+    result: populated 15-part taxonomy with hook, host-install, runtime-state, and recovery coupling
+  round_1:
+    status: completed
+    reviewer: claude-opus-4-8
+    reviewer_family: anthropic
+    effort: high
+    rubric_score: 6
+    verdict: pass-with-findings
+    receipt: .svc/external-review-artifacts/plan/1dfc84dc1d0792f18e951d8203b835230260ffe8490fc3da65b5ce06bb4d8fb8/20260723T222549Z-3530856/receipt.json
+    findings:
+      - { id: F-001, severity: high, response: accepted, disposition: source-proven zero-wait lock plus outer fail-open catch }
+      - { id: F-002, severity: medium, response: accepted, disposition: cited aggregate runner discovery }
+      - { id: F-003, severity: medium, response: accepted, disposition: pinned producer charset and length }
+      - { id: F-004, severity: medium, response: rejected-with-counter-evidence, disposition: finally release unlinks sidecar and focused test guards it }
+      - { id: F-005, severity: medium, response: accepted, disposition: added per-skill lane table and decisions }
+      - { id: F-006, severity: low, response: accepted, disposition: pinned current-file mtime cadence boundary }
+      - { id: F-007, severity: low, response: accepted, disposition: cited repository Codex trailer mapping }
+  round_2:
+    status: completed
+    reviewer: claude-opus-4-8
+    reviewer_family: anthropic
+    effort: high
+    rubric_score: 7
+    verdict: pass-with-findings
+    receipt: .svc/external-review-artifacts/plan/8e83a134d641e3957ae817004c57b0d171815890f73928d32f0b5df455689c2f/20260723T223220Z-3546478/receipt.json
+    ruling: round-1 F-004 dispute resolved in orchestrator favor
+    findings:
+      - { id: F-CONV-001, severity: medium, response: accepted, disposition: added under-500-ms contention assertion }
+      - { id: F-CONV-002, severity: medium, response: rejected-with-counter-evidence, disposition: measured per-session scan retained instead of new marker lifecycle }
+      - { id: F-CONV-003, severity: low, response: accepted, disposition: expected red changed to exit 1 }
+  round_3:
+    status: completed
+    reviewer: claude-opus-4-8
+    reviewer_family: anthropic
+    effort: high
+    rubric_score: 8
+    verdict: pass-with-findings
+    receipt: .svc/external-review-artifacts/plan/e0e5fe7a37199e66a813d5468495618a1717a0a248044ed0b059549fe08af3de/20260723T223608Z-3555138/receipt.json
+    findings:
+      - { id: F-R3-001, severity: medium, response: accepted, disposition: bounded ready-release handshake makes contention proof deterministic }
+      - { id: F-R3-002, severity: low, response: accept-with-justification, disposition: sub-millisecond rescan only during already degraded fail-open persistence }
+    ruling: revised_at_round_cap
+  terminal_state: REVISED_AND_REVIEWED
+  rounds_run: 3
+  unresolved_critical: 0
+  remaining_high: 0
+  commit_sha: pending

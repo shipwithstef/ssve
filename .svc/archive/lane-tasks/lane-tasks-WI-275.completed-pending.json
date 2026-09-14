@@ -1,0 +1,40 @@
+{
+  "wi": "WI-275",
+  "lane": "framework",
+  "created": "2026-05-10T20:53:10Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Migrate stage-revenue skill contract",
+      "status": "completed",
+      "blocked_by": [],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T20:53:10Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T20:53:10Z"
+    },
+    {
+      "id": 2,
+      "subject": "Validate and close WI-275",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T20:53:10Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T20:55:50Z"
+    }
+  ]
+}

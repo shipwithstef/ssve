@@ -1,0 +1,161 @@
+{
+  "wi": "WI-191",
+  "lane": "framework",
+  "created": "2026-05-10T09:30:00Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Route WI-191 Phase A and bind session contract",
+      "status": "completed",
+      "metadata": {
+        "skill": "route-workflow"
+      },
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-05-10T09:00:00Z",
+        "loaded_via": "session"
+      },
+      "completed_at": "2026-05-10T09:00:00Z"
+    },
+    {
+      "id": 2,
+      "subject": "Produce plan-changeset manifest at .svc/plan-changeset-WI-191-phase-a.md (spec lives in WI-191.md; this is framework lane, not product-feature lane)",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "plan-changeset"
+      },
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-05-10T05:29:30.966Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-10T05:29:31.002Z"
+    },
+    {
+      "id": 3,
+      "subject": "Document the phase-receipt schema in references/phase-receipts.md (single source of truth)",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-05-10T05:29:22.419Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-10T05:30:38.821Z"
+    },
+    {
+      "id": 4,
+      "subject": "Extend route-workflow/references/task-graph-protocol.md to document optional skill_receipt extension fields",
+      "status": "completed",
+      "blocked_by": [
+        3
+      ],
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-05-10T05:30:38.848Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-10T05:31:05.135Z"
+    },
+    {
+      "id": 5,
+      "subject": "Add tier-1 validator validate-skill-receipt-shape.sh (advisory mode in Phase A)",
+      "status": "completed",
+      "blocked_by": [
+        3
+      ],
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-05-10T05:31:05.167Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-10T05:31:56.292Z"
+    },
+    {
+      "id": 6,
+      "subject": "Add fixtures: good/bad lane-tasks files exercising the validator",
+      "status": "completed",
+      "blocked_by": [
+        5
+      ],
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-05-10T05:31:56.322Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-10T05:33:17.881Z"
+    },
+    {
+      "id": 7,
+      "subject": "Update FRAMEWORK-STATE.md Known Gaps to record Phase A landed",
+      "status": "completed",
+      "blocked_by": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "metadata": {
+        "skill": "execute-changeset"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-05-10T05:33:17.917Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-10T05:34:15.397Z"
+    },
+    {
+      "id": 8,
+      "subject": "Run tier-1 evals; confirm new validator passes its own checks and no other validator regresses",
+      "status": "completed",
+      "blocked_by": [
+        7
+      ],
+      "metadata": {
+        "skill": "verify-promotion"
+      },
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-05-10T05:34:15.426Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-10T05:58:07.569Z"
+    },
+    {
+      "id": 9,
+      "subject": "Commit Phase A and open PR",
+      "status": "completed",
+      "blocked_by": [
+        8
+      ],
+      "metadata": {
+        "skill": "land-changeset"
+      },
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-05-10T05:58:07.618Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-05-10T09:58:07Z"
+    }
+  ]
+}

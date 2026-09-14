@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "base_sha": "65717d8c557db80166b6b73dd619984ea7b2ef78",
+  "manifest": "docs/plans/2026-08-23-wi558-tier1-regressions/manifest.md",
+  "volatile_paths": [
+    ".svc/"
+  ],
+  "ownership": [
+    {
+      "task": "T01",
+      "paths": [
+        "bin/svc-enforce.mjs",
+        "hooks/opencode/svc-opencode-plugin.ts",
+        "hooks/svc-session-contract-freshness.mjs",
+        "setup"
+      ]
+    },
+    {
+      "task": "T02",
+      "paths": [
+        "scripts/blind-floor-judge.sh",
+        "scripts/lib/reviewer-evidence.mjs",
+        "scripts/prompt-floor-judge.sh",
+        "scripts/run-external-review.mjs"
+      ]
+    },
+    {
+      "task": "T03",
+      "paths": [
+        "test-framework/evals/tier-1/lib/stage-governed-hooks.sh",
+        "test-framework/evals/tier-1/validate-actionable-hook-denial.sh",
+        "test-framework/evals/tier-1/validate-all-host-install-migration.sh",
+        "test-framework/evals/tier-1/validate-chain-references.sh",
+        "test-framework/evals/tier-1/validate-codex-execution-integrity.sh",
+        "test-framework/evals/tier-1/validate-company-fleet-integration.sh",
+        "test-framework/evals/tier-1/validate-enforcement-escape-and-readonly.sh",
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+        "test-framework/evals/tier-1/validate-governed-wirer-fail-fast.sh",
+        "test-framework/evals/tier-1/validate-quick-fix-carve-out.sh",
+        "test-framework/evals/tier-1/validate-sdkg-router-fail-closed.sh",
+        "test-framework/evals/tier-1/validate-self-heal-survives-double-dead-pointer.sh",
+        "test-framework/evals/tier-1/validate-session-contract-freshness.sh",
+        "test-framework/evals/tier-1/validate-setup-worktree-canonical-resolution.sh",
+        "test-framework/evals/tier-1/validate-sol-r2-fail-closed.mjs",
+        "test-framework/evals/tier-1/validate-wi546-cursor-live-acceptance.sh",
+        "test-framework/evals/tier-1/validate-wi546-grok-live-acceptance.sh"
+      ]
+    },
+    {
+      "task": "T04",
+      "paths": [
+        "test-framework/evals/tier-1/validate-plan-product-safety.sh"
+      ]
+    },
+    {
+      "task": "T06",
+      "paths": [
+        "docs/specs/audit-reports/WI-558-review-brief.md",
+        "docs/specs/audit-reports/WI-558-review-codex-sol-high.txt",
+        "docs/specs/audit-reports/WI-558-review-cursor-auto.txt",
+        "docs/specs/work-items/PROPOSAL-PROMOTION-LEDGER.md",
+        "docs/specs/work-items/WI-512-residual-map.json",
+        "docs/specs/work-items/WI-548.md",
+        "docs/specs/work-items/WI-549.md",
+        "docs/specs/work-items/WI-550.md",
+        "docs/specs/work-items/WI-551-residual-map.json",
+        "docs/specs/work-items/WI-551.md",
+        "docs/specs/work-items/WI-552-residual-map.json",
+        "docs/specs/work-items/WI-552.md",
+        "docs/specs/work-items/WI-553-residual-map.json",
+        "docs/specs/work-items/WI-553.md",
+        "docs/specs/work-items/WI-555-residual-map.json",
+        "docs/specs/work-items/WI-556-residual-map.json",
+        "docs/specs/work-items/WI-556.md",
+        "proposals/2026-07-24-session-019f8cd3-audit-and-svc-framework-fixes.md",
+        "proposals/2026-08-02-one-lane-framework.md",
+        "proposals/2026-08-17-framework-improvement-autonomous-restart-boundary-continuation.md",
+        "proposals/2026-08-17-framework-improvement-native-host-dispatch-policy.md",
+        "proposals/2026-08-17-framework-improvement-risk-triggered-plan-exec-contracts.md",
+        "proposals/2026-08-21-framework-improvement-consumer-retroactive-attestation.md",
+        "proposals/2026-08-21-framework-improvement-final-sha-mandatory-skill-coverage.md",
+        "proposals/done/2026-07-24-session-019f8cd3-audit-and-svc-framework-fixes.md",
+        "proposals/done/2026-08-02-one-lane-framework.md",
+        "proposals/done/2026-08-17-framework-improvement-autonomous-restart-boundary-continuation.md",
+        "proposals/done/2026-08-17-framework-improvement-native-host-dispatch-policy.md",
+        "proposals/done/2026-08-17-framework-improvement-risk-triggered-plan-exec-contracts.md",
+        "proposals/done/2026-08-21-framework-improvement-consumer-retroactive-attestation.md",
+        "proposals/done/2026-08-21-framework-improvement-final-sha-mandatory-skill-coverage.md",
+        "proposals/triage.json"
+      ]
+    },
+    {
+      "task": "T07",
+      "paths": [
+        "docs/plans/2026-08-23-wi558-tier1-regressions/manifest.md",
+        "docs/plans/2026-08-23-wi558-tier1-regressions/plan-contract.json",
+        "docs/specs/audit-reports/WI-558-review-codex-sol-final.txt",
+        "docs/specs/work-items/WI-558.md"
+      ]
+    },
+    {
+      "task": "T08",
+      "paths": [
+        "scripts/validate-plan-contract.mjs"
+      ]
+    }
+  ],
+  "resource_review": {
+    "verification": "changed-executable-census",
+    "denominator": 26,
+    "disposition": "no-risky-resource-writers",
+    "evidence": "changed-executable-census over git diff 65717d8..HEAD excluding volatile .svc/; no money/ledger/quota/identity writer vocabulary introduced (enforcement audit uses plain writeFileSync; floor judges gained only a content-digest flag)"
+  },
+  "resource_writers": [],
+  "claims": [
+    {
+      "kind": "all",
+      "evidence": {
+        "verification": "triage-direct-proposals"
+      },
+      "denominator": 42
+    },
+    {
+      "kind": "absence",
+      "evidence": {
+        "verification": "diff-manifest-parity"
+      },
+      "denominator": 0
+    },
+    {
+      "kind": "unused",
+      "evidence": {
+        "verification": "executable-consumers"
+      },
+      "denominator": 0
+    }
+  ],
+  "executables": []
+}

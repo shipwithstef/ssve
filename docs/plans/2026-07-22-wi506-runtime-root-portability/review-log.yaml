@@ -1,0 +1,164 @@
+review_log:
+  wi: WI-506
+  plan: docs/plans/2026-07-22-wi506-runtime-root-portability/manifest.md
+  implementation_started: false
+  owner_exception:
+    kind: retro-plan-review
+    authority: repository-owner
+    source: user-message-2026-07-22-WI-506
+    authorization_path: docs/plans/2026-07-22-wi506-runtime-root-portability/retro-plan-review-authorization.json
+    authorization_sha256: cf284b66a1f7d38e3391d8d256c093260e53035d3eb9f682a9af563b45f5ddad
+    scope: one WI-506 review sequence, including mandatory infrastructure convergence
+    reason: mandatory pre-execution blend artifacts were falsely classified as implementation
+  tier1:
+    script: scripts/verify-plan-mechanical.sh
+    exit_code: 0
+    evidence: /tmp/plan-tier1.log
+  external_state:
+    result: PASS
+    evidence: /tmp/plan-external-state-check.log
+  round_1:
+    status: COMPLETED
+    reviewer_family: openai
+    reviewer_model: gpt-5.6-sol
+    effort: high
+    rubric_score: 3
+    verdict: fail
+    findings_count: 8
+    findings_path: docs/plans/2026-07-22-wi506-runtime-root-portability/review-round1-findings.json
+    receipt_path: docs/plans/2026-07-22-wi506-runtime-root-portability/review-round1-receipt.json
+    phase_guard_decision: allow-override
+    responses:
+      - finding_id: F-001
+        severity: high
+        decision: ACCEPT
+        justification: The newly inserted classifier task shifted docs ownership and left three stale task identifiers; unresolved task edges make execution ambiguous.
+        action: Replaced every task-5-docs edge with task-6-docs and added an exact task-id scan to the revised manifest review.
+      - finding_id: F-002
+        severity: high
+        decision: ACCEPT
+        justification: The command block must execute the classifier and documentation tasks explicitly; staging a filename is not implementation.
+        action: Added ordered task 5 and task 6 instructions, the complete focused command set, and an exact manifest-owned staged-path equality gate.
+      - finding_id: F-003
+        severity: high
+        decision: ACCEPT
+        justification: A prose checkpoint without a commit cannot be a Git rollback anchor.
+        action: Reclassified checkpoints as evidence milestones with pre-task diff hashes and logs; only land-changeset creates the final commit, whose rollback is a reviewed git revert.
+      - finding_id: F-004
+        severity: high
+        decision: ACCEPT
+        justification: Directory-wide staging is unsafe in a reused worktree and can both include residue and omit declared governance evidence.
+        action: Added implementation-paths.txt, pathspec-file staging, existence checks, and fail-closed equality between the sorted allowlist and staged diff.
+      - finding_id: F-005
+        severity: high
+        decision: ACCEPT
+        justification: Every affected focused validator must run before the aggregate framework suite.
+        action: Added actionable-hook, all-host install, double-dead-pointer, external-review launcher, contract-map, and lane-graph checks to the execution sequence.
+      - finding_id: F-006
+        severity: high
+        decision: ACCEPT
+        justification: The graph contained the evidence, but the plan-review protocol requires the manifest itself to expose lane compliance.
+        action: Added a complete required-skill table with task ids, current statuses, artifact or receipt authority, downstream blocks, and the graph validation command.
+      - finding_id: F-007
+        severity: medium
+        decision: ACCEPT
+        justification: The classifier fixture expanded the existing modified-validator count from eight to nine.
+        action: Corrected the task and simulation counts and named the external-review fixture ownership.
+      - finding_id: F-008
+        severity: high
+        decision: ACCEPT
+        justification: A trust-sensitive exception needs explicit ownership, generation, validation, failure behavior, and durable receipt evidence.
+        action: Added task-0-owner-auth, the exact JSON/freshness/SHA/canonical-receipt checks, durable authorization and receipt artifacts, and an honest statement that the current mechanism has no signature beyond same-session owner authority plus SHA binding.
+  round_2:
+    status: COMPLETED
+    reviewer_family: openai
+    reviewer_model: gpt-5.6-sol
+    requested_effort: high
+    effective_effort: high
+    findings_self_reported_effort: xhigh
+    requested_effective_tuple_match: true
+    rubric_score: 5
+    verdict: fail
+    findings_count: 5
+    findings_path: docs/plans/2026-07-22-wi506-runtime-root-portability/review-convergence-findings.json
+    receipt_path: docs/plans/2026-07-22-wi506-runtime-root-portability/review-convergence-receipt.json
+    phase_guard_decision: allow-override
+    responses:
+      - finding_id: F-009
+        severity: high
+        decision: ACCEPT
+        justification: improve-framework is a spanning orchestrator whose P5-P8 cannot complete before implementation replay, state mutation, proposal closeout, and remote sync; that exception must be mechanically distinguished from an arbitrary pending upstream leaf.
+        action: Cited the improve-framework phase contract and added an exact graph assertion for task 2 skill, pending status, blocker 15, full orchestrates_tasks set, completion gate, and receipted P1-P4 routing phases.
+      - finding_id: F-010
+        severity: high
+        decision: ACCEPT
+        justification: Repository-relative require syntax is not a valid filesystem load and the shown invocation did not persist both canonical artifacts.
+        action: Replaced require with path.resolve plus fs.readFileSync, redirected findings, captured the launcher receipt path, copied the receipt, and schema/tuple/override-validated both artifacts.
+      - finding_id: F-011
+        severity: high
+        decision: REJECT
+        justification: The canonical round-1 receipt records requested and effective tuples as identical gpt-5.6-sol/high. The findings envelope self-reported xhigh, but model self-report is not invocation authority and does not override the launcher receipt.
+        counter_evidence: docs/plans/2026-07-22-wi506-runtime-root-portability/review-round1-receipt.json has requested_tuple.effort=high, effective_tuple.effort=high, identical tuple objects, and classification=success; the prerequisite command now fails on any requested/effective mismatch.
+      - finding_id: F-012
+        severity: high
+        decision: ACCEPT
+        justification: Equality against a mutable allowlist is insufficient unless the reviewed plan binds the allowlist bytes and downstream-only paths are separately denied.
+        action: Embedded the final implementation-paths.txt SHA-256 220f5d0c630c7e4f7f45d72cf8599f0a45b3e4ed24e1de25eb9b5465be9896e9, validates it before and after staging, compares exact path equality, and rejects FRAMEWORK-STATE, svc capability, or proposals/done paths during execute.
+      - finding_id: F-013
+        severity: medium
+        decision: ACCEPT
+        justification: A generic nonzero exit cannot distinguish the intended contract failure from syntax or fixture breakage.
+        action: Added syntax-first checks, three named RED-only commands, exact nonzero requirements, stable WI506-RED diagnostic markers, named .svc logs, and post-implementation zero-exit replays.
+  round_3:
+    status: COMPLETED
+    reviewer_family: openai
+    reviewer_model: gpt-5.6-sol
+    requested_effort: high
+    effective_effort: high
+    requested_effective_tuple_match: true
+    rubric_score: 6
+    verdict: fail
+    findings_count: 3
+    findings_path: docs/plans/2026-07-22-wi506-runtime-root-portability/review-round3-findings.json
+    receipt_path: docs/plans/2026-07-22-wi506-runtime-root-portability/review-round3-receipt.json
+    phase_guard_decision: allow-override
+    responses:
+      - finding_id: F-014
+        severity: high
+        decision: ACCEPT
+        justification: Recomputing both the artifact digest and trust anchor from mutable bytes proves equality but not identity with the owner-reviewed artifact.
+        action: Added literal EXPECTED_AUTH_SHA cf284b66a1f7d38e3391d8d256c093260e53035d3eb9f682a9af563b45f5ddad, checks the file against it before invocation, supplies only that literal to the launcher, and requires both receipt hashes plus WI/source/path/kind to match the reviewed constants.
+      - finding_id: F-015
+        severity: high
+        decision: ACCEPT
+        justification: A digest is not independently reviewable without the bound bytes, and ordinary Git pathspec interpretation can expand non-literal entries.
+        action: Embedded all allowlist bytes in the manifest, compares them byte-for-byte with implementation-paths.txt, rejects blank/duplicate/absolute/traversal/magic/glob entries, uses git --literal-pathspecs add per entry, and retains the fixed SHA and exact staged equality gates.
+      - finding_id: F-016
+        severity: medium
+        decision: ACCEPT
+        justification: The plan should not promise per-task diff hashes or GREEN logs that its command sequence does not create.
+        action: Reclassified the table as execution milestones, removed independent rollback-anchor claims, kept only explicit task-1 RED logs, and made combined-tree validators plus normal execute-changeset phase receipts the task 2-6 completion signal.
+  convergence:
+    required: true
+    reason: infra-path plan and round-1 rubric below 5
+    package: revised manifest plus complete round-1 findings and responses
+    requested_tuple: codex gpt-5.6-sol high
+    status: complete-at-hard-cap
+    disposition: all round-3 findings accepted and applied; no Critical or residual High remains
+    no_fourth_round: true
+  post_review_execution_correction:
+    trigger: mandated security and implementation audits found authority-lock, repository-skill-symlink, shell-counter, and graph-binding defects in the executed design
+    owner_scope: the repository owner explicitly authorized delivery of WI-506 including the permanent phase-classification correction
+    plan_effect: the implementation allowlist grew from 55 to 59 paths and its SHA-256 changed to e4fb22b47cbc5c463e87ad34e8b7e287dde47e99c39d6072c0852f5ff4ff69e9
+    disposition: execution remediation under the already promoted WI-506 plan; final exact diff must repeat review-gate, review-exec, review-security, audit-implementation, and test-framework
+    plan_revalidation:
+      mechanical: PASS
+      mechanical_evidence: .svc/wi506-amended-plan-mechanical.log
+      round_cap: PASS
+      round_cap_evidence: .svc/wi506-review-round-cap.log
+    no_fourth_round_reason: review-plan already consumed the mechanically enforced three-round maximum; a fourth paid adversarial plan round is forbidden
+  terminal_state: REVISED_AND_REVIEWED
+
+rounds_run: 3
+unresolved_critical: 0
+remaining_high: 0

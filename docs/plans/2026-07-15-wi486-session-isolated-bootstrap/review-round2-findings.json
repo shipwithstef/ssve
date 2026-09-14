@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "review_kind": "plan",
+  "rubric_score": 3,
+  "rubric_failures": [
+    1,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "dependencies_needing_read": [
+    "docs/specs/features/wi-486-session-isolated-bootstrap.md",
+    "docs/specs/bugfix/wi-486-session-bootstrap-brief.md",
+    "docs/specs/decisions/wi-486-session-isolated-bootstrap.md",
+    "docs/specs/journeys/J-FW-05-multi-session-contention.feature.md",
+    ".svc/lane-tasks-WI-486.json",
+    ".svc/pipeline-decisions.jsonl"
+  ],
+  "reviewer": {
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5",
+    "effort": "high"
+  },
+  "verdict": "fail",
+  "summary": "The plan has strong AC mapping and test intent, but it is not execution-safe yet. It contradicts launcher-owned reviewer routing, schedules upstream authority artifacts during implementation, lacks crash recovery for partial bootstrap tuples, and provides no viable rollback for already-migrated task state. Several commands also prove only generic failure rather than the claimed behavior.",
+  "findings": [
+    {
+      "id": "F-001",
+      "severity": "high",
+      "claim": "The plan hard-codes Fable 5/high without citing the required owner-selected profile receipt.",
+      "analysis": "The review protocol makes the canonical launcher the sole owner of reviewer tuple resolution. A plan may require Fable only when an explicit owner-selected Fable profile is active and receipted. The manifest instead declares Fable 5/high as an unconditional readiness condition and evidence target. This can conflict with the scheduled Opus profile and makes successful execution depend on bypassing or misreporting launcher policy.",
+      "evidence": [
+        "Promotion checklist: “Independent plan review uses Fable 5 exactly high before implementation.”",
+        "Files Planned describes review-log.yaml as containing “Fable-5/high plan review attempts.”",
+        "The supplied protocol states that Codex orchestration uses the scheduled or explicit owner profile and that a different tuple requires a receipted repository-owner override.",
+        "No owner override receipt path, digest, or decision entry is cited in the plan."
+      ],
+      "proposed_fix": "Replace every unconditional Fable requirement with “use the tuple resolved by scripts/run-external-review.mjs and persist its receipt.” If Fable is owner-required, add the exact owner-override receipt artifact and hash as a prerequisite and fail closed when it is absent."
+    },
+    {
+      "id": "F-002",
+      "severity": "high",
+      "claim": "Upstream planning and journey authority is scheduled for creation or modification inside execution, contradicting the claimed completed framework lane.",
+      "analysis": "The plan says diagnose-bug, write-spec, and design-tech are completed prerequisites, yet task 1 is assigned to create the diagnosis, architecture decisions, and the plan manifest itself. Task 6 is assigned to commit accepted journey authority. This allows implementation to establish or alter its own upstream contract after execution has begun and makes lane compliance unverifiable. It also conflicts with the first-task statement that these artifacts are already committed inputs.",
+      "evidence": [
+        "Files Planned assigns CREATE-UPSTREAM for the diagnosis, decisions, and manifest to task-1.",
+        "Files Planned assigns MODIFY-UPSTREAM for J-FW-05 scenarios to task-6.",
+        "Prerequisite matrix says the upstream lane is satisfied and cites completed route-workflow, diagnose-bug, write-spec, and design-tech phase receipts.",
+        "First-task viability says task 1 has a “committed spec/diagnosis/design, manifest.”"
+      ],
+      "proposed_fix": "Freeze the diagnosis, decisions, journey scenarios, spec, and reviewed manifest before execute-changeset. Mark them as PREEXISTING inputs rather than task-owned creates. Cite the exact task-graph phase receipts or pipeline-decision entries for every mandatory upstream framework-lane skill. Limit task 6 to implementation-evidence and lifecycle updates that cannot rewrite the accepted contract."
+    },
+    {
+      "id": "F-003",
+      "severity": "high",
+      "claim": "A process interruption can leave a partial bootstrap tuple that the canonical command can neither resume nor recover.",
+      "analysis": "Selective rollback covers failures handled by the running process, but it cannot be assumed after SIGKILL, host termination, or power loss. The plan explicitly makes every partial tuple an unrecoverable conflict and forbids repair or deletion. Consequently, an interrupted canonical bootstrap can permanently block the same WI, violating bootstrap idempotency and rerun safety.",
+      "evidence": [
+        "Bootstrap contract: “Any partial tuple ... is an actionable conflict.”",
+        "AC mapping: “every partial tuple conflicts without repair/delete.”",
+        "RECOVERY_IF_FAIL says to remove nothing manually.",
+        "The failpoint proof describes reverse rollback by the helper but does not include abrupt termination where cleanup code never runs."
+      ],
+      "proposed_fix": "Define a durable transaction journal written before each stage, including repository identity, session, generation, artifact preexistence, and creation status. Add an explicit, attributable recovery path that may resume or selectively remove only journal-proven artifacts after revalidating the lock and exact tuple. Test hard termination at every stage in a subprocess, followed by deterministic rerun or recovery."
+    },
+    {
+      "id": "F-004",
+      "severity": "high",
+      "claim": "The rollback plan reverts code but does not restore task-state files already migrated to the new format.",
+      "analysis": "A normal revert PR can remove the migration reader and compatibility modules while leaving graphs transformed on disk. If the restored code cannot consume the migrated shape, rollback creates an outage. Backups and digests provide evidence but are not themselves a restoration procedure. The plan needs a version-compatible rollback sequence for persistent state.",
+      "evidence": [
+        "Rollback says to restore host adapters and original bootstrap behavior while removing compatibility/migration modules.",
+        "Migration writes task-state transformations through atomic replacement.",
+        "Rollback says not to manually delete backups or receipts and only to use digests to prove restoration.",
+        "No reverse-migration command, restore precondition, compatibility window, or validation of old-code readability is specified."
+      ],
+      "proposed_fix": "Keep the compatibility reader through a rollback window or add a receipt-driven reverse-migration command. Specify exact eligibility checks, before/after digests, atomic restore from immutable backup, failure receipt behavior, and validation that the reverted code can read every restored graph before removing compatibility support."
+    },
+    {
+      "id": "F-005",
+      "severity": "high",
+      "claim": "The migration and compatibility runtime contracts omit executable interface and storage details needed for deterministic inline implementation.",
+      "analysis": "The manifest describes an “explicit authorization source,” compatibility markers, backups, and terminal receipts without fixing their CLI flags, accepted authorization artifact, output paths, exit codes, or concurrency behavior. Different implementations could satisfy the prose while being incompatible with hooks or validators. The execution sequence only syntax-checks the CLI and delegates all behavior to a yet-unwritten validator.",
+      "evidence": [
+        "Compatibility contract says the migration CLI “requires an explicit authorization source” but never names its format or argument.",
+        "Only the backup directory `.svc/task-state-migrations/v1/<digest>/` is fixed; marker and terminal receipt paths are not fixed.",
+        "Task 4 execution commands are `node --check ...` and one validator invocation; no canonical migration command is shown.",
+        "External State names compatibility markers and migration receipts generically rather than identifying their exact locations and cleanup lifecycle."
+      ],
+      "proposed_fix": "Add a concrete CLI contract: complete invocation, required flags, authorization artifact and validation rules, stdin/stdout schema, exit-code table, exact backup/marker/receipt paths, file modes, atomic-create behavior, and already-migrated result. Include copy-pasteable success, foreign-denial, failure, and idempotent-replay commands in task 4."
+    },
+    {
+      "id": "F-006",
+      "severity": "medium",
+      "claim": "The red-first commands accept any nonzero exit and therefore do not prove failure for the named missing behavior.",
+      "analysis": "The shell expression succeeds for assertion failures, syntax failures, missing tools, permission errors, and timeouts alike. That contradicts the task requirement that new tests fail only because WI-486 behavior is absent. A broken fixture could be recorded as a valid red checkpoint.",
+      "evidence": [
+        "Execution sequence uses `bash ...validate-session-authority-isolation.sh || test \"$?\" -ne 0`.",
+        "The same pattern is used for validate-task-state-compatibility.sh.",
+        "Task 1 requires that the new tests “fail only for the named missing behavior.”"
+      ],
+      "proposed_fix": "Give each red fixture a stable expected exit code and diagnostic token, capture stdout/stderr, and assert both. Add a timeout and explicitly reject shell parse errors, command-not-found, fixture setup failures, and unexpected failing assertions."
+    },
+    {
+      "id": "F-007",
+      "severity": "medium",
+      "claim": "The execution command sequence stops before the mandatory receipts, frozen-diff reviews, commit, merge, and promoted replay claimed by the plan.",
+      "analysis": "The sequence is copy-pasteable only through local Tier-1 validation. The checklist requires four reviews over one frozen hash, chain receipts, a reviewed commit, merge, and post-promotion replay, but no commands bind these operations to the same tree or commit. This leaves the most consequential handoff dependent on operator interpretation.",
+      "evidence": [
+        "Execution Command Sequence ends with `bash test-framework/evals/run-all-evals.sh`.",
+        "The prose says the aggregate diff then receives review-exec, review-security, review-gate, and audit.",
+        "Promotion readiness requires those reviews to evaluate the same frozen diff hash and requires PR merge plus promoted-origin replay.",
+        "Only a conditional `check-chain-receipts.mjs --sha HEAD` command is supplied; receipt emission, hash comparison, commit, land, and verify commands are absent."
+      ],
+      "proposed_fix": "Extend the sequence with exact commands to compute and persist the frozen tree/diff hash, invoke each mandatory gate, verify every review references that hash, emit and validate receipts, commit without bypass, invoke land-changeset, and replay the named validators against the promoted commit. If later skills own these commands, identify their task IDs and required input/output receipts explicitly."
+    },
+    {
+      "id": "F-008",
+      "severity": "medium",
+      "claim": "The asserted inventory of 35 regression-only graph readers has no reproducible inventory artifact or classification check.",
+      "analysis": "The authority boundary depends on the assertion that only five accepted entry points require semantic changes while 35 other readers remain regression-only. Without the exact file list and discovery command, a missed authority consumer can retain old graph-uniqueness semantics. Focused tests for the named adapters do not prove repository-wide entry-point completeness.",
+      "evidence": [
+        "Entry-point universe states “35 files found by bounded inventory” but does not enumerate them.",
+        "No inventory artifact appears in Files Planned.",
+        "No command in the targeted or full execution sequence reproduces the count or classifies each reader as authority-bearing versus diagnostic-only."
+      ],
+      "proposed_fix": "Add a tracked inventory evidence file containing the exact 35 paths, discovery patterns, and classification rationale. Add a deterministic validator that reruns the search, fails on unclassified additions/removals, and verifies that every authority-bearing consumer imports or invokes the shared resolver."
+    }
+  ],
+  "certifications": [
+    {
+      "key": "scope_lock",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "a8cffd32cd11f409570fb4ac4ea53b35ac8ee0b49843aa6a6ee3249a7c840e55"
+    },
+    {
+      "key": "schema_constrained_review",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "a8cffd32cd11f409570fb4ac4ea53b35ac8ee0b49843aa6a6ee3249a7c840e55"
+    }
+  ]
+}

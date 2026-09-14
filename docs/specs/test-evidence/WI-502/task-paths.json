@@ -1,0 +1,81 @@
+{
+  "task-1-red-contracts": [
+    "test-framework/evals/tier-1/validate-operation-scope-authority.sh",
+    "test-framework/evals/tier-1/validate-controller-lease-handover.sh",
+    "test-framework/evals/tier-1/validate-delegated-execution-authority.sh",
+    "test-framework/evals/tier-1/validate-shell-containment-contract.sh",
+    "docs/plans/2026-07-20-wi502-durable-authority/progress.md"
+  ],
+  "task-2-operation-scope": [
+    "docs/plans/2026-07-20-wi502-durable-authority/progress.md",
+    "hooks/lib/operation-scope.mjs",
+    "hooks/lib/hook-payload.mjs",
+    "hooks/codex/lib/codex-hook-context.mjs",
+    "hooks/codex/svc-codex-skill-load-enforcer.mjs",
+    "hooks/svc-worktree-isolation-guard.mjs",
+    "scripts/codex-load-skill.mjs",
+    "test-framework/evals/tier-1/validate-codex-first-task-activation.sh",
+    "test-framework/evals/tier-1/validate-operation-scope-authority.sh"
+  ],
+  "task-3-controller-lease": [
+    "docs/plans/2026-07-20-wi502-durable-authority/progress.md",
+    "schemas/controller-lease.schema.json",
+    "schemas/authority-handover-receipt.schema.json",
+    "hooks/lib/authority-store.mjs",
+    "hooks/lib/wi-claim.mjs",
+    "hooks/lib/resolve-wi.mjs",
+    "scripts/svc-authority.mjs",
+    "scripts/svc-ensure-worktree.mjs",
+    "test-framework/evals/tier-1/validate-controller-lease-handover.sh"
+  ],
+  "task-4-delegated-execution": [
+    "docs/plans/2026-07-20-wi502-durable-authority/progress.md",
+    "schemas/execution-graph.schema.json",
+    "schemas/delegation-capability.schema.json",
+    "schemas/delegation-completion-receipt.schema.json",
+    "hooks/lib/delegation-authority.mjs",
+    "scripts/plan-execution-wave.mjs",
+    "scripts/dispatch-execution-task.mjs",
+    "scripts/validate-execution-merge-back.mjs",
+    "scripts/dispatch-worker.sh",
+    "execute-changeset/SKILL.md",
+    "execute-changeset/references/process-details.md",
+    "execute-changeset/references/subagent-dispatch.md",
+    "dispatch-waves/SKILL.md",
+    "references/parallel-dispatch-transport.md",
+    "test-framework/evals/tier-1/validate-delegated-execution-authority.sh"
+  ],
+  "task-5-containment-hosts": [
+    "docs/plans/2026-07-20-wi502-durable-authority/progress.md",
+    "scripts/svc-contained-exec.mjs",
+    "scripts/validate-host-authority-capabilities.mjs",
+    "provision/hosts/antigravity.json",
+    "provision/hosts/claude.json",
+    "provision/hosts/codex.json",
+    "provision/hosts/cursor.json",
+    "provision/hosts/gemini.json",
+    "provision/hosts/kimi.json",
+    "provision/hosts/mimo-code.json",
+    "provision/hosts/opencode.json",
+    "references/host-capabilities.md",
+    "references/knowledge/domains/codex-hooks/details/events.md",
+    "test-framework/evals/tier-1/validate-shell-containment-contract.sh"
+  ],
+  "task-6-docs-install-regression": [
+    "AGENTS.md",
+    "DOCTRINE.md",
+    "FRAMEWORK-STATE.md",
+    "WORKTREES.md",
+    "docs/plans/2026-07-20-wi502-durable-authority/progress.md",
+    "scripts/check-install-drift.sh",
+    "test-framework/evals/tier-1/validate-session-authority-isolation.sh",
+    "test-framework/evals/tier-1/validate-session-worktree-binding.sh",
+    "test-framework/evals/tier-1/validate-parallel-wi-dispatch.sh"
+  ],
+  "task-7-holistic-gates": [
+    ".svc/lane-tasks-WI-502.json",
+    "docs/plans/2026-07-20-wi502-durable-authority/progress.md",
+    "docs/specs/reviews/wi-502-durable-authority-exec-cross-model.md",
+    "docs/specs/reviews/wi-502-durable-authority-exec-review-log.yaml"
+  ]
+}

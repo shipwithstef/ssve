@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "review_kind": "plan",
+  "rubric_score": 5,
+  "rubric_failures": [
+    2,
+    3,
+    5,
+    7,
+    8
+  ],
+  "dependencies_needing_read": [
+    ".svc/lane-tasks-WI-506.json",
+    "docs/plans/2026-07-22-wi506-runtime-root-portability/review-round1-receipt.json",
+    "docs/plans/2026-07-22-wi506-runtime-root-portability/implementation-paths.txt",
+    "docs/specs/work-items/WI-506.md"
+  ],
+  "reviewer": {
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6-sol",
+    "effort": "xhigh"
+  },
+  "verdict": "fail",
+  "summary": "The revision resolves most round-1 structural findings, but promotion remains blocked by an incomplete lane-compliance disposition, contradictory reviewer-tuple evidence, a nonfunctional authorization validation command, and an allowlist whose reviewed contents are neither embedded nor immutable. RED-checkpoint evidence is also insufficiently deterministic.",
+  "findings": [
+    {
+      "id": "F-009",
+      "severity": "high",
+      "claim": "The lane-compliance table still leaves a mandatory upstream skill pending rather than completed or skipped with a cited decision.",
+      "analysis": "The review protocol requires every mandatory upstream lane skill to be completed with an artifact or skipped with a cited decision. The revised table labels improve-framework as pending and says its completion is blocked by verify-promotion. That may reflect a long-lived orchestration task, but the manifest neither classifies it as exempt from the upstream-completion rule nor cites a lane-contract condition authorizing the pending state. Therefore the response to round-1 F-006 has not mechanically established lane compliance.",
+      "evidence": [
+        "The Lane Compliance table records `improve-framework | 2 | pending orchestrator`.",
+        "Its evidence column says only `graph P1-P4 receipt; completion blocked by task 15`.",
+        "The review protocol requires each mandatory upstream skill to be completed or skipped with a cited decision."
+      ],
+      "proposed_fix": "Either complete improve-framework before plan promotion, record an explicit skip with its exact decision-ledger entry, or cite and mechanically validate a lane-contract rule that classifies it as a spanning orchestrator whose pending state is permitted. Make validate-task-graph-lane.mjs enforce that exception rather than relying on prose."
+    },
+    {
+      "id": "F-010",
+      "severity": "high",
+      "claim": "The owner-authorization verification sequence contains a Node path-resolution error and does not deterministically persist the review findings it claims to validate.",
+      "analysis": "The receipt check calls require() with a repository-relative string beginning `docs/`. Node treats that as a package identifier rather than a relative file, so the shown command normally fails with MODULE_NOT_FOUND. The preceding review invocation also leaves findings on stdout instead of redirecting them to the declared round-1 findings artifact. Consequently the exact prerequisite block cannot reproducibly create and validate the durable evidence named by task-0.",
+      "evidence": [
+        "The command uses `const r=require(process.argv[1])` with argument `docs/plans/2026-07-22-wi506-runtime-root-portability/review-round1-receipt.json`, which lacks `./` or an absolute path.",
+        "The `review-plan-codex.sh` invocation has no stdout redirection to `review-round1-findings.json`.",
+        "The manifest nevertheless declares both round-1 findings and receipt files as durable canonical artifacts."
+      ],
+      "proposed_fix": "Read the receipt with `JSON.parse(fs.readFileSync(path.resolve(process.argv[1]), \"utf8\"))`. Redirect schema-valid findings to the declared findings path, capture the launcher-reported receipt path, copy it to the declared receipt path, and validate both files before task-0 completes."
+    },
+    {
+      "id": "F-011",
+      "severity": "high",
+      "claim": "The recorded round-1 reviewer tuple is internally contradictory, violating the launcher's exact-tuple requirement.",
+      "analysis": "The embedded canonical findings report Codex gpt-5.6-sol at xhigh effort, while the durable review log records high effort and the convergence request claims the requested tuple was high. The protocol treats tuple mismatch as a hard failure and requires convergence on the same requested primary tuple. Without the canonical receipt, the plan cannot establish whether round 1 was valid or which tuple convergence must reproduce.",
+      "evidence": [
+        "Round-1 canonical findings contain `model: gpt-5.6-sol` and `effort: xhigh`.",
+        "The orchestrator review log records `reviewer_model: gpt-5.6-sol` and `effort: high`.",
+        "The convergence block states `requested_tuple: codex gpt-5.6-sol high`.",
+        "The supplied review-plan contract states that tuple mismatch is a hard failure."
+      ],
+      "proposed_fix": "Validate the requested and effective tuple from review-round1-receipt.json. Correct the findings/log metadata to that receipt, fail the round if requested and effective tuples differ, and request convergence using the exact receipt-backed primary tuple."
+    },
+    {
+      "id": "F-012",
+      "severity": "high",
+      "claim": "The staged-path equality gate is not independently scope-binding because its allowlist contents are absent from the reviewed manifest and the allowlist remains mutable.",
+      "analysis": "The revised plan delegates scope enforcement to implementation-paths.txt, but does not enumerate that file's exact contents or bind its hash in the plan-review receipt. An executor can add an unrelated staged path to the allowlist and still pass the equality comparison. This does not fully resolve round-1 F-004, especially because the file inventory mixes implementation, pre-existing review evidence, and verify-promotion-only paths.",
+      "evidence": [
+        "The command compares staged paths only against `implementation-paths.txt`.",
+        "The manifest describes the file as an exact allowlist but does not reproduce its entries or a reviewed SHA-256.",
+        "The governance inventory explicitly excludes some verify-promotion files while other lifecycle-dependent CREATE-then-MOVE paths are present, leaving inclusion rules non-mechanical."
+      ],
+      "proposed_fix": "Embed the exact implementation staging list in the reviewed manifest or include the complete file and its SHA-256 in the plan-manifest receipt. Verify that hash before staging, prohibit execute-changeset from modifying the allowlist, and separately assert that downstream-only paths are absent."
+    },
+    {
+      "id": "F-013",
+      "severity": "medium",
+      "claim": "The RED-test checkpoint cannot distinguish intended contract failures from broken fixtures or syntax failures.",
+      "analysis": "Task-1 requires expected RED evidence, but the execution sequence only instructs the orchestrator in prose to capture RED logs. It defines neither log paths nor expected exit codes and diagnostic markers. Any nonzero result could therefore be recorded as RED even when caused by a missing fixture dependency, syntax error, or unrelated baseline failure.",
+      "evidence": [
+        "Task-1 validation says to record expected failures before implementation.",
+        "The execution sequence says only `Apply task-1 tests with apply_patch and capture expected RED logs`.",
+        "The checkpoint table refers generically to RED logs under `.svc/` without naming commands, files, exit expectations, or required failure signatures."
+      ],
+      "proposed_fix": "For each new or changed RED probe, specify the exact command, evidence path, expected nonzero exit, and required diagnostic assertion. First run syntax/fixture-completeness checks that must pass, then accept RED only when the intended contract assertion fails."
+    }
+  ],
+  "certifications": []
+}

@@ -1,0 +1,32 @@
+review_log:
+  wi: WI-508
+  lane: framework
+  reviewer: claude-opus-4-8/high (anthropic) via scripts/run-external-review.mjs
+  rounds_run: 3
+  unresolved_critical: 0
+  remaining_high: 0
+  round_1:
+    status: completed
+    request_id: 8f16810c-7dd9-4aea-b1b9-51f683b61d1a
+    verdict: pass-with-findings
+    findings: 13
+    critical: 0
+    high: 3
+    response: "WI508-H3 fixed with transactional cross-mirror refusal; H1 and H2 rejected with append-only/reconstruction design evidence; supported Medium/Low findings fixed; round 2 required for repaired diff."
+  round_2:
+    status: completed
+    request_id: 3b3dfc38-2f21-4cd1-a1f3-fea76659169c
+    verdict: pass-with-findings
+    findings: 11
+    critical: 0
+    high: 1
+    response: "Round-one repairs verified. The sole High was rejected because TRIAGE-03 requires ambiguous cross-scope IDs to fail and the approved CLI has no scope selector; every Medium/Low received an evidence-backed disposition."
+  round_3:
+    status: completed
+    request_id: 0f438757-1286-45a4-a4fb-12a522c1dc38
+    verdict: pass-with-dispositions
+    findings: 17
+    critical: 0
+    high: 4
+    response: "Audit-repair package reviewed in full. H1 same-mirror re-scope fixed transactionally; H2 evidence binding updated in round-three records and final receipt; H3 cross-model/security evidence rerun in downstream gates; H4 rejected as stale because both baton files were already consumed and current status proves them absent. Supported Medium/Low findings were fixed or explicitly dispositioned without a forbidden fourth round."
+  terminal_state: HARD_CAP_PASS_WITH_DISPOSITIONS

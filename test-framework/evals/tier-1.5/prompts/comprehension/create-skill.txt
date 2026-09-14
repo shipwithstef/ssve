@@ -1,0 +1,10 @@
+Skill: create-skill
+
+Q: What is the maximum recommended line count for a SKILL.md file, and what naming convention should the skill name follow?
+A: Expected pattern: Keep SKILL.md under 500 lines where possible. The name should use verb-noun convention (e.g., write-spec, design-ux, audit-ac).
+
+Q: What is the CSO WARNING (AP-20) about skill descriptions, and why does it matter?
+A: Expected pattern: Descriptions must state WHEN to trigger, never WHAT the skill does step by step. Summarizing the workflow in the description causes Claude to treat it as sufficient knowledge and skip the full SKILL.md, running a shallow version that misses gates and checks.
+
+Q: What are the 8 post-creation steps for a new skill, and which one is mandatory and commonly skipped?
+A: Expected pattern: (1) Add to skills-manifest.json, (2) Add to README.md, (3) Add to EXTERNAL_ADDONS.md, (4) Create tier-2 eval, (5) Run manifest linter, (6) Check for overlap, (7) Run ./setup installer, (8) Commit changes. Step 7 (running ./setup to create symlinks) is mandatory and commonly skipped — without it the skill is invisible to the host CLI after restart.

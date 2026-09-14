@@ -1,0 +1,247 @@
+{
+  "schema": 1,
+  "wi": "WI-305",
+  "source_proposals": [
+    "proposals/done/2026-05-11-framework-improvement-feature-validation-closeout-ledger.md",
+    "proposals/done/2026-04-25-prevent-deployed-unverified-shipping.md",
+    "proposals/done/2026-05-05-evolution.md"
+  ],
+  "status": "implemented-with-residuals",
+  "coverage": [
+    {
+      "source_proposal": "proposals/done/2026-05-11-framework-improvement-feature-validation-closeout-ledger.md",
+      "proposal_item": "F-001: route-workflow creates feature_validation_closeout evidence obligations for user-facing feature lanes",
+      "status": "covered",
+      "owner_wi": "WI-305",
+      "evidence": [
+        "route-workflow/references/lane-model.md",
+        "scripts/compile-delivery-graph.mjs",
+        "test-framework/evals/tier-1/validate-delivery-graph-compiler.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-11-framework-improvement-feature-validation-closeout-ledger.md",
+      "proposal_item": "F-002: canonical FEATURE_VALIDATION_LEDGER.md template exists under feature test evidence",
+      "status": "covered",
+      "owner_wi": "WI-305",
+      "evidence": [
+        "docs/specs/features/test-evidence/FEATURE_VALIDATION_LEDGER.template.md",
+        "docs/specs/work-items/WI-305.md"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-11-framework-improvement-feature-validation-closeout-ledger.md",
+      "proposal_item": "F-003/F-005: ledger validator enforces exactly one AC row with persona, journey, runtime, E2E/manual, visual/saved-state evidence, WI-linked failures, and final classification",
+      "status": "covered",
+      "owner_wi": "WI-305",
+      "evidence": [
+        "scripts/validate-feature-closeout-ledger.mjs",
+        "test-framework/evals/tier-1/validate-feature-closeout-ledger.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-11-framework-improvement-feature-validation-closeout-ledger.md",
+      "proposal_item": "F-004: route-workflow dispatches a full validation graph rather than loose visual/test fragments",
+      "status": "covered",
+      "owner_wi": "WI-305",
+      "evidence": [
+        "route-workflow/references/lane-model.md",
+        "review-gate/SKILL.md",
+        "verify-promotion/SKILL.md"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-11-framework-improvement-feature-validation-closeout-ledger.md",
+      "proposal_item": "F-006: review-gate and verify-promotion reject missing ledgers for user/admin-facing features",
+      "status": "covered",
+      "owner_wi": "WI-305",
+      "evidence": [
+        "review-gate/SKILL.md",
+        "verify-promotion/SKILL.md",
+        "scripts/classify-delivery-graph-closeout.mjs"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-11-framework-improvement-feature-validation-closeout-ledger.md",
+      "proposal_item": "WI-233-style replay fixture fails API-only, dialog-only, partial saved-state, missing-ledger closeout",
+      "status": "covered",
+      "owner_wi": "WI-305",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-feature-closeout-ledger.sh",
+        "scripts/validate-feature-closeout-ledger.mjs"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-25-prevent-deployed-unverified-shipping.md",
+      "proposal_item": "P0: compressed-lane skips require registry-backed skip_condition_id rather than unilateral skipped_upstream prose",
+      "status": "covered",
+      "owner_wi": "WI-320",
+      "evidence": [
+        "scripts/compile-delivery-graph.mjs",
+        "scripts/validate-delivery-graph.mjs",
+        "scripts/classify-delivery-graph-closeout.mjs",
+        "route-workflow/SKILL.md",
+        "route-workflow/references/task-graph-protocol.md",
+        "verify-promotion/SKILL.md",
+        "test-framework/evals/tier-1/validate-delivery-tier.sh"
+      ],
+      "note": "Delivery graph now records explicit delivery_tier; compressed/rush tiers require rationale and decision-log reference, and validators reject silent reduced-scope routing."
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-25-prevent-deployed-unverified-shipping.md",
+      "proposal_item": "P0/P2: compression ratio should be recorded and trigger audit-implementation before land-changeset",
+      "status": "covered",
+      "owner_wi": "WI-331",
+      "evidence": [
+        "docs/specs/work-items/WI-331.md",
+        "scripts/compile-delivery-graph.mjs",
+        "scripts/validate-delivery-graph.mjs",
+        "test-framework/evals/tier-1/validate-deployed-unverified-compression.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-25-prevent-deployed-unverified-shipping.md",
+      "proposal_item": "P0: verify-promotion must reject bundle-grep as sufficient runtime proof",
+      "status": "covered",
+      "owner_wi": "WI-199",
+      "evidence": [
+        "docs/specs/work-items/WI-199.md",
+        "hooks/svc-verification-delegation-guard.sh",
+        "test-framework/evals/tier-1/validate-bundle-grep-substitution.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-25-prevent-deployed-unverified-shipping.md",
+      "proposal_item": "P0: land-changeset/PR merge should require review-gate receipt and flag same-agent self-review",
+      "status": "covered",
+      "owner_wi": "WI-323",
+      "evidence": [
+        "docs/specs/work-items/WI-323.md",
+        "docs/specs/work-items/WI-312-residual-map.json",
+        "references/review-receipts.md",
+        "hooks/svc-workflow-guard.mjs",
+        "test-framework/evals/tier-1/validate-review-receipt-merge-guard.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-25-prevent-deployed-unverified-shipping.md",
+      "proposal_item": "P1: add DEPLOYED-UNVERIFIED or equivalent pending-verification status and keep it out of the DONE bucket",
+      "status": "covered",
+      "owner_wi": "WI-331",
+      "evidence": [
+        "docs/specs/work-items/WI-331.md",
+        "references/work-item-schema.md",
+        "list-work-items/SKILL.md",
+        "scripts/classify-delivery-graph-closeout.mjs"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-25-prevent-deployed-unverified-shipping.md",
+      "proposal_item": "P1: AC traceability must require evidence per AC, not only per task",
+      "status": "covered",
+      "owner_wi": "WI-305",
+      "evidence": [
+        "scripts/validate-feature-closeout-ledger.mjs",
+        "docs/specs/features/test-evidence/FEATURE_VALIDATION_LEDGER.template.md"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-25-prevent-deployed-unverified-shipping.md",
+      "proposal_item": "Plain-term errors: strategic-decision and WI files must not substitute for feature specs, journeys, or validation ledgers",
+      "status": "covered",
+      "owner_wi": "WI-305",
+      "evidence": [
+        "route-workflow/references/lane-model.md",
+        "scripts/validate-feature-closeout-ledger.mjs",
+        "docs/specs/work-items/WI-305.md"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-25-prevent-deployed-unverified-shipping.md",
+      "proposal_item": "Plain-term errors: lane tasks should not close without skill receipts or prerequisite skill proof",
+      "status": "covered",
+      "owner_wi": "WI-325",
+      "evidence": [
+        "docs/specs/work-items/WI-325.md",
+        "references/phase-receipts.md",
+        "hooks/svc-prompt-stale-state.mjs",
+        "route-workflow/references/task-graph-protocol.md",
+        "test-framework/evals/tier-1/validate-prompt-progress-prereqs.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-25-prevent-deployed-unverified-shipping.md",
+      "proposal_item": "Plain-term errors: autonomous/end-to-end mode must not mean skip verification",
+      "status": "covered",
+      "owner_wi": "WI-198",
+      "evidence": [
+        "docs/specs/work-items/WI-198.md",
+        "hooks/svc-task-completion-guard.sh",
+        "route-workflow/SKILL.md"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-05-evolution.md",
+      "proposal_item": "P0-F1: live evidence capture must exist as a real contract, not a fake host hook",
+      "status": "covered",
+      "owner_wi": "WI-333",
+      "evidence": [
+        "_shared/live-evidence.md",
+        "route-workflow/SKILL.md",
+        "docs/specs/work-items/WI-205.md",
+        "docs/specs/work-items/WI-333.md",
+        "scripts/live-evidence-capture.mjs",
+        "test-framework/evals/tier-1/validate-visual-evidence-motion.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-05-evolution.md",
+      "proposal_item": "P0-F2: brownfield visual iteration review task must bind metadata.skill=review-gate",
+      "status": "covered",
+      "owner_wi": "WI-332",
+      "evidence": [
+        "docs/specs/work-items/WI-332.md",
+        "references/templates/brownfield-iter-visual.json",
+        "scripts/validate-brownfield-iteration-guard.mjs",
+        "test-framework/evals/tier-1/validate-brownfield-iteration-guard.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-05-evolution.md",
+      "proposal_item": "P1-F3: brownfield iterations need branch/worktree or PR workflow enforcement before direct-to-main commits",
+      "status": "covered",
+      "owner_wi": "WI-332",
+      "evidence": [
+        "docs/specs/work-items/WI-332.md",
+        "hooks/svc-workflow-guard.mjs",
+        "test-framework/evals/tier-1/validate-brownfield-iteration-guard.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-05-evolution.md",
+      "proposal_item": "P1-F4: decision-log density should be enforced or generated per task",
+      "status": "covered",
+      "owner_wi": "WI-325",
+      "evidence": [
+        "docs/specs/work-items/WI-325.md",
+        "references/decision-log.md",
+        "hooks/svc-prompt-stale-state.mjs",
+        "route-workflow/references/task-graph-protocol.md"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-05-evolution.md",
+      "proposal_item": "P2-F5: motion implementations should cite or use canonical motion patterns when motion is present",
+      "status": "covered",
+      "owner_wi": "WI-333",
+      "evidence": [
+        "docs/specs/work-items/WI-333.md",
+        "landing-page/SKILL.md",
+        "references/motion-patterns.md",
+        "scripts/validate-motion-pattern-usage.mjs",
+        "test-framework/evals/tier-1/validate-visual-evidence-motion.sh"
+      ]
+    }
+  ],
+  "residuals": []
+}

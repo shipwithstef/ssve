@@ -1,0 +1,154 @@
+{
+  "schema_version": 1,
+  "review_kind": "plan",
+  "rubric_score": 3,
+  "rubric_failures": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "dependencies_needing_read": null,
+  "reviewer": {
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6-sol",
+    "effort": "high"
+  },
+  "verdict": "fail",
+  "summary": "The plan has strong AC coverage and architectural detail, but its freeze, receipt, staging, review, and promotion commands are not executable as written. In particular, new untracked implementation files are omitted from the reviewed hash, pre-execution receipts cannot become the claimed aggregate-commit envelope, several required artifacts and variables are never created, and the post-merge receipt publication path is incomplete.",
+  "findings": [
+    {
+      "id": "F-001",
+      "severity": "critical",
+      "claim": "The frozen review package omits every newly created, untracked implementation and fixture file.",
+      "analysis": "The plan computes REVIEWED_CODE_SHA with `git diff \"$BASE\" -- $CODE_PATHS`. Git does not include untracked files in that diff. Several CODE_PATHS entries are CREATE actions and will normally remain untracked because the plan deliberately postpones staging until after external review. The reviewers therefore cannot inspect the compatibility module, migration CLI, schema, inventory script, or new validators. When those files are subsequently staged, the cached-diff hash will differ from REVIEWED_CODE_SHA, making the declared equality check fail. If the check were weakened, unreviewed code could land.",
+      "evidence": [
+        "Files Planned marks hooks/lib/task-state-compatibility.mjs, scripts/svc-migrate-task-state.mjs, scripts/inventory-graph-readers.sh, schemas/task-state-migration-receipt.schema.json, and two validators as CREATE.",
+        "Execution states that implementation remains uncommitted until task 6 and stages files only after the two external review invocations.",
+        "Freeze command: `REVIEWED_CODE_SHA=$(git diff \"$BASE\" -- $CODE_PATHS | sha256sum | awk '{print $1}')`.",
+        "Later check compares that worktree diff hash with `git diff --cached \"$BASE\" -- $CODE_PATHS`, which includes newly staged files."
+      ],
+      "proposed_fix": "Before freezing, add intent-to-add entries for every new CODE_PATHS file with `git add -N -- $NEW_CODE_PATHS`, or construct the review diff explicitly from tracked diffs plus complete contents of untracked files. Verify the worktree review hash, staged hash, and reviewed package hash are identical before dispatch and again before commit."
+    },
+    {
+      "id": "F-002",
+      "severity": "critical",
+      "claim": "The required pre-execution plan receipts cannot produce the claimed five-receipt envelope on the later aggregate implementation commit.",
+      "analysis": "The plan requires plan-manifest and review-plan receipts before tasks 2–5 begin, while also requiring zero commits ahead of the base and one aggregate commit only at task 6. A receipt emitted before execution is bound either to the current base SHA or to the pre-execution staging tree. Tasks 2–5 then change the tree, so post-commit staging promotion cannot attach that earlier receipt to the aggregate commit. Nevertheless, the plan expects `check-chain-receipts --sha HEAD` immediately after the aggregate commit to find all five receipt types. The later merge-SHA re-emission cannot repair this earlier hard gate because landing is reached only after the HEAD check succeeds.",
+      "evidence": [
+        "Gate ordering says plan-manifest and review-plan receipts must be emitted before task-2..5 code execution.",
+        "Base preflight requires `test -z \"$(git rev-list \"$BASE\"..HEAD)\"` and says implementation stays uncommitted until one aggregate freeze commit.",
+        "Task 6 emits only exec-record, review-exec, and audit-implementation after that commit.",
+        "The next command asserts `node scripts/check-chain-receipts.mjs --sha HEAD` yields the complete five-receipt envelope."
+      ],
+      "proposed_fix": "Define a two-stage receipt lifecycle explicitly: preserve schema-valid pre-execution plan receipt bodies as immutable evidence for the execution gate, then re-emit those same bodies against the final aggregate commit after verifying their plan-content hashes still match. Alternatively, commit the converged plan and review before execution and update the range-level validation contract accordingly. Add commands that prove both the pre-execution gate and final-SHA attachment."
+    },
+    {
+      "id": "F-003",
+      "severity": "high",
+      "claim": "The commit, receipt, and PR sequence depends on undefined files and variables, so it is not copy-paste executable.",
+      "analysis": "The plan invokes shell variables and receipt bodies that no earlier task or command creates. Placeholder redirections such as `<exec-record.json>` are not executable plan instructions, and `.svc/receipt-bodies/*.json` is later required for merge-SHA and verify-promotion emission without a generation step. The commit message, PR title, and PR body variables are likewise unset under the shown sequence. This makes the principal land path halt even after implementation and review succeed.",
+      "evidence": [
+        "`git commit -F \"$COMMIT_MSG_FILE\"` appears without defining COMMIT_MSG_FILE.",
+        "`gh pr create ... --title \"$PR_TITLE\" --body-file \"$PR_BODY_FILE\"` appears without defining PR_TITLE or PR_BODY_FILE.",
+        "Receipt emission uses `--body <exec-record.json>`, `--body <review-exec.json>`, and `--body <audit.json>` without creating those files.",
+        "Merge and verification later require `.svc/receipt-bodies/$T.json` and `.svc/receipt-bodies/verify-promotion.json`, but no task or command creates that directory or its bodies."
+      ],
+      "proposed_fix": "Add a deterministic receipt-body generation step with exact paths and schema validation, define COMMIT_MSG_FILE, PR_TITLE, and PR_BODY_FILE before use, and replace all angle-bracket placeholders with concrete commands. Include cleanup or preservation rules for these generated local artifacts."
+    },
+    {
+      "id": "F-004",
+      "severity": "high",
+      "claim": "The exact staged-file proof is circular because its expected-set artifact is itself absent from the declared Files Planned set.",
+      "analysis": "Task 1 allegedly generates `declared-file-set.txt` from the Files Planned table. That artifact is not a row in the table, yet task 6 stages the entire WI-486 evidence directory containing it. Therefore a literal expected set generated from the table omits the expected-set file itself, while the actual staged set contains it. The required diff will fail unless the generator silently adds an undeclared exception, defeating the claim that the table is the authoritative exact set.",
+      "evidence": [
+        "Files Planned includes several files under docs/specs/test-evidence/WI-486 but does not list declared-file-set.txt.",
+        "Execution says declared-file-set.txt is generated from the Files Planned table.",
+        "`git add` stages the whole `docs/specs/test-evidence/WI-486/` directory.",
+        "The staged-name comparison requires exact equality with declared-file-set.txt."
+      ],
+      "proposed_fix": "Add `docs/specs/test-evidence/WI-486/declared-file-set.txt` explicitly to Files Planned and specify the generator's normalization rules for directory rows, CREATE-EVIDENCE files, preserved files, and the manifest itself. Generate the expected set from an independent machine-readable source rather than from a prose table that includes the expected-set artifact."
+    },
+    {
+      "id": "F-005",
+      "severity": "medium",
+      "claim": "The command sequence still uses `node --check` with multiple file arguments despite explicitly acknowledging that only the first file is checked.",
+      "analysis": "The plan contains a correct per-file loop in one revision section, but the operative task-2 command passes three files to one `node --check` invocation. The targeted-tests block also comments additional file paths after a completed loop, so those paths are ignored as comments. Consequently the claimed complete syntax validation is not established by the displayed sequence.",
+      "evidence": [
+        "Task-2 command: `node --check hooks/lib/resolve-wi.mjs hooks/codex/lib/codex-hook-context.mjs hooks/codex/svc-codex-skill-load-enforcer.mjs`.",
+        "The plan itself states that `node --check` validates only its first argument.",
+        "The targeted-tests line ends its loop before a comment containing scripts/svc-ensure-worktree.mjs, hooks/lib/task-state-compatibility.mjs, and scripts/svc-migrate-task-state.mjs."
+      ],
+      "proposed_fix": "Use one authoritative loop over every planned Node entry point in both Targeted Tests and Execution Command Sequence, and remove the contradictory multi-argument invocations."
+    },
+    {
+      "id": "F-006",
+      "severity": "high",
+      "claim": "The bootstrap-intent schema lacks the process identity fields required by the foreign-session liveness algorithm.",
+      "analysis": "The intent marker is declared with session, WI, branch, target worktree, base SHA, and started_at. Later, the plan requires same-host liveness checks using hostname, pid, and process_start_token, plus unspecified renewals. Those values cannot be evaluated from the fixed marker contract, so live and stale foreign partial states cannot be classified deterministically. Misclassification could either delete a live session's artifacts or leave crashed state permanently blocked.",
+      "evidence": [
+        "Bootstrap transaction fixes the marker as `{ session_id, wi, branch, target_worktree, base_sha, started_at }`.",
+        "Foreign-session liveness requires `marker.hostname`, `marker.pid`, and `marker.process_start_token`.",
+        "The liveness rule also refers to `started_at/any renewal`, but no renewal field, renewal writer, or atomic renewal cadence is specified."
+      ],
+      "proposed_fix": "Extend the marker contract to include hostname, pid, process_start_token, expires_at or renewed_at, and schema/version fields. Specify who renews it, the TTL and clock rule, atomic renewal behavior, and the fail-closed result when process identity cannot be checked."
+    },
+    {
+      "id": "F-007",
+      "severity": "high",
+      "claim": "The post-merge notes retry does not retry publication, and the verify-promotion receipt is never pushed.",
+      "analysis": "On notes contention, the command fetches the remote notes ref but neither merges/re-emits the local receipts nor retries the push. Execution then emits verify-promotion only after this attempted notes publication and provides no subsequent notes push or remote validation. The promoted commit can therefore lack durable merge receipts or G7 evidence even though local emission succeeds.",
+      "evidence": [
+        "Contention handler: `git push ... || { git fetch origin refs/notes/svc-receipts:refs/notes/svc-receipts; }`.",
+        "The handler exits successfully after fetch without another push.",
+        "`verify-promotion` is emitted after the last shown notes push.",
+        "No command checks the remote notes ref after emitting verify-promotion."
+      ],
+      "proposed_fix": "Use a bounded fetch–merge/re-emit–validate–push retry loop with an explicit retry count and failure exit. After verify-promotion emission, push notes again and validate the receipt by reading the fetched remote notes ref for MERGE_SHA."
+    },
+    {
+      "id": "F-008",
+      "severity": "high",
+      "claim": "The claimed specialist security review is dispatched with the same generic review kind and identical package as the general execution review.",
+      "analysis": "Both external calls use `--review-kind exec` and consume the same FROZEN_EXEC_PACKAGE. The only changed argument is the artifacts directory. A comment labels the second output an authority/path/ownership lens, but no specialist focus is encoded in the input or invocation. The resulting security evidence could be a duplicate generic review and does not deterministically prove the stated specialist coverage.",
+      "evidence": [
+        "First dispatch: `--review-kind exec ... < \"$FROZEN_EXEC_PACKAGE\"`.",
+        "Second dispatch: `--review-kind exec ... < \"$FROZEN_EXEC_PACKAGE\"`.",
+        "The package contains the same spec/AC excerpt and diff for both calls.",
+        "The authority/path/ownership specialization exists only in a shell comment after the second command."
+      ],
+      "proposed_fix": "Create a separately hashed security package that explicitly enumerates the authority, path containment, symlink, ownership, stale-session, migration authorization, and rollback threat model. Use a supported security review kind or include the lens instructions in the exact stdin package, then record both package hash and REVIEWED_CODE_SHA in the security evidence."
+    },
+    {
+      "id": "F-009",
+      "severity": "high",
+      "claim": "The plan assigns review-log persistence to task 6 even though review-plan must converge before tasks 2–5 execute.",
+      "analysis": "The Files Planned table says review-log.yaml is created by task 6, but the gate-ordering revision requires that review-plan converge and emit its receipt before implementation starts. Since the durable review log is the canonical audit output of review-plan, postponing its creation until task 6 leaves tasks 2–5 without the persisted evidence required to authorize execution. The two instructions cannot both govern execution.",
+      "evidence": [
+        "Files Planned assigns `docs/plans/2026-07-15-wi486-session-isolated-bootstrap/review-log.yaml` to task-6.",
+        "Gate ordering says review-plan must converge and its receipts must be emitted before any task-2..5 code execution.",
+        "Framework review-plan requires the review log to be persisted before the skill completes."
+      ],
+      "proposed_fix": "Move review-log creation and validation to the pre-execution plan gate, update Files Planned and the task graph accordingly, and make task 6 only verify that the earlier log and receipt remain content-consistent."
+    },
+    {
+      "id": "F-010",
+      "severity": "medium",
+      "claim": "The immutable Tier-1 baseline is stated as both 244 and 245 passing tests.",
+      "analysis": "Different authoritative sections assign different totals to the same promoted base SHA. Task 1 and the Simulation Report expect 244/0/0, while Full branch policy expects 245/0/0. This prevents a deterministic baseline comparison and allows an unexpected total to be rationalized using whichever section is convenient.",
+      "evidence": [
+        "Task-1 validation says the baseline file states 244/0/0.",
+        "Simulation Report says the promoted baseline is 244/0/0 at the exact base SHA.",
+        "Full branch policy says the immutable pre-edit comparison point is 245 passed, 0 failed, 0 timed out on base 99da8bcf."
+      ],
+      "proposed_fix": "Run the exact declared Tier-1 command at base 99da8bcf, record its raw output and command hash, and use that single count consistently throughout the manifest and baseline evidence."
+    }
+  ],
+  "certifications": []
+}

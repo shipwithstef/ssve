@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# WI-562 IP-H7 (HD-9): lane-tasks graph files written via Bash (or any path that
+# bypasses the PostToolUse validator) get validated at the commit boundary.
+# Same validator as the hook path: scripts/task-graph.mjs validate.
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null | grep -E '^\.svc/lane-tasks-.+\.json$' || true)
+[[ -z "$STAGED" ]] && exit 0
+
+rc=0
+for f in $STAGED; do
+  if ! node "$ROOT/scripts/task-graph.mjs" validate "$ROOT/$f" >/dev/null 2>&1; then
+    echo "[svc-lane-tasks-pre-commit] INVALID task graph staged: $f" >&2
+    node "$ROOT/scripts/task-graph.mjs" validate "$ROOT/$f" 2>&1 | head -5 >&2 || true
+    rc=1
+  fi
+done
+
+if [[ $rc -ne 0 ]]; then
+  echo "[svc-lane-tasks-pre-commit] Commit BLOCKED — fix or unstage the malformed .svc/lane-tasks-*.json file(s)." >&2
+fi
+exit $rc

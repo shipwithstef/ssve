@@ -1,0 +1,56 @@
+{
+  "wi": "WI-211",
+  "lane": "framework",
+  "created": "2026-05-10T15:55:45.061Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Add record-phase helper and Phase B validator enforcement",
+      "status": "completed",
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T15:55:56.669Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T16:00:21.648Z"
+    },
+    {
+      "id": 2,
+      "subject": "Migrate canonical five skill contracts and tier-2 scenarios",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T16:00:21.718Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T16:01:24.813Z"
+    },
+    {
+      "id": 3,
+      "subject": "Validate, close WI-211, and archive task graph",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T16:01:24.887Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T16:08:13.945Z"
+    }
+  ]
+}

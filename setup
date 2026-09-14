@@ -1,0 +1,1117 @@
+#!/bin/bash
+# Serious Vibe Coding — framework installer
+# Usage:
+#   ./setup [options]
+#
+# Common hosts: claude|codex|kimi|gemini|opencode|mimo-code|antigravity|cursor|grok (default: claude)
+#
+# Options:
+#   --host <name>    Target a specific host manifest
+#   --all-hosts      Run across all discovered hosts
+#   --full           Force clean install of all symlinks
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
+
+# Refuse to run from inside a git worktree. If a user runs ./setup from a
+# worktree (e.g. while working on a feature branch), every skill symlink in
+# ~/.claude/skills/ will be repointed at the worktree path. When the worktree
+# is later removed (after PR merge), every symlink dangles and every hook
+# breaks. Force the user back to the main checkout.
+if [[ "$SCRIPT_DIR" == *"/.worktrees/"* && "${SVC_SETUP_VALIDATE_ONLY:-0}" == "1" ]]; then
+  echo "NOTICE: setup validate-only mode running from worktree source: $SCRIPT_DIR" >&2
+elif [[ "$SCRIPT_DIR" == *"/.worktrees/"* ]]; then
+  echo "NOTICE: setup invoked from a git worktree." >&2
+  echo "  Detected SCRIPT_DIR: $SCRIPT_DIR" >&2
+  echo "  Symlinks must resolve to the main checkout, NOT the worktree, or they" >&2
+  echo "  dangle when the worktree is removed (see anti-pattern AP-30)." >&2
+
+  # Always re-point SCRIPT_DIR at the canonical main checkout.
+  # `git rev-parse --git-common-dir` returns the shared .git directory; its parent
+  # is the main repository working tree. This resolution succeeds from any
+  # worktree in the repo. If it ever fails (detached / corrupt), fall through to
+  # the legacy refusal path so we never silently install with a bad source root.
+  CANONICAL_GIT_DIR="$(cd "$SCRIPT_DIR" && git rev-parse --git-common-dir 2>/dev/null || true)"
+  if [[ -n "$CANONICAL_GIT_DIR" ]]; then
+    if [[ "$CANONICAL_GIT_DIR" != /* ]]; then
+      CANONICAL_GIT_DIR="$(cd "$SCRIPT_DIR" && cd "$CANONICAL_GIT_DIR" && pwd)"
+    fi
+    CANONICAL_REPO_ROOT="$(cd "$CANONICAL_GIT_DIR/.." && pwd)"
+  else
+    CANONICAL_REPO_ROOT=""
+  fi
+
+  if [[ -z "$CANONICAL_REPO_ROOT" || ! -f "$CANONICAL_REPO_ROOT/setup" ]]; then
+    echo "ERROR: could not resolve the canonical main checkout from this worktree." >&2
+    echo "  cd to the main repository checkout and re-run ./setup there." >&2
+    exit 1
+  fi
+
+  if [[ "${SVC_SETUP_ALLOW_WORKTREE:-0}" != "1" ]]; then
+    echo "  Refusing to install. cd to $CANONICAL_REPO_ROOT and re-run ./setup there." >&2
+    echo "  Override (advanced): SVC_SETUP_ALLOW_WORKTREE=1 SVC_SETUP_ALLOW_WORKTREE_REASON='<text>' ./setup --host <host>" >&2
+    exit 1
+  fi
+  if [[ -z "${SVC_SETUP_ALLOW_WORKTREE_REASON:-}" ]]; then
+    echo "  SVC_SETUP_ALLOW_WORKTREE=1 set, but SVC_SETUP_ALLOW_WORKTREE_REASON is empty." >&2
+    echo "  Refusing the bypass without an explicit, non-empty reason." >&2
+    echo "  Re-run with: SVC_SETUP_ALLOW_WORKTREE=1 SVC_SETUP_ALLOW_WORKTREE_REASON='why this is safe' ./setup --host <host>" >&2
+    exit 1
+  fi
+
+  echo "  SVC_SETUP_ALLOW_WORKTREE=1 set (reason: ${SVC_SETUP_ALLOW_WORKTREE_REASON})." >&2
+  echo "  Re-pointing symlink source from $SCRIPT_DIR" >&2
+  echo "                              to $CANONICAL_REPO_ROOT (canonical main)." >&2
+  SCRIPT_DIR="$CANONICAL_REPO_ROOT"
+fi
+
+# Dry-run hook: print the resolved symlink-source root and exit. Used by
+# test-framework/evals/tier-1/validate-setup-worktree-canonical-resolution.sh
+# to verify that worktree invocations never poison ~/.claude/skills/* with
+# worktree paths, regardless of override state.
+if [[ "${SVC_SETUP_DRY_RUN_PRINT_ROOT:-0}" == "1" ]]; then
+  echo "$SCRIPT_DIR"
+  exit 0
+fi
+
+# Parse provisioning mode. A single-host run is the primitive; --all-hosts
+# fans out to that same primitive with bounded concurrency.
+HOST="claude"
+HOST_EXPLICIT=0
+ALL_HOSTS=0
+FULL_REBUILD=0
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --host)
+      if [ $# -lt 2 ] || [[ "$2" == -* ]]; then
+        echo "ERROR: --host requires an argument" >&2
+        exit 2
+      fi
+      HOST="$2"; HOST_EXPLICIT=1; shift 2 ;;
+    --all-hosts) ALL_HOSTS=1; shift ;;
+    --full) FULL_REBUILD=1; shift ;;
+    -h|--help)
+      cat <<'EOF'
+Serious Vibe Coding — framework installer
+
+Usage:
+  ./setup [options]
+
+Options:
+  --host <name>    Target a specific host manifest (default: claude)
+                   Supported hosts: claude, codex, kimi, gemini, opencode, mimo-code, antigravity, cursor, grok
+  --all-hosts      Run across all discovered hosts
+  --full           Force clean install of all symlinks
+  -h, --help       Show this help message
+EOF
+      exit 0
+      ;;
+    *) echo "Unknown option: $1"; exit 1 ;;
+  esac
+done
+
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "ERROR: python3 is required by setup but was not found in PATH" >&2
+  exit 1
+fi
+
+if ! [[ "$HOST" =~ ^[a-z0-9-]+$ ]]; then
+  echo "ERROR: invalid host name: $HOST" >&2
+  exit 2
+fi
+
+if [ "$ALL_HOSTS" -eq 1 ] && [ "$HOST_EXPLICIT" -eq 1 ]; then
+  echo "ERROR: --host and --all-hosts are mutually exclusive" >&2
+  exit 2
+fi
+
+if [ "$ALL_HOSTS" -eq 1 ]; then
+  ALL_HOST_NAMES=()
+  for hf in "$SCRIPT_DIR/provision/hosts/"*.json; do
+    [ -f "$hf" ] || continue
+    hbase="$(basename "$hf")"
+    ALL_HOST_NAMES+=("${hbase%.json}")
+  done
+  if [ "${#ALL_HOST_NAMES[@]}" -eq 0 ]; then
+    echo "ERROR: no provisioned host manifests found" >&2
+    exit 2
+  fi
+  max_jobs="${SVC_SETUP_MAX_JOBS:-4}"
+  if ! [[ "$max_jobs" =~ ^[1-9][0-9]*$ ]]; then
+    echo "ERROR: SVC_SETUP_MAX_JOBS must be a positive integer" >&2
+    exit 2
+  fi
+  logs_dir="$(mktemp -d)"
+  trap 'rm -rf "$logs_dir"' EXIT
+  echo "Provisioning ${#ALL_HOST_NAMES[@]} hosts with at most $max_jobs concurrent jobs"
+  active=0
+  failed=0
+  pids=()
+  hosts=()
+  for host_name in "${ALL_HOST_NAMES[@]}"; do
+    child_args=(--host "$host_name")
+    [ "$FULL_REBUILD" -eq 1 ] && child_args+=(--full)
+    ("$SCRIPT_DIR/setup" "${child_args[@]}" >"$logs_dir/$host_name.log" 2>&1) &
+    pids+=("$!")
+    hosts+=("$host_name")
+    active=$((active + 1))
+    if [ "$active" -ge "$max_jobs" ]; then
+      if ! wait "${pids[0]}"; then failed=1; fi
+      pids=("${pids[@]:1}")
+      hosts=("${hosts[@]:1}")
+      active=$((active - 1))
+    fi
+  done
+  for pid in "${pids[@]}"; do
+    if ! wait "$pid"; then failed=1; fi
+  done
+  for host_name in "${ALL_HOST_NAMES[@]}"; do
+    printf '\n--- %s ---\n' "$host_name"
+    cat "$logs_dir/$host_name.log"
+  done
+  if [ "$failed" -ne 0 ]; then
+    echo "ERROR: one or more host setup jobs failed" >&2
+    exit 1
+  fi
+  echo "All ${#ALL_HOST_NAMES[@]} hosts converged."
+  exit 0
+fi
+
+# --- Load host manifest ---
+
+HOST_MANIFEST="$SCRIPT_DIR/provision/hosts/$HOST.json"
+if [ ! -f "$HOST_MANIFEST" ]; then
+  echo "Unknown host: $HOST"
+  echo "Available hosts:"
+  ls "$SCRIPT_DIR/provision/hosts/"*.json 2>/dev/null | xargs -I{} basename {} .json | sed 's/^/  /'
+  exit 1
+fi
+
+# Extract config from host manifest in a single python3 invocation
+eval "$(python3 - "$HOST_MANIFEST" <<'PY_MANIFEST'
+import json, os, shlex, sys
+
+with open(sys.argv[1], "r", encoding="utf-8") as f:
+    m = json.load(f)
+
+skills_target = os.path.expanduser(m['skills_path'])
+host_name = m['name']
+supports_hooks = str(bool(m.get('capabilities', {}).get('hooks', False)))
+
+w = m.get('wiring', {})
+wiring_governed = str(bool(w.get('governed', False)))
+wiring_wirer = w.get('wirer') or ''
+wiring_wirer_via = w.get('wirer_via') or ''
+cf = w.get('config_file') or ''
+wiring_config_file = os.path.expanduser(cf) if cf else ''
+scf = w.get('effective_state', {}).get('config_file') or ''
+wiring_state_config_file = os.path.expanduser(scf) if scf else ''
+
+gt = w.get('governed_token')
+gt_list = [gt] if isinstance(gt, str) else (gt or [])
+wiring_governed_tokens = '\n'.join(x for x in gt_list if x)
+
+infra_files = '\n'.join(m.get('infra_files', []))
+infra_dirs = '\n'.join(m.get('infra_dirs', []))
+skip_dirs = '\n'.join(m.get('skip', []))
+verify_cmds = '\n'.join(m.get('verify_commands', []))
+
+rp = m.get('rules_path', '') or ''
+rules_target = os.path.expanduser(rp) if rp else ''
+
+pp = m.get('policies_path', '') or ''
+policies_target = os.path.expanduser(pp) if pp else ''
+
+post_install = '\n'.join(m.get('post_install_commands', []))
+
+print(f"SKILLS_TARGET={shlex.quote(skills_target)}")
+print(f"HOST_NAME={shlex.quote(host_name)}")
+print(f"SUPPORTS_HOOKS={shlex.quote(supports_hooks)}")
+print(f"WIRING_GOVERNED={shlex.quote(wiring_governed)}")
+print(f"WIRING_WIRER={shlex.quote(wiring_wirer)}")
+print(f"WIRING_WIRER_VIA={shlex.quote(wiring_wirer_via)}")
+print(f"WIRING_CONFIG_FILE={shlex.quote(wiring_config_file)}")
+print(f"WIRING_STATE_CONFIG_FILE={shlex.quote(wiring_state_config_file)}")
+print(f"WIRING_GOVERNED_TOKENS={shlex.quote(wiring_governed_tokens)}")
+print(f"INFRA_FILES={shlex.quote(infra_files)}")
+print(f"INFRA_DIRS={shlex.quote(infra_dirs)}")
+print(f"SKIP_DIRS={shlex.quote(skip_dirs)}")
+print(f"VERIFY_CMDS={shlex.quote(verify_cmds)}")
+print(f"RULES_TARGET={shlex.quote(rules_target)}")
+print(f"POLICIES_TARGET={shlex.quote(policies_target)}")
+print(f"POST_INSTALL={shlex.quote(post_install)}")
+PY_MANIFEST
+)"
+
+NODE_BIN="${SVC_NODE_BIN:-}"
+if [ -z "$NODE_BIN" ]; then
+  if command -v node >/dev/null 2>&1; then
+    NODE_BIN="$(command -v node)"
+  elif command -v nodejs >/dev/null 2>&1; then
+    NODE_BIN="$(command -v nodejs)"
+  fi
+fi
+
+# Every host-controlled destination must be a concrete path beneath HOME with
+# no symlink in its existing ancestry. Reject before mkdir/rm/ln so a crafted
+# host root cannot redirect setup writes outside the declared user surface.
+python3 - "$HOME" "$SKILLS_TARGET" "$RULES_TARGET" "$POLICIES_TARGET" "$WIRING_CONFIG_FILE" "$WIRING_STATE_CONFIG_FILE" <<'PY_SECURE_TARGETS'
+import os, pathlib, stat, sys
+home = pathlib.Path(sys.argv[1]).resolve()
+for raw in sys.argv[2:]:
+    if not raw:
+        continue
+    target = pathlib.Path(raw)
+    if not target.is_absolute():
+        raise SystemExit(f"ERROR: setup target must be absolute: {raw}")
+    try:
+        target.relative_to(home)
+    except ValueError:
+        raise SystemExit(f"ERROR: setup target escapes HOME: {raw}")
+    if target == home:
+        raise SystemExit(f"ERROR: setup target may not equal HOME: {raw}")
+    current = home
+    for part in target.relative_to(home).parts:
+        current = current / part
+        try:
+            mode = os.lstat(current).st_mode
+        except FileNotFoundError:
+            break
+        if stat.S_ISLNK(mode):
+            raise SystemExit(f"ERROR: setup target ancestry must not contain symlinks: {current}")
+        if current != target and not stat.S_ISDIR(mode):
+            raise SystemExit(f"ERROR: setup target ancestor is not a directory: {current}")
+PY_SECURE_TARGETS
+
+# Detect first-party skill directories from the packaged source root. Host
+# targets remain flat; this source-only package boundary is never reproduced
+# beneath the configured host skills directory.
+SKILLS_SOURCE_DIR="$SCRIPT_DIR/skills"
+if [ ! -d "$SKILLS_SOURCE_DIR" ] || [ -L "$SKILLS_SOURCE_DIR" ]; then
+  echo "ERROR: packaged skill source root must be a real directory: $SKILLS_SOURCE_DIR" >&2
+  exit 1
+fi
+
+SOURCE_SKILL_OUTPUT="$(python3 - "$SCRIPT_DIR" <<'PY_SOURCE_SKILLS'
+import json, pathlib, sys
+root = pathlib.Path(sys.argv[1])
+skills_root = root / "skills"
+names = json.loads((root / "skills-manifest.json").read_text(encoding="utf-8")).get("includedSkills", [])
+if len(names) != len(set(names)):
+    raise SystemExit("ERROR: skills-manifest.json includedSkills contains duplicate names")
+if not skills_root.is_dir() or skills_root.is_symlink():
+    raise SystemExit(f"ERROR: packaged skill source root must be a real directory: {skills_root}")
+boundary = skills_root.resolve()
+discovered = [p.name for p in skills_root.iterdir() if p.is_dir() and (p / "SKILL.md").is_file()]
+if sorted(names) != sorted(discovered):
+    raise SystemExit("ERROR: packaged source/manifest names are not an exact bijection")
+for name in names:
+    directory = skills_root / name
+    contract = directory / "SKILL.md"
+    if directory.is_symlink() or contract.is_symlink() or not directory.is_dir() or not contract.is_file():
+        raise SystemExit(f"ERROR: invalid packaged skill source (missing or symlinked): skills/{name}/SKILL.md")
+    for candidate, label in ((directory, "skill source"), (contract, "SKILL.md")):
+        try:
+            candidate.resolve().relative_to(boundary)
+        except ValueError:
+            raise SystemExit(f"ERROR: {label} escapes packaged root: {name}")
+print("\n".join(names))
+PY_SOURCE_SKILLS
+)"
+MANIFEST_SKILLS=()
+SKILL_DIRS=()
+while IFS= read -r skill; do
+  [ -n "$skill" ] || continue
+  MANIFEST_SKILLS+=("$skill")
+  SKILL_DIRS+=("$SKILLS_SOURCE_DIR/$skill")
+done <<< "$SOURCE_SKILL_OUTPUT"
+
+echo "Serious Vibe Coding setup"
+echo "========================="
+echo "Source:  $SCRIPT_DIR"
+echo "Host:    $HOST ($HOST_NAME)"
+echo "Target:  $SKILLS_TARGET"
+echo "Skills:  ${#SKILL_DIRS[@]}"
+echo "Hooks:   $SUPPORTS_HOOKS"
+echo ""
+
+if [[ "${SVC_SETUP_VALIDATE_ONLY:-0}" == "1" ]]; then
+  echo "Validate-only: manifest parsed, source tree readable, ${#SKILL_DIRS[@]} skills discovered."
+  exit 0
+fi
+
+# Serialize setup per host. Different hosts may provision concurrently, but two
+# writers for the same host must never interleave config snapshots or wirers.
+SETUP_STATE_ROOT="${SVC_SETUP_STATE_ROOT:-$HOME/.svc/setup-state}"
+# The state HOME parent (~/.svc) is the enforcement state root (F-015): it must
+# be owner-private BEFORE any child dir or bundle is written. A default-mode
+# `mkdir -p` under umask 0002 yields 0775 and svc-migrate-install then refuses
+# its own root. Create securely on first touch; refuse a pre-existing insecure
+# root (never chmod-heal — that could mask tampering).
+SVC_STATE_HOME="$(dirname "$SETUP_STATE_ROOT")"
+# A symlinked state home is left for the canonical ancestry walk below to
+# reject with its own diagnostic ('state ancestry must not contain symlinks').
+if [ ! -L "$SVC_STATE_HOME" ] && [ -d "$SVC_STATE_HOME" ]; then
+  SVC_STATE_HOME_MODE="$(stat -c %a "$SVC_STATE_HOME" 2>/dev/null || stat -f %Lp "$SVC_STATE_HOME")"
+  case "$SVC_STATE_HOME_MODE" in
+    *[2367]) echo "ERROR: svc state home is group/other-writable (mode $SVC_STATE_HOME_MODE): $SVC_STATE_HOME" >&2; exit 1 ;;
+  esac
+fi
+python3 - "$HOME" "$SETUP_STATE_ROOT" <<'PY_SECURE_STATE_ROOT'
+import os, pathlib, stat, sys
+home = pathlib.Path(sys.argv[1]).resolve()
+# Lexical normalization ONLY — resolve() would silently follow symlinked
+# components and defeat the ancestry walk below. normpath collapses ../
+# lexically so an escaping root ($HOME/../../tmp) is rejected here.
+raw_target = pathlib.Path(sys.argv[2])
+if not raw_target.is_absolute(): raise SystemExit(f"ERROR: setup state root must be absolute: {raw_target}")
+target = pathlib.Path(os.path.normpath(str(raw_target)))
+try: parts = target.relative_to(home).parts
+except ValueError: raise SystemExit(f"ERROR: setup state root escapes HOME: {target}")
+if not parts: raise SystemExit("ERROR: setup state root may not equal HOME")
+current = home
+missing_from = None
+for part in parts:
+    current /= part
+    try: mode = os.lstat(current).st_mode
+    except FileNotFoundError:
+        missing_from = current; break
+    if stat.S_ISLNK(mode): raise SystemExit(f"ERROR: setup state ancestry must not contain symlinks: {current}")
+    if current != target and not stat.S_ISDIR(mode): raise SystemExit(f"ERROR: setup state ancestor is not a directory: {current}")
+# WI-558: creation happens HERE — after the full symlink-free ancestry walk —
+# so a hostile symlink in any component can never be followed into a mutation
+# outside the intended path. Each created component is owner-private 0700,
+# which also keeps the enforcement state root (~/.svc) from being created
+# group-writable under umask 0002 (svc-migrate-install would refuse it).
+if missing_from is not None:
+    to_create = []
+    cursor = target
+    while cursor != home and not cursor.exists():
+        to_create.append(cursor)
+        cursor = cursor.parent
+    for directory in reversed(to_create):
+        os.mkdir(directory, mode=0o700)
+PY_SECURE_STATE_ROOT
+mkdir -p "$SETUP_STATE_ROOT/locks" "$SETUP_STATE_ROOT/digests"
+chmod 700 "$SETUP_STATE_ROOT" "$SETUP_STATE_ROOT/locks" "$SETUP_STATE_ROOT/digests" 2>/dev/null || true
+SETUP_LOCK_FILE="$SETUP_STATE_ROOT/locks/$HOST.lock"
+if [ -L "$SETUP_LOCK_FILE" ]; then
+  echo "ERROR: setup lock must not be a symlink: $SETUP_LOCK_FILE" >&2
+  exit 1
+fi
+exec 9>"$SETUP_LOCK_FILE"
+SETUP_FLOCK_BIN="${SVC_SETUP_FLOCK_BIN:-$(command -v flock || true)}"
+if [ -z "$SETUP_FLOCK_BIN" ] || [ ! -x "$SETUP_FLOCK_BIN" ]; then
+  if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+    echo "ERROR: setup requires flock for per-host serialization; install via 'brew install flock' or provide SVC_SETUP_FLOCK_BIN" >&2
+  else
+    echo "ERROR: setup requires flock for per-host serialization; install util-linux or provide SVC_SETUP_FLOCK_BIN" >&2
+  fi
+  exit 1
+fi
+"$SETUP_FLOCK_BIN" -x 9
+
+# A clean Git source is already content-addressed; avoid re-reading ~12 MiB on
+# every session. Dirty/untracked sources fall back to a complete byte digest so
+# development installs remain exact.
+SETUP_INPUT_PATHS=(setup skills-manifest.json "provision/hosts/$HOST.json" skills hooks scripts rules agents provision/policies)
+if git -C "$SCRIPT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1 \
+   && [ -z "$(git -C "$SCRIPT_DIR" ls-files -v -- "${SETUP_INPUT_PATHS[@]}" | grep -E '^[a-zS]' || true)" ] \
+   && [ -z "$(GIT_OPTIONAL_LOCKS=0 git -C "$SCRIPT_DIR" status --porcelain=v1 --untracked-files=all -- "${SETUP_INPUT_PATHS[@]}")" ]; then
+  SETUP_DIGEST="git:$(git -C "$SCRIPT_DIR" rev-parse HEAD):$HOST"
+else
+SETUP_DIGEST="$(python3 - "$SCRIPT_DIR" "$HOST" <<'PY_SETUP_DIGEST'
+import hashlib, os, pathlib, sys
+root = pathlib.Path(sys.argv[1])
+host = sys.argv[2]
+items = [root / "setup", root / "skills-manifest.json", root / "provision" / "hosts" / f"{host}.json"]
+for rel in ("skills", "hooks", "scripts", "rules", "agents", "provision/policies"):
+    base = root / rel
+    if base.is_dir():
+        items.extend(p for p in base.rglob("*") if p.is_file() and ".git" not in p.parts)
+h = hashlib.sha256()
+for item in sorted(set(items), key=lambda p: p.as_posix()):
+    rel = item.relative_to(root).as_posix().encode()
+    h.update(len(rel).to_bytes(4, "big")); h.update(rel)
+    data = item.read_bytes()
+    h.update(len(data).to_bytes(8, "big")); h.update(data)
+print(h.hexdigest())
+PY_SETUP_DIGEST
+)"
+fi
+SETUP_DIGEST_FILE="$SETUP_STATE_ROOT/digests/$HOST.json"
+
+if [ "$FULL_REBUILD" -eq 0 ] && [ -f "$SETUP_DIGEST_FILE" ] && [ ! -L "$SETUP_DIGEST_FILE" ]; then
+  PREVIOUS_DIGEST="$(python3 - "$SETUP_DIGEST_FILE" <<'PY_SETUP_READ'
+import json, sys
+try:
+    value = json.load(open(sys.argv[1], encoding="utf-8"))
+    print(value.get("digest", "") if isinstance(value, dict) else "")
+except Exception:
+    print("")
+PY_SETUP_READ
+)"
+  if [ "$PREVIOUS_DIGEST" = "$SETUP_DIGEST" ] \
+     && bash "$SCRIPT_DIR/scripts/check-install-drift.sh" --host "$HOST" --quiet; then
+    echo "Setup: no-op — $HOST content digest and installed surfaces are current."
+    exit 0
+  fi
+fi
+
+# --- WI-487 (F-010 / R3-F003): durable launcher BUNDLE PREFLIGHT — a HARD PREREQUISITE
+# that runs BEFORE setup creates or changes ANY host target (skills symlinks, infra,
+# rules, policies, host configs). For EVERY hook-capable host we materialize the
+# durable, NON-symlinked enforcement launcher + byte/hash-verified core under
+# ~/.svc/enforcement/<version>/ (outside the host surface) FIRST. If materialization
+# fails (or Node is absent), we ABORT here WITHOUT having touched any host surface —
+# never leaving a repointed skills surface next to a checkout-bound / stale governed
+# hook. Non-hook-capable hosts (antigravity/cursor, capabilities.hooks=false) skip
+# this. SCRIPT_DIR is already the canonical main checkout (worktree invocations were
+# repointed above), so the bundle records a durable effective source.
+if [ "$SUPPORTS_HOOKS" = "True" ]; then
+  if [ -z "$NODE_BIN" ]; then
+    echo "Enforce: ABORT — $HOST is hook-capable but Node.js was not found on PATH."
+    if [ -n "${WSL_DISTRO_NAME:-}" ]; then
+      echo "         WSL requires Linux Node.js inside WSL; install Node 22 in WSL, then re-run ./setup --host $HOST."
+    fi
+    echo "         The durable enforcement launcher cannot be materialized without Node; refusing"
+    echo "         to touch the host surface or wire checkout-bound governed hooks. Install Node.js, then re-run."
+    exit 1
+  fi
+  if [ ! -f "$SCRIPT_DIR/scripts/svc-migrate-install.mjs" ]; then
+    # Backward-compat: a source that predates WI-487 (or main during the WI-487
+    # landing commit itself) has no durable-launcher materializer. That is NOT a
+    # failure — install with the legacy behavior. Durable enforcement activates
+    # automatically once the source includes WI-487. The hard-abort below is
+    # reserved for a source that HAS the materializer but fails to materialize.
+    echo "Enforce: SKIP — scripts/svc-migrate-install.mjs not present in this source (pre-WI-487);"
+    echo "         installing $HOST without the durable enforcement launcher (legacy behavior)."
+  elif "$NODE_BIN" "$SCRIPT_DIR/scripts/svc-migrate-install.mjs" materialize \
+       --host "$HOST" --repo-root "$SCRIPT_DIR" --skills-path "$SKILLS_TARGET"; then
+    echo "Enforce: durable launcher bundle materialized (~/.svc/enforcement/) — pre-mutation preflight passed"
+  else
+    echo "Enforce: ABORT — durable launcher materialization FAILED for hook-capable host $HOST."
+    echo "         Refusing to touch the host surface (skills/infra/rules/configs) so no partially"
+    echo "         installed host is left next to a checkout-bound or stale governed hook."
+    echo "         Ensure the source is a durable canonical checkout (run ./setup from the main checkout,"
+    echo "         not a git worktree, and with ~/.svc owned by you), then re-run ./setup --host $HOST."
+    exit 1
+  fi
+fi
+
+# Snapshot every setup-owned host surface before the first host mutation. A
+# verification, post-install, or wirer failure restores the exact prior bytes
+# and symlink topology. The durable launcher preflight above owns its separate
+# transaction and is intentionally outside this host-surface rollback.
+mkdir -p "$SETUP_STATE_ROOT/transactions"
+SETUP_TX_DIR="$(mktemp -d "$SETUP_STATE_ROOT/transactions/$HOST.XXXXXX")"
+chmod 700 "$SETUP_TX_DIR" 2>/dev/null || true
+SETUP_TX_COMMITTED=0
+SETUP_TX_PATHS=()
+SETUP_TX_STATES=()
+SETUP_TX_BACKUPS=()
+setup_tx_snapshot() {
+  local candidate="$1" seen path backup
+  [ -n "$candidate" ] || return 0
+  for seen in "${SETUP_TX_PATHS[@]:-}"; do [ "$seen" = "$candidate" ] && return 0; done
+  path="$candidate"
+  SETUP_TX_PATHS+=("$path")
+  backup="$SETUP_TX_DIR/${#SETUP_TX_PATHS[@]}"
+  SETUP_TX_BACKUPS+=("$backup")
+  if [ -e "$path" ] || [ -L "$path" ]; then
+    cp -a -- "$path" "$backup"
+    SETUP_TX_STATES+=(present)
+  else
+    SETUP_TX_STATES+=(absent)
+  fi
+}
+setup_tx_finish() {
+  local rc="$?" i path state backup
+  trap - EXIT INT TERM
+  if [ "$SETUP_TX_COMMITTED" -ne 1 ]; then
+    for ((i=${#SETUP_TX_PATHS[@]}-1; i>=0; i--)); do
+      path="${SETUP_TX_PATHS[$i]}"; state="${SETUP_TX_STATES[$i]}"; backup="${SETUP_TX_BACKUPS[$i]}"
+      [ ! -e "$path" ] && [ ! -L "$path" ] || rm -rf -- "$path"
+      if [ "$state" = present ]; then
+        mkdir -p -- "$(dirname "$path")"
+        cp -a -- "$backup" "$path"
+      fi
+    done
+  fi
+  rm -rf -- "$SETUP_TX_DIR"
+  exit "$rc"
+}
+trap setup_tx_finish EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+setup_tx_snapshot "$SKILLS_TARGET"
+setup_tx_snapshot "$RULES_TARGET"
+if [ -n "$RULES_TARGET" ] && [ ! -d "$RULES_TARGET" ]; then
+  setup_tx_snapshot "$(dirname "$RULES_TARGET")/rules"
+fi
+setup_tx_snapshot "$POLICIES_TARGET"
+setup_tx_snapshot "$WIRING_CONFIG_FILE"
+setup_tx_snapshot "$WIRING_STATE_CONFIG_FILE"
+DEFERRED_BROWSE_COMMANDS=()
+
+mkdir -p "$SKILLS_TARGET"
+
+# --- Write source-repo pointer (used by improve-framework to locate the framework git repo) ---
+echo "$SCRIPT_DIR" > "$SKILLS_TARGET/.source-repo"
+
+# --- Portable readlink ---
+
+resolve_path() {
+  realpath "$1" 2>/dev/null \
+    || readlink -f "$1" 2>/dev/null \
+    || python3 -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "$1" 2>/dev/null \
+    || echo "$1"
+}
+
+# --- Install skills ---
+
+installed=0
+skipped=0
+
+for skill_path in "${SKILL_DIRS[@]}"; do
+  skill_name="$(basename "$skill_path")"
+
+  # Skip directories the host doesn't support
+  if echo "$SKIP_DIRS" | grep -q "^${skill_name}$" 2>/dev/null; then
+    continue
+  fi
+
+  target="$SKILLS_TARGET/$skill_name"
+
+  if [ "$FULL_REBUILD" -eq 0 ] && [ -L "$target" ] && [ "$(resolve_path "$target")" = "$(resolve_path "$skill_path")" ]; then
+    skipped=$((skipped + 1))
+    continue
+  fi
+
+  if [ -e "$target" ] && [ ! -L "$target" ]; then
+    echo "ERROR: target $target is a non-symlink file or directory; refusing to overwrite" >&2
+    exit 1
+  fi
+  { [ -e "$target" ] || [ -L "$target" ]; } && rm -rf -- "$target"
+  ln -sf "$skill_path" "$target"
+  installed=$((installed + 1))
+done
+
+echo "Skills: $installed installed, $skipped already current"
+
+# Remove dangling symlinks from the host skill root. Kimi and other hosts scan
+# the whole directory, so broken leftovers from deleted worktrees or project
+# installs can still perturb skill discovery even when svc-owned symlinks are
+# current. Only broken symlinks are removed; valid user-installed skills remain.
+broken_skill_links=0
+for link in "$SKILLS_TARGET"/*; do
+  if [ -L "$link" ] && [ ! -e "$link" ]; then
+    rm -f -- "$link"
+    broken_skill_links=$((broken_skill_links + 1))
+  fi
+done
+[ "$broken_skill_links" -gt 0 ] && echo "Skills: pruned $broken_skill_links broken symlink(s)"
+
+worktree_skill_links=0
+for link in "$SKILLS_TARGET"/*; do
+  if [ -L "$link" ]; then
+    resolved="$(resolve_path "$link")"
+    if [[ "$resolved" == *"/.worktrees/"* ]]; then
+      rm -f -- "$link"
+      worktree_skill_links=$((worktree_skill_links + 1))
+    fi
+  fi
+done
+[ "$worktree_skill_links" -gt 0 ] && echo "Skills: pruned $worktree_skill_links worktree-bound symlink(s)"
+
+# --- Install framework infrastructure (from host manifest) ---
+
+infra_count=0
+
+while IFS= read -r f; do
+  [ -z "$f" ] && continue
+  src="$SCRIPT_DIR/$f"
+  dst="$SKILLS_TARGET/$f"
+  if [ -f "$src" ]; then
+    if [ "$FULL_REBUILD" -eq 0 ] && [ -L "$dst" ] && [ "$(resolve_path "$dst")" = "$(resolve_path "$src")" ]; then
+      continue
+    fi
+    { [ -e "$dst" ] || [ -L "$dst" ]; } && rm -rf -- "$dst"
+    ln -sf "$src" "$dst"
+    infra_count=$((infra_count + 1))
+  fi
+done <<< "$INFRA_FILES"
+
+while IFS= read -r d; do
+  [ -z "$d" ] && continue
+
+  # Skip dirs the host doesn't support
+  if echo "$SKIP_DIRS" | grep -q "^${d}$" 2>/dev/null; then
+    continue
+  fi
+
+  src="$SCRIPT_DIR/$d"
+  dst="$SKILLS_TARGET/$d"
+  if [ -d "$src" ]; then
+    if [ "$FULL_REBUILD" -eq 0 ] && [ -L "$dst" ] && [ "$(resolve_path "$dst")" = "$(resolve_path "$src")" ]; then
+      continue
+    fi
+    { [ -e "$dst" ] || [ -L "$dst" ]; } && rm -rf -- "$dst"
+    ln -sf "$src" "$dst"
+    infra_count=$((infra_count + 1))
+  fi
+done <<< "$INFRA_DIRS"
+
+echo "Infra:  $infra_count files/dirs linked"
+
+# --- Register the .svc/*.json merge driver (WI-398) ---
+# Mutable .svc JSON state needs the deterministic 3-way driver so parallel
+# orchestrator sessions don't corrupt each other's state on merge. The driver
+# COMMAND lives in machine-local .git/config (not version-controlled), so each
+# clone must register it. Best-effort: a missing driver or non-git checkout
+# must not fail the install (git falls back to safe conflict markers).
+if [ -x "$SCRIPT_DIR/scripts/install-svc-merge-driver.sh" ]; then
+  if bash "$SCRIPT_DIR/scripts/install-svc-merge-driver.sh" --repo "$SCRIPT_DIR" >/dev/null 2>&1; then
+    echo "Merge:  .svc/*.json driver (svc-json) registered"
+  else
+    echo "Merge:  skipped .svc/*.json driver (not a git repo or driver missing — safe default applies)"
+  fi
+fi
+
+# --- Install framework rules ---
+#
+# Injection model:
+#   correction + universal  → ~/.claude/rules/  (globally injected every session)
+#   steering   + universal  → ~/.claude/rules/  (universal steering, still global)
+#   steering   + <stack>    → ~/.claude/skills/rules/<stack>/  (per-project @-import only)
+#
+# onboard-repo wires steering rules into per-project CLAUDE.md via @-imports.
+
+rules_count=0
+steering_count=0
+
+if [ -n "$RULES_TARGET" ] && [ -d "$SCRIPT_DIR/rules" ]; then
+  # If target is a file (e.g. GEMINI.md), create a /rules subdir next to it
+  if [ ! -d "$RULES_TARGET" ]; then
+    RULES_DIR="$(dirname "$RULES_TARGET")/rules"
+    mkdir -p "$RULES_DIR"
+  else
+    RULES_DIR="$RULES_TARGET"
+  fi
+
+  # Read rulesRegistry from skills-manifest.json to know type + stack per file.
+  # Outputs: "<path>|<type>|<stack>" per entry.
+  REGISTRY=$(python3 - "$SCRIPT_DIR/skills-manifest.json" <<'PY_REGISTRY'
+import json, sys
+with open(sys.argv[1], "r", encoding="utf-8") as f:
+    m = json.load(f)
+for e in m.get('rulesRegistry', {}).get('entries', []):
+    print(e.get('path','') + '|' + e.get('type','') + '|' + e.get('stack','') + '|' + e.get('auto_inject','always'))
+PY_REGISTRY
+)
+
+  # WI-361 (Claude host ONLY): the rule-injector hook delivers signal/lazy
+  # rules on demand — install only auto_inject==always into the global dir,
+  # and trim stale non-always leftovers (incl. historical twin pairs) with a
+  # timestamped backup. Other hosts have no injector yet: full install stays.
+  TRIM_TO_ALWAYS=0
+  if [ "$HOST" = "claude" ]; then
+    TRIM_TO_ALWAYS=1
+    if [ -d "$RULES_DIR" ] && [ -n "$(ls -A "$RULES_DIR" 2>/dev/null)" ]; then
+      BAK="$RULES_DIR.svc-backup-$(date -u +%Y-%m-%dT%H-%M-%SZ)"
+      cp -r "$RULES_DIR" "$BAK"
+      echo "  ✓ rules backup: $BAK"
+      echo "    restore: cp -r \"$BAK/.\" \"$RULES_DIR/\""
+    fi
+  fi
+
+  EXPECTED_ALWAYS=""
+  while IFS='|' read -r rule_path rule_type rule_stack rule_inject; do
+    [ -z "$rule_path" ] && continue
+    src="$SCRIPT_DIR/$rule_path"
+    [ -f "$src" ] || continue
+    if [ "$TRIM_TO_ALWAYS" = "1" ] && [ "$rule_inject" != "always" ]; then
+      continue   # signal/lazy rules arrive via svc-rule-injector on this host
+    fi
+
+    if [ "$rule_stack" = "universal" ]; then
+      # Universal rules (correction or steering) → global inject
+      # Name: svc-<subdir-path-with-dashes>.md, e.g. svc-common-code-review.md
+      rel="${rule_path#rules/}"           # strip leading rules/
+      slug="$(echo "$rel" | tr '/' '-')"  # common/code-review.md → common-code-review.md
+      dst="$RULES_DIR/svc-$slug"
+      EXPECTED_ALWAYS="$EXPECTED_ALWAYS svc-$slug"   # track BEFORE the already-linked early-continue (live-fire fix: pre-existing symlinks skipped tracking and the sweep removed the always-set)
+      if [ "$FULL_REBUILD" -eq 0 ] && [ -L "$dst" ] && [ "$(resolve_path "$dst")" = "$(resolve_path "$src")" ]; then
+        # Check if already imported if target is a file
+        if [ ! -d "$RULES_TARGET" ] && ! grep -q "@$dst" "$RULES_TARGET" 2>/dev/null; then
+          echo "@$dst" >> "$RULES_TARGET"
+        fi
+        continue
+      fi
+      { [ -e "$dst" ] || [ -L "$dst" ]; } && rm -rf -- "$dst"
+      ln -sf "$src" "$dst"
+      rules_count=$((rules_count + 1))
+
+      # If global target is a file, append @-import
+      if [ ! -d "$RULES_TARGET" ] && ! grep -q "@$dst" "$RULES_TARGET" 2>/dev/null; then
+        # Ensure file exists and ends with newline
+        [ -f "$RULES_TARGET" ] || touch "$RULES_TARGET"
+        [ -z "$(tail -c 1 "$RULES_TARGET")" ] || echo "" >> "$RULES_TARGET"
+        echo "@$dst" >> "$RULES_TARGET"
+      fi
+    else
+      # Stack-specific steering rules → skills/rules/<stack>/ (per-project @-import)
+      stack_dir="$SKILLS_TARGET/rules/$rule_stack"
+      mkdir -p "$stack_dir"
+      fname="$(basename "$src")"
+      dst="$stack_dir/$fname"
+      if [ "$FULL_REBUILD" -eq 0 ] && [ -L "$dst" ] && [ "$(resolve_path "$dst")" = "$(resolve_path "$src")" ]; then
+        continue
+      fi
+      { [ -e "$dst" ] || [ -L "$dst" ]; } && rm -rf -- "$dst"
+      ln -sf "$src" "$dst"
+      steering_count=$((steering_count + 1))
+    fi
+  done <<< "$REGISTRY"
+
+  # WI-361 (Claude only): trim stale files in the global rules dir — anything
+  # not in the expected always-set (covers historical twin pairs + all
+  # signal/lazy leftovers from pre-injector installs). Backup taken above.
+  if [ "$TRIM_TO_ALWAYS" = "1" ] && [ -d "$RULES_DIR" ]; then
+    trimmed=0
+    for f in "$RULES_DIR"/*.md; do
+      [ -e "$f" ] || continue
+      base="$(basename "$f")"
+      # G6 EXEC-001: ONLY touch svc-owned files — svc-*.md, or files whose
+      # resolved target lives under this repo's rules/ (covers the historical
+      # unprefixed twin pairs). A user's personal .md rules are NEVER removed.
+      svc_owned=0
+      case "$base" in svc-*.md) svc_owned=1 ;; esac
+      if [ "$svc_owned" = "0" ]; then
+        tgt="$(resolve_path "$f" 2>/dev/null || true)"
+        case "$tgt" in "$SCRIPT_DIR/rules/"*) svc_owned=1 ;; esac
+      fi
+      [ "$svc_owned" = "1" ] || continue
+      case " $EXPECTED_ALWAYS " in
+        *" $base "*) : ;;   # expected always rule — keep
+        *) rm -f "$f"; trimmed=$((trimmed + 1)) ;;
+      esac
+    done
+    [ "$trimmed" -gt 0 ] && echo "  ✓ WI-361 trim: removed $trimmed non-always rule file(s) from $RULES_DIR"
+  fi
+
+  # WI-080: orphan cleanup. Remove stale symlinks in $SKILLS_TARGET/rules/ and
+  # $RULES_DIR that don't correspond to a current rulesRegistry entry. Prevents
+  # dead symlinks accumulating when a rule is renamed or removed from the
+  # registry. Only removes symlinks (never regular files) and only those whose
+  # targets are missing or point outside $SCRIPT_DIR.
+  orphans_removed=0
+  for dir in "$SKILLS_TARGET/rules" "$RULES_DIR"; do
+    [ -d "$dir" ] || continue
+    while IFS= read -r -d '' link; do
+      target=$(readlink "$link" 2>/dev/null)
+      # Remove if target doesn't exist OR target points outside our repo
+      if [ ! -e "$link" ]; then
+        rm -f "$link"
+        orphans_removed=$((orphans_removed + 1))
+      elif [ -n "$target" ] && [[ "$target" != "$SCRIPT_DIR"* ]]; then
+        # Symlink points outside our repo — likely from a different framework install
+        :  # keep — not ours to clean up
+      fi
+    done < <(find "$dir" -maxdepth 6 -type l -print0 2>/dev/null)
+  done
+  [ "$orphans_removed" -gt 0 ] && echo "Rules:  pruned $orphans_removed orphan symlink(s)"
+fi
+
+echo "Rules:  $rules_count global${RULES_TARGET:+ → $RULES_TARGET}, $steering_count steering → \$SKILLS_TARGET/rules/<stack>/"
+
+# --- Inject universal rules into KIMI.md for Kimi host ---
+# Kimi CLI does not natively read ~/.kimi/rules/ like Claude reads ~/.claude/rules/.
+# We append the universal rule bodies directly into KIMI.md so they travel with context.
+if [ "$HOST" = "kimi" ] && [ -f "$SKILLS_TARGET/KIMI.md" ] && [ -n "$RULES_DIR" ]; then
+  KIMI_FILE="$SKILLS_TARGET/KIMI.md"
+  # Break symlink so injection modifies the installed copy, not the source template
+  if [ -L "$KIMI_FILE" ]; then
+    cp "$KIMI_FILE" "${KIMI_FILE}.tmp"
+    rm -f "$KIMI_FILE"
+    mv "${KIMI_FILE}.tmp" "$KIMI_FILE"
+  fi
+  RULES_MARKER="<!-- svc-auto-rules-begin -->"
+  RULES_END_MARKER="<!-- svc-auto-rules-end -->"
+  NEW_RULES_CONTENT="$(
+    echo "$RULES_MARKER"
+    echo ""
+    echo "## Universal Rules (Auto-Injected from rules/)"
+    echo ""
+    for rule in "$RULES_DIR"/svc-*.md; do
+      [ -f "$rule" ] || continue
+      awk 'BEGIN{fm=0} NR==1 && !/^---$/{print; next} /^---$/{fm++; next} fm==1{next} {print}' "$rule"
+      echo ""
+    done
+    echo "$RULES_END_MARKER"
+  )"
+  python3 - "$KIMI_FILE" "$RULES_MARKER" "$RULES_END_MARKER" "$NEW_RULES_CONTENT" <<'PY_KIMI'
+import sys
+
+kimi_file, begin_m, end_m, new_content = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+try:
+    with open(kimi_file, "r", encoding="utf-8") as f:
+        text = f.read()
+except FileNotFoundError:
+    text = ""
+
+if begin_m in text and end_m in text:
+    prefix = text[:text.index(begin_m)]
+    suffix = text[text.index(end_m) + len(end_m):]
+    updated = prefix.rstrip() + "\n\n" + new_content.strip() + "\n" + suffix.lstrip()
+else:
+    updated = text.rstrip() + "\n\n---\n\n" + new_content.strip() + "\n"
+
+with open(kimi_file, "w", encoding="utf-8") as f:
+    f.write(updated)
+PY_KIMI
+  echo "Rules:  injected universal rules into $KIMI_FILE"
+fi
+
+# --- Install framework policies (for hosts with a policy engine) ---
+
+policy_count=0
+if [ -n "$POLICIES_TARGET" ] && [ -d "$SCRIPT_DIR/provision/policies" ]; then
+  mkdir -p "$POLICIES_TARGET"
+  for src in "$SCRIPT_DIR/provision/policies"/*.toml; do
+    [ -f "$src" ] || continue
+    fname="$(basename "$src")"
+    dst="$POLICIES_TARGET/$fname"
+    if [ "$FULL_REBUILD" -eq 0 ] && [ -L "$dst" ] && [ "$(resolve_path "$dst")" = "$(resolve_path "$src")" ]; then
+      continue
+    fi
+    { [ -e "$dst" ] || [ -L "$dst" ]; } && rm -rf -- "$dst"
+    ln -sf "$src" "$dst"
+    policy_count=$((policy_count + 1))
+  done
+  echo "Policies: $policy_count files linked → $POLICIES_TARGET"
+fi
+
+  # --- Run host-specific post-install commands ---
+  # The durable launcher bundle was ALREADY materialized in the pre-mutation
+  # PREFLIGHT above (R3-F003), so the wirers here are guaranteed to see it and can
+  # route the governed guard THROUGH it. For kimi + mimo-code the wirer runs HERE
+  # (post_install); a GOVERNED post-install wirer runs FAIL-FAST (R3-F001).
+
+  while IFS= read -r cmd; do
+    [ -z "$cmd" ] && continue
+    cmd="${cmd//\{skills_path\}/$SKILLS_TARGET}"
+    if [ -n "$NODE_BIN" ]; then
+      cmd="${cmd//\{node_bin\}/$NODE_BIN}"
+      if [[ "$cmd" == node\ * ]]; then
+        cmd="$NODE_BIN ${cmd#node }"
+      fi
+    fi
+    echo "Post-install: $cmd"
+    # R3-F001: a GOVERNED hook wirer routed via post_install (e.g. Kimi's) MUST run
+    # FAIL-FAST. Suppressing its failure with `|| true` would leave the host without
+    # launcher-backed enforcement (silent fail-open). install-browse mutates a
+    # cross-host shared surface, so serialize it globally and fail closed. Other
+    # non-governed observational commands remain best-effort.
+    if [ "$WIRING_GOVERNED" = "True" ] && [ "$WIRING_WIRER_VIA" = "post_install" ] \
+         && [ -n "$WIRING_WIRER" ] && [[ "$cmd" == *"$WIRING_WIRER"* ]]; then
+      if ! eval "$cmd"; then
+        echo "Enforce: ABORT — governed hook wirer FAILED for host $HOST." >&2
+        echo "         Refusing to report $HOST converged without launcher-backed enforcement;" >&2
+        echo "         no unenforced or checkout-bound governed hook is left in place." >&2
+        exit 1
+      fi
+      # Verify the ACTUAL installed governed command routes through the durable
+      # launcher. The verifier binds every marker to exactly one effective command;
+      # unrelated config text cannot launder a direct-checkout hook.
+      if [ -n "$WIRING_GOVERNED_TOKENS" ]; then
+        if ! "$NODE_BIN" "$SCRIPT_DIR/scripts/verify-governed-routing.mjs" --manifest "$HOST_MANIFEST"; then
+          echo "Enforce: ABORT — governed command for $HOST does NOT route through the launcher." >&2
+          echo "         Refusing false convergence at ${WIRING_CONFIG_FILE:-<unset>}." >&2
+          exit 1
+        fi
+      fi
+    elif [[ "$cmd" == *"scripts/install-browse.sh"* ]]; then
+      # Browse is an optional cross-host add-on, not part of host convergence.
+      # Run it only after the host transaction commits and under one global lock.
+      DEFERRED_BROWSE_COMMANDS+=("$cmd")
+      echo "Post-install: deferred optional browse until host commit"
+    else
+      eval "$cmd" || true
+    fi
+  done <<< "$POST_INSTALL"
+
+  # --- Wire hooks per host (each host has its own config format) ---
+  #   Claude:    ~/.claude/settings.json          (JSON, hookSpecificOutput format)
+  #   Kimi:      ~/.kimi/config.toml              (TOML [[hooks]] arrays) — runs via post_install
+  #   Codex:     ~/.codex/hooks.json              (JSON + feature flag in config.toml)
+  #   Gemini:    ~/.gemini/settings.json          (JSON, Before*/After* event names, timeout in ms)
+  #   OpenCode:  ~/.config/opencode/plugins/      (TypeScript plugin files) — runs via post_install
+  #   MiMo-Code: ~/.config/mimocode/mimocode.json (OpenCode fork plugin) — runs via post_install
+  #   Cursor:    ~/.cursor/hooks.json             (JSON, beforeShellExecution/afterFileEdit/sessionStart/stop)
+  #   Grok:      ~/.grok/config.toml              (TOML [[hooks]] arrays) — runs via post_install
+  #   Antigravity: supported for skills; no hook runtime (non-hook-capable)
+
+  if [ "$SUPPORTS_HOOKS" = "True" ]; then
+    case "$HOST" in
+      claude)
+        echo "Hooks:"
+        "$NODE_BIN" "$SCRIPT_DIR/scripts/wire-hooks.mjs" --skills-path "$SKILLS_TARGET"
+        ;;
+      codex)
+        echo "Hooks:"
+        "$NODE_BIN" "$SCRIPT_DIR/scripts/wire-codex-hooks.mjs" --skills-path "$SKILLS_TARGET"
+        ;;
+      gemini)
+        echo "Hooks:"
+        "$NODE_BIN" "$SCRIPT_DIR/scripts/wire-gemini-hooks.mjs" --skills-path "$SKILLS_TARGET"
+        ;;
+      cursor)
+        echo "Hooks:"
+        "$NODE_BIN" "$SCRIPT_DIR/scripts/wire-cursor-hooks.mjs" --skills-path "$SKILLS_TARGET"
+        ;;
+      # opencode + mimo-code + kimi + grok wire via post_install_commands (run above, AFTER materialization)
+    esac
+
+    # WI-529: every governed wirer must prove its EFFECTIVE installed command,
+    # including case-routed Claude/Codex/Gemini wirers. Previously only the
+    # post_install branch checked these markers, so Codex could print Done while
+    # its composite dispatcher had already drifted to a direct checkout command.
+    if [ "$WIRING_GOVERNED" = "True" ] && [ -n "$WIRING_GOVERNED_TOKENS" ]; then
+      if ! "$NODE_BIN" "$SCRIPT_DIR/scripts/verify-governed-routing.mjs" --manifest "$HOST_MANIFEST"; then
+        echo "Enforce: ABORT — governed command for $HOST does NOT route through the launcher." >&2
+        echo "         Refusing false convergence at ${WIRING_CONFIG_FILE:-<unset>}." >&2
+        exit 1
+      fi
+    fi
+
+    # R3-F003: FINALIZE the per-host install receipt AFTER the skills surface exists
+    # and the host config is wired, so the receipt's coverage booleans reflect the
+    # verified post-install state (skills_installed / governed routing) rather than
+    # the pre-mutation preflight snapshot. The durable BUNDLE was already proven in
+    # the fail-fast preflight; this refresh is a bundle no-op, so it is best-effort —
+    # a receipt-refresh hiccup must not fail an otherwise-converged install.
+    "$NODE_BIN" "$SCRIPT_DIR/scripts/svc-migrate-install.mjs" materialize \
+      --host "$HOST" --repo-root "$SCRIPT_DIR" --skills-path "$SKILLS_TARGET" >/dev/null 2>&1 \
+      && echo "Enforce: per-host install receipt finalized (post-wiring coverage recorded)" \
+      || echo "Enforce: NOTE — install-receipt refresh skipped (bundle already durable; receipt regenerable)"
+  fi
+
+  # --- Verify (from host manifest) ---
+
+  echo ""
+  echo "Verification:"
+
+  errors=0
+
+  while IFS= read -r cmd; do
+    [ -z "$cmd" ] && continue
+    # Expand {skills_path} placeholder
+    cmd="${cmd//\{skills_path\}/$SKILLS_TARGET}"
+    if eval "$cmd" 2>/dev/null; then
+      if [[ "$cmd" == "test -f "* ]]; then
+        path="${cmd#test -f }"
+        echo "  ✓ $path"
+      fi
+    else
+      if [[ "$cmd" == "test -f "* ]]; then
+        path="${cmd#test -f }"
+        echo "  ✗ $path MISSING"
+      else
+        echo "  ✗ verify command failed: ${cmd:0:60}..."
+      fi
+      errors=$((errors + 1))
+    fi
+  done <<< "$VERIFY_CMDS"
+
+  if [ "$errors" -eq 0 ]; then
+
+  SETUP_DIGEST_TMP="$SETUP_DIGEST_FILE.tmp.$$"
+  python3 - "$SETUP_DIGEST_TMP" "$HOST" "$SETUP_DIGEST" "$SCRIPT_DIR" <<'PY_SETUP_WRITE'
+import json, os, sys
+target, host, digest, source = sys.argv[1:]
+with open(target, "w", encoding="utf-8") as fh:
+    json.dump({"schema_version": 1, "host": host, "digest": digest, "source": source}, fh, sort_keys=True)
+    fh.write("\n")
+    fh.flush(); os.fsync(fh.fileno())
+os.chmod(target, 0o600)
+PY_SETUP_WRITE
+  SETUP_TX_COMMITTED=1
+  BROWSE_OPTIONAL_OK=1
+
+  for cmd in "${DEFERRED_BROWSE_COMMANDS[@]:-}"; do
+    [ -n "$cmd" ] || continue
+    SHARED_POST_LOCK="$SETUP_STATE_ROOT/locks/shared-post-install.lock"
+    if [ -L "$SHARED_POST_LOCK" ]; then
+      echo "Post-install: WARN — optional browse lock is unsafe; browse skipped" >&2
+      BROWSE_OPTIONAL_OK=0
+      continue
+    fi
+    exec 8>"$SHARED_POST_LOCK"
+    "$SETUP_FLOCK_BIN" -x 8
+    if ! eval "$cmd"; then
+      echo "Post-install: WARN — optional browse setup failed; host framework remains converged and the next setup will retry browse" >&2
+      BROWSE_OPTIONAL_OK=0
+    fi
+    "$SETUP_FLOCK_BIN" -u 8
+    exec 8>&-
+  done
+  if [ "$BROWSE_OPTIONAL_OK" -eq 1 ]; then
+    mv -f "$SETUP_DIGEST_TMP" "$SETUP_DIGEST_FILE"
+  else
+    rm -f "$SETUP_DIGEST_TMP" "$SETUP_DIGEST_FILE"
+  fi
+
+  echo ""
+  echo "Done. ${#SKILL_DIRS[@]} skills + framework infrastructure installed for $HOST_NAME."
+  echo ""
+  case "$HOST" in
+    claude)
+      echo "Start Claude Code in any project and skills are available:"
+      echo "  cd your-project && claude"
+      ;;
+    codex)
+      echo "Start Codex in any project and skills are available:"
+      echo "  cd your-project && codex"
+      ;;
+    gemini)
+      echo "Start Gemini CLI in any project and skills are available:"
+      echo "  cd your-project && gemini"
+      ;;
+    kimi)
+      echo "Start Kimi Code CLI in any project and skills are available:"
+      echo "  cd your-project && kimi"
+      ;;
+    opencode)
+      echo "Start OpenCode in any project and skills are available:"
+      echo "  cd your-project && opencode"
+      ;;
+    mimo-code)
+      echo "Start MiMo Code in any project and skills are available from:"
+      echo "  $SKILLS_TARGET"
+      ;;
+    antigravity)
+      echo "Start Antigravity in any project and skills are available from:"
+      echo "  $SKILLS_TARGET"
+      ;;
+    cursor)
+      echo "Start Cursor in any project and skills are available from:"
+      echo "  $SKILLS_TARGET"
+      ;;
+    grok)
+      echo "Start Grok Build in any project and skills are available:"
+      echo "  cd your-project && grok"
+      ;;
+  esac
+  echo ""
+  echo "⚠  Re-run ./setup after every \`git pull\` on this repo to pick up new skills."
+  echo "   To check for drift without re-installing: ./scripts/check-install-drift.sh --host $HOST"
+  echo ""
+  echo "📁 To initialize svc state in a project directory:"
+  echo "   node $SKILLS_TARGET/scripts/init-project-state.mjs"
+else
+  echo ""
+  echo "Setup completed with $errors errors. Check the output above."
+  exit 1
+fi

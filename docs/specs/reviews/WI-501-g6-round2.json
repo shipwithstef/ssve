@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "review_kind": "exec",
+  "rubric_score": null,
+  "rubric_failures": null,
+  "dependencies_needing_read": null,
+  "reviewer": {
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5",
+    "effort": "high"
+  },
+  "verdict": "fail",
+  "summary": "Round 2 fails with 1 HIGH and 2 MEDIUM findings. The decoded-argv classifier closes the Round-1 bypasses, and the marker hardening is materially improved. However, the promoted validator can still report success after its corpus crashes, so R1-F003 is not fully fixed. Syntax checks passed; the classifier corpus passed. Break-glass runtime tests could not complete in this read-only sandbox because mktemp was unavailable.",
+  "findings": [
+    {
+      "id": "R2-F001",
+      "severity": "high",
+      "claim": "The tier-1 validator ignores the corpus process exit status and can falsely pass a module syntax error.",
+      "analysis": "The script captures the corpus output but discards Node's non-zero status. It then accepts any output containing the substring CORPUS-PASS. Node syntax errors print the offending source line; if the error is on the sentinel line, that diagnostic itself contains CORPUS-PASS. I reproduced this exact shape: Node exited 1, while the validator's grep condition returned PASS. No OK/BAD count is required either. This directly contradicts the stated guarantee that module errors are failures and leaves the security classifier vulnerable to an undetected regression.",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-enforcement-escape-and-readonly.sh:16 omits errexit intentionally but does not compensate by checking the child status.",
+        "test-framework/evals/tier-1/validate-enforcement-escape-and-readonly.sh:22 captures output from node without preserving or testing `$?`.",
+        "test-framework/evals/tier-1/validate-enforcement-escape-and-readonly.sh:25 uses unanchored `grep -q \"CORPUS-PASS\"`.",
+        "Reproduction: a syntax-invalid sentinel line caused Node rc=1 while the same grep check printed `validator-sentinel-check=PASS`."
+      ],
+      "proposed_fix": "Capture and require the corpus exit status to be zero, require exactly one full-line sentinel with `grep -qx 'CORPUS-PASS'`, and assert the expected number of case-result lines. Add a mutation test that introduces a syntax error on the sentinel line and proves the validator exits non-zero."
+    },
+    {
+      "id": "R2-F002",
+      "severity": "medium",
+      "claim": "The audit trail remains symlink-following and permission-unhardened, allowing silent audit redirection or tampering.",
+      "analysis": "Marker authorization now uses lstat and ownership/mode checks, but the audit path is passed directly to appendFileSync. A pre-existing `break-glass-audit.jsonl` symlink is followed; the append can succeed against another file, so no AUDIT WRITE FAILED warning appears and the intended audit file receives no record. Newly created audit files also use the process umask rather than an explicit restrictive mode.",
+      "evidence": [
+        "bin/svc-enforce.mjs:99-107 calls `fs.appendFileSync` on the pathname without lstat/fstat or no-follow opening.",
+        "bin/svc-enforce.mjs:76-86 hardens only BREAK-GLASS and its parent, not break-glass-audit.jsonl.",
+        "The success banner at bin/svc-enforce.mjs:114-117 always names the intended audit path even if a symlink redirected the append."
+      ],
+      "proposed_fix": "Open the audit file with append/create/write plus O_NOFOLLOW and mode 0600; validate the opened descriptor with fstat for regular-file, same-UID, and non-group/other-writable properties. Treat rejected audit paths as an explicit loud audit failure while preserving the documented escape-hatch behavior."
+    },
+    {
+      "id": "R2-F003",
+      "severity": "medium",
+      "claim": "The break-glass regression test no longer proves EG-01a: that a governed denial becomes an actual PreToolUse allow.",
+      "analysis": "The test invokes only the Stop guard with break-glass enabled and checks for a banner. It never runs the same mutation while governed, never establishes a baseline DENY, and never verifies the Codex PreToolUse allow payload. A regression isolated to the mutation enforcer or its host response shape could therefore pass this section.",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-enforcement-escape-and-readonly.sh:33 constructs only a Stop event for `svc-task-completion-guard`.",
+        "test-framework/evals/tier-1/validate-enforcement-escape-and-readonly.sh:36 checks only whether stderr contains BREAK-GLASS ACTIVE.",
+        "docs/specs/work-items/WI-501.md acceptance criterion EG-01a requires a governed DENY to become ALLOWED with banner and audit row."
+      ],
+      "proposed_fix": "Add a hermetic PreToolUse case for `svc-codex-skill-load-enforcer`: assert a mutating command is denied without break-glass, then assert the identical payload exits successfully with the expected allow response, banner, and audit row under SVC_BREAK_GLASS=1."
+    }
+  ],
+  "certifications": [
+    {
+      "key": "r1_f001_decoded_argv_fix",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "e5139673105194dccd1651c07b35d6deda1c57d0056b30e810ab78f398e9d0d9"
+    },
+    {
+      "key": "r1_f002_marker_hardening",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "e5139673105194dccd1651c07b35d6deda1c57d0056b30e810ab78f398e9d0d9"
+    },
+    {
+      "key": "r1_f003_validator_fail_closed",
+      "certified": false,
+      "reviewer_family": "openai",
+      "for_content_sha": "e5139673105194dccd1651c07b35d6deda1c57d0056b30e810ab78f398e9d0d9"
+    }
+  ]
+}

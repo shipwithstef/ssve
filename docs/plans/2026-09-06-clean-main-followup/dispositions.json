@@ -1,0 +1,580 @@
+{
+  "wi": "WI-FW-CLEAN-MAIN-FOLLOWUP-01",
+  "base_sha": "848693c4c7e1abc5636479b26b1dd9b37844c2b2",
+  "historical_count": 19,
+  "current_baseline": [
+    {
+      "validator": "validate-capability-blocker-inertia.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 0.917
+    },
+    {
+      "validator": "validate-claude-wirer-cutover.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 1.011
+    },
+    {
+      "validator": "validate-consumer-evidence-root.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 0.251
+    },
+    {
+      "validator": "validate-framework-self-management.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 0.797
+    },
+    {
+      "validator": "validate-knowledge-domain-provenance.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 0.875
+    },
+    {
+      "validator": "validate-knowledge-legacy-backfill.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 0.841
+    },
+    {
+      "validator": "validate-lane-tasks-integrity.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 4.917
+    },
+    {
+      "validator": "validate-locked-agents.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 0.526
+    },
+    {
+      "validator": "validate-pipeline-decisions-recent.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 0.02
+    },
+    {
+      "validator": "validate-pipeline-decisions-schema.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 0.044
+    },
+    {
+      "validator": "validate-pretool-decision-engine.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 1.52
+    },
+    {
+      "validator": "validate-proposal-triage-sla.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 0.257
+    },
+    {
+      "validator": "validate-self-heal-survives-double-dead-pointer.sh",
+      "status": "not_run_pre_change_live_state_mutation",
+      "exit_code": null
+    },
+    {
+      "validator": "validate-session-contract-freshness.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 0.401
+    },
+    {
+      "validator": "validate-skill-before-starting.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 1.024
+    },
+    {
+      "validator": "validate-skill-receipt-shape.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 53.617
+    },
+    {
+      "validator": "validate-skills-source-layout.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 1.148
+    },
+    {
+      "validator": "validate-work-item-metadata.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 0.152
+    },
+    {
+      "validator": "validate-workflow-guard.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 4.744
+    }
+  ],
+  "dirty_preservation": ".git/svc-review-evidence/preservation/WI-FW-CLEAN-MAIN-FOLLOWUP-01",
+  "completion": "pending",
+  "dispositions": [
+    {
+      "validator": "validate-capability-blocker-inertia.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 0.917,
+      "historical_status": "failure in preserved 19-name attribution at 6d4d8b0",
+      "classification": "stale hook dependency closure",
+      "owner": "T1",
+      "files": [
+        "test-framework/evals/tier-1/validate-capability-blocker-inertia.sh"
+      ],
+      "proof_command": "bash test-framework/evals/tier-1/validate-capability-blocker-inertia.sh",
+      "fixture": "existing validator isolated fixture",
+      "negative_proof": "cause-specific rejected/missing/stale/conflicting fixture alongside corrected positive case",
+      "input_sha256": {
+        "test-framework/evals/tier-1/validate-capability-blocker-inertia.sh": "0d82c6eb6cd42d858afd5b0a4d8a41d268dc7cdf7e984e8606b044aa93ec3115"
+      },
+      "missing_input_reason": "null denotes declared CREATE absent before implementation",
+      "rollback": "restore owned source patch; for historical .svc files restore pre-edit immutable object after concurrent-change check",
+      "archive_object_sha256": null,
+      "completion": "pending"
+    },
+    {
+      "validator": "validate-claude-wirer-cutover.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 1.011,
+      "historical_status": "failure in preserved 19-name attribution at 6d4d8b0",
+      "classification": "obsolete launcher path assertions",
+      "owner": "T1",
+      "files": [
+        "test-framework/evals/tier-1/validate-claude-wirer-cutover.sh"
+      ],
+      "proof_command": "bash test-framework/evals/tier-1/validate-claude-wirer-cutover.sh",
+      "fixture": "existing validator isolated fixture",
+      "negative_proof": "cause-specific rejected/missing/stale/conflicting fixture alongside corrected positive case",
+      "input_sha256": {
+        "test-framework/evals/tier-1/validate-claude-wirer-cutover.sh": "6b6a6bf5979b89ddcdaa4e8fa20e59328732df444e42bd0c3422c8ece3cab649"
+      },
+      "missing_input_reason": "null denotes declared CREATE absent before implementation",
+      "rollback": "restore owned source patch; for historical .svc files restore pre-edit immutable object after concurrent-change check",
+      "archive_object_sha256": null,
+      "completion": "pending"
+    },
+    {
+      "validator": "validate-consumer-evidence-root.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 0.251,
+      "historical_status": "failure in preserved 19-name attribution at 6d4d8b0",
+      "classification": "outdated synthetic receipt schema",
+      "owner": "T1",
+      "files": [
+        "test-framework/evals/tier-1/validate-consumer-evidence-root.sh"
+      ],
+      "proof_command": "bash test-framework/evals/tier-1/validate-consumer-evidence-root.sh",
+      "fixture": "existing validator isolated fixture",
+      "negative_proof": "cause-specific rejected/missing/stale/conflicting fixture alongside corrected positive case",
+      "input_sha256": {
+        "test-framework/evals/tier-1/validate-consumer-evidence-root.sh": "8cef1e4a3636a9202044f8b90c822e0cc632602aabf2a5e94fa0b386288b0a0b"
+      },
+      "missing_input_reason": "null denotes declared CREATE absent before implementation",
+      "rollback": "restore owned source patch; for historical .svc files restore pre-edit immutable object after concurrent-change check",
+      "archive_object_sha256": null,
+      "completion": "pending"
+    },
+    {
+      "validator": "validate-framework-self-management.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 0.797,
+      "historical_status": "failure in preserved 19-name attribution at 6d4d8b0",
+      "classification": "missing continuation contract",
+      "owner": "T3",
+      "files": [
+        "skills/produce-ad-video/SKILL.md"
+      ],
+      "proof_command": "bash test-framework/evals/tier-1/validate-framework-self-management.sh",
+      "fixture": "T2 regression validate-clean-main-followup.mjs hosts T3 data-negative cases in scratch; no live-source mutation",
+      "negative_proof": "remove continuation in scratch; checker rejects",
+      "input_sha256": {
+        "skills/produce-ad-video/SKILL.md": "4cfa5429ff59adc6bcca1bc5602786cd1d3b61313e96c13ca7a77c2876cbe9de"
+      },
+      "missing_input_reason": "null denotes declared CREATE absent before implementation",
+      "rollback": "restore owned source patch; for historical .svc files restore pre-edit immutable object after concurrent-change check",
+      "archive_object_sha256": null,
+      "completion": "pending"
+    },
+    {
+      "validator": "validate-knowledge-domain-provenance.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 0.875,
+      "historical_status": "failure in preserved 19-name attribution at 6d4d8b0",
+      "classification": "missing provenance",
+      "owner": "T3",
+      "files": [
+        "references/knowledge/domains/mimo/CAPABILITIES.md",
+        "references/knowledge/domains/mimo/.sources.jsonl",
+        "references/knowledge/domains/claude-hooks/CAPABILITIES.md",
+        "references/knowledge/domains/claude-hooks/.sources.jsonl"
+      ],
+      "proof_command": "bash test-framework/evals/tier-1/validate-knowledge-domain-provenance.sh",
+      "fixture": "T2 regression validate-clean-main-followup.mjs hosts T3 data-negative cases in scratch; no live-source mutation",
+      "negative_proof": "remove source record in scratch; checker rejects",
+      "input_sha256": {
+        "references/knowledge/domains/mimo/CAPABILITIES.md": "62f3a183fdf7f3eaa6e1b60c55f8e9356bf75f3f130b6605eb5af09b43f2a120",
+        "references/knowledge/domains/mimo/.sources.jsonl": null,
+        "references/knowledge/domains/claude-hooks/CAPABILITIES.md": "20a1afe8be7409e7205eebfb3256761c54b6de73c750c22bdc568e30b2d91671",
+        "references/knowledge/domains/claude-hooks/.sources.jsonl": null
+      },
+      "missing_input_reason": "null denotes declared CREATE absent before implementation",
+      "rollback": "restore owned source patch; for historical .svc files restore pre-edit immutable object after concurrent-change check",
+      "archive_object_sha256": null,
+      "completion": "pending"
+    },
+    {
+      "validator": "validate-knowledge-legacy-backfill.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 0.841,
+      "historical_status": "failure in preserved 19-name attribution at 6d4d8b0",
+      "classification": "pipefail hides provenance diagnostic",
+      "owner": "T1",
+      "files": [
+        "test-framework/evals/tier-1/validate-knowledge-legacy-backfill.sh"
+      ],
+      "proof_command": "bash test-framework/evals/tier-1/validate-knowledge-legacy-backfill.sh",
+      "fixture": "existing validator isolated fixture",
+      "negative_proof": "cause-specific rejected/missing/stale/conflicting fixture alongside corrected positive case",
+      "input_sha256": {
+        "test-framework/evals/tier-1/validate-knowledge-legacy-backfill.sh": "e734ad1d47128ee0d2e96bade3ece794fa10384337f7091b46e6565556f342f4"
+      },
+      "missing_input_reason": "null denotes declared CREATE absent before implementation",
+      "rollback": "restore owned source patch; for historical .svc files restore pre-edit immutable object after concurrent-change check",
+      "archive_object_sha256": null,
+      "completion": "pending"
+    },
+    {
+      "validator": "validate-lane-tasks-integrity.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 4.917,
+      "historical_status": "failure in preserved 19-name attribution at 6d4d8b0",
+      "classification": "unsupported historical graph claims",
+      "owner": "T3",
+      "files": [
+        ".svc/lane-tasks-WI-567.json",
+        ".svc/lane-tasks-WI-SSVE-ARCHITECTURE-EVOLUTION-02.json",
+        ".svc/lane-tasks-WI-FW-SWARM-COORDINATION-01.json"
+      ],
+      "proof_command": "bash test-framework/evals/tier-1/validate-lane-tasks-integrity.sh",
+      "fixture": "T2 regression validate-clean-main-followup.mjs hosts T3 data-negative cases in scratch; no live-source mutation",
+      "negative_proof": "malformed graph/unsupported completed phase rejects",
+      "input_sha256": {
+        ".svc/lane-tasks-WI-567.json": "6422f0ede1c868461ba66f87d03c426d08d3bb06906672311d52353af3cd1a49",
+        ".svc/lane-tasks-WI-SSVE-ARCHITECTURE-EVOLUTION-02.json": "07104f4845999c351a25c89aa09d60d70b9ab3b66913bff31f30f3f4356cbb98",
+        ".svc/lane-tasks-WI-FW-SWARM-COORDINATION-01.json": "c7a3df18b61c15d514fece821054ab434f279b0364c83f8c8a738d52ad222881"
+      },
+      "missing_input_reason": "null denotes declared CREATE absent before implementation",
+      "rollback": "restore owned source patch; for historical .svc files restore pre-edit immutable object after concurrent-change check",
+      "archive_object_sha256": {
+        ".svc/lane-tasks-WI-567.json": "6422f0ede1c868461ba66f87d03c426d08d3bb06906672311d52353af3cd1a49",
+        ".svc/lane-tasks-WI-SSVE-ARCHITECTURE-EVOLUTION-02.json": "07104f4845999c351a25c89aa09d60d70b9ab3b66913bff31f30f3f4356cbb98",
+        ".svc/lane-tasks-WI-FW-SWARM-COORDINATION-01.json": "c7a3df18b61c15d514fece821054ab434f279b0364c83f8c8a738d52ad222881"
+      },
+      "completion": "pending"
+    },
+    {
+      "validator": "validate-locked-agents.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 0.526,
+      "historical_status": "failure in preserved 19-name attribution at 6d4d8b0",
+      "classification": "generated mirror drift",
+      "owner": "T3",
+      "files": [
+        ".claude/agents/ad-video-producer.md",
+        ".claude/agents/strategic-reviewer.md"
+      ],
+      "proof_command": "bash test-framework/evals/tier-1/validate-locked-agents.sh",
+      "fixture": "T2 regression validate-clean-main-followup.mjs hosts T3 data-negative cases in scratch; no live-source mutation",
+      "negative_proof": "tamper generated mirror in scratch; --check rejects",
+      "input_sha256": {
+        ".claude/agents/ad-video-producer.md": "f6f031c911f4abaf83382b87078e9955e7fd5fcd13a21e3539a745badd5d4b6e",
+        ".claude/agents/strategic-reviewer.md": "ac0177cb34e4fe9c14fd9883a4d48c88f07ff38b22166f84d0f2a50ac937bc06"
+      },
+      "missing_input_reason": "null denotes declared CREATE absent before implementation",
+      "rollback": "restore owned source patch; for historical .svc files restore pre-edit immutable object after concurrent-change check",
+      "archive_object_sha256": null,
+      "completion": "pending"
+    },
+    {
+      "validator": "validate-pipeline-decisions-recent.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 0.02,
+      "historical_status": "failure in preserved 19-name attribution at 6d4d8b0",
+      "classification": "live-age dependency",
+      "owner": "T1",
+      "files": [
+        "test-framework/evals/tier-1/validate-pipeline-decisions-recent.sh"
+      ],
+      "proof_command": "bash test-framework/evals/tier-1/validate-pipeline-decisions-recent.sh",
+      "fixture": "existing validator isolated fixture",
+      "negative_proof": "cause-specific rejected/missing/stale/conflicting fixture alongside corrected positive case",
+      "input_sha256": {
+        "test-framework/evals/tier-1/validate-pipeline-decisions-recent.sh": "0446c3e71ec0426d7030854abdc48b0a873760f5f083ef3b40c17353e4b70018"
+      },
+      "missing_input_reason": "null denotes declared CREATE absent before implementation",
+      "rollback": "restore owned source patch; for historical .svc files restore pre-edit immutable object after concurrent-change check",
+      "archive_object_sha256": null,
+      "completion": "pending"
+    },
+    {
+      "validator": "validate-pipeline-decisions-schema.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 0.044,
+      "historical_status": "failure in preserved 19-name attribution at 6d4d8b0",
+      "classification": "malformed decision row",
+      "owner": "T1",
+      "files": [
+        "test-framework/evals/tier-1/validate-pipeline-decisions-schema.sh"
+      ],
+      "proof_command": "bash test-framework/evals/tier-1/validate-pipeline-decisions-schema.sh",
+      "fixture": "existing validator isolated fixture",
+      "negative_proof": "cause-specific rejected/missing/stale/conflicting fixture alongside corrected positive case",
+      "input_sha256": {
+        "test-framework/evals/tier-1/validate-pipeline-decisions-schema.sh": "318cd3f932c16bad2f53acaff5212c73aeac4cfcf6414cdeb192ddedb249d0dd"
+      },
+      "missing_input_reason": "null denotes declared CREATE absent before implementation",
+      "rollback": "restore owned source patch; for historical .svc files restore pre-edit immutable object after concurrent-change check",
+      "archive_object_sha256": {
+        ".svc/pipeline-decisions.jsonl": "ec31619fa75259b5b5649b940c7ebd3030fa34f0930ab62dc03ae00d5f3bae45"
+      },
+      "completion": "pending",
+      "live_proof_owner": "T3",
+      "proof_prerequisite": "T3 data repairs; not T1 exit criterion"
+    },
+    {
+      "validator": "validate-pretool-decision-engine.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 1.52,
+      "historical_status": "failure in preserved 19-name attribution at 6d4d8b0",
+      "classification": "incomplete authority fixture",
+      "owner": "T1",
+      "files": [
+        "test-framework/evals/tier-1/validate-pretool-decision-engine.sh"
+      ],
+      "proof_command": "bash test-framework/evals/tier-1/validate-pretool-decision-engine.sh",
+      "fixture": "existing validator isolated fixture",
+      "negative_proof": "cause-specific rejected/missing/stale/conflicting fixture alongside corrected positive case",
+      "input_sha256": {
+        "test-framework/evals/tier-1/validate-pretool-decision-engine.sh": "cf87cd8dc9350329385dbc06cd94f736f8a291f4edad4a9870186a766b6ccf0a"
+      },
+      "missing_input_reason": "null denotes declared CREATE absent before implementation",
+      "rollback": "restore owned source patch; for historical .svc files restore pre-edit immutable object after concurrent-change check",
+      "archive_object_sha256": null,
+      "completion": "pending"
+    },
+    {
+      "validator": "validate-proposal-triage-sla.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 0.257,
+      "historical_status": "failure in preserved 19-name attribution at 6d4d8b0",
+      "classification": "proposal metadata/identifier drift",
+      "owner": "T1",
+      "files": [
+        "test-framework/evals/tier-1/validate-proposal-triage-sla.sh"
+      ],
+      "proof_command": "bash test-framework/evals/tier-1/validate-proposal-triage-sla.sh",
+      "fixture": "existing validator isolated fixture",
+      "negative_proof": "cause-specific rejected/missing/stale/conflicting fixture alongside corrected positive case",
+      "input_sha256": {
+        "test-framework/evals/tier-1/validate-proposal-triage-sla.sh": "b7bd68fdd37e0d7eaa38d9be7853009956cd631d3e8836ec8dde3fc711dd8858"
+      },
+      "missing_input_reason": "null denotes declared CREATE absent before implementation",
+      "rollback": "restore owned source patch; for historical .svc files restore pre-edit immutable object after concurrent-change check",
+      "archive_object_sha256": null,
+      "completion": "pending",
+      "live_proof_owner": "T3",
+      "proof_prerequisite": "T3 data repairs; not T1 exit criterion"
+    },
+    {
+      "validator": "validate-self-heal-survives-double-dead-pointer.sh",
+      "status": "not_run_pre_change_live_state_mutation",
+      "exit_code": null,
+      "historical_status": "failure in preserved 19-name attribution at 6d4d8b0",
+      "classification": "live HOME mutation hazard",
+      "owner": "T1",
+      "files": [
+        "test-framework/evals/tier-1/validate-self-heal-survives-double-dead-pointer.sh"
+      ],
+      "proof_command": "bash test-framework/evals/tier-1/validate-self-heal-survives-double-dead-pointer.sh",
+      "fixture": "existing validator isolated fixture",
+      "negative_proof": "cause-specific rejected/missing/stale/conflicting fixture alongside corrected positive case",
+      "input_sha256": {
+        "test-framework/evals/tier-1/validate-self-heal-survives-double-dead-pointer.sh": "3c03fd7eb6b0da1c26d44b654dd5749bb173a501ceef7c407b45b517b9a98720"
+      },
+      "missing_input_reason": "null denotes declared CREATE absent before implementation",
+      "rollback": "restore owned source patch; for historical .svc files restore pre-edit immutable object after concurrent-change check",
+      "archive_object_sha256": null,
+      "completion": "pending"
+    },
+    {
+      "validator": "validate-session-contract-freshness.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 0.401,
+      "historical_status": "failure in preserved 19-name attribution at 6d4d8b0",
+      "classification": "live-age dependency",
+      "owner": "T1",
+      "files": [
+        "test-framework/evals/tier-1/validate-session-contract-freshness.sh"
+      ],
+      "proof_command": "bash test-framework/evals/tier-1/validate-session-contract-freshness.sh",
+      "fixture": "existing validator isolated fixture",
+      "negative_proof": "cause-specific rejected/missing/stale/conflicting fixture alongside corrected positive case",
+      "input_sha256": {
+        "test-framework/evals/tier-1/validate-session-contract-freshness.sh": "3088ec456f33483e6b3f26c21cbf29654e1ff4dbf69eac5a5453367737292971"
+      },
+      "missing_input_reason": "null denotes declared CREATE absent before implementation",
+      "rollback": "restore owned source patch; for historical .svc files restore pre-edit immutable object after concurrent-change check",
+      "archive_object_sha256": null,
+      "completion": "pending"
+    },
+    {
+      "validator": "validate-skill-before-starting.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 1.024,
+      "historical_status": "failure in preserved 19-name attribution at 6d4d8b0",
+      "classification": "missing context family",
+      "owner": "T3",
+      "files": [
+        "references/context-loading-registry.json",
+        "skills/produce-ad-video/SKILL.md"
+      ],
+      "proof_command": "bash test-framework/evals/tier-1/validate-skill-before-starting.sh",
+      "fixture": "T2 regression validate-clean-main-followup.mjs hosts T3 data-negative cases in scratch; no live-source mutation",
+      "negative_proof": "remove included skill from registry in scratch; checker rejects",
+      "input_sha256": {
+        "references/context-loading-registry.json": "4c0c29742a76ee959814bf249aeeb9b72593c6fca1a03384e6ee22fa5bb615cb",
+        "skills/produce-ad-video/SKILL.md": "4cfa5429ff59adc6bcca1bc5602786cd1d3b61313e96c13ca7a77c2876cbe9de"
+      },
+      "missing_input_reason": "null denotes declared CREATE absent before implementation",
+      "rollback": "restore owned source patch; for historical .svc files restore pre-edit immutable object after concurrent-change check",
+      "archive_object_sha256": null,
+      "completion": "pending"
+    },
+    {
+      "validator": "validate-skill-receipt-shape.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 53.617,
+      "historical_status": "failure in preserved 19-name attribution at 6d4d8b0",
+      "classification": "missing historic phase evidence",
+      "owner": "T3",
+      "files": [
+        ".svc/lane-tasks-WI-567.json",
+        ".svc/lane-tasks-WI-SSVE-ARCHITECTURE-EVOLUTION-02.json",
+        ".svc/lane-tasks-WI-FW-SWARM-COORDINATION-01.json"
+      ],
+      "proof_command": "bash test-framework/evals/tier-1/validate-skill-receipt-shape.sh",
+      "fixture": "T2 regression validate-clean-main-followup.mjs hosts T3 data-negative cases in scratch; no live-source mutation",
+      "negative_proof": "assert completed without authentic required phase evidence; checker rejects",
+      "input_sha256": {
+        ".svc/lane-tasks-WI-567.json": "6422f0ede1c868461ba66f87d03c426d08d3bb06906672311d52353af3cd1a49",
+        ".svc/lane-tasks-WI-SSVE-ARCHITECTURE-EVOLUTION-02.json": "07104f4845999c351a25c89aa09d60d70b9ab3b66913bff31f30f3f4356cbb98",
+        ".svc/lane-tasks-WI-FW-SWARM-COORDINATION-01.json": "c7a3df18b61c15d514fece821054ab434f279b0364c83f8c8a738d52ad222881"
+      },
+      "missing_input_reason": "null denotes declared CREATE absent before implementation",
+      "rollback": "restore owned source patch; for historical .svc files restore pre-edit immutable object after concurrent-change check",
+      "archive_object_sha256": {
+        ".svc/lane-tasks-WI-567.json": "6422f0ede1c868461ba66f87d03c426d08d3bb06906672311d52353af3cd1a49",
+        ".svc/lane-tasks-WI-SSVE-ARCHITECTURE-EVOLUTION-02.json": "07104f4845999c351a25c89aa09d60d70b9ab3b66913bff31f30f3f4356cbb98",
+        ".svc/lane-tasks-WI-FW-SWARM-COORDINATION-01.json": "c7a3df18b61c15d514fece821054ab434f279b0364c83f8c8a738d52ad222881"
+      },
+      "completion": "pending"
+    },
+    {
+      "validator": "validate-skills-source-layout.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 1.148,
+      "historical_status": "failure in preserved 19-name attribution at 6d4d8b0",
+      "classification": "hardcoded skill count",
+      "owner": "T1",
+      "files": [
+        "test-framework/evals/tier-1/validate-skills-source-layout.sh"
+      ],
+      "proof_command": "bash test-framework/evals/tier-1/validate-skills-source-layout.sh",
+      "fixture": "existing validator isolated fixture",
+      "negative_proof": "cause-specific rejected/missing/stale/conflicting fixture alongside corrected positive case",
+      "input_sha256": {
+        "test-framework/evals/tier-1/validate-skills-source-layout.sh": "0f5d3e8d9918bfb08529a6ac32c19fdb5d07e1b2c2216b4f9373c20f954aeb47"
+      },
+      "missing_input_reason": "null denotes declared CREATE absent before implementation",
+      "rollback": "restore owned source patch; for historical .svc files restore pre-edit immutable object after concurrent-change check",
+      "archive_object_sha256": null,
+      "completion": "pending"
+    },
+    {
+      "validator": "validate-work-item-metadata.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 0.152,
+      "historical_status": "failure in preserved 19-name attribution at 6d4d8b0",
+      "classification": "missing affected surface metadata",
+      "owner": "T3",
+      "files": [
+        "docs/specs/work-items/WI-GROK-HOST-IDENTITY-02.md"
+      ],
+      "proof_command": "bash test-framework/evals/tier-1/validate-work-item-metadata.sh",
+      "fixture": "T2 regression validate-clean-main-followup.mjs hosts T3 data-negative cases in scratch; no live-source mutation",
+      "negative_proof": "remove required metadata in scratch; checker rejects",
+      "input_sha256": {
+        "docs/specs/work-items/WI-GROK-HOST-IDENTITY-02.md": "a42b138e7c2794b41078d502635ac870f470d970cee9de9f1eca52fa4ff4cf2d"
+      },
+      "missing_input_reason": "null denotes declared CREATE absent before implementation",
+      "rollback": "restore owned source patch; for historical .svc files restore pre-edit immutable object after concurrent-change check",
+      "archive_object_sha256": null,
+      "completion": "pending"
+    },
+    {
+      "validator": "validate-workflow-guard.sh",
+      "status": "fail",
+      "exit_code": 1,
+      "seconds": 4.744,
+      "historical_status": "failure in preserved 19-name attribution at 6d4d8b0",
+      "classification": "stale permission expectation",
+      "owner": "T1",
+      "files": [
+        "test-framework/evals/tier-1/validate-workflow-guard.sh"
+      ],
+      "proof_command": "bash test-framework/evals/tier-1/validate-workflow-guard.sh",
+      "fixture": "existing validator isolated fixture",
+      "negative_proof": "cause-specific rejected/missing/stale/conflicting fixture alongside corrected positive case",
+      "input_sha256": {
+        "test-framework/evals/tier-1/validate-workflow-guard.sh": "6f1a2b82f315cfc4f0bff6bdcfc03df00e1a0b89d6cc8bbcd9a06413565a3e1b"
+      },
+      "missing_input_reason": "null denotes declared CREATE absent before implementation",
+      "rollback": "restore owned source patch; for historical .svc files restore pre-edit immutable object after concurrent-change check",
+      "archive_object_sha256": null,
+      "completion": "pending"
+    }
+  ],
+  "verified_pre_edit_archive_objects": {
+    ".svc/lane-tasks-WI-567.json": "6422f0ede1c868461ba66f87d03c426d08d3bb06906672311d52353af3cd1a49",
+    ".svc/lane-tasks-WI-SSVE-ARCHITECTURE-EVOLUTION-02.json": "07104f4845999c351a25c89aa09d60d70b9ab3b66913bff31f30f3f4356cbb98",
+    ".svc/lane-tasks-WI-FW-SWARM-COORDINATION-01.json": "c7a3df18b61c15d514fece821054ab434f279b0364c83f8c8a738d52ad222881",
+    ".svc/pipeline-decisions.jsonl": "ec31619fa75259b5b5649b940c7ebd3030fa34f0930ab62dc03ae00d5f3bae45"
+  },
+  "archive_restore_contract": "Verify SHA object and exact task-owned expected postimage, then restore bytes in place preserving current mode. Missing-file recreation or mode restoration requires preserved metadata; object mode is not original mode."
+}

@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "wi": "WI-354",
+  "source_proposals": [
+    "proposals/done/2026-06-04-session-audit-active-intent-guard.md"
+  ],
+  "status": "implemented",
+  "coverage": [
+    {
+      "source_proposal": "proposals/done/2026-06-04-session-audit-active-intent-guard.md",
+      "proposal_item": "Active user-intent isolation + stale completion-guard suppression (interactive control-contract gate)",
+      "status": "covered",
+      "owner_wi": "WI-354",
+      "evidence": [
+        "docs/specs/work-items/WI-354.md",
+        "hooks/lib/active-intent.mjs",
+        "test-framework/evals/tier-1/validate-active-intent-guard.sh"
+      ]
+    }
+  ],
+  "note": "Formal closeout filed 2026-06-29 (residual-map + ledger) — the proposal was implemented + VERIFIED as WI-354 outside the original promotion path; this reconciles the registry."
+}

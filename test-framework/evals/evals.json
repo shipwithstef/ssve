@@ -1,0 +1,482 @@
+{
+  "skill_name": "test-framework",
+  "tiers": {
+    "tier-1": {
+      "description": "Static validation scripts — no LLM, <10s, free",
+      "scripts": [
+        {
+          "name": "validate-skill-structure",
+          "path": "tier-1/validate-skill-structure.sh",
+          "checks": "Every SKILL.md has name, description, inputs, outputs, chain in frontmatter. Pipeline Continuation section (except route-workflow, test-framework). Audit Mode section for the 11 skills that have it.",
+          "cost": "$0",
+          "duration": "<5s"
+        },
+        {
+          "name": "validate-contracts",
+          "path": "tier-1/validate-contracts.sh",
+          "checks": "Input paths use valid docs/specs/ patterns. Output paths don't conflict across skills. Status transitions are valid lifecycle values.",
+          "cost": "$0",
+          "duration": "<5s"
+        },
+        {
+          "name": "validate-chain-references",
+          "path": "tier-1/validate-chain-references.sh",
+          "checks": "Every chain.lanes.*.next and *.prev references a real skill in includedSkills. Lane skill lists in manifest match chain positions in individual SKILL.md frontmatter.",
+          "cost": "$0",
+          "duration": "<5s"
+        },
+        {
+          "name": "validate-self-verify-sections",
+          "path": "tier-1/validate-self-verify-sections.sh",
+          "checks": "Every skill with self_verify: true has a Self-Verify table with PASS/FAIL column.",
+          "cost": "$0",
+          "duration": "<5s"
+        },
+        {
+          "name": "validate-worktree-safety",
+          "path": "tier-1/validate-worktree-safety.sh",
+          "checks": ".gitignore has .worktrees/, scripts/worktree.sh exists, no orphaned worktrees.",
+          "cost": "$0",
+          "duration": "<5s"
+        },
+        {
+          "name": "validate-framework-self-management",
+          "path": "tier-1/validate-framework-self-management.sh",
+          "checks": "Cross-host task-graph contract uses lane-tasks.json as source of truth, Claude stop hook is optional acceleration, and svc-on-svc routing between improve-framework, diagnose-bug, write-spec, and explore-solutions is explicit.",
+          "cost": "$0",
+          "duration": "<5s"
+        },
+        {
+          "name": "validate-frontmatter-ast",
+          "path": "tier-1/validate-frontmatter-ast.mjs",
+          "checks": "AST-based YAML frontmatter parsing and schema validation. Checks required fields, types, inputs/outputs structure, chain lanes shape, boolean flags, duplicate keys.",
+          "cost": "$0",
+          "duration": "<5s"
+        },
+        {
+          "name": "validate-markdown-ast",
+          "path": "tier-1/validate-markdown-ast.mjs",
+          "checks": "AST-based Markdown structure validation. Checks H1 presence, heading nesting, self-verify table columns/rows, audit mode sections, announce patterns, cross-reference file existence, empty sections.",
+          "cost": "$0",
+          "duration": "<5s"
+        },
+        {
+          "name": "validate-lane-dynamic-handling",
+          "path": "tier-1/validate-lane-dynamic-handling.sh",
+          "checks": "Lane-model documents skip/NA conditions for all 7 lanes. Key skills (design-ux, design-ui, execute-changeset, track-visuals) have skip-justification checks in Self-Verify. plan-changeset and route-workflow have new-lane necessity checks. Task-graph protocol supports skip_reason.",
+          "cost": "$0",
+          "duration": "<5s"
+        },
+        {
+          "name": "validate-discussion-phase-contracts",
+          "path": "tier-1/validate-discussion-phase-contracts.sh",
+          "checks": "Discussion artifact helper validates frontmatter/register contracts and skills/route-workflow/write-spec/design-ux/design-tech/review-gate wiring references discuss-phase.",
+          "cost": "$0",
+          "duration": "<5s"
+        },
+        {
+          "name": "validate-host-manifests",
+          "path": "tier-1/validate-host-manifests.sh",
+          "checks": "Every provisioned host manifest under provision/hosts/*.json is valid JSON. All infra_files and infra_dirs entries exist in repo. All manifests include 'templates' and 'scripts' in infra_dirs. Setup completes without error for each host.",
+          "cost": "$0",
+          "duration": "<10s"
+        },
+        {
+          "name": "kimi-health-check",
+          "path": "../../scripts/kimi-health-check.mjs",
+          "checks": "Lightweight Kimi CLI scenarios (routing, validate-feature, write-spec, diagnose-bug, plan-changeset) run N times each. Measures pass rate, output variance, time, and structural correctness. Produces health report with recommendations.",
+          "cost": "~15K tokens per run (3 iterations)",
+          "duration": "~3min for 3 iterations, ~10min for 10 iterations",
+          "note": "Requires kimi CLI. Not run in standard tier-1 batch — invoke manually."
+        }
+      ]
+    },
+    "tier-1.5": {
+      "description": "Skill comprehension and triggering tests — LLM-powered, ~5K tokens each, ~30-60s",
+      "helpers": "test-helpers.sh",
+      "tests": [
+        {
+          "name": "skill-comprehension",
+          "path": "tier-1.5/test-skill-comprehension.sh",
+          "checks": "Asks Claude factual questions about skill rules (chain order, lifecycle states, TDD enforcement, self-verify gating). Verifies answers contain expected patterns.",
+          "skills_tested": ["write-vision", "write-spec", "plan-changeset", "execute-changeset", "validate-feature", "sync-spec-code", "analyze-domain", "analyze-competitors", "build-personas", "audit-ac", "audit-coverage", "audit-implementation", "create-skill", "define-code-style", "design-ux", "design-ui", "design-tech", "evaluate-rule", "explore-solutions", "find-opportunity", "land-changeset", "onboard-repo", "quick-fix", "research", "review-cross-model", "review-gate", "review-plan", "review-security", "roadmap-evaluation", "stage-revenue", "sync-work-items", "verify-promotion", "write-e2e", "analyze-marketing", "assess-market-readiness", "audit-session-execution", "benchmark-landing", "blend-private", "capture-idea", "discover-skills", "extract-bootstrap", "list-work-items", "manage-finops", "manage-learnings", "mine-builder", "monetization-architecture", "plan-capabilities", "platform-operating-architect", "reverse-engineer", "strategic-decision", "svc-advisor", "teach-project", "test-journeys", "track-visuals", "wsl2-audio", "route-workflow"],
+          "cost": "~290K tokens total",
+          "duration": "~45min"
+        },
+        {
+          "name": "skill-triggering",
+          "path": "tier-1.5/test-skill-triggering.sh",
+          "checks": "Sends naive user prompts (no skill name mentioned) and verifies correct skill is triggered via stream-json Skill tool invocation. Also checks for premature tool use before skill loading.",
+          "prompts": ["diagnose-bug", "validate-feature", "sync-spec-code", "write-spec", "write-vision", "write-journeys", "improve-framework", "test-framework", "blend-external", "evolve-framework", "analyze-domain", "build-personas", "design-ux", "plan-changeset", "execute-changeset", "review-gate", "onboard-repo", "find-opportunity", "research", "quick-fix", "capture-idea", "list-work-items", "stage-revenue", "audit-session-execution", "monetization-architecture"],
+          "cost": "~75K tokens total",
+          "duration": "~15min"
+        }
+      ]
+    },
+    "tier-2": {
+      "description": "Integration scenarios via claude -p — ~50K tokens each",
+      "runner": "tier-2/run-tier2.sh",
+      "scenarios": [
+        {
+          "name": "write-spec-greenfield",
+          "path": "tier-2/scenarios/write-spec-greenfield.md",
+          "skill_under_test": "write-spec",
+          "assertions": 8,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "plan-changeset-manifest",
+          "path": "tier-2/scenarios/plan-changeset-manifest.md",
+          "skill_under_test": "plan-changeset",
+          "assertions": 6,
+          "cost": "~50K tokens",
+          "duration": "~3min"
+        },
+        {
+          "name": "validate-feature-validate",
+          "path": "tier-2/scenarios/validate-feature-validate.md",
+          "skill_under_test": "validate-feature",
+          "assertions": 6,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "write-vision-create",
+          "path": "tier-2/scenarios/write-vision-create.md",
+          "skill_under_test": "write-vision",
+          "assertions": 11,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "audit-session-execution-eval",
+          "path": "tier-2/scenarios/audit-session-execution-eval.md",
+          "skill_under_test": "audit-session-execution",
+          "assertions": 7,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "capture-idea-eval",
+          "path": "tier-2/scenarios/capture-idea-eval.md",
+          "skill_under_test": "capture-idea",
+          "assertions": 5,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "evaluate-rule-probe",
+          "path": "tier-2/scenarios/evaluate-rule-probe.md",
+          "skill_under_test": "evaluate-rule",
+          "assertions": 5,
+          "cost": "~50K tokens",
+          "duration": "~2min",
+          "note": "Manual tier-2 eval — no scripted harness yet"
+        },
+        {
+          "name": "find-opportunity-eval",
+          "path": "tier-2/scenarios/find-opportunity-eval.md",
+          "skill_under_test": "find-opportunity",
+          "assertions": 11,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "framework-self-improve-eval",
+          "path": "tier-2/scenarios/framework-self-improve-eval.md",
+          "skill_under_test": "improve-framework",
+          "assertions": 6,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "manage-finops-eval",
+          "path": "tier-2/scenarios/manage-finops-eval.md",
+          "skill_under_test": "manage-finops",
+          "assertions": 4,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "mine-builder-eval",
+          "path": "tier-2/scenarios/mine-builder-eval.md",
+          "skill_under_test": "mine-builder",
+          "assertions": 13,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "platform-operating-architect-eval",
+          "path": "tier-2/scenarios/platform-operating-architect-eval.md",
+          "skill_under_test": "platform-operating-architect",
+          "assertions": 5,
+          "cost": "~50K tokens",
+          "duration": "~2min",
+          "note": "Manual tier-2 eval — no scripted harness yet"
+        },
+        {
+          "name": "stage-revenue-eval",
+          "path": "tier-2/scenarios/stage-revenue-eval.md",
+          "skill_under_test": "stage-revenue",
+          "assertions": 9,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "kimi-host-detection-eval",
+          "path": "tier-2/scenarios-kimi/kimi-host-detection-eval.md",
+          "skill_under_test": null,
+          "assertions": 3,
+          "cost": "~50K tokens",
+          "duration": "~2min",
+          "note": "Framework infrastructure test — host detection / model resolution"
+        },
+        {
+          "name": "kimi-route-workflow-eval",
+          "path": "tier-2/scenarios-kimi/kimi-route-workflow-eval.md",
+          "skill_under_test": "route-workflow",
+          "assertions": 3,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "design-ux-flow",
+          "path": "tier-2/scenarios/design-ux-flow.md",
+          "skill_under_test": "design-ux",
+          "assertions": 6,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "design-ui-visual",
+          "path": "tier-2/scenarios/design-ui-visual.md",
+          "skill_under_test": "design-ui",
+          "assertions": 5,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "design-tech-architecture",
+          "path": "tier-2/scenarios/design-tech-architecture.md",
+          "skill_under_test": "design-tech",
+          "assertions": 6,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "diagnose-bug-typo",
+          "path": "tier-2/scenarios/diagnose-bug-typo.md",
+          "skill_under_test": "diagnose-bug",
+          "assertions": 6,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "execute-changeset-fix",
+          "path": "tier-2/scenarios/execute-changeset-fix.md",
+          "skill_under_test": "execute-changeset",
+          "assertions": 5,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "review-gate-code",
+          "path": "tier-2/scenarios/review-gate-code.md",
+          "skill_under_test": "review-gate",
+          "assertions": 4,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "onboard-repo-convert",
+          "path": "tier-2/scenarios/onboard-repo-convert.md",
+          "skill_under_test": "onboard-repo",
+          "assertions": 5,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "onboard-repo-mapping",
+          "path": "tier-2/scenarios/onboard-repo-mapping.md",
+          "skill_under_test": "onboard-repo",
+          "assertions": 5,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "build-personas-auto",
+          "path": "tier-2/scenarios/build-personas-auto.md",
+          "skill_under_test": "build-personas",
+          "assertions": 5,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "explore-solutions-challenge",
+          "path": "tier-2/scenarios/explore-solutions-challenge.md",
+          "skill_under_test": "explore-solutions",
+          "assertions": 5,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "audit-implementation-code",
+          "path": "tier-2/scenarios/audit-implementation-code.md",
+          "skill_under_test": "audit-implementation",
+          "assertions": 5,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "test-journeys-runtime",
+          "path": "tier-2/scenarios/test-journeys-runtime.md",
+          "skill_under_test": "test-journeys",
+          "assertions": 5,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "write-journeys-generate",
+          "path": "tier-2/scenarios/write-journeys-generate.md",
+          "skill_under_test": "write-journeys",
+          "assertions": 7,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "write-e2e-spec",
+          "path": "tier-2/scenarios/write-e2e-spec.md",
+          "skill_under_test": "write-e2e",
+          "assertions": 5,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "land-changeset-merge",
+          "path": "tier-2/scenarios/land-changeset-merge.md",
+          "skill_under_test": "land-changeset",
+          "assertions": 5,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "verify-promotion-check",
+          "path": "tier-2/scenarios/verify-promotion-check.md",
+          "skill_under_test": "verify-promotion",
+          "assertions": 5,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "create-skill-template",
+          "path": "tier-2/scenarios/create-skill-template.md",
+          "skill_under_test": "create-skill",
+          "assertions": 5,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "evaluate-rule-worth",
+          "path": "tier-2/scenarios/evaluate-rule-worth.md",
+          "skill_under_test": "evaluate-rule",
+          "assertions": 5,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "improve-framework-gap",
+          "path": "tier-2/scenarios/improve-framework-gap.md",
+          "skill_under_test": "improve-framework",
+          "assertions": 5,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "research-api",
+          "path": "tier-2/scenarios/research-api.md",
+          "skill_under_test": "research",
+          "assertions": 5,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "quick-fix-typo",
+          "path": "tier-2/scenarios/quick-fix-typo.md",
+          "skill_under_test": "quick-fix",
+          "assertions": 4,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        }
+      ]
+    },
+    "tier-3": {
+      "description": "LLM-as-judge scoring — ~20K tokens per judgment",
+      "runner": "tier-3/run-tier3.sh",
+      "kimi_runner": "tier-3/run-tier3-kimi.sh",
+      "judge_prompts": [
+        {
+          "name": "completeness",
+          "path": "tier-3/judge-prompts/completeness.md",
+          "scores": "0-10: does skill output address every input requirement?",
+          "cost": "~20K tokens",
+          "duration": "~1min"
+        },
+        {
+          "name": "consistency",
+          "path": "tier-3/judge-prompts/consistency.md",
+          "scores": "0-10: does output contradict anything from prior phases?",
+          "cost": "~20K tokens",
+          "duration": "~1min"
+        },
+        {
+          "name": "actionability",
+          "path": "tier-3/judge-prompts/actionability.md",
+          "scores": "0-10: can the next skill in the chain use this output?",
+          "cost": "~20K tokens",
+          "duration": "~1min"
+        }
+      ],
+      "first_validated_scenario": "diagnose-bug-typo",
+      "first_validation_date": "2026-04-23",
+      "first_validation_scores": {
+        "completeness": 10,
+        "actionability": 10,
+        "consistency": 10
+      },
+      "first_validation_notes": "Final v8 brief achieved 10/10/10 after 8 iterations. Key improvements: 15-section Bugfix Brief Template in skills/diagnose-bug/SKILL.md, complete diff rule (ALL affected lines), mandatory edge case analysis, N/A justification, regression guard scoping, artifact type labels, branch info, handoff status, risk/effort estimate, out-of-scope boundaries, external doc verification. Consistency judge requires prior phase artifacts (spec/journey files) in prompt. AP-26 confirmed: full skill-contract prompt causes scope explosion; template-driven prompt stays scoped."
+    }
+  },
+  "evals": [
+    {
+      "id": 1,
+      "suite": "pipeline-integrity",
+      "prompt": "Run the pipeline integrity validation on the todo-api example",
+      "expected_output": "All checks pass: vision, personas, feature specs (Feature + Enabler types), journeys with AC cross-references, UX/UI designs, design system, manifest",
+      "assertions": [
+        { "type": "exit_code", "value": 0, "description": "Validation script exits cleanly" },
+        { "type": "output_contains", "value": "0 failed", "description": "Zero failures in output" },
+        { "type": "output_contains", "value": "PASS", "description": "At least one PASS in output" }
+      ]
+    },
+    {
+      "id": 2,
+      "suite": "progressive-narrowing",
+      "prompt": "Generate a health check endpoint 3 times with no svc phases (just a one-line prompt) and 3 times with full pipeline (spec → tech design → code). Measure pairwise diff variance between the 3 outputs in each group.",
+      "expected_output": "Full-pipeline group has lower pairwise diff variance than no-phases group, demonstrating that progressive narrowing reduces implementation variance",
+      "assertions": [
+        { "type": "metric_comparison", "metric": "variance_lines", "condition": "full_pipeline < no_phases", "description": "Full pipeline produces less variance" }
+      ]
+    },
+    {
+      "id": 3,
+      "suite": "review-gate",
+      "prompt": "Take the todo-api feature spec and plant 5 known errors (contradicting AC, nonexistent file reference, ungrounded precondition, compound story, untestable AC). Run single-pass review and full review protocol. Count how many errors each approach finds.",
+      "expected_output": "Full review protocol finds more planted errors than single-pass review",
+      "assertions": [
+        { "type": "metric_comparison", "metric": "errors_found", "condition": "full_protocol >= single_pass", "description": "Protocol finds at least as many errors" },
+        { "type": "metric_threshold", "metric": "full_protocol_errors_found", "condition": ">= 4", "description": "Protocol finds at least 4 of 5 planted errors" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,545 @@
+{
+  "wi": "WI-567",
+  "lane": "bugfix",
+  "created": "2026-09-05T12:26:29.847Z",
+  "status": "blocked",
+  "delivery_graph": {
+    "compiler_version": 1,
+    "user_intent": "Correct negation-blind active-intent stop detection while preserving affirmative stop and WI isolation semantics",
+    "repo_mode": "framework",
+    "change_type": "framework",
+    "lane": "bugfix",
+    "delivery_mode": "end_to_end",
+    "delivery_tier": {
+      "mode": "full",
+      "selected_by": "route-workflow",
+      "rationale": "Full framework validation is the default delivery tier.",
+      "decision_log_ref": "",
+      "validation_policy": {
+        "mandatory_skills": [
+          "diagnose-bug",
+          "plan-changeset",
+          "review-plan",
+          "execute-changeset",
+          "review-gate",
+          "review-exec",
+          "audit-implementation",
+          "land-changeset",
+          "verify-promotion"
+        ],
+        "skippable_skills": [],
+        "blocked_behind_explicit_override": []
+      }
+    },
+    "risk_flags": [],
+    "planned_files": [
+      "hooks/lib/active-intent.mjs",
+      "test-framework/evals/tier-1/validate-active-intent-guard.sh",
+      "docs/specs/work-items/WI-567.md",
+      "docs/specs/work-items/INDEX.md",
+      "FRAMEWORK-STATE.md"
+    ],
+    "platform_contracts": [],
+    "solution_confidence": {
+      "required": false,
+      "mode": "none",
+      "status": "not_required"
+    },
+    "compression": {
+      "ratio": 1,
+      "threshold": 2,
+      "rationale": ""
+    },
+    "evidence_families": {
+      "product": "required",
+      "acceptance_criteria": "required",
+      "journey": "required",
+      "visual": "n/a",
+      "runtime": "n/a",
+      "plan_review": "required",
+      "code_review": "required",
+      "implementation_audit": "required",
+      "deploy": "n/a",
+      "promotion": "required",
+      "session_forensics": "n/a",
+      "feature_validation_closeout": "n/a",
+      "provider_fidelity": "n/a"
+    },
+    "required_skills": [
+      "diagnose-bug",
+      "plan-changeset",
+      "review-plan",
+      "execute-changeset",
+      "review-gate",
+      "review-exec",
+      "audit-implementation",
+      "land-changeset",
+      "verify-promotion"
+    ],
+    "conditional_mandatory_skills": [],
+    "optional_skills": [],
+    "skipped_skills": [],
+    "verification_tiers": {
+      "local": [
+        "tier-1"
+      ],
+      "runtime": [],
+      "production": []
+    },
+    "mutation_history": [
+      {
+        "ts": "2026-09-05T12:26:29.847Z",
+        "source": "route-workflow",
+        "action": "initial_compile",
+        "reason": "Compiled delivery graph at lane entry before downstream mutation."
+      }
+    ],
+    "closeout_classification_required": true
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "diagnose-bug: delivery graph required step",
+      "status": "completed",
+      "blocked_by": [],
+      "metadata": {
+        "skill": "diagnose-bug"
+      },
+      "process_tasks": [
+        {
+          "id": "1.1",
+          "name": "diagnose-bug|spec-anchor",
+          "status": "completed",
+          "blocked_by": [],
+          "subject": "Read WI-354 ACs and framework state as the intended-behavior anchor"
+        },
+        {
+          "id": "1.2",
+          "name": "diagnose-bug|repro-classify",
+          "status": "completed",
+          "blocked_by": [
+            "1.1"
+          ],
+          "subject": "Replayed exact mandate; classified deterministic Code-domain Action failure"
+        },
+        {
+          "id": "1.3",
+          "name": "diagnose-bug|reading-list",
+          "status": "completed",
+          "blocked_by": [
+            "1.2"
+          ],
+          "subject": "Read active-intent library, prompt writer, completion guard, and active-intent validator"
+        },
+        {
+          "id": "1.4",
+          "name": "diagnose-bug|code-read",
+          "status": "completed",
+          "blocked_by": [
+            "1.3"
+          ],
+          "subject": "Confirmed unconditional stop-token candidate and missing negated fixtures"
+        },
+        {
+          "id": "1.5",
+          "name": "diagnose-bug|fault-isolate",
+          "status": "completed",
+          "blocked_by": [
+            "1.4"
+          ],
+          "subject": "Trace: prompt classifier → suppression decision → wildcard state write"
+        },
+        {
+          "id": "1.6",
+          "name": "diagnose-bug|root-cause",
+          "status": "completed",
+          "blocked_by": [
+            "1.5"
+          ],
+          "subject": "Recorded immediate, enabling, systemic causes in WI-567"
+        },
+        {
+          "id": "1.7",
+          "name": "diagnose-bug|pillar-audit",
+          "status": "completed",
+          "blocked_by": [
+            "1.6"
+          ],
+          "subject": "Audited all 8 pillars and populated eval_matrix"
+        },
+        {
+          "id": "1.8",
+          "name": "diagnose-bug|pattern-scan",
+          "status": "completed",
+          "blocked_by": [
+            "1.7"
+          ],
+          "subject": "Scanned adjacent intent/stop classifiers and found Kimi preflight sibling"
+        },
+        {
+          "id": "1.9",
+          "name": "diagnose-bug|register-disc",
+          "status": "completed",
+          "blocked_by": [
+            "1.8"
+          ],
+          "subject": "Registered independent Kimi sibling as WI-568"
+        },
+        {
+          "id": "1.10",
+          "name": "diagnose-bug|brief",
+          "status": "completed",
+          "blocked_by": [
+            "1.9"
+          ],
+          "subject": "Wrote WI-567 diagnosis, changeset scope, ACs, artifacts, learning, and proof plan"
+        }
+      ],
+      "eval_matrix": {
+        "product_fit": "UNCHANGED — VERIFIED — docs/specs/work-items/WI-354.md",
+        "journey": "N/A — internal prompt-to-Stop hook lifecycle has no product journey",
+        "acceptance_criteria": "UPDATED — WI-567 acceptance criteria add negated-stop boundary",
+        "ux": "N/A — no rendered or interactive user experience changes",
+        "ui": "N/A — no visual surface, tokens, layout, or screenshot changes",
+        "tech_architecture": "UNCHANGED — VERIFIED — hooks/lib/active-intent.mjs remains the shared bridge",
+        "cost_model": "UNCHANGED — VERIFIED — bounded local string classification only",
+        "operations_ownership": "UNCHANGED — VERIFIED — existing hook ownership, state scope, and TTL retained"
+      },
+      "skill_receipt": {
+        "skill": "diagnose-bug",
+        "loaded_at": "2026-09-05T12:27:30.367Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-Inputs",
+            "ts": "2026-09-05T12:27:30.506Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/work-items/WI-567.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-Reproduction",
+            "ts": "2026-09-05T12:27:30.642Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-567.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RootCause",
+            "ts": "2026-09-05T12:27:30.776Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-567.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-FixPlan",
+            "ts": "2026-09-05T12:27:30.925Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-567.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-PillarRevisit",
+            "ts": "2026-09-05T12:27:31.068Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-567.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-05T12:27:31.214Z"
+    },
+    {
+      "id": 2,
+      "subject": "plan-changeset: delivery graph required step",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "plan-changeset"
+      },
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-09-05T12:28:03.480Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-09-05T12:29:45.092Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-archetype.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-09-05T12:29:45.231Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-scope.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-09-05T12:29:45.371Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-09-05-active-intent-negated-stop/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-09-05T12:29:45.505Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-09-05-active-intent-negated-stop/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-09-05T12:29:45.635Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-09-05T12:29:45.769Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-05T12:29:54.039Z"
+    },
+    {
+      "id": 3,
+      "subject": "review-plan: delivery graph required step",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "metadata": {
+        "skill": "review-plan"
+      },
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-09-05T12:29:54.306Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-09-05T12:34:23.870Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi567-plan-tier1.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-09-05T12:34:24.007Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi567-plan-external-state-check.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-09-05T12:34:24.146Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "/tmp/wi567-review-tier2.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-09-05T12:34:24.279Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-09-05-active-intent-negated-stop/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-09-05T12:34:24.408Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-09-05-active-intent-negated-stop/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-09-05T12:34:24.539Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-plan-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-05T12:34:24.671Z"
+    },
+    {
+      "id": 4,
+      "subject": "execute-changeset: delivery graph required step",
+      "status": "blocked",
+      "blocked_by": [
+        3
+      ],
+      "metadata": {
+        "skill": "execute-changeset",
+        "historical_completion": {
+          "status": "completed",
+          "completed_at": null,
+          "original_graph_sha256": "359e9b0f1bdc23e0b9fc51df12ee1261c75b255b9c847b3f3febc422532752e0",
+          "task_id": 4
+        }
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-09-05T12:34:24.935Z",
+        "loaded_via": "direct_skill_file"
+      },
+      "blocked_reason": "Historical completion is unverified: required skill phase evidence was not located in the named artifacts or repository note census. Original graph bytes and reported historical work are preserved; no rerun or unmerge is claimed."
+    },
+    {
+      "id": 5,
+      "subject": "review-gate: delivery graph required step",
+      "status": "blocked",
+      "blocked_by": [
+        4
+      ],
+      "metadata": {
+        "skill": "review-gate",
+        "historical_completion": {
+          "status": "completed",
+          "completed_at": null,
+          "original_graph_sha256": "6422f0ede1c868461ba66f87d03c426d08d3bb06906672311d52353af3cd1a49",
+          "task_id": 5
+        },
+        "blocked_reason": "Historical gate completion is not substantiated by valid skill/phase evidence, or depends on such a gate. Original record is archived; this repair makes no new execution or approval claim."
+      }
+    },
+    {
+      "id": 6,
+      "subject": "review-exec: delivery graph required step",
+      "status": "blocked",
+      "blocked_by": [
+        5
+      ],
+      "metadata": {
+        "skill": "review-exec",
+        "historical_completion": {
+          "status": "completed",
+          "completed_at": null,
+          "original_graph_sha256": "6422f0ede1c868461ba66f87d03c426d08d3bb06906672311d52353af3cd1a49",
+          "task_id": 6
+        },
+        "blocked_reason": "Historical gate completion is not substantiated by valid skill/phase evidence, or depends on such a gate. Original record is archived; this repair makes no new execution or approval claim."
+      }
+    },
+    {
+      "id": 7,
+      "subject": "audit-implementation: delivery graph required step",
+      "status": "blocked",
+      "blocked_by": [
+        6
+      ],
+      "metadata": {
+        "skill": "audit-implementation",
+        "historical_completion": {
+          "status": "completed",
+          "completed_at": null,
+          "original_graph_sha256": "6422f0ede1c868461ba66f87d03c426d08d3bb06906672311d52353af3cd1a49",
+          "task_id": 7
+        },
+        "blocked_reason": "Historical gate completion is not substantiated by valid skill/phase evidence, or depends on such a gate. Original record is archived; this repair makes no new execution or approval claim."
+      }
+    },
+    {
+      "id": 8,
+      "subject": "land-changeset: delivery graph required step",
+      "status": "blocked",
+      "blocked_by": [
+        7
+      ],
+      "metadata": {
+        "skill": "land-changeset",
+        "historical_completion": {
+          "status": "completed",
+          "completed_at": null,
+          "original_graph_sha256": "6422f0ede1c868461ba66f87d03c426d08d3bb06906672311d52353af3cd1a49",
+          "task_id": 8
+        },
+        "blocked_reason": "Historical gate completion is not substantiated by valid skill/phase evidence, or depends on such a gate. Original record is archived; this repair makes no new execution or approval claim."
+      }
+    },
+    {
+      "id": 9,
+      "subject": "verify-promotion: delivery graph required step",
+      "status": "blocked",
+      "blocked_by": [
+        8
+      ],
+      "metadata": {
+        "skill": "verify-promotion",
+        "historical_completion": {
+          "status": "completed",
+          "completed_at": null,
+          "original_graph_sha256": "6422f0ede1c868461ba66f87d03c426d08d3bb06906672311d52353af3cd1a49",
+          "task_id": 9
+        },
+        "blocked_reason": "Historical gate completion is not substantiated by valid skill/phase evidence, or depends on such a gate. Original record is archived; this repair makes no new execution or approval claim."
+      }
+    }
+  ],
+  "updated_at": "2026-09-06T18:27:43.318Z",
+  "historical_reconciliation": {
+    "wi": "WI-FW-CLEAN-MAIN-FOLLOWUP-01",
+    "original_graph_sha256": "359e9b0f1bdc23e0b9fc51df12ee1261c75b255b9c847b3f3febc422532752e0",
+    "reason": "Withdraw unsupported skill completion only; retain historical code and receipts."
+  }
+}

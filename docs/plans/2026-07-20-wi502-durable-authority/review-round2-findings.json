@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "review_kind": "plan",
+  "rubric_score": 7,
+  "rubric_failures": null,
+  "dependencies_needing_read": [
+    "docs/specs/test-evidence/WI-502/declared-file-set.txt",
+    "docs/specs/test-evidence/WI-502/task-paths.json",
+    "scripts/check-install-drift.sh",
+    "provision/hosts/mimo-code.json",
+    "docs/plans/2026-07-20-wi502-durable-authority/review-round2-findings.json",
+    "docs/specs/features/wi-502-durable-authority.md"
+  ],
+  "reviewer": {
+    "host": "claude",
+    "family": "anthropic",
+    "model": "claude-fable-5",
+    "effort": "high"
+  },
+  "verdict": "pass-with-findings",
+  "summary": "Round-2 convergence review of the revised WI-502 manifest. The revision resolves the round-1 structural concerns (no committed red windows, single final commit, snapshot refs, declared file universe, lane skip decisions, all-host drift checks), and the plan's architecture, AC/test ownership, external-state walk, and lane compliance are sound. However, the execution command sequence — the plan's determinism core — contains two high-severity defects that make the copy-paste run fail or behave order-dependently: (1) stage_declared_existing aborts under `set -euo pipefail` whenever the last entry of declared-file-set.txt names a not-yet-created CREATE path, which is the expected state before task 1; (2) the post-commit receipt-emission block hard-gates on review-exec and audit-implementation receipt bodies that, per the plan's own Lane Compliance section, are produced by skills that have not yet run at that point in the sequence. Additional medium findings cover the ERR trap not firing inside functions (no errtrace), the UPSTREAM misclassification of review-round2-findings.json (this review's own output), the undocumented mimo-code host for check-install-drift.sh, the unasserted sort order feeding comm -23, and progress.md being the resume anchor while no command in the sequence writes it. No critical findings; verdict pass-with-findings with dispositions required before promotion.",
+  "findings": [
+    {
+      "id": "F-001",
+      "severity": "high",
+      "claim": "stage_declared_existing aborts the entire run under set -e whenever the last line of declared-file-set.txt names a file that does not exist yet — the expected state at the first invocation, before task 1 creates anything.",
+      "analysis": "The loop body is `test -e \"$file\" && git add -- \"$file\"`. Under bash errexit, an intermediate failure inside an && list is exempt, so missing files mid-list are tolerated; but the while loop's exit status is the status of the last command executed, and that status becomes the function's return value. If the final entry in declared-file-set.txt is a CREATE path that is 'intentionally absent on disk until their task' (the plan's own words), the function returns nonzero, and a plain function call failing under `set -euo pipefail` terminates the script. The very first call happens immediately after preflight to build PLAN_SNAPSHOT, when none of the four tier-1 validators exist. Since declared-file-set.txt must be sorted for the later `comm -23` gate, its last entries will almost certainly be `test-framework/evals/tier-1/validate-*.sh` CREATE paths — so the sequence deterministically dies before task 1. Even if the current sort order happens to end on an existing file, correctness of the whole run hinges on the ordering of an UPSTREAM file the plan never constrains, which is exactly the kind of hidden nondeterminism this gate exists to prevent.",
+      "evidence": [
+        "Manifest, Execution Command Sequence: `stage_declared_existing() { while IFS= read -r file; do test -e \"$file\" && git add -- \"$file\"; done < \"$DECLARED\" }` executed under `set -euo pipefail`.",
+        "Manifest, Files Planned legend: \"CREATE paths are intentionally absent on disk until their task.\"",
+        "First call site: `stage_declared_existing` runs before `PLAN_SNAPSHOT=\"$(git stash create ...)\"`, i.e. before task-1 creates any validator.",
+        "bash errexit semantics: a function invocation whose body's last command returned nonzero is itself a failing simple command and triggers exit."
+      ],
+      "proposed_fix": "Rewrite the loop body so a missing file can never be the function's return status: `while IFS= read -r file; do if test -e \"$file\"; then git add -- \"$file\"; fi; done < \"$DECLARED\"` (or append `; return 0` after the loop). Additionally add a preflight `sort -c \"$DECLARED\"` so the ordering assumption required by the later `comm -23` gate is asserted, not hoped for."
+    },
+    {
+      "id": "F-002",
+      "severity": "high",
+      "claim": "The post-commit receipt-emission block hard-fails as written: it requires schema-valid bodies for review-exec and audit-implementation receipts immediately after the commit, but the plan's own Lane Compliance section says those skills run later and have not executed at that point in the sequence.",
+      "analysis": "The sequence commits, computes IMPL_SHA, then loops `test -s \".svc/receipt-bodies/WI-502/$type.json\"` over all five envelope types (plan-manifest, review-plan, exec-record, review-exec, audit-implementation) before emitting and validating receipts. The inline comment concedes these bodies are produced by 'execute-changeset, review-exec, and audit-implementation' — i.e., by pipeline stages that per Lane Compliance 'remain pending in that order' after this script's scope. Under `set -euo pipefail`, the first `test -s` on a not-yet-produced body (at latest review-exec.json) aborts. Dimension (h) requires commands that are copy-pasteable and complete from branch creation to merge; this block is neither executable as written nor annotated with an explicit stop/resume boundary telling the implementer to leave the script, run review-exec and audit-implementation, and return. The resume protocol ('read progress.md, skip proven task blocks') covers task checkpoints but says nothing about re-entering mid-way through this trailing block, so a naive rerun of the whole script after the commit would also re-trip the `git log -1 | grep WI-502` preflight path and the receipt gate in an underdetermined order.",
+      "evidence": [
+        "Manifest, Execution Command Sequence: `for type in plan-manifest review-plan exec-record review-exec audit-implementation; do test -s \".svc/receipt-bodies/WI-502/$type.json\" ...` immediately follows the single `git commit`.",
+        "Manifest, Lane Compliance: \"execute-changeset, review-exec, audit-implementation, land-changeset, and verify-promotion remain pending in that order.\"",
+        "Inline comment in sequence: \"execute-changeset, review-exec, and audit-implementation produce these schema-valid bodies for the exact final commit\" — acknowledging the producers run after this point."
+      ],
+      "proposed_fix": "Split the sequence at an explicit stage boundary: end the execute-changeset script after the commit (and after emitting only the receipts whose bodies exist at that stage, e.g. plan-manifest, review-plan, exec-record), and move the review-exec/audit-implementation receipt emission plus `check-chain-receipts.mjs` into a clearly labeled post-review block with its own entry preconditions. Name which skill writes each receipt body and at which stage, so the `test -s` gates are provably satisfiable when reached."
+    },
+    {
+      "id": "F-003",
+      "severity": "medium",
+      "claim": "review-round2-findings.json is declared UPSTREAM (already authored during planning/review) while the Review Convergence section states round 2 is the pending mandatory convergence review of this exact revised manifest — the file cannot truthfully exist before this review completes.",
+      "analysis": "The Files Planned legend defines UPSTREAM as 'already authored during diagnosis/design/planning; implementation tasks may only validate or synchronize them.' Round 2 is this review. Either the file is absent — in which case Tier-1 mechanical check #1 ('every file path in the plan resolves on disk') fails against the manifest — or a placeholder/pre-written round-2 findings file exists on disk before the round-2 reviewer has produced findings, which would be fabricated review evidence in the audit trail. Both branches are wrong; the classification, not the workflow, is the defect. The same reasoning correctly classified review-log.yaml as CREATE/review, so this looks like an inconsistency rather than intent.",
+      "evidence": [
+        "Files Planned: `docs/plans/2026-07-20-wi502-durable-authority/review-round2-findings.json | UPSTREAM | review | Schema-valid Fable convergence review`.",
+        "Review Convergence: \"Round 2 is the mandatory convergence review of this exact revised manifest\" — i.e., not yet produced at plan-authoring time.",
+        "Contrast: `review-log.yaml` in the same table is correctly marked CREATE for the review stage."
+      ],
+      "proposed_fix": "Reclassify review-round2-findings.json as CREATE (task: review), matching review-log.yaml. If a placeholder currently exists on disk, delete it and let the canonical launcher write the real artifact."
+    },
+    {
+      "id": "F-004",
+      "severity": "medium",
+      "claim": "Task-6 runs `check-install-drift.sh --host mimo-code`, but the repo's documented host set for that script is claude|kimi|codex|gemini|opencode|antigravity|cursor — mimo-code is not among them, and no task states that mimo-code support is being added to the drift checker.",
+      "analysis": "AGENTS.md documents `check-install-drift.sh [--host claude|kimi|codex|gemini|opencode|antigravity|cursor]`. The plan both modifies `provision/hosts/mimo-code.json` (task 5) and invokes the drift check for mimo-code (task 6). check-install-drift.sh is in task-6's touches, so modification is permitted — but the task-6 description ('Capability/install source drift validation') never commits to adding mimo-code host support, so an implementer following the plan literally could leave the script's host whitelist unchanged and the task-6 gate would fail (or worse, the script silently no-ops on an unknown host and the gate passes vacuously). Either the script already supports mimo-code (in which case the documented usage is stale and this is only a docs nit) or the plan has an unstated implementation dependency inside a validation gate. I could not read the script to determine which; it is listed in dependencies_needing_read.",
+      "evidence": [
+        "Manifest, task-6 gate: `bash scripts/check-install-drift.sh --host mimo-code --quiet`.",
+        "AGENTS.md §4: \"bash scripts/check-install-drift.sh [--host claude|kimi|codex|gemini|opencode|antigravity|cursor] [--quiet]\" — no mimo-code.",
+        "Manifest, task-6 detail: \"Capability/install source drift validation\" — no mention of adding a new host to the checker."
+      ],
+      "proposed_fix": "Verify whether check-install-drift.sh currently accepts --host mimo-code. If not, add an explicit task-6 work item: 'extend check-install-drift.sh host set with mimo-code and fail (not no-op) on unknown hosts', and update the AGENTS.md usage line in the same change."
+    },
+    {
+      "id": "F-005",
+      "severity": "medium",
+      "claim": "The ERR trap (RECOVERY_IF_FAIL) will not fire for failures inside functions or pipeline subshells because the script sets `set -euo pipefail` but not `set -E` (errtrace) — and nearly all fallible commands live inside checkpoint_task, stage_declared_existing, and expect_red.",
+      "analysis": "Bash does not inherit ERR traps into function bodies, command substitutions, or subshells unless errtrace is enabled. The script's recovery contract — print git status, recent log, and the 'stopped at the last named local snapshot' guidance — is the operator's resume anchor after any mid-task failure. But a jq allowlist rejection inside checkpoint_task's pipeline, a failed `git stash create`, or a validator failure invoked through a function will abort via errexit without ever running RECOVERY_IF_FAIL. The script still stops (safety preserved), but the promised diagnostic output silently never appears, and the plan's own recovery narrative ('installs recovery before fallible commands', per Review Convergence) is not actually delivered for the majority of fallible surface.",
+      "evidence": [
+        "Manifest, Execution Command Sequence: `set -euo pipefail` with `trap RECOVERY_IF_FAIL ERR` and no `set -E` / `set -o errtrace`.",
+        "Fallible commands wrapped in functions: `checkpoint_task` (git stash create, jq allowlist pipeline), `stage_declared_existing`, `expect_red`.",
+        "Review Convergence: \"installs recovery before fallible commands\" — the round-1 fix this mechanism is meant to implement."
+      ],
+      "proposed_fix": "Add `set -E` (or `set -o errtrace`) immediately after `set -euo pipefail` so the ERR trap propagates into functions and subshells."
+    },
+    {
+      "id": "F-006",
+      "severity": "medium",
+      "claim": "The final file-universe gate `comm -23 actual-files.txt \"$DECLARED\"` is only correct if declared-file-set.txt is sorted, and nothing in the plan asserts or checks that ordering.",
+      "analysis": "comm requires both inputs in sort order. The left input is produced with `sort -u`, but the right input is an UPSTREAM artifact whose ordering is never constrained in the manifest and never verified in the sequence. GNU comm emits an order warning but still produces output whose correctness is undefined for unsorted input — under `set -e` the warning does not stop the run, so an out-of-order declared file can cause the containment gate to pass with undeclared files present or fail on declared ones. This is the single gate backing the unchecked promotion-readiness item 'Final diff contains only this manifest's file universe', so its reliability must be mechanical, not assumed. (Same root cause as the ordering sensitivity in F-001; one preflight assertion fixes both.)",
+      "evidence": [
+        "Manifest, task-7: `comm -23 .svc/test-evidence/WI-502/actual-files.txt \"$DECLARED\" | tee ... ; test ! -s ...` with the left side sorted via `sort -u` and no ordering check on `$DECLARED`.",
+        "Promotion Readiness Checklist: \"[ ] Final diff contains only this manifest's file universe\" depends entirely on this gate."
+      ],
+      "proposed_fix": "Add `sort -c \"$DECLARED\"` to the preflight block (or invoke `comm --check-order` so an unsorted input is a hard error rather than a warning)."
+    },
+    {
+      "id": "F-007",
+      "severity": "medium",
+      "claim": "progress.md is the designated resume anchor ('On resume, read progress.md...') and a task-1 CREATE deliverable, yet no command in the execution sequence ever writes it, and the task-1 description contradicts the sequence about where red-run evidence goes.",
+      "analysis": "Task-1's detail says 'Capture each expected nonzero red run in progress.md', but the sequence captures red output to `.svc/test-evidence/WI-502/red/*.log` and touches progress.md nowhere. The plan's resume protocol depends on progress.md accurately reflecting which tasks completed with which checkpoint refs; if its authorship is left implicit ('implementer applies source edits with native file tools'), there is no deterministic contract for when entries are appended relative to `checkpoint_task`, so a crash between checkpointing and (manual) progress logging leaves the resume anchor and the ref store disagreeing. The plan already defines the tie-break for lane-tasks vs checkpoint files elsewhere, but defines none for progress.md vs refs/svc/checkpoints.",
+      "evidence": [
+        "Task details, task 1: \"Capture each expected nonzero red run in progress.md\".",
+        "Execution Command Sequence: `expect_red .svc/test-evidence/WI-502/red/operation-scope.log ...` — evidence goes to .svc, not progress.md; no command writes docs/plans/2026-07-20-wi502-durable-authority/progress.md.",
+        "Sequence postscript: \"On resume, read progress.md and verify each completed task has both its named refs/svc/checkpoints/WI-502 ref and passing focused validation.\""
+      ],
+      "proposed_fix": "Make progress.md writes mechanical: append a line inside `checkpoint_task` (e.g. `printf '%s %s %s\\n' \"$(date -u +%FT%TZ)\" \"$task_id\" \"$snapshot\" >> docs/plans/2026-07-20-wi502-durable-authority/progress.md` before updating the ref), and state that refs/svc/checkpoints is authoritative when the two disagree. Align the task-1 prose with the actual red-log location."
+    },
+    {
+      "id": "F-008",
+      "severity": "low",
+      "claim": "The sequence hard-depends on jq (checkpoint allowlist gate) but the repo declares jq an optional runtime dependency, and the preflight block never checks for it.",
+      "analysis": "AGENTS.md lists jq under 'optional'. If jq is absent, the failure surfaces mid-run inside checkpoint_task's pipeline — after work has been done — rather than at preflight, and (per F-005) without the recovery trap firing. Tier-1 mechanical check #6 requires every claimed CLI tool to be on PATH; making the dependency explicit and preflighted keeps the sequence honest against that check.",
+      "evidence": [
+        "Manifest, checkpoint_task: `jq -e --arg task \"$task_id\" --arg file \"$file\" '.[$task] | index($file) != null' \"$TASK_PATHS\"`.",
+        "AGENTS.md §2 runtime deps: \"optional `jq`, `gh`\".",
+        "Plan-review protocol Tier 1 check 6: \"Every claimed CLI tool is on PATH\"."
+      ],
+      "proposed_fix": "Add `command -v jq >/dev/null` (and `command -v node`, `git`) to the preflight block before the first checkpoint."
+    },
+    {
+      "id": "F-009",
+      "severity": "low",
+      "claim": "No gate detects stray files created outside the declared universe: undeclared untracked files are never staged, never enter stash snapshots, and are invisible to both the per-task jq allowlist and the final comm gate.",
+      "analysis": "stage_declared_existing only stages declared paths, `git stash create` omits untracked unstaged files, and the task-7 comm check compares staged names against the declared set. An implementation that drops an undeclared helper script or artifact into the tree passes every checkpoint and the final gate; the file simply never gets committed. The commit stays clean (good), but the working tree is polluted, the 'clean-diff/file-universe checks' claim in task-7 overstates coverage, and a later `git add`-happy session could sweep the stray file into an unrelated commit. This weakens, without breaking, the containment story.",
+      "evidence": [
+        "Manifest: only `stage_declared_existing` stages files; snapshots via `git stash create`; final gate is `git diff --cached --name-only | sort -u` vs `$DECLARED`.",
+        "Task-7 detail: \"clean-diff/file-universe checks\" — scoped in practice to staged content only."
+      ],
+      "proposed_fix": "At task-7, add an untracked-file scan: `git status --porcelain --untracked-files=all | awk '/^\\?\\?/ {print $2}'` filtered against the declared set plus known-ignored .svc evidence paths, failing on unexpected entries."
+    }
+  ],
+  "certifications": []
+}

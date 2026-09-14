@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seriousvibecoding.dev/schemas/evidence-object-v2.schema.json",
+  "title": "SVC Evidence Object v2",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "kind",
+    "trust_level",
+    "subject",
+    "producer_id",
+    "consumer_ids",
+    "generation_bindings",
+    "relevant_digests",
+    "environment_identity",
+    "created_at",
+    "expires_at",
+    "payload",
+    "object_digest"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "enum": [2] },
+    "kind": { "type": "string" },
+    "trust_level": {
+      "type": "string",
+      "enum": ["static", "hermetic", "sandbox", "device", "staging", "production"]
+    },
+    "subject": { "type": "string" },
+    "producer_id": { "type": "string", "minLength": 1 },
+    "consumer_ids": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+    "generation_bindings": {
+      "type": "object",
+      "required": [
+        "protocol_generation_digest", "product_generation_digest", "context_generation_digest",
+        "concern_generation_digest", "control_generation_digest", "authority_generation_digest",
+        "layer_inventory_digest"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "protocol_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "product_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "context_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "concern_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "control_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "authority_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "layer_inventory_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "relevant_digests": { "type": "object" },
+    "environment_identity": { "type": "string" },
+    "created_at": { "type": "string" },
+    "expires_at": { "type": ["string", "null"] },
+    "payload": { "type": "object" },
+    "object_digest": { "type": "string" }
+  }
+}

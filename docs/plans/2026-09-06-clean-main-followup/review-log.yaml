@@ -1,0 +1,486 @@
+{
+  "wi": "WI-FW-CLEAN-MAIN-FOLLOWUP-01",
+  "phase": "plan",
+  "status": "successor_plan_reviews_passed_chain_receipt_pending",
+  "revised_candidate": {
+    "manifest": "4646d54545b0a651bab6c49678d1a3f7f061e40d15a62407e2693906814a2825",
+    "contract": "642f8ebd9c563306ed47b93dbad0c129497c58d899be67d2e8fa94228bbc57e4",
+    "graph": "cf25412726b7a8bc0e50af0900e6c3a8266fc174048da2d0fbf50b430abab8ea",
+    "prior_cursor": "cursor-plan/findings.json",
+    "resolution": "F001/F005 explicit CLI/check matrix; F002 scratch generation exact two copies, single routing-index owner; F003 narrow volatile paths + pre-edit archive + append corrections; F004 nineteen populated dispositions; F006 inventory evidence; F007 recorded lane applicability. No implementation source edits."
+  },
+  "reviews": [
+    {
+      "reviewer": "gpt-5.6-sol/high",
+      "candidate": "4646d54545b0a651bab6c49678d1a3f7f061e40d15a62407e2693906814a2825",
+      "verdict": "pass",
+      "receipt": ".svc/clean-main-review/sol-plan-v2-receipt.json",
+      "authority": "same-family advisory"
+    },
+    {
+      "reviewer": "cursor/cursor-grok-4.6-high",
+      "candidate": "ba3a5ca74e3c911bb9e9aabc115c7bd56a31d263aa222405577c08fb93d58be5",
+      "verdict": "fail",
+      "receipt": ".svc/clean-main-review/cursor-plan/receipt.json",
+      "superseded": false
+    },
+    {
+      "reviewer": "cursor/cursor-grok-4.6-high",
+      "candidate": "4646d54545b0a651bab6c49678d1a3f7f061e40d15a62407e2693906814a2825",
+      "verdict": "fail",
+      "artifacts": ".svc/clean-main-review/cursor-plan-v2",
+      "receipt": ".svc/clean-main-review/cursor-plan-v2/receipt.json",
+      "launcher_status": "internal_failure_after_provider_result"
+    }
+  ],
+  "responses": [
+    {
+      "id": "F-001",
+      "original_severity": "high",
+      "disposition": "revised; awaiting independent confirmation",
+      "claim": "T2 phase-aware mechanical/contract design does not close C1/C10 and collides with existing CLI positionals."
+    },
+    {
+      "id": "F-002",
+      "original_severity": "high",
+      "disposition": "revised; awaiting independent confirmation",
+      "claim": "T3 lists generated .claude/agents mirrors and an unbounded sync-native-agents run, omitting canonical agents/ sources."
+    },
+    {
+      "id": "F-003",
+      "original_severity": "high",
+      "disposition": "revised; awaiting independent confirmation",
+      "claim": "T3 .svc graph and decision-log repairs are planned work but excluded from execution parity and Stage A rollback capture."
+    },
+    {
+      "id": "F-004",
+      "original_severity": "high",
+      "disposition": "revised; awaiting independent confirmation",
+      "claim": "The preserved roadmap 19-row disposition table is not in the manifest; seven current failing validators are not in Files Planned."
+    },
+    {
+      "id": "F-005",
+      "original_severity": "medium",
+      "disposition": "revised; awaiting independent confirmation",
+      "claim": "Copy-paste execution commands omit --phase, expected exit codes, and the release mechanical check."
+    },
+    {
+      "id": "F-006",
+      "original_severity": "medium",
+      "disposition": "revised; awaiting independent confirmation",
+      "claim": "Two plan sentences assert absence of deployment/migration without citing the probe."
+    },
+    {
+      "id": "F-007",
+      "original_severity": "medium",
+      "disposition": "revised; awaiting independent confirmation",
+      "claim": "Framework-lane write-spec and improve-framework are neither completed with artifacts nor skipped in pipeline-decisions.jsonl."
+    },
+    {
+      "id": "F-008",
+      "disposition": "accepted and corrected",
+      "evidence": "manifest.md exact T3 generation block; mirror-scratch-proof.json proves 27 outputs and exact two differences"
+    },
+    {
+      "id": "F-009",
+      "disposition": "accepted and corrected",
+      "evidence": "manifest.md explicitly runs compiler, compiler --check, router validate"
+    }
+  ],
+  "mechanical": {
+    "status": "known_preimplementation_failure",
+    "raw": ".svc/clean-main-review/plan-mechanical-v2.log",
+    "failures": [
+      "C1 named future runtime output",
+      "C10 future implementation paths, actual parity/census/claims"
+    ],
+    "release_requirement": "all strict execution checks pass; no historical baseline waiver"
+  },
+  "implementation_started": true,
+  "current_manifest_sha256": "228ad98016642a6d2e36864b361fa4dd65c0aaa8ada16141705f8afea1c42bd0",
+  "cycle_audit": {
+    "issued_rounds": 3,
+    "actual_additional_provider_invocations": 1,
+    "total_observed_provider_rounds": 4,
+    "inventory": ".svc/clean-main-review/review-cycle-inventory.json",
+    "violation": "Cap checked at issuance after paid provider execution; catch receipt reports process_invocations=0 despite preserved real output. Earlier roadmap reviews consume same WI/base plan cycle. No further paid launches; no passing receipt claimed."
+  },
+  "followup_required": {
+    "status": "reproduced_unresolved",
+    "priority": "before_next_paid_review",
+    "scope": "existing launcher/provenance/cycle contracts only",
+    "evidence": [
+      ".svc/clean-main-review/review-cycle-inventory.json",
+      ".svc/clean-main-review/cursor-plan-v2/receipt.json",
+      ".svc/clean-main-review/cursor-plan-v2/findings.json"
+    ],
+    "required_behavior": [
+      "Preflight cycle capacity before paid launch, with race-safe existing lock/reservation semantics",
+      "Preserve invocation count, tuple, usage and provider output when later provenance/cache issuance fails",
+      "Keep proposal/advisory review distinct from governed phase review using explicit existing review authority; never retroactively relabel existing receipts",
+      "Recover current overrun through explicit truthful disposition contract; do not reset WI/base, delete issuance, rewrite signed receipts or pretend four rounds were three",
+      "Regression fixtures prove cap prevents launch and post-provider failure retains actual invocation evidence"
+    ],
+    "release_status": "not authorized by this issue record; actual current gate recovery remains required"
+  },
+  "final_sol_delta": {
+    "reviewed_at": "2026-09-06T16:44:32.865220+00:00",
+    "model": "gpt-5.6-sol",
+    "effort": "high",
+    "manifest_sha256": "b4fdc75d0c0eea0ebe9dc4f9e9a7eba5eefca96d91f018803016d3b45337734e",
+    "findings_delta": "PASS: F008/F009 closed",
+    "execution_authorization": "REVISE: four actual calls violate existing cap; no honest existing bounded-exit recovery",
+    "required_next_action": "Prospective reviewed source/contract correction for truthful cap-overrun recovery and preflight capacity; preserve every call, no relabeling or concealment."
+  },
+  "implementation_scope_note": "Reversible launcher recovery edits exist; broader program remains unfinished. Latest user requests review results before switching executor.",
+  "latest_bounded_recovery_review": {
+    "reviewed_at": "2026-09-06T18:23:18.717460+00:00",
+    "reviewer": {
+      "model": "gpt-5.6-sol",
+      "effort": "high",
+      "authority": "same-family advisory"
+    },
+    "verdict": "pass",
+    "scope": "Launcher recovery correction only",
+    "source_sha256": "3a6826ea0cf31b535e887aa1f1e1d16bf9d25986775a19b2b549a63327c45d65",
+    "closed_findings": [
+      "SOL-RECOVERY-OUTER-RETRY: global handler cleared before locked recovery; fault fixture proves no outer retry."
+    ],
+    "limitations": [
+      "Historical plan gate is not approved.",
+      "Wider changeset review and release gates remain required."
+    ]
+  },
+  "progress_checkpoint": {
+    "recorded_at": "2026-09-06T18:22:57.824291+00:00",
+    "status": "implementation_in_progress_no_release_claim",
+    "sol_advisory_passes": [
+      {
+        "scope": "launcher locked emergency recovery",
+        "evidence": ".svc/clean-main-review/t2-current-tests.log",
+        "limitations": "No independent execution approval; raw four-call plan history remains unresolved."
+      },
+      {
+        "scope": "explicit plan phase; strict execution default",
+        "evidence": ".svc/clean-main-review/plan-mechanical-current.log"
+      },
+      {
+        "scope": "T1 fixture isolation, fixed-clock freshness, portable duration",
+        "evidence": ".svc/clean-main-review/t2-current-tests.log"
+      }
+    ],
+    "verification": {
+      "focused_regressions": {
+        "passed": 18,
+        "failed": 0
+      },
+      "risk_contracts": {
+        "passed": 27,
+        "failed": 0
+      },
+      "capability_inertia": {
+        "passed": 33,
+        "failed": 0
+      },
+      "source_layout": {
+        "passed": 110,
+        "failed": 0
+      },
+      "before_starting": {
+        "passed": 112,
+        "failed": 0
+      },
+      "knowledge_backfill": {
+        "passed": 6,
+        "failed": 0
+      },
+      "self_heal": "exact recovery in isolated installation passed",
+      "mechanical_plan": "pass; not an execution gate",
+      "router": "104 skills valid"
+    },
+    "remaining": [
+      "historical plan overrun recovery and independent actual changeset review",
+      "remaining T1 fixture/schema/metadata repairs",
+      "current execution parity and full offline corpus",
+      "Stage B useful original dirty UX work",
+      "Stage C clean-main push/install and eligible worktree cleanup"
+    ],
+    "new_observation": "validate-plan-product-safety.sh executes a latest-committed plan contract against current dirty changes, producing a mismatched release census. Keep strict current-candidate checking at release; isolate this software test assumption. Not yet corrected or counted as passing."
+  },
+  "bounded_review_history": [
+    {
+      "artifact": ".svc/clean-main-review/sol-launcher-closure-review.json",
+      "reviewed_at": "2026-09-06T17:47:29.624800+00:00",
+      "reviewer": {
+        "model": "gpt-5.6-sol",
+        "effort": "high",
+        "authority": "same-family advisory"
+      },
+      "verdict": "fail",
+      "scope": "Bounded launcher recovery correction review; not approval of entire plan or execution changeset",
+      "source_sha256": "703cae7c7f9effd16d6b5fb344a282b415ccfaa53513b2b25f1e72dc3b00ebaf",
+      "closed_findings": [
+        "Cache replay now shares cycle lock before issuance.",
+        "Issuance lock release concern rejected: existing release catches unlink errors; fault fixture confirms signed evidence survives."
+      ],
+      "remaining_findings": [
+        {
+          "id": "SOL-RECOVERY-OUTER-RETRY",
+          "claim": "If locked emergencyReceipt throws, the outer handler retries after cache lock release and can check/remove a replaced cache entry without serialization.",
+          "evidence": [
+            "scripts/run-external-review.mjs:1595",
+            "scripts/run-external-review.mjs:1952",
+            "scripts/run-external-review.mjs:1961",
+            "scripts/run-external-review.mjs:1974"
+          ],
+          "disposition": "accepted; correction and targeted regression pending"
+        }
+      ],
+      "tests": {
+        "artifact": ".svc/clean-main-review/t2-current-tests.log",
+        "passed": 11,
+        "failed": 0,
+        "limitation": "Does not cover the newly identified outer recovery retry race."
+      },
+      "cursor_status": "Prior exact cursor-grok-4.6-high review failed with F008/F009, subsequently corrected locally. No current independent PASS. Historical over-cap fourth invocation and malformed failure receipt preserved; no further paid invocation."
+    }
+  ],
+  "current_candidate": {
+    "manifest_sha256": "130d1df784b7c3aaf28752908a6f8dff72c0f06001aeb9ce55eaac02c93afc55",
+    "contract_sha256": "102bf448d4c08ba135b0932f1e54e2af1b3f505e043bf83c5c34a4d1d515750f",
+    "live_graph_sha256": "4ccb4275243d8ffbb8aa0a3737d7a86f4aa0191415f8996bf80fd9f9073df059",
+    "planned_paths": 82,
+    "review_status": "unreviewed current candidate; historical frozen review inputs preserved"
+  },
+  "latest_progress": {
+    "recorded_at": "2026-09-06T18:42:02.857349+00:00",
+    "completed": [
+      "Live graph reconciled with 72-path contract without changing task completion status.",
+      "Created truthful follow-up WI; six owned proposals linked to actual reconciliation/backlog owners.",
+      "Product-safety fixture validates explicit candidate/base and rejects undeclared subsequent change; PASS.",
+      "Proposal triage uses canonical WI grammar; existing named WI and missing named WI fixtures pass."
+    ],
+    "not_passing": {
+      "proposal_triage": "8 checks pass, 2 fail: 31 older direct proposals have expired deferrals. No deadline extension or fabricated completion.",
+      "claude_wirer": "31 checks pass, 8 fail. Current consolidated-dispatcher and durable Stop assertions pass; additive legacy duplicates and foreign hooks/kimi deletion remain reproduced. Static subtractive-rebuild assertions also fail against current implementation."
+    },
+    "remaining": "Whole-program review including truthful historical cycle recovery; remaining fixtures/runtime repairs; Stage B UX; execution census/full validation; audit/land/push/all-host clean-main install and cleanup.",
+    "scope_addition": "T1 owns scripts/wire-hooks.mjs for reproduced duplicate legacy guards and foreign-command removal. Plan and graph agree at73 paths; mechanical plan check PASS. Runtime repair not yet applied."
+  },
+  "wirer_recovery": {
+    "recorded_at": "2026-09-06T18:47:59.192645+00:00",
+    "status": "implemented_unreleased_sol_advisory_pass",
+    "source_sha256": "eb231d8077d8e9a22116956623e85ce6392a753351689ffedbd304b0353d2e58",
+    "tests": {
+      "cutover": 44,
+      "variant_compatibility": 25,
+      "generated_settings_duplicates": 8
+    },
+    "sol_finding": "Accepted all-disabled subtraction persistence defect; now tracks removed settings and uses existing atomic write even with no replacements. Regression passes.",
+    "limitation": "No independent full-candidate approval or live install claim.",
+    "sol_delta": "PASS: subtraction-only updates reach backup and atomic write; all-disabled regression covers literal controls and foreign preservation. Same-family advisory only."
+  },
+  "validation_followup": {
+    "at": "2026-09-06T18:53:50.685432+00:00",
+    "consumer_evidence": "PASS: fixture uses actual launcher version and exact phase WI/subject binding; no provider invoked.",
+    "decision_engine": "26 PASS: missing authority remains denied, exact same-session fallback authority accepted, foreign repository denied.",
+    "workflow_guard": "50 PASS",
+    "self_verify": "Fixed zero-check discovery bug; 416 PASS across104skills, empty/missing registry negative fixtures reject.",
+    "skill_structure": "1263 PASS,0fail,0advisory",
+    "chain_references": "273 PASS",
+    "cadence": "Updated AGENTS,DOCTRINE,execute,land: reuse only matching input-bound full evidence; release, postcommit, live verification still required. Compiler freshness and manifest linter PASS.",
+    "triage": "Five expired proposals mapped to existing WI374(frozen),461,481,485,484; previous metadata preserved.26 remain unresolved. WI368 name collision observed; no fabricated owner.",
+    "release_status": "Unreleased. Historical plan-cycle recovery, actual independent changeset review, remaining receipt history/triage repairs, full corpus, StageB UX, and StageC clean-main/install remain unfinished."
+  },
+  "historical_phase_reconciliation": {
+    "at": "2026-09-06T18:57:59.088757+00:00",
+    "preservation": ".svc/clean-main-review/historical-phase-preservation.json",
+    "note_census": ".svc/clean-main-review/historical-note-census.json",
+    "changes": "5 unsupported completed claims in4graphs changed to blocked; existing reported history and phase bytes retained, no rerun/merge reversal claimed.",
+    "receipt_shape": {
+      "processed_files": 68,
+      "phase_failures": 0,
+      "advisory_findings": 25,
+      "log": ".svc/clean-main-review/receipt-shape-current.log"
+    },
+    "lane_integrity": {
+      "files": 66,
+      "checks_passed": 66,
+      "log": ".svc/clean-main-review/lane-integrity-current.log"
+    },
+    "archive_recovery": "Existing relocation mapping conflict preserved. Additional current bytes stored using existing putObject API with byte verification; earlier mappings untouched.",
+    "release_status": "Interim validation only; full goal unfinished."
+  },
+  "full_corpus_diagnostic": {
+    "at": "2026-09-06T19:07:09.074324+00:00",
+    "summary": ".svc/clean-main-review/full-corpus-summary.json",
+    "passed": 357,
+    "failed": 9,
+    "timed_out": 0,
+    "subsequent_corrections": {
+      "capture_idea": 18,
+      "cross_host": 67,
+      "grok_roundtrip": 31,
+      "skill_router": 13
+    },
+    "new_limitation": "accepted_wi triggers proposal archival/residual-map closeout, even when used merely to record existing backlog ownership. Fourteen newly mapped direct proposals require actual consumer-compatible disposition; not considered closed. 23 other proposals remain untriaged.",
+    "sol_advisory": "PASS bounded cadence/consumer/engine/selfverify deltas; not whole gate approval.",
+    "release_status": "Unfinished; no full current-candidate release PASS."
+  },
+  "latest_readiness_review": {
+    "recorded_at": "2026-09-06T19:20:43.654951+00:00",
+    "reviewer": {
+      "model": "gpt-5.6-sol",
+      "effort": "high",
+      "authority": "same-family advisory"
+    },
+    "verdict": "REVISE",
+    "mechanical_plan": "PASS: 4 owner streams, 2 claims, 44 executables",
+    "observed_input_sha256": {
+      "docs/plans/2026-09-06-clean-main-followup/manifest.md": "366ffe4b841d0215cb70896cd84508afbf8ae85531c4cf0e52e8747b6fffc22f",
+      "docs/plans/2026-09-06-clean-main-followup/plan-contract.json": "3ace0296b8b54fcdb66f8e5808f5b463a0fd1fd14590c5ee7708db66a3df7887",
+      ".svc/lane-tasks-WI-FW-CLEAN-MAIN-FOLLOWUP-01.json": "f3311b328f1ff9f38ec0ca712b3ea9f358f722fdf6558e26fb68b65a8126c4de"
+    },
+    "findings": [
+      "No current governed independent plan approval; historical Cursor verdicts remain fail.",
+      "Historical four-call cycle requires explicit truthful recovery disposition before another paid invocation; do not reset or relabel it.",
+      "Freeze and synchronize candidate hashes and scope before current review; prior current_candidate snapshot is stale.",
+      "Stage A is not approval or completion of remaining Stage B/C, proposal dispositions, current release validation, UX integration, landing, installation and cleanup."
+    ],
+    "bounded_backlog_review": "PASS: malformed/empty/conflicting/terminal backlog values rejected; three verified WIs recorded as rejected duplicate intake; WI-374 remains frozen; accepted closeout unchanged.",
+    "cursor": "No new call: existing cycle exhausted; exact cursor-grok-4.6-high findings and failed issuance preserved.",
+    "authorization_note": "Founder authorization for reversible work persists. This advisory REVISE neither revokes that authorization nor supplies missing release approval."
+  },
+  "runner_evidence_review": {
+    "at": "2026-09-06T19:25:15.803834+00:00",
+    "reviewer": "gpt-5.6-sol/high",
+    "authority": "same-family advisory",
+    "verdict": "PASS",
+    "scope": "Optional Tier-1 before/after input identity and outcome summary; not whole-candidate approval",
+    "source_sha256": "d5626895a7f1bff93900aa0802b438e6a6e42aa62a2fb185b59177007bbe6497",
+    "tests": {
+      "focused_recovery_passed": 19,
+      "focused_recovery_failed": 0,
+      "hook_host_residuals_passed": 4,
+      "framework_docs": "PASS with18 warnings",
+      "proposal_triage": "15 PASS,2FAIL;23 expired dispositions remain"
+    },
+    "limitations": [
+      "No current full-corpus release proof",
+      "Ignored files and external Git authority stores excluded from source inventory",
+      "Transient mutations restored during run not detected",
+      "Summary does not authorize gate reuse or replace live installation verification"
+    ],
+    "evidence": ".svc/clean-main-review/t2-current-tests.log"
+  },
+  "proposal_disposition_progress": {
+    "at": "2026-09-06T19:30:25.632108+00:00",
+    "registry_sha256": "d4830474c82607bf5de2f2e83dd37b05da1ae80c2e058a81209495b89ab74881",
+    "new_dispositions": 11,
+    "rejected_design_or_duplicate": 8,
+    "existing_unfinished_owners": {
+      "WI-315": [
+        "2026-05-13-claude-legal-skills-addon.md"
+      ],
+      "WI-316": [
+        "2026-05-02-lane-7-infra-mode-deepening.md",
+        "2026-05-10-otel-cross-cluster-existing-nlb-extension.md"
+      ]
+    },
+    "remaining_expired": 12,
+    "sol_review": "Read-only evidence review supported the three ownership assignments and Lucas Patiri duplicate intake rejection. Other design dispositions remain subject to full changeset review.",
+    "tests": {
+      "skill_judgment": "PASS18liveconsumers; static contract evidence, not behavioral certification",
+      "proposal_promotion_closeout": "12PASS0FAIL",
+      "proposal_triage": "15PASS2FAIL;12expiredproposals"
+    },
+    "limits": "No deadline extension, historical source mutation, historical completion claim, provider invocation or product infrastructure mutation."
+  },
+  "proposal_disposition_completion": {
+    "at": "2026-09-06T19:35:56.600843+00:00",
+    "status": "triage_complete_not_backlog_implementation",
+    "previously_expired": 23,
+    "remaining_expired": 0,
+    "tests": {
+      "triage_passed": 17,
+      "closeout_passed": 12
+    },
+    "new_backlog_owners": [
+      "WI-FW-DELIVERY-EVIDENCE-RESIDUALS-01",
+      "WI-FW-DESIGN-INTEGRATIONS-RESIDUALS-01",
+      "WI-FW-CONTROLLER-CUTOVER-RESIDUALS-01"
+    ],
+    "limits": "No historical completion or current canary/installation claims; full changeset approval remains due. Sol reviewing final delta."
+  },
+  "input_bound_corpus_result": {
+    "at": "2026-09-06T19:43:01.342376+00:00",
+    "evidence": ".svc/clean-main-review/full-corpus-input-bound.json",
+    "passed": 365,
+    "failed": 1,
+    "timed_out": 0,
+    "elapsed_ms": 262623,
+    "inputs_stable": false,
+    "failure": "validate-chain-receipts-schema.sh treats .svc/receipts/848693c/digests.json as a receipt missing receipt_type",
+    "source_observation": "Source digest changed. Files with mtimes during interval: references/skill-routing-index.json, references/knowledge/domains/startup-saas-finance/.version, skills-manifest.json, .svc/manifest-digest.json. Mtime observations do not yet identify the exact changed bytes or responsible writer.",
+    "release_status": "NOT a stable passing release run; retain evidence and diagnose before another full sweep."
+  },
+  "triage_sol_corrections": {
+    "status": "Sol High advisory PASS for both corrected findings",
+    "MCP_owner": "WI-FW-CAPABILITY-MCP-STARTUP-RESIDUALS-01 explicitly ownsAC01\u201308; registry+inlinepointer updated with prior metadata retained",
+    "index": "All4newresidual WIs plus current followup have exact status rows; INDEX declared in T4 scope",
+    "verification": "mechanicalPASS; persistence91PASS;triage17PASS",
+    "scope_limit": "Not full-candidate or release approval; source-changing fullrun and receipt-index failure remain."
+  },
+  "validation_writer_corrections": {
+    "at": "2026-09-06T19:51:34.620083+00:00",
+    "receipt_inventory": "PASS actual validator + valid/malformed/unknownfamily/untyped fixtures; SolboundedPASS; canonical chain validation unchanged",
+    "source_writers": "Manifest stamp/corruption now scratch-only; finance freshness copy with2000fixturedate; router compile in-memory and redaction receipt in complete scratchroot. Solcaughtremainingreceiptappend then verified correctionPASS.",
+    "tests": "21recoveryregressions passed before final receipt-isolation delta; final concurrent3validator no-write test passes including real receipt bytes/mode/mtime/absence. Individualstamp5,refresh4,router13PASS.",
+    "sidecar": "Test-generated timestamp-only sidecar archived and matchingHEADbytes restored; .svc/clean-main-review/manifest-stamp-restoration.json",
+    "original_dirty_heuristic": "Carried exact hosted-media-semantics-001 line from preserved original; historicaldatedevidence not recertified live. Original checkout untouched.",
+    "parity": "No undeclared/unchanged ownership or invalidconsumer errors remain. Still missing changed-executable resource review with47denominator and prospective relocation snapshot.",
+    "release_status": "Full current input-stable corpus and actual independent review/land/install remain required."
+  },
+  "execution_contract_review": {
+    "at": "2026-09-06T19:57:36.675507+00:00",
+    "mechanical_execution": "PASS4owners2claims47executables",
+    "census": ".svc/clean-main-review/changed-executable-census.json",
+    "resource_disposition": "Declared quota and counter writers with ordering/compensation/property tests; no fictitious no-writer assertion.",
+    "rollback": ".svc/clean-main-review/rollback/relocations-before-operation.json",
+    "rollback_limit": "572currententries captured prospectively. Not proof of state before earlier operations. No oldsnapshot overwritten.",
+    "remaining": "Actual current independent review/recovery, full stable-input corpus, StageB UX, StageC landing/install/cleanup."
+  },
+  "successor_review": {
+    "cycle_id": "ab222962b91a3c459c9f4b61de763923d39e93d31b410445396200775d96d051",
+    "override_sha256": "ae6b5f637e2ede1bfadd59477eaefe64654357116d13f84f97534064f9404dab",
+    "candidate_files": {
+      "docs/plans/2026-09-06-clean-main-followup/manifest.md": "2ae153f5fc8ca95653dfcf1e8f85269d5a8f76790d8db1ca80b4e1efe0eb4a2c",
+      "docs/plans/2026-09-06-clean-main-followup/plan-contract.json": "94c4bf860ea0f8809a051a70eddfc452badd02c4b811ffc26f02da2e04953892",
+      "docs/plans/2026-09-06-clean-main-followup/roadmap.md": "12a80170ffab5a84833429c91e3b3a1711ddea9f2f0cbee3c19d337b3242892d",
+      "docs/plans/2026-09-06-clean-main-followup/dispositions.json": "4e37e75729fe83f297e84df4ba0d142b89380b2fe8c9de5fef78a9f42d962370",
+      ".svc/lane-tasks-WI-FW-CLEAN-MAIN-FOLLOWUP-01.json": "9a6f98b092d197d1858f6216ef7c8258aaf0f47a32b42a6c0ed9a374abe4d518"
+    },
+    "rounds_run": 2,
+    "terminal_state": "REVISED_AND_REVIEWED",
+    "unresolved_critical": 0,
+    "remaining_high": 0,
+    "sol": ".svc/clean-main-review/sol-successor-corrections-review.json",
+    "rounds": [
+      {
+        "round": 1,
+        "receipt": ".svc/clean-main-review/cursor-successor-plan-round-1/receipt.json",
+        "findings": ".svc/clean-main-review/cursor-successor-plan-round-1/findings.json",
+        "verdict": "fail"
+      },
+      {
+        "round": 2,
+        "receipt": ".svc/clean-main-review/cursor-successor-plan-round-2/receipt.json",
+        "findings": ".svc/clean-main-review/cursor-successor-plan-round-2/findings.json",
+        "verdict": "pass"
+      }
+    ],
+    "responses": ".svc/clean-main-review/successor-round-1-adjudication.json",
+    "round_cap_log": ".svc/clean-main-review/successor-plan-round-cap.yaml",
+    "scope": "Corrected Stage A retrospective plan only. Historical overrun remains invalid; execution/release and Stages B/C pending."
+  }
+}

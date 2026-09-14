@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "base_sha": "f9ec209e14347aad800ba3039b2b12ca90ab9049",
+  "manifest": "docs/plans/2026-09-06-session-recovery/manifest.md",
+  "risk_flags": [
+    "runtime_concurrency",
+    "cross_runtime_integration"
+  ],
+  "ownership": [
+    {
+      "task": "T1",
+      "paths": [
+        "scripts/svc-ensure-worktree.mjs",
+        "test-framework/evals/tier-1/validate-literal-branch-worktree.sh"
+      ]
+    },
+    {
+      "task": "T2",
+      "paths": [
+        "scripts/review-topology-v2.mjs",
+        "scripts/lib/reviewer-resources.mjs",
+        "schemas/reviewer-policy-v2.schema.json",
+        "scripts/resolve-dispatch.mjs",
+        "schemas/dispatch-policy.schema.json"
+      ]
+    },
+    {
+      "task": "T3",
+      "paths": [
+        "scripts/run-external-review.mjs",
+        "test-framework/tests/session-recovery.test.mjs",
+        "test-framework/evals/tier-1/validate-review-topology-v2.mjs",
+        "test-framework/evals/tier-1/validate-dispatch-resolver-wi551.mjs",
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+        "test-framework/evals/tier-1/validate-reviewer-run-evidence.sh",
+        "test-framework/evals/tier-1/validate-retroactive-attestation.sh",
+        "test-framework/evals/tier-1/validate-stop-hook-session-isolation.sh"
+      ]
+    },
+    {
+      "task": "T4",
+      "paths": [
+        "FRAMEWORK-STATE.md",
+        "references/advisor/framework-knowledge-index.md",
+        "docs/specs/bugfix/session-recovery-brief.md",
+        "docs/plans/2026-09-06-session-recovery/manifest.md",
+        "docs/plans/2026-09-06-session-recovery/plan-contract.json",
+        "references/skill-routing-index.json",
+        "docs/specs/audit/session-recovery-analysis.md",
+        "docs/specs/relations/wi-541-full-transition.branches.md",
+        "docs/specs/relations/wi-548-host-parity.branches.md",
+        "docs/specs/relations/wi-541-full-transition.branches.md.imports.json",
+        "docs/specs/relations/wi-548-host-parity.branches.md.imports.json"
+      ]
+    }
+  ],
+  "volatile_paths": [
+    ".svc"
+  ],
+  "concurrency": {
+    "atomic_primitive": "o_excl",
+    "owner_key": "existing state-io lock for absolute owner-policy-path.resources.json; observations keyed policy digest and pool_id",
+    "concurrent_invoke_behavior": "Existing mkdir-exclusive launcher pool lock serializes invocation across candidate keys; existing o_excl state lock serializes failure observations. Re-read suppression after acquiring pool lock, record failure before release.",
+    "stale_lock_cleanup": "existing state-io process identity and stale lock handling; no new cleanup primitive",
+    "concurrency_test": "test-framework/tests/session-recovery.test.mjs"
+  },
+  "resource_review": {
+    "verification": "changed-executable-census",
+    "denominator": 13,
+    "disposition": "declared-risky-resource-writers",
+    "evidence": "Actual changed executable census from git diff HEAD plus untracked source files; new helper has runtime imports in topology and launcher and focused behavioral fixtures. No quota balances are written."
+  },
+  "resource_writers": [
+    {
+      "resource": "identity",
+      "ordering": "Resolve complete existing tuple before any mutable recovery step; owner remains current task session only. Validate exact Cursor identity before release receipt acceptance.",
+      "compensation": "Denial has no target mutation; existing transaction rollback retained. Failed reviewer evidence retained without approval.",
+      "property_sweep": "isolated registered/foreign/released/malformed worktree cases and Cursor exact/Auto/mismatch tests"
+    },
+    {
+      "resource": "quota",
+      "ordering": "Validate owner policy then resolve pool observation before any capability/provider spawn; serialize classified failure observation after attempt.",
+      "compensation": "No quota balance mutation or invented reset; retain prior observation on write failure and expose error.",
+      "property_sweep": "pool separation, equal/stale/new timestamps, unknown balances, repeated launch suppression"
+    }
+  ],
+  "claims": [],
+  "executables": [
+    {
+      "path": "scripts/lib/reviewer-resources.mjs",
+      "consumers": [
+        {
+          "path": "scripts/run-external-review.mjs",
+          "query": "from './lib/reviewer-resources.mjs'"
+        },
+        {
+          "path": "scripts/review-topology-v2.mjs",
+          "query": "from './lib/reviewer-resources.mjs'"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/tests/session-recovery.test.mjs",
+      "consumers": [
+        {
+          "path": "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+          "query": "test-framework/tests/session-recovery.test.mjs"
+        }
+      ]
+    }
+  ]
+}

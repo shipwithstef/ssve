@@ -1,0 +1,103 @@
+{
+  "host": "gemini",
+  "name": "Gemini CLI",
+  "skills_path": "~/.gemini/skills",
+  "rules_path": "~/.gemini/GEMINI.md",
+  "policies_path": "~/.gemini/policies",
+  "builder_profile_path": "~/.svc/builder-profile.md",
+  "capabilities": {
+    "skills": true,
+    "hooks": true,
+    "plugins": false,
+    "mcp": true,
+    "commands": true,
+    "agents": true
+  },
+  "runtime_ingress_v2": { "transport": "hook-adapter", "fallback": "cli-adapter", "canonical_journal": true, "projection_only": true },
+  "authority_capabilities": {
+    "stable_session_identity": true,
+    "stable_child_identity": true,
+    "identity_source": "GEMINI_SESSION_ID plus persisted dispatch child principal",
+    "filesystem_containment": "wrapper",
+    "containment_backend": "landlock",
+    "containment_launcher": "scripts/svc-contained-exec.mjs",
+    "containment_probe_required": true,
+    "mutating_child_execution": true,
+    "fresh_session_launch": {
+      "enabled": false,
+      "reason": "No automatable fresh-session transport declared for this host yet (WI-552 migration note: disabled by default until a host manifest declares fresh_session_launch)."
+    }
+  },
+  "hook_events": [
+    "SessionStart",
+    "SessionEnd",
+    "BeforeAgent",
+    "AfterAgent",
+    "BeforeModel",
+    "AfterModel",
+    "BeforeToolSelection",
+    "BeforeTool",
+    "AfterTool",
+    "PreCompress",
+    "Notification"
+  ],
+  "hook_quirks": {
+    "timeout_unit": "ms",
+    "stdout_strict": true,
+    "env_vars": [
+      "GEMINI_PROJECT_DIR",
+      "GEMINI_PLANS_DIR",
+      "GEMINI_SESSION_ID",
+      "GEMINI_CWD",
+      "CLAUDE_PROJECT_DIR"
+    ],
+    "config_file": ".gemini/settings.json"
+  },
+  "task_graph": {
+    "task_ui": "write_todos",
+    "background_tasks": false,
+    "skill_load_mode": "direct_skill_file",
+    "native_task_read_tools": []
+  },
+  "infra_files": [
+    "DOCTRINE.md",
+    "REPO_MODES.md",
+    "WORKTREES.md",
+    "EXTERNAL_ADDONS.md",
+    "FRAMEWORK-STATE.md",
+    "skills-manifest.json",
+    "CONTRIBUTING.md",
+    "GEMINI.md"
+  ],
+  "infra_dirs": [
+    "scripts",
+    "references",
+    "proposals",
+    "examples",
+    "hooks",
+    "provision",
+    "templates",
+    "_shared",
+    "concerns"
+  ],
+  "skip": [],
+  "post_install_commands": [],
+  "verify_commands": [
+    "test -f {skills_path}/route-workflow/SKILL.md",
+    "test -f {skills_path}/DOCTRINE.md",
+    "test -f {skills_path}/skills-manifest.json",
+    "test -f {skills_path}/scripts/worktree.sh"
+  ],
+  "wiring": {
+    "hook_capable": true,
+    "wirer": "scripts/wire-gemini-hooks.mjs",
+    "wirer_via": "case",
+    "governed": true,
+    "governed_token": [
+      "svc-enforce",
+      "svc-task-completion-guard"
+    ],
+    "config_file": "~/.gemini/settings.json",
+    "enforcement": "launcher"
+  }
+}

@@ -1,0 +1,154 @@
+{
+  "schema_version": 1,
+  "review_kind": "plan",
+  "rubric_score": 3,
+  "rubric_failures": [
+    3,
+    4,
+    5,
+    6,
+    8,
+    9
+  ],
+  "dependencies_needing_read": null,
+  "reviewer": {
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6-codex",
+    "effort": "high"
+  },
+  "verdict": "fail",
+  "summary": "The implementation contract is unusually thorough, but the plan is not executable safely as written. Core defects affect fail-fast behavior, bootstrap provenance, live-owner reclamation, review convergence, stale-base recovery, mandatory-chain compliance, and isolation of the follow-up promotion work.",
+  "findings": [
+    {
+      "id": "F-001",
+      "severity": "critical",
+      "claim": "The canonical land sequence is not fail-fast and can continue after failed gates, including a failed promoted Tier-1 run.",
+      "analysis": "The sequence relies on standalone tests and pipelines to block later mutation, but it never enables `set -e` or `pipefail`. In an ordinary shell, failed `test`, `diff`, receipt validation, or review assertions do not stop subsequent commands. Most critically, the promoted Tier-1 command is piped to `tee`; without `pipefail`, a failing harness normally produces pipeline status 0, allowing the verify-promotion PR and VERIFIED receipt to proceed. This invalidates the stated gate ordering and promotion checklist.",
+      "evidence": [
+        "The command block begins with `BASE=...` and contains no `set -euo pipefail`.",
+        "Step 8 runs `( cd \"$PRIMARY\" && bash test-framework/evals/run-all-evals.sh --tier1 ) | tee /tmp/wi486-promoted-tier1.log`.",
+        "Steps 1–5 use standalone `test`, `diff`, and validation commands whose failure is not otherwise checked."
+      ],
+      "proposed_fix": "Start every independently executable command block with `set -euo pipefail`. Capture the promoted run explicitly, for example with `set -o pipefail` and a checked pipeline status, and add a final assertion that the persisted result reports zero failures and zero timeouts before creating task-6b."
+    },
+    {
+      "id": "F-002",
+      "severity": "high",
+      "claim": "The bootstrap deletion ledger has an unavoidable crash window that creates artifacts without deletion provenance.",
+      "analysis": "The plan creates an artifact and only afterward appends its path to `created_paths`. A crash between those operations leaves an artifact absent from the deletion allowlist. A foreign stale recovery may then remove the marker while leaving that artifact behind, producing the exact markerless ambiguous state the algorithm refuses to repair or delete. Thus rollback cannot remove every artifact created by a failed attempt, and a same-WI bootstrap can become permanently blocked.",
+      "evidence": [
+        "The transaction says to create the worktree, graph, claim, and binding in sequence.",
+        "Deletion provenance says each path is appended to `created_paths[]` “as each artifact is created” and before the next stage.",
+        "The recovery table says paths absent from `created_paths[]` are never touched, while artifacts with no marker and no claim are `AMBIGUOUS → CONFLICT`."
+      ],
+      "proposed_fix": "Use a write-ahead ledger. Before each creation, atomically record a pending entry containing the exact path, artifact kind, pre-existence state, and owner token; create the artifact with verifiable ownership metadata where possible; then mark the entry created. Recovery may delete only entries proven created by that owner token and never pre-existing paths. Add failpoints both before and after each ledger transition."
+    },
+    {
+      "id": "F-003",
+      "severity": "critical",
+      "claim": "The liveness formula permits reclamation and deletion of artifacts belonging to a still-running same-host process after the 24-hour TTL.",
+      "analysis": "For same-host owners, LIVE is defined as TTL-fresh AND process-identity-live. Consequently, once the TTL expires, an unquestionably live process is classified STALE. Stale recovery can delete its marker-listed worktree, graph, claim, or binding. `renewed_at` is refreshed only on bootstrap resume, not continuously, so a normal long-lived session can cross this boundary without any failure.",
+      "evidence": [
+        "The plan defines LIVE iff `max(started_at, renewed_at)` is within 24 hours AND same-host `processIdentity(...)` is live.",
+        "The stale-marker recovery path removes all listed artifacts and then starts a fresh bootstrap.",
+        "No heartbeat or periodic renewal mechanism is planned."
+      ],
+      "proposed_fix": "For same-host markers, make an exact live process identity authoritative regardless of TTL; dead means stale and indeterminate remains fail-closed LIVE. Use TTL only for cross-host owners, or add an explicit authenticated heartbeat protocol before relying on TTL locally. Add a fixture for a process older than 24 hours that remains live and must never be reclaimed."
+    },
+    {
+      "id": "F-004",
+      "severity": "high",
+      "claim": "The stale-base recovery branch cannot reconstruct the reviewed candidate and produces an empty staged review diff after rebasing.",
+      "analysis": "Step 6 runs only after the aggregate implementation commit exists. If main advanced, `git rebase origin/main` leaves a clean index. The plan then runs `git add -- $CODE_PATHS` and hashes `git diff --cached`, which is empty for committed files. It instructs execution to rerun Step 3 and resume at Step 4, but Step 4 attempts another aggregate commit without first converting the rebased aggregate commit back into a staged candidate. The resulting review hash does not represent the rebased implementation.",
+      "evidence": [
+        "Step 4 creates the aggregate commit before the freshness gate.",
+        "The advancement branch performs `git rebase origin/main`, `git add -- $CODE_PATHS`, then hashes `git diff --cached`.",
+        "Recovery says to rerun Step 3 and resume from Step 4, without a command that restores the aggregate commit to the index."
+      ],
+      "proposed_fix": "Move the origin/main freshness check before the aggregate commit and external reviews. If advancement can still occur later, define a complete restart path: rebase, recompute the candidate using `git diff \"$BASE\"...HEAD` or intentionally reconstruct the staged aggregate commit, rerun all tests and both reviews, regenerate review artifacts and receipt bodies, and only then perform a newly specified commit/merge sequence."
+    },
+    {
+      "id": "F-005",
+      "severity": "high",
+      "claim": "External exec and security reviews are gated only by artifact existence, so failing or stale findings can be landed as PASS.",
+      "analysis": "The sequence invokes the launcher but never asserts the findings verdict, schema, reviewer tuple, zero unresolved critical/high findings, or convergence state. Human review documents and the gate document are checked only with `test -f`. The security package hash is computed but neither compared with the launcher receipt nor embedded in the review-exec receipt. A stale document or a launcher response containing blocking findings therefore satisfies the mechanical sequence.",
+      "evidence": [
+        "Step 3 asserts only `test -f` for the three review documents.",
+        "`SEC_PKG_SHA` is calculated but never used.",
+        "The review-exec body embeds the exec package hash, but for security embeds only request ID and artifact directory.",
+        "No command parses `$ART/findings.json` or `$ART_SEC/findings.json` to require an acceptable verdict and resolved findings."
+      ],
+      "proposed_fix": "Add a deterministic review validator that checks both receipt and findings schemas, exact requested tuples, package hashes equal the freshly generated exec/security packages, acceptable verdicts, and zero unresolved critical/high findings. Bind both request IDs and both package hashes into review-exec. Validate that each human review document names `REVIEWED_CODE_SHA` and records dispositions for every finding before commit."
+    },
+    {
+      "id": "F-006",
+      "severity": "high",
+      "claim": "Task-6b bypasses the repository's mandatory chain and sanctioned merge path despite changing non-exempt `.svc` state.",
+      "analysis": "The follow-up is called a docs-class PR, but it modifies `.svc/lane-tasks-WI-486.json`, which is not among the documented exempt classes. The sequence pushes the commit without a five-receipt envelope, merges it using raw `gh pr merge`, and emits only verify-promotion afterward. Under the supplied mandatory-chain contract, this push is expected to be rejected or to create an unreceipted non-quick-fix commit.",
+      "evidence": [
+        "CLAUDE.md states every pushed non-quick-fix commit needs the five-receipt envelope; exempt `.svc` changes are append-only JSONL, not lane-task JSON.",
+        "Task-6b stages `.svc/lane-tasks-WI-486.json`.",
+        "Task-6b uses `gh pr merge ... --squash --delete-branch` instead of `merge-pr-with-review-receipt.mjs`.",
+        "The only task-6b receipt emitted is `verify-promotion`, after its merge."
+      ],
+      "proposed_fix": "Mechanically classify task-6b before commit. If it is not exempt, give it the required plan/review/exec/review/audit receipts and use the sanctioned review-receipt merge wrapper. If a narrowly defined G7 exemption is intended, add that exemption to the governing contract and validator in scope before relying on it, then emit its required exemption receipt before push."
+    },
+    {
+      "id": "F-007",
+      "severity": "high",
+      "claim": "Task-6b mutates the shared primary checkout and can collide with or alter the default-checkout residue the plan promises to preserve.",
+      "analysis": "The sequence fetches, pulls, creates a branch, authors files, stages, and commits directly in the primary checkout. It neither asserts that the primary checkout is on main nor that it is clean. `git pull origin main` applies to whatever branch is currently checked out, and `checkout -b` can fail or conflict with unrelated tracked/untracked residue. This contradicts worktree isolation and makes the follow-up non-repeatable in the multi-session scenario being fixed.",
+      "evidence": [
+        "Step 8 computes `PRIMARY` and runs `git -C \"$PRIMARY\" pull --ff-only origin main` without checking its current branch or status.",
+        "Step 9 runs `git -C \"$PRIMARY\" checkout -b framework-WI-486-verify-promotion origin/main` and authors/commits there.",
+        "The External State section explicitly identifies unrelated default-checkout tracked and untracked residue as preserved state."
+      ],
+      "proposed_fix": "Create a separate dedicated worktree for task-6b from the exact implementation merge SHA or freshly fetched origin/main. Perform all authoring, validation, commit, and PR operations there. Treat the primary checkout as read-only and add before/after status and byte-digest assertions proving its residue is unchanged."
+    },
+    {
+      "id": "F-008",
+      "severity": "medium",
+      "claim": "The implementation receipt claims task-6a completed before task-6a's merge and promoted verification have occurred.",
+      "analysis": "Task-6a includes commit, receipt emission, PR creation, merge, receipt re-emission, and promoted verification. Its exec-record is authored immediately after the aggregate commit and declares task-6a completed, before the remaining task-6a operations execute. The committed lane graph has the same causal problem if it marks task-6a complete. This creates false completion evidence and weakens resume behavior after a partial land failure.",
+      "evidence": [
+        "The task-6a title includes freeze, review, commit, PR, squash-merge, re-emission, and promoted verification.",
+        "Step 5 creates `exec-record.json` with `tasks_completed` including `task-6a`.",
+        "Steps 6–8 execute the remaining task-6a work only after that receipt is emitted."
+      ],
+      "proposed_fix": "Split implementation freeze/commit from land/promotion verification into separately stateful tasks, or keep task-6a in progress and omit it from `tasks_completed` until all its operations finish. Record post-commit phase receipts externally, and close task-6a truthfully in task-6b after verifying its merge and promoted-test evidence."
+    },
+    {
+      "id": "F-009",
+      "severity": "medium",
+      "claim": "The verify-promotion receipt is emitted against a merge SHA that may not exist locally and cites only ephemeral `/tmp` evidence.",
+      "analysis": "After the second PR merges, the sequence obtains its SHA through the GitHub API but does not fetch the corresponding commit before invoking the git-note receipt emitter from the original implementation worktree. Git notes normally require the target object locally. Even if emission succeeds, the receipt's only Tier-1 evidence path is `/tmp/wi486-promoted-tier1.log`, which is not durable or portable, despite the plan creating tracked post-change evidence files.",
+      "evidence": [
+        "`MERGE_SHA_6B` is read using `gh pr view`; there is no subsequent `git fetch` before `emit-receipt.mjs --sha \"$MERGE_SHA_6B\"`.",
+        "The verify-promotion body sets `evidence` to `/tmp/wi486-promoted-tier1.log`.",
+        "Task-6b separately creates tracked `post-change-tier1-frozen.md` and `pre-post-evidence.json`."
+      ],
+      "proposed_fix": "Fetch origin/main and assert `git cat-file -e \"$MERGE_SHA_6B^{commit}\"` before emitting the note. Bind the receipt to the tracked verification artifacts and their SHA-256 digests; retain `/tmp` only as a transient source used to author those durable files."
+    },
+    {
+      "id": "F-010",
+      "severity": "medium",
+      "claim": "The post-merge rollback procedure is not copy-pasteable because its required migration authorization is an unresolved placeholder.",
+      "analysis": "Rollback requires a fresh repository-owner authorization file, its byte hash in `SVC_TASK_STATE_MIGRATION_SHA256`, discovery of every applicable digest, and ordered restores before reverting. The plan supplies only `--authorization <owner>` prose and no deterministic discovery or validation commands. In an incident, this makes the safety-critical rollback dependent on improvisation.",
+      "evidence": [
+        "Rollback instructs running `--authorization <owner> --restore <digest>`.",
+        "The migration contract requires an authorization file with exact content, WI, freshness, and matching environment SHA-256.",
+        "No rollback command enumerates eligible WI-486 receipts, verifies their status, sets the authorization hash, or confirms every restore before the revert PR."
+      ],
+      "proposed_fix": "Provide a bounded non-interactive rollback script or exact command sequence that validates the owner authorization, exports its hash, enumerates only WI-486 migrated receipts, restores each digest once, verifies original digests, and aborts before the revert PR on any mismatch."
+    }
+  ],
+  "certifications": [
+    {
+      "key": "scope_lock",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "93b7190eebafb11962720b80b3664ae02d01bf71d683a00a150c214b1c5c16e9"
+    }
+  ]
+}

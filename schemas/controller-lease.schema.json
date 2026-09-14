@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://serious-vibe-coding.local/schemas/controller-lease.schema.json",
+  "title": "SVC controller lease",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "lease_id", "repo_id", "wi", "worktree_root",
+    "controller_principal", "generation", "state", "issued_at",
+    "renewed_at", "expires_at", "backend_revision"
+  ],
+  "properties": {
+    "schema_version": { "const": 2 },
+    "lease_id": { "type": "string", "format": "uuid" },
+    "repo_id": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "wi": { "type": "string", "pattern": "^WI-[A-Z0-9][A-Z0-9._-]*$" },
+    "worktree_root": { "type": "string", "minLength": 1 },
+    "controller_principal": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "generation": { "type": "integer", "minimum": 1 },
+    "state": { "enum": ["active", "released"] },
+    "issued_at": { "type": "string", "format": "date-time" },
+    "renewed_at": { "type": "string", "format": "date-time" },
+    "expires_at": { "type": "string", "format": "date-time" },
+    "backend_revision": { "type": "integer", "minimum": 1 }
+  }
+}

@@ -1,0 +1,281 @@
+{
+  "schema_version": 1,
+  "wi": "WI-558",
+  "lane": "bugfix",
+  "status": "in_progress",
+  "created": "2026-08-23T15:25:01.756Z",
+  "tasks": [
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "execute-changeset",
+      "subject": "repair 25 failing tier-1 validators (code, fixtures, honest state)",
+      "blocked_by": [],
+      "completed_at": "2026-08-23T16:20:00.000Z",
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-08-23T15:26:00.000Z",
+        "loaded_via": "manual",
+        "evidence": "Adversarial plan review (Cursor APPROVE-WITH-FINDINGS, Grok 4.6 High REJECT-on-C2 accepted); fixes applied in .worktrees/bugfix-tier1-regressions (phase ts = merge commit dc908bf time approximation)",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-08-23T18:07:07Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-558.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-08-23T18:07:07Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "scripts/lib/reviewer-evidence.mjs"
+              },
+              {
+                "type": "file",
+                "path": "setup"
+              },
+              {
+                "type": "file",
+                "path": "bin/svc-enforce.mjs"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-08-23T18:07:07Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "test-framework/evals/run-all-evals.sh"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-08-23T18:07:07Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-558.md"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "status": "completed",
+      "skill": "review-exec",
+      "subject": "external adversarial review of the repair (Codex/Sol + Cursor) + finding remediation",
+      "blocked_by": [
+        1
+      ],
+      "completed_at": "2026-08-23T19:05:00Z",
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-08-23T17:40:00Z",
+        "loaded_via": "manual",
+        "evidence": "Round-1: Codex/Sol REJECT -> remediated; Cursor APPROVE-WITH-FINDINGS. Round-3 confirmation: Codex/Sol VERDICT APPROVE (docs/specs/audit-reports/WI-558-review-codex-sol-final.txt); prior rounds in WI-558-review-codex-sol-high.txt / -cursor-auto.txt",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-08-23T18:07:07Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-558-review-brief.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-08-23T18:07:07Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-558-review-cursor-auto.txt"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-08-23T18:07:07Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-558-review-codex-sol-high.txt"
+              }
+            ]
+          },
+          {
+            "id": "P4-IterationLoop",
+            "ts": "2026-08-23T18:07:07Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-558-review-codex-sol-final.txt"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerdictAndReceiptFinalize",
+            "ts": "2026-08-23T18:07:07Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-558-review-codex-sol-final.txt"
+              }
+            ]
+          }
+        ],
+        "note": "(phase ts = merge commit dc908bf time approximation)"
+      }
+    },
+    {
+      "id": 3,
+      "status": "pending",
+      "skill": "land-changeset",
+      "subject": "merge to main, converge hosts, post-commit re-verify",
+      "blocked_by": [
+        2,
+        4
+      ]
+    },
+    {
+      "id": 4,
+      "status": "completed",
+      "skill": "audit-implementation",
+      "subject": "session audit: dual external reviews + landing-state evidence",
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-08-23T18:05:00Z",
+        "loaded_via": "manual",
+        "evidence": "docs/specs/audit-reports/WI-558-review-codex-sol-high.txt (REJECT -> findings being remediated); docs/specs/audit-reports/WI-558-review-cursor-auto.txt (APPROVE-WITH-FINDINGS)",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextScopeConcern",
+            "ts": "2026-08-23T18:07:07Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-558-review-brief.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecialistDispatchCoverageLedger",
+            "ts": "2026-08-23T18:07:07Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-558-review-codex-sol-high.txt"
+              }
+            ]
+          },
+          {
+            "id": "P3-HypothesisGeneration",
+            "ts": "2026-08-23T18:07:07Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-558-review-cursor-auto.txt"
+              }
+            ]
+          },
+          {
+            "id": "P4-SubsystemBehaviorAudit",
+            "ts": "2026-08-23T18:07:07Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-558-review-brief.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-FindingsConvergenceReport",
+            "ts": "2026-08-23T18:07:07Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit-reports/WI-558-review-codex-sol-high.txt"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-23T19:05:00Z"
+    },
+    {
+      "id": 5,
+      "status": "completed",
+      "skill": "verify-promotion",
+      "subject": "push main, post-push tier-1 green, closeout",
+      "blocked_by": [
+        2,
+        4
+      ],
+      "completed_at": "2026-08-23T19:20:00Z",
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-08-23T19:15:00Z",
+        "loaded_via": "manual",
+        "p3_target_type": "install-validation",
+        "verdict": "pass",
+        "evidence": "origin/main=3950887 aligned; post-push tier-1 335/0 (run after 3950887); install-drift OK x8 hosts (kimi CLI absent on machine)",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-08-23T19:20:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-wi558.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-08-23T19:20:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-558.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-08-23T19:20:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "test-framework/evals/run-all-evals.sh"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-08-23T19:20:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-558.json"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

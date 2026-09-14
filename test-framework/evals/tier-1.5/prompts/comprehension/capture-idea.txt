@@ -1,0 +1,10 @@
+Skill: capture-idea
+
+Q: What is the output path format for a captured idea, and what is the default status and severity?
+A: Expected pattern: `docs/specs/work-items/WI-###.md` with Status: backlog and Severity: low.
+
+Q: What triggers a Product-Grounded Assessment section in the captured work item, and what are its constraints?
+A: Expected pattern: Directive signals in the intake (e.g., "figure out", "best way", "check if we have", assessment requests, or any `?`). Assessment must be ≤ 200 words, grounded in project context, and must NOT invoke validate-feature, write-spec, or research.
+
+Q: What must capture-idea NOT do after storing an idea?
+A: Expected pattern: Must NOT invoke validate-feature, invoke write-spec, ask business questions (except duplicate follow-up), or ask for more detail.

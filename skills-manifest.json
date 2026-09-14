@@ -1,0 +1,1666 @@
+{
+  "schema_version": 1,
+  "manifestArrayRoles": {
+    "includedSkills": {
+      "role": "Complete svc-native skill registry. Every installed or documented first-party skill belongs here.",
+      "source_of_truth_for": [
+        "host setup",
+        "README skill list",
+        "EXTERNAL_ADDONS core pack"
+      ],
+      "subset_of": null
+    },
+    "corePackForRouting": {
+      "role": "Router-suggestable baseline used by route-workflow. Excludes skills that exist but are normally invoked by another skill or gate.",
+      "source_of_truth_for": [
+        "route-workflow/references/routing-rules.md core pack"
+      ],
+      "subset_of": "includedSkills",
+      "documented_exclusions": [
+        "terminal or advisory skills that should not be suggested as default next steps",
+        "skills invoked automatically by lane/gate logic instead of direct user routing"
+      ]
+    },
+    "bootstrapStartSequence": {
+      "role": "Minimal greenfield initialization order for bootstrap mode. It is not the full lane and may omit optional or conditional skills.",
+      "source_of_truth_for": [
+        "REPO_MODES.md default greenfield sequence"
+      ],
+      "subset_of": "includedSkills"
+    },
+    "pipeline": {
+      "role": "Canonical product-build spine used for documentation and gate placement. It is narrower than full lane definitions.",
+      "source_of_truth_for": [
+        "review gate and product-build sequence documentation"
+      ],
+      "subset_of": "includedSkills"
+    },
+    "laneDefinitions.*.skills": {
+      "role": "Lane-specific execution order. Lanes may include conditional, skip-eligible, or dynamically inserted skills.",
+      "source_of_truth_for": [
+        "route-workflow lane task graph construction"
+      ],
+      "subset_of": "includedSkills"
+    }
+  },
+  "skillRuntimeContractsV2": {
+    "registry": "references/skill-runtime-contracts-v2.json",
+    "compiler": "scripts/svc-skill-runtime-compiler-v2.mjs",
+    "continuation": "references/runtime-continuation-v2.md",
+    "authoritative_state": "runtime-journal",
+    "projections": [
+      "lane-tasks",
+      "orchestrator-state",
+      "receipt-mirrors",
+      "decision-log"
+    ]
+  },
+  "includedSkills": [
+    "ad-video-script",
+    "align-feature",
+    "analyze-competitors",
+    "analyze-domain",
+    "analyze-marketing",
+    "assess-market-readiness",
+    "audit-ac",
+    "audit-coverage",
+    "audit-feature",
+    "audit-implementation",
+    "audit-session-execution",
+    "base44-environment",
+    "benchmark-landing",
+    "blend-external",
+    "blend-private",
+    "blind-control-plan",
+    "build-personas",
+    "capability-concierge",
+    "capability-registry",
+    "capture-idea",
+    "catalog-domain-capabilities",
+    "comms",
+    "cos",
+    "counsel",
+    "craft-prompt",
+    "create-skill",
+    "customer-cs",
+    "decide",
+    "define-code-style",
+    "design-logo",
+    "design-tech",
+    "design-ui",
+    "design-ux",
+    "diagnose-bug",
+    "discover-skills",
+    "discuss-phase",
+    "dispatch-waves",
+    "evaluate-rule",
+    "evolve-framework",
+    "execute-changeset",
+    "explore-solutions",
+    "explore-ux",
+    "extract-bootstrap",
+    "fin-analyst",
+    "find-opportunity",
+    "generate-visuals",
+    "growth-eng",
+    "growth-lead",
+    "honest-diagnosis",
+    "improve-framework",
+    "infra-sre",
+    "ingest-guide",
+    "ingest-guide-batch",
+    "land-changeset",
+    "landing-page",
+    "launch-knowledge",
+    "list-work-items",
+    "manage-finops",
+    "manage-learnings",
+    "market-intel",
+    "mine-builder",
+    "monetization-architecture",
+    "onboard-repo",
+    "plan-blast-radius",
+    "plan-capabilities",
+    "plan-changeset",
+    "platform-operating-architect",
+    "privacy-dpo",
+    "procurement",
+    "produce-ad-video",
+    "product-lead",
+    "quick-fix",
+    "recall-stack-knowledge",
+    "refresh-competitors",
+    "research",
+    "reverse-engineer",
+    "review-cross-model",
+    "review-exec",
+    "review-gate",
+    "review-plan",
+    "review-security",
+    "revops",
+    "roadmap-evaluation",
+    "route-workflow",
+    "security-ops",
+    "stage-revenue",
+    "strategic-decision",
+    "suno-architect",
+    "svc-advisor",
+    "sync-spec-code",
+    "sync-work-items",
+    "tax-auditor",
+    "teach-project",
+    "test-framework",
+    "test-journeys",
+    "track-topology-diff",
+    "track-visuals",
+    "validate-feature",
+    "verify-promotion",
+    "write-e2e",
+    "write-journeys",
+    "write-spec",
+    "write-vision",
+    "wsl2-audio",
+    "propose-ux-improvements"
+  ],
+  "skillMetadata": {
+    "dispatch-waves": {
+      "created": "2026-05-12",
+      "progressive_disclosure_reference": "skills/dispatch-waves/references/dispatch-runtime.md"
+    }
+  },
+  "corePackForRouting": [
+    "write-vision",
+    "analyze-domain",
+    "analyze-competitors",
+    "catalog-domain-capabilities",
+    "build-personas",
+    "write-journeys",
+    "test-journeys",
+    "validate-feature",
+    "audit-ac",
+    "sync-spec-code",
+    "define-code-style",
+    "write-e2e",
+    "analyze-marketing",
+    "produce-ad-video",
+    "recall-stack-knowledge",
+    "onboard-repo",
+    "diagnose-bug",
+    "sync-work-items",
+    "list-work-items",
+    "discover-skills",
+    "research",
+    "discuss-phase",
+    "dispatch-waves",
+    "review-plan",
+    "review-security",
+    "mine-builder",
+    "find-opportunity",
+    "stage-revenue",
+    "improve-framework",
+    "test-framework",
+    "audit-session-execution",
+    "evolve-framework",
+    "explore-ux",
+    "blend-external",
+    "blend-private",
+    "create-skill",
+    "plan-capabilities",
+    "platform-operating-architect",
+    "teach-project",
+    "audit-coverage",
+    "roadmap-evaluation",
+    "monetization-architecture",
+    "assess-market-readiness",
+    "manage-finops",
+    "cos",
+    "growth-lead",
+    "fin-analyst",
+    "product-lead",
+    "market-intel",
+    "counsel",
+    "security-ops",
+    "customer-cs",
+    "revops",
+    "comms",
+    "tax-auditor",
+    "privacy-dpo",
+    "infra-sre",
+    "procurement",
+    "growth-eng"
+  ],
+  "pipeline": [
+    "write-spec",
+    "audit-ac",
+    "write-journeys",
+    "design-ux",
+    "design-ui",
+    "landing-page",
+    "track-visuals",
+    "design-tech",
+    "explore-solutions",
+    "define-code-style",
+    "plan-changeset",
+    "review-plan",
+    "execute-changeset",
+    "review-exec",
+    "track-visuals",
+    "benchmark-landing",
+    "review-gate",
+    "audit-implementation",
+    "land-changeset",
+    "verify-promotion"
+  ],
+  "globalArtifacts": {
+    "builderProfile": {
+      "path": "~/.svc/builder-profile.md",
+      "scope": "global",
+      "createdBy": "mine-builder",
+      "updatedBy": [
+        "mine-builder",
+        "verify-promotion"
+      ],
+      "readBy": [
+        "audit-coverage",
+        "create-skill",
+        "find-opportunity",
+        "mine-builder",
+        "plan-capabilities",
+        "reverse-engineer",
+        "roadmap-evaluation",
+        "route-workflow",
+        "stage-revenue",
+        "teach-project",
+        "validate-feature",
+        "verify-promotion"
+      ],
+      "note": "Persists across all projects. Propagated to downstream skills via P0 persona."
+    },
+    "orchestratorState": {
+      "path": ".svc/orchestrator-state.json",
+      "scope": "per-project",
+      "createdBy": "onboard-repo",
+      "updatedBy": [
+        "route-workflow"
+      ],
+      "readBy": [
+        "route-workflow",
+        "onboard-repo",
+        "plan-capabilities"
+      ],
+      "note": "Cross-session orchestrator state machine. Initialized from templates/.svc/orchestrator-state.json via scripts/init-project-state.mjs."
+    },
+    "capabilityRegistry": {
+      "path": ".svc/capability-registry.json",
+      "scope": "per-project",
+      "createdBy": "onboard-repo",
+      "updatedBy": [
+        "plan-capabilities",
+        "route-workflow"
+      ],
+      "readBy": [
+        "plan-capabilities",
+        "route-workflow",
+        "design-tech",
+        "evolve-framework"
+      ],
+      "note": "Project capability inventory. Initialized from templates/.svc/capability-registry.json via scripts/init-project-state.mjs."
+    },
+    "frameworkGaps": {
+      "path": ".svc/framework-gaps.jsonl",
+      "scope": "per-project",
+      "createdBy": "onboard-repo",
+      "updatedBy": [
+        "evolve-framework",
+        "audit-session-execution"
+      ],
+      "readBy": [
+        "evolve-framework",
+        "improve-framework"
+      ],
+      "note": "Append-only JSONL of framework gaps discovered during sessions. Initialized from templates/.svc/framework-gaps.jsonl."
+    },
+    "pipelineDecisionLog": {
+      "path": ".svc/pipeline-decisions.jsonl",
+      "scope": "per-project",
+      "createdBy": "route-workflow",
+      "updatedBy": "route-workflow and skills with explicit logging steps",
+      "note": "Append-only JSONL. route-workflow owns the schema; workflow skills append entries where their contracts define decision logging."
+    },
+    "founderProfile": {
+      "path": "~/.svc/founder-profile.md",
+      "scope": "global",
+      "createdBy": "launch-knowledge",
+      "updatedBy": [
+        "launch-knowledge",
+        "mine-builder"
+      ],
+      "readBy": [
+        "launch-knowledge",
+        "mine-builder",
+        "roadmap-evaluation",
+        "manage-finops",
+        "find-opportunity"
+      ],
+      "note": "Per-builder overlay for launch decisions (jurisdiction, employment status vs SS cap, applied credits, programs rejected). Optional input \u2014 launch-knowledge works GREAT with empty/missing profile (AC-06)."
+    },
+    "launchVehicleDecision": {
+      "path": "docs/specs/launch-vehicle-decision.md",
+      "scope": "per-project",
+      "createdBy": "launch-knowledge",
+      "updatedBy": [
+        "launch-knowledge"
+      ],
+      "readBy": [
+        "mor-vs-stripe",
+        "pricing",
+        "validate-feature",
+        "design-tech",
+        "manage-finops"
+      ],
+      "note": "Recommended legal entity for THIS project + revisit triggers (revenue, PII, fundraising). Hand-off artifact to mor-vs-stripe for processor-type trade study."
+    },
+    "creditStackPlan": {
+      "path": "docs/analysis/credit-stack-plan.md",
+      "scope": "per-project",
+      "createdBy": "launch-knowledge",
+      "updatedBy": [
+        "launch-knowledge"
+      ],
+      "readBy": [
+        "manage-finops",
+        "roadmap-evaluation"
+      ],
+      "note": "Ranked credit programs to apply, eligibility-cut against profile, expected value \u00d7 approval probability, stackability check."
+    },
+    "runwayProjection": {
+      "path": "docs/analysis/runway-projection.md",
+      "scope": "per-project",
+      "createdBy": "launch-knowledge",
+      "updatedBy": [
+        "launch-knowledge",
+        "manage-finops"
+      ],
+      "readBy": [
+        "manage-finops",
+        "roadmap-evaluation",
+        "platform-operating-architect"
+      ],
+      "note": "Months of free runway given chosen stack, broken down by line item with sources."
+    },
+    "distributionPlan": {
+      "path": "docs/analysis/distribution-plan.md",
+      "scope": "per-project",
+      "createdBy": "launch-knowledge",
+      "updatedBy": [
+        "launch-knowledge"
+      ],
+      "readBy": [
+        "launch",
+        "cold-email",
+        "lead-magnets",
+        "free-tools"
+      ],
+      "note": "First-100-customer playbook for the product type identified. Channel ranking; execution delegated to named downstream skills."
+    }
+  },
+  "featureStates": [
+    "DRAFT",
+    "UX-REVIEWED",
+    "DESIGNED",
+    "BASELINED",
+    "CHANGE-SET-APPROVED",
+    "PROMOTED",
+    "VERIFIED",
+    "REJECTED",
+    "PIVOTED"
+  ],
+  "dualRunSkillAllowlist": {
+    "track-visuals": {
+      "max_occurrences": 2,
+      "arrays": [
+        "pipeline",
+        "bootstrapStartSequence",
+        "laneDefinitions.greenfield.skills",
+        "laneDefinitions.brownfield-feature.skills"
+      ]
+    }
+  },
+  "reviewGates": {
+    "G1": {
+      "after": "write-spec",
+      "transition": "DRAFT \u2192 DRAFT (quality gate, no state change)",
+      "checks": "Stories testable? ACs specific? Layer 3 clean? Dependencies identified?",
+      "enforced_by": [
+        "write-spec"
+      ]
+    },
+    "G2": {
+      "after": "design-ux",
+      "transition": "DRAFT \u2192 UX-REVIEWED",
+      "checks": "Flows cover all stories? States complete? Error handling? Accessibility?",
+      "enforced_by": [
+        "design-ux"
+      ]
+    },
+    "G3": {
+      "after": "design-ui",
+      "transition": "UX-REVIEWED \u2192 DESIGNED",
+      "checks": "Design system consistency? Responsive? Dark mode? Component reuse?",
+      "enforced_by": [
+        "design-ui"
+      ]
+    },
+    "G4": {
+      "after": "design-tech",
+      "transition": "DESIGNED \u2192 BASELINED",
+      "checks": "All ACs feasible? Architecture sound? Risks identified? Trade-offs explicit?",
+      "enforced_by": [
+        "design-tech"
+      ]
+    },
+    "G5": {
+      "after": "execute-changeset",
+      "transition": "BASELINED \u2192 CHANGE-SET-APPROVED",
+      "checks": "Executed branch diff matches design? Tasks cover ACs? Cross-file consistency? No placeholders? Task checkpoints clean?",
+      "enforced_by": [
+        "review-exec",
+        "audit-implementation"
+      ]
+    },
+    "G6": {
+      "after": "land-changeset",
+      "transition": "CHANGE-SET-APPROVED \u2192 PROMOTED",
+      "checks": "Squash diff matches manifest file set? No unplanned changes? Validation clean?",
+      "enforced_by": [
+        "land-changeset"
+      ]
+    },
+    "G7": {
+      "after": "verify-promotion",
+      "transition": "PROMOTED \u2192 VERIFIED",
+      "checks": "Tests pass? QA complete? E2E complete? Spec annotations and responsive evidence updated?",
+      "enforced_by": [
+        "verify-promotion"
+      ]
+    }
+  },
+  "externalAddOns": {
+    "coreyhaines-marketing-pack": [
+      "product-marketing",
+      "customer-research",
+      "market-competitors",
+      "competitors",
+      "copywriting",
+      "cro",
+      "launch",
+      "market-social",
+      "market-ads",
+      "market-emails",
+      "signup",
+      "onboarding"
+    ]
+  },
+  "bootstrapStartSequence": [
+    "write-vision",
+    "analyze-domain",
+    "analyze-competitors",
+    "catalog-domain-capabilities",
+    "build-personas",
+    "validate-feature",
+    "write-spec",
+    "audit-ac",
+    "write-journeys",
+    "design-ux",
+    "design-ui",
+    "landing-page",
+    "track-visuals",
+    "design-tech",
+    "explore-solutions",
+    "define-code-style",
+    "plan-changeset",
+    "review-plan",
+    "execute-changeset",
+    "review-exec",
+    "track-visuals",
+    "benchmark-landing",
+    "review-gate",
+    "audit-implementation",
+    "land-changeset",
+    "verify-promotion"
+  ],
+  "laneDefinitions": {
+    "greenfield": {
+      "skills": [
+        "write-vision",
+        "analyze-domain",
+        "analyze-competitors",
+        "catalog-domain-capabilities",
+        "build-personas",
+        "validate-feature",
+        "write-spec",
+        "audit-ac",
+        "write-journeys",
+        "design-ux",
+        "design-ui",
+        "design-logo",
+        "landing-page",
+        "track-visuals",
+        "design-tech",
+        "explore-solutions",
+        "define-code-style",
+        "plan-changeset",
+        "execute-changeset",
+        "track-visuals",
+        "benchmark-landing",
+        "review-gate",
+        "audit-implementation",
+        "land-changeset",
+        "verify-promotion"
+      ],
+      "defaultSkips": []
+    },
+    "brownfield-conversion": {
+      "skills": [
+        "onboard-repo",
+        "audit-coverage",
+        "sync-work-items"
+      ],
+      "defaultSkips": []
+    },
+    "brownfield-feature": {
+      "skills": [
+        "sync-spec-code",
+        "validate-feature",
+        "write-spec",
+        "write-journeys",
+        "design-ux",
+        "design-ui",
+        "design-logo",
+        "landing-page",
+        "track-visuals",
+        "design-tech",
+        "explore-solutions",
+        "define-code-style",
+        "plan-changeset",
+        "execute-changeset",
+        "track-visuals",
+        "benchmark-landing",
+        "review-gate",
+        "audit-implementation",
+        "land-changeset",
+        "verify-promotion"
+      ],
+      "defaultSkips": [],
+      "notes": "For pure background enablers or integrations with no human-visible surface, design-ux, design-ui, and track-visuals may self-skip only with explicit rationale. User-facing or admin-facing changes must not bypass them."
+    },
+    "bugfix": {
+      "skills": [
+        "diagnose-bug",
+        "plan-changeset",
+        "execute-changeset",
+        "review-gate",
+        "audit-implementation",
+        "land-changeset",
+        "verify-promotion"
+      ],
+      "defaultSkips": [
+        "define-code-style"
+      ]
+    },
+    "drift": {
+      "skills": [
+        "sync-spec-code",
+        "write-journeys",
+        "sync-work-items"
+      ],
+      "defaultSkips": []
+    },
+    "refactor": {
+      "skills": [
+        "sync-spec-code",
+        "plan-changeset",
+        "execute-changeset",
+        "review-gate",
+        "audit-implementation",
+        "land-changeset",
+        "verify-promotion"
+      ],
+      "defaultSkips": []
+    },
+    "framework": {
+      "skills": [
+        "test-framework",
+        "evolve-framework",
+        "blend-external",
+        "blend-private",
+        "improve-framework",
+        "recall-stack-knowledge",
+        "plan-blast-radius",
+        "track-topology-diff",
+        "refresh-competitors"
+      ],
+      "defaultSkips": [],
+      "notes": "Framework evidence and implementation loop for known gaps. Broken framework behavior may start in diagnose-bug, and new framework capabilities route through the normal svc product pipeline on this repo per route-workflow's svc-on-svc policy.",
+      "mandatoryChainEnforcement": "Framework changes are enforced through L1+L2+L3 (git hook dispatcher + svc-reconcile), not via skills-manifest lane listing. Each skill in this lane operates within the broader chain enforced by the hooks."
+    }
+  },
+  "rulesRegistry": {
+    "_comment": "Rules are a svc primitive alongside skills. Entries describe rule files intended to be injected into Claude/Codex context (typically via CLAUDE.md or ~/.claude/rules/). See references/rules-policy.md for scope/stack/source semantics and the classification policy that decides what lives in rules/ vs references/.",
+    "entries": [
+      {
+        "path": "rules/base44/auth-refresh.md",
+        "type": "correction",
+        "scope": "global",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-05-01",
+        "source_sha": null,
+        "notes": "Backfill registration (was on disk but unregistered). See validate-rules-registered.sh tier-1.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "base44",
+            "\\.base44/"
+          ],
+          "bash": [
+            "base44",
+            "app\\.base44\\.com"
+          ]
+        }
+      },
+      {
+        "path": "rules/base44/rls-policy.md",
+        "type": "correction",
+        "scope": "project",
+        "stack": "base44",
+        "source": "local",
+        "last_evaluated": "2026-04-26",
+        "source_sha": null,
+        "notes": "Per example-marketplace WI-113/WI-115: every Base44 user_app entity MUST have an rls block; the dashboard's Apply-Recommended-Rules generates a malformed AND-rule between owner_id and admin role that MongoDB silently AND-evaluates to false. Documents canonical $or shape, deploy-via-coding/write mechanics, read-back caveat, and the 200-owner / 403-non-owner / asServiceRole verification protocol.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "rls",
+            "policies",
+            "base44"
+          ]
+        }
+      },
+      {
+        "path": "rules/base44/schema.md",
+        "type": "correction",
+        "scope": "project",
+        "stack": "base44",
+        "source": "local",
+        "last_evaluated": "2026-04-15",
+        "source_sha": null,
+        "notes": "Prevents false claims that Base44 entity schemas require dashboard inspection. Use the coding/write round-trip to verify schema fields safely with real file content.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "entities",
+            "base44"
+          ],
+          "bash": [
+            "coding/write"
+          ]
+        }
+      },
+      {
+        "path": "rules/bash-hygiene.md",
+        "type": "correction",
+        "scope": "global",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-05-01",
+        "source_sha": null,
+        "notes": "Backfill registration (was on disk but unregistered). See validate-rules-registered.sh tier-1. twin: svc-loop-guard + bounded-wait validators + harness sleep-block",
+        "auto_inject": "lazy"
+      },
+      {
+        "path": "rules/common/code-review.md",
+        "type": "correction",
+        "scope": "project",
+        "stack": "universal",
+        "source": "blended:ecc",
+        "last_evaluated": "2026-04-13",
+        "source_sha": "125d5e619905d97b519a887d5bc7332dcc448a52",
+        "notes": "ECC common/code-review.md distilled: severity taxonomy (CRITICAL/HIGH/MEDIUM/LOW \u2192 BLOCK/WARN/INFO/NOTE), mandatory triggers, 80% coverage min, Approve/Warning/Block outcome. ECC agent refs replaced with svc skill refs. consumer: review-gate/audit-implementation load severity taxonomy in-skill",
+        "auto_inject": "lazy"
+      },
+      {
+        "path": "rules/common/port-parity-baseline.md",
+        "type": "correction",
+        "scope": "global",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-06-15",
+        "source_sha": null,
+        "notes": "Port/convert parity & visual-diff: resolve the comparison baseline as the legacy source repo, never the deployed product (a cut-over port's prod serves the port build). Added per example-marketplace landing-hero-restore session audit F1m. Signal fires when parity/baseline artifacts are touched; intent-level consumer wiring in route-workflow verification path is a tracked follow-up.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "parity.*results",
+            "port-parity",
+            "parity-verification",
+            "source-parity",
+            "source-content-drift"
+          ]
+        }
+      },
+      {
+        "path": "rules/common/gh-workflow-validation.md",
+        "type": "correction",
+        "scope": "project",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-05-06",
+        "source_sha": null,
+        "notes": "Prevents false CI confidence when validating GitHub Actions changes: fresh-dispatch workflow-source edits and verify target job steps/logs, not only run conclusions.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "\\.github/workflows/"
+          ],
+          "bash": [
+            "gh (workflow|run) "
+          ]
+        }
+      },
+      {
+        "path": "rules/common/git-pre-commit-hygiene.md",
+        "type": "correction",
+        "scope": "project",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-05-06",
+        "source_sha": null,
+        "notes": "Requires status, branch, and cached-diff checks before commits in brownfield repos to avoid wrong-branch or unrelated staged-file commits. twin: pre-commit drift hooks + commit-quality guard",
+        "auto_inject": "lazy"
+      },
+      {
+        "path": "rules/common/model-selection.md",
+        "type": "steering",
+        "scope": "project",
+        "stack": "universal",
+        "source": "blended:ecc",
+        "last_evaluated": "2026-04-13",
+        "source_sha": "125d5e619905d97b519a887d5bc7332dcc448a52",
+        "notes": "ECC common/performance.md distilled: Haiku/Sonnet/Opus decision table with current model IDs. Opus updated 4.5 \u2192 4.6. Steering: collapses model selection variance; universal stack so globally injected. twin: scripts/resolve-model.sh is the behavior; tables mirror registry",
+        "auto_inject": "lazy"
+      },
+      {
+        "path": "rules/common/neversay-fix-if-needed.md",
+        "type": "steering",
+        "scope": "project",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-05-21",
+        "source_sha": null,
+        "notes": "Speculative commit message quality check. Case-insensitively blocks any commit message matching standard conditional fix phrases to keep git history definitive. twin: svc-workflow-guard commit-msg regex block",
+        "auto_inject": "lazy"
+      },
+      {
+        "path": "rules/common/research-before-build.md",
+        "type": "correction",
+        "scope": "project",
+        "stack": "universal",
+        "source": "blended:ecc",
+        "last_evaluated": "2026-04-13",
+        "source_sha": "125d5e619905d97b519a887d5bc7332dcc448a52",
+        "notes": "ECC common/development-workflow.md Step 0 only. Research priority: gh search \u2192 vendor docs \u2192 web search \u2192 package registries. Steps 1-5 (ECC pipeline) stripped \u2014 svc has its own.",
+        "auto_inject": "always"
+      },
+      {
+        "path": "rules/common/question-fatigue.md",
+        "type": "steering",
+        "scope": "project",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-05-06",
+        "source_sha": null,
+        "auto_inject": "always",
+        "notes": "Prevents agent question fatigue by blocking follow-up questions after user imperatives (improve it, proceed, do it, go, ship it, fix it, build it, yes). Enforces action-over-discipline for on-demand requests."
+      },
+      {
+        "path": "rules/common/regex-identifier-conventions.md",
+        "type": "correction",
+        "scope": "project",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-05-06",
+        "source_sha": null,
+        "notes": "Warns against combining case-convention regex classes with whole-pattern ignore-case flags, which cancels identifier casing constraints and creates false positives.",
+        "auto_inject": "signal",
+        "signals": {
+          "bash": [
+            "re\\.compile",
+            "IGNORECASE",
+            "grep -i"
+          ],
+          "keywords": [
+            "IGNORECASE",
+            "re\\.compile\\(.*re\\.I"
+          ]
+        }
+      },
+      {
+        "path": "rules/common/skill-output-visibility.md",
+        "type": "correction",
+        "scope": "project",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-04-27",
+        "source_sha": null,
+        "notes": "Per WI-132 (promotion of proposal 2026-04-26-list-work-items-output-visibility.md): skills whose primary deliverable is a Bash-stdout table (list-work-items, audit-coverage --report, manage-learnings list, find-skills, etc.) MUST instruct the agent to reproduce the table verbatim in the assistant reply. Bash tool stdout is consumed by the model, not shown to the user. Composes with rules/long-output-to-file.md when output is also large. Enforcement is rule-based for v1 (reviewer flags); tier-1 validator deferred until drift observed.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "(^|/)SKILL\\.md$"
+          ]
+        }
+      },
+      {
+        "path": "rules/common/visualize-decisions.md",
+        "type": "steering",
+        "scope": "global",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-06-20",
+        "source_sha": null,
+        "notes": "User directive 2026-06-20: significant decisions + finished results are visualized as a self-contained HTML artifact (result + flow + each decision's choice/why/consequence/alternatives + issues) via scripts/render-run-summary.mjs; companion always-on 3-section completion report (What/How/Issues); execution noise stays in subagents (hidden, full quality). render-status.mjs is the project-level dashboard companion.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "render-run-summary",
+            "render-status",
+            "docs/status/"
+          ],
+          "bash": [
+            "render-run-summary",
+            "render-status",
+            "classify-delivery-graph-closeout"
+          ]
+        }
+      },
+      {
+        "path": "rules/destructive-git-ops.md",
+        "type": "correction",
+        "scope": "project",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-04-25",
+        "source_sha": null,
+        "notes": "Per WI-103: destructive git commands (reset --hard, push --force, clean -f, branch -D, etc.) require an evidence pre-check (status, branch, unpushed commits, disposition) before running. 'Continue autonomously' does not authorize destructive ops. twin: svc-destructive-git-preamble PreToolUse hard-block",
+        "auto_inject": "lazy"
+      },
+      {
+        "path": "rules/docker-local-dev.md",
+        "type": "correction",
+        "scope": "global",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-05-01",
+        "source_sha": null,
+        "notes": "Backfill registration (was on disk but unregistered). See validate-rules-registered.sh tier-1.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "docker-compose",
+            "Dockerfile"
+          ],
+          "bash": [
+            "docker ",
+            "supabase start"
+          ]
+        }
+      },
+      {
+        "path": "rules/github-projects.md",
+        "type": "correction",
+        "scope": "global",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-05-01",
+        "source_sha": null,
+        "notes": "Backfill registration (was on disk but unregistered). See validate-rules-registered.sh tier-1.",
+        "auto_inject": "signal",
+        "signals": {
+          "bash": [
+            "gh (issue|project) "
+          ]
+        }
+      },
+      {
+        "path": "rules/golang/patterns.md",
+        "type": "steering",
+        "scope": "project",
+        "stack": "golang",
+        "source": "blended:ecc",
+        "last_evaluated": "2026-04-13",
+        "source_sha": "125d5e619905d97b519a887d5bc7332dcc448a52",
+        "notes": "Functional options pattern for constructor configuration. Distilled from ECC golang/patterns.md \u2014 stripped Small Interfaces and DI sections (inflation). DG=2/CD=0/FC=0/CC=0.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "\\.go$"
+          ]
+        }
+      },
+      {
+        "path": "rules/helper-app-query-parity.md",
+        "type": "correction",
+        "scope": "global",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-05-01",
+        "source_sha": null,
+        "notes": "Backfill registration (was on disk but unregistered). See validate-rules-registered.sh tier-1.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "e2e/helpers/",
+            "tests/fixtures/"
+          ]
+        }
+      },
+      {
+        "path": "rules/host-capability-research.md",
+        "type": "correction",
+        "scope": "project",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-04-23",
+        "source_sha": null,
+        "notes": "Hard gate: verify host docs before implementing host-specific features. Prevents training-data staleness from causing framework degradation. Enforced in improve-framework Step 5, evolve-framework analysis rules, and quick-fix Step 1.5.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "^hooks/",
+            "wire-.*hooks",
+            "provision/hosts/"
+          ]
+        }
+      },
+      {
+        "path": "rules/learning-preload.md",
+        "type": "steering",
+        "scope": "project",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-04-23",
+        "source_sha": null,
+        "notes": "Pre-loads framework learnings at session start and reminds agents to check project learnings before acting. Turns passive logs into active guardrails. SessionStart hook svc-learning-preload.mjs implements the deterministic preload.",
+        "auto_inject": "always"
+      },
+      {
+        "path": "rules/long-output-to-file.md",
+        "type": "correction",
+        "scope": "project",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-06-08",
+        "source_sha": null,
+        "notes": "Per WI-128 (promotion of WI-099 T2-A): when a skill's primary output exceeds ~800 lines or ~10K tokens, write full output to disk and emit a compact 3-bullet summary inline. Prevents 'Prompt is too long' wedges and transcript truncation. WI-393: demoted from always-on prose to signal-injected on output-heavy skill signals (audits, research/knowledge dumps, roadmap/market-readiness/coverage reports) so it arrives exactly when an agent is about to write a long artifact instead of riding every session. Composes with the WI-361/WI-384 injector. Tier-1 validator: validate-output-discipline-guard.sh.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "docs/specs/audit-reports/",
+            "docs/analysis/",
+            "references/knowledge/.*/details/",
+            "references/knowledge/.*/CAPABILITIES\\.md",
+            "docs/specs/roadmap\\.md",
+            "docs/specs/market-readiness\\.md",
+            "docs/specs/coverage-audit\\.md",
+            "docs/specs/analyze-competitors\\.md"
+          ],
+          "bash": [
+            "(audit-implementation|audit-coverage|roadmap-evaluation|assess-market-readiness|analyze-competitors|deep-research)"
+          ]
+        }
+      },
+      {
+        "path": "rules/plan-changeset-trigger.md",
+        "type": "correction",
+        "scope": "project",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-04-24",
+        "source_sha": null,
+        "notes": "Risk-based plan-changeset trigger: (1) contract change / (2) hot-path edit / (3) refactor-without-behavior-change. Adopted 2026-04-24 during framework-cohesion session; supersedes the older size-based rule. Authored in-repo, not blended.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "^hooks/",
+            "^scripts/",
+            "^test-framework/"
+          ]
+        }
+      },
+      {
+        "path": "rules/provider-fidelity-test-contract.md",
+        "type": "correction",
+        "scope": "global",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-05-13",
+        "source_sha": null,
+        "notes": "Backfill registration for parallel-session rule add. Asserts that provider-backed tests must check source + quality, not just success/no-throw. Origin: framework-learnings entries 81 from PR #143-era. concern-bridge: also injected via handled_by.required_rules",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "provider",
+            "generation",
+            "/ai/"
+          ]
+        }
+      },
+      {
+        "path": "rules/tier-1-promotion.md",
+        "type": "correction",
+        "scope": "project",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-05-12",
+        "source_sha": null,
+        "notes": "Requires observed recurrence, anti-pattern/rule coverage, or hot-path protection before adding always-on tier-1 validators; prevents tier-1 surface growth from one-off incidents.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "test-framework/evals/tier-1/"
+          ]
+        }
+      },
+      {
+        "path": "rules/post-fix-evidence-before-next-fix.md",
+        "type": "correction",
+        "scope": "global",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-05-01",
+        "source_sha": null,
+        "notes": "Backfill registration (was on disk but unregistered). See validate-rules-registered.sh tier-1. concern-bridge: also injected via handled_by.required_rules",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "test-results/",
+            "error-context"
+          ]
+        }
+      },
+      {
+        "path": "rules/mobile-ui-verification-gate.md",
+        "type": "correction",
+        "scope": "project",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-07-11",
+        "source_sha": null,
+        "notes": "Browser-visible mobile UI changes need device-realistic (safe-area-emulated), authenticated (seeded-customer storageState), perceptual gates before land/deploy \u2014 not DOM-presence e2e. Born from six Example Marketplace bugs (WI-SAMPLE-NAV-01 / WI-SCROLL-TOP-01 / WI-HERO-MOBILE-01) that each shipped past every logic gate and were caught only by a human on-device. Enforced by the mobile-occlusion + scroll-position browser-checks, track-visuals' hard rule, and the two tier-1 validators (Playwright-required). Registered per validate-rules-registered.sh.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "scripts/lib/browser-checks/mobile-occlusion\\.mjs",
+            "scripts/lib/browser-checks/scroll-position\\.mjs",
+            "scripts/browser-verify\\.mjs"
+          ]
+        }
+      },
+      {
+        "path": "rules/python/patterns.md",
+        "type": "steering",
+        "scope": "project",
+        "stack": "python",
+        "source": "blended:ecc",
+        "last_evaluated": "2026-04-13",
+        "source_sha": "125d5e619905d97b519a887d5bc7332dcc448a52",
+        "notes": "Protocol for structural interfaces, @dataclass for internal DTOs. Distilled from ECC python/patterns.md \u2014 stripped Context Managers section (inflation), scoped @dataclass to non-API DTOs. DG=2/CD=0/FC=0/CC=0.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "\\.py$"
+          ]
+        }
+      },
+      {
+        "path": "rules/react/coding-style.md",
+        "type": "steering",
+        "scope": "project",
+        "stack": "react",
+        "source": "local",
+        "last_evaluated": "2026-05-08",
+        "source_sha": "18c9b2d436dd0dea",
+        "notes": "Evaluated: beats default behavior. Covers URL/view naming parity, component export patterns (no React.FC), props interfaces, Zustand vs useState vs Context decision matrix, import ordering, TypeScript guidelines, React Compiler performance guidance.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "\\.(tsx|jsx)$"
+          ]
+        }
+      },
+      {
+        "path": "rules/research-must-use-agy-cli.md",
+        "type": "correction",
+        "scope": "project",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-04-25",
+        "source_sha": null,
+        "notes": "Per WI-090 doctrine: research skill MUST dispatch to agy-cli as primary; falling back to in-session Claude WebSearch is only legitimate when agy-cli has actually failed. Quota-preservation rationalization is forbidden. Enforced by tier-1 validate-research-prescope-sub-agent.sh which scans pre-scope artifacts for the violation pattern. Source: 2026-04-25 violation captured as framework-learnings.jsonl entry research-skill-default-must-be-gemini-cli (confidence 10).",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "research-prescope",
+            "references/knowledge/"
+          ],
+          "bash": [
+            "agy"
+          ]
+        }
+      },
+      {
+        "path": "rules/rust/patterns.md",
+        "type": "steering",
+        "scope": "project",
+        "stack": "rust",
+        "source": "blended:ecc",
+        "last_evaluated": "2026-04-13",
+        "source_sha": "125d5e619905d97b519a887d5bc7332dcc448a52",
+        "notes": "Newtype IDs, builder pattern, no-wildcard on business-critical enums. Distilled from ECC rust/patterns.md \u2014 stripped Repository, Service Layer, Sealed Traits, API Envelope (all inflation). DG=2/CD=0/FC=1/CC=0.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "\\.rs$"
+          ]
+        }
+      },
+      {
+        "path": "rules/tenant-scoped-test-seeding.md",
+        "type": "correction",
+        "scope": "global",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-05-01",
+        "source_sha": null,
+        "notes": "Backfill registration (was on disk but unregistered). See validate-rules-registered.sh tier-1.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "e2e/",
+            "\\.spec\\."
+          ]
+        }
+      },
+      {
+        "path": "rules/tool-selection.md",
+        "type": "correction",
+        "scope": "project",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-04-13",
+        "source_sha": null,
+        "notes": "Prevents Agent/Explore spawns when target is known. Authored in-repo, not blended.",
+        "auto_inject": "always"
+      },
+      {
+        "path": "rules/transient-ui-assertion-pattern.md",
+        "type": "correction",
+        "scope": "global",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-05-01",
+        "source_sha": null,
+        "notes": "Backfill registration (was on disk but unregistered). See validate-rules-registered.sh tier-1.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "e2e/",
+            "\\.spec\\."
+          ]
+        }
+      },
+      {
+        "path": "rules/verify-state-before-context.md",
+        "type": "correction",
+        "scope": "project",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-04-21",
+        "source_sha": null,
+        "notes": "Prevents stale context from being treated as ground truth. Requires git branch/status/pwd verification before git ops when context mentions branches or worktrees. Also corrects git rename detection (--name-only vs --stat).",
+        "auto_inject": "always"
+      },
+      {
+        "path": "rules/web/design-quality.md",
+        "type": "correction",
+        "scope": "project",
+        "stack": "web",
+        "source": "blended:ecc",
+        "last_evaluated": "2026-04-13",
+        "source_sha": "125d5e619905d97b519a887d5bc7332dcc448a52",
+        "notes": "Anti-template policy + Required Qualities checklist. Fixes real default: unconstrained frontend produces generic template UI. Distilled from ECC web/design-quality.md \u2014 stripped Style Directions list (inflation). DG=2/CD=2/FC=1/CC=0.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "src/components/",
+            "\\.css$"
+          ]
+        }
+      },
+      {
+        "path": "rules/web/performance.md",
+        "type": "correction",
+        "scope": "project",
+        "stack": "web",
+        "source": "blended:ecc",
+        "last_evaluated": "2026-04-13",
+        "source_sha": "125d5e619905d97b519a887d5bc7332dcc448a52",
+        "notes": "CWV targets table, bundle budgets (150/300/80kb), hero image eager+fetchpriority (fixes lazy default). Strongest correction in ECC web pack. DG=2/CD=2/FC=1/CC=0.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "src/",
+            "\\.css$",
+            "vite\\.config"
+          ]
+        }
+      },
+      {
+        "path": "rules/base44/cli-site-deploy-decoupled.md",
+        "type": "correction",
+        "scope": "project",
+        "stack": "base44",
+        "source": "local",
+        "last_evaluated": "2026-06-14",
+        "source_sha": null,
+        "notes": "Base44-specific: CLI site deploy is decoupled from the sandbox/git path; git sync reverts CLI deploys (needs connected_to_github:false) and a raw build deploys with null appId/serverUrl unless VITE_BASE44_APP_ID/serverUrl are baked at build time. Backfill registration 2026-06-14 (improve-framework) to clear baseline \u2014 file was on disk, unregistered.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "base44",
+            "dist/"
+          ],
+          "bash": [
+            "base44.*site.*deploy",
+            "base44.*deploy"
+          ]
+        }
+      },
+      {
+        "path": "rules/base44/function-deploy-404-check-secrets.md",
+        "type": "correction",
+        "scope": "project",
+        "stack": "base44",
+        "source": "local",
+        "last_evaluated": null,
+        "source_sha": null,
+        "notes": "Base44-specific: 404 Deployment does not exist usually means missing secret, not stale deploy. Evaluated via evaluate-rule before permanent registration.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "functions/",
+            "base44"
+          ],
+          "bash": [
+            "base44.*deploy"
+          ]
+        }
+      },
+      {
+        "path": "rules/base44/static-assets-public-dir.md",
+        "type": "correction",
+        "scope": "project",
+        "stack": "base44",
+        "source": "local",
+        "last_evaluated": null,
+        "source_sha": null,
+        "notes": "Base44-specific: public/ assets must pass git-tracked + bundled + CDN Content-Type triple check. Evaluated via evaluate-rule before permanent registration.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "public/",
+            "assets/"
+          ]
+        }
+      },
+      {
+        "path": "rules/concern-routing.md",
+        "type": "steering",
+        "scope": "global",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": null,
+        "source_sha": null,
+        "notes": "Framework routing rule: concerns route from subject matter to skills. Defines procedural gate for wiring concerns into route-workflow and review pipeline. Evaluated via evaluate-rule before permanent registration.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "^concerns/",
+            "scan-concerns"
+          ],
+          "bash": [
+            "scan-concerns"
+          ]
+        }
+      },
+      {
+        "path": "rules/distribution-vs-launch-blocker.md",
+        "type": "steering",
+        "scope": "global",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": null,
+        "source_sha": null,
+        "notes": "Framework business rule: distribution-first principle must not override UX-quality fixes on already-shipped surfaces. Evaluated via evaluate-rule before permanent registration.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "docs/specs/features/"
+          ]
+        }
+      },
+      {
+        "path": "rules/base44/e2e-otp-connector.md",
+        "type": "steering",
+        "scope": "project",
+        "stack": "base44",
+        "source": "local",
+        "last_evaluated": null,
+        "source_sha": null,
+        "notes": "Base44-specific: OTP email authentication connector strategy.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "e2e/.*auth",
+            "otp"
+          ]
+        }
+      },
+      {
+        "path": "rules/cross-ref-workflow-dispatch-coherence.md",
+        "type": "steering",
+        "scope": "global",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": null,
+        "source_sha": null,
+        "notes": "Coherence between cross-ref workflow dispatches.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "\\.github/workflows/"
+          ],
+          "bash": [
+            "gh workflow run.*--ref"
+          ]
+        }
+      },
+      {
+        "path": "rules/build-and-ship-alignment.md",
+        "type": "correction",
+        "scope": "global",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-05-29",
+        "source_sha": null,
+        "notes": "Requires source/artifact/release/store-version alignment before calling mobile or deploy artifacts upload-ready. Added after Example Marketplace Google Play rejected a locally valid AAB because versionCode 31 had already been used.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "android/",
+            "ios/",
+            "build\\.gradle",
+            "Info\\.plist"
+          ],
+          "bash": [
+            "gradle",
+            "versionCode",
+            "\\.aab",
+            "\\.ipa"
+          ]
+        }
+      },
+      {
+        "type": "correction",
+        "scope": "global",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-06-08",
+        "source_sha": null,
+        "notes": "WI-369 D5: insights-report fabrication class (payslip/lawyer doc) + WI-366 recall-drift; TBD+ask contract",
+        "auto_inject": "signal",
+        "path": "rules/no-fabrication.md",
+        "signals": {
+          "paths": [
+            "references/knowledge/",
+            "docs/specs/research-"
+          ],
+          "bash": [
+            "ingest-guide",
+            "research",
+            "payslip",
+            "invoice"
+          ],
+          "content": [
+            "fabricat",
+            "payslip",
+            "lawyer letter",
+            "sample document"
+          ]
+        }
+      },
+      {
+        "path": "rules/runtime-discriminator-first-debugging.md",
+        "type": "correction",
+        "scope": "global",
+        "stack": "universal",
+        "source": "local",
+        "last_evaluated": "2026-07-13",
+        "source_sha": null,
+        "notes": "Origin: example-marketplace WI-RESUME-FREEZE-01 dead-nav \u2014 RR7 startTransition starvation by unconditional high-frequency setState churn; probe-ladder-first for 'UI dead but app alive'. signals.keywords match WRITTEN content (high-frequency listener authorship); signals.bash match debugging-context commands. Cross-model reviewed (Codex FIX-FIRST round: unsupported signals shape repaired, RR version claim made exact, fix prescription softened, origin counts corrected, on-device PASS recorded in product log).",
+        "auto_inject": "signal",
+        "signals": {
+          "keywords": [
+            "\\.on\\(['\\\"](idle|moveend|move|zoom|render)['\\\"]",
+            "watchPosition\\s*\\(",
+            "addEventListener\\(['\\\"](scroll|resize|touchmove|pointermove)['\\\"]"
+          ],
+          "bash": [
+            "chrome://inspect",
+            "adb\\s+logcat",
+            "elementFromPoint",
+            "[wW]ebContentsDebuggingEnabled"
+          ]
+        }
+      }
+    ]
+  },
+  "ownersRegistry": {
+    "_comment": "WI-392: task-class -> owning skill/app. Matched at action time by hooks/svc-owner-inject.mjs (PreToolUse, ADDITIVE \u2014 allow + additionalContext, never blocks). One row per mapping (AC3). Project-specific app owners (e.g. a project's own discovery/admin app) go in that project's .svc/task-owners.json (exempt-class, AC2) using the SAME row shape \u2014 an array of rows, or {entries:[...]}. SIGNAL MATCHING DIFFERS BY SOURCE (Codex+Gemini G6 hardening, ReDoS-proof): GLOBAL `signals.bash`/`signals.paths` here are trusted JS-regex strings (this file is reviewed in-repo); PROJECT `.svc/task-owners.json` signals are matched as LITERAL SUBSTRINGS (never compiled to a regex) so an arbitrary project file can never inject a catastrophic regex into the hot path. Keep GLOBAL patterns high-precision (anchored to specific commands/hosts) to avoid over-firing; in project files just list the literal command/URL/app substring. A project row of the same task_class SHADOWS the global one entirely.",
+    "entries": [
+      {
+        "task_class": "deploy",
+        "owner": "base44-environment",
+        "owner_kind": "skill",
+        "message": "Production deploys are owned by the base44-environment skill \u2014 route through it. Generic CLI deploy commands are blocked by the permission classifier by design; the skill knows the environment-specific deploy + secrets path.",
+        "signals": {
+          "bash": [
+            "\\b(vercel|netlify)\\s+deploy\\b",
+            "\\bnpm\\s+run\\s+deploy\\b",
+            "\\b(wrangler|flyctl|fly)\\s+deploy\\b",
+            "\\bbase44\\b[^\\n]*\\bdeploy\\b"
+          ]
+        }
+      },
+      {
+        "task_class": "browser-verify",
+        "owner": "Playwright browse mode (test-journeys / track-visuals, or the playwright MCP)",
+        "owner_kind": "tool",
+        "message": "Browser/page verification is owned by Playwright browse mode \u2014 use it instead of curl/admin-token probing of an app URL, which hangs and never exercises the rendered page. The skills test-journeys and track-visuals drive it.",
+        "signals": {
+          "bash": [
+            "\\bcurl\\b[^\\n]*\\.base44\\.com",
+            "\\bcurl\\b[^\\n]*\\badmin[-_]?token\\b"
+          ]
+        }
+      }
+    ]
+  },
+  "mandatoryChainOutOfLane": {
+    "review-exec": "Invoked by route-workflow after execute-changeset for every product/framework lane. Enforced via L2 (hooks/git/pre-push.d/10-receipts-complete) and L3 (scripts/svc-reconcile.mjs). Listed in includedSkills but not in any lane.skills array to keep existing chain.position contracts valid."
+  },
+  "expertiseRegistry": {
+    "_comment": "WI-431: the SME-agent expertise spine. One row per domain-SME agent tying it to its current-knowledge bank (references/knowledge/domains/<domain>/), currency window, episodic memory, and the framework stages it can serve. expertise.mjs check enforces parity with each agent frontmatter domain:/expertise: declaration. Agents are added as they are wired to a knowledge bank (the WI-434 fanout).",
+    "entries": [
+      {
+        "agent": "financial-analyst",
+        "domain": "startup-saas-finance",
+        "knowledge": "references/knowledge/domains/startup-saas-finance/",
+        "currency": "domain",
+        "memory_role": "financial-analyst",
+        "memory_kind": "ledger",
+        "stages": [
+          "company.finance",
+          "validate-feature.economics"
+        ]
+      },
+      {
+        "agent": "growth-lead",
+        "domain": "startup-growth-marketing",
+        "knowledge": "references/knowledge/domains/startup-growth-marketing/",
+        "currency": "domain",
+        "memory_role": "growth-lead",
+        "memory_kind": "ledger",
+        "stages": [
+          "company.growth",
+          "landing-page.strategy"
+        ]
+      },
+      {
+        "agent": "market-intel",
+        "domain": "market-intelligence",
+        "knowledge": "references/knowledge/domains/market-intelligence/",
+        "currency": "domain",
+        "memory_role": "market-intel",
+        "memory_kind": "ledger",
+        "stages": [
+          "company.market",
+          "analyze-competitors"
+        ]
+      },
+      {
+        "agent": "product-lead",
+        "domain": "product-discovery-pmf",
+        "knowledge": "references/knowledge/domains/product-discovery-pmf/",
+        "currency": "domain",
+        "memory_role": "product-lead",
+        "memory_kind": "ledger",
+        "stages": [
+          "company.product",
+          "validate-feature"
+        ]
+      },
+      {
+        "agent": "chief-of-staff",
+        "domain": "startup-operating-cadence",
+        "knowledge": "references/knowledge/domains/startup-operating-cadence/",
+        "currency": "domain",
+        "memory_role": "chief-of-staff",
+        "memory_kind": "ledger",
+        "stages": [
+          "company.synthesis"
+        ]
+      },
+      {
+        "agent": "counsel",
+        "domain": "startup-legal-compliance",
+        "knowledge": "references/knowledge/domains/startup-legal-compliance/",
+        "currency": "domain",
+        "memory_role": "counsel",
+        "memory_kind": "ledger",
+        "stages": [
+          "company.legal"
+        ]
+      },
+      {
+        "agent": "security-ops",
+        "domain": "appsec-secops",
+        "knowledge": "references/knowledge/domains/appsec-secops/",
+        "currency": "domain",
+        "memory_role": "security-ops",
+        "memory_kind": "ledger",
+        "stages": [
+          "company.security",
+          "review-security"
+        ]
+      },
+      {
+        "agent": "customer-success",
+        "domain": "customer-success-retention",
+        "knowledge": "references/knowledge/domains/customer-success-retention/",
+        "currency": "domain",
+        "memory_role": "customer-success",
+        "memory_kind": "ledger",
+        "stages": [
+          "company.retention"
+        ]
+      },
+      {
+        "agent": "revops",
+        "domain": "revenue-operations",
+        "knowledge": "references/knowledge/domains/revenue-operations/",
+        "currency": "domain",
+        "memory_role": "revops",
+        "memory_kind": "ledger",
+        "stages": [
+          "company.revenue"
+        ]
+      },
+      {
+        "agent": "comms",
+        "domain": "pr-brand-comms",
+        "knowledge": "references/knowledge/domains/pr-brand-comms/",
+        "currency": "domain",
+        "memory_role": "comms",
+        "memory_kind": "ledger",
+        "stages": [
+          "company.comms"
+        ]
+      },
+      {
+        "agent": "data-collection",
+        "domain": "web-data-collection",
+        "knowledge": "references/knowledge/domains/web-data-collection/",
+        "currency": "domain",
+        "memory_role": "data-collection",
+        "memory_kind": "ledger",
+        "stages": [
+          "company.data"
+        ]
+      },
+      {
+        "agent": "people-ops",
+        "domain": "people-ops-hiring",
+        "knowledge": "references/knowledge/domains/people-ops-hiring/",
+        "currency": "domain",
+        "memory_role": "people-ops",
+        "memory_kind": "ledger",
+        "stages": [
+          "company.people"
+        ]
+      },
+      {
+        "agent": "researcher",
+        "domain": "research-methodology",
+        "knowledge": "references/knowledge/domains/research-methodology/",
+        "currency": "domain",
+        "memory_kind": "source-heuristics",
+        "stages": [
+          "*.research",
+          "uncertainty"
+        ]
+      }
+    ]
+  }
+}

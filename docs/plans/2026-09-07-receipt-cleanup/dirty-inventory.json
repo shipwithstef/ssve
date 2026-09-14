@@ -1,0 +1,54 @@
+{
+  "root": "/home/user/app-workspaces/seriousvibecoding",
+  "branch": "feat/produce-ad-video",
+  "entries": [
+    {
+      "path": ".svc/authorization-events.jsonl",
+      "status": " M",
+      "sha256": "9093b7c8fb8b0b6880436e09a44fbf16898df2f438883f18a7ac7d87fb464b94",
+      "mode": "0o664"
+    },
+    {
+      "path": ".svc/session-contract.jsonl",
+      "status": " M",
+      "sha256": "e0d3b0a4e5daffa8a7cb3ee35802c17a248c55da47596050e114ab7b756da53c",
+      "mode": "0o664"
+    },
+    {
+      "path": "references/knowledge/source-heuristics.global.jsonl",
+      "status": " M",
+      "sha256": "8971c17a1f400288e6956978171015325db316078770b00f48a36c09ad146091",
+      "mode": "0o664"
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-skills-source-layout.sh",
+      "status": " M",
+      "sha256": "249d24ae5c3c46708ef9324b25dd3efb027edcdb10842d95eb369194fb97fec4",
+      "mode": "0o775"
+    },
+    {
+      "path": ".svc/dispatch-log.jsonl",
+      "status": "??",
+      "sha256": "dc22f11559e72f15303ab9bbe09cd81b38b2edf16462724bf4a7a1bc1787ba04",
+      "mode": "0o664"
+    },
+    {
+      "path": ".svc/lane-tasks-WI-FW-UX-IMPROVE-MODE-01.json",
+      "status": "??",
+      "sha256": "9d55d77a333de4f86db06504cda54ff8979d02cd2e96f55e6c809ba67465d4bf",
+      "mode": "0o664"
+    },
+    {
+      "path": "proposals/2026-08-26-framework-improvement-ux-improve-mode-skills.md",
+      "status": "??",
+      "sha256": "8974d7069d6a54699d29146525aa5abec4a5d20893bd0e1121a6b7e47d6e373f",
+      "mode": "0o664"
+    },
+    {
+      "path": "skills/propose-ux-improvements/SKILL.md",
+      "status": "??",
+      "sha256": "db61244d40d2cfa272f1ba3a345a15dcc8c4099803a4e9653a83fce6dcc85bb5",
+      "mode": "0o664"
+    }
+  ]
+}

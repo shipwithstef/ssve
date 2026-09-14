@@ -1,0 +1,1158 @@
+{
+  "schema_version": 1,
+  "wi": "WI-502",
+  "lane": "framework",
+  "status": "completed",
+  "created": "2026-07-20T11:20:39.788Z",
+  "title": "WI-502: canonical operation scope and durable authority",
+  "delivery_tier": {
+    "mode": "full"
+  },
+  "delivery_graph": {
+    "compiler_version": 1,
+    "user_intent": "Correct operation-scope authority and add durable generation-bound controller and child capabilities end to end",
+    "repo_mode": "convert",
+    "change_type": "framework",
+    "lane": "framework",
+    "delivery_mode": "end_to_end",
+    "delivery_tier": {
+      "mode": "full",
+      "selected_by": "route-workflow",
+      "rationale": "Critical authority and containment behavior requires the full framework lane.",
+      "decision_log_ref": ".svc/pipeline-decisions.jsonl",
+      "validation_policy": {
+        "mandatory_skills": [
+          "route-workflow",
+          "diagnose-bug",
+          "write-spec",
+          "design-tech",
+          "explore-solutions",
+          "plan-changeset",
+          "review-plan",
+          "execute-changeset",
+          "review-exec",
+          "audit-implementation",
+          "land-changeset",
+          "verify-promotion"
+        ],
+        "skippable_skills": [],
+        "blocked_behind_explicit_override": []
+      }
+    },
+    "risk_flags": [
+      "auth-sensitive",
+      "concurrency",
+      "high-blast-radius"
+    ],
+    "platform_contracts": [],
+    "solution_confidence": {
+      "required": true,
+      "mode": "cross-model",
+      "status": "satisfied"
+    },
+    "compression": {
+      "ratio": 1,
+      "threshold": 2,
+      "rationale": ""
+    },
+    "evidence_families": {
+      "product": "satisfied",
+      "acceptance_criteria": "satisfied",
+      "journey": "satisfied",
+      "visual": "n/a",
+      "runtime": "satisfied",
+      "plan_review": "satisfied",
+      "code_review": "satisfied",
+      "implementation_audit": "satisfied",
+      "deploy": "n/a",
+      "promotion": "satisfied",
+      "session_forensics": "n/a",
+      "feature_validation_closeout": "n/a",
+      "provider_fidelity": "n/a"
+    },
+    "required_skills": [
+      "route-workflow",
+      "diagnose-bug",
+      "write-spec",
+      "design-tech",
+      "explore-solutions",
+      "plan-changeset",
+      "review-plan",
+      "execute-changeset",
+      "review-exec",
+      "audit-implementation",
+      "land-changeset",
+      "verify-promotion"
+    ],
+    "conditional_mandatory_skills": [],
+    "optional_skills": [],
+    "skipped_skills": [],
+    "verification_tiers": {
+      "local": [
+        "tier-1"
+      ],
+      "runtime": [
+        "headless-process-fixtures",
+        "landlock-containment-probe"
+      ],
+      "production": []
+    },
+    "mutation_history": [
+      {
+        "ts": "2026-07-20T11:20:39.788Z",
+        "source": "route-workflow",
+        "action": "initial_compile",
+        "reason": "Compiled the full framework authority delivery graph."
+      },
+      {
+        "ts": "2026-07-21T00:00:00.000Z",
+        "source": "verify-promotion",
+        "action": "closeout_evidence_sync",
+        "reason": "Recorded promoted-commit AC, behavioral fixture, audit, review, and promotion evidence."
+      },
+      {
+        "ts": "2026-07-21T00:05:00.000Z",
+        "source": "classify-delivery-graph-closeout",
+        "action": "close_as_framework_complete",
+        "reason": "delivery_tier=full; all evidence families and required tasks are closed",
+        "affected_tasks": [
+          12
+        ],
+        "affected_evidence_families": [
+          "product",
+          "acceptance_criteria",
+          "journey",
+          "runtime",
+          "plan_review",
+          "code_review",
+          "implementation_audit",
+          "promotion"
+        ],
+        "validator_proof": "docs/specs/verification/wi-502-promotion.md"
+      }
+    ],
+    "closeout_classification_required": true,
+    "closeout_classification": "framework-complete",
+    "closeout_classification_reasons": [
+      "delivery_tier=full",
+      "all evidence families and required tasks are closed"
+    ],
+    "closeout_delivery_tier": "full"
+  },
+  "persona_coverage": {
+    "status": "not_required",
+    "reason": "Internal framework Enabler for host hook authority, worktree containment, session handover, and delegated execution; no customer-facing persona or visual surface."
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "route-workflow",
+      "subject": "route WI-502 durable authority and operation-scope correction",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-07-20T11:21:29.333Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-07-20T11:21:29.400Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/session-contract.jsonl"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-07-20T11:21:29.500Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/pipeline-decisions.jsonl"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-07-20T11:21:29.600Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-502.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-07-20T11:21:29.700Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/pipeline-decisions.jsonl"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-07-20T11:21:29.800Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-502.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-07-20T11:21:29.900Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/lane-tasks-WI-502.json"
+              }
+            ]
+          }
+        ]
+      },
+      "validation_output": "framework lane selected; solution_confidence_required=true; planning-only stop after review-plan"
+    },
+    {
+      "id": 2,
+      "status": "completed",
+      "skill": "diagnose-bug",
+      "metadata": {
+        "skill": "diagnose-bug",
+        "wi": "WI-502"
+      },
+      "subject": "prove operation-scope authority failures and isolate the enabling framework gaps",
+      "blocked_by": [
+        1
+      ],
+      "process_tasks": [
+        {
+          "id": "2.1",
+          "name": "diagnose-bug|spec-anchor",
+          "status": "completed",
+          "blocked_by": [],
+          "subject": "Anchor expected behavior in owner proposal plus J-FW-05 and prior WI-484/WI-486 authority contracts"
+        },
+        {
+          "id": "2.2",
+          "name": "diagnose-bug|repro-classify",
+          "status": "completed",
+          "blocked_by": [
+            "2.1"
+          ],
+          "subject": "Reproduce false deny and false permit using top-level cwd versus explicit tool workdir and patch target"
+        },
+        {
+          "id": "2.3",
+          "name": "diagnose-bug|reading-list",
+          "status": "completed",
+          "blocked_by": [
+            "2.2"
+          ],
+          "subject": "Target Codex hook context, isolation guard, WI resolver, claim store, and dispatch contracts"
+        },
+        {
+          "id": "2.4",
+          "name": "diagnose-bug|code-read",
+          "status": "completed",
+          "blocked_by": [
+            "2.3"
+          ],
+          "subject": "Classify current workdir, file-target, authority, and delegation surfaces as match, drift, or gap"
+        },
+        {
+          "id": "2.5",
+          "name": "diagnose-bug|fault-isolate",
+          "status": "completed",
+          "blocked_by": [
+            "2.4"
+          ],
+          "subject": "Falsify cwd-only containment with controlled PreToolUse payloads"
+        },
+        {
+          "id": "2.6",
+          "name": "diagnose-bug|root-cause",
+          "status": "completed",
+          "blocked_by": [
+            "2.5"
+          ],
+          "subject": "Record immediate cause, enabling assumption, and missing durable authority lifecycle"
+        },
+        {
+          "id": "2.7",
+          "name": "diagnose-bug|pillar-audit",
+          "status": "completed",
+          "blocked_by": [
+            "2.6"
+          ],
+          "subject": "Audit all eight framework/product pillars and affected artifacts"
+        },
+        {
+          "id": "2.8",
+          "name": "diagnose-bug|pattern-scan",
+          "status": "completed",
+          "blocked_by": [
+            "2.7"
+          ],
+          "subject": "Enumerate every authority consumer and dispatch surface sharing the defect class"
+        },
+        {
+          "id": "2.9",
+          "name": "diagnose-bug|register-disc",
+          "status": "completed",
+          "blocked_by": [
+            "2.8"
+          ],
+          "subject": "Decompose immediate scope correction, lease lifecycle, delegation, and containment rollout"
+        },
+        {
+          "id": "2.10",
+          "name": "diagnose-bug|brief-finalize",
+          "status": "completed",
+          "blocked_by": [
+            "2.9"
+          ],
+          "subject": "Finalize bug brief, verification contract, and learnings"
+        }
+      ],
+      "skill_receipt": {
+        "skill": "diagnose-bug",
+        "loaded_at": "2026-07-20T11:31:04.700Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-Inputs",
+            "ts": "2026-07-20T11:40:28.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-502.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-Reproduction",
+            "ts": "2026-07-20T11:40:28.101Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/bugfix/wi-502-operation-scope-authority-brief.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RootCause",
+            "ts": "2026-07-20T11:40:28.190Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/bugfix/wi-502-operation-scope-authority-brief.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-FixPlan",
+            "ts": "2026-07-20T11:40:28.286Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/wi-502-durable-authority.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-PillarRevisit",
+            "ts": "2026-07-20T11:40:28.383Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-502.md"
+              }
+            ]
+          }
+        ]
+      },
+      "eval_matrix": [
+        {
+          "id": "p1-product-fit",
+          "label": "Product fit",
+          "value": "UNCHANGED — VERIFIED — docs/specs/work-items/WI-502.md:115"
+        },
+        {
+          "id": "p2-journey",
+          "label": "Journey",
+          "value": "UPDATED — WI-502"
+        },
+        {
+          "id": "p3-ac",
+          "label": "Acceptance criteria",
+          "value": "UPDATED — WI-502"
+        },
+        {
+          "id": "p4-ux",
+          "label": "UX",
+          "value": "N/A — headless framework authority guard has no customer interaction surface"
+        },
+        {
+          "id": "p5-ui",
+          "label": "UI",
+          "value": "N/A — no visual components tokens assets or viewport behavior exist"
+        },
+        {
+          "id": "p6-tech",
+          "label": "Tech architecture",
+          "value": "UPDATED — WI-502"
+        },
+        {
+          "id": "p7-cost",
+          "label": "Cost model",
+          "value": "UPDATED — WI-502"
+        },
+        {
+          "id": "p8-ops",
+          "label": "Operations",
+          "value": "UPDATED — WI-502"
+        }
+      ],
+      "output_artifact": "docs/specs/bugfix/wi-502-operation-scope-authority-brief.md",
+      "validation_output": "Three controlled payload repros confirmed; pillar audit, pattern scan, staged correction, and headless proof plan recorded"
+    },
+    {
+      "id": 3,
+      "status": "completed",
+      "skill": "write-spec",
+      "subject": "specify canonical operation scope and durable authority lifecycle",
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "write-spec",
+        "loaded_at": "2026-07-20T11:40:28.614Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-ContextAndModeSelection",
+            "ts": "2026-07-20T11:41:00.780Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-502.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiscussionPreflightAndAlternatives",
+            "ts": "2026-07-20T11:41:00.867Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/decisions/wi-502-durable-authority.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-StoryAcceptanceCriteriaDraft",
+            "ts": "2026-07-20T11:41:00.966Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/wi-502-durable-authority.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ScopeReviewDecisionLog",
+            "ts": "2026-07-20T11:41:01.077Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/decisions/wi-502-durable-authority.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-JourneySyncDependencyQueue",
+            "ts": "2026-07-20T11:41:01.162Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/journeys/J-FW-05-multi-session-contention.feature.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyHandoff",
+            "ts": "2026-07-20T11:41:01.255Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/wi-502-durable-authority.md"
+              }
+            ]
+          }
+        ]
+      },
+      "output_artifact": "docs/specs/features/wi-502-durable-authority.md",
+      "validation_output": "Enabler contract covers invariant/changed behavior, OS/SB/AU/DG acceptance families, J-FW-05 sync, dependencies, and complete pillar matrix"
+    },
+    {
+      "id": 4,
+      "status": "completed",
+      "skill": "design-tech",
+      "subject": "baseline staged authority architecture and migration boundaries",
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "design-tech",
+        "loaded_at": "2026-07-20T11:41:31.535Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-SpecJourneyDiscussionPreflight",
+            "ts": "2026-07-20T11:41:31.646Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/wi-502-durable-authority.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-CodebasePatternAnalysis",
+            "ts": "2026-07-20T11:41:31.748Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/test-evidence/WI-502/framework-surface-inventory.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-ArchitectureAlternativesAndDiagrams",
+            "ts": "2026-07-20T11:41:31.832Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/wi-502-durable-authority.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-CostOpsFeasibilityRiskDesign",
+            "ts": "2026-07-20T11:41:31.914Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/decisions/2026-07-20-wi-502-durable-authority/SOLUTION-CONFIDENCE.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-G4ReviewAndDecisionLogging",
+            "ts": "2026-07-20T11:41:31.994Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/decisions/wi-502-durable-authority.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-BaselinedSpecSelfVerify",
+            "ts": "2026-07-20T11:41:32.076Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/wi-502-durable-authority.md"
+              }
+            ]
+          }
+        ]
+      },
+      "output_artifact": "docs/specs/features/wi-502-durable-authority.md",
+      "validation_output": "BASELINED architecture includes canonical scope, v2 lease state machine, delegation capability, execution graph, failure matrix, migration, cost, and operations"
+    },
+    {
+      "id": 5,
+      "status": "completed",
+      "skill": "explore-solutions",
+      "subject": "challenge the staged architecture against alternatives and world grounding",
+      "blocked_by": [
+        4
+      ],
+      "skill_receipt": {
+        "skill": "explore-solutions",
+        "loaded_at": "2026-07-20T11:41:50.724Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextProblemBrief",
+            "ts": "2026-07-20T11:41:50.824Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/explorations/wi-502-durable-authority/PROBLEM_BRIEF.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ParadigmResearchSolutionMap",
+            "ts": "2026-07-20T11:41:50.909Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/explorations/wi-502-durable-authority/SOLUTION_MAP.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-ACTradeoffAnalysis",
+            "ts": "2026-07-20T11:41:51.004Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/explorations/wi-502-durable-authority/ANALYSIS.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-FinalistPrototypeComparison",
+            "ts": "2026-07-20T11:41:51.096Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/explorations/wi-502-durable-authority/COMPARISON.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-DecisionAndTechDesignImpact",
+            "ts": "2026-07-20T11:41:51.188Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/explorations/wi-502-durable-authority/DECISION.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyAndContinuation",
+            "ts": "2026-07-20T11:41:51.294Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/decisions/2026-07-20-wi-502-durable-authority/SOLUTION-CONFIDENCE.md"
+              }
+            ]
+          }
+        ]
+      },
+      "output_artifact": "docs/specs/explorations/wi-502-durable-authority/DECISION.md",
+      "validation_output": "Four paradigms and seven approaches compared; staged local capability system selected; SQLite retained only as CAS fallback"
+    },
+    {
+      "id": 6,
+      "status": "completed",
+      "skill": "plan-changeset",
+      "subject": "author and mechanically simulate the WI-502 implementation plan",
+      "blocked_by": [
+        5
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-07-20T11:43:53.182Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-07-20T11:46:56.547Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/test-evidence/WI-502/framework-surface-inventory.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-07-20T11:46:56.635Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/wi-502-durable-authority.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-07-20T11:46:56.737Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-20-wi502-durable-authority/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-07-20T11:46:56.841Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-20-wi502-durable-authority/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-07-20T12:27:42.733Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-20-wi502-durable-authority/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-07-20T12:27:42.765Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-20-wi502-durable-authority/manifest.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-20T12:27:42.798Z"
+    },
+    {
+      "id": 7,
+      "status": "completed",
+      "skill": "review-plan",
+      "subject": "run canonical Fable adversarial review and disposition findings",
+      "blocked_by": [
+        6
+      ],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-07-20T12:27:42.882Z",
+        "loaded_via": "codex-load-skill",
+        "validation_output": "Three Fable review rounds completed and all findings dispositioned in review-log.yaml",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-07-20T12:27:42.922Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/plans/2026-07-20-wi502-durable-authority/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-07-20T12:27:42.957Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/plans/2026-07-20-wi502-durable-authority/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-07-20T12:27:42.991Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-20-wi502-durable-authority/review-round1-findings.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-07-20T12:27:43.025Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-20-wi502-durable-authority/review-round3-findings.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-07-20T12:27:43.060Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-20-wi502-durable-authority/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-20T12:27:43.094Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/lane-tasks-WI-502.json"
+              }
+            ]
+          }
+        ]
+      },
+      "validation_output": "Three Fable review rounds completed and all findings dispositioned in review-log.yaml",
+      "completed_at": "2026-07-20T12:27:43.127Z"
+    },
+    {
+      "id": 8,
+      "status": "completed",
+      "skill": "execute-changeset",
+      "subject": "implement only after the reviewed planning checkpoint",
+      "blocked_by": [
+        7
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-07-20T12:41:46.406Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-07-20T12:41:46.453Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/WI-502-execute-skill-load.txt"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-07-20T14:43:05.343Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/test-evidence/WI-502/declared-file-set.txt"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-07-20T14:43:05.373Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/plans/2026-07-20-wi502-durable-authority/progress.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-07-20T14:43:05.404Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/plans/2026-07-20-wi502-durable-authority/progress.md"
+              }
+            ]
+          }
+        ],
+        "validation_output": "Focused authority, delegation, containment, Codex integrity, and full Tier-1 gates completed; 258 scripts pass with two pre-existing baseline validators."
+      },
+      "completed_at": "2026-07-20T14:49:28.382Z"
+    },
+    {
+      "id": 9,
+      "status": "completed",
+      "skill": "review-exec",
+      "subject": "review the finished implementation diff",
+      "blocked_by": [
+        8
+      ],
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-07-20T14:51:41.061Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-07-20T17:12:58.749Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-502-durable-authority-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-07-20T17:12:58.800Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/external-review-artifacts/WI-502-exec-round3/receipt.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-07-20T17:12:58.841Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-502-durable-authority-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-IterationLoop",
+            "ts": "2026-07-20T17:12:58.881Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-502-durable-authority-exec-review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerdictAndReceiptFinalize",
+            "ts": "2026-07-20T17:12:58.924Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-502-durable-authority-exec-review-log.yaml"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-20T17:12:58.962Z"
+    },
+    {
+      "id": 10,
+      "status": "completed",
+      "skill": "audit-implementation",
+      "subject": "audit implementation coverage and authority invariants",
+      "blocked_by": [
+        9
+      ],
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-07-20T17:13:27.311Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextScopeConcern",
+            "ts": "2026-07-20T17:33:23.838Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/audit/wi-502-durable-authority-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecialistDispatchCoverageLedger",
+            "ts": "2026-07-20T17:33:23.891Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-502-durable-authority-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-HypothesisGeneration",
+            "ts": "2026-07-20T17:33:23.943Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-502-durable-authority-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-SubsystemBehaviorAudit",
+            "ts": "2026-07-20T17:33:23.999Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/security/wi-502-durable-authority-review.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-FindingsConvergenceReport",
+            "ts": "2026-07-20T17:33:24.055Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-502-durable-authority-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-20T17:33:24.119Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/audit/wi-502-durable-authority-analysis.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-20T17:33:24.174Z"
+    },
+    {
+      "id": 11,
+      "status": "completed",
+      "skill": "land-changeset",
+      "subject": "land only after implementation gates pass",
+      "blocked_by": [
+        10
+      ],
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-07-20T23:35:28.032Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-07-20T23:41:15.145Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/plans/2026-07-20-wi502-durable-authority/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-07-20T23:41:15.182Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/test-evidence/WI-502/declared-file-set.txt"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-07-20T23:41:15.221Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/plans/2026-07-20-wi502-durable-authority/progress.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-PushPrCreation",
+            "ts": "2026-07-20T23:41:15.261Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/reviews/wi-502-durable-authority-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-MergeDecisionCleanup",
+            "ts": "2026-07-20T23:41:15.306Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/audit/wi-502-durable-authority-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SpecStatusSelfVerify",
+            "ts": "2026-07-20T23:41:15.344Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/features/wi-502-durable-authority.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-20T23:41:15.385Z"
+    },
+    {
+      "id": 12,
+      "status": "completed",
+      "skill": "verify-promotion",
+      "subject": "verify promoted authority behavior across supported hosts",
+      "blocked_by": [
+        11
+      ],
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-07-20T23:41:15.478Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-07-20T23:52:21.737Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/verification/wi-502-promotion.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-07-20T23:52:21.773Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-502.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-07-20T23:52:21.807Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/verification/wi-502-promotion.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-07-20T23:52:21.841Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/verification/wi-502-promotion.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-20T23:52:21.879Z"
+    }
+  ],
+  "flags": [
+    "solution_confidence_required",
+    "solution_confidence_mode:design_auto",
+    "planning_checkpoint_after_review_plan"
+  ]
+}

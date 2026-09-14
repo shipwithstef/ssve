@@ -1,0 +1,90 @@
+review_log:
+  plan: docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/manifest.md
+  tier1:
+    script: scripts/verify-plan-mechanical.sh
+    exit_code: 0
+    issues: 0
+    log: docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/mechanical-gate.log
+    note: rev-1 run had 6 issues (missing sections + unresolved paths); fixed in rev 2/3; final run PASS
+  tier2:
+    reviewer: codex
+    reviewer_family: openai
+    rounds: 4
+    rubric_score: not-emitted-by-reviewer (codex exec free-form; findings-based verdicts only — see raw captures)
+    raw_captures:
+      - review-round1-codex-raw.txt
+      - review-round2-codex-raw.txt
+      - review-round3-codex-raw.txt
+      - review-round4-codex-raw.txt
+    findings:
+      # round 1 (verdict FAIL)
+      - {id: R1-1, sev: HIGH, finding: external-state lifecycle absent}
+      - {id: R1-2, sev: HIGH, finding: mechanical plan gate fails (6 issues)}
+      - {id: R1-3, sev: HIGH, finding: references/knowledge exclusion too broad (live routing files inside)}
+      - {id: R1-4, sev: HIGH, finding: analyze-marketing L124 live skill-name ref missed}
+      - {id: R1-5, sev: MEDIUM, finding: concerns/REGISTRY.json is generated; seeder missed}
+      - {id: R1-6, sev: MEDIUM, finding: validation cannot catch worst failure; routing smoke vague}
+      - {id: R1-7, sev: MEDIUM, finding: AC4 ad-strategist unresolved}
+      - {id: R1-8, sev: HIGH, finding: lane compliance incomplete}
+      # round 2 (verdict FAIL)
+      - {id: R2-1, sev: HIGH, finding: exec sequence wrong tree; planning artifacts untracked; branch name fails WI detection}
+      - {id: R2-2, sev: HIGH, finding: machine flip decoupled from landing; soft assertions; kimi count wrong; taxonomy walk absent}
+      - {id: R2-3, sev: HIGH, finding: path-level allowlist hides missed edits; scan non-gating; concierge + results files unclassified}
+      - {id: R2-4, sev: HIGH, finding: lane graph invalid; receipt ordering noncanonical}
+      - {id: R2-5, sev: MEDIUM, finding: WI-478 lacks explicit ads-pointer AC; planning artifacts not in file set}
+      - {id: R2-6, sev: MEDIUM, finding: git diff --stat cannot prove only-the-rename}
+      # round 3 (verdict FAIL)
+      - {id: R3-1, sev: HIGH, finding: grep -o drops .md so Class-D allowlist rows can never match; audit-coverage row too broad}
+      - {id: R3-2, sev: HIGH, finding: "&& lists and explicit exit defeat set -e / ERR trap (fetch, test -d, collision exit, mirror assertions)"}
+      - {id: R3-3, sev: HIGH, finding: collision check runs after deletion (destructive, no rollback)}
+      - {id: R3-4, sev: HIGH, finding: trap removed before V3; worktree lifecycle claim contradicts land-changeset}
+      - {id: R3-5, sev: HIGH, finding: "phase receipts P6,P1,P1,P2..P6 noncanonical; review-log.yaml lacks required schema"}
+      - {id: R3-6, sev: MEDIUM, finding: pointer assertions missing sms / comms mirror / growth-lead pointers}
+      - {id: R3-7, sev: MEDIUM, finding: "changed-lines <= 6 permits unrelated registry changes"}
+      # round 4 (verdict FAIL)
+      - {id: R4-1, sev: HIGH, finding: "rollback set +e fail-open (probe: printed ROLLED_BACK then SURVIVED); test -z masks failing find", evidence: review-round4-codex-raw.txt}
+      - {id: R4-2, sev: HIGH, finding: "grep -c | grep -qx 0 fails under pipefail exactly when count is 0 (reproduced)", evidence: review-round4-codex-raw.txt}
+      - {id: R4-3, sev: HIGH, finding: "skill-marketplaces dir/token allowlist row hides blueprint-26 misses (grep -o token loses line context)", evidence: review-round4-codex-raw.txt}
+      - {id: R4-4, sev: HIGH, finding: "review-log lacks rubric_score/evidence structure; tier3 wrongly disabled — infra path (scripts/, agents/, .svc/) makes tier3 MANDATORY", evidence: review-round4-codex-raw.txt}
+      - {id: R4-5, sev: MEDIUM, finding: "pointer assertions pre-satisfiable (emails/listening match pre-migration prose); .claude revops emails assert missing", evidence: review-round4-codex-raw.txt}
+      - {id: R4-6, sev: MEDIUM, finding: "V0 never records baseline (SHA/cleanliness/writability/pre-dangling); rollback hardcodes v1.9.0; fetch is not read-only", evidence: review-round4-codex-raw.txt}
+  responses:
+    - {id: R1-1, response: ACCEPT, action: "§ External State Lifecycle added (15-entry taxonomy walk, coupling, relink, rollback, alternatives)"}
+    - {id: R1-2, response: ACCEPT, action: "Execution Command Sequence + Prerequisite Alignment Matrix added; paths fixed; gate PASS"}
+    - {id: R1-3, response: ACCEPT, action: "blueprints 24-26 added; allowlist narrowed to coreyhaines-martech dir"}
+    - {id: R1-4, response: ACCEPT, action: "blueprint 27 + dedicated negative assertion"}
+    - {id: R1-5, response: ACCEPT, action: "blueprints 16/17/18: source + seeder + regenerate"}
+    - {id: R1-6, response: ACCEPT, action: "repo-wide gating scan vs allowlist + concrete assertions"}
+    - {id: R1-7, response: ACCEPT, action: "WI-478 filed + indexed"}
+    - {id: R1-8, response: ACCEPT, action: "skip decisions logged; design-tech/explore-solutions completed-inline with receipts"}
+    - {id: R2-1, response: ACCEPT, action: "two-commit strategy (commit P pre-worktree); ROOT/WT + cd; branch WI-477-coreyhaines-v2-migration"}
+    - {id: R2-2, response: ACCEPT, action: "flip moved post-merge under trap; counts corrected (codex 37, kimi 39); full taxonomy walk"}
+    - {id: R2-3, response: ACCEPT, action: "occurrence-level allowlist; gating awk scan; blueprint 29 (capability-concierge.mjs); results files classified historical"}
+    - {id: R2-4, response: ACCEPT, action: "receipts via CLI; stale skip summary removed; validate exits 0"}
+    - {id: R2-5, response: ACCEPT, action: "WI-478 explicit ads-pointer AC; File Set section"}
+    - {id: R2-6, response: ACCEPT, action: "content-diff assertions"}
+    - {id: R3-1, response: ACCEPT, action: "scanner pattern gains product-marketing-context\\.md as leftmost-longest alternative; all Class-D rows require the .md form incl. audit-coverage"}
+    - {id: R3-2, response: ACCEPT, action: "all assertions rewritten as separate simple commands; exact-SHA rev-parse assert; explicit rollback+false instead of bare exit inside trap scope"}
+    - {id: R3-3, response: ACCEPT, action: "collision preflight scans all 5 farms against the ls-tree name set BEFORE checkout/deletion; -e and -L both collide unless an addon link scheduled for replacement"}
+    - {id: R3-4, response: ACCEPT, action: "trap removal moved after V3; worktree-lifecycle claim corrected (land-changeset removes worktree post-merge — safe because host symlinks target the main checkout, not the worktree)"}
+    - {id: R3-5, response: ACCEPT, action: "phases_executed canonicalized to P1..P6 (repair logged in pipeline-decisions); review-log.yaml rewritten to this canonical schema"}
+    - {id: R3-6, response: ACCEPT, action: "assertions extended: sms+prospecting+emails in both revops mirrors; public-relations+listening in both comms mirrors; marketing-plan+marketing-loops+ads in both growth-lead mirrors"}
+    - {id: R3-7, response: ACCEPT, action: "registry diff asserts exactly 2 content lines: 1 removed containing pricing-strategy, 1 added containing pricing"}
+  responses_round4:
+    - {id: R4-1, response: ACCEPT, action: "on_err handler: captures rc, disarms trap, set +e scoped to handler, restores RECORDED baseline, verifies, exits rc; find outputs captured in standalone assignments then tested", justification: "reviewer probe demonstrated fail-open; fail-closed is non-negotiable for machine-global mutation"}
+    - {id: R4-2, response: ACCEPT, action: "absence assert rewritten as ! grep -q", justification: "reviewer reproduced the pipefail failure in the desired state"}
+    - {id: R4-3, response: ACCEPT, action: "scan switched to line-context (grep -rn, awk matches line remainder); skill-marketplaces row narrowed to [@/]pricing-strategy third-party identifiers", justification: "installed-pack mentions carry no @/ prefix, so blueprint-26 misses now FAIL the scan"}
+    - {id: R4-4, response: ACCEPT, action: "this schema upgrade + tier3 marked triggered/mandatory and dispatched to AGY (google family)", justification: "plan touches scripts/, agents/, .svc/ — infra path per review-plan SKILL"}
+    - {id: R4-5, response: ACCEPT, action: "exact backticked pointer expressions defined in blueprints 11-13 and asserted in both mirrors, plus negative asserts (! grep email-sequence) that cannot pass pre-migration", justification: "assertions must prove the migration happened, not that prose existed"}
+    - {id: R4-6, response: ACCEPT, action: "V0 records BASE_SHA + asserts clean clone + farm existence/writability + zero pre-dangling; on_err restores recorded SHA; preflight wording corrected to non-destructive", justification: "reruns and drifted starts must restore actual pre-run state"}
+  tier3:
+    triggered: true
+    trigger_reason: infra_path
+    reviewer: agy
+    reviewer_family: google
+    status: COMPLETED 2026-07-13
+    raw_capture: review-tier3-agy-raw.txt
+    ruling: agrees_with_orchestrator
+    verdict: SOUND-TO-EXECUTE (zero findings; all five round-4 remediation controls verified sound)
+  terminal_state: REVISED_AND_REVIEWED
+  commit_sha: manifest-blob:ccd66d7289504dab1800574f82fa75381e0d1f2a (plan content at promotion; containing commit is commit P — a commit cannot embed its own sha)

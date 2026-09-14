@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "wi": "WI-551",
+  "source_proposal": "proposals/done/2026-08-17-framework-improvement-native-host-dispatch-policy.md",
+  "status": "implemented",
+  "coverage": [
+    {
+      "proposal_item": "Owner-controlled native dispatch policy for host/model selection",
+      "status": "covered",
+      "evidence": [
+        "scripts/resolve-dispatch.mjs",
+        "schemas/dispatch-policy.schema.json"
+      ],
+      "note": "Landed with 50a3440 host-parity remediations."
+    }
+  ]
+}

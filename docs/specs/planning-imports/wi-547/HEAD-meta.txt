@@ -1,0 +1,5 @@
+7bca62f3ef5e6a3eb2e0eff9c10694a2b44fb8c3
+fix(receipts): relocate external-review evidence without rewriting AGY bytes (#11)
+origin/main after PR #11
+2026-08-17
+check-chain-receipts --sha f27a143a => ok:true from .worktrees/verify-WI-547-on-main

@@ -1,0 +1,121 @@
+{
+  "verdict": "fail",
+  "rubric_score": 4,
+  "reviewer": "gpt-5.6-sol-high",
+  "reviewer_family": "openai",
+  "transport": "cursor-agent",
+  "findings": [
+    {
+      "id": "SOL-001",
+      "severity": "HIGH",
+      "lens": "release",
+      "claim": "The planning-only scope guard is fail-open and does not prevent pre-staged runtime files from entering the commit.",
+      "analysis": "The runtime-path check ends with `|| true`, so it succeeds even when runtime diffs exist. The later path-scoped `git add` does not remove files already staged before the sequence, while `git diff --cached --check` checks formatting rather than the allowed path set. T5 can therefore commit runtime changes while reporting planning-only success.",
+      "evidence": [
+        "docs/plans/2026-08-17-wi548-host-parity-plan/manifest.md:130-146"
+      ],
+      "proposed_fix": "Remove `|| true` and add a fail-closed staged-path allowlist immediately before commit that rejects every path outside `docs/specs/**`, `docs/plans/**`, and `proposals/**`."
+    },
+    {
+      "id": "SOL-002",
+      "severity": "HIGH",
+      "lens": "product",
+      "claim": "Several authoritative artifacts still treat PR #10 as open and WI-547 as in progress despite both being landed.",
+      "analysis": "The manifest and index correctly record PR #10 and WI-547 as landed, and the merge-base is the required `223436ab`. However, the reconciliation base and unblock section, architecture rollback, solution-confidence current-state and action packet, feature dependency text, and WI-548 context still describe an open PR #10, an intact WI-547 worktree, or a future rebase. These contradictory instructions can cause re-closeout or obsolete rollback work.",
+      "evidence": [
+        "git merge-base HEAD origin/main == 223436abe5124e6d9852551d249efd855759833b",
+        "docs/specs/architecture/wi-548-reconciliation.md:6",
+        "docs/specs/architecture/wi-548-reconciliation.md:91-121",
+        "docs/specs/architecture/wi-548-portable-outcome-capability-adapters.md:105-109",
+        "docs/specs/decisions/2026-08-17-wi-548-host-parity/SOLUTION-CONFIDENCE.md:32-37",
+        "docs/specs/decisions/2026-08-17-wi-548-host-parity/SOLUTION-CONFIDENCE.md:119-128",
+        "docs/specs/features/framework-portable-host-parity.md:116-121",
+        "docs/specs/work-items/WI-548.md:11-29"
+      ],
+      "proposed_fix": "Rebase every current-state, rollback, dependency, and closeout statement onto the landed reality: WI-547 is immutable VERIFIED-L3, PR #10 is merged, and neither has remaining execution in this DAG."
+    },
+    {
+      "id": "SOL-003",
+      "severity": "HIGH",
+      "lens": "coverage",
+      "claim": "AC-548-5 is marked complete although WI-545 and WI-546 are not implementation-ready child specifications.",
+      "analysis": "AC-548-5 requires each independently landable child to have ACs, files, tests, rollback, and cost notes. WI-545 has broad scope and affected files but no enumerated ACs, deterministic test plan, rollback, or cost section. WI-546 has broad scope but no enumerated ACs, rollback, provider-cost section, or exact fixture commands. T2 validates only that listed items have rows, which cannot establish AC-548-5.",
+      "evidence": [
+        "docs/specs/work-items/WI-548.md:32-42",
+        "docs/plans/2026-08-17-wi548-host-parity-plan/manifest.md:63-87",
+        "docs/specs/work-items/WI-545.md:17-82",
+        "docs/specs/work-items/WI-546.md:14-102"
+      ],
+      "proposed_fix": "Add explicit AC, affected-file, focused-test, rollback, and provider-cost sections to WI-545 and WI-546, then make T2 validate those sections rather than row existence."
+    },
+    {
+      "id": "SOL-004",
+      "severity": "HIGH",
+      "lens": "determinism",
+      "claim": "The child dependency DAG is contradictory and cannot be scheduled deterministically.",
+      "analysis": "WI-546 declares `Depends on: —` while its status and reconciliation require multiple predecessors. The reconciliation makes WI-552 conditional using the undefined phrase `if restart fixtures are in the wave`, yet the capability matrix requires restart continuation in the final acceptance wave. WI-551 is required to prevent hidden remapping and is a prerequisite of WI-552, but is omitted from WI-546's stated prerequisite set. WI-553 is shown parallel in one ordering without a clear landing-boundary relationship.",
+      "evidence": [
+        "docs/specs/work-items/WI-546.md:4-11",
+        "docs/specs/architecture/wi-548-reconciliation.md:55-81",
+        "docs/plans/2026-08-17-wi548-host-parity-plan/manifest.md:198-202",
+        "docs/specs/architecture/wi-548-capability-matrix.md:43-51",
+        "docs/specs/work-items/WI-552.md:9-12"
+      ],
+      "proposed_fix": "Define one canonical DAG with explicit hard and optional edges. State mechanically whether WI-546 depends on WI-551 and WI-552, define the condition controlling restart fixtures, and mirror those edges in every child header, the manifest, and reconciliation."
+    },
+    {
+      "id": "SOL-005",
+      "severity": "HIGH",
+      "lens": "failure",
+      "claim": "WI-550 does not require a concurrent-writer proof for its atomic receipt-merge claim.",
+      "analysis": "The architecture requires atomic sibling merging, but WI-550 tests only sequential writes and same-key overwrite rejection. Two processes writing distinct WI keys to the same notes envelope can still race through read-modify-write and lose one receipt while all listed sequential fixtures pass.",
+      "evidence": [
+        "docs/specs/architecture/wi-548-portable-outcome-capability-adapters.md:53-57",
+        "docs/specs/architecture/wi-548-contract-map.md:9",
+        "docs/specs/work-items/WI-550.md:33-41"
+      ],
+      "proposed_fix": "Add an AC defining the lock/CAS/retry primitive and a barrier-synchronized concurrent-writer fixture proving both distinct-WI receipts survive or one writer fails explicitly without data loss."
+    },
+    {
+      "id": "SOL-006",
+      "severity": "HIGH",
+      "lens": "release",
+      "claim": "Several child rollback plans deliberately restore the false-success behavior the program is intended to eliminate.",
+      "analysis": "WI-550 rollback restores type-only keys and therefore known last-wins corruption. WI-551 rollback restores prior host tables even though the current path silently remaps unknown hosts, while prose merely says not to reintroduce that behavior. WI-549 removes the shared resolver without defining the replacement that preserves fail-closed missing-policy behavior. These are warnings, not executable safe rollback procedures.",
+      "evidence": [
+        "docs/specs/work-items/WI-549.md:47-57",
+        "docs/specs/work-items/WI-550.md:53-63",
+        "docs/specs/work-items/WI-551.md:53-62"
+      ],
+      "proposed_fix": "Specify safety-preserving rollback states: disable new writes while retaining composite reads for WI-550, preserve explicit unknown-host refusal for WI-551, and retain a minimal common-dir fail-closed resolver for WI-549."
+    },
+    {
+      "id": "SOL-007",
+      "severity": "MEDIUM",
+      "lens": "authority",
+      "claim": "T4 is recorded as promoted even though its declared launcher-receipt checkpoint is absent and its mechanical evidence is disposable.",
+      "analysis": "The manifest requires a review log plus launcher receipt. The review log records a launcher exit and a `/tmp` mechanical log but no durable receipt path or digest binding the mechanical result, manifest tree, and review result. It then declares `PROMOTED_WITH_DISPUTES` while T5, the PR URL, and the owner gate remain incomplete. This creates a false terminal state even though the stated mechanical pass itself is accepted as factual.",
+      "evidence": [
+        "docs/plans/2026-08-17-wi548-host-parity-plan/manifest.md:65-73",
+        "docs/plans/2026-08-17-wi548-host-parity-plan/manifest.md:152-167",
+        "docs/plans/2026-08-17-wi548-host-parity-plan/review-log.yaml:20-31",
+        "docs/plans/2026-08-17-wi548-host-parity-plan/review-log.yaml:138-145"
+      ],
+      "proposed_fix": "Bind T4 to a durable review receipt containing the reviewed tree or manifest digest and mechanical result digest. Use a review-complete state rather than PROMOTED until T5 actually opens the planning PR."
+    },
+    {
+      "id": "SOL-008",
+      "severity": "MEDIUM",
+      "lens": "determinism",
+      "claim": "The finalization barrier does not define which receipt set must validate at each implementation, promotion, closeout, Stop, and VERIFIED transition.",
+      "analysis": "The architecture names several SHA classes, while WI-550 reduces the rule to the exact closeout SHA. No matrix specifies required receipt types, WI identity, phase, target SHA, and consumer for each transition. An implementation can therefore validate a convenient valid SHA while omitting the receipts belonging to the actual transition.",
+      "evidence": [
+        "docs/specs/work-items/WI-546.md:50-56",
+        "docs/specs/work-items/WI-550.md:15-19",
+        "docs/specs/work-items/WI-550.md:33-41",
+        "docs/specs/architecture/wi-548-contract-map.md:11-17"
+      ],
+      "proposed_fix": "Add a transition matrix mapping every completion consumer to its canonical SHA source, required receipt identities, allowed legacy projection, and fail-closed behavior."
+    }
+  ]
+}

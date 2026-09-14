@@ -1,0 +1,468 @@
+{
+  "wi": "WI-360",
+  "lane": "framework",
+  "status": "completed",
+  "created": "2026-06-07T05:40:44Z",
+  "delivery_graph": {
+    "tier": "end_to_end",
+    "autorun": true,
+    "source": "route-workflow WI-360",
+    "speed_levers": "reuse gated-push suite evidence; background model calls; single-round-default reviews (full escalation on dispute/infra-surprise)",
+    "closeout_classification": "framework-complete",
+    "closeout_classification_reasons": [
+      "delivery_tier=undeclared",
+      "all evidence families and required tasks are closed"
+    ],
+    "closeout_delivery_tier": "undeclared",
+    "mutation_history": [
+      {
+        "ts": "2026-06-07T06:31:38.910Z",
+        "source": "classify-delivery-graph-closeout",
+        "action": "close_as_framework_complete",
+        "reason": "delivery_tier=undeclared; all evidence families and required tasks are closed",
+        "affected_tasks": [],
+        "affected_evidence_families": [],
+        "validator_proof": "scripts/classify-delivery-graph-closeout.mjs --write"
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "route-workflow",
+      "subject": "route-workflow: route WI-360 quick-fix carve-out to framework lane full chain",
+      "status": "completed",
+      "metadata": {
+        "skill": "route-workflow",
+        "description": "Invoke: /route-workflow"
+      },
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-06-07T05:40:44.482Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-06-07T05:40:44.642Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-session-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-06-07T05:40:44.687Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-intent.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-06-07T05:40:44.741Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-concern-gate.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-06-07T05:40:44.788Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-self-verify.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-06-07T05:40:44.836Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-360.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-06-07T05:40:44.882Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-360.json"
+              }
+            ]
+          }
+        ],
+        "output_artifact": ".svc/lane-tasks-WI-360.json",
+        "validation_output": "routed: 9-task graph, claim, concerns none, design-tech skip, levers declared"
+      },
+      "completed_at": "2026-06-07T05:40:45.033Z"
+    },
+    {
+      "id": 2,
+      "skill": "plan-changeset",
+      "subject": "Plan: quick-fix-eligibility carve-out (exempt-class real; protected paths still refuse; confirm Phase-0 broad-waiver semantics)",
+      "status": "completed",
+      "metadata": {
+        "skill": "plan-changeset",
+        "description": "Invoke: /plan-changeset — ground FIRST: current eligibility semantics incl. the all-markdown waiver that auto-judged the 26-file Phase-0 commit eligible; carve-out deliberate not accidental; tier-1 test BOTH directions"
+      },
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-06-07T05:40:45.147Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-06-07T05:45:08.384Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-archetype.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-06-07T05:45:08.513Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-scope.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-06-07T05:45:08.559Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-07-wi-360-quick-fix-carve-out/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-06-07T05:45:08.603Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-simulation.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-06-07T05:45:08.648Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-adversarial.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-06-07T05:45:08.696Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-self-verify.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-06-07-wi-360-quick-fix-carve-out/manifest.md",
+        "validation_output": "SIMULATED; sim 7/7 + mech exit 0 first-pass; adversarial 10/10; binding scope addition grounded in dfe22a00 receipt evidence"
+      },
+      "completed_at": "2026-06-07T05:45:08.776Z"
+    },
+    {
+      "id": 3,
+      "skill": "review-plan",
+      "subject": "G2 adversarial plan review",
+      "status": "completed",
+      "metadata": {
+        "skill": "review-plan",
+        "description": "Invoke: /review-plan — codex primary single-round default; tier-3 only on dispute/infra-surprise"
+      },
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-06-07T05:45:08.862Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-06-07T05:54:04.754Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-07-wi-360-quick-fix-carve-out/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-06-07T05:54:04.791Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/plan-external-state-check.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-06-07T05:54:04.825Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "/tmp/wi360-g2-gem-out.txt"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-06-07T05:54:04.857Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-07-wi-360-quick-fix-carve-out/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-06-07T05:54:04.887Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-06-07-wi-360-quick-fix-carve-out/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-06-07T05:54:04.917Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-plan-self-verify.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-06-07-wi-360-quick-fix-carve-out/review-log.yaml",
+        "validation_output": "APPROVED: gemini 95, 1 LOW rejected (types line-cited); codex hook-corrupted -> gemini per allowlist; tier-3 not triggered"
+      },
+      "completed_at": "2026-06-07T05:54:04.980Z"
+    },
+    {
+      "id": 4,
+      "skill": "execute-changeset",
+      "subject": "Execute in worktree (TDD both-directions)",
+      "status": "completed",
+      "metadata": {
+        "skill": "execute-changeset",
+        "description": "Invoke: /execute-changeset"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-06-07T05:54:05.043Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-06-07T05:59:08.515Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-preflight.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-06-07T05:59:08.548Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-apply.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-06-07T05:59:08.582Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-verification.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-06-07T05:59:08.615Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/execute-changeset-checkpoint.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": ".worktrees/feature-wi-360-quick-fix-carve-out (4 files @ 3489b227)",
+        "validation_output": "RED 30e4c68c (6-fail) -> GREEN 3489b227 (12/12); suite 197/197; lint 0; diff EXACT-4; validator self-pollution fix found+synced"
+      },
+      "completed_at": "2026-06-07T06:02:31.706Z"
+    },
+    {
+      "id": 5,
+      "skill": "review-exec",
+      "subject": "G6 cross-model exec review",
+      "status": "completed",
+      "metadata": {
+        "skill": "review-exec",
+        "description": "Invoke: /review-exec — codex single-round default"
+      },
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-06-07T06:02:31.771Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-06-07T06:21:12.387Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-exec-selfreview.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "/tmp/wi360-g6-out.txt + r2 + tiebreak (review-log g6_exec block)",
+        "validation_output": "G6: rename guard fixed+proven (D7); dynamic binding (D8/D8b); copy-residual rejected w/ gemini tie-break reject-upheld; 15/15; suite 197/197"
+      },
+      "completed_at": "2026-06-07T06:21:12.462Z"
+    },
+    {
+      "id": 6,
+      "skill": "audit-implementation",
+      "subject": "Audit (light)",
+      "status": "completed",
+      "metadata": {
+        "skill": "audit-implementation",
+        "description": "Invoke: /audit-implementation — reuse gated-push suite run as evidence when SHA matches"
+      },
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-06-07T06:21:12.528Z",
+        "loaded_via": "manual",
+        "output_artifact": "pipeline-decisions audit entry",
+        "validation_output": "mode=light: scope EXACT-4; residue 0; suite 197/197 @ HEAD (reused, SHA-matched); READY TO LAND"
+      },
+      "completed_at": "2026-06-07T06:21:12.631Z"
+    },
+    {
+      "id": 7,
+      "skill": "land-changeset",
+      "subject": "Land via PR (single enveloped landing commit)",
+      "status": "completed",
+      "metadata": {
+        "skill": "land-changeset",
+        "description": "Invoke: /land-changeset"
+      },
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-06-07T06:21:12.692Z",
+        "loaded_via": "manual",
+        "output_artifact": "PR #32 -> squash 1505ff65",
+        "validation_output": "gated push clean; merged via wrapper; envelope landing+squash; notes synced; cleanup done"
+      },
+      "completed_at": "2026-06-07T06:31:38.776Z"
+    },
+    {
+      "id": 8,
+      "skill": "verify-promotion",
+      "subject": "Verify (G7) + live both-direction push proof",
+      "status": "completed",
+      "metadata": {
+        "skill": "verify-promotion",
+        "description": "Invoke: /verify-promotion — the closeout push itself = exempt-class live proof"
+      },
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-06-07T06:31:38.606Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-06-07T06:31:38.640Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-P1-PromotionEvidence.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-06-07T06:31:38.677Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-P2-SpecACVerification.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-06-07T06:31:38.712Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-P3-RuntimeRegression.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-06-07T06:31:38.743Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/verify-promotion-P4-StateCloseout.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/specs/work-items/WI-360.md (VERIFIED)",
+        "validation_output": "G7 PASS: ACs live; tree-identity suite transfer; closeout = first envelope-free exempt push"
+      },
+      "completed_at": "2026-06-07T06:31:38.845Z"
+    },
+    {
+      "id": 9,
+      "skill": "design-tech",
+      "subject": "design-tech: SKIPPED",
+      "status": "skipped",
+      "metadata": {
+        "skill": "design-tech",
+        "description": "Skipped: single-script predicate extension; design carried in WI guardrails"
+      },
+      "skip_reason": "Predicate extension to one eligibility script; exempt-class path list specified in WI guardrails; no new components/integrations. Registry-backed, same class as WI-357/358/359."
+    }
+  ]
+}

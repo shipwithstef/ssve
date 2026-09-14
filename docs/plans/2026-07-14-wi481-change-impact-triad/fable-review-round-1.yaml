@@ -1,0 +1,71 @@
+review:
+  reviewer: claude-fable-5
+  reviewer_family: anthropic
+  invoked_via: claude-code-2.1.209
+  plan_sha256: afcb456f2724c5ea18abd3180d9b8ac329626ece2cf178cfc471c9519a9bd74f
+  rubric_score: 4
+  rubric_failures: [2, 3, 6, 7, 9, 10]
+  findings:
+    - id: F-001
+      severity: high
+      claim: The one-composite-Stop invariant was not achievable because the Codex wirer only merged entries and could leave the old shared Stop guard installed concurrently.
+      evidence:
+        - scripts/wire-codex-hooks.mjs registry and merge logic had no absent-key deregistration path.
+        - Codex user and repository hook layers are additive and matching hooks run concurrently.
+      proposed_fix: Add stable managed keys, prune obsolete managed entries, remove the old shared Stop and Kimi enforcer, inspect user plus repo layers, and assert exactly one effective svc Stop entry.
+    - id: F-002
+      severity: high
+      claim: Creating all five worktrees at T0 made later pillars stale and the commands did not pin the declared base.
+      evidence:
+        - scripts/worktree.sh create defaults to HEAD unless --from is supplied.
+        - T4 must include verified WI-485, but its pre-created worktree would predate that promotion.
+      proposed_fix: Create each leaf lazily after the prior verify-promotion using an anchored default checkout and --from origin/main.
+    - id: F-003
+      severity: medium
+      claim: The plan promised exact Codex artifact authenticity but named no wrapper and left the repository-global shared authenticity hook wired.
+      evidence:
+        - Shared hook accepts a recent repo-global receipt and protects docs/specs/plans rather than docs/plans.
+      proposed_fix: Make the exact Codex skill gate subsume authenticity and remove the shared authenticity entry from Codex, or add a separate exact wrapper.
+    - id: F-004
+      severity: medium
+      claim: Strict turn equality would force skill reload on every normal multi-turn task, while loose equality was unspecified.
+      evidence:
+        - Receipt schema bound turn_id but did not define later-turn behavior.
+      proposed_fix: Record turn for audit; authorize later turns only in the same session with identical task graph, task, worktree, skill, and hash; reload on scope/hash change.
+    - id: F-005
+      severity: medium
+      claim: Non-Codex --list-all snapshots were impossible for Gemini and OpenCode because those wirers lack the option.
+      evidence:
+        - Only Claude, Codex, and Kimi wirers expose list-all.
+      proposed_fix: Use list-all where supported and source plus dry-run output/config hashes elsewhere.
+    - id: F-006
+      severity: medium
+      claim: Recovery covered pre-land worktrees but not TINT failures after five pillar promotions.
+      evidence:
+        - TINT is blocked by all landed pillar tasks.
+      proposed_fix: Define reverse-dependency main reverts, hook trust refresh, aggregate retest, and receipts.
+    - id: F-007
+      severity: medium
+      claim: WI-482, WI-483, and WI-484 lacked named source specs and their acceptance criteria existed only inside the plan.
+      evidence:
+        - Plan cited proposals for P1/P5 only; no WI-481..485 work-item artifacts were listed.
+      proposed_fix: Create indexed work-item specs carrying canonical ACs and cite them as sources.
+    - id: F-008
+      severity: low
+      claim: Execution commands lacked expected exit/output predicates, an anchored cwd, and a concrete Codex runtime-support probe.
+      evidence:
+        - codex exec prompt had no golden trace assertion.
+      proposed_fix: Anchor cwd, annotate expected outcomes, commit a golden trace, and record explicit N/A if the runtime probe prerequisites are absent.
+    - id: F-009
+      severity: low
+      claim: The plan had stale path/fact text and its inherited sibling planning worktree conflicted with the future P2 rule.
+      evidence:
+        - P5 authority moved to host runtime state while .gitignore prose still named .svc/sessions.
+        - Planning worktree predates and sits outside the repository .worktrees convention.
+      proposed_fix: Correct artifact-home and current hook-enablement facts; record the planning worktree as a one-time inherited exception and land/remove it before P2 becomes precedent.
+  dependencies_needing_read:
+    - docs/specs/work-items/INDEX.md
+    - references/knowledge/domains/codex-hooks/details/events.md
+    - references/knowledge/domains/codex-hooks/details/decision-formats.md
+    - test-framework/evals/tier-1/validate-active-intent-guard.sh
+    - effective user and repository Codex hooks configuration

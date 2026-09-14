@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "wi": "WI-472",
+  "gate": "G6",
+  "round": 1,
+  "launcher_status": "schema_invalid",
+  "launcher_schema_issue": "provider returned review_kind=review-exec while launcher required exec",
+  "content_verdict": "fail",
+  "request_id": "5d27d48a-4f2c-4fae-a763-a80e69b6fc10",
+  "reviewer": {
+    "host": "claude",
+    "family": "anthropic",
+    "model": "claude-opus-4-8",
+    "effort": "high"
+  },
+  "receipt_sha256": "97262857e0f9f0ea5f1bfc8e1f6b91d081adf94c6b4131beb62cdf1e687edc4a",
+  "findings_sha256": "7a3ed2ff0942995066d125b5ee8f86191314c6dcb0e6ad3ae40723877d167b24",
+  "findings": [
+    {"id": "WI472-F1", "severity": "critical", "status": "accepted", "resolution": "Remove all pre-baked review verdicts; derive attestations only from actual row certifications."},
+    {"id": "WI472-F2", "severity": "high", "status": "accepted", "resolution": "Replace synthesized phase envelopes with a visibly distinct retroactive-attestation receipt."},
+    {"id": "WI472-F3", "severity": "medium", "status": "accepted", "resolution": "Bind every attestation to exact target SHA and tree."},
+    {"id": "WI472-F4", "severity": "medium", "status": "accepted", "resolution": "Add frozen-old-binary versus new-binary five-state output test; move scheduling detail outside legacy projection."},
+    {"id": "WI472-F5", "severity": "medium", "status": "accepted", "resolution": "Validate applied attestations through the real chain checker and rollback on any failure."},
+    {"id": "WI472-F6", "severity": "low", "status": "accepted", "resolution": "Make the child sole terminal-outcome writer and reclaim stale/terminal locks."},
+    {"id": "WI472-F7", "severity": "low", "status": "accepted", "resolution": "Run live frozen-range batch versus per-SHA equivalence comparison."},
+    {"id": "WI472-F8", "severity": "info", "status": "accepted", "resolution": "Regenerate a compact attestation-basis bundle and require 78 explicit basis-hash certifications in the next review."}
+  ],
+  "certification": false
+}

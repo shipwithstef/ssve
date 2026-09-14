@@ -1,0 +1,83 @@
+# Framework Improvement — 2026-04-24 — Skip-Conditions Registry
+
+**Status:** DRAFT — authored by improve-framework Step 5 as a focused fix brief extracted from `proposals/done/2026-04-24-framework-cohesion-evolution.md` § P0.2.
+
+**Parent evolution proposal:** `proposals/done/2026-04-24-framework-cohesion-evolution.md` (v3.1). This proposal narrows that one to the single P0.2 leaf so it can flow through `capture-idea --from-proposal` (WI-073's mechanism) as a single-WI promotion instead of bulk-emitting all phased leaves.
+
+## Goal
+
+Create `references/skip-conditions.json` as a single source of truth for which skills have documented skip/NA conditions, and add a tier-1 validator that keeps the registry in sync with each skill's own self-verify rows. Closes the route-workflow self-verify row #2 claim ("Skip conditions evaluated") — currently that claim is unverifiable because no central registry exists.
+
+## Non-Goals
+
+1. Changing any skill's actual skip behavior. This is audit-wiring, not behavior change.
+2. Enforcing skip decisions (that's the orchestrator's job per route-workflow).
+3. Migrating design-ux/design-ui-specific skip rules into the registry (they already live in their own SKILL.md self-verify; the registry points to them).
+4. Retro-logging skip decisions for past work items.
+
+## Acceptance Criteria
+
+### US-01 — Registry as single source of truth
+
+- **AC-01.1** `references/skip-conditions.json` exists with schema `{ "skills": { "<skill-name>": { "skip_when": string, "signals": string[], "justification_format": string, "self_verify_row": string } } }`.
+- **AC-01.2** Registry contains entries for every skill that documents skip conditions in its SKILL.md today. Initial set: `design-ui`, `design-ux`, `execute-changeset`, `track-visuals`, `test-journeys`, `write-e2e`, `benchmark-landing`, `analyze-domain`, `blend-external`, `audit-ac`, `sync-work-items`, `validate-feature`, `verify-promotion` (13 skills).
+- **AC-01.3** Each entry's `self_verify_row` field names the specific row in the referenced SKILL.md that documents the skip clause (e.g., `"design-ui/SKILL.md § Self-Verify row 7"`).
+
+### US-02 — Tier-1 validator keeps registry and SKILL.md in sync
+
+- **AC-02.1** `test-framework/evals/tier-1/validate-skip-conditions-registry.sh` exists and is executable.
+- **AC-02.2** Validator asserts every registry entry's `self_verify_row` points to a SKILL.md file that (a) exists and (b) contains language matching the skip clause.
+- **AC-02.3** Validator asserts no skill has a skip clause in its SKILL.md self-verify section that is missing from the registry (bidirectional check).
+- **AC-02.4** Validator exits 0 on both-way match; exit 1 with the offending skill name and direction of mismatch otherwise.
+- **AC-02.5** Full tier-1 sweep (`bash test-framework/evals/run-all-evals.sh --tier1`) passes including the new validator (per `g5-review-must-run-all-tier1` learning).
+
+### US-03 — Route-workflow self-verify row #2 becomes enforceable
+
+- **AC-03.1** `route-workflow/SKILL.md` self-verify row #2 is updated to reference `references/skip-conditions.json` explicitly as the source of truth for "documented skip/NA conditions."
+- **AC-03.2** No behavior change to route-workflow's runtime — just a spec reference. Existing tier-1 route-workflow tests continue to pass.
+
+### US-04 — No regression in the 13 referenced skills
+
+- **AC-04.1** No `*/SKILL.md` file outside `route-workflow/SKILL.md` is modified.
+- **AC-04.2** The 5-source-of-truth sync (manifest + README + REPO_MODES + route-workflow Core Pack + EXTERNAL_ADDONS) remains consistent — no drift from this change.
+
+## File Impact
+
+| File | Change |
+|---|---|
+| `references/skip-conditions.json` | **create** — registry with 13 skill entries |
+| `test-framework/evals/tier-1/validate-skip-conditions-registry.sh` | **create** — bidirectional sync validator |
+| `route-workflow/SKILL.md` | **edit** — self-verify row #2 references the registry |
+
+No other files touched.
+
+## Scope boundary
+
+- **touches:** the 3 files above, and only those.
+- **reads (for validator):** the 13 skills' SKILL.md files (content inspection only).
+- **must-not-touch:** any skill's SKILL.md except route-workflow's; any hook; any rule; any manifest; README.md; FRAMEWORK-STATE.md; proposals/ outside this file; work-items index.
+
+## Rollback
+
+Commit-scoped revert per WI-073's learned pattern. No hot-path hooks; no `.bak` needed.
+
+- If the registry has wrong content: `git revert` the registry commit; re-author.
+- If the validator is too strict / flakes: `git revert` the validator commit; re-tune thresholds.
+- If the route-workflow edit breaks a downstream reference: `git revert` just that commit; the registry + validator stay.
+
+## Size / Risk
+
+- **Risk class:** contract change (new source of truth) + one route-workflow spec edit.
+- **Lines:** ~150 (registry JSON + validator SH + 2-line route-workflow edit).
+- **Files:** 3.
+- **Plan-changeset required:** yes (contract change per risk-based trigger rule).
+
+## Relationship to the cohesion plan
+
+This fix brief is the per-leaf improve-framework output that the WI-073 lane-compliance gap flagged was missing. For Phase 0.3–0.6 onward, each leaf gets its own focused improvement proposal extracted from the parent evolution proposal, then promoted via `capture-idea --from-proposal`.
+
+
+---
+
+**Promoted to:** docs/specs/work-items/WI-074.md
+**Promoted at:** 2026-04-24T12:01:55.792Z

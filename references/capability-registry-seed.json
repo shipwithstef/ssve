@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "resources": {
+    "gpt-business": {
+      "label": "GPT Business",
+      "tier": "paid",
+      "cost_usd_monthly": 30,
+      "host_cli": ["codex-cli"],
+      "reset_cadence": "monthly",
+      "reset_day_of_period": 1,
+      "last_verified": "2026-04-25",
+      "notes": "Codex CLI included; Deep Research is a separately-metered budget not consumed by Codex.",
+      "sub_budgets": {
+        "codex-cli": {
+          "label": "Codex CLI messages",
+          "quota": "see OpenAI business quota",
+          "consumed_estimate": 0,
+          "notes": "primary EXEC path for this tier"
+        },
+        "deep-research": {
+          "label": "Deep Research minutes",
+          "quota": "separately metered",
+          "consumed_estimate": 0,
+          "notes": "use for research skill DISC lens; unused cycles are free horsepower"
+        }
+      }
+    },
+    "claude-max": {
+      "label": "Claude Max (5-seat plan)",
+      "tier": "paid",
+      "cost_usd_monthly": 500,
+      "host_cli": ["claude-code", "openclaw"],
+      "reset_cadence": "monthly",
+      "reset_day_of_period": 1,
+      "last_verified": "2026-04-25",
+      "notes": "Claude Code CLI; Claude design tool / timer beta is a separate budget.",
+      "sub_budgets": {
+        "claude-code": {
+          "label": "Claude Code CLI usage",
+          "quota": "5x plan limits",
+          "consumed_estimate": 0,
+          "notes": "primary STRAT+PLAN path"
+        },
+        "design-tool-beta": {
+          "label": "Claude design tool beta",
+          "quota": "separate budget",
+          "consumed_estimate": 0,
+          "notes": "verify current metering when used"
+        }
+      }
+    },
+    "kimi": {
+      "label": "Kimi $39",
+      "tier": "paid",
+      "cost_usd_monthly": 39,
+      "host_cli": ["kimi-cli"],
+      "reset_cadence": "monthly",
+      "reset_day_of_period": 1,
+      "last_verified": "2026-04-25",
+      "notes": "Kimi CLI + possibly separate quotas for web/app tools.",
+      "sub_budgets": {
+        "kimi-cli": {
+          "label": "Kimi CLI messages",
+          "quota": "per $39 tier",
+          "consumed_estimate": 0,
+          "notes": "alternative EXEC path when Claude Code runs hot"
+        }
+      }
+    },
+    "gemini-pro": {
+      "label": "Gemini Pro",
+      "tier": "paid",
+      "cost_usd_monthly": 20,
+      "host_cli": ["gemini-cli"],
+      "reset_cadence": "monthly",
+      "reset_day_of_period": 1,
+      "last_verified": "2026-04-25",
+      "notes": "gemini-cli; Gemini app features (Deep Research, etc.) live outside CLI and have their own cap.",
+      "sub_budgets": {
+        "gemini-cli": {
+          "label": "Gemini CLI",
+          "quota": "per Pro tier",
+          "consumed_estimate": 0,
+          "notes": "research skill primary sub-agent per WI-090"
+        },
+        "gemini-app-deep-research": {
+          "label": "Gemini app Deep Research",
+          "quota": "separate from CLI",
+          "consumed_estimate": 0,
+          "notes": "manual invocation only"
+        }
+      }
+    },
+    "mimo": {
+      "label": "MiMo (Xiaomi standard)",
+      "tier": "paid",
+      "cost_usd_monthly": 0,
+      "host_cli": ["mimo-cli", "opencode"],
+      "reset_cadence": "monthly",
+      "reset_day_of_period": 1,
+      "last_verified": "2026-04-25",
+      "notes": "mimo CLI; Hermes agent / clawing capabilities exist outside the default invocation path.",
+      "sub_budgets": {
+        "mimo-cli": {
+          "label": "MiMo CLI via opencode",
+          "quota": "per Xiaomi standard tier",
+          "consumed_estimate": 0,
+          "notes": "EXEC delegation target in svc-default profile"
+        },
+        "hermes": {
+          "label": "Hermes agent / clawing",
+          "quota": "separate",
+          "consumed_estimate": 0,
+          "notes": "potential free-horsepower scrape path"
+        }
+      }
+    },
+    "base44": {
+      "label": "Base44 + free credits",
+      "tier": "paid",
+      "cost_usd_monthly": 50,
+      "host_cli": ["base44-cli"],
+      "reset_cadence": "monthly",
+      "reset_day_of_period": 1,
+      "last_verified": "2026-04-25",
+      "notes": "Hosted backend / app builder; Example Marketplace lives here.",
+      "sub_budgets": {}
+    },
+    "namecheap-marketing": {
+      "label": "Namecheap marketing trial",
+      "tier": "trial",
+      "cost_usd_monthly": 0,
+      "host_cli": [],
+      "reset_cadence": "never",
+      "reset_day_of_period": 0,
+      "last_verified": "2026-04-25",
+      "notes": "1-month marketing trial. EXPIRING. Unused as of filing; candidate for Example Marketplace launch channel."
+    }
+  }
+}

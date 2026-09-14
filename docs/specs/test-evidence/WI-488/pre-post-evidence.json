@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "acceptance_critical": true,
+  "selected_proof": {
+    "id": "wi488-launcher-fixture-runtime",
+    "command": "bash test-framework/evals/tier-1/validate-external-review-launcher.sh --runtime-only",
+    "target": "WI-488 fixture-controlled canonical external-review launcher",
+    "environment": "isolated fake Codex and Claude CLIs; no paid model calls",
+    "fixture_account": "SVC_EXTERNAL_REVIEW_FIXTURE=1"
+  },
+  "pre": {
+    "status": "fail",
+    "evidence": "docs/plans/2026-07-15-wi488-deterministic-external-reviewer/progress.md TDD evidence: schemas passed and launcher-exists failed, 2 passed / 1 failed"
+  },
+  "post": {
+    "status": "pass",
+    "evidence": "same command passed 53 runtime assertions on 2026-07-15",
+    "fixture_account": "SVC_EXTERNAL_REVIEW_FIXTURE=1"
+  },
+  "comparison": "fixed-by-change",
+  "iterations": [
+    {
+      "iteration": 1,
+      "fix_batch": "add shared schemas, canonical launcher, policy adapters, and fixture-controlled replay contract",
+      "classification": "fixed-by-change",
+      "evidence": "runtime replay proves exact tuples, stdin, isolation, schema, fallback taxonomy, overrides, cache, locks, receipts, GC, and three adapters"
+    }
+  ],
+  "changed_signals": [
+    {
+      "signal": "launcher exists and parses",
+      "classification": "fixed-by-change",
+      "acceptance_critical": true
+    },
+    {
+      "signal": "fixture runtime assertions increased from schema-only red boundary to 53 passing behavioral assertions",
+      "classification": "fixed-by-change",
+      "acceptance_critical": true
+    }
+  ]
+}

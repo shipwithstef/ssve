@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "wi": "WI-488",
+  "captured_at": "2026-07-15T16:45:41Z",
+  "promoted_commit": "71e01336d733ab324c8dd8fbc0a7e5c2a6662a21",
+  "paid_model_calls": 0,
+  "probes": [
+    {
+      "orchestrator": "claude",
+      "reviewer_host": "codex",
+      "display_name": "Codex 5.6 sol",
+      "requested_model": "gpt-5.6-codex",
+      "canonical_model_id_source": "references/model-registry.json harnesses.codex.models.gpt-5.6-codex",
+      "requested_effort": "high",
+      "cli_version": "codex-cli-exec 0.144.4",
+      "classification": "success",
+      "capability": true,
+      "invocation_tuple": null,
+      "attempt_count": 0
+    },
+    {
+      "orchestrator": "codex",
+      "reviewer_host": "claude",
+      "display_name": "Fable 5",
+      "requested_model": "claude-fable-5",
+      "canonical_model_id_source": "references/model-registry.json harnesses.claude.models.fable-5",
+      "requested_effort": "high",
+      "cli_version": "2.1.210 (Claude Code)",
+      "classification": "success",
+      "capability": true,
+      "invocation_tuple": null,
+      "attempt_count": 0
+    }
+  ]
+}

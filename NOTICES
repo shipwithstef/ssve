@@ -1,0 +1,254 @@
+Third-Party Notices
+===================
+
+Serious Vibe Coding is an opinionated blend of patterns from several
+open-source projects in the Claude Code ecosystem. This section credits
+the projects that contributed ideas, patterns, or code.
+
+---
+
+gstack (https://github.com/garrytan/gstack)
+Copyright (c) 2025 Garry Tan
+Licensed under the MIT License
+
+Patterns blended from gstack:
+- P0 founder persona and forcing questions (route-workflow)
+- Adversarial CEO/design/eng review gates (review-gate, design-ux, design-ui, design-tech)
+- /cso security audit pattern (review-security)
+- /learn institutional memory pattern (manage-learnings)
+- /browse headless browser integration (test-journeys, track-visuals, write-e2e)
+- /design-consultation and /design-shotgun patterns (design-ui)
+- /investigate root-cause-first debugging (diagnose-bug)
+- /ship version bump and PR workflow (land-changeset)
+- /canary post-deploy monitoring (verify-promotion)
+- Review Army specialist dispatch — parallel specialist subagents with adaptive gating (audit-implementation) [re-blend 2026-04-08]
+- Plan completion audit — per-task DONE/PARTIAL/MISSING verification (land-changeset) [re-blend 2026-04-08]
+- Scope drift detection — diff-vs-manifest comparison (audit-implementation) [re-blend 2026-04-08]
+- Failure ownership triage — branch/pre-existing/flaky categorization (execute-changeset) [re-blend 2026-04-08]
+- AI Slop blacklist — 10 known-bad design anti-patterns (references/anti-patterns.md AP-22) [re-blend 2026-04-08]
+- Completeness principle — Boil the Lake (DOCTRINE.md) [re-blend 2026-04-08]
+- Search Before Building discipline — 3-layer knowledge check (execute-changeset) [re-blend 2026-04-08]
+- Test framework bootstrap — detect/install test runner (execute-changeset) [re-blend 2026-04-08]
+- Design checklist AI slop visual detection — 5 visual anti-patterns (track-visuals comprehension review) [2026-04-13]
+- Central state-root resolver and explicit precedence-chain shape, adapted with SVC's fail-closed authority validation (WI-506) [2026-07-22]
+
+---
+
+superpowers (https://github.com/obra/superpowers)
+Copyright (c) 2025 Jesse Vincent
+Licensed under the MIT License
+
+Patterns blended from superpowers:
+- plan-changeset/ (derived from writing-plans task graph approach)
+- Subagent-driven development model (execute-changeset parallel dispatch)
+- TDD-first execution discipline (execute-changeset)
+- CSO anti-pattern for skill descriptions (references/anti-patterns.md AP-20) [re-blend 2026-04-08]
+- Anti-rationalization table format for discipline skills (create-skill) [re-blend 2026-04-08]
+- Two-stage review ordering — spec compliance before code quality (execute-changeset) [re-blend 2026-04-08]
+- Mock-interface derivation gate (references/anti-patterns.md AP-14) [re-blend 2026-04-08]
+- Layer-by-layer diagnostic instrumentation (diagnose-bug) [re-blend 2026-04-08]
+- 3-fixes architectural escalation reframe (diagnose-bug) [re-blend 2026-04-08]
+- Anti-sycophancy review rules (references/anti-patterns.md AP-21) [re-blend 2026-04-08]
+- Type/naming consistency check for plans (plan-changeset) [re-blend 2026-04-08]
+- Pressure testing methodology for skill evals (test-framework) [re-blend 2026-04-08]
+
+---
+
+claude-code-setup (https://github.com/petekp/claude-code-setup)
+Copyright (c) 2024 Pete Petrash
+Licensed under the MIT License
+
+Patterns blended from claude-code-setup:
+- explore-solutions/ (solution exploration and paradigm comparison)
+- audit-implementation/ (systems analysis and correctness audit)
+
+---
+
+Oh My Claude Code (https://github.com/yeachan-heo/oh-my-claudecode)
+Copyright (c) 2025 Yeachan Heo
+Licensed under the MIT License
+
+Patterns referenced:
+- Ambiguity gate scoring (route-workflow weighted dimensions)
+- Commit trailer protocol (execute-changeset structured metadata)
+- Verified completion loop (execute-changeset 3-strike rule)
+- Tri-model orchestration (review-cross-model parallel dispatch)
+- Learning extraction from debugging (manage-learnings quality gate)
+
+---
+
+last30days (https://github.com/mvanhorn/last30days-skill)
+Copyright (c) 2025 mvanhorn
+Licensed under the MIT License
+
+Patterns blended from last30days-skill:
+- Untrusted content fencing — <untrusted_content> tag convention for external web content (references/anti-patterns.md AP-25)
+- Fixture-based behavioral testing pattern — canned input artifacts for skill contract validation (test-framework/SKILL.md tier-2 fixture mode)
+
+Recommended companion skill for live market research (external addon):
+- Live signal grounding for validate-feature business questions (Q1-Q4, Q6)
+- Current competitive intelligence for analyze-competitors (buzz, sentiment)
+- Demand evidence for find-opportunity market research
+
+---
+
+---
+
+Get Shit Done (https://github.com/gsd-build/get-shit-done)
+Copyright (c) 2025 TACHES
+Licensed under the MIT License
+
+Patterns blended from GSD:
+- Context budget degradation tiers (references/context-budget.md)
+- Verification patterns — Exists/Substantive/Wired/Functional (references/verification-patterns.md)
+- Universal anti-patterns (references/anti-patterns.md)
+- Thinking models at decision points (references/thinking-models.md)
+- Executor deviation rules — auto-fix vs stop classification (execute-changeset)
+- Scope reduction prohibition — banned phrases in planning (plan-changeset)
+- Safety gates before chain advance (DOCTRINE.md)
+- Session continuity and project state tracking (route-workflow)
+- Questioning anti-patterns — ban checklist walking (mine-builder)
+- Freeform intent routing (route-workflow)
+- Workflow guard hooks (hooks/svc-workflow-guard.js)
+- Gates taxonomy — 4 canonical types with selection heuristic (DOCTRINE.md)
+- Stall detection in revision loops (review-gate)
+- Test quality audit — disabled tests, circular patterns, assertion strength (verify-promotion)
+- Adaptive context enrichment for 1M models (execute-changeset)
+- Agent completion markers convention AP-23 (references/anti-patterns.md)
+- Schema drift detection for ORM changes (plan-changeset)
+- Claim provenance tagging AP-24 (references/anti-patterns.md)
+
+---
+
+Harness (https://github.com/revfactory/harness)
+Copyright (c) 2025 robin (revfactory)
+Licensed under the Apache License, Version 2.0
+
+Patterns blended from Harness:
+- Agent team architecture taxonomy — 6 patterns (references/agent-patterns.md)
+- Agent definition convention — WHO vs HOW separation (references/agent-patterns.md)
+- Pushy skill description standard (references/anti-patterns.md AP-19)
+- Near-miss trigger testing methodology (test-framework tier 1.5)
+- Adaptive communication based on user skill level (route-workflow)
+- Integration coherence / boundary mismatch detection (references/verification-patterns.md)
+
+---
+
+Anthropic Skills (https://github.com/anthropics/skills)
+Copyright (c) 2025 Anthropic
+Licensed under the MIT License
+
+Forked skill-creator with svc pipeline knowledge (create-skill/)
+
+TaskMaster (https://github.com/blader/taskmaster)
+Author: blader
+Licensed under the MIT License
+
+Patterns derived:
+  - Stop hook completion guard (adapted for task-graph-based completion checking)
+    → hooks/svc-task-completion-guard.sh
+  - Anti-rationalization language ("PROGRESS IS NOT COMPLETION", "DO NOT NARRATE — EXECUTE")
+    → route-workflow/SKILL.md Task-Graph Execution Protocol
+
+---
+
+everything-claude-code (https://github.com/affaan-m/everything-claude-code)
+Copyright (c) 2026 Affaan M. and contributors
+Licensed under the MIT License
+
+Patterns blended from everything-claude-code:
+- Hook runtime profiling — SVC_HOOK_PROFILE=minimal|full + selective disable via SVC_DISABLED_HOOKS (hooks/hooks.json)
+- Config-protection hook — blocks Write/Edit to linter/formatter/tsconfig/lock files (hooks/svc-workflow-guard.js)
+- Block-no-verify — blocks --no-verify / --no-gpg-sign in Bash commands (hooks/svc-workflow-guard.js)
+- Commit-quality hook — validates Co-Authored-By trailer, message format, staged debug code detection (hooks/svc-workflow-guard.js)
+- Batch Stop format+typecheck — post-edit accumulator + stack-aware batch quality check at Stop time (hooks/svc-stop-quality.js)
+- Model routing decision table — Haiku/Sonnet/Opus mapped to svc skill categories (references/model-routing.md)
+- CLI-over-MCP preference — DEGRADING/POOR tiers prefer CLI over always-on MCPs (references/context-budget.md)
+- pass@k vs pass^k evaluation vocabulary — formal strategy distinction for retry vs consistency testing (test-framework/SKILL.md)
+
+AgentShield (part of everything-claude-code) recommended as external addon:
+- Scans CLAUDE.md, hooks, MCP configs, agent defs for injection risks, secrets, misconfigurations
+- Complements review-security (OWASP/STRIDE for app code) — does not overlap
+- Install: npx ecc-agentshield scan
+
+---
+
+All projects above are licensed under the MIT License. The full MIT License
+text applies to all derived code:
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+**Taste Skill** (https://github.com/Leonxlnx/taste-skill)
+Copyright (c) 2026 Leonxlnx, MIT License
+Patterns: Design Dials, Liquid Glass, Inline Typography, Output Enforcement
+
+---
+
+Capacitor Skills — Capawesome (https://github.com/capawesome-team/skills)
+Copyright (c) 2025 Capawesome Team
+Licensed under the MIT License
+
+Capacitor Skills — Capgo (https://github.com/Cap-go/capgo-skills)
+Copyright (c) 2025 Capgo
+Licensed under the MIT License
+
+Used as external add-on (installed globally across all hosts via
+`npx skills add capawesome-team/skills -g -a "*"` and
+`npx skills add Cap-go/capgo-skills -g -a "*"`). 72 skills covering Capacitor /
+Ionic mobile development, plugins, security scanning (Capsec), testing, CI/CD,
+and live updates.
+
+Patterns identified as candidate blends in
+`proposals/done/2026-04-29-blend-capacitor-skills.md` (not yet applied to svc skills):
+- Skill structure template — Prerequisites → Behavior → Procedures → Errors →
+  Related (candidate for create-skill)
+- Plugin catalog decision matrix — official → community → alternative
+  (candidate for discover-skills)
+- Capsec security scanning integration for mobile projects
+  (candidate for review-security)
+- Platform-aware execution guards — `Capacitor.isNativePlatform()` /
+  `getPlatform()` (candidate for platform-operating-architect)
+
+---
+
+Lucas Patiri UGC Viral Growth Playbook (http://x.com/lucaspatiri_/status/2062627926022238586)
+Public Domain / Social Content Heuristics
+
+Patterns blended on 2026-06-05:
+- Structured subagent briefing / task prompts format (plan-changeset)
+- Raw platform-native aesthetics standard (anti-patterns)
+- Down-funnel visual state inventory verification gates (review-gate, verify-promotion)
+- Operational outreach templates & B2B performance milestones (cold-outbound)
+
+---
+
+Corey Haines Marketing Skills (https://github.com/coreyhaines31/marketingskills)
+Copyright (c) Corey Haines
+Licensed under the MIT License
+
+Used as external add-on since 2026-04-28 (v1.9.0, WI-135/136), governed by
+EXTERNAL_ADDONS.md. Re-blend analysis at v2.6.0 on 2026-07-13
+(proposals/2026-07-13-blend-coreyhaines-v2.6.0.md). Patterns derived:
+- Loop state/idempotency contract + two-tier action guardrail model
+  (marketing-loops references → candidate svc autonomous-loop contract)
+- Andromeda-era paid-creative doctrine: creative-as-targeting, platform
+  creative/targeting split (ads skill → candidate ad-strategist knowledge)
+- Upstream version-staleness check practice (VERSIONS.md + CI version-sync
+  → candidate blend-external audit-mode improvement)

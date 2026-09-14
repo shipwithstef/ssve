@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seriousvibecoding.dev/schemas/product-memory-bridge-v2.schema.json",
+  "title": "SVC product memory and company bridge v2",
+  "oneOf": [
+    { "$ref": "#/$defs/memoryEvidence" },
+    { "$ref": "#/$defs/companyRoute" },
+    { "$ref": "#/$defs/outcomeLearning" }
+  ],
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "memoryEvidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema_version", "evidence_id", "source_path", "source_digest", "content_digest", "consumer_id", "fresh_until", "trust", "disposition", "generation_bindings"],
+      "properties": {
+        "schema_version": { "const": "memory-evidence-v2" }, "evidence_id": { "type": "string", "minLength": 1 },
+        "source_path": { "type": "string", "minLength": 1 }, "source_digest": { "$ref": "#/$defs/digest" },
+        "content_digest": { "$ref": "#/$defs/digest" }, "consumer_id": { "type": "string", "minLength": 1 },
+        "fresh_until": { "type": "string", "format": "date-time" }, "trust": { "enum": ["untrusted", "corroborated", "authoritative"] },
+        "disposition": { "enum": ["pending", "used", "ignored"] }, "disposition_reason": { "type": "string", "minLength": 1 },
+        "generation_bindings": { "$ref": "execution-task-capsule-v2.schema.json#/$defs/generationBindings" }
+      }
+    },
+    "companyRoute": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema_version", "route_id", "company_card_id", "company_card_digest", "verdict", "product_id", "direction", "authority_principal", "generation_bindings"],
+      "properties": {
+        "schema_version": { "const": "company-product-route-v2" }, "route_id": { "type": "string", "minLength": 1 },
+        "company_card_id": { "type": "string", "minLength": 1 }, "company_card_digest": { "$ref": "#/$defs/digest" },
+        "verdict": { "const": "approved" }, "product_id": { "type": "string", "minLength": 1 },
+        "direction": { "type": "string", "minLength": 1 }, "authority_principal": { "type": "string", "minLength": 1 },
+        "generation_bindings": { "$ref": "execution-task-capsule-v2.schema.json#/$defs/generationBindings" }
+      }
+    },
+    "outcomeLearning": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema_version", "learning_id", "product_id", "source_evidence_id", "product_consumer_id", "consumption_ack_id", "outcome_evidence_id", "next_decision_id", "promoted"],
+      "properties": {
+        "schema_version": { "const": "outcome-learning-v2" }, "learning_id": { "type": "string", "minLength": 1 },
+        "product_id": { "type": "string", "minLength": 1 }, "source_evidence_id": { "type": "string", "minLength": 1 },
+        "product_consumer_id": { "type": "string", "minLength": 1 }, "consumption_ack_id": { "type": "string", "minLength": 1 },
+        "outcome_evidence_id": { "type": "string", "minLength": 1 }, "next_decision_id": { "type": "string", "minLength": 1 },
+        "promoted": { "const": true }
+      }
+    }
+  }
+}

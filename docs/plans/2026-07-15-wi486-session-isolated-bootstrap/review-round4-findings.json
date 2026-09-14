@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "review_kind": "plan",
+  "rubric_score": 3,
+  "rubric_failures": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "dependencies_needing_read": null,
+  "reviewer": {
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5",
+    "effort": "high"
+  },
+  "verdict": "fail",
+  "summary": "The AC mapping is extensive, but the plan is not executable as written. Crash recovery contradicts its own ownership rules, review and commit hashes depend on mutable state, the command sequence contains undefined artifacts and shell placeholders, staging exceeds the declared scope, and review-plan evidence is scheduled after execution begins.",
+  "findings": [
+    {
+      "id": "F-001",
+      "severity": "critical",
+      "claim": "The bootstrap cannot recover from crashes before binding creation, contradicting the atomicity and same-session-resume contract.",
+      "analysis": "The plan permits forward completion only when non-session-bearing artifacts such as the worktree and graph are referenced by the current session's binding. During the transaction, however, the worktree and graph are created before the binding. A crash after either creation therefore leaves artifacts that cannot be positively attributed under the stated rules. The next invocation classifies them as ambiguous and refuses to complete them. Recording artifacts in an in-memory rollback list does not solve process-crash recovery. This leaves SIB-11 through SIB-15 unreachable for multiple failpoints and can strand a same-WI bootstrap permanently.",
+      "evidence": [
+        "The canonical creation order is stated as: worktree, graph, claim, binding, final tuple re-read.",
+        "The Round-2 contract says every present non-bearing artifact must be the one referenced by the binding for same-session recovery.",
+        "The same section says missing ownership attribution is ambiguous and must conflict.",
+        "The plan nevertheless claims that a crash at any stage leaves a same-session-resumable tuple."
+      ],
+      "proposed_fix": "Define and plan a durable, securely created attempt journal carrying repository, WI, session, generation, intended worktree, graph, claim, and binding paths before creating the worktree. Make every stage fsync its completion into that journal. Under the repository lock, allow forward completion only from a valid current-session journal, and add crash/restart fixtures for every boundary including before claim and before binding creation."
+    },
+    {
+      "id": "F-002",
+      "severity": "high",
+      "claim": "The frozen review and staged-code hashes use mutable origin/main instead of the declared immutable base.",
+      "analysis": "The preflight pins BASE to a commit, but task 6 computes both the review hash and staged comparison against origin/main. If origin/main advances after preflight, the package may include unrelated upstream changes or omit parts of the actual commit delta. The two hashes can still agree with each other while failing to represent the commit being created on HEAD. No immediate task-6 assertion rechecks HEAD and the merge base before hashing and committing.",
+      "evidence": [
+        "The plan declares BASE=99da8bcf873d4d2a7b2a2becfb19759c71e3d2de as immutable.",
+        "The review hash command is `git diff origin/main -- $CODE_PATHS`.",
+        "The staged comparison is `git diff --cached origin/main -- $CODE_PATHS`.",
+        "The branch is later pushed and merged, so origin/main is explicitly capable of changing during this workflow."
+      ],
+      "proposed_fix": "Use `$BASE` for package generation, REVIEWED_CODE_SHA, and the staged comparison. Immediately before review and immediately before commit assert `git rev-parse HEAD` equals `$BASE` and `git merge-base \"$BASE\" HEAD` equals `$BASE`. Abort and rebase/re-plan if either assertion fails."
+    },
+    {
+      "id": "F-003",
+      "severity": "high",
+      "claim": "The execution sequence is not copy-pasteable because required paths, artifacts, and review-document generation steps are undefined.",
+      "analysis": "Several variables are consumed without initialization, placeholder tokens are shell redirections rather than usable arguments, and the commands do not specify how launcher JSON becomes the three required Markdown review artifacts. The frozen execution package claims that spec and AC context is appended, but no command performs that append. The security package is never constructed. Consequently task 6 cannot deterministically produce the evidence it later stages or prove that all reviews evaluated the advertised package.",
+      "evidence": [
+        "Undefined variables include `FROZEN_EXEC_PACKAGE`, `FROZEN_SECURITY_PACKAGE`, `ART`, `ART_SEC`, `COMMIT_MSG_FILE`, and `VERIFY_PROMOTION_JSON`.",
+        "Commands contain placeholders such as `--pr <n>` and `--authorization <owner>`, which the shell interprets as input redirection.",
+        "The package command is `git diff origin/main -- $CODE_PATHS > \"$FROZEN_EXEC_PACKAGE\"` followed only by the comment `# + spec/AC context appended`.",
+        "The plan says launcher calls write `wi-486-exec-cross-model.md` and `wi-486-security.md`, but supplies no deterministic transformation from launcher findings and receipts to those documents."
+      ],
+      "proposed_fix": "Add a task-6 variable-initialization block with exact repository-relative paths, PR-number discovery, receipt-body paths, and commit-message construction. Provide explicit package-building commands that append the named spec/AC context, commands that validate the package hash, and a committed script or exact deterministic procedure that writes each review document from schema-valid findings and receipt artifacts."
+    },
+    {
+      "id": "F-004",
+      "severity": "high",
+      "claim": "The aggregate staging command can include undeclared residue while omitting a planned state file.",
+      "analysis": "`git add` over entire `hooks`, `scripts`, `schemas`, `test-framework`, `docs/specs`, and `docs/plans` directories is broader than the Files Planned inventory. Any unrelated tracked or untracked worktree content under those directories will enter the aggregate commit. Conversely, `.svc/pipeline-decisions.jsonl` is listed as modified by all tasks but is absent from the staging command. Hashing only CODE_PATHS does not detect extra documentation or state files, so the reviewed-code equality assertion cannot enforce the declared commit scope.",
+      "evidence": [
+        "The Files Planned table enumerates specific files and includes `.svc/pipeline-decisions.jsonl`.",
+        "The staging command is `git add -- $CODE_PATHS docs/specs docs/plans .svc/lane-tasks-WI-486.json`.",
+        "The command stages directory trees but does not stage `.svc/pipeline-decisions.jsonl`.",
+        "The reviewed hash covers only `hooks scripts schemas test-framework`, excluding all broadly staged documentation and state."
+      ],
+      "proposed_fix": "Generate an exact allowlist from the Files Planned table and stage only those paths. Before commit, compare `git diff --cached --name-only` against that allowlist and fail on additions or omissions. Explicitly include `.svc/pipeline-decisions.jsonl` if it is genuinely part of this changeset, and separately verify that no preserved residue path is staged."
+    },
+    {
+      "id": "F-005",
+      "severity": "high",
+      "claim": "The plan schedules review-plan evidence and receipts after execution, violating the mandatory gate ordering.",
+      "analysis": "The plan identifies review-plan as currently in progress, but assigns `review-log.yaml` to task 6, after tasks 1 through 5 have modified runtime behavior. The command sequence also assumes plan-manifest and review-plan receipts were emitted without showing when or how they become bound to the aggregate commit. A review gate cannot authorize task 1 if its durable log is not produced until task 6, and the final five-receipt assertion is unreachable if the assumed receipts were never promoted to the committed tree.",
+      "evidence": [
+        "Framework-Lane Compliance marks `review-plan` as `in_progress`.",
+        "The Files Planned table assigns `docs/plans/2026-07-15-wi486-session-isolated-bootstrap/review-log.yaml` to task 6.",
+        "The mandatory protocol requires review-plan to complete before execute-changeset dispatch.",
+        "After commit, the sequence emits only `exec-record`, `review-exec`, and `audit-implementation`, then asserts that plan-manifest and review-plan were emitted this round."
+      ],
+      "proposed_fix": "Make convergence produce and persist review-log.yaml before task 1 starts. Define exact pre-execution emission commands for plan-manifest and review-plan receipts, including how staging receipts are promoted and verified against the eventual tree. Add a pre-task-1 gate that validates the terminal review log and both receipt schemas."
+    },
+    {
+      "id": "F-006",
+      "severity": "medium",
+      "claim": "Foreign-session liveness and stale-state handling are undefined, leaving conflict behavior nondeterministic.",
+      "analysis": "The partial-tuple policy distinguishes artifacts owned by a different live session, but it never defines how liveness is established, how stale claims are recognized, or what happens to consistently owned but non-live foreign partial state. Different consumers could therefore classify the same fixture differently, undermining host parity and creating either unsafe takeover or permanent denial.",
+      "evidence": [
+        "The bootstrap contract uses the phrase `different live session` as a conflict condition.",
+        "The plan defines freshness for migration authorization but gives no freshness or liveness algorithm for bootstrap claims and bindings.",
+        "The resolver result contract lists classifications generally but does not define a stale-foreign partial-tuple transition."
+      ],
+      "proposed_fix": "Specify one shared liveness function with exact inputs, timestamps/TTL or process/session evidence, clock-skew behavior, and classifications for live, stale, malformed, and unverifiable ownership. Require both resolver and bootstrap to use it, and add deterministic fixtures for each state without deleting or taking over stale foreign artifacts implicitly."
+    },
+    {
+      "id": "F-007",
+      "severity": "medium",
+      "claim": "The syntax-validation commands do not check all planned Node entry points as claimed.",
+      "analysis": "One validation line closes a loop after three files and places the remaining Node paths after a shell comment, so those paths are ignored. The task-2 execution command passes multiple filenames to one `node --check` invocation even though the plan itself notes that `node --check` checks one script argument. This permits syntax errors in later files to escape the stated checkpoint.",
+      "evidence": [
+        "The Validation Plan line ends `done   # per-file ... scripts/svc-ensure-worktree.mjs hooks/lib/task-state-compatibility.mjs scripts/svc-migrate-task-state.mjs`; everything following `#` is ignored.",
+        "Task 2 runs `node --check hooks/lib/resolve-wi.mjs hooks/codex/lib/codex-hook-context.mjs hooks/codex/svc-codex-skill-load-enforcer.mjs`.",
+        "Task 4 correctly uses a per-file loop, demonstrating the required form is already known."
+      ],
+      "proposed_fix": "Use one loop over all six `.mjs` files in the general validation block and a per-file loop for the three task-2 files. Keep each command on executable lines without trailing pseudo-command comments."
+    }
+  ],
+  "certifications": [
+    {
+      "key": "scope_lock_honored",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "573c95a0b91efb0292a8dcca49fc8a621ed9ca46ebbdf3c65bdc9f72ac51c3e5"
+    },
+    {
+      "key": "schema_constrained_output",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "573c95a0b91efb0292a8dcca49fc8a621ed9ca46ebbdf3c65bdc9f72ac51c3e5"
+    }
+  ]
+}

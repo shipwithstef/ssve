@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seriousvibecoding.dev/schemas/product-proof-graph-v2.schema.json",
+  "title": "SVC Product Proof Graph v2",
+  "type": "object",
+  "required": ["schema_version", "product", "generation_bindings", "layer_inventory_digest", "nodes", "edges"],
+  "properties": {
+    "schema_version": { "type": "integer", "enum": [2] },
+    "product": { "type": "string", "minLength": 1 },
+    "generation_bindings": {
+      "type": "object",
+      "required": [
+        "protocol_generation_digest", "product_generation_digest", "context_generation_digest",
+        "concern_generation_digest", "control_generation_digest", "authority_generation_digest",
+        "layer_inventory_digest"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "protocol_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "product_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "context_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "concern_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "control_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "authority_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "layer_inventory_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "layer_inventory_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "title", "context_scope", "status", "source"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "type": {
+            "type": "string",
+            "enum": [
+              "DIRECTION", "EVIDENCE_CLAIM", "UNCERTAINTY", "OPTION", "DECISION",
+              "REJECTED_OPTION", "FOUNDER_DECISION", "FEATURE", "OUTCOME", "LAYER_OBLIGATION",
+              "JOURNEY", "AC", "AUTHORITY", "FAILURE_BEHAVIOR", "TASK", "CODE", "VALIDATOR",
+              "EVIDENCE", "FINAL_REVIEW", "FINAL_SHA", "RELEASE", "ROLLBACK_PROOF",
+              "RELEASE_PROBE", "OBSERVATION", "OBSERVED_DELTA", "NEXT_DECISION", "LEARNING", "OPERATIONS"
+            ]
+          },
+          "title": { "type": "string", "minLength": 1 },
+          "context_scope": { "type": "string", "enum": ["global", "feature", "task", "evidence"] },
+          "status": { "type": "string", "enum": ["RESOLVED", "OPEN", "NOT_APPLICABLE"] },
+          "source": {
+            "type": "object",
+            "required": ["path", "digest", "span"],
+            "properties": {
+              "path": { "type": "string", "minLength": 1 },
+              "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+              "span": { "type": "string", "minLength": 1 },
+              "value": {}
+            }
+          },
+          "attributes": { "type": "object" }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["from", "to", "type"],
+        "properties": {
+          "from": { "type": "string", "minLength": 1 },
+          "to": { "type": "string", "minLength": 1 },
+          "type": {
+            "type": "string",
+            "enum": [
+              "DIRECTS", "SUPPORTED_BY", "RAISES", "INFORMS", "RANKS", "SELECTS", "REJECTS",
+              "AUTHORIZES", "GOVERNS", "DELIVERS", "OBLIGATES", "SATISFIED_BY", "EXPERIENCED_IN",
+              "ACCEPTED_BY", "IMPLEMENTED_BY", "CHANGES", "PROVED_BY", "EMITS", "CONSUMED_BY",
+              "CONSTRAINED_BY", "FAILS_AS", "REVIEWED_BY", "BINDS", "RELEASES",
+              "ROLLBACK_READY_BY", "VERIFIED_BY", "SCHEDULES", "OBSERVES", "EVALUATED_BY",
+              "DECIDES", "TEACHES", "OPERATED_BY"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

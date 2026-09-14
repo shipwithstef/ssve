@@ -1,0 +1,151 @@
+{
+  "wi": "WI-555",
+  "lane": "framework",
+  "story_type": "bug",
+  "change_type": "bug",
+  "created": "2026-08-21T12:07:04.605Z",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "impact: route-workflow",
+      "status": "pending",
+      "blocked_by": [],
+      "skill": "route-workflow"
+    },
+    {
+      "id": 2,
+      "subject": "ac: audit-ac",
+      "status": "pending",
+      "blocked_by": [],
+      "skill": "audit-ac"
+    },
+    {
+      "id": 3,
+      "subject": "plan: plan-changeset",
+      "status": "pending",
+      "blocked_by": [
+        16
+      ],
+      "skill": "plan-changeset",
+      "note": "WI-558: reverted ghost-completion (no skill_receipt; plan artifact lives in docs/plans/, not provable per-task execution)"
+    },
+    {
+      "id": 4,
+      "subject": "review-plan: review-plan",
+      "status": "pending",
+      "blocked_by": [
+        3
+      ],
+      "skill": "review-plan"
+    },
+    {
+      "id": 5,
+      "subject": "implement: execute-changeset",
+      "status": "pending",
+      "blocked_by": [
+        4
+      ],
+      "skill": "execute-changeset"
+    },
+    {
+      "id": 6,
+      "subject": "review-exec: review-exec",
+      "status": "pending",
+      "blocked_by": [
+        5
+      ],
+      "skill": "review-exec"
+    },
+    {
+      "id": 7,
+      "subject": "e2e: write-e2e",
+      "status": "pending",
+      "blocked_by": [
+        6
+      ],
+      "skill": "write-e2e"
+    },
+    {
+      "id": 8,
+      "subject": "test-run: test-journeys",
+      "status": "pending",
+      "blocked_by": [
+        6
+      ],
+      "skill": "test-journeys"
+    },
+    {
+      "id": 9,
+      "subject": "spec-sync: sync-spec-code",
+      "status": "pending",
+      "blocked_by": [
+        6
+      ],
+      "skill": "sync-spec-code"
+    },
+    {
+      "id": 10,
+      "subject": "live-proof: verify-promotion",
+      "status": "pending",
+      "blocked_by": [
+        9
+      ],
+      "skill": "verify-promotion"
+    },
+    {
+      "id": 11,
+      "subject": "qa-companion: test-journeys",
+      "status": "pending",
+      "blocked_by": [
+        9
+      ],
+      "skill": "test-journeys"
+    },
+    {
+      "id": 12,
+      "subject": "ledger: none",
+      "status": "pending",
+      "blocked_by": [
+        9
+      ]
+    },
+    {
+      "id": 13,
+      "subject": "marketing: analyze-marketing",
+      "status": "pending",
+      "blocked_by": [
+        9
+      ],
+      "skill": "analyze-marketing"
+    },
+    {
+      "id": 14,
+      "subject": "pricing: pricing",
+      "status": "pending",
+      "blocked_by": [
+        9
+      ],
+      "skill": "pricing"
+    },
+    {
+      "id": 15,
+      "subject": "index-restamp: execute-changeset",
+      "status": "pending",
+      "blocked_by": [
+        9
+      ],
+      "skill": "execute-changeset"
+    },
+    {
+      "id": 16,
+      "skill": "design-tech",
+      "subject": "design-tech: not a product surface",
+      "status": "skipped",
+      "skip_reason": "Framework bugfix on existing retroactive-attestation validator: authority root selection only (WI-472 package vs repoRootForCache consumer package). No new product UI, data model, or runtime dependency. Design is captured in WI-555.md + improve-framework proposal.",
+      "blocked_by": [
+        1
+      ]
+    }
+  ],
+  "status": "pending"
+}

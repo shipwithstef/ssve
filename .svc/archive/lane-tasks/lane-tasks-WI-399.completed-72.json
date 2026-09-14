@@ -1,0 +1,277 @@
+{
+  "wi": "WI-399",
+  "lane": "framework",
+  "delivery_graph": {
+    "lane": "framework",
+    "change_type": "framework-evolution",
+    "risk_flags": [
+      "hot-path-hooks"
+    ]
+  },
+  "execution_mode": "end_to_end",
+  "run": "run3",
+  "tasks": [
+    {
+      "id": "t1-b7-baseline",
+      "skill": "execute-changeset",
+      "title": "B7: per-hook latency baseline (before)",
+      "status": "completed",
+      "completed_at": "2026-06-10T05:58:28.330Z",
+      "skill_receipt": {
+        "loaded_at": "2026-06-10T05:58:28.330Z",
+        "loaded_via": "execute-changeset (WI-399 run1, inline orchestrator)",
+        "output_artifact": ".svc/perf-baseline.json (hook_latency_informational)",
+        "validation_output": "tier-1 validate-hook-latency.sh PASS"
+      }
+    },
+    {
+      "id": "t2-a1-spawn-diet",
+      "skill": "execute-changeset",
+      "title": "A1: preflight matcher Skill-only + workflow-guard merged mode",
+      "status": "completed",
+      "completed_at": "2026-06-10T05:58:28.330Z",
+      "skill_receipt": {
+        "loaded_at": "2026-06-10T05:58:28.330Z",
+        "loaded_via": "execute-changeset (WI-399 run1, inline orchestrator)",
+        "output_artifact": "hooks/hooks.json (merged entry + Skill matcher)",
+        "validation_output": "validate-workflow-guard.sh 42/0 incl. merged-mode phase-gate cases"
+      }
+    },
+    {
+      "id": "t3-a3-contract-scope",
+      "skill": "execute-changeset",
+      "title": "A3: contract-freshness repo scoping + worktree bootstrap + doc fix",
+      "status": "completed",
+      "completed_at": "2026-06-10T05:58:28.330Z",
+      "skill_receipt": {
+        "loaded_at": "2026-06-10T05:58:28.330Z",
+        "loaded_via": "execute-changeset (WI-399 run1, inline orchestrator)",
+        "output_artifact": "hooks/svc-session-contract-freshness.mjs",
+        "validation_output": "validate-session-contract-freshness.sh A3 fixtures 4/4"
+      }
+    },
+    {
+      "id": "t4-a5-commit-quality",
+      "skill": "execute-changeset",
+      "title": "A5: -F trailer, no-gpg-sign, ESM require, registry attribution",
+      "status": "completed",
+      "completed_at": "2026-06-10T05:58:28.330Z",
+      "skill_receipt": {
+        "loaded_at": "2026-06-10T05:58:28.330Z",
+        "loaded_via": "execute-changeset (WI-399 run1, inline orchestrator)",
+        "output_artifact": "hooks/svc-workflow-guard.mjs (A5) + references/model-registry.json commitAttribution",
+        "validation_output": "validate-workflow-guard.sh -F/-no-gpg-sign cases PASS"
+      }
+    },
+    {
+      "id": "t5-a8-stop-quality",
+      "skill": "execute-changeset",
+      "title": "A8: baseline-aware type gate",
+      "status": "completed",
+      "completed_at": "2026-06-10T05:58:28.330Z",
+      "skill_receipt": {
+        "loaded_at": "2026-06-10T05:58:28.330Z",
+        "loaded_via": "execute-changeset (WI-399 run1, inline orchestrator)",
+        "output_artifact": "hooks/svc-stop-quality.js + hooks/lib/stop-quality-baseline.mjs",
+        "validation_output": "validate-stop-quality-baseline.sh 2/0"
+      }
+    },
+    {
+      "id": "t6-a10-claude-md",
+      "skill": "execute-changeset",
+      "title": "A10: CLAUDE.md S5 alignment",
+      "status": "completed",
+      "completed_at": "2026-06-10T05:58:28.330Z",
+      "skill_receipt": {
+        "loaded_at": "2026-06-10T05:58:28.330Z",
+        "loaded_via": "execute-changeset (WI-399 run1, inline orchestrator)",
+        "output_artifact": "CLAUDE.md S5 paragraph",
+        "validation_output": "grep S5-policy CLAUDE.md"
+      }
+    },
+    {
+      "id": "t7-fixtures",
+      "skill": "execute-changeset",
+      "title": "Negative fixtures + spawn-count net (B7 part 2)",
+      "status": "completed",
+      "completed_at": "2026-06-10T05:58:28.330Z",
+      "skill_receipt": {
+        "loaded_at": "2026-06-10T05:58:28.330Z",
+        "loaded_via": "execute-changeset (WI-399 run1, inline orchestrator)",
+        "output_artifact": "3 tier-1 validators extended/created",
+        "validation_output": "all 3 validators PASS serial"
+      }
+    },
+    {
+      "id": "t8-review",
+      "skill": "review-exec",
+      "title": "G6 cross-model (codex primary)",
+      "status": "completed",
+      "completed_at": "2026-06-10T09:58:09.278Z",
+      "skill_receipt": {
+        "loaded_at": "2026-06-10T09:58:09.278Z",
+        "loaded_via": "review-exec (run4 closeout)",
+        "output_artifact": "activation record + B6/B8 in this PR",
+        "validation_output": "see WI doc activation record"
+      }
+    },
+    {
+      "id": "t9-land",
+      "skill": "land-changeset",
+      "title": "Envelope + PR + merge + deploy live",
+      "status": "completed",
+      "completed_at": "2026-06-10T07:07:37.427Z",
+      "skill_receipt": {
+        "loaded_at": "2026-06-10T07:07:37.427Z",
+        "loaded_via": "land-changeset + verify-promotion (run1)",
+        "output_artifact": "PR #68 squash 257ecc41; envelope complete; deployed (main reconciled, settings A1 applied + throwaway-validated)",
+        "validation_output": "post-A1 measured: Edit-chain -25.5% (333->248ms), Read-chain -50% (96->48ms), spawns 8->6; AC >=15% MET"
+      }
+    },
+    {
+      "id": "r2-a2-preamble",
+      "skill": "execute-changeset",
+      "title": "A2: destructive-preamble op+target + same-message",
+      "status": "completed",
+      "completed_at": "2026-06-10T07:22:49.818Z",
+      "skill_receipt": {
+        "loaded_at": "2026-06-10T07:22:49.818Z",
+        "loaded_via": "execute-changeset (WI-399 run2, inline orchestrator)",
+        "output_artifact": "hooks/svc-workflow-guard.mjs (op+target matcher, 300s window)",
+        "validation_output": "validate-workflow-guard.sh A2 cases 4/4 (3 respellings pass, wrong target blocks)"
+      }
+    },
+    {
+      "id": "r2-a4-config-ask",
+      "skill": "execute-changeset",
+      "title": "A4: config-protection -> native ask + override channel",
+      "status": "completed",
+      "completed_at": "2026-06-10T07:22:49.818Z",
+      "skill_receipt": {
+        "loaded_at": "2026-06-10T07:22:49.818Z",
+        "loaded_via": "execute-changeset (WI-399 run2, inline orchestrator)",
+        "output_artifact": "hooks/svc-workflow-guard.mjs (ask-class + hard-deny split + override channel)",
+        "validation_output": "ask JSON asserted for eslint/tsconfig; lockfile+.env exit 2; override fixture passes"
+      }
+    },
+    {
+      "id": "r2-a6-completion-cap",
+      "skill": "execute-changeset",
+      "title": "A6: real N-strike cap + claim ownership",
+      "status": "completed",
+      "completed_at": "2026-06-10T07:22:49.818Z",
+      "skill_receipt": {
+        "loaded_at": "2026-06-10T07:22:49.818Z",
+        "loaded_via": "execute-changeset (WI-399 run2, inline orchestrator)",
+        "output_artifact": "hooks/svc-task-completion-guard.sh (real cap + foreign-claim downgrade)",
+        "validation_output": "validate-completion-guard-no-max-escape.sh 5/5 (WI-183+WI-399 reconciled contract)"
+      }
+    },
+    {
+      "id": "r2-a7-session-state",
+      "skill": "execute-changeset",
+      "title": "A7: per-session loop-guard state + phase-gate claim preference (G6 F5)",
+      "status": "completed",
+      "completed_at": "2026-06-10T07:22:49.818Z",
+      "skill_receipt": {
+        "loaded_at": "2026-06-10T07:22:49.818Z",
+        "loaded_via": "execute-changeset (WI-399 run2, inline orchestrator)",
+        "output_artifact": "hooks/svc-loop-guard.mjs (session-keyed state) + workflow-guard claim-preferred lane-tasks (G6 F5)",
+        "validation_output": "syntax + validators green"
+      }
+    },
+    {
+      "id": "r2-a9-artifact-gate",
+      "skill": "execute-changeset",
+      "title": "A9: verification-stop-guard artifact gate, prose advisory",
+      "status": "completed",
+      "completed_at": "2026-06-10T07:22:49.818Z",
+      "skill_receipt": {
+        "loaded_at": "2026-06-10T07:22:49.818Z",
+        "loaded_via": "execute-changeset (WI-399 run2, inline orchestrator)",
+        "output_artifact": "scripts/verification-stop-guard.mjs (artifact-grounded gating)",
+        "validation_output": "delegation-detection validator A9 cases 3/3"
+      }
+    },
+    {
+      "id": "r2-review",
+      "skill": "review-exec",
+      "title": "G6 cross-model run2",
+      "status": "completed",
+      "completed_at": "2026-06-10T08:08:02.224Z",
+      "skill_receipt": {
+        "loaded_at": "2026-06-10T08:08:02.224Z",
+        "loaded_via": "review-exec (G6: codex quota -> gemini; R1 5 findings: 4 accepted+fixed w/ attack repros, F2 rejected w/ R11 reasoning; R2 VERDICT PASS)",
+        "output_artifact": "/tmp/wi399-run2-gemini.txt + r2",
+        "validation_output": "workflow-guard 50/0; completion contract 5/5; delegation 6/6+3/3; parity 47=47; full tier-1 PASS"
+      }
+    },
+    {
+      "id": "r2-land",
+      "skill": "land-changeset",
+      "title": "envelope + PR + merge + deploy",
+      "status": "completed",
+      "completed_at": "2026-06-10T08:33:13.730Z",
+      "skill_receipt": {
+        "loaded_at": "2026-06-10T08:33:13.730Z",
+        "loaded_via": "land-changeset + verify-promotion (run2)",
+        "output_artifact": "PR #69 squash c15bdbac; envelope complete; deployed live (atomic ledger-preserving fast-forward)",
+        "validation_output": "check-chain-receipts complete; guards live"
+      }
+    },
+    {
+      "id": "r3-b1-agents",
+      "skill": "execute-changeset",
+      "title": "B1: 9 locked agents + per-class sync locks + protocol wiring + validator",
+      "status": "completed",
+      "completed_at": "2026-06-10T08:33:13.730Z",
+      "skill_receipt": {
+        "loaded_at": "2026-06-10T08:33:13.730Z",
+        "loaded_via": "execute-changeset (run3, inline)",
+        "output_artifact": "agents/svc-*.md x9 + .claude/agents sync + 2 refs wired + validate-locked-agents.sh",
+        "validation_output": "validate-locked-agents.sh 22/0; sync --check drift-free"
+      }
+    },
+    {
+      "id": "r3-b5-journeys",
+      "skill": "write-journeys",
+      "title": "B5: J-FW-01..05 chain journeys + JOURNEY_INDEX",
+      "status": "completed",
+      "completed_at": "2026-06-10T08:33:13.730Z",
+      "skill_receipt": {
+        "loaded_at": "2026-06-10T08:33:13.730Z",
+        "loaded_via": "write-journeys (create mode, receipt logged in pipeline-decisions)",
+        "output_artifact": "docs/specs/journeys/J-FW-0{1..5}-*.feature.md + JOURNEY_INDEX rows",
+        "validation_output": "every scenario carries a Maps-to anchor; full tier-1 PASS"
+      }
+    },
+    {
+      "id": "r3-review",
+      "skill": "review-exec",
+      "title": "G6 run3",
+      "status": "completed",
+      "completed_at": "2026-06-10T08:41:43.874Z",
+      "skill_receipt": {
+        "loaded_at": "2026-06-10T08:41:43.874Z",
+        "loaded_via": "review-exec (G6 gemini: clean first round — 5x SEVERITY NONE, VERDICT PASS)",
+        "output_artifact": "/tmp/wi399-run3-gemini.txt",
+        "validation_output": "all 6 invariants confirmed; tier-1 PASS"
+      }
+    },
+    {
+      "id": "r3-land",
+      "skill": "land-changeset",
+      "title": "land run3",
+      "status": "completed",
+      "completed_at": "2026-06-10T09:58:09.278Z",
+      "skill_receipt": {
+        "loaded_at": "2026-06-10T09:58:09.278Z",
+        "loaded_via": "land-changeset (run4 closeout)",
+        "output_artifact": "activation record + B6/B8 in this PR",
+        "validation_output": "see WI doc activation record"
+      }
+    }
+  ],
+  "status": "completed",
+  "archived_note": "WI-399 VERIFIED 2026-06-10; archived by WI-399 run4 closeout"
+}

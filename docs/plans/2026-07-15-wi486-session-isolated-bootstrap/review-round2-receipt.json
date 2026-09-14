@@ -1,0 +1,195 @@
+{
+  "schema_version": 2,
+  "launcher_version": "2.2.0",
+  "cli_version": "codex-cli-exec 0.144.5",
+  "request_id": "3862086a-fa9f-46ea-a79a-68d5e49b14fc",
+  "review_kind": "plan",
+  "package_sha256": "8fc482b44ebadf17ea86a7997795708ab53d85f70c2b8ea40942b5462665edd0",
+  "findings_schema_sha256": "f742e7410648aea34b4eaad056466ec819dff20981e2ae60960889068172facf",
+  "cache_key": "5c5e5cf0f65c3a4b1273f14565a67a2593fe829d4e14a1e05b3478a766caad36",
+  "fixture_mode": false,
+  "started_at": "2026-07-16T14:48:39.275Z",
+  "finished_at": "2026-07-16T14:51:42.885Z",
+  "status": "success",
+  "classification": "success",
+  "requested_tuple": {
+    "orchestrator": "claude",
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6-sol",
+    "effort": "high"
+  },
+  "invocation_tuple": {
+    "orchestrator": "claude",
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6-sol",
+    "effort": "high"
+  },
+  "effective_tuple": {
+    "orchestrator": "claude",
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6-sol",
+    "effort": "high"
+  },
+  "attempts": [
+    {
+      "index": 1,
+      "tuple": {
+        "orchestrator": "claude",
+        "host": "codex",
+        "family": "openai",
+        "model": "gpt-5.6-sol",
+        "effort": "high"
+      },
+      "started_at": "2026-07-16T14:48:39.841Z",
+      "finished_at": "2026-07-16T14:51:42.883Z",
+      "exit_code": 0,
+      "classification": "success",
+      "artifacts": {
+        "events": "/tmp/claude-1000/-home-dianast-app-workspaces-seriousvibecoding/337044a1-701f-40c8-8930-b03f561c448e/scratchpad/wi486-plan-review/attempt-1-events.jsonl",
+        "stderr": "/tmp/claude-1000/-home-dianast-app-workspaces-seriousvibecoding/337044a1-701f-40c8-8930-b03f561c448e/scratchpad/wi486-plan-review/attempt-1-stderr.log",
+        "findings": "/tmp/claude-1000/-home-dianast-app-workspaces-seriousvibecoding/337044a1-701f-40c8-8930-b03f561c448e/scratchpad/wi486-plan-review/attempt-1-findings.json"
+      },
+      "usage": {
+        "input_tokens": 56221,
+        "cached_input_tokens": 0,
+        "output_tokens": 6458,
+        "reasoning_output_tokens": 4095,
+        "observed_models": []
+      }
+    }
+  ],
+  "fallback": {
+    "eligible": false,
+    "used": false,
+    "reason": null
+  },
+  "override": {
+    "used": false,
+    "authority": null,
+    "source": null,
+    "path": null,
+    "expected_sha256": null,
+    "actual_sha256": null
+  },
+  "policy": {
+    "version": 3,
+    "profile": "codex-high",
+    "source": "fixed-policy",
+    "resolved_at": "2026-07-16T14:48:39.274Z",
+    "effective_window": {
+      "starts_at": null,
+      "ends_at": null
+    },
+    "cutover_utc": "2026-07-19T21:00:00Z",
+    "cutover_local": "2026-07-20 00:00:00 EEST",
+    "timezone": "Europe/Sofia",
+    "selection_sha256": null,
+    "selection_expires_at": null,
+    "selection_authority": null
+  },
+  "protocol": {
+    "process_invocations": 1,
+    "configured_turn_ceiling": null,
+    "configured_budget_usd": null,
+    "reported_turns": null,
+    "stop_reason": null,
+    "terminal_reason": null,
+    "errors": []
+  },
+  "route": {
+    "kind": "exact_primary",
+    "switching_enabled": false,
+    "cli_fallback_configured": false,
+    "evidence": "requested_primary"
+  },
+  "effective_effort": {
+    "value": "high",
+    "provenance": "requested"
+  },
+  "model_attestation": {
+    "level": "requested_accepted",
+    "requested_model": "gpt-5.6-sol",
+    "observed_models": [],
+    "evidence": "exact_model_argv_plus_successful_auth_schema_exit_no_server_model_echo"
+  },
+  "phase_guard": {
+    "applicable": true,
+    "kind": "plan",
+    "decision": "allow",
+    "reason": "pre_execution_state_verified",
+    "wi": "WI-486",
+    "pre_execution_base": "99da8bcf873d4d2a7b2a2becfb19759c71e3d2de",
+    "plan_manifest_sha256": "6ee9732ff72e0b510f4d7cdac29d5206070c9495de4ed15c9ede08004a28cb5e",
+    "exec_record_present": false,
+    "exec_record_path": null,
+    "implementation_diverged": false,
+    "diverged_files": [],
+    "base_resolved": true,
+    "override": {
+      "used": false,
+      "authority": null,
+      "source": null,
+      "path": null,
+      "expected_sha256": null,
+      "actual_sha256": null,
+      "kind": null
+    }
+  },
+  "package_context": {
+    "version": 1,
+    "context_root": "/workspace/seriousvibecoding/.worktrees/framework-WI-486-isolated-bootstrap",
+    "base_package_sha256": "a8cffd32cd11f409570fb4ac4ea53b35ac8ee0b49843aa6a6ee3249a7c840e55",
+    "files": [
+      {
+        "path": "target:AGENTS.md",
+        "sha256": "8a581d78b52cc5d8ea5e968067aa17ff8710ec119825cd4dc2adf00317e16e51",
+        "bytes": 23019
+      },
+      {
+        "path": "target:CLAUDE.md",
+        "sha256": "7642decad9c1522b0751d82b1a7d06d878e94e2019b08782576cd8660ad08464",
+        "bytes": 11370
+      },
+      {
+        "path": "framework:review-plan/SKILL.md",
+        "sha256": "04e5cbd3545160abce474329b5ef52353f06ef1e3f45bc8b9005fcebe0d38333",
+        "bytes": 18630
+      },
+      {
+        "path": "framework:review-cross-model/SKILL.md",
+        "sha256": "52ec7642ce1952429f26595a622f412ab88344c04789f457f15f81af981d5b32",
+        "bytes": 17815
+      },
+      {
+        "path": "framework:references/plan-review-protocol.md",
+        "sha256": "ca3ce126d412b67e780bfc32b4c0b6827f4e0fdcd313f51872391156778751ae",
+        "bytes": 9730
+      },
+      {
+        "path": "framework:rules/plan-changeset-trigger.md",
+        "sha256": "63385c5d1d31e0afb83118184bbe8c5ff20fabf2f9c815a1d81679d3b956ebba",
+        "bytes": 3661
+      }
+    ]
+  },
+  "cache": {
+    "disposition": "published",
+    "reusable": true,
+    "entry": "/workspace/seriousvibecoding/.worktrees/framework-WI-486-isolated-bootstrap/.svc/external-review-cache/v1/5c5e5cf0f65c3a4b1273f14565a67a2593fe829d4e14a1e05b3478a766caad36"
+  },
+  "artifacts": {
+    "findings": "/tmp/claude-1000/-home-dianast-app-workspaces-seriousvibecoding/337044a1-701f-40c8-8930-b03f561c448e/scratchpad/wi486-plan-review/findings.json",
+    "receipt": "/tmp/claude-1000/-home-dianast-app-workspaces-seriousvibecoding/337044a1-701f-40c8-8930-b03f561c448e/scratchpad/wi486-plan-review/receipt.json",
+    "capabilities": "/tmp/claude-1000/-home-dianast-app-workspaces-seriousvibecoding/337044a1-701f-40c8-8930-b03f561c448e/scratchpad/wi486-plan-review/capabilities.log"
+  },
+  "usage": {
+    "input_tokens": 56221,
+    "cached_input_tokens": 0,
+    "output_tokens": 6458,
+    "reasoning_output_tokens": 4095,
+    "observed_models": []
+  }
+}

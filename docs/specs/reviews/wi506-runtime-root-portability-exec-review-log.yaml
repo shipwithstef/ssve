@@ -1,0 +1,97 @@
+review: WI-506-exec-git-cas-final
+rounds_run: 3
+hard_round_cap: 3
+unresolved_critical: 0
+remaining_high: 0
+remaining_medium: 2
+remaining_low: 6
+remaining_info: 1
+terminal_state: PASS_WITH_FINDINGS
+certification:
+  key: review-exec-independent-adversarial
+  certified: true
+  reviewer_family: anthropic
+  model: claude-opus-4-8
+  effort: high
+  fallback_used: false
+  for_content_sha: 1dd847dbdd4df0ca6d3d58899df668bcdda4170f1c1c417574df31f48806f81d
+rounds:
+  - round: 1
+    artifacts: .svc/impact-triad/WI-506/review-git-cas-final
+    result: remediation_required
+    high: 3
+  - round: 2
+    artifacts: .svc/impact-triad/WI-506/review-git-cas-round2
+    result: certified
+    high: 0
+  - round: 3
+    artifacts: .svc/impact-triad/WI-506/review-git-cas-round3
+    result: certified-pass-with-findings
+    high: 0
+bounded_exit:
+  reason: final hard-cap round has no unresolved critical or high findings; remaining findings are bounded availability, compatibility, diagnostic, and performance backlog
+  dispositions:
+    - id: WI506-EXEC-R2-001
+      severity: medium
+      decision: accept-as-backlog
+      justification: throughput optimization only; exact Git CAS correctness is certified and full Tier-1 remains required
+    - id: WI506-EXEC-R2-002
+      severity: low
+      decision: accept-as-backlog
+      justification: narrow diagnostic race emits retryable invalid recovery text but cannot steal or wedge authority
+    - id: WI506-EXEC-R2-003
+      severity: low
+      decision: accept-as-backlog
+      justification: timestamp is operator observability only and must never become a takeover grant
+    - id: WI506-EXEC-R2-004
+      severity: low
+      decision: accept-as-backlog
+      justification: ephemeral-hostname recovery remains safely manual and exact-OID conditional
+    - id: WI506-EXEC-R2-005
+      severity: low
+      decision: accept-with-documentation
+      justification: refs/svc authority locks are machine-local coordination refs and must be excluded from mirror refspecs
+    - id: WI506-EXEC-R2-006
+      severity: info
+      decision: accept-with-clarification
+      justification: acceptance boundary is the exact non-code extension allowlist rather than executable mode bits
+    - id: WI506-EXEC-R2-007
+      severity: info
+      decision: confirmed-good
+      justification: production dependencies conclusively close the round-one source-context questions
+    - id: WI506-EXEC-R3-001
+      severity: medium
+      decision: accept-as-bounded-backlog
+      justification: release failure remains fail-closed and retains exact recovery evidence; hard consumers misclassify a rare post-operation cleanup failure but do not grant authority
+    - id: WI506-EXEC-R3-002
+      severity: medium
+      decision: accept-as-bounded-backlog
+      justification: non-canonical repo roots can lose repo-local precedence but only fall back to the separately trusted installed skill boundary; supported canonical installations remain covered
+    - id: WI506-EXEC-R3-003
+      severity: low
+      decision: accept-as-backlog
+      justification: symref poisoning stays fail-closed; follow-up should align read and no-deref recovery semantics
+    - id: WI506-EXEC-R3-004
+      severity: low
+      decision: accept-as-backlog
+      justification: malformed completion pressure is advisory and non-authoritative; canonical cleanup is already lifecycle backlog
+    - id: WI506-EXEC-R3-005
+      severity: low
+      decision: accept-with-documentation-followup
+      justification: all governed graph migrations run inside local Git repositories; minimum-version diagnostics can be clarified without changing authority
+    - id: WI506-EXEC-R3-006
+      severity: low
+      decision: accept-as-backlog
+      justification: unknown-OID and self-reentrant messages are misleading but fail closed and cannot steal a lock
+    - id: WI506-EXEC-R3-007
+      severity: low
+      decision: accept-with-documentation
+      justification: docs and proposals are inert planning surfaces never loaded by production hooks scripts or bin; moves into executable roots are now visible
+    - id: WI506-EXEC-R3-008
+      severity: low
+      decision: fixed-in-review-finalization
+      justification: round log and markdown now record round 3 and its certified content SHA before the cap gate runs
+    - id: WI506-EXEC-R3-009
+      severity: info
+      decision: accept-as-maintainability-backlog
+      justification: naming and explicit sentinel improvements do not change the proven behavior

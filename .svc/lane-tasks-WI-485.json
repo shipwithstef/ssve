@@ -1,0 +1,372 @@
+{
+  "wi": "WI-485",
+  "lane": "framework",
+  "title": "Codex execution integrity",
+  "created": "2026-07-14T12:18:36Z",
+  "source": "worktree-init",
+  "status": "completed",
+  "delivery_tier": {
+    "mode": "full"
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "execute-changeset",
+      "status": "completed",
+      "subject": "Implement frozen WI-485 manifest",
+      "metadata": {
+        "skill": "execute-changeset",
+        "wi": "WI-485"
+      },
+      "blocked_by": [],
+      "args": {
+        "mode": "inline"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-07-14T12:20:00Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "output_artifact": "git diff origin/main...HEAD",
+        "validation_output": "focused WI-485 validator 28/28; feature-flag and Stop-stdin validators pass; full tier-1 239/239",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-07-14T12:20:10Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "bash scripts/resolve-model.sh EXEC --json"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-07-14T12:40:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "hooks/codex/lib/codex-hook-context.mjs"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-07-14T12:46:55Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "bash test-framework/evals/run-all-evals.sh"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-07-14T12:47:00Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "git log origin/main..HEAD"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T12:47:00Z"
+    },
+    {
+      "id": 2,
+      "skill": "review-exec",
+      "status": "completed",
+      "subject": "Mandatory adversarial review of executed diff",
+      "metadata": {
+        "skill": "review-exec",
+        "wi": "WI-485"
+      },
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-07-14T12:47:00Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-07-14T14:10:50.677Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-485-codex-execution-integrity-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-07-14T14:10:50.724Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "scripts/resolve-adversarial-reviewer.sh"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-07-14T14:10:50.766Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-485-codex-execution-integrity-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-IterationLoop",
+            "ts": "2026-07-14T14:10:50.832Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-485-codex-execution-integrity-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerdictAndReceiptFinalize",
+            "ts": "2026-07-14T14:10:50.907Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-485-codex-execution-integrity-exec-cross-model.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T14:10:50.959Z"
+    },
+    {
+      "id": 3,
+      "skill": "audit-implementation",
+      "status": "completed",
+      "subject": "Audit AC coverage and host-control correctness",
+      "metadata": {
+        "skill": "audit-implementation",
+        "wi": "WI-485"
+      },
+      "blocked_by": [
+        2
+      ],
+      "args": {
+        "mode": "full"
+      },
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-07-14T14:10:51.067Z",
+        "loaded_via": "manual",
+        "output_artifact": "docs/specs/audit/wi-485-codex-execution-integrity-analysis.md",
+        "validation_output": "focused WI-485 validator 88/88; full tier-1 239/239; Fable/Claude frozen-diff APPROVE",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextScopeConcern",
+            "ts": "2026-07-14T15:24:30.092Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-implementation-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecialistDispatchCoverageLedger",
+            "ts": "2026-07-14T15:24:30.148Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-485-codex-execution-integrity-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-HypothesisGeneration",
+            "ts": "2026-07-14T15:24:30.203Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-485-codex-execution-integrity-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-SubsystemBehaviorAudit",
+            "ts": "2026-07-14T15:24:30.253Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-implementation-subsystems.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-FindingsConvergenceReport",
+            "ts": "2026-07-14T15:24:30.302Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-485-codex-execution-integrity-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-14T15:24:30.357Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/audit-implementation-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T15:25:04.176Z"
+    },
+    {
+      "id": 4,
+      "skill": "land-changeset",
+      "status": "completed",
+      "subject": "Land WI-485 through reviewed PR",
+      "metadata": {
+        "skill": "land-changeset",
+        "wi": "WI-485"
+      },
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-07-14T15:25:04.340Z",
+        "loaded_via": "codex-load-skill",
+        "output_artifact": "https://github.com/s7an-it/seriousvibecoding/pull/131",
+        "validation_output": "PR mergeable; review receipt PASS; focused 88/88; full tier-1 239/239 after origin/main integration",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-07-14T15:29:08.480Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-07-14T15:29:08.553Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-diff-audit.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-07-14T15:29:08.607Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-validation.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-PushPrCreation",
+            "ts": "2026-07-14T15:46:57.572Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-pr.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-MergeDecisionCleanup",
+            "ts": "2026-07-14T15:46:57.612Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-merge.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SpecStatusSelfVerify",
+            "ts": "2026-07-14T15:46:57.653Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T15:47:38.899Z"
+    },
+    {
+      "id": 5,
+      "skill": "verify-promotion",
+      "status": "completed",
+      "subject": "Verify WI-485 post-merge and installed Codex state",
+      "metadata": {
+        "skill": "verify-promotion",
+        "wi": "WI-485"
+      },
+      "blocked_by": [
+        4
+      ],
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-07-14T16:16:23.110Z",
+        "loaded_via": "codex-load-skill",
+        "output_artifact": "docs/specs/verification/wi-485-codex-execution-integrity.md",
+        "validation_output": "trusted installed Codex 0.144.4 deny-load-allow + foreign-Stop trace; focused 88/88; full tier-1 239/239",
+        "target_class": "infra",
+        "evidence_level": "V2",
+        "evidence_artifacts": [
+          {
+            "type": "file",
+            "path": "docs/specs/verification/wi-485-codex-execution-integrity.md"
+          },
+          {
+            "type": "file",
+            "path": "docs/specs/verification/wi-485-pre-post-evidence.json"
+          }
+        ],
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-07-14T16:23:27Z",
+            "evidence_artifacts": [{ "type": "file", "path": "docs/specs/verification/wi-485-codex-execution-integrity.md" }]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-07-14T16:24:00Z",
+            "evidence_artifacts": [{ "type": "file", "path": "docs/specs/verification/wi-485-codex-execution-integrity.md" }]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-07-14T16:25:00Z",
+            "evidence_artifacts": [{ "type": "file", "path": "docs/specs/verification/wi-485-live-runtime-trace.json" }]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-07-14T16:26:00Z",
+            "evidence_artifacts": [{ "type": "file", "path": "docs/specs/verification/wi-485-pre-post-evidence.json" }]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T16:26:01Z"
+    }
+  ]
+}

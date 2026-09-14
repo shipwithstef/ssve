@@ -1,0 +1,461 @@
+{
+  "schema_version": 1,
+  "wi": "WI-487",
+  "lane": "framework",
+  "title": "Durable installed enforcement source",
+  "created": "2026-07-17T05:14:57.285Z",
+  "source": "improve-framework-intake",
+  "status": "pending",
+  "delivery_tier": {
+    "mode": "full"
+  },
+  "persona_coverage": {
+    "status": "not_required",
+    "reason": "Internal framework-lane Enabler (install-integrity + hook-denial contract); no end-user-facing surface or persona differentiation. System-only S1 Framework Orchestrator flow per docs/specs/decisions/wi-487-durable-install-enforcement.md."
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "improve-framework",
+      "status": "completed",
+      "subject": "Diagnose the durable-install fail-open gap and register WI-487",
+      "metadata": {
+        "skill": "improve-framework",
+        "wi": "WI-487"
+      },
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-07-15T09:00:00.000Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "output_artifact": "proposals/2026-07-15-framework-improvement-durable-install-source.md",
+        "validation_output": "proposal accepted as WI-487; gap, evidence, 12 ACs, negative tests, and route recorded; Fable 5 high intake review"
+      },
+      "completed_at": "2026-07-15T09:45:00.000Z"
+    },
+    {
+      "id": 2,
+      "skill": "diagnose-bug",
+      "status": "completed",
+      "subject": "Reproduce fail-open loss of enforcement, opaque code-1 storm, and legacy-machine loop",
+      "metadata": {
+        "skill": "diagnose-bug",
+        "wi": "WI-487"
+      },
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "diagnose-bug",
+        "loaded_at": "2026-07-15T10:00:00.000Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "phases_executed": [
+          {
+            "id": "P1-Inputs",
+            "ts": "2026-07-15T10:05:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "proposals/2026-07-15-framework-improvement-durable-install-source.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-Reproduction",
+            "ts": "2026-07-15T10:10:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/diagnose-WI-487-reproduction.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-RootCause",
+            "ts": "2026-07-15T10:15:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "proposals/2026-07-15-framework-improvement-durable-install-source.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-FixPlan",
+            "ts": "2026-07-15T10:20:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/diagnose-WI-487-fix-plan.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-PillarRevisit",
+            "ts": "2026-07-15T10:25:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/diagnose-WI-487-pillars.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "proposals/2026-07-15-framework-improvement-durable-install-source.md",
+        "validation_output": "root cause: installed enforcement resolves through an ephemeral source; loss fails open; denials anonymous; legacy machines loop. Distinguished from WI-485."
+      },
+      "completed_at": "2026-07-15T10:30:00.000Z"
+    },
+    {
+      "id": 3,
+      "skill": "write-spec",
+      "status": "completed",
+      "subject": "Baseline the durable-install enforcement acceptance contract (AC-487-1..12)",
+      "metadata": {
+        "skill": "write-spec",
+        "wi": "WI-487"
+      },
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "write-spec",
+        "loaded_at": "2026-07-17T07:50:00.000Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "phases_executed": [
+          {
+            "id": "P1-ContextAndModeSelection",
+            "ts": "2026-07-17T07:52:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/write-spec-WI-487-context-mode.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiscussionPreflightAndAlternatives",
+            "ts": "2026-07-17T07:54:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/write-spec-WI-487-discussion-alternatives.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-StoryAcceptanceCriteriaDraft",
+            "ts": "2026-07-17T07:56:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/wi-487-durable-install-enforcement.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ScopeReviewDecisionLog",
+            "ts": "2026-07-17T07:58:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/write-spec-WI-487-scope-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-JourneySyncDependencyQueue",
+            "ts": "2026-07-17T08:00:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/write-spec-WI-487-journey-sync.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyHandoff",
+            "ts": "2026-07-17T08:02:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/wi-487-durable-install-enforcement.md"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/specs/features/wi-487-durable-install-enforcement.md",
+        "validation_output": "BASELINED; AC-487-1..12 transcribed verbatim; passes validate-industry-grounding-section; WI-486 delegation boundary declared"
+      },
+      "completed_at": "2026-07-17T08:03:00.000Z"
+    },
+    {
+      "id": 4,
+      "skill": "design-tech",
+      "status": "completed",
+      "subject": "Design durable-source classification, fail-closed enforcement, actionable denial, and all-host migration",
+      "metadata": {
+        "skill": "design-tech",
+        "wi": "WI-487",
+        "signal": "technical-risk"
+      },
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "design-tech",
+        "loaded_at": "2026-07-17T08:05:00.000Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "phases_executed": [
+          {
+            "id": "P1-SpecJourneyDiscussionPreflight",
+            "ts": "2026-07-17T08:07:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/design-tech-WI-487-preflight.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-CodebasePatternAnalysis",
+            "ts": "2026-07-17T08:09:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/design-tech-WI-487-codebase-analysis.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ArchitectureAlternativesAndDiagrams",
+            "ts": "2026-07-17T08:11:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/decisions/wi-487-durable-install-enforcement.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-CostOpsFeasibilityRiskDesign",
+            "ts": "2026-07-17T08:13:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/wi-487-durable-install-enforcement.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-G4ReviewAndDecisionLogging",
+            "ts": "2026-07-17T08:15:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/design-tech-WI-487-g4-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-BaselinedSpecSelfVerify",
+            "ts": "2026-07-17T08:17:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/wi-487-durable-install-enforcement.md"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/specs/decisions/wi-487-durable-install-enforcement.md",
+        "validation_output": "D-1..D-9 accepted; G4 PASS; fail-closed default, denial-dedup-keeps-deny, and WI-486 delegation (no second migrator) decided"
+      },
+      "completed_at": "2026-07-17T08:18:00.000Z"
+    },
+    {
+      "id": 5,
+      "skill": "plan-changeset",
+      "status": "completed",
+      "subject": "Plan WI-487 deterministically at high reasoning (TDD red-first, all-host migration, WI-486 delegation)",
+      "metadata": {
+        "skill": "plan-changeset",
+        "wi": "WI-487",
+        "reasoning": "high"
+      },
+      "blocked_by": [
+        4
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-07-17T08:20:00.000Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-07-17T08:22:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-WI-487-archetype.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-07-17T08:24:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-WI-487-scope.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-07-17T08:26:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-17-wi487-durable-install-enforcement/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-07-17T08:28:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-17-wi487-durable-install-enforcement/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-07-17T08:30:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-WI-487-review.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-07-17T08:32:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-WI-487-self-verify.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-07-17-wi487-durable-install-enforcement/manifest.md",
+        "validation_output": "deterministic manifest at high reasoning; $BASE=835e365a pinned; BASELINE 246/2/0 (2 env-reds); files-planned + TDD red-first task graph + tier-1 promotion notes + rollback"
+      },
+      "completed_at": "2026-07-17T08:33:00.000Z"
+    },
+    {
+      "id": 6,
+      "skill": "review-plan",
+      "status": "completed",
+      "subject": "Adversarial plan review of the WI-487 manifest via the deterministic external launcher (gpt-5.6-sol/high)",
+      "metadata": {
+        "skill": "review-plan",
+        "wi": "WI-487"
+      },
+      "blocked_by": [
+        5
+      ],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-07-17T04:00:00.000Z",
+        "loaded_via": "route-workflow",
+        "output_artifact": "docs/plans/2026-07-17-wi487-durable-install-enforcement/review-log.yaml",
+        "validation_output": "gpt-5.6-sol 2-round bounded plan review, 20 findings all resolved, 0 unresolved critical; check-review-round-cap validates PROMOTED"
+      }
+    },
+    {
+      "id": 7,
+      "skill": "execute-changeset",
+      "status": "in_progress",
+      "subject": "Execute the reviewed WI-487 changeset (RED fixtures first, then durable-source, denial helper, all-host migration, green)",
+      "metadata": {
+        "skill": "execute-changeset",
+        "wi": "WI-487",
+        "reasoning": "medium"
+      },
+      "blocked_by": [
+        6
+      ]
+    },
+    {
+      "id": 8,
+      "skill": "review-exec",
+      "status": "pending",
+      "subject": "Independent review of the frozen WI-487 implementation diff",
+      "metadata": {
+        "skill": "review-exec",
+        "wi": "WI-487"
+      },
+      "blocked_by": [
+        7
+      ]
+    },
+    {
+      "id": 9,
+      "skill": "review-security",
+      "status": "pending",
+      "subject": "Security review: fail-open bypass, ephemeral-classification evasion, forged receipts, dedup-to-allow, migration config overwrite, second-migrator boundary",
+      "metadata": {
+        "skill": "review-security",
+        "wi": "WI-487",
+        "signal": "auth-surface"
+      },
+      "blocked_by": [
+        8
+      ]
+    },
+    {
+      "id": 10,
+      "skill": "audit-implementation",
+      "status": "pending",
+      "subject": "Audit durable-source integrity, fail-closed enforcement, denial dedup, and WI-486 delegation (no self graph write)",
+      "metadata": {
+        "skill": "audit-implementation",
+        "wi": "WI-487"
+      },
+      "blocked_by": [
+        9
+      ]
+    },
+    {
+      "id": 11,
+      "skill": "land-changeset",
+      "status": "pending",
+      "subject": "Open, independently review, and merge the WI-487 implementation PR (6a)",
+      "metadata": {
+        "skill": "land-changeset",
+        "wi": "WI-487"
+      },
+      "blocked_by": [
+        10
+      ]
+    },
+    {
+      "id": 12,
+      "skill": "verify-promotion",
+      "status": "pending",
+      "subject": "Verify WI-487 from promoted origin/main; flip status VERIFIED and close the lane graph (6b)",
+      "metadata": {
+        "skill": "verify-promotion",
+        "wi": "WI-487"
+      },
+      "blocked_by": [
+        11
+      ]
+    }
+  ]
+}

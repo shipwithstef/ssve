@@ -1,0 +1,77 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "svc-receipt-control-plan",
+  "title": "control-plan receipt (WI-410 blind-control-plan floor)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "receipt_type",
+    "schema_version",
+    "wi",
+    "blind_model",
+    "framework_model",
+    "profile",
+    "registry_version",
+    "floor_verdict",
+    "element_ledger",
+    "judge",
+    "tree_hash",
+    "timestamp"
+  ],
+  "properties": {
+    "receipt_type": { "const": "control-plan" },
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "wi": { "type": "string", "pattern": "^WI-" },
+    "blind_model": { "type": "string", "minLength": 1, "description": "model family/id that authored the context-starved blind plan B" },
+    "framework_model": { "type": "string", "minLength": 1, "description": "model that authored the framework plan F" },
+    "profile": { "type": "string", "minLength": 1 },
+    "registry_version": { "type": "string", "minLength": 1, "description": "model-registry version — anchors the v2 model-upgrade rot sentinel" },
+    "floor_verdict": {
+      "enum": ["pass", "blind-adopted", "fail"],
+      "description": "pass = F shipped, zero uncertified REMOVE/ALTER; blind-adopted = B shipped verbatim (retention escape hatch); fail = uncertified removal/weakening detected (WARN in v1, BLOCK in v2)"
+    },
+    "element_ledger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kept", "added", "refined", "removed", "altered"],
+      "properties": {
+        "kept": { "type": "array", "items": { "type": "string" } },
+        "added": { "type": "array", "items": { "type": "string" } },
+        "refined": { "type": "array", "items": { "type": "string" }, "description": "changed B-elements with a valid cross-family certified_strict_improvement" },
+        "removed": { "type": "array", "items": { "type": "string" }, "description": "B-elements absent from F WITHOUT a valid cross-family certification (violations)" },
+        "altered": { "type": "array", "items": { "type": "string" }, "description": "changed B-elements WITHOUT a valid cross-family certification (violations)" }
+      }
+    },
+    "judge": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["reviewer_host", "reviewer_family", "certifications"],
+      "properties": {
+        "reviewer_host": { "type": "string" },
+        "reviewer_family": {
+          "type": "string",
+          "description": "MUST differ from the orchestrator family (anthropic). check-chain-receipts re-derives this; a pass/refined row certified by reviewer_family==anthropic is a forged verdict (rejected)."
+        },
+        "certifications": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": ["key", "certified_strict_improvement", "reviewer_family"],
+            "properties": {
+              "key": { "type": "string" },
+              "certified_strict_improvement": { "type": "boolean" },
+              "reviewer_family": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "contamination_note": {
+      "type": "string",
+      "description": "honest disclosure: B was authored context-starved but by the same model family as F, so it is not provably framework-free (WI-410 accepted risk)"
+    },
+    "tree_hash": { "type": "string", "description": "WI-396 squash-invariant bind" },
+    "timestamp": { "type": "string" }
+  }
+}

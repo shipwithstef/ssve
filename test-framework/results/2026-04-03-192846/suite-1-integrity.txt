@@ -1,0 +1,40 @@
+=== Vibomatic Pipeline Integrity: todo-api ===
+
+--- Skill Pack Structure ---
+  SKIP  skills-manifest.json (not a skill pack — OK for projects)
+
+--- Foundational Artifacts ---
+  PASS  vision.md exists
+  PASS  at least 1 persona exists (1 found)
+
+--- Feature Specs ---
+  PASS  at least 1 feature spec exists (2 found)
+  PASS  enabler-overdue-checker has Status field
+  PASS  enabler-overdue-checker has Type field
+  PASS  enabler-overdue-checker has AC table(s)
+  PASS  feature-todo-management has Status field
+  PASS  feature-todo-management has Type field
+  PASS  feature-todo-management has AC table(s)
+
+--- Journeys ---
+  PASS  at least 1 journey exists (1 found)
+  PASS  J01-todo-lifecycle AC references found in feature specs
+
+--- UX/UI Designs ---
+  PASS  UX designs exist for Feature-type specs (1 found)
+  PASS  UI designs exist for Feature-type specs (1 found)
+
+--- Design System ---
+  PASS  design-system.md exists (required by UI designs)
+
+--- Change Set ---
+  PASS  at least 1 change set manifest exists (1 found)
+
+--- Feature Type Coverage ---
+  PASS  Feature-type specs exist (1 found)
+  INFO  Enabler-type specs: 1
+  INFO  Integration-type specs: 0
+0
+
+=== Results: 16 passed, 0 failed (of 16 checks) ===
+All checks passed.

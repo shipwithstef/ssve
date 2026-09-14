@@ -1,0 +1,1219 @@
+{
+  "sources": [
+    {
+      "name": "gstack",
+      "url": "https://github.com/garrytan/gstack",
+      "license": "MIT",
+      "author": "Garry Tan",
+      "blends": [
+        {
+          "sha": "unknown-pre-registry",
+          "date": "2026-04-05",
+          "patterns_taken": [
+            {
+              "external_path": "skills/",
+              "svc_target": "route-workflow/SKILL.md",
+              "pattern": "P0 founder persona and forcing questions"
+            },
+            {
+              "external_path": "skills/",
+              "svc_target": "review-gate/SKILL.md",
+              "pattern": "Adversarial CEO/design/eng review gates"
+            },
+            {
+              "external_path": "skills/",
+              "svc_target": "review-security/SKILL.md",
+              "pattern": "/cso OWASP + STRIDE security audit"
+            },
+            {
+              "external_path": "skills/",
+              "svc_target": "manage-learnings/SKILL.md",
+              "pattern": "/learn institutional memory"
+            },
+            {
+              "external_path": "skills/",
+              "svc_target": "test-journeys/SKILL.md",
+              "pattern": "/browse headless browser integration"
+            },
+            {
+              "external_path": "skills/",
+              "svc_target": "design-ui/SKILL.md",
+              "pattern": "/design-consultation and /design-shotgun"
+            },
+            {
+              "external_path": "skills/",
+              "svc_target": "diagnose-bug/SKILL.md",
+              "pattern": "/investigate root-cause-first debugging"
+            },
+            {
+              "external_path": "skills/",
+              "svc_target": "land-changeset/SKILL.md",
+              "pattern": "/ship version bump and PR workflow"
+            },
+            {
+              "external_path": "skills/",
+              "svc_target": "verify-promotion/SKILL.md",
+              "pattern": "/canary post-deploy monitoring"
+            }
+          ],
+          "patterns_skipped": []
+        },
+        {
+          "sha": "9d34baa973475d4901c8e8aee2e94e33f9417679",
+          "date": "2026-04-08",
+          "patterns_taken": [
+            {
+              "external_path": "review/SKILL.md + review/specialists/*.md",
+              "svc_target": "audit-implementation/SKILL.md",
+              "pattern": "Review Army specialist dispatch \u2014 6 parallel specialists with adaptive gating"
+            },
+            {
+              "external_path": "ship/SKILL.md Step 3.45",
+              "svc_target": "land-changeset/SKILL.md",
+              "pattern": "Plan completion audit \u2014 per-task DONE/PARTIAL/MISSING verification"
+            },
+            {
+              "external_path": "review/SKILL.md Step 2",
+              "svc_target": "audit-implementation/SKILL.md",
+              "pattern": "Scope drift detection \u2014 diff-vs-manifest comparison flags unplanned changes"
+            },
+            {
+              "external_path": "ship/SKILL.md Step 3",
+              "svc_target": "execute-changeset/SKILL.md",
+              "pattern": "Failure ownership triage \u2014 branch/pre-existing/flaky categorization"
+            },
+            {
+              "external_path": "design-review/SKILL.md",
+              "svc_target": "references/anti-patterns.md",
+              "pattern": "AI Slop blacklist \u2014 10 known-bad design patterns (AP-22)"
+            },
+            {
+              "external_path": "ETHOS.md",
+              "svc_target": "DOCTRINE.md",
+              "pattern": "Completeness principle \u2014 Boil the Lake"
+            },
+            {
+              "external_path": "ETHOS.md",
+              "svc_target": "execute-changeset/SKILL.md",
+              "pattern": "Search Before Building discipline \u2014 3-layer knowledge check"
+            },
+            {
+              "external_path": "ship/SKILL.md B2-B5 + qa/SKILL.md",
+              "svc_target": "execute-changeset/SKILL.md",
+              "pattern": "Test framework bootstrap \u2014 detect/install test runner before TDD"
+            }
+          ],
+          "patterns_skipped": [
+            {
+              "external_path": "devex-review/ + plan-devex-review/",
+              "reason": "Full new skills, not patterns. Would need new lane position and gate. DEFER."
+            },
+            {
+              "external_path": "pair-agent/",
+              "reason": "Multi-agent browser sharing \u2014 svc architecture doesn't need it"
+            },
+            {
+              "external_path": "open-gstack-browser/",
+              "reason": "Implementation detail of browse daemon, not methodology"
+            },
+            {
+              "external_path": "design-html/ (Pretext)",
+              "reason": "Adds OpenAI dependency, text-based specs sufficient"
+            },
+            {
+              "external_path": "benchmark/",
+              "reason": "Project-specific performance tracking, not pipeline-critical"
+            },
+            {
+              "external_path": "checkpoint/",
+              "reason": ".continue-here.md + progress.md sufficient"
+            },
+            {
+              "external_path": "document-release/",
+              "reason": "verify-promotion covers spec-sync"
+            },
+            {
+              "external_path": "health/",
+              "reason": "Code quality dashboard is nice-to-have, not pipeline-critical"
+            },
+            {
+              "external_path": "retro/",
+              "reason": "svc is a pipeline framework, not team management"
+            },
+            {
+              "external_path": "design/ ($D CLI)",
+              "reason": "Adds OpenAI dependency"
+            },
+            {
+              "external_path": "extension/",
+              "reason": "Browser UI is implementation artifact, not methodology"
+            },
+            {
+              "external_path": "scripts/gen-skill-docs.ts (template resolvers)",
+              "reason": "Different architecture \u2014 svc skills are self-contained markdown"
+            },
+            {
+              "external_path": "bin/gstack-session-update (team mode)",
+              "reason": "Install method is locked decision"
+            },
+            {
+              "external_path": "browse/src/content-security.ts (4-layer defense)",
+              "reason": "svc browses own app, not untrusted web"
+            },
+            {
+              "external_path": "hosts/ (multi-host config)",
+              "reason": "svc provisioning already works"
+            },
+            {
+              "external_path": "conductor.json (parallel sprints)",
+              "reason": "No equivalent architecture in svc"
+            },
+            {
+              "external_path": "autoplan/",
+              "reason": "svc progressive chaining covers auto-review pipeline"
+            }
+          ]
+        },
+        {
+          "sha": "a3259400a366593e0c909dd9ac3e59752efd2488",
+          "date": "2026-07-22",
+          "patterns_taken": [
+            {
+              "external_path": "bin/gstack-paths",
+              "svc_target": "WI-506 shared runtime-root resolver",
+              "pattern": "One explicit host-aware state-root precedence interface; adapted with SVC fail-closed ownership and mode validation"
+            }
+          ],
+          "patterns_skipped": [
+            {
+              "external_path": "bin/gstack-paths best-effort mkdir and caller-late failure",
+              "reason": "Suitable for convenience state, but unsafe for SVC authorization receipts and locks"
+            }
+          ]
+        }
+      ],
+      "upstream_ref_cmd": "git ls-remote https://github.com/garrytan/gstack HEAD"
+    },
+    {
+      "name": "superpowers",
+      "url": "https://github.com/obra/superpowers",
+      "license": "MIT",
+      "author": "Jesse Vincent",
+      "blends": [
+        {
+          "sha": "unknown-pre-registry",
+          "date": "2026-04-05",
+          "patterns_taken": [
+            {
+              "external_path": "skills/",
+              "svc_target": "plan-changeset/SKILL.md",
+              "pattern": "writing-plans task graph approach"
+            },
+            {
+              "external_path": "skills/",
+              "svc_target": "execute-changeset/SKILL.md",
+              "pattern": "Subagent-driven development and TDD execution"
+            }
+          ],
+          "patterns_skipped": []
+        },
+        {
+          "sha": "917e5f53b16b115b70a3a355ed5f4993b9f8b73d",
+          "date": "2026-04-08",
+          "patterns_taken": [
+            {
+              "external_path": "skills/writing-skills/SKILL.md",
+              "svc_target": "references/anti-patterns.md",
+              "pattern": "CSO anti-pattern: skill descriptions summarizing workflow cause shortcut bypass (AP-20)"
+            },
+            {
+              "external_path": "skills/test-driven-development/SKILL.md",
+              "svc_target": "create-skill/SKILL.md",
+              "pattern": "Anti-rationalization table format for discipline-enforcing skills"
+            },
+            {
+              "external_path": "skills/subagent-driven-development/SKILL.md",
+              "svc_target": "execute-changeset/SKILL.md",
+              "pattern": "Two-stage review ordering: spec compliance before code quality"
+            },
+            {
+              "external_path": "docs/plans/2025-11-28-skills-improvements-from-user-feedback.md",
+              "svc_target": "references/anti-patterns.md",
+              "pattern": "Mock-interface derivation gate: derive mock from interface, not code (AP-14 strengthening)"
+            },
+            {
+              "external_path": "skills/systematic-debugging/SKILL.md",
+              "svc_target": "diagnose-bug/SKILL.md",
+              "pattern": "Layer-by-layer diagnostic instrumentation at component boundaries"
+            },
+            {
+              "external_path": "skills/systematic-debugging/SKILL.md",
+              "svc_target": "diagnose-bug/SKILL.md",
+              "pattern": "3-fixes = architectural problem reframe for escalation"
+            },
+            {
+              "external_path": "skills/receiving-code-review/SKILL.md",
+              "svc_target": "references/anti-patterns.md",
+              "pattern": "Anti-sycophancy rules: verify before implementing reviewer suggestions (AP-21)"
+            },
+            {
+              "external_path": "skills/writing-plans/SKILL.md",
+              "svc_target": "plan-changeset/SKILL.md",
+              "pattern": "Type/naming consistency check across plan tasks"
+            },
+            {
+              "external_path": "skills/writing-skills/testing-skills-with-subagents.md",
+              "svc_target": "test-framework/references/",
+              "pattern": "Pressure testing methodology for discipline-enforcing skills"
+            }
+          ],
+          "patterns_skipped": [
+            {
+              "external_path": "skills/using-superpowers/SKILL.md",
+              "reason": "svc uses route-workflow + description optimization; different architecture"
+            },
+            {
+              "external_path": "skills/brainstorming/SKILL.md",
+              "reason": "svc's progressive narrowing (validate-feature + write-spec + design-ux/ui) is more granular"
+            },
+            {
+              "external_path": "skills/executing-plans/SKILL.md",
+              "reason": "svc's execute-changeset is more sophisticated (worktrees, checkpoints, deviation rules)"
+            },
+            {
+              "external_path": "skills/dispatching-parallel-agents/SKILL.md",
+              "reason": "Covered by execute-changeset inner worktrees + harness agent patterns"
+            },
+            {
+              "external_path": "skills/using-git-worktrees/SKILL.md",
+              "reason": "scripts/worktree.sh covers this"
+            },
+            {
+              "external_path": "skills/finishing-a-development-branch/SKILL.md",
+              "reason": "land-changeset handles more (version bumps, squash merges)"
+            },
+            {
+              "external_path": "skills/verification-before-completion/SKILL.md",
+              "reason": "verification-patterns.md + AP-18 cover this with more structure"
+            },
+            {
+              "external_path": "skills/requesting-code-review/SKILL.md",
+              "reason": "review-gate covers this"
+            },
+            {
+              "external_path": "skills/brainstorming/visual-companion.md",
+              "reason": "Interesting but not pipeline-critical; no svc equivalent needed"
+            },
+            {
+              "external_path": "skills/writing-skills/persuasion-principles.md",
+              "reason": "Over-engineering; actionable parts captured in anti-rationalization blend"
+            },
+            {
+              "external_path": "skills/systematic-debugging/condition-based-waiting.md",
+              "reason": "Useful but too niche for framework reference"
+            },
+            {
+              "external_path": "skills/systematic-debugging/defense-in-depth.md",
+              "reason": "Good pattern but too detailed for diagnose-bug scope"
+            }
+          ]
+        },
+        {
+          "sha": "d884ae04edebef577e82ff7c4e143debd0bbec99",
+          "date": "2026-07-22",
+          "patterns_taken": [],
+          "patterns_skipped": [
+            {
+              "external_path": "docs/porting-to-a-new-harness.md",
+              "reason": "Thin installer-owned host adapters reinforce SVC's existing model; zero-runtime-state architecture cannot replace SVC authority receipts"
+            }
+          ]
+        }
+      ],
+      "upstream_ref_cmd": "git ls-remote https://github.com/obra/superpowers HEAD"
+    },
+    {
+      "name": "oh-my-claudecode",
+      "url": "https://github.com/yeachan-heo/oh-my-claudecode",
+      "license": "MIT",
+      "author": "Yeachan Heo",
+      "blends": [
+        {
+          "sha": "unknown-pre-registry",
+          "date": "2026-04-05",
+          "patterns_taken": [
+            {
+              "external_path": "agents/",
+              "svc_target": "route-workflow/SKILL.md",
+              "pattern": "Ambiguity gate scoring (weighted dimensions, 20% threshold)"
+            },
+            {
+              "external_path": "agents/",
+              "svc_target": "execute-changeset/SKILL.md",
+              "pattern": "Commit trailers and verified completion loop (3-strike rule)"
+            },
+            {
+              "external_path": "agents/",
+              "svc_target": "review-cross-model/SKILL.md",
+              "pattern": "Tri-model orchestration (Claude + Codex + Gemini)"
+            },
+            {
+              "external_path": "agents/",
+              "svc_target": "manage-learnings/SKILL.md",
+              "pattern": "Learning extraction from debugging (3-question quality gate)"
+            }
+          ],
+          "patterns_skipped": []
+        }
+      ],
+      "upstream_ref_cmd": "git ls-remote https://github.com/yeachan-heo/oh-my-claudecode HEAD"
+    },
+    {
+      "name": "claude-code-setup",
+      "url": "https://github.com/petekp/claude-code-setup",
+      "license": "MIT",
+      "author": "Pete Petrash",
+      "blends": [
+        {
+          "sha": "unknown-pre-registry",
+          "date": "2026-04-05",
+          "patterns_taken": [
+            {
+              "external_path": "skills/",
+              "svc_target": "explore-solutions/SKILL.md",
+              "pattern": "Solution exploration and paradigm comparison"
+            },
+            {
+              "external_path": "skills/",
+              "svc_target": "audit-implementation/SKILL.md",
+              "pattern": "Systems analysis and correctness audit"
+            }
+          ],
+          "patterns_skipped": []
+        }
+      ],
+      "upstream_ref_cmd": "git ls-remote https://github.com/petekp/claude-code-setup HEAD"
+    },
+    {
+      "name": "get-shit-done",
+      "url": "https://github.com/gsd-build/get-shit-done",
+      "license": "MIT",
+      "author": "TACHES",
+      "blends": [
+        {
+          "sha": "unknown-2026-04-06",
+          "date": "2026-04-06",
+          "patterns_taken": [
+            {
+              "external_path": "references/context-budget.md",
+              "svc_target": "references/context-budget.md",
+              "pattern": "Context degradation tiers (PEAK/GOOD/DEGRADING/POOR)"
+            },
+            {
+              "external_path": "references/verification-patterns.md",
+              "svc_target": "references/verification-patterns.md",
+              "pattern": "4-level verification (Exists/Substantive/Wired/Functional)"
+            },
+            {
+              "external_path": "references/universal-anti-patterns.md",
+              "svc_target": "references/anti-patterns.md",
+              "pattern": "Universal anti-patterns adapted for svc"
+            },
+            {
+              "external_path": "references/thinking-models-execution.md",
+              "svc_target": "references/thinking-models.md",
+              "pattern": "Structured reasoning models at decision points"
+            },
+            {
+              "external_path": "agents/gsd-executor.md",
+              "svc_target": "execute-changeset/SKILL.md",
+              "pattern": "Deviation rules (auto-fix vs stop, 3-attempt limit, analysis paralysis guard)"
+            },
+            {
+              "external_path": "agents/gsd-planner.md",
+              "svc_target": "plan-changeset/SKILL.md",
+              "pattern": "Scope reduction prohibition (banned phrases, coverage matrix)"
+            },
+            {
+              "external_path": "workflows/next.md",
+              "svc_target": "DOCTRINE.md",
+              "pattern": "Safety gates before chain advance"
+            },
+            {
+              "external_path": "workflows/autonomous.md",
+              "svc_target": "route-workflow/SKILL.md",
+              "pattern": "Session continuity and project state tracking"
+            },
+            {
+              "external_path": "references/questioning.md",
+              "svc_target": "mine-builder/SKILL.md",
+              "pattern": "Questioning anti-patterns (ban checklist walking)"
+            },
+            {
+              "external_path": "workflows/do.md",
+              "svc_target": "route-workflow/SKILL.md",
+              "pattern": "Freeform intent routing"
+            },
+            {
+              "external_path": "hooks/gsd-workflow-guard.js",
+              "svc_target": "hooks/svc-workflow-guard.js",
+              "pattern": "Soft workflow guard hook"
+            }
+          ],
+          "patterns_skipped": [
+            {
+              "external_path": "workflows/fast.md",
+              "reason": "Quick-fix mode identified but deferred to future implementation"
+            },
+            {
+              "external_path": "workflows/discuss-phase.md",
+              "reason": "Gray area discussion phase deferred \u2014 partially covered by validate-feature"
+            }
+          ]
+        },
+        {
+          "sha": "v1.34.2",
+          "date": "2026-04-08",
+          "patterns_taken": [
+            {
+              "external_path": "references/gates.md",
+              "svc_target": "DOCTRINE.md",
+              "pattern": "Gates taxonomy \u2014 4 canonical types (pre-flight/revision/escalation/abort) + selection heuristic + svc G1-G7 mapping"
+            },
+            {
+              "external_path": "references/gates.md",
+              "svc_target": "review-gate/SKILL.md",
+              "pattern": "Stall detection in revision loops \u2014 escalate if issue count doesn't decrease"
+            },
+            {
+              "external_path": "docs/AGENTS.md (gsd-verifier)",
+              "svc_target": "verify-promotion/SKILL.md",
+              "pattern": "Test quality audit \u2014 disabled tests, circular patterns, assertion strength, provenance"
+            },
+            {
+              "external_path": "docs/ARCHITECTURE.md",
+              "svc_target": "execute-changeset/SKILL.md",
+              "pattern": "Adaptive context enrichment \u2014 1M models get richer subagent prompts"
+            },
+            {
+              "external_path": "references/agent-contracts.md",
+              "svc_target": "references/anti-patterns.md",
+              "pattern": "Agent completion markers convention (AP-23)"
+            },
+            {
+              "external_path": "docs/FEATURES.md (#59)",
+              "svc_target": "plan-changeset/SKILL.md",
+              "pattern": "Schema drift detection \u2014 ORM changes without migration tasks flagged"
+            },
+            {
+              "external_path": "docs/FEATURES.md (#65)",
+              "svc_target": "references/anti-patterns.md",
+              "pattern": "Claim provenance tagging (AP-24)"
+            }
+          ],
+          "patterns_skipped": [
+            {
+              "external_path": "workflows/discuss-phase.md",
+              "reason": "Already deferred \u2014 validate-feature partially covers"
+            },
+            {
+              "external_path": "execute-phase wave execution",
+              "reason": "Already deferred \u2014 inner worktrees exist"
+            },
+            {
+              "external_path": "hooks/gsd-context-monitor.js",
+              "reason": "Already deferred \u2014 documented in references/context-budget.md"
+            },
+            {
+              "external_path": "hooks/gsd-prompt-guard.js",
+              "reason": "Already deferred"
+            },
+            {
+              "external_path": "workflows/add-phase/insert-phase",
+              "reason": "Already deferred \u2014 fixed lane sequences by design"
+            },
+            {
+              "external_path": "agents/gsd-user-profiler.md",
+              "reason": "Already deferred \u2014 mine-builder does active interview"
+            },
+            {
+              "external_path": "bin/install.js (12-runtime)",
+              "reason": "svc uses git clone + ./setup"
+            },
+            {
+              "external_path": "references/model-profiles.md",
+              "reason": "svc uses Opus/Sonnet only"
+            },
+            {
+              "external_path": "workflows/workstreams.md",
+              "reason": "Worktrees cover branch isolation"
+            },
+            {
+              "external_path": "workflows/forensics.md",
+              "reason": "diagnose-bug covers post-mortem"
+            },
+            {
+              "external_path": "Socratic exploration",
+              "reason": "Nice UX but not pipeline-critical"
+            },
+            {
+              "external_path": "workflows/reapply-patches.md",
+              "reason": "land-changeset squash merge avoids hunk issues"
+            }
+          ]
+        }
+      ],
+      "upstream_ref_cmd": "gh release list -R gsd-build/get-shit-done -L 1"
+    },
+    {
+      "name": "anthropic-skills",
+      "url": "https://github.com/anthropics/skills",
+      "license": "MIT",
+      "author": "Anthropic",
+      "blends": [
+        {
+          "sha": "unknown-2026-04-06",
+          "date": "2026-04-06",
+          "patterns_taken": [
+            {
+              "external_path": "skills/skill-creator/",
+              "svc_target": "create-skill/",
+              "pattern": "Forked skill-creator with svc pipeline knowledge"
+            }
+          ],
+          "patterns_skipped": []
+        }
+      ],
+      "upstream_ref_cmd": "git ls-remote https://github.com/anthropics/skills HEAD"
+    },
+    {
+      "name": "harness",
+      "url": "https://github.com/revfactory/harness",
+      "license": "Apache-2.0",
+      "author": "robin (revfactory)",
+      "blends": [
+        {
+          "sha": "2d84863bd10070c48b99b973e370f160e7a51ad4",
+          "date": "2026-04-08",
+          "patterns_taken": [
+            {
+              "external_path": "skills/harness/references/agent-design-patterns.md",
+              "svc_target": "references/agent-patterns.md",
+              "pattern": "6 architecture patterns + team vs subagent decision tree + team size guidelines"
+            },
+            {
+              "external_path": "skills/harness/SKILL.md:69-93",
+              "svc_target": "references/agent-patterns.md",
+              "pattern": "Agent definition convention (WHO vs HOW separation)"
+            },
+            {
+              "external_path": "skills/harness/SKILL.md:112-119",
+              "svc_target": "references/anti-patterns.md",
+              "pattern": "Pushy skill description standard (AP-19)"
+            },
+            {
+              "external_path": "skills/harness/SKILL.md:350-357",
+              "svc_target": "test-framework/evals/tier-1.5/test-skill-triggering.sh",
+              "pattern": "Near-miss trigger testing methodology"
+            },
+            {
+              "external_path": "skills/harness/SKILL.md:42",
+              "svc_target": "route-workflow/SKILL.md",
+              "pattern": "Adaptive communication based on user skill level"
+            },
+            {
+              "external_path": "skills/harness/references/qa-agent-guide.md",
+              "svc_target": "references/verification-patterns.md",
+              "pattern": "Integration coherence / boundary mismatch detection (4 areas)"
+            }
+          ],
+          "patterns_skipped": [
+            {
+              "external_path": "skills/harness/SKILL.md:131-153",
+              "reason": "Progressive disclosure \u2014 already have in knowledge system"
+            },
+            {
+              "external_path": "skills/harness/SKILL.md:315-369",
+              "reason": "With/without comparison \u2014 test-framework has comparison mode"
+            },
+            {
+              "external_path": "skills/harness/SKILL.md:373-418",
+              "reason": "Feedback-driven evolution \u2014 already in improve-framework + builder patterns"
+            },
+            {
+              "external_path": "skills/harness/SKILL.md:18-36",
+              "reason": "Phase 0 audit \u2014 onboard-repo + session continuity covers"
+            },
+            {
+              "external_path": "skills/harness/references/orchestrator-template.md",
+              "reason": "Full orchestrator template \u2014 too coupled to Agent Teams API"
+            }
+          ]
+        }
+      ],
+      "upstream_ref_cmd": "git ls-remote https://github.com/revfactory/harness HEAD"
+    },
+    {
+      "name": "last30days-skill",
+      "url": "https://github.com/mvanhorn/last30days-skill",
+      "license": "MIT",
+      "author": "mvanhorn",
+      "blends": [
+        {
+          "sha": "341da372",
+          "date": "2026-04-12",
+          "patterns_taken": [
+            {
+              "external_path": "scripts/lib/rerank.py (untrusted_content tagging)",
+              "svc_target": "references/anti-patterns.md",
+              "pattern": "Untrusted content fencing \u2014 wrap external web content in <untrusted_content> tags before LLM processing (AP-25)"
+            },
+            {
+              "external_path": "tests/ + fixtures/ (fixture-based testing pattern)",
+              "svc_target": "test-framework/SKILL.md",
+              "pattern": "Fixture-based behavioral testing \u2014 canned input artifacts \u2192 skill invocation \u2192 output validation (tier-2 evals)"
+            }
+          ],
+          "patterns_skipped": [
+            {
+              "external_path": "scripts/lib/pipeline.py (8-stage IR pipeline)",
+              "reason": "Different domain \u2014 information retrieval pipeline vs dev pipeline"
+            },
+            {
+              "external_path": "scripts/lib/planner.py (intent classification)",
+              "reason": "svc has route-workflow for dev intent routing"
+            },
+            {
+              "external_path": "scripts/lib/fusion.py (RRF scoring)",
+              "reason": "Scoring social content vs reviewing code artifacts \u2014 different problem"
+            },
+            {
+              "external_path": "scripts/lib/cluster.py (text similarity clustering)",
+              "reason": "svc doesn't aggregate scraped content"
+            },
+            {
+              "external_path": "scripts/lib/rerank.py (graceful degradation / deterministic fallback)",
+              "reason": "svc skills are LLM-native; agent IS the LLM"
+            },
+            {
+              "external_path": "skills/last30days-v3/SKILL.md (synthesis contract)",
+              "reason": "svc progressive narrowing handles artifact consumption implicitly"
+            },
+            {
+              "external_path": "gemini-extension.json + OpenClaw variants (multi-host)",
+              "reason": "svc targets dev-focused hosts only"
+            },
+            {
+              "external_path": "scripts/lib/setup_wizard.py (progressive unlock)",
+              "reason": "Dev tooling doesn't need progressive source unlock UX"
+            },
+            {
+              "external_path": "scripts/lib/store.py (SQLite persistence)",
+              "reason": "svc has 3-layer knowledge system"
+            },
+            {
+              "external_path": "scripts/lib/render.py (rendering modes)",
+              "reason": "svc artifacts consumed by skills, not humans in different viewing contexts"
+            }
+          ]
+        }
+      ],
+      "upstream_ref_cmd": "git ls-remote https://github.com/mvanhorn/last30days-skill HEAD"
+    },
+    {
+      "name": "everything-claude-code",
+      "url": "https://github.com/affaan-m/everything-claude-code",
+      "license": "MIT",
+      "author": "Affaan M. and contributors",
+      "blends": [
+        {
+          "sha": "125d5e619905d97b519a887d5bc7332dcc448a52",
+          "date": "2026-04-12",
+          "patterns_taken": [
+            {
+              "external_path": "hooks/hooks.json + scripts/hooks/run-with-flags.js",
+              "svc_target": "hooks/hooks.json + hooks/svc-workflow-guard.js",
+              "pattern": "Hook runtime profiling \u2014 SVC_HOOK_PROFILE=minimal|full; SVC_DISABLED_HOOKS selective disable"
+            },
+            {
+              "external_path": "hooks/hooks.json (pre:config-protection)",
+              "svc_target": "hooks/svc-workflow-guard.js",
+              "pattern": "Config-protection hook \u2014 blocks Write/Edit to linter/formatter/tsconfig/lock files"
+            },
+            {
+              "external_path": "hooks/hooks.json (pre:bash:block-no-verify)",
+              "svc_target": "hooks/svc-workflow-guard.js",
+              "pattern": "Block-no-verify \u2014 native implementation blocking --no-verify / --no-gpg-sign in Bash commands"
+            },
+            {
+              "external_path": "hooks/hooks.json (pre:bash:commit-quality)",
+              "svc_target": "hooks/svc-workflow-guard.js",
+              "pattern": "Commit-quality hook \u2014 validates Co-Authored-By trailer, message format, staged debug code detection"
+            },
+            {
+              "external_path": "hooks/hooks.json (post:edit:accumulator + stop:format-typecheck)",
+              "svc_target": "hooks/hooks.json + hooks/svc-stop-quality.js",
+              "pattern": "Batch Stop format+typecheck \u2014 post-edit accumulator + stack-aware batch quality check at Stop"
+            },
+            {
+              "external_path": "the-longform-guide.md (Token Economics) + skills/agent-harness-construction/SKILL.md",
+              "svc_target": "references/model-routing.md (new)",
+              "pattern": "Model routing decision table \u2014 Haiku/Sonnet/Opus mapped to svc skill categories"
+            },
+            {
+              "external_path": "SOUL.md + the-longform-guide.md (CLI-over-MCP)",
+              "svc_target": "references/context-budget.md",
+              "pattern": "CLI-over-MCP preference \u2014 DEGRADING/POOR tiers prefer CLI over always-on MCPs"
+            },
+            {
+              "external_path": "skills/eval-harness/SKILL.md + skills/continuous-agent-loop/SKILL.md",
+              "svc_target": "test-framework/SKILL.md + references/benchmark-findings.md",
+              "pattern": "pass@k vs pass^k evaluation vocabulary \u2014 formal strategy distinction for retry vs consistency testing"
+            }
+          ],
+          "patterns_skipped": [
+            {
+              "external_path": "rules/ (14 language dirs)",
+              "reason": "Out of svc scope \u2014 language-specific rules, not dev framework patterns"
+            },
+            {
+              "external_path": "skills/continuous-learning-v2/",
+              "reason": "Instinct-based automatic capture misaligned with svc's deliberate manage-learnings 3-question gate philosophy"
+            },
+            {
+              "external_path": "ecc2/ (Rust control plane)",
+              "reason": "Alpha, not GA. No control-plane architecture in svc."
+            },
+            {
+              "external_path": "commands/ (79 legacy shims)",
+              "reason": "svc uses skills directly; shims are a backward-compat concern"
+            },
+            {
+              "external_path": "skills/ (business/operator/media/domain-specific)",
+              "reason": "Domain mismatch \u2014 svc is a dev framework, not a business ops toolkit"
+            },
+            {
+              "external_path": "mcp-configs/",
+              "reason": "Infrastructure concern, not a framework pattern"
+            },
+            {
+              "external_path": "hooks/hooks.json (session-start-bootstrap)",
+              "reason": "svc file-based continuity (project-state.md) is richer than hook-based session start"
+            },
+            {
+              "external_path": "hooks/hooks.json (suggest-compact)",
+              "reason": "context-budget.md tier system is more precise than hook-based arbitrary suggestions"
+            },
+            {
+              "external_path": "hooks/hooks.json (post:edit:design-quality-check)",
+              "reason": "AP-22 AI Slop blacklist covers this as reference doc; per-edit hook too noisy for phase-gated workflow"
+            },
+            {
+              "external_path": "install.sh profiles + SQLite state store",
+              "reason": "svc symlink-based install is appropriate for a framework; ECC complexity for 181 skills"
+            },
+            {
+              "external_path": "Cross-harness (Cursor, OpenCode, Gemini, Antigravity, Trae, Kiro)",
+              "reason": "svc supports Claude Code + Codex already; additional harnesses add maintenance for marginal benefit"
+            },
+            {
+              "external_path": "agents/ (47-agent catalog)",
+              "reason": "svc embeds specialist subagents within skills; standalone agent catalog is different architecture"
+            }
+          ]
+        }
+      ],
+      "upstream_ref_cmd": "git ls-remote https://github.com/affaan-m/everything-claude-code HEAD"
+    },
+    {
+      "name": "taskmaster",
+      "url": "https://github.com/blader/taskmaster",
+      "license": "MIT",
+      "author": "blader",
+      "blends": [
+        {
+          "sha": "HEAD-v4.2.0",
+          "date": "2026-04-09",
+          "patterns_taken": [
+            {
+              "external_path": "check-completion.sh",
+              "svc_target": "hooks/svc-task-completion-guard.sh",
+              "pattern": "Stop hook completion guard (adapted for lane-tasks.json)"
+            },
+            {
+              "external_path": "taskmaster-compliance-prompt.sh",
+              "svc_target": "route-workflow/SKILL.md",
+              "pattern": "Anti-rationalization language (PROGRESS IS NOT COMPLETION)"
+            },
+            {
+              "external_path": "(user insight, not from source)",
+              "svc_target": "route-workflow/SKILL.md",
+              "pattern": "HYBRID: file-backed task persistence (lane-tasks.json) + output-to-file convention"
+            }
+          ],
+          "patterns_skipped": [
+            {
+              "external_path": "SKILL.md",
+              "reason": "Done token (TASKMASTER_DONE) \u2014 svc task graph completion is richer"
+            },
+            {
+              "external_path": "hooks/run-codex-expect-bridge.exp",
+              "reason": "Codex PTY injection \u2014 not applicable to Claude Code"
+            },
+            {
+              "external_path": "taskmaster-compliance-prompt.sh",
+              "reason": "Full 7-step checklist structure \u2014 svc per-skill self-verify is more precise; took language only"
+            }
+          ]
+        }
+      ],
+      "upstream_ref_cmd": "git ls-remote https://github.com/blader/taskmaster HEAD"
+    },
+    {
+      "name": "taste-skill",
+      "url": "https://github.com/Leonxlnx/taste-skill",
+      "license": "MIT",
+      "author": "Leonxlnx",
+      "blends": [
+        {
+          "sha": "ff487253076dc6d60333e996627f21f0ec1e2a74",
+          "date": "2026-04-19",
+          "patterns_taken": [
+            {
+              "external_path": "skills/taste-skill/SKILL.md",
+              "svc_target": "design-ui/SKILL.md",
+              "pattern": "Design Dials (1-10)"
+            },
+            {
+              "external_path": "skills/taste-skill/SKILL.md",
+              "svc_target": "design-ui/SKILL.md",
+              "pattern": "Liquid Glass Refraction"
+            },
+            {
+              "external_path": "skills/stitch-skill/DESIGN.md",
+              "svc_target": "design-ui/SKILL.md",
+              "pattern": "Inline Image Typography"
+            },
+            {
+              "external_path": "skills/taste-skill/SKILL.md",
+              "svc_target": "design-tech/SKILL.md",
+              "pattern": "Hardware-Accelerated Motion"
+            },
+            {
+              "external_path": "skills/output-skill/SKILL.md",
+              "svc_target": "execute-changeset/SKILL.md",
+              "pattern": "Full-Output Pause/Resume"
+            }
+          ],
+          "patterns_skipped": [
+            {
+              "external_path": "skills/brutalist-skill/SKILL.md",
+              "reason": "Too niche"
+            },
+            {
+              "external_path": "skills/soft-skill/SKILL.md",
+              "reason": "Redundant"
+            }
+          ]
+        }
+      ],
+      "upstream_ref_cmd": "git ls-remote https://github.com/Leonxlnx/taste-skill HEAD"
+    },
+    {
+      "name": "capacitor-skills",
+      "url": "https://github.com/capawesome-team/skills",
+      "license": "MIT",
+      "author": "Capawesome Team + Capgo",
+      "companion_url": "https://github.com/Cap-go/capgo-skills",
+      "blends": [
+        {
+          "sha": "main-2026-04-29",
+          "date": "2026-04-29",
+          "patterns_taken": [
+            {
+              "external_path": "skills/ (all 72)",
+              "svc_target": "EXTERNAL_ADDONS.md",
+              "pattern": "External skill pack registration for Capacitor mobile development \u2014 installed globally across all hosts via `npx skills add ... -g -a \"*\"`"
+            }
+          ],
+          "patterns_skipped": [
+            {
+              "external_path": "skills/capacitor-react/SKILL.md (skill structure template)",
+              "reason": "Identified as candidate blend in proposals/done/2026-04-29-blend-capacitor-skills.md (target: create-skill); not yet applied"
+            },
+            {
+              "external_path": "skills/capacitor-plugins/SKILL.md (decision matrix)",
+              "reason": "Identified as candidate blend (target: discover-skills); not yet applied"
+            },
+            {
+              "external_path": "skills/capacitor-security/SKILL.md (Capsec integration)",
+              "reason": "Identified as candidate blend (target: review-security); not yet applied"
+            },
+            {
+              "external_path": "skills/capacitor-react/SKILL.md (platform guards)",
+              "reason": "Identified as candidate blend (target: platform-operating-architect); not yet applied"
+            },
+            {
+              "external_path": "skills/capacitor-app-creation",
+              "reason": "Project scaffolding covered by onboard-repo"
+            },
+            {
+              "external_path": "skills/ionic-* (7 skills)",
+              "reason": "Ionic Framework not relevant to svc default stack \u2014 installed but framework does not route to them by default"
+            },
+            {
+              "external_path": "skills/capgo-cloud/* (live-updates, native-builds)",
+              "reason": "Cloud product features, not framework patterns"
+            },
+            {
+              "external_path": "skills/skill-creator (both packs)",
+              "reason": "svc already has create-skill"
+            }
+          ]
+        }
+      ],
+      "upstream_ref_cmd": "git ls-remote https://github.com/capawesome-team/skills HEAD"
+    },
+    {
+      "name": "open-gsd",
+      "url": "https://github.com/open-gsd/gsd-core",
+      "license": "MIT",
+      "author": "Tom Boucher and contributors",
+      "blends": [
+        {
+          "sha": "936a3453810470182421051301f6a0a83552bf89",
+          "date": "2026-07-22",
+          "patterns_taken": [],
+          "patterns_skipped": [
+            {
+              "external_path": "hooks/gsd-context-monitor.js",
+              "reason": "os.tmpdir plus silent failure is correct for advisory context hints but cannot protect SVC mutation authority"
+            }
+          ]
+        }
+      ],
+      "upstream_ref_cmd": "git ls-remote https://github.com/open-gsd/gsd-core HEAD"
+    },
+    {
+      "name": "gsd-2",
+      "url": "https://github.com/gsd-build/gsd-2",
+      "license": "MIT",
+      "author": "T\u00c2CHES",
+      "blends": [
+        {
+          "sha": "42ef05fb",
+          "date": "2026-04-30",
+          "patterns_taken": [
+            {
+              "external_path": "src/resources/extensions/gsd/auto-recovery.ts",
+              "svc_target": "verify-promotion/SKILL.md + execute-changeset/SKILL.md",
+              "pattern": "Artifact verification per unit type \u2014 bespoke checks per unit type (research\u2192plan\u2192execute\u2192complete) with blocker placeholder write and implementation-artifact detection"
+            },
+            {
+              "external_path": "src/resources/extensions/gsd/auto-direct-dispatch.ts + dispatch-guard.ts + session-lock.ts",
+              "svc_target": "route-workflow/SKILL.md",
+              "pattern": "Auto-advance state machine \u2014 session lock + crash recovery + auto-dispatch guard for continuous pipeline execution"
+            },
+            {
+              "external_path": "src/resources/extensions/gsd/memory-ingest.ts + memory-extractor.ts",
+              "svc_target": "manage-learnings/SKILL.md",
+              "pattern": "Memory extraction from transcripts \u2014 fire-and-forget background LLM extraction from session JSONL with secret redaction and mutex rate-limiting"
+            },
+            {
+              "external_path": "src/resources/extensions/gsd/compaction-snapshot.ts",
+              "svc_target": "references/context-budget.md",
+              "pattern": "Compaction snapshot \u2014 \u22642KB tiered markdown digest (active context \u2192 top memories \u2192 recent exec runs) written before context compaction"
+            },
+            {
+              "external_path": "src/resources/extensions/gsd/bootstrap/tool-call-loop-guard.ts",
+              "svc_target": "hooks/svc-loop-guard.js",
+              "pattern": "Tool-call loop guard \u2014 SHA-256 signature hashing over tool-call sequences to detect identical call chains within N turns"
+            }
+          ],
+          "patterns_skipped": [
+            {
+              "external_path": "Pi SDK monorepo (pi-ai, pi-agent-core, pi-coding-agent, pi-tui, daemon, mcp-server, rpc-client, native)",
+              "reason": "svc is framework-agnostic across 5 hosts; rebuilding host integration is scope explosion"
+            },
+            {
+              "external_path": "Native Rust engine (libgit2, ripgrep, ast-grep, glob, diff, process tree, TTSR)",
+              "reason": "svc is documentation/script-driven; native modules out of scope"
+            },
+            {
+              "external_path": "Next.js web UI + Electron studio + VS Code extension",
+              "reason": "Product features, not framework concerns"
+            },
+            {
+              "external_path": "Headless RPC mode with event streaming and restart loop",
+              "reason": "svc is framework-level guidance, not a CLI tool"
+            },
+            {
+              "external_path": "Daemon/Discord bot",
+              "reason": "Ops/deployment layer, not framework concern"
+            },
+            {
+              "external_path": "MCP server",
+              "reason": "svc already works across 5 hosts via native hooks; adding MCP duplicates integration"
+            },
+            {
+              "external_path": "Model registry (20+ providers, 3-tier)",
+              "reason": "svc delegates model selection to host CLI; no need for abstraction layer"
+            },
+            {
+              "external_path": "16-category preferences wizard",
+              "reason": "Overkill for framework; builder profile covers preferences"
+            },
+            {
+              "external_path": "/gsd command system (26 natural-language routes)",
+              "reason": "svc uses slash commands in host CLI, not a separate command namespace"
+            },
+            {
+              "external_path": "Orchestrator meta-skill (spec\u2192software workflow)",
+              "reason": "svc has route-workflow + progressive narrowing; orchestrator pattern is different architecture"
+            },
+            {
+              "external_path": "5 built-in agents with conflict lists",
+              "reason": "Interesting but svc embeds specialist subagents within skills; standalone agent catalog is different architecture"
+            },
+            {
+              "external_path": "Extension validation rules D-03\u2013D-10",
+              "reason": "Good patterns but covered by existing lint-skills-manifest.mjs; content fingerprinting is overkill for svc skills"
+            },
+            {
+              "external_path": "Undo system (unit/task/slice granularities)",
+              "reason": "Useful but defer to dedicated skill; not a pattern blend"
+            },
+            {
+              "external_path": "Cost tracking per unit with model/tier/downgrade flags",
+              "reason": "Useful but defer to dedicated tracking; not a pattern blend"
+            },
+            {
+              "external_path": "Guided flow queue (milestone reordering)",
+              "reason": "Covered by list-work-items and route-workflow; interactive UI is host-specific"
+            }
+          ]
+        },
+        {
+          "sha": "33c00aaffa56e5d394bccce1c8df59fb842e84c5",
+          "date": "2026-07-22",
+          "patterns_taken": [],
+          "patterns_skipped": [
+            {
+              "external_path": "src/resources/extensions/gsd/session-lock.ts",
+              "reason": "Path snapshots and retry reinforce WI-506 tests, but proper-lockfile adds a dependency and does not solve runtime-root trust"
+            }
+          ]
+        }
+      ],
+      "upstream_ref_cmd": "git ls-remote https://github.com/gsd-build/gsd-2 HEAD"
+    },
+    {
+      "name": "lucaspatiri-ugc-viral",
+      "url": "https://x.com/lucaspatiri_/status/2062627926022238586",
+      "license": "Public Domain / Social Heuristics",
+      "author": "Lucas Patiri",
+      "blends": [
+        {
+          "sha": "none-article",
+          "date": "2026-06-05",
+          "patterns_taken": [
+            {
+              "external_path": "X status 2062627926022238586 (Rule 1)",
+              "svc_target": "plan-changeset/SKILL.md",
+              "pattern": "Structured subagent briefing container / prompt standard"
+            },
+            {
+              "external_path": "X status 2062627926022238586 (Rule 3)",
+              "svc_target": "references/anti-patterns.md",
+              "pattern": "Raw/native stack aesthetics standard (rejecting over-polished templates)"
+            },
+            {
+              "external_path": "X status 2062627926022238586 (Rule 9)",
+              "svc_target": "review-gate/SKILL.md",
+              "pattern": "Down-funnel visual state inventory verification gates (empty/degraded/mobile)"
+            }
+          ],
+          "patterns_skipped": [
+            {
+              "external_path": "X status 2062627926022238586 (Rule 2, 4-8, 10)",
+              "reason": "Covered by existing skills/hooks: route-workflow persona, pre-commit/pre-flight/stop hooks, and task-graph persistence"
+            }
+          ]
+        }
+      ],
+      "upstream_ref_cmd": null,
+      "staleness_note": "manual \u2014 social post, no versioned upstream"
+    },
+    {
+      "name": "coreyhaines-marketingskills",
+      "url": "https://github.com/coreyhaines31/marketingskills",
+      "license": "MIT",
+      "author": "Corey Haines",
+      "upstream_ref_cmd": "gh release list -R coreyhaines31/marketingskills -L 1",
+      "blends": [
+        {
+          "sha": "1bcff9fc79c64fd7886c3c7aa583f4bd63916ff2",
+          "tag": "v1.9.0",
+          "date": "2026-04-28",
+          "note": "retro-registered 2026-07-13 \u2014 original adoption (WI-135/136) predates registry discipline",
+          "patterns_taken": [
+            {
+              "external_path": "(whole pack)",
+              "svc_target": "EXTERNAL_ADDONS.md",
+              "pattern": "runtime addon adoption + interop contract"
+            }
+          ],
+          "patterns_skipped": [
+            {
+              "external_path": "community PR model",
+              "reason": "private repo strategy (monetize-then-public)"
+            }
+          ]
+        },
+        {
+          "sha": "2815104d5459357d44c5f9031fcca0525b00c991",
+          "tag": "v2.6.0",
+          "date": "2026-07-13",
+          "wi": "WI-476",
+          "proposal": "proposals/2026-07-13-blend-coreyhaines-v2.6.0.md",
+          "status": "analysis-complete, items pending implementation",
+          "patterns_taken": [
+            {
+              "external_path": "skills/marketing-loops/references/loop-state.md + loop-guardrails.md",
+              "svc_target": "references/autonomous-loop-contract.md (new, pending)",
+              "pattern": "loop state/idempotency + two-tier action guardrails"
+            },
+            {
+              "external_path": "skills/ads/SKILL.md (Andromeda playbook + platform split)",
+              "svc_target": "ad-strategist agent + ad-video-script (pending)",
+              "pattern": "creative-as-targeting paid doctrine"
+            },
+            {
+              "external_path": "VERSIONS.md update-check practice",
+              "svc_target": "blend-external audit mode + this registry upstream_ref_cmd field (pending)",
+              "pattern": "mechanical upstream staleness probe"
+            }
+          ],
+          "patterns_skipped": [
+            {
+              "external_path": "skills/marketing-loops/references/loop-catalog.md",
+              "reason": "runtime content \u2014 consumed via addon"
+            },
+            {
+              "external_path": "skills/marketing-council (unreleased)",
+              "reason": "main-only, not tagged; watch item for next re-blend"
+            },
+            {
+              "external_path": "ads RSA spec / CFM rules",
+              "reason": "runtime via addon / wrong vertical"
+            }
+          ],
+          "addon_update": {
+            "action": "pin v1.9.0 -> v2.6.0 + 17-rename migration across ~14 live files",
+            "proposed_wi": "WI-477"
+          }
+        }
+      ]
+    }
+  ]
+}

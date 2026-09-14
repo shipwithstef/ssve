@@ -1,0 +1,229 @@
+review_log:
+  plan: docs/plans/2026-07-23-wi510-phase-receipt-skip-integrity/manifest.md
+  tier1:
+    script: scripts/verify-plan-mechanical.sh
+    exit_code: 0
+    issues: 0
+  external_state:
+    exit_code: 0
+    issues: 0
+  rounds:
+    - round: 1
+      reviewer: codex
+      reviewer_family: openai
+      model: gpt-5.6-sol
+      effort: high
+      route: exact_primary
+      rubric_score: 4
+      verdict: fail
+      launcher_receipt: .svc/external-review-artifacts/plan/700d4737248a88d5ae7d7b76965676fb18f55958721e6959c4e8512bf9a2d694/20260723T160514Z-2960592/receipt.json
+      findings:
+        - id: F-001
+          severity: high
+          claim: The final-SHA review and promoted-replay lifecycle was circular.
+          analysis: Tracked review/task/proposal evidence was scheduled after the commit it claimed to prove, and promoted evidence cannot be content inside its own squash.
+          evidence:
+            - The original sequence assigned FINAL_SHA before LAND and POST-MERGE.
+            - The original task-4 owned tracked artifacts without a later tracked lifecycle.
+          proposed_fix: Separate candidate, final branch, promoted squash, and post-merge receipt stages with SHA equality assertions.
+        - id: F-002
+          severity: high
+          claim: Staging used broad directory pathspecs and omitted the plan/review log.
+          analysis: Ambient residue could enter while execution authority remained unstaged.
+          evidence:
+            - The original command staged test-framework/evals/tier-1, docs/specs, and proposals as directories.
+            - The original command omitted docs/plans/2026-07-23-wi510-phase-receipt-skip-integrity.
+          proposed_fix: Stage the exact authorized files and compare the staged path set mechanically.
+        - id: F-003
+          severity: high
+          claim: The expected-red checkpoint accepted every nonzero failure.
+          analysis: Syntax, fixture, or environment errors could masquerade as the intended missing-classifier red.
+          evidence:
+            - The original conditional asserted only that the focused script failed.
+          proposed_fix: Assert a dedicated exit code and diagnostic token.
+        - id: F-004
+          severity: high
+          claim: Inline implementation contracts were not deterministic.
+          analysis: Exports, precedence, reason codes, output schema, and exit mapping were delegated to unstated context.
+          evidence:
+            - The original manifest named classifications but not exact symbols or transitions.
+          proposed_fix: Freeze the library and CLI contract in the manifest.
+        - id: F-005
+          severity: high
+          claim: Lane compliance was asserted without evidence and the inner graph looked contradictory.
+          analysis: A four-task changeset graph was presented beside an unevidenced claim of a 16-task mandatory lane graph.
+          evidence:
+            - The original manifest had no lane-compliance table.
+          proposed_fix: Enumerate every outer skill/task/status/evidence requirement and map inner tasks to the outer graph.
+        - id: F-006
+          severity: medium
+          claim: External review and PR dependencies contradicted the no-provider/no-network claim.
+          analysis: Review and landing rely on provider, auth, quota/network, and remote Git state.
+          evidence:
+            - Task-4 requires external reviews and PR merge.
+            - The original External State conclusion denied provider/network dependency.
+          proposed_fix: Declare provider, remote Git, authentication, hard-failure, retry, and idempotency wiring.
+    - round: 2
+      reviewer: codex
+      reviewer_family: openai
+      model: gpt-5.6-sol
+      effort: high
+      route: exact_primary
+      rubric_score: 5
+      verdict: fail
+      launcher_receipt: .svc/external-review-artifacts/plan/ea4d20b3080eb03cbc373fa42e62506316b26045feb454c33afb327cf95e9942/20260723T161134Z-2978034/receipt.json
+      findings:
+        - id: F-001
+          severity: high
+          claim: Final-SHA review lifecycle still lacked executable receipt emission.
+          analysis: The prior revision checked receipts after commit without commands that bound them to the final tree.
+          proposed_fix: Freeze a staged Git tree/diff, bind review body, commit equal tree, emit every body onto that SHA, then verify.
+        - id: F-002
+          severity: high
+          claim: Mandatory tracked review and audit outputs were outside the file scope.
+          analysis: Cross-model, exec-review, security, and audit skills produce durable reports not listed in task-4 or exact staging.
+          proposed_fix: Add every exact path to planned files, task-4, staging, and staged equality.
+        - id: F-003
+          severity: high
+          claim: Rejecting all absolute evidence paths contradicted canonical `/tmp` producers.
+          analysis: Current review-plan and execution skills emit file/command-output phase references under `/tmp`.
+          proposed_fix: Define type-specific OS-temp compatibility and test actual producer shapes.
+        - id: F-004
+          severity: high
+          claim: Registered skip condition did not prove applicability.
+          analysis: Same-skill registry membership alone could authorize a condition whose declared signal was false.
+          proposed_fix: Require an exact registry signal and non-empty applicability evidence with a negative fixture.
+        - id: F-005
+          severity: medium
+          claim: Skill-contract read failures had contradictory task and CLI outcomes.
+          analysis: The library classified invalid while the CLI was specified to exit as a usage failure.
+          proposed_fix: Use invalid/exit 1 for graph-resolved contract failures and reserve exit 2 for top-level invocation/input failures.
+        - id: F-006
+          severity: medium
+          claim: Proposal and pre-plan artifacts had unclear lifecycle ownership.
+          analysis: The proposal appeared twice and task scopes did not distinguish frozen planning inputs from execution-owned changes.
+          proposed_fix: Deduplicate each path and assign one owner/read-only phase.
+    - round: 3
+      reviewer: codex
+      reviewer_family: openai
+      model: gpt-5.6-sol
+      effort: high
+      route: exact_primary
+      rubric_score: 5
+      verdict: fail
+      launcher_receipt: .svc/external-review-artifacts/plan/12f15dd4a0bed8ca5fe8403798693f0ed68e576ec36095efa4f599cf6c6031dc/20260723T162225Z-3009866/receipt.json
+      findings:
+        - id: F-001
+          severity: high
+          claim: The frozen-tree lifecycle could not produce a completed authoritative outer task graph.
+          analysis: Land and verify cannot truthfully complete until after the implementation squash is promoted.
+          proposed_fix: Land the reviewed implementation with tasks 15 and 16 pending, then persist their actual receipts and statuses in an authorized governance-only follow-up commit.
+        - id: F-002
+          severity: high
+          claim: Mandatory reviews, landing, and promotion receipt emission were not expressed as deterministic executable commands.
+          analysis: Skill names and comments did not bind PR heads, exits, artifacts, receipt emission, or retry behavior.
+          proposed_fix: Add exact activation/postconditions, PR-head assertions, merge commands, promoted receipt emission, and closeout commands.
+        - id: F-003
+          severity: medium
+          claim: The WI-498 immutability check did not prove every protected historical surface.
+          analysis: Shared append-only files and the consolidated notes ref require WI-498-specific target hashes.
+          proposed_fix: Pin and recheck the graph, work item, promoted note payload, extracted WI-498 JSONL records, and checkpoint absence.
+        - id: F-004
+          severity: medium
+          claim: The recorded base commit was not mechanically enforced before implementation or landing.
+          analysis: A resumed worktree or advanced main could change the reviewed baseline.
+          proposed_fix: Assert exact ancestry, bind review to the base-to-frozen-tree diff, and rerun review after integrating any advanced main.
+  responses:
+    - finding_id: F-001
+      decision: ACCEPT
+      justification: Final branch review and post-merge verification are different facts and must bind different immutable SHAs.
+      action: Added separate lifecycle stages, clean-tree/HEAD assertions, and verify-promotion receipt-only post-merge truth.
+    - finding_id: F-002
+      decision: ACCEPT
+      justification: Repository residue is protected and broad pathspecs violate the declared file boundary.
+      action: Replaced directory staging with exact paths and a staged-path equality check.
+    - finding_id: F-003
+      decision: ACCEPT
+      justification: A red test is evidence only when its expected cause is mechanically identified.
+      action: Required focused exit 2 plus classifier-unavailable.
+    - finding_id: F-004
+      decision: ACCEPT
+      justification: Inline mode removes payload duplication, not the need for deterministic interfaces and state semantics.
+      action: Added exact exports, inputs/results, precedence, reason codes, flags, and exit codes.
+    - finding_id: F-005
+      decision: ACCEPT
+      justification: The inner changeset graph and outer skill graph have different jobs and must be explicitly related.
+      action: Added the 16-row lane-compliance matrix and inner-to-outer mapping.
+    - finding_id: F-006
+      decision: ACCEPT
+      justification: Governance reviews and PR landing are external dependencies even though the product runtime has none.
+      action: Added taxonomy entries 7 and 14, hard-failure receipts, and exact-SHA retry boundaries.
+    - finding_id: round2-F-001
+      decision: ACCEPT
+      justification: Receipt presence is insufficient unless the reviewed diff and commit tree are mechanically identical.
+      action: Added staged-tree/diff freeze, body equality, commit-tree equality, exact receipt emission, clean-tree checks.
+    - finding_id: round2-F-002
+      decision: ACCEPT
+      justification: Every mandatory tracked output belongs inside the scope and exact staged set.
+      action: Added exact cross-model, exec-review, security, and audit paths.
+    - finding_id: round2-F-003
+      decision: ACCEPT
+      justification: Canonical current producers are normative evidence and cannot be invalidated by a new stricter path rule.
+      action: Added contained OS-temp compatibility for file/command_output plus negative inversions.
+    - finding_id: round2-F-004
+      decision: ACCEPT
+      justification: Registry membership is weaker than applicability.
+      action: Source verification after round 3 showed delivery entries have no applicability object; the corrected design requires substantive canonical registry applicability fields plus non-empty delivery evidence and retains skip-condition-inapplicable for empty registry metadata.
+    - finding_id: round2-F-005
+      decision: ACCEPT
+      justification: Graph data invalidity and CLI invocation failure need distinct stable exits.
+      action: Contract failures now return invalid/exit 1; exit 2 is top-level only.
+    - finding_id: round2-F-006
+      decision: ACCEPT
+      justification: Single ownership is necessary for fail-closed scope comparison.
+      action: Deduplicated proposal ownership and froze pre-plan artifacts after convergence.
+    - finding_id: round3-F-001
+      decision: ACCEPT
+      justification: Land and verify evidence must describe events that have actually happened.
+      action: Added inner task-5 and an exact same-WI governance-only closeout PR after promoted replay.
+    - finding_id: round3-F-002
+      decision: ACCEPT
+      justification: Mandatory gates and promotion need inspectable inputs, outputs, and immutable SHA checks.
+      action: Added task activation/postcondition rows, exact PR commands, head assertions, merge calls, receipt emission, and final replay.
+    - finding_id: round3-F-003
+      decision: ACCEPT
+      justification: Append-only shared stores need target-specific preservation assertions.
+      action: Added exact WI-498 graph, work-item, note, JSONL extraction, and checkpoint-absence hashes.
+    - finding_id: round3-F-004
+      decision: ACCEPT
+      justification: Review authority is meaningful only against the exact declared base and final tree.
+      action: Added ancestry assertions, base-to-tree diff hashing, and stop-integrate-rerun rules for an advanced main.
+  tier3:
+    trigger_reason: infra_path_and_round1_low_confidence
+    status: bounded_convergence_complete
+  terminal_state: REVISED_AND_REVIEWED
+  rounds_run: 3
+  unresolved_critical: 0
+  remaining_high: 0
+  post_review_corrections:
+    - source: schema-invalid Anthropic impact review payload plus direct local contract verification
+      accepted_as_formal_review: false
+      corrections:
+        - Git first-add history, not editable graph.created, authorizes pre-enforcement compatibility.
+        - Skip applicability consumes the actual registry and delivery-entry schema rather than a non-existent applicability object.
+        - Phase timestamps are ordered between load and completion.
+        - The WI-498 allowlist row remains through implementation promotion and moves to governance closeout.
+        - Receipt and merge flags, consumer failure deltas, pinned diff hashing, and exact closeout staging are preflighted.
+      formal_followup: Fresh schema-valid different-family impact review required before commit.
+    - source: schema-valid Anthropic execution review at .svc/external-review-artifacts/impact-triad-planning-round2
+      accepted_as_formal_review: true
+      verdict: fail
+      corrections:
+        - Pin pre-change registry failure to exactly WI-498 tasks 5/6 and post-change consumer exits to zero.
+        - Prove full Tier-1 ignores the allowlist and main-green exits on a fully green suite before reading it.
+        - Prove WI-510.md already exists at the base commit.
+        - Keep FROZEN_DIFF_HASH only in ignored receipt state and Git notes, never tracked review markdown.
+        - State OS-temp evidence is receipt well-formedness rather than retained-byte integrity.
+        - Add cutoff parity and registered-skills-only filter fixtures.
+        - Require all four tracked review/security/audit documents even for zero findings.
+      formal_followup: One final schema-valid Anthropic PASS is required before commit.

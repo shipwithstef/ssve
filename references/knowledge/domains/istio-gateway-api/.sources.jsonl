@@ -1,0 +1,3 @@
+{"url":"https://istio.io/latest/docs/","sha256":"s7an-import-2026-05-14","retrieved_at":"2026-05-01T00:00:00Z","retrieval_method":"s7an-it research import","extracted_into":["CAPABILITIES.md","details/wasmplugin.md","details/security-policies.md","details/envoyfilter-ambient.md","details/istioctl-ops.md"]}
+{"url":"https://gateway-api.sigs.k8s.io/","sha256":"s7an-import-2026-05-14","retrieved_at":"2026-05-01T00:00:00Z","retrieval_method":"s7an-it research import","extracted_into":["CAPABILITIES.md"]}
+{"url":"https://argo-rollouts.readthedocs.io/","sha256":"s7an-import-2026-05-14","retrieved_at":"2026-05-01T00:00:00Z","retrieval_method":"s7an-it research import","extracted_into":["CAPABILITIES.md"]}

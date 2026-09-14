@@ -1,0 +1,758 @@
+{
+  "schema_version": 1,
+  "wi": "WI-FW-CLEAN-MAIN-FOLLOWUP-01",
+  "lane": "framework",
+  "status": "in_progress",
+  "created": "2026-09-06T16:01:27.820Z",
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "route-workflow",
+      "subject": "route-workflow — clean-main Stage A",
+      "status": "completed",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-09-06T16:19:06.112Z",
+        "loaded_via": "activate-skill",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-09-06T16:20:00.674Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/route-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-09-06T16:20:00.814Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/route-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-09-06T16:20:00.949Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/route-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-09-06T16:20:01.086Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/route-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-09-06T16:20:01.223Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/route-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-09-06T16:20:01.363Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/route-evidence.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-06T16:20:01.503Z"
+    },
+    {
+      "id": 2,
+      "skill": "design-tech",
+      "subject": "design-tech — clean-main Stage A",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "design-tech",
+        "loaded_at": "2026-09-06T16:20:01.644Z",
+        "loaded_via": "activate-skill",
+        "phases_executed": [
+          {
+            "id": "P1-SpecJourneyDiscussionPreflight",
+            "ts": "2026-09-06T16:20:01.778Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-09-06-clean-main-followup/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-CodebasePatternAnalysis",
+            "ts": "2026-09-06T16:20:01.930Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-09-06-clean-main-followup/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-ArchitectureAlternativesAndDiagrams",
+            "ts": "2026-09-06T16:20:02.080Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-09-06-clean-main-followup/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-CostOpsFeasibilityRiskDesign",
+            "ts": "2026-09-06T16:20:02.219Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-09-06-clean-main-followup/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P1-SpecJourneyDiscussionPreflight",
+            "ts": "2026-09-06T20:29:28.180Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/design-plan-current-verification.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-CodebasePatternAnalysis",
+            "ts": "2026-09-06T20:29:28.334Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/design-plan-current-verification.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-ArchitectureAlternativesAndDiagrams",
+            "ts": "2026-09-06T20:29:28.480Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-09-06-clean-main-followup/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-CostOpsFeasibilityRiskDesign",
+            "ts": "2026-09-06T20:29:28.625Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-09-06-clean-main-followup/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-G4ReviewAndDecisionLogging",
+            "ts": "2026-09-06T20:29:28.775Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/design-plan-current-verification.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-BaselinedSpecSelfVerify",
+            "ts": "2026-09-06T20:29:28.925Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-09-06-clean-main-followup/manifest.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-06T20:29:29.069Z"
+    },
+    {
+      "id": 3,
+      "skill": "plan-changeset",
+      "subject": "plan-changeset — clean-main Stage A",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-09-06T20:30:27.874Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-09-06T20:30:28.182Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/design-plan-current-verification.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-09-06T20:30:28.335Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/design-plan-current-verification.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-09-06T20:30:28.484Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-09-06-clean-main-followup/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-09-06T20:30:28.639Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-09-06-clean-main-followup/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-09-06T20:30:28.787Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/successor-corrections-final-mechanical.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-09-06T20:30:28.939Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/design-plan-current-verification.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-06T20:30:29.095Z"
+    },
+    {
+      "id": 4,
+      "skill": "review-plan",
+      "subject": "review-plan — clean-main Stage A",
+      "status": "completed",
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-09-06T20:30:29.260Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-09-06T20:30:29.582Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/successor-corrections-final-mechanical.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-09-06T20:30:29.738Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/design-plan-current-verification.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-09-06T20:30:29.895Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/clean-main-review/cursor-successor-plan-round-2/findings.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-09-06T20:30:30.047Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/clean-main-review/successor-round-1-adjudication.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-09-06T20:30:30.204Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-09-06-clean-main-followup/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-09-06T20:30:30.368Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/design-plan-current-verification.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-06T20:30:30.531Z"
+    },
+    {
+      "id": 5,
+      "skill": "execute-changeset",
+      "subject": "execute-changeset — clean-main Stage A",
+      "status": "completed",
+      "blocked_by": [
+        4
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-09-06T20:30:30.685Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-09-06T21:37:40.310Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/resumed-dispatch-decision.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-09-06T21:37:40.503Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/clean-main-review/execution-completed.diff"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-09-06T21:37:40.696Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/full-corpus-git-ceiling.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-09-06T21:37:41.042Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/resumed-execution-checkpoint.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-06T21:37:41.224Z"
+    },
+    {
+      "id": 6,
+      "skill": "review-gate",
+      "subject": "review-gate — clean-main Stage A",
+      "status": "completed",
+      "blocked_by": [
+        5
+      ],
+      "skill_receipt": {
+        "skill": "review-gate",
+        "loaded_at": "2026-09-06T21:25:52.509Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-GateContextChecklistConcernScan",
+            "ts": "2026-09-06T21:35:19.029Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/g5-convergence.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-SelfReviewFindings",
+            "ts": "2026-09-06T21:35:19.178Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/g5-convergence.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-SelfJudgment",
+            "ts": "2026-09-06T21:35:19.330Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/g5-convergence.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-CrossReviewConvergence",
+            "ts": "2026-09-06T21:35:19.476Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/g5-convergence.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-GateDecisionBacklog",
+            "ts": "2026-09-06T21:35:19.625Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/g5-convergence.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-09-06T21:35:19.774Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/g5-convergence.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-06T21:38:24.724Z"
+    },
+    {
+      "id": 7,
+      "skill": "review-exec",
+      "subject": "review-exec — clean-main Stage A",
+      "status": "completed",
+      "blocked_by": [
+        6
+      ],
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-09-06T21:35:20.227Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-09-06T21:35:20.374Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/clean-main-review/g5-convergence.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-09-06T21:35:20.524Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/clean-main-review/reviewer-policy.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-09-06T21:35:20.672Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/clean-main-review/cursor-final-candidate-verification/receipt.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-IterationLoop",
+            "ts": "2026-09-06T21:35:20.825Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/clean-main-review/git-ceiling-correction-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerdictAndReceiptFinalize",
+            "ts": "2026-09-06T21:35:20.979Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipts/staging/acc85003fc763009cd7d5f3148f4c0765cddb58a/review-exec.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-06T21:38:25.028Z"
+    },
+    {
+      "id": 8,
+      "skill": "audit-implementation",
+      "subject": "audit-implementation — clean-main Stage A",
+      "status": "completed",
+      "blocked_by": [
+        7
+      ],
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-09-06T21:35:21.430Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextScopeConcern",
+            "ts": "2026-09-06T21:40:43.743Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/closeout-plan-contract.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecialistDispatchCoverageLedger",
+            "ts": "2026-09-06T21:40:43.903Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/clean-main-review/sol-stage-a-audit.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-HypothesisGeneration",
+            "ts": "2026-09-06T21:40:44.069Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/clean-main-followup.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-SubsystemBehaviorAudit",
+            "ts": "2026-09-06T21:40:44.233Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/full-corpus-git-ceiling.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-FindingsConvergenceReport",
+            "ts": "2026-09-06T21:40:44.411Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/clean-main-followup.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-09-06T21:40:44.578Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/clean-main-review/audit-completion-checkpoint.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-06T21:40:44.745Z"
+    },
+    {
+      "id": 9,
+      "skill": "land-changeset",
+      "subject": "land-changeset — clean-main Stage A",
+      "status": "in_progress",
+      "blocked_by": [
+        8
+      ],
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-09-06T21:40:45.080Z",
+        "loaded_via": "manual"
+      }
+    },
+    {
+      "id": 10,
+      "skill": "verify-promotion",
+      "subject": "verify-promotion — clean-main Stage A",
+      "status": "pending",
+      "blocked_by": [
+        9
+      ]
+    }
+  ],
+  "plan": "docs/plans/2026-09-06-clean-main-followup/manifest.md",
+  "flags": [
+    "cross_runtime_integration",
+    "external_state_writer",
+    "runtime_concurrency"
+  ],
+  "planned_files": [
+    "test-framework/evals/run-all-evals.sh",
+    "test-framework/evals/tier-1/lib/fixture-home.sh",
+    "test-framework/evals/tier-1/validate-capability-blocker-inertia.sh",
+    "test-framework/evals/tier-1/validate-claude-wirer-cutover.sh",
+    "test-framework/evals/tier-1/validate-consumer-evidence-root.sh",
+    "test-framework/evals/tier-1/validate-knowledge-legacy-backfill.sh",
+    "test-framework/evals/tier-1/validate-pipeline-decisions-recent.sh",
+    "test-framework/evals/tier-1/validate-pipeline-decisions-schema.sh",
+    "test-framework/evals/tier-1/validate-pretool-decision-engine.sh",
+    "test-framework/evals/tier-1/validate-proposal-triage-sla.sh",
+    "test-framework/evals/tier-1/validate-self-heal-survives-double-dead-pointer.sh",
+    "test-framework/evals/tier-1/validate-session-contract-freshness.sh",
+    "test-framework/evals/tier-1/validate-skills-source-layout.sh",
+    "test-framework/evals/tier-1/validate-workflow-guard.sh",
+    "test-framework/evals/tier-1/validate-all-host-setup.sh",
+    "test-framework/evals/tier-1/validate-codex-zero-block-reads.sh",
+    "test-framework/evals/tier-1/validate-claude-skills-symlinks.sh",
+    "test-framework/evals/tier-1/validate-codex-execution-integrity.sh",
+    "test-framework/evals/tier-1/validate-settings-no-duplicate-hooks.sh",
+    "test-framework/evals/tier-1/validate-settings-write-guard.sh",
+    "test-framework/evals/tier-1/validate-setup-worktree-canonical-resolution.sh",
+    "test-framework/evals/tier-1/validate-source-repo-not-worktree.sh",
+    "test-framework/evals/tier-1/validate-no-svc-residue.sh",
+    "test-framework/evals/tier-1/validate-phase-receipt-autoemit.sh",
+    "test-framework/evals/tier-1/validate-rule-injection.sh",
+    "test-framework/evals/tier-1/validate-plan-product-safety.sh",
+    "scripts/wire-hooks.mjs",
+    "test-framework/evals/tier-1/validate-wire-hooks-variant-dedup.sh",
+    "test-framework/evals/tier-1/validate-self-verify-sections.sh",
+    "test-framework/evals/tier-1/validate-capture-idea-from-proposal.sh",
+    "test-framework/evals/tier-1/validate-cross-host-hook-conformance.sh",
+    "test-framework/evals/tier-1/validate-skill-router.sh",
+    "test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh",
+    "scripts/validate-proposal-promotion-closeout.mjs",
+    "test-framework/evals/tier-1/validate-proposal-promotion-closeout.sh",
+    "skills/improve-framework/SKILL.md",
+    "scripts/lib/external-review-provenance.mjs",
+    "scripts/validate-plan-contract.mjs",
+    "scripts/verify-plan-mechanical.sh",
+    "scripts/verify-file-persistence.sh",
+    "test-framework/evals/tier-1/validate-clean-main-followup.mjs",
+    "scripts/select-tier1-validators-v2.mjs",
+    "scripts/run-external-review.mjs",
+    "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+    "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs",
+    "skills/produce-ad-video/SKILL.md",
+    "references/context-loading-registry.json",
+    "references/knowledge/domains/mimo/CAPABILITIES.md",
+    "references/knowledge/domains/mimo/.sources.jsonl",
+    "references/knowledge/domains/claude-hooks/CAPABILITIES.md",
+    "references/knowledge/domains/claude-hooks/.sources.jsonl",
+    "references/knowledge/domains/legacy-backfill-queue.json",
+    "references/knowledge/source-heuristics.global.jsonl",
+    ".svc/lane-tasks-WI-567.json",
+    ".svc/lane-tasks-WI-SSVE-ARCHITECTURE-EVOLUTION-02.json",
+    ".svc/lane-tasks-WI-FW-SWARM-COORDINATION-01.json",
+    ".svc/pipeline-decisions.jsonl",
+    "docs/specs/work-items/WI-GROK-HOST-IDENTITY-02.md",
+    "references/skill-routing-index.json",
+    "proposals/2026-08-22-framework-improvement-capability-scoped-plugin-mcp-startup.md",
+    "proposals/2026-08-26-framework-docs-audit-findings.md",
+    "proposals/2026-08-26-framework-improvement-advisor-knowledge.md",
+    "proposals/2026-08-26-framework-improvement-codex-svc-host-adhoc-dispatch.md",
+    "proposals/2026-08-26-framework-improvement-owner-lease-24h-slide-renew.md",
+    "proposals/2026-08-30-framework-improvement-configured-reviewer-transports.md",
+    ".claude/agents/ad-video-producer.md",
+    ".claude/agents/strategic-reviewer.md",
+    "proposals/triage.json",
+    ".svc/lane-tasks-WI-FW-ADVISOR-KNOWLEDGE-01.json",
+    ".svc/lane-tasks-WI-FW-HOOKS-SAFETY-01.json",
+    ".svc/lane-tasks-WI-FW-SKILLS-ROUTING-01.json",
+    "AGENTS.md",
+    "DOCTRINE.md",
+    "FRAMEWORK-STATE.md",
+    "skills/execute-changeset/SKILL.md",
+    "skills/land-changeset/SKILL.md",
+    "docs/plans/2026-09-06-clean-main-followup/manifest.md",
+    "docs/plans/2026-09-06-clean-main-followup/plan-contract.json",
+    "docs/plans/2026-09-06-clean-main-followup/roadmap.md",
+    "docs/plans/2026-09-06-clean-main-followup/dispositions.json",
+    "docs/specs/audit/clean-main-followup.md",
+    ".gitignore",
+    "docs/plans/2026-09-06-clean-main-followup/review-log.yaml",
+    "docs/specs/work-items/WI-FW-CLEAN-MAIN-FOLLOWUP-01.md",
+    "docs/specs/work-items/WI-FW-DELIVERY-EVIDENCE-RESIDUALS-01.md",
+    "docs/specs/work-items/WI-FW-DESIGN-INTEGRATIONS-RESIDUALS-01.md",
+    "docs/specs/work-items/WI-FW-CONTROLLER-CUTOVER-RESIDUALS-01.md",
+    "docs/specs/work-items/WI-FW-CAPABILITY-MCP-STARTUP-RESIDUALS-01.md",
+    "docs/specs/work-items/INDEX.md",
+    "test-framework/evals/tier-1/validate-chain-receipts-schema.sh",
+    "test-framework/evals/tier-1/validate-manifest-integrity-stamp.sh",
+    "test-framework/evals/tier-1/validate-knowledge-refresh-scan.sh",
+    "test-framework/evals/tier-1/validate-rename-schema-drill.sh",
+    "test-framework/evals/tier-1/validate-wire-kimi-hooks-paths.sh"
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "wi": "WI-332",
+  "source_proposal": "proposals/done/2026-06-04-framework-improvement-interactive-control-contract-gate.md",
+  "status": "implemented",
+  "coverage": [
+    {
+      "proposal_item": "F-01: Spec/Acceptance Criteria Definition rules for interactive UI controls",
+      "status": "covered",
+      "evidence": [
+        "write-spec/SKILL.md"
+      ],
+      "note": "Added interactive controls visibility and accessibility requirements in AC tables rule."
+    },
+    {
+      "proposal_item": "F-02: UX State Machines map panel visibility and transitions",
+      "status": "covered",
+      "evidence": [
+        "design-ux/SKILL.md"
+      ],
+      "note": "Required mapping of panel visibility and state transitions."
+    },
+    {
+      "proposal_item": "F-03: Component design specifies accessibility token attributes",
+      "status": "covered",
+      "evidence": [
+        "design-ui/SKILL.md"
+      ],
+      "note": "Required component specifications to detail design tokens and aria states for interactive components."
+    },
+    {
+      "proposal_item": "F-04: Review Gates checklists update (G1, G3, G5, G7)",
+      "status": "covered",
+      "evidence": [
+        "review-gate/SKILL.md"
+      ],
+      "note": "Checklists updated to verify interactive control contracts across gates."
+    }
+  ],
+  "residuals": []
+}

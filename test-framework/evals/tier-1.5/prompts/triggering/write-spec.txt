@@ -1,0 +1,1 @@
+I need to define the requirements for a new notifications feature. Users should get in-app notifications when someone comments on their post, when their post gets liked, and when they get a new follower. I have a vision doc and personas already — can you write the spec?

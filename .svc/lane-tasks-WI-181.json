@@ -1,0 +1,56 @@
+{
+  "wi": "WI-181",
+  "lane": "framework",
+  "created": "2026-05-09T14:36:13Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Route WI-181 and capture host harness constraints",
+      "status": "completed",
+      "metadata": {
+        "skill": "route-workflow"
+      },
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-05-09T14:36:13Z",
+        "loaded_via": "session"
+      },
+      "completed_at": "2026-05-09T14:36:13Z"
+    },
+    {
+      "id": 2,
+      "subject": "Patch Stop hook wiring so JSON stdin reaches the completion guard",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "route-workflow"
+      },
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-05-09T14:46:00Z",
+        "loaded_via": "session"
+      },
+      "completed_at": "2026-05-09T14:46:00Z"
+    },
+    {
+      "id": 3,
+      "subject": "Validate WI-181 with targeted tier-1 evidence",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "metadata": {
+        "skill": "route-workflow"
+      },
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-05-09T14:47:00Z",
+        "loaded_via": "session"
+      },
+      "completed_at": "2026-05-09T14:47:00Z"
+    }
+  ]
+}

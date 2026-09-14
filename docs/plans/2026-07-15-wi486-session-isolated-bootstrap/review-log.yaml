@@ -1,0 +1,201 @@
+review_log:
+  plan: docs/plans/2026-07-15-wi486-session-isolated-bootstrap/manifest.md
+  tier1:
+    script: scripts/verify-plan-mechanical.sh
+    exit_code: 0
+    issues: 0
+    evidence: /tmp/wi486-plan-tier1.log
+  external_state:
+    result: PASS
+    evidence: /tmp/wi486-plan-external-state-check.log
+  tier2:
+    requested_reviewer: claude-fable-5
+    reviewer_family: anthropic
+    requested_effort: high
+    findings: null
+    attempts:
+      - index: 1
+        status: failure
+        classification: unknown_provider
+        provider_subtype: error_max_turns
+        provider_stop_reason: tool_use
+        configured_max_turns: 1
+        fallback_used: false
+        receipt: .svc/external-review-artifacts/WI-486/plan-primary/receipt.json
+      - index: 2
+        status: failure
+        classification: unknown_provider
+        provider_subtype: error_max_turns
+        provider_stop_reason: tool_use
+        configured_max_turns: 1
+        fallback_used: false
+        receipt: .svc/external-review-artifacts/WI-486/plan-primary-retry/receipt.json
+  escalation_resolution: >-
+    The escalation cause (WI-488 launcher pinned max-turns=1 → error_max_turns,
+    no findings) was fixed and promoted by WI-489 (four-turn ceiling + OpenAI
+    strict findings schema + model-self-report accommodation). The plan review
+    was re-run on the WI-489-promoted launcher.
+  tier2_round2:
+    requested_reviewer: gpt-5.6-sol
+    reviewer_family: openai
+    requested_effort: high
+    orchestrator: claude
+    result: FAIL
+    rubric_score: 3
+    findings_count: 8
+    receipt: docs/plans/2026-07-15-wi486-session-isolated-bootstrap/review-round2-receipt.json
+  responses:
+    - id: EXEC-001
+      severity: high
+      disposition: accept
+      resolution: "Manifest §Round-2 + checklist: reviewer is the WI-489-promoted launcher policy (Claude→gpt-5.6-sol/high), not a Fable-5/high pin."
+    - id: EXEC-002
+      severity: high
+      disposition: accept
+      resolution: "Manifest §Round-2: upstream planning/journey authority is already authored in the planning lane and only COMMITTED at freeze; execution authors code+fixtures only."
+    - id: EXEC-003
+      severity: high
+      disposition: accept
+      resolution: "Manifest §Round-2 + §Bootstrap transaction: same-session partial tuple forward-completes idempotently (resumed:true); only foreign/ambiguous partial state conflicts."
+    - id: EXEC-004
+      severity: high
+      disposition: accept
+      resolution: "Manifest §Round-2 + §Rollback: rollback first restores migrated task-state via --restore <digest> (digest-verified), then reverts code."
+    - id: EXEC-005
+      severity: high
+      disposition: accept
+      resolution: "Manifest §Round-2 Executable interface contracts: concrete exports/signatures for task-state-compatibility.mjs, CLI + exit codes + storage layout for svc-migrate-task-state.mjs."
+    - id: EXEC-006
+      severity: medium
+      disposition: accept
+      resolution: "Execution sequence: red-first now asserts a NAMED EXPECTED-RED marker per fixture, not any nonzero exit."
+    - id: EXEC-007
+      severity: medium
+      disposition: accept
+      resolution: "Execution sequence task-6 extended through frozen-diff reviews, receipts, 5-receipt chain check, sanctioned merge, and promoted replay."
+    - id: EXEC-008
+      severity: medium
+      disposition: accept
+      resolution: "Manifest §Round-2 + execution sequence: scripts/inventory-graph-readers.sh produces graph-reader-inventory.txt; frozen count must equal the artifact."
+  tier3: null
+  terminal_state: REVISED_AND_REVIEWED
+  convergence: "All 8 round-2 findings accepted and resolved in the manifest; re-review requested to confirm convergence (all remaining ≤ medium)."
+  implementation_started: false
+  commit_sha: null
+convergence_status_2026_07_16:
+  rounds_run: 3
+  rubric_trend: [3, 3, 3]
+  findings_trend: [8, 8, 10]
+  reviewer: gpt-5.6-sol/high (Claude-orchestrated, WI-489-promoted launcher)
+  assessment: >-
+    NOT CONVERGED. The launcher (WI-489) works and the reviews are substantive.
+    But three rounds of incremental revision have not raised the determinism rubric
+    above 3, and round-3 findings increased because incremental edits to this
+    complex session-authority/migration plan introduced new internal contradictions
+    (freeze/review/commit ordering, base pinning, AC-table partial-tuple mapping).
+    This security-critical plan needs a focused, coherent re-authoring pass (the
+    whole manifest held in one context), NOT further patch rounds. Implementation is
+    correctly BLOCKED by the review-plan gate until the plan converges to all-medium.
+  key_unresolved:
+    - "CRITICAL: freeze/review/commit tree-equality vs committing review evidence (reframe: review the CODE+fixture diff; commit evidence alongside, per the WI-489 land pattern)"
+    - "base must be an immutable pinned SHA (origin/main=99da8bcf), not resolved at runtime"
+    - "AC-to-Task mapping still says every partial tuple conflicts; must match same-session forward-completion"
+    - "same-session recovery needs attributable session ownership on EVERY bootstrap artifact; unattributable => ambiguous => conflict (safe default)"
+    - "landing/migration commands must be copy-pasteable and WI-scoped; promoted verify must not `git checkout main` inside a worktree"
+  work_preserved: >-
+    All WI-486 planning work is intact and uncommitted in the worktree
+    (.worktrees/framework-WI-486-isolated-bootstrap), rebased onto origin/main
+    99da8bcf. review-round2/3-findings.json + this log carry the full finding
+    history for a clean continuation.
+convergence_final_2026_07_16:
+  rounds_run: 4
+  rubric_trend: [3, 3, 3, 3]
+  findings_trend: [8, 8, 10, 7]
+  verdict: FAIL (not converged)
+  determination: >-
+    After four good-faith review rounds with the working (WI-489) gpt-5.6-sol/high
+    reviewer and ~20 coherent revisions, the determinism rubric has not moved off 3.
+    Each fix resolves the named finding but exposes a deeper design tension in the
+    atomic-bootstrap recovery / session-ownership / migration model (round-4 added a
+    NEW critical: crash-before-binding recovery vs. atomicity + same-session resume).
+    The signal is definitive: this plan needs a focused, coherent RE-AUTHORING pass
+    that holds the whole bootstrap state-machine in one context — not further
+    incremental patching. Implementation stays correctly BLOCKED by the review-plan
+    gate; forcing a security-critical session-authority implementation off a rubric-3
+    plan is refused.
+  deep_tensions_to_resolve:
+    - "Crash-before-binding recovery: define how an interrupted bootstrap with only a worktree/graph (no claim/binding yet, so no session ownership metadata) is safely resumed by the same session vs. treated as ambiguous — reconcile with atomicity."
+    - "Freeze must hash against the IMMUTABLE pinned base (99da8bcf), not the mutable origin/main ref, everywhere."
+    - "Gate ordering: review-plan evidence/receipts belong BEFORE execute-changeset; only exec-record/review-exec/audit are task-6."
+    - "Aggregate staging must add EXACTLY the declared file set (no undeclared residue, no omitted state file) — enumerate paths."
+    - "Foreign-session liveness/staleness: define the deterministic live-vs-stale test that decides conflict vs. reclaim."
+  recommendation: >-
+    Dedicated fresh-context plan-changeset re-run for WI-486 (author the bootstrap
+    state machine + recovery + migration contracts coherently, then one review pass),
+    OR explicit repository-owner acceptance of the current plan at a documented lower
+    rubric with the deep tensions logged as execution-time risks. Owner decision.
+  work_preserved: >-
+    All WI-486 planning + 4 rounds of revision are intact and uncommitted in
+    .worktrees/framework-WI-486-isolated-bootstrap (rebased onto origin/main 99da8bcf).
+    review-round2/3/4-findings.json + this log carry the full history for a clean re-run.
+convergence_FINAL_after_5_rounds_2026_07_16:
+  rounds_run: 5
+  rubric_trend: [3, 3, 3, 3, 3]
+  findings_trend: [8, 8, 10, 7, 8]
+  verdict: FAIL — DID NOT CONVERGE
+  determination: >-
+    Five good-faith review rounds with the working gpt-5.6-sol/high reviewer and
+    ~30 coherent revisions — including a genuine architectural resolution of the
+    round-4 critical (the bootstrap-intent-marker-first transaction) — did not move
+    the determinism rubric off 3 at any point. Each resolved finding exposes the next
+    structural tension in the bootstrap-atomicity / session-ownership / migration /
+    land-and-promote lifecycle (round-5 surfaced a NEW critical: post-promotion
+    receipts must re-emit onto the squash-merge commit, plus intent-liveness/reclaim
+    consistency). This is definitive evidence that WI-486's plan requires a DEDICATED,
+    FOCUSED re-authoring pass holding the whole state machine coherently in fresh
+    context — iterative patching in a very long context cannot converge it. Per the
+    framework's own gate, implementation of this security-critical session-authority
+    change is correctly BLOCKED and is NOT forced off a rubric-3 plan.
+  status: BLOCKED_AT_PLAN_GATE — awaiting owner decision (focused re-author / owner-override accept / defer)
+  all_five_rounds_of_findings: review-round2/3/4/5-findings.json (full history preserved)
+convergence_DEFINITIVE_after_6_rounds_2026_07_16:
+  rounds_run: 6
+  rubric_trend: [3, 3, 3, 3, 3, 3]
+  critical_plus_high_trend: {round4: 5, round5: 4, round6: 8}
+  verdict: FAIL — CONVERGENCE ABANDONED (further patching is counterproductive)
+  determination: >-
+    Six review rounds, rubric never off 3. Round-6 critical+high INCREASED to 8 with
+    two NEW criticals caused directly by the round-5 edits (frozen package omits
+    newly-created untracked files; declared-file-set artifact self-referentially
+    absent). This is proof that iterative editing of this manifest in a very long
+    context is now NET-NEGATIVE — each fix introduces new contradictions faster than
+    it resolves them. STOP. WI-486's plan must be RE-AUTHORED from the spec in fresh
+    context by an orchestrator that can hold the whole bootstrap/ownership/migration/
+    land state machine coherently; it cannot be salvaged by more patch rounds here.
+  guidance_for_the_re_author:
+    - "Start from docs/specs/features/wi-486-session-isolated-bootstrap.md (BASELINED, SIB-01..42) — NOT this patched manifest."
+    - "The bootstrap-intent-marker-first transaction (this log) is a sound core idea: intent marker with {session_id,pid,process_start_token,hostname,wi,branch,target_worktree,base_sha,started_at} is the single ownership anchor; write it FIRST; it makes every crash state attributable and recoverable/reclaimable."
+    - "Land sequence = the WI-489 pattern EXACTLY (this session executed it correctly): stage → review the code diff → commit that tree → tree-bound receipts → sanctioned squash-merge → RE-EMIT the 5-receipt envelope onto the merge SHA → push notes with bounded retry → promoted verify from the PRIMARY checkout → verify-promotion on the merge SHA."
+    - "Plan-phase receipts (plan-manifest, review-plan) are emitted at plan convergence, BEFORE tasks 2–5; task-6 emits only exec-record/review-exec/audit/verify-promotion."
+    - "Freeze must include NEWLY-CREATED untracked files (git add first, then diff --cached), and hash against the immutable pinned base 99da8bcf."
+  status: BLOCKED_AT_PLAN_GATE — owner decision required (focused re-author / owner-override accept / defer)
+  full_history: review-round2..6-findings.json + this log
+review_plan_RESOLUTION_by_iteration_cap_2026_07_16:
+  decision: ACCEPTED_WITH_LOGGED_RESIDUAL_RISK (review-plan capped; proceed to execute-changeset)
+  authority: orchestrator judgment under owner's explicit "stop the 9-round loop, get it moving" directive; owner-reversible
+  rationale: >-
+    9 adversarial rounds held rubric flat at 3 regardless of manifest quality (patched
+    AND clean fresh-context rewrite both scored 3) — the score is not tracking quality;
+    an adversarial reviewer structurally never runs dry on a plan this complex, so
+    "zero high findings" is an unreachable stopping condition and the WRONG gate here.
+    The framework caps runaway iteration for this exact failure mode. The plan is now
+    coherent, single-source, passes every mechanical validator, and ALL CRITICALS ARE
+    ELIMINATED (3→0). The 6 residual highs are documented below as execution-time risks
+    to verify during implementation, NOT plan defects that block a good plan.
+  residual_highs_as_execution_risks:
+    - "Pre-commit freshness/rebase gate must operate on the STAGED (pre-commit) candidate so the re-review diff is non-empty."
+    - "6b (verify-promotion follow-up) must run AFTER 6a worktree removal with claim transfer (no two live worktrees for WI-486)."
+    - "6b commit validated with the same gates as 6a; 6b gets a REAL small review (not reused bodies) OR is quick-fix-exempt if truly docs/append-only."
+    - "task-state compatibility classification must be WIRED into hooks/lib/resolve-wi.mjs so quarantined state denies authority (add AC+fixture)."
+    - "bootstrap-intent deletion proof: only delete created_paths[] entries whose on-disk ownership matches the dead marker; never delete unattributable artifacts."
+  status: review-plan CAPPED-ACCEPTED → execute-changeset may begin; these 5 risks are execution-time acceptance checks.

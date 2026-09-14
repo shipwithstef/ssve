@@ -1,0 +1,10 @@
+Skill: test-journeys
+
+Q: What are the four core modes of test-journeys, and what does smoke mode validate?
+A: Expected pattern: smoke, regression, feature-ac, exploratory. Smoke mode validates: auth/session entry, primary user action, success state visibility, critical failure guardrail.
+
+Q: What is the Stage 1 viewport requirement for test-journeys, and when can Stage 2 (mobile) begin?
+A: Expected pattern: Stage 1 — Desktop (1280x800) is MANDATORY first pass. Stage 2 — Mobile (375x812) runs after Stage 1 is clean.
+
+Q: What are the three allowed terminal statuses for every scenario in test-journeys?
+A: Expected pattern: executed, skipped-infeasible, skipped-user-approved. Efficiency skips are NOT allowed.

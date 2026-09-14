@@ -1,0 +1,39 @@
+{
+  "wi": "WI-226",
+  "lane": "framework",
+  "created": "2026-05-10T16:37:12.924Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Migrate refresh-competitors skill contract",
+      "status": "completed",
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T16:37:34.079Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T16:39:14.219Z"
+    },
+    {
+      "id": 2,
+      "subject": "Validate and close WI-226",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T16:39:14.293Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T16:39:14.331Z"
+    }
+  ]
+}

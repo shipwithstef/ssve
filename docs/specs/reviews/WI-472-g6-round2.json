@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "wi": "WI-472",
+  "gate": "G6",
+  "round": 2,
+  "launcher_status": "success",
+  "content_verdict": "pass-with-findings",
+  "request_id": "8f606d84-83b7-40f4-ad7b-bb2d83f5cd6e",
+  "reviewer": {"host": "claude", "family": "anthropic", "model": "claude-opus-4-8", "effort": "high"},
+  "receipt_sha256": "876f760467992d76fc9cfc329ee7f36b1713225841bcbc89c1e5d9017dcfc468",
+  "findings_sha256": "7fd214bfd31800135c418235e0480650bbe93e3306508e607d06db17c1390629",
+  "backlog_certifications": {"required": 78, "positive": 78, "negative": 0},
+  "findings": [
+    {"id": "WI472-R2-01", "severity": "medium", "disposition": "accepted-with-justification", "justification": "The frozen ledger disposition is retained as evidence-origin provenance only; apply never copies an envelope and every row receives the same distinct attestation class. All 78 exact bases were nevertheless certified true."},
+    {"id": "WI472-R2-02", "severity": "low", "disposition": "accepted-with-justification", "justification": "Detached operation cannot synchronously report terminal verification. The locked legacy field retains its shape and reports accepted scheduling; exact drive state is additive metadata plus the durable outcome."},
+    {"id": "WI472-R2-03", "severity": "low", "disposition": "deferred", "justification": "The operator-only local helper uses a PID/SHA path with O_EXCL-like notes application sequencing; random-temp hardening is non-blocking and outside the acceptance surface."},
+    {"id": "WI472-R2-04", "severity": "low", "disposition": "accepted-with-justification", "justification": "RC-01 explicitly scopes child calls in svc-reconcile; detached spawn is intentionally non-waiting and backlog-helper processes are bounded by finite local Git/Node operations."},
+    {"id": "WI472-R2-05", "severity": "info", "disposition": "accepted", "justification": "Responsibility B emits only unverified candidates, so false is the correct wiring; the predicate remains reusable and independently state-matrix tested."},
+    {"id": "WI472-R2-06", "severity": "info", "disposition": "accepted", "justification": "The fixture deliberately isolates the GitHub hang path; Responsibility A has separate live-range equality evidence."}
+  ],
+  "unresolved_critical": 0,
+  "remaining_high": 0,
+  "certification": true
+}

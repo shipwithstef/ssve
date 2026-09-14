@@ -1,0 +1,44 @@
+review: WI-530-exec
+rounds_run: 3
+hard_round_cap: 3
+unresolved_critical: 0
+remaining_high: 0
+terminal_state: PASS
+final_implementation_digest: f94058b07f5ed53668459bc876ca7ac43a2740ecedb5ecf145698c266e56ecec
+agy_certification:
+  reviewer_host: agy
+  reviewer_family: google
+  model: Gemini 3.6 Flash (High)
+  effort: high
+  fallback_used: false
+  override_used: false
+  candidate_digest: 74ffda26e5f80631d1b00819bf6f8e057251587dde29b9de5c81b54bfcfed16b
+  verdict: pass
+  rubric_score: 10
+rounds:
+  - round: 1
+    result: remediation_required
+    critical: 0
+    high: 7
+    disposition: fixed with focused executable regressions
+  - round: 2
+    candidate_digest: 8402d1ca2f58e86d4194a483e3544cb1f38c01ec0b5e9478da5d74f3b632c700
+    result: remediation_required
+    critical: 0
+    high: 3
+    disposition: fixed pre-intent resume, exact source bijection, and lineage rollback
+  - round: 3
+    candidate_digest: 74ffda26e5f80631d1b00819bf6f8e057251587dde29b9de5c81b54bfcfed16b
+    result: pass_after_mechanical_cap_fix
+    critical: 0
+    high: 1
+    disposition: fixed exact partial-write retry; targeted Sol confirmation PASS
+bounded_exit:
+  no_fourth_broad_round: true
+  reason: hard cap reached; final High was deterministic and closed by an exact executable crash-state regression
+  targeted_confirmation:
+    self_heal: 17_passed_0_failed
+    controller_migration_rollback: pass
+    source_layout: 109_passed_0_failed
+    unresolved_critical: 0
+    remaining_high: 0

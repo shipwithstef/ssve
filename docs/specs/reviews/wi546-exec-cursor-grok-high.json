@@ -1,0 +1,134 @@
+{
+  "review_kind": "exec",
+  "reviewer": "cursor-grok-4.6-high",
+  "reviewer_family": "xai",
+  "host": "cursor",
+  "usage_pool": "Cursor Models",
+  "fast": false,
+  "role": "inline-self",
+  "independent": false,
+  "examined_sha": "6f6890d2415b8718e5579967db3e45402e12952e",
+  "base": "origin/main 223436abe5124e6d9852551d249efd855759833b",
+  "verdict": "pass_with_findings",
+  "rubric_score": 7,
+  "checked": [
+    "SOL-E001 notes vs gitignored mirrors (check-chain-receipts NOTE_REQUIRED_CONSUMERS + emit-receipt no mirror-merge)",
+    "SOL-E002 run-external-review REVIEW_HOST_TRANSPORTS; no else-to-Claude",
+    "SOL-E003 continuation launch_command null => capability_limited; pid required before launch_receipted",
+    "SOL-E004 consume binds result.wi + event_status=success + artifacts + no failing ACs",
+    "SOL-E005 continuation phase-guard catch fail-closed for identified children",
+    "SOL-E006 Cursor/Grok Stop adapters: no || true; missing/crash exit 2",
+    "SOL-E007 session-override owner file + override_sha256/WI/session/expiry; inline receipt refused",
+    "SOL-E008 scoped overlay without caller WI refused",
+    "AC-545 git 100755 + setup SVC-ENFORCE-HOOK-MODE fail-closed fixture",
+    "AC-549 shared chain-policy order + conflict refuse",
+    "AC-550 composite identity + Stop --consumer stop",
+    "AC-551 missing owner file refuse + no Grok/Cursor remap in resolve-dispatch",
+    "AC-546 live fixtures (Cursor/Grok compose children, AGY f27a143a note consume)",
+    "unstaged WI-553 leftovers ignored"
+  ],
+  "findings": [
+    {
+      "id": "CGH-001",
+      "severity": "HIGH",
+      "lens": "authority",
+      "claim": "L2 pre-push and L3 reconcile can still be authorized by gitignored mirror envelopes.",
+      "analysis": "SOL-E001's Stop/verify/final-report and note-merge legs are closed: NOTE_REQUIRED_CONSUMERS rejects non-note sources for those consumers, and writeNote no longer Object.assigns mirror siblings into notes. The original proposed_fix also named push and reconcile. Those callers still invoke check-chain-receipts without --consumer, so getReceiptsForSha's documented development-mode mirror fallback remains live. A complete forged .svc/receipts/<sha>/ tree with no refs/notes/svc-receipts can therefore pass pre-push in refuse mode and reconcile responsibility A, which is the WI-542 class of shipping commits whose durable notes never existed.",
+      "evidence": [
+        "scripts/check-chain-receipts.mjs:70",
+        "scripts/check-chain-receipts.mjs:407",
+        "scripts/check-chain-receipts.mjs:700",
+        "hooks/git/pre-push.d/10-receipts-complete:56",
+        "hooks/git/pre-push.d/10-receipts-complete:63",
+        "scripts/svc-reconcile.mjs:188"
+      ],
+      "disposition": "NEEDS_FIX"
+    },
+    {
+      "id": "CGH-002",
+      "severity": "HIGH",
+      "lens": "authority",
+      "claim": "Continuation children still fail open when the ledger is absent or not found, not only when JSON.parse throws.",
+      "analysis": "The SOL-E005 catch now fail-closes identified children (SVC_CONTINUATION_TOKEN or session id prefix svc-continuation-). isPhaseForbiddenForSession does not throw for a missing .svc/continuation dir, a cwd that does not contain the parent ledger, or no matching launched baton: it returns forbidden:false and the hook exits 0 before the looksLikeChild branch. A child that inherited the continuation token can then invoke diagnose-bug/plan-changeset/execute-changeset, violating AC-552-4. Fail-closed must apply to identified children whenever the launched baton cannot be validated, not only on thrown parse errors.",
+      "evidence": [
+        "hooks/svc-continuation-phase-guard.mjs:43",
+        "hooks/svc-continuation-phase-guard.mjs:49",
+        "scripts/resolve-continuation.mjs:82",
+        "scripts/resolve-continuation.mjs:572",
+        "scripts/resolve-continuation.mjs:587"
+      ],
+      "disposition": "NEEDS_FIX"
+    },
+    {
+      "id": "CGH-003",
+      "severity": "MEDIUM",
+      "lens": "determinism",
+      "claim": "A work overlay without scope.wi still applies to every WI.",
+      "analysis": "SOL-E008 is fixed for the scoped-without-caller-WI case (refused). parseOverlay still applies any overlay that omits scope.wi globally, so SVC_DISPATCH_WORK_OVERLAY can remap another workflow. AC-551-4 requires work overlays not to leak across WIs; Sol's proposed_fix also required explicit scope. Unscoped overlays remain a leak vector.",
+      "evidence": [
+        "scripts/resolve-dispatch.mjs:193",
+        "scripts/resolve-dispatch.mjs:200",
+        "scripts/resolve-dispatch.mjs:206",
+        "test-framework/evals/tier-1/validate-dispatch-resolver-wi551.mjs:183"
+      ],
+      "disposition": "NEEDS_FIX"
+    },
+    {
+      "id": "CGH-004",
+      "severity": "MEDIUM",
+      "lens": "coverage",
+      "claim": "Grok still declares fresh_session_launch.enabled=true with launch_command=null; WI-546 live proof is grok -p, not the controller spawn path.",
+      "analysis": "SOL-E003 is correctly fail-closed: non-fake launch with a null command records launch_blocked/capability_limited and never launch_receipted with pid=null (covered by validate-continuation-lifecycle-wi552). That makes the host declaration honest, not a ghost success. AC-546-3 / AC-552-10 still asked WI-546 to exercise a live Grok controller launch when the host declares the primitive. The live fixture only runs observational grok -p and skips if grok is missing, so restart-continuation parity is still capability-limited rather than proven.",
+      "evidence": [
+        "provision/hosts/grok.json:25",
+        "provision/hosts/grok.json:29",
+        "scripts/resolve-continuation.mjs:389",
+        "test-framework/evals/tier-1/validate-wi546-grok-live-acceptance.sh:196",
+        "test-framework/evals/tier-1/validate-continuation-lifecycle-wi552.mjs:364"
+      ],
+      "disposition": "ACCEPT_WITH_JUSTIFICATION"
+    },
+    {
+      "id": "CGH-005",
+      "severity": "MEDIUM",
+      "lens": "release",
+      "claim": "Owner example policy names Cursor as the Sol/Fable review host, but run-external-review has no cursor/grok transport.",
+      "analysis": "SOL-E002 is closed as specified: REVIEW_HOST_TRANSPORTS is {codex,agy,claude}; unknown hosts including cursor/grok take the capability branch and never the old else-to-Claude argv. That is correct no-remap behavior. The shipped example dispatch policy still marks fable and sol-high as required independent stations with host=cursor, so a production review-exec that consumes that example through the launcher will capability-limit the required different-family stations instead of invoking cursor-agent. This station itself is Cursor Models inline-self, not that launcher path.",
+      "evidence": [
+        "scripts/run-external-review.mjs:35",
+        "scripts/run-external-review.mjs:1057",
+        "scripts/run-external-review.mjs:1558",
+        "examples/dispatch-policy.example.json:52",
+        "examples/dispatch-policy.example.json:92"
+      ],
+      "disposition": "ACCEPT_WITH_JUSTIFICATION"
+    },
+    {
+      "id": "CGH-006",
+      "severity": "LOW",
+      "lens": "authority",
+      "claim": "Session-override receipt session_id is not bound unless the caller already has a session id.",
+      "analysis": "SOL-E007's CRITICAL inline-JSON forge is closed: receipts must be a uid-owned non-world-writable non-symlink file, bind override_sha256, require WI, issued_at, and expires_at. Independently verifiable owner authorization is the same filesystem bar as ~/.svc/dispatch-policy.json, which is acceptable for this trust model. Residual: if (sessionId && receipt.session_id !== sessionId) lets a valid receipt file apply when SVC_SESSION_ID is unset.",
+      "evidence": [
+        "scripts/resolve-dispatch.mjs:250",
+        "scripts/resolve-dispatch.mjs:255",
+        "scripts/resolve-dispatch.mjs:261",
+        "scripts/resolve-dispatch.mjs:268"
+      ],
+      "disposition": "ACCEPT_WITH_JUSTIFICATION"
+    }
+  ],
+  "gaps": [
+    "No tier-1 fixture that --consumer stop/verify-promotion/final-report rejects a mirror-only envelope, or that pre-push --range without notes fails",
+    "No fixture that an identified continuation child with a missing/foreign-cwd ledger is denied forbidden skills",
+    "Cursor/Grok Stop adapters still treat core exit 0 plus absence of a block JSON as allow; they do not require schema-valid allow output",
+    "foldBaton still derives closed_pass from result.verdict alone on ledger replay; consume() now validates first, so this is writer-trust not a new consume hole",
+    "Live Grok controller spawn (launch_command + pid) not in WI-546 fixtures",
+    "This station is same-family advisory; it cannot authorize production release"
+  ],
+  "confidence": {
+    "fail_closed": 0.74,
+    "no_remap": 0.93,
+    "land_ready": 0.48
+  }
+}

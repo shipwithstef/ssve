@@ -1,0 +1,385 @@
+{
+  "schema_version": 1,
+  "wi": "WI-FW-HOOKS-SAFETY-01",
+  "lane": "framework",
+  "status": "blocked",
+  "created": "2026-08-25T00:00:00.000Z",
+  "tasks": [
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "review-plan",
+      "subject": "gate approved self-healing hooks plan",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-08-25T22:16:19.018Z",
+        "loaded_via": "codex-load-skill",
+        "output_artifact": "docs/plans/2026-08-25-wi-fw-hooks-safety/review-log.yaml",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-08-25T22:20:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/plans/2026-08-25-wi-fw-hooks-safety/plan-contract.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-08-25T22:22:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-25-wi-fw-hooks-safety/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-08-26T07:10:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/cross-model/findings.json"
+              },
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-fw-hooks-safety-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-08-26T07:49:12.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-fw-hooks-safety-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-08-26T00:16:05.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-25-wi-fw-hooks-safety/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-08-26T07:49:12.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-FW-HOOKS-SAFETY-01.json"
+              }
+            ]
+          }
+        ]
+      },
+      "note": "CLOSED: mechanical gates PASS (committed receipts); paid plan review transport-blocked at execution time and deferred to exec-kind frozen-diff review per launcher phase doctrine — compensating independent exec reviews (rounds 1+2) recorded under task 3; owner policy governed-triple/codex-sol-high; owner override directive authorized continuation",
+      "completed_at": "2026-08-26T07:49:12.000Z"
+    },
+    {
+      "id": 2,
+      "status": "completed",
+      "skill": "execute-changeset",
+      "subject": "implement unified decision, self-heal, and renewal",
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-08-25T22:59:11.000Z",
+        "loaded_via": "codex-load-skill",
+        "output_artifact": "docs/plans/2026-08-25-wi-fw-hooks-safety/manifest.md",
+        "validation_output": "test-framework/evals/tier-1/validate-codex-zero-block-reads.sh",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-08-25T22:59:11.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-25-wi-fw-hooks-safety/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-08-26T00:07:04.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "hooks/lib/pretool-decision-engine.mjs"
+              },
+              {
+                "type": "file",
+                "path": "hooks/codex/svc-codex-pretool-dispatcher.mjs"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-08-26T07:30:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-exec-validation.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-08-26T00:16:05.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-fw-hooks-safety-analysis.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-26T00:07:04.000Z"
+    },
+    {
+      "id": 3,
+      "status": "completed",
+      "skill": "review-exec",
+      "subject": "self-review and independent review of frozen diff",
+      "blocked_by": [
+        2
+      ],
+      "note": "CONVERGED at WI-491 3-round cap; bounded exit: 0 critical, residuals dispositioned (see cross-model doc)",
+      "completed_at": "2026-08-26T09:05:00.000Z",
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-08-26T06:45:00.000Z",
+        "loaded_via": "opencode-session",
+        "output_artifact": "docs/specs/reviews/wi-fw-hooks-safety-exec-cross-model.md",
+        "validation_output": ".svc/external-review-artifacts/cross-model-r3/receipt.json",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-08-26T00:16:05.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-fw-hooks-safety-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-08-26T06:41:52.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/review-exec-pair.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-08-26T09:05:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/cross-model-r3/receipt.json"
+              },
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-fw-hooks-safety-exec-cross-model.md"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "status": "completed",
+      "skill": "audit-implementation",
+      "subject": "deep correctness and security audit",
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-08-26T00:16:05.000Z",
+        "loaded_via": "codex-load-skill",
+        "output_artifact": "docs/specs/audit/wi-fw-hooks-safety-analysis.md",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextScopeConcern",
+            "ts": "2026-08-26T00:16:05.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-FW-HOOKS-SAFETY-01.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecialistDispatchCoverageLedger",
+            "ts": "2026-08-26T00:16:05.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-25-wi-fw-hooks-safety/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P3-HypothesisGeneration",
+            "ts": "2026-08-26T00:16:05.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-fw-hooks-safety-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-SubsystemBehaviorAudit",
+            "ts": "2026-08-26T06:55:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/cross-model/findings.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-FindingsConvergenceReport",
+            "ts": "2026-08-26T07:20:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-exec-validation.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-08-26T07:49:12.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-FW-HOOKS-SAFETY-01.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-26T00:16:05.000Z"
+    },
+    {
+      "id": 5,
+      "status": "completed",
+      "skill": "land-changeset",
+      "subject": "push PR, merge, and install all hosts",
+      "blocked_by": [
+        3,
+        4
+      ],
+      "completed_at": "2026-08-26T09:23:56.000Z",
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-08-26T09:10:00.000Z",
+        "loaded_via": "opencode-session",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-08-26T09:12:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-25-wi-fw-hooks-safety/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-08-26T09:20:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-FW-HOOKS-SAFETY-01.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-08-26T09:22:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "PR #27 checks"
+              }
+            ]
+          }
+        ]
+      },
+      "receipt": "PR #27 squash-merged c92f91b58df774ade6ccc18403f85e965613eeeb at 2026-08-26T09:23:56Z"
+    },
+    {
+      "id": 6,
+      "status": "blocked",
+      "skill": "verify-promotion",
+      "subject": "verify promoted source and installed hooks",
+      "blocked_by": [
+        5
+      ],
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-08-26T09:30:00.000Z",
+        "loaded_via": "opencode-session",
+        "phases_executed": [
+          {
+            "id": "P1-PromotedSourceVerification",
+            "ts": "2026-08-26T09:35:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "8/8 WI validators PASS from main@c92f91b"
+              }
+            ]
+          },
+          {
+            "id": "P2-InstalledParity",
+            "ts": "2026-08-26T09:38:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "check-install-drift --all-hosts: zero drift, 9 hosts"
+              }
+            ]
+          }
+        ]
+      },
+      "receipt": "promoted source main@c92f91b: 8/8 focused validators PASS; ./setup --all-hosts converged (kimi CLI verify env-gap only); drift zero across 9 hosts",
+      "metadata": {
+        "historical_completion": {
+          "status": "completed",
+          "completed_at": "2026-08-26T09:40:00.000Z",
+          "original_graph_sha256": "2c23d725cc3c859be0617deefed63f2cc34e98e2e2541cd7a04387a5f095d967",
+          "task_id": 6
+        }
+      },
+      "blocked_reason": "Historical completion is unverified: required skill phase evidence was not located in the named artifacts or repository note census. Original graph bytes and reported historical work are preserved; no rerun or unmerge is claimed."
+    }
+  ],
+  "historical_reconciliation": {
+    "wi": "WI-FW-CLEAN-MAIN-FOLLOWUP-01",
+    "original_graph_sha256": "2c23d725cc3c859be0617deefed63f2cc34e98e2e2541cd7a04387a5f095d967",
+    "reason": "Withdraw unsupported skill completion only; retain historical code and receipts."
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://serious-vibe-coding.local/schemas/pipeline-decision-entry.schema.json",
+  "title": "SVC pipeline decision entry (WI-562 IP-R7 canonical form)",
+  "description": "Validates entries in .svc/pipeline-decisions.jsonl that carry schema_version. Writers DUAL-WRITE canonical (kind/ts/schema_version) alongside legacy (type/timestamp) so all historical consumers keep working.",
+  "type": "object",
+  "required": ["schema_version", "kind", "ts"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "kind": { "enum": ["mechanical", "taste", "user", "gate-result"] },
+    "ts": { "type": "string", "format": "date-time" },
+    "legacy_type": { "type": "string" },
+    "legacy_timestamp": { "type": "string" },
+    "gate": { "type": "string" },
+    "wi": { "type": "string" },
+    "decided_by": { "type": "string" },
+    "summary": { "type": "string" },
+    "payload": { "type": "object" }
+  }
+}

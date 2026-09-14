@@ -1,0 +1,20 @@
+# Serious Vibe Coding — Global Tool Safety Policy
+# Prevents destructive tool usage on critical system/git metadata
+
+[[rule]]
+name = "Protect .git directory"
+description = "Do not allow tools to read or write to the .git directory directly"
+pattern = ".*\\.git/.*"
+effect = "deny"
+
+[[rule]]
+name = "Protect .env files"
+description = "Do not allow tools to read .env files to prevent credential leakage"
+pattern = ".*\\.env.*"
+effect = "ask_user"
+
+[[rule]]
+name = "Protect SVC internal state"
+description = "Ask user before modifying core framework state files directly"
+pattern = ".*FRAMEWORK-STATE\\.md"
+effect = "ask_user"

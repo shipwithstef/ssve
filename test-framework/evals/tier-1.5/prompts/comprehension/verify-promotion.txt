@@ -1,0 +1,10 @@
+Skill: verify-promotion
+
+Q: What are the four verification tiers in the escalation ladder, and when is V3 (user delegation) allowed?
+A: Expected pattern: V0 is Static/structural, V1 is Live DOM, V2 is Live interaction, V3 is User delegation. V3 is last resort only after V2 exhaustion, for structural platform constraints or aesthetic claims.
+
+Q: What are the three confidence tiers for a verified feature, and when is VERIFIED-L3 acceptable for browser-visible features?
+A: Expected pattern: VERIFIED (full AI verification), VERIFIED-L2 (partial V2 with documented technical limit), VERIFIED-USER (V3 handoff with justification). VERIFIED-L3 is acceptable for browser-visible features ONLY when visual verification is blocked by a documented pre-existing issue like auth-gated pages.
+
+Q: What four sub-skills does verify-promotion invoke as part of its verification passes?
+A: Expected pattern: sync-spec-code, audit-ac, test-journeys, and E2E regression test execution.

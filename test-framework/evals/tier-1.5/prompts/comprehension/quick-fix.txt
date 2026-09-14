@@ -1,0 +1,10 @@
+Skill: quick-fix
+
+Q: What are the five criteria that ALL must be met for a change to qualify as a quick-fix?
+A: Expected pattern: (1) 3 or fewer files modified, (2) no new dependencies added, (3) no architecture changes, (4) no new user-facing behavior, (5) obvious correctness.
+
+Q: What happens if a quick-fix touches more than 3 files, and what commit format should be used?
+A: Expected pattern: If more than 3 files are changed, STOP — unstage and route to plan-changeset. Use conventional commit format: fix: for bug fixes, chore: for config changes, docs: for documentation, style: for naming changes.
+
+Q: What is the rule for host-specific fixes in quick-fix?
+A: Expected pattern: If the fix touches host integration surfaces (hooks, MCP, task graph, model routing, UI paradigms, Background Tasks, or any host-specific API), invoke research to verify current host documentation before editing. Host-specific fixes are NEVER quick.

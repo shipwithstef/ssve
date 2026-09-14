@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "svc auto-learning-candidate",
+  "description": "Entry in `.svc/auto-learnings.jsonl` produced by `hooks/svc-auto-capture-learnings.mjs` per WI-343. Audit-log entries; tracked-file promotion happens via `scripts/promote-auto-learnings.mjs` only. Schema baselined 2026-05-12 by WI-343 tranche 1.",
+  "type": "object",
+  "required": ["schema_version", "captured_at", "signal", "key", "insight", "confidence", "source", "session_id"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": 1 },
+    "captured_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC timestamp when the hook detected the candidate."
+    },
+    "signal": {
+      "enum": [
+        "correction-after-failure",
+        "review-finding-remediation",
+        "hook-side-effect",
+        "recursive-failure-observation",
+        "stale-capability-rediscovery",
+        "new-rule-class-observation"
+      ],
+      "description": "Which of the 6 heuristics from the proposal detected this candidate."
+    },
+    "key": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]+$",
+      "description": "Kebab-case slug for dedup. Should be unique-ish but content-derived; dedup compares key + insight prefix."
+    },
+    "insight": {
+      "type": "string",
+      "minLength": 40,
+      "description": "Free-form one-paragraph insight, conforming to the existing learnings.jsonl `insight` field."
+    },
+    "confidence": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10,
+      "description": "Heuristic confidence 1-10. Dedup skips append when an existing entry has >= confidence."
+    },
+    "source": {
+      "type": "string",
+      "description": "Citation: PR number, commit SHA, decision-log entry, or hook event identifier."
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Branch name + short hash + ts; identifies the session that captured this candidate. Used to suppress duplicate same-session captures."
+    },
+    "candidate_target": {
+      "enum": ["framework-learnings", "project-learnings", "user-memory"],
+      "description": "Suggested promotion target if/when promoted. Classifier output; final destination decided at promotion time."
+    },
+    "files": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "File paths cited in the insight."
+    },
+    "trigger": {
+      "enum": ["stop", "pre-compact", "post-tool-use", "manual-cli", "unknown"],
+      "description": "Which trigger surface produced this candidate. Set by `hooks/svc-auto-capture-learnings.mjs` from the `--trigger` argv (host hooks: `stop`, `pre-compact`, `post-tool-use`) OR by `scripts/capture-session-learnings.mjs` (`manual-cli`). Falls back to `unknown` when the wrapper omits it. Tranche 1 wires `stop`, `pre-compact`, and `post-tool-use` on Claude Code; tranche 2c added the `manual-cli` standalone path; other hosts add their own per `provision/hosts/<host>.json` in tranche 2+."
+    }
+  }
+}

@@ -1,0 +1,151 @@
+{
+  "wi": "WI-471",
+  "lane": "framework",
+  "created": "2026-07-06T22:51:32+03:00",
+  "status": "completed",
+  "delivery_tier": "full",
+  "solution_confidence_mode": "post_design_human_gate",
+  "normalized_intent": "Review the entire svc framework and propose 3 changes that make it 3x better with zero quality loss",
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "route-workflow",
+      "status": "completed",
+      "subject": "Route + reconcile stale WI-411 guard + session contract refresh",
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-07-06T19:55:11.393Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-07-06T19:55:11.592Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-471.json"
+              }
+            ]
+          },
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-07-06T19:55:56.494Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-session-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-07-06T19:55:56.570Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-intent.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-07-06T19:55:56.638Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-471.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-07-06T19:55:56.715Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-concern-gate.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-07-06T19:55:56.865Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-471.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-07-06T20:58:32.178Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/lane-tasks-WI-471.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-07-06T21:00:24.688Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-471.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-07-06T21:00:24.742Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/route-workflow-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-06T21:02:16.062Z"
+    },
+    {
+      "id": 2,
+      "skill": "improve-framework",
+      "status": "completed",
+      "subject": "Ultracode read-only 10-dimension review workflow (review -> dedup -> 3-lens adversarial verify -> synthesize -> judge)",
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-07-06T19:55:56.429Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-07-06T20:58:31.521Z"
+    },
+    {
+      "id": 3,
+      "skill": "list-work-items",
+      "status": "completed",
+      "subject": "File WI-471 epic + 3 child WIs (proposals) + INDEX rows + analysis doc; exempt-class commit + push",
+      "skill_receipt": {
+        "skill": "list-work-items",
+        "loaded_at": "2026-07-06T20:58:31.913Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-07-06T21:00:11.915Z"
+    },
+    {
+      "id": 4,
+      "skill": "route-workflow",
+      "status": "completed",
+      "subject": "Closeout: publication state, leftover disposition, run-summary HTML, 3-section report; human gate on proposal pick",
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-07-06T21:02:44.869Z",
+        "loaded_via": "manual"
+      },
+      "completed_at": "2026-07-06T21:02:44.918Z"
+    }
+  ]
+}

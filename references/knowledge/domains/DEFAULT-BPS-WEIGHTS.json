@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://svc.local/schemas/bps-weights.json",
+  "title": "Domain-Specific BPS Weight Presets",
+  "description": "Default and domain-tuned Build Priority Score weights for catalog-domain-capabilities.",
+  "default_preset": "balanced",
+  "presets": {
+    "balanced": {
+      "description": "General-purpose default for unknown or mixed domains",
+      "frequency": 3.0,
+      "kano": 2.5,
+      "moat": 2.0,
+      "complexity": 1.5,
+      "convergence": 2.0
+    },
+    "fintech": {
+      "description": "Financial services: regulatory/compliance weighted higher, moat lower",
+      "frequency": 3.0,
+      "kano": 3.0,
+      "moat": 1.5,
+      "complexity": 1.5,
+      "convergence": 2.0,
+      "notes": "Must-be capabilities dominate due to regulatory expectations."
+    },
+    "healthcare": {
+      "description": "Healthcare/telemedicine: compliance and safety weighted highest",
+      "frequency": 2.5,
+      "kano": 3.5,
+      "moat": 1.0,
+      "complexity": 1.5,
+      "convergence": 2.0,
+      "notes": "Indifferent capabilities may be life-critical; Kano alone is insufficient."
+    },
+    "devtools": {
+      "description": "Developer tools: moat and complexity matter most",
+      "frequency": 2.5,
+      "kano": 2.0,
+      "moat": 3.0,
+      "complexity": 2.0,
+      "convergence": 1.5,
+      "notes": "Developer loyalty and ecosystem lock-in are primary differentiators."
+    },
+    "saas-b2b": {
+      "description": "B2B SaaS: frequency and convergence drive enterprise sales",
+      "frequency": 3.5,
+      "kano": 2.5,
+      "moat": 2.0,
+      "complexity": 1.5,
+      "convergence": 2.5,
+      "notes": "Enterprise buyers compare feature matrices; missing universal features block deals."
+    },
+    "saas-b2c": {
+      "description": "B2C SaaS: Kano and convergence drive retention and delight",
+      "frequency": 2.5,
+      "kano": 3.0,
+      "moat": 2.0,
+      "complexity": 1.0,
+      "convergence": 2.5,
+      "notes": "Attractive features differentiate; must-be features are hygiene."
+    },
+    "ecommerce": {
+      "description": "E-commerce: conversion and trust signals weighted higher",
+      "frequency": 3.0,
+      "kano": 2.5,
+      "moat": 1.5,
+      "complexity": 1.5,
+      "convergence": 2.5,
+      "notes": "Checkout friction and trust signals directly impact revenue."
+    },
+    "marketplace": {
+      "description": "Two-sided marketplace: network effects and trust weighted higher",
+      "frequency": 3.0,
+      "kano": 2.5,
+      "moat": 2.5,
+      "complexity": 1.5,
+      "convergence": 1.5,
+      "notes": "Trust and safety capabilities are moat-building; speed to liquidity matters."
+    },
+    "ai-ml": {
+      "description": "AI/ML products: moat and convergence velocity dominate",
+      "frequency": 2.0,
+      "kano": 2.0,
+      "moat": 3.5,
+      "complexity": 2.0,
+      "convergence": 2.5,
+      "notes": "Model differentiation and data moat are everything; features commoditize fast."
+    },
+    "social": {
+      "description": "Social/consumer apps: Kano and network effects drive growth",
+      "frequency": 2.5,
+      "kano": 3.0,
+      "moat": 2.5,
+      "complexity": 1.0,
+      "convergence": 2.0,
+      "notes": "Viral mechanics and engagement loops are attractive/moat-heavy."
+    }
+  }
+}

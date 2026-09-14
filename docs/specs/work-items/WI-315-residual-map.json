@@ -1,0 +1,92 @@
+{
+  "schema": 1,
+  "wi": "WI-315",
+  "source_proposals": [
+    "proposals/done/2026-04-28-blend-coreyhaines-marketing.md",
+    "proposals/done/2026-04-29-blend-capacitor-skills.md",
+    "proposals/done/2026-04-30-blend-gsd-2.md"
+  ],
+  "status": "backlog-owned-with-related-coverage",
+  "coverage": [
+    {
+      "source_proposal": "proposals/done/2026-04-28-blend-coreyhaines-marketing.md",
+      "proposal_item": "coreyhaines Before Starting context gate, behavioral evals, progressive disclosure, and foundation marketing context are represented as framework blend backlog",
+      "status": "partial",
+      "owner_wi": "WI-135",
+      "evidence": [
+        "docs/specs/work-items/WI-135.md",
+        "EXTERNAL_ADDONS.md",
+        "test-framework/evals/tier-1/validate-skill-before-starting.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-28-blend-coreyhaines-marketing.md",
+      "proposal_item": "first organic new-skill proof of the progressive-disclosure convention remains separately tracked",
+      "status": "covered",
+      "owner_wi": "WI-136",
+      "evidence": [
+        "docs/specs/work-items/WI-136.md",
+        "proposals/done/2026-04-28-blend-coreyhaines-marketing.md",
+        "skills-manifest.json",
+        "dispatch-waves/SKILL.md",
+        "dispatch-waves/references/dispatch-runtime.md",
+        "test-framework/evals/tier-1/validate-progressive-disclosure-proof.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-29-blend-capacitor-skills.md",
+      "proposal_item": "Capacitor external skill packs are registered as optional addons with integration points and attribution",
+      "status": "covered",
+      "owner_wi": "WI-315",
+      "evidence": [
+        "EXTERNAL_ADDONS.md",
+        "NOTICES",
+        "references/blend-registry.json"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-29-blend-capacitor-skills.md",
+      "proposal_item": "Capacitor blend patterns for skill structure, plugin decision matrix, Capsec, platform guards, and addon registry remain owned by the blend backlog",
+      "status": "partial",
+      "owner_wi": "WI-315",
+      "evidence": [
+        "docs/specs/work-items/WI-315.md",
+        "proposals/done/2026-04-29-blend-capacitor-skills.md",
+        "references/blend-registry.json"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-30-blend-gsd-2.md",
+      "proposal_item": "GSD-2 compaction snapshot and loop-guard patterns have related framework implementations",
+      "status": "covered",
+      "owner_wi": "WI-315",
+      "evidence": [
+        "hooks/hooks.json",
+        "hooks/opencode/svc-opencode-plugin.ts",
+        "test-framework/evals/tier-1/validate-loop-guard.sh",
+        "references/blend-registry.json"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-30-blend-gsd-2.md",
+      "proposal_item": "GSD-2 artifact verification, auto-advance, transcript memory extraction, and remaining reusable patterns still require a dedicated blend disposition",
+      "status": "partial",
+      "owner_wi": "WI-315",
+      "evidence": [
+        "docs/specs/work-items/WI-315.md",
+        "proposals/done/2026-04-30-blend-gsd-2.md",
+        "references/blend-registry.json"
+      ]
+    }
+  ],
+  "residuals": [
+    {
+      "wi": "WI-135",
+      "title": "Blend coreyhaines marketing skills v1.9.0"
+    },
+    {
+      "wi": "WI-315",
+      "title": "External addon blend backlog consolidation"
+    }
+  ]
+}

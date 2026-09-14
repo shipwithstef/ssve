@@ -1,0 +1,5 @@
+Test setup notes for WI-197 fixtures.
+
+The fixture provides three transcripts: good (no delegation), bad (delegation without evidence), exempt (carve-out match). The before-each helper seedTestData populates .svc/lane-tasks-WI-FIXTURE.json. The setup helper users the same routing as the production code.
+
+This text contains "verify" but it's about the test fixture setup, not asking a user to verify anything.

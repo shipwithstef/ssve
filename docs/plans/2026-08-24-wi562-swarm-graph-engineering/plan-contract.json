@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "base_sha": "aeb8b8ce11b57f0b91a8e3f1afdbc7aa98856c0b",
+  "manifest": "docs/plans/2026-08-24-wi562-swarm-graph-engineering/manifest.md",
+  "ownership": [
+    {
+      "task": "T01",
+      "paths": [
+        ".svc/lane-tasks-WI-562.json",
+        "docs/plans/2026-08-24-wi562-multi-agent-handoff-and-graph-engineering.md",
+        "docs/plans/2026-08-24-wi562-swarm-graph-engineering/plan-contract.json",
+        "docs/specs/reviews/wi562-plan-remediation.md",
+        "docs/specs/reviews/wi562-plan-review-grok-high.md",
+        "docs/specs/reviews/wi562-plan-review-round1-transcripts.md",
+        "docs/specs/reviews/wi562-plan-review-rounds2-6-transcripts.md",
+        "docs/specs/wi-followups.md",
+        "hooks/lib/process-liveness.mjs",
+        "hooks/lib/worktree-verb-lock.mjs",
+        "scripts/check-chain-receipts.mjs",
+        "scripts/dispatch-worker.sh",
+        "scripts/emit-receipt.mjs",
+        "scripts/lib/merge-back-core.mjs",
+        "scripts/mine-receipts.mjs",
+        "scripts/quick-fix-eligibility.mjs",
+        "scripts/state-io.mjs",
+        "scripts/svc-auto-drive.mjs",
+        "scripts/validate-execution-merge-back.mjs",
+        "scripts/validate-parallel-merge-back.mjs",
+        "scripts/wire-cursor-hooks.mjs",
+        "scripts/wire-hooks.mjs",
+        "test-framework/evals/run-all-evals.sh",
+        "test-framework/evals/tier-1/validate-all-host-install-migration.sh",
+        "test-framework/evals/tier-1/validate-atomic-receipt-writes.sh",
+        "test-framework/evals/tier-1/validate-catalog-generation.sh",
+        "test-framework/evals/tier-1/validate-claim-liveness.mjs",
+        "test-framework/evals/tier-1/validate-codex-execution-integrity.sh",
+        "test-framework/evals/tier-1/validate-handoff-forward-completion.mjs",
+        "test-framework/evals/tier-1/validate-ownership-predicate-parity.mjs",
+        "test-framework/evals/tier-1/validate-parallel-ground-truth.sh",
+        "test-framework/evals/tier-1/validate-parallel-wi-dispatch.sh",
+        "test-framework/evals/tier-1/validate-process-liveness-lock.sh",
+        "test-framework/evals/tier-1/validate-quick-fix-retirement.sh",
+        "test-framework/evals/tier-1/validate-receipt-integrity.sh",
+        "test-framework/evals/tier-1/validate-rename-schema-drill.sh",
+        "test-framework/evals/tier-1/validate-schema-code-conformance.mjs",
+        "test-framework/evals/tier-1/validate-slot-envelope-mining.sh",
+        "test-framework/evals/tier-1/validate-spec-index-hermetic.sh",
+        "test-framework/evals/tier-1/validate-stage-registry-single-source.sh",
+        "test-framework/evals/tier-1/validate-swarm-velocity-gates.sh",
+        "test-framework/evals/tier-1/validate-task-state-compatibility.sh",
+        "test-framework/evals/tier-1/validate-wire-hooks-variant-dedup.sh",
+        "test-framework/evals/tier-1/validate-wirer-corrupt-config.sh",
+        "test-framework/evals/tier-1/validate-worktree-safety.sh",
+        "docs/plans/2026-08-24-wi562-swarm-graph-engineering/manifest.md",
+        "test-framework/evals/tier-1/validate-plan-product-safety.sh",
+        "test-framework/evals/tier-1/validate-v2-branch-claims-live.sh",
+        "test-framework/evals/tier-1/validate-promote-honesty-fake-origin.sh",
+        "test-framework/evals/tier-1/validate-session-contract-freshness.sh",
+        "hooks/svc-session-start-healthcheck.mjs",
+        "scripts/svc-ensure-worktree.mjs",
+        "scripts/validate-review-receipt.mjs",
+        "hooks/svc-workflow-guard.mjs",
+        "scripts/plan-parallel-wi-dispatch.mjs",
+        "docs/specs/reviews/wi562-exec-triple-review.md",
+        "docs/specs/reviews/wi562-promotion-delivery-receipt.md",
+        ".svc/session-contract.jsonl"
+      ]
+    },
+    {
+      "task": "T02",
+      "paths": [
+        "hooks/lib/authority-store.mjs",
+        "hooks/lib/svc-ownership.mjs",
+        "hooks/lib/wi-claim.mjs",
+        "references/receipt-format-charter.md",
+        "references/receipt-format-exceptions.json",
+        "references/receipt-kind-registry.json",
+        "schemas/authority-handover-receipt.schema.json",
+        "schemas/handoff-record.schema.json",
+        "schemas/install-state-receipt.schema.json",
+        "scripts/lint-receipt-formats.mjs",
+        "scripts/worktree.sh"
+      ]
+    },
+    {
+      "task": "T03",
+      "paths": [
+        "docs/specs/wi562-read-matrix-baseline.json",
+        "hooks/git/pre-commit.d/15-lane-tasks-validate",
+        "hooks/lib/hook-catalog.mjs",
+        "hooks/svc-worktree-isolation-guard.mjs",
+        "references/host-hook-catalog.json",
+        "schemas/pipeline-decision-entry.schema.json",
+        "scripts/fanout.sh",
+        "scripts/orchestrator-state.mjs",
+        "scripts/pipeline-log.mjs",
+        "scripts/receipt-read-matrix.mjs",
+        "skills/dispatch-waves/SKILL.md"
+      ]
+    },
+    {
+      "task": "T04",
+      "paths": [
+        "scripts/gc-stale-receipts.mjs",
+        "scripts/wire-grok-hooks.mjs"
+      ]
+    }
+  ],
+  "resource_review": {
+    "verification": "changed-executable-census",
+    "denominator": 59,
+    "disposition": "no-risky-resource-writers",
+    "evidence": "changed-executable-census over git diff origin/main --diff-filter=ACMR excluding volatile .svc/; no money/ledger/quota/identity writer vocabulary introduced (receipt writers go through emit-receipt atomic primitives)"
+  },
+  "resource_writers": [],
+  "claims": [
+    {
+      "kind": "absence",
+      "evidence": {
+        "verification": "diff-manifest-parity"
+      },
+      "denominator": 0
+    },
+    {
+      "kind": "unused",
+      "evidence": {
+        "verification": "executable-consumers"
+      },
+      "denominator": 0
+    }
+  ],
+  "executables": []
+}

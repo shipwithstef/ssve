@@ -1,0 +1,98 @@
+{
+  "host": "cursor",
+  "name": "Cursor",
+  "skills_path": "~/.cursor/skills",
+  "rules_path": "~/.cursor/rules",
+  "builder_profile_path": "~/.svc/builder-profile.md",
+  "capabilities": {
+    "skills": true,
+    "hooks": true,
+    "plugins": true,
+    "mcp": true,
+    "commands": true,
+    "agents": true
+  },
+  "runtime_ingress_v2": { "transport": "hook-adapter", "fallback": "cli-adapter", "canonical_journal": true, "projection_only": true },
+  "authority_capabilities": {
+    "stable_session_identity": true,
+    "stable_child_identity": true,
+    "identity_source": "session hook identity plus persisted dispatch child principal",
+    "filesystem_containment": "wrapper",
+    "containment_backend": "landlock",
+    "containment_launcher": "scripts/svc-contained-exec.mjs",
+    "containment_probe_required": true,
+    "mutating_child_execution": true,
+    "fresh_session_launch": {
+      "enabled": false,
+      "reason": "No automatable fresh-session transport declared for this host yet (WI-552 migration note: disabled by default until a host manifest declares fresh_session_launch)."
+    }
+  },
+  "hook_events": [
+    "beforeSubmitPrompt",
+    "preToolUse",
+    "beforeShellExecution",
+    "afterFileEdit",
+    "sessionStart",
+    "stop"
+  ],
+  "hook_quirks": {
+    "config_file": "~/.cursor/hooks.json",
+    "config_format": "json",
+    "parallel_execution": false,
+    "tool_matcher_regex": false,
+    "timeout_unit": "exit-code",
+    "timeout_default": null,
+    "decision_format": "exit-code-2-blocks",
+    "skill_load_mode": "skill_or_slash_command",
+    "notes": "Cursor 2.4+ hooks.json: flat hooks object with event keys mapping to command arrays. Exit code 2 = hard block. No matcher support — all commands run on every tool use for that event."
+  },
+  "task_graph": {
+    "task_ui": "none; use .svc/lane-tasks-<WI>.json as source of truth",
+    "background_tasks": false,
+    "skill_load_mode": "slash_skill_or_direct_skill_file",
+    "native_task_read_tools": []
+  },
+  "infra_files": [
+    "DOCTRINE.md",
+    "REPO_MODES.md",
+    "WORKTREES.md",
+    "EXTERNAL_ADDONS.md",
+    "FRAMEWORK-STATE.md",
+    "skills-manifest.json",
+    "CONTRIBUTING.md",
+    "AGENTS.md"
+  ],
+  "infra_dirs": [
+    "scripts",
+    "references",
+    "proposals",
+    "examples",
+    "hooks",
+    "provision",
+    "agents",
+    "templates",
+    "_shared",
+    "concerns"
+  ],
+  "skip": [],
+  "post_install_commands": [],
+  "verify_commands": [
+    "test -f {skills_path}/route-workflow/SKILL.md",
+    "test -f {skills_path}/DOCTRINE.md",
+    "test -f {skills_path}/skills-manifest.json",
+    "test -f {skills_path}/scripts/worktree.sh",
+    "test -d {skills_path}/templates/.svc"
+  ],
+  "wiring": {
+    "hook_capable": true,
+    "wirer": "scripts/wire-cursor-hooks.mjs",
+    "wirer_via": "case",
+    "governed": true,
+    "governed_token": [
+      "svc-enforce",
+      "svc-cursor-task-completion-guard"
+    ],
+    "config_file": "~/.cursor/hooks.json",
+    "enforcement": "launcher"
+  }
+}

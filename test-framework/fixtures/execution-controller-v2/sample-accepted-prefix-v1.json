@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "wi": "WI-SAMPLE-REVENUE-ACTIVATION-R21",
+  "run_id": "sample-revenue-activation-r21-shadow",
+  "tasks": [
+    { "id": "direction", "status": "completed", "evidence": ["owner-direction-receipt"] },
+    { "id": "plan", "status": "completed", "evidence": ["plan-review-receipt"] },
+    { "id": "implementation", "status": "completed", "evidence": ["candidate-validation-receipt"] },
+    { "id": "release", "status": "pending", "evidence": [] }
+  ],
+  "closeout": "completed",
+  "production_proof": false
+}

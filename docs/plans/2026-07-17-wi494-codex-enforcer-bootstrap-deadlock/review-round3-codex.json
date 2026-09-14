@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "review_kind": "plan",
+  "rubric_score": 4,
+  "rubric_failures": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "dependencies_needing_read": [
+    "skills-manifest.json",
+    "docs/specs/work-items/WI-494.md",
+    "docs/specs/bugfix/wi-494-codex-enforcer-brief.md",
+    ".svc/lane-tasks-WI-494.json",
+    ".svc/pipeline-decisions.jsonl",
+    "scripts/svc-ensure-worktree.mjs",
+    "test-framework/evals/tier-1/validate-codex-execution-integrity.sh"
+  ],
+  "reviewer": {
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5",
+    "effort": "high"
+  },
+  "verdict": "fail",
+  "summary": "The plan addresses the reported deadlock but does not yet prove its central exactly-one-bootstrap invariant. Distinct-WI executions are not serialized, one allowlisted command writes files, invalid markers can be downgraded to absence, and several lane, test, rollback, and external-state claims are not mechanically closed.",
+  "findings": [
+    {
+      "id": "F-001",
+      "severity": "critical",
+      "claim": "The proposed per-(repo,WI) locking cannot guarantee exactly one bootstrap across concurrent distinct WIs.",
+      "analysis": "The hook decisions and subsequent executions are separated in time. Two sessions proposing different WIs can both observe zero graphs and be allowed. Because their locks have different keys, both scripts can acquire a lock and perform their post-lock graph checks concurrently while the repository is still empty. Both may then create graphs. Moving the recheck inside each per-WI lock does not create repo-wide mutual exclusion, so the distinct-WI concurrency fixture's expected single winner is unreachable with the specified design.",
+      "evidence": [
+        "Section 6.3 states that the existing lock is per-(repo,WI).",
+        "Section 6.3 explicitly allows two different WIs to receive hook authorization during the zero-state window.",
+        "The same section requires a distinct-WI concurrency fixture asserting exactly one graph-creation transition wins.",
+        "No blueprint introduces a repository-wide lock, atomic zero-state claim, or shared compare-and-create primitive."
+      ],
+      "proposed_fix": "Serialize the zero-to-one transition with a repository-wide bootstrap lock or atomic claim shared by all WIs. Under that lock, re-read all lane graphs and marker state, create exactly one ownership record, then release. Specify stale-lock handling and tests for same-WI and distinct-WI races."
+    },
+    {
+      "id": "F-002",
+      "severity": "high",
+      "claim": "The read allowlist classifies `gh run download` as read-only even though it writes artifacts to disk.",
+      "analysis": "The proposed second-level allowlist includes `download` under `gh run`. That command materializes workflow artifacts in the current directory or a selected destination, making it a governed filesystem mutation. The generic GitHub hazard predicate only detects API method/body flags and does not reject this subcommand. This creates the silent over-allow failure the plan identifies as its highest-risk direction.",
+      "evidence": [
+        "Section 6.2 defines `gh: { run:new Set([\"view\",\"list\",\"download\"]) }`.",
+        "`HAZARD_FLAGS.gh` checks `-X`, field, raw-field, method, and input flags but contains no `run download` check.",
+        "Section 3 says over-allow silently disables governance framework-wide."
+      ],
+      "proposed_fix": "Remove `download` from the read-only `gh run` set. Add negative fixtures for bare `gh run download`, `--dir`, and other destination spellings, plus a mutant proving those fixtures fail if `download` is restored."
+    },
+    {
+      "id": "F-003",
+      "severity": "high",
+      "claim": "The shared marker design can downgrade an invalid marker to absence in the executing script.",
+      "analysis": "The enforcer denies `state === \"invalid\"`, but the writer adaptation says to treat every non-valid result as no usable marker. A marker can become malformed, replaced, or unreadable after hook authorization and before the script's post-lock recheck. If the executing script treats that invalid state like absence, it may continue or replace the marker, defeating the tri-state fail-closed guarantee at the only point that can provide atomic enforcement. Additionally, `readMarker` calls any JSON object valid without validating the declared required marker fields.",
+      "evidence": [
+        "Section 6.3 says the enforcer must distinguish absent, valid, and invalid and deny invalid.",
+        "The `svc-ensure-worktree.mjs` edit says to adapt to `.marker`/`.state` and \"treat non-`valid` as 'no usable marker'.\"",
+        "The proposed `readMarker` validates file ownership/type and JSON object shape only; it does not validate the authoritative required schema listed in Section 4.",
+        "The plan relies on the script's post-lock recheck to close hook-time TOCTOU."
+      ],
+      "proposed_fix": "Define one shared schema-validating reader. In both callers, handle `invalid` as a hard denial/error and only `absent` as creatable. Require all authoritative fields with types and invariants. Add a test that replaces a previously absent or valid marker with malformed, wrong-owner, symlink, and incomplete-object variants between hook authorization and the post-lock check."
+    },
+    {
+      "id": "F-004",
+      "severity": "high",
+      "claim": "Mandatory framework-lane skips are asserted but not cited in the required decision ledger.",
+      "analysis": "The plan names the nine claimed mandatory lane skills, but its evidence is described as skip strings in the lane-task graph. The review protocol requires each mandatory upstream skill to have a completed artifact or a skip with a cited `.svc/pipeline-decisions.jsonl` decision. The table supplies prose beginning with `ledger:` but no decision IDs, JSONL records, or exact citations. Therefore the claimed 9/9 resolution is not independently auditable from the manifest.",
+      "evidence": [
+        "Section 2 says all nine mandatory lane skills are skipped and that their strings live in `.svc/lane-tasks-WI-494.json`.",
+        "The lane-compliance protocol requires skipped mandatory skills to cite `.svc/pipeline-decisions.jsonl`.",
+        "The table provides no decision record IDs, line keys, timestamps, or exact JSONL citations for the nine skips."
+      ],
+      "proposed_fix": "Add an explicit nine-row compliance table containing the exact task-graph entry and pipeline-decision record ID for every skip. Add a mechanical command that compares `laneDefinitions.framework.skills` with completed plus cited-skipped names and fails on missing, extra, or duplicate names."
+    },
+    {
+      "id": "F-005",
+      "severity": "medium",
+      "claim": "The zero-state end-to-end fixture is not idempotent when implemented with the proposed shared-repository worktree option.",
+      "analysis": "Using `git worktree add --detach` against the source repository allows the bootstrap command to register another worktree and create a fixed branch such as `wi999x` in the same repository. Cleanup removes only the outer detached worktree and runtime directory; it does not explicitly remove the bootstrap-created worktree, branch, marker location, or associated Git administrative records. A second run can therefore collide with the first run or leave persistent repository state.",
+      "evidence": [
+        "Section 6.4 permits `git worktree add --detach \"$REPO\" HEAD` as an alternative to a local clone.",
+        "The bootstrap command uses fixed identifiers `WI-999` and `wi999x`.",
+        "The cleanup step only removes `$REPO` and the runtime directory.",
+        "The fixture requires running the block twice with identical results."
+      ],
+      "proposed_fix": "Choose one deterministic isolation strategy. Prefer a disposable `git clone --local --no-hardlinks` with unique WI and branch values per run. If the shared worktree strategy remains, capture and remove every nested worktree and branch through Git before removing the outer worktree, and assert no new worktree, branch, or marker remains after cleanup."
+    },
+    {
+      "id": "F-006",
+      "severity": "medium",
+      "claim": "The mutation-adequacy blueprint cannot falsify every negative fixture it claims to cover.",
+      "analysis": "The plan says each negative vector must kill a mutant, but the proposed mutants only weaken the lexer or read-command classifier in two copied modules. Edit/Write payloads bypass those functions, bootstrap marker/session/path negatives live in the enforcer and marker module, and zero-state concurrency depends on the bootstrap script. Those vectors cannot become allowed through either prescribed mutation, so their tests cannot satisfy the stated one-mutant-killed-per-vector rule.",
+      "evidence": [
+        "Section 6.4 scopes isolated mutant copies to `argv-lex.mjs` and `codex-hook-context.mjs`.",
+        "The negative vector table also includes Edit/Write payloads, marker ownership and target checks, bootstrap flags, canonical-script checks, and concurrency.",
+        "The mutation instructions require one mutant-killed line for every negative vector."
+      ],
+      "proposed_fix": "Partition the mutation matrix by enforcement layer. Add isolated mutants or dependency-injection seams for the enforcer, marker reader, and bootstrap serialization path, and map each negative fixture to a mutation capable of flipping that exact decision. Limit the universal kill claim to vectors for which such a mutant exists."
+    },
+    {
+      "id": "F-007",
+      "severity": "medium",
+      "claim": "The rollback runbook is not executable because installed-path and commit selection remain placeholders.",
+      "analysis": "The runbook correctly recognizes that source reversion alone is insufficient, but its critical installed-copy verification uses unresolved placeholders. It does not provide a deterministic command to derive the installed enforcer or launcher path from the Codex host manifest/setup state, nor an exact harness command for the installed behavioral smoke. This prevents an operator from executing the rollback without reconstructing repository-specific knowledge during an incident.",
+      "evidence": [
+        "Section 8 uses `<merge-sha>`, `<installed-enforcer>`, and `<repo>` placeholders.",
+        "The behavioral smoke says to drive vectors through the installed launcher but provides no launcher path, payload, or assertion command.",
+        "Command determinism requires complete, non-interactive, copy-pasteable commands."
+      ],
+      "proposed_fix": "Supply commands that resolve the WI-494 land SHA from its receipt, derive the installed launcher/enforcer paths from the Codex host manifest or setup output, refresh with `./setup --host codex`, and execute exact JSON fixtures with exit/status assertions. Make every derived value fail closed when empty or ambiguous."
+    },
+    {
+      "id": "F-008",
+      "severity": "medium",
+      "claim": "The External State section incorrectly classifies bootstrap-intent state as read-only.",
+      "analysis": "The behavioral change exists specifically to authorize execution of `svc-ensure-worktree.mjs`, which creates or renews bootstrap markers, graphs, worktrees, branches, and Git administrative state. The tests also intentionally create and remove those artifacts. Calling the marker read-only obscures the changed write lifecycle and omits coupling, cleanup, and recovery wiring required for external-state review.",
+      "evidence": [
+        "Section 8 labels `.svc/bootstrap-intent/<WI>.json` as `read-only here`.",
+        "Section 6.4 requires actually running the bootstrap command and asserting that a graph and marker were created.",
+        "Section 6.3 relies on the executed script to create the ownership transition under a lock.",
+        "The worktree-based fixture can also mutate shared Git worktree and branch state."
+      ],
+      "proposed_fix": "Mark bootstrap-intent, lane-task, worktree, branch, and Git administrative state as coupled external state. Name the writer, lock, post-lock validation, cleanup command, rollback behavior, and tests that detect stale or partial artifacts. Distinguish production lifecycle changes from test-only state."
+    }
+  ],
+  "certifications": [
+    {
+      "key": "scope_lock",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "d42a0e4ef17f0867f92a90ec75fc6ba7ac34a334311576b80531e1f954eb8657"
+    }
+  ]
+}

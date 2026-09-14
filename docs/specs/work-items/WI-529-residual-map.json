@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "wi": "WI-529",
+  "sources": [
+    "proposals/done/2026-08-10-framework-improvement-agy-chain-receipts.md",
+    "proposals/done/2026-08-10-framework-improvement-codex-launcher-wiring.md"
+  ],
+  "findings": [
+    {
+      "source": "proposals/done/2026-08-10-framework-improvement-agy-chain-receipts.md",
+      "id": "truthful-agy-chain-receipts",
+      "status": "covered",
+      "owner_wi": "WI-529",
+      "evidence": ["references/chain-receipt-contract.md", "test-framework/evals/tier-1/validate-chain-receipts-schema.sh", "docs/specs/features/execution-controller-production-closeout.md"]
+    },
+    {
+      "source": "proposals/done/2026-08-10-framework-improvement-codex-launcher-wiring.md",
+      "id": "launcher-routed-codex-dispatcher",
+      "status": "covered",
+      "owner_wi": "WI-529",
+      "evidence": ["scripts/wire-codex-hooks.mjs", "scripts/verify-governed-routing.mjs", "docs/specs/features/execution-controller-production-closeout.md"]
+    }
+  ]
+}

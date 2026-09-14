@@ -1,0 +1,31 @@
+round: 2
+reviewer:
+  host: claude
+  family: anthropic
+  model: claude-opus-4-8
+  effort: high
+receipt: .svc/external-review-artifacts/plan/87639a88d35aaa07010a419ee2fa8e78b1fdf25bf1967e801abd43f47d473c96/20260721T013534Z-3036188/receipt.json
+verdict: pass-with-findings
+rubric_score: 7
+responses:
+  - id: F-001
+    disposition: accepted
+    response: Process tasks are now proc-1 through proc-10; lane evidence uses skill-named lane nodes only.
+  - id: F-002
+    disposition: accepted
+    response: Proc-4 must assert the ledger hash equals the frozen hash of record before embedding it.
+  - id: F-003
+    disposition: accepted
+    response: The review schema and validator now require distinct producer and reviewer principals and run identifiers.
+  - id: F-004
+    disposition: accepted
+    response: The five-sample p95 is pinned to nearest-rank, rank five, and therefore the exact maximum.
+  - id: F-005
+    disposition: accepted
+    response: Execution now refuses unless the checkpoint is an ancestor of the frozen base.
+  - id: F-006
+    disposition: accepted
+    response: GitHub auth switching gains an atomic recovery record and startup reconciliation in addition to finally cleanup.
+  - id: F-007
+    disposition: accepted
+    response: The drive outcome required field contract is enumerated in the manifest.

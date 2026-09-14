@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "review_kind": "plan",
+  "rubric_score": 3,
+  "rubric_failures": null,
+  "dependencies_needing_read": null,
+  "reviewer": {
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5",
+    "effort": "xhigh"
+  },
+  "verdict": "fail",
+  "summary": "The plan has strong AC coverage and architecture detail, but execution is not deterministic. The frozen-tree sequence cannot commit the review artifacts it creates, the base identity conflicts, partial-tuple ownership is under-specified, and multiple commands contain unresolved placeholders or validate less than claimed.",
+  "findings": [
+    {
+      "id": "PLAN-001",
+      "severity": "critical",
+      "claim": "The freeze/review/commit sequence cannot both commit the review artifacts and preserve the claimed reviewed-tree equality.",
+      "analysis": "The plan stages and writes FROZEN_TREE before generating three tracked review artifacts. Those later writes are outside the staged tree, so the subsequent commit either omits them or commits stale staged versions. Re-staging them would create a different tree and invalidate the stated equality. Embedding FROZEN_TREE inside an artifact contained by that same tree also creates a self-reference problem.",
+      "evidence": [
+        "Files Planned assigns three review documents to task-6 as CREATE-EVIDENCE.",
+        "Execution step 1 runs `git add -A` and `git write-tree` before step 2 creates the review artifacts.",
+        "Execution step 3 claims `committed tree == FROZEN_TREE == reviewed tree` without re-staging the generated evidence."
+      ],
+      "proposed_fix": "Define two explicit objects: CODE_TREE/CODE_DIFF for the implementation reviewed externally, then FINAL_TREE after immutable review and audit artifacts are staged. Verify that the implementation paths and CODE_DIFF did not change between the two trees, commit FINAL_TREE, and bind receipts to both the committed tree and reviewed code-tree digest."
+    },
+    {
+      "id": "PLAN-002",
+      "severity": "high",
+      "claim": "The declared base is contradictory and execution resolves a mutable base at runtime.",
+      "analysis": "The manifest header declares one immutable base, while the execution section claims a different promoted SHA and actually assigns BASE from the then-current origin/main. A moving remote changes the reviewed diff, merge-base assertion, baseline tests, and rollback anchor without revising the plan.",
+      "evidence": [
+        "Header: `Base: origin/main at 4d230174c0e1bda200c6bb820f18fbe88cc97aac`.",
+        "Execution: `BASE=$(git rev-parse origin/main)` with a comment claiming `99da8bcf...`.",
+        "The checkpoint table uses `base SHA` as the first rollback anchor without resolving the contradiction."
+      ],
+      "proposed_fix": "Revise the header to one full promoted SHA and set `BASE=<full-sha>`. Fetch origin, assert `git rev-parse origin/main` equals that SHA, and halt for re-plan if it moved."
+    },
+    {
+      "id": "PLAN-003",
+      "severity": "high",
+      "claim": "Same-session partial-tuple recovery relies on ownership metadata that is not defined for every recoverable artifact.",
+      "analysis": "A crash may leave only a worktree, branch, or graph. The plan says every present artifact must match the current session, but it does not define where session ownership is durably recorded for those early artifacts. Without an attributable transaction record, the bootstrap cannot distinguish its own interrupted state from foreign residue safely.",
+      "evidence": [
+        "The recovery rule covers partial sets of `{worktree, graph, claim, binding}`.",
+        "The plan requires every present artifact's `session_id` or owner to match the current session.",
+        "Claim and binding are created after the graph, so an interruption can occur before either ownership-bearing artifact exists.",
+        "The plan mentions an `attempt ledger` but does not specify its path, schema, atomic lifecycle, or include it in Files Planned."
+      ],
+      "proposed_fix": "Specify a lock-protected transaction journal created before the first durable artifact, including repository, WI, session, target branch/worktree, generation, and per-stage digests. Add its path/schema and cleanup rules to Files Planned and test crashes before and after every stage. Treat unattributable early artifacts as foreign conflicts."
+    },
+    {
+      "id": "PLAN-004",
+      "severity": "high",
+      "claim": "The AC mapping still requires partial tuples to conflict, contradicting the authoritative forward-completion behavior.",
+      "analysis": "The Round-2 revision changes same-session partial tuples from conflict to forward recovery, but the AC-to-test mapping still says every partial tuple conflicts. Implementers and tests therefore have two incompatible expected behaviors for SIB-14–15.",
+      "evidence": [
+        "Round-2: `Same-session partial tuple ... FORWARD-COMPLETE idempotently`.",
+        "AC mapping for SIB-14–15: `every partial tuple conflicts without repair/delete`.",
+        "Task-3 validation lists both `resume` and `partial tuple` without resolving which fixture expectation controls."
+      ],
+      "proposed_fix": "Rewrite the SIB-14–15 mapping and corresponding spec ACs before execution: complete same-session tuples resume unchanged; attributable same-session partial tuples forward-complete; foreign, mixed, or unattributable partial tuples conflict without mutation."
+    },
+    {
+      "id": "PLAN-005",
+      "severity": "high",
+      "claim": "The review, receipt, and landing commands are not copy-pasteable or complete.",
+      "analysis": "Several required variables and files are never initialized, launcher output is not redirected into the promised tracked documents, and review-gate is only a comment. Receipt bodies, commit message, authorization source, and PR number remain placeholders. Task-6 therefore has no executable path from frozen candidate to complete receipt envelope.",
+      "evidence": [
+        "Undefined inputs include `$ART`, `$ART_SEC`, `$FROZEN_EXEC_PACKAGE`, `$FROZEN_SECURITY_PACKAGE`, `<commit-msg>`, `<exec-record.json>`, `<review-exec.json>`, `<audit.json>`, `<verify-promotion.json>`, `<owner>`, and `<n>`.",
+        "The launcher commands contain only comments claiming they produce `docs/specs/reviews/...`; no command transforms launcher outputs into those documents.",
+        "`review-gate is the in-session 5-step gate decision` is prose rather than an executable or precisely enumerated procedure."
+      ],
+      "proposed_fix": "Add deterministic commands that construct every package, initialize each artifacts directory, capture and validate launcher summaries and receipts, render each tracked review document, run the named gate/audit procedures, generate schema-valid receipt bodies, discover the PR number non-interactively, and verify every expected output before commit."
+    },
+    {
+      "id": "PLAN-006",
+      "severity": "high",
+      "claim": "The promoted-verification command is unreachable from the feature worktree when main is already checked out elsewhere.",
+      "analysis": "The plan states execution occurs inside an isolated linked worktree, then attempts to check out main in that same worktree. In the documented worktree model, main is normally held by the default checkout, so Git will refuse the checkout. The subsequent pull, Tier-1 replay, and G7 receipt would not run.",
+      "evidence": [
+        "Declared worktree: `.worktrees/framework-WI-486-isolated-bootstrap`.",
+        "Execution step 6 runs `git checkout main && git pull --ff-only origin main`.",
+        "Repository guidance places merge and promoted verification on main rather than inside the implementation worktree."
+      ],
+      "proposed_fix": "Run landing and G7 from the repository's existing main worktree using an explicit resolved path or the sanctioned land/verify workflow. Add assertions for current worktree, main SHA equal to the merge result, and clean promoted state."
+    },
+    {
+      "id": "PLAN-007",
+      "severity": "high",
+      "claim": "`git add -A` can silently include files outside the declared changeset.",
+      "analysis": "The worktree intentionally contains pre-authored upstream residue and mutable `.svc` state. Staging everything without comparing the staged path set to Files Planned permits unrelated session residue or generated artifacts to enter the aggregate commit, violating the scope boundary and residue-preservation invariant.",
+      "evidence": [
+        "Execution stages the candidate with `git add -A`.",
+        "No command compares `git diff --cached --name-only` against a committed allowlist derived from Files Planned.",
+        "`.svc/session-contract.jsonl` is marked PRESERVE, while other `.svc` files are mutable during all tasks."
+      ],
+      "proposed_fix": "Generate an exact allowed-path manifest, stage only those paths, and fail if tracked or untracked candidate files fall outside it. Explicitly assert `.svc/session-contract.jsonl` is byte-identical unless a separately authorized refresh was recorded."
+    },
+    {
+      "id": "PLAN-008",
+      "severity": "medium",
+      "claim": "The multi-file `node --check` commands do not prove syntax for every listed module.",
+      "analysis": "Node accepts one script entry; subsequent path arguments are treated as script arguments rather than independent files to syntax-check. Both the targeted validation and task sequence therefore overstate syntax coverage.",
+      "evidence": [
+        "Targeted validation invokes `node --check` with six module paths in one command.",
+        "Task-2 similarly invokes `node --check` with three paths.",
+        "Task-4 invokes it with two paths."
+      ],
+      "proposed_fix": "Use a shell loop such as `for f in ...; do node --check \"$f\"; done`, with `set -e`, and preserve the resulting per-file output as evidence."
+    },
+    {
+      "id": "PLAN-009",
+      "severity": "high",
+      "claim": "Migration authorization and rollback enumeration are not concretely defined.",
+      "analysis": "The CLI requires `--authorization <source>`, but the plan never defines valid source forms, verification rules, or how a source binds to the exact tuple. Rollback also says to restore every recorded digest on the machine without a deterministic enumeration command. An executor cannot safely decide what may migrate or restore.",
+      "evidence": [
+        "Interface: both modes require `--authorization <source>`.",
+        "Rollback examples retain the placeholder `--authorization <owner>`.",
+        "Rollback says `for every recorded WI-486 migration digest` but supplies no listing command, index, ordering rule, or duplicate handling."
+      ],
+      "proposed_fix": "Define the authorization source schema and exact validation algorithm. Add a deterministic `--list --wi WI-486 --json` or equivalent index, validate each receipt and backup before restore, specify stable ordering and replay behavior, and replace all authorization placeholders with a mechanically resolvable source."
+    },
+    {
+      "id": "PLAN-010",
+      "severity": "medium",
+      "claim": "The concrete compatibility digest signature omits a field required by the stated loop-termination invariant.",
+      "analysis": "The invariant and prose require classification to participate in compatibility identity, but the exported function signature does not accept classification. Implementing the signature literally cannot satisfy the invariant and can collapse distinct dispositions onto one marker identity.",
+      "evidence": [
+        "Invariant: compatibility pressure is keyed by affected paths, byte digest, and classification.",
+        "Compatibility prose says identity hashes fields `and classification`.",
+        "Concrete export is `stateIdentityDigest({ repoRoot, sessionId, worktreeRoot, affectedPaths[], graphBytesByPath })` with no classification parameter."
+      ],
+      "proposed_fix": "Add an explicit validated `classification` parameter to the function contract, define its canonical encoding and ordering, and add a fixture proving identical bytes under different classifications produce different identities."
+    }
+  ],
+  "certifications": []
+}

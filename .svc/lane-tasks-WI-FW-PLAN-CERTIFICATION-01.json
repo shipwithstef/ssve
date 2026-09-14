@@ -1,0 +1,309 @@
+{
+  "schema_version": 1,
+  "wi": "WI-FW-PLAN-CERTIFICATION-01",
+  "lane": "framework",
+  "status": "in_progress",
+  "created": "2026-09-07T09:21:28.486912+00:00",
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "route-workflow",
+      "subject": "Invoke: /route-workflow",
+      "status": "completed",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-09-07T09:23:29.742Z",
+        "loaded_via": "activate-skill",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-09-07T09:23:29.918Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/plan-certification-review/plan-preflight.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-09-07T09:23:30.090Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/plan-certification-review/plan-preflight.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-09-07T09:23:30.266Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/plan-certification-review/plan-preflight.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-09-07T09:23:30.440Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/plan-certification-review/plan-preflight.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-09-07T09:23:30.623Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/plan-certification-review/plan-preflight.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-09-07T09:23:30.794Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/plan-certification-review/plan-preflight.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-07T09:23:30.967Z"
+    },
+    {
+      "id": 2,
+      "skill": "plan-changeset",
+      "subject": "Invoke: /plan-changeset",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-09-07T09:23:31.141Z",
+        "loaded_via": "activate-skill",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-09-07T09:23:31.327Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/plan-certification-review/plan-preflight.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-09-07T09:23:31.503Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/plan-certification-review/plan-preflight.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-09-07T09:23:31.691Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/plan-certification-review/plan-preflight.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-09-07T09:23:31.879Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/plan-certification-review/plan-preflight.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-09-07T09:23:32.051Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/plan-certification-review/plan-preflight.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-09-07T09:23:32.225Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/plan-certification-review/plan-preflight.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-07T09:44:09.050Z"
+    },
+    {
+      "id": 3,
+      "skill": "review-plan",
+      "subject": "Invoke: /review-plan",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-09-07T09:44:09.221Z",
+        "loaded_via": "activate-skill",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-09-07T09:44:22.002Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/plan-certification-review/r2-dispositions.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-09-07T09:44:22.171Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/plan-certification-review/r2-dispositions.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-09-07T09:44:22.338Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/plan-certification-review/r2-dispositions.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-09-07T09:44:22.509Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/plan-certification-review/r2-dispositions.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-09-07T09:44:22.677Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/plan-certification-review/r2-dispositions.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-09-07T09:44:22.840Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/plan-certification-review/r2-dispositions.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-07T09:44:23.008Z"
+    },
+    {
+      "id": 4,
+      "skill": "execute-changeset",
+      "subject": "Invoke: /execute-changeset",
+      "status": "in_progress",
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-09-07T09:44:23.180Z",
+        "loaded_via": "activate-skill"
+      }
+    },
+    {
+      "id": 5,
+      "skill": "review-gate",
+      "subject": "Invoke: /review-gate",
+      "status": "pending",
+      "blocked_by": [
+        4
+      ]
+    },
+    {
+      "id": 6,
+      "skill": "review-exec",
+      "subject": "Invoke: /review-exec",
+      "status": "pending",
+      "blocked_by": [
+        5
+      ]
+    },
+    {
+      "id": 7,
+      "skill": "audit-implementation",
+      "subject": "Invoke: /audit-implementation",
+      "status": "pending",
+      "blocked_by": [
+        6
+      ]
+    },
+    {
+      "id": 8,
+      "skill": "land-changeset",
+      "subject": "Invoke: /land-changeset",
+      "status": "pending",
+      "blocked_by": [
+        7
+      ]
+    },
+    {
+      "id": 9,
+      "skill": "verify-promotion",
+      "subject": "Invoke: /verify-promotion",
+      "status": "pending",
+      "blocked_by": [
+        8
+      ]
+    }
+  ],
+  "conditional_skip_reasons": {
+    "write-spec": "Founder-authorized incremental receipt-contract correction: existing code and in-manifest ACs define scope; no new product, external blend, stack research or infrastructure surface. Relevant tests run as implementation/release validation.",
+    "evolve-framework": "Founder-authorized incremental receipt-contract correction: existing code and in-manifest ACs define scope; no new product, external blend, stack research or infrastructure surface. Relevant tests run as implementation/release validation.",
+    "improve-framework": "Founder-authorized incremental receipt-contract correction: existing code and in-manifest ACs define scope; no new product, external blend, stack research or infrastructure surface. Relevant tests run as implementation/release validation.",
+    "test-framework": "Founder-authorized incremental receipt-contract correction: existing code and in-manifest ACs define scope; no new product, external blend, stack research or infrastructure surface. Relevant tests run as implementation/release validation.",
+    "blend-external": "Founder-authorized incremental receipt-contract correction: existing code and in-manifest ACs define scope; no new product, external blend, stack research or infrastructure surface. Relevant tests run as implementation/release validation.",
+    "blend-private": "Founder-authorized incremental receipt-contract correction: existing code and in-manifest ACs define scope; no new product, external blend, stack research or infrastructure surface. Relevant tests run as implementation/release validation.",
+    "recall-stack-knowledge": "Founder-authorized incremental receipt-contract correction: existing code and in-manifest ACs define scope; no new product, external blend, stack research or infrastructure surface. Relevant tests run as implementation/release validation.",
+    "plan-blast-radius": "Founder-authorized incremental receipt-contract correction: existing code and in-manifest ACs define scope; no new product, external blend, stack research or infrastructure surface. Relevant tests run as implementation/release validation.",
+    "track-topology-diff": "Founder-authorized incremental receipt-contract correction: existing code and in-manifest ACs define scope; no new product, external blend, stack research or infrastructure surface. Relevant tests run as implementation/release validation.",
+    "refresh-competitors": "Founder-authorized incremental receipt-contract correction: existing code and in-manifest ACs define scope; no new product, external blend, stack research or infrastructure surface. Relevant tests run as implementation/release validation."
+  }
+}

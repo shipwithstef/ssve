@@ -1,0 +1,14 @@
+  Running validate-proposal-triage-sla.sh...
+proposal triage SLA: 6 passed, 1 failed
+  FAIL: validate-proposal-triage-sla.sh (rc=1)
+
+  Running validate-skip-conditions-registry.sh...
+skip-conditions registry validation: 13 passed, 1 failed
+  FAIL: validate-skip-conditions-registry.sh (rc=1)
+
+  Running validate-markdown-ast.mjs...
+=== Tier 1: Markdown AST Validation ===
+  2412 passed, 0 failed
+  PASS — all markdown structure valid
+
+>>> Tier 1 Result: 268 scripts passed, 2 failed (0 timed out)

@@ -1,0 +1,47 @@
+{
+  "captured_at": "2026-08-17T10:31:00Z",
+  "command": "grok inspect --json",
+  "promoted_sha": "a4d0efa319241c12b5bb108b00da28313826617d",
+  "session_start_count": 6,
+  "grok_home_healthcheck_count": 1,
+  "claude_healthcheck_count": 1,
+  "session_start": [
+    {
+      "event": "session_start",
+      "hookType": "command",
+      "target": "/home/user/.nvm/versions/node/v24.13.0/bin/node ~/.grok/skills/hooks/svc-session-start-healthcheck.mjs",
+      "source": { "type": "configToml", "path": "/home/user/.grok/config.toml" },
+      "matcher": "*"
+    },
+    {
+      "event": "session_start",
+      "target": "node /home/user/.claude/skills/hooks/svc-learning-preload.mjs",
+      "source": { "path": "/home/user/.claude" },
+      "vendor": "claude"
+    },
+    {
+      "event": "session_start",
+      "target": "node /home/user/.claude/skills/hooks/svc-session-start-healthcheck.mjs",
+      "source": { "path": "/home/user/.claude" },
+      "vendor": "claude"
+    },
+    {
+      "event": "session_start",
+      "target": "node /home/user/.claude/skills/scripts/zombie-session-sweep.mjs",
+      "source": { "path": "/home/user/.claude" },
+      "vendor": "claude"
+    },
+    {
+      "event": "session_start",
+      "target": "node /home/user/.claude/skills/hooks/cos-briefing.mjs",
+      "source": { "path": "/home/user/.claude" },
+      "vendor": "claude"
+    },
+    {
+      "event": "session_start",
+      "target": "node /home/user/.claude/skills/hooks/svc-delta-preload.mjs",
+      "source": { "path": "/home/user/.claude" },
+      "vendor": "claude"
+    }
+  ]
+}

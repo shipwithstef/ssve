@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://seriousvibecoding/schemas/task-state-migration-receipt.schema.json",
+  "title": "Task-State Migration Receipt (WI-486 SIB-30..35)",
+  "description": "Terminal receipt for an explicit, authorized on-disk task-state migration or restore. Every disk rewrite path emits exactly one of these; a failure emits one with terminal_result=failed and never reports the state as upgraded (SIB-34).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "receipt_type",
+    "schema_version",
+    "wi",
+    "authorization",
+    "source_version",
+    "target_version",
+    "changed_paths",
+    "backups",
+    "before_digests",
+    "after_digests",
+    "terminal_result",
+    "timestamp"
+  ],
+  "properties": {
+    "receipt_type": { "const": "task-state-migration" },
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "wi": { "type": "string", "pattern": "^WI-[A-Z0-9]+(-[A-Z0-9]+)*$" },
+    "authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "digest"],
+      "properties": {
+        "source": { "type": "string", "minLength": 1, "description": "Attributable authorization input path (SIB-30)" },
+        "digest": { "type": "string", "pattern": "^[0-9a-f]{64}$", "description": "sha256 of the authorization file bytes" },
+        "principal": { "type": "string", "description": "verified authority principal that authorized the operation (EXEC-006)" },
+        "nonce": { "type": "string", "description": "single-use nonce from the verified authorization (EXEC-006)" },
+        "issued_at": { "type": "string", "description": "authorization issuance timestamp (EXEC-006)" },
+        "expires_at": { "type": "string", "description": "authorization expiry timestamp (EXEC-006)" },
+        "repository": { "type": "string", "description": "repository the authorization is scoped to (EXEC-006)" }
+      }
+    },
+    "source_version": { "type": "integer", "minimum": 0 },
+    "target_version": { "type": "integer", "minimum": 1 },
+    "changed_paths": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "task-graph paths whose bytes were rewritten (empty on already-migrated / failed-before-write)"
+    },
+    "backups": {
+      "type": "array",
+      "description": "immutable byte-for-byte backups taken BEFORE any mutation (SIB-32)",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["original_path", "backup_path", "digest"],
+        "properties": {
+          "original_path": { "type": "string", "minLength": 1 },
+          "backup_path": { "type": "string", "minLength": 1 },
+          "digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    },
+    "before_digests": {
+      "type": "object",
+      "description": "path -> sha256 of the exact bytes before migration",
+      "additionalProperties": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+    },
+    "after_digests": {
+      "type": "object",
+      "description": "path -> sha256 of the exact bytes after migration (equals before on failure/idempotent)",
+      "additionalProperties": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+    },
+    "terminal_result": {
+      "type": "string",
+      "enum": ["migrated", "already-migrated", "restored", "failed", "rejected", "corrupt", "eligible-dry-run", "restore-dry-run"],
+      "description": "SIB-33/34/35 + EXEC-R2-006/007: exactly one outcome. failed/rejected/corrupt never means upgraded; `corrupt` marks a rollback that could not restore the verified original. `eligible-dry-run`/`restore-dry-run` are NON-TERMINAL simulations that changed nothing and must NOT satisfy a completed-migration/completed-restore check."
+    },
+    "failure_reason": { "type": "string", "description": "present when terminal_result is failed, rejected, or corrupt" },
+    "restore_of": { "type": "string", "description": "backup_path this restore reverted to (terminal_result=restored)" },
+    "timestamp": { "type": "string", "format": "date-time" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "terminal_result": { "enum": ["failed", "rejected", "corrupt"] } } },
+      "then": { "required": ["failure_reason"] }
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "wi": "WI-239",
+  "lane": "framework",
+  "created": "2026-05-10T17:46:51.798Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Migrate list-work-items skill contract",
+      "status": "completed",
+      "blocked_by": [],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T17:47:03.063Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T17:48:23.198Z"
+    },
+    {
+      "id": 2,
+      "subject": "Validate and close WI-239",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T17:48:23.275Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T17:48:23.307Z"
+    }
+  ]
+}

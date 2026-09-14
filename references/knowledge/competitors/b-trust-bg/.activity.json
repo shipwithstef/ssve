@@ -1,0 +1,12 @@
+{
+  "source": null,
+  "total_posts_found": 0,
+  "posts_in_last_12mo": 0,
+  "posts_in_last_6mo": 0,
+  "posts_in_last_3mo": 0,
+  "latest_post_date": null,
+  "latest_post_url": null,
+  "activity_verdict": "unknown",
+  "verdict_reason": "no blog source detected (no wp-json, RSS, or sitemap blog URLs)",
+  "generated_at": "2026-05-03T05:12:33.979Z"
+}

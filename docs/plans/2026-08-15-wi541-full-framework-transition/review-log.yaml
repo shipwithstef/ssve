@@ -1,0 +1,71 @@
+review_log:
+  plan: docs/plans/2026-08-15-wi541-full-framework-transition/manifest.md
+  candidate_digest: 55a87518dcd1ca72dda5a730f319f5f0331a22317a15996d770ab10bf64e82c3
+  tier1:
+    script: scripts/verify-plan-mechanical.sh
+    exit_code: 0
+    issues: 0
+    external_state_check: PASS
+    deploy_dependency_violations: 0
+  tier2:
+    reviewer: agy
+    reviewer_family: google
+    model: Gemini 3.6 Flash (High)
+    rubric_score: 10
+    holistic_receipt: .svc/external-review-artifacts/plan/7aac1fc9276e6c91e486bc798f49938ccceb2a2faface69fc24aa2089ef241a8/20260815T133547Z-959624/receipt.json
+    holistic_findings_sha256: 7920759c416082090b442436b7d190425370b136f296c4cd597ddb4954a26fa9
+  responses:
+    - finding_id: F-001
+      decision: ACCEPT
+      justification: >-
+        Explicit framework-lane completion and skip citations remove ambiguity for
+        the executor and make the reviewer's lane-compliance claim mechanically
+        auditable without changing product scope.
+      action: >-
+        Persist design-ux, design-ui, define-code-style, build-personas, and
+        analyze-competitors decisions in .svc/pipeline-decisions.jsonl and add a
+        table citing every completed/in-progress upstream framework skill artifact.
+    - finding_id: F-002
+      decision: ACCEPT
+      justification: >-
+        The canonical worktree is already proven by branch and base assertions, so
+        deriving its root from Git preserves authority while removing needless
+        user-home coupling.
+      action: Replace the absolute repository path with git rev-parse --show-toplevel.
+  lens_rechecks:
+    - lens: lane-compliance-and-command-determinism
+      prior_findings: [F-001, F-002]
+      relevant_digest: 55a87518dcd1ca72dda5a730f319f5f0331a22317a15996d770ab10bf64e82c3
+      reviewer: agy
+      reviewer_family: google
+      receipt: .svc/external-review-artifacts/plan-lens/55a87518dcd1ca72dda5a730f319f5f0331a22317a15996d770ab10bf64e82c3/round2/receipt.json
+      findings_sha256: 1d77a608d2e509fa8028d5b77e2fb51492a4fec3f27eb9d8fa55bbb8edb80e26
+      verdict: pass
+      rubric_score: 10
+      residual_findings: 0
+  rounds:
+    round_1:
+      status: completed
+      kind: holistic
+      candidate_digest: 7aac1fc9276e6c91e486bc798f49938ccceb2a2faface69fc24aa2089ef241a8
+      findings: 2
+      critical: 0
+      high: 0
+      medium: 1
+      low: 1
+    round_2:
+      status: completed
+      kind: invalidated-lens-remediation
+      candidate_digest: 55a87518dcd1ca72dda5a730f319f5f0331a22317a15996d770ab10bf64e82c3
+      findings: 0
+      critical: 0
+      high: 0
+      medium: 0
+      low: 0
+  terminal_state: REVISED_AND_REVIEWED
+  self_review_passes: 1
+  self_review_digest: 0685ad38318f7366a95a5ccdb30ca407f99dcdcf5e32949e22e5dbd1568d99d5
+  rounds_run: 2
+  unresolved_critical: 0
+  remaining_high: 0
+  commit_sha: ec625b9a57dc2ccc8d01f0bcc7c86548bb0cf9c9

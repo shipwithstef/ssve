@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "wi": "WI-485",
+  "host": {
+    "name": "Codex CLI",
+    "version": "0.144.4",
+    "project_trust": "trusted",
+    "hook_trust": {
+      "owner_confirmed": true,
+      "native_prompt": "3 hooks are new or changed",
+      "selection": "Trust all and continue",
+      "trusted_indexes": [
+        "pre_tool_use:4:0",
+        "user_prompt_submit:1:0",
+        "stop:0:0"
+      ]
+    }
+  },
+  "session": {
+    "id": "019f6169-73d2-7831-b562-fc1565171ccc",
+    "initial_turn_id": "019f6169-83e3-7533-a302-80767ce9ca7e",
+    "foreign_stop_turn_id": "019f616b-7351-7320-bbd7-1fdcc02e04a2",
+    "cwd": "/workspace/seriousvibecoding/.worktrees/framework-WI-485-verify-promotion",
+    "transcript": "~/.codex/sessions/2026/07/14/rollout-2026-07-14T19-15-28-019f6169-73d2-7831-b562-fc1565171ccc.jsonl"
+  },
+  "events": [
+    {
+      "step": "pre_load_mutation",
+      "command": "touch /tmp/wi485-live-deny-marker",
+      "decision": "deny",
+      "diagnostic": "missing or insecure Codex skill-load receipt",
+      "recovery": "node scripts/codex-load-skill.mjs --graph /workspace/seriousvibecoding/.worktrees/framework-WI-485-verify-promotion/.svc/lane-tasks-WI-485.json --task 5 --skill verify-promotion",
+      "marker_exists_after": false
+    },
+    {
+      "step": "skill_load",
+      "skill": "verify-promotion",
+      "printed_lines": 677,
+      "task_id": 5,
+      "receipt_mode": "0600",
+      "skill_sha256": "sha256:968a164a71ec07df8a3e6b78d82c3573612b2ad37af1effaf61ad40b2675fea9",
+      "decision": "pass"
+    },
+    {
+      "step": "post_load_resumed_mutation",
+      "command": "touch /tmp/wi485-live-allow-marker",
+      "decision": "allow",
+      "exit_code": 0,
+      "marker_exists_after": true
+    },
+    {
+      "step": "foreign_stop",
+      "explicit_wi": "WI-485",
+      "continuation_intent": "continue",
+      "claim_owner": "foreign-live-session",
+      "claim_fresh": true,
+      "firewall_output": {},
+      "continuation_pressure_emitted": false,
+      "codex_result": "FOREIGN_STOP_OK"
+    }
+  ],
+  "redaction": {
+    "raw_prompt_persisted": false,
+    "seeded_secret_persisted": false,
+    "recursive_runtime_scan": "pass"
+  }
+}

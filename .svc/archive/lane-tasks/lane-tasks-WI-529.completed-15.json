@@ -1,0 +1,605 @@
+{
+  "schema_version": 1,
+  "wi": "WI-529",
+  "lane": "framework",
+  "status": "completed",
+  "created": "2026-08-10T14:59:31.061Z",
+  "persona_coverage": {
+    "status": "not_required",
+    "reason": "Internal framework install and reviewer-receipt integrity repair with no end-user-facing persona behavior or differentiated product journey."
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "improve-framework",
+      "subject": "Classify AGY receipt and Codex install closeout gaps",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-08-10T14:58:00.000Z",
+        "loaded_via": "codex"
+      },
+      "completed_at": "2026-08-10T15:03:00.000Z"
+    },
+    {
+      "id": 2,
+      "status": "completed",
+      "skill": "research",
+      "subject": "Resolve current Codex hook wiring contract from local authoritative knowledge",
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "research",
+        "loaded_at": "2026-08-10T14:58:30.000Z",
+        "loaded_via": "codex"
+      },
+      "completed_at": "2026-08-10T15:04:00.000Z"
+    },
+    {
+      "id": 3,
+      "status": "completed",
+      "skill": "write-spec",
+      "subject": "Baseline production closeout contract",
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "write-spec",
+        "loaded_at": "2026-08-10T15:04:00.000Z",
+        "loaded_via": "codex",
+        "phases_executed": [
+          {
+            "id": "P1-ContextAndModeSelection",
+            "ts": "2026-08-10T15:52:30.803Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/execution-controller-production-closeout.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiscussionPreflightAndAlternatives",
+            "ts": "2026-08-10T15:52:30.860Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/execution-controller-production-closeout.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-StoryAcceptanceCriteriaDraft",
+            "ts": "2026-08-10T15:52:30.919Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/execution-controller-production-closeout.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ScopeReviewDecisionLog",
+            "ts": "2026-08-10T15:52:30.986Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/execution-controller-production-closeout.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-JourneySyncDependencyQueue",
+            "ts": "2026-08-10T15:52:31.055Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/execution-controller-production-closeout.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyHandoff",
+            "ts": "2026-08-10T15:52:31.112Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/execution-controller-production-closeout.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-10T15:06:00.000Z"
+    },
+    {
+      "id": 4,
+      "status": "completed",
+      "skill": "plan-changeset",
+      "subject": "Plan bounded schema and installer repair",
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-08-10T15:06:00.000Z",
+        "loaded_via": "codex"
+      },
+      "completed_at": "2026-08-10T15:08:00.000Z"
+    },
+    {
+      "id": 5,
+      "status": "completed",
+      "skill": "review-plan",
+      "subject": "Adversarially review closeout plan",
+      "blocked_by": [
+        4
+      ],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-08-10T15:08:00.000Z",
+        "loaded_via": "codex"
+      },
+      "completed_at": "2026-08-10T15:09:00.000Z"
+    },
+    {
+      "id": 6,
+      "status": "completed",
+      "skill": "execute-changeset",
+      "subject": "Implement and validate AGY receipts and launcher-routed Codex dispatcher",
+      "blocked_by": [
+        5
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-08-10T15:09:00.000Z",
+        "loaded_via": "codex",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-08-10T15:52:31.166Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi529-red-codex.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-08-10T15:52:31.219Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-10-execution-controller-production-closeout/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-08-10T15:52:31.280Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi529-focused-green.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-08-10T15:52:31.332Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi529-focused-green.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-10T15:31:04.566Z"
+    },
+    {
+      "id": 7,
+      "status": "completed",
+      "skill": "review-exec",
+      "subject": "Self and independent Sol execution review",
+      "blocked_by": [
+        6
+      ],
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-08-10T15:31:04.606Z",
+        "loaded_via": "codex",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-08-10T16:01:08.172Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/execution-controller-production-closeout-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-08-10T16:01:08.391Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "/home/svc-user/.svc/reviewer-policy-v2.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-08-10T16:10:41.299Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "/tmp/svc-wi529-agy-final-7c92c4ed/findings.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-IterationLoop",
+            "ts": "2026-08-10T16:10:41.372Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/execution-controller-production-closeout-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerdictAndReceiptFinalize",
+            "ts": "2026-08-10T16:10:41.628Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipts/8c4c75c/review-exec.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-10T16:10:41.683Z"
+    },
+    {
+      "id": 8,
+      "status": "completed",
+      "skill": "audit-implementation",
+      "subject": "Audit implementation and regression proof",
+      "blocked_by": [
+        7
+      ],
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-08-10T16:10:41.737Z",
+        "loaded_via": "codex",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextScopeConcern",
+            "ts": "2026-08-10T16:10:41.796Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/execution-controller-production-closeout-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecialistDispatchCoverageLedger",
+            "ts": "2026-08-10T16:10:41.855Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/execution-controller-production-closeout-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-HypothesisGeneration",
+            "ts": "2026-08-10T16:10:41.919Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/execution-controller-production-closeout-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-SubsystemBehaviorAudit",
+            "ts": "2026-08-10T16:10:41.975Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi529-final-governed.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-FindingsConvergenceReport",
+            "ts": "2026-08-10T16:10:42.041Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/execution-controller-production-closeout-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-08-10T16:10:42.096Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi529-final-agy.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-10T16:10:42.295Z"
+    },
+    {
+      "id": 9,
+      "status": "completed",
+      "skill": "land-changeset",
+      "subject": "Land production closeout repair",
+      "blocked_by": [
+        8
+      ],
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-08-10T16:10:42.351Z",
+        "loaded_via": "codex",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-08-10T16:10:50.735Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi529-land-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-08-10T16:10:50.815Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi529-land-diff-audit.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-08-10T16:10:50.882Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi529-land-validation.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-PushPrCreation",
+            "ts": "2026-08-10T16:17:48.331Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi529-land-pr.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-MergeDecisionCleanup",
+            "ts": "2026-08-10T16:18:09.661Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi529-land-merge.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SpecStatusSelfVerify",
+            "ts": "2026-08-10T16:18:09.784Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi529-land-self-verify.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-10T16:18:09.844Z"
+    },
+    {
+      "id": 10,
+      "status": "completed",
+      "skill": "verify-promotion",
+      "subject": "Install and verify live Codex host convergence",
+      "blocked_by": [
+        9
+      ],
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-08-10T16:18:09.895Z",
+        "loaded_via": "codex",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-08-10T16:20:28.877Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi529-promotion-closeout.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-08-10T16:20:28.981Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/features/execution-controller-production-closeout.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-08-10T16:20:29.064Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi529-promote-codex-routing.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-08-10T16:20:29.147Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi529-promotion-closeout.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-10T16:20:29.225Z"
+    },
+    {
+      "id": 11,
+      "status": "completed",
+      "skill": "improve-framework",
+      "subject": "Close Codex effective hook state and Example Marketplace consumer integration residuals",
+      "blocked_by": [
+        10
+      ],
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-08-10T18:35:12.000Z",
+        "loaded_via": "codex"
+      },
+      "completed_at": "2026-08-10T18:39:00.000Z"
+    },
+    {
+      "id": 12,
+      "status": "completed",
+      "skill": "plan-changeset",
+      "subject": "Extend the bounded WI-529 manifest for effective state and consumer surface",
+      "blocked_by": [
+        11
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-08-10T18:39:00.000Z",
+        "loaded_via": "codex"
+      },
+      "completed_at": "2026-08-10T18:41:00.000Z"
+    },
+    {
+      "id": 13,
+      "status": "completed",
+      "skill": "execute-changeset",
+      "subject": "Implement state-aware convergence and project-local consumer metadata",
+      "blocked_by": [
+        12
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-08-10T18:41:00.000Z",
+        "loaded_via": "codex"
+      },
+      "completed_at": "2026-08-10T18:52:00.000Z"
+    },
+    {
+      "id": 14,
+      "status": "completed",
+      "skill": "review-exec",
+      "subject": "Review the exact residual candidate and live install evidence",
+      "blocked_by": [
+        13
+      ],
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-08-10T18:48:00.000Z",
+        "loaded_via": "codex-sol-subagent",
+        "reviewer": "gpt-5.6-sol",
+        "verdict": "pass",
+        "critical_findings": 0,
+        "high_findings": 0,
+        "candidate_digest": "4bfe9f5485f422e77851b78958841f6d5b2724308ed0f1c5e58e62e20373febf"
+      },
+      "completed_at": "2026-08-10T18:54:00.000Z"
+    },
+    {
+      "id": 15,
+      "status": "completed",
+      "skill": "verify-promotion",
+      "subject": "Verify canonical install and Example Marketplace bootstrap behavior",
+      "blocked_by": [
+        14
+      ],
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-08-10T19:09:45.010Z",
+        "loaded_via": "codex",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-08-10T19:09:45.114Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi529-promotion-live-final.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-08-10T19:09:45.212Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/verification/wi-529-residual-live-closeout.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-08-10T19:09:45.345Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi529-promotion-live-final.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-08-10T19:09:45.489Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/verification/wi-529-residual-live-closeout.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-08-10T19:09:45.601Z"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "svc skill_outcome",
+  "type": "object",
+  "required": ["skill_outcome"],
+  "properties": {
+    "skill_outcome": {
+      "type": "object",
+      "required": ["skill", "status", "graph_mutations_requested"],
+      "properties": {
+        "skill": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["pass", "partial", "blocked", "fail"] },
+        "signals_added": { "type": "array", "items": { "type": "string" } },
+        "artifacts_produced": { "type": "array", "items": { "type": "string" } },
+        "validator_proof": { "type": "string" },
+        "graph_mutations_requested": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["action", "reason"],
+            "properties": {
+              "action": {
+                "enum": [
+                  "insert_task",
+                  "mark_n_a",
+                  "escalate_review",
+                  "reclassify_lane",
+                  "return_to_prior_gate",
+                  "block_until_user_input",
+                  "block_on_discovery",
+                  "close_as_runtime_accepted",
+                  "close_as_corrective_closure_complete",
+                  "close_as_framework_complete"
+                ]
+              },
+              "target": { "type": "string" },
+              "signal": { "type": "string" },
+              "reason": { "type": "string", "minLength": 1 },
+              "affected_tasks": { "type": "array", "items": { "type": ["number", "string"] } },
+              "affected_evidence_families": { "type": "array", "items": { "type": "string" } },
+              "validator_proof": { "type": "string" },
+              "skip_condition_id": { "type": "string" },
+              "question": { "type": "string" },
+              "artifact": { "type": "string" },
+              "blocking_discovery_artifact": { "type": "string" },
+              "follow_up_wi": { "type": "string" },
+              "follow_up_status": { "type": "string" },
+              "recommended_skill": { "type": "string" }
+            },
+            "additionalProperties": true
+          }
+        },
+        "closeout_impact": {
+          "enum": [
+            "framework-complete",
+            "runtime-accepted",
+            "corrective-closure-complete",
+            "blocked",
+            null
+          ]
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

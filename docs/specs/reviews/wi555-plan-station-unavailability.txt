@@ -1,0 +1,7 @@
+WI-555 plan/exec review station unavailability (Cursor orchestrator)
+
+- Owner dispatch profile resolves fable/sol-high on host:cursor
+- scripts/run-external-review.mjs REVIEW_HOST_TRANSPORTS = {codex,agy,claude} only
+- schemas/external-review-receipt.schema.json host enum = codex|claude|agy only
+- Therefore SVC_DISPATCH_UNAVAILABLE_STATIONS=fable,sol-high and station agy (fallback) is used
+- Same mechanical evidence pattern as WI-554

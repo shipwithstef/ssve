@@ -1,0 +1,462 @@
+{
+  "schema_version": 1,
+  "wi": "WI-494",
+  "lane": "framework",
+  "status": "pending",
+  "created": "2026-07-17T14:00:06.602Z",
+  "delivery_tier": "full",
+  "owner_session": "92cbd820-4813-42d6-b12d-1a70e09f4168",
+  "change_impact": {
+    "tier": "infra-path",
+    "reasons": [
+      "hooks/ enforcement path",
+      "governed-mutation decision boundary",
+      "host manifest semantics (skill_load_mode)"
+    ],
+    "triad_owner_task": 3
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "route-workflow",
+      "subject": "route WI-494 to framework lane, tier full; log no-Claude-parity taste decision",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-07-17T14:14:32.736Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-07-17T14:14:32.942Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-494.json"
+              }
+            ]
+          },
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-07-17T16:49:21.475Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-494.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-07-17T16:49:21.516Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-494.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-07-17T16:49:21.555Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-494.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-07-17T16:49:21.594Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-494.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-07-17T16:49:21.632Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-494.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-17T14:16:55.995Z"
+    },
+    {
+      "id": 2,
+      "status": "completed",
+      "skill": "diagnose-bug",
+      "subject": "confirm both defects with hermetic reproduction: zero-state bootstrap deadlock + quoted/unlisted read misclassification",
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "diagnose-bug",
+        "loaded_at": "2026-07-17T14:16:56.031Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-Inputs",
+            "ts": "2026-07-17T16:59:30.448Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "docs/specs/bugfix/wi-494-codex-enforcer-brief.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-Reproduction",
+            "ts": "2026-07-17T16:59:30.481Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/bugfix/wi-494-codex-enforcer-brief.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RootCause",
+            "ts": "2026-07-17T16:59:30.521Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/bugfix/wi-494-codex-enforcer-brief.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-FixPlan",
+            "ts": "2026-07-17T16:59:30.555Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/bugfix/wi-494-codex-enforcer-brief.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-PillarRevisit",
+            "ts": "2026-07-17T16:59:30.587Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/bugfix/wi-494-codex-enforcer-brief.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-17T14:29:18.510Z"
+    },
+    {
+      "id": 10,
+      "status": "skipped",
+      "skill": "design-tech",
+      "subject": "tech design for WI-494",
+      "blocked_by": [
+        2
+      ],
+      "skip_reason": "Bugfix lane, Broken-Invariant archetype: WI-494 restores an intended invariant in two existing hook predicates. No new component, module boundary, data model, or interface — no tech-design surface. The design decisions that DO exist (zero-dep argv lexer vs npm shell-quote; bootstrap-intent marker reused as the pre-graph ownership anchor) are captured in manifest.md sections 4 and 6 and are under adversarial review at task 4."
+    },
+    {
+      "id": 3,
+      "status": "completed",
+      "skill": "plan-changeset",
+      "subject": "plan the bootstrap exception for graph creation + argv-based read classification; includes change-impact triad",
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-07-17T14:29:18.563Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-07-17T14:29:19.366Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/lane-tasks-WI-494.json"
+              }
+            ]
+          },
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-07-17T16:59:30.624Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-17-wi494-codex-enforcer-bootstrap-deadlock/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-07-17T16:59:30.658Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-17-wi494-codex-enforcer-bootstrap-deadlock/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-07-17T16:59:30.688Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-17-wi494-codex-enforcer-bootstrap-deadlock/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-07-17T16:59:30.721Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-17-wi494-codex-enforcer-bootstrap-deadlock/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-07-17T16:59:30.754Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-17-wi494-codex-enforcer-bootstrap-deadlock/manifest.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-17T15:09:17.038Z"
+    },
+    {
+      "id": 4,
+      "status": "completed",
+      "skill": "review-plan",
+      "subject": "adversarial plan review (gpt-5.6-sol, HARD 3-round cap per WI-491)",
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-07-17T15:09:17.078Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-17T15:09:17.245Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/lane-tasks-WI-494.json"
+              }
+            ]
+          },
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-07-17T16:59:30.786Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-17-wi494-codex-enforcer-bootstrap-deadlock/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-07-17T16:59:30.820Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-17-wi494-codex-enforcer-bootstrap-deadlock/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-07-17T16:59:30.850Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-17-wi494-codex-enforcer-bootstrap-deadlock/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-07-17T16:59:30.883Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-17-wi494-codex-enforcer-bootstrap-deadlock/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-07-17T16:59:30.914Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-17-wi494-codex-enforcer-bootstrap-deadlock/review-log.yaml"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-07-17-wi494-codex-enforcer-bootstrap-deadlock/review-log.yaml"
+      },
+      "completed_at": "2026-07-17T16:04:53.726Z"
+    },
+    {
+      "id": 5,
+      "status": "completed",
+      "skill": "execute-changeset",
+      "subject": "implement CED-01..CED-07 incl. tier-1 fixtures (zero-state, quoted-read, injection-negative, still-denies-mutation)",
+      "blocked_by": [
+        4
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-07-17T17:35:38.327Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-07-17T17:35:38.358Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/impact-triad/WI-494/proof-codex-integrity.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-07-17T17:35:38.391Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/impact-triad/WI-494/proof-codex-integrity.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-07-17T17:35:38.425Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/impact-triad/WI-494/proof-codex-integrity.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-07-17T17:35:38.464Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/impact-triad/WI-494/proof-codex-integrity.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": ".svc/impact-triad/WI-494/proof-codex-integrity.log"
+      },
+      "completed_at": "2026-07-17T18:37:45.756Z"
+    },
+    {
+      "id": 6,
+      "status": "pending",
+      "skill": "review-exec",
+      "subject": "G6 adversarial review of the frozen diff (3-round cap)",
+      "blocked_by": [
+        5
+      ]
+    },
+    {
+      "id": 7,
+      "status": "pending",
+      "skill": "audit-implementation",
+      "subject": "G5 correctness audit — verify the zero-state exit did not open a bypass",
+      "blocked_by": [
+        6
+      ]
+    },
+    {
+      "id": 8,
+      "status": "pending",
+      "skill": "land-changeset",
+      "subject": "push branch, open PR, squash-merge, re-emit receipt notes on the merge SHA",
+      "blocked_by": [
+        7
+      ]
+    },
+    {
+      "id": 9,
+      "status": "pending",
+      "skill": "verify-promotion",
+      "subject": "G7 — promoted tier-1 green; verify the deadlock is gone against promoted main",
+      "blocked_by": [
+        8
+      ]
+    }
+  ],
+  "upstream_completed": [
+    "diagnose-bug"
+  ],
+  "upstream_skipped_with_justification": [
+    {
+      "skill": "evolve-framework",
+      "reason": "WI-494 is broken framework BEHAVIOR (live Codex host deadlock), not a capability gap. skills-manifest laneDefinitions.framework.notes: broken framework behavior may start in diagnose-bug. Entry is diagnose-bug per the lane model."
+    },
+    {
+      "skill": "improve-framework",
+      "reason": "Same: defect repair against authored intake WI-494 with AC CED-01..CED-07 already fixed; no framework-capability ideation surface."
+    },
+    {
+      "skill": "test-framework",
+      "reason": "No new eval tier; WI-494 extends the EXISTING tier-1 validate-codex-execution-integrity.sh (task 5)."
+    },
+    {
+      "skill": "blend-external",
+      "reason": "No external source blended."
+    },
+    {
+      "skill": "blend-private",
+      "reason": "No private source blended."
+    },
+    {
+      "skill": "recall-stack-knowledge",
+      "reason": "Host-capability research done in-task against provision/hosts/codex.json + the live hook source, per rules/host-capability-research.md."
+    },
+    {
+      "skill": "plan-blast-radius",
+      "reason": "Subsumed by change_impact tier infra-path + the triad owned by task 3."
+    },
+    {
+      "skill": "track-topology-diff",
+      "reason": "No topology change: two existing files edited, no new module boundary."
+    },
+    {
+      "skill": "refresh-competitors",
+      "reason": "Not applicable to an internal enforcement defect."
+    }
+  ]
+}

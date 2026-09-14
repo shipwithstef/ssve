@@ -1,0 +1,10 @@
+Skill: plan-changeset
+
+Q: What file does plan-changeset produce, and what is the mandatory Step 0 classification?
+A: Expected pattern: It produces docs/plans/<date>-<name>/manifest.md. Step 0 requires problem archetype classification into one of: bounded, migration, architectural, cross-cutting, or incremental.
+
+Q: What are the five banned phrases in plan-changeset that indicate prohibited scope reduction?
+A: Expected pattern: The banned phrases are "v1", "simplified version", "placeholder", "static for now", and "will be wired later" / "stubbed out".
+
+Q: What validation script must pass before the plan-changeset manifest can be handed off?
+A: Expected pattern: scripts/validate-task-graph-lane.mjs against the .svc/lane-tasks file must exit 0 with no missing mandatory skills (review-gate, audit-implementation, land-changeset, verify-promotion) before handoff to execute-changeset.

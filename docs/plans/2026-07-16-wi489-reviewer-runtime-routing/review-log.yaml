@@ -1,0 +1,52 @@
+review_log:
+  plan: docs/plans/2026-07-16-wi489-reviewer-runtime-routing/manifest.md
+  tier1:
+    script: scripts/verify-plan-mechanical.sh
+    exit_code: 0
+    issues: 0
+    rerun_after_revisions: pass
+  external_state:
+    result: pass
+    findings: 0
+  bootstrap_exception:
+    reason: promoted canonical launcher is the one-turn/schema-classification defect under WI-489 repair
+    transport: identical package on stdin to one isolated Claude CLI process; no tools, MCP, persistence, fallback, or smoke call
+    requested_tuple: claude-fable-5/high
+    max_turns_flag: 4
+    note: provider-reported num_turns is preserved separately from the CLI agentic-turn ceiling
+  tier2:
+    reviewer: claude
+    reviewer_family: anthropic
+    requested_model: claude-fable-5
+    requested_effort: high
+    rubric_score: 6
+    verdict: pass-with-findings
+    findings: [F-001, F-002, F-003, F-004, F-005, F-006, F-007, F-008, F-009, F-010]
+    process_exit: 0
+    process_duration_ms: 228536
+    provider_reported_num_turns: 11
+    effective_model_evidence: not durably captured from bootstrap stdout; this review is not EXTREV-122 provider-fidelity proof
+  responses:
+    source: /tmp/review-responses.yaml
+    decisions: 10 ACCEPT
+    revised_plan: true
+  tier3:
+    reviewer: claude
+    reviewer_family: anthropic
+    trigger_reason: infra_path
+    requested_model: claude-fable-5
+    requested_effort: high
+    rubric_score: 9
+    verdict: pass-with-findings
+    ruling: prior-findings-resolved
+    residual_findings: [F-101, F-102, F-103, F-104]
+    responses: 4 ACCEPT
+    residual_after_revision: none
+    process_exit: 0
+    process_duration_ms: 173162
+    provider_reported_num_turns: 2
+    total_cost_usd: 1.191302
+    model_usage: [claude-fable-5, claude-haiku-4-5-20251001]
+    provider_safety_route_observed: false
+  terminal_state: REVISED_AND_REVIEWED
+  commit_sha: attached by the post-commit receipt promotion hook; pre-commit review is bound to the staged tree hash

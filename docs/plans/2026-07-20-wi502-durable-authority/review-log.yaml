@@ -1,0 +1,182 @@
+review_kind: plan
+wi: WI-502
+plan: docs/plans/2026-07-20-wi502-durable-authority/manifest.md
+rounds_run: 3
+unresolved_critical: 0
+remaining_high: 0
+terminal_state: CONVERGED_WITH_BOUNDED_DISPOSITIONS
+
+round_1:
+  status: COMPLETED
+  reviewer_family: anthropic
+  reviewer_model: claude-fable-5
+  effort: high
+  profile: fable-high
+  profile_source: explicit-selection
+  rubric_score: 6
+  verdict: pass-with-findings
+  findings_path: docs/plans/2026-07-20-wi502-durable-authority/review-round1-findings.json
+  receipt_path: .svc/external-review-artifacts/plan/WI-502-round1/receipt.json
+  findings:
+    - id: F-001
+      severity: high
+      decision: ACCEPT
+      justification: Auto-discovered validators cannot remain intentionally failing across committed checkpoints.
+      action: Use green-capable validators, capture red output before implementation, keep all task snapshots unpushed, and create one final green commit.
+    - id: F-002
+      severity: high
+      decision: ACCEPT
+      justification: Refuse-mode pre-push validates every introduced commit; a multi-commit branch without envelopes is unreachable.
+      action: Use one final implementation commit and attach plan-manifest, review-plan, exec-record, review-exec, and audit-implementation bodies to its explicit SHA before push.
+    - id: F-003
+      severity: medium
+      decision: ACCEPT
+      justification: A trap installed after the work cannot provide recovery evidence.
+      action: Define and install RECOVERY_IF_FAIL immediately after strict shell mode.
+    - id: F-004
+      severity: medium
+      decision: ACCEPT
+      justification: Resume must tolerate completed local snapshots and the final WI commit.
+      action: Keep HEAD at base until one final commit, persist refs/svc/checkpoints/WI-502 task snapshots, and resume from progress plus snapshot plus focused validation.
+    - id: F-005
+      severity: medium
+      decision: ACCEPT
+      justification: git diff --check is only a whitespace check.
+      action: Commit a sorted declared-file-set and mechanically reject actual paths outside it before the final commit.
+    - id: F-006
+      severity: medium
+      decision: ACCEPT
+      justification: Framework lane decisions need a durable, reviewable disposition.
+      action: Add Lane Compliance and append the exact WI-502 skip/require decision to .svc/pipeline-decisions.jsonl.
+    - id: F-007
+      severity: low
+      decision: ACCEPT
+      justification: Every modified host manifest needs a named gate.
+      action: Add the mimo-code install-drift invocation in addition to the all-manifest capability validator.
+    - id: F-008
+      severity: low
+      decision: ACCEPT
+      justification: Prose scope labels cannot be compared with Git paths.
+      action: Put exact paths in the task graph, commit task-paths.json, and compare every local task snapshot delta to its task allowlist.
+    - id: F-009
+      severity: low
+      decision: ACCEPT
+      justification: Broad git add can sweep unrelated residue.
+      action: Stage only existing entries from declared-file-set.txt and produce one explicit final commit.
+
+round_2:
+  status: COMPLETED
+  reviewer_family: anthropic
+  reviewer_model: claude-fable-5
+  effort: high
+  profile: fable-high
+  profile_source: explicit-selection
+  rubric_score: 7
+  verdict: pass-with-findings
+  findings_path: docs/plans/2026-07-20-wi502-durable-authority/review-round2-findings.json
+  receipt_path: .svc/external-review-artifacts/plan/WI-502-round2/receipt.json
+  findings:
+    - id: F-001
+      severity: high
+      decision: ACCEPT
+      justification: Missing future CREATE paths must not leak a nonzero status from the staging helper.
+      action: Use an explicit if branch for existing files and assert the declared list sort order before staging.
+    - id: F-002
+      severity: high
+      decision: ACCEPT
+      justification: Later review and audit stages cannot provide receipt bodies during execute-changeset.
+      action: End execute-changeset after its three satisfiable receipts, then use a separately preconditioned post-review block for review-exec and audit-implementation.
+    - id: F-003
+      severity: medium
+      decision: ACCEPT
+      justification: Review artifacts need a lifecycle distinct from already-authored planning inputs.
+      action: Add REVIEW-EVIDENCE for completed rounds and classify pending round 3 as CREATE.
+    - id: F-004
+      severity: medium
+      decision: ACCEPT
+      justification: The checker accepts any existing provisioned host manifest and rejects an unknown host, but its usage documentation is stale.
+      action: Add AGENTS.md to task 6 and document the manifest-driven host set including mimo-code.
+    - id: F-005
+      severity: medium
+      decision: ACCEPT
+      justification: Recovery output must propagate through functions and subshells.
+      action: Enable Bash errtrace with set -E.
+    - id: F-006
+      severity: medium
+      decision: ACCEPT
+      justification: comm requires both inputs to be sorted.
+      action: Assert LC_ALL=C sort -c on declared-file-set.txt during preflight.
+    - id: F-007
+      severity: medium
+      decision: ACCEPT
+      justification: Resume evidence cannot depend on manual progress edits.
+      action: Append a task record mechanically before each snapshot, include progress.md in every task allowlist, and make checkpoint refs authoritative.
+    - id: F-008
+      severity: low
+      decision: ACCEPT
+      justification: jq is optional at repository level but mandatory for this execution plan.
+      action: Preflight bash, git, jq, and node before any checkpoint work.
+    - id: F-009
+      severity: low
+      decision: ACCEPT
+      justification: A staged-only comparison misses undeclared tracked and untracked residue.
+      action: Compare the union of all HEAD diffs and non-ignored untracked paths against the declared universe.
+
+round_3:
+  status: COMPLETED
+  reviewer_family: anthropic
+  reviewer_model: claude-fable-5
+  effort: high
+  profile: fable-high
+  profile_source: explicit-selection
+  rubric_score: 8
+  verdict: pass-with-findings
+  findings_path: docs/plans/2026-07-20-wi502-durable-authority/review-round3-findings.json
+  receipt_path: .svc/external-review-artifacts/plan/WI-502-round3/receipt.json
+  bounded_exit: true
+  findings:
+    - id: F-001
+      severity: medium
+      decision: ACCEPT
+      justification: The repository does not currently ignore the proposed runtime evidence path.
+      action: Allocate all red and file-universe evidence with mktemp outside the repository.
+    - id: F-002
+      severity: medium
+      decision: ACCEPT
+      justification: Prose-only resume is insufficient for a copy-paste execution sequence.
+      action: Gate every task on its checkpoint ref and reconstruct PREV_SNAPSHOT from each completed ref.
+    - id: F-003
+      severity: medium
+      decision: ACCEPT
+      justification: Authority rollback must remove files created after the anchor, not only restore earlier bytes.
+      action: Add an exact allowlisted restore recipe that restores the anchor and deletes rolled-back task paths absent from its tree.
+    - id: F-004
+      severity: low
+      decision: ACCEPT
+      justification: The execute entry point must not pretend a clean post-commit rerun is supported.
+      action: Exit with an explicit redirect to the post-review entry point whenever HEAD differs from BASE.
+    - id: F-005
+      severity: low
+      decision: ACCEPT
+      justification: Any nonzero exit is not proof of the intended red contract.
+      action: Require a unique stable WI502-RED marker from every expected failure.
+    - id: F-006
+      severity: low
+      decision: ACCEPT
+      justification: The live script supports --body, but stdin is the repository's documented and already-proven contract.
+      action: Standardize both receipt loops on stdin redirection.
+
+reviewer_discovery:
+  id: WI-503
+  description: The canonical adapter completed the Fable review and wrote a valid receipt, but its final receipt-display expression used require() on a relative custom artifacts path without a relative-path prefix. It printed MODULE_NOT_FOUND while returning success.
+  disposition: File as a separate follow-up because it is unrelated to WI-502 authority semantics and did not invalidate the absolute receipt or findings.
+
+post_review_local_discovery:
+  issue: Concurrent svc-auto-drive appends can share the tracked pipeline-decisions JSONL ledger with the WI-502 lane decision.
+  evidence: Default-checkout and worktree diffs contain different inode-local auto-drive appends; the WI-502 line exists only in the worktree.
+  disposition: Preserve all unrelated bytes and make the execution index contain BASE plus exactly the unique WI-502 decision line. This is a local deterministic staging correction after the bounded third round, not a fourth adversarial review.
+
+execution_deviation:
+  issue: The reviewed file universe omitted scripts/codex-load-skill.mjs even though OS-09 and generation invalidation require the loader receipt to bind the current lease generation.
+  classification: missing-critical auto-fix
+  disposition: Add the loader to task 2 and the declared file universe; emit authority_model, authority_generation, lease_id, and principal_id into every new receipt. Old receipts fail closed and must be reissued.

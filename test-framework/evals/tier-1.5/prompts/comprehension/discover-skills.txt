@@ -1,0 +1,10 @@
+Skill: discover-skills
+
+Q: What are the two skill marketplaces searched by discover-skills, and what quality signal does each use?
+A: Expected pattern: skills.sh (primary, ~90K+ index, install count) and SkillHub (secondary, ~80K+ index, 5-dimension AI rating).
+
+Q: What is the ranking formula for evaluating discovered skills, and what is the threshold for a strong signal on skills.sh?
+A: Expected pattern: Install count (high weight), AI quality score (medium), publisher reputation (medium), freshness (low). 1K+ installs on skills.sh is a strong signal.
+
+Q: What must be logged after installing a skill, and where is domain-specific knowledge written?
+A: Expected pattern: Installation is logged to `docs/specs/research-log.md`. Domain-specific knowledge is written to `references/knowledge/skills/<name>/CAPABILITIES.md`.

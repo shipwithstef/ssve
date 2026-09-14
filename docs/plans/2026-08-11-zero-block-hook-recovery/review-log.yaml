@@ -1,0 +1,50 @@
+review_log:
+  plan: docs/plans/2026-08-11-zero-block-hook-recovery/manifest.md
+  wi: WI-531
+  reviewed_digest: 0d6bed89f6948439d5e3a89410713f7083924c98a4bc0ce388296522ffe3f535
+  tier1:
+    script: scripts/verify-plan-mechanical.sh
+    exit_code: 0
+    issues: 0
+  tier2:
+    reviewer: agy
+    reviewer_family: google
+    model: Gemini 3.6 Flash (High)
+    rubric_score: 10
+    findings: []
+    receipt: .svc/external-review-artifacts/WI-531-retro-plan-final-r2/receipt.json
+    request_id: 422bd6e2-9c4a-438c-8bfc-27d6b7b35ae4
+    phase_guard: allow-override
+    override_kind: retro-plan-review
+  responses:
+    - finding_id: F-001
+      decision: ACCEPT
+      justification: The framework lane and every lane-stage disposition must be visible to the executor and reviewer.
+      action: Added Lane header and Upstream Skill Compliance matrix with exact artifacts and activation dispositions.
+    - finding_id: F-002
+      decision: ACCEPT
+      justification: A literal PR_NUMBER token is not copy-pasteable automation.
+      action: Added deterministic gh PR resolution before the governed merge command.
+    - finding_id: F-003
+      decision: REJECT
+      justification: The executable cross-host graph uses numeric task ids; T0 through T8 are markdown implementation labels only.
+      counter_evidence:
+        - type: file
+          path: .svc/lane-tasks-WI-531.json
+          output: task 2 is the numeric plan-changeset task and the canonical loader activated it successfully
+  lens_rechecks:
+    - lens: lane-compliance-and-command-determinism
+      prior_finding_id: F-001,F-002,F-003
+      relevant_digest: 20abd42b0e4ef0163c3159d918996a877547079aa206aa63373169650fb9f92e
+      findings: []
+    - lens: final-manifest-retro-review
+      relevant_digest: 0d6bed89f6948439d5e3a89410713f7083924c98a4bc0ce388296522ffe3f535
+      reason: Review-exec found post-review manifest and AC-baton drift.
+      findings: []
+  terminal_state: REVISED_AND_REVIEWED
+  self_review_passes: 1
+  self_review_digest: 0d6bed89f6948439d5e3a89410713f7083924c98a4bc0ce388296522ffe3f535
+  rounds_run: 3
+  unresolved_critical: 0
+  remaining_high: 0
+  commit_sha: de23dbadfff085db13bbfc4adefaf74aa3b967e6

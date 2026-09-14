@@ -1,0 +1,224 @@
+{
+  "wi": "WI-137",
+  "lane": "framework",
+  "created": "2026-04-29T11:16:07.599Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "write-spec",
+      "subject": "write-spec: WI-137 _shared/ symlink bugfix",
+      "status": "completed",
+      "blocked_by": [],
+      "skill_receipt": {
+        "completed_at": "2026-04-29T11:18:30Z",
+        "output": "docs/specs/features/WI-137-shared-content-symlinks.md",
+        "mode": "bugfix-behavior",
+        "type": "Enabler",
+        "skill": "write-spec",
+        "loaded_at": "2026-04-29T11:18:30Z",
+        "loaded_via": "legacy-backfill"
+      }
+    },
+    {
+      "id": 2,
+      "skill": "design-tech",
+      "subject": "design-tech: technical design",
+      "status": "skipped",
+      "blocked_by": [
+        1
+      ],
+      "skip_reason": "Framework bugfix with trivial technical design (5 JSON config edits + 1 ~40-line bash validator + 1 ~30-line meta-rule in lint-skills-manifest.mjs). Tech architecture pillar is folded into the spec's Behavior Contract section; design-tech document would duplicate the manifest's Implementation Summary and File table without adding analysis. Per CLAUDE.md and rules/plan-changeset-trigger.md, framework bugfixes of this size do not require a separate design-tech artifact when the spec's Behavior Contract + the plan-changeset manifest jointly cover architecture, data model, dependencies, and operations.",
+      "skipped_at": "2026-04-29T11:25:30Z"
+    },
+    {
+      "id": 3,
+      "skill": "plan-changeset",
+      "subject": "plan-changeset: ordered edits in worktree",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "completed_at": "2026-04-29T11:25:00Z",
+        "output": "docs/plans/2026-04-29-WI-137-shared-symlinks/manifest.md",
+        "worktree": "/workspace/seriousvibecoding/.worktrees/bugfix-WI-137-shared-symlinks",
+        "branch": "bugfix-WI-137-shared-symlinks",
+        "tasks": 6,
+        "files_planned": 10,
+        "skill": "plan-changeset",
+        "loaded_at": "2026-04-29T11:25:00Z",
+        "loaded_via": "legacy-backfill"
+      }
+    },
+    {
+      "id": 4,
+      "skill": "review-plan",
+      "subject": "review-plan: adversarial review of manifest",
+      "status": "completed",
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "completed_at": "2026-04-29T11:55:00Z",
+        "output": "docs/plans/2026-04-29-WI-137-shared-symlinks/review-log.yaml",
+        "tier1": "PASS",
+        "tier1_5": "PASS",
+        "tier2_reviewer": "sonnet",
+        "tier2_rubric_score": 8,
+        "tier2_findings": 5,
+        "responses_all_accept": true,
+        "tier3_invoked": false,
+        "terminal_state": "PROMOTED_WITH_DISPUTES",
+        "dispute_note": "Tier 2 was Sonnet-only (same family as Opus orchestrator); Codex rate-limited until 18:19 UTC, Kimi violated scope-lock. All findings ACCEPTED — no content disputes.",
+        "skill": "review-plan",
+        "loaded_at": "2026-04-29T11:55:00Z",
+        "loaded_via": "legacy-backfill"
+      }
+    },
+    {
+      "id": 5,
+      "skill": "execute-changeset",
+      "subject": "execute-changeset: apply plan, run tier-1 + lint-skills-manifest",
+      "status": "completed",
+      "blocked_by": [
+        4
+      ],
+      "skill_receipt": {
+        "completed_at": "2026-04-29T12:20:00Z",
+        "dispatch": "opus-override",
+        "override_reason": "Mechanical transcription of explicit manifest; total surface ~150 LOC; MiMo Pro unavailable; framework infra (zero src/ writes — pre-commit hook scope does not fire)",
+        "branch": "bugfix-WI-137-shared-symlinks",
+        "commits": 4,
+        "files_changed": 10,
+        "insertions": 404,
+        "deletions": 5,
+        "checkpoints": [
+          "task-1-host-manifests-add-shared",
+          "task-2-write-validator",
+          "task-3-lint-meta-rule",
+          "task-4-negative-test"
+        ],
+        "tasks_5_6_skipped_reason": "task-5 is doc-only (post-merge migration path documented in manifest, exec at verify-promotion). task-6 is no-op (orchestrator confirmed glob-based discovery in run-all-evals.sh during plan-changeset).",
+        "validation": {
+          "block_1_json_content": "PASS — all 5 hosts contain _shared in infra_dirs",
+          "block_2_validator_syntax": "PASS — both validators syntax-clean",
+          "block_3_lint_meta_rule": "PASS for WI137 meta-rule (lint exits 1 due to PRE-EXISTING unrelated issues: coreyhaines pack mismatch, rules-registry gaps — out of WI-137 scope)",
+          "block_4_negative_test": "PASS — meta-rule correctly rejects synthetic violation, names _shared + claude in error",
+          "block_5_tier1_aggregate": "DEFERRED to verify-promotion — validate-shared-content-symlinks.sh fails pre-merge as designed (user's host installs still have stale partial symlinks until ./setup is rerun post-merge)"
+        },
+        "skill": "execute-changeset",
+        "loaded_at": "2026-04-29T12:20:00Z",
+        "loaded_via": "legacy-backfill"
+      }
+    },
+    {
+      "id": 6,
+      "skill": "review-gate",
+      "subject": "review-gate: confirm 8 ACs met, validator green on all detected hosts",
+      "status": "completed",
+      "blocked_by": [
+        5
+      ],
+      "skill_receipt": {
+        "completed_at": "2026-04-29T12:35:00Z",
+        "gate": "G5",
+        "decision": "PASS",
+        "iterations": 1,
+        "agent_a_findings": 3,
+        "agent_a_after_judgment": 2,
+        "agent_b_new_findings": 3,
+        "total_remaining_low": 5,
+        "blocking_remaining": 0,
+        "agent_b_overall_verdict": "APPROVE",
+        "new_state": "CHANGE-SET-APPROVED",
+        "backlog_items": [
+          "G5-001 manifest block-5 wording inconsistency",
+          "G5-003 validator sibling-marker layout coupling",
+          "G5-B-001 reachability vs topology assertion (validator passes on non-symlink _shared with per-file symlinks)",
+          "G5-B-002 GNU find -printf non-portable to BSD",
+          "G5-B-003 shared-content-dirs.json is 6th SoT not listed in CLAUDE.md — fix during land-changeset"
+        ],
+        "skill": "review-gate",
+        "loaded_at": "2026-04-29T12:35:00Z",
+        "loaded_via": "legacy-backfill"
+      }
+    },
+    {
+      "id": 7,
+      "skill": "land-changeset",
+      "subject": "land-changeset: merge bugfix-WI-137-shared-symlinks to main",
+      "status": "completed",
+      "blocked_by": [
+        6
+      ],
+      "skill_receipt": {
+        "completed_at": "2026-04-29T13:00:00Z",
+        "pr_number": 53,
+        "merge_commit": "31dbcf4",
+        "merged_at": "2026-04-29T12:27:41Z",
+        "merge_strategy": "squash",
+        "files_in_squash": 11,
+        "lines_added": 408,
+        "lines_deleted": 5,
+        "post_merge_actions": [
+          "git pull --ff-only synced main with squash commit",
+          "worktree force-removed (only .svc/pipeline-decisions.jsonl was dirty — superseded by main's copy)",
+          "local branch deleted",
+          "remote branch deleted via git push origin --delete",
+          "spec status flipped DRAFT → PROMOTED (SVC_SKILL_ARTIFACT_ALLOW=1 logged bypass — mechanical state transition, not skill re-run)",
+          "G5-B-003 (CLAUDE.md note about shared-content registry) folded into the squash"
+        ],
+        "skill": "land-changeset",
+        "loaded_at": "2026-04-29T13:00:00Z",
+        "loaded_via": "legacy-backfill"
+      }
+    },
+    {
+      "id": 8,
+      "skill": "verify-promotion",
+      "subject": "verify-promotion: post-merge ./setup against all 5 hosts + validator green",
+      "status": "completed",
+      "blocked_by": [
+        7
+      ],
+      "skill_receipt": {
+        "completed_at": "2026-04-29T13:35:00Z",
+        "pre_state": {
+          "claude": "DIR with 3 files (manual partial)",
+          "codex": "DIR with 1 file (manual partial)",
+          "opencode": "DIR with 1 file",
+          "kimi": "DIR with 1 file",
+          "gemini": "DIR with 1 file"
+        },
+        "pre_validator_exit": 1,
+        "pre_validator_misses": 5,
+        "setup_runs": "all 5 hosts: ./setup --host <h> exit 0",
+        "post_state": {
+          "claude": "SYMLINK → /workspace/seriousvibecoding/_shared",
+          "codex": "SYMLINK → /workspace/seriousvibecoding/_shared",
+          "opencode": "SYMLINK → /workspace/seriousvibecoding/_shared",
+          "kimi": "SYMLINK → /workspace/seriousvibecoding/_shared",
+          "gemini": "SYMLINK → /workspace/seriousvibecoding/_shared"
+        },
+        "post_validator_exit": 0,
+        "post_validator": "Hosts detected: 5 | Files checked per host: 3 | Misses: 0",
+        "broken_symlinks": "0 across all 5 hosts (find -xtype l clean)",
+        "idempotency_check": "re-run ./setup --host claude — dir-symlink unchanged, no errors",
+        "ac_status": {
+          "WI137-01": "VERIFIED — ~/.claude/skills/_shared resolves through dir-symlink to framework _shared",
+          "WI137-02": "VERIFIED — idempotent re-run, partial pre-state cleanly replaced, no errors",
+          "WI137-03": "VERIFIED — validator exits 0 when all hosts reachable, exit 1 in pre-state",
+          "WI137-04": "VERIFIED — all 5 hosts populated as dir-symlinks",
+          "WI137-05": "VERIFIED — no broken symlinks anywhere",
+          "WI137-06": "VERIFIED — validator iterated 5 detected installs",
+          "WI137-07": "VERIFIED — lint passes with no WI137 errors",
+          "WI137-08": "VERIFIED — negative-test green during execute-changeset"
+        },
+        "skill": "verify-promotion",
+        "loaded_at": "2026-04-29T13:35:00Z",
+        "loaded_via": "legacy-backfill"
+      }
+    }
+  ]
+}

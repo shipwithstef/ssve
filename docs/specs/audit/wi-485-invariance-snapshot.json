@@ -1,0 +1,43 @@
+{
+  "work_item": "WI-485",
+  "acceptance_criterion": "AC-485-7",
+  "baseline_commit": "9a098a84265da9df3c71f7a2553089139d7308f4",
+  "baseline_tree": "e176a369ea4c8e532e021b89d858b54619457888",
+  "frozen_candidate_commit": "8c0bfe07203cc5dce1c836a736123a36b3d2620c",
+  "frozen_candidate_tree": "2d5b67e7ebd0e455f2c404f77f3688255927b203",
+  "algorithm": "sha256",
+  "invariants": [
+    {
+      "path": "provision/hosts/codex.json",
+      "baseline": "006dcde8ea170dcab6211726fc1a1cb24e614f06c85626d97f4bcba57c581a7a",
+      "candidate": "006dcde8ea170dcab6211726fc1a1cb24e614f06c85626d97f4bcba57c581a7a",
+      "status": "unchanged"
+    },
+    {
+      "path": "skills-manifest.json",
+      "baseline": "3df1bd6920be73f6f38631e772e4fde68395928960bd662030bbb4fee36ec4d8",
+      "candidate": "3df1bd6920be73f6f38631e772e4fde68395928960bd662030bbb4fee36ec4d8",
+      "status": "unchanged"
+    },
+    {
+      "path": "hooks/kimi/svc-kimi-skill-load-enforcer.sh",
+      "baseline": "1a9d8e4c9e94fe42ad54a39086868cf5945e9e320edb634ccce02964438a0bf4",
+      "candidate": "1a9d8e4c9e94fe42ad54a39086868cf5945e9e320edb634ccce02964438a0bf4",
+      "status": "unchanged"
+    },
+    {
+      "path": "scripts/wire-kimi-hooks.mjs",
+      "baseline": "4a4adb3367b18179d22e6ffab57aab089d3843f9f4940d92199bf9662f5e6dde",
+      "candidate": "4a4adb3367b18179d22e6ffab57aab089d3843f9f4940d92199bf9662f5e6dde",
+      "status": "unchanged"
+    },
+    {
+      "path": "scripts/wire-gemini-hooks.mjs",
+      "baseline": "1ce98630b4d7feace38496f2c1f68003dc50457d62754f17cd59f0294696a98a",
+      "candidate": "1ce98630b4d7feace38496f2c1f68003dc50457d62754f17cd59f0294696a98a",
+      "status": "unchanged"
+    }
+  ],
+  "unexpected_non_codex_source_paths": [],
+  "verdict": "PASS"
+}

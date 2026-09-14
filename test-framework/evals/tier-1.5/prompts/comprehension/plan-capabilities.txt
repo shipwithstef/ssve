@@ -1,0 +1,10 @@
+Skill: plan-capabilities
+
+Q: What are the two primary output files for plan-capabilities, and what is the action policy for installations?
+A: Expected pattern: `docs/specs/capability-plan.md` and `.svc/capability-registry.json`. Action policy: never auto-install silently — use `auto` (read-only), `suggest` (needs approval), or `track` (defer).
+
+Q: What are the 10 project types that plan-capabilities can classify, and what signals indicate a SaaS web app?
+A: Expected pattern: SaaS web app, Self-hosted product, Browser extension, CLI/developer tool, API/backend service, Mobile app, Infrastructure/platform, Plugin/skill/framework repo, Data/ETL/analytics, Brownfield enterprise. SaaS signals: Next.js/React, auth, payments, user accounts.
+
+Q: What is the maintenance cadence for competitor refresh and domain knowledge in plan-capabilities?
+A: Expected pattern: Competitor refresh: 7 days. Domain knowledge: 30 days.

@@ -1,0 +1,40 @@
+review_log:
+  plan: docs/plans/2026-07-23-WI-509-reconcile-range-workers/manifest.md
+  tier1:
+    script: scripts/verify-plan-mechanical.sh
+    exit_code: 0
+    issues: 0
+  tier2:
+    reviewer: gpt-5.6-sol
+    reviewer_family: openai
+    rubric_score: 6
+    receipt: .svc/external-review-artifacts/plan/1a963c462c7b8301a83fcd0eb8132919cfbe7c59b88f37c4092411cad64ba99d/20260723T130724Z-1346918/receipt.json
+    findings: 9
+    response: accepted all proof-specificity corrections except destructive reset-based rollback
+  tier3:
+    reviewer: gpt-5.6-sol
+    reviewer_family: openai
+    trigger_reason: infra_path
+    rounds:
+      - round: 2
+        rubric_score: 5
+        receipt: .svc/external-review-artifacts/plan/1ff24562c3d49580309f89e9a9571369d84ea3b0a610bc82e6fff72c60722ecf/20260723T131045Z-1359974/receipt.json
+        response: accepted real-child, mirror-concurrency, timeout-budget, integrity, and skip-evidence corrections
+      - round: 3
+        rubric_score: 6
+        verdict: pass-with-findings
+        receipt: .svc/external-review-artifacts/plan/9deedf23b1bd74284d7763bb28c00d24a1d2ff9a6b2ce665a4e9871aaf9c2838/20260723T131457Z-1375484/receipt.json
+        response: accepted minimum-bound, consumer, checkpoint, recursion, buffer, and decision-location corrections
+    ruling: bounded-disposition
+  terminal_state: PROMOTED_WITH_DISPOSITIONS
+  rounds_run: 3
+  unresolved_critical: 0
+  remaining_high: 4
+  bounded_exit:
+    disposition: reject-with-justification
+    residual_highs:
+      - "R3-F001 accepted and corrected: final concurrency is clamped to at least one and the pool rejects a zero bound."
+      - "R3-F002 rejected: measured real worker runs already include Node startup at 7.22 and 8.18 seconds, leaving 6.82 seconds under the pinned 15-second host AC; replacing it with an unmeasured synthetic ratio is weaker evidence."
+      - "R3-F003 rejected: a doubled per-SHA retry can overrun the fixed 20-second parent; fail-closed exact-SHA output plus replay-safe whole-command retry preserves the bounded contract."
+      - "R3-F004 rejected: hardcoded commit and receipt bodies before the final tree would stale the mandatory chain; later lane skills derive commits and all five receipts from reviewed final state."
+  commit_sha: pending

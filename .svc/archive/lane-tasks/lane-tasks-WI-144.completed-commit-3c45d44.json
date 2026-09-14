@@ -1,0 +1,49 @@
+{
+  "wi": "WI-144",
+  "lane": "framework",
+  "subject": "Framework skip-integrity improvements — skip-conditions registry, ghost-completion detection, lightweight audit mode",
+  "source_proposal": "proposals/2026-05-04-session-audit-wi142-wi144.md",
+  "created": "2026-05-04",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "execute-changeset",
+      "subject": "execute-changeset: implement skip-conditions registry update + lane-tasks integrity validator + lightweight audit mode",
+      "status": "completed",
+      "blocked_by": [],
+      "completed_at": "2026-05-04T14:39:28Z",
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-05-04T14:39:28Z",
+        "loaded_via": "manual"
+      }
+    },
+    {
+      "id": 2,
+      "skill": "review-gate",
+      "subject": "review-gate: G5 — tier-1 validator self-test + diff review",
+      "status": "completed",
+      "blocked_by": [1],
+      "completed_at": "2026-05-04T14:39:28Z",
+      "skill_receipt": {
+        "skill": "review-gate",
+        "loaded_at": "2026-05-04T14:39:28Z",
+        "loaded_via": "manual"
+      }
+    },
+    {
+      "id": 3,
+      "skill": "land-changeset",
+      "subject": "land-changeset: squash-merge to main",
+      "status": "completed",
+      "blocked_by": [2],
+      "completed_at": "2026-05-04T14:43:34Z",
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-05-04T14:43:34Z",
+        "loaded_via": "manual"
+      }
+    }
+  ]
+}

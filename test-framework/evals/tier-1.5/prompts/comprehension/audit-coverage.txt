@@ -1,0 +1,10 @@
+Skill: audit-coverage
+
+Q: What are the three classification states in audit-coverage, and what does FOREIGN mean?
+A: Expected pattern: The three states are CANONICAL (exists at svc-canonical path), FOREIGN (equivalent content exists outside svc paths and needs consolidation), and MISSING (no content at all). FOREIGN is not "good enough" — it requires a consolidation skill run.
+
+Q: How many canonical artifacts are in the catalog as of v1.1, and what are the three artifact categories?
+A: Expected pattern: 22 canonical artifacts in catalog v1.1. The categories are foundational specs, feature lifecycle, design contracts, code and style contracts, test contracts, and state files.
+
+Q: What is the core rule that prevents audit-coverage from fixing gaps automatically?
+A: Expected pattern: "Log then triage, do not fix as found" — it only reports gaps and recommends next skills. It does NOT create the missing artifacts automatically.

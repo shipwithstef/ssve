@@ -1,0 +1,275 @@
+{
+  "schema": 1,
+  "wi": "WI-307",
+  "source_proposals": [
+    "proposals/done/2026-04-27-debug-e2e-skill-meta-gap.md",
+    "proposals/done/2026-04-27-no-positional-role-selectors.md",
+    "proposals/done/2026-04-30-journey-execution-trace-validation.md",
+    "proposals/done/2026-04-30-journey-proposals-self-review.md",
+    "proposals/done/2026-04-30-journey-skills-contract-hardening.md",
+    "proposals/done/2026-05-09-journey-generator-must-detect-i18n-and-chrome-controls.md"
+  ],
+  "status": "implemented",
+  "coverage": [
+    {
+      "source_proposal": "proposals/done/2026-04-27-debug-e2e-skill-meta-gap.md",
+      "proposal_item": "Extend diagnose-bug with E2E test debugging mode rather than creating a separate debug-e2e skill",
+      "status": "covered",
+      "owner_wi": "WI-307",
+      "evidence": [
+        "diagnose-bug/SKILL.md",
+        "route-workflow/references/intent-routing.md",
+        "test-framework/evals/tier-1/validate-journey-e2e-contract.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-27-debug-e2e-skill-meta-gap.md",
+      "proposal_item": "E2E debug mode includes artifact-first review, persistence, helper-app parity, tenant scope, transient assertion, selector, hypothesis ranking, and old/new proof phases",
+      "status": "covered",
+      "owner_wi": "WI-307",
+      "evidence": [
+        "diagnose-bug/SKILL.md",
+        "docs/specs/work-items/WI-307.md"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-27-no-positional-role-selectors.md",
+      "proposal_item": "Forbid positional role selectors unless there is no stable alternative and the exception is justified",
+      "status": "covered",
+      "owner_wi": "WI-307",
+      "evidence": [
+        "scripts/validate-e2e-selector-discipline.mjs",
+        "write-e2e/SKILL.md",
+        "test-framework/evals/tier-1/validate-journey-e2e-contract.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-27-no-positional-role-selectors.md",
+      "proposal_item": "Design-stage companion: chrome/layout controls should get stable accessible names or data-testid selectors",
+      "status": "covered",
+      "owner_wi": "WI-336",
+      "evidence": [
+        "docs/specs/work-items/WI-336.md",
+        "design-ui/SKILL.md",
+        "design-tech/SKILL.md",
+        "scripts/validate-design-chrome-testability.mjs",
+        "test-framework/evals/tier-1/validate-design-chrome-testability.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-30-journey-execution-trace-validation.md",
+      "proposal_item": "P0: test-journeys tier-2 scenario must verify process execution, not only output artifacts",
+      "status": "covered",
+      "owner_wi": "WI-307",
+      "evidence": [
+        "test-framework/evals/tier-2/scenarios/test-journeys-runtime.md",
+        "scripts/tier2-process-assertions.mjs",
+        "test-framework/evals/tier-1/validate-tier2-process-assertions.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-30-journey-execution-trace-validation.md",
+      "proposal_item": "P0: write-journeys --refresh should trigger at milestone boundary after verify-promotion",
+      "status": "covered",
+      "owner_wi": "WI-335",
+      "evidence": [
+        "docs/specs/work-items/WI-335.md",
+        "verify-promotion/SKILL.md",
+        "write-journeys/SKILL.md",
+        "scripts/check-journey-refresh-trigger.mjs",
+        "test-framework/evals/tier-1/validate-journey-refresh-trigger.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-30-journey-execution-trace-validation.md",
+      "proposal_item": "P1: tier-3 journey-skill judge coverage should exist",
+      "status": "covered",
+      "owner_wi": "WI-192",
+      "evidence": [
+        "docs/specs/work-items/WI-192.md",
+        "test-framework/evals/tier-1/validate-tier3-coverage-plan.sh",
+        "scripts/tier3-coverage-plan.mjs"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-30-journey-execution-trace-validation.md",
+      "proposal_item": "P2: S2 classification tightening needs a deterioration guard",
+      "status": "covered",
+      "owner_wi": "WI-334",
+      "evidence": [
+        "docs/specs/work-items/WI-334.md",
+        "test-journeys/SKILL.md",
+        "scripts/validate-s2-justification.mjs",
+        "test-framework/evals/tier-1/validate-test-journeys-s2-guard.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-30-journey-execution-trace-validation.md",
+      "proposal_item": "P2: mechanical bridge validation between write-journeys output and write-e2e input",
+      "status": "covered",
+      "owner_wi": "WI-307",
+      "evidence": [
+        "scripts/verify-journey-e2e-bridge.mjs",
+        "write-journeys/SKILL.md",
+        "test-framework/evals/tier-1/validate-journey-e2e-contract.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-30-journey-skills-contract-hardening.md",
+      "proposal_item": "P0: write-journeys progressive-disclosure/line-count target",
+      "status": "superseded",
+      "owner_wi": "WI-189",
+      "evidence": [
+        "docs/specs/work-items/WI-189.md",
+        "test-framework/evals/tier-1/validate-progressive-disclosure-scope.sh"
+      ],
+      "note": "The broad legacy-size remediation was invalidated as filed; opportunistic refactors remain allowed when touching the skill."
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-30-journey-skills-contract-hardening.md",
+      "proposal_item": "P0: write-journeys needs tier-2 generation coverage",
+      "status": "covered",
+      "owner_wi": "WI-190",
+      "evidence": [
+        "docs/specs/work-items/WI-190.md",
+        "test-framework/evals/tier-2/scenarios/write-journeys-generate.md",
+        "test-framework/evals/tier-1/validate-write-journeys-coverage-debt.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-30-journey-skills-contract-hardening.md",
+      "proposal_item": "P1/P2: write-journeys self-verify and journey format validators for AC/persona coverage",
+      "status": "covered",
+      "owner_wi": "WI-334",
+      "evidence": [
+        "docs/specs/work-items/WI-334.md",
+        "write-journeys/SKILL.md",
+        "scripts/validate-journey-format.mjs",
+        "scripts/verify-journey-coverage.mjs",
+        "test-framework/evals/tier-1/validate-journey-format-coverage.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-30-journey-skills-contract-hardening.md",
+      "proposal_item": "P1: duplicate task-graph boilerplate in write-journeys and test-journeys",
+      "status": "covered",
+      "owner_wi": "WI-335",
+      "evidence": [
+        "docs/specs/work-items/WI-335.md",
+        "write-journeys/SKILL.md",
+        "test-journeys/SKILL.md",
+        "references/phase-receipts.md"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-30-journey-proposals-self-review.md",
+      "proposal_item": "C1/O1: progressive-disclosure target overstated and write-journeys largest-skill concern",
+      "status": "superseded",
+      "owner_wi": "WI-189",
+      "evidence": [
+        "docs/specs/work-items/WI-189.md",
+        "references/skill-conventions.md"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-30-journey-proposals-self-review.md",
+      "proposal_item": "C2: write-journeys git commit self-verify check depended on a nonexistent skill step",
+      "status": "invalid",
+      "evidence": [
+        "proposals/done/2026-04-30-journey-proposals-self-review.md",
+        "write-journeys/SKILL.md"
+      ],
+      "note": "Rejected as a required WI-307 contract; skill output persistence and lane closeout are handled by task graph and land/verify phases."
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-30-journey-proposals-self-review.md",
+      "proposal_item": "C3/M1/O2/O3: missing journey coverage scripts, S2 guard, write-journeys comprehension prompt, and reusable fixtures",
+      "status": "covered",
+      "owner_wi": "WI-334",
+      "evidence": [
+        "docs/specs/work-items/WI-334.md",
+        "scripts/validate-journey-format.mjs",
+        "scripts/verify-journey-coverage.mjs",
+        "scripts/validate-s2-justification.mjs",
+        "test-framework/evals/tier-1.5/prompts/comprehension/write-journeys.txt",
+        "test-framework/evals/tier-1/fixtures/journey-format"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-30-journey-proposals-self-review.md",
+      "proposal_item": "C4/M3: GPS drift belongs to refresh trigger, and duplicate boilerplate should be merged into one cleanup task",
+      "status": "covered",
+      "owner_wi": "WI-335",
+      "evidence": [
+        "docs/specs/work-items/WI-335.md",
+        "verify-promotion/SKILL.md",
+        "scripts/check-journey-refresh-trigger.mjs",
+        "test-framework/evals/tier-1/validate-journey-refresh-trigger.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-30-journey-proposals-self-review.md",
+      "proposal_item": "M2: bridge validator criteria should be mechanical rather than subjective",
+      "status": "covered",
+      "owner_wi": "WI-307",
+      "evidence": [
+        "scripts/verify-journey-e2e-bridge.mjs",
+        "test-framework/evals/tier-1/validate-journey-e2e-contract.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-30-journey-proposals-self-review.md",
+      "proposal_item": "M4: tier-3 journey effort estimate understated because realistic fixtures are required",
+      "status": "covered",
+      "owner_wi": "WI-192",
+      "evidence": [
+        "docs/specs/work-items/WI-192.md",
+        "scripts/tier3-coverage-plan.mjs"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-30-journey-proposals-self-review.md",
+      "proposal_item": "O4: test-journeys is intentionally lane-less/static-lane absent",
+      "status": "superseded",
+      "evidence": [
+        "scripts/compile-delivery-graph.mjs",
+        "route-workflow/references/lane-model.md"
+      ],
+      "note": "Current delivery graph inserts test-journeys conditionally for user/admin-facing runtime work instead of relying on static lane membership."
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-09-journey-generator-must-detect-i18n-and-chrome-controls.md",
+      "proposal_item": "WI-A: write-journeys --auto-discover-chrome emits skeleton journeys from chrome controls",
+      "status": "covered",
+      "owner_wi": "WI-168",
+      "evidence": [
+        "docs/specs/work-items/WI-168.md",
+        "write-journeys/scripts/auto-discover-chrome.mjs",
+        "test-framework/evals/tier-1/validate-write-journeys-chrome-discovery.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-09-journey-generator-must-detect-i18n-and-chrome-controls.md",
+      "proposal_item": "WI-B: catalog-domain-capabilities auto-chains table-stakes capabilities into write-journeys",
+      "status": "covered",
+      "owner_wi": "WI-169",
+      "evidence": [
+        "docs/specs/work-items/WI-169.md",
+        "write-journeys/scripts/capability-journeys.mjs",
+        "test-framework/evals/tier-1/validate-capability-journey-auto-chain.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-09-journey-generator-must-detect-i18n-and-chrome-controls.md",
+      "proposal_item": "WI-C: validate-chrome-journey-coverage warns then escalates for uncovered chrome controls",
+      "status": "covered",
+      "owner_wi": "WI-170",
+      "evidence": [
+        "docs/specs/work-items/WI-170.md",
+        "scripts/validate-chrome-journey-coverage.mjs",
+        "test-framework/evals/tier-1/validate-chrome-journey-coverage.sh"
+      ]
+    }
+  ],
+  "residuals": []
+}

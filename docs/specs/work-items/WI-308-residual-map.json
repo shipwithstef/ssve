@@ -1,0 +1,72 @@
+{
+  "schema": 1,
+  "wi": "WI-308",
+  "source_proposals": [
+    "proposals/done/2026-04-26-audit-entity-rls-skill.md",
+    "proposals/done/2026-04-27-diagnose-bug-persistence-bisect-phase-0.md",
+    "proposals/done/2026-04-28-prove-gap-exploitable-before-deploying-security-rule.md",
+    "proposals/done/2026-04-28-rls-deployment-order-by-caller-surface.md",
+    "proposals/done/2026-04-28-rls-derived-ownership-pattern.md"
+  ],
+  "status": "implemented",
+  "coverage": [
+    {
+      "source_proposal": "proposals/done/2026-04-26-audit-entity-rls-skill.md",
+      "proposal_item": "Base44 entity RLS audit flow checks missing RLS, malformed rules, sensitivity tier, caller surface, deployment priority, and derived ownership",
+      "status": "covered",
+      "owner_wi": "WI-308",
+      "evidence": [
+        "base44-environment/SKILL.md",
+        "scripts/audit-base44-entity-rls.mjs",
+        "test-framework/evals/tier-1/validate-base44-verification-pack.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-27-diagnose-bug-persistence-bisect-phase-0.md",
+      "proposal_item": "diagnose-bug runs persistence bisect for empty/zero visibility symptoms before searching frontend and backend simultaneously",
+      "status": "covered",
+      "owner_wi": "WI-308",
+      "evidence": [
+        "diagnose-bug/SKILL.md",
+        "scripts/classify-persistence-bisect.mjs",
+        "test-framework/evals/tier-1/validate-base44-verification-pack.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-28-prove-gap-exploitable-before-deploying-security-rule.md",
+      "proposal_item": "security/RLS rule work requires before/after exploitability probe evidence and rejects scanner-only proof",
+      "status": "covered",
+      "owner_wi": "WI-308",
+      "evidence": [
+        "review-security/SKILL.md",
+        "review-gate/SKILL.md",
+        "scripts/validate-security-rule-probe-evidence.mjs",
+        "test-framework/evals/tier-1/validate-base44-verification-pack.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-28-rls-deployment-order-by-caller-surface.md",
+      "proposal_item": "RLS rollout order is ranked by frontend caller count, service-role-only backend pattern, exploitability, and blast radius",
+      "status": "covered",
+      "owner_wi": "WI-308",
+      "evidence": [
+        "scripts/audit-base44-entity-rls.mjs",
+        "base44-environment/SKILL.md",
+        "references/knowledge/domains/base44/CAPABILITIES.md",
+        "test-framework/evals/tier-1/validate-base44-verification-pack.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-04-28-rls-derived-ownership-pattern.md",
+      "proposal_item": "derived ownership entities require an explicit denormalized-owner, secureOperation defense-in-depth, or function-gateway decision",
+      "status": "covered",
+      "owner_wi": "WI-308",
+      "evidence": [
+        "scripts/audit-base44-entity-rls.mjs",
+        "review-gate/SKILL.md",
+        "references/knowledge/domains/base44/CAPABILITIES.md",
+        "test-framework/evals/tier-1/validate-base44-verification-pack.sh"
+      ]
+    }
+  ]
+}

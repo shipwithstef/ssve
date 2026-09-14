@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# svc pre-commit slot: skills-manifest integrity (digest sidecar + lint).
+# Skips cleanly when skills-manifest.json is not staged.
+# F-001b (WI-SSVE exec review r4): fail closed when the working-tree manifest
+# differs from the staged one — linting working-tree bytes would validate
+# content that is NOT what this commit ships.
+set -u
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+if ! git diff --cached --name-only | grep -q '^skills-manifest\.json$'; then
+  exit 0
+fi
+if ! git diff --name-only --exit-code -- skills-manifest.json >/dev/null 2>&1; then
+  echo "pre-commit[21-manifest-integrity]: FAIL — working-tree skills-manifest.json differs from the staged version." >&2
+  echo "  Linting would validate bytes that are not in this commit." >&2
+  echo "  Fix: either 'git add skills-manifest.json' to stage the current bytes, or" >&2
+  echo "       'git checkout -- skills-manifest.json' to discard the unstaged edits." >&2
+  exit 1
+fi
+# Tracked-sidecar model (exec-review R5 F-006): the digest sidecar is COMMITTED,
+# so a fresh clone always has a baseline and deleting it is a git-restorable
+# mutation, never a silent reset. Manual lint stays fail-closed on missing
+# sidecar; --stamp + re-add is the only legitimate rotation path.
+node "$REPO_ROOT/scripts/lint-skills-manifest.mjs" || exit 1
+
+# Retro-plan R2 F-001: bind the STAGED manifest and STAGED digest as an atomic
+# pair. Lint validates working-tree bytes; this check fails the commit when the
+# INDEX would ship a digest that does not match the indexed manifest — i.e. a
+# manifest edit without `--stamp` + re-add in the same commit.
+STAGED_MANIFEST_SHA="$(git show ":skills-manifest.json" 2>/dev/null | sha256sum | cut -d' ' -f1)"
+STAGED_DIGEST_FILE="$(git show ":.svc/manifest-digest.json" 2>/dev/null)"
+if [ -z "$STAGED_MANIFEST_SHA" ]; then
+  echo "pre-commit[21-manifest-integrity]: FAIL — skills-manifest.json not present in index." >&2
+  exit 1
+fi
+if [ -z "$STAGED_DIGEST_FILE" ]; then
+  echo "pre-commit[21-manifest-integrity]: FAIL — .svc/manifest-digest.json is not staged." >&2
+  echo "  The tracked sidecar must rotate in the SAME commit as skills-manifest.json:" >&2
+  echo "    node scripts/lint-skills-manifest.mjs --stamp && git add .svc/manifest-digest.json" >&2
+  exit 1
+fi
+STAGED_DIGEST="$(printf '%s' "$STAGED_DIGEST_FILE" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{process.stdout.write(JSON.parse(d).digest||"")}catch{}})')"
+if [ "$STAGED_DIGEST" != "$STAGED_MANIFEST_SHA" ]; then
+  echo "pre-commit[21-manifest-integrity]: FAIL — staged digest does not match staged manifest." >&2
+  echo "  staged manifest sha256: $STAGED_MANIFEST_SHA" >&2
+  echo "  staged sidecar digest:  ${STAGED_DIGEST:-<unparsable>}" >&2
+  echo "  Fix: node scripts/lint-skills-manifest.mjs --stamp && git add .svc/manifest-digest.json" >&2
+  exit 1
+fi
+exit 0

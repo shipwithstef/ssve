@@ -1,0 +1,10 @@
+Skill: write-e2e
+
+Q: What is the required input for write-e2e, and what is the mandatory pre-flight step before writing selectors?
+A: Expected pattern: Required input is docs/specs/journeys/J*.feature.md (journey-docs). The mandatory pre-flight step is reading the actual frontend component source code before writing any selector or assertion.
+
+Q: What selector types does write-e2e require, and what is the core testing philosophy?
+A: Expected pattern: Selectors must be semantic and resilient — using getByRole, getByLabel, getByText. The core philosophy is "Fix the App, Not the Test."
+
+Q: What is the deploy-before-validate rule, and when does it apply?
+A: Expected pattern: Before running a spec that claims to validate a fix is live, run node scripts/verify-deploy-status.mjs to confirm HEAD is pushed and auto-deploy has elapsed. This is mandatory for post-deploy E2E runs.

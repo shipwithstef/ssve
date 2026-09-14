@@ -1,0 +1,27 @@
+wi: WI-497
+review_kind: plan
+reviewer: codex gpt-5.6-sol (high) via scripts/review-plan-codex.sh — 3 paid rounds, exact_primary
+cap: WI-491 HARD 3-round cap; convergence by DISPOSITION
+outcome: TERMINATED at round 3 — 0 Critical all rounds; rubric 3→4→4; all remaining High resolved
+terminal_state: DISPOSITIONED_AT_CAP
+rounds_run: 3
+unresolved_critical: 0
+remaining_high: 0
+
+rounds:
+  - round: 1
+    findings: 7  # 6 high 1 med
+    disposition: 7 ACCEPT -> rev 2 (task graph/commands, ESM import facts, dual canonical, External State, lane table, per-boundary validation, G7 pin)
+  - round: 2
+    findings: 7  # 6 high 1 med
+    disposition: 7 ACCEPT -> rev 3 (one-pattern mechanics, anchored extraction re-validate, exact touches, Category-B regression, semantic-risk routing, taxonomy walk, language-corpus)
+  - round: 3
+    findings: 7  # 5 high 2 med -- CAP: all resolved in rev-3-final
+    detail:
+      - "R3-F001 high (regex accepts consecutive hyphens vs declared language): FIXED-IN-PLAN -> pattern corrected to /^WI-[A-Z0-9]+(-[A-Z0-9]+)*$/; full ACCEPT/REJECT corpus passes."
+      - "R3-F002 high (anchored validation of truncated match still accepts prefix): FIXED-IN-PLAN -> extraction locator is delimiter-bounded + full-token isValidWiId re-check; no prefix-of-malformed acceptance."
+      - "R3-F003 high (one-pattern invariant not mechanically achieved): FIXED-IN-PLAN -> embedded/BOOTSTRAP/extraction regexes composed from WI_ID_RE.source via new RegExp; canonical-identity + no-hardcode guards enforce it."
+      - "R3-F004 high (lane skips lack citations): FIXED-IN-PLAN -> write-spec + improve-framework skip decisions logged (pipeline-decisions 2026-07-18T08:30); lane table cites each."
+      - "R3-F005 high (no closed file scope / deterministic sequence): FIXED-IN-PLAN -> Frozen scope + sequence section (closed touches set + lane-tasks graph order + no-hardcode build guard)."
+      - "R3-F006 med (validator not wired to durable tier-1): FIXED -> validate-wi-id.sh lives in test-framework/evals/tier-1/, auto-run by run-all-evals --tier1 (NWI-06 gate)."
+      - "R3-F007 med (External State Codex-only): FIXED -> Claude-host shared guards (resolve-wi/wi-claim/impact-triad) added to External State + G7 Claude-host check."

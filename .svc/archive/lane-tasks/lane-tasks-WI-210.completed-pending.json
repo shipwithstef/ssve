@@ -1,0 +1,56 @@
+{
+  "wi": "WI-210",
+  "lane": "framework",
+  "created": "2026-05-10T15:39:06.612Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Design and implement proposal triage SLA enforcement",
+      "status": "completed",
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T15:39:22.776Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T15:42:49.175Z"
+    },
+    {
+      "id": 2,
+      "subject": "Seed historical proposal triage state and update docs",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T15:42:49.310Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T15:44:02.161Z"
+    },
+    {
+      "id": 3,
+      "subject": "Validate, close WI-210, and archive task graph",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T15:44:02.259Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T15:49:49.818Z"
+    }
+  ]
+}

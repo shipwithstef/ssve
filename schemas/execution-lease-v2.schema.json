@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seriousvibecoding.dev/schemas/execution-lease-v2.schema.json",
+  "title": "SVC Durable Execution Lease v2",
+  "type": "object",
+  "required": [
+    "schema_version", "run_id", "task_id", "task_revision", "capsule_digest",
+    "principal_id", "generation", "generation_bindings", "lease_id", "status",
+    "acquired_at", "heartbeat_at", "expires_at", "ttl_ms", "heartbeat_sequence",
+    "predecessor_lease_id", "reclaim_reason"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "integer", "enum": [2] },
+    "run_id": { "type": "string", "minLength": 1 },
+    "task_id": { "type": "string", "minLength": 1 },
+    "task_revision": { "type": "integer", "minimum": 1 },
+    "capsule_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "principal_id": { "type": "string", "minLength": 1 },
+    "generation": { "type": "integer", "minimum": 1 },
+    "generation_bindings": {
+      "type": "object",
+      "required": [
+        "protocol_generation_digest", "product_generation_digest", "context_generation_digest",
+        "concern_generation_digest", "control_generation_digest", "authority_generation_digest",
+        "layer_inventory_digest"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "protocol_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "product_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "context_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "concern_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "control_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "authority_generation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "layer_inventory_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "lease_id": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "status": { "type": "string", "enum": ["ACTIVE", "EXPIRED", "RELEASED", "CANCELLED"] },
+    "acquired_at": { "type": "string" },
+    "heartbeat_at": { "type": "string" },
+    "expires_at": { "type": "string" },
+    "ttl_ms": { "type": "integer", "minimum": 1 },
+    "heartbeat_sequence": { "type": "integer", "minimum": 0 },
+    "predecessor_lease_id": { "type": ["string", "null"] },
+    "reclaim_reason": { "type": ["string", "null"] },
+    "closed_at": { "type": ["string", "null"] },
+    "close_reason": { "type": ["string", "null"] }
+  }
+}

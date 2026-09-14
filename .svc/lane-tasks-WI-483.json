@@ -1,0 +1,397 @@
+{
+  "wi": "WI-483",
+  "lane": "framework",
+  "title": "Mobile worktree build identity and canonical release separation",
+  "created": "2026-07-14T20:49:54Z",
+  "source": "frozen-manifest",
+  "status": "completed",
+  "delivery_tier": {
+    "mode": "full"
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "execute-changeset",
+      "status": "completed",
+      "subject": "Implement frozen WI-483 mobile identity manifest",
+      "metadata": {
+        "skill": "execute-changeset",
+        "wi": "WI-483"
+      },
+      "blocked_by": [],
+      "args": {
+        "mode": "dispatch"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-07-14T20:49:54Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "output_artifact": "scripts/mobile-build-identity.mjs",
+        "validation_output": "mobile lifecycle 12/12; Android release gate 37/37; output guard 27/27; full Tier-1 242/242",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-07-14T20:49:54Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "dispatch-three-bounded-slices"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-07-14T21:35:49.959Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "scripts/mobile-build-identity.mjs"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-07-14T21:35:49.959Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi483-tier1-round2.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-07-14T21:35:49.959Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "git-diff-cached-check"
+              }
+            ]
+          }
+        ]
+      },
+      "reopened_reason": "audit found forged artifact proof and missing source-level release idempotency",
+      "completed_at": "2026-07-15T02:00:52.483Z"
+    },
+    {
+      "id": 2,
+      "skill": "review-exec",
+      "status": "completed",
+      "subject": "Adversarial review of mobile identity and release separation",
+      "metadata": {
+        "skill": "review-exec",
+        "wi": "WI-483"
+      },
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-07-14T21:32:15.872Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "output_artifact": "docs/specs/reviews/wi-483-mobile-worktree-builds-exec-cross-model.md",
+        "validation_output": "Fable round 5 APPROVE; security re-audit PASS; all testing/performance findings closed",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-07-14T21:35:49.959Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-483-mobile-worktree-builds-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-07-14T21:35:49.959Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/review-exec-pair.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-07-14T21:35:49.959Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-483-mobile-worktree-builds-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-IterationLoop",
+            "ts": "2026-07-14T21:35:49.959Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "test-framework/evals/tier-1/validate-mobile-build-identity.sh"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerdictAndReceiptFinalize",
+            "ts": "2026-07-14T21:35:49.959Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-483-mobile-worktree-builds-exec-cross-model.md"
+              }
+            ]
+          }
+        ]
+      },
+      "reopened_reason": "re-review required after audit-driven integrity fixes",
+      "completed_at": "2026-07-15T02:00:52.483Z"
+    },
+    {
+      "id": 3,
+      "skill": "audit-implementation",
+      "status": "completed",
+      "subject": "Audit six ACs and no-SDK boundary",
+      "metadata": {
+        "skill": "audit-implementation",
+        "wi": "WI-483"
+      },
+      "blocked_by": [
+        2
+      ],
+      "args": {
+        "mode": "full"
+      },
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-07-14T21:35:49.959Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "output_artifact": "docs/specs/audit/wi-483-mobile-worktree-builds-analysis.md",
+        "validation_output": "full audit; all six ACs confirmed; security PASS; Fable APPROVE; focused lifecycle 12/12",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextScopeConcern",
+            "ts": "2026-07-15T02:02:02.048Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi483-mobile-worktree-builds/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecialistDispatchCoverageLedger",
+            "ts": "2026-07-15T02:02:02.048Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-483-mobile-worktree-builds-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-HypothesisGeneration",
+            "ts": "2026-07-15T02:02:02.048Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-483-mobile-worktree-builds-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-SubsystemBehaviorAudit",
+            "ts": "2026-07-15T02:02:02.048Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/security/wi-483-mobile-worktree-builds-review.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-FindingsConvergenceReport",
+            "ts": "2026-07-15T02:02:02.048Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-483-mobile-worktree-builds-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-15T02:02:02.048Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi483-tier1-final4.log"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-15T02:02:02.048Z"
+    },
+    {
+      "id": 4,
+      "skill": "land-changeset",
+      "status": "completed",
+      "subject": "Land WI-483 through reviewed PR",
+      "metadata": {
+        "skill": "land-changeset",
+        "wi": "WI-483"
+      },
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-07-15T02:41:08.117Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-07-15T02:41:11.333Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi483-mobile-worktree-builds/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-07-15T02:41:14.522Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "git-diff-9c2c7b66..d016bee7"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-07-15T02:41:16.819Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi483-tier1-final4.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-PushPrCreation",
+            "ts": "2026-07-15T02:41:18.796Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "https://github.com/s7an-it/seriousvibecoding/pull/137"
+              }
+            ]
+          },
+          {
+            "id": "P5-MergeDecisionCleanup",
+            "ts": "2026-07-15T02:41:20.916Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "merge-commit-6755c8af"
+              }
+            ]
+          },
+          {
+            "id": "P6-SpecStatusSelfVerify",
+            "ts": "2026-07-15T02:41:22.527Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "postmerge-verification-delegated-task-5"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-15T02:41:23.476Z"
+    },
+    {
+      "id": 5,
+      "skill": "verify-promotion",
+      "status": "completed",
+      "subject": "Verify WI-483 post-merge",
+      "metadata": {
+        "skill": "verify-promotion",
+        "wi": "WI-483"
+      },
+      "blocked_by": [
+        4
+      ],
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-07-15T02:41:24.617Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-07-15T03:02:46.115Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "merge-commit-6755c8af-pr-137"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-07-15T03:02:46.705Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-483.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-07-15T03:02:47.316Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "/tmp/wi483-postmerge-tier1-rerun.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-07-15T03:02:47.972Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/verification/wi-483-mobile-worktree-builds.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-15T03:02:48.610Z"
+    }
+  ],
+  "delivery_graph": {
+    "closeout_classification": "runtime-accepted",
+    "closeout_classification_reasons": [
+      "missing delivery_graph"
+    ],
+    "mutation_history": [
+      {
+        "ts": "2026-07-15T03:04:07.116Z",
+        "source": "classify-delivery-graph-closeout",
+        "action": "close_as_runtime_accepted",
+        "reason": "missing delivery_graph",
+        "affected_tasks": [],
+        "affected_evidence_families": [],
+        "validator_proof": "scripts/classify-delivery-graph-closeout.mjs --write"
+      }
+    ]
+  }
+}

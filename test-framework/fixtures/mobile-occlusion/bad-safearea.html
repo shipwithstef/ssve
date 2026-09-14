@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: sans-serif; }
+  /* Sidebar-footer style screen (no bottom nav — the sheet covers it). BUG B2:
+     the action button is pinned to the very bottom with no safe-area padding,
+     so on a device it sits under the home indicator. */
+  .footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 16px; background: #f5f5f5; }
+  .footer button { width: 100%; padding: 10px; border: 2px solid #a78bfa; border-radius: 8px; background: #fff; }
+</style>
+</head>
+<body>
+  <header><h1>Menu</h1></header>
+  <div class="footer">
+    <button data-testid="logout" aria-label="Log out">Log out</button>
+  </div>
+</body>
+</html>

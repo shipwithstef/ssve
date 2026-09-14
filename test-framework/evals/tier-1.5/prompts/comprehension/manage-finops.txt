@@ -1,0 +1,10 @@
+Skill: manage-finops
+
+Q: What is the mandatory output file for manage-finops, and what are three of its required sections?
+A: Expected pattern: `docs/specs/finops-audit.md` must contain Executive Summary, Infrastructure Breakdown (Small/Medium/Large), Unit Economics, Funnel Impact, Profitability Plan, Free Tier Guardrails, Platform Recommendations, and Risk Register.
+
+Q: What are the four provenance tags required for every factual claim in manage-finops reports?
+A: Expected pattern: [FROM-CODE], [FROM-SPEC], [FROM-RESEARCH], [ASSUMED].
+
+Q: What is the critical rule regarding free tier recommendations in manage-finops?
+A: Expected pattern: Always check ALL free tier options extensively before recommending paid services. Only recommend paid services when free tier limits are reached AND revenue > 3x upgrade cost.

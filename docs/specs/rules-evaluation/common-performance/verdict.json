@@ -1,0 +1,40 @@
+{
+  "rule_path": null,
+  "source_repo": "affaan-m/everything-claude-code",
+  "source_path": "rules/common/performance.md",
+  "scope": "global",
+  "stack": "universal",
+  "verdict": "adopt-with-edits",
+  "scores": {
+    "determinism_gain": 2,
+    "correctness_delta": 2,
+    "friction_cost": 1,
+    "convention_conflict": 0
+  },
+  "scenarios_evaluated": 3,
+  "tier2_ran": true,
+  "tier2_verdict": "confirmed",
+  "edits_required": [
+    "Update 'Opus 4.5' → 'Opus 4.6' (current model: claude-opus-4-6)",
+    "Strip 'Build Troubleshooting' section (ECC build-error-resolver agent dependency)",
+    "Add note: verify model IDs at adoption time — these evolve with releases",
+    "Consider pinning to model ID strings (claude-haiku-4-5-20251001, claude-sonnet-4-6, claude-opus-4-6) rather than version numbers"
+  ],
+  "adopt_core": "Model selection decision table: Haiku for lightweight workers (3x cheaper, 90% capability), Sonnet for main dev + orchestration, Opus for complex architectural decisions and research. Context window last-20% avoidance for large tasks.",
+  "note": "The model selection taxonomy is the strongest behavior change in the entire ECC rule pack — fills a real gap in Claude's default vague model recommendations for multi-agent systems.",
+  "evidence": {
+    "default_transcript": "docs/specs/rules-evaluation/common-performance/default-transcript.md",
+    "diff_and_verdict": "docs/specs/rules-evaluation/common-performance/diff-and-verdict.md"
+  },
+  "suggested_registry_entry": {
+    "path": "rules/model-selection.md",
+    "scope": "global",
+    "stack": "universal",
+    "source": "blended:ecc",
+    "last_evaluated": "2026-04-13",
+    "source_sha": "125d5e619905d97b519a887d5bc7332dcc448a52",
+    "notes": "ECC common/performance.md distilled to model selection table + context window guidance. Remove build troubleshooter section. Update Opus 4.5 → 4.6."
+  },
+  "evaluated_at": "2026-04-13",
+  "contamination_caveat": "Rules fetched into context before skill invocation"
+}

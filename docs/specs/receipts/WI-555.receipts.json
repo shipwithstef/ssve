@@ -1,0 +1,112 @@
+{
+  "wi": "WI-555",
+  "story_type": "bug",
+  "scope": "consumer-local retroactive-attestation authority via repoRootForCache",
+  "stages": [
+    {
+      "stage": "impact",
+      "status": "pending",
+      "evidence": [],
+      "grounded_on": [],
+      "note": ""
+    },
+    {
+      "stage": "ac",
+      "status": "pending",
+      "evidence": [],
+      "grounded_on": [],
+      "note": ""
+    },
+    {
+      "stage": "plan",
+      "status": "pending",
+      "evidence": [],
+      "grounded_on": [],
+      "note": ""
+    },
+    {
+      "stage": "review-plan",
+      "status": "pending",
+      "evidence": [],
+      "grounded_on": [],
+      "note": ""
+    },
+    {
+      "stage": "implement",
+      "status": "pending",
+      "evidence": [],
+      "grounded_on": [],
+      "note": ""
+    },
+    {
+      "stage": "review-exec",
+      "status": "pending",
+      "evidence": [],
+      "grounded_on": [],
+      "note": ""
+    },
+    {
+      "stage": "e2e",
+      "status": "pending",
+      "evidence": [],
+      "grounded_on": [],
+      "note": ""
+    },
+    {
+      "stage": "test-run",
+      "status": "pending",
+      "evidence": [],
+      "grounded_on": [],
+      "note": ""
+    },
+    {
+      "stage": "spec-sync",
+      "status": "pending",
+      "evidence": [],
+      "grounded_on": [],
+      "note": ""
+    },
+    {
+      "stage": "live-proof",
+      "status": "pending",
+      "evidence": [],
+      "grounded_on": [],
+      "note": ""
+    },
+    {
+      "stage": "qa-companion",
+      "status": "pending",
+      "evidence": [],
+      "grounded_on": [],
+      "note": ""
+    },
+    {
+      "stage": "ledger",
+      "status": "pending",
+      "evidence": [],
+      "grounded_on": [],
+      "note": ""
+    },
+    {
+      "stage": "marketing",
+      "status": "pending",
+      "evidence": [],
+      "grounded_on": [],
+      "note": ""
+    },
+    {
+      "stage": "pricing",
+      "status": "pending",
+      "evidence": [],
+      "grounded_on": [],
+      "note": ""
+    },
+    {
+      "stage": "index-restamp",
+      "status": "pending",
+      "evidence": [],
+      "grounded_on": [],
+      "note": ""
+    }
+  ]
+}

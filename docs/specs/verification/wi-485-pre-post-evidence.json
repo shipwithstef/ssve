@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "acceptance_critical": true,
+  "selected_proof": {
+    "id": "wi-485-codex-runtime-boundary",
+    "command": "test-framework/evals/tier-2/codex-execution-integrity/scenario.md",
+    "target": "installed Codex 0.144.4 hooks in the WI-485 verification worktree",
+    "environment": "local promoted origin/main with owner-trusted hooks",
+    "fixture_account": "session 019f6169-73d2-7831-b562-fc1565171ccc"
+  },
+  "pre": {
+    "status": "not-run",
+    "evidence": "proposals/2026-07-14-session-audit-codex-foreign-stop-and-ghost-skill.md"
+  },
+  "post": {
+    "status": "pass",
+    "evidence": "docs/specs/verification/wi-485-live-runtime-trace.json",
+    "fixture_account": "session 019f6169-73d2-7831-b562-fc1565171ccc"
+  },
+  "no_pre_baseline_reason": "The acceptance-triggering failure occurred in a prior live session; replacing the promoted checkout with vulnerable hook code would alter the installed trust target.",
+  "baseline_replacement": "old-path-new-path",
+  "comparison": "fixed-by-change",
+  "iterations": [
+    {
+      "iteration": 1,
+      "fix_batch": "PR #131 Codex authority and exact skill-loading boundary",
+      "classification": "fixed-by-change",
+      "evidence": "live deny-load-allow and foreign-Stop traces"
+    }
+  ],
+  "changed_signals": [
+    {
+      "signal": "foreign Stop continuation pressure",
+      "classification": "fixed-by-change",
+      "acceptance_critical": true
+    },
+    {
+      "signal": "mutation before exact skill loading",
+      "classification": "fixed-by-change",
+      "acceptance_critical": true
+    }
+  ]
+}

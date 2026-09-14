@@ -1,0 +1,55 @@
+{
+  "wi": "WI-FW-UX-GRADUATION-01",
+  "phase": "plan",
+  "status": "REVIEWS_PASSED_EXECUTION_RESUMED",
+  "manifest_sha256": "947c786ddb9d672883cd7dcd0e55f5daebbca559de94eb865cc9a5e56d53cb0c",
+  "contract_sha256": "cf51cc74ddd92927878a85b3ec6a9501e5f59f9187a1a6173f49bd40e6bd5076",
+  "self_review_passes": 1,
+  "rounds_run": 2,
+  "unresolved_critical": 0,
+  "remaining_high": 0,
+  "remaining_findings": 0,
+  "mechanical": {
+    "exit_code": 0,
+    "evidence": ".svc/clean-main-review/stage-b/plan-mechanical-round-2.log"
+  },
+  "sol": {
+    "verdict": "pass",
+    "authority": "same-family-advisory",
+    "evidence": ".svc/clean-main-review/stage-b/sol-plan-amendments.json"
+  },
+  "cursor": {
+    "verdict": "pass",
+    "rubric_score": 10,
+    "model": "cursor-grok-4.6-high",
+    "identity_level": "requested_accepted",
+    "receipt": ".svc/clean-main-review/stage-b/cursor-plan-round-2/receipt.json",
+    "findings": ".svc/clean-main-review/stage-b/cursor-plan-round-2/findings.json"
+  },
+  "responses": [
+    {
+      "id": "F-001",
+      "decision": "accept",
+      "resolution": "Own stale validator and replace numeric pin with independent source census; preserve fallback tests."
+    },
+    {
+      "id": "F-002",
+      "decision": "accept",
+      "resolution": "Own EXTERNAL_ADDONS and run existing mirror generator before lint."
+    },
+    {
+      "id": "F-003",
+      "decision": "accept",
+      "resolution": "Require both roadmap cleanup consumers to use same five exact paths and existing checks."
+    },
+    {
+      "id": "F-004",
+      "decision": "accept",
+      "resolution": "Own and update current CLAUDE count alongside AGENTS and framework state."
+    }
+  ],
+  "failed_preflight_preserved": ".svc/clean-main-review/stage-b/cursor-plan-round-1/receipt.json",
+  "initial_failed_review_preserved": ".svc/clean-main-review/stage-b/cursor-plan-round-1-ready/findings.json",
+  "handoff": "Founder goal continuation resumed implementation after both plan reviews. Plan reviews remain bound to their original bytes; execution contract adds two exact framework-maintained .svc volatile paths, disclosed in audit and final changeset review.",
+  "recorded_at": "2026-09-06T22:24:05.522134+00:00"
+}

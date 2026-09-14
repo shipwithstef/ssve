@@ -1,0 +1,5 @@
+PR campaign closeout for the V2 evidence-level rollout.
+
+Verifies the build contains the new evidence_level prop. Confirmed by grepping the production bundle. The minified bundle has the V2 string reference.
+
+string 'V2' found in main.js. Verified via bundle inspection. No further action.

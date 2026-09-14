@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "task-node-result",
+  "title": "Parallel task-node result (WI-388)",
+  "description": "The schema-forced StructuredOutput each worktree-isolated task agent returns to execute-changeset (AC4) — replaces the fragile grep-for-SVC_WORKER_SUMMARY. The orchestrator merges these mechanically; it never re-parses free text.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["task_id", "status", "files_written", "checkpoint_sha"],
+  "properties": {
+    "task_id": { "type": "string" },
+    "status": { "type": "string", "enum": ["completed", "failed", "blocked"] },
+    "files_written": { "type": "array", "items": { "type": "string" }, "description": "the actual paths this task mutated — MUST be a subset of the task's declared file-set the fence partitioned on; a write outside it is a partition violation the merge rejects" },
+    "checkpoint_sha": { "type": "string", "description": "the worktree commit SHA this task produced (merged back sequentially)" },
+    "tests_passed": { "type": "boolean" },
+    "summary": { "type": "string", "maxLength": 2000, "description": "≤~500 tokens: what the task did + any blocker" },
+    "blocker": { "type": ["string", "null"] }
+  }
+}

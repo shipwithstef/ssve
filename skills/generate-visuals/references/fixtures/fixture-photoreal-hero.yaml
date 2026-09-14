@@ -1,0 +1,32 @@
+# Fixture: photoreal hero brief
+#
+# Represents the most common landing-page invocation: hero background image
+# for a B2B SaaS landing. Used to E2E-test the codex CLI primary path without
+# requiring a real provider invocation. Verify Self-Verify checks #1-#7 against
+# this fixture by mocking the candidate writes.
+
+slot: hero-background
+class: photoreal-lifestyle
+style: warm-golden-hour-cafe-counter-with-tablet-pos-system
+count: 3
+brand_context:
+  palette: [terra-cotta, warm-cream, espresso, deep-charcoal]
+  voice: trustworthy-warm-modern
+  forbid:
+    - stock-cliche
+    - AI-slop-gradient
+    - smiling-headset
+    - synthetic-bokeh
+    - plastic-skin
+viewport: 1920x1080
+license: production-marketing
+
+# Expected provider routing (per matrix in SKILL.md):
+# Primary: codex CLI (photoreal-lifestyle row)
+# Fallback: Gemini Nano-Banana Pro (manual)
+#
+# Expected output paths:
+# - docs/specs/hero-assets/hero-background/candidates/codex-1.png
+# - docs/specs/hero-assets/hero-background/candidates/codex-2.png
+# - docs/specs/hero-assets/hero-background/candidates/codex-3.png
+# - docs/specs/hero-assets/hero-background/provenance.yaml

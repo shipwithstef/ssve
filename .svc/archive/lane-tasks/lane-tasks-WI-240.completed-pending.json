@@ -1,0 +1,40 @@
+{
+  "wi": "WI-240",
+  "lane": "framework",
+  "created": "2026-05-10T17:52:07.836Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Migrate discover-skills skill contract",
+      "status": "completed",
+      "blocked_by": [],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T17:52:16.455Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T17:53:19.784Z"
+    },
+    {
+      "id": 2,
+      "subject": "Validate and close WI-240",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T17:53:19.819Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T17:55:11.670Z"
+    }
+  ]
+}

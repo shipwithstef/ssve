@@ -1,0 +1,1 @@
+I need to define the user journeys for our checkout flow. We have a spec with acceptance criteria already, but no journey maps or Gherkin scenarios. Can you create the journey scenarios that cover the happy path and the main error cases?

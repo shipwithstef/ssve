@@ -1,0 +1,246 @@
+{
+  "wi": "WI-215",
+  "lane": "framework",
+  "created": "2026-05-11T04:01:06.930Z",
+  "status": "completed",
+  "flags": [
+    "framework-policy",
+    "review-gate-required:core-skill-and-tier-1-validator"
+  ],
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "improve-framework: trim route-workflow hot path and move operational detail into references",
+      "status": "completed",
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-11T04:02:22.959Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-FrameworkRepoAndMemoryLoad",
+            "ts": "2026-05-11T04:02:23.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-215-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-PendingProposalAndEvidenceSelection",
+            "ts": "2026-05-11T04:02:23.044Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-215-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-DiagnosisAndDuplicateFilter",
+            "ts": "2026-05-11T04:02:23.083Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/WI-215-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ImplementationRouteDecision",
+            "ts": "2026-05-11T04:02:23.126Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-215-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-ImplementationAndReplayVerification",
+            "ts": "2026-05-11T04:02:23.164Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-215-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-ImprovementRecordAndStateMutation",
+            "ts": "2026-05-11T04:02:23.214Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "FRAMEWORK-STATE.md"
+              }
+            ]
+          },
+          {
+            "id": "P7-ProposalDoneAndRemoteSync",
+            "ts": "2026-05-11T04:02:23.255Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-215-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P8-SelfVerifyContinuation",
+            "ts": "2026-05-11T04:02:23.292Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-215-evidence.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-11T04:02:23.338Z"
+    },
+    {
+      "id": 2,
+      "subject": "review-gate: review route-workflow trim and hot-path validator",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "review-gate"
+      },
+      "skill_receipt": {
+        "skill": "review-gate",
+        "loaded_at": "2026-05-11T04:02:37.201Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-GateContextChecklistConcernScan",
+            "ts": "2026-05-11T04:02:37.231Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-215-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SelfReviewFindings",
+            "ts": "2026-05-11T04:02:37.266Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-215-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-SelfJudgment",
+            "ts": "2026-05-11T04:02:37.302Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-215-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-CrossReviewConvergence",
+            "ts": "2026-05-11T04:02:37.334Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-215-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-GateDecisionBacklog",
+            "ts": "2026-05-11T04:02:37.368Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-215-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-05-11T04:02:37.402Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-215-evidence.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-11T04:02:37.434Z"
+    },
+    {
+      "id": 3,
+      "subject": "verify-promotion: run route-workflow focused validators and close WI-215",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "metadata": {
+        "skill": "verify-promotion"
+      },
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-05-11T04:02:37.499Z",
+        "loaded_via": "direct_skill_file",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-05-11T04:02:37.540Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-215-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-05-11T04:02:37.576Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-215.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-05-11T04:02:37.616Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/WI-215-evidence.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-05-11T04:02:37.651Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-215.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-05-11T04:02:37.688Z"
+    }
+  ]
+}

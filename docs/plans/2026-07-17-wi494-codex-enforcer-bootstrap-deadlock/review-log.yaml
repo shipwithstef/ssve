@@ -1,0 +1,77 @@
+wi: WI-494
+plan: docs/plans/2026-07-17-wi494-codex-enforcer-bootstrap-deadlock/manifest.md
+reviewer:
+  launcher: scripts/run-external-review.mjs
+  tuple: {orchestrator: claude, host: codex, family: openai, model: gpt-5.6-sol, effort: high}
+  profile: codex-high (fixed-policy, policy_version 3)
+cap: 3-round HARD cap (WI-491); convergence by DISPOSITION, not by reviewer running dry
+outcome: CONVERGED at round 3 — no unresolved Critical, all High dispositioned (check-review-round-cap OK)
+rounds:
+  - round: 1
+    transport: direct launcher call with hand-built WI-494 phase-binding (the wrapper
+      first hit exit 4 because the OLD lowercase branch `wi494-...` derived 6 WIs from
+      plan text; the launcher itself is the sanctioned tool, phase-binding supplied for
+      the unambiguous WI-494). A real paid gpt-5.6-sol call; receipt emitted.
+    verdict: fail
+    rubric_score: 3
+    findings: 8   # 1 critical, 5 high, 2 medium
+    artifact: docs/plans/2026-07-17-wi494-codex-enforcer-bootstrap-deadlock/review-round1-codex.json
+    disposition: ACCEPT all 8 → plan revised
+    key_dispositions:
+      - F-001 critical (tokenizer accepted glob/tilde/comment): ACCEPT — added *?[]{}~!# to unquoted reject set (§6.1)
+      - F-002 high (gh -f/-F/--input attached forms evade): ACCEPT — startsWith stems (§6.2)
+      - F-003 high (marker field list contradiction): ACCEPT-with-correction — marker DOES carry wi/branch; shared readMarker (§4/§6.3)
+      - F-004 high (git/rg/find predicates omitted): ACCEPT — full impls added (§6.2)
+      - F-005 high (falsification can't reach lexer-negatives): ACCEPT — per-layer falsification (§6.4)
+      - F-006 medium (zero-state runner unspecified): ACCEPT — e2e runner steps (§6.4)
+      - F-007 high (lane compliance asserted not proven): ACCEPT — skill-by-skill table (§2)
+      - F-008 medium (rollback generic): ACCEPT — rollback runbook (§8)
+  - round: 2
+    transport: sanctioned wrapper scripts/review-plan-codex.sh (branch renamed to
+      framework-WI-494-codex-enforcer by orchestrator → derives exactly WI-494)
+    verdict: fail
+    rubric_score: 4   # improved from 3
+    findings: 8   # deeper layer: 4 high, 4 medium
+    artifact: docs/plans/2026-07-17-wi494-codex-enforcer-bootstrap-deadlock/review-round2-codex.json
+    disposition: ACCEPT all 8 → plan revised
+    key_dispositions:
+      - F-001 high (session-identity gate + tri-state marker): ACCEPT — require non-empty session id, try/catch wrap, tri-state readMarker (§6.3)
+      - F-002 high (TOCTOU / non-atomic): ACCEPT-scoped — hook is a gate not a mutex; atomicity in script lock; concurrency fixture (§6.3)
+      - F-003 high (file scope omits shared module): ACCEPT — added bootstrap-marker.mjs + svc-ensure-worktree.mjs to §5 (5 files)
+      - F-004 high (kubectl cluster-info dump writes; watch fused forms): ACCEPT — cluster-info + watch-form hazards (§6.2)
+      - F-005 high (fixture can't run from empty repo): ACCEPT — isolated checkout, canonical realpath (§6.4)
+      - F-006 medium (in-place mutation unsafe): ACCEPT — isolated mutant copies + cleanup trap (§6.4)
+      - F-007 medium (9/9 arithmetic mismatch): ACCEPT — corrected denominator (9 mandatory; diagnose-bug is entry) (§2)
+      - F-008 medium (drift-check ≠ refresh): ACCEPT — mandatory refresh unless proven live symlink (§8)
+  - round: 3
+    transport: sanctioned wrapper (final — HARD cap reached)
+    verdict: fail
+    rubric_score: 4   # plateaued
+    findings: 8   # 1 critical, 3 high, 4 medium
+    artifact: docs/plans/2026-07-17-wi494-codex-enforcer-bootstrap-deadlock/review-round3-codex.json
+    disposition: 7 ACCEPT + 1 PARTIAL-REJECT (the critical) → plan revised; CONVERGED
+    key_dispositions:
+      - F-001 CRITICAL (repo-wide single-winner across distinct WIs): PARTIAL-REJECT.
+        Accepted the same-(repo,WI) atomicity concern (already guaranteed by WI-486's
+        per-(repo,WI) lock). REJECTED the demanded repo-wide single-winner-across-WIs
+        lock — it CONTRADICTS WI-486's session-isolated multi-WI bootstrap (lock key is
+        canonical-repo-identity + WI so DIFFERENT WIs bootstrap independently, by design;
+        svc-ensure-worktree.mjs:70-71). The round-2 revision mis-stated the invariant as
+        single-repo-winner; that requirement is WITHDRAWN and the true invariant
+        (per-(repo,WI,session) single graph; multi-WI concurrency preserved) is stated
+        with a distinct-WI fixture asserting BOTH graphs are created (§6.3). Counter-
+        evidence: WI-486 "session-isolated multi-WI bootstrap" landed PR #149.
+        Critical is RESOLVED by correcting the plan, not by adding a regressive lock.
+      - F-002 high (gh run download writes artifacts): ACCEPT — removed download from read set (§6.2)
+      - F-003 high (invalid marker downgraded to absence in script): ACCEPT — schema-validating reader; script treats invalid as hard error (§6.3)
+      - F-004 high (skips not cited in ledger): ACCEPT — cite structured upstream_skipped_with_justification + mechanical audit command (§2)
+      - F-005 medium (worktree fixture not idempotent): ACCEPT — disposable --local clone + unique per-run WI/branch (§6.4)
+      - F-006 medium (mutation matrix can't cover all layers): ACCEPT — partitioned by decision layer; universal-kill bounded to mutant-bearing vectors (§6.4)
+      - F-007 medium (rollback placeholders): ACCEPT — copy-pasteable fail-closed commands (§8)
+      - F-008 medium (bootstrap-intent mislabeled read-only): ACCEPT — coupled-write-state table (§8)
+residual_followups:
+  - none material to CED-01..CED-07. The round-3 critical was a plan mis-statement now
+    corrected; all accepted findings are folded into the manifest for execute-changeset.
+  - Candidate 3rd defect (branch-form ↔ WI-derivation mismatch in review-plan-codex.sh:42)
+    logged by orchestrator in .svc/pipeline-decisions.jsonl, folded into WI-494 scope.
+next: execute-changeset (task 5, seg-2) — dispatched separately; NOT part of seg-1-plan

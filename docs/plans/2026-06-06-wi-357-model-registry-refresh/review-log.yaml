@@ -1,0 +1,79 @@
+review_log:
+  plan: docs/plans/2026-06-06-wi-357-model-registry-refresh/manifest.md
+  wi: WI-357
+  date: 2026-06-06
+  tier1:
+    script: scripts/verify-plan-mechanical.sh
+    iterations: 4
+    history:
+      - run: 1
+        exit_code: 1
+        issues: "C8 x7 — diff blueprints below 3-line context floor"
+        fix: "all blocks padded with real file neighbors"
+      - run: 2
+        exit_code: 1
+        issues: "C1 x3 — prose path-tokens (glob + 2 tilde paths) parsed as planned files"
+        fix: "prose rephrased"
+      - run: 3
+        exit_code: 1
+        issues: "C1 x1 — review-log.yaml referenced before creation (chicken-and-egg with this very file)"
+        fix: "path-token defused in process-artifacts table"
+      - run: 4
+        exit_code: 0
+        issues: 0
+  tier1_5_external_state:
+    log: /tmp/plan-external-state-check.log
+    checks: "section exists; 3 populated rows; walked-list present; all targets in-repo; coupled wiring named (check-install-drift.sh, check-mimo-quota.sh); decoupled-justified prose + recovery (./setup --host kimi)"
+    result: PASS
+  tier2:
+    reviewer: codex
+    reviewer_family: openai
+    invocation: scripts/review-plan-codex.sh (re-dispatched after first attempt hung 3h25m on a newline-mangled background command — xargs stdin wait; killed per bash-hygiene)
+    rubric_score: 5
+    rubric_failures: [3, 4, 5, 7, 8]
+    findings_count: 6
+    findings_summary:
+      - { id: F-001, severity: high, claim: "framework-lane upstream compliance not proven in plan" }
+      - { id: F-002, severity: high, claim: "rollback not commit-scoped/safe (HEAD~1 arithmetic)" }
+      - { id: F-003, severity: high, claim: "--tier1 flag unproven vs AGENTS.md no-arg form" }
+      - { id: F-004, severity: medium, claim: "declared file scope vs final diff allowance mismatch (open-ended jsonl)" }
+      - { id: F-005, severity: medium, claim: "AC-04 mirror-marker check declared but absent from scripted command" }
+      - { id: F-006, severity: medium, claim: "execution sequence not idempotent on partial re-entry" }
+  responses:
+    - { id: F-001, decision: ACCEPT, justification: "evidence existed in lane graph + validator but protocol requires the PLAN to carry it", action: "Lane Compliance matrix added to manifest" }
+    - { id: F-002, decision: ACCEPT, justification: "HEAD~1 fragile + misaligned with destructive-git-ops discipline", action: "SHA-recorded checkpoints (.svc/wi-357-checkpoints.log), status-gated reset, rescue-branch-first" }
+    - { id: F-003, decision: REJECT, justification: "flag is documented and live-proven", counter_evidence: "CLAUDE.md Commands documents `run-all-evals.sh --tier1` verbatim; three same-day runs honored it (RESULT: PASS (tier-1 only)); AGENTS.md no-arg form is the superset invocation, not a contradiction" }
+    - { id: F-004, decision: ACCEPT, justification: "open-ended allowance weakens diff-equals-manifest", action: "explicit process-artifacts touches block; exact final diff set" }
+    - { id: F-005, decision: ACCEPT, justification: "declared check missing from command", action: "marker grep-count tests added to AC-04 command (now 4 mirrors)" }
+    - { id: F-006, decision: ACCEPT, justification: "resume guards > rollback-only; matches post-compaction reality", action: "checkpoint-detection resume guards added to execution sequence" }
+  tier3:
+    trigger_reason: infra_path (manifest migration keywords) + disputed_reject (F-003)
+    reviewer: gemini
+    reviewer_family: google
+    substitution_chain: "preferred sonnet (claude -p --bare --agent plan-reviewer) FAILED: headless auth dead ('Not logged in', env-scrub did not help); fallback kimi (scripts/review-plan-kimi.sh) FAILED: HTTP 402 membership expired; gemini selected — operative, allowlisted in CLAUDE.md reviewer set {codex, claude, gemini}, maximum family distance from Tier-2 (google vs openai)"
+    ruling: agrees_with_orchestrator
+    ruling_detail: "F-003 rejection STANDS — Gemini: 'Codex's claim is a hallucination', citing CLAUDE.md L18, test-framework/SKILL.md L65, framework-learnings g5-review-must-run-all-tier1"
+    accepted_fixes_verified: "F-001/F-002/F-004/F-005/F-006 confirmed adequately integrated"
+    new_findings:
+      - id: NEW-001
+        severity: critical
+        claim: "stale pins INSIDE planned file execute-changeset/SKILL.md missed by sweep (L170 Implementor MiMo-V2-Pro row, L172-173 prose, L180 xiaomi/mimo-v2-pro example)"
+        verification: "all three confirmed on disk by orchestrator"
+        disposition: ACCEPT — added to file-9 blueprint (3 additional edits)
+      - id: NEW-002
+        severity: high
+        claim: "missed authoritative mirrors + executable defaults: references/model-toggle.md, references/model-routing-kimi.md, scripts/dispatch-worker.sh L31, scripts/plan-parallel-wi-dispatch.mjs L236/239/242"
+        verification: "all four confirmed on disk by orchestrator"
+        disposition: >-
+          ACCEPT-PARTIAL — both doc mirrors added as files 11-12 (model-routing-kimi: family
+          names only; its MiMo EXEC harness is intentional kimi-mixed profile design).
+          Both EXECUTABLE transport defaults deferred to WI-367 (scripts are re-base deletion
+          candidates) with zero-operative-drift evidence: dispatch preflight short-circuits to
+          USE_SONNET before the literals are reachable while MIMO_API_KEY is absent (live probe
+          2026-06-06). Tracking note appended to docs/specs/work-items/WI-367.md.
+    overall_verdict_from_tier3: revise
+    post_revision: "all in-scope revisions applied; Tier-1 re-run exit 0; 9/9 new-blueprint uniqueness sim PASS"
+  scope_lock: "reviewers read only plan-named inputs; Tier-3 package enumerated the allowed set"
+  terminal_state: REVISED_AND_REVIEWED
+  plan_status_after: SIMULATED (31/31 cumulative blueprint checks PASS across both sim rounds)
+  commit_sha_at_promotion: pending (manifest committed with the worktree branch at execute/land)

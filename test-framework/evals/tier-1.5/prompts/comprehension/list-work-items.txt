@@ -1,0 +1,10 @@
+Skill: list-work-items
+
+Q: What is the default output behavior of list-work-items, and what file does it regenerate on every run?
+A: Expected pattern: Default stdout is a compact table of open items only. `docs/specs/work-items/DONE.md` is regenerated on every run.
+
+Q: What are the done bucket status keywords recognized by list-work-items?
+A: Expected pattern: VERIFIED, DONE, CLOSED, BASELINED, SHIPPED, COMPLETED, IMPLEMENTED, RESOLVED, MERGED, RELEASED (case-insensitive).
+
+Q: How does list-work-items handle heading variants like `# WI-NNN — title` or plain titles without a WI prefix?
+A: Expected pattern: It tolerates multiple heading forms: `# WI-NNN: title`, `# WI-NNN — title`, `# WI-NNN - title`, and `# Plain Title` (uses filename as ID).

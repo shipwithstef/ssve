@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://serious-vibe-coding.local/schemas/handoff-record.schema.json",
+  "title": "SVC normalized multi-agent handoff record (WI-562 IP-H6)",
+  "description": "Machine-checkable record emitted at every controller-authority transition. Separate from (and dual-written alongside) authority-handover-receipt.schema.json lifecycle receipts; validated on resume against the live lease.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "record_id", "kind", "wi", "repo_id", "lease_id",
+    "generation", "old_generation", "principal", "predecessor_principal",
+    "worktree_realpath", "base_sha", "allowed_paths", "ttl_ms",
+    "evidence_digests", "ts"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "record_id": { "type": "string", "format": "uuid" },
+    "kind": { "enum": ["handover", "explicit_takeover", "recovery", "release"] },
+    "wi": { "type": "string", "minLength": 1 },
+    "repo_id": { "type": "string", "minLength": 1 },
+    "lease_id": { "type": "string", "format": "uuid" },
+    "generation": { "type": "integer", "minimum": 1 },
+    "old_generation": { "type": "integer", "minimum": 0 },
+    "principal": { "type": "string", "minLength": 1 },
+    "predecessor_principal": { "type": "string" },
+    "worktree_realpath": { "type": "string", "minLength": 1 },
+    "base_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$|^$" },
+    "token_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "allowed_paths": { "type": "array", "items": { "type": "string" } },
+    "ttl_ms": { "type": "integer", "exclusiveMinimum": 0 },
+    "evidence_digests": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+    },
+    "ts": { "type": "string", "format": "date-time" }
+  }
+}

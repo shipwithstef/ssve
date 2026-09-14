@@ -1,0 +1,62 @@
+{
+  "receipt_type": "plan-manifest",
+  "schema_version": 3,
+  "wi": "WI-475",
+  "mode": "inline",
+  "lane": "framework",
+  "scope": {
+    "included": [
+      "rules/research-must-use-agy-cli.md",
+      "skills-manifest.json",
+      "scripts/resolve-adversarial-reviewer.sh",
+      "scripts/prompt-floor-judge.sh",
+      "scripts/blind-floor-judge.sh",
+      "scripts/host-probes/agy.sh",
+      "research/SKILL.md",
+      "research/references/prescope-template.md",
+      "research/scripts/dispatch-agy.mjs",
+      "research/scripts/synthesize-meaning.mjs",
+      "research/scripts/website-prescope.mjs",
+      "test-framework/evals/tier-1/validate-research-prescope-sub-agent.sh"
+    ],
+    "excluded": []
+  },
+  "dependencies": [],
+  "decision_trace": [],
+  "task_graph": [
+    "improve-framework",
+    "plan-changeset",
+    "execute-changeset",
+    "review-gate",
+    "audit-implementation",
+    "land-changeset",
+    "verify-promotion",
+    "test-framework"
+  ],
+  "validation_plan": [
+    "lint-skills-manifest",
+    "run-all-evals"
+  ],
+  "risk_rollback": {
+    "risk": "Minimal risk of breaking static tests or model invocations.",
+    "rollback": "git stash or git checkout main."
+  },
+  "timestamp": "2026-07-12T02:52:00.000Z",
+  "execution_command_sequence": [
+    {
+      "step": 1,
+      "command": "node scripts/lint-skills-manifest.mjs",
+      "expected_outcome": "PASS"
+    },
+    {
+      "step": 2,
+      "command": "bash test-framework/evals/run-all-evals.sh",
+      "expected_outcome": "PASS"
+    }
+  ],
+  "ac_digests": {
+    "spec_path": "docs/specs/work-items/WI-475.md",
+    "spec_ac_table_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "entries": []
+  }
+}

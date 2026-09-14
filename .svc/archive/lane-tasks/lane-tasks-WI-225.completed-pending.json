@@ -1,0 +1,39 @@
+{
+  "wi": "WI-225",
+  "lane": "framework",
+  "created": "2026-05-10T16:28:39.217Z",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Migrate analyze-competitors skill contract",
+      "status": "completed",
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T16:29:00.710Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T16:31:36.499Z"
+    },
+    {
+      "id": 2,
+      "subject": "Validate and close WI-225",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "skill": "improve-framework"
+      },
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-05-10T16:31:36.574Z",
+        "loaded_via": "direct-SKILL.md-read"
+      },
+      "completed_at": "2026-05-10T16:31:36.612Z"
+    }
+  ]
+}

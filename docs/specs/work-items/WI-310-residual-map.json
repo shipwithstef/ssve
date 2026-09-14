@@ -1,0 +1,135 @@
+{
+  "schema": 1,
+  "wi": "WI-310",
+  "source_proposal": "proposals/done/2026-04-14-parallel-wi-dispatch.md",
+  "status": "implemented",
+  "coverage": [
+    {
+      "proposal_item": "F-01: first-class skill accepts WI list and produces a wave plan",
+      "status": "covered",
+      "evidence": [
+        "dispatch-waves/SKILL.md",
+        "scripts/plan-parallel-wi-dispatch.mjs",
+        "test-framework/evals/tier-1/validate-parallel-wi-dispatch.sh"
+      ]
+    },
+    {
+      "proposal_item": "F-02: transport choice documented for Agent/subagent/headless execution",
+      "status": "covered",
+      "evidence": [
+        "references/parallel-dispatch-transport.md",
+        "scripts/plan-parallel-wi-dispatch.mjs"
+      ],
+      "note": "Implemented with current transport names: local-inline, subagent, detached-kimi, headless-worker."
+    },
+    {
+      "proposal_item": "F-0x: task-graph boilerplate must be subagent-aware",
+      "status": "covered",
+      "evidence": [
+        "dispatch-waves/SKILL.md",
+        "references/parallel-dispatch-transport.md",
+        "scripts/dispatch-worker.sh"
+      ],
+      "note": "Worker file-state rule and SVC_SUBAGENT are present; per-worker Stop-hook filtering remains a child WI."
+    },
+    {
+      "proposal_item": "F-03: WI files declare affected files structurally and authoring skills fill them",
+      "status": "covered",
+      "owner_wi": "WI-329",
+      "evidence": [
+        "scripts/plan-parallel-wi-dispatch.mjs",
+        "references/work-item-schema.md",
+        "scripts/validate-work-item-metadata.mjs",
+        "test-framework/evals/tier-1/validate-work-item-metadata.sh"
+      ],
+      "note": "Canonical WI metadata, authoring-skill guidance, and high/critical metadata validation are implemented."
+    },
+    {
+      "proposal_item": "F-04: merge-back contract after parallel wave completes",
+      "status": "covered",
+      "evidence": [
+        "dispatch-waves/SKILL.md",
+        "references/parallel-dispatch-transport.md",
+        "scripts/validate-parallel-merge-back.mjs"
+      ],
+      "note": "Merge-back result validation is implemented; worker-side result production is tracked under WI-328."
+    },
+    {
+      "proposal_item": "F-05: worker model routing",
+      "status": "covered",
+      "owner_wi": "WI-330",
+      "evidence": [
+        "scripts/dispatch-worker.sh",
+        "scripts/plan-parallel-wi-dispatch.mjs"
+      ],
+      "note": "Planner output now records worker_model and rationale from WI metadata."
+    },
+    {
+      "proposal_item": "F-07: conflict detection covers shared config and import graph reachability",
+      "status": "covered",
+      "owner_wi": "WI-330",
+      "evidence": [
+        "scripts/plan-parallel-wi-dispatch.mjs",
+        "test-framework/evals/tier-1/validate-parallel-wi-dispatch.sh"
+      ],
+      "note": "Planner now adds reverse import scan dependencies and records dependency confidence/degraded warnings."
+    },
+    {
+      "proposal_item": "F-08: hooks adapt for multi-session wave execution",
+      "status": "covered",
+      "owner_wi": "WI-328",
+      "evidence": [
+        "scripts/dispatch-worker.sh",
+        "hooks/svc-task-completion-guard.sh",
+        "hooks/svc-stop-quality.js"
+      ],
+      "note": "SVC_WORKER_WI filters Stop-hook scope, dispatch-worker emits result/progress/edit artifacts, and stop-quality rolls worker edits into parent checks."
+    },
+    {
+      "proposal_item": "F-09: landing strategy explicit",
+      "status": "covered",
+      "evidence": [
+        "references/parallel-dispatch-transport.md"
+      ],
+      "note": "Reference locks one PR per WI unless the user explicitly asks for consolidation."
+    },
+    {
+      "proposal_item": "F-10: shared-resource arbitration and concurrency cap",
+      "status": "covered",
+      "owner_wi": "WI-328",
+      "evidence": [
+        "scripts/plan-parallel-wi-dispatch.mjs",
+        "references/parallel-dispatch-transport.md"
+      ],
+      "note": "Concurrency cap, inline threshold, Base44 TEST_STREAM assignment, browser slots, and serialization are implemented."
+    },
+    {
+      "proposal_item": "F-11: failure semantics table",
+      "status": "covered",
+      "owner_wi": "WI-328",
+      "evidence": [
+        "references/parallel-dispatch-transport.md",
+        "scripts/validate-parallel-merge-back.mjs"
+      ],
+      "note": "dispatch-worker emits timeout, non-zero, dirty-tree, result, log, and progress artifacts; merge-back validation catches missing/invalid results."
+    },
+    {
+      "proposal_item": "F-12: unified wave-progress stream",
+      "status": "covered",
+      "owner_wi": "WI-328",
+      "evidence": [
+        "references/parallel-dispatch-transport.md"
+      ],
+      "note": "dispatch-worker writes .svc/dispatch/wave-progress.jsonl while workers run."
+    },
+    {
+      "proposal_item": "F-06: native host wave UI",
+      "status": "invalid",
+      "evidence": [
+        "proposals/done/2026-04-14-parallel-wi-dispatch.md"
+      ],
+      "note": "Proposal itself marks this as host-harness limitation and track-only, not actionable framework work."
+    }
+  ],
+  "residuals": []
+}

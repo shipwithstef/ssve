@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seriousvibecoding.dev/schemas/review-station-receipt-v2.schema.json",
+  "title": "Candidate-bound inline or subagent review station receipt v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "receipt_type", "station_id", "station_kind", "candidate_digest", "reviewed_at", "reviewer", "verdict", "summary", "findings"],
+  "properties": {
+    "schema_version": { "const": 2 },
+    "receipt_type": { "const": "REVIEW_STATION" },
+    "station_id": { "type": "string", "minLength": 1 },
+    "station_kind": { "enum": ["inline-self", "subagent"] },
+    "candidate_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "reviewed_at": { "type": "string", "format": "date-time" },
+    "reviewer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["host", "family", "model", "effort"],
+      "properties": {
+        "host": { "type": "string", "minLength": 1 },
+        "family": { "enum": ["openai", "anthropic", "google", "xai"] },
+        "model": { "type": "string", "minLength": 1 },
+        "effort": { "enum": ["low", "medium", "high", "xhigh", "max"] }
+      }
+    },
+    "verdict": { "enum": ["pass", "fail", "pass-with-findings"] },
+    "summary": { "type": "string", "minLength": 1 },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "severity", "claim", "analysis", "evidence", "proposed_fix"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "severity": { "enum": ["critical", "high", "medium", "low", "info"] },
+          "claim": { "type": "string", "minLength": 1 },
+          "analysis": { "type": "string", "minLength": 1 },
+          "evidence": { "type": "array", "items": { "type": "string" } },
+          "proposed_fix": { "type": "string" }
+        }
+      }
+    }
+  }
+}

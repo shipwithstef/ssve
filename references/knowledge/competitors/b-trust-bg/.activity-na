@@ -1,0 +1,12 @@
+B-Trust.bg is a Qualified Trust Service Provider (QTSP) operated by Borica AD.
+It is service infrastructure (KEP issuance + identity validation), not a content
+publisher. It has no public blog/news section. Activity verdict from blog-crawl
+defaults to "unknown" because there is no blog source — this is correct.
+
+Liveness signal for B-Trust comes from:
+- Borica AD (operator) — major BG financial-infrastructure company, active 2026
+- ETSI / EU Trust List inclusion — verifiable at https://eidas.ec.europa.eu/efda/tl-browser/
+- Active certificate issuance (visible by attempting purchase flow)
+- LinkedIn / press releases of Borica AD parent
+
+Marker created 2026-05-03.

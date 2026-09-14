@@ -1,0 +1,568 @@
+{
+  "schema": 1,
+  "max_open_days": 1,
+  "max_defer_days": 14,
+  "description": "Direct proposals start in proposals/ and must receive accepted_wi, rejected_reason, or deferred_until metadata by the SLA. Once accepted_wi exists, the proposal source is archived under proposals/done/ and this registry keeps the WI/residual-map ownership pointer.",
+  "entries": {
+    "2026-06-29-evolution.md": {
+      "deferred_until": null,
+      "reason": "Existing execution-speed epic owns the survey and its ranked children. Child verification remains authoritative; no new completion claim.",
+      "prior_triage": {
+        "deferred_until": "2026-08-25",
+        "reason": "Findings already promoted to tracked epic WI-461 (children WI-462..469); proposal retained as the evolve-framework survey.",
+        "blocked_reason": "Formal accept+archive deferred to avoid the promotion-closeout cascade during this anti-friction batch; the epic + child WIs already carry the actionable work."
+      },
+      "backlog_wi": "WI-461"
+    },
+    "2026-04-14-blocking-discovery-halt-protocol.md": {
+      "accepted_wi": "WI-318",
+      "residual_map": "docs/specs/work-items/WI-318-residual-map.json"
+    },
+    "2026-04-14-parallel-wi-dispatch.md": {
+      "accepted_wi": "WI-310",
+      "residual_map": "docs/specs/work-items/WI-310-residual-map.json"
+    },
+    "2026-04-19-evolution.md": {
+      "accepted_wi": "WI-311",
+      "residual_map": "docs/specs/work-items/WI-311-residual-map.json"
+    },
+    "2026-04-20-session-audit-capture-idea-wrong-repo.md": {
+      "accepted_wi": "WI-311",
+      "residual_map": "docs/specs/work-items/WI-311-residual-map.json"
+    },
+    "2026-04-21-evolution.md": {
+      "accepted_wi": "WI-311",
+      "residual_map": "docs/specs/work-items/WI-311-residual-map.json"
+    },
+    "2026-04-22-strategic-decision-research-discipline.md": {
+      "accepted_wi": "WI-313",
+      "residual_map": "docs/specs/work-items/WI-313-residual-map.json"
+    },
+    "2026-04-24-framework-cohesion-evolution.md": {
+      "accepted_wi": "WI-311",
+      "residual_map": "docs/specs/work-items/WI-311-residual-map.json"
+    },
+    "2026-04-25-capability-blocker-auto-diagnosis.md": {
+      "accepted_wi": "WI-314",
+      "residual_map": "docs/specs/work-items/WI-314-residual-map.json"
+    },
+    "2026-04-25-comprehensive-session-audit.md": {
+      "accepted_wi": "WI-311",
+      "residual_map": "docs/specs/work-items/WI-311-residual-map.json"
+    },
+    "2026-04-25-deterministic-quality-hooks.md": {
+      "accepted_wi": "WI-312",
+      "residual_map": "docs/specs/work-items/WI-312-residual-map.json"
+    },
+    "2026-04-25-dynamic-deterministic-reliability-review.md": {
+      "accepted_wi": "WI-312",
+      "residual_map": "docs/specs/work-items/WI-312-residual-map.json"
+    },
+    "2026-04-25-inertia-detection-deprecated-api-check.md": {
+      "accepted_wi": "WI-314",
+      "residual_map": "docs/specs/work-items/WI-314-residual-map.json"
+    },
+    "2026-04-25-prevent-deployed-unverified-shipping.md": {
+      "accepted_wi": "WI-305",
+      "residual_map": "docs/specs/work-items/WI-305-residual-map.json"
+    },
+    "2026-04-26-audit-entity-rls-skill.md": {
+      "accepted_wi": "WI-308",
+      "residual_map": "docs/specs/work-items/WI-308-residual-map.json"
+    },
+    "2026-04-27-debug-e2e-skill-meta-gap.md": {
+      "accepted_wi": "WI-307",
+      "residual_map": "docs/specs/work-items/WI-307-residual-map.json"
+    },
+    "2026-04-27-diagnose-bug-persistence-bisect-phase-0.md": {
+      "accepted_wi": "WI-308",
+      "residual_map": "docs/specs/work-items/WI-308-residual-map.json"
+    },
+    "2026-04-27-global-improvements-from-opencode-review.md": {
+      "accepted_wi": "WI-319",
+      "residual_map": "docs/specs/work-items/WI-319-residual-map.json"
+    },
+    "2026-04-27-no-positional-role-selectors.md": {
+      "accepted_wi": "WI-307",
+      "residual_map": "docs/specs/work-items/WI-307-residual-map.json"
+    },
+    "2026-04-27-prove-old-path-fails-before-migrating.md": {
+      "accepted_wi": "WI-309",
+      "residual_map": "docs/specs/work-items/WI-309-residual-map.json"
+    },
+    "2026-04-28-blend-coreyhaines-marketing.md": {
+      "accepted_wi": "WI-315",
+      "residual_map": "docs/specs/work-items/WI-315-residual-map.json"
+    },
+    "2026-04-28-launch-knowledge-update.md": {
+      "accepted_wi": "WI-313",
+      "residual_map": "docs/specs/work-items/WI-313-residual-map.json"
+    },
+    "2026-04-28-prove-gap-exploitable-before-deploying-security-rule.md": {
+      "accepted_wi": "WI-308",
+      "residual_map": "docs/specs/work-items/WI-308-residual-map.json"
+    },
+    "2026-04-28-rls-deployment-order-by-caller-surface.md": {
+      "accepted_wi": "WI-308",
+      "residual_map": "docs/specs/work-items/WI-308-residual-map.json"
+    },
+    "2026-04-28-rls-derived-ownership-pattern.md": {
+      "accepted_wi": "WI-308",
+      "residual_map": "docs/specs/work-items/WI-308-residual-map.json"
+    },
+    "2026-04-29-blend-capacitor-skills.md": {
+      "accepted_wi": "WI-315",
+      "residual_map": "docs/specs/work-items/WI-315-residual-map.json"
+    },
+    "2026-04-29-completion-guard-historical-skip.md": {
+      "accepted_wi": "WI-312",
+      "residual_map": "docs/specs/work-items/WI-312-residual-map.json"
+    },
+    "2026-04-29-cross-system-flow-paradigm.md": {
+      "accepted_wi": "WI-309",
+      "residual_map": "docs/specs/work-items/WI-309-residual-map.json"
+    },
+    "2026-04-30-blend-gsd-2.md": {
+      "accepted_wi": "WI-315",
+      "residual_map": "docs/specs/work-items/WI-315-residual-map.json"
+    },
+    "2026-04-30-infra-project-support.md": {
+      "accepted_wi": "WI-316",
+      "residual_map": "docs/specs/work-items/WI-316-residual-map.json"
+    },
+    "2026-04-30-journey-execution-trace-validation.md": {
+      "accepted_wi": "WI-307",
+      "residual_map": "docs/specs/work-items/WI-307-residual-map.json"
+    },
+    "2026-04-30-journey-proposals-self-review.md": {
+      "accepted_wi": "WI-307",
+      "residual_map": "docs/specs/work-items/WI-307-residual-map.json"
+    },
+    "2026-04-30-journey-skills-contract-hardening.md": {
+      "accepted_wi": "WI-307",
+      "residual_map": "docs/specs/work-items/WI-307-residual-map.json"
+    },
+    "2026-05-01-competitive-awareness-gap.md": {
+      "accepted_wi": "WI-142",
+      "residual_map": "docs/specs/work-items/WI-142-residual-map.json"
+    },
+    "2026-05-04-session-audit-opencode-go-research.md": {
+      "accepted_wi": "WI-311",
+      "residual_map": "docs/specs/work-items/WI-311-residual-map.json"
+    },
+    "2026-05-05-evolution.md": {
+      "accepted_wi": "WI-305",
+      "residual_map": "docs/specs/work-items/WI-305-residual-map.json"
+    },
+    "2026-05-06-session-audit-catalog-skill.md": {
+      "accepted_wi": "WI-311",
+      "residual_map": "docs/specs/work-items/WI-311-residual-map.json"
+    },
+    "2026-05-06-session-audit-fix-phase.md": {
+      "accepted_wi": "WI-311",
+      "residual_map": "docs/specs/work-items/WI-311-residual-map.json"
+    },
+    "2026-05-08-end-to-end-execution-without-permission-checkpoints.md": {
+      "accepted_wi": "WI-198",
+      "residual_map": "docs/specs/work-items/WI-198-residual-map.json"
+    },
+    "2026-05-08-runtime-verification-must-not-delegate-to-user.md": {
+      "accepted_wi": "WI-197",
+      "residual_map": "docs/specs/work-items/WI-197-residual-map.json"
+    },
+    "2026-05-08-svc-doctor-consolidated-healthcheck.md": {
+      "accepted_wi": "WI-317",
+      "residual_map": "docs/specs/work-items/WI-317-residual-map.json"
+    },
+    "2026-05-09-bundle-grep-is-not-validation.md": {
+      "accepted_wi": "WI-199",
+      "residual_map": "docs/specs/work-items/WI-199-residual-map.json"
+    },
+    "2026-05-09-intelligent-intent-parsing.md": {
+      "accepted_wi": "WI-201",
+      "residual_map": "docs/specs/work-items/WI-201-residual-map.json"
+    },
+    "2026-05-09-journey-generator-must-detect-i18n-and-chrome-controls.md": {
+      "accepted_wi": "WI-307",
+      "residual_map": "docs/specs/work-items/WI-307-residual-map.json"
+    },
+    "2026-05-11-framework-improvement-feature-validation-closeout-ledger.md": {
+      "accepted_wi": "WI-305",
+      "residual_map": "docs/specs/work-items/WI-305-residual-map.json"
+    },
+    "2026-05-11-framework-improvement-provider-fidelity-for-ai-visuals.md": {
+      "accepted_wi": "WI-306",
+      "residual_map": "docs/specs/work-items/WI-306-residual-map.json"
+    },
+    "2026-05-17-framework-improvement-wave-closeout-validator.md": {
+      "accepted_wi": "WI-348",
+      "residual_map": "docs/specs/work-items/WI-348-residual-map.json"
+    },
+    "2026-05-02-lane-7-infra-mode-deepening.md": {
+      "deferred_until": null,
+      "backlog_wi": "WI-316",
+      "reason": "Existing unfinished infra lane/Knowledge Spine residual audit. Current infra routing has evolved beyond the old Lane7 numbering; WI-316 owns checking actual current routing, recall and replay requirements, then classifying residual gates. This records audit ownership, not implementation of all nine proposed gates or authorization to start infra work ahead of dedicated-session optimization.",
+      "prior_triage": {
+        "deferred_until": "2026-08-25",
+        "reason": "Imported from s7an salvage; needs dedicated Lane 7 proposal review before WI promotion. | re-triaged 2026-06-29: backlog-sequenced, flagged for individual triage by 2026-07-29",
+        "blocked_reason": "Beyond the 14-day defer window: imported/backlog evolution proposal awaiting a dedicated triage pass (re-deferred 2026-06-29, not abandoned)."
+      }
+    },
+    "2026-05-07-runtime-parity-gate-and-precheck-discipline.md": {
+      "deferred_until": null,
+      "backlog_wi": "WI-FW-DELIVERY-EVIDENCE-RESIDUALS-01",
+      "reason": "Explicit unfinished residual owner records the source-specific gaps, provenance limitations and acceptance evidence. Current framework WI368 is unrelated. No current runtime parity, canary, landing or default cutover is certified by this pointer; historical evidence is preserved.",
+      "prior_triage": {
+        "deferred_until": "2026-08-25",
+        "reason": "Imported from s7an salvage; needs dedicated framework-hardening triage before WI promotion. | re-triaged 2026-06-29: backlog-sequenced, flagged for individual triage by 2026-07-29",
+        "blocked_reason": "Beyond the 14-day defer window: imported/backlog evolution proposal awaiting a dedicated triage pass (re-deferred 2026-06-29, not abandoned)."
+      }
+    },
+    "2026-05-08-end-of-turn-summary-leads-with-shipped.md": {
+      "deferred_until": null,
+      "rejected_reason": "Reject the proposed mandatory Shipped block and per-skill propagation. The useful result-first communication principle is already represented by route-workflow closeout and rules/common/visualize-decisions.md (What I did before issues), and the current founder asks for less procedural overhead. A newly written file or filed issue must not be labelled shipped as though it were landed. Preserve this source as historical evidence; this disposition does not certify any past delivery.",
+      "prior_triage": {
+        "deferred_until": "2026-08-25",
+        "reason": "Imported from s7an salvage; needs output-protocol review before WI promotion. | re-triaged 2026-06-29: backlog-sequenced, flagged for individual triage by 2026-07-29",
+        "blocked_reason": "Beyond the 14-day defer window: imported/backlog evolution proposal awaiting a dedicated triage pass (re-deferred 2026-06-29, not abandoned)."
+      }
+    },
+    "2026-05-10-otel-cross-cluster-existing-nlb-extension.md": {
+      "deferred_until": null,
+      "backlog_wi": "WI-316",
+      "reason": "Existing unfinished infra Knowledge Spine activation owns this narrow content residual: current opentelemetry-collector CAPABILITIES documents generic NLB passthrough but does not establish existing-NLB sibling-listener reuse and ALPN selection. Verify current official behavior before adding that recipe. Historical product live evidence is not current validation, and no product infrastructure change is authorized by this backlog pointer.",
+      "prior_triage": {
+        "deferred_until": "2026-08-25",
+        "reason": "Imported from s7an salvage; needs OTel knowledge update triage before WI promotion. | re-triaged 2026-06-29: backlog-sequenced, flagged for individual triage by 2026-07-29",
+        "blocked_reason": "Beyond the 14-day defer window: imported/backlog evolution proposal awaiting a dedicated triage pass (re-deferred 2026-06-29, not abandoned)."
+      }
+    },
+    "2026-05-13-claude-legal-skills-addon.md": {
+      "deferred_until": null,
+      "backlog_wi": "WI-315",
+      "reason": "Existing unfinished external-addon consolidation owns evaluation of the legal addon/catalog and plan-capabilities recommendations. Extracted knowledge exists but does not prove addon installation or routing. Do not revive obsolete launch-strategy or insert mandatory legal steps into unrelated delivery. Any useful integration requires its own applicability review; no unavailable provider invocation is authorized.",
+      "prior_triage": {
+        "deferred_until": "2026-08-25",
+        "reason": "Needs launch/legal-addon triage before WI promotion. | re-triaged 2026-06-29: backlog-sequenced, flagged for individual triage by 2026-07-29",
+        "blocked_reason": "Beyond the 14-day defer window: imported/backlog evolution proposal awaiting a dedicated triage pass (re-deferred 2026-06-29, not abandoned)."
+      }
+    },
+    "2026-05-13-concurrent-session-collision-on-main.md": {
+      "accepted_wi": "WI-349",
+      "residual_map": "docs/specs/work-items/WI-349-residual-map.json"
+    },
+    "2026-05-13-mandatory-cross-model-review-loop.md": {
+      "deferred_until": null,
+      "rejected_reason": "Reject this obsolete six-round no-escape fallback-chain design. It conflicts with the current explicit owner-selected available routes and the three-round disposition cap in references/plan-review-protocol.md. Retain direct launcher evidence and truthful different-family review via scripts/run-external-review.mjs and existing provenance contracts. The current four-call incident remains unresolved under WI-FW-CLEAN-MAIN-FOLLOWUP-01; this rejection neither approves it nor waives review. Do not revive automatic Claude/Gemini/Kimi fallback or the historical bootstrap bypass.",
+      "prior_triage": {
+        "deferred_until": "2026-08-25",
+        "reason": "Needs review-loop architecture triage before WI promotion. | re-triaged 2026-06-29: backlog-sequenced, flagged for individual triage by 2026-07-29",
+        "blocked_reason": "Beyond the 14-day defer window: imported/backlog evolution proposal awaiting a dedicated triage pass (re-deferred 2026-06-29, not abandoned)."
+      }
+    },
+    "2026-05-13-multi-dev-multi-agent-operating-model.md": {
+      "deferred_until": null,
+      "rejected_reason": "Reject the proposed claim design: per-session refs/svc-claims/WI/session CAS plus a separate remote scan permits two different sessions to observe no claims then create distinct refs successfully. The proposed no-claim mutation escape is also incompatible with exact authority. Current durable repository leases/handover/delegation (WI-502) are not proof of cross-clone multi-developer coordination. That broader capability remains unimplemented/unowned and deferred under the founder priority; this record does not silently enable it.",
+      "prior_triage": {
+        "deferred_until": "2026-08-25",
+        "reason": "Needs multi-agent operating-model triage before WI promotion. | re-triaged 2026-06-29: backlog-sequenced, flagged for individual triage by 2026-07-29",
+        "blocked_reason": "Beyond the 14-day defer window: imported/backlog evolution proposal awaiting a dedicated triage pass (re-deferred 2026-06-29, not abandoned)."
+      }
+    },
+    "2026-05-16-route-workflow-research-trigger-gate.md": {
+      "deferred_until": null,
+      "backlog_wi": "WI-FW-DELIVERY-EVIDENCE-RESIDUALS-01",
+      "reason": "Dedicated unfinished residual audit names this source and its consequential requirements individually. Historical behavior/availability is not current proof; reproduce and deduplicate before bounded implementation. Ownership is not delivery certification or automatic dispatch. Current clean-main and UX acceptance remain separate.",
+      "prior_triage": {
+        "deferred_until": "2026-08-25",
+        "reason": "Needs route-workflow research gate architectural review. | re-triaged 2026-06-29: backlog-sequenced, flagged for individual triage by 2026-07-29",
+        "blocked_reason": "Beyond the 14-day defer window: imported/backlog evolution proposal awaiting a dedicated triage pass (re-deferred 2026-06-29, not abandoned)."
+      }
+    },
+    "2026-05-17-generic-data-access-control-delivery-guard.md": {
+      "deferred_until": null,
+      "backlog_wi": "WI-FW-DELIVERY-EVIDENCE-RESIDUALS-01",
+      "reason": "Dedicated unfinished residual audit names this source and its consequential requirements individually. Historical behavior/availability is not current proof; reproduce and deduplicate before bounded implementation. Ownership is not delivery certification or automatic dispatch. Current clean-main and UX acceptance remain separate.",
+      "prior_triage": {
+        "deferred_until": "2026-08-25",
+        "reason": "Needs generic data access control delivery guard architectural review. | re-triaged 2026-06-29: backlog-sequenced, flagged for individual triage by 2026-07-29",
+        "blocked_reason": "Beyond the 14-day defer window: imported/backlog evolution proposal awaiting a dedicated triage pass (re-deferred 2026-06-29, not abandoned)."
+      }
+    },
+    "2026-05-25-evolution.md": {
+      "deferred_until": null,
+      "rejected_reason": "Reject duplicate ignore-provisioning intake: templates/.gitignore.template, scripts/init-project-state.mjs envelope synchronization, onboard-repo ignore checks and validate-worktree-safety recovery guidance already exist. Do not create another template or force every legacy transient name into every project. The validator checks a core subset rather than every proposed line; this disposition rejects that blanket expansion instead of claiming exact implementation of the old recipe. Current task residue/evidence preservation remains owned by WI-FW-CLEAN-MAIN-FOLLOWUP-01.",
+      "prior_triage": {
+        "deferred_until": "2026-08-25",
+        "reason": "Imported evolution survey; its gitignore-hygiene slice (WI-FRAMEWORK-EVOLVE-GITIGNORE-HYGIENE) has landed/archived, the remainder is un-triaged. Re-triaged 2026-06-29 \u2014 needs per-item closure/triage by 2026-07-29.",
+        "blocked_reason": "Beyond the 14-day defer window: imported/backlog evolution proposal awaiting a dedicated triage pass (re-deferred 2026-06-29, not abandoned)."
+      }
+    },
+    "2026-05-29-framework-improvement-parallel-session-isolation.md": {
+      "rejected_reason": "Superseded by verified WI-351 and WI-352 session-isolation work; proposal remains as historical evidence until archived."
+    },
+    "2026-06-01-framework-improvement-feature-like-bugfix-product-questions.md": {
+      "deferred_until": null,
+      "rejected_reason": "Reject the proposed compulsory 20 customer plus20 system questions and mandatory companion regardless of consequential uncertainty. Preserve product-meaning escalation through current skills/diagnose-bug/SKILL.md and _shared/product-question-format.md: investigate actual spec/code conflicts, changed journey/AC/data meaning, meaningful alternatives and unresolved consequential decisions before dependent coding; reuse real owner resolutions. Current skill-judgment fixtures cover this decision contract. This rejects the quota-based design, not product reasoning, and does not certify the historical product WI332 repair.",
+      "prior_triage": {
+        "deferred_until": "2026-08-25",
+        "reason": "Backlog: needs a dedicated framework-lane triage pass. Re-triaged 2026-06-29 \u2014 revisit by 2026-07-29.",
+        "blocked_reason": "Beyond the 14-day defer window: imported/backlog evolution proposal awaiting a dedicated triage pass (re-deferred 2026-06-29, not abandoned)."
+      }
+    },
+    "2026-06-04-framework-improvement-interactive-control-contract-gate.md": {
+      "accepted_wi": "WI-332",
+      "residual_map": "docs/specs/work-items/WI-332-residual-map.json"
+    },
+    "2026-06-04-session-audit-active-intent-guard.md": {
+      "accepted_wi": "WI-354",
+      "residual_map": "docs/specs/work-items/WI-354-residual-map.json",
+      "note": "Implemented + VERIFIED as WI-354; formal closeout filed 2026-06-29."
+    },
+    "2026-06-05-blend-lucaspatiri-ugc-viral.md": {
+      "deferred_until": null,
+      "rejected_reason": "Reject duplicate blend intake: the three selected patterns are already recorded in references/blend-registry.json (lucaspatiri-ugc-viral) and attributed in NOTICES. Preserve the original source analysis. The separately re-evaluated ideas retain their own proposal statuses; this is not a claim that those other proposals or every target behavior is implemented.",
+      "prior_triage": {
+        "deferred_until": "2026-08-25",
+        "reason": "Awaiting blend review and implementation planning. | re-triaged 2026-06-29: backlog-sequenced, flagged for individual triage by 2026-07-29",
+        "blocked_reason": "Beyond the 14-day defer window: imported/backlog evolution proposal awaiting a dedicated triage pass (re-deferred 2026-06-29, not abandoned)."
+      }
+    },
+    "2026-06-07-port-headless-claude-p-to-subagent-transport.md": {
+      "deferred_until": null,
+      "reason": "Existing owner remains frozen by explicit user directive; do not auto-dispatch. Acceptance records backlog ownership, not permission to execute or completion.",
+      "prior_triage": {
+        "deferred_until": "2026-08-25",
+        "reason": "Filed as WI-374 (frozen \u2014 do-not-auto-dispatch by user directive); deferred 2026-06-29, tracked by that WI pending its unfreeze or a reject decision \u2014 NOT loose/un-triaged backlog.",
+        "blocked_reason": "Beyond the 14-day defer window: tracked by a WI, pending formal proposal closeout \u2014 re-deferred 2026-06-29."
+      },
+      "backlog_wi": "WI-374"
+    },
+    "2026-07-14-change-impact-triad-universal-gate.md": {
+      "deferred_until": null,
+      "reason": "Existing program owns implementation and remaining promotion evidence. Proposal acceptance does not recertify release.",
+      "prior_triage": {
+        "deferred_until": "2026-08-25",
+        "reason": "Tracked by WI-481; defer proposal archive and residual-map closeout until the five-leaf implementation program is fully verified."
+      },
+      "rejected_reason": "Reject duplicate implementation intake: the canonical WI-481 explicitly owns this proposal and records VERIFIED status. Retain the proposal as historical evidence; any current reproduced defect is separate recovery work, not a reason to reopen the whole original proposal. This disposition does not fabricate fresh historical gate evidence.",
+      "historical_wi": "WI-481"
+    },
+    "2026-07-14-codex-execution-integrity.md": {
+      "deferred_until": null,
+      "reason": "Existing work item explicitly cites this proposal. Retain its program WI-481 closeout obligations; no new execution claim.",
+      "prior_triage": {
+        "deferred_until": "2026-08-25",
+        "reason": "Implemented by WI-485, but formal proposal archive, residual map, and program promotion closeout remain coupled to the WI-481 program."
+      },
+      "rejected_reason": "Reject duplicate implementation intake: the canonical WI-485 explicitly owns this proposal and records VERIFIED status. Retain the proposal as historical evidence; any current reproduced defect is separate recovery work, not a reason to reopen the whole original proposal. This disposition does not fabricate fresh historical gate evidence.",
+      "historical_wi": "WI-485"
+    },
+    "2026-07-14-session-audit-codex-foreign-stop-and-ghost-skill.md": {
+      "deferred_until": null,
+      "reason": "Existing work item cites this incident and depends on WI-485 containment. Acceptance records this ownership, not a new incident replay.",
+      "prior_triage": {
+        "deferred_until": "2026-08-25",
+        "reason": "Evidence feeds WI-484 and WI-485; defer formal archive and residual mapping until the dependent WI-481 program closes."
+      },
+      "rejected_reason": "Reject duplicate implementation intake: the canonical WI-484 explicitly owns this proposal and records VERIFIED status. Retain the proposal as historical evidence; any current reproduced defect is separate recovery work, not a reason to reopen the whole original proposal. This disposition does not fabricate fresh historical gate evidence.",
+      "historical_wi": "WI-484"
+    },
+    "2026-08-02-one-lane-framework.md": {
+      "accepted_wi": "WI-512",
+      "reason": "ACCEPTED and in flight: implemented as WI-512 (batches B1-B4) on branch wi512-one-lane-batch. Sections 3e, 4c hook enforcement and physical quick-fix deletion are explicitly NOT built with reasons recorded in WI-512.",
+      "residual_map": "docs/specs/work-items/WI-512-residual-map.json"
+    },
+    "2026-07-24-session-019f8cd3-audit-and-svc-framework-fixes.md": {
+      "accepted_wi": "WI-512",
+      "reason": "Source of docs/specs/plans/FRAMEWORK_OPTIMIZATION_PLAN.md (PR #182). The 11 genuinely-unimplemented OPT items are being executed as WI-512 batch B3; OPT-06/09/10/15 already landed or carry stale premises and OPT-14 has a false premise (target script does not exist under that name).",
+      "residual_map": "docs/specs/work-items/WI-512-residual-map.json"
+    },
+    "2026-08-10-framework-improvement-agy-chain-receipts.md": {
+      "accepted_wi": "WI-529",
+      "residual_map": "docs/specs/work-items/WI-529-residual-map.json"
+    },
+    "2026-08-10-framework-improvement-codex-launcher-wiring.md": {
+      "accepted_wi": "WI-529",
+      "residual_map": "docs/specs/work-items/WI-529-residual-map.json"
+    },
+    "2026-08-10-framework-improvement-skills-package-layout.md": {
+      "accepted_wi": "WI-530",
+      "residual_map": "docs/specs/work-items/WI-530-residual-map.json"
+    },
+    "2026-08-10-wi368-execution-controller-v2-implementation-prompt.md": {
+      "deferred_until": null,
+      "rejected_reason": "Reject obsolete one-time execution instructions prescribing bypass/bruteforce mode and postponing all construction tests. Preserve the prompt as history, not current execution authority. The substantive controller proposal now has explicit canonical residual ownership; no accepted_wi or release claim is inferred from the prompt.",
+      "prior_triage": {
+        "deferred_until": "2026-08-25",
+        "reason": "Implementation is locally verified on the proposal branch; formal parent-WI and governed landing provenance must be reconciled before acceptance."
+      }
+    },
+    "2026-08-10-wi368-execution-controller-v2.md": {
+      "deferred_until": null,
+      "backlog_wi": "WI-FW-CONTROLLER-CUTOVER-RESIDUALS-01",
+      "reason": "Explicit unfinished residual owner records the source-specific gaps, provenance limitations and acceptance evidence. Current framework WI368 is unrelated. No current runtime parity, canary, landing or default cutover is certified by this pointer; historical evidence is preserved.",
+      "prior_triage": {
+        "deferred_until": "2026-08-25",
+        "reason": "Implementation is locally verified on the proposal branch; formal parent-WI and governed landing provenance must be reconciled before acceptance."
+      }
+    },
+    "2026-07-21-session-audit-wi-472-reconcile-backlog.md": {
+      "status": "archived",
+      "archived_at": "2026-08-04",
+      "archived_to": "proposals/done/",
+      "reason": "Closed by WI-472, status VERIFIED-L3 in docs/specs/work-items/INDEX.md. Nothing actionable remained.",
+      "closed_by": "WI-512 landing hygiene"
+    },
+    "2026-08-15-evolution-marketplace-transition.md": {
+      "accepted_wi": "WI-541",
+      "residual_map": "docs/specs/work-items/WI-541-residual-map.json",
+      "reason": "The content-deduplicated transition program is the authoritative WI-541 scope ledger."
+    },
+    "2026-08-15-framework-improvement-mandatory-chain-graph-parity.md": {
+      "accepted_wi": "WI-541",
+      "residual_map": "docs/specs/work-items/WI-541-residual-map.json",
+      "reason": "The false-green graph defect is implemented as WI-541 T02."
+    },
+    "2026-08-22-framework-improvement-capability-scoped-plugin-mcp-startup.md": {
+      "deferred_until": null,
+      "backlog_wi": "WI-FW-CAPABILITY-MCP-STARTUP-RESIDUALS-01",
+      "reason": "Dedicated unfinished companion owns AC01\u201308 explicitly; WI551 only owns host/model dispatch. No scoped MCP capability, live replay, OAuth suppression or cleanup completion is implied. Preserve task-only cleanup and available-route restrictions.",
+      "prior_triage": {
+        "reason": "Track startup capability scoping with the existing dispatch resolver backlog; this is not a completion claim.",
+        "backlog_wi": "WI-551"
+      }
+    },
+    "2026-08-17-framework-improvement-autonomous-restart-boundary-continuation.md": {
+      "accepted_wi": "WI-552",
+      "residual_map": "docs/specs/work-items/WI-552-residual-map.json"
+    },
+    "2026-08-17-framework-improvement-native-host-dispatch-policy.md": {
+      "accepted_wi": "WI-551",
+      "residual_map": "docs/specs/work-items/WI-551-residual-map.json"
+    },
+    "2026-08-17-framework-improvement-risk-triggered-plan-exec-contracts.md": {
+      "accepted_wi": "WI-553",
+      "residual_map": "docs/specs/work-items/WI-553-residual-map.json"
+    },
+    "2026-08-21-framework-improvement-final-sha-mandatory-skill-coverage.md": {
+      "accepted_wi": "WI-556",
+      "residual_map": "docs/specs/work-items/WI-556-residual-map.json"
+    },
+    "2026-08-21-framework-improvement-consumer-retroactive-attestation.md": {
+      "accepted_wi": "WI-555",
+      "residual_map": "docs/specs/work-items/WI-555-residual-map.json"
+    },
+    "2026-08-26-framework-docs-audit-findings.md": {
+      "reason": "Current follow-up owns evidence and metadata reconciliation. Historical claims below are retained, not recertified; no missing historical WI or execution evidence is fabricated.",
+      "backlog_wi": "WI-FW-CLEAN-MAIN-FOLLOWUP-01"
+    },
+    "2026-08-26-framework-improvement-advisor-knowledge.md": {
+      "reason": "Current follow-up owns evidence and metadata reconciliation. Historical claims below are retained, not recertified; no missing historical WI or execution evidence is fabricated.",
+      "backlog_wi": "WI-FW-CLEAN-MAIN-FOLLOWUP-01"
+    },
+    "2026-08-26-framework-improvement-codex-svc-host-adhoc-dispatch.md": {
+      "reason": "Current follow-up owns evidence and metadata reconciliation. Historical claims below are retained, not recertified; no missing historical WI or execution evidence is fabricated.",
+      "backlog_wi": "WI-FW-CLEAN-MAIN-FOLLOWUP-01"
+    },
+    "2026-08-26-framework-improvement-owner-lease-24h-slide-renew.md": {
+      "reason": "Current follow-up owns evidence and metadata reconciliation. Historical claims below are retained, not recertified; no missing historical WI or execution evidence is fabricated.",
+      "backlog_wi": "WI-FW-CLEAN-MAIN-FOLLOWUP-01"
+    },
+    "2026-08-30-framework-improvement-configured-reviewer-transports.md": {
+      "reason": "Existing transport work remains owned by WI-565; current exact-route review evidence is required before completion.",
+      "backlog_wi": "WI-565"
+    },
+    "2026-05-12-autonomous-discuss-phase-with-adversarial-review.md": {
+      "deferred_until": null,
+      "reason": "Existing backlog WI and promotion ledger explicitly own this proposal; dependency WI341 remains open. This is ownership reconciliation, not approval of a new mandatory reviewer or completed implementation.",
+      "prior_triage": {
+        "source": "inline proposal metadata, retained unchanged"
+      },
+      "backlog_wi": "WI-342"
+    },
+    "2026-05-12-pre-wi-promotion-compression-gate.md": {
+      "deferred_until": null,
+      "reason": "Existing backlog WI and promotion ledger own this gate proposal. Preserve its backlog state; no gate installation or completion is claimed.",
+      "prior_triage": {
+        "source": "inline proposal metadata, retained unchanged"
+      },
+      "backlog_wi": "WI-341"
+    },
+    "2026-07-13-blend-coreyhaines-v2.6.0.md": {
+      "deferred_until": null,
+      "reason": "Implementation ownership is already split across WI477(addon), WI478(creative doctrine), WI479(loop contract), WI480(staleness). WI477 is the primary implementation pointer, not proof that all leaves shipped. Fleet work stays deferred in the current founder scope.",
+      "prior_triage": {
+        "source": "inline proposal metadata, retained unchanged"
+      },
+      "backlog_wi": "WI-477"
+    },
+    "2026-05-12-blend-gsd-read-before-edit.md": {
+      "deferred_until": null,
+      "rejected_reason": "Reject the stateful full-file-read prerequisite hook. A session cache cannot prove current bytes after another writer changes them, while requiring complete reads rejects valid targeted inspections and deterministic generated edits and increases context load. The proposal itself documents brittle shell-reader recognition. Preserve evidence-grounded inspection and exact patch applicability; add recovery only for a reproduced failure through existing helpers. No new read-cache ledger or universal read blocker belongs in the current optimization program.",
+      "prior_triage": {
+        "source": "Unmodified inline proposal metadata; no previous registry entry."
+      }
+    },
+    "2026-06-20-stale-branch-read-guard-and-branch-divergence-check.md": {
+      "deferred_until": null,
+      "rejected_reason": "Reject this new per-read hook, canonical-ref registry and arbitrary50-commit warning design. Canonical main is not necessarily the deployed revision, and legitimate worktree reads should not incur a second inferred-authority registry. Preserve identification of the actual deployed or tested revision and config consumer before diagnosis/promotion through existing verify-state-before-context and live verification contracts. Current clean-main source/install verification is owned by WI-FW-CLEAN-MAIN-FOLLOWUP-01. This does not claim the historical product incidents were fixed or authorize switching active product checkouts.",
+      "prior_triage": {
+        "source": "Unmodified inline proposal metadata; no previous registry entry."
+      }
+    },
+    "2026-05-11-deep-dive-research-protocol-standard.md": {
+      "deferred_until": null,
+      "rejected_reason": "Reject compulsory sampling of2-3largest files in every directory and fixed three-tier output for every analysis. File size is not dependency relevance; hashes identify source bytes but do not prove comprehension or eliminate hallucination. Retain code-backed claims, exact provenance and tracing relevant implementation/test dependencies through the existing research and knowledge protocols. Expand the census when claiming repository-wide coverage, rather than charging every bounded question for a whole-repo sweep. The historical90percent claim is not treated as a measured framework-wide rate.",
+      "prior_triage": {
+        "source": "Unmodified inline proposal metadata; no previous registry entry."
+      }
+    },
+    "2026-07-15-extraction-skill-absence-detection.md": {
+      "deferred_until": null,
+      "rejected_reason": "Reject blanket sibling-skill rollout requiring a blind independent model and a new mandatory gap_check ledger for every inventory completion. The current program explicitly excludes new mandatory ledgers. Retain the substantive invariant: completeness needs a declared mechanically derived denominator, explicit gaps/skips, and actual code/runtime evidence at the appropriate scope. Use existing plan claims, validators and canonical artifacts, and request independent review when applicable to the real gate. This does not claim sibling skills have been comprehensively upgraded or retract the historical marketing absence finding.",
+      "prior_triage": {
+        "source": "Unmodified inline proposal metadata; no previous registry entry."
+      }
+    },
+    "2026-05-12-blend-gsd-validation-routing.md": {
+      "deferred_until": null,
+      "backlog_wi": "WI-FW-DELIVERY-EVIDENCE-RESIDUALS-01",
+      "reason": "Dedicated unfinished residual audit names this source and its consequential requirements individually. Historical behavior/availability is not current proof; reproduce and deduplicate before bounded implementation. Ownership is not delivery certification or automatic dispatch. Current clean-main and UX acceptance remain separate.",
+      "prior_triage": {
+        "source": "Unmodified inline proposal metadata; no previous registry entry."
+      }
+    },
+    "2026-05-12-shift-left-concern-routing.md": {
+      "deferred_until": null,
+      "backlog_wi": "WI-FW-DELIVERY-EVIDENCE-RESIDUALS-01",
+      "reason": "Dedicated unfinished residual audit names this source and its consequential requirements individually. Historical behavior/availability is not current proof; reproduce and deduplicate before bounded implementation. Ownership is not delivery certification or automatic dispatch. Current clean-main and UX acceptance remain separate.",
+      "prior_triage": {
+        "source": "Unmodified inline proposal metadata; no previous registry entry."
+      }
+    },
+    "2026-06-15-evolution-landing-audit.md": {
+      "deferred_until": null,
+      "backlog_wi": "WI-FW-DELIVERY-EVIDENCE-RESIDUALS-01",
+      "reason": "Dedicated unfinished residual audit names this source and its consequential requirements individually. Historical behavior/availability is not current proof; reproduce and deduplicate before bounded implementation. Ownership is not delivery certification or automatic dispatch. Current clean-main and UX acceptance remain separate.",
+      "prior_triage": {
+        "source": "Unmodified inline proposal metadata; no previous registry entry."
+      }
+    },
+    "2026-06-19-evolution.md": {
+      "deferred_until": null,
+      "backlog_wi": "WI-FW-DESIGN-INTEGRATIONS-RESIDUALS-01",
+      "reason": "Dedicated unfinished residual audit names this source and its consequential requirements individually. Historical behavior/availability is not current proof; reproduce and deduplicate before bounded implementation. Ownership is not delivery certification or automatic dispatch. Current clean-main and UX acceptance remain separate.",
+      "prior_triage": {
+        "source": "Unmodified inline proposal metadata; no previous registry entry."
+      }
+    },
+    "2026-06-20-evolution.md": {
+      "deferred_until": null,
+      "rejected_reason": "Reject the proposed mandatory visual-status productionization and per-step regeneration/publication expansion: the founder explicitly excludes a new dashboard from current optimization. Existing optional render-status remains available. The useful stale-graph concern is handled through existing graph/receipt reconciliation and hygiene validators; this does not claim all thirteen historical records were correctly completed or resurrect a stale completion claim. No shareable-page publishing or Claude invocation is authorized.",
+      "prior_triage": {
+        "source": "Unmodified inline proposal metadata; no previous registry entry."
+      }
+    }
+  }
+}

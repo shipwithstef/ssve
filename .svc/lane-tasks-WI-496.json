@@ -1,0 +1,354 @@
+{
+  "schema_version": 1,
+  "wi": "WI-496",
+  "lane": "framework",
+  "status": "in_progress",
+  "created": "2026-07-18T04:22:00.417Z",
+  "delivery_tier": "full",
+  "owner_session": "92cbd820-4813-42d6-b12d-1a70e09f4168",
+  "change_impact": {
+    "tier": "infra-path",
+    "reasons": [
+      "hooks/codex enforcement path",
+      "governed-mutation decision boundary"
+    ],
+    "triad_owner_task": 2
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "route-workflow",
+      "subject": "route WI-496 lean profile; diagnosis folded into intake (live repro logged in pipeline-decisions)",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-07-18T04:24:18.027Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-07-18T04:24:18.079Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-496.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-07-18T04:24:18.123Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-496.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-07-18T04:24:18.167Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-496.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-07-18T04:24:18.209Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-496.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-07-18T04:24:18.262Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-496.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-07-18T04:24:18.311Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-496.json"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/specs/work-items/WI-496.md"
+      },
+      "completed_at": "2026-07-18T04:24:18.386Z"
+    },
+    {
+      "id": 9,
+      "status": "skipped",
+      "skill": "design-tech",
+      "subject": "technical design",
+      "skip_reason": "Bugfix on an existing WI-494 mechanism; the design IS the WI-494 reviewer's own R2-F001 recommendation (absolute canonical path binding) applied host-aware via the established WI-487 import.meta.url trusted-source pattern already in this file. No new architecture, data model, or dependency. Registry-backed: bugfix-lane design-tech skip when fix surface reuses an existing reviewed mechanism.",
+      "blocked_by": [
+        1
+      ]
+    },
+    {
+      "id": 2,
+      "status": "completed",
+      "skill": "plan-changeset",
+      "subject": "compact manifest: dual-canonical script binding + repo-aware recovery + ISB fixtures",
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-07-18T04:26:29.118Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-07-18T04:26:29.165Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-18-wi496-installed-script-binding/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-07-18T04:26:29.200Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-18-wi496-installed-script-binding/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-07-18T04:26:29.243Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-18-wi496-installed-script-binding/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-07-18T04:26:29.277Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-18-wi496-installed-script-binding/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-07-18T04:26:29.318Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-18-wi496-installed-script-binding/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-07-18T04:26:29.351Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-18-wi496-installed-script-binding/manifest.md"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-07-18-wi496-installed-script-binding/manifest.md"
+      },
+      "completed_at": "2026-07-18T04:26:29.401Z"
+    },
+    {
+      "id": 3,
+      "status": "completed",
+      "skill": "review-plan",
+      "subject": "one adversarial round, same-round disposition (WI-491 cap applies)",
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-07-18T04:26:29.431Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-07-18T04:40:42.813Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-18-wi496-installed-script-binding/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-07-18T04:40:42.848Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-18-wi496-installed-script-binding/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-07-18T04:40:42.887Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-18-wi496-installed-script-binding/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-07-18T04:40:42.925Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-18-wi496-installed-script-binding/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-07-18T04:40:42.962Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-18-wi496-installed-script-binding/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-18T04:40:42.997Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-18-wi496-installed-script-binding/review-log.yaml"
+              }
+            ]
+          }
+        ],
+        "output_artifact": "docs/plans/2026-07-18-wi496-installed-script-binding/review-log.yaml"
+      },
+      "completed_at": "2026-07-18T04:40:43.048Z"
+    },
+    {
+      "id": 4,
+      "status": "in_progress",
+      "skill": "execute-changeset",
+      "subject": "implement ISB-01..ISB-05 inline; diff frozen to enforcer+fixtures",
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-07-18T04:42:25.805Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-07-18T05:05:50.669Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/impact-triad/WI-496/proof-codex-integrity.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-07-18T05:05:50.702Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/impact-triad/WI-496/proof-codex-integrity.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-07-18T05:05:50.732Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/impact-triad/WI-496/proof-codex-integrity.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-07-18T05:05:50.763Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/impact-triad/WI-496/proof-codex-integrity.log"
+              }
+            ]
+          }
+        ],
+        "output_artifact": ".svc/impact-triad/WI-496/proof-codex-integrity.log"
+      }
+    },
+    {
+      "id": 5,
+      "status": "pending",
+      "skill": "review-exec",
+      "subject": "G6 one round over frozen diff",
+      "blocked_by": [
+        4
+      ]
+    },
+    {
+      "id": 6,
+      "status": "pending",
+      "skill": "audit-implementation",
+      "subject": "G5: ISB ACs + no bypass via third location",
+      "blocked_by": [
+        5
+      ]
+    },
+    {
+      "id": 7,
+      "status": "pending",
+      "skill": "land-changeset",
+      "subject": "push, PR, squash-merge, re-emit notes on merge SHA",
+      "blocked_by": [
+        6
+      ]
+    },
+    {
+      "id": 8,
+      "status": "pending",
+      "skill": "verify-promotion",
+      "subject": "G7: example-marketplace bootstraps under restored guard; promoted tier-1 green; restore ~/.codex/hooks.json",
+      "blocked_by": [
+        7
+      ]
+    }
+  ]
+}

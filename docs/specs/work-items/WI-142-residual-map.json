@@ -1,0 +1,80 @@
+{
+  "schema": 1,
+  "wi": "WI-142",
+  "source_proposals": [
+    "proposals/done/2026-05-01-competitive-awareness-gap.md"
+  ],
+  "status": "implemented-with-related-coverage",
+  "coverage": [
+    {
+      "source_proposal": "proposals/done/2026-05-01-competitive-awareness-gap.md",
+      "proposal_item": "analyze-competitors must do live deep research, including earn mechanism, enrollment, merchant cost, POS integrations, fraud prevention, and complaints",
+      "status": "covered",
+      "owner_wi": "WI-142",
+      "evidence": [
+        "docs/specs/work-items/WI-140-competitive-awareness-deep-research.md",
+        "analyze-competitors/SKILL.md",
+        "test-framework/evals/tier-1/validate-competitor-analysis-schema.sh",
+        "test-framework/evals/tier-1/validate-competitor-analysis-freshness.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-01-competitive-awareness-gap.md",
+      "proposal_item": "validate-feature and write-spec must include competitive/industry grounding and block unsupported divergence without compensating rationale",
+      "status": "covered",
+      "owner_wi": "WI-142",
+      "evidence": [
+        "validate-feature/SKILL.md",
+        "write-spec/SKILL.md",
+        "scripts/gates/competitive.mjs",
+        "test-framework/evals/tier-1/validate-feature-competitive-cross-reference.sh",
+        "test-framework/evals/tier-1/validate-industry-grounding-section.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-01-competitive-awareness-gap.md",
+      "proposal_item": "competitive monitoring must refresh stale competitor knowledge out of band",
+      "status": "covered",
+      "owner_wi": "WI-143",
+      "evidence": [
+        "docs/specs/work-items/WI-143.md",
+        "refresh-competitors/SKILL.md",
+        "test-framework/evals/tier-1/validate-competitor-floor.sh",
+        "test-framework/evals/tier-1/validate-competitor-analysis-freshness.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-01-competitive-awareness-gap.md",
+      "proposal_item": "receipt scanning or other missing-capability workarounds must be framed as compensating controls with replacement path",
+      "status": "covered",
+      "owner_wi": "WI-142",
+      "evidence": [
+        "write-spec/SKILL.md",
+        "design-tech/SKILL.md",
+        "references/templates/compensating-control.md",
+        "test-framework/evals/tier-1/validate-spec-compensating-control.sh"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-01-competitive-awareness-gap.md",
+      "proposal_item": "research and advisory answers should surface competitive context automatically",
+      "status": "covered",
+      "owner_wi": "WI-142",
+      "evidence": [
+        "research/SKILL.md",
+        "svc-advisor/SKILL.md",
+        "references/templates/competitive-context-block.md"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-01-competitive-awareness-gap.md",
+      "proposal_item": "retroactively audit Example Marketplace receipt/enrollment/verification WIs after framework promotion",
+      "status": "invalid",
+      "evidence": [
+        "docs/specs/work-items/WI-140-competitive-awareness-deep-research.md",
+        "proposals/done/2026-05-01-competitive-awareness-gap.md"
+      ],
+      "note": "This is project-repo follow-up, not a framework-repo deliverable. The framework side records the dependency queue but cannot close Example Marketplace WIs here."
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+review_log:
+  wi: WI-370
+  date: 2026-06-07
+  tier1: { exit: 0 }
+  tier2_attempt: { reviewer: codex, delivery_failure: "empty output (6th corruption) — straight to gemini per protocol" }
+  tier2_effective:
+    reviewer: gemini
+    rubric_score: 95
+    findings:
+      - { id: safe-command-access, severity: high, resolution: "ACCEPT — optional chaining in migration filter" }
+      - { id: empty-matcher-removal, severity: high, resolution: "ACCEPT — two-step filter (inner hooks then empty parents)" }
+      - { id: python-syntax-error-in-validator, severity: medium, resolution: "REJECT w/ citation — the shipped q helper yields (matcher,h) tuples: cmds=[(r.get('matcher',''),h) for r ... for h ...]; 'for _,h in cmds' is correct (WI-359 validator, 19/19 green)" }
+    verdict: approve
+  terminal_state: APPROVED

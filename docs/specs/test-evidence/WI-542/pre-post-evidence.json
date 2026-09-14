@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "acceptance_critical": true,
+  "selected_proof": {
+    "id": "wi-542-session-start-self-heal",
+    "command": "bash test-framework/evals/tier-1/validate-session-start-self-heal.sh",
+    "target": "bugfix-wi-542-grok-sessionstart-healthcheck worktree",
+    "environment": "hermetic isolated HOME fixtures; session IDs unset except claim tests"
+  },
+  "pre": {
+    "status": "fail",
+    "evidence": "docs/specs/bugfix/wi-542-grok-sessionstart-healthcheck-brief.md replay: 11 false-missing /.grok/... paths, self-heal, elapsed=14.41s"
+  },
+  "post": {
+    "status": "pass",
+    "command": "bash test-framework/evals/tier-1/validate-session-start-self-heal.sh",
+    "target": "bugfix-wi-542-grok-sessionstart-healthcheck worktree",
+    "environment": "hermetic isolated HOME fixtures; session IDs unset except claim tests",
+    "evidence": "validate-session-start-self-heal.sh 10 passed, 0 failed (T1–T10 including $HOME/ and parallel claim)"
+  },
+  "comparison": "fixed-by-change",
+  "iterations": [
+    {
+      "iteration": 1,
+      "fix_batch": "Tokenizer, ~/$HOME expand, atomic 0700 session claim, lossless Grok wirer, $HOME fixtures.",
+      "classification": "fixed-by-change",
+      "evidence": "validate-session-start-self-heal.sh PASS; validate-grok-hook-toml-roundtrip.sh 22 passed"
+    }
+  ],
+  "changed_signals": [
+    {
+      "signal": "Present portable ~/.host/skills/hooks/foo.mjs changed from missing=true (old regex) to missing=[] (new parser).",
+      "classification": "fixed-by-change",
+      "acceptance_critical": true
+    },
+    {
+      "signal": "Healthy SVC_HOST=grok replay changed from self-heal 14s to silent <1s.",
+      "classification": "fixed-by-change",
+      "acceptance_critical": true
+    },
+    {
+      "signal": "grok inspect session_start grok-home healthcheck count changed from 0 to 1; Claude-compat remains 1.",
+      "classification": "fixed-by-change",
+      "acceptance_critical": true
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "stamped_at": "edc2819f0bb9ccfdb5246478917ba01cdc0f0584",
+  "imports": {
+    "docs/plans/2026-08-17-wi548-host-parity-plan/manifest.md": [],
+    "docs/specs/architecture/wi-548-contract-map.md": [],
+    "docs/specs/architecture/wi-548-reconciliation.md": [],
+    "docs/specs/work-items/WI-548.md": [],
+    "docs/specs/work-items/WI-549.md": [],
+    "docs/specs/work-items/WI-550.md": [],
+    "docs/specs/work-items/WI-551.md": [],
+    "docs/specs/work-items/WI-552.md": [],
+    "docs/specs/work-items/WI-553.md": [],
+    "hooks/svc-task-completion-guard.sh": [
+      "fs",
+      "node:child_process",
+      "node:fs",
+      "node:path",
+      "node:url",
+      "path"
+    ],
+    "scripts/check-chain-receipts.mjs": [
+      "./derive-receipt-tier.mjs",
+      "./lib/cognitive-family.mjs",
+      "./lib/history-epoch.mjs",
+      "./lib/normalize-ac-table.mjs",
+      "./lib/reviewer-evidence.mjs",
+      "./lib/skill-coverage.mjs",
+      "./state-io.mjs",
+      "node:child_process",
+      "node:crypto",
+      "node:fs",
+      "node:os",
+      "node:path",
+      "node:url"
+    ],
+    "scripts/emit-receipt.mjs": [
+      "./lib/cognitive-family.mjs",
+      "./lib/reviewer-evidence.mjs",
+      "./state-io.mjs",
+      "./state-lock.mjs",
+      "node:child_process",
+      "node:crypto",
+      "node:fs",
+      "node:os",
+      "node:path",
+      "node:url"
+    ],
+    "scripts/resolve-adversarial-reviewer.sh": [
+      "fs"
+    ],
+    "scripts/run-external-review.mjs": [
+      "../hooks/lib/wi-id.mjs",
+      "./lib/external-review-provenance.mjs",
+      "./lib/review-evidence-store.mjs",
+      "./lib/review-report-recovery.mjs",
+      "./lib/reviewer-resources.mjs",
+      "./review-topology-v2.mjs",
+      "node:child_process",
+      "node:crypto",
+      "node:fs",
+      "node:os",
+      "node:path",
+      "node:process",
+      "node:url"
+    ],
+    "scripts/svc-reconcile.mjs": [
+      "./lib/chain-policy.mjs",
+      "./state-io.mjs",
+      "node:fs",
+      "node:path",
+      "node:url"
+    ]
+  }
+}

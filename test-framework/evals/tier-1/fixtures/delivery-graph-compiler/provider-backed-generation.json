@@ -1,0 +1,10 @@
+{
+  "wi": "WI-FIXTURE-PROVIDER",
+  "user_intent": "Generate and save AI images through the named product provider",
+  "repo_mode": "convert",
+  "change_type": "feature",
+  "lane": "brownfield-feature",
+  "delivery_mode": "end_to_end",
+  "risk_flags": ["browser-visible", "user-facing", "provider-backed", "generated-content", "ai-generation", "saved-outcome"],
+  "platform_contracts": []
+}

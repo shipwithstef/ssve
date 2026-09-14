@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://serious-vibe-coding.local/schemas/authority-handover-receipt.schema.json",
+  "title": "SVC authority handover or recovery receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "receipt_id", "kind", "lease_id", "repo_id", "wi",
+    "old_controller_principal", "new_controller_principal", "old_generation",
+    "new_generation", "evidence", "completed_at"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "receipt_id": { "type": "string", "format": "uuid" },
+    "kind": { "enum": ["handover", "explicit_takeover", "recovery"] },
+    "lease_id": { "type": "string", "format": "uuid" },
+    "repo_id": { "type": "string" },
+    "wi": { "type": "string" },
+    "old_controller_principal": { "type": "string" },
+    "new_controller_principal": { "type": "string" },
+    "old_generation": { "type": "integer", "minimum": 1 },
+    "new_generation": { "type": "integer", "minimum": 2 },
+    "evidence": { "type": "object" },
+    "completed_at": { "type": "string", "format": "date-time" }
+  }
+}

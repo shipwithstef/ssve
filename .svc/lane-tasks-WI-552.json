@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "wi": "WI-552",
+  "lane": "framework",
+  "status": "pending",
+  "created": "2026-08-18T04:16:59.362Z",
+  "tasks": [
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "execute-changeset",
+      "subject": "Autonomous restart-boundary continuation: hash-bound baton lifecycle, WI-551 verify.restart role resolution, phase-gated continuation children, host fresh_session_launch capability wiring",
+      "affected_files": [
+        "schemas/continuation-baton.schema.json",
+        "schemas/continuation-result.schema.json",
+        "scripts/resolve-continuation.mjs",
+        "scripts/resolve-dispatch.mjs",
+        "hooks/svc-continuation-phase-guard.mjs",
+        "hooks/hooks.json",
+        "provision/hosts/antigravity.json",
+        "provision/hosts/claude.json",
+        "provision/hosts/codex.json",
+        "provision/hosts/cursor.json",
+        "provision/hosts/gemini.json",
+        "provision/hosts/grok.json",
+        "provision/hosts/kimi.json",
+        "provision/hosts/mimo-code.json",
+        "provision/hosts/opencode.json",
+        "skills/land-changeset/SKILL.md",
+        "skills/verify-promotion/SKILL.md",
+        "scripts/select-tier1-validators-v2.mjs",
+        ".svc/perf-baseline.json",
+        ".gitignore",
+        "test-framework/evals/tier-1/validate-continuation-lifecycle-wi552.mjs",
+        "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs"
+      ],
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-08-18T05:08:28.382Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-08-18T08:31:54Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-08-17-wi548-host-parity-plan/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-08-18T08:31:54Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "scripts/svc-migrate-install.mjs"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-08-18T08:31:54Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "test-framework/evals/tier-1/validate-all-host-install-migration.sh"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-08-18T08:31:54Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-552.md"
+              }
+            ]
+          }
+        ],
+        "evidence": "(phase ts = landing commit 50a3440 time approximation, not per-phase instrumentation)"
+      },
+      "completed_at": "2026-08-18T05:08:34.756Z"
+    },
+    {
+      "id": 2,
+      "status": "pending",
+      "skill": "review-exec",
+      "subject": "Review WI-552 restart-boundary continuation changeset",
+      "blocked_by": [
+        1
+      ]
+    }
+  ]
+}

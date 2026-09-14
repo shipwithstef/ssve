@@ -1,0 +1,65 @@
+{
+  "review_kind": "exec",
+  "reviewer": "cursor-grok-4.6-high",
+  "reviewer_family": "xai",
+  "host": "cursor",
+  "usage_pool": "Cursor Models",
+  "fast": false,
+  "role": "inline-self",
+  "independent": false,
+  "examined_sha": "f57d1a93de6e466cffdb3e4dc64aab166294201e",
+  "base": "50a3440a4d9ee069abe5349944d14b091de67bc4",
+  "verdict": "fail",
+  "rubric_score": 6,
+  "checked": [
+    "CGH-553-001 CLOSED: validateGraph calls assertDesignTechRiskGate; set-status refuses design-tech skipped while ac553EffectiveFlags.size > 0; PostToolUse hook still runs task-graph.mjs validate so a JSON skip is also gated; T2-set-status fixture",
+    "CGH-553-002 still open: collectPlannedFiles exists; validateDesignTechRiskGate feeds it liveDiffFiles; compileDeliveryGraph writes delivery_graph.planned_files from input — but CLI loadInput omits planned_files, documented compile command has no --planned-files, and task-graph.mjs inlined ac553PlannedFiles does not scan live diff",
+    "CGH-553-002 fixtures: T2-compiler (JS API with planned_files already in the argument); T2d still hand-builds delivery_graph.planned_files",
+    "CGH-553-003 CLOSED: receiptGateAppliesToGraph always returns true; omit-created fixture expects FAIL; polarity matches isModernPersonaGateGraph (null created = modern)",
+    "CGH-553-004 CLOSED as side-effect: designTechDispositionDenied + assertDesignTechRiskGate reject any skip/completed-with-skip_reason while flags apply; T2-other-reason fixture",
+    "CGH-553-005 still open: CHECK_THEN_WRITE_RE still period-bounded [^.]{0,40}",
+    "CGH-553-006 CLOSED as side-effect: external_writer path compare uses posix-normalize, strip leading ./, collapse slashes",
+    "hooks/svc-lane-tasks-validator.mjs still execs task-graph.mjs validate (now includes the inlined design-tech gate, still no live-diff implication)",
+    "scripts/verify-plan-mechanical.sh Check 11 still declared-Risk-Flags-only; does not scan planned files or git diff",
+    "AC-553-5 assertExecuteChangesetReceipts still wired on set-status completed; currentTreeReceiptsDir staging/SHA split unchanged"
+  ],
+  "findings": [
+    {
+      "id": "CGH-553-002",
+      "severity": "HIGH",
+      "lens": "correctness",
+      "claim": "The implied-by-planned-files half of AC-553-2 is still dead on the production skip path: the compiler field is written empty, and task-graph validate/set-status never see live files.",
+      "analysis": "Round 1 HIGH was that impliedRiskFlags read delivery_graph.planned_files and nothing wrote that field. Round 2 added collectPlannedFiles and compileDeliveryGraph.planned_files, but the production compile path still cannot populate it. loadInput() for CLI flags never copies planned_files / files_planned / files; the documented route-workflow invocation (lane-model.md) passes only --wi/--lane/--change-type/--intent/--risk-flags/--out. compileDeliveryGraph therefore emits planned_files: [] unless a caller uses --input JSON or the JS API. The T2-compiler fixture only exercises that JS API with planned_files already in the argument object. validateDesignTechRiskGate now unions collectPlannedFiles with liveDiffFiles, but liveDiffFiles is uncommitted-only (git diff HEAD + cached) and still lives only on the prompt-invoked lane validator — the same non-mutation path round 1 rejected as insufficient. The path that actually skips, scripts/task-graph.mjs, inlines ac553PlannedFiles from graph.planned_files / delivery_graph.planned_files / delivery_graph.files and does not scan the worktree. So a WI-542-class bugfix still compiles with empty planned_files, set-status skips design-tech with 'no product UI' while flags are undeclared, then edits hooks/svc-session-start-healthcheck.mjs; task-graph validate and the lane-tasks hook still see no implied flags. Check 11 still does not scan the Files Planned table or the live diff. The mechanical backstop for a forgotten declaration still does not fire where the skip is applied.",
+      "evidence": [
+        "scripts/compile-delivery-graph.mjs:78",
+        "scripts/compile-delivery-graph.mjs:421",
+        "scripts/compile-delivery-graph.mjs:448",
+        "skills/route-workflow/references/lane-model.md:136",
+        "scripts/validate-task-graph-lane.mjs:29",
+        "scripts/validate-task-graph-lane.mjs:215",
+        "scripts/task-graph.mjs:146",
+        "scripts/task-graph.mjs:171",
+        "scripts/task-graph.mjs:637",
+        "scripts/task-graph.mjs:1021",
+        "scripts/lib/risk-flags.mjs:114",
+        "scripts/verify-plan-mechanical.sh:167",
+        "test-framework/evals/tier-1/validate-risk-triggered-contracts.sh:140"
+      ],
+      "proposed_fix": "Map --planned-files (and --input.planned_files) through loadInput so the documented compile command actually fills delivery_graph.planned_files. Have task-graph.mjs ac553PlannedFiles use the same graph fields plus liveDiffFiles as the lane validator (inline the helper; do not import risk-flags.mjs). Optionally feed plan-changeset Files Planned / origin/main...HEAD names into that set so implication survives after commit. Add a fixture: CLI compile without JS-API planned_files, then set-status skip design-tech while a matching hook path is dirty, expect AC-553-2 refuse."
+    },
+    {
+      "id": "CGH-553-005",
+      "severity": "MEDIUM",
+      "lens": "spec-fidelity",
+      "claim": "The check-then-write mechanical check is still a narrow prose regex that dies at a period; the atomic_primitive allowlist remains the real gate.",
+      "analysis": "Not in the claimed round-2 remediations. CHECK_THEN_WRITE_RE is unchanged: check|exists?|stat, then then|before, then writ|creat, with [^.]{0,40} stopping at a period. 'Check if the file exists. Then write it.', 'if missing, create it', and 'write only when absent' still evade. A contract that names o_excl while describing a check-then-write race in concurrent_invoke_behavior can still pass. concurrency_test: 'none' still satisfies hasText.",
+      "evidence": [
+        "scripts/validate-plan-contract.mjs:12",
+        "scripts/validate-plan-contract.mjs:13",
+        "scripts/validate-plan-contract.mjs:45",
+        "scripts/validate-plan-contract.mjs:47"
+      ],
+      "proposed_fix": "Normalize concurrent_invoke_behavior (strip punctuation, collapse whitespace) before the regex; add an existence check that concurrency_test names a real file; keep the primitive allowlist as the hard gate."
+    }
+  ]
+}

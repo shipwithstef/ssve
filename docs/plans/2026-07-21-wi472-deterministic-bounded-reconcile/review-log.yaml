@@ -1,0 +1,33 @@
+review_log:
+  plan: docs/plans/2026-07-21-wi472-deterministic-bounded-reconcile/manifest.md
+  wi: WI-472
+  lane: framework
+  rounds_run: 2
+  unresolved_critical: 0
+  remaining_high: 0
+
+  round_1:
+    status: COMPLETE
+    reviewer: claude-opus-4-8
+    reviewer_family: anthropic
+    effort: high
+    rubric_score: 6
+    verdict: pass-with-findings
+    receipt: .svc/external-review-artifacts/plan/6761907f58966474419816223030a70801c95923ada9a4459a1ac2fa41ea424f/20260721T013008Z-3033191/receipt.json
+    findings: 8
+    response_file: docs/plans/2026-07-21-wi472-deterministic-bounded-reconcile/review-round-1-responses.yaml
+    outcome: All findings accepted and applied before round 2.
+
+  round_2:
+    status: COMPLETE
+    reviewer: claude-opus-4-8
+    reviewer_family: anthropic
+    effort: high
+    rubric_score: 7
+    verdict: pass-with-findings
+    receipt: .svc/external-review-artifacts/plan/87639a88d35aaa07010a419ee2fa8e78b1fdf25bf1967e801abd43f47d473c96/20260721T013534Z-3036188/receipt.json
+    findings: 7
+    response_file: docs/plans/2026-07-21-wi472-deterministic-bounded-reconcile/review-round-2-responses.yaml
+    outcome: No Critical or High findings; every Medium and Low refinement accepted and applied.
+
+  terminal_state: REVIEWED

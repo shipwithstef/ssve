@@ -1,0 +1,10 @@
+Skill: review-gate
+
+Q: What are the five steps of the review-gate protocol, and what is the maximum number of iterations allowed?
+A: Expected pattern: The five steps are Self-Review, Self-Judgment, Cross-Review, Convergence Check, and Gate Decision. Maximum 3 iterations are allowed before escalation to human.
+
+Q: What are the four severity levels for findings in review-gate, and which ones block progress?
+A: Expected pattern: The four severity levels are critical, high, medium, and low. Only critical and high severity findings block progress; medium and low do not block but become improvement backlog items.
+
+Q: Which gates run on main vs inside the worktree?
+A: Expected pattern: G1-G4 (spec/design reviews) run on main. G5 (post-execution review) runs inside the worktree. G6 (promotion review) runs on main.

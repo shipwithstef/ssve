@@ -1,0 +1,212 @@
+{
+  "_schema": "WI-074 skip-conditions registry — single source of truth for which skills document skip/NA conditions in their self-verify sections. route-workflow/SKILL.md self-verify row #2 reads from this registry to enforce skip-justification logging.",
+  "_version": 1,
+  "_updated": "2026-05-11",
+  "graph_level_skip_conditions": {
+    "design-ui:no-visual-surface": {
+      "id": "design-ui:no-visual-surface",
+      "skill": "design-ui",
+      "applies_when": "No browser-visible UI surface exists for the work item.",
+      "required_evidence": "change_type=docs, framework lane, or explicit no-visual-surface signal"
+    },
+    "track-visuals:no-browser-visible-change": {
+      "id": "track-visuals:no-browser-visible-change",
+      "skill": "track-visuals",
+      "applies_when": "The graph has no browser-visible UI, CSS, layout, asset, or rendered-state change.",
+      "required_evidence": "docs-only, backend-only, or framework-only evidence"
+    },
+    "test-journeys:no-runtime-behavior-change": {
+      "id": "test-journeys:no-runtime-behavior-change",
+      "skill": "test-journeys",
+      "applies_when": "The graph has no user/admin-facing runtime behavior path.",
+      "required_evidence": "docs-only, backend-only, or no-flow-change evidence"
+    },
+    "write-e2e:no-runtime-behavior-change": {
+      "id": "write-e2e:no-runtime-behavior-change",
+      "skill": "write-e2e",
+      "applies_when": "E2E coverage is not applicable because no runtime behavior path changed.",
+      "required_evidence": "docs-only, backend-only, or unit-test-sufficient evidence"
+    },
+    "audit-implementation:no-technical-risk": {
+      "id": "audit-implementation:no-technical-risk",
+      "skill": "audit-implementation",
+      "applies_when": "No backend, external integration, auth, data model, concurrency, or high-blast-radius surface exists.",
+      "required_evidence": "changed-file and risk-flag scan showing no technical-risk surface"
+    },
+    "review-plan:trivial-or-prior-reviewed": {
+      "id": "review-plan:trivial-or-prior-reviewed",
+      "skill": "review-plan",
+      "applies_when": "The changeset is trivial or an equivalent adversarial plan review already exists.",
+      "required_evidence": "trivial line/file count or path to prior review artifact"
+    },
+    "base44-environment:not-base44-deploy": {
+      "id": "base44-environment:not-base44-deploy",
+      "skill": "base44-environment",
+      "applies_when": "No Base44 platform or deploy-affecting obligation is present.",
+      "required_evidence": "platform contract and deploy-surface scan"
+    },
+    "audit-session-execution:not-retroactive": {
+      "id": "audit-session-execution:not-retroactive",
+      "skill": "audit-session-execution",
+      "applies_when": "The closeout is not retroactive, graph-mismatch, missing-route-log, or user-challenged.",
+      "required_evidence": "route log and closeout challenge scan"
+    }
+  },
+  "skills": {
+    "design-ui": {
+      "skip_when": "Feature has no visual/UI surface (backend-only, config-only, or CLI-only work).",
+      "signals": [
+        "no CSS or className change",
+        "no HTML or JSX markup change",
+        "no visual component added or modified",
+        "lane is framework or refactor without UI implication"
+      ],
+      "justification_format": "pipeline-decisions.jsonl entry: {\"skill\":\"design-ui\",\"decision\":\"skipped\",\"reason\":\"<why no visual surface>\"}",
+      "self_verify_row": "design-ui/SKILL.md § Self-Verify — skip row documented inline in the skill's instructions"
+    },
+    "design-ux": {
+      "skip_when": "Feature has no UX surface (pure enabler, backend-only, internal tooling with no flow or state machine).",
+      "signals": [
+        "no user flow introduced",
+        "no new screen or interaction pattern",
+        "framework-internal work"
+      ],
+      "justification_format": "pipeline-decisions.jsonl entry: {\"skill\":\"design-ux\",\"decision\":\"skipped\",\"reason\":\"<why no UX surface>\"}",
+      "self_verify_row": "design-ux/SKILL.md § Self-Verify — skip clause for enabler/backend features"
+    },
+    "execute-changeset": {
+      "skip_when": "TDD step is not applicable (e.g., doc-only change, configuration-only, test itself is the deliverable).",
+      "signals": [
+        "no executable code change",
+        "deliverable IS the test",
+        "config or markdown only"
+      ],
+      "justification_format": "pipeline-decisions.jsonl entry: {\"skill\":\"execute-changeset\",\"decision\":\"tdd-skipped\",\"reason\":\"<why TDD N/A>\"}",
+      "self_verify_row": "execute-changeset/SKILL.md § Self-Verify row for TDD applicability"
+    },
+    "track-visuals": {
+      "skip_when": "No UI surface present — track-visuals cannot capture what doesn't render.",
+      "signals": [
+        "framework lane",
+        "pure backend change",
+        "no browser-rendered output"
+      ],
+      "justification_format": "pipeline-decisions.jsonl entry: {\"skill\":\"track-visuals\",\"decision\":\"skipped\",\"reason\":\"<no-ui-surface>\"}",
+      "self_verify_row": "track-visuals/SKILL.md § Self-Verify row 7 (skip-justified if no visual surface)"
+    },
+    "test-journeys": {
+      "skip_when": "Viewport coverage can be skipped when feature has no visual surface; record in SUMMARY.md.",
+      "signals": [
+        "no visual component",
+        "backend-only API change"
+      ],
+      "justification_format": "SUMMARY.md entry naming the skipped scenarios + reason, plus lane-tasks JSON skip_reason field",
+      "self_verify_row": "test-journeys/SKILL.md line 92 and skip_reason pattern in step templates"
+    },
+    "write-e2e": {
+      "skip_when": "E2E not applicable — backend-only change, unit-test-sufficient, or lane-tasks JSON explicitly marks task skippable.",
+      "signals": [
+        "no user-facing flow",
+        "lane-tasks.json task marked skippable with reason"
+      ],
+      "justification_format": "lane-tasks-<WI>.json task marked completed with skip reason field; mirror that status to TaskList",
+      "self_verify_row": "write-e2e/SKILL.md § lane-tasks skip_reason handling"
+    },
+    "benchmark-landing": {
+      "skip_when": "Dimension 9 (design delta vs baseline) is skipped on greenfield first-pass when no predecessor exists; weight redistributed.",
+      "signals": [
+        "no docs/specs/benchmark/<prev>.yaml",
+        "first pass / greenfield"
+      ],
+      "justification_format": "benchmark YAML marks dimension 9 as skipped with weight-redistribution note",
+      "self_verify_row": "benchmark-landing/SKILL.md § Iteration case F-015 — dimension 9 skip + weight redistribution"
+    },
+    "analyze-domain": {
+      "skip_when": "User can skip domain research explicitly, or lane-tasks task marked skippable with reason.",
+      "signals": [
+        "domain already well-understood and documented",
+        "user explicit opt-out",
+        "lane-tasks.json task skippable"
+      ],
+      "justification_format": "lane-tasks-<WI>.json skip_reason, plus domain-profile.md note if domain remains unresolved",
+      "self_verify_row": "analyze-domain/SKILL.md § lane-tasks skip_reason handling"
+    },
+    "blend-external": {
+      "skip_when": "External source's approach is adequate in svc form already (SKIP verdict in blend-dimension table).",
+      "signals": [
+        "our existing approach ≥ their approach",
+        "source doesn't fit svc model",
+        "no incremental value"
+      ],
+      "justification_format": "blend-analysis.md verdict column = SKIP with 1-2 sentence rationale",
+      "self_verify_row": "blend-external/SKILL.md § blend-dimension table SKIP verdict"
+    },
+    "audit-ac": {
+      "skip_when": "AC marked with ⛔ means skip forever in E2E planning (distinct from 🔲 pending).",
+      "signals": [
+        "⛔ on AC row",
+        "explicit out-of-scope in spec"
+      ],
+      "justification_format": "AC row emoji ⛔ with rationale in spec",
+      "self_verify_row": "audit-ac/SKILL.md line ~290 (⛔ vs 🔲 distinction)"
+    },
+    "sync-work-items": {
+      "skip_when": "Host mirroring can be skipped when the consistency check fails — file state is the durable record.",
+      "signals": [
+        "check fails",
+        "host (GitHub) temporarily unreachable"
+      ],
+      "justification_format": "lane-tasks JSON skip_reason field + log to pipeline-decisions.jsonl",
+      "self_verify_row": "sync-work-items/SKILL.md § host-mirroring check-fail skip path"
+    },
+    "validate-feature": {
+      "skip_when": "Business questions can be skipped if the escape-hatch context scan reveals the feature is already validated.",
+      "signals": [
+        "existing persona fit documented",
+        "existing spec covers the feature",
+        "context scan matches escape-hatch criteria"
+      ],
+      "justification_format": "Ship Brief notes the skip reason; escape-hatch criteria documented inline",
+      "self_verify_row": "validate-feature/SKILL.md § Step 0 escape hatch for business questions"
+    },
+    "review-plan": {
+      "skip_when": "Changeset is trivial (≤2 files, ≤50 lines) OR a post-plan adversarial review has already been performed and logged. NEVER skip on changesets >2 files or >50 lines without a prior review-log.yaml.",
+      "signals": [
+        "≤2 files AND ≤50 lines",
+        "review-log.yaml exists from prior review of this plan",
+        "framework-internal fix with existing review-plan precedent"
+      ],
+      "justification_format": "lane-tasks-<WI>.json skip_reason field must cite either 'trivial changeset (N files, M lines)' or 'post-plan review exists at <path>'. Pipeline-decisions.jsonl entry: {\"skill\":\"review-plan\",\"decision\":\"skipped\",\"reason\":\"<trivial|reviewed>\"}",
+      "self_verify_row": "review-plan/SKILL.md § Self-Verify — skip row with changeset-size gate"
+    },
+    "audit-implementation": {
+      "skip_when": "Feature has no data model, no external integration, no concurrency, and no security-sensitive path (auth, payments, secrets). Pure UI/docs/config changes with no behavioral impact.",
+      "signals": [
+        "no new tables/columns/schema changes",
+        "no API calls to external services",
+        "no async/parallel/threading code",
+        "no auth middleware, no payment flow, no secret handling"
+      ],
+      "justification_format": "lane-tasks-<WI>.json task marked completed with skip_reason field; pipeline-decisions.jsonl entry: {\"skill\":\"audit-implementation\",\"decision\":\"skipped\",\"reason\":\"<why no audit surface>\"}",
+      "self_verify_row": "audit-implementation/SKILL.md § When To Run — skip rules for low-risk changes"
+    },
+    "verify-promotion": {
+      "skip_when": "Skipping a verification tier to a higher tier requires explicit justification (structural constraint or aesthetic claim).",
+      "signals": [
+        "V3 handoff when V2 is structurally impossible",
+        "aesthetic/subjective claim cannot be automated"
+      ],
+      "justification_format": "verification report carries V3 handoff justification block naming the structural or subjective constraint",
+      "self_verify_row": "verify-promotion/SKILL.md § V3 handoff justification + VERIFIED-USER status rule"
+    }
+  },
+  "activation_conditions": {
+    "_schema": "WI-512 §2 stage-activation registry — quote-derived from proposals/2026-08-02-one-lane-framework.md §2 'Conditions, deliberately mechanical' table. Consumed by scripts/stage-activation.mjs via --conditions. Essential stages (plan, review-plan, implement, review-exec, spec-sync, index-restamp) may never appear as keys here — the script refuses (exit 2) if they do.",
+    "perf": { "condition": "diff touches a query path, a loop over rows, or an index" },
+    "translations": { "condition": "diff adds or changes a user-visible string" },
+    "device-proof": { "condition": "diff touches src/**, android/**, ios/** or a native permission" },
+    "visuals": { "condition": "diff touches a rendered component or a design token" },
+    "pricing": { "condition": "diff touches plans.generated.js, a fee path, or a priced surface" },
+    "marketing": { "condition": "diff touches a capability the marketing context claims", "approximated": true }
+  }
+}

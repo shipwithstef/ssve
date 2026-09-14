@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "wi": "WI-546",
+  "lane": "framework",
+  "status": "in_progress",
+  "created": "2026-08-18T05:26:09.934Z",
+  "tasks": [
+    {
+      "id": 1,
+      "status": "in_progress",
+      "skill": "execute-changeset",
+      "subject": "WI-546 Cursor live-acceptance: setup/drift, Stop/SessionStart adapters, composed child fixtures, AGY consume, no Claude/Codex remap",
+      "affected_files": [
+        "docs/specs/architecture/wi-548-capability-matrix.md",
+        "test-framework/evals/tier-1/validate-wi546-cursor-live-acceptance.sh",
+        "test-framework/evals/tier-1/validate-task-graph-cross-host.sh",
+        "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs",
+        "scripts/select-tier1-validators-v2.mjs",
+        "docs/specs/test-evidence/WI-546/validate-wi546-cursor-live-acceptance.log",
+        "docs/specs/test-evidence/WI-546/dispatch-trace.json",
+        ".svc/wi-546-impl-summary.md",
+        ".svc/lane-tasks-WI-546.json"
+      ],
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-08-18T05:28:00.000Z",
+        "loaded_via": "manual"
+      }
+    },
+    {
+      "id": 2,
+      "status": "pending",
+      "skill": "review-exec",
+      "subject": "Review WI-546 Cursor live-acceptance changeset",
+      "blocked_by": [1],
+      "notes": "schema-v2 deferred-to-final independent review bound to this single review-exec task"
+    }
+  ]
+}

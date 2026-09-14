@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "review_kind": "exec",
+  "rubric_score": 5,
+  "rubric_failures": [
+    4,
+    5,
+    7
+  ],
+  "dependencies_needing_read": [],
+  "reviewer": {
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5",
+    "effort": "xhigh"
+  },
+  "verdict": "pass-with-findings",
+  "summary": "Bounded round-3 verdict: the F006 consumer-shadow ACE is closed, and non-numeric activation fails closed without modifying the graph. However, the claim that production graphs are exclusively numeric is false, the F005 recovery proof remains incomplete, F007 task state is still unreconciled, and the anti-regression guard does not generically cover shell executables. No Critical remains; the High findings require explicit bounded-exit dispositions before promotion. The frozen staged diff hash was verified. Temp-backed tests could not be rerun because this review sandbox has a read-only /tmp.",
+  "findings": [
+    {
+      "id": "R3-F001",
+      "severity": "high",
+      "claim": "The non-exploitability argument relies on the false premise that production task graphs cannot contain non-numeric IDs.",
+      "analysis": "The rejection itself is fail-closed: codex-load-skill writes no session receipt when activate-skill exits nonzero, and updateJsonAtomic writes nothing when validation throws. That half of the disposition is sound. The compatibility claim is not. The authority validator deliberately accepts string IDs; current-version graphs using them are classified SUPPORTED; legacy migration preserves IDs while upgrading the version; and install-migration fixtures explicitly model supported and legacy production state with string IDs. The repository also contains checked-in lane graphs with string IDs. Such a graph can therefore enter or remain in production state and be selected through the ownership tuple, after which the enforcer authorizes the exact loader but activate-skill rejects it, recreating a fail-closed bootstrap/skill-load deadlock. The fixture's quoted \"string id\" case only passes the CLI token \"1\" against a numeric graph; it does not exercise a string-ID graph. This also contradicts IAR-04's numeric-plus-string coverage statement.",
+      "evidence": [
+        "hooks/lib/validate-task-graph-shape.mjs:28-36 preserves non-numeric string IDs in the authority domain.",
+        "hooks/lib/task-state-compatibility.mjs:39-64 classifies well-formed version-1 string-ID graphs as SUPPORTED.",
+        "hooks/lib/task-state-compatibility.mjs:87-98 and scripts/svc-migrate-task-state.mjs:510-518 upgrade legacy graphs without converting their task IDs.",
+        "test-framework/evals/tier-1/validate-all-host-install-migration.sh:95-97 creates a supported current graph with id=\"t1\"; lines 238-244 create legacy string-ID production state.",
+        "scripts/task-graph.mjs:205-208 and 697-700 reject that authority-valid graph during activate-skill.",
+        "test-framework/evals/tier-1/validate-codex-first-task-activation.sh:60-77 tests a numeric graph with the token \"1\", then asserts that an actual non-numeric graph is rejected.",
+        "docs/specs/work-items/WI-498.md:42 promises numeric and string task-ID coverage, while lines 50-52 dismiss string-ID graphs as hypothetical.",
+        "Existing tracked examples include .svc/lane-tasks-WI-MIMO-B1.json:8-42 and .svc/lane-tasks-WI-CLN-14.json:8-42."
+      ],
+      "proposed_fix": "Either unify the operational validator with the recoverableId domain now, or narrow authority/compatibility to numeric IDs while explicitly migrating existing string-ID graphs. If deferred under the round cap, create and index WI-499 as an actual blocking compatibility follow-up and change IAR-04 plus the production-safety claim to acknowledge the fail-closed deadlock. Add an end-to-end string-ID graph fixture through enforcer → installed loader → governed mutation."
+    },
+    {
+      "id": "R3-F007",
+      "severity": "high",
+      "claim": "The staged lane-task source of truth is still unreconciled with the execution and review phase being performed.",
+      "analysis": "The graph reports plan-changeset as in_progress and review-plan, execute-changeset, and review-exec as pending. That cannot represent a round-3 G6 execution review of an already implemented diff. Because this file is declared the cross-host source of truth, downstream chain checks and resume behavior will infer the wrong phase. Merely adding the graph did not resolve F007.",
+      "evidence": [
+        ".svc/lane-tasks-WI-498.json:169-233 leaves plan-changeset in_progress.",
+        ".svc/lane-tasks-WI-498.json:234-260 leaves review-plan, execute-changeset, and review-exec pending.",
+        "The supplied review request identifies this invocation as G6 review-exec round 3 over an executed frozen diff."
+      ],
+      "proposed_fix": "Reconcile tasks 4-6 to completed with their real receipts and phase evidence, then mark task 7 review-exec in_progress. Do not fabricate timestamps or receipts; if upstream evidence is absent, treat that as a chain blocker and regenerate it through the producing skill."
+    },
+    {
+      "id": "R3-F005",
+      "severity": "medium",
+      "claim": "The strengthened fixture still does not prove the claimed exact-loader recovery or exact session receipt.",
+      "analysis": "The session-receipt assertion accepts any JSON anywhere under the shared runtime directory, which may have been created by the earlier loader invocation against consumer B. It does not inspect the expected repository/session skill-load.json or verify its graph, task, skill, and worktree fields. More importantly, the failure-injection section claims an exact-loader retry but directly invokes task-graph activate-skill. It therefore never proves that codex-load-skill retries the partial state, writes the missing session receipt, and reaches authority accepted by the real enforcer.",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-codex-first-task-activation.sh:94 invokes the loader before the later receipt assertion using the same runtime root and session.",
+        "test-framework/evals/tier-1/validate-codex-first-task-activation.sh:118-124 checks only that some runtime JSON exists.",
+        "test-framework/evals/tier-1/validate-codex-first-task-activation.sh:126-132 invokes $TASKGRAPH directly despite labeling the result an exact-loader retry.",
+        "docs/specs/work-items/WI-498.md:43 requires exact-loader recovery and graph plus session-receipt behavior."
+      ],
+      "proposed_fix": "Compute the exact skillReceiptPath for consumer D and assert its complete binding fields. In failure injection, establish the realistic graph-written/session-receipt-missing state, rerun codex-load-skill.mjs itself, verify both receipts, and then require explicit {} ALLOW from the real enforcer."
+    },
+    {
+      "id": "R3-F008",
+      "severity": "medium",
+      "claim": "The anti-regression guard was not actually widened to generic .sh executable resolution.",
+      "analysis": "EXECS contains one specific shell filename, svc-task-completion-guard.sh. A new consumer-relative path to any other svc shell executable passes the detector, despite the comments and IAR-07 claiming coverage of shell executables and any new consumer-relative svc executable path. The positive seed only proves the hard-coded filename.",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-install-anchored-resolution.sh:27-31 lists only svc-task-completion-guard\\.sh rather than a generic shell-executable pattern.",
+        "test-framework/evals/tier-1/validate-install-anchored-resolution.sh:66-69 seeds that same hard-coded filename.",
+        "docs/specs/work-items/WI-498.md:35 and 45 state the guard fails on any new consumer-relative svc executable resolution."
+      ],
+      "proposed_fix": "Detect generic executable sinks rather than enumerating only filenames—for example, enumerate spawn/exec/import calls and trace path construction, with a generic scripts/hooks *.sh and *.mjs pattern. At minimum add a different-shell-name positive seed that currently fails, then broaden EXECS until it passes."
+    },
+    {
+      "id": "R3-F009",
+      "severity": "medium",
+      "claim": "deny()'s always-absolute recovery command is not paste-runnable when the installed realpath contains whitespace.",
+      "analysis": "The recovery renderer interpolates the realpath without shell quoting. The authorization parser rejects quotes and backslashes, splits on whitespace, and requires exactly 8 or 10 tokens. Consequently, installations under a path containing spaces cannot use the printed bootstrap or loader recovery command. Making the absolute form unconditional turns this into a recovery regression even in a framework checkout where the relative spelling could otherwise work.",
+      "evidence": [
+        "hooks/codex/svc-codex-skill-load-enforcer.mjs:97-109 interpolates installed absolute paths without an argv-safe encoding.",
+        "hooks/codex/svc-codex-skill-load-enforcer.mjs:114-124 rejects quotes/backslashes and tokenizes with split(/\\s+/).",
+        "The comment at hooks/codex/svc-codex-skill-load-enforcer.mjs:92-105 claims the rendered absolute command is runnable everywhere."
+      ],
+      "proposed_fix": "Use a stable installed launcher path whose spelling is guaranteed whitespace-free while realpath-binding it to the trusted sibling, or extend the lexer and shape checks to accept one rigorously parsed quoted path argument. Add a fixture whose install root contains a space and execute the denial recovery byte-for-byte."
+    }
+  ],
+  "certifications": [
+    {
+      "key": "frozen_diff_match",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "644e70c3e1a436e1fbd303c00c6ca15dd1c6668b2880f47a77536d4018057544"
+    },
+    {
+      "key": "f006_default_path_self_located",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "644e70c3e1a436e1fbd303c00c6ca15dd1c6668b2880f47a77536d4018057544"
+    },
+    {
+      "key": "non_numeric_activation_fails_closed",
+      "certified": true,
+      "reviewer_family": "openai",
+      "for_content_sha": "644e70c3e1a436e1fbd303c00c6ca15dd1c6668b2880f47a77536d4018057544"
+    },
+    {
+      "key": "production_graphs_numeric_only",
+      "certified": false,
+      "reviewer_family": "openai",
+      "for_content_sha": "644e70c3e1a436e1fbd303c00c6ca15dd1c6668b2880f47a77536d4018057544"
+    },
+    {
+      "key": "lane_task_state_reconciled",
+      "certified": false,
+      "reviewer_family": "openai",
+      "for_content_sha": "644e70c3e1a436e1fbd303c00c6ca15dd1c6668b2880f47a77536d4018057544"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+version: 1
+agent:
+  name: svc-kimi-executor
+  description: |
+    Serious Vibe Coding execution agent for Kimi Code CLI.
+    Optimized for plan-changeset manifest execution: high tool throughput,
+    background task utilization, and concise operational output.
+    Use when the blueprint is done and raw implementation horsepower is needed.
+  extend: default
+  system_prompt_path: ./svc-kimi-executor-prompt.md
+  system_prompt_args:
+    SVC_AGENT_ROLE: executor
+    SVC_PIPELINE_PHASE: implementation
+  tools:
+    - "kimi_cli.tools.agent:Agent"
+    - "kimi_cli.tools.ask_user:AskUserQuestion"
+    - "kimi_cli.tools.todo:SetTodoList"
+    - "kimi_cli.tools.shell:Shell"
+    - "kimi_cli.tools.file:ReadFile"
+    - "kimi_cli.tools.file:ReadMediaFile"
+    - "kimi_cli.tools.file:Glob"
+    - "kimi_cli.tools.file:Grep"
+    - "kimi_cli.tools.file:WriteFile"
+    - "kimi_cli.tools.file:StrReplaceFile"
+    - "kimi_cli.tools.web:SearchWeb"
+    - "kimi_cli.tools.web:FetchURL"
+    - "kimi_cli.tools.background:TaskList"
+    - "kimi_cli.tools.background:TaskOutput"
+    - "kimi_cli.tools.background:TaskStop"
+  subagents:
+    explore:
+      path: ./svc-kimi-executor.yaml
+      description: Fast read-only codebase exploration for dependency analysis
+    plan:
+      path: ./svc-kimi-executor.yaml
+      description: Implementation planning when the manifest needs mid-flight revision

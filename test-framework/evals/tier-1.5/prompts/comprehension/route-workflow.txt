@@ -1,0 +1,10 @@
+Skill: route-workflow
+
+Q: What are the two axes that route-workflow routes on, and what are the possible values for each?
+A: Expected pattern: Repo state (bootstrap = greenfield/clean, convert = brownfield/existing) and Change type (conversion, feature, bugfix, regression, refactor, drift, chore, framework).
+
+Q: What are the six Self-Verify checks for route-workflow?
+A: Expected pattern: Lane matched to change type, skip conditions evaluated, new-lane necessity checked, task graph initialized, next skill is valid, decision logged.
+
+Q: What are the five pre-lane on-demand skills that route-workflow checks for before selecting a lane, and what signal triggers each?
+A: Expected pattern: strategic-decision (N-way trade study ≥3 options), plan-capabilities (first session, empty capability-registry), mine-builder (first interaction, missing builder profile), platform-operating-architect (platform signals detected, no operating model), skills/roadmap-evaluation/assess-market-readiness ("what's next?" with zero active task graphs).

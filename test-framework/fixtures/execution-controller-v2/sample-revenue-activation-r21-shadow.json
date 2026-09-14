@@ -1,0 +1,94 @@
+{
+  "schema_version": 2,
+  "wi": "WI-SAMPLE-REVENUE-ACTIVATION-01",
+  "snapshot_date": "2026-08-10",
+  "source_snapshot": {
+    "branch": "sample-revenue-activation-r21",
+    "head": "829be5921a179661048b1b4382961f6f98c76914",
+    "accepted_base_sha": "fe71e25200fa998b90b218db03cfc87fe9b06097",
+    "manifest_sha256": "528b3b8e91eb48c582bbec7cc578c2fd365f0586e4e4635e204d4e86929fc05a",
+    "contract_sha256": "194179ef8618545a49c23b4c323d6efde7c130a35abf7c16a532b8b11661b48d",
+    "lane_sha256": "9b967597726240dba38538a3da3a8ac85c8360374934688278faca228cd8eb09",
+    "executor_state_sha256": "c9c6405ca649f5574aec870d757026c4dd30bada08a2b4bc5ba9a2c61cc16e57",
+    "ac_task_test_mapping_sha256": "8daa1a558689bca465169863892a8765d961ef6ac26ab5ca4603746fc08aae1c",
+    "journey_scenario_coverage_sha256": "29e9f31efbecc3e72d5bffac4ad38794398e4ef9c70d1772ce69288f6d5a0d12",
+    "lifecycle_graph_sha256": "07f2e39bf0dd01a74be5be19c5c8386aebc84316afbe55384122ce708d642a6d"
+  },
+  "coverage": {
+    "acceptance_criteria": 81,
+    "task_mappings": 81,
+    "test_mappings": 81,
+    "journey_scenarios": 12,
+    "journey_assertions": 74,
+    "implementation_units": 9,
+    "accepted_units": 2,
+    "remaining_units": 7
+  },
+  "accepted_prefix": [
+    { "unit": "E1A", "revision": 8, "commit_sha": "8d1099786d526d680008344cc30de7769ec0f568", "validation_count": 3 },
+    { "unit": "E1B1", "revision": 21, "commit_sha": "829be5921a179661048b1b4382961f6f98c76914", "validation_count": 5 }
+  ],
+  "in_progress_evidence": {
+    "unit": "E1B2",
+    "revision": 21,
+    "attempts": 2,
+    "latest_validation_count": 6,
+    "latest_pass_count": 6,
+    "prior_failed_validation": "sql-backfill-apply",
+    "prior_failure_exit_code": 3
+  },
+  "active_budget_seconds": 3600,
+  "max_parallel": 5,
+  "delivery_forecast": {
+    "baseline_feature_minutes": 3330,
+    "required_speedup": 24,
+    "risk_reserve_seconds": 600,
+    "forecast_mode": "SHADOW",
+    "estimate_basis": "DECLARED_TARGETS",
+    "calibration_samples": 0,
+    "estimate_confidence": "LOW",
+    "external_wait_seconds": null,
+    "evidence_digest": "8daa1a558689bca465169863892a8765d961ef6ac26ab5ca4603746fc08aae1c"
+  },
+  "external_dependencies": [
+    {
+      "id": "WI-368-merged-main-receipt",
+      "blocks_before_stage": "T13",
+      "counts_as_active_engineering_time": false,
+      "required": true
+    }
+  ],
+  "stages": [
+    { "id": "PREFLIGHT", "production_obligation_id": "OUTCOME_AND_SCOPE", "budget_seconds": 120, "dependencies": [], "merge_dependencies": [], "resource": "control:preflight", "validation_count": 5, "provides": ["accepted-prefix-v1"] },
+    { "id": "E1B2", "production_obligation_id": "DATA_AND_MIGRATION", "budget_seconds": 240, "dependencies": ["PREFLIGHT"], "merge_dependencies": ["PREFLIGHT"], "resource": "repo:migration", "validation_count": 6, "consumes": [{ "id": "accepted-prefix-v1", "producer": "PREFLIGHT" }], "provides": ["backfill-apply-v1"] },
+    { "id": "E1C", "production_obligation_id": "DATA_AND_MIGRATION", "budget_seconds": 300, "dependencies": ["E1B2"], "merge_dependencies": ["E1B2"], "resource": "repo:migration", "validation_count": 4, "consumes": [{ "id": "backfill-apply-v1", "producer": "E1B2" }], "provides": ["db-revenue-interface-v1"] },
+    { "id": "E2", "production_obligation_id": "PRODUCT_CODE", "budget_seconds": 300, "dependencies": ["PREFLIGHT"], "merge_dependencies": ["PREFLIGHT", "E1C"], "resource": "repo:revenue-facts", "validation_count": 1, "consumes": [{ "id": "accepted-prefix-v1", "producer": "PREFLIGHT" }, { "id": "db-revenue-interface-v1", "producer": "E1C" }], "provides": ["revenue-facts-interface-v1"] },
+    { "id": "E3", "production_obligation_id": "EXTERNAL_INTEGRATIONS", "budget_seconds": 300, "dependencies": ["PREFLIGHT"], "merge_dependencies": ["PREFLIGHT", "E2"], "resource": "repo:revenue-worker", "validation_count": 1, "consumes": [{ "id": "accepted-prefix-v1", "producer": "PREFLIGHT" }, { "id": "revenue-facts-interface-v1", "producer": "E2" }], "provides": ["revenue-worker-interface-v1"] },
+    { "id": "E4", "production_obligation_id": "AUTH_AND_PRIVACY", "budget_seconds": 240, "dependencies": ["PREFLIGHT"], "merge_dependencies": ["PREFLIGHT", "E3"], "resource": "repo:economy-audit", "validation_count": 2, "consumes": [{ "id": "accepted-prefix-v1", "producer": "PREFLIGHT" }, { "id": "revenue-worker-interface-v1", "producer": "E3" }], "provides": ["economy-audit-interface-v1"] },
+    { "id": "E5", "production_obligation_id": "OPERABILITY", "budget_seconds": 360, "dependencies": ["PREFLIGHT"], "merge_dependencies": ["PREFLIGHT", "E4"], "resource": "repo:ops", "validation_count": 2, "consumes": [{ "id": "accepted-prefix-v1", "producer": "PREFLIGHT" }, { "id": "economy-audit-interface-v1", "producer": "E4" }], "provides": ["ops-interface-v1"] },
+    { "id": "E6", "production_obligation_id": "PRODUCT_CODE", "budget_seconds": 360, "dependencies": ["E1C", "E2", "E3", "E4", "E5"], "merge_dependencies": ["E1C", "E2", "E3", "E4", "E5"], "resource": "repo:integration", "validation_count": 20, "consumes": [{ "id": "db-revenue-interface-v1", "producer": "E1C" }, { "id": "revenue-facts-interface-v1", "producer": "E2" }, { "id": "revenue-worker-interface-v1", "producer": "E3" }, { "id": "economy-audit-interface-v1", "producer": "E4" }, { "id": "ops-interface-v1", "producer": "E5" }], "provides": ["frozen-candidate-v1"] },
+    { "id": "T12", "production_obligation_id": "VALIDATION", "budget_seconds": 60, "dependencies": ["E6"], "merge_dependencies": ["E6"], "resource": "control:freeze", "validation_count": 3, "consumes": [{ "id": "frozen-candidate-v1", "producer": "E6" }], "provides": ["frozen-candidate-receipt-v1"] },
+    { "id": "H1", "production_obligation_id": "HOLISTIC_REVIEW", "budget_seconds": 420, "dependencies": ["T12"], "merge_dependencies": ["T12"], "resource": "model:holistic-review", "validation_count": 2, "consumes": [{ "id": "frozen-candidate-receipt-v1", "producer": "T12" }], "provides": ["holistic-review-pass-v1"] },
+    { "id": "L1", "production_obligation_id": "FINAL_SHA_AND_LANDING", "budget_seconds": 120, "dependencies": ["H1"], "merge_dependencies": ["H1"], "resource": "git:landing", "validation_count": 2, "consumes": [{ "id": "holistic-review-pass-v1", "producer": "H1" }], "provides": ["merged-main-v1"] },
+    { "id": "T13", "production_obligation_id": "RELEASE_AND_CONFIG", "budget_seconds": 180, "dependencies": ["L1"], "merge_dependencies": ["L1"], "resource": "environment:staging", "validation_count": 6, "consumes": [{ "id": "merged-main-v1", "producer": "L1" }], "provides": ["staging-proof-v1"] },
+    { "id": "R1", "production_obligation_id": "ROLLBACK", "budget_seconds": 90, "dependencies": ["T13"], "merge_dependencies": ["T13"], "resource": "environment:rollback-proof", "validation_count": 2, "consumes": [{ "id": "staging-proof-v1", "producer": "T13" }], "provides": ["rollback-ready-v1"] },
+    { "id": "T15", "production_obligation_id": "RELEASE_AND_CONFIG", "budget_seconds": 120, "dependencies": ["R1"], "merge_dependencies": ["T13", "R1"], "resource": "environment:production", "validation_count": 4, "consumes": [{ "id": "staging-proof-v1", "producer": "T13" }, { "id": "rollback-ready-v1", "producer": "R1" }], "provides": ["production-proof-v1"] },
+    { "id": "V1", "production_obligation_id": "LIVE_VERIFICATION", "budget_seconds": 90, "dependencies": ["T15"], "merge_dependencies": ["T15"], "resource": "environment:production-probe", "validation_count": 3, "consumes": [{ "id": "production-proof-v1", "producer": "T15" }], "provides": ["promotion-pass-v1"] },
+    { "id": "L2", "production_obligation_id": "OUTCOME_OBSERVATION", "budget_seconds": 90, "dependencies": ["V1"], "merge_dependencies": ["V1"], "resource": "git:evidence-closeout", "validation_count": 2, "consumes": [{ "id": "promotion-pass-v1", "producer": "V1" }], "provides": ["closed-feature-v1"] }
+  ],
+  "required_stage_ids": ["PREFLIGHT", "E1B2", "E1C", "E2", "E3", "E4", "E5", "E6", "T12", "H1", "L1", "T13", "R1", "T15", "V1", "L2"],
+  "historical_failures": [
+    { "id": "source-candidate-cardinality", "engine_case": "capsule-cardinality", "expected_route": "COMPILE_REJECT", "plan_repair": false },
+    { "id": "ready-shape-drift", "engine_case": "capsule-shape", "expected_route": "COMPILE_REJECT", "plan_repair": false },
+    { "id": "timestamp-serialization", "engine_case": "capsule-timestamp", "expected_route": "COMPILE_REJECT", "plan_repair": false },
+    { "id": "sql-scope-alias", "engine_case": "mechanical-retry", "expected_route": "EXECUTOR_RETRY", "plan_repair": false },
+    { "id": "legacy-fingerprint-propagation", "engine_case": "assertion-retry", "expected_route": "EXECUTOR_RETRY", "plan_repair": false },
+    { "id": "owner-isolation-semantic-change", "engine_case": "product-freeze", "expected_route": "PLAN_FROZEN", "plan_repair": true },
+    { "id": "missing-rpc-grant-owner-edge", "engine_case": "security-freeze", "expected_route": "PLAN_FROZEN", "plan_repair": true },
+    { "id": "log-wording-only", "engine_case": "irrelevant-cache", "expected_route": "CACHE_REUSE", "plan_repair": false },
+    { "id": "assertion-or-grant-weakened", "engine_case": "relevant-rerun", "expected_route": "VALIDATION_RERUN", "plan_repair": false },
+    { "id": "runner-residue", "engine_case": "mechanical-retry", "expected_route": "EXECUTOR_RETRY", "plan_repair": false },
+    { "id": "mechanical-budget-exhausted", "engine_case": "terminal-after-assist", "expected_route": "IMPLEMENTATION_TERMINAL", "plan_repair": false },
+    { "id": "final-review-semantic-conflict", "engine_case": "product-freeze", "expected_route": "PLAN_FROZEN", "plan_repair": true }
+  ]
+}

@@ -1,0 +1,196 @@
+{
+  "$comment": "WI-562 IP-R1/R-A: machine-readable denominator of every svc receipt kind. The lint-receipt-formats.mjs tier-1 validator iterates THIS registry \u2014 one row per kind mapping emitter, storage, schema, and validator.",
+  "kinds": [
+    {
+      "kind": "chain-receipts",
+      "emitters": [
+        "scripts/emit-receipt.mjs"
+      ],
+      "storage": [
+        "git notes refs/notes/svc-receipts (slot-keyed)",
+        ".svc/receipts/<sha>/ mirror",
+        ".svc/receipts/staging/<treeHash>/"
+      ],
+      "schema_dir": "schemas/receipts/",
+      "validator": "scripts/check-chain-receipts.mjs",
+      "schema_version_convention": "int monotonic",
+      "timestamp_field": "timestamp (legacy alias tolerated; new emissions carry ts-compatible values)",
+      "read_validated": "YES"
+    },
+    {
+      "kind": "quick-fix-staging",
+      "emitters": [
+        "scripts/quick-fix-eligibility.mjs (via emit-receipt writeReceiptMirror)"
+      ],
+      "storage": [
+        ".svc/receipts/staging/<treeHash>/"
+      ],
+      "schema_dir": "schemas/receipts/",
+      "validator": "scripts/check-chain-receipts.mjs + reconcile tree-hash cross-check",
+      "schema_version_convention": "int const 1",
+      "timestamp_field": "timestamp",
+      "read_validated": "YES"
+    },
+    {
+      "kind": "authority-lifecycle",
+      "emitters": [
+        "hooks/lib/authority-store.mjs"
+      ],
+      "storage": [
+        "<stateRoot>/receipts/*.json",
+        "<stateRoot>/receipts/handoff/*.json (normalized records)"
+      ],
+      "schema_dir": "schemas/",
+      "schemas": [
+        "authority-handover-receipt.schema.json",
+        "handoff-record.schema.json"
+      ],
+      "validator": "in-store validateHandoffRecord + resume generation check",
+      "schema_version_convention": "int const 1",
+      "timestamp_field": "completed_at (lifecycle) / ts (normalized records)",
+      "read_validated": "YES (resume consumes records; explicit_takeover enum closed WI-562)"
+    },
+    {
+      "kind": "delegation-completion",
+      "emitters": [
+        "hooks/lib/delegation-authority.mjs"
+      ],
+      "storage": [
+        "delegation-receipts/<id>.json"
+      ],
+      "schema_dir": "schemas/",
+      "schemas": [
+        "delegation-completion-receipt.schema.json"
+      ],
+      "validator": "validateCompletionReceiptShape (conformance-tested against schema)",
+      "schema_version_convention": "int const 1",
+      "timestamp_field": "ts",
+      "read_validated": "YES"
+    },
+    {
+      "kind": "denial-receipts",
+      "emitters": [
+        "hooks/lib/hook-denial.mjs via enforcement-core writeDenialReceipt"
+      ],
+      "storage": [
+        "denial-receipts/<sessionHash>/<digest>.json"
+      ],
+      "schema_dir": "schemas/",
+      "schemas": [
+        "hook-denial-receipt.schema.json"
+      ],
+      "validator": "digest/dedup on read (body re-validation = accepted debt, WI-563)",
+      "schema_version_convention": "minimum 1",
+      "timestamp_field": "ts",
+      "read_validated": "PARTIAL"
+    },
+    {
+      "kind": "gate-receipts-pipeline-decisions",
+      "emitters": [
+        "scripts/pipeline-log.mjs (dual-writes canonical kind/ts/schema_version + legacy type/timestamp)"
+      ],
+      "storage": [
+        ".svc/pipeline-decisions.jsonl"
+      ],
+      "schema_dir": "schemas/",
+      "schemas": [
+        "pipeline-decision-entry.schema.json"
+      ],
+      "validator": "canonical-field validation on entries carrying schema_version",
+      "schema_version_convention": "int const 1 (new entries)",
+      "timestamp_field": "ts (+ legacy timestamp alias)",
+      "read_validated": "YES (canonical subset)"
+    },
+    {
+      "kind": "pr-review-receipts",
+      "emitters": [
+        "scripts/merge-pr-with-review-receipt.mjs"
+      ],
+      "storage": [
+        ".svc/review-receipts/pr-<n>.json"
+      ],
+      "schema_dir": null,
+      "validator": "validate-review-receipt.mjs (snapshot-based schema_version enforcement)",
+      "schema_version_convention": "int const 1 (new receipts post-WI-562)",
+      "timestamp_field": "decided_at",
+      "read_validated": "YES"
+    },
+    {
+      "kind": "story-receipts",
+      "emitters": [
+        "scripts/task-graph.mjs"
+      ],
+      "storage": [
+        "docs/specs/receipts/<WI>.receipts.json"
+      ],
+      "schema_dir": null,
+      "validator": "audit-story-receipts.mjs (registry-parameterized, exit-2 hard)",
+      "schema_version_convention": "absent (template-driven class)",
+      "timestamp_field": "n/a",
+      "read_validated": "YES"
+    },
+    {
+      "kind": "install-receipts",
+      "emitters": [
+        "scripts/svc-migrate-install.mjs"
+      ],
+      "storage": [
+        "<stateRoot>/install-state/<host>.json"
+      ],
+      "schema_dir": "schemas/",
+      "schemas": [
+        "install-state-receipt.schema.json"
+      ],
+      "validator": "identity-bound validateInstallReceipt in enforcement-core.mjs",
+      "schema_version_convention": "int version-bound",
+      "timestamp_field": "installed_at",
+      "read_validated": "YES"
+    },
+    {
+      "kind": "external-review-cache",
+      "emitters": [
+        "scripts/run-external-review.mjs"
+      ],
+      "storage": [
+        "cache dir"
+      ],
+      "schema_dir": "schemas/",
+      "schemas": [
+        "external-review-findings.schema.json",
+        "external-review-receipt.schema.json"
+      ],
+      "validator": "write AND cache-hit validation",
+      "schema_version_convention": "int enum [2]",
+      "timestamp_field": "ts",
+      "read_validated": "YES"
+    },
+    {
+      "kind": "migration-receipts",
+      "emitters": [
+        "hooks/lib/authority-store.mjs migration ops"
+      ],
+      "storage": [
+        "migration root"
+      ],
+      "schema_dir": null,
+      "validator": "digest-checked, reversible",
+      "schema_version_convention": "int const 1",
+      "timestamp_field": "completed_at",
+      "read_validated": "YES"
+    },
+    {
+      "kind": "runtime-projections",
+      "emitters": [
+        "scripts/svc-host-runtime-adapter-v2.mjs"
+      ],
+      "storage": [
+        "mirror"
+      ],
+      "schema_dir": null,
+      "validator": "ad-hoc (accepted debt, WI-563)",
+      "schema_version_convention": "string runtime-projection-v2 (grandfathered)",
+      "timestamp_field": "loaded_at",
+      "read_validated": "NO"
+    }
+  ]
+}

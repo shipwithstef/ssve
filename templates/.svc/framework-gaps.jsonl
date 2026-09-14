@@ -1,0 +1,1 @@
+{"timestamp":"<ISO-8601>","type":"framework","wi":"<WI-ID>","gap":"<gap-slug>","context":"<description>","frequency":0,"severity":"low|medium|high|blocking","source":"session_audit|runtime|review","resolution":"pending|done|deferred","note":"<optional>"}

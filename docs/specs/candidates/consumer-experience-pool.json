@@ -1,0 +1,1497 @@
+{
+  "schema_version": "1.0.0",
+  "topic": "consumer-experience-pool",
+  "project_id": null,
+  "item_scope": "consumer-experience",
+  "candidates": [
+    {
+      "id": "CAND-001",
+      "title": "Shared favourites collection",
+      "summary": "Let people curate and share a focused favourites collection.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "README.md"
+      ],
+      "code_grounding": {
+        "valid_count": 1,
+        "total_count": 1,
+        "ratio": "1/1",
+        "invalid_targets": []
+      },
+      "cos_roles": [
+        "product",
+        "growth"
+      ],
+      "scores": {
+        "product_impact": 95,
+        "growth_flywheel": 90,
+        "db_overhead": 10,
+        "security_risk": 10
+      },
+      "composite_score": 74.25,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-002",
+      "title": "Following activity digest",
+      "summary": "Summarize meaningful changes from followed people and collections.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "README.md"
+      ],
+      "code_grounding": {
+        "valid_count": 1,
+        "total_count": 1,
+        "ratio": "1/1",
+        "invalid_targets": []
+      },
+      "cos_roles": [
+        "product",
+        "growth"
+      ],
+      "scores": {
+        "product_impact": 95,
+        "growth_flywheel": 90,
+        "db_overhead": 10,
+        "security_risk": 10
+      },
+      "composite_score": 74.25,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-003",
+      "title": "Personalized discovery feed",
+      "summary": "Rank useful discoveries from explicit interests and recent actions.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "README.md"
+      ],
+      "code_grounding": {
+        "valid_count": 1,
+        "total_count": 1,
+        "ratio": "1/1",
+        "invalid_targets": []
+      },
+      "cos_roles": [
+        "product",
+        "growth",
+        "engineering"
+      ],
+      "scores": {
+        "product_impact": 94,
+        "growth_flywheel": 88,
+        "db_overhead": 12,
+        "security_risk": 10
+      },
+      "composite_score": 73.3,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-004",
+      "title": "One-tap collection sharing",
+      "summary": "Create a safe share surface for a whole collection.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "README.md"
+      ],
+      "code_grounding": {
+        "valid_count": 1,
+        "total_count": 1,
+        "ratio": "1/1",
+        "invalid_targets": []
+      },
+      "cos_roles": [
+        "product",
+        "growth"
+      ],
+      "scores": {
+        "product_impact": 92,
+        "growth_flywheel": 90,
+        "db_overhead": 10,
+        "security_risk": 10
+      },
+      "composite_score": 73.2,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-005",
+      "title": "Collaborative shortlist",
+      "summary": "Allow invited people to add and vote on shortlist entries.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "README.md"
+      ],
+      "code_grounding": {
+        "valid_count": 1,
+        "total_count": 1,
+        "ratio": "1/1",
+        "invalid_targets": []
+      },
+      "cos_roles": [
+        "product",
+        "growth",
+        "security"
+      ],
+      "scores": {
+        "product_impact": 90,
+        "growth_flywheel": 92,
+        "db_overhead": 10,
+        "security_risk": 10
+      },
+      "composite_score": 72.9,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-006",
+      "title": "Smart re-engagement reminders",
+      "summary": "Prompt users when a saved item becomes newly relevant.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "README.md"
+      ],
+      "code_grounding": {
+        "valid_count": 1,
+        "total_count": 1,
+        "ratio": "1/1",
+        "invalid_targets": []
+      },
+      "cos_roles": [
+        "product",
+        "growth"
+      ],
+      "scores": {
+        "product_impact": 91,
+        "growth_flywheel": 88,
+        "db_overhead": 12,
+        "security_risk": 8
+      },
+      "composite_score": 72.45,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-007",
+      "title": "Public profile highlights",
+      "summary": "Offer an optional public view of selected collections and activity.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "README.md"
+      ],
+      "code_grounding": {
+        "valid_count": 1,
+        "total_count": 1,
+        "ratio": "1/1",
+        "invalid_targets": []
+      },
+      "cos_roles": [
+        "product",
+        "growth",
+        "security"
+      ],
+      "scores": {
+        "product_impact": 89,
+        "growth_flywheel": 90,
+        "db_overhead": 8,
+        "security_risk": 10
+      },
+      "composite_score": 72.35,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-008",
+      "title": "Invite loop onboarding",
+      "summary": "Turn collaboration invitations into a clear first-run experience.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "README.md"
+      ],
+      "code_grounding": {
+        "valid_count": 1,
+        "total_count": 1,
+        "ratio": "1/1",
+        "invalid_targets": []
+      },
+      "cos_roles": [
+        "growth",
+        "product"
+      ],
+      "scores": {
+        "product_impact": 88,
+        "growth_flywheel": 92,
+        "db_overhead": 10,
+        "security_risk": 8
+      },
+      "composite_score": 72.4,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-009",
+      "title": "Contextual recommendation reasons",
+      "summary": "Explain why each recommendation appears and what signal drove it.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "README.md"
+      ],
+      "code_grounding": {
+        "valid_count": 1,
+        "total_count": 1,
+        "ratio": "1/1",
+        "invalid_targets": []
+      },
+      "cos_roles": [
+        "product",
+        "engineering"
+      ],
+      "scores": {
+        "product_impact": 90,
+        "growth_flywheel": 85,
+        "db_overhead": 12,
+        "security_risk": 10
+      },
+      "composite_score": 71.3,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-010",
+      "title": "Collection templates",
+      "summary": "Start common collection types from opinionated reusable templates.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "README.md"
+      ],
+      "code_grounding": {
+        "valid_count": 1,
+        "total_count": 1,
+        "ratio": "1/1",
+        "invalid_targets": []
+      },
+      "cos_roles": [
+        "product",
+        "growth"
+      ],
+      "scores": {
+        "product_impact": 87,
+        "growth_flywheel": 90,
+        "db_overhead": 10,
+        "security_risk": 10
+      },
+      "composite_score": 71.45,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-011",
+      "title": "Saved search alerts",
+      "summary": "Notify users when a saved query has meaningful new matches.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-011.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-011.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product",
+        "growth"
+      ],
+      "scores": {
+        "product_impact": 84,
+        "growth_flywheel": 82,
+        "db_overhead": 18,
+        "security_risk": 10
+      },
+      "composite_score": 43,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-012",
+      "title": "Preference tuning controls",
+      "summary": "Let people directly tune recommendation themes and frequency.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-012.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-012.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product",
+        "engineering"
+      ],
+      "scores": {
+        "product_impact": 82,
+        "growth_flywheel": 78,
+        "db_overhead": 14,
+        "security_risk": 8
+      },
+      "composite_score": 42.1,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-013",
+      "title": "Collection comments",
+      "summary": "Support lightweight discussion attached to shared collections.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-013.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-013.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product",
+        "security"
+      ],
+      "scores": {
+        "product_impact": 80,
+        "growth_flywheel": 80,
+        "db_overhead": 20,
+        "security_risk": 18
+      },
+      "composite_score": 40.2,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-014",
+      "title": "Reaction signals",
+      "summary": "Capture quick reactions that improve shared discovery context.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-014.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-014.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product",
+        "growth"
+      ],
+      "scores": {
+        "product_impact": 79,
+        "growth_flywheel": 82,
+        "db_overhead": 16,
+        "security_risk": 10
+      },
+      "composite_score": 41.45,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-015",
+      "title": "Export personal archive",
+      "summary": "Export user-owned collections and preferences in a portable format.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-015.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-015.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product",
+        "security",
+        "engineering"
+      ],
+      "scores": {
+        "product_impact": 78,
+        "growth_flywheel": 65,
+        "db_overhead": 12,
+        "security_risk": 6
+      },
+      "composite_score": 38.5,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-016",
+      "title": "Offline collection access",
+      "summary": "Keep selected collections usable through intermittent connectivity.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-016.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-016.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product",
+        "engineering"
+      ],
+      "scores": {
+        "product_impact": 81,
+        "growth_flywheel": 68,
+        "db_overhead": 22,
+        "security_risk": 10
+      },
+      "composite_score": 38.75,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-017",
+      "title": "Duplicate suggestion cleanup",
+      "summary": "Detect and merge near-duplicate entries in a collection.",
+      "work_type": "enhancement",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-017.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-017.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product",
+        "engineering"
+      ],
+      "scores": {
+        "product_impact": 75,
+        "growth_flywheel": 62,
+        "db_overhead": 10,
+        "security_risk": 6
+      },
+      "composite_score": 37.05,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-018",
+      "title": "Accessibility preference profile",
+      "summary": "Persist presentation preferences without hiding standard controls.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-018.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-018.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product",
+        "accessibility"
+      ],
+      "scores": {
+        "product_impact": 83,
+        "growth_flywheel": 60,
+        "db_overhead": 10,
+        "security_risk": 6
+      },
+      "composite_score": 39.45,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-019",
+      "title": "Recent activity undo",
+      "summary": "Provide a brief recovery window for destructive personal actions.",
+      "work_type": "enhancement",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-019.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-019.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product",
+        "engineering"
+      ],
+      "scores": {
+        "product_impact": 76,
+        "growth_flywheel": 58,
+        "db_overhead": 8,
+        "security_risk": 4
+      },
+      "composite_score": 37,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-020",
+      "title": "Trusted curator badges",
+      "summary": "Show transparent provenance for recognized collection curators.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-020.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-020.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product",
+        "growth",
+        "security"
+      ],
+      "scores": {
+        "product_impact": 74,
+        "growth_flywheel": 76,
+        "db_overhead": 16,
+        "security_risk": 20
+      },
+      "composite_score": 37.5,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-021",
+      "title": "Topic follow controls",
+      "summary": "Follow and unfollow discovery topics with clear feed effects.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-021.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-021.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product",
+        "growth"
+      ],
+      "scores": {
+        "product_impact": 80,
+        "growth_flywheel": 78,
+        "db_overhead": 18,
+        "security_risk": 8
+      },
+      "composite_score": 41,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-022",
+      "title": "Collection change history",
+      "summary": "Display meaningful edits and restore an earlier collection version.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-022.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-022.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product",
+        "engineering"
+      ],
+      "scores": {
+        "product_impact": 73,
+        "growth_flywheel": 55,
+        "db_overhead": 24,
+        "security_risk": 8
+      },
+      "composite_score": 33.35,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-023",
+      "title": "Private notes on saves",
+      "summary": "Attach personal context to saved entries without sharing it.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-023.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-023.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product",
+        "security"
+      ],
+      "scores": {
+        "product_impact": 77,
+        "growth_flywheel": 55,
+        "db_overhead": 12,
+        "security_risk": 8
+      },
+      "composite_score": 35.95,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-024",
+      "title": "Search inside collections",
+      "summary": "Find entries quickly across titles, tags, and personal notes.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-024.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-024.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product",
+        "engineering"
+      ],
+      "scores": {
+        "product_impact": 82,
+        "growth_flywheel": 62,
+        "db_overhead": 20,
+        "security_risk": 6
+      },
+      "composite_score": 38.5,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-025",
+      "title": "Bulk collection editing",
+      "summary": "Apply tags, moves, and archive actions to many entries safely.",
+      "work_type": "enhancement",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-025.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-025.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product",
+        "engineering"
+      ],
+      "scores": {
+        "product_impact": 72,
+        "growth_flywheel": 50,
+        "db_overhead": 10,
+        "security_risk": 8
+      },
+      "composite_score": 33.4,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-026",
+      "title": "Seasonal discovery pages",
+      "summary": "Create time-bound discovery views from existing catalog signals.",
+      "work_type": "experiment",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-026.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-026.mjs"
+        ]
+      },
+      "cos_roles": [
+        "growth",
+        "product"
+      ],
+      "scores": {
+        "product_impact": 70,
+        "growth_flywheel": 80,
+        "db_overhead": 12,
+        "security_risk": 6
+      },
+      "composite_score": 38.7,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-027",
+      "title": "Referral attribution view",
+      "summary": "Explain which invitations and shares led to meaningful adoption.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-027.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-027.mjs"
+        ]
+      },
+      "cos_roles": [
+        "growth",
+        "data"
+      ],
+      "scores": {
+        "product_impact": 68,
+        "growth_flywheel": 84,
+        "db_overhead": 20,
+        "security_risk": 14
+      },
+      "composite_score": 37.2,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-028",
+      "title": "New-user guided collection",
+      "summary": "Build a first useful collection through a short guided sequence.",
+      "work_type": "experiment",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-028.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-028.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product",
+        "growth"
+      ],
+      "scores": {
+        "product_impact": 78,
+        "growth_flywheel": 78,
+        "db_overhead": 10,
+        "security_risk": 6
+      },
+      "composite_score": 41.3,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-029",
+      "title": "Privacy audience preview",
+      "summary": "Preview exactly who can see a collection before publishing changes.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-029.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-029.mjs"
+        ]
+      },
+      "cos_roles": [
+        "security",
+        "product"
+      ],
+      "scores": {
+        "product_impact": 79,
+        "growth_flywheel": 55,
+        "db_overhead": 8,
+        "security_risk": 4
+      },
+      "composite_score": 37.45,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-030",
+      "title": "Moderation appeal flow",
+      "summary": "Give people a clear explanation and appeal route for moderation.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-030.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-030.mjs"
+        ]
+      },
+      "cos_roles": [
+        "security",
+        "product",
+        "operations"
+      ],
+      "scores": {
+        "product_impact": 74,
+        "growth_flywheel": 48,
+        "db_overhead": 18,
+        "security_risk": 12
+      },
+      "composite_score": 32.5,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-031",
+      "title": "Collection quality checklist",
+      "summary": "Help curators improve clarity, provenance, and completeness.",
+      "work_type": "enhancement",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-031.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-031.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product",
+        "growth"
+      ],
+      "scores": {
+        "product_impact": 69,
+        "growth_flywheel": 65,
+        "db_overhead": 6,
+        "security_risk": 4
+      },
+      "composite_score": 36.15,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-032",
+      "title": "Pinned collection sections",
+      "summary": "Organize important entries into named sections within a collection.",
+      "work_type": "enhancement",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-032.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-032.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product"
+      ],
+      "scores": {
+        "product_impact": 71,
+        "growth_flywheel": 52,
+        "db_overhead": 10,
+        "security_risk": 4
+      },
+      "composite_score": 33.85,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-033",
+      "title": "Cross-collection move",
+      "summary": "Move or copy entries between owned collections with clear outcomes.",
+      "work_type": "enhancement",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-033.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-033.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product",
+        "engineering"
+      ],
+      "scores": {
+        "product_impact": 70,
+        "growth_flywheel": 50,
+        "db_overhead": 8,
+        "security_risk": 6
+      },
+      "composite_score": 33.1,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-034",
+      "title": "Follow suggestion controls",
+      "summary": "Explain and dismiss people or topic follow suggestions.",
+      "work_type": "enhancement",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-034.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-034.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product",
+        "growth"
+      ],
+      "scores": {
+        "product_impact": 68,
+        "growth_flywheel": 64,
+        "db_overhead": 8,
+        "security_risk": 8
+      },
+      "composite_score": 35,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-035",
+      "title": "Share card customization",
+      "summary": "Choose title, image, and privacy-safe context for a share card.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-035.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-035.mjs"
+        ]
+      },
+      "cos_roles": [
+        "growth",
+        "product"
+      ],
+      "scores": {
+        "product_impact": 67,
+        "growth_flywheel": 72,
+        "db_overhead": 8,
+        "security_risk": 8
+      },
+      "composite_score": 36.25,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-036",
+      "title": "Collection completion meter",
+      "summary": "Show optional progress toward a user-defined collection goal.",
+      "work_type": "experiment",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-036.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-036.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product",
+        "growth"
+      ],
+      "scores": {
+        "product_impact": 62,
+        "growth_flywheel": 58,
+        "db_overhead": 8,
+        "security_risk": 4
+      },
+      "composite_score": 32.1,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-037",
+      "title": "Topic mute controls",
+      "summary": "Mute unwanted topics without losing existing saved items.",
+      "work_type": "enhancement",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-037.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-037.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product",
+        "security"
+      ],
+      "scores": {
+        "product_impact": 73,
+        "growth_flywheel": 42,
+        "db_overhead": 6,
+        "security_risk": 4
+      },
+      "composite_score": 32.95,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-038",
+      "title": "Reading progress marker",
+      "summary": "Remember progress through long entries linked from collections.",
+      "work_type": "experiment",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-038.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-038.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product"
+      ],
+      "scores": {
+        "product_impact": 60,
+        "growth_flywheel": 44,
+        "db_overhead": 14,
+        "security_risk": 6
+      },
+      "composite_score": 27.8,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-039",
+      "title": "Weekly personal recap",
+      "summary": "Summarize saved, shared, and revisited items for the user.",
+      "work_type": "experiment",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-039.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-039.mjs"
+        ]
+      },
+      "cos_roles": [
+        "growth",
+        "product"
+      ],
+      "scores": {
+        "product_impact": 66,
+        "growth_flywheel": 70,
+        "db_overhead": 16,
+        "security_risk": 8
+      },
+      "composite_score": 34.7,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-040",
+      "title": "Collection cover generator",
+      "summary": "Suggest accessible covers from collection content and user choice.",
+      "work_type": "experiment",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-040.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-040.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product",
+        "growth",
+        "accessibility"
+      ],
+      "scores": {
+        "product_impact": 61,
+        "growth_flywheel": 62,
+        "db_overhead": 12,
+        "security_risk": 10
+      },
+      "composite_score": 31.55,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-041",
+      "title": "Archive lifecycle controls",
+      "summary": "Archive dormant collections and restore them without data loss.",
+      "work_type": "enhancement",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-041.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-041.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product",
+        "engineering"
+      ],
+      "scores": {
+        "product_impact": 64,
+        "growth_flywheel": 38,
+        "db_overhead": 8,
+        "security_risk": 4
+      },
+      "composite_score": 28.8,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-042",
+      "title": "Suggested collection tags",
+      "summary": "Suggest editable tags from titles and existing taxonomy.",
+      "work_type": "experiment",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-042.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-042.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product",
+        "engineering"
+      ],
+      "scores": {
+        "product_impact": 58,
+        "growth_flywheel": 48,
+        "db_overhead": 12,
+        "security_risk": 6
+      },
+      "composite_score": 28.1,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-043",
+      "title": "Low-noise notification mode",
+      "summary": "Bundle non-urgent updates and preserve only high-value alerts.",
+      "work_type": "enhancement",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-043.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-043.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product"
+      ],
+      "scores": {
+        "product_impact": 70,
+        "growth_flywheel": 40,
+        "db_overhead": 8,
+        "security_risk": 4
+      },
+      "composite_score": 31.3,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-044",
+      "title": "Profile interest import",
+      "summary": "Initialize interests from a user-reviewed portable topic list.",
+      "work_type": "experiment",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-044.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-044.mjs"
+        ]
+      },
+      "cos_roles": [
+        "growth",
+        "security",
+        "product"
+      ],
+      "scores": {
+        "product_impact": 63,
+        "growth_flywheel": 68,
+        "db_overhead": 14,
+        "security_risk": 20
+      },
+      "composite_score": 32.25,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-045",
+      "title": "Collection merge assistant",
+      "summary": "Preview and merge overlapping collections without losing notes.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-045.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-045.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product",
+        "engineering"
+      ],
+      "scores": {
+        "product_impact": 69,
+        "growth_flywheel": 46,
+        "db_overhead": 20,
+        "security_risk": 8
+      },
+      "composite_score": 30.55,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-046",
+      "title": "Blocked-topic explanation",
+      "summary": "Explain why muted or blocked topics no longer appear.",
+      "work_type": "enhancement",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-046.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-046.mjs"
+        ]
+      },
+      "cos_roles": [
+        "product",
+        "security"
+      ],
+      "scores": {
+        "product_impact": 55,
+        "growth_flywheel": 34,
+        "db_overhead": 4,
+        "security_risk": 2
+      },
+      "composite_score": 25.45,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-047",
+      "title": "Community collection fork",
+      "summary": "Fork a public collection while retaining visible source attribution.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-047.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-047.mjs"
+        ]
+      },
+      "cos_roles": [
+        "growth",
+        "product",
+        "security"
+      ],
+      "scores": {
+        "product_impact": 72,
+        "growth_flywheel": 75,
+        "db_overhead": 24,
+        "security_risk": 18
+      },
+      "composite_score": 36,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-048",
+      "title": "Curator analytics summary",
+      "summary": "Show privacy-safe collection reach and engagement summaries.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-048.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-048.mjs"
+        ]
+      },
+      "cos_roles": [
+        "growth",
+        "data",
+        "security"
+      ],
+      "scores": {
+        "product_impact": 66,
+        "growth_flywheel": 70,
+        "db_overhead": 22,
+        "security_risk": 16
+      },
+      "composite_score": 33.3,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-049",
+      "title": "Collection report controls",
+      "summary": "Report unsafe public collection content with category and context.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-049.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-049.mjs"
+        ]
+      },
+      "cos_roles": [
+        "security",
+        "operations",
+        "product"
+      ],
+      "scores": {
+        "product_impact": 68,
+        "growth_flywheel": 35,
+        "db_overhead": 18,
+        "security_risk": 10
+      },
+      "composite_score": 28,
+      "status": "candidate"
+    },
+    {
+      "id": "CAND-050",
+      "title": "Data retention controls",
+      "summary": "Choose retention windows for eligible personal activity data.",
+      "work_type": "feature",
+      "item_scope": "consumer-experience",
+      "target_files": [
+        "src/candidates/CAND-050.mjs"
+      ],
+      "code_grounding": {
+        "valid_count": 0,
+        "total_count": 1,
+        "ratio": "0/1",
+        "invalid_targets": [
+          "src/candidates/CAND-050.mjs"
+        ]
+      },
+      "cos_roles": [
+        "security",
+        "product",
+        "engineering"
+      ],
+      "scores": {
+        "product_impact": 70,
+        "growth_flywheel": 30,
+        "db_overhead": 18,
+        "security_risk": 4
+      },
+      "composite_score": 28.3,
+      "status": "candidate"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+Skill: reverse-engineer
+
+Q: What are the two output files produced by reverse-engineer, and where are they stored?
+A: Expected pattern: `<name>-teardown.md` and `<name>-build-brief.md` under `docs/specs/reverse-engineer/`.
+
+Q: What is Phase 0.5 in reverse-engineer, and what happens on a family mismatch with no cross-family intent stated?
+A: Expected pattern: Reference-Family Fit Check. On mismatch with no cross-family intent: STOP. Do not proceed to Phase 1. Offer 3-5 family-matched alternatives.
+
+Q: What are the four intelligence dimensions gathered in Phase 1 of reverse-engineer?
+A: Expected pattern: Product Intelligence, Business Intelligence, Technical Intelligence, and Technique Intelligence (if input is a technique/workflow).

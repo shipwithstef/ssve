@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "wi": "WI-499",
+  "lane": "framework",
+  "status": "in_progress",
+  "created": "2026-07-19T09:01:02.067Z",
+  "tasks": [
+    {
+      "id": 1,
+      "status": "in_progress",
+      "skill": "route-workflow",
+      "subject": "route workflow",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-07-19T09:33:38.551Z",
+        "loaded_via": "orchestrator-inline"
+      }
+    }
+  ]
+}

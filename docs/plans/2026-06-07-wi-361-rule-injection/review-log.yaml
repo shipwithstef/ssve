@@ -1,0 +1,29 @@
+review_log:
+  plan: docs/plans/2026-06-07-wi-361-rule-injection/manifest.md
+  wi: WI-361
+  date: 2026-06-07
+  tier1: { script: scripts/verify-plan-mechanical.sh, latest_exit_code: 0 }
+  tier1_5_external_state: { result: PASS, checks: "6 rows; dual restore lines (rules dir + settings); next-session constraint per WI-359 precedent" }
+  host_capability_gate: "additionalContext per-event matrix agent-verified vs live docs (PreToolUse allow+context, 10K cap) BEFORE design lock — the WI's PreToolUse upgrade clause fired"
+  tier2:
+    reviewer: codex
+    delivery: "5th output corruption — final message referenced findings 001-008 with BLOCK but YAML swallowed by its session hooks; ALL 8 RECOVERED from ~/.codex/sessions transcript (new recovery path)"
+    findings: 8
+    resolutions:
+      - { id: PLAN-001, severity: critical, fix: "trim scoped to --host claude ONLY; other hosts keep full install (no injector parity yet); follow-up noted" }
+      - { id: PLAN-002, severity: high, fix: "hooks/lib/hook-payload.mjs normalizer + payload.cwd-first relativization" }
+      - { id: PLAN-003, severity: high, fix: "two-state memo (full|pointer); pointer rules re-eligible; I11 overflow fixtures" }
+      - { id: PLAN-004, severity: high, fix: "SVC_RULES_MANIFEST/SVC_CONCERNS_REGISTRY/SVC_RULES_ROOT overrides; I10 bridge-ONLY fixtures" }
+      - { id: PLAN-005, severity: high, fix: "signals.keywords matched vs Edit/Write content" }
+      - { id: PLAN-006, severity: medium, fix: "ALWAYS_ALLOWLIST identity pinning both directions + field-consistency + lazy twin-citation requirement" }
+      - { id: PLAN-007, severity: medium, fix: "manifest edit MUST go through Write tool (authenticity hook is PreToolUse Edit|Write; bash writes bypass)" }
+      - { id: PLAN-008, severity: medium, fix: "subsumed by PLAN-001 Claude-scoping" }
+  tier3:
+    reviewer: gemini
+    round1: iterate
+    findings:
+      - { id: T3-001, severity: critical, resolution: "REJECTED w/ empirical evidence — module __dirname realpath-resolves through install symlink to repo root; injector reads untrimmed repo rules; live-verified. round-2: rejection-upheld" }
+      - { id: T3-002, severity: high, resolution: "ACCEPTED — globToRe anchored + (?:.*/)? zero-dir + [^/] for ?; applied verbatim" }
+    round2_raw: "tier3_round2: {T3-001: rejection-upheld, T3-002: confirmed-fixed, verdict: approve}"
+  terminal_state: APPROVED_ALL_TIERS
+  plan_status_final: SIMULATED

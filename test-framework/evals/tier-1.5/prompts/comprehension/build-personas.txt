@@ -1,0 +1,10 @@
+Skill: build-personas
+
+Q: What files does build-personas produce, and what is the recommended number of personas?
+A: Expected pattern: It produces docs/specs/personas/P*.md files plus a PERSONA_INDEX.md. The sweet spot is 3-7 personas.
+
+Q: What are the seven modes of the build-personas skill?
+A: Expected pattern: The seven modes are build/refresh, audit, add, expand, interview, discover gaps, and tiered auto-discovery.
+
+Q: In the greenfield lane, what skill comes before and after build-personas?
+A: Expected pattern: In the greenfield lane it is position 4. Previous skill is analyze-competitors, next skill is validate-feature. It has progressive=true and self_verify=true.

@@ -1,0 +1,227 @@
+{
+  "wi": "WI-134",
+  "lane": 4,
+  "created": "2026-04-29T07:08:35.838Z",
+  "status": "completed",
+  "flags": [],
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "diagnose-bug",
+      "subject": "diagnose-bug: root cause + pillar revisit + pattern scan for WI-134",
+      "status": "completed",
+      "blocked_by": [],
+      "process_tasks": [
+        {
+          "id": "1.1",
+          "name": "diagnose-bug|spec-anchor",
+          "status": "completed",
+          "blocked_by": [],
+          "subject": "Read WI + source proposal + setup/healthcheck contract"
+        },
+        {
+          "id": "1.2",
+          "name": "diagnose-bug|repro-classify",
+          "status": "completed",
+          "blocked_by": [
+            "1.1"
+          ],
+          "subject": "Trigger/Expected/Actual classified as Action-class (install binds address-of-source to ephemeral path)"
+        },
+        {
+          "id": "1.3",
+          "name": "diagnose-bug|reading-list",
+          "status": "completed",
+          "blocked_by": [
+            "1.2"
+          ],
+          "subject": "setup, hooks/svc-session-start-healthcheck.mjs, scripts/wire-opencode-hooks.mjs (.source-repo reader)"
+        },
+        {
+          "id": "1.4",
+          "name": "diagnose-bug|code-read",
+          "status": "completed",
+          "blocked_by": [
+            "1.3"
+          ],
+          "subject": "Drift in WI: setup ALREADY refuses worktree (commit 52ef4eb 2026-04-25). Gap in healthcheck: no Strategy 3. No tier-1 validators."
+        },
+        {
+          "id": "1.5",
+          "name": "diagnose-bug|fault-isolate",
+          "status": "completed",
+          "blocked_by": [
+            "1.4"
+          ],
+          "subject": "Trace: detectRepoRoot() at hooks/svc-session-start-healthcheck.mjs:65-86 → returns null when both .source-repo and scripts-symlink resolve to dead worktree paths → main() at line 117-123 only warns + exit 0"
+        },
+        {
+          "id": "1.6",
+          "name": "diagnose-bug|root-cause",
+          "status": "completed",
+          "blocked_by": [
+            "1.5"
+          ],
+          "subject": "Immediate: detectRepoRoot has only 2 strategies, both vulnerable to simultaneous death. Enabling: install address-of-source bound to install-time pwd. Why allowed: WI-124 self-heal assumed at least one pointer survives."
+        },
+        {
+          "id": "1.7",
+          "name": "diagnose-bug|pillar-audit",
+          "status": "completed",
+          "blocked_by": [
+            "1.6"
+          ],
+          "subject": "8 pillars audited; AC, tech-arch, ops affected; others unchanged or N/A"
+        },
+        {
+          "id": "1.8",
+          "name": "diagnose-bug|pattern-scan",
+          "status": "completed",
+          "blocked_by": [
+            "1.7"
+          ],
+          "subject": "No siblings: setup:113 is the only long-lived address-of-source pointer; other process.cwd() usages are project-local where worktree-cwd is correct semantics"
+        },
+        {
+          "id": "1.9",
+          "name": "diagnose-bug|register-disc",
+          "status": "completed",
+          "blocked_by": [
+            "1.8"
+          ],
+          "subject": "Single correction — no decomposition needed"
+        },
+        {
+          "id": "1.10",
+          "name": "diagnose-bug|brief",
+          "status": "completed",
+          "blocked_by": [
+            "1.9"
+          ],
+          "subject": "Brief written to WI-134.md (Diagnose-bug brief section)"
+        }
+      ],
+      "eval_matrix": {
+        "product_fit": "UNCHANGED — VERIFIED — WI-134.md Pillar Revisit Audit",
+        "journey": "N/A — framework infrastructure has no end-user journey; analogue is the fresh-session SLA which IS the AC",
+        "acceptance_criteria": "UPDATED — WI-134 (2 new tier-1 validators in test-framework/evals/tier-1/)",
+        "ux": "UNCHANGED — VERIFIED — no user-visible surface change beyond removing redundant WARN",
+        "ui": "N/A — no UI surface in framework install/healthcheck layer",
+        "tech_architecture": "UPDATED — WI-134 (detectRepoRoot Strategy 3 added to hooks/svc-session-start-healthcheck.mjs)",
+        "cost_model": "UNCHANGED — VERIFIED — Strategy 3 fires only when 1 and 2 fail, bounded by find 3s timeout",
+        "operations": "UPDATED — WI-134 (references/knowledge/svc/CAPABILITIES.md self-heal description revised after fix)"
+      },
+      "skill_receipt": {
+        "skill": "diagnose-bug",
+        "loaded_at": "2026-05-01T00:52:03.668Z",
+        "loaded_via": "legacy-backfill"
+      }
+    },
+    {
+      "id": 1.5,
+      "skill": "design-tech",
+      "subject": "design-tech — SKIPPED for bugfix lane; diagnose-bug brief carries the technical design (Strategy 3 in detectRepoRoot, two new tier-1 validators)",
+      "status": "skipped",
+      "skip_reason": "bugfix lane: technical design covered by diagnose-bug brief at docs/specs/work-items/WI-134.md",
+      "blocked_by": [
+        1
+      ]
+    },
+    {
+      "id": 2,
+      "skill": "plan-changeset",
+      "subject": "plan-changeset — manifest at docs/plans/2026-04-29-WI-134-self-heal-strategy-3/manifest.md",
+      "status": "completed",
+      "blocked_by": [
+        1,
+        1.5
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-05-01T00:52:03.668Z",
+        "loaded_via": "legacy-backfill"
+      }
+    },
+    {
+      "id": 2.5,
+      "skill": "review-plan",
+      "subject": "review-plan — Codex Tier 2 rubric_score 5; F2-F6 ACCEPTED+applied, F1 REJECTED w/ mechanical counter-evidence; Kimi Tier 3 timed out; PROMOTED_WITH_DISPUTES per review-log.yaml",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-05-01T00:52:03.668Z",
+        "loaded_via": "legacy-backfill"
+      }
+    },
+    {
+      "id": 3,
+      "skill": "execute-changeset",
+      "subject": "execute-changeset — 4 checkpoints landed (T1 strategy-3 / T2 inflow-validator / T3 outflow-validator / T4-T5 learnings+capabilities). T2 PASS 20 assertions across 5 host roots. T3 PASS — Strategy 3 self-healed double-dead-pointer scenario. Branch diff: 5 files / 386 insertions. Tier-1 sweep: 50 PASS, 4 pre-existing FAILS (chain-references / contracts / host-manifests timeouts at 180s; cross-project-state perf cap; kimi-detached-runner perf cap) — all unrelated to this branch.",
+      "status": "completed",
+      "blocked_by": [
+        2,
+        2.5
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-05-01T00:52:03.668Z",
+        "loaded_via": "legacy-backfill"
+      }
+    },
+    {
+      "id": 4,
+      "skill": "review-gate",
+      "subject": "review-gate G5 — PASS, 1 LOW resolved inline (G5-004), 4 medium/low backlog",
+      "status": "completed",
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "review-gate",
+        "loaded_at": "2026-05-01T00:52:03.668Z",
+        "loaded_via": "legacy-backfill"
+      }
+    },
+    {
+      "id": 5,
+      "skill": "write-e2e",
+      "subject": "write-e2e — SKIPPED, framework infra layer; T2+T3 tier-1 validators are the test surface (justified per route-workflow Lane 4 step 5)",
+      "status": "skipped",
+      "skip_reason": "framework infra layer; tier-1 validators replace e2e",
+      "blocked_by": [
+        4
+      ]
+    },
+    {
+      "id": 6,
+      "skill": "land-changeset",
+      "subject": "land-changeset — PR #52 squash-merged as 9d7217a; worktree removed; local branch deleted",
+      "status": "completed",
+      "blocked_by": [
+        5
+      ],
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-05-01T00:52:03.668Z",
+        "loaded_via": "legacy-backfill"
+      }
+    },
+    {
+      "id": 7,
+      "skill": "verify-promotion",
+      "subject": "verify-promotion — AC-06 fresh-host smoke PASS (`self-heal: repaired (setup exit=0)`); WI-134 status flipped to VERIFIED; closeout d2150d5 pushed to origin/main",
+      "status": "completed",
+      "blocked_by": [
+        6
+      ],
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-05-01T00:52:03.668Z",
+        "loaded_via": "legacy-backfill"
+      }
+    }
+  ]
+}

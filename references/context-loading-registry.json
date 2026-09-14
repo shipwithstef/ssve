@@ -1,0 +1,206 @@
+{
+  "version": 1,
+  "purpose": "Family-level Before Starting coverage for legacy first-party svc skills.",
+  "rules": [
+    "New skills authored on or after 2026-04-28 still need an explicit ## Before Starting section.",
+    "Legacy skills without a direct section are covered by exactly one family here until they are substantively edited.",
+    "Every family must define how to reach complete relevant context without bulk-reading unrelated artifacts."
+  ],
+  "families": [
+    {
+      "id": "product-definition",
+      "skills": [
+        "write-vision",
+        "analyze-domain",
+        "analyze-competitors",
+        "refresh-competitors",
+        "catalog-domain-capabilities",
+        "build-personas",
+        "write-journeys",
+        "test-journeys",
+        "validate-feature",
+        "write-spec"
+      ],
+      "start_from": [
+        "session-contract",
+        "builder-profile",
+        "project-state"
+      ],
+      "dependency_expansion": [
+        "domain-profile",
+        "feature-spec",
+        "journey-index",
+        "related-work-items"
+      ],
+      "stop_condition": "Stop after all related feature, journey, domain, and AC sources that can change the product contract are loaded."
+    },
+    {
+      "id": "planning-and-execution",
+      "skills": [
+        "craft-prompt", "blind-control-plan", "design-ux",
+        "design-ui",
+        "design-logo",
+        "design-tech",
+        "explore-solutions",
+        "explore-ux",
+        "propose-ux-improvements",
+        "plan-changeset",
+        "execute-changeset",
+        "write-e2e",
+        "review-gate",
+        "audit-implementation",
+        "land-changeset",
+        "verify-promotion",
+        "review-cross-model",
+        "review-plan",
+        "track-visuals",
+        "review-security",
+        "plan-blast-radius",
+        "track-topology-diff",
+        "review-exec"
+      ],
+      "start_from": [
+        "active-WI",
+        "task-graph",
+        "approved-plan"
+      ],
+      "dependency_expansion": [
+        "active-spec",
+        "journeys",
+        "review-findings",
+        "validators",
+        "worktree-state"
+      ],
+      "stop_condition": "Stop after all contracts and validators governing the planned edit, evidence, and merge surface are loaded."
+    },
+    {
+      "id": "routing-and-state",
+      "skills": [
+        "route-workflow",
+        "capture-idea",
+        "audit-ac",
+        "sync-spec-code",
+        "onboard-repo",
+        "diagnose-bug",
+        "align-feature",
+        "audit-feature",
+        "decide",
+        "sync-work-items",
+        "list-work-items",
+        "discover-skills",
+        "svc-advisor",
+        "research",
+        "discuss-phase",
+        "dispatch-waves",
+        "honest-diagnosis",
+        "roadmap-evaluation",
+        "strategic-decision",
+        "recall-stack-knowledge"
+      ],
+      "start_from": [
+        "session-contract",
+        "user-request",
+        "work-item-index",
+        "spec-index"
+      ],
+      "dependency_expansion": [
+        "referenced-proposal",
+        "source-review",
+        "related-WIs",
+        "decision-log"
+      ],
+      "stop_condition": "Stop after the route, advice, or state mutation has enough linked evidence to avoid skipping a mandatory branch."
+    },
+    {
+      "id": "framework-evolution",
+      "skills": [
+        "define-code-style",
+        "capability-registry",
+        "capability-concierge",
+        "test-framework",
+        "audit-session-execution",
+        "evolve-framework",
+        "blend-external",
+        "blend-private",
+        "create-skill",
+        "quick-fix",
+        "improve-framework",
+        "teach-project",
+        "plan-capabilities",
+        "reverse-engineer",
+        "audit-coverage",
+        "platform-operating-architect",
+        "evaluate-rule",
+        "launch-knowledge"
+      ],
+      "start_from": [
+        "FRAMEWORK-STATE.md",
+        "skills-manifest.json",
+        "active-WI"
+      ],
+      "dependency_expansion": [
+        "affected-SKILL.md",
+        "affected-hook-or-script",
+        "host-wirer",
+        "tier-1-validator",
+        "review-source"
+      ],
+      "stop_condition": "Stop after the affected framework surface, host wiring, and validator coverage are all represented."
+    },
+    {
+      "id": "domain-and-growth",
+      "skills": [
+        "ingest-guide",
+        "ingest-guide-batch",
+        "analyze-marketing",
+        "extract-bootstrap",
+        "benchmark-landing",
+        "manage-learnings",
+        "wsl2-audio",
+        "mine-builder",
+        "find-opportunity",
+        "stage-revenue",
+        "base44-environment",
+        "monetization-architecture",
+        "assess-market-readiness",
+        "manage-finops",
+        "ad-video-script",
+        "produce-ad-video",
+        "generate-visuals",
+        "landing-page",
+        "suno-architect"
+      ],
+      "start_from": [
+        "builder-profile",
+        "domain-profile",
+        "capability-registry"
+      ],
+      "dependency_expansion": [
+        "knowledge-index",
+        "external-guide-source",
+        "brand-or-market-context",
+        "target-output-contract"
+      ],
+      "stop_condition": "Stop after the domain, market, tool, or asset context that can change the recommendation or output is loaded."
+    },
+    {
+      "id": "company-operations",
+      "skills": [
+        "comms", "cos", "counsel", "customer-cs", "fin-analyst",
+        "growth-eng", "growth-lead", "infra-sre", "market-intel", "privacy-dpo",
+        "procurement", "product-lead", "revops", "security-ops", "tax-auditor"
+      ],
+      "start_from": [
+        "company-link-or-local-state",
+        "company-briefing",
+        "role-ledger"
+      ],
+      "dependency_expansion": [
+        "decision-evidence",
+        "open-items",
+        "risk-domain-peer-review"
+      ],
+      "stop_condition": "Stop after all role-relevant operating evidence and declared risk reviews are loaded; do not bulk-read unrelated ledgers."
+    }
+  ]
+}

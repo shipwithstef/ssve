@@ -1,0 +1,10 @@
+Skill: design-ui
+
+Q: What files does design-ui produce, and what is the Design Shotgun process?
+A: Expected pattern: It produces docs/specs/ui/<name>.md, docs/specs/design-system.md, docs/specs/ui/tokens.json, and docs/specs/ui/vibe-contract.json. The Design Shotgun process is: generate 3-5 text concepts, get user confirmation, produce HTML variants, then select one.
+
+Q: What component states must be specified for interactive elements in the UI design?
+A: Expected pattern: Component states must be specified for default, hover, active, disabled, loading, focus, and error.
+
+Q: In the greenfield lane, what skill comes before design-ui and what comes after?
+A: Expected pattern: In the greenfield lane it is position 10. Previous skill is design-ux, next skill is track-visuals. Progressive is true.

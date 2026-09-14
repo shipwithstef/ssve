@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "feature-graph",
+  "title": ".svc/feature-graph.json — relational product-artifact store (WI-390)",
+  "description": "The canonical relational index wiring story→AC→journey-scenario→test→task→persona. AC nodes carry a file_anchor POINTER to the prose AC text, NEVER a copy — the spec stays the authoritative prose store. Coverage matrices are rendered VIEWS of this graph (render-coverage-matrix.mjs), not hand-maintained.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["version", "nodes", "edges"],
+  "properties": {
+    "version": { "type": "integer" },
+    "generated_from": { "type": "string", "description": "the spec path this graph was built from (v1 single-spec, svc-native)" },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type"],
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string", "enum": ["story", "ac", "journey-scenario", "test", "task", "persona"] },
+          "file_anchor": { "type": "string", "description": "POINTER of the form <path>:<line>. An AC node MUST have one and MUST NOT carry a prose text/description/body copy (AC1)." },
+          "qa_status": { "type": "string" },
+          "e2e_status": { "type": "string" },
+          "test_ref": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "to", "type"],
+        "properties": {
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "type": { "type": "string", "enum": ["scenario-covers-ac", "test-covers-ac", "task-implements-ac", "story-has-ac", "persona-uses-story"] }
+        }
+      }
+    },
+    "orphans": {
+      "type": "array",
+      "description": "@AC-ID tags with no matching AC node — a build emits these and validate fails on any (AC2).",
+      "items": { "type": "object", "properties": { "tag": { "type": "string" }, "source": { "type": "string" } } }
+    }
+  }
+}

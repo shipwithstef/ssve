@@ -1,0 +1,35 @@
+{
+  "stamped_at": "f24a7add94ea8f78a87f736dcc7cb8f9183eb59a",
+  "imports": {
+    ".svc/lane-tasks-WI-541.json": [],
+    "hooks/codex/svc-codex-pretool-dispatcher.mjs": [
+      "node:fs"
+    ],
+    "scripts/compile-delivery-graph.mjs": [
+      "./lib/mandatory-delivery-chain.mjs",
+      "./state-io.mjs",
+      "node:fs",
+      "node:path"
+    ],
+    "scripts/svc-ensure-worktree.mjs": [
+      "../hooks/codex/lib/bootstrap-marker.mjs",
+      "../hooks/codex/lib/session-handoff.mjs",
+      "../hooks/lib/resolve-wi.mjs",
+      "../hooks/lib/validate-task-graph-shape.mjs",
+      "../hooks/lib/wi-id.mjs",
+      "./lib/chain-policy.mjs",
+      "node:child_process",
+      "node:crypto",
+      "node:fs",
+      "node:os",
+      "node:path",
+      "node:url"
+    ],
+    "skills/dispatch-waves/SKILL.md": [],
+    "skills/execute-changeset/SKILL.md": [],
+    "skills/plan-changeset/SKILL.md": [
+      "fs"
+    ],
+    "skills/route-workflow/SKILL.md": []
+  }
+}

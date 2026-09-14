@@ -1,0 +1,371 @@
+{
+  "schema": 1,
+  "wi": "WI-311",
+  "generated": "2026-05-11",
+  "sources": [
+    {
+      "proposal": "proposals/done/2026-04-19-evolution.md",
+      "findings": [
+        {
+          "id": "F-001",
+          "classification": "covered",
+          "owner_wi": "WI-188",
+          "evidence": "Manifest install surface is now mechanically checked; WI-188 closed manifest-excludes-real-skills drift."
+        },
+        {
+          "id": "F-002",
+          "classification": "covered",
+          "owner_wi": "WI-123",
+          "evidence": "Hook inventory and loadability are now validated across host wirers and canonical gates."
+        },
+        {
+          "id": "F-003",
+          "classification": "covered",
+          "owner_wi": "WI-311",
+          "evidence": "No list-work-items.skill archive exists in the current tree; WI-311 records the residual as mapped and non-actionable."
+        },
+        {
+          "id": "F-004",
+          "classification": "covered",
+          "owner_wi": "WI-210",
+          "evidence": "Open proposal triage is now registry-backed; stale shipped proposals are no longer the only backlog source."
+        },
+        {
+          "id": "F-005",
+          "classification": "covered",
+          "owner_wi": "WI-311",
+          "evidence": "WI-311 updates evolve-framework stale '35+ skills' wording to avoid count drift."
+        },
+        {
+          "id": "F-006",
+          "classification": "covered",
+          "owner_wi": "WI-210",
+          "evidence": "The referenced 2026-04-19 proposal files are in proposals/done and open proposals require triage disposition."
+        },
+        {
+          "id": "F-007",
+          "classification": "covered",
+          "owner_wi": "WI-243",
+          "evidence": "discuss-phase is a first-party skill and has phase-receipt coverage; no residual proposal-only gap remains."
+        }
+      ]
+    },
+    {
+      "proposal": "proposals/done/2026-04-20-session-audit-capture-idea-wrong-repo.md",
+      "findings": [
+        {
+          "id": "F1",
+          "classification": "covered",
+          "owner_wi": "WI-210",
+          "evidence": "The session-audit proposal is no longer hidden backlog; triage accepts it into WI-311 and the residual map records the single finding."
+        }
+      ]
+    },
+    {
+      "proposal": "proposals/done/2026-04-21-evolution.md",
+      "findings": [
+        {
+          "id": "F-001",
+          "classification": "covered",
+          "owner_wi": "WI-222",
+          "evidence": "list-work-items now reads YAML/body status and keeps closed items out of the default open backlog."
+        },
+        {
+          "id": "F-002",
+          "classification": "covered",
+          "owner_wi": "WI-222",
+          "evidence": "list-work-items frontmatter/body parsing handles modern WI headings and title shapes."
+        },
+        {
+          "id": "F-003",
+          "classification": "covered",
+          "owner_wi": "WI-222",
+          "evidence": "Severity/priority parsing is covered by the current list-work-items parser and frontmatter validator."
+        },
+        {
+          "id": "F-004",
+          "classification": "covered",
+          "owner_wi": "WI-132",
+          "evidence": "Default list output is compact and WI-132 pins table visibility instead of huge freeform dumps."
+        },
+        {
+          "id": "F-005",
+          "classification": "child-wi",
+          "owner_wi": "WI-322",
+          "evidence": "Dependency/topology and archive hygiene remain part of work-item parser lifecycle cleanup."
+        },
+        {
+          "id": "F-006",
+          "classification": "covered",
+          "owner_wi": "WI-222",
+          "evidence": "Modern WI parsing and validators now normalize the previously divergent WI file shapes enough for listing."
+        },
+        {
+          "id": "F-007",
+          "classification": "covered",
+          "owner_wi": "WI-128",
+          "evidence": "Long output is now governed by the long-output-to-file rule."
+        }
+      ]
+    },
+    {
+      "proposal": "proposals/done/2026-04-24-framework-cohesion-evolution.md",
+      "findings": [
+        {
+          "id": "F1",
+          "classification": "covered",
+          "owner_wi": "WI-221",
+          "evidence": "The quick-fix size-threshold issue was audited and closed invalid; current validators enforce risk-based trigger alignment."
+        },
+        {
+          "id": "F2",
+          "classification": "covered",
+          "owner_wi": "WI-215",
+          "evidence": "route-workflow hot-path docs now point to references instead of duplicating large operational tables."
+        },
+        {
+          "id": "F3",
+          "classification": "covered",
+          "owner_wi": "WI-276",
+          "evidence": "create-skill is now a migrated first-party skill with task graph and phase receipt coverage."
+        },
+        {
+          "id": "F4",
+          "classification": "covered",
+          "owner_wi": "WI-302",
+          "evidence": "Delivery graph replay and autorun fixtures cover pre-lane graph compilation and mutation behavior."
+        },
+        {
+          "id": "F5",
+          "classification": "child-wi",
+          "owner_wi": "WI-313",
+          "evidence": "Evaluation TTL and source-volatility discipline belong with strategic research/local-evidence work."
+        },
+        {
+          "id": "F6",
+          "classification": "covered",
+          "owner_wi": "WI-074",
+          "evidence": "Skip-conditions registry exists and has tier-1 validation."
+        },
+        {
+          "id": "F7",
+          "classification": "covered",
+          "owner_wi": "WI-219",
+          "evidence": "Framework-lane review policy and skip handling now distinguish framework work from user journeys."
+        },
+        {
+          "id": "F8",
+          "classification": "covered",
+          "owner_wi": "WI-073",
+          "evidence": "capture-idea --from-proposal implements the proposal-to-WI seam; WI-311 adds residual mapping for historical sweeps."
+        },
+        {
+          "id": "F9",
+          "classification": "covered",
+          "owner_wi": "WI-072",
+          "evidence": "Hook hard blocks use the shared hook-decision helper and exit-2 convention."
+        },
+        {
+          "id": "F10",
+          "classification": "child-wi",
+          "owner_wi": "WI-312",
+          "evidence": "Kimi wrapper consolidation remains in the hook/host enforcement residual bucket."
+        },
+        {
+          "id": "FA",
+          "classification": "child-wi",
+          "owner_wi": "WI-312",
+          "evidence": "Host capability verification before hook edits belongs with hook/host residual enforcement."
+        },
+        {
+          "id": "FB",
+          "classification": "covered",
+          "owner_wi": "WI-320",
+          "evidence": "route-workflow delivery graphs now declare delivery_tier; compressed/rush routing requires decision-log rationale and validate-delivery-tier.sh proves feature-class requests cannot silently skip validation obligations."
+        },
+        {
+          "id": "FC",
+          "classification": "child-wi",
+          "owner_wi": "WI-312",
+          "evidence": "Per-turn contract enforcement is a hook/guard residual."
+        },
+        {
+          "id": "FD",
+          "classification": "child-wi",
+          "owner_wi": "WI-312",
+          "evidence": "Post-compaction lane-state reinjection is a host/hook lifecycle residual."
+        }
+      ]
+    },
+    {
+      "proposal": "proposals/done/2026-04-25-comprehensive-session-audit.md",
+      "findings": [
+        {
+          "id": "F-1",
+          "classification": "covered",
+          "owner_wi": "WI-213",
+          "evidence": "Skill receipts and phase enforcement now prevent hand-rolled files from masquerading as completed skill work."
+        },
+        {
+          "id": "F-2",
+          "classification": "covered",
+          "owner_wi": "WI-304",
+          "evidence": "Publication/landing state verification now catches local-only and origin-divergent closeout states."
+        },
+        {
+          "id": "F-3",
+          "classification": "child-wi",
+          "owner_wi": "WI-314",
+          "evidence": "Capability registry write discipline belongs with capability blocker and legacy-inertia detection."
+        },
+        {
+          "id": "F-4",
+          "classification": "child-wi",
+          "owner_wi": "WI-317",
+          "evidence": "Test/dry-run artifact pollution is a repo-health check for the consolidated svc doctor."
+        },
+        {
+          "id": "F-5",
+          "classification": "child-wi",
+          "owner_wi": "WI-322",
+          "evidence": "Onboard refresh versus init belongs with work-item/project-state hygiene."
+        },
+        {
+          "id": "F-6",
+          "classification": "covered",
+          "owner_wi": "WI-308",
+          "evidence": "Base44 verification pack owns Base44-specific recovery and verification discipline."
+        },
+        {
+          "id": "F-7",
+          "classification": "covered",
+          "owner_wi": "WI-098",
+          "evidence": "Atomic WI number allocation prevents WI ID collisions."
+        },
+        {
+          "id": "F-8",
+          "classification": "child-wi",
+          "owner_wi": "WI-317",
+          "evidence": "Memory/write-discipline drift is a healthcheck and session-doctor concern."
+        },
+        {
+          "id": "F-9",
+          "classification": "covered",
+          "owner_wi": "WI-198",
+          "evidence": "End-to-end session mode and autorun proof clarify autonomous versus autorun behavior."
+        },
+        {
+          "id": "F-10",
+          "classification": "covered",
+          "owner_wi": "WI-308",
+          "evidence": "Base44 sandbox/build recovery is covered by the Base44 verification pack and knowledge references."
+        },
+        {
+          "id": "F-11",
+          "classification": "covered",
+          "owner_wi": "WI-128",
+          "evidence": "Long-output and context-pollution controls are represented by the long-output-to-file rule."
+        },
+        {
+          "id": "F-12",
+          "classification": "child-wi",
+          "owner_wi": "WI-313",
+          "evidence": "Strategic-decision Phase 1b implementation belongs with strategic research and launch knowledge discipline."
+        }
+      ]
+    },
+    {
+      "proposal": "proposals/done/2026-05-04-session-audit-opencode-go-research.md",
+      "findings": [
+        {
+          "id": "F1",
+          "classification": "child-wi",
+          "owner_wi": "WI-313",
+          "evidence": "Research Question Mode L3 guidance is part of strategic/local knowledge discipline."
+        },
+        {
+          "id": "F2",
+          "classification": "covered",
+          "owner_wi": "WI-166",
+          "evidence": "Task graph validation is cross-host and rejects malformed graph shape before completion."
+        },
+        {
+          "id": "F3",
+          "classification": "covered",
+          "owner_wi": "WI-213",
+          "evidence": "Skill receipt shape and Stop hook enforcement now block completed tasks missing required receipts."
+        },
+        {
+          "id": "F4",
+          "classification": "covered",
+          "owner_wi": "WI-123",
+          "evidence": "docs/specs/router-context.md exists and framework self-management validators check router-context wiring."
+        },
+        {
+          "id": "F5",
+          "classification": "invalid",
+          "reason": "The audit itself records the provenance file was updated after L3 creation; no durable framework gap remains.",
+          "evidence": "Incremental .sources.jsonl update is acceptable when the final provenance file names all extraction targets."
+        }
+      ]
+    },
+    {
+      "proposal": "proposals/done/2026-05-06-session-audit-catalog-skill.md",
+      "findings": [
+        {
+          "id": "F1",
+          "classification": "covered",
+          "owner_wi": "WI-214",
+          "evidence": "Task graph creation now requires a fresh matching session contract."
+        },
+        {
+          "id": "F2",
+          "classification": "covered",
+          "owner_wi": "WI-320",
+          "evidence": "route-workflow delivery graphs now declare delivery_tier; compressed/rush routing requires decision-log rationale and validate-delivery-tier.sh proves feature-class requests cannot silently skip validation obligations."
+        },
+        {
+          "id": "F3",
+          "classification": "covered",
+          "owner_wi": "WI-276",
+          "evidence": "create-skill has formal phase receipt coverage and task graph expectations."
+        },
+        {
+          "id": "F4",
+          "classification": "covered",
+          "owner_wi": "WI-147",
+          "evidence": "Question-fatigue rule registration is deduped and active as a framework rule."
+        },
+        {
+          "id": "F5",
+          "classification": "child-wi",
+          "owner_wi": "WI-312",
+          "evidence": "Multi-host setup after new framework skills is a host/setup enforcement residual."
+        },
+        {
+          "id": "F6",
+          "classification": "invalid",
+          "reason": "The audit classified the eval as recommended/low severity and the follow-up fix phase created an eval.",
+          "evidence": "proposals/done/2026-05-06-session-audit-fix-phase.md records tier-2 eval creation."
+        }
+      ]
+    },
+    {
+      "proposal": "proposals/done/2026-05-06-session-audit-fix-phase.md",
+      "findings": [
+        {
+          "id": "F1",
+          "classification": "child-wi",
+          "owner_wi": "WI-312",
+          "evidence": "Mechanical question-fatigue prevention is a hook/guard enforcement residual."
+        },
+        {
+          "id": "F2",
+          "classification": "covered",
+          "owner_wi": "WI-214",
+          "evidence": "Fresh session-contract enforcement covers intent switches that create new task graphs."
+        }
+      ]
+    }
+  ]
+}

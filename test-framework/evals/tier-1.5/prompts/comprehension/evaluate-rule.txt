@@ -1,0 +1,10 @@
+Skill: evaluate-rule
+
+Q: What is the core load-bearing idea of evaluate-rule, and why is the default elicited before the rule is read?
+A: Expected pattern: The core idea is bias isolation. If the model sees the rule first, its answer about default behavior drifts toward the rule. The default must be elicited in Pass 1 before the rule contaminates it.
+
+Q: What are the four possible verdicts in evaluate-rule, and what score thresholds determine adopt-as-is?
+A: Expected pattern: The four verdicts are adopt-as-is, adopt-with-edits, reject, and defer-to-default. adopt-as-is requires determinism_gain >= 2 OR correctness_delta >= 2, AND friction_cost <= 1, AND convention_conflict <= 1.
+
+Q: When is Tier 2 (cross-model challenge) mandatory in evaluate-rule?
+A: Expected pattern: Tier 2 is mandatory when --scope global is set, when --cross-model flag is set, or when Tier 1 verdict is adopt-as-is and scope is global.

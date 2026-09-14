@@ -1,0 +1,249 @@
+{
+  "schema_version": 2,
+  "launcher_version": "2.4.0",
+  "cli_version": "codex-cli-exec 0.149.0",
+  "request_id": "c5ed0417-278c-4010-bb4c-e1a24dbb298f",
+  "review_kind": "exec",
+  "candidate_digest": "2b08a5142a7854563af73e84a5335f98302bccb79010ba1201be0efcf318952c",
+  "package_sha256": "4abd7b717021a7a13a487a3a8d0802d0b14201a6e221f208c7300252ad2f6eff",
+  "findings_schema_sha256": "c53006becb41df17e49ba913ddffa9b9fa70c0e1f2039fb9b86457446191774b",
+  "findings_sha256": "2364a3917ade25623591a877e1b819fed6854a6f742f4a4bd20b38ace2273a2a",
+  "cache_key": "9583a917c8c28ebfddba6f48723ed784b3fd112d6a5e6c2b636d7706564dc675",
+  "fixture_mode": false,
+  "started_at": "2026-08-26T12:03:35.700Z",
+  "finished_at": "2026-08-26T12:06:36.565Z",
+  "status": "success",
+  "classification": "success",
+  "requested_tuple": {
+    "orchestrator": "opencode",
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6-sol",
+    "effort": "high"
+  },
+  "invocation_tuple": {
+    "orchestrator": "opencode",
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6-sol",
+    "effort": "high"
+  },
+  "effective_tuple": {
+    "orchestrator": "opencode",
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6-sol",
+    "effort": "high"
+  },
+  "attempts": [
+    {
+      "index": 1,
+      "tuple": {
+        "orchestrator": "opencode",
+        "host": "codex",
+        "family": "openai",
+        "model": "gpt-5.6-sol",
+        "effort": "high"
+      },
+      "started_at": "2026-08-26T12:03:35.749Z",
+      "finished_at": "2026-08-26T12:06:36.563Z",
+      "exit_code": 0,
+      "classification": "success",
+      "command": {
+        "binary": "codex",
+        "argv": [
+          "exec",
+          "--skip-git-repo-check",
+          "--sandbox",
+          "read-only",
+          "--ephemeral",
+          "--ignore-user-config",
+          "--ignore-rules",
+          "--strict-config",
+          "--model",
+          "gpt-5.6-sol",
+          "-c",
+          "model_reasoning_effort=\"high\"",
+          "--output-schema",
+          "/home/user/app-workspaces/seriousvibecoding/.worktrees/wi-fw-docs-audit-01/schemas/external-review-findings.schema.json",
+          "--json",
+          "--output-last-message",
+          "/tmp/opencode/review-artifacts-wi-fw-docs-audit/attempt-1-findings.json",
+          "--color",
+          "never",
+          "-"
+        ]
+      },
+      "artifacts": {
+        "events": "/tmp/opencode/review-artifacts-wi-fw-docs-audit/attempt-1-events.jsonl",
+        "stderr": "/tmp/opencode/review-artifacts-wi-fw-docs-audit/attempt-1-stderr.log",
+        "findings": "/tmp/opencode/review-artifacts-wi-fw-docs-audit/attempt-1-findings.json"
+      },
+      "usage": {
+        "input_tokens": 232839,
+        "cached_input_tokens": 154112,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 6523,
+        "reasoning_output_tokens": 4957,
+        "observed_models": []
+      }
+    }
+  ],
+  "reviewer_run": {
+    "commands": [
+      {
+        "binary": "codex",
+        "argv": [
+          "exec",
+          "--skip-git-repo-check",
+          "--sandbox",
+          "read-only",
+          "--ephemeral",
+          "--ignore-user-config",
+          "--ignore-rules",
+          "--strict-config",
+          "--model",
+          "gpt-5.6-sol",
+          "-c",
+          "model_reasoning_effort=\"high\"",
+          "--output-schema",
+          "/home/user/app-workspaces/seriousvibecoding/.worktrees/wi-fw-docs-audit-01/schemas/external-review-findings.schema.json",
+          "--json",
+          "--output-last-message",
+          "/tmp/opencode/review-artifacts-wi-fw-docs-audit/attempt-1-findings.json",
+          "--color",
+          "never",
+          "-"
+        ]
+      }
+    ],
+    "output_artifacts": [
+      "/tmp/opencode/review-artifacts-wi-fw-docs-audit/attempt-1-events.jsonl",
+      "/tmp/opencode/review-artifacts-wi-fw-docs-audit/attempt-1-stderr.log",
+      "/tmp/opencode/review-artifacts-wi-fw-docs-audit/attempt-1-findings.json"
+    ]
+  },
+  "fallback": {
+    "eligible": false,
+    "used": false,
+    "reason": null
+  },
+  "override": {
+    "used": false,
+    "authority": null,
+    "source": null,
+    "path": null,
+    "expected_sha256": null,
+    "actual_sha256": null
+  },
+  "policy": {
+    "version": 2,
+    "profile": "governed-triple:codex-sol-high",
+    "source": "owner-config",
+    "resolved_at": "2026-08-26T12:03:35.700Z",
+    "effective_window": {
+      "starts_at": null,
+      "ends_at": null
+    },
+    "cutover_utc": null,
+    "cutover_local": null,
+    "timezone": null,
+    "selection_sha256": "a10e59a41ac6ee5653f89f67ea84787a4e8fd38b6a156b6142ae9b102081cde0",
+    "selection_expires_at": null,
+    "selection_authority": "repository-owner"
+  },
+  "protocol": {
+    "process_invocations": 1,
+    "configured_turn_ceiling": null,
+    "configured_budget_usd": null,
+    "reported_turns": null,
+    "stop_reason": null,
+    "terminal_reason": null,
+    "errors": []
+  },
+  "route": {
+    "kind": "owner_config_primary",
+    "switching_enabled": false,
+    "cli_fallback_configured": false,
+    "evidence": "requested_primary"
+  },
+  "effective_effort": {
+    "value": "high",
+    "provenance": "requested"
+  },
+  "model_attestation": {
+    "level": "requested_accepted",
+    "requested_model": "gpt-5.6-sol",
+    "observed_models": [],
+    "evidence": "exact_model_argv_plus_successful_auth_schema_exit_no_server_model_echo"
+  },
+  "phase_guard": {
+    "applicable": false,
+    "kind": "exec",
+    "decision": "not-applicable",
+    "reason": null,
+    "wi": null,
+    "pre_execution_base": null,
+    "plan_manifest_sha256": null,
+    "exec_record_present": null,
+    "exec_record_path": null,
+    "implementation_diverged": null,
+    "diverged_files": [],
+    "base_resolved": null,
+    "override": {
+      "used": false,
+      "authority": null,
+      "source": null,
+      "path": null,
+      "expected_sha256": null,
+      "actual_sha256": null,
+      "kind": null
+    }
+  },
+  "package_context": {
+    "version": 1,
+    "context_root": "/home/user/app-workspaces/seriousvibecoding/.worktrees/wi-fw-docs-audit-01",
+    "base_package_sha256": "071bfa51107acff65d06df03c4b18a30ae0f76460dfb847334c23f4df9573c47",
+    "files": [
+      {
+        "path": "target:AGENTS.md",
+        "sha256": "3d1e589724a9bd9ca08da61b4a4654e9640077241e6f399ac83d557ae3ab1d13",
+        "bytes": 27476
+      },
+      {
+        "path": "target:CLAUDE.md",
+        "sha256": "2a438d254509b3cb2b40f22b24c5075e92ea6b9b1fc96a1c5518602cb6c3eb03",
+        "bytes": 11576
+      },
+      {
+        "path": "framework:skills/review-exec/SKILL.md",
+        "sha256": "da53c5ca0fd778df617ba18466ebf6e65689a8289ce8e10924f7498f851d8f0e",
+        "bytes": 19624
+      },
+      {
+        "path": "framework:skills/review-cross-model/SKILL.md",
+        "sha256": "4bbe2968bef6e84511483f8277232352e8ad406d397789038e89798afe263abf",
+        "bytes": 22108
+      }
+    ]
+  },
+  "cache": {
+    "disposition": "published",
+    "reusable": true,
+    "entry": "/home/user/app-workspaces/seriousvibecoding/.worktrees/wi-fw-docs-audit-01/.svc/external-review-cache/v1/9583a917c8c28ebfddba6f48723ed784b3fd112d6a5e6c2b636d7706564dc675"
+  },
+  "artifacts": {
+    "findings": "/tmp/opencode/review-artifacts-wi-fw-docs-audit/findings.json",
+    "receipt": "/tmp/opencode/review-artifacts-wi-fw-docs-audit/receipt.json",
+    "package": "/tmp/opencode/review-artifacts-wi-fw-docs-audit/review-package.bin",
+    "capabilities": "/tmp/opencode/review-artifacts-wi-fw-docs-audit/capabilities.log"
+  },
+  "usage": {
+    "input_tokens": 232839,
+    "cached_input_tokens": 154112,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 6523,
+    "reasoning_output_tokens": 4957,
+    "observed_models": []
+  }
+}

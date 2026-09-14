@@ -1,0 +1,10 @@
+{
+  "wi": "WI-FIXTURE-RETRO",
+  "user_intent": "Close a challenged WI after discovering the original graph skipped required evidence",
+  "repo_mode": "convert",
+  "change_type": "bugfix",
+  "lane": "bugfix",
+  "delivery_mode": "end_to_end",
+  "risk_flags": ["retroactive", "graph-mismatch"],
+  "platform_contracts": []
+}

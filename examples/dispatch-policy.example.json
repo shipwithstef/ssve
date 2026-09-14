@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "authority": "repository-owner",
+  "default_mode": "mixed-grok-cursor",
+  "entitlements": {
+    "grok_superheavy": true,
+    "claude_paid": false,
+    "codex": false
+  },
+  "deny": {
+    "*": ["claude-sonnet-5"],
+    "implementor": ["claude-opus-5"],
+    "review.plan": ["claude-opus-5"],
+    "review.exec": ["claude-opus-5"]
+  },
+  "allow": {
+    "review.design": ["claude-opus-5"]
+  },
+  "modes": {
+    "mixed-grok-cursor": {
+      "labels": {
+        "STRAT": { "host": "grok", "family": "xai", "model": "grok-4.6", "effort": "xhigh" },
+        "PLAN": { "host": "grok", "family": "xai", "model": "grok-4.6", "effort": "high" },
+        "EXEC": { "host": "grok", "family": "xai", "model": "grok-4.6", "effort": "high" },
+        "REVIEW": { "host": "grok", "family": "xai", "model": "grok-4.6", "effort": "high" },
+        "SENSE": { "host": "grok", "family": "xai", "model": "grok-code-fast", "effort": "high" },
+        "DISC": { "host": "grok", "family": "xai", "model": "web_search", "effort": "high" },
+        "PASS": { "host": "grok", "family": "xai", "model": "grok-code-fast", "effort": "high" }
+      },
+      "plan": {
+        "tuple": { "host": "grok", "family": "xai", "model": "grok-4.6", "effort": "high" }
+      },
+      "self_review": {
+        "tuple": { "host": "grok", "family": "xai", "model": "grok-4.6", "effort": "high" }
+      },
+      "implementor": {
+        "tuple": { "host": "grok", "family": "xai", "model": "grok-4.6", "effort": "high" }
+      },
+      "review": {
+        "plan": {
+          "release_authority": true,
+          "feedback_sink": "grok-self",
+          "on_sink_reject": { "escalate_to": "sol-high", "forbid_return_to": ["fable"] },
+          "stations": [
+            {
+              "id": "grok-self",
+              "kind": "inline-self",
+              "required": true,
+              "authority": "advisory",
+              "tuple": { "host": "grok", "family": "xai", "model": "grok-4.6", "effort": "high" }
+            },
+            {
+              "id": "fable",
+              "kind": "external",
+              "required": true,
+              "authority": "independent",
+              "tuple": { "host": "cursor", "family": "anthropic", "model": "claude-fable-5", "effort": "high" },
+              "max_invocations": 1,
+              "round_trip": false
+            },
+            {
+              "id": "sol-high",
+              "kind": "external",
+              "required": true,
+              "authority": "independent",
+              "tuple": { "host": "cursor", "family": "openai", "model": "gpt-5.6-sol", "effort": "high" }
+            },
+            {
+              "id": "agy-gemini-3.7-high",
+              "kind": "external",
+              "required": false,
+              "authority": "independent",
+              "tuple": { "host": "agy", "family": "google", "model": "Gemini 3.7 Flash (High)", "effort": "high" },
+              "fallback_only": true,
+              "explicit_request_only": true
+            }
+          ]
+        },
+        "exec": {
+          "release_authority": true,
+          "feedback_sink": "grok-self",
+          "on_sink_reject": { "escalate_to": "sol-high", "forbid_return_to": ["fable"] },
+          "stations": [
+            {
+              "id": "grok-self",
+              "kind": "inline-self",
+              "required": true,
+              "authority": "advisory",
+              "tuple": { "host": "grok", "family": "xai", "model": "grok-4.6", "effort": "high" }
+            },
+            {
+              "id": "fable",
+              "kind": "external",
+              "required": true,
+              "authority": "independent",
+              "tuple": { "host": "cursor", "family": "anthropic", "model": "claude-fable-5", "effort": "high" },
+              "max_invocations": 1,
+              "round_trip": false
+            },
+            {
+              "id": "sol-high",
+              "kind": "external",
+              "required": true,
+              "authority": "independent",
+              "tuple": { "host": "cursor", "family": "openai", "model": "gpt-5.6-sol", "effort": "high" }
+            },
+            {
+              "id": "agy-gemini-3.7-high",
+              "kind": "external",
+              "required": false,
+              "authority": "independent",
+              "tuple": { "host": "agy", "family": "google", "model": "Gemini 3.7 Flash (High)", "effort": "high" },
+              "fallback_only": true,
+              "explicit_request_only": true
+            }
+          ]
+        },
+        "design": {
+          "release_authority": false,
+          "stations": [
+            {
+              "id": "grok-self",
+              "kind": "inline-self",
+              "required": true,
+              "authority": "advisory",
+              "tuple": { "host": "grok", "family": "xai", "model": "grok-4.6", "effort": "high" }
+            },
+            {
+              "id": "opus-5-design",
+              "kind": "external",
+              "required": true,
+              "authority": "advisory",
+              "tuple": { "host": "cursor", "family": "anthropic", "model": "claude-opus-5", "effort": "high" }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

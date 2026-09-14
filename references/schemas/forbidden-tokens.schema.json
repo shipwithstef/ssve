@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "svc forbidden-tokens",
+  "description": "Project-owned list of tokens that MUST NOT appear in framework-path files. Each consuming project maintains its own .svc/forbidden-tokens.json. The framework itself ships only the schema; the framework's own forbidden list (if any) lives in the framework's project-local config and contains only generic terms. Baselined 2026-05-12 by WI-341.",
+  "type": "object",
+  "required": ["schema_version", "tokens"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": 1 },
+    "tokens": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["pattern", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "pattern": {
+            "type": "string",
+            "description": "Substring or JS-style /regex/ flags pattern. Substring match by default. Wrap in / / for regex."
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "description": "Why this token is forbidden in framework paths. E.g., 'Example Marketplace WI-233 specific evidence token'."
+          },
+          "scope": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Optional path globs the rule applies to. Defaults to framework-path glob set when omitted."
+          },
+          "added_at": {
+            "type": "string",
+            "format": "date",
+            "description": "Date the token was added to the list."
+          },
+          "added_by": {
+            "type": "string",
+            "description": "Source WI, review, or person that surfaced the forbidden token."
+          }
+        }
+      }
+    },
+    "framework_path_globs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Path globs treated as framework-path (vs project-path). Defaults defined by validate-wi-promotion if omitted: ['scripts/**', 'hooks/**', 'references/**', 'test-framework/**', '*/SKILL.md']."
+    }
+  }
+}

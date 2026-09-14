@@ -1,0 +1,30 @@
+review_log:
+  wi: WI-508
+  scope: promotion closeout plus main-green attribution correction
+  orchestrator: codex/openai
+  reviewer: claude-opus-4-8/high (anthropic) via scripts/run-external-review.mjs
+  rounds_run: 3
+  unresolved_critical: 0
+  remaining_high: 0
+  round_1:
+    status: completed
+    request_id: d2481a5f-e01b-4965-8a2e-40cc5dad1d0b
+    verdict: pass-with-findings
+    critical: 0
+    high: 2
+    response: "Parser format coupling received a locked fixture; the proposal SLA waiver was removed by directly adding accepted_wi metadata. Ledger timestamps, status taxonomy, task evidence, and G6 cap citations were corrected."
+  round_2:
+    status: completed
+    request_id: a5421b3d-ce2a-4f4b-8ce6-89a0f0dbe623
+    verdict: pass-with-findings
+    critical: 0
+    high: 2
+    response: "The empty-array newline defect was fixed; timeout count parsing and an observed runner-format fixture were added. The executable canary change was classified non-quick-fix and routed to a fresh full receipt envelope."
+  round_3:
+    status: completed
+    request_id: 968b1300-e868-40f6-a653-7ada34317914
+    verdict: pass-with-dispositions
+    critical: 0
+    high: 2
+    response: "H1 accepted: the follow-up closeout SHA receives its own five-receipt envelope, explicitly separate from the original feature squash receipts. H2 rejected with exact receipt evidence: self_review.orchestrator=codex, author_family=openai, reviewer_family=anthropic, primary reviewer claude/anthropic/claude-opus-4-8/high. Medium findings were fixed with temporary-repo end-to-end canary cases, producer-format assertions, reachable timeout ownership, and named residual debt. No fourth round is permitted."
+  terminal_state: HARD_CAP_PASS_WITH_DISPOSITIONS

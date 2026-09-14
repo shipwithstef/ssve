@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: sans-serif; height: 200vh; }
+  /* Same fab, clear of the gesture zone. */
+  .fab {
+    position: fixed; right: 16px; bottom: 200px; z-index: 40;
+    background: #10b981; color: #fff; border: none; border-radius: 999px;
+    padding: 14px 18px; font-weight: 600;
+  }
+  app-overlay { display: contents; }
+</style>
+</head>
+<body>
+  <header><h1>Discovery</h1></header>
+  <button class="fab" data-testid="scout-fab" aria-label="Scout a spot">+ Scout</button>
+
+  <app-overlay></app-overlay>
+  <script>
+    class AppOverlay extends HTMLElement {
+      constructor() {
+        super();
+        const root = this.attachShadow({ mode: 'open' });
+        root.innerHTML = `
+          <style>
+            /* A SHORT fixed bar inside the shadow root — it clears the fab at
+               bottom:200px, so the pierce finds no occluder over the fab: PASS.
+               Proves the shadow-descent doesn't over-flag (no false positive). */
+            .panel {
+              position: fixed; left: 0; right: 0; bottom: 0; height: 56px; z-index: 100;
+              background: rgba(20,20,25,0.96); color: #fff;
+              padding-bottom: env(safe-area-inset-bottom, 0px);
+            }
+          </style>
+          <div class="panel" role="dialog" aria-label="Promo panel">Compact bar</div>`;
+      }
+    }
+    customElements.define('app-overlay', AppOverlay);
+  </script>
+</body>
+</html>

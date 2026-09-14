@@ -1,0 +1,131 @@
+{
+  "wi": "WI-379",
+  "lane": "framework",
+  "delivery_graph": {
+    "lane": "framework",
+    "change_type": "bugfix",
+    "risk_flags": [
+      "hot-path-hooks"
+    ]
+  },
+  "execution_mode": "end_to_end",
+  "transport": "stage-isolated (WI-380, B2 activation)",
+  "tasks": [
+    {
+      "id": "pre-design-tech",
+      "skill": "design-tech",
+      "title": "design-tech (skipped — no new architecture)",
+      "status": "completed",
+      "skip_reason": "Framework bugfix: ports 3 env-var-payload sites to stdin in one existing hook + its lib + broadens one tier-1 validator. No new architecture, data model, module boundary, or external dependency — design-tech N/A. Transport-change blueprints live in the plan-changeset manifest.",
+      "completed_at": "2026-06-10T09:58:09.278Z",
+      "skill_receipt": {
+        "loaded_at": "2026-06-10T09:58:09.278Z",
+        "loaded_via": "design-tech (run4 closeout)",
+        "output_artifact": "PR #71 squash 8138e51a",
+        "validation_output": "see WI doc activation record"
+      }
+    },
+    {
+      "id": "seg-1-plan",
+      "skill": "plan-changeset",
+      "title": "plan + review-plan via svc-stage-plan",
+      "status": "completed",
+      "completed_at": "2026-06-10T08:59:13.464Z",
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-06-10T08:59:13.464Z",
+        "loaded_via": "svc-stage-plan (stage-isolated dispatch, WI-380 B2 activation)",
+        "output_artifact": "docs/plans/2026-06-10-wi379-e2big-guard/manifest.md",
+        "validation_output": "manifest DRAFTED with 3a blueprints for 3 MODIFY files; 3 env-export sites found (S1:L109,S2:L268,S3:L690; spec lines +4 drifted via WI-399); baseline validate-hook-payload-not-argv.sh 4/4 PASS; self-review residual <= MEDIUM",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "evidence": "command_output:.svc/plan-changeset-archetype.log"
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "evidence": "command_output:.svc/plan-changeset-scope.log"
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "evidence": "file:docs/plans/2026-06-10-wi379-e2big-guard/manifest.md"
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "evidence": "file:docs/plans/2026-06-10-wi379-e2big-guard/manifest.md"
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "evidence": "command_output:.svc/pipeline-decisions.jsonl"
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "evidence": "command_output:.svc/lane-tasks-WI-379.json"
+          }
+        ]
+      }
+    },
+    {
+      "id": "seg-2-exec",
+      "skill": "execute-changeset",
+      "title": "exec + G6 station via svc-stage-exec + lenses",
+      "status": "completed",
+      "completed_at": "2026-06-10T09:15:00.000Z",
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-06-10T09:15:00.000Z",
+        "loaded_via": "svc-stage-exec (stage-isolated dispatch, WI-380 B2 activation)",
+        "output_artifact": "hooks/svc-task-completion-guard.sh + hooks/lib/active-intent.mjs + test-framework/evals/tier-1/validate-hook-payload-not-argv.sh",
+        "validation_output": "all 8 completion-guard tier-1 validators PASS; 300KB smoke PASS (no E2BIG/no 126/127); full tier-1 suite 223 scripts PASS 0 FAIL",
+        "bash_limitation_note": "printf|node<<heredoc inside $() does not deliver stdin in bash (subshell limitation). Used tmpfile-path-via-env pattern for S1 and S2 heredoc sites (no payload in envp — only bounded /tmp path). S3 (node script-file) uses direct printf|node pipe as planned (no heredoc, pipe works).",
+        "per_task_evidence": [
+          {
+            "task": "task-1",
+            "status": "completed",
+            "evidence": "node hooks/lib/active-intent.mjs check </dev/null → allow (exit 0)"
+          },
+          {
+            "task": "task-2",
+            "status": "completed",
+            "evidence": "validate-end-to-end-stop-hook PASS; validate-stop-hook-stdin-preservation PASS"
+          },
+          {
+            "task": "task-3",
+            "status": "completed",
+            "evidence": "validate-stop-hook-session-isolation PASS; validate-stop-hook-stdin-preservation PASS"
+          },
+          {
+            "task": "task-4",
+            "status": "completed",
+            "evidence": "validate-completion-guard-no-max-escape 5/5 PASS"
+          },
+          {
+            "task": "task-5",
+            "status": "completed",
+            "evidence": "validate-hook-payload-not-argv 4/4 PASS (swept all svc-*.sh)"
+          },
+          {
+            "task": "task-6",
+            "status": "completed",
+            "evidence": "all 8 completion-guard validators PASS; 300KB smoke exit=0 no E2BIG; tier-1 suite 223/0"
+          }
+        ]
+      }
+    },
+    {
+      "id": "seg-3-land",
+      "skill": "land-changeset",
+      "title": "land + verify via svc-stage-land",
+      "status": "completed",
+      "completed_at": "2026-06-10T09:58:09.278Z",
+      "skill_receipt": {
+        "loaded_at": "2026-06-10T09:58:09.278Z",
+        "loaded_via": "land-changeset (run4 closeout)",
+        "output_artifact": "PR #71 squash 8138e51a",
+        "validation_output": "see WI doc activation record"
+      }
+    }
+  ],
+  "status": "completed",
+  "archived_note": "WI-379 VERIFIED 2026-06-10; archived by WI-399 run4 closeout"
+}

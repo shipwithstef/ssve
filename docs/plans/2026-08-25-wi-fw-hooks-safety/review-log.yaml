@@ -1,0 +1,72 @@
+review_log:
+  plan: docs/plans/2026-08-25-wi-fw-hooks-safety/manifest.md
+  wi: WI-FW-HOOKS-SAFETY-01
+  lane: framework
+  base: 494f074
+  tier1:
+    script: scripts/verify-plan-mechanical.sh
+    exit_code: 0
+    evidence: .svc/evidence/WI-FW-HOOKS-SAFETY-01/plan-tier1.log
+    issues: 0
+  external_state:
+    exit_code: 0
+    evidence: .svc/evidence/WI-FW-HOOKS-SAFETY-01/plan-external-state-check.log
+    result: "no violations; untouched taxonomy entries walked and documented in manifest"
+  plan_review_external:
+    status: blocked_authentication
+    detail: >
+      Owner dispatch policy names fable/sol-high on host cursor, for which the
+      canonical launcher has no transport (codex/agy/claude only), and the agy
+      station's Google OAuth expired (interactive login required). The launcher
+      refused the paid plan review with classification=authentication after a
+      phase_violation attempt (implementation had diverged via the
+      review-plan-codex.sh WI-pattern fix itself) and a capability attempt.
+      Receipts preserved under
+      .svc/external-review-artifacts/plan/e33b380645b409b6f52870a50430169a626a4a9091438215b1be6566c10dde4a/.
+    decision: >
+      Proceed under the owner's RESUME directive with mechanical gates green
+      and the owner-approved source design; defer independent review to the
+      exec-kind frozen-diff review per the launcher's own phase doctrine.
+      Blocker recorded async at .svc/sessions/notifications.jsonl and as a
+      taste decision in .svc/pipeline-decisions.jsonl. No review receipts are
+      fabricated; release authority stays unclaimed until an independent
+      reviewer runs or the owner accepts the risk explicitly.
+  self_review:
+    status: completed_per_task
+    method: focused tier-1 validators red/green per task plus full-suite run at T05/T06
+  exec_review:
+    status: pending_external_transport
+    artifact: docs/specs/reviews/wi-fw-hooks-safety-exec-cross-model.md
+
+# --- exec-phase review (WI-FW-HOOKS-SAFETY-01 closeout, 2026-08-26) ---
+exec_review:
+  kind: exec
+  station: codex-sol-high
+  policy: governed-triple (owner config sha a10e59a4)
+  rounds: 3
+  round_1:
+    candidate_digest: eaff01dcde8231f27689d91b20516cf52cfc0d2378bb71728e51526695f1e429
+    verdict: fail
+    findings: 9
+    remediation_commit: 227cf17
+    receipt: .svc/external-review-artifacts/cross-model/receipt.json
+  round_2:
+    candidate_digest: 7a3c30f9431a50fc1cd37af98c9cf200d6cb16bcba1e52d1241dd2ae266b08da
+    verdict: fail
+    findings: 7
+    remediation_commit: e3d3b42
+    receipt: .svc/external-review-artifacts/cross-model-r2/receipt.json
+  round_3:
+    candidate_digest: 7ed772452103aa1e671944657d1d01796d1c90b7f7e8edf0202c6cd28d8f5787
+    verdict: fail
+    findings: 8
+    remediation_commit: 34ee21f
+    receipt: .svc/external-review-artifacts/cross-model-r3/receipt.json
+  cap: WI-491 hard 3-round cap reached
+  bounded_exit:
+    unresolved_critical: 0
+    fixed_in_round_3: [EXTREV-R3-002, EXTREV-R3-003, EXTREV-R3-004, EXTREV-R3-005, EXTREV-R3-008]
+    accepted_with_justification: [EXTREV-R3-001, EXTREV-R3-007]
+    partially_resolved: [EXTREV-R3-006]
+    authority: repository-owner override directive (resume + land + human_checkpoint waived)
+self_review_passes: 2

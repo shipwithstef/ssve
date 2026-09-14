@@ -1,0 +1,703 @@
+{
+ "$schema": "https://github.com/s7an-it/ssve/schemas/model-registry.json",
+ "description": "Host-agnostic model registry for Serious Vibe Coding. Separates orchestrator (who runs the session) from execution harness (which model handles each cognitive label). Skills reference cognitive labels; the framework resolves them via the active profile.",
+ "version": 2,
+ "externalReviewPolicy": {
+  "version": 3,
+  "cutover_utc": "2026-07-19T21:00:00Z",
+  "cutover_local": "2026-07-20 00:00:00 EEST",
+  "timezone": "Europe/Sofia",
+  "selection": {
+   "schema_version": 1,
+   "path": ".svc/external-review-policy/v1/selection.json",
+   "authority": "repository-owner",
+   "applies_to_orchestrator": "codex",
+   "allowed_profiles": ["fable-high"]
+  },
+  "orchestrators": {
+   "claude": {
+    "profile": "codex-high",
+    "source": "fixed-policy"
+   },
+   "codex": {
+    "schedule": [
+     { "profile": "fable-high", "starts_at": null, "ends_at": "2026-07-19T21:00:00Z" },
+     { "profile": "opus-high", "starts_at": "2026-07-19T21:00:00Z", "ends_at": null }
+    ]
+   }
+  },
+  "profiles": {
+   "codex-high": {
+    "tuple": { "orchestrator": "claude", "host": "codex", "family": "openai", "model": "gpt-5.6-sol", "effort": "high" },
+    "fallback": null
+   },
+   "fable-high": {
+    "tuple": { "orchestrator": "codex", "host": "claude", "family": "anthropic", "model": "claude-fable-5", "effort": "high" },
+    "fallback": {
+     "tuple": { "orchestrator": "codex", "host": "claude", "family": "anthropic", "model": "claude-opus-4-8", "effort": "xhigh" },
+     "eligible_after": ["model_unavailable", "model_entitlement", "provider_overload"]
+    }
+   },
+   "opus-high": {
+    "tuple": { "orchestrator": "codex", "host": "claude", "family": "anthropic", "model": "claude-opus-4-8", "effort": "high" },
+    "fallback": null
+   }
+  }
+ },
+ "cognitiveLabels": {
+  "STRAT": {
+   "description": "Strategic Determination — high-stakes decisions, product invention, spatial UX reasoning, resolving ambiguity",
+   "icon": "🧠",
+   "useFor": "Strategic decisions, architecture, north-star definition"
+  },
+  "PLAN": {
+   "description": "Architectural Blueprinting — dependency graphs, JSON manifests, task logic, strict planning",
+   "icon": "📐",
+   "useFor": "Blueprinting, dependency graphs, manifest creation"
+  },
+  "EXEC": {
+   "description": "Agentic Execution — high-volume file editing, terminal commands, running tests, bash loops",
+   "icon": "⚙️",
+   "useFor": "File edits, bash commands, tests, execution"
+  },
+  "REVIEW": {
+   "description": "Grounded Verification — code review, architectural drift detection, spec alignment",
+   "icon": "🛡️",
+   "useFor": "Code review, drift detection, spec alignment"
+  },
+  "SENSE": {
+   "description": "Temporal / Sensory QA — video, UI animations, audio interactions, visual regression",
+   "icon": "👁️",
+   "useFor": "Video, UI animations, visual regression"
+  },
+  "DISC": {
+   "description": "Grounded Discovery — live docs, competitor pages, exact SDK versions, web search",
+   "icon": "🌐",
+   "useFor": "Web search, live docs, competitor research"
+  },
+  "PASS": {
+   "description": "Pass-Through Distillation — mechanical extraction, reformatting, no reasoning needed",
+   "icon": "🔁",
+   "useFor": "Mechanical extraction, reformatting, no reasoning"
+  }
+ },
+ "orchestrators": {
+  "claude": {
+   "name": "Claude Code",
+   "detection": {
+    "envVars": [
+     "CLAUDE_CODE_SSE_PORT"
+    ],
+    "parentProcess": "claude"
+   },
+   "setupFlag": "--host claude",
+   "skillsPath": "~/.claude/skills",
+   "nativeCapabilities": [
+    "skills",
+    "hooks",
+    "plugins",
+    "mcp",
+    "commands",
+    "agents"
+   ],
+   "commitAttribution": "Claude Opus 4.8 (1M context) <contact-cd29c5ac34@example.invalid>"
+  },
+  "kimi": {
+   "name": "Kimi Code CLI",
+   "detection": {
+    "envVars": [
+     "KIMI_WORK_DIR"
+    ],
+    "parentProcess": "Kimi Code"
+   },
+   "setupFlag": "--host kimi",
+   "skillsPath": "~/.kimi/skills",
+   "nativeCapabilities": [
+    "skills",
+    "hooks",
+    "plugins",
+    "mcp",
+    "commands",
+    "agents"
+   ],
+   "commitAttribution": "Kimi k1.6 (Kimi Code CLI) <contact-4baf1bf8ca@example.invalid>"
+  },
+  "codex": {
+   "name": "OpenAI Codex CLI",
+   "detection": {
+    "envVars": [
+     "CODEX_CLI",
+     "CODEX_HOME",
+     "CODEX_THREAD_ID",
+     "CODEX_CI"
+    ],
+    "parentProcess": "codex"
+   },
+   "setupFlag": "--host codex",
+   "skillsPath": "~/.codex/skills",
+   "nativeCapabilities": [
+    "skills",
+    "hooks",
+    "plugins",
+    "mcp",
+    "commands",
+    "agents"
+   ],
+   "commitAttribution": "Codex CLI <contact-b6b620a2d4@example.invalid>"
+  },
+  "gemini": {
+   "name": "Gemini CLI",
+   "detection": {
+    "envVars": [
+     "GEMINI_CLI_IDE_SERVER_PORT"
+    ],
+    "parentProcess": "gemini"
+   },
+   "setupFlag": "--host gemini",
+   "skillsPath": "~/.gemini/skills",
+   "nativeCapabilities": [
+    "skills",
+    "mcp",
+    "commands",
+    "agents"
+   ],
+   "commitAttribution": "Gemini 2.5 Pro (Gemini CLI) <contact-4a2d56cec3@example.invalid>"
+  },
+  "opencode": {
+   "name": "OpenCode CLI",
+   "detection": {
+    "envVars": [
+     "OPENCODE"
+    ],
+    "parentProcess": "opencode"
+   },
+   "setupFlag": "--host opencode",
+   "skillsPath": "~/.config/opencode/skills",
+   "nativeCapabilities": [
+    "skills",
+    "hooks",
+    "plugins",
+    "mcp",
+    "commands",
+    "agents"
+   ],
+   "commitAttribution": "OpenCode CLI <contact-dabed2f59a@example.invalid>"
+  },
+  "cursor": {
+   "name": "Cursor CLI",
+   "detection": {
+    "envVars": [
+     "CURSOR_TRACE_ID",
+     "CURSOR_AGENT"
+    ],
+    "parentProcess": "agent"
+   },
+   "setupFlag": "--host cursor",
+   "skillsPath": "~/.cursor/skills",
+   "nativeCapabilities": [
+    "skills",
+    "hooks",
+    "plugins",
+    "mcp",
+    "commands",
+    "agents"
+   ],
+   "commitAttribution": "Cursor CLI <contact-c4b78912de@example.invalid>"
+  },
+  "grok": {
+   "name": "Grok Build CLI",
+   "detection": {
+    "envVars": [
+     "GROK_CLI",
+     "GROK_HOME",
+     "GROK_SESSION_ID"
+    ],
+    "parentProcess": "grok"
+   },
+   "setupFlag": "--host grok",
+   "skillsPath": "~/.grok/skills",
+   "nativeCapabilities": [
+    "skills",
+    "hooks",
+    "plugins",
+    "mcp",
+    "commands",
+    "agents"
+   ],
+   "commitAttribution": "Grok 4.6 (Grok Build CLI) <contact-4f9e8a71b2@example.invalid>"
+  }
+ },
+ "harnesses": {
+  "claude": {
+   "description": "Anthropic Claude models via Claude Code or API",
+   "models": {
+    "opus": {
+     "id": "claude-opus-4-8",
+     "contextWindow": 1048576,
+     "invocation": "claude -p --model claude-opus-4-8",
+     "variants": {
+      "claude-opus-4-8[1m]": {
+       "contextWindow": 1048576,
+       "note": "harness-tier id observed live in Claude Code 2026-06-06; API default context for claude-opus-4-8 is 1M per Anthropic models docs (review-exec H2 citation)"
+      }
+     },
+     "displayName": "Opus 4.8"
+    },
+    "sonnet": {
+     "id": "claude-sonnet-4-6",
+     "contextWindow": 200000,
+     "invocation": "claude -p --model claude-sonnet-4-6",
+     "displayName": "Sonnet 4.6"
+    },
+    "sonnet-5": {
+     "id": "claude-sonnet-5",
+     "contextWindow": 1000000,
+     "invocation": "claude -p --model claude-sonnet-5",
+     "displayName": "Sonnet 5",
+     "_source": "claude-api skill shared/models.md (verified 2026-06-30, WI-470): id claude-sonnet-5, 1M ctx, 128K max output. High effort via output_config.effort:high (GA, no beta); adaptive thinking only — budget_tokens 400s."
+    },
+    "fable-5": {
+     "id": "claude-fable-5",
+     "invocation": "canonical external-review launcher only",
+     "displayName": "Fable 5",
+     "externalReviewEffort": "high"
+    },
+    "haiku": {
+     "id": "claude-haiku-4-5-20251001",
+     "contextWindow": 200000,
+     "invocation": "claude -p --model claude-haiku-4-5-20251001",
+     "displayName": "Haiku 4.5"
+    }
+   },
+   "displayName": "Claude"
+  },
+  "kimi": {
+   "description": "Moonshot Kimi k2.6 via Kimi Code CLI",
+   "models": {
+    "kimi-for-coding": {
+     "id": "kimi-for-coding",
+     "contextWindow": 262144,
+     "thinkingToggle": true,
+     "invocation": "kimi --model kimi-for-coding"
+    }
+   },
+   "displayName": "Kimi"
+  },
+  "mimo": {
+   "description": "Xiaomi MiMo via OpenCode CLI or API",
+   "models": {
+    "mimo-v2.5-pro": {
+     "id": "mimo-v2.5-pro",
+     "contextWindow": 1048576,
+     "invocation": "opencode run --model mimo/mimo-v2.5-pro",
+     "released": "2026-04-22",
+     "pricingPer1MInputTokens": 1,
+     "pricingPer1MOutputTokens": 3,
+     "modalities": [
+      "text",
+      "image"
+     ],
+     "hyperparameters": {
+      "temperature": 1,
+      "topP": 0.95,
+      "_source": "MiMo API Docs 2026-04-25; default for v2.5/v2-pro/v2-omni class; recommended for all task types per MiMo"
+     },
+     "displayName": "MiMo-V2.5-Pro"
+    },
+    "mimo-v2.5": {
+     "id": "mimo-v2.5",
+     "contextWindow": 1048576,
+     "invocation": "opencode run --model mimo/mimo-v2.5",
+     "released": "2026-04-22",
+     "pricingPer1MInputTokens": 0.4,
+     "pricingPer1MOutputTokens": 2,
+     "modalities": [
+      "text"
+     ],
+     "hyperparameters": {
+      "temperature": 1,
+      "topP": 0.95,
+      "_source": "MiMo API Docs 2026-04-25; default + recommended for all task types per MiMo"
+     },
+     "displayName": "MiMo V2.5"
+    },
+    "mimo-v2-flash": {
+     "id": "mimo-v2-flash",
+     "contextWindow": 262144,
+     "invocation": "opencode run --model mimo/mimo-v2-flash",
+     "released": "2026-06-12",
+     "pricingPer1MInputTokens": null,
+     "pricingPer1MOutputTokens": null,
+     "modalities": [
+      "text"
+     ],
+     "hyperparameters": {
+      "temperature": 1,
+      "topP": 0.95,
+      "_source": "XiaomiMiMo/MiMo-V2-Flash (efficient reasoning/coding/agentic foundation model, 256K ctx). Pricing not published as of 2026-06-14. Invocation via mimo/ provider UNVERIFIED — confirm provider serves this id before PASS routing."
+     },
+     "displayName": "MiMo-V2-Flash"
+    },
+    "mimo-v2-pro": {
+     "id": "mimo-v2-pro",
+     "contextWindow": 1048576,
+     "invocation": "opencode run --model mimo/mimo-v2-pro",
+     "hyperparameters": {
+      "temperature": 1,
+      "topP": 0.95,
+      "_source": "MiMo API Docs 2026-04-25"
+     },
+     "displayName": "MiMo-V2-Pro"
+    },
+    "mimo-v2-omni": {
+     "id": "mimo-v2-omni",
+     "contextWindow": 1048576,
+     "invocation": "opencode run --model mimo/mimo-v2-omni",
+     "hyperparameters": {
+      "temperature": 1,
+      "topP": 0.95,
+      "_source": "MiMo API Docs 2026-04-25"
+     },
+     "displayName": "MiMo-V2-Omni"
+    }
+   },
+   "configReference": "references/opencode-mimo-config.json",
+   "displayName": "MiMo"
+  },
+  "codex": {
+   "description": "OpenAI Codex CLI / app native execution",
+   "models": {
+    "gpt-5.5": {
+     "id": "gpt-5.5",
+     "contextWindow": 400000,
+     "invocation": "codex exec --model gpt-5.5"
+    },
+    "gpt-5.6-sol": {
+     "id": "gpt-5.6-sol",
+     "invocation": "canonical external-review launcher only",
+     "displayName": "GPT 5.6 sol",
+     "externalReviewEffort": "high"
+    },
+    "gpt-5.4-mini": {
+     "id": "gpt-5.4-mini",
+     "contextWindow": 400000,
+     "invocation": "codex exec --model gpt-5.4-mini"
+    }
+   },
+   "displayName": "Codex"
+  },
+  "xai": {
+   "description": "xAI Grok models via Grok Build CLI or API",
+   "models": {
+    "grok-4.6": {
+     "id": "grok-4.6",
+     "contextWindow": 524288,
+     "reasoningEffort": "xhigh",
+     "invocation": "grok --model grok-4.6",
+     "released": "2026-08-12",
+     "displayName": "Grok 4.6"
+    },
+    "grok-code": {
+     "id": "grok-code-fast",
+     "contextWindow": 262144,
+     "invocation": "grok --model grok-code-fast",
+     "displayName": "Grok Code Fast"
+    }
+   },
+   "displayName": "xAI Grok"
+  },
+  "native": {
+   "description": "Native tools of the orchestrator host — no external model call",
+   "models": {},
+   "tools": {
+    "claude": "web_search",
+    "kimi": "SearchWeb",
+    "codex": "web_search",
+    "gemini": "google_search",
+    "opencode": "websearch",
+    "grok": "web_search"
+   },
+   "displayName": "Native"
+  }
+ },
+ "profiles": {
+  "svc-default": {
+   "description": "Framework default. Claude orchestrates + Sonnet executes + MiMo-V2.5-Pro senses (key-gated). Updated 2026-06-06 (WI-357): EXEC moved mimo→claude/sonnet to match the operative dispatch-preflight fallback (MIMO_API_KEY-gated) and review-grade execution quality; MiMo execution remains first-class via opencode-mimo / kimi-orchestrator-mixed profiles.",
+   "labels": {
+    "STRAT": {
+     "harness": "claude",
+     "model": "opus",
+     "rationale": "Highest reasoning depth for strategy"
+    },
+    "PLAN": {
+     "harness": "claude",
+     "model": "opus",
+     "rationale": "Deterministic blueprinting needs frontier reasoning",
+     "displayRationale": "Deterministic blueprinting"
+    },
+    "EXEC": {
+     "harness": "claude",
+     "model": "sonnet-5",
+     "effort": "high",
+     "rationale": "WI-470 2026-06-30: EXEC runs on Sonnet 5 (subagents pinned). effort:high is DECLARED here (output_config.effort:high, claude-api-verified, adaptive thinking) and surfaced via resolve-model EXEC --effort; consumers apply it via the Agent dispatch effort param (this is the routing source, not the applier). Supersedes WI-357 EXEC=Sonnet4.6; MiMo EXEC via opencode-mimo/kimi profiles",
+     "displayRationale": "Sonnet 5 execution; effort:high declared (WI-470); MiMo EXEC via keyed profiles"
+    },
+    "REVIEW": {
+     "harness": "claude",
+     "model": "sonnet-5",
+     "effort": "high",
+     "rationale": "WI-470 2026-06-30: REVIEW runs on Sonnet 5 (subagents pinned) against the Opus blueprint; effort:high declared here, consumer-applied via the Agent dispatch effort param"
+    },
+    "SENSE": {
+     "harness": "mimo",
+     "model": "mimo-v2.5-pro",
+     "rationale": "Multimodal (text+image) sensory QA; V2.5-Pro supersedes V2-Omni with 57.2% SWE-bench Pro. Requires MIMO_API_KEY; without it dispatch preflight falls back per execute-changeset",
+     "displayRationale": "Multimodal sensory QA (requires MIMO_API_KEY)"
+    },
+    "DISC": {
+     "harness": "native",
+     "tool": "web_search",
+     "rationale": "Live docs via native search"
+    },
+    "PASS": {
+     "harness": "claude",
+     "model": "haiku",
+     "rationale": "Cheapest pass-through extraction"
+    }
+   }
+  },
+  "kimi-native": {
+   "description": "Everything inside Kimi CLI. No cross-harness delegation. Uses thinking ON/OFF to differentiate labels.",
+   "labels": {
+    "STRAT": {
+     "harness": "kimi",
+     "model": "kimi-for-coding",
+     "thinking": true,
+     "rationale": "Deep reasoning with thinking ON"
+    },
+    "PLAN": {
+     "harness": "kimi",
+     "model": "kimi-for-coding",
+     "thinking": true,
+     "rationale": "Deterministic planning with thinking ON"
+    },
+    "EXEC": {
+     "harness": "kimi",
+     "model": "kimi-for-coding",
+     "thinking": true,
+     "rationale": "Execution of complex manifests benefits from reasoning; toggle OFF for purely mechanical quick-fixes"
+    },
+    "REVIEW": {
+     "harness": "kimi",
+     "model": "kimi-for-coding",
+     "thinking": true,
+     "rationale": "Careful review with thinking ON"
+    },
+    "SENSE": {
+     "harness": "kimi",
+     "model": "kimi-for-coding",
+     "thinking": true,
+     "rationale": "Video/image analysis with thinking ON"
+    },
+    "DISC": {
+     "harness": "native",
+     "tool": "SearchWeb",
+     "rationale": "Native Kimi web search"
+    },
+    "PASS": {
+     "harness": "kimi",
+     "model": "kimi-for-coding",
+     "thinking": false,
+     "rationale": "Cheap pass-through with thinking OFF"
+    }
+   }
+  },
+  "claude-native": {
+   "description": "Everything inside Claude Code. No MiMo delegation. Sonnet handles execution.",
+   "labels": {
+    "STRAT": {
+     "harness": "claude",
+     "model": "opus",
+     "rationale": "Opus for strategy"
+    },
+    "PLAN": {
+     "harness": "claude",
+     "model": "opus",
+     "rationale": "Opus for planning"
+    },
+    "EXEC": {
+     "harness": "claude",
+     "model": "sonnet",
+     "rationale": "Sonnet for execution"
+    },
+    "REVIEW": {
+     "harness": "claude",
+     "model": "sonnet",
+     "rationale": "Sonnet for review"
+    },
+    "SENSE": {
+     "harness": "claude",
+     "model": "opus",
+     "rationale": "Opus for multimodal QA"
+    },
+    "DISC": {
+     "harness": "native",
+     "tool": "web_search",
+     "rationale": "Native web search"
+    },
+    "PASS": {
+     "harness": "claude",
+     "model": "haiku",
+     "rationale": "Haiku for extraction"
+    }
+   }
+  },
+  "codex-native": {
+   "description": "Everything inside Codex. Best for Windows Codex app + WSL2 when Claude/OpenCode/MiMo delegate CLIs are unavailable or intentionally avoided.",
+   "labels": {
+    "STRAT": {
+     "harness": "codex",
+     "model": "gpt-5.5",
+     "rationale": "Codex-native frontier reasoning inside the active WSL2 environment"
+    },
+    "PLAN": {
+     "harness": "codex",
+     "model": "gpt-5.5",
+     "rationale": "Codex-native planning without cross-harness shell dependencies"
+    },
+    "EXEC": {
+     "harness": "codex",
+     "model": "gpt-5.5",
+     "rationale": "Codex-native execution avoids missing opencode/MiMo delegation on Windows WSL2"
+    },
+    "REVIEW": {
+     "harness": "codex",
+     "model": "gpt-5.5",
+     "rationale": "Codex-native review in the same workspace and sandbox"
+    },
+    "SENSE": {
+     "harness": "codex",
+     "model": "gpt-5.5",
+     "rationale": "Codex-native multimodal/tooling path when available"
+    },
+    "DISC": {
+     "harness": "native",
+     "tool": "web_search",
+     "rationale": "Native Codex web search"
+    },
+    "PASS": {
+     "harness": "codex",
+     "model": "gpt-5.4-mini",
+     "rationale": "Lower-cost Codex-native pass-through extraction"
+    }
+   }
+  },
+  "kimi-orchestrator-mixed": {
+   "description": "EXPERIMENTAL: Kimi orchestrates but delegates EXEC to MiMo and PASS to Haiku. Useful if Kimi's execution throughput is insufficient.",
+   "labels": {
+    "STRAT": {
+     "harness": "kimi",
+     "model": "kimi-for-coding",
+     "thinking": true,
+     "rationale": "Kimi strategy"
+    },
+    "PLAN": {
+     "harness": "kimi",
+     "model": "kimi-for-coding",
+     "thinking": true,
+     "rationale": "Kimi planning"
+    },
+    "EXEC": {
+     "harness": "mimo",
+     "model": "mimo-v2.5",
+     "rationale": "MiMo V2.5 for raw execution horsepower at low cost"
+    },
+    "REVIEW": {
+     "harness": "kimi",
+     "model": "kimi-for-coding",
+     "thinking": true,
+     "rationale": "Kimi review"
+    },
+    "SENSE": {
+     "harness": "mimo",
+     "model": "mimo-v2.5-pro",
+     "rationale": "MiMo V2.5-Pro multimodal for video/image QA"
+    },
+    "DISC": {
+     "harness": "native",
+     "tool": "SearchWeb",
+     "rationale": "Native web search"
+    },
+    "PASS": {
+     "harness": "claude",
+     "model": "haiku",
+     "rationale": "Haiku for cheapest extraction"
+    }
+   }
+  },
+  "opencode-mimo": {
+   "description": "OpenCode orchestrator + MiMo execution. Full 1M context, no autocompact. Best for large multi-file ports and high-context tasks where Claude Code's autocompact would thrash.",
+   "labels": {
+    "STRAT": {
+     "harness": "mimo",
+     "model": "mimo-v2.5-pro",
+     "rationale": "MiMo V2.5-Pro for strategy (57.2% SWE-bench Pro, $1.00/$3.00 per Mtok)"
+    },
+    "PLAN": {
+     "harness": "mimo",
+     "model": "mimo-v2.5-pro",
+     "rationale": "MiMo V2.5-Pro for planning with full 1M context"
+    },
+    "EXEC": {
+     "harness": "mimo",
+     "model": "mimo-v2.5",
+     "rationale": "MiMo V2.5 for execution at $0.40/$2.00 per Mtok"
+    },
+    "REVIEW": {
+     "harness": "mimo",
+     "model": "mimo-v2.5-pro",
+     "rationale": "MiMo V2.5-Pro for review with multimodal support"
+    },
+    "SENSE": {
+     "harness": "mimo",
+     "model": "mimo-v2.5-pro",
+     "rationale": "MiMo V2.5-Pro multimodal (text+image) for visual QA"
+    },
+    "DISC": {
+     "harness": "native",
+     "tool": "websearch",
+     "rationale": "OpenCode native websearch via Exa AI"
+    },
+    "PASS": {
+     "harness": "mimo",
+     "model": "mimo-v2.5",
+     "rationale": "MiMo V2.5 cheapest pass-through at $0.40/$2.00 per Mtok"
+    }
+   }
+  },
+  "mimo-code-native": {
+   "description": "MiMo Code host (OpenCode fork) with native MiMo routing. Separate from opencode-mimo and from svc-default (svc-default carries the locked WI-357 decision — do NOT modify it).",
+   "labels": {
+    "STRAT": { "harness": "mimo-code", "model": "mimo-v2.5-pro", "rationale": "1M context, strongest reasoning" },
+    "PLAN": { "harness": "mimo-code", "model": "mimo-v2.5-pro", "rationale": "1M context, deterministic planning" },
+    "EXEC": { "harness": "mimo-code", "model": "mimo-v2.5", "rationale": "$0.40/$2.00, 1M context" },
+    "REVIEW": { "harness": "claude", "model": "claude-sonnet-4-6", "rationale": "Reviewer allowlist {codex,claude,gemini}: MiMo is out-of-scope as reviewer (CLAUDE.md). REVIEW stays cross-model even on a MiMo host to preserve adversarial integrity." },
+    "SENSE": { "harness": "mimo-code", "model": "mimo-v2.5-pro", "rationale": "text+image multimodal QA — v2.5 is text-only, so SENSE must use v2.5-pro" },
+    "DISC": { "harness": "native", "tool": "websearch", "rationale": "native web search" },
+    "PASS": { "harness": "mimo-code", "model": "mimo-v2.5", "rationale": "cheapest VERIFIED MiMo pass-through (v2-flash registered but mimo/ invocation unverified)" }
+   }
+  },
+  "grok-native": {
+   "description": "Pure xAI Grok profile using Grok 4.6 with xhigh reasoning for all cognitive tiers.",
+   "labels": {
+    "STRAT": { "harness": "xai", "model": "grok-4.6", "rationale": "Grok 4.6 500K context with xhigh reasoning" },
+    "PLAN": { "harness": "xai", "model": "grok-4.6", "rationale": "Grok 4.6 for deterministic blueprinting" },
+    "EXEC": { "harness": "xai", "model": "grok-4.6", "rationale": "Grok 4.6 agentic execution" },
+    "REVIEW": { "harness": "xai", "model": "grok-4.6", "rationale": "Grok 4.6 high-rigor adversarial review" },
+    "SENSE": { "harness": "xai", "model": "grok-code", "rationale": "Fast visual and code sensing" },
+    "DISC": { "harness": "native", "tool": "web_search", "rationale": "Native real-time search" },
+    "PASS": { "harness": "xai", "model": "grok-code", "rationale": "Fast summary extraction" }
+   }
+  }
+ }
+}

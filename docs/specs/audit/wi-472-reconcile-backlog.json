@@ -1,0 +1,4133 @@
+{
+  "schema_version": 1,
+  "wi": "WI-472",
+  "generated_at": "2026-07-21T01:22:10.470Z",
+  "authority": "portable refs/notes/svc-receipts validation from checkpoint to origin/main",
+  "range": "985a8d5de2255288daaacda91c739e294b8a67d5..origin/main",
+  "checkpoint_sha": "985a8d5de2255288daaacda91c739e294b8a67d5",
+  "origin_main": "6b026ea9fbcee849e682d7aa47c3eec894512de3",
+  "portable_unresolved_count": 78,
+  "main_checkout_reported_unresolved_count": 72,
+  "counts": {
+    "copy_tree_equivalent_reviewed_envelope": 27,
+    "promote_valid_main_mirror": 6,
+    "reissue_mechanically_eligible_quick_fix": 8,
+    "retroactive_evidence_review": 37
+  },
+  "policy": "No AUDIT_EXEMPT or EMERGENCY_OVERRIDE. Each row must be recovered mechanically or pass explicit retroactive plan and independent execution review.",
+  "rows": [
+    {
+      "sha": "85b5b965b28667e0b8f16501c50446cb9f3ca73b",
+      "short": "85b5b96",
+      "date": "2026-07-18T19:59:01+03:00",
+      "subject": "feat(WI-498): install-anchored resolution (security) + Codex first-task activation (#156)",
+      "tree": "d381b98415546507df6f1f6f5eefc2cacf2c9440",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 156,
+        "title": "feat(WI-498): install-anchored resolution (security) + Codex first-task activation",
+        "merged_at": "2026-07-18T16:59:01Z",
+        "head": "framework-WI-498-codex-first-task-activation",
+        "review_decision": "",
+        "body_sha256": "74f333eeefe713910baffb8e6b938de0dfbd76184e3245346670449703010e14"
+      },
+      "wi_ids": [
+        "WI-498"
+      ],
+      "changed_files": [
+        ".svc/lane-tasks-WI-498.json",
+        ".svc/learning-fires.jsonl",
+        ".svc/pipeline-decisions.jsonl",
+        ".svc/session-contract.jsonl",
+        "docs/plans/2026-07-18-codex-first-task-activation/manifest.md",
+        "docs/specs/reviews/WI-498-g6-exec-review-round3.json",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-498.md",
+        "hooks/codex/svc-codex-skill-load-enforcer.mjs",
+        "hooks/codex/svc-codex-stop-firewall.mjs",
+        "hooks/lib/validate-task-graph-shape.mjs",
+        "hooks/svc-lane-tasks-validate-content.mjs",
+        "hooks/svc-lane-tasks-validate-edit.mjs",
+        "hooks/svc-phase-receipt-autoemit.mjs",
+        "references/knowledge/domains/dev-tooling/source-heuristics.jsonl",
+        "scripts/codex-load-skill.mjs",
+        "scripts/state-io.mjs",
+        "scripts/task-graph.mjs",
+        "scripts/validate-wave-closeout.mjs",
+        "test-framework/evals/tier-1/validate-codex-execution-integrity.sh",
+        "test-framework/evals/tier-1/validate-codex-first-task-activation.sh",
+        "test-framework/evals/tier-1/validate-install-anchored-resolution.sh"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-498.json",
+        "docs/plans/2026-07-18-codex-first-task-activation/manifest.md",
+        "docs/specs/reviews/WI-498-g6-exec-review-round3.json",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-498.md"
+      ],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "f6804b78dc9cedb2e744961033d000a746754438",
+      "short": "f6804b7",
+      "date": "2026-07-17T15:05:55+03:00",
+      "subject": "docs(WI-487): verify promotion — status VERIFIED (G7) (#152)",
+      "tree": "8dcc5d5061b71fbc5c847e3fe98f2339411f4e5e",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "95bb539bb3b31b321d8180d9a17f53a4bf82a178",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": true,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 152,
+        "title": "docs(WI-487): verify promotion — status VERIFIED (G7)",
+        "merged_at": "2026-07-17T12:05:55Z",
+        "head": "wi487-verify-closeout",
+        "review_decision": "",
+        "body_sha256": "03604ee01830bcb6f55d2077f95fc96fa7397fafed4e80f64f6d9807c0dc3608"
+      },
+      "wi_ids": [
+        "WI-487"
+      ],
+      "changed_files": [
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-487.md"
+      ],
+      "evidence_artifacts": [
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-487.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "a72813415bd7aff0578d10da33aff866b9c500ec",
+      "short": "a728134",
+      "date": "2026-07-17T15:00:02+03:00",
+      "subject": "feat(WI-487): durable, observable installed enforcement — no silent fail-open (#151)",
+      "tree": "09d8c32f50bb162f024ec27b989867e418f80756",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "be93dd6e53ccdb8b8890b69b078bffd93ea95c54",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 151,
+        "title": "feat(WI-487): durable, observable installed enforcement — no silent fail-open",
+        "merged_at": "2026-07-17T12:00:03Z",
+        "head": "framework-WI-487-durable-install",
+        "review_decision": "",
+        "body_sha256": "7a020d04b20b6d2975472d902aa24f1bce34cab8eb90b63d3c4cc527a69adba6"
+      },
+      "wi_ids": [
+        "WI-487"
+      ],
+      "changed_files": [
+        ".gitignore",
+        ".svc/lane-tasks-WI-487.json",
+        "bin/svc-enforce.mjs",
+        "docs/plans/2026-07-17-wi487-durable-install-enforcement/manifest.md",
+        "docs/plans/2026-07-17-wi487-durable-install-enforcement/review-log.yaml",
+        "docs/specs/decisions/wi-487-durable-install-enforcement.md",
+        "docs/specs/features/wi-487-durable-install-enforcement.md",
+        "docs/specs/reviews/wi-487-exec-review-log.yaml",
+        "docs/specs/test-evidence/WI-487/blocking-hook-inventory.json",
+        "docs/specs/test-evidence/WI-487/blocking-hook-repo-paths.txt",
+        "docs/specs/test-evidence/WI-487/declared-file-set.txt",
+        "docs/specs/test-evidence/WI-487/env-red-baseline.json",
+        "docs/specs/test-evidence/WI-487/pre-change-tier1-baseline.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-493.md",
+        "hooks/codex/svc-codex-skill-load-enforcer.mjs",
+        "hooks/lib/durable-source.mjs",
+        "hooks/lib/emit-denial.sh",
+        "hooks/lib/enforcement-core.mjs",
+        "hooks/lib/hook-denial.mjs",
+        "hooks/svc-inertia-check.mjs",
+        "hooks/svc-lane-tasks-validator.mjs",
+        "hooks/svc-session-contract-freshness.mjs",
+        "hooks/svc-session-start-healthcheck.mjs",
+        "hooks/svc-skill-artifact-authenticity.mjs",
+        "hooks/svc-stop-quality.js",
+        "hooks/svc-task-completion-guard.sh",
+        "hooks/svc-verification-delegation-guard.sh",
+        "hooks/svc-wi-pillars-check.sh",
+        "hooks/svc-workflow-guard.mjs",
+        "provision/hosts/antigravity.json",
+        "provision/hosts/claude.json",
+        "provision/hosts/codex.json",
+        "provision/hosts/cursor.json",
+        "provision/hosts/gemini.json",
+        "provision/hosts/kimi.json",
+        "provision/hosts/mimo-code.json",
+        "provision/hosts/opencode.json",
+        "schemas/hook-denial-receipt.schema.json",
+        "schemas/install-state-receipt.schema.json",
+        "scripts/author-review-doc.mjs",
+        "scripts/check-blocking-hook-inventory.mjs",
+        "scripts/check-install-drift.sh",
+        "scripts/check-tier1-env-red-set.mjs",
+        "scripts/emit-6b-closure.mjs",
+        "scripts/eval-gate.mjs",
+        "scripts/preflight.mjs",
+        "scripts/svc-migrate-install.mjs",
+        "scripts/wire-codex-hooks.mjs",
+        "scripts/wire-gemini-hooks.mjs",
+        "scripts/wire-hooks.mjs",
+        "scripts/wire-kimi-hooks.mjs",
+        "setup",
+        "test-framework/evals/tier-1/validate-actionable-hook-denial.sh",
+        "test-framework/evals/tier-1/validate-all-host-install-migration.sh",
+        "test-framework/evals/tier-1/validate-governed-wirer-fail-fast.sh",
+        "test-framework/evals/tier-1/validate-self-heal-survives-double-dead-pointer.sh",
+        "test-framework/evals/tier-1/validate-setup-worktree-canonical-resolution.sh",
+        "test-framework/evals/tier-1/validate-stop-hook-stdin-preservation.sh",
+        "test-framework/evals/tier-1/validate-wi-pillars-hard-block.sh"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-487.json",
+        "docs/plans/2026-07-17-wi487-durable-install-enforcement/manifest.md",
+        "docs/plans/2026-07-17-wi487-durable-install-enforcement/review-log.yaml",
+        "docs/specs/decisions/wi-487-durable-install-enforcement.md",
+        "docs/specs/features/wi-487-durable-install-enforcement.md",
+        "docs/specs/reviews/wi-487-exec-review-log.yaml",
+        "docs/specs/test-evidence/WI-487/blocking-hook-inventory.json",
+        "docs/specs/test-evidence/WI-487/blocking-hook-repo-paths.txt",
+        "docs/specs/test-evidence/WI-487/declared-file-set.txt",
+        "docs/specs/test-evidence/WI-487/env-red-baseline.json",
+        "docs/specs/test-evidence/WI-487/pre-change-tier1-baseline.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-493.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "835e365a1ee2b408bcfbb8eae49500d8f0270f4b",
+      "short": "835e365",
+      "date": "2026-07-17T08:12:11+03:00",
+      "subject": "docs(WI-486): verify promotion — status VERIFIED (G7) (#150)",
+      "tree": "bd35b8a9edd6c21aec2d18f88e6cc1e7bbe92d54",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "539451894fe61440c7a036969cd195d39f2dc2e3",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": true,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 150,
+        "title": "docs(WI-486): verify promotion — status VERIFIED (G7)",
+        "merged_at": "2026-07-17T05:12:11Z",
+        "head": "wi486-verify-closeout",
+        "review_decision": "",
+        "body_sha256": "7d8e4af750558bf30da20f8f8a4d3d298128196cb291368c1a10b5d682a97740"
+      },
+      "wi_ids": [
+        "WI-486"
+      ],
+      "changed_files": [
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-486.md"
+      ],
+      "evidence_artifacts": [
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-486.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "0a64c07fa20e8ea571521c9d20fd57278c8f9fcc",
+      "short": "0a64c07",
+      "date": "2026-07-17T08:08:37+03:00",
+      "subject": "feat(WI-486): session-isolated multi-WI bootstrap — atomic intent-anchored transaction + tuple-only authority + bounded task-state migration (#149)",
+      "tree": "99c08f5575843b945b8fd6d0f628dd1d8c87102f",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "1329c7804c612bf0a6728ec9004625d39379ceea",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 149,
+        "title": "feat(WI-486): session-isolated multi-WI bootstrap — atomic intent-anchored transaction + tuple-only authority",
+        "merged_at": "2026-07-17T05:08:37Z",
+        "head": "framework-WI-486-isolated-bootstrap",
+        "review_decision": "",
+        "body_sha256": "e013c06c9c6527fa056d3166a8fe709538711b04a1871c2cf114ca816a4ef0cc"
+      },
+      "wi_ids": [
+        "WI-486"
+      ],
+      "changed_files": [
+        ".gitignore",
+        ".svc/lane-tasks-WI-486.json",
+        ".svc/pipeline-decisions.jsonl",
+        "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/manifest.md",
+        "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/progress.md",
+        "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/review-log.yaml",
+        "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/review-round2-findings.json",
+        "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/review-round2-receipt.json",
+        "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/review-round3-findings.json",
+        "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/review-round4-findings.json",
+        "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/review-round5-findings.json",
+        "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/review-round6-findings.json",
+        "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/review-round7-findings.json",
+        "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/review-round8-findings.json",
+        "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/review-round9-findings.json",
+        "docs/specs/bugfix/wi-486-session-bootstrap-brief.md",
+        "docs/specs/decisions/wi-486-session-isolated-bootstrap.md",
+        "docs/specs/features/wi-486-session-isolated-bootstrap.md",
+        "docs/specs/journeys/J-FW-05-multi-session-contention.feature.md",
+        "docs/specs/reviews/wi-486-exec-review-log.yaml",
+        "docs/specs/test-evidence/WI-486/declared-file-set.txt",
+        "docs/specs/test-evidence/WI-486/graph-reader-inventory.txt",
+        "docs/specs/test-evidence/WI-486/pre-change-tier1-baseline.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-492.md",
+        "hooks/codex/lib/codex-hook-context.mjs",
+        "hooks/codex/svc-codex-skill-load-enforcer.mjs",
+        "hooks/lib/resolve-wi.mjs",
+        "hooks/lib/task-state-compatibility.mjs",
+        "hooks/lib/validate-task-graph-shape.mjs",
+        "hooks/lib/wi-claim.mjs",
+        "hooks/svc-task-completion-guard.sh",
+        "schemas/task-state-migration-receipt.schema.json",
+        "scripts/codex-load-skill.mjs",
+        "scripts/inventory-graph-readers.sh",
+        "scripts/svc-ensure-worktree.mjs",
+        "scripts/svc-migrate-task-state.mjs",
+        "test-framework/evals/tier-1/validate-codex-execution-integrity.sh",
+        "test-framework/evals/tier-1/validate-default-checkout-isolation.sh",
+        "test-framework/evals/tier-1/validate-session-authority-isolation.sh",
+        "test-framework/evals/tier-1/validate-session-worktree-binding.sh",
+        "test-framework/evals/tier-1/validate-task-state-compatibility.sh"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-486.json",
+        "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/manifest.md",
+        "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/progress.md",
+        "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/review-log.yaml",
+        "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/review-round2-findings.json",
+        "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/review-round2-receipt.json",
+        "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/review-round3-findings.json",
+        "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/review-round4-findings.json",
+        "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/review-round5-findings.json",
+        "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/review-round6-findings.json",
+        "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/review-round7-findings.json",
+        "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/review-round8-findings.json",
+        "docs/plans/2026-07-15-wi486-session-isolated-bootstrap/review-round9-findings.json",
+        "docs/specs/bugfix/wi-486-session-bootstrap-brief.md",
+        "docs/specs/decisions/wi-486-session-isolated-bootstrap.md",
+        "docs/specs/features/wi-486-session-isolated-bootstrap.md",
+        "docs/specs/journeys/J-FW-05-multi-session-contention.feature.md",
+        "docs/specs/reviews/wi-486-exec-review-log.yaml",
+        "docs/specs/test-evidence/WI-486/declared-file-set.txt",
+        "docs/specs/test-evidence/WI-486/graph-reader-inventory.txt",
+        "docs/specs/test-evidence/WI-486/pre-change-tier1-baseline.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-492.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "e8285fe7980ea73e67be0711b1aae88853ec519e",
+      "short": "e8285fe",
+      "date": "2026-07-17T00:48:38+03:00",
+      "subject": "docs(WI-491): verify promotion — status VERIFIED (G7) (#148)",
+      "tree": "acd0593431a07cfb8bb09abd9bd96aa9a3b430bc",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "b798bf8f1f6873248563361dbaf6ca4b58b2fb05",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": true,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 148,
+        "title": "docs(WI-491): verify promotion — status VERIFIED (G7)",
+        "merged_at": "2026-07-16T21:48:38Z",
+        "head": "wi491-verify-closeout",
+        "review_decision": "",
+        "body_sha256": "df59e4bbfc9616554a3cc3d0a79b18234d686b420f25a69bb5113c4da2abba06"
+      },
+      "wi_ids": [
+        "WI-491"
+      ],
+      "changed_files": [
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-491.md"
+      ],
+      "evidence_artifacts": [
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-491.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "4d230174c0e1bda200c6bb820f18fbe88cc97aac",
+      "short": "4d23017",
+      "date": "2026-07-15T20:17:34+03:00",
+      "subject": "Verify WI-488 promotion (#144)",
+      "tree": "14a430043ebed30b6a66c7e0950d36e2f7e4e3b8",
+      "missing": [
+        "plan-manifest",
+        "review-plan"
+      ],
+      "existing_receipts": [
+        "exec-record",
+        "review-exec",
+        "audit-implementation",
+        "verify-promotion"
+      ],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "5109e169083f921006b643a3f8eaed729888b0c1",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 144,
+        "title": "Verify WI-488 promotion",
+        "merged_at": "2026-07-15T17:17:35Z",
+        "head": "framework-WI-488-external-reviewer",
+        "review_decision": "",
+        "body_sha256": "d00674f337fa0809ebe8492756217d2bf5914a22fc1eb37fd482b38ea04e4835"
+      },
+      "wi_ids": [
+        "WI-488"
+      ],
+      "changed_files": [
+        ".svc/lane-tasks-WI-488.json",
+        ".svc/pipeline-decisions.jsonl",
+        ".svc/review-receipts/pr-144.json",
+        "docs/specs/features/wi-488-deterministic-external-reviewer.md",
+        "docs/specs/reviews/wi-488-g7-cross-model.md",
+        "docs/specs/verification/wi-488-capability-proof.json",
+        "docs/specs/verification/wi-488-command-evidence.md",
+        "docs/specs/verification/wi-488-deterministic-external-reviewer.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-488.md"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-488.json",
+        "docs/specs/features/wi-488-deterministic-external-reviewer.md",
+        "docs/specs/reviews/wi-488-g7-cross-model.md",
+        "docs/specs/verification/wi-488-capability-proof.json",
+        "docs/specs/verification/wi-488-command-evidence.md",
+        "docs/specs/verification/wi-488-deterministic-external-reviewer.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-488.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "67e325fd3ee0bddb4504a783fe0b8d227a46deff",
+      "short": "67e325f",
+      "date": "2026-07-15T15:06:38+03:00",
+      "subject": "Register concurrency, install, and reviewer-effort follow-ups (#142)",
+      "tree": "33a525a14043024d3f1834a07c501575257c80e8",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 142,
+        "title": "Register concurrency, install, and reviewer-effort follow-ups",
+        "merged_at": "2026-07-15T12:06:38Z",
+        "head": "framework-WI-486-multi-wi-bootstrap",
+        "review_decision": "",
+        "body_sha256": "8152038624e820eb6bfe2613884d2bfbd442320e84db85a3bef8020c0160fc50"
+      },
+      "wi_ids": [],
+      "changed_files": [
+        ".svc/lane-tasks-WI-486.json",
+        ".svc/pipeline-decisions.jsonl",
+        "docs/specs/research-log.md",
+        "docs/specs/reviews/wi-486-wi-488-framework-intake-fable-review.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-486.md",
+        "docs/specs/work-items/WI-487.md",
+        "docs/specs/work-items/WI-488.md",
+        "proposals/2026-07-15-framework-improvement-durable-install-source.md",
+        "proposals/2026-07-15-framework-improvement-multi-wi-session-bootstrap.md",
+        "proposals/2026-07-15-framework-improvement-reviewer-effort-policy.md",
+        "references/knowledge/domains/agent-harnesses/.sources.jsonl",
+        "references/knowledge/domains/agent-harnesses/.version",
+        "references/knowledge/domains/agent-harnesses/CAPABILITIES.md",
+        "references/knowledge/domains/agent-harnesses/details/anthropic-agent-sdk-credit-2026-06-15.md",
+        "references/knowledge/domains/agent-harnesses/details/applied-knowledge.md",
+        "references/knowledge/domains/agent-harnesses/details/claude-code-dynamic-workflows.md",
+        "references/knowledge/domains/agent-harnesses/source-heuristics.jsonl"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-486.json",
+        "docs/specs/research-log.md",
+        "docs/specs/reviews/wi-486-wi-488-framework-intake-fable-review.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-486.md",
+        "docs/specs/work-items/WI-487.md",
+        "docs/specs/work-items/WI-488.md",
+        "proposals/2026-07-15-framework-improvement-durable-install-source.md",
+        "proposals/2026-07-15-framework-improvement-multi-wi-session-bootstrap.md",
+        "proposals/2026-07-15-framework-improvement-reviewer-effort-policy.md"
+      ],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "4ae39183bb62b3222faafcf43df2a162d182db3c",
+      "short": "4ae3918",
+      "date": "2026-07-15T10:25:11+03:00",
+      "subject": "feat(analyze-marketing): Mode 9 completeness gap-check — absence detection for missed sellable capabilities (WI-482) (#141)",
+      "tree": "c321f29c036a605ebdc5ebd0de7a1a046b809489",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 141,
+        "title": "feat(analyze-marketing): Mode 9 completeness gap-check (absence detection) — WI-482",
+        "merged_at": "2026-07-15T07:25:12Z",
+        "head": "wi-marketing-mode9-gap-check",
+        "review_decision": "",
+        "body_sha256": "04b72d7d2c4afa2cefc59fd122686fe7595bd56b634b5cfaadd209c574c09d61"
+      },
+      "wi_ids": [
+        "WI-482"
+      ],
+      "changed_files": [
+        "analyze-marketing/SKILL.md",
+        "analyze-marketing/references/completeness-gap-check.md",
+        "proposals/2026-07-15-extraction-skill-absence-detection.md",
+        "references/framework-learnings.jsonl"
+      ],
+      "evidence_artifacts": [
+        "proposals/2026-07-15-extraction-skill-absence-detection.md"
+      ],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "15cf1bd3ae505847d9b2241be94ab504798011c2",
+      "short": "15cf1bd",
+      "date": "2026-07-15T08:12:55+03:00",
+      "subject": "Verify WI-481 promotion (#140)",
+      "tree": "743760239b003fecea925763048708b01f54ca1b",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "9f2f5c168bbee7beff1046a2792363dfb25730c3",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 140,
+        "title": "Verify WI-481 promotion",
+        "merged_at": "2026-07-15T05:12:55Z",
+        "head": "framework-WI-481-verification",
+        "review_decision": "",
+        "body_sha256": "a7fa27f563919ebdb83f90298730027ddcee483fc24375f6c2b7253bcdba5ec6"
+      },
+      "wi_ids": [
+        "WI-481"
+      ],
+      "changed_files": [
+        ".svc/lane-tasks-WI-481.json",
+        ".svc/review-receipts/pr-140.json",
+        "docs/specs/verification/wi-481-change-impact-triad.md",
+        "docs/specs/work-items/WI-481.md"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-481.json",
+        "docs/specs/verification/wi-481-change-impact-triad.md",
+        "docs/specs/work-items/WI-481.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "2c1b1b7a53ea22ef45b3ac9c0cb694eb74ea88a9",
+      "short": "2c1b1b7",
+      "date": "2026-07-15T07:31:43+03:00",
+      "subject": "Enforce universal change impact triad (#139)",
+      "tree": "5c8de3374206134618dfad19680778ef282d0186",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "17b5d7bec83b2fc02c41ce0c1d06389f35cd938a",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 139,
+        "title": "Enforce universal change impact triad",
+        "merged_at": "2026-07-15T04:31:43Z",
+        "head": "framework-WI-481-change-impact-triad",
+        "review_decision": "",
+        "body_sha256": "d0de36f98fc582ed372b1b70576b927c411d138bf1e094b44e17e09d85cc63e7"
+      },
+      "wi_ids": [],
+      "changed_files": [
+        ".gitignore",
+        ".svc/lane-tasks-WI-481.json",
+        ".svc/review-receipts/pr-139.json",
+        ".svc/session-contract.jsonl",
+        "DOCTRINE.md",
+        "diagnose-bug/SKILL.md",
+        "docs/plans/2026-07-14-wi481-change-impact-triad-leaf/review-exec-g6-fable.md",
+        "docs/specs/audit/wi-481-change-impact-triad-analysis.md",
+        "docs/specs/work-items/WI-481.md",
+        "execute-changeset/SKILL.md",
+        "hooks/git/pre-commit.d/25-impact-triad",
+        "hooks/svc-impact-triad-guard.mjs",
+        "quick-fix/SKILL.md",
+        "references/change-impact-triad.md",
+        "route-workflow/SKILL.md",
+        "schemas/change-impact-triad.schema.json",
+        "scripts/classify-change-risk.mjs",
+        "scripts/install-git-hooks.mjs",
+        "scripts/quick-fix-eligibility.mjs",
+        "scripts/wire-codex-hooks.mjs",
+        "scripts/wire-hooks.mjs",
+        "test-framework/evals/tier-1/validate-envelope-integrity.sh",
+        "test-framework/evals/tier-1/validate-impact-triad.sh",
+        "test-framework/evals/tier-1/validate-quick-fix-carve-out.sh"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-481.json",
+        "docs/plans/2026-07-14-wi481-change-impact-triad-leaf/review-exec-g6-fable.md",
+        "docs/specs/audit/wi-481-change-impact-triad-analysis.md",
+        "docs/specs/work-items/WI-481.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "1a552b8c815a17675f8073af74058dc5de9917bc",
+      "short": "1a552b8",
+      "date": "2026-07-15T06:08:50+03:00",
+      "subject": "Verify WI-483 promotion (#138)",
+      "tree": "b9c23177754a0d57a72378af29cf840143e8a711",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "610d182dd4210fe28b831c807a7a1735a2ae0f93",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": true,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 138,
+        "title": "Verify WI-483 promotion",
+        "merged_at": "2026-07-15T03:08:50Z",
+        "head": "framework-WI-483-verification-v2",
+        "review_decision": "",
+        "body_sha256": "971665046f667dcbf4c0f530b71ef0825ef37322be2e2ab774908edbb0a8f2dc"
+      },
+      "wi_ids": [
+        "WI-483"
+      ],
+      "changed_files": [
+        ".svc/lane-tasks-WI-483.json",
+        ".svc/review-receipts/pr-138.json",
+        ".svc/session-contract.jsonl",
+        "docs/specs/verification/wi-483-mobile-worktree-builds.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-483.md"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-483.json",
+        "docs/specs/verification/wi-483-mobile-worktree-builds.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-483.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "6755c8afa2df6a61d9263df073ce4bd458e63ef3",
+      "short": "6755c8a",
+      "date": "2026-07-15T05:36:42+03:00",
+      "subject": "Add mobile worktree build identity (#137)",
+      "tree": "4532b114ba55cfae7011205235257a0c7482be98",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "e8004a5bab13eae3fe5c18ead9fb36aa721ad7c4",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 137,
+        "title": "Add mobile worktree build identity",
+        "merged_at": "2026-07-15T02:36:42Z",
+        "head": "framework-WI-483-mobile-worktree-builds",
+        "review_decision": "",
+        "body_sha256": "4fb3325a32e7b2ceec699a776f8d58a3432d4334ac25331c2b85db77f5164cd7"
+      },
+      "wi_ids": [],
+      "changed_files": [
+        ".svc/lane-tasks-WI-483.json",
+        ".svc/review-receipts/pr-137.json",
+        ".svc/session-contract.jsonl",
+        "concerns/build-ship-alignment.md",
+        "docs/specs/audit/wi-483-mobile-worktree-builds-analysis.md",
+        "docs/specs/reviews/wi-483-mobile-worktree-builds-exec-cross-model.md",
+        "docs/specs/security/wi-483-mobile-worktree-builds-review.md",
+        "execute-changeset/SKILL.md",
+        "land-changeset/SKILL.md",
+        "proposals/triage.json",
+        "references/mobile-worktree-builds.md",
+        "rules/build-and-ship-alignment.md",
+        "schemas/mobile-build-contract.schema.json",
+        "scripts/mobile-build-identity.mjs",
+        "test-framework/evals/tier-1/validate-build-ship-android-version-gate.sh",
+        "test-framework/evals/tier-1/validate-mobile-build-identity.sh",
+        "test-framework/evals/tier-1/validate-output-discipline-guard.sh",
+        "verify-promotion/SKILL.md"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-483.json",
+        "docs/specs/audit/wi-483-mobile-worktree-builds-analysis.md",
+        "docs/specs/reviews/wi-483-mobile-worktree-builds-exec-cross-model.md",
+        "docs/specs/security/wi-483-mobile-worktree-builds-review.md",
+        "proposals/triage.json"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "9c2c7b66ac4544a07193c73d71e8d728552f5300",
+      "short": "9c2c7b6",
+      "date": "2026-07-14T23:40:24+03:00",
+      "subject": "Verify WI-482 default-checkout isolation promotion (#136)",
+      "tree": "14cd8b4df63677f95abc63b3c511eb032e931343",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "e48685547d9ca5f90109e51f0c595e26ba535d1f",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": true,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 136,
+        "title": "Verify WI-482 default-checkout isolation promotion",
+        "merged_at": "2026-07-14T20:40:25Z",
+        "head": "framework-WI-482-default-checkout-isolation",
+        "review_decision": "",
+        "body_sha256": "9ea64ceb49b925471b453df44cfe2b26156613ecb04eff39cad98e2a5dcf568e"
+      },
+      "wi_ids": [
+        "WI-482"
+      ],
+      "changed_files": [
+        ".svc/lane-tasks-WI-482.json",
+        ".svc/review-receipts/pr-136.json",
+        "docs/specs/verification/wi-482-default-checkout-isolation.md",
+        "docs/specs/work-items/WI-482.md"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-482.json",
+        "docs/specs/verification/wi-482-default-checkout-isolation.md",
+        "docs/specs/work-items/WI-482.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "0ebe2efd7d0b13131e1fab2d01ff639caec54427",
+      "short": "0ebe2ef",
+      "date": "2026-07-14T23:17:37+03:00",
+      "subject": "Enforce mandatory default-checkout isolation (#135)",
+      "tree": "6a60581eaebfe018c55943f7f405ca174e5e307e",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "4453f588a61ce8f0492a9536eba347f7c0a2aeb4",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 135,
+        "title": "Enforce mandatory default-checkout isolation",
+        "merged_at": "2026-07-14T20:17:37Z",
+        "head": "framework-WI-482-default-checkout-isolation",
+        "review_decision": "",
+        "body_sha256": "95c0dcab9f51c02f9444742b62dab478705d26a90b95f7cb7cebe16a7bc531c7"
+      },
+      "wi_ids": [],
+      "changed_files": [
+        ".gitignore",
+        ".svc/lane-tasks-WI-482.json",
+        ".svc/review-receipts/pr-135.json",
+        ".svc/session-contract.jsonl",
+        "WORKTREES.md",
+        "docs/specs/audit/wi-482-default-checkout-isolation-analysis.md",
+        "docs/specs/reviews/wi-482-default-checkout-isolation-exec-cross-model.md",
+        "docs/specs/security/wi-482-default-checkout-isolation-review.md",
+        "hooks/git/pre-commit.d/10-default-checkout-isolation",
+        "hooks/svc-worktree-isolation-guard.mjs",
+        "list-work-items/SKILL.md",
+        "references/worktree-isolation.md",
+        "route-workflow/SKILL.md",
+        "scripts/svc-ensure-worktree.mjs",
+        "scripts/wire-codex-hooks.mjs",
+        "scripts/wire-gemini-hooks.mjs",
+        "scripts/wire-hooks.mjs",
+        "scripts/wire-kimi-hooks.mjs",
+        "scripts/wire-opencode-hooks.mjs",
+        "scripts/worktree.sh",
+        "test-framework/evals/tier-1/validate-default-checkout-isolation.sh",
+        "test-framework/evals/tier-1/validate-git-hooks-installed.sh",
+        "test-framework/evals/tier-1/validate-stop-hook-session-isolation.sh",
+        "test-framework/evals/tier-1/validate-wire-kimi-hooks-paths.sh"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-482.json",
+        "docs/specs/audit/wi-482-default-checkout-isolation-analysis.md",
+        "docs/specs/reviews/wi-482-default-checkout-isolation-exec-cross-model.md",
+        "docs/specs/security/wi-482-default-checkout-isolation-review.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "b095ca4b988064559cc7a201577ea896ce5e7f7b",
+      "short": "b095ca4",
+      "date": "2026-07-14T21:59:10+03:00",
+      "subject": "Verify WI-484 session-worktree binding promotion (#134)",
+      "tree": "5feee3ba329e51d98be7f03aefbadaf9c857ac13",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "38129d9d77c7a9bb719885eb7b2f13503fa13ce1",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": true,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 134,
+        "title": "Verify WI-484 session-worktree binding promotion",
+        "merged_at": "2026-07-14T18:59:11Z",
+        "head": "framework-WI-484-verify-promotion",
+        "review_decision": "",
+        "body_sha256": "2ba9825e58cee59b0296faf5dcbacc3edf8a34da843f876f58af242fb40edd1b"
+      },
+      "wi_ids": [
+        "WI-484"
+      ],
+      "changed_files": [
+        ".svc/lane-tasks-WI-484.json",
+        ".svc/review-receipts/pr-133.json",
+        ".svc/session-contract.jsonl",
+        "docs/specs/verification/wi-484-session-worktree-binding.md",
+        "docs/specs/work-items/WI-484.md"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-484.json",
+        "docs/specs/verification/wi-484-session-worktree-binding.md",
+        "docs/specs/work-items/WI-484.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "af4e43a4b6d63d64fa81ab81b3e27558a6c8dde7",
+      "short": "af4e43a",
+      "date": "2026-07-14T21:40:51+03:00",
+      "subject": "Bind framework sessions to worktrees and WIs (#133)",
+      "tree": "4b8b83b23ec1325dca28ca83d2cbe2ccd3cde689",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "c67d88a18194681960df22fa5e4bbba7c3411b9b",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 133,
+        "title": "Bind framework sessions to worktrees and WIs",
+        "merged_at": "2026-07-14T18:40:51Z",
+        "head": "framework-WI-484-session-worktree-binding",
+        "review_decision": "",
+        "body_sha256": "b36be02b6aba3fedee8781b659f5f68d8ba6fbb1ce294bfa58d6a1e8052a17d4"
+      },
+      "wi_ids": [],
+      "changed_files": [
+        ".svc/lane-tasks-WI-484.json",
+        ".svc/session-contract.jsonl",
+        "docs/specs/audit/wi-484-session-worktree-binding-analysis.md",
+        "docs/specs/reviews/wi-484-session-worktree-binding-exec-cross-model.md",
+        "docs/specs/security/wi-484-session-worktree-binding-review.md",
+        "docs/specs/work-items/WI-484.md",
+        "hooks/lib/active-intent.mjs",
+        "hooks/lib/resolve-wi.mjs",
+        "hooks/lib/wi-claim.mjs",
+        "hooks/svc-task-completion-guard.sh",
+        "references/session-worktree-wi-binding.md",
+        "schemas/session-worktree-binding.schema.json",
+        "scripts/worktree.sh",
+        "test-framework/evals/tier-1/validate-active-intent-guard.sh",
+        "test-framework/evals/tier-1/validate-completion-guard-no-max-escape.sh",
+        "test-framework/evals/tier-1/validate-session-worktree-binding.sh"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-484.json",
+        "docs/specs/audit/wi-484-session-worktree-binding-analysis.md",
+        "docs/specs/reviews/wi-484-session-worktree-binding-exec-cross-model.md",
+        "docs/specs/security/wi-484-session-worktree-binding-review.md",
+        "docs/specs/work-items/WI-484.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "16afeb50acd7ebef38bd823e254ba3b27d2c1239",
+      "short": "16afeb5",
+      "date": "2026-07-14T19:48:41+03:00",
+      "subject": "Verify WI-485 installed Codex runtime (#132)",
+      "tree": "1f58d0a74d577e2df770a7e6b8976beb07d776cc",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "05b3e06c164b3209ec68135f62163edbb65e5a21",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": true,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 132,
+        "title": "Verify WI-485 installed Codex runtime",
+        "merged_at": "2026-07-14T16:48:42Z",
+        "head": "framework-WI-485-verify-promotion",
+        "review_decision": "",
+        "body_sha256": "55354e5b8510a69c4b69380f79c6977c91a76a7306f8097036f20339ea1401f3"
+      },
+      "wi_ids": [
+        "WI-485"
+      ],
+      "changed_files": [
+        ".svc/lane-tasks-WI-485.json",
+        ".svc/review-receipts/pr-132.json",
+        "docs/specs/verification/wi-485-codex-execution-integrity.md",
+        "docs/specs/verification/wi-485-live-runtime-trace.json",
+        "docs/specs/verification/wi-485-pre-post-evidence.json",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-485.md"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-485.json",
+        "docs/specs/verification/wi-485-codex-execution-integrity.md",
+        "docs/specs/verification/wi-485-live-runtime-trace.json",
+        "docs/specs/verification/wi-485-pre-post-evidence.json",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-485.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "7734a4533685745412fb766899b87fa778cb5ca2",
+      "short": "7734a45",
+      "date": "2026-07-14T18:48:24+03:00",
+      "subject": "feat: enforce Codex execution integrity (#131)",
+      "tree": "c593648a6cb922645317d420e76bf62e7a9f3826",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "7ff308839161aa9965b6a6ff25049ef96c796fa8",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 131,
+        "title": "feat: enforce Codex execution integrity",
+        "merged_at": "2026-07-14T15:48:25Z",
+        "head": "framework-WI-485-codex-execution-integrity",
+        "review_decision": "",
+        "body_sha256": "6b5e16a976355ede11f55fc1e25c092829b1316c59131e93e731175999e604e8"
+      },
+      "wi_ids": [],
+      "changed_files": [
+        ".svc/lane-tasks-WI-485.json",
+        ".svc/pipeline-decisions.jsonl",
+        ".svc/review-receipts/pr-131.json",
+        ".svc/session-contract.jsonl",
+        "docs/specs/audit/wi-485-codex-execution-integrity-analysis.md",
+        "docs/specs/audit/wi-485-invariance-snapshot.json",
+        "docs/specs/reviews/wi-485-codex-execution-integrity-exec-cross-model.md",
+        "docs/specs/security/wi-485-codex-execution-integrity-review.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-485.md",
+        "hooks/codex/lib/codex-hook-context.mjs",
+        "hooks/codex/svc-codex-prompt-authority.mjs",
+        "hooks/codex/svc-codex-skill-load-enforcer.mjs",
+        "hooks/codex/svc-codex-stop-firewall.mjs",
+        "references/codex-hook-execution-integrity.md",
+        "references/knowledge/domains/codex-hooks/CAPABILITIES.md",
+        "references/knowledge/domains/codex-hooks/details/configuration.md",
+        "scripts/codex-load-skill.mjs",
+        "scripts/wire-codex-hooks.mjs",
+        "test-framework/evals/tier-1/validate-codex-execution-integrity.sh",
+        "test-framework/evals/tier-1/validate-codex-hook-feature-flag.sh",
+        "test-framework/evals/tier-1/validate-stop-hook-stdin-preservation.sh",
+        "test-framework/evals/tier-2/codex-execution-integrity/scenario.md"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-485.json",
+        "docs/specs/audit/wi-485-codex-execution-integrity-analysis.md",
+        "docs/specs/audit/wi-485-invariance-snapshot.json",
+        "docs/specs/reviews/wi-485-codex-execution-integrity-exec-cross-model.md",
+        "docs/specs/security/wi-485-codex-execution-integrity-review.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-485.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "5b4cb61ed842890e5077b0dfe005dd07db16b83a",
+      "short": "5b4cb61",
+      "date": "2026-07-14T16:58:07+03:00",
+      "subject": "chore(WI-480): task-graph closeout — all 13 tasks complete, verify-promotion done",
+      "tree": "4161eeae8cb1794f2619c4e6bd45a12f06f407d6",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "promote_valid_main_mirror",
+      "source_sha": null,
+      "main_mirror_valid": true,
+      "quick_fix_eligible": true,
+      "quick_fix_reason": null,
+      "pr": null,
+      "wi_ids": [
+        "WI-480"
+      ],
+      "changed_files": [
+        ".svc/lane-tasks-WI-480.json",
+        ".svc/session-contract.jsonl"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-480.json"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "6f4fee1d1fa6ea09336e68100af6ea716bae4390",
+      "short": "6f4fee1",
+      "date": "2026-07-14T16:52:43+03:00",
+      "subject": "Merge pull request #130 from s7an-it/WI-480-staleness-probe",
+      "tree": "9b1f59ba07f9cd0700c9eb5e38570c3d4485bcb7",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 130,
+        "title": "WI-480: upstream-staleness probe for blend sources (blend item 3 — final)",
+        "merged_at": "2026-07-14T13:52:43Z",
+        "head": "WI-480-staleness-probe",
+        "review_decision": "",
+        "body_sha256": "862d5ff8b0d549febced205f13348194490bd496287b91500258f0757329fe7a"
+      },
+      "wi_ids": [
+        "WI-480-"
+      ],
+      "changed_files": [
+        ".svc/lane-tasks-WI-480.json",
+        ".svc/pipeline-decisions.jsonl",
+        "blend-external/SKILL.md",
+        "docs/plans/2026-07-14-wi480-staleness-probe/manifest.md",
+        "docs/plans/2026-07-14-wi480-staleness-probe/mechanical-gate.log",
+        "docs/plans/2026-07-14-wi480-staleness-probe/review-exec-g6-agy-raw.txt",
+        "docs/plans/2026-07-14-wi480-staleness-probe/review-log.yaml",
+        "docs/plans/2026-07-14-wi480-staleness-probe/review-round1-agy-raw.txt",
+        "docs/specs/audit/WI-480-analysis.md",
+        "references/blend-registry.json"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-480.json",
+        "docs/plans/2026-07-14-wi480-staleness-probe/manifest.md",
+        "docs/plans/2026-07-14-wi480-staleness-probe/mechanical-gate.log",
+        "docs/plans/2026-07-14-wi480-staleness-probe/review-exec-g6-agy-raw.txt",
+        "docs/plans/2026-07-14-wi480-staleness-probe/review-log.yaml",
+        "docs/plans/2026-07-14-wi480-staleness-probe/review-round1-agy-raw.txt",
+        "docs/specs/audit/WI-480-analysis.md"
+      ],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "9d5f8bb0a6874e0e232728480899075cf5a9a961",
+      "short": "9d5f8bb",
+      "date": "2026-07-14T16:46:45+03:00",
+      "subject": "docs(WI-480): audit report + G6 review record (commit A)",
+      "tree": "9b1f59ba07f9cd0700c9eb5e38570c3d4485bcb7",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "promote_valid_main_mirror",
+      "source_sha": null,
+      "main_mirror_valid": true,
+      "quick_fix_eligible": true,
+      "quick_fix_reason": null,
+      "pr": null,
+      "wi_ids": [
+        "WI-480"
+      ],
+      "changed_files": [
+        ".svc/lane-tasks-WI-480.json",
+        "docs/plans/2026-07-14-wi480-staleness-probe/review-exec-g6-agy-raw.txt",
+        "docs/specs/audit/WI-480-analysis.md"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-480.json",
+        "docs/plans/2026-07-14-wi480-staleness-probe/review-exec-g6-agy-raw.txt",
+        "docs/specs/audit/WI-480-analysis.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "06ee77036dea76c66f3c3c0acd8ff62e1750dad7",
+      "short": "06ee770",
+      "date": "2026-07-14T16:03:22+03:00",
+      "subject": "Merge pull request #129 from s7an-it/WI-479-autonomous-loop-contract",
+      "tree": "f7c401f2027ddd70281f4a77531c9c5f5882f114",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "25cf590c6aa2763d4555d643e2defcf13a4c73f0",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 129,
+        "title": "WI-479: autonomous-loop contract (blend item 1)",
+        "merged_at": "2026-07-14T13:03:22Z",
+        "head": "WI-479-autonomous-loop-contract",
+        "review_decision": "",
+        "body_sha256": "ff9528c6e758850addd3237ae38dfcbeadcd1275252a502a6d3ab19085c5271f"
+      },
+      "wi_ids": [
+        "WI-479-"
+      ],
+      "changed_files": [
+        ".claude/agents/chief-of-staff.md",
+        ".claude/agents/comms.md",
+        ".claude/agents/customer-success.md",
+        ".claude/agents/data-collection.md",
+        ".claude/agents/growth-lead.md",
+        ".claude/agents/revops.md",
+        ".svc/lane-tasks-WI-479.json",
+        ".svc/pipeline-decisions.jsonl",
+        "agents/chief-of-staff.md",
+        "agents/comms.md",
+        "agents/customer-success.md",
+        "agents/data-collection.md",
+        "agents/growth-lead.md",
+        "agents/revops.md",
+        "docs/plans/2026-07-14-wi479-autonomous-loop-contract/manifest.md",
+        "docs/plans/2026-07-14-wi479-autonomous-loop-contract/mechanical-gate.log",
+        "docs/plans/2026-07-14-wi479-autonomous-loop-contract/review-exec-g6-agy-raw.txt",
+        "docs/plans/2026-07-14-wi479-autonomous-loop-contract/review-log.yaml",
+        "docs/plans/2026-07-14-wi479-autonomous-loop-contract/review-round1-codex-raw.txt",
+        "docs/plans/2026-07-14-wi479-autonomous-loop-contract/review-round2-codex-raw.txt",
+        "docs/plans/2026-07-14-wi479-autonomous-loop-contract/review-tier3-agy-raw.txt",
+        "docs/specs/audit/WI-479-analysis.md",
+        "references/autonomous-loop-contract.md",
+        "references/company-operating-fleet.md"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-479.json",
+        "docs/plans/2026-07-14-wi479-autonomous-loop-contract/manifest.md",
+        "docs/plans/2026-07-14-wi479-autonomous-loop-contract/mechanical-gate.log",
+        "docs/plans/2026-07-14-wi479-autonomous-loop-contract/review-exec-g6-agy-raw.txt",
+        "docs/plans/2026-07-14-wi479-autonomous-loop-contract/review-log.yaml",
+        "docs/plans/2026-07-14-wi479-autonomous-loop-contract/review-round1-codex-raw.txt",
+        "docs/plans/2026-07-14-wi479-autonomous-loop-contract/review-round2-codex-raw.txt",
+        "docs/plans/2026-07-14-wi479-autonomous-loop-contract/review-tier3-agy-raw.txt",
+        "docs/specs/audit/WI-479-analysis.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "9a098a84265da9df3c71f7a2553089139d7308f4",
+      "short": "9a098a8",
+      "date": "2026-07-14T15:17:51+03:00",
+      "subject": "plan(WI-481): freeze five-pillar implementation program (#128)",
+      "tree": "e176a369ea4c8e532e021b89d858b54619457888",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "0e6711d2f14017094f598218bda5d5f6b1100b72",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 128,
+        "title": "plan(WI-481): freeze five-pillar implementation program",
+        "merged_at": "2026-07-14T12:17:51Z",
+        "head": "wi-481-change-impact-triad",
+        "review_decision": "",
+        "body_sha256": "5db0ab82a85b90b4d4e4ed901155ef6948bfa1394545d215b4760d6d4fe699f2"
+      },
+      "wi_ids": [
+        "WI-481"
+      ],
+      "changed_files": [
+        ".svc/lane-tasks-WI-481.json",
+        ".svc/pipeline-decisions.jsonl",
+        ".svc/session-contract.jsonl",
+        "OPEN-PROPOSALS.md",
+        "docs/plans/2026-07-14-wi481-change-impact-triad-leaf/manifest.md",
+        "docs/plans/2026-07-14-wi481-change-impact-triad/PLAN.md",
+        "docs/plans/2026-07-14-wi481-change-impact-triad/PLANNING-FREEZE.md",
+        "docs/plans/2026-07-14-wi481-change-impact-triad/fable-leaf-review-round-1-responses.yaml",
+        "docs/plans/2026-07-14-wi481-change-impact-triad/fable-leaf-review-round-1.yaml",
+        "docs/plans/2026-07-14-wi481-change-impact-triad/fable-leaf-review-round-2.yaml",
+        "docs/plans/2026-07-14-wi481-change-impact-triad/fable-review-round-1-responses.yaml",
+        "docs/plans/2026-07-14-wi481-change-impact-triad/fable-review-round-1.yaml",
+        "docs/plans/2026-07-14-wi481-change-impact-triad/fable-review-round-2-responses.yaml",
+        "docs/plans/2026-07-14-wi481-change-impact-triad/fable-review-round-2.yaml",
+        "docs/plans/2026-07-14-wi481-change-impact-triad/fable-review-round-3.yaml",
+        "docs/plans/2026-07-14-wi481-change-impact-triad/leaf-package-review-log.yaml",
+        "docs/plans/2026-07-14-wi481-change-impact-triad/review-log.yaml",
+        "docs/plans/2026-07-14-wi482-default-checkout-isolation/manifest.md",
+        "docs/plans/2026-07-14-wi483-mobile-worktree-builds/manifest.md",
+        "docs/plans/2026-07-14-wi484-session-worktree-binding/manifest.md",
+        "docs/plans/2026-07-14-wi485-codex-execution-integrity/manifest.md",
+        "docs/specs/research-log.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-479.md",
+        "docs/specs/work-items/WI-481.md",
+        "docs/specs/work-items/WI-482.md",
+        "docs/specs/work-items/WI-483.md",
+        "docs/specs/work-items/WI-484.md",
+        "docs/specs/work-items/WI-485.md",
+        "proposals/2026-06-15-evolution-landing-audit.md",
+        "proposals/2026-07-13-blend-coreyhaines-v2.6.0.md",
+        "proposals/2026-07-14-change-impact-triad-universal-gate.md",
+        "proposals/2026-07-14-codex-execution-integrity.md",
+        "proposals/2026-07-14-session-audit-codex-foreign-stop-and-ghost-skill.md",
+        "proposals/triage.json"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-481.json",
+        "docs/plans/2026-07-14-wi481-change-impact-triad-leaf/manifest.md",
+        "docs/plans/2026-07-14-wi481-change-impact-triad/PLAN.md",
+        "docs/plans/2026-07-14-wi481-change-impact-triad/PLANNING-FREEZE.md",
+        "docs/plans/2026-07-14-wi481-change-impact-triad/fable-leaf-review-round-1-responses.yaml",
+        "docs/plans/2026-07-14-wi481-change-impact-triad/fable-leaf-review-round-1.yaml",
+        "docs/plans/2026-07-14-wi481-change-impact-triad/fable-leaf-review-round-2.yaml",
+        "docs/plans/2026-07-14-wi481-change-impact-triad/fable-review-round-1-responses.yaml",
+        "docs/plans/2026-07-14-wi481-change-impact-triad/fable-review-round-1.yaml",
+        "docs/plans/2026-07-14-wi481-change-impact-triad/fable-review-round-2-responses.yaml",
+        "docs/plans/2026-07-14-wi481-change-impact-triad/fable-review-round-2.yaml",
+        "docs/plans/2026-07-14-wi481-change-impact-triad/fable-review-round-3.yaml",
+        "docs/plans/2026-07-14-wi481-change-impact-triad/leaf-package-review-log.yaml",
+        "docs/plans/2026-07-14-wi481-change-impact-triad/review-log.yaml",
+        "docs/plans/2026-07-14-wi482-default-checkout-isolation/manifest.md",
+        "docs/plans/2026-07-14-wi483-mobile-worktree-builds/manifest.md",
+        "docs/plans/2026-07-14-wi484-session-worktree-binding/manifest.md",
+        "docs/plans/2026-07-14-wi485-codex-execution-integrity/manifest.md",
+        "docs/specs/research-log.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-479.md",
+        "docs/specs/work-items/WI-481.md",
+        "docs/specs/work-items/WI-482.md",
+        "docs/specs/work-items/WI-483.md",
+        "docs/specs/work-items/WI-484.md",
+        "docs/specs/work-items/WI-485.md",
+        "proposals/2026-06-15-evolution-landing-audit.md",
+        "proposals/2026-07-13-blend-coreyhaines-v2.6.0.md",
+        "proposals/2026-07-14-change-impact-triad-universal-gate.md",
+        "proposals/2026-07-14-codex-execution-integrity.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "ca2a2f94074549574ed793207737513d4fbcf5e7",
+      "short": "ca2a2f9",
+      "date": "2026-07-14T00:03:56+03:00",
+      "subject": "Merge pull request #127 from s7an-it/WI-478-andromeda-doctrine",
+      "tree": "994dab7b094c7e6fb5dc1f12fcfa73296fee77af",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "5b8894dbc17b9a3b5c635b6314adaa1aed4a910c",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 127,
+        "title": "WI-478: Andromeda paid-creative doctrine into ad-strategist",
+        "merged_at": "2026-07-13T21:03:56Z",
+        "head": "WI-478-andromeda-doctrine",
+        "review_decision": "",
+        "body_sha256": "902c929c72a77165678d2318955e7a3fc805e455292cd35644226e19c97abeeb"
+      },
+      "wi_ids": [
+        "WI-478-"
+      ],
+      "changed_files": [
+        ".claude/agents/ad-strategist.md",
+        ".svc/lane-tasks-WI-478.json",
+        ".svc/pipeline-decisions.jsonl",
+        "ad-video-script/SKILL.md",
+        "agents/ad-strategist.md",
+        "docs/plans/2026-07-13-wi478-andromeda-doctrine/manifest.md",
+        "docs/plans/2026-07-13-wi478-andromeda-doctrine/mechanical-gate.log",
+        "docs/plans/2026-07-13-wi478-andromeda-doctrine/review-exec-g6-codex-raw.txt",
+        "docs/plans/2026-07-13-wi478-andromeda-doctrine/review-log.yaml",
+        "docs/plans/2026-07-13-wi478-andromeda-doctrine/review-round1-codex-raw.txt",
+        "docs/plans/2026-07-13-wi478-andromeda-doctrine/review-round2-codex-raw.txt",
+        "docs/plans/2026-07-13-wi478-andromeda-doctrine/review-round3-codex-raw.txt",
+        "docs/plans/2026-07-13-wi478-andromeda-doctrine/review-tier3-agy-raw.txt",
+        "docs/specs/audit/WI-478-analysis.md",
+        "docs/specs/work-items/WI-478.md"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-478.json",
+        "docs/plans/2026-07-13-wi478-andromeda-doctrine/manifest.md",
+        "docs/plans/2026-07-13-wi478-andromeda-doctrine/mechanical-gate.log",
+        "docs/plans/2026-07-13-wi478-andromeda-doctrine/review-exec-g6-codex-raw.txt",
+        "docs/plans/2026-07-13-wi478-andromeda-doctrine/review-log.yaml",
+        "docs/plans/2026-07-13-wi478-andromeda-doctrine/review-round1-codex-raw.txt",
+        "docs/plans/2026-07-13-wi478-andromeda-doctrine/review-round2-codex-raw.txt",
+        "docs/plans/2026-07-13-wi478-andromeda-doctrine/review-round3-codex-raw.txt",
+        "docs/plans/2026-07-13-wi478-andromeda-doctrine/review-tier3-agy-raw.txt",
+        "docs/specs/audit/WI-478-analysis.md",
+        "docs/specs/work-items/WI-478.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "e985d373d2ed44a0f9cc8537aeedec9b399833ef",
+      "short": "e985d37",
+      "date": "2026-07-13T21:58:58+03:00",
+      "subject": "Merge pull request #126 from s7an-it/WI-477-coreyhaines-v2-migration",
+      "tree": "e8b9c8b1f6d34ffb829fac89b98c040a6b7b08fa",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 126,
+        "title": "WI-477: migrate coreyhaines addon references to v2.6.0 + wire fleet consumers",
+        "merged_at": "2026-07-13T18:58:58Z",
+        "head": "WI-477-coreyhaines-v2-migration",
+        "review_decision": "",
+        "body_sha256": "ef1e68bd484068c38d17a728255ce8a3bfc10aee8ba457577b8bc045403fc3f5"
+      },
+      "wi_ids": [
+        "WI-477-"
+      ],
+      "changed_files": [
+        ".claude/agents/comms.md",
+        ".claude/agents/financial-analyst.md",
+        ".claude/agents/growth-lead.md",
+        ".claude/agents/revops.md",
+        ".svc/lane-tasks-WI-477.json",
+        ".svc/pipeline-decisions.jsonl",
+        ".svc/session-contract.jsonl",
+        "EXTERNAL_ADDONS.md",
+        "OPEN-PROPOSALS.md",
+        "_shared/live-evidence.md",
+        "ad-video-script/SKILL.md",
+        "agents/comms.md",
+        "agents/financial-analyst.md",
+        "agents/growth-lead.md",
+        "agents/revops.md",
+        "analyze-marketing/SKILL.md",
+        "assess-market-readiness/SKILL.md",
+        "build-personas/SKILL.md",
+        "concerns/REGISTRY.json",
+        "concerns/pricing-tier-touch.md",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/manifest.md",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/mechanical-gate.log",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/old-name-allowlist.txt",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-exec-g6-codex-raw.txt",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-log.yaml",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-round1-codex-raw.txt",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-round2-codex-raw.txt",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-round3-codex-raw.txt",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-round4-codex-raw.txt",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-tier3-agy-raw.txt",
+        "docs/specs/audit/WI-477-analysis.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-478.md",
+        "generate-visuals/SKILL.md",
+        "landing-page/SKILL.md",
+        "launch-knowledge/SKILL.md",
+        "launch-knowledge/references/skill-composition.md",
+        "references/company-operating-fleet.md",
+        "references/knowledge/launch/distribution/INDEX.md",
+        "references/knowledge/launch/distribution/first-100-customers-b2b-saas.md",
+        "references/knowledge/skill-marketplaces/CAPABILITIES.md",
+        "references/knowledge/skill-marketplaces/details/monetization-skills-evaluation.md",
+        "route-workflow/SKILL.md",
+        "route-workflow/references/hot-path-operational-details.md",
+        "route-workflow/references/intent-routing.md",
+        "route-workflow/references/routing-rules.md",
+        "scripts/capability-concierge.mjs",
+        "scripts/seed-phase2-concerns.mjs",
+        "skills-manifest.json",
+        "strategic-decision/SKILL.md"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-477.json",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/manifest.md",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/mechanical-gate.log",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/old-name-allowlist.txt",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-exec-g6-codex-raw.txt",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-log.yaml",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-round1-codex-raw.txt",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-round2-codex-raw.txt",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-round3-codex-raw.txt",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-round4-codex-raw.txt",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-tier3-agy-raw.txt",
+        "docs/specs/audit/WI-477-analysis.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-478.md"
+      ],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "70d50332cc435d956b6b42e5286710dab9e0e6b7",
+      "short": "70d5033",
+      "date": "2026-07-13T21:52:16+03:00",
+      "subject": "docs(WI-477): audit report + G6 review record + task-graph closeout (commit A)",
+      "tree": "e8b9c8b1f6d34ffb829fac89b98c040a6b7b08fa",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "promote_valid_main_mirror",
+      "source_sha": null,
+      "main_mirror_valid": true,
+      "quick_fix_eligible": true,
+      "quick_fix_reason": null,
+      "pr": null,
+      "wi_ids": [
+        "WI-477"
+      ],
+      "changed_files": [
+        ".svc/lane-tasks-WI-477.json",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-exec-g6-codex-raw.txt",
+        "docs/specs/audit/WI-477-analysis.md"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-477.json",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-exec-g6-codex-raw.txt",
+        "docs/specs/audit/WI-477-analysis.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "4b0b095818432412987197610e3d4d19267c056d",
+      "short": "4b0b095",
+      "date": "2026-07-13T19:56:43+03:00",
+      "subject": "docs(WI-477): plan manifest rev 5 + adversarial review record — coreyhaines addon v2.6.0 migration (commit P)",
+      "tree": "6205de128ad52aefe14c178ca666e20966ba0d8a",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "promote_valid_main_mirror",
+      "source_sha": null,
+      "main_mirror_valid": true,
+      "quick_fix_eligible": true,
+      "quick_fix_reason": null,
+      "pr": null,
+      "wi_ids": [
+        "WI-477"
+      ],
+      "changed_files": [
+        ".svc/lane-tasks-WI-477.json",
+        ".svc/pipeline-decisions.jsonl",
+        ".svc/session-contract.jsonl",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/manifest.md",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/mechanical-gate.log",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/old-name-allowlist.txt",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-log.yaml",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-round1-codex-raw.txt",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-round2-codex-raw.txt",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-round3-codex-raw.txt",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-round4-codex-raw.txt",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-tier3-agy-raw.txt",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-478.md"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-477.json",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/manifest.md",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/mechanical-gate.log",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/old-name-allowlist.txt",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-log.yaml",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-round1-codex-raw.txt",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-round2-codex-raw.txt",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-round3-codex-raw.txt",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-round4-codex-raw.txt",
+        "docs/plans/2026-07-13-wi477-coreyhaines-v2.6-migration/review-tier3-agy-raw.txt",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-478.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "52f73ebe0282846eb5589e01959defd6f569d3fe",
+      "short": "52f73eb",
+      "date": "2026-07-12T09:02:01+03:00",
+      "subject": "docs(WI-475): address Codex review findings and add Cross-Model Review report",
+      "tree": "0adb6a34b019b2ec8759a926b7bf94e7c710e9dc",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": null,
+      "wi_ids": [
+        "WI-475"
+      ],
+      "changed_files": [
+        ".gitignore",
+        ".svc/pipeline-decisions.jsonl",
+        ".svc/session-contract.jsonl",
+        "docs/specs/reviews/agy-cli-migration-cross-model.md",
+        "hooks/lib/hook-payload.mjs",
+        "proposals/2026-06-20-stale-branch-read-guard-and-branch-divergence-check.md",
+        "references/pipeline-decisions-schema.json",
+        "scripts/blind-floor-judge.sh",
+        "scripts/prompt-floor-judge.sh",
+        "test-framework/evals/tier-1/validate-pipeline-decisions-schema.sh"
+      ],
+      "evidence_artifacts": [
+        "docs/specs/reviews/agy-cli-migration-cross-model.md",
+        "proposals/2026-06-20-stale-branch-read-guard-and-branch-divergence-check.md"
+      ],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "d6e0a64f74a4dfae307b67dc215f0313312f6d65",
+      "short": "d6e0a64",
+      "date": "2026-07-12T04:03:30+03:00",
+      "subject": "feat(WI-475): Migrate Gemini CLI references to AGY CLI and default to Gemini 3.5 Flash High (#124)",
+      "tree": "b75fb706c3a5f7250b3678bb870f3fa109132786",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 124,
+        "title": "feature-agy-cli",
+        "merged_at": "2026-07-12T01:03:31Z",
+        "head": "feature-agy-cli",
+        "review_decision": "",
+        "body_sha256": "200eac55ab9212430adb41890c5bc18477c31712edf11e1b5ce52baa9511d3bb"
+      },
+      "wi_ids": [
+        "WI-475"
+      ],
+      "changed_files": [
+        ".svc/session-contract.jsonl",
+        "analyze-competitors/SKILL.md",
+        "hooks/lib/hook-payload.mjs",
+        "proposals/2026-06-20-stale-branch-read-guard-and-branch-divergence-check.md",
+        "research/SKILL.md",
+        "research/references/prescope-template.md",
+        "research/scripts/dispatch-agy.mjs",
+        "research/scripts/dispatch-gemini.mjs",
+        "research/scripts/synthesize-meaning.mjs",
+        "research/scripts/website-prescope.mjs",
+        "route-workflow/references/routing-rules.md",
+        "rules/research-must-use-agy-cli.md",
+        "rules/research-must-use-gemini-cli.md",
+        "scripts/blind-floor-judge.sh",
+        "scripts/host-probes/agy.sh",
+        "scripts/host-probes/gemini.sh",
+        "scripts/lib/cognitive-family.mjs",
+        "scripts/prompt-floor-judge.sh",
+        "scripts/resolve-adversarial-reviewer.sh",
+        "scripts/svc-settings-write-guard.mjs",
+        "skills-manifest.json",
+        "test-framework/evals/tier-1/validate-lane-tasks-archive-parity.sh",
+        "test-framework/evals/tier-1/validate-pipeline-decisions-schema.sh",
+        "test-framework/evals/tier-1/validate-prior-art-check.sh",
+        "test-framework/evals/tier-1/validate-receipt-tier.sh",
+        "test-framework/evals/tier-1/validate-research-prescope-sub-agent.sh",
+        "test-framework/evals/tier-1/validate-secret-redaction.sh"
+      ],
+      "evidence_artifacts": [
+        "proposals/2026-06-20-stale-branch-read-guard-and-branch-divergence-check.md"
+      ],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "7c56f415a8674f8a651b4b55c46e0f65c3f576b0",
+      "short": "7c56f41",
+      "date": "2026-07-11T14:52:42+03:00",
+      "subject": "Merge pull request #123 from s7an-it/chore/svc-residue-closeout",
+      "tree": "a594d7853066982872d262d911bed619e7cf2394",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "d724646c12a09a35ae98a7416ddca88f35cab09b",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 123,
+        "title": "chore(.svc): residue closeout — archive completed lane-tasks + MiMo Code host + ledger appends",
+        "merged_at": "2026-07-11T11:52:43Z",
+        "head": "chore/svc-residue-closeout",
+        "review_decision": "",
+        "body_sha256": "808bd9b840b040595fdfe5b8a45b110118a11a57184229842e38a454c0a5f17a"
+      },
+      "wi_ids": [],
+      "changed_files": [
+        ".svc/archive/lane-tasks/lane-tasks-WI-348.completed-20.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-357.completed-117.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-358.completed-30.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-359.completed-44.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-360.completed-75.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-361.completed-41.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-363.completed-39.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-364.completed-118.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-366.completed-47.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-369.completed-52.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-370.completed-35.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-375.completed-48.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-380.completed-114.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-382.completed-72.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-385.completed-59.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-387.completed-63.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-388.completed-64.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-390.completed-60.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-400.completed-75.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-410.completed-75.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-411.completed-76.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-471.completed-commit-d42c4b44.json",
+        ".svc/competitive-monitor-triggers.jsonl",
+        ".svc/lane-tasks-WI-348.json",
+        ".svc/lane-tasks-WI-357.json",
+        ".svc/lane-tasks-WI-358.json",
+        ".svc/lane-tasks-WI-359.json",
+        ".svc/lane-tasks-WI-360.json",
+        ".svc/lane-tasks-WI-361.json",
+        ".svc/lane-tasks-WI-363.json",
+        ".svc/lane-tasks-WI-364.json",
+        ".svc/lane-tasks-WI-366.json",
+        ".svc/lane-tasks-WI-369.json",
+        ".svc/lane-tasks-WI-370.json",
+        ".svc/lane-tasks-WI-375.json",
+        ".svc/lane-tasks-WI-380.json",
+        ".svc/lane-tasks-WI-382.json",
+        ".svc/lane-tasks-WI-385.json",
+        ".svc/lane-tasks-WI-387.json",
+        ".svc/lane-tasks-WI-388.json",
+        ".svc/lane-tasks-WI-390.json",
+        ".svc/lane-tasks-WI-400.json",
+        ".svc/lane-tasks-WI-410.json",
+        ".svc/lane-tasks-WI-411.json",
+        ".svc/learning-fires.jsonl",
+        ".svc/pipeline-decisions.jsonl",
+        ".svc/session-contract.jsonl",
+        "HOSTS.md",
+        "docs/status/wi-440-summary.html",
+        "docs/status/wi-471-summary.html",
+        "provision/hosts/mimo-code.json"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-348.json",
+        ".svc/lane-tasks-WI-357.json",
+        ".svc/lane-tasks-WI-358.json",
+        ".svc/lane-tasks-WI-359.json",
+        ".svc/lane-tasks-WI-360.json",
+        ".svc/lane-tasks-WI-361.json",
+        ".svc/lane-tasks-WI-363.json",
+        ".svc/lane-tasks-WI-364.json",
+        ".svc/lane-tasks-WI-366.json",
+        ".svc/lane-tasks-WI-369.json",
+        ".svc/lane-tasks-WI-370.json",
+        ".svc/lane-tasks-WI-375.json",
+        ".svc/lane-tasks-WI-380.json",
+        ".svc/lane-tasks-WI-382.json",
+        ".svc/lane-tasks-WI-385.json",
+        ".svc/lane-tasks-WI-387.json",
+        ".svc/lane-tasks-WI-388.json",
+        ".svc/lane-tasks-WI-390.json",
+        ".svc/lane-tasks-WI-400.json",
+        ".svc/lane-tasks-WI-410.json",
+        ".svc/lane-tasks-WI-411.json"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "e6893b39f58668abe691adfb69a3f080f251f116",
+      "short": "e6893b3",
+      "date": "2026-07-11T09:52:31+03:00",
+      "subject": "chore(.svc): closeout — archive completed lane-tasks + MiMo Code host + ledger appends",
+      "tree": "a8a8498a66bf74db70d84d3f119fe5e30531032c",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": null,
+      "wi_ids": [],
+      "changed_files": [
+        ".svc/archive/lane-tasks/lane-tasks-WI-348.completed-20.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-357.completed-117.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-358.completed-30.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-359.completed-44.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-360.completed-75.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-361.completed-41.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-363.completed-39.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-364.completed-118.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-366.completed-47.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-369.completed-52.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-370.completed-35.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-375.completed-48.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-380.completed-114.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-382.completed-72.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-385.completed-59.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-387.completed-63.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-388.completed-64.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-390.completed-60.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-400.completed-75.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-410.completed-75.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-411.completed-76.json",
+        ".svc/archive/lane-tasks/lane-tasks-WI-471.completed-commit-d42c4b44.json",
+        ".svc/competitive-monitor-triggers.jsonl",
+        ".svc/lane-tasks-WI-348.json",
+        ".svc/lane-tasks-WI-357.json",
+        ".svc/lane-tasks-WI-358.json",
+        ".svc/lane-tasks-WI-359.json",
+        ".svc/lane-tasks-WI-360.json",
+        ".svc/lane-tasks-WI-361.json",
+        ".svc/lane-tasks-WI-363.json",
+        ".svc/lane-tasks-WI-364.json",
+        ".svc/lane-tasks-WI-366.json",
+        ".svc/lane-tasks-WI-369.json",
+        ".svc/lane-tasks-WI-370.json",
+        ".svc/lane-tasks-WI-375.json",
+        ".svc/lane-tasks-WI-380.json",
+        ".svc/lane-tasks-WI-382.json",
+        ".svc/lane-tasks-WI-385.json",
+        ".svc/lane-tasks-WI-387.json",
+        ".svc/lane-tasks-WI-388.json",
+        ".svc/lane-tasks-WI-390.json",
+        ".svc/lane-tasks-WI-400.json",
+        ".svc/lane-tasks-WI-410.json",
+        ".svc/lane-tasks-WI-411.json",
+        ".svc/learning-fires.jsonl",
+        ".svc/session-contract.jsonl",
+        "HOSTS.md",
+        "docs/status/wi-440-summary.html",
+        "docs/status/wi-471-summary.html",
+        "provision/hosts/mimo-code.json"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-348.json",
+        ".svc/lane-tasks-WI-357.json",
+        ".svc/lane-tasks-WI-358.json",
+        ".svc/lane-tasks-WI-359.json",
+        ".svc/lane-tasks-WI-360.json",
+        ".svc/lane-tasks-WI-361.json",
+        ".svc/lane-tasks-WI-363.json",
+        ".svc/lane-tasks-WI-364.json",
+        ".svc/lane-tasks-WI-366.json",
+        ".svc/lane-tasks-WI-369.json",
+        ".svc/lane-tasks-WI-370.json",
+        ".svc/lane-tasks-WI-375.json",
+        ".svc/lane-tasks-WI-380.json",
+        ".svc/lane-tasks-WI-382.json",
+        ".svc/lane-tasks-WI-385.json",
+        ".svc/lane-tasks-WI-387.json",
+        ".svc/lane-tasks-WI-388.json",
+        ".svc/lane-tasks-WI-390.json",
+        ".svc/lane-tasks-WI-400.json",
+        ".svc/lane-tasks-WI-410.json",
+        ".svc/lane-tasks-WI-411.json"
+      ],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "26ad7a0f2c5d3c2613e362076fa8ffebe9373a8d",
+      "short": "26ad7a0",
+      "date": "2026-07-11T09:39:33+03:00",
+      "subject": "Merge pull request #122 from s7an-it/feat/mobile-occlusion-safe-area-gate",
+      "tree": "e3c5cb12ec79100057fbbf7b998c07e13e1dff5c",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 122,
+        "title": "feat(verify): device-realistic mobile UI gates — occlusion/safe-area + scroll-restoration + authenticated perceptual",
+        "merged_at": "2026-07-11T06:39:33Z",
+        "head": "feat/mobile-occlusion-safe-area-gate",
+        "review_decision": "",
+        "body_sha256": "88efc4010822e2ebb90d191468174626866725b7df053716d286ef9b121f5146"
+      },
+      "wi_ids": [],
+      "changed_files": [
+        ".gitignore",
+        "rules/mobile-ui-verification-gate.md",
+        "scripts/browser-verify.mjs",
+        "scripts/lib/browser-checks/index.mjs",
+        "scripts/lib/browser-checks/mobile-occlusion.mjs",
+        "scripts/lib/browser-checks/scroll-position.mjs",
+        "skills-manifest.json",
+        "test-framework/evals/tier-1/validate-mobile-occlusion-gate.sh",
+        "test-framework/evals/tier-1/validate-scroll-position-gate.sh",
+        "test-framework/fixtures/mobile-occlusion/bad-safearea.html",
+        "test-framework/fixtures/mobile-occlusion/bad-shadow.html",
+        "test-framework/fixtures/mobile-occlusion/bad.html",
+        "test-framework/fixtures/mobile-occlusion/good-modal.html",
+        "test-framework/fixtures/mobile-occlusion/good-safearea.html",
+        "test-framework/fixtures/mobile-occlusion/good-scroll.html",
+        "test-framework/fixtures/mobile-occlusion/good-shadow.html",
+        "test-framework/fixtures/mobile-occlusion/good.html",
+        "test-framework/fixtures/scroll-position/bad.html",
+        "test-framework/fixtures/scroll-position/good.html",
+        "track-visuals/SKILL.md"
+      ],
+      "evidence_artifacts": [],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "903edcf8ea107120d6f908ebecf8767633802f8e",
+      "short": "903edcf",
+      "date": "2026-07-11T09:16:17+03:00",
+      "subject": "feat(verify): device-realistic mobile UI gates — occlusion/safe-area + scroll-restoration + authenticated perceptual",
+      "tree": "e3c5cb12ec79100057fbbf7b998c07e13e1dff5c",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": null,
+      "wi_ids": [],
+      "changed_files": [
+        ".gitignore",
+        "rules/mobile-ui-verification-gate.md",
+        "scripts/browser-verify.mjs",
+        "scripts/lib/browser-checks/index.mjs",
+        "scripts/lib/browser-checks/mobile-occlusion.mjs",
+        "scripts/lib/browser-checks/scroll-position.mjs",
+        "skills-manifest.json",
+        "test-framework/evals/tier-1/validate-mobile-occlusion-gate.sh",
+        "test-framework/evals/tier-1/validate-scroll-position-gate.sh",
+        "test-framework/fixtures/mobile-occlusion/bad-safearea.html",
+        "test-framework/fixtures/mobile-occlusion/bad-shadow.html",
+        "test-framework/fixtures/mobile-occlusion/bad.html",
+        "test-framework/fixtures/mobile-occlusion/good-modal.html",
+        "test-framework/fixtures/mobile-occlusion/good-safearea.html",
+        "test-framework/fixtures/mobile-occlusion/good-scroll.html",
+        "test-framework/fixtures/mobile-occlusion/good-shadow.html",
+        "test-framework/fixtures/mobile-occlusion/good.html",
+        "test-framework/fixtures/scroll-position/bad.html",
+        "test-framework/fixtures/scroll-position/good.html",
+        "track-visuals/SKILL.md"
+      ],
+      "evidence_artifacts": [],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "d42c4b448939b29d47ce5a2e84aa98c13b23cdc2",
+      "short": "d42c4b4",
+      "date": "2026-07-10T08:22:11+03:00",
+      "subject": "feat(concerns): standing cross-family review gate on security diffs (#121)",
+      "tree": "0d54ee7902a4546afa0857b0f32f091222cdf6e5",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 121,
+        "title": "feat(concerns): standing cross-family review gate on security diffs",
+        "merged_at": "2026-07-10T05:22:11Z",
+        "head": "framework/cross-family-security-gate",
+        "review_decision": "",
+        "body_sha256": "43f8b526eeef6680aa7fd3ccf4950b0a319ce35be7b90e1d030bfe67d6fbf86e"
+      },
+      "wi_ids": [],
+      "changed_files": [
+        "concerns/REGISTRY.json",
+        "concerns/cryptography-touch.md",
+        "concerns/security-cross-family-review.md",
+        "docs/analysis/framework-3x-proposals-2026-07-06.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-471.md",
+        "review-cross-model/SKILL.md",
+        "review-security/SKILL.md"
+      ],
+      "evidence_artifacts": [
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-471.md"
+      ],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "197ff19a02f50a5b08e52dbfd23a167a09f8e819",
+      "short": "197ff19",
+      "date": "2026-07-07T15:47:54+03:00",
+      "subject": "docs(knowledge): HeyGen AI-video production — capability map, consistency architecture, polish doctrine (#120)",
+      "tree": "edbbfa7388d4feb67fcdd75f41c2cf5acc9b883a",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "d6874de321eb34765620d73ca7a3c0fb1b551254",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": true,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 120,
+        "title": "docs(knowledge): HeyGen AI-video production knowledge",
+        "merged_at": "2026-07-07T12:47:54Z",
+        "head": "knowledge/heygen-video-production",
+        "review_decision": "",
+        "body_sha256": "8573374ccc26f569147cf842100a8e2058225d1f2b4a81e3c9cc5ba71415f4da"
+      },
+      "wi_ids": [],
+      "changed_files": [
+        "references/knowledge/heygen-video-production.md"
+      ],
+      "evidence_artifacts": [],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "b02e5409194822aadad053dfa56a65a8cfe056a0",
+      "short": "b02e540",
+      "date": "2026-06-30T23:36:52+03:00",
+      "subject": "docs(WI-470): mark verified (merged PR #118) — EXEC/REVIEW on Sonnet 5 (#119)",
+      "tree": "5e63581f7fab6b934b81f7285dc4cd3c74d81dc2",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "reissue_mechanically_eligible_quick_fix",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": true,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 119,
+        "title": "docs(WI-470): mark verified (merged #118)",
+        "merged_at": "2026-06-30T20:36:52Z",
+        "head": "wi470-verified",
+        "review_decision": "",
+        "body_sha256": "33ca96ec4d864d14fa53ac9f8fecbc201f1712faf8e43dabf1c586a8b957da3b"
+      },
+      "wi_ids": [
+        "WI-470"
+      ],
+      "changed_files": [
+        "docs/specs/work-items/INDEX.md"
+      ],
+      "evidence_artifacts": [
+        "docs/specs/work-items/INDEX.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "218f4ffa60b80fb8dee425d1329c3b4c21ba5b45",
+      "short": "218f4ff",
+      "date": "2026-06-30T22:38:12+03:00",
+      "subject": "feat(routing): WI-470 — svc-default EXEC+REVIEW execute/review on Sonnet 5 (effort:high declared) (#118)",
+      "tree": "6c2f1a52362548119def66087772a80d576739f6",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 118,
+        "title": "feat(routing): WI-470 — EXEC+REVIEW execute/review on Sonnet 5 (effort:high declared)",
+        "merged_at": "2026-06-30T19:38:13Z",
+        "head": "wi470-exec",
+        "review_decision": "",
+        "body_sha256": "abe80e57e356e4e44cbde60efd5eea0e5c8f9375d7c6d0cee0d8c191733415f9"
+      },
+      "wi_ids": [
+        "WI-470"
+      ],
+      "changed_files": [
+        ".claude/agents/plan-reviewer.md",
+        ".claude/agents/strategic-reviewer.md",
+        ".claude/agents/svc-journey-qa.md",
+        ".claude/agents/svc-lens-correctness.md",
+        ".claude/agents/svc-lens-security.md",
+        ".claude/agents/svc-lens-spec-fidelity.md",
+        ".claude/agents/svc-stage-exec.md",
+        ".claude/agents/svc-stage-land.md",
+        ".svc/pipeline-decisions.jsonl",
+        "CLAUDE.md",
+        "agents/plan-reviewer.md",
+        "agents/strategic-reviewer.md",
+        "agents/svc-journey-qa.md",
+        "agents/svc-lens-correctness.md",
+        "agents/svc-lens-security.md",
+        "agents/svc-lens-spec-fidelity.md",
+        "agents/svc-stage-exec.md",
+        "agents/svc-stage-land.md",
+        "docs/specs/research-log.md",
+        "proposals/triage.json",
+        "references/model-registry.json",
+        "references/model-routing.md",
+        "scripts/dispatch-worker.sh",
+        "scripts/resolve-model.sh"
+      ],
+      "evidence_artifacts": [
+        "docs/specs/research-log.md",
+        "proposals/triage.json"
+      ],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "4cda72903850fc00d7e50273ec56e6d27e0c07e5",
+      "short": "4cda729",
+      "date": "2026-06-30T21:33:22+03:00",
+      "subject": "docs(WI-470): route execution-class to Sonnet 5 high-effort (model-routing WI) (#117)",
+      "tree": "82abd4854382d4380ffbff6fc7f345f990f26d49",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "reissue_mechanically_eligible_quick_fix",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": true,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 117,
+        "title": "docs(WI-470): route execution-class to Sonnet 5 high-effort (model-routing WI)",
+        "merged_at": "2026-06-30T18:33:22Z",
+        "head": "wi470-sonnet5-exec",
+        "review_decision": "",
+        "body_sha256": "ac23c4d654aa86454f447e0bcadb35c6c009e5c28ac7203e206328e4d8674328"
+      },
+      "wi_ids": [
+        "WI-470"
+      ],
+      "changed_files": [
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-470.md"
+      ],
+      "evidence_artifacts": [
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-470.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "b98abb44c3fd1fc3b43624eec38e7b92bd0928f7",
+      "short": "b98abb4",
+      "date": "2026-06-29T23:46:35+03:00",
+      "subject": "feat(land): merge-gate permission doc + blocked-on-user protocol (WI-464) (#116)",
+      "tree": "f99827d0fa8a91e421c9f35e56bb00237d0405d1",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "7eac713bcfbf8c2987b54a7f5978d828d1be654c",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 116,
+        "title": "feat(land): merge-gate permission + blocked-on-user protocol (WI-464 — P1)",
+        "merged_at": "2026-06-29T20:46:35Z",
+        "head": "wi464-merge-permission",
+        "review_decision": "",
+        "body_sha256": "cf946a3f681458bde5a024335a69c7724bbeb6ba368b367474679f7785ea1f84"
+      },
+      "wi_ids": [
+        "WI-464"
+      ],
+      "changed_files": [
+        "docs/specs/work-items/INDEX.md",
+        "land-changeset/SKILL.md",
+        "references/merge-gate-permission.md",
+        "test-framework/evals/tier-1/validate-merge-gate-permission.sh"
+      ],
+      "evidence_artifacts": [
+        "docs/specs/work-items/INDEX.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "26d8655e55c96ab696ed41bb149150ffd13d28d6",
+      "short": "26d8655",
+      "date": "2026-06-29T23:17:28+03:00",
+      "subject": "feat(verify): no-loss-verify guard + harness — collapse the verification ritual (WI-462/463) (#115)",
+      "tree": "e4a64fc4ab1361dfb4cd08b3d364d4a35c4cb002",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "6bbe0f8cdf1b493abbe61c4996e779cb605bab7c",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 115,
+        "title": "feat(verify): no-loss-verify guard + harness (WI-462/463 — P0 speed fix)",
+        "merged_at": "2026-06-29T20:17:28Z",
+        "head": "wi462-noloss-preflight",
+        "review_decision": "",
+        "body_sha256": "bd17262a53269c0af6e2f5db972d905e0593781d1687503360bcf0c3edd5f23f"
+      },
+      "wi_ids": [
+        "WI-462"
+      ],
+      "changed_files": [
+        "docs/specs/work-items/INDEX.md",
+        "scripts/lib/no-loss-preflight.mjs",
+        "scripts/no-loss-verify.mjs",
+        "test-framework/evals/tier-1/validate-no-loss-verify.sh"
+      ],
+      "evidence_artifacts": [
+        "docs/specs/work-items/INDEX.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "76ea121b4a1c5f2bed68b578bde9e4df70b9782c",
+      "short": "76ea121",
+      "date": "2026-06-29T22:42:23+03:00",
+      "subject": "docs(WI-461): file execution-speed optimization epic + evolve-framework survey (#114)",
+      "tree": "9358fe923c44d6cfd2bbf50f64779bec91bf8580",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "12f2da9403b36a1ec9c92d8a3dea3f2fe9604c3a",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": true,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 114,
+        "title": "docs(WI-461): execution-speed optimization epic + evolve-framework survey",
+        "merged_at": "2026-06-29T19:42:23Z",
+        "head": "wi461-exec-speed-epic",
+        "review_decision": "",
+        "body_sha256": "84648c80553c1a5aa1c4a1bde8451821d3f95daed4b19b3b956f055124c9f601"
+      },
+      "wi_ids": [
+        "WI-461"
+      ],
+      "changed_files": [
+        ".svc/pipeline-decisions.jsonl",
+        ".svc/session-contract.jsonl",
+        "docs/analysis/2026-06-29-session-speed-audit.md",
+        "docs/specs/decisions/exec-speed-gamechanger/DECISION.md",
+        "docs/specs/decisions/exec-speed-gamechanger/REVIEW.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-461.md",
+        "proposals/2026-06-29-evolution.md",
+        "proposals/triage.json"
+      ],
+      "evidence_artifacts": [
+        "docs/specs/decisions/exec-speed-gamechanger/DECISION.md",
+        "docs/specs/decisions/exec-speed-gamechanger/REVIEW.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-461.md",
+        "proposals/2026-06-29-evolution.md",
+        "proposals/triage.json"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "d46e945ebd8e39b545533271628963adf745fa69",
+      "short": "d46e945",
+      "date": "2026-06-29T20:06:03+03:00",
+      "subject": "docs(WI-440): mark merged children verified + record C2 rejection (audit closeout) (#113)",
+      "tree": "096e5fe4ff20e609dc9ebffd6ffa1d9a6a080992",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "0a70cbf6c49a8cf429b2de8370acd6e44ebb5503",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": true,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 113,
+        "title": "docs(WI-440): mark merged children verified + record C2 rejection (audit closeout)",
+        "merged_at": "2026-06-29T17:06:03Z",
+        "head": "chore/wi-440-closeout",
+        "review_decision": "",
+        "body_sha256": "d1df4ff3282e3b70accd9334a23d01a5b234df408d1d8231ee90265692ce57fc"
+      },
+      "wi_ids": [
+        "WI-440"
+      ],
+      "changed_files": [
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-440.md"
+      ],
+      "evidence_artifacts": [
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-440.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "2394e890ffdb6cc17bedef92cda8f204f5b8e139",
+      "short": "2394e89",
+      "date": "2026-06-29T18:15:43+03:00",
+      "subject": "docs(review-security): wire in project-secrets-hygiene reference (WI-460 / audit C6) (#112)",
+      "tree": "cd1fcebfaacdbfc67b8b1da4160ca8e2843cea89",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "reissue_mechanically_eligible_quick_fix",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": true,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 112,
+        "title": "docs(review-security): wire in project-secrets-hygiene reference (WI-460 / audit C6)",
+        "merged_at": "2026-06-29T15:15:44Z",
+        "head": "wi460-c6",
+        "review_decision": "",
+        "body_sha256": "94c4ae983b03b7fef35226c0d25491e64d368b4a8111a0578fdfce3295259b69"
+      },
+      "wi_ids": [
+        "WI-460"
+      ],
+      "changed_files": [
+        "review-security/SKILL.md"
+      ],
+      "evidence_artifacts": [],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "8ab3baa5676a3feafe3bedd4a8a36638c4f50e2b",
+      "short": "8ab3baa",
+      "date": "2026-06-29T18:15:40+03:00",
+      "subject": "refactor(hooks): dedup norm() path fn into shared module (WI-458 / audit C1) (#111)",
+      "tree": "6efe4d7cf301c1a7ac710f5d76c17f0ec2b76396",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 111,
+        "title": "refactor(hooks): dedup norm() path fn into shared module (WI-458 / audit C1)",
+        "merged_at": "2026-06-29T15:15:40Z",
+        "head": "wi458-c1",
+        "review_decision": "",
+        "body_sha256": "c454a28cb76f25ec546228d55d89fea4e6d6cb860a2e3c7de894d99be81a7090"
+      },
+      "wi_ids": [
+        "WI-458"
+      ],
+      "changed_files": [
+        "hooks/lib/learning-index.mjs",
+        "hooks/lib/normalize-path.mjs",
+        "hooks/lib/owner-index.mjs"
+      ],
+      "evidence_artifacts": [],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "fbd3bf28c6aede7dc52075f8c23bd04033e123f2",
+      "short": "fbd3bf2",
+      "date": "2026-06-29T18:15:36+03:00",
+      "subject": "perf(evals): parallelize tier-1 suite — ~57% faster, no-loss (WI-453 / audit A1) (#110)",
+      "tree": "2139c2683089621c08f8cbc6e0ce94cb3e7fc58c",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 110,
+        "title": "perf(evals): parallelize tier-1 suite — ~57% faster, no-loss (WI-453 / audit A1)",
+        "merged_at": "2026-06-29T15:15:36Z",
+        "head": "wi453-a1",
+        "review_decision": "",
+        "body_sha256": "0d28366dc1101a22f5506ddf1e624cfd39f76a0de0ab6c61d91f781d4e24b50d"
+      },
+      "wi_ids": [
+        "WI-453"
+      ],
+      "changed_files": [
+        "test-framework/evals/run-all-evals.sh"
+      ],
+      "evidence_artifacts": [],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "bb1da9718b3907839b5f7092b2b0ba5b66828fc7",
+      "short": "bb1da97",
+      "date": "2026-06-29T18:15:21+03:00",
+      "subject": "docs(WI-440): file no-loss audit epic + reconcile stale rows + prose drift (Step 0) (#109)",
+      "tree": "40263c618670b38bbef48ca23d93b1122fab285f",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "accab8a5bb9001c6a8a3c0298cf6d6251e89a259",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 109,
+        "title": "docs(WI-440): file no-loss audit epic + reconcile stale rows + prose drift (Step 0)",
+        "merged_at": "2026-06-29T15:15:22Z",
+        "head": "chore/wi-440-filing",
+        "review_decision": "",
+        "body_sha256": "59befe353903044c701f52dbd0d4ab92e1fc25cc395c14df7c602c7974970366"
+      },
+      "wi_ids": [
+        "WI-440"
+      ],
+      "changed_files": [
+        ".svc/competitive-monitor-triggers.jsonl",
+        ".svc/learning-fires.jsonl",
+        ".svc/pipeline-decisions.jsonl",
+        ".svc/session-contract.jsonl",
+        "CLAUDE.md",
+        "EXTERNAL_ADDONS.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-411.md",
+        "docs/specs/work-items/WI-440.md",
+        "docs/specs/work-items/WI-446.md",
+        "docs/specs/work-items/WI-452.md",
+        "rules/common/model-selection.md"
+      ],
+      "evidence_artifacts": [
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-411.md",
+        "docs/specs/work-items/WI-440.md",
+        "docs/specs/work-items/WI-446.md",
+        "docs/specs/work-items/WI-452.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "02f25abf8fb97507a04db765c7e061978f6a39cd",
+      "short": "02f25ab",
+      "date": "2026-06-29T11:41:42+03:00",
+      "subject": "chore(proposals): batch re-triage 20 expired evolution proposals (green tier-1) (#108)",
+      "tree": "2f4194b9879ca4da2feeb0281ab410d3fb9b5f97",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "copy_tree_equivalent_reviewed_envelope",
+      "source_sha": "bff17c6a391841f65056f672f2c649ed31dd399d",
+      "main_mirror_valid": false,
+      "quick_fix_eligible": true,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 108,
+        "title": "chore(proposals): batch re-triage 20 expired evolution proposals (green tier-1)",
+        "merged_at": "2026-06-29T08:41:43Z",
+        "head": "fix-proposal-batch-retriage",
+        "review_decision": "",
+        "body_sha256": "6d560c2cdb674740f8061ce86229be7cc468b65e4fbb937f12b62079588e9a48"
+      },
+      "wi_ids": [],
+      "changed_files": [
+        ".svc/pipeline-decisions.jsonl",
+        "docs/specs/work-items/PROPOSAL-PROMOTION-LEDGER.md",
+        "docs/specs/work-items/WI-354-residual-map.json",
+        "proposals/2026-05-11-deep-dive-research-protocol-standard.md",
+        "proposals/2026-05-12-autonomous-discuss-phase-with-adversarial-review.md",
+        "proposals/2026-05-12-blend-gsd-read-before-edit.md",
+        "proposals/2026-05-12-blend-gsd-validation-routing.md",
+        "proposals/2026-05-12-pre-wi-promotion-compression-gate.md",
+        "proposals/2026-05-12-shift-left-concern-routing.md",
+        "proposals/2026-06-01-framework-improvement-feature-like-bugfix-product-questions.md",
+        "proposals/2026-06-04-session-audit-active-intent-guard.md",
+        "proposals/done/2026-06-04-session-audit-active-intent-guard.md",
+        "proposals/triage.json"
+      ],
+      "evidence_artifacts": [
+        "docs/specs/work-items/PROPOSAL-PROMOTION-LEDGER.md",
+        "docs/specs/work-items/WI-354-residual-map.json",
+        "proposals/2026-05-11-deep-dive-research-protocol-standard.md",
+        "proposals/2026-05-12-autonomous-discuss-phase-with-adversarial-review.md",
+        "proposals/2026-05-12-blend-gsd-read-before-edit.md",
+        "proposals/2026-05-12-blend-gsd-validation-routing.md",
+        "proposals/2026-05-12-pre-wi-promotion-compression-gate.md",
+        "proposals/2026-05-12-shift-left-concern-routing.md",
+        "proposals/2026-06-01-framework-improvement-feature-like-bugfix-product-questions.md",
+        "proposals/2026-06-04-session-audit-active-intent-guard.md",
+        "proposals/done/2026-06-04-session-audit-active-intent-guard.md",
+        "proposals/triage.json"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "633d2a98c08bf05a2b2c1461876654073092b027",
+      "short": "633d2a9",
+      "date": "2026-06-29T02:14:42+03:00",
+      "subject": "chore(proposals): re-triage expired-deferral survey (green tier-1 red #2) (#106)",
+      "tree": "e69d3c1852804797f3843c1c87e83b9dd5114f35",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "reissue_mechanically_eligible_quick_fix",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": true,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 106,
+        "title": "chore(proposals): re-triage expired-deferral survey (green tier-1 red #2)",
+        "merged_at": "2026-06-28T23:14:43Z",
+        "head": "fix-proposal-triage-sla",
+        "review_decision": "",
+        "body_sha256": "364af3a3d935dc18aabbef7b42566c6bd566235713d7ab43d79312847ae8e2fd"
+      },
+      "wi_ids": [],
+      "changed_files": [
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-452.md",
+        "proposals/2026-06-15-evolution-landing-audit.md"
+      ],
+      "evidence_artifacts": [
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-452.md",
+        "proposals/2026-06-15-evolution-landing-audit.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "06e31fc01758aa4a94bcbcc06116167abc63c440",
+      "short": "06e31fc",
+      "date": "2026-06-29T00:43:20+03:00",
+      "subject": "feat(expertise): SME dispatch resolver + autonomous heuristic promotion (WI-435+436) (#104)",
+      "tree": "72bc4e3929ea2c774f7c9e633e6f3ef9a7471b0a",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 104,
+        "title": "[Feature] WI-435+436: SME dispatch resolver + autonomous heuristic promotion",
+        "merged_at": "2026-06-28T21:43:20Z",
+        "head": "feat/dispatch-promote-wi435-436",
+        "review_decision": "",
+        "body_sha256": "0a2f196e0ab1e6e26c933998c5fcb79c6acccebf1b39d345a749b853d510f23c"
+      },
+      "wi_ids": [
+        "WI-435"
+      ],
+      "changed_files": [
+        "route-workflow/SKILL.md",
+        "route-workflow/references/hot-path-operational-details.md",
+        "scripts/company-state.mjs",
+        "scripts/expertise.mjs",
+        "test-framework/evals/tier-1/validate-expertise-dispatch-promote.sh"
+      ],
+      "evidence_artifacts": [],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "77cad2949883fb3fbb30357ab94f61d455fe16ff",
+      "short": "77cad29",
+      "date": "2026-06-29T00:13:54+03:00",
+      "subject": "feat(expertise): generalize the contract to the researcher (source-heuristics) (WI-433) (#102)",
+      "tree": "46550e5ed5dc968afa2fb55a7de1e875c6af8bce",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 102,
+        "title": "[Feature] WI-433: generalize expertise contract to the researcher (source-heuristics)",
+        "merged_at": "2026-06-28T21:13:55Z",
+        "head": "feat/researcher-sme-wi433",
+        "review_decision": "",
+        "body_sha256": "21fb63ba5e1da37f52389e8c9459e09786b6244f8d8ef758e88068a6ee6e7fcd"
+      },
+      "wi_ids": [
+        "WI-433"
+      ],
+      "changed_files": [
+        ".claude/agents/researcher.md",
+        "agents/researcher.md",
+        "references/knowledge/domains/research-methodology/.sources.jsonl",
+        "references/knowledge/domains/research-methodology/.version",
+        "references/knowledge/domains/research-methodology/CAPABILITIES.md",
+        "references/knowledge/domains/research-methodology/details/research-methodology-2026.md",
+        "scripts/expertise.mjs",
+        "skills-manifest.json",
+        "test-framework/evals/tier-1/validate-expertise-contract.sh"
+      ],
+      "evidence_artifacts": [],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "35e2b38c046f3dac64e7fcb8d4971fb7cc230948",
+      "short": "35e2b38",
+      "date": "2026-06-28T23:48:19+03:00",
+      "subject": "feat(expertise): staleness→refresh closure — refresh-scan (WI-432) (#100)",
+      "tree": "aec0ca67538a8fe29653a29aa9bbfddfb1d7d3c6",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 100,
+        "title": "[Feature] WI-432: staleness→refresh closure (expertise.mjs refresh-scan)",
+        "merged_at": "2026-06-28T20:48:20Z",
+        "head": "feat/staleness-refresh-wi432",
+        "review_decision": "",
+        "body_sha256": "d22c963ea81f3806790716a1eebd50d03467ff6be4e23ed15c79d42111595b55"
+      },
+      "wi_ids": [
+        "WI-432"
+      ],
+      "changed_files": [
+        ".claude/agents/chief-of-staff.md",
+        ".claude/agents/comms.md",
+        ".claude/agents/counsel.md",
+        ".claude/agents/customer-success.md",
+        ".claude/agents/data-collection.md",
+        ".claude/agents/financial-analyst.md",
+        ".claude/agents/growth-lead.md",
+        ".claude/agents/market-intel.md",
+        ".claude/agents/people-ops.md",
+        ".claude/agents/product-lead.md",
+        ".claude/agents/revops.md",
+        ".claude/agents/security-ops.md",
+        "agents/chief-of-staff.md",
+        "agents/comms.md",
+        "agents/counsel.md",
+        "agents/customer-success.md",
+        "agents/data-collection.md",
+        "agents/financial-analyst.md",
+        "agents/growth-lead.md",
+        "agents/market-intel.md",
+        "agents/people-ops.md",
+        "agents/product-lead.md",
+        "agents/revops.md",
+        "agents/security-ops.md",
+        "references/knowledge/domains/startup-saas-finance/CAPABILITIES.md",
+        "scripts/expertise.mjs",
+        "test-framework/evals/tier-1/validate-knowledge-refresh-scan.sh"
+      ],
+      "evidence_artifacts": [],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "faff67fe2128b082a3f532d99815c553f6b303b9",
+      "short": "faff67f",
+      "date": "2026-06-28T23:20:41+03:00",
+      "subject": "feat(expertise): fanout — 11 SME domain banks + all 11 fleet brains wired (WI-434) (#98)",
+      "tree": "ed82d2f824165edb7dbc163d2aa6662973d6c147",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 98,
+        "title": "[Feature] WI-434: fanout — 11 SME domain banks + all 11 fleet brains wired",
+        "merged_at": "2026-06-28T20:20:41Z",
+        "head": "feat/sme-banks-wired-wi434",
+        "review_decision": "",
+        "body_sha256": "116c44f81f7707a1b2af9a01ca1d0321d5fdfb2b23ed62546a652b971ee4efb7"
+      },
+      "wi_ids": [
+        "WI-434"
+      ],
+      "changed_files": [
+        ".claude/agents/chief-of-staff.md",
+        ".claude/agents/comms.md",
+        ".claude/agents/counsel.md",
+        ".claude/agents/customer-success.md",
+        ".claude/agents/data-collection.md",
+        ".claude/agents/growth-lead.md",
+        ".claude/agents/market-intel.md",
+        ".claude/agents/people-ops.md",
+        ".claude/agents/product-lead.md",
+        ".claude/agents/revops.md",
+        ".claude/agents/security-ops.md",
+        "agents/chief-of-staff.md",
+        "agents/comms.md",
+        "agents/counsel.md",
+        "agents/customer-success.md",
+        "agents/data-collection.md",
+        "agents/growth-lead.md",
+        "agents/market-intel.md",
+        "agents/people-ops.md",
+        "agents/product-lead.md",
+        "agents/revops.md",
+        "agents/security-ops.md",
+        "references/knowledge/domains/appsec-secops/.sources.jsonl",
+        "references/knowledge/domains/appsec-secops/.version",
+        "references/knowledge/domains/appsec-secops/CAPABILITIES.md",
+        "references/knowledge/domains/appsec-secops/details/appsec-secops-2026.md",
+        "references/knowledge/domains/customer-success-retention/.sources.jsonl",
+        "references/knowledge/domains/customer-success-retention/.version",
+        "references/knowledge/domains/customer-success-retention/CAPABILITIES.md",
+        "references/knowledge/domains/customer-success-retention/details/customer-success-retention-2026.md",
+        "references/knowledge/domains/market-intelligence/.sources.jsonl",
+        "references/knowledge/domains/market-intelligence/.version",
+        "references/knowledge/domains/market-intelligence/CAPABILITIES.md",
+        "references/knowledge/domains/market-intelligence/details/market-intelligence-2026.md",
+        "references/knowledge/domains/people-ops-hiring/.sources.jsonl",
+        "references/knowledge/domains/people-ops-hiring/.version",
+        "references/knowledge/domains/people-ops-hiring/CAPABILITIES.md",
+        "references/knowledge/domains/people-ops-hiring/details/people-ops-hiring-2026.md",
+        "references/knowledge/domains/pr-brand-comms/.sources.jsonl",
+        "references/knowledge/domains/pr-brand-comms/.version",
+        "references/knowledge/domains/pr-brand-comms/CAPABILITIES.md",
+        "references/knowledge/domains/pr-brand-comms/details/pr-brand-comms-2026.md",
+        "references/knowledge/domains/product-discovery-pmf/.sources.jsonl",
+        "references/knowledge/domains/product-discovery-pmf/.version",
+        "references/knowledge/domains/product-discovery-pmf/CAPABILITIES.md",
+        "references/knowledge/domains/product-discovery-pmf/details/product-discovery-pmf-2026.md",
+        "references/knowledge/domains/revenue-operations/.sources.jsonl",
+        "references/knowledge/domains/revenue-operations/.version",
+        "references/knowledge/domains/revenue-operations/CAPABILITIES.md",
+        "references/knowledge/domains/revenue-operations/details/revenue-operations-2026.md",
+        "references/knowledge/domains/startup-growth-marketing/.sources.jsonl",
+        "references/knowledge/domains/startup-growth-marketing/.version",
+        "references/knowledge/domains/startup-growth-marketing/CAPABILITIES.md",
+        "references/knowledge/domains/startup-growth-marketing/details/startup-growth-marketing-2026.md",
+        "references/knowledge/domains/startup-legal-compliance/.sources.jsonl",
+        "references/knowledge/domains/startup-legal-compliance/.version",
+        "references/knowledge/domains/startup-legal-compliance/CAPABILITIES.md",
+        "references/knowledge/domains/startup-legal-compliance/details/startup-legal-compliance-2026.md",
+        "references/knowledge/domains/startup-operating-cadence/.sources.jsonl",
+        "references/knowledge/domains/startup-operating-cadence/.version",
+        "references/knowledge/domains/startup-operating-cadence/CAPABILITIES.md",
+        "references/knowledge/domains/startup-operating-cadence/details/startup-operating-cadence-2026.md",
+        "references/knowledge/domains/startup-saas-finance/.sources.jsonl",
+        "references/knowledge/domains/web-data-collection/.sources.jsonl",
+        "references/knowledge/domains/web-data-collection/.version",
+        "references/knowledge/domains/web-data-collection/CAPABILITIES.md",
+        "references/knowledge/domains/web-data-collection/details/web-data-collection-2026.md",
+        "skills-manifest.json",
+        "test-framework/evals/tier-1/validate-expertise-contract.sh"
+      ],
+      "evidence_artifacts": [],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "12d583026266417669547d26321ca3209b11688a",
+      "short": "12d5830",
+      "date": "2026-06-28T22:51:53+03:00",
+      "subject": "feat(expertise): expertiseRegistry spine + parity check (WI-431) (#96)",
+      "tree": "4a86fa1caf983998a66d75b961eb6140fa3666f1",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 96,
+        "title": "[Feature] WI-431: expertiseRegistry spine + parity check",
+        "merged_at": "2026-06-28T19:51:53Z",
+        "head": "feat/expertise-registry-wi431",
+        "review_decision": "",
+        "body_sha256": "c4f8c6a1c9cc19a4ad17af3bebbe92971e05102ab7c44e4d52d383229512fe79"
+      },
+      "wi_ids": [
+        "WI-431"
+      ],
+      "changed_files": [
+        ".claude/agents/financial-analyst.md",
+        "agents/financial-analyst.md",
+        "scripts/expertise.mjs",
+        "skills-manifest.json",
+        "test-framework/evals/tier-1/validate-expertise-registry.sh"
+      ],
+      "evidence_artifacts": [],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "989b9cc278f2df3e6a35ce0a06d368eb1613fd2e",
+      "short": "989b9cc",
+      "date": "2026-06-28T22:25:19+03:00",
+      "subject": "feat(expertise): SME expertise contract — 4-layer preload proven on financial-analyst (WI-430) (#94)",
+      "tree": "49a2e86394a74b17956f6e587c02845308e91068",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 94,
+        "title": "[Feature] WI-430: SME expertise contract — 4-layer preload proven on financial-analyst",
+        "merged_at": "2026-06-28T19:25:19Z",
+        "head": "feat/expertise-contract-wi430",
+        "review_decision": "",
+        "body_sha256": "7428e563e931f332438c499d750a2d18d070586e48d1f7937324fee83fd4be58"
+      },
+      "wi_ids": [
+        "WI-430"
+      ],
+      "changed_files": [
+        ".claude/agents/financial-analyst.md",
+        "agents/financial-analyst.md",
+        "references/knowledge/domains/startup-saas-finance/.version",
+        "references/knowledge/domains/startup-saas-finance/CAPABILITIES.md",
+        "references/knowledge/domains/startup-saas-finance/details/saas-benchmarks-2026.md",
+        "scripts/expertise.mjs",
+        "test-framework/evals/tier-1/validate-expertise-contract.sh"
+      ],
+      "evidence_artifacts": [],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "59d6bd9e898c167edb4671ebb4757d06653b392e",
+      "short": "59d6bd9",
+      "date": "2026-06-28T19:24:59+03:00",
+      "subject": "feat(company-operating-fleet): synthesis + product/marketing technique upgrade (contradiction-map, triage, calibration) (#92)",
+      "tree": "f44d28d01802e36f3f52d80f5176f1c051f50b1a",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 92,
+        "title": "[Feature] Fleet technique upgrade — contradiction-mapping + actionability triage + calibration",
+        "merged_at": "2026-06-28T16:24:59Z",
+        "head": "feat/fleet-technique-upgrade",
+        "review_decision": "",
+        "body_sha256": "d62e4a72088ff3e0b71aa7c81ebcf1c6932976ac4fff617f90a808bc705bffff"
+      },
+      "wi_ids": [],
+      "changed_files": [
+        ".claude/agents/chief-of-staff.md",
+        ".claude/agents/growth-lead.md",
+        ".claude/agents/market-intel.md",
+        ".claude/agents/product-lead.md",
+        ".claude/agents/revops.md",
+        "agents/chief-of-staff.md",
+        "agents/growth-lead.md",
+        "agents/market-intel.md",
+        "agents/product-lead.md",
+        "agents/revops.md",
+        "schemas/company-decision-card.schema.json",
+        "scripts/company-state.mjs",
+        "test-framework/evals/tier-1/validate-company-compounding-loop.sh"
+      ],
+      "evidence_artifacts": [],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "06c8c5805cfdfd982c830885625d2c3c380f455b",
+      "short": "06c8c58",
+      "date": "2026-06-28T18:40:46+03:00",
+      "subject": "feat(company-operating-fleet): wire recall into all 12 brains — activate the compounding loop (#90)",
+      "tree": "667d0620a5d4dcb10950c7930d9137385e3020de",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 90,
+        "title": "[Feature] Wire recall into all 12 fleet brains — activate the compounding loop",
+        "merged_at": "2026-06-28T15:40:46Z",
+        "head": "feat/wire-recall",
+        "review_decision": "",
+        "body_sha256": "313f6d78bba093b9309d94de04d3d77b5528166f44b385599a5d020e240e4511"
+      },
+      "wi_ids": [],
+      "changed_files": [
+        ".claude/agents/chief-of-staff.md",
+        ".claude/agents/comms.md",
+        ".claude/agents/counsel.md",
+        ".claude/agents/customer-success.md",
+        ".claude/agents/data-collection.md",
+        ".claude/agents/financial-analyst.md",
+        ".claude/agents/growth-lead.md",
+        ".claude/agents/market-intel.md",
+        ".claude/agents/people-ops.md",
+        ".claude/agents/product-lead.md",
+        ".claude/agents/revops.md",
+        ".claude/agents/security-ops.md",
+        "agents/chief-of-staff.md",
+        "agents/comms.md",
+        "agents/counsel.md",
+        "agents/customer-success.md",
+        "agents/data-collection.md",
+        "agents/financial-analyst.md",
+        "agents/growth-lead.md",
+        "agents/market-intel.md",
+        "agents/people-ops.md",
+        "agents/product-lead.md",
+        "agents/revops.md",
+        "agents/security-ops.md"
+      ],
+      "evidence_artifacts": [],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "7b2b7b7d601aa7514c758872e13e1ea49e810827",
+      "short": "7b2b7b7",
+      "date": "2026-06-28T18:31:17+03:00",
+      "subject": "feat(company-operating-fleet): compounding memory — resolve/record-outcome/recall + local recall index (#88)",
+      "tree": "0f6f3156955599a82b5affc191282bee799ff3c4",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 88,
+        "title": "[Feature] Company-fleet compounding memory — outcome loop + local recall index",
+        "merged_at": "2026-06-28T15:31:18Z",
+        "head": "feat/company-compounding-memory",
+        "review_decision": "",
+        "body_sha256": "0332e06f55bbbb2ba19caa4c9fa20d4685f9dead296931d1bad7185a23ec0c96"
+      },
+      "wi_ids": [],
+      "changed_files": [
+        "references/company-operating-fleet.md",
+        "scripts/company-memory.mjs",
+        "scripts/company-state.mjs",
+        "test-framework/evals/tier-1/validate-company-compounding-loop.sh"
+      ],
+      "evidence_artifacts": [],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "38aebfccb9a0d9bf22b01757c4f56eb6028f7e1d",
+      "short": "38aebfc",
+      "date": "2026-06-28T16:05:28+03:00",
+      "subject": "refactor(company-operating-fleet): cadence split — 8 operating weekly / 3 governance quarterly (cost fix) (#86)",
+      "tree": "4b89a8f82022f960aad951336dffe9e53b514ccb",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "reissue_mechanically_eligible_quick_fix",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": true,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 86,
+        "title": "[Refactor] Fleet cadence split — operating-weekly / governance-quarterly (cost fix)",
+        "merged_at": "2026-06-28T13:05:29Z",
+        "head": "feat/cadence-split",
+        "review_decision": "",
+        "body_sha256": "fa0623ac08a54dd2018e16c40e36acb7b207beda76ea37057f5c41e7682cda15"
+      },
+      "wi_ids": [],
+      "changed_files": [
+        ".claude/agents/chief-of-staff.md",
+        "agents/chief-of-staff.md",
+        "references/company-operating-fleet.md"
+      ],
+      "evidence_artifacts": [],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "6763ebb123747581d495169b045e125706b54001",
+      "short": "6763ebb",
+      "date": "2026-06-28T14:51:55+03:00",
+      "subject": "feat(company-operating-fleet): 5 expansion brains — CS/revops/comms/data-collection/people-ops (WI-422..426) (#84)",
+      "tree": "c5bf5ba9c65170a9d297b5d9e4d339449540329d",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 84,
+        "title": "[Feature] 5 fleet expansion brains — CS/revops/comms/data-collection/people-ops (WI-422..426)",
+        "merged_at": "2026-06-28T11:51:55Z",
+        "head": "feat/fleet-brains-wave",
+        "review_decision": "",
+        "body_sha256": "aecc9f0a9aeac8a36434d75a99a1fd26b9d8a35cc9f4763887e4e98100154d19"
+      },
+      "wi_ids": [
+        "WI-422"
+      ],
+      "changed_files": [
+        ".claude/agents/chief-of-staff.md",
+        ".claude/agents/comms.md",
+        ".claude/agents/customer-success.md",
+        ".claude/agents/data-collection.md",
+        ".claude/agents/people-ops.md",
+        ".claude/agents/revops.md",
+        "agents/chief-of-staff.md",
+        "agents/comms.md",
+        "agents/customer-success.md",
+        "agents/data-collection.md",
+        "agents/people-ops.md",
+        "agents/revops.md",
+        "references/company-operating-fleet.md",
+        "schemas/company-decision-card.schema.json",
+        "scripts/company-state.mjs",
+        "scripts/sync-native-agents.mjs",
+        "test-framework/evals/tier-1/validate-locked-agents.sh"
+      ],
+      "evidence_artifacts": [],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "f272e9d2d6a7c162bf444d812057788adebbdca9",
+      "short": "f272e9d",
+      "date": "2026-06-28T07:17:48+03:00",
+      "subject": "feat(company-operating-fleet): security-ops — continuous-security/SecOps brain (7th role-agent, WI-421) (#82)",
+      "tree": "f35c4ce785ef9a55a8de1884b07ddaefbc86a225",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 82,
+        "title": "[Feature] security-ops — continuous-security/SecOps brain (7th fleet role-agent, WI-421)",
+        "merged_at": "2026-06-28T04:17:48Z",
+        "head": "feat/security-ops-brain",
+        "review_decision": "",
+        "body_sha256": "88419a5e216df5afcf7c3dae71c9b30769d561e36fda77fd8d11dbc63d6936ba"
+      },
+      "wi_ids": [
+        "WI-421"
+      ],
+      "changed_files": [
+        ".claude/agents/chief-of-staff.md",
+        ".claude/agents/security-ops.md",
+        "agents/chief-of-staff.md",
+        "agents/security-ops.md",
+        "references/company-operating-fleet.md",
+        "schemas/company-decision-card.schema.json",
+        "scripts/company-state.mjs",
+        "scripts/sync-native-agents.mjs"
+      ],
+      "evidence_artifacts": [],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "a908f9973fa7ca6b30d1b1f5c0a8b9df71713c64",
+      "short": "a908f99",
+      "date": "2026-06-28T01:07:17+03:00",
+      "subject": "feat(company-operating-fleet): counsel — legal/compliance brain (6th fleet role-agent, WI-420) (#80)",
+      "tree": "d4689fbc02c5045a34498b301cae790d0370d4b4",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 80,
+        "title": "[Feature] counsel — legal/compliance brain (6th fleet role-agent, WI-420)",
+        "merged_at": "2026-06-27T22:07:18Z",
+        "head": "feat/counsel-brain",
+        "review_decision": "",
+        "body_sha256": "3d76a9d425313e8ae722831ec20a39835ec7b8e5e47eda7e18006e721e0c659e"
+      },
+      "wi_ids": [
+        "WI-420"
+      ],
+      "changed_files": [
+        ".claude/agents/chief-of-staff.md",
+        ".claude/agents/counsel.md",
+        "agents/chief-of-staff.md",
+        "agents/counsel.md",
+        "references/company-operating-fleet.md",
+        "schemas/company-decision-card.schema.json",
+        "scripts/company-state.mjs",
+        "scripts/sync-native-agents.mjs"
+      ],
+      "evidence_artifacts": [],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "6859193705cb04d05b509ef775b5fd797d81b21b",
+      "short": "6859193",
+      "date": "2026-06-23T20:21:20+03:00",
+      "subject": "[Feature] company-operating-fleet — autonomous business role-agents + quality spine (WI-403..409, WI-414/415) (#78)",
+      "tree": "38e1efc2a107e7a9b5283707228b7aa609e9381a",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 78,
+        "title": "[Feature] company-operating-fleet — autonomous business role-agents + quality spine (WI-403..409, WI-414/415)",
+        "merged_at": "2026-06-23T17:21:21Z",
+        "head": "feat/company-fleet-clean",
+        "review_decision": "",
+        "body_sha256": "0bd33b3c2416f2039c15e00dc46fa40cd58ab56d9dc06d4588ac67ca475a99ab"
+      },
+      "wi_ids": [
+        "WI-403",
+        "WI-414"
+      ],
+      "changed_files": [
+        ".claude/agents/chief-of-staff.md",
+        ".claude/agents/financial-analyst.md",
+        ".claude/agents/growth-lead.md",
+        ".claude/agents/market-intel.md",
+        ".claude/agents/product-lead.md",
+        ".claude/agents/researcher.md",
+        "agents/chief-of-staff.md",
+        "agents/financial-analyst.md",
+        "agents/growth-lead.md",
+        "agents/market-intel.md",
+        "agents/product-lead.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-403.md",
+        "docs/specs/work-items/WI-404.md",
+        "docs/specs/work-items/WI-405.md",
+        "docs/specs/work-items/WI-406.md",
+        "docs/specs/work-items/WI-407.md",
+        "docs/specs/work-items/WI-408.md",
+        "docs/specs/work-items/WI-409.md",
+        "proposals/2026-06-20-company-operating-fleet.md",
+        "references/company-operating-fleet.md",
+        "schemas/company-decision-card.schema.json",
+        "scripts/company-state.mjs",
+        "scripts/sync-native-agents.mjs",
+        "scripts/validate-company-decision-cards.mjs",
+        "test-framework/evals/tier-1/validate-company-evidence-gate.sh",
+        "test-framework/evals/tier-1/validate-locked-agents.sh"
+      ],
+      "evidence_artifacts": [
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-403.md",
+        "docs/specs/work-items/WI-404.md",
+        "docs/specs/work-items/WI-405.md",
+        "docs/specs/work-items/WI-406.md",
+        "docs/specs/work-items/WI-407.md",
+        "docs/specs/work-items/WI-408.md",
+        "docs/specs/work-items/WI-409.md",
+        "proposals/2026-06-20-company-operating-fleet.md"
+      ],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "5b16c0a5de6752b303d838be2ea5bb653543f05a",
+      "short": "5b16c0a",
+      "date": "2026-06-22T22:37:44+03:00",
+      "subject": "WI-411: craft-prompt — emit world-class prompts proven never worse than baseline (lean) (#76)",
+      "tree": "0a1e6fee3971e36cbc367d7d2dcfece2c88c9c02",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "promote_valid_main_mirror",
+      "source_sha": null,
+      "main_mirror_valid": true,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 76,
+        "title": "WI-411: craft-prompt — emit world-class prompts proven never worse than baseline (lean)",
+        "merged_at": "2026-06-22T19:37:44Z",
+        "head": "wi411-craft-prompt",
+        "review_decision": "",
+        "body_sha256": "02a902ec9eabe14dd8241e6318840fa71a2d753686c30346eaa75d43f4fa3c9c"
+      },
+      "wi_ids": [
+        "WI-411"
+      ],
+      "changed_files": [
+        ".svc/lane-tasks-WI-411.json",
+        ".svc/learning-fires.jsonl",
+        ".svc/pipeline-decisions.jsonl",
+        ".svc/session-contract.jsonl",
+        "EXTERNAL_ADDONS.md",
+        "README.md",
+        "craft-prompt/SKILL.md",
+        "craft-prompt/references/authoring-rubric.md",
+        "docs/analysis/wi411-craft-prompt-research.md",
+        "docs/plans/2026-06-22-wi411-craft-prompt/manifest.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-411.md",
+        "proposals/2026-06-20-stale-branch-read-guard-and-branch-divergence-check.md",
+        "references/context-loading-registry.json",
+        "references/preflight-registry.json",
+        "route-workflow/references/intent-routing.md",
+        "schemas/receipts/prompt-floor.schema.json",
+        "scripts/prompt-element-extract.mjs",
+        "scripts/prompt-floor-judge.sh",
+        "scripts/prompt-floor-route.mjs",
+        "skills-manifest.json",
+        "test-framework/evals/tier-1/fixtures/prompt-floor/judge-unavailable/B.json",
+        "test-framework/evals/tier-1/fixtures/prompt-floor/judge-unavailable/F.json",
+        "test-framework/evals/tier-1/fixtures/prompt-floor/judge-unavailable/expect.json",
+        "test-framework/evals/tier-1/fixtures/prompt-floor/kept-all/B.json",
+        "test-framework/evals/tier-1/fixtures/prompt-floor/kept-all/F.json",
+        "test-framework/evals/tier-1/fixtures/prompt-floor/kept-all/expect.json",
+        "test-framework/evals/tier-1/fixtures/prompt-floor/planted-requirement-drop/B.json",
+        "test-framework/evals/tier-1/fixtures/prompt-floor/planted-requirement-drop/F.json",
+        "test-framework/evals/tier-1/fixtures/prompt-floor/planted-requirement-drop/expect.json",
+        "test-framework/evals/tier-1/fixtures/prompt-floor/planted-requirement-drop/verdicts.json",
+        "test-framework/evals/tier-1/fixtures/prompt-floor/refine/B.json",
+        "test-framework/evals/tier-1/fixtures/prompt-floor/refine/F.json",
+        "test-framework/evals/tier-1/fixtures/prompt-floor/refine/expect.json",
+        "test-framework/evals/tier-1/fixtures/prompt-floor/refine/verdicts.json",
+        "test-framework/evals/tier-1/fixtures/prompt-floor/self-cert-rejected/B.json",
+        "test-framework/evals/tier-1/fixtures/prompt-floor/self-cert-rejected/F.json",
+        "test-framework/evals/tier-1/fixtures/prompt-floor/self-cert-rejected/expect.json",
+        "test-framework/evals/tier-1/fixtures/prompt-floor/self-cert-rejected/verdicts.json",
+        "test-framework/evals/tier-1/validate-prompt-floor.sh"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-411.json",
+        "docs/plans/2026-06-22-wi411-craft-prompt/manifest.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-411.md",
+        "proposals/2026-06-20-stale-branch-read-guard-and-branch-divergence-check.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "6dd54de030eaf6c15ad0f7e0c6bc37c48030831d",
+      "short": "6dd54de",
+      "date": "2026-06-22T17:03:28+03:00",
+      "subject": "WI-410: blind-control-plan floor — prove framework plan is never worse than blind (#75)",
+      "tree": "7488b498b1966bac424f9aadaab0fe506ba51421",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "promote_valid_main_mirror",
+      "source_sha": null,
+      "main_mirror_valid": true,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 75,
+        "title": "WI-410: blind-control-plan floor — prove framework plan is never worse than blind",
+        "merged_at": "2026-06-22T14:03:28Z",
+        "head": "wi410-control-plan",
+        "review_decision": "",
+        "body_sha256": "372df3d7aa8ebd75c551e7bcd5584d18ab07d31d597f4baf116ff3bee24004fa"
+      },
+      "wi_ids": [
+        "WI-410"
+      ],
+      "changed_files": [
+        ".claude/agents/ad-strategist.md",
+        ".claude/agents/ad-video-producer.md",
+        ".claude/agents/researcher.md",
+        ".gitignore",
+        ".svc/competitive-monitor-triggers.jsonl",
+        ".svc/lane-tasks-WI-400.json",
+        ".svc/lane-tasks-WI-410.json",
+        ".svc/learning-fires.jsonl",
+        ".svc/pipeline-decisions.jsonl",
+        ".svc/session-contract.jsonl",
+        "EXTERNAL_ADDONS.md",
+        "FRAMEWORK-STATE.md",
+        "README.md",
+        "ad-video-script/SKILL.md",
+        "agents/ad-strategist.md",
+        "agents/ad-video-producer.md",
+        "agents/researcher.md",
+        "blind-control-plan/SKILL.md",
+        "design-ui/SKILL.md",
+        "docs/analysis/claude-design-integration-2026-06-19.md",
+        "docs/analysis/wi410-control-plan-research.md",
+        "docs/learnings/learnings.jsonl",
+        "docs/plans/2026-06-22-wi410-blind-control-plan/manifest.md",
+        "docs/plans/2026-06-22-wi410-blind-control-plan/review-log.yaml",
+        "docs/specs/ad-scripts/example-marketplace/boutique-feed-ad.beatsheet.json",
+        "docs/specs/ad-scripts/example-marketplace/boutique-feed-ad.md",
+        "docs/specs/ad-scripts/example-marketplace/business-owner-feed-ad.beatsheet.json",
+        "docs/specs/ad-scripts/example-marketplace/business-owner-feed-ad.md",
+        "docs/specs/ad-scripts/example-marketplace/customer-consumer-feed-ad.beatsheet.json",
+        "docs/specs/ad-scripts/example-marketplace/customer-consumer-feed-ad.md",
+        "docs/specs/ad-scripts/example-marketplace/dental-feed-ad.beatsheet.json",
+        "docs/specs/ad-scripts/example-marketplace/dental-feed-ad.md",
+        "docs/specs/ad-scripts/example-marketplace/fitness-feed-ad.beatsheet.json",
+        "docs/specs/ad-scripts/example-marketplace/fitness-feed-ad.md",
+        "docs/specs/ad-scripts/example-marketplace/example-marketplace-ad-scripts.md",
+        "docs/specs/ad-scripts/example-marketplace/owner-acquisition-feed-ad.beatsheet.json",
+        "docs/specs/ad-scripts/example-marketplace/restaurant-feed-ad.beatsheet.json",
+        "docs/specs/ad-scripts/example-marketplace/restaurant-feed-ad.md",
+        "docs/specs/ad-scripts/example-marketplace/salon-feed-ad.beatsheet.json",
+        "docs/specs/ad-scripts/example-marketplace/salon-feed-ad.md",
+        "docs/specs/research-log.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-400-ad-video-script-design.md",
+        "docs/specs/work-items/WI-400.md",
+        "docs/specs/work-items/WI-401.md",
+        "docs/specs/work-items/WI-402.md",
+        "docs/specs/work-items/WI-410.md",
+        "docs/status/ad-example-marketplace-boutique.html",
+        "docs/status/ad-example-marketplace-dental.html",
+        "docs/status/ad-example-marketplace-fitness.html",
+        "docs/status/ad-example-marketplace-gemini-review.html",
+        "docs/status/ad-example-marketplace-restaurant.html",
+        "docs/status/ad-example-marketplace-salon.html",
+        "docs/status/framework-visualize-decisions-summary.html",
+        "docs/status/run-example-marketplace-5-ads.html",
+        "docs/status/run-visualize-decisions.html",
+        "docs/status/svc-status.html",
+        "proposals/2026-06-15-evolution-landing-audit.md",
+        "proposals/2026-06-19-evolution.md",
+        "proposals/2026-06-20-evolution.md",
+        "proposals/done/2026-06-15-framework-improvement-port-parity-baseline.md",
+        "proposals/triage.json",
+        "references/claude-design-sync.md",
+        "references/context-loading-registry.json",
+        "references/knowledge/domains/external-canvases/CAPABILITIES.md",
+        "references/knowledge/source-heuristics-mechanism.md",
+        "references/knowledge/source-heuristics.global.jsonl",
+        "references/preflight-registry.json",
+        "research/SKILL.md",
+        "route-workflow/SKILL.md",
+        "rules/common/port-parity-baseline.md",
+        "rules/common/visualize-decisions.md",
+        "schemas/receipts/control-plan.schema.json",
+        "scripts/blind-floor-check.mjs",
+        "scripts/blind-floor-judge.sh",
+        "scripts/blind-floor-route.mjs",
+        "scripts/render-ad-script.mjs",
+        "scripts/render-run-summary.mjs",
+        "scripts/render-status.mjs",
+        "scripts/sync-native-agents.mjs",
+        "skills-manifest.json",
+        "test-framework/evals/tier-1/fixtures/blind-floor/duplicate-key/B.json",
+        "test-framework/evals/tier-1/fixtures/blind-floor/duplicate-key/F.json",
+        "test-framework/evals/tier-1/fixtures/blind-floor/duplicate-key/expect.json",
+        "test-framework/evals/tier-1/fixtures/blind-floor/judge-unavailable/B.json",
+        "test-framework/evals/tier-1/fixtures/blind-floor/judge-unavailable/F.json",
+        "test-framework/evals/tier-1/fixtures/blind-floor/judge-unavailable/expect.json",
+        "test-framework/evals/tier-1/fixtures/blind-floor/kept-only/B.json",
+        "test-framework/evals/tier-1/fixtures/blind-floor/kept-only/F.json",
+        "test-framework/evals/tier-1/fixtures/blind-floor/kept-only/expect.json",
+        "test-framework/evals/tier-1/fixtures/blind-floor/planted-silent-removal/B.json",
+        "test-framework/evals/tier-1/fixtures/blind-floor/planted-silent-removal/F.json",
+        "test-framework/evals/tier-1/fixtures/blind-floor/planted-silent-removal/expect.json",
+        "test-framework/evals/tier-1/fixtures/blind-floor/planted-silent-removal/verdicts.json",
+        "test-framework/evals/tier-1/fixtures/blind-floor/refine/B.json",
+        "test-framework/evals/tier-1/fixtures/blind-floor/refine/F.json",
+        "test-framework/evals/tier-1/fixtures/blind-floor/refine/expect.json",
+        "test-framework/evals/tier-1/fixtures/blind-floor/refine/verdicts.json",
+        "test-framework/evals/tier-1/fixtures/blind-floor/stale-verdict/B.json",
+        "test-framework/evals/tier-1/fixtures/blind-floor/stale-verdict/F.json",
+        "test-framework/evals/tier-1/fixtures/blind-floor/stale-verdict/expect.json",
+        "test-framework/evals/tier-1/fixtures/blind-floor/stale-verdict/verdicts.json",
+        "test-framework/evals/tier-1/fixtures/blind-floor/weakening-as-refinement/B.json",
+        "test-framework/evals/tier-1/fixtures/blind-floor/weakening-as-refinement/F.json",
+        "test-framework/evals/tier-1/fixtures/blind-floor/weakening-as-refinement/expect.json",
+        "test-framework/evals/tier-1/fixtures/blind-floor/weakening-as-refinement/verdicts.json",
+        "test-framework/evals/tier-1/validate-blind-floor.sh",
+        "test-framework/evals/tier-1/validate-locked-agents.sh",
+        "test-framework/evals/tier-1/validate-loop-guard.sh",
+        "test-framework/evals/tier-1/validate-no-svc-residue.sh"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-400.json",
+        ".svc/lane-tasks-WI-410.json",
+        "docs/plans/2026-06-22-wi410-blind-control-plan/manifest.md",
+        "docs/plans/2026-06-22-wi410-blind-control-plan/review-log.yaml",
+        "docs/specs/ad-scripts/example-marketplace/boutique-feed-ad.beatsheet.json",
+        "docs/specs/ad-scripts/example-marketplace/boutique-feed-ad.md",
+        "docs/specs/ad-scripts/example-marketplace/business-owner-feed-ad.beatsheet.json",
+        "docs/specs/ad-scripts/example-marketplace/business-owner-feed-ad.md",
+        "docs/specs/ad-scripts/example-marketplace/customer-consumer-feed-ad.beatsheet.json",
+        "docs/specs/ad-scripts/example-marketplace/customer-consumer-feed-ad.md",
+        "docs/specs/ad-scripts/example-marketplace/dental-feed-ad.beatsheet.json",
+        "docs/specs/ad-scripts/example-marketplace/dental-feed-ad.md",
+        "docs/specs/ad-scripts/example-marketplace/fitness-feed-ad.beatsheet.json",
+        "docs/specs/ad-scripts/example-marketplace/fitness-feed-ad.md",
+        "docs/specs/ad-scripts/example-marketplace/example-marketplace-ad-scripts.md",
+        "docs/specs/ad-scripts/example-marketplace/owner-acquisition-feed-ad.beatsheet.json",
+        "docs/specs/ad-scripts/example-marketplace/restaurant-feed-ad.beatsheet.json",
+        "docs/specs/ad-scripts/example-marketplace/restaurant-feed-ad.md",
+        "docs/specs/ad-scripts/example-marketplace/salon-feed-ad.beatsheet.json",
+        "docs/specs/ad-scripts/example-marketplace/salon-feed-ad.md",
+        "docs/specs/research-log.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-400-ad-video-script-design.md",
+        "docs/specs/work-items/WI-400.md",
+        "docs/specs/work-items/WI-401.md",
+        "docs/specs/work-items/WI-402.md",
+        "docs/specs/work-items/WI-410.md",
+        "proposals/2026-06-15-evolution-landing-audit.md",
+        "proposals/2026-06-19-evolution.md",
+        "proposals/2026-06-20-evolution.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "3b3938e582ce69f93ba4dd7059b8199c7043e666",
+      "short": "3b3938e",
+      "date": "2026-06-20T16:56:29+03:00",
+      "subject": "rules: strengthen verify-state-before-context with deployed-ref discipline (read git show origin/<ref>, not stale local working tree) + propose stale-branch-read guard & branch-divergence check",
+      "tree": "edbe175e6ea7181fce1b083d2ac7eee5ff65760b",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": null,
+      "wi_ids": [],
+      "changed_files": [
+        ".svc/session-contract.jsonl",
+        "proposals/2026-06-20-stale-branch-read-guard-and-branch-divergence-check.md",
+        "rules/verify-state-before-context.md"
+      ],
+      "evidence_artifacts": [
+        "proposals/2026-06-20-stale-branch-read-guard-and-branch-divergence-check.md"
+      ],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "0f14e1d3304c1b45f8e301d00049b2ce2a40b47c",
+      "short": "0f14e1d",
+      "date": "2026-06-10T08:22:23+03:00",
+      "subject": "docs(WI-399): bind official CC subagent guidelines as acceptance-blocking design constraints (#67)",
+      "tree": "ad7b41aaa86b0a47d3c63130018e265b9d54ce03",
+      "missing": [
+        "quick-fix invalid: receipt_type=undefined expected quick-fix"
+      ],
+      "existing_receipts": [
+        "quick-fix"
+      ],
+      "disposition": "reissue_mechanically_eligible_quick_fix",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": true,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 67,
+        "title": "docs(WI-399): bind official CC subagent guidelines as acceptance-blocking constraints",
+        "merged_at": "2026-06-10T05:22:23Z",
+        "head": "wi399-subagent-econ",
+        "review_decision": "",
+        "body_sha256": "b409d9cc0fef22ff511cf6185c275de149df374675546b21944c2d105ad2ca23"
+      },
+      "wi_ids": [
+        "WI-399"
+      ],
+      "changed_files": [
+        ".svc/pipeline-decisions.jsonl",
+        ".svc/session-contract.jsonl",
+        "docs/specs/work-items/WI-399.md"
+      ],
+      "evidence_artifacts": [
+        "docs/specs/work-items/WI-399.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "051c5667b45a033668f650b2db5c7a3d212cc428",
+      "short": "051c566",
+      "date": "2026-06-10T06:55:20+03:00",
+      "subject": "docs(WI-399): file capability restoration + flow-multiplier bulk WI + host capability audit (#66)",
+      "tree": "3c07e03b348f8d2dc8a5d1d820615d07a391194d",
+      "missing": [
+        "quick-fix invalid: receipt_type=undefined expected quick-fix"
+      ],
+      "existing_receipts": [
+        "quick-fix"
+      ],
+      "disposition": "reissue_mechanically_eligible_quick_fix",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": true,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 66,
+        "title": "docs(WI-399): capability restoration + flow-multiplier bulk WI + host capability audit",
+        "merged_at": "2026-06-10T03:55:20Z",
+        "head": "wi399-intake",
+        "review_decision": "",
+        "body_sha256": "05e02dc25f96001afc41ee6d7b585cc1ffc3bb3847bdf097203af135efbffb63"
+      },
+      "wi_ids": [
+        "WI-399"
+      ],
+      "changed_files": [
+        ".svc/pipeline-decisions.jsonl",
+        ".svc/session-contract.jsonl",
+        "docs/analysis/claude-capability-restriction-audit-2026-06-09.md",
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-399.md"
+      ],
+      "evidence_artifacts": [
+        "docs/specs/work-items/INDEX.md",
+        "docs/specs/work-items/WI-399.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "af9302b6427063eab8fee700e0497fbdb7616220",
+      "short": "af9302b",
+      "date": "2026-06-09T13:46:14+03:00",
+      "subject": "docs(work-items): reconcile INDEX statuses — 24 delivered WIs → VERIFIED + dedup WI-374 (#64)",
+      "tree": "59a058eee3842cae1044ab1bf4fe9055d3845f55",
+      "missing": [
+        "quick-fix invalid: receipt_type=undefined expected quick-fix"
+      ],
+      "existing_receipts": [
+        "quick-fix"
+      ],
+      "disposition": "reissue_mechanically_eligible_quick_fix",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": true,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 64,
+        "title": "docs(work-items): reconcile INDEX statuses — 24 delivered WIs → VERIFIED + dedup WI-374",
+        "merged_at": "2026-06-09T10:46:14Z",
+        "head": "index-status-reconcile",
+        "review_decision": "",
+        "body_sha256": "87737791c0048f3236c82e1251291cad27d646fa8dfea18912b99434692b008a"
+      },
+      "wi_ids": [
+        "WI-374"
+      ],
+      "changed_files": [
+        "docs/specs/work-items/INDEX.md"
+      ],
+      "evidence_artifacts": [
+        "docs/specs/work-items/INDEX.md"
+      ],
+      "review_status": "mechanically-recoverable-review-required"
+    },
+    {
+      "sha": "ceb1596b515e41f8e86b52892d5c81fbca94d394",
+      "short": "ceb1596",
+      "date": "2026-06-08T15:29:03+03:00",
+      "subject": "chore(state): archive stale WI-365 lane-tasks (3/7 in_progress → completed-38) (#53)",
+      "tree": "f53b1d48ab554522eb3cc6aacb09916b852edf77",
+      "missing": [
+        "ALL — no note or mirror found"
+      ],
+      "existing_receipts": [],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 53,
+        "title": "chore(state): archive stale WI-365 lane-tasks (3/7 → completed-38)",
+        "merged_at": "2026-06-08T12:29:03Z",
+        "head": "archive-wi365-stale",
+        "review_decision": "",
+        "body_sha256": "86e10b51e429035b9ee2fef3be56a59383066de600c408ea40642f305ef3a55c"
+      },
+      "wi_ids": [
+        "WI-365"
+      ],
+      "changed_files": [
+        ".svc/archive/lane-tasks/lane-tasks-WI-365.completed-38.json",
+        ".svc/lane-tasks-WI-365.json"
+      ],
+      "evidence_artifacts": [
+        ".svc/lane-tasks-WI-365.json"
+      ],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "1f6feb5551586f7d11a752905e2517f892635b63",
+      "short": "1f6feb5",
+      "date": "2026-06-08T07:48:05+03:00",
+      "subject": "fix(hooks): svc-wi-pillars-check E2BIG regression — payload via stdin, not env var (#46)",
+      "tree": "72ad87c80590c22526e9ae2cf41d931e9b03a1eb",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 46,
+        "title": "fix(hooks): svc-wi-pillars-check E2BIG regression — payload via stdin not env var",
+        "merged_at": "2026-06-08T04:48:06Z",
+        "head": "bugfix-pillars-e2big",
+        "review_decision": "",
+        "body_sha256": "5dbec7ea60e7c11d5e98e3b46220f05e9b7e85b12cf7053d0c4587a78941d21e"
+      },
+      "wi_ids": [],
+      "changed_files": [
+        "hooks/svc-wi-pillars-check.sh",
+        "test-framework/evals/tier-1/validate-hook-payload-not-argv.sh"
+      ],
+      "evidence_artifacts": [],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "e2fdffdd8d6e1eafa9c7dc28c01482fd9f5c1a23",
+      "short": "e2fdffd",
+      "date": "2026-06-08T01:46:32+03:00",
+      "subject": "feat(WI-373): Workflow-tool transport for read-only analysis fan-outs (#45)",
+      "tree": "a50ae2b27d5376126fec048587ce50db912be501",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 45,
+        "title": "feat(WI-373): Workflow-tool transport for read-only analysis fan-outs",
+        "merged_at": "2026-06-07T22:46:32Z",
+        "head": "feature-wi-373-workflow-fanout",
+        "review_decision": "",
+        "body_sha256": "192f2bc2bfff8572156c3f63b7815dd69f406f941495472dae80995bf2b6410a"
+      },
+      "wi_ids": [
+        "WI-373"
+      ],
+      "changed_files": [
+        "execute-changeset/references/subagent-dispatch.md",
+        "references/workflow-fanout-protocol.md",
+        "scripts/dispatch-worker.sh",
+        "scripts/extract-summary.sh",
+        "scripts/fanout.sh",
+        "scripts/haiku-extract.sh",
+        "scripts/wait-for-output.sh"
+      ],
+      "evidence_artifacts": [],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "3336fd93afb3ad1f69827142566cd087825c6bd8",
+      "short": "3336fd9",
+      "date": "2026-06-08T01:31:49+03:00",
+      "subject": "feat(WI-372): agents -> native .claude/agents (locked policy mechanically enforced) (#44)",
+      "tree": "103cb2bc97bebc974aa65832640f18cb85548cf1",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 44,
+        "title": "feat(WI-372): native .claude/agents — locked reviewer policy mechanically enforced",
+        "merged_at": "2026-06-07T22:31:49Z",
+        "head": "feature-wi-372-native-agents",
+        "review_decision": "",
+        "body_sha256": "5012049a53c980887da36fa3a5e1b37657ecd2ea5d02da8e5082300341e4728c"
+      },
+      "wi_ids": [
+        "WI-372"
+      ],
+      "changed_files": [
+        ".claude/agents/plan-reviewer.md",
+        ".claude/agents/strategic-reviewer.md",
+        ".claude/agents/summary-extractor.md",
+        "scripts/resolve-adversarial-reviewer.sh",
+        "scripts/sync-native-agents.mjs"
+      ],
+      "evidence_artifacts": [],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "3fb77eb2a0e71d8445849fb694aa212a55f319dc",
+      "short": "3fb77eb",
+      "date": "2026-06-08T01:10:56+03:00",
+      "subject": "feat(WI-377): L2 per-project pack partitioning — packs as plugins, native enabledPlugins control (#43)",
+      "tree": "2676aaebe9224985a97e1c1dab6bfdf81487971d",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 43,
+        "title": "feat(WI-377): L2 per-project pack partitioning — packs as plugins (dry-run-default migration)",
+        "merged_at": "2026-06-07T22:10:57Z",
+        "head": "feature-wi-377-l2-plugins",
+        "review_decision": "",
+        "body_sha256": "52575ea5874db201cd2e0e19b4c7e2642d444e47b9454b8cf4153d97b9ad384c"
+      },
+      "wi_ids": [
+        "WI-377"
+      ],
+      "changed_files": [
+        ".claude/settings.json",
+        "EXTERNAL_ADDONS.md",
+        "scripts/migrate-packs-to-plugins.sh"
+      ],
+      "evidence_artifacts": [],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "aecb69cef22ef1a03e2d9c71eaf023f4053f6e33",
+      "short": "aecb69c",
+      "date": "2026-06-08T00:43:18+03:00",
+      "subject": "feat(WI-375): validator git-isolation sweep + meta-validator (#42)",
+      "tree": "d2099f6847017b69b6dbb1d929d8ebc5c1027343",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 42,
+        "title": "feat(WI-375): validator git-isolation sweep + meta-validator — identity-leak class closed",
+        "merged_at": "2026-06-07T21:43:18Z",
+        "head": "feature-wi-375-git-isolation",
+        "review_decision": "",
+        "body_sha256": "b0096cdac4c30293c331172d7fe910d5d7d56d4fcb90301ab6bdb82150ccdcaf"
+      },
+      "wi_ids": [
+        "WI-375"
+      ],
+      "changed_files": [
+        "test-framework/evals/tier-1/.svc/loop-guard-state.json",
+        "test-framework/evals/tier-1/validate-brownfield-iteration-guard.sh",
+        "test-framework/evals/tier-1/validate-g1-lane-tasks-edit-guard.sh",
+        "test-framework/evals/tier-1/validate-git-isolation-meta.sh",
+        "test-framework/evals/tier-1/validate-honest-diagnosis.sh",
+        "test-framework/evals/tier-1/validate-quick-fix-eligibility-rejects-structural.sh",
+        "test-framework/evals/tier-1/validate-setup-worktree-canonical-resolution.sh"
+      ],
+      "evidence_artifacts": [],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "d6ec114cc073162adc8ab808986300c5beab0fb1",
+      "short": "d6ec114",
+      "date": "2026-06-07T23:13:11+03:00",
+      "subject": "feat(WI-369): decay discipline + honest-emission + ratio telemetry — cluster closer (#41)",
+      "tree": "e05908c12aa92c0f25fe43d80ac13f44c7730806",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 41,
+        "title": "feat(WI-369): decay discipline + honest-emission + ratio telemetry — cluster closer",
+        "merged_at": "2026-06-07T20:13:11Z",
+        "head": "feature-wi-369-decay-discipline",
+        "review_decision": "",
+        "body_sha256": "d0016ecf80729707edd3d3ec6486cd5e9c89cd39fda1e714be84dc0173fec616"
+      },
+      "wi_ids": [
+        "WI-369"
+      ],
+      "changed_files": [
+        "docs/analysis/commit-ratio-2026-06-08.md",
+        "docs/analysis/decay-report-2026-06-08.md",
+        "docs/plans/2026-06-08-wi-369-decay-discipline/manifest.md",
+        "execute-changeset/SKILL.md",
+        "references/capability-blockers.json",
+        "rules/no-fabrication.md",
+        "scripts/check-chain-receipts.mjs",
+        "scripts/quick-fix-eligibility.mjs",
+        "scripts/report-commit-ratio.mjs",
+        "scripts/report-decay-candidates.mjs",
+        "skills-manifest.json",
+        "test-framework/evals/tier-1/validate-quick-fix-carve-out.sh"
+      ],
+      "evidence_artifacts": [
+        "docs/plans/2026-06-08-wi-369-decay-discipline/manifest.md"
+      ],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "741e660db65b24c7c4a565bf2eef5135954198e9",
+      "short": "741e660",
+      "date": "2026-06-07T22:27:50+03:00",
+      "subject": "feat(WI-366): batch-2 — review-gate 859→261 (−70%); cluster diet totals 3646→1028 (#40)",
+      "tree": "24dafb676b7142c66d6cdde81e143983886db9a7",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 40,
+        "title": "feat(WI-366): batch-2 review-gate 859→266 — diet complete, 4 skills −72%",
+        "merged_at": "2026-06-07T19:27:50Z",
+        "head": "feature-wi-366-b2-review-gate",
+        "review_decision": "",
+        "body_sha256": "ae386b791d0fcf616eb897f1e2c678be3ee4b2d6107fc314d3498f590ba8fcfb"
+      },
+      "wi_ids": [
+        "WI-366"
+      ],
+      "changed_files": [
+        "docs/plans/2026-06-07-wi-366-core-skill-diet/batch-2-addendum.md",
+        "review-gate/SKILL.md",
+        "review-gate/references/findings-feedback.md",
+        "review-gate/references/five-step-protocol.md",
+        "review-gate/references/gate-checklists.md",
+        "review-gate/references/specialized-gates.md"
+      ],
+      "evidence_artifacts": [
+        "docs/plans/2026-06-07-wi-366-core-skill-diet/batch-2-addendum.md"
+      ],
+      "review_status": "requires-plan-and-independent-review"
+    },
+    {
+      "sha": "5130644884130c1c414da6674dc4ccc7d8779bde",
+      "short": "5130644",
+      "date": "2026-06-07T20:44:59+03:00",
+      "subject": "feat(WI-365): skill-catalog budget L0/L1/L4/L5 — catalog was 241% over budget, svc now fits in 80% (#38)",
+      "tree": "3ce249216f1a0f61eff022d5518cfcfd0637cef1",
+      "missing": [
+        "plan-manifest",
+        "review-plan",
+        "exec-record",
+        "review-exec",
+        "audit-implementation"
+      ],
+      "existing_receipts": [
+        "verify-promotion"
+      ],
+      "disposition": "retroactive_evidence_review",
+      "source_sha": null,
+      "main_mirror_valid": false,
+      "quick_fix_eligible": false,
+      "quick_fix_reason": null,
+      "pr": {
+        "number": 38,
+        "title": "feat(WI-365): skill-catalog budget L0/L1/L4/L5 — 241% over-budget catalog, svc now fits in 87%",
+        "merged_at": "2026-06-07T17:44:59Z",
+        "head": "feature-wi-365-skill-budget",
+        "review_decision": "",
+        "body_sha256": "2f616229925523d47e28a0a0bf0eece1e811c102ab02c4460d48a4743c14cf02"
+      },
+      "wi_ids": [
+        "WI-365"
+      ],
+      "changed_files": [
+        "analyze-marketing/SKILL.md",
+        "audit-coverage/SKILL.md",
+        "blend-private/SKILL.md",
+        "capture-idea/SKILL.md",
+        "catalog-domain-capabilities/SKILL.md",
+        "docs/analysis/skill-budget-baseline-2026-06-07.md",
+        "docs/plans/2026-06-07-wi-365-skill-budget/manifest.md",
+        "find-opportunity/SKILL.md",
+        "honest-diagnosis/SKILL.md",
+        "ingest-guide-batch/SKILL.md",
+        "ingest-guide/SKILL.md",
+        "launch-knowledge/SKILL.md",
+        "manage-finops/SKILL.md",
+        "monetization-architecture/SKILL.md",
+        "recall-stack-knowledge/SKILL.md",
+        "roadmap-evaluation/SKILL.md",
+        "route-workflow/references/routing-rules.md",
+        "scripts/check-chain-independence.mjs",
+        "scripts/measure-skill-budget.mjs",
+        "strategic-decision/SKILL.md",
+        "suno-architect/SKILL.md",
+        "svc-advisor/SKILL.md",
+        "sync-spec-code/SKILL.md",
+        "teach-project/SKILL.md",
+        "validate-feature/SKILL.md",
+        "wsl2-audio/SKILL.md"
+      ],
+      "evidence_artifacts": [
+        "docs/plans/2026-06-07-wi-365-skill-budget/manifest.md"
+      ],
+      "review_status": "requires-plan-and-independent-review"
+    }
+  ]
+}

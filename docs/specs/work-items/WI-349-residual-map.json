@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "wi": "WI-349",
+  "source_proposal": "proposals/done/2026-05-13-concurrent-session-collision-on-main.md",
+  "status": "implemented",
+  "coverage": [
+    {
+      "source_proposal": "proposals/done/2026-05-13-concurrent-session-collision-on-main.md",
+      "proposal_item": "Add --sha <sha> flag to scripts/emit-receipt.mjs and deprecate fallback to HEAD",
+      "status": "child-wi",
+      "owner_wi": "WI-349",
+      "evidence": [
+        "docs/specs/work-items/WI-349.md"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-13-concurrent-session-collision-on-main.md",
+      "proposal_item": "Update chain skills to pass --sha explicitly to every emit-receipt call",
+      "status": "child-wi",
+      "owner_wi": "WI-349",
+      "evidence": [
+        "docs/specs/work-items/WI-349.md"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-13-concurrent-session-collision-on-main.md",
+      "proposal_item": "Document the --sha requirement in references/chain-receipt-contract.md",
+      "status": "child-wi",
+      "owner_wi": "WI-349",
+      "evidence": [
+        "docs/specs/work-items/WI-349.md"
+      ]
+    },
+    {
+      "source_proposal": "proposals/done/2026-05-13-concurrent-session-collision-on-main.md",
+      "proposal_item": "Add regression test verifying that receipt emission correctly binds to --sha under dynamic HEAD switches",
+      "status": "child-wi",
+      "owner_wi": "WI-349",
+      "evidence": [
+        "docs/specs/work-items/WI-349.md"
+      ]
+    }
+  ],
+  "residuals": []
+}

@@ -1,0 +1,9 @@
+# Append-only event logs: union is correct (concatenate both sides' lines).
+.svc/*.jsonl merge=union
+# Mutable JSON state (lane-tasks, registries, receipts, orchestrator-state):
+# union would CORRUPT JSON, so use the deterministic 3-way driver (WI-398).
+# Driver command is registered per-clone by scripts/install-svc-merge-driver.sh
+# (./setup runs it). Absent registration, git's safe default conflict applies.
+.svc/*.json merge=svc-json
+.svc/**/*.json merge=svc-json
+**/transcript.txt -whitespace

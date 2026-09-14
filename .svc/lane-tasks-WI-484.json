@@ -1,0 +1,380 @@
+{
+  "wi": "WI-484",
+  "lane": "framework",
+  "title": "Session, worktree, and WI binding",
+  "created": "2026-07-14T16:49:10Z",
+  "source": "worktree-init",
+  "status": "completed",
+  "delivery_tier": {
+    "mode": "full"
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "execute-changeset",
+      "status": "completed",
+      "subject": "Implement frozen WI-484 manifest",
+      "metadata": {
+        "skill": "execute-changeset",
+        "wi": "WI-484"
+      },
+      "blocked_by": [],
+      "args": {
+        "mode": "inline"
+      },
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-07-14T16:50:00Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "output_artifact": "git diff origin/main...HEAD",
+        "validation_output": "focused WI-484 validator 16/16; compatibility validators pass; full tier-1 240/240",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-07-14T16:50:01Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "bash scripts/resolve-model.sh EXEC --json"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-07-14T17:20:32.923Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "hooks/lib/wi-claim.mjs"
+              }
+            ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-07-14T17:20:32.956Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "bash test-framework/evals/run-all-evals.sh"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-07-14T17:20:32.989Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "git diff --check"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T17:20:33.025Z"
+    },
+    {
+      "id": 2,
+      "skill": "review-exec",
+      "status": "completed",
+      "subject": "Mandatory adversarial review of executed diff",
+      "metadata": {
+        "skill": "review-exec",
+        "wi": "WI-484"
+      },
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-07-14T17:30:02.470Z",
+        "loaded_via": "direct-SKILL.md-read",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-07-14T18:21:36.875Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "git-diff-check-and-focused-tier1"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-07-14T18:21:36.913Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "resolve-adversarial-reviewer-Claude-Fable"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-07-14T18:21:36.951Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-484-session-worktree-binding-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-IterationLoop",
+            "ts": "2026-07-14T18:21:36.988Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-484-session-worktree-binding-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerdictAndReceiptFinalize",
+            "ts": "2026-07-14T18:21:37.029Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-484-session-worktree-binding-exec-cross-model.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T18:21:37.065Z"
+    },
+    {
+      "id": 3,
+      "skill": "audit-implementation",
+      "status": "completed",
+      "subject": "Audit AC coverage and concurrency correctness",
+      "metadata": {
+        "skill": "audit-implementation",
+        "wi": "WI-484"
+      },
+      "blocked_by": [
+        2
+      ],
+      "args": {
+        "mode": "full"
+      },
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-07-14T18:21:37.151Z",
+        "loaded_via": "manual",
+        "output_artifact": "docs/specs/audit/wi-484-session-worktree-binding-analysis.md",
+        "validation_output": "focused WI-484 22/22; full Tier-1 240/240; final Fable verdict APPROVE",
+        "phases_executed": [
+          {
+            "id": "P1-UpstreamContextScopeConcern",
+            "ts": "2026-07-14T18:28:16.471Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-484.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecialistDispatchCoverageLedger",
+            "ts": "2026-07-14T18:28:16.514Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-484-session-worktree-binding-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-HypothesisGeneration",
+            "ts": "2026-07-14T18:28:16.565Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-484-session-worktree-binding-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-SubsystemBehaviorAudit",
+            "ts": "2026-07-14T18:28:16.613Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/security/wi-484-session-worktree-binding-review.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-FindingsConvergenceReport",
+            "ts": "2026-07-14T18:28:16.647Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/reviews/wi-484-session-worktree-binding-exec-cross-model.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-07-14T18:28:16.682Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "full-tier1-240-of-240"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T18:28:16.720Z"
+    },
+    {
+      "id": 4,
+      "skill": "land-changeset",
+      "status": "completed",
+      "subject": "Land WI-484 through reviewed PR",
+      "metadata": {
+        "skill": "land-changeset",
+        "wi": "WI-484"
+      },
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-07-14T18:28:16.794Z",
+        "loaded_via": "manual",
+        "output_artifact": "https://github.com/s7an-it/seriousvibecoding/pull/133",
+        "validation_output": "PR #133 receipt-gated squash merge at af4e43a4",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-07-14T18:41:50.005Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/2026-07-14-wi484-session-worktree-binding/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-07-14T18:41:50.160Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/audit/wi-484-session-worktree-binding-analysis.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-07-14T18:41:50.211Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "full-tier1-240-of-240"
+              }
+            ]
+          },
+          {
+            "id": "P4-PushPrCreation",
+            "ts": "2026-07-14T18:41:50.268Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "PR-133"
+              }
+            ]
+          },
+          {
+            "id": "P5-MergeDecisionCleanup",
+            "ts": "2026-07-14T18:41:50.316Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "PR-133-merged-af4e43a4"
+              }
+            ]
+          },
+          {
+            "id": "P6-SpecStatusSelfVerify",
+            "ts": "2026-07-14T18:41:50.367Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-484.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T18:41:50.418Z"
+    },
+    {
+      "id": 5,
+      "skill": "verify-promotion",
+      "status": "completed",
+      "subject": "Verify WI-484 post-merge",
+      "metadata": {
+        "skill": "verify-promotion",
+        "wi": "WI-484"
+      },
+      "blocked_by": [
+        4
+      ],
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-07-14T18:41:50.522Z",
+        "loaded_via": "manual",
+        "output_artifact": "docs/specs/verification/wi-484-session-worktree-binding.md",
+        "validation_output": "eight host drift checks pass; focused WI-484 22/22; direct receipt-schema validator pass",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-07-14T18:52:12.724Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "PR-133-merged-af4e43a4-and-eight-host-drift-pass"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-07-14T18:52:12.782Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/verification/wi-484-session-worktree-binding.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-07-14T18:52:12.845Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "focused-binding-22-of-22-and-direct-receipt-schema-pass"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-07-14T18:52:12.908Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-484.md"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-07-14T18:52:12.957Z"
+    }
+  ]
+}

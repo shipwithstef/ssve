@@ -1,0 +1,142 @@
+{
+  "$schema": "https://serious-vibe-coding/schemas/verification-anti-pattern-config-v1.json",
+  "version": 1,
+  "purpose": "Detect closeout language that claims runtime verification was performed via static bundle inspection (grep over dist/build output) instead of via live runtime evidence (V1 live-DOM, V2 screenshot, V3 multi-sample). Companion to WI-191 (phase receipts) and WI-197 (delegation detection). Loaded by scripts/scan-verification-delegation.mjs via --config. Phase A: detection only.",
+  "delegation_patterns": [
+    {
+      "id": "string-appears-in-dist",
+      "regex": "\\bappears\\s+in\\s+(dist/|build/|out/|public/|\\.next/)",
+      "severity": "HIGH",
+      "examples": [
+        "the 'Submit' label appears in dist/main-abc123.js",
+        "verified — text appears in build/static/js/chunk.js"
+      ]
+    },
+    {
+      "id": "grep-found-in-bundle",
+      "regex": "\\bgrep(ped)?\\s+(found|matched|saw|confirmed)\\b.{0,40}\\b(dist|build|bundle|chunk|main\\.js)\\b",
+      "severity": "HIGH",
+      "examples": [
+        "grep found 'V2' in dist/chunk.js",
+        "grepped and matched the new label in the bundle"
+      ]
+    },
+    {
+      "id": "verified-via-bundle-inspection",
+      "regex": "\\bverif(y|ied|ies)\\b.{0,40}\\b(bundle|dist|build|chunk|main\\.js|deployment)\\b",
+      "severity": "HIGH",
+      "examples": [
+        "verified by checking the bundle output",
+        "verifies the build contains the new prop"
+      ]
+    },
+    {
+      "id": "string-found-in-bundle-file",
+      "regex": "\\b(string|text|label|copy|prop)\\s+(found|present|exists?|located)\\s+in\\s+\\S+\\.(js|css|html|tsx?|jsx?|mjs)\\b",
+      "severity": "MEDIUM",
+      "examples": [
+        "string 'cancel' found in main.js",
+        "label is present in dashboard.tsx of the deployed build"
+      ]
+    },
+    {
+      "id": "confirmed-by-grep",
+      "regex": "\\bconfirm(ed|s)?\\b.{0,40}\\bgrep(ping)?\\b",
+      "severity": "MEDIUM",
+      "examples": [
+        "confirmed by grepping the production bundle",
+        "confirms via grep over dist/"
+      ]
+    },
+    {
+      "id": "deployed-bundle-contains",
+      "regex": "\\bdeploy(ed|ment)\\b.{0,30}\\bcontain(s|ed)?\\b.{0,30}\\b(string|text|label|class|selector)\\b",
+      "severity": "MEDIUM",
+      "examples": [
+        "deployment contains the new label string",
+        "deployed bundle contains the data-testid selector"
+      ]
+    },
+    {
+      "id": "minified-bundle-claim",
+      "regex": "\\b(minified|production|prod)\\s+(bundle|build|js|output)\\b.{0,40}\\b(has|contains|includes|carries)\\b",
+      "severity": "MEDIUM",
+      "examples": [
+        "minified bundle has the new error class",
+        "production js contains the helper function"
+      ]
+    }
+  ],
+  "evidence_anchor_patterns": [
+    {
+      "id": "screenshot-path",
+      "regex": "\\b[\\w./-]+\\.(png|jpe?g|webp)\\b",
+      "description": "Image artifact path; counts as visual evidence."
+    },
+    {
+      "id": "playwright-result",
+      "regex": "\\b(playwright[-_]report|e2e/test-results|playwright\\s+run\\s+id)\\b",
+      "description": "Playwright artifact path or run id."
+    },
+    {
+      "id": "evidence-keyword",
+      "regex": "\\b(evidence|screenshot|video|recording|live[-\\s]?dom|live[-\\s]?evidence|trace|HAR\\s+capture|aria[-\\s]snapshot)\\b",
+      "description": "Explicit evidence-class keyword."
+    },
+    {
+      "id": "v-ladder-claim",
+      "regex": "\\b(evidence[-_\\s]?level\\s*[:=]\\s*V[1-3]|V[1-3]\\s+(evidence|run|capture|verified)|evidence\\s+at\\s+V[1-3])\\b",
+      "description": "Explicit V-ladder evidence-level claim in citation position (not casual content mention) — shared with WI-191/WI-197."
+    },
+    {
+      "id": "explicit-evidence-line",
+      "regex": "(?im)^\\s*evidence:\\s*\\S",
+      "description": "An 'Evidence:' line with content following."
+    },
+    {
+      "id": "playwright-test-id-pattern",
+      "regex": "\\bgetByTestId|getByRole|toBeVisible|toHaveText\\b",
+      "description": "Playwright assertion API call — implies real browser execution."
+    }
+  ],
+  "carve_outs": [
+    {
+      "id": "skill-spec-doc",
+      "match_kind": "input_path",
+      "regex": "\\.md$|\\bSKILL\\.md\\b|references/.*\\.md$|docs/specs/.*\\.md$|proposals/.*\\.md$",
+      "reason": "Skill specs and reference docs DESCRIBE bundle-grep substitution as an anti-pattern; matches in those files are pedagogy, not closeout language."
+    },
+    {
+      "id": "test-fixture-seeding",
+      "match_kind": "surrounding_text",
+      "regex": "\\b(test\\s+fixture|fixture\\s+(provides|seeds|sets)|before\\s+each|setup\\s+helper|seedTestData)\\b",
+      "reason": "Fixture/seeding language is talking about test setup, not closeout verification."
+    },
+    {
+      "id": "demo-or-tutorial",
+      "match_kind": "surrounding_text",
+      "regex": "(?i)\\b(demo:|example:|tutorial:|walkthrough:)",
+      "reason": "Tutorial/demo content explicitly labelled."
+    },
+    {
+      "id": "intentional-pedagogy-marker",
+      "match_kind": "surrounding_text",
+      "regex": "(?i)\\bintentional[-\\s]pedagogy\\b|\\bnon-?normative\\b",
+      "reason": "Author explicitly tagged the passage as not-a-rule."
+    },
+    {
+      "id": "build-output-discussion",
+      "match_kind": "surrounding_text",
+      "regex": "\\b(bundle\\s+size|chunk\\s+size|tree[-\\s]shak(e|ing)|code\\s+splitting|bundle\\s+analyz(e|er))\\b",
+      "reason": "Discussions of bundle size, tree-shaking, or build optimization legitimately reference dist/ contents without implying verification-by-grep."
+    }
+  ],
+  "config": {
+    "default_min_severity": "MEDIUM",
+    "report_format_default": "json",
+    "hard_block_severities_phase_d": ["HIGH"],
+    "drift_review_threshold_per_30d": 10,
+    "concern_class": "bundle-grep-substitution",
+    "companion_concerns": ["verification-delegation", "phase-receipt-shape"]
+  }
+}

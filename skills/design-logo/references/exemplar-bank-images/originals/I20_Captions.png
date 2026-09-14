@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+    <link rel="icon" href="/favicon.svg" />
+    <meta name="theme-color" content="#000000" />
+    <link rel="apple-touch-icon" href="/logo256.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>Captions</title>
+
+    <meta
+      name="description"
+      content="Publish in minutes with Captions' online video editor and app. Edit your entire video with AI or generate AI avatars, automatic captions, music and more."
+    />
+
+    <meta property="og:site_name" content="Captions" />
+    <meta property="og:title" content="Get Started with Captions: Create and Edit Videos with AI" />
+    <meta
+      property="og:description"
+      content="Publish in minutes with Captions' online video editor and app. Edit your entire video with AI or generate AI avatars, automatic captions, music and more."
+    />
+    <meta property="og:image" content="https://captions.ai/captions-og-image.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://captions.ai" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Get Started with Captions: Create and Edit Videos with AI"
+    />
+    <meta
+      name="twitter:description"
+      content="Publish in minutes with Captions' online video editor and app. Edit your entire video with AI or generate AI avatars, automatic captions, music and more."
+    />
+    <meta name="twitter:image" content="https://captions.ai/captions-og-image.png" />
+
+    <!-- Meta Pixel Code -->
+    <script>
+      !(function (f, b, e, v, n, t, s) {
+        if (f.fbq) return;
+        n = f.fbq = function () {
+          n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+        };
+        if (!f._fbq) f._fbq = n;
+        n.push = n;
+        n.loaded = !0;
+        n.version = "2.0";
+        n.queue = [];
+        t = b.createElement(e);
+        t.async = !0;
+        t.src = v;
+        s = b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t, s);
+      })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
+      fbq("init", "1498239233978195");
+      fbq("track", "PageView");
+    </script>
+    <!-- End Meta Pixel Code -->
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-D2LXFQZFXS"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+
+      gtag("config", "G-D2LXFQZFXS");
+    </script>
+
+    <!-- Google Tag Manager -->
+    <script>
+      (function (w, d, s, l, i) {
+        w[l] = w[l] || [];
+        w[l].push({ "gtm.start": new Date().getTime(), event: "gtm.js" });
+        var f = d.getElementsByTagName(s)[0],
+          j = d.createElement(s),
+          dl = l != "dataLayer" ? "&l=" + l : "";
+        j.async = true;
+        j.src = "https://www.googletagmanager.com/gtm.js?id=" + i + dl;
+        f.parentNode.insertBefore(j, f);
+      })(window, document, "script", "dataLayer", "GTM-WB8W2DF");
+    </script>
+
+    <script>
+      const themeSetting = JSON.parse(localStorage.getItem("studio_theme") ?? '"system"');
+      const preference = window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+      const theme = themeSetting === "system" ? preference : themeSetting;
+      document.documentElement.setAttribute("data-theme", theme);
+
+      const isIOSDevice =
+        /iPad|iPhone|iPod/.test(navigator.platform) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+      const setMobileShellHeight = () => {
+        if (!isIOSDevice) {
+          return;
+        }
+
+        const shellHeight = Math.max(window.outerHeight, window.innerHeight);
+        document.documentElement.style.setProperty("--mobile-shell-height", shellHeight + "px");
+      };
+
+      setMobileShellHeight();
+      window.addEventListener("load", setMobileShellHeight, { once: true });
+    </script>
+
+    <style>
+      html[data-theme="dark"] {
+        background-color: var(--colors-\$background-secondary, #1d1f20);
+      }
+      html[data-theme="light"] {
+        background-color: var(--colors-\$background-secondary, #ffffff);
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/index-ncB8cG4P.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/generated-icons-BOKBAHNx.js">
+    <link rel="modulepreload" crossorigin href="/assets/react-obj-view-BICQUpq5.js">
+    <link rel="stylesheet" crossorigin href="/assets/react-obj-view-BLvV26l8.css">
+    <link rel="stylesheet" crossorigin href="/assets/index-AGY5cshk.css">
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <!-- Google Tag Manager (noscript) -->
+    <noscript>
+      <iframe
+        src="https://www.googletagmanager.com/ns.html?id=GTM-WB8W2DF"
+        height="0"
+        width="0"
+        style="display: none; visibility: hidden"
+      ></iframe>
+    </noscript>
+    <!-- End Google Tag Manager (noscript) -->
+
+    <noscript>
+      <img
+        height="1"
+        width="1"
+        style="display: none"
+        src="https://www.facebook.com/tr?id=1498239233978195&ev=PageView&noscript=1"
+      />
+    </noscript>
+  </body>
+</html>

@@ -1,0 +1,31 @@
+{
+  "status": "PROMOTED_WITH_FINDINGS",
+  "self_review_passes": 1,
+  "sol": {
+    "verdict": "pass",
+    "rubric_score": 10,
+    "artifact": ".svc/receipt-cleanup-review/sol-r2.json"
+  },
+  "cursor": {
+    "verdict": "pass-with-findings",
+    "rubric_score": 8,
+    "receipt": ".svc/receipt-cleanup-review/cursor-plan-r2/receipt.json",
+    "candidate_digest": "29469a3355dc01d33c9bce91bc8f8a3ac67b062eb719c14c9c386c871e0b97f0",
+    "rounds_run": 2,
+    "unresolved_critical": 0,
+    "remaining_high": 0
+  },
+  "dispositions": [
+    {
+      "id": "F-005",
+      "decision": "accept",
+      "evidence": "Exact currentPromotionTuple flag set read; concrete promotion command will be materialized with recorded SHA/PR/session values before land, using existing helper. No implementation design remains open."
+    },
+    {
+      "id": "F-007",
+      "decision": "accept",
+      "evidence": ".svc/receipt-cleanup-review/diagnosis.json hash-binds diagnosis section; actual route/diagnose/plan/review phases recorded; review-exec supplies G5 without duplicate invocation."
+    }
+  ],
+  "execution_release_review": "pending"
+}

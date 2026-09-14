@@ -1,0 +1,35 @@
+review:
+  reviewer: claude-fable-5
+  reviewer_family: anthropic
+  plan_sha256: 1ed8c8b1b7be74cc49e9c07c865afbd76ed5a62ccf16c0aa217db65121e20d16
+  rubric_score: 9
+  rubric_failures: [9]
+  round_1_status:
+    F-001: RESOLVED
+    F-002: RESOLVED
+    F-003: RESOLVED
+    F-004: RESOLVED
+    F-005: RESOLVED
+    F-006: RESOLVED
+    F-007: RESOLVED_WITH_RESIDUAL
+    F-008: RESOLVED
+    F-009: RESOLVED
+  findings:
+    - id: F-101
+      severity: medium
+      claim: Canonical WI-485 and the proposal/plan used conflicting route-binding turn scopes.
+      evidence: The plan called WI files canonical but adopted proposal ACs verbatim; WI-485 allowed same-session routing while the proposal and P5 rule required same-turn routing.
+      proposed_fix: Make WI-485 canonical, explicitly supersede proposal wording, and choose one route-binding turn scope.
+    - id: F-102
+      severity: low
+      claim: Runtime-probe N/A wording conflicted with an unconditional promotion-checklist requirement.
+      proposed_fix: Require runtime proof on Codex-capable hosts and explicit observed=N/A otherwise; skip codex exec only after that receipt.
+    - id: F-103
+      severity: low
+      claim: Lowercase wi-N branch names bypassed the current case-sensitive WI extraction in worktree.sh.
+      proposed_fix: Use uppercase WI-N branch segments or explicitly accept weaker initialization.
+    - id: F-104
+      severity: low
+      claim: Cross-host snapshot methods were named but literal fixed-argument commands were delegated implicitly.
+      proposed_fix: Require T5A to pin and replay identical literal snapshot commands.
+  verdict: Converged except F-101; no Critical or High residual.
