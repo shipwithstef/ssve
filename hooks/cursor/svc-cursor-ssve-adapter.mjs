@@ -337,6 +337,10 @@ function handlePreTool(payload, { isShellExecEvent = false } = {}) {
 
     const updatedInput = decision?.updated_input || decision?.hookSpecificOutput?.updatedInput;
     if (updatedInput) {
+      const loader = (typeof updatedInput.command === "string" && updatedInput.command) ||
+                     (typeof updatedInput.cmd === "string" && updatedInput.cmd) || "";
+      const isSkillLoader = /codex-load-skill/i.test(loader);
+
       if (isShellTool(rawToolName) && !isShellExecEvent) {
         logExit("allow", null);
         const msg = decision?.user_message || decision?.systemMessage;
@@ -347,13 +351,32 @@ function handlePreTool(payload, { isShellExecEvent = false } = {}) {
         }) + "\n");
         process.exit(0);
       }
-      // Rewriting non-shell or beforeShellExecution is unsupported in Cursor: deny with instruction
-      const loader = updatedInput.command || updatedInput.cmd || "";
-      const reason = `SSVE restored the authorized WI. Load its current skill before retrying: ${loader}`;
-      logExit("deny", reason);
+
+      // If a non-shell tool was given a skill loader command rewrite, it cannot run shell commands:
+      // deny with the specific loader instruction so the user/agent can load the skill.
+      if (isSkillLoader && loader) {
+        const reason = `SSVE restored the authorized WI. Load its current skill before retrying: ${loader}`;
+        logExit("deny", reason);
+        process.stdout.write(JSON.stringify({
+          permission: "deny",
+          user_message: reason,
+        }) + "\n");
+        process.exit(0);
+      }
+
+      // Ordinary tool updates: clean shell-only workdir out of non-shell tool schemas
+      const cleaned = { ...updatedInput };
+      if (!isShellTool(rawToolName)) {
+        delete cleaned.workdir;
+      }
+
+      logExit("allow", null);
+      const msg = decision?.user_message || decision?.systemMessage;
+      const hasUpdates = Object.keys(cleaned).length > 0;
       process.stdout.write(JSON.stringify({
-        permission: "deny",
-        user_message: reason,
+        permission: "allow",
+        ...(hasUpdates && !isShellExecEvent ? { updated_input: cleaned } : {}),
+        ...(msg ? { user_message: msg } : {}),
       }) + "\n");
       process.exit(0);
     }

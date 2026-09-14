@@ -614,3 +614,222 @@ test('Cursor adapter: logs failing events with identity fields, authority path, 
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 });
+
+test('Cursor adapter: Task tool with workdir update is allowed and strips workdir without blank loader denial', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'svc-cursor-task-update-'));
+  try {
+    const shadowDispatcher = path.join(tmp, 'shadow-dispatcher.mjs');
+    // Simulate dispatcher returning an updated_input containing workdir and task parameters
+    fs.writeFileSync(
+      shadowDispatcher,
+      `console.log(JSON.stringify({
+        permission: "allow",
+        updated_input: {
+          workdir: "/path/to/worktree",
+          prompt: "Execute subtask 1",
+          subtask_id: "sub-42"
+        },
+        user_message: "Dispatcher approved Task"
+      })); process.exit(0);`
+    );
+
+    const payload = {
+      tool_name: 'Task',
+      tool_input: { prompt: 'Execute subtask 1', subtask_id: 'sub-42' },
+      conversation_id: 'cur-task-chat-1',
+      cwd: tmp,
+    };
+
+    const res = runAdapter('--pretool', payload, {
+      SVC_HOST: 'cursor',
+      SVC_CURSOR_DISPATCHER_OVERRIDE: shadowDispatcher,
+    });
+
+    assert.equal(res.status, 0);
+    assert.equal(res.json?.permission, 'allow');
+    assert.equal(res.json?.user_message, 'Dispatcher approved Task');
+    // Must strip workdir for non-shell tool
+    assert.equal(res.json?.updated_input?.workdir, undefined);
+    assert.equal(res.json?.updated_input?.prompt, 'Execute subtask 1');
+    assert.equal(res.json?.updated_input?.subtask_id, 'sub-42');
+
+    // Case 2: When updated_input contains ONLY workdir, it is stripped and no empty updated_input is leaked
+    const shadowWorkdirOnly = path.join(tmp, 'shadow-dispatcher-workdir-only.mjs');
+    fs.writeFileSync(
+      shadowWorkdirOnly,
+      `console.log(JSON.stringify({
+        permission: "allow",
+        updated_input: {
+          workdir: "/path/to/worktree"
+        }
+      })); process.exit(0);`
+    );
+
+    const res2 = runAdapter('--pretool', payload, {
+      SVC_HOST: 'cursor',
+      SVC_CURSOR_DISPATCHER_OVERRIDE: shadowWorkdirOnly,
+    });
+    assert.equal(res2.status, 0);
+    assert.equal(res2.json?.permission, 'allow');
+    assert.equal(res2.json?.updated_input, undefined);
+
+    // Case 3: When a non-shell tool receives an actual skill-loader rewrite, it denies with the specific command
+    const shadowSkillLoader = path.join(tmp, 'shadow-dispatcher-loader.mjs');
+    fs.writeFileSync(
+      shadowSkillLoader,
+      `console.log(JSON.stringify({
+        permission: "allow",
+        updated_input: {
+          command: "node /path/to/codex-load-skill.mjs --task 1",
+          workdir: "/path/to/worktree"
+        }
+      })); process.exit(0);`
+    );
+
+    const res3 = runAdapter('--pretool', payload, {
+      SVC_HOST: 'cursor',
+      SVC_CURSOR_DISPATCHER_OVERRIDE: shadowSkillLoader,
+    });
+    assert.equal(res3.status, 0);
+    assert.equal(res3.json?.permission, 'deny');
+    assert.match(res3.json?.user_message || '', /SSVE restored the authorized WI\. Load its current skill before retrying: node \/path\/to\/codex-load-skill\.mjs --task 1/);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('Cursor adapter: in-process chat switch/resume updates Prompt, Shell, and Task identity while in-flight preserves dispatch conversation', async () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'svc-cursor-resume-identity-'));
+  try {
+    const wi = 'WI-CURSOR-RESUME-01';
+    const chatA = '05fedae0-8d19-4f5a-8ffc-68b2cc606540';
+    const chatB = '2f538175-c2a2-461e-a2ab-29a7042adf73';
+    const { repo, target, env } = setupCursorSessionFixture(tmp, wi, chatA);
+    const { runtimeRoot, hookContext, authorityPath, readJson } = await import('../../hooks/codex/lib/codex-hook-context.mjs');
+
+    // 1. Chat A starts: submit prompt captures Prompt Authority for Chat A
+    const promptA = runAdapter(
+      '--before-submit-prompt',
+      {
+        prompt: `Work on ${wi} in chat A and execute task 1`,
+        conversation_id: chatA,
+        cwd: target,
+      },
+      env
+    );
+    assert.equal(promptA.status, 0);
+    assert.equal(promptA.json?.continue, true);
+
+    const authA = readJson(authorityPath(hookContext({ cwd: target, conversation_id: chatA }, env)));
+    assert.ok(authA);
+    assert.equal(authA.explicit_wi, wi);
+    assert.equal(authA.session_id, chatA);
+
+    // 2. Chat A performs Shell pretool call: identifies Chat A
+    const shellA = runAdapter(
+      '--pretool',
+      {
+        tool_name: 'Shell',
+        tool_input: { command: 'echo "chatA mutation" >> seed.txt' },
+        conversation_id: chatA,
+        cwd: target,
+      },
+      env
+    );
+    assert.equal(shellA.status, 0);
+    assert.equal(shellA.json?.permission, 'allow');
+
+    // 3. User switches / resumes to Chat B: beforeSubmitPrompt fires with Chat B and owner override
+    const promptB = runAdapter(
+      '--before-submit-prompt',
+      {
+        prompt: `SVC OWNER OVERRIDE: retain and resume active lease for ${wi} in this session.\nWork on ${wi} in resumed chat B and continue task 1`,
+        conversation_id: chatB,
+        cwd: target,
+      },
+      env
+    );
+    assert.equal(promptB.status, 0);
+    assert.equal(promptB.json?.continue, true);
+    assert.match(promptB.json?.user_message || '', /SVC owner override armed/i);
+
+    const authB = readJson(authorityPath(hookContext({ cwd: target, conversation_id: chatB }, env)));
+    assert.ok(authB);
+    assert.equal(authB.explicit_wi, wi);
+    assert.equal(authB.session_id, chatB);
+
+    // 4. Following resume, Shell and Task in Chat B both carry Chat B identity dynamically
+    const shellB = runAdapter(
+      '--pretool',
+      {
+        tool_name: 'Shell',
+        tool_input: { command: 'echo "chatB mutation" >> seed.txt' },
+        conversation_id: chatB,
+        cwd: target,
+      },
+      env
+    );
+    assert.equal(shellB.status, 0);
+    assert.equal(shellB.json?.permission, 'allow');
+
+    // Task in Chat B is evaluated under Chat B and strips workdir if updated
+    const taskB = runAdapter(
+      '--pretool',
+      {
+        tool_name: 'Task',
+        tool_input: { prompt: 'Subtask B work' },
+        conversation_id: chatB,
+        cwd: target,
+      },
+      env
+    );
+    assert.equal(taskB.status, 0);
+
+    // 5. In-flight operation initiated under Chat A still preserves Chat A's conversation ID
+    const inFlightShellA = runAdapter(
+      '--pretool',
+      {
+        tool_name: 'Shell',
+        tool_input: { command: 'echo "in-flight chatA" >> seed.txt' },
+        conversation_id: chatA,
+        cwd: target,
+      },
+      env
+    );
+    assert.equal(inFlightShellA.status, 0);
+    assert.equal(inFlightShellA.json?.permission, 'allow');
+
+    // 6. Verify event log recorded separate identities for Chat A, Chat B, and in-flight operations
+    const logFile = path.join(runtimeRoot(env), 'cursor-hook-events.jsonl');
+    assert.ok(fs.existsSync(logFile));
+    const events = fs.readFileSync(logFile, 'utf8').trim().split('\n').map(l => JSON.parse(l));
+
+    const chatAEvents = events.filter(e => e.resolved_sid === chatA);
+    const chatBEvents = events.filter(e => e.resolved_sid === chatB);
+    assert.ok(chatAEvents.length >= 2, 'Chat A must have prompt and pretool events recorded under chatA');
+    assert.ok(chatBEvents.length >= 2, 'Chat B must have prompt and pretool events recorded under chatB');
+    assert.ok(chatAEvents.some(e => e.tool_name === 'Shell' && e.resolved_sid === chatA));
+    assert.ok(chatBEvents.some(e => e.tool_name === 'Shell' && e.resolved_sid === chatB));
+
+    // 7. Empty conversation_id post-resume recovers active session Chat B, NOT stale Chat A
+    const emptyPostResume = runAdapter(
+      '--pretool',
+      {
+        tool_name: 'Shell',
+        tool_input: { command: 'echo "recovered chatB" >> seed.txt' },
+        cwd: target,
+      },
+      env
+    );
+    assert.equal(emptyPostResume.status, 0);
+    assert.equal(emptyPostResume.json?.permission, 'allow');
+
+    const updatedEvents = fs.readFileSync(logFile, 'utf8').trim().split('\n').map(l => JSON.parse(l));
+    const lastEmpty = updatedEvents.filter(e => e.empty_id_recovered === true).at(-1);
+    assert.ok(lastEmpty, 'empty ID event must be recovered');
+    assert.equal(lastEmpty.resolved_sid, chatB, 'must recover active Chat B rather than startup Chat A');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
