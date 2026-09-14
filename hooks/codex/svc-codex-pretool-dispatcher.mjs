@@ -54,7 +54,30 @@ if(String(process.env.CODEX_SESSION_ID||"").trim())return "codex";
 if(String(process.env.CODEX_HOME||"").trim())return "codex";
 try{if(path.basename(HERE)==="codex")return "codex";}catch{}
 return "";}
-function sidOf(p) { return String(p.session_id || p.sessionId || p.conversation_id || p.conversationId || p.thread_id || p.threadId || process.env.CURSOR_CONVERSATION_ID || process.env.SVC_SESSION_ID || process.env.GROK_SESSION_ID || process.env.CODEX_THREAD_ID || process.env.CODEX_SESSION_ID || ""); }
+function sidOf(p) {
+  return String(
+    p?.session_id ||
+    p?.sessionId ||
+    p?.conversation_id ||
+    p?.conversationId ||
+    p?.thread_id ||
+    p?.threadId ||
+    p?.metadata?.session_id ||
+    p?.metadata?.sessionId ||
+    p?.metadata?.conversation_id ||
+    p?.metadata?.conversationId ||
+    process.env.CURSOR_CONVERSATION_ID ||
+    process.env.CURSOR_SESSION_ID ||
+    process.env.SVC_SESSION_ID ||
+    process.env.GROK_SESSION_ID ||
+    process.env.CODEX_THREAD_ID ||
+    process.env.CODEX_SESSION_ID ||
+    process.env.CLAUDE_SESSION_ID ||
+    process.env.KIMI_SESSION_ID ||
+    process.env.GEMINI_SESSION_ID ||
+    ""
+  );
+}
 function worktreeRows(repo) { const rows=[]; for(const x of (spawnSync("git",["-C",repo,"worktree","list","--porcelain"],{encoding:"utf8"}).stdout||"").split(/\r?\n/)){ if(x.startsWith("worktree ")){ try { rows.push(fs.realpathSync(x.slice(9))); } catch {} } } return rows; }
 function baton(repo,sid,payload) { if(!repo)return null; const found=[]; try { for(const root of new Set([repo,...worktreeRows(repo)])){ let candidate; try { candidate=fs.realpathSync(root); } catch { continue; } const dir=path.join(candidate,".svc","bindings"); try { for(const n of fs.readdirSync(dir)){ if(!n.endsWith(".json"))continue; const f=path.join(dir,n),s=fs.lstatSync(f); if(!s.isFile()||s.isSymbolicLink())continue; const b=JSON.parse(fs.readFileSync(f,"utf8")); if(b.session_id===sid&&b.role==="mutating"&&!b.released_at){ try { found.push({worktree:fs.realpathSync(b.worktree_root),binding:b}); } catch {} } } } catch {} } if(!found.length){ for(const root of new Set([repo,...worktreeRows(repo)])){ let candidate; try { candidate=fs.realpathSync(root); } catch { continue; } const resolved=resolveWI({...payload,cwd:candidate,session_id:sid},{...process.env,SVC_REQUIRE_SESSION_BINDING:"1"}); if(resolved.authority&&resolved.tuple?.worktree_root===candidate)found.push({worktree:candidate,binding:resolved.tuple}); } } } catch {} return found.length===1?found[0]:found.length>1?{conflict:true}:null; }
 function child(spec,payload){const name=spec[0]==="codex"?spec[1]:spec[0];const disabled=String(process.env.SVC_DISABLED_HOOKS||"").split(",").map(s=>s.trim()).filter(Boolean);// EXTREV-R3-008: selective disabling follows the consolidated contract.

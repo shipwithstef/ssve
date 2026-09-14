@@ -19,7 +19,10 @@ import {
   turnId,
   governanceBinding,
   isReadOnlyTool,
+  runtimeRoot,
+  repoIdentity,
 } from "../codex/lib/codex-hook-context.mjs";
+import { findSvcDir } from "../lib/resolve-wi.mjs";
 import { armOwnerLease } from "../codex/lib/owner-lease.mjs";
 import { evaluatePreToolObservation } from "../lib/pretool-decision-engine.mjs";
 import { isShellTool } from "../lib/shell-tools.mjs";
@@ -57,6 +60,19 @@ function sweep(repoRoot, currentDir, env) {
   } catch {}
 }
 
+function logCursorHookEvent(eventData) {
+  try {
+    const root = runtimeRoot(process.env);
+    if (!root || !fs.existsSync(root)) return;
+    const logFile = path.join(root, "cursor-hook-events.jsonl");
+    const entry = JSON.stringify({
+      timestamp: new Date().toISOString(),
+      ...eventData,
+    }) + "\n";
+    fs.appendFileSync(logFile, entry, { mode: 0o600 });
+  } catch {}
+}
+
 function handleBeforeSubmitPrompt(payload) {
   try {
     const text = promptText(payload);
@@ -70,6 +86,13 @@ function handleBeforeSubmitPrompt(payload) {
       const bound = governanceBinding({ ...payload, cwd: rawCwd });
       const worktree = bound?.worktree || repo;
       if (!sid || !repo || !worktree) {
+        logCursorHookEvent({
+          event: "beforeSubmitPrompt",
+          payload_session_id: payload?.session_id || payload?.sessionId || null,
+          payload_conversation_id: payload?.conversation_id || payload?.conversationId || null,
+          decision: "deny",
+          rejection_reason: "SVC owner override requires a repository and stable session",
+        });
         process.stdout.write(JSON.stringify({ continue: false, user_message: "SVC owner override requires a repository and stable session" }) + "\n");
         process.exit(0);
       }
@@ -106,6 +129,31 @@ function handleBeforeSubmitPrompt(payload) {
         authorization_turn_id: inherited ? (previous.authorization_turn_id || previous.turn_id) : ctx.turn_id,
         recorded_at: new Date().toISOString(),
       });
+      try {
+        const repoDir = path.join(runtimeRoot(process.env), repoIdentity(ctx.repo_root));
+        const activeFile = path.join(repoDir, "active-cursor-session.json");
+        atomicWriteJson(activeFile, {
+          schema_version: SCHEMA_VERSION,
+          session_id: ctx.session_id,
+          turn_id: ctx.turn_id,
+          repo_root: ctx.repo_root,
+          recorded_at: new Date().toISOString(),
+        });
+      } catch {}
+      logCursorHookEvent({
+        event: "beforeSubmitPrompt",
+        payload_session_id: payload?.session_id || payload?.sessionId || null,
+        payload_conversation_id: payload?.conversation_id || payload?.conversationId || null,
+        payload_generation_id: payload?.turn_id || payload?.turnId || payload?.generation_id || payload?.generationId || null,
+        resolved_sid: ctx.session_id,
+        resolved_turn: ctx.turn_id,
+        repo_root: ctx.repo_root,
+        authority_path: authorityPath(ctx),
+        authority_exists: true,
+        decision: "continue",
+        rejection_reason: null,
+        empty_id_recovered: false,
+      });
       sweep(ctx.repo_root, ctx.session_dir, process.env);
     }
     process.stdout.write(JSON.stringify({ continue: true, ...(overrideMessage ? { user_message: overrideMessage } : {}) }) + "\n");
@@ -119,14 +167,110 @@ function handleBeforeSubmitPrompt(payload) {
 }
 
 function handlePreTool(payload, { isShellExecEvent = false } = {}) {
+  const rawToolName = isShellExecEvent ? "Shell" : String(payload.tool_name || payload.toolName || payload.tool || "");
+  let sid = String(
+    payload?.session_id ||
+    payload?.sessionId ||
+    payload?.conversation_id ||
+    payload?.conversationId ||
+    payload?.thread_id ||
+    payload?.threadId ||
+    payload?.metadata?.session_id ||
+    payload?.metadata?.sessionId ||
+    payload?.metadata?.conversation_id ||
+    payload?.metadata?.conversationId ||
+    process.env.CURSOR_CONVERSATION_ID ||
+    process.env.CURSOR_SESSION_ID ||
+    ""
+  );
+  let turn = String(payload?.turn_id || payload?.turnId || payload?.generation_id || payload?.generationId || "");
+  let emptyIdRecovered = false;
+  const rawCwd = payload.cwd || payload.working_directory || (Array.isArray(payload.workspace_roots) && payload.workspace_roots[0]) || process.cwd();
+  const repo = findRepoRoot(rawCwd);
+
+  if (!sid && repo) {
+    try {
+      const repoDir = path.join(runtimeRoot(process.env), repoIdentity(repo));
+      const activeFile = path.join(repoDir, "active-cursor-session.json");
+      const active = readJson(activeFile);
+      if (active?.session_id) {
+        const ttlMinutes = Number(process.env.SVC_CODEX_AUTHORITY_TTL_MIN || 240);
+        const recorded = Date.parse(active.recorded_at || "");
+        if (Number.isFinite(recorded) && Date.now() - recorded <= Math.max(1, ttlMinutes) * 60_000) {
+          sid = String(active.session_id);
+          if (!turn || turn.startsWith("session:")) {
+            turn = String(active.turn_id || turn || `session:${sid}`);
+          }
+          emptyIdRecovered = true;
+        }
+      }
+    } catch {}
+    if (!sid) {
+      try {
+        const svcDir = findSvcDir(repo);
+        if (svcDir) {
+          const bDir = path.join(svcDir, "bindings");
+          if (fs.existsSync(bDir)) {
+            const activeBindings = [];
+            for (const name of fs.readdirSync(bDir)) {
+              if (!name.endsWith(".json")) continue;
+              const b = readJson(path.join(bDir, name));
+              if (b?.session_id && b?.role === "mutating" && !b?.released_at) {
+                activeBindings.push(b);
+              }
+            }
+            if (activeBindings.length === 1) {
+              sid = String(activeBindings[0].session_id);
+              if (!turn || turn.startsWith("session:")) turn = `session:${sid}`;
+              emptyIdRecovered = true;
+            }
+          }
+        }
+      } catch {}
+    }
+  }
+
+  if (!sid) {
+    sid = sessionId(payload);
+  }
+  if (!turn) {
+    turn = sid ? `session:${sid}` : "";
+  }
+
+  let authPath = null;
+  let authExists = false;
+  if (repo && sid) {
+    try {
+      const ctx = hookContext({ ...payload, session_id: sid, cwd: rawCwd });
+      if (ctx.session_dir) {
+        authPath = authorityPath(ctx);
+        authExists = fs.existsSync(authPath);
+      }
+    } catch {}
+  }
+
+  const logExit = (decision, reason = null) => {
+    logCursorHookEvent({
+      event: isShellExecEvent ? "beforeShellExecution" : "pretool",
+      tool_name: rawToolName,
+      payload_session_id: payload?.session_id || payload?.sessionId || null,
+      payload_conversation_id: payload?.conversation_id || payload?.conversationId || null,
+      payload_generation_id: payload?.turn_id || payload?.turnId || payload?.generation_id || payload?.generationId || null,
+      resolved_sid: sid || null,
+      resolved_turn: turn || null,
+      repo_root: repo,
+      authority_path: authPath,
+      authority_exists: authExists,
+      decision,
+      rejection_reason: reason,
+      empty_id_recovered: emptyIdRecovered,
+    });
+  };
+
   try {
-    const rawToolName = isShellExecEvent ? "Shell" : String(payload.tool_name || payload.toolName || payload.tool || "");
     const toolInput = isShellExecEvent
       ? { command: payload.command || "", cwd: payload.cwd || process.cwd() }
       : (payload.tool_input || payload.toolInput || payload.arguments || payload.args || {});
-    const sid = sessionId(payload);
-    const turn = turnId(payload);
-    const rawCwd = payload.cwd || payload.working_directory || (Array.isArray(payload.workspace_roots) && payload.workspace_roots[0]) || process.cwd();
 
     const normalized = {
       ...payload,
@@ -140,6 +284,7 @@ function handlePreTool(payload, { isShellExecEvent = false } = {}) {
     // 1. Observation fast-path
     const observation = evaluatePreToolObservation(normalized);
     if (observation) {
+      logExit("allow", null);
       if (observation.execution_input && isShellTool(rawToolName) && !isShellExecEvent) {
         process.stdout.write(JSON.stringify({ permission: "allow", updated_input: observation.execution_input }) + "\n");
       } else {
@@ -159,13 +304,16 @@ function handlePreTool(payload, { isShellExecEvent = false } = {}) {
 
     if (result.error || result.status !== 0) {
       const reason = result.error?.message || result.stderr?.trim() || "Cursor pretool child process failed closed";
+      logExit("deny", reason);
       process.stdout.write(JSON.stringify({ permission: "deny", user_message: reason }) + "\n");
       process.exit(0);
     }
 
     const stdout = String(result.stdout || "").trim();
     if (!stdout) {
-      process.stdout.write(JSON.stringify({ permission: "deny", user_message: "child dispatcher emitted no output; failing closed" }) + "\n");
+      const reason = "child dispatcher emitted no output; failing closed";
+      logExit("deny", reason);
+      process.stdout.write(JSON.stringify({ permission: "deny", user_message: reason }) + "\n");
       process.exit(0);
     }
 
@@ -173,13 +321,16 @@ function handlePreTool(payload, { isShellExecEvent = false } = {}) {
     try {
       decision = JSON.parse(stdout.split(/\r?\n/).filter(Boolean).at(-1));
     } catch {
-      process.stdout.write(JSON.stringify({ permission: "deny", user_message: "child emitted an unparseable decision; failing closed" }) + "\n");
+      const reason = "child emitted an unparseable decision; failing closed";
+      logExit("deny", reason);
+      process.stdout.write(JSON.stringify({ permission: "deny", user_message: reason }) + "\n");
       process.exit(0);
     }
 
     const isDeny = decision?.permission === "deny" || decision?.hookSpecificOutput?.permissionDecision === "deny" || decision?.decision === "deny";
     if (isDeny) {
       const reason = decision?.user_message || decision?.hookSpecificOutput?.permissionDecisionReason || decision?.reason || "operation denied";
+      logExit("deny", reason);
       process.stdout.write(JSON.stringify({ permission: "deny", user_message: reason }) + "\n");
       process.exit(0);
     }
@@ -187,6 +338,7 @@ function handlePreTool(payload, { isShellExecEvent = false } = {}) {
     const updatedInput = decision?.updated_input || decision?.hookSpecificOutput?.updatedInput;
     if (updatedInput) {
       if (isShellTool(rawToolName) && !isShellExecEvent) {
+        logExit("allow", null);
         const msg = decision?.user_message || decision?.systemMessage;
         process.stdout.write(JSON.stringify({
           permission: "allow",
@@ -197,17 +349,22 @@ function handlePreTool(payload, { isShellExecEvent = false } = {}) {
       }
       // Rewriting non-shell or beforeShellExecution is unsupported in Cursor: deny with instruction
       const loader = updatedInput.command || updatedInput.cmd || "";
+      const reason = `SSVE restored the authorized WI. Load its current skill before retrying: ${loader}`;
+      logExit("deny", reason);
       process.stdout.write(JSON.stringify({
         permission: "deny",
-        user_message: `SSVE restored the authorized WI. Load its current skill before retrying: ${loader}`,
+        user_message: reason,
       }) + "\n");
       process.exit(0);
     }
 
+    logExit("allow", null);
     process.stdout.write(JSON.stringify({ permission: "allow" }) + "\n");
     process.exit(0);
   } catch (error) {
-    process.stdout.write(JSON.stringify({ permission: "deny", user_message: `Cursor pretool failed closed: ${error.message}` }) + "\n");
+    const reason = `Cursor pretool failed closed: ${error.message}`;
+    logExit("deny", reason);
+    process.stdout.write(JSON.stringify({ permission: "deny", user_message: reason }) + "\n");
     process.exit(0);
   }
 }

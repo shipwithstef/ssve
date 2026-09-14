@@ -42,7 +42,7 @@ const expected = taskSkillForLoad(task);
 if (!task || expected !== args.skill) fail("graph/task/declared skill mismatch");
 const sid = args.session || (process.env.SVC_CODEX_TEST_MODE === "1"
   ? (process.env.CODEX_SESSION_ID || process.env.CODEX_THREAD_ID || "")
-  : (process.env.CURSOR_CONVERSATION_ID || process.env.SVC_SESSION_ID || process.env.GROK_SESSION_ID || process.env.CODEX_THREAD_ID || process.env.CODEX_SESSION_ID || ""));
+  : (process.env.CURSOR_CONVERSATION_ID || process.env.CURSOR_SESSION_ID || process.env.SVC_SESSION_ID || process.env.GROK_SESSION_ID || process.env.CODEX_THREAD_ID || process.env.CODEX_SESSION_ID || process.env.CLAUDE_SESSION_ID || process.env.KIMI_SESSION_ID || process.env.GEMINI_SESSION_ID || ""));
 if (!sid) fail("missing session identity");
 const skillEvidence = resolveCanonicalSkill(worktree, args.skill, process.env);
 if (!skillEvidence) fail(`unreadable canonical skill: ${args.skill}`);

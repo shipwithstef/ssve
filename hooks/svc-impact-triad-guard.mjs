@@ -43,8 +43,29 @@ function readReceiptUnderRoot(file, root) {
   }
   return readJsonRegular(absolute);
 }
-function sessionId(payload, env) {
-  return String(payload?.session_id || payload?.sessionId || payload?.thread_id || payload?.threadId || env.CURSOR_CONVERSATION_ID || env.CURSOR_SESSION_ID || env.SVC_SESSION_ID || env.CODEX_THREAD_ID || env.CODEX_SESSION_ID || env.CLAUDE_SESSION_ID || env.KIMI_SESSION_ID || env.GEMINI_SESSION_ID || "");
+function sessionId(payload, env = process.env) {
+  return String(
+    payload?.session_id ||
+    payload?.sessionId ||
+    payload?.conversation_id ||
+    payload?.conversationId ||
+    payload?.thread_id ||
+    payload?.threadId ||
+    payload?.metadata?.session_id ||
+    payload?.metadata?.sessionId ||
+    payload?.metadata?.conversation_id ||
+    payload?.metadata?.conversationId ||
+    env.CURSOR_CONVERSATION_ID ||
+    env.CURSOR_SESSION_ID ||
+    env.SVC_SESSION_ID ||
+    env.GROK_SESSION_ID ||
+    env.CODEX_THREAD_ID ||
+    env.CODEX_SESSION_ID ||
+    env.CLAUDE_SESSION_ID ||
+    env.KIMI_SESSION_ID ||
+    env.GEMINI_SESSION_ID ||
+    ""
+  );
 }
 function hookBoundary(payload) {
   const tool = String(payload.tool_name || payload.toolName || "");

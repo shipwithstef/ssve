@@ -140,13 +140,13 @@ function findMissingHookScripts(settingsPath, hooksSupported) {
 function sessionIdFromEnv(env = process.env) {
   return env.CURSOR_CONVERSATION_ID
     || env.CURSOR_SESSION_ID
+    || env.SVC_SESSION_ID
     || env.GROK_SESSION_ID
-    || env.CLAUDE_SESSION_ID
-    || env.CODEX_SESSION_ID
     || env.CODEX_THREAD_ID
+    || env.CODEX_SESSION_ID
+    || env.CLAUDE_SESSION_ID
     || env.KIMI_SESSION_ID
     || env.GEMINI_SESSION_ID
-    || env.SVC_SESSION_ID
     || "";
 }
 

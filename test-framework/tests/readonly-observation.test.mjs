@@ -22,6 +22,7 @@ const reads = [
   'journalctl --file /var/log/journal/test.journal --verify',
   "journalctl --no-pager --grep 'alpha|beta' | head -n 20",
   'systemctl show codex-durability.service 2>/dev/null && git status --short',
+  'git ls-remote origin',
 ];
 for (const command of reads) test(`authority-free observation: ${command}`, () => {
   const original = payload(command);
@@ -37,7 +38,7 @@ const writes = [
   'git --paginate log HEAD',
   'git -p log HEAD',
   'git --no-pager --paginate log HEAD',
-  'git ls-remote origin',
+  'git ls-remote --upload-pack=custom origin',
   'git branch --list --set-upstream-to origin/topic',
   'git branch -r -d origin/topic',
   'git branch -a -D topic',

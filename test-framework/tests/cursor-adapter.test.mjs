@@ -25,6 +25,57 @@ function runAdapter(mode, input, env = process.env) {
   return { status: res.status, stdout: res.stdout || '', stderr: res.stderr || '', json };
 }
 
+function setupCursorSessionFixture(tmp, wi = 'WI-CURSOR-FIXTURE-01', cursorSid = '2f538175-c2a2-461e-a2ab-29a7042adf73') {
+  const repo = path.join(tmp, 'repo');
+  const target = path.join(repo, '.worktrees', `wt-${wi.toLowerCase()}`);
+  fs.mkdirSync(repo, { recursive: true });
+
+  const git = (...args) => execFileSync('git', ['-C', repo, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  git('init', '-b', 'main');
+  git('config', 'user.name', 'cursor-fixture');
+  git('config', 'user.email', 'cursor@example.invalid');
+  fs.writeFileSync(path.join(repo, 'seed.txt'), 'seed');
+  git('add', '.');
+  git('commit', '-qm', 'seed');
+  git('update-ref', 'refs/remotes/origin/main', 'HEAD');
+  fs.mkdirSync(path.join(repo, '.worktrees'), { recursive: true });
+  git('worktree', 'add', '-b', `fix/${wi.toLowerCase()}`, target);
+
+  fs.mkdirSync(path.join(target, '.svc'), { recursive: true });
+  const graph = {
+    schema_version: 1,
+    wi,
+    lane: 'bugfix',
+    status: 'in_progress',
+    tasks: [
+      {
+        id: 1,
+        skill: 'execute-changeset',
+        subject: 'Cursor test task',
+        status: 'in_progress',
+        metadata: { skill: 'execute-changeset', wi },
+        blocked_by: [],
+      },
+    ],
+  };
+  fs.writeFileSync(path.join(target, '.svc', `lane-tasks-${wi}.json`), JSON.stringify(graph, null, 2));
+  fs.writeFileSync(
+    path.join(target, '.svc', 'session-contract.jsonl'),
+    JSON.stringify({ wi, ts: new Date().toISOString(), authorization_envelope: { rules: [] } }) + '\n'
+  );
+
+  const runtimeDir = path.join(tmp, 'runtime');
+  fs.mkdirSync(runtimeDir, { recursive: true, mode: 0o700 });
+  fs.chmodSync(runtimeDir, 0o700);
+
+  const env = {
+    SVC_HOST: 'cursor',
+    SVC_CODEX_RUNTIME_DIR: runtimeDir,
+  };
+
+  return { repo, target, env, wi, cursorSid };
+}
+
 test('Cursor adapter: malformed payload fails closed on beforeSubmitPrompt and pretool', () => {
   // Malformed JSON string
   const badPrompt = runAdapter('--before-submit-prompt', '{ not json:');
@@ -413,6 +464,152 @@ test('Cursor adapter: controller-v2 takeover without existing binding file resol
     assert.equal(preMutation.status, 0);
     assert.equal(preMutation.json?.permission, 'allow');
     assert.match(preMutation.json?.updated_input?.command || '', /codex-load-skill/);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('Cursor adapter: sentence punctuation in WI is accepted by explicitWI and prompt authority', async () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'svc-cursor-punct-'));
+  try {
+    const repo = path.join(tmp, 'repo');
+    fs.mkdirSync(path.join(repo, '.git'), { recursive: true });
+    spawnSync('git', ['init', '-b', 'main'], { cwd: repo });
+    const cursorSid = '5c8a9134-4b5b-4361-a5cf-punct0000001';
+    const runtimeDir = path.join(tmp, 'runtime');
+    fs.mkdirSync(runtimeDir, { recursive: true, mode: 0o700 });
+    fs.chmodSync(runtimeDir, 0o700);
+    const env = {
+      SVC_CODEX_RUNTIME_DIR: runtimeDir,
+    };
+    const { explicitWI, hookContext, authorityPath, readJson } = await import('../../hooks/codex/lib/codex-hook-context.mjs');
+
+    // Test cases with sentence punctuation
+    assert.equal(explicitWI('Work on WI-PUNCT-01.'), 'WI-PUNCT-01');
+    assert.equal(explicitWI('WI-PUNCT-01: continue task 1'), 'WI-PUNCT-01');
+    assert.equal(explicitWI('Work on WI-PUNCT-01, please continue'), 'WI-PUNCT-01');
+    assert.equal(explicitWI('Is it WI-PUNCT-01?'), 'WI-PUNCT-01');
+    assert.equal(explicitWI('(WI-PUNCT-01)'), 'WI-PUNCT-01');
+    assert.equal(explicitWI('"WI-PUNCT-01"'), 'WI-PUNCT-01');
+    assert.equal(explicitWI('WI-PUNCT-01; next'), 'WI-PUNCT-01');
+
+    // Negative cases should not match
+    assert.equal(explicitWI('Work on WI-PUNCT-01.md'), '');
+    assert.equal(explicitWI('path/to/WI-PUNCT-01'), '');
+    assert.equal(explicitWI('WI-PUNCT-01_foo'), '');
+    assert.equal(explicitWI('WI-PUNCT-01-foo'), '');
+
+    // Submit prompt with period after WI
+    const promptRes = runAdapter(
+      '--before-submit-prompt',
+      {
+        prompt: 'Work on WI-PUNCT-01. Resume task 1.',
+        conversation_id: cursorSid,
+        cwd: repo,
+      },
+      env
+    );
+    assert.equal(promptRes.status, 0);
+    assert.equal(promptRes.json?.continue, true);
+
+    const ctx = hookContext({ cwd: repo, conversation_id: cursorSid }, { ...process.env, ...env });
+    const auth = readJson(authorityPath(ctx));
+    assert.ok(auth);
+    assert.equal(auth.explicit_wi, 'WI-PUNCT-01');
+    assert.equal(auth.continuation_intent, 'work_on');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('Cursor adapter: recovers session identity when Cursor emits pretool event with empty conversation_id', async () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'svc-cursor-empty-id-'));
+  try {
+    const { repo, target, env, wi, cursorSid } = setupCursorSessionFixture(tmp, 'WI-CURSOR-EMPTY-01');
+    const { runtimeRoot } = await import('../../hooks/codex/lib/codex-hook-context.mjs');
+
+    // 1. Submit prompt establishes active session and writes prompt authority
+    const promptRes = runAdapter(
+      '--before-submit-prompt',
+      {
+        prompt: `Work on ${wi} and continue task 1`,
+        conversation_id: cursorSid,
+        cwd: target,
+      },
+      env
+    );
+    assert.equal(promptRes.status, 0);
+
+    // 2. Cursor emits pretool event with NO conversation_id or session_id (the upstream bug)
+    const emptyIdPretool = runAdapter(
+      '--pretool',
+      {
+        tool_name: 'Shell',
+        tool_input: { command: 'echo "mutation" >> seed.txt' },
+        // Notice: conversation_id and session_id are completely omitted
+        cwd: target,
+      },
+      env
+    );
+    assert.equal(emptyIdPretool.status, 0);
+    assert.equal(emptyIdPretool.json?.permission, 'allow');
+    assert.match(emptyIdPretool.json?.updated_input?.command || '', /codex-load-skill/);
+
+    // 3. Verify event log recorded the empty-ID event with recovery
+    const logFile = path.join(runtimeRoot(env), 'cursor-hook-events.jsonl');
+    assert.ok(fs.existsSync(logFile), 'event log must exist');
+    const lines = fs.readFileSync(logFile, 'utf8').trim().split('\n').map(l => JSON.parse(l));
+    const emptyRecoveryEvent = lines.find(e => e.empty_id_recovered === true);
+    assert.ok(emptyRecoveryEvent, 'must have an event with empty_id_recovered === true');
+    assert.equal(emptyRecoveryEvent.payload_conversation_id, null);
+    assert.equal(emptyRecoveryEvent.resolved_sid, cursorSid);
+    assert.ok(emptyRecoveryEvent.authority_exists);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('Cursor adapter: logs failing events with identity fields, authority path, and rejection reason', async () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'svc-cursor-fail-log-'));
+  try {
+    const { target, env, cursorSid, wi } = setupCursorSessionFixture(tmp, 'WI-CURSOR-FAIL-01');
+    const { runtimeRoot } = await import('../../hooks/codex/lib/codex-hook-context.mjs');
+
+    // Submit prompt establishes prompt authority
+    const promptRes = runAdapter(
+      '--before-submit-prompt',
+      {
+        prompt: `Work on ${wi} and continue task 1`,
+        conversation_id: cursorSid,
+        cwd: target,
+      },
+      env
+    );
+    assert.equal(promptRes.status, 0);
+
+    // Non-shell tool before skill load is denied
+    const nonShell = runAdapter(
+      '--pretool',
+      {
+        tool_name: 'WriteFile',
+        tool_input: { path: 'file.txt', content: 'hello' },
+        conversation_id: cursorSid,
+        cwd: target,
+      },
+      env
+    );
+    assert.equal(nonShell.status, 0);
+    assert.equal(nonShell.json?.permission, 'deny');
+
+    // Verify denial was logged with full diagnostic identity and reason
+    const logFile = path.join(runtimeRoot(env), 'cursor-hook-events.jsonl');
+    assert.ok(fs.existsSync(logFile));
+    const lines = fs.readFileSync(logFile, 'utf8').trim().split('\n').map(l => JSON.parse(l));
+    const denyEvent = lines.find(e => e.decision === 'deny' && e.tool_name === 'WriteFile');
+    assert.ok(denyEvent, 'must have logged the denied event');
+    assert.equal(denyEvent.resolved_sid, cursorSid);
+    assert.match(denyEvent.rejection_reason, /Load its current skill before retrying/i);
+    assert.ok(denyEvent.authority_path);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
