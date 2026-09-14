@@ -6,7 +6,7 @@ import { execFileSync } from "node:child_process";
 import { lexSimpleCommand } from "./argv-lex.mjs";
 import { findSvcDir, resolveWI, resolveAuthorityHost } from "../../lib/resolve-wi.mjs";
 import { validateTaskGraphShape } from "../../lib/validate-task-graph-shape.mjs";
-import { isValidWiId, WI_ID_BODY } from "../../lib/wi-id.mjs";
+import { isValidWiId, WI_ID_BODY, WI_EXTRACT_RE, extractWiId } from "../../lib/wi-id.mjs";
 import { resolveOperationScope } from "../../lib/operation-scope.mjs";
 import { assertPrivateDirectory, ensurePrivateDirectory, resolveRuntimeDirectory } from "../../lib/svc-runtime-root.mjs";
 import { isShellTool } from "../../lib/shell-tools.mjs";
@@ -24,7 +24,28 @@ export function parseHookInput(raw) {
 }
 
 export function sessionId(payload, env = process.env) {
-  return String(payload?.session_id || payload?.sessionId || payload?.conversation_id || payload?.conversationId || env.CURSOR_CONVERSATION_ID || env.SVC_SESSION_ID || env.GROK_SESSION_ID || env.CODEX_THREAD_ID || env.CODEX_SESSION_ID || "");
+  return String(
+    payload?.session_id ||
+    payload?.sessionId ||
+    payload?.conversation_id ||
+    payload?.conversationId ||
+    payload?.thread_id ||
+    payload?.threadId ||
+    payload?.metadata?.session_id ||
+    payload?.metadata?.sessionId ||
+    payload?.metadata?.conversation_id ||
+    payload?.metadata?.conversationId ||
+    env.CURSOR_CONVERSATION_ID ||
+    env.CURSOR_SESSION_ID ||
+    env.SVC_SESSION_ID ||
+    env.GROK_SESSION_ID ||
+    env.CODEX_THREAD_ID ||
+    env.CODEX_SESSION_ID ||
+    env.CLAUDE_SESSION_ID ||
+    env.KIMI_SESSION_ID ||
+    env.GEMINI_SESSION_ID ||
+    ""
+  );
 }
 
 export function turnId(payload, env = process.env) {
@@ -209,9 +230,7 @@ export function readJson(file) {
 }
 
 export function explicitWI(text) {
-  const m = String(text || "").match(new RegExp("(?<![A-Za-z0-9._:/-])" + WI_ID_BODY + "(?![A-Za-z0-9._:/-])"));
-  const cand = m ? m[0].toUpperCase() : "";
-  return isValidWiId(cand) ? cand : "";
+  return extractWiId(text);
 }
 
 export function continuationIntent(text, { distinguishNegative = false } = {}) {
@@ -226,7 +245,7 @@ export function continuationIntent(text, { distinguishNegative = false } = {}) {
   // button label, an unrelated topic) must not activate self-heal.
   // EXTREV-R3-003: reuse the canonical WI body so NAMESPACED ids
   // (WI-FW-HOOKS-SAFETY-01) anchor the sentence scope, not just WI-123 forms.
-  const wiMatch = value.match(new RegExp("(?<![A-Za-z0-9._:/-])" + WI_ID_BODY + "(?![A-Za-z0-9._:/-])"));
+  const wiMatch = value.match(WI_EXTRACT_RE);
   const sentences = (() => {
     if (!wiMatch) return [value];
     const parts = value.split(/(?:[.!?]|\n\s*\n|\.\s)\s*/);

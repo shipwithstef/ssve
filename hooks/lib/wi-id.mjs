@@ -16,6 +16,17 @@ export const WI_ID_RE = /^WI-[A-Z0-9]+(-[A-Z0-9]+)*$/;
 // LOCATORS at extraction sites via new RegExp — keeps one source string.
 export const WI_ID_BODY = "WI-[A-Z0-9]+(?:-[A-Z0-9]+)*";
 
+// Delimiter-bounded extractor pattern that permits standard sentence punctuation
+// (e.g. '.', ':', ',', ';', '!', '?', quotes, parens) while rejecting
+// extensions, subpaths, lowercase suffix segments, or embedded occurrences.
+export const WI_EXTRACT_RE = new RegExp("(?<![A-Za-z0-9._:/-])" + WI_ID_BODY + "(?![A-Za-z0-9_/-]|\\.[A-Za-z0-9]|:[A-Za-z0-9/:])");
+
 export function isValidWiId(s) {
   return typeof s === "string" && WI_ID_RE.test(s);
+}
+
+export function extractWiId(text) {
+  const m = String(text || "").match(WI_EXTRACT_RE);
+  const cand = m ? m[0].toUpperCase() : "";
+  return isValidWiId(cand) ? cand : "";
 }

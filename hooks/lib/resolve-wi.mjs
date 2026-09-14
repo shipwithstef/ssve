@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { execFileSync, execSync } from "node:child_process";
 import { claimFreshness, normalizeClaimOwner, readClaimAbsolute } from "./wi-claim.mjs";
 import { validateTaskGraphShape } from "./validate-task-graph-shape.mjs";
-import { WI_ID_RE } from "./wi-id.mjs";
+import { WI_ID_RE, extractWiId } from "./wi-id.mjs";
 
 // Keep authority resolution self-contained because several supported host and
 // eval runtimes install this synchronous resolver as a deliberately minimal
@@ -134,9 +134,26 @@ function repoRootFor(worktreeRoot) {
 
 export function sessionId(hookPayload = {}, env = process.env) {
   return String(
-    hookPayload.session_id || hookPayload.sessionId || hookPayload.conversation_id || hookPayload.conversationId || hookPayload.thread_id || hookPayload.threadId ||
-    env.CURSOR_CONVERSATION_ID || env.CURSOR_SESSION_ID || env.SVC_SESSION_ID || env.GROK_SESSION_ID || env.CODEX_THREAD_ID || env.CODEX_SESSION_ID ||
-    env.KIMI_SESSION_ID || env.CLAUDE_SESSION_ID || env.GEMINI_SESSION_ID || ""
+    hookPayload?.session_id ||
+    hookPayload?.sessionId ||
+    hookPayload?.conversation_id ||
+    hookPayload?.conversationId ||
+    hookPayload?.thread_id ||
+    hookPayload?.threadId ||
+    hookPayload?.metadata?.session_id ||
+    hookPayload?.metadata?.sessionId ||
+    hookPayload?.metadata?.conversation_id ||
+    hookPayload?.metadata?.conversationId ||
+    env.CURSOR_CONVERSATION_ID ||
+    env.CURSOR_SESSION_ID ||
+    env.SVC_SESSION_ID ||
+    env.GROK_SESSION_ID ||
+    env.CODEX_THREAD_ID ||
+    env.CODEX_SESSION_ID ||
+    env.CLAUDE_SESSION_ID ||
+    env.KIMI_SESSION_ID ||
+    env.GEMINI_SESSION_ID ||
+    ""
   );
 }
 
@@ -159,10 +176,10 @@ export function resolveAuthorityHost(payload = {}, env = process.env) {
 export function wiFromBranch(cwd = process.cwd()) {
   try {
     const branch = execSync("git symbolic-ref --short HEAD 2>/dev/null", { cwd, encoding: "utf8", timeout: 5000 }).trim();
-    const explicit = branch.match(/WI-(\d+)/i);
-    if (explicit) return `WI-${explicit[1]}`;
-    const legacy = branch.match(/(?:feature|bugfix|refactor)-(\d+)/i);
-    return legacy ? `WI-${legacy[1]}` : "";
+    const explicit = extractWiId(branch);
+    if (explicit) return explicit;
+    const legacy = branch.match(/(?:feature|bugfix|refactor)-([A-Za-z0-9]+)/i);
+    return legacy ? `WI-${legacy[1].toUpperCase()}` : "";
   } catch {
     return "";
   }
