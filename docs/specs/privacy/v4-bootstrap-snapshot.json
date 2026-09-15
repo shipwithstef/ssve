@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "wi": "WI-FW-TWO-BOX-01",
+  "consumer_repository_id": "483a45144270fb2c3baf7f9db111b52dfdf22d068a083f69b117f0da3e02defe",
+  "public_root": "0dcd69d255642dcc78db521e95afa2b18ea1276f",
+  "base_sha": "0dcd69d255642dcc78db521e95afa2b18ea1276f",
+  "plan_body_sha256": "b5fcee9a07c6aa09c3346f9784c9458224e9dd7141095c200718aff980bf11b0",
+  "manifest_sha256": "4e885ac1d6d9a00ecc2e3e99be601e2ba5281d92d288ec04eaed0b5cc4af7e55",
+  "plan_contract_sha256": "effdc901ae0d5ed68848171a0aec51a5843799c0fd3eecbd24e68ccfa890aca8",
+  "spec_ac_table_sha256": "ff42508d5ae7fe0829e761e77630f0b464f320b9c5668aaf05c8f770355a2486",
+  "immutable_context": [
+    {
+      "path": "docs/specs/tech/two-box-transmutation.md",
+      "start_line": 1,
+      "end_line": 188,
+      "excerpt_sha256": "0353f791af1902ddd0b65d034aeb5cdd3d54aaf07db2ff42908167fe21214157"
+    },
+    {
+      "path": "docs/plans/two-box-transmutation/solution-plan.md",
+      "start_line": 1,
+      "end_line": 116,
+      "excerpt_sha256": "13667ce4668c54381934c6936b81b86acf52c4988e572fbae6bea8fb0480cb87"
+    }
+  ],
+  "capabilities_package_sha256": "35da218524898ad303eb7284100c96b066d6cb7b65c82e97cbe00722d73ce4fa",
+  "review_plan_receipt": {
+    "type": "object",
+    "sha256": "874610660d5b65b4081878cb2b030757c9de99ff0a04c53721d0f2670d06868f"
+  },
+  "reviewer_launcher_receipts": [
+    {
+      "type": "object",
+      "sha256": "048b97c0aa07f031b857585cd076e584ed6d5c1318c5b60fb3310af89976ed2a"
+    }
+  ],
+  "reviewed_plan": {
+    "type": "object",
+    "sha256": "b5fcee9a07c6aa09c3346f9784c9458224e9dd7141095c200718aff980bf11b0"
+  },
+  "reviewed_manifest": {
+    "type": "object",
+    "sha256": "4e885ac1d6d9a00ecc2e3e99be601e2ba5281d92d288ec04eaed0b5cc4af7e55"
+  },
+  "companion_contract": {
+    "type": "object",
+    "sha256": "effdc901ae0d5ed68848171a0aec51a5843799c0fd3eecbd24e68ccfa890aca8"
+  },
+  "freeze_producer": {
+    "type": "object",
+    "sha256": "1eb2c039af245c27a7cbd451efb526bdc50e9f546788cb382f810b2b3bc626e4"
+  },
+  "created_at": "2026-09-15T01:40:30.062Z",
+  "authority": "Exact digest pinned in trusted source package; not a consumer-editable exception"
+}

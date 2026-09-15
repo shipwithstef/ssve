@@ -18,7 +18,7 @@ const TRUSTED_WORKDIR_FIELDS = {
   gemini: new Set(["workdir"]),
   opencode: new Set(["workdir"]),
   antigravity: new Set(["workdir"]),
-  cursor: new Set(["workdir"]),
+  cursor: new Set(["workdir", "cwd", "workingDirectory", "working_directory"]),
   "mimo-code": new Set(["workdir"]),
   grok: new Set(["workdir"]),
 };
@@ -232,7 +232,7 @@ function commandDirectoryEvidence(command, sessionCwd) {
   });
 }
 
-function targetDirectoryEvidence(descriptor, sessionCwd) {
+function targetDirectoryEvidence(descriptor, sessionCwd, identityCache = null) {
   const requested = String(descriptor?.requested || "").trim();
   if (!path.isAbsolute(requested)) return null;
   try {
@@ -247,7 +247,10 @@ function targetDirectoryEvidence(descriptor, sessionCwd) {
       // governed denial into the opaque invalid-target result.
       directory = canonical.canonical_anchor;
     }
-    return { source: "absolute-target", requested, canonical: fs.realpathSync(directory) };
+    const realDir = fs.realpathSync(directory);
+    const gitId = gitIdentity(realDir, identityCache);
+    const operationDir = gitId?.worktree_root || realDir;
+    return { source: "absolute-target", requested, canonical: operationDir };
   } catch (error) {
     return { source: "absolute-target", requested, canonical: null, error: error.message };
   }
@@ -344,7 +347,7 @@ export function resolveOperationScope(payload, { host = "", env = process.env } 
     if (item.error) contradictions.push({ code: "invalid-operation-cwd", source: item.source, requested: item.requested, message: item.error });
   }
   const commandCanonical = unique(commandEvidence.map((item) => item.canonical));
-  const targetEvidence = descriptors.map((descriptor) => targetDirectoryEvidence(descriptor, sessionCwd)).filter(Boolean);
+  const targetEvidence = descriptors.map((descriptor) => targetDirectoryEvidence(descriptor, sessionCwd, identityCache)).filter(Boolean);
   for (const item of targetEvidence) {
     if (item.error) contradictions.push({ code: "invalid-target", role: "path", requested: item.requested, message: item.error });
   }

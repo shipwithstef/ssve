@@ -12,6 +12,8 @@ import { hasFrameworkLearningCredit } from "../../../scripts/learning-lifecycle.
 import { candidateTreeIdentity, issueExternalReviewProvenance, listExternalReviewCycleProvenance } from "../../../scripts/lib/external-review-provenance.mjs";
 import { putObject, putRelocation, getObject } from "../../../scripts/lib/review-evidence-store.mjs";
 import { verifyReviewerEvidence } from "../../../scripts/lib/reviewer-evidence.mjs";
+import { validateReceipt as checkChainValidateReceipt } from "../../../scripts/check-chain-receipts.mjs";
+import { assertCurrentExecution, readHistoricalReceipt } from "../../../scripts/lib/receipt-issuance-epoch.mjs";
 
 const frameworkRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const sha = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
@@ -208,8 +210,9 @@ for (const mutate of [
 }
 const certEmitted = spawnSync(process.execPath, [path.join(frameworkRoot, "scripts/emit-receipt.mjs"), "--type", "review-plan", "--wi", certWi, "--sha", candidateSha, "--no-note"], { cwd: temp, input: JSON.stringify(certBuiltBody), encoding: "utf8" });
 assert.equal(certEmitted.status, 0, certEmitted.stderr);
-// The plan scaffold is historical schema1; the reviewed receipt under test is
-// the actual schema3 emitter output. Exercise the checker, not just its library.
+// Historical schema1 plan is an OFFLINE synthetic fixture only. Current execution
+// requires a sealed v5 (or pinned bootstrap v4). Exercise the checker's review-plan
+// validator directly so certification tamper is not masked by the seal/epoch gate.
 const certMirror = path.join(temp, ".svc/receipts", candidateSha.slice(0, 7));
 fs.writeFileSync(path.join(certMirror, "plan-manifest.json"), JSON.stringify({ receipt_type: "plan-manifest", schema_version: 1, wi: certWi, mode: "inline", scope: {}, dependencies: [], decision_trace: [], task_graph: [], validation_plan: [], risk_rollback: {}, timestamp: "2026-09-02T00:00:00.000Z", execution_command_sequence: [] }));
 const publishCertFixture = review => {
@@ -220,12 +223,35 @@ const publishCertFixture = review => {
   execFileSync("git", ["-C", temp, "notes", "--ref=svc-receipts", "add", "-f", "-m", JSON.stringify(envelope), candidateSha], { stdio: "pipe" });
 };
 publishCertFixture(JSON.parse(fs.readFileSync(path.join(certMirror, "review-plan.json"))));
-const certChain = () => spawnSync(process.execPath, [path.join(frameworkRoot, "scripts/check-chain-receipts.mjs"), "--sha", candidateSha, "--wi", certWi, "--consumer", "stop", "--expected-stage", "review-plan"], { cwd: temp, encoding: "utf8" });
-const certChainResult = certChain(); assert.equal(certChainResult.status, 0, certChainResult.stdout + certChainResult.stderr);
 const certMirrorPath = path.join(certMirror, "review-plan.json");
 const emittedBody = JSON.parse(fs.readFileSync(certMirrorPath));
 const tamperedBody = structuredClone(emittedBody); tamperedBody.reviewer_evidence.bounded_exit.certification_failure_census[0].key = "tampered";
-publishCertFixture(tamperedBody); assert.notEqual(certChain().status, 0, "checker must reject altered certification binding");
+const previousCwd = process.cwd();
+process.chdir(temp);
+try {
+  const goodCheck = checkChainValidateReceipt("review-plan", emittedBody, candidateSha);
+  assert.equal(goodCheck.valid, true, `checker must accept genuine bounded-exit review evidence: ${goodCheck.reasons.join("; ")}`);
+  const tamperCheck = checkChainValidateReceipt("review-plan", tamperedBody, candidateSha);
+  assert.equal(tamperCheck.valid, false, "checker must reject altered certification binding");
+} finally {
+  process.chdir(previousCwd);
+}
+const historicalPlan = JSON.parse(fs.readFileSync(path.join(certMirror, "plan-manifest.json")));
+const historical = readHistoricalReceipt({ consumerRoot: temp, commitSha: candidateSha, receiptType: "plan-manifest", wi: certWi });
+assert.equal(historical.executable, false, "historical plan fixture is not current execution");
+assert.equal(historical.kind, "historical");
+assert.throws(() => assertCurrentExecution({
+  consumerRoot: temp,
+  body: historicalPlan,
+  planBytes: Buffer.from(JSON.stringify(historicalPlan)),
+  manifestPath: "docs/plans/two-box-transmutation/manifest.md",
+}), /schema_version 5|bootstrap|issuance|seal|authority/);
+const certChain = () => spawnSync(process.execPath, [path.join(frameworkRoot, "scripts/check-chain-receipts.mjs"), "--sha", candidateSha, "--wi", certWi, "--consumer", "stop", "--expected-stage", "review-plan"], { cwd: temp, encoding: "utf8" });
+const certChainResult = certChain();
+assert.notEqual(certChainResult.status, 0, "active stop/review-plan consumer must not grant current execution from a historical plan");
+assert.match(`${certChainResult.stdout}\n${certChainResult.stderr}`, /current plan execution/);
+publishCertFixture(tamperedBody);
+assert.notEqual(certChain().status, 0, "active gate remains closed on tampered certification plus historical plan");
 publishCertFixture(emittedBody);
 assert.deepEqual(certRounds.map(row => [artifact(row.receiptPath).sha256, artifact(row.output).sha256]), certRawHashes, "adjudication never rewrites signed reviewer artifacts");
 

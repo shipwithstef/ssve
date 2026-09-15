@@ -9,16 +9,19 @@
 #       reimplemented).
 #
 # The contract under test:
-#   - dispatch mode (mode:dispatch OR mode ABSENT) WITHOUT changeset_blueprints -> REJECT
-#   - inline   mode (mode:inline)                  WITHOUT changeset_blueprints -> ACCEPT
-#   - dispatch mode WITH blueprints                                            -> ACCEPT
-# The absent-mode case is the load-bearing one: it must fail closed to dispatch
-# semantics so WI-347's hard requirement is never silently relaxed (a vacuous
-# `properties` constraint would fail OPEN — the regression this validator guards).
+#   Layer A (JSON Schema): dispatch/absent without blueprints REJECT; inline without
+#   blueprints ACCEPT; dispatch with blueprints ACCEPT. These schema cases are the
+#   pure WI-386 blueprint contract and must not be skipped.
+#   Layer B (emit-receipt): fabricated v3 plan-manifests are not current issuance.
+#   Absent-mode without blueprints must exit nonzero for current epoch/seal/authority
+#   OR missing changeset_blueprints, and must not write a receipt. Inline without
+#   blueprints must not be rejected on blueprint grounds; current epoch still refuses
+#   to issue the legacy body.
+# The absent-mode schema case is the load-bearing WI-347 fail-closed.
 #
 # Hermetic: no network, no LLM, no real receipts/notes. Layer B runs emit-receipt in a
-# throwaway empty git repo (HOME + cwd redirected) so the real code path executes with
-# zero side effects on this worktree. Expected runtime < 5s.
+# throwaway empty git repo (cwd redirected; no HOME override) so the real code path
+# executes with zero side effects on this worktree. Expected runtime < 5s.
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
@@ -159,30 +162,41 @@ PY
 # reaches the verdict hermetically.
 run_layer_b() {
   local body="$1" outfile="$2"
-  ( cd "$SANDBOX" && HOME="$SANDBOX" node "$EMIT" --type plan-manifest --wi WI-386 < "$body" ) >"$outfile" 2>&1
+  ( cd "$SANDBOX" && node "$EMIT" --type plan-manifest --wi WI-386 < "$body" ) >"$outfile" 2>&1
   return $?
 }
 
-# Case B1: dispatch (mode ABSENT), no blueprints -> emitter MUST reject (exit != 0, blueprint reason)
+layer_b_wrote_receipt() {
+  find "$SANDBOX" -path '*/.svc/receipts/*' -name '*.json' 2>/dev/null | grep -q .
+}
+
+# Case B1: dispatch (mode ABSENT), no blueprints -> emitter MUST reject (exit != 0)
+# for current epoch/seal/authority OR missing changeset_blueprints, and write nothing.
 run_layer_b "$TMP_DIR/b_dispatch_absent_no_bp.json" "$TMP_DIR/b1.out"; rc=$?
-if [[ $rc -ne 0 ]] && grep -q "changeset_blueprints" "$TMP_DIR/b1.out"; then
+if [[ $rc -ne 0 ]] && ! layer_b_wrote_receipt && grep -Eq "changeset_blueprints|schema_version 5|issuance|authority|bootstrap|seal|plan-authority" "$TMP_DIR/b1.out"; then
   ok
 else
-  bad "chain engine FAIL-OPEN: absent-mode receipt without blueprints was NOT rejected (rc=$rc). Output: $(tr '\n' ' ' < "$TMP_DIR/b1.out" | head -c 300)"
+  bad "chain engine FAIL-OPEN: absent-mode receipt without blueprints was NOT rejected (rc=$rc) or a receipt was written. Output: $(tr '\n' ' ' < "$TMP_DIR/b1.out" | head -c 300)"
 fi
 
-# Case B2: inline, no blueprints -> emitter MUST NOT reject on blueprint grounds.
+# Case B2: inline, no blueprints -> MUST NOT reject on blueprint grounds.
+# Current epoch still refuses to issue a legacy v3 plan; that is not WI-386 over-strict.
 run_layer_b "$TMP_DIR/b_inline_no_bp.json" "$TMP_DIR/b2.out"; rc=$?
 if grep -q "changeset_blueprints" "$TMP_DIR/b2.out"; then
   bad "chain engine over-strict: inline receipt rejected for missing blueprints (WI-386 should exempt it). Output: $(tr '\n' ' ' < "$TMP_DIR/b2.out" | head -c 300)"
+elif [[ $rc -eq 0 ]] || layer_b_wrote_receipt || ! grep -Eq "schema_version 5|issuance|authority|bootstrap|seal|plan-authority" "$TMP_DIR/b2.out"; then
+  bad "chain engine FAIL-OPEN: inline v3 plan was issued, a receipt was written, or reject was not current epoch/seal. Output: $(tr '\n' ' ' < "$TMP_DIR/b2.out" | head -c 300)"
 else
   ok
 fi
 
-# Case B3: dispatch WITH blueprints -> emitter MUST NOT reject on blueprint grounds.
+# Case B3: dispatch WITH blueprints -> MUST NOT reject on blueprint grounds.
+# Current epoch still refuses to issue a legacy v3 plan; that is not WI-386 over-strict.
 run_layer_b "$TMP_DIR/b_dispatch_with_bp.json" "$TMP_DIR/b3.out"; rc=$?
 if grep -q "changeset_blueprints" "$TMP_DIR/b3.out"; then
   bad "chain engine over-strict: dispatch receipt WITH blueprints flagged for missing blueprints. Output: $(tr '\n' ' ' < "$TMP_DIR/b3.out" | head -c 300)"
+elif [[ $rc -eq 0 ]] || layer_b_wrote_receipt || ! grep -Eq "schema_version 5|issuance|authority|bootstrap|seal|plan-authority" "$TMP_DIR/b3.out"; then
+  bad "chain engine FAIL-OPEN: dispatch v3 plan was issued, a receipt was written, or reject was not current epoch/seal. Output: $(tr '\n' ' ' < "$TMP_DIR/b3.out" | head -c 300)"
 else
   ok
 fi

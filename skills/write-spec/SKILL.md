@@ -151,7 +151,7 @@ Brownfield: also read `project-state.md` + open WIs; reuse a WI's framing when i
 | Spec exists but ACs are weak/missing | `audit-ac` (can run standalone) |
 | Dependency queue approved | Run this skill again for each queued spec |
 
-**Auto-invoke:** Layer 3 surfacing marketing-worthy differentiators → insert `analyze-marketing` before design-ux handoff; unknown domain concept/API → inline `research`. Update lane-tasks with `blocked_by` + log a `mechanical` decision.
+**Auto-invoke:** Layer 3 surfacing marketing-worthy differentiators → insert `analyze-marketing` before design-ux handoff. For an unknown domain concept/API, call `researchDecision(question)` from `scripts/lib/research-decision.mjs` and insert `research` only when it returns `external_research_required`. Bind `requesting_decision_id` and `requesting_task_id`; reuse a matching existing task on the same decision ID; keep the requester blocked while unresolved; a changed claim invalidates only that claim's old proof. Missing ordinary confidence is analysis. Update lane-tasks with `blocked_by` + log a `mechanical` decision.
 
 ## Audit Mode
 

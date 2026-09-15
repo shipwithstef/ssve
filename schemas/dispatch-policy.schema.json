@@ -48,12 +48,51 @@
     "fallback": {
       "$ref": "#/$defs/station"
     },
+    "planning_transport": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pre_content_retry": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "max_classified_spawn_retries": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "retry_class": {
+              "const": "pre_content_spawn_failure"
+            }
+          }
+        }
+      }
+    },
     "modes": {
       "type": "object",
       "minProperties": 1,
       "additionalProperties": {
         "type": "object",
-        "additionalProperties": true
+        "additionalProperties": true,
+        "properties": {
+          "labels": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "roles": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/$defs/role_route"
+            }
+          },
+          "review": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
       }
     },
     "resource_policy": {
@@ -73,6 +112,55 @@
     }
   },
   "$defs": {
+    "named_planning_role": {
+      "type": "string",
+      "enum": [
+        "open_box",
+        "contract_box",
+        "assessor",
+        "scout_forward",
+        "scout_reverse"
+      ]
+    },
+    "role_route": {
+      "type": "object",
+      "minProperties": 1,
+      "properties": {
+        "tuple": {
+          "$ref": "#/$defs/tuple"
+        },
+        "host": {
+          "type": "string",
+          "minLength": 1
+        },
+        "family": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "effort": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+            "provider-managed"
+          ]
+        },
+        "native": {
+          "type": "string",
+          "minLength": 1
+        },
+        "thinking": true,
+        "invocation": true
+      },
+      "additionalProperties": true
+    },
     "tuple": {
       "type": "object",
       "required": [

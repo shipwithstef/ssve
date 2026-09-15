@@ -4,6 +4,15 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { writeJsonAtomic } from "./state-io.mjs";
 import { injectMandatoryDeliveryChain, validateMandatoryDeliveryChain } from "./lib/mandatory-delivery-chain.mjs";
+import {
+  EXTERNAL_RESEARCH_REQUIRED,
+  RESOLVED,
+  collectResearchQuestions,
+  matchingResearchTask,
+  reevaluateQuestion,
+  researchDecision,
+  researchInputMatches,
+} from "./lib/research-decision.mjs";
 
 const EVIDENCE_FAMILIES = [
   "product",
@@ -182,13 +191,19 @@ function normalizeSolutionConfidence(input, wi, riskFlags) {
   };
 }
 
-function conditionalInsertions({ changeType, riskFlags, platformContracts, solutionConfidence }) {
+function conditionalInsertions({ changeType, riskFlags, platformContracts, solutionConfidence, researchInsertions = [] }) {
   const out = [];
   const add = (skill, signal, reason, metadata = {}) => out.push({ skill, signal, reason, ...metadata });
   const has = (flag) => riskFlags.includes(flag);
   const featureCloseout = isUserOrAdminFacingFeature({ changeType, riskFlags });
+  for (const insertion of researchInsertions) {
+    add("research", "external-research-required", insertion.reason, {
+      before: insertion.before || "design-tech",
+      requesting_decision_id: insertion.requesting_decision_id,
+      question_id: insertion.question_id,
+    });
+  }
   if (solutionConfidence.required) {
-    add("research", "solution-confidence", "Solution confidence requires sourced world/provider grounding before design closes.", { before: "design-tech" });
     if (has("cost") || has("cache") || has("paid-provider") || has("metered-platform") || has("base44-platform")) {
       add("manage-finops", "solution-confidence-cost-cache", "Cost/cache-sensitive solution confidence requires explicit cost modeling.", { before: "design-tech" });
     }
@@ -312,7 +327,13 @@ function buildTaskSteps(baseSkills, conditionals) {
     steps.splice(planIndex, 0, entry);
   };
   const insertRelative = (entry) => {
-    const existingIndex = steps.findIndex((step) => step.skill === entry.skill);
+    const existingIndex = steps.findIndex((step) => {
+      if (step.skill !== entry.skill) return false;
+      if (entry.skill === "research") {
+        return String(step.requesting_decision_id || "") === String(entry.requesting_decision_id || "");
+      }
+      return true;
+    });
     if (existingIndex !== -1) {
       steps[existingIndex] = { ...steps[existingIndex], ...entry, source: steps[existingIndex].source };
       return;
@@ -376,6 +397,8 @@ function taskList(steps, solutionConfidence) {
       ...(step.mode ? { mode: step.mode } : {}),
       ...(step.signal ? { signal: step.signal } : {}),
       ...(step.required_process_steps ? { required_process_steps: step.required_process_steps } : {}),
+      ...(step.requesting_decision_id ? { requesting_decision_id: step.requesting_decision_id } : {}),
+      ...(step.question_id ? { question_id: step.question_id } : {}),
     },
   }));
   if (solutionConfidence.required) {
@@ -411,6 +434,123 @@ function taskList(steps, solutionConfidence) {
   return tasks;
 }
 
+function taskMatchKey(task) {
+  const skill = task?.metadata?.skill || task?.skill || "";
+  if (skill === "research") return "research:" + String(task.metadata?.requesting_decision_id || "");
+  return skill + ":" + String(task.metadata?.mode || "");
+}
+
+function applyExistingGraph(tasks, existingGraph) {
+  const existing = Array.isArray(existingGraph?.tasks) ? existingGraph.tasks : [];
+  if (!existing.length) return tasks;
+  const reserved = new Set();
+  const queues = new Map();
+  for (const task of existing) {
+    if (!Number.isInteger(task.id) || task.id < 1 || reserved.has(task.id)) throw new Error("invalid existing task identity");
+    reserved.add(task.id);
+    const key = taskMatchKey(task);
+    if (!queues.has(key)) queues.set(key, []);
+    queues.get(key).push(task);
+  }
+  let nextId = Math.max(...reserved) + 1;
+  const remap = new Map(), matched = new Set(), pairs = [];
+  for (const task of tasks) {
+    const prev = queues.get(taskMatchKey(task))?.shift();
+    const id = prev ? prev.id : nextId++;
+    remap.set(task.id, id);
+    if (prev) matched.add(prev.id);
+    const clone = {
+      ...structuredClone(prev || {}), ...task, id,
+      status: prev?.status || task.status,
+      metadata: { ...structuredClone(prev?.metadata || {}), ...task.metadata },
+    };
+    if (task.metadata?.solution_confidence_mode) {
+      for (const flag of ["solution_confidence_waits_for_approval", "solution_confidence_intake_stop"]) {
+        if (!task.metadata[flag]) {
+          delete clone.metadata[flag];
+          if (prev?.metadata?.[flag] && clone.status === "blocked") clone.status = "pending";
+        }
+      }
+    }
+    pairs.push({ task, prev, clone });
+  }
+  const out = pairs.map(({ task, prev, clone }) => {
+    const required = (task.blocked_by || []).map(id => remap.get(id));
+    clone.blocked_by = prev?.status === "completed"
+      ? [...(prev.blocked_by || [])]
+      : [...new Set([...(prev?.blocked_by || []), ...required])];
+    return clone;
+  });
+  for (const prev of existing) {
+    if (matched.has(prev.id)) continue;
+    // Retain completed evidence and unrelated work. Unstarted research that is
+    // no longer needed is archived separately, never marked completed.
+    if ((prev.metadata?.skill || prev.skill) === "research" && prev.status !== "completed") continue;
+    out.push(structuredClone(prev));
+  }
+  const ids = new Set(out.map(task => task.id));
+  const retired = new Set(existing.filter(task => !ids.has(task.id)).map(task => task.id));
+  for (const task of out) task.blocked_by = (task.blocked_by || []).filter(id => !retired.has(id));
+  return out;
+}
+
+function attachResearchRequestors(tasks, questions) {
+  const defaultRequestor = tasks.find(task => task.metadata?.skill === "design-tech")
+    || tasks.find(task => task.metadata?.skill === "explore-solutions")
+    || tasks.find(task => task.metadata?.skill === "plan-changeset");
+  const touched = new Set();
+  for (const task of tasks) {
+    if (task.metadata?.research_waits_for_decisions) {
+      task.metadata.research_waits_for_decisions = [];
+      touched.add(task);
+    }
+  }
+  for (const task of tasks) {
+    if (task.metadata?.skill !== "research") continue;
+    const question = questions.find(item => item.id === task.metadata.requesting_decision_id);
+    const requestedId = question?.requesting_task_id ?? task.metadata.requesting_task_id;
+    const requestor = requestedId != null ? tasks.find(item => item.id === requestedId)
+      : question?.requesting_skill ? tasks.find(item => item.metadata?.skill === question.requesting_skill) : defaultRequestor;
+    if (!requestor || requestor === task) throw new Error("research has no valid requesting task");
+    task.metadata.requesting_task_id = requestor.id;
+    if (task.status === "completed" && !researchInputMatches(question, task) && researchDecision(question) === EXTERNAL_RESEARCH_REQUIRED) {
+      const archived = structuredClone(task);
+      delete archived.metadata.research_history;
+      task.metadata.research_history = [...(task.metadata.research_history || []), archived];
+      for (const key of ["skill_receipt", "phase_receipts", "completed_at", "started_at", "process_tasks"]) delete task[key];
+      for (const key of ["observed_evidence", "observed_confidence", "fulfilled_scope"]) delete task.metadata[key];
+      task.metadata.research_trigger_question = structuredClone(question);
+      task.status = "pending";
+    }
+    if (!task.metadata.research_trigger_question && researchDecision(question) === EXTERNAL_RESEARCH_REQUIRED) {
+      task.metadata.research_trigger_question = structuredClone(question);
+    }
+    const decision = researchDecision(reevaluateQuestion(question, task));
+    touched.add(requestor);
+    requestor.metadata.research_waits_for_decisions ||= [];
+    if (decision !== RESOLVED) {
+      if (!Object.hasOwn(requestor.metadata, "research_previous_status")) requestor.metadata.research_previous_status = requestor.status;
+      requestor.metadata.research_waits_for_decisions.push(question?.id || task.metadata.requesting_decision_id);
+      requestor.metadata.research_next_action = decision;
+      if (!requestor.blocked_by.includes(task.id)) requestor.blocked_by.push(task.id);
+      requestor.status = "blocked";
+    } else if (task.status === "completed") {
+      requestor.blocked_by = requestor.blocked_by.filter(id => id !== task.id);
+    }
+  }
+  for (const task of touched) {
+    if (task.metadata.research_waits_for_decisions.length) continue;
+    const prior = task.metadata.research_previous_status;
+    if (prior && task.status === "blocked" && !task.metadata.solution_confidence_waits_for_approval && !task.metadata.solution_confidence_intake_stop) {
+      task.status = prior === "completed" ? "pending" : prior;
+    }
+    delete task.metadata.research_waits_for_decisions;
+    delete task.metadata.research_previous_status;
+    delete task.metadata.research_next_action;
+  }
+  return tasks;
+}
+
 export function compileDeliveryGraph(input) {
   const wi = requireString(input.wi, "wi");
   const lane = requireString(input.lane, "lane");
@@ -423,7 +563,25 @@ export function compileDeliveryGraph(input) {
   const platformContracts = unique(list(input.platform_contracts));
   const solutionConfidence = normalizeSolutionConfidence(input, wi, riskFlags);
   const compression = normalizeCompression(input);
-  const conditionals = conditionalInsertions({ changeType, riskFlags, platformContracts, solutionConfidence });
+  const existingGraph = input.existing_graph && typeof input.existing_graph === "object" ? input.existing_graph : null;
+  if (existingGraph && (existingGraph.wi !== wi || existingGraph.lane !== lane)) throw new Error("existing graph has a different WI/lane identity");
+  const questions = collectResearchQuestions(input);
+  const existingTasks = Array.isArray(existingGraph?.tasks) ? existingGraph.tasks : [];
+  const researchInsertions = [];
+  if (solutionConfidence.mode !== "intake_only") {
+    for (const question of questions) {
+      const working = reevaluateQuestion(question, matchingResearchTask(existingTasks, question.id));
+      if (researchDecision(working) !== EXTERNAL_RESEARCH_REQUIRED) continue;
+      if (typeof question.id !== "string" || question.id.trim() === "") continue;
+      researchInsertions.push({
+        requesting_decision_id: question.id,
+        question_id: question.id,
+        before: question.requesting_skill || existingTasks.find(task => task.id === question.requesting_task_id)?.metadata?.skill || "design-tech",
+        reason: "researchDecision returned external_research_required for " + question.id,
+      });
+    }
+  }
+  const conditionals = conditionalInsertions({ changeType, riskFlags, platformContracts, solutionConfidence, researchInsertions });
   const requiredSkills = unique([...laneSkills, ...conditionals.map((item) => item.skill)]);
   const requiredSteps = buildTaskSteps(laneSkills, conditionals);
   const chainValidation = validateMandatoryDeliveryChain(requiredSteps.map((step) => step.skill));
@@ -449,6 +607,7 @@ export function compileDeliveryGraph(input) {
     planned_files: plannedFiles,
     platform_contracts: platformContracts,
     solution_confidence: solutionConfidence,
+    research: { questions },
     compression,
     evidence_families: evidenceFamilies,
     required_skills: requiredSkills,
@@ -461,23 +620,30 @@ export function compileDeliveryGraph(input) {
       production: evidenceFamilies.deploy === "required" ? ["platform-deploy-verification"] : [],
     },
     mutation_history: [
+      ...(existingGraph?.delivery_graph?.mutation_history || []),
       {
         ts: new Date().toISOString(),
         source: "route-workflow",
-        action: "initial_compile",
+        action: existingGraph ? "resume_compile" : "initial_compile",
         reason: "Compiled delivery graph at lane entry before downstream mutation.",
       },
     ],
     closeout_classification_required: true,
   };
 
+  const tasks = attachResearchRequestors(applyExistingGraph(taskList(requiredSteps, solutionConfidence), existingGraph), questions);
+  const superseded = [...(existingGraph?.delivery_graph?.research?.superseded_tasks || []),
+    ...existingTasks.filter(task => !tasks.some(current => current.id === task.id)).map(task => ({
+      task: structuredClone(task), disposition: "research no longer required; no completion receipt issued",
+    }))];
+  deliveryGraph.research.superseded_tasks = [...new Map(superseded.map(row => [JSON.stringify(row), row])).values()];
   return {
     wi,
     lane,
-    created: new Date().toISOString(),
-    status: "pending",
+    created: existingGraph?.created || new Date().toISOString(),
+    status: existingGraph?.status === "completed" && tasks.some(task => task.status !== "completed") ? "in_progress" : existingGraph?.status || "pending",
     delivery_graph: deliveryGraph,
-    tasks: taskList(requiredSteps, solutionConfidence),
+    tasks,
   };
 }
 

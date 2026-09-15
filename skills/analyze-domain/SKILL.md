@@ -125,10 +125,10 @@ For each area, rate your confidence: high / medium / low.
 - **Medium confidence:** Recent versions, evolving best practices, niche domains
 - **Low confidence:** Brand-new frameworks, industry-specific regulations, regional conventions
 
-For low-confidence areas:
-1. Invoke the `research` skill with the specific question
+For low-confidence areas, build a question record and call `researchDecision(question)` from `scripts/lib/research-decision.mjs`. Missing ordinary confidence is analysis. External research only when the predicate returns `external_research_required`. Bind `requesting_decision_id` and `requesting_task_id`; reuse a matching existing task on the same decision ID; keep the requester blocked while unresolved; a changed claim invalidates only that claim's old proof.
+1. If `external_research_required`, invoke `research` for that question
 2. If research reveals a framework/library gap, invoke `discover-skills` to check for external skills
-3. Log all findings to `docs/specs/research-log.md`
+3. Log findings to `docs/specs/research-log.md` when research ran; otherwise record the analysis gap in Knowledge Gaps
 
 **Step 5: Write domain profile**
 
@@ -221,7 +221,7 @@ When another skill calls analyze-domain with a specific question:
 
 1. Read the existing `docs/specs/domain-profile.md`
 2. If the answer is in the profile: return it immediately
-3. If not: invoke `research` skill, update the domain profile with the finding, return the answer
+3. If not: analyze locally; invoke `research` only when `researchDecision(question)` returns `external_research_required`, then update the domain profile with the finding and return the answer
 4. If research reveals a capability gap: invoke `discover-skills` to check for external skills
 
 ### Update Mode (existing domain-profile.md)
@@ -231,20 +231,20 @@ When invoked on a project that already has a domain profile:
 1. Read the existing profile
 2. Check if tech stack has changed (compare package.json against profile's Tech Stack)
 3. Check if vision has evolved (compare vision.md against profile's Industry/Domain)
-4. If changes detected: update the profile, research new areas
+4. If changes detected: update the profile; run `researchDecision` per new-area question and research only when `external_research_required`
 5. If no changes: report "domain profile is current"
 
 ## Auto Mode vs Guided Mode
 
 **Auto mode** (`--progressive --auto-approve`):
 - Extracts domain signals silently
-- Researches gaps without asking
+- Resolves gaps with analysis; researches only when the predicate requires it, without asking
 - Creates domain profile and reference packs
 - Chains to analyze-competitors
 
 **Guided mode** (standalone or `--progressive`):
 - Presents extracted domain signals: "I see this as a [sector] product using [stack]. Sound right?"
-- For each knowledge gap: "I'm not confident about [X]. Let me research."
+- For each knowledge gap: "I'm not confident about [X]." Analyze first; research only if `researchDecision` returns `external_research_required`.
 - Presents findings with recommendations
 - User can correct domain classification, add context, or skip research
 
@@ -254,7 +254,7 @@ Based on signals detected during domain analysis, conditionally insert these ski
 
 | Signal | Skill | Insertion Point | Why |
 |--------|-------|-----------------|-----|
-| Knowledge gap exists after checking Layer 2 and stored domain-profile has no answer | `research` | Inline before the analysis step that needs the gap filled | Prevents domain classification based on stale or incomplete knowledge |
+| After Layer 2 and domain-profile, `researchDecision(question)` returns `external_research_required` | `research` | Inline before the requesting analysis step; reuse matching decision ID | Predicate-required external evidence; missing score stays analysis |
 | Capability gap discovered that an external skill could fill | `discover-skills` | After research completes, before returning domain profile | Ensures capability inventory is complete before downstream work |
 
 If any on-demand skill is inserted, update `.svc/lane-tasks-<WI>.json` with the new task and set `blocked_by` so downstream work waits for the on-demand skill's output. Log the insertion as a `mechanical` decision in `.svc/pipeline-decisions.jsonl`.
@@ -281,7 +281,7 @@ If no external research is needed, record `P4-GapResolution` against the
 |---|-------|-----|-----------|
 | 1 | `docs/specs/domain-profile.md` exists | `test -f docs/specs/domain-profile.md` | |
 | 2 | Profile has Industry and Tech Stack | grep for both sections | |
-| 3 | Low-confidence areas were researched | Knowledge Gaps section present | |
+| 3 | Low-confidence areas evaluated with `researchDecision`; research only if `external_research_required` | Knowledge Gaps section present | |
 | 4 | Domain reference pack created if warranted | check references/domains/ | |
 | 5 | Knowledge protocol conformance | Library checked first, project artifact written, knowledge persisted, .version updated | |
 

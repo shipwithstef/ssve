@@ -551,7 +551,7 @@ export function recoverController({ stateRoot, repoId, wi, principal, reason, wo
     const lease = assertLease(readJson(paths.lease, { required: true }), { repoId, wi });
     if (lease.state !== "active") throw new Error("controller lease is not active");
     const ownerAlive = processIsAlive(lease.owner_process);
-    if (evidence.owner_live === true || ownerAlive === true) throw new Error("a provably live owner cannot be displaced");
+    if (evidence.owner_live === true || ownerAlive === true) throw new Error("controller authority conflict: a provably live owner cannot be displaced");
     const expired = evidence.expired === true && Date.parse(lease.expires_at) <= now;
     const sameHostDead = evidence.same_host_dead === true && ownerAlive === false;
     if (!expired && !sameHostDead) throw new Error("recovery requires positive dead-owner evidence or lease expiry");

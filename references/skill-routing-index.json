@@ -63,7 +63,7 @@
     {
       "skill": "analyze-domain",
       "path": "skills/analyze-domain/SKILL.md",
-      "content_hash": "bb27c141bd0824ad5004f86544ea192c2b34da8a5984f4402c23b93d828e5b52",
+      "content_hash": "ffe9941baaf1b6c5a14861c5145bc71c6099bdb90a387387d6b77a7e2ee324e1",
       "description": "Identify and build domain expertise for the project. Reads vision to determine industry, tech stack, and domain. Loads or creates stack convention packs. In identify mode, produces docs/specs/domain-profile.md. In research mode, resolves domain questions for other skills. Use when: \"what domain is this\", \"domain expertise\", \"what do I need to know about this space\", \"industry context\", or automatically after write-vision in progressive mode. Also invoked by other skills when they need domain-specific knowledge beyond what training data provides.",
       "aliases": [],
       "positive_triggers": [],
@@ -279,8 +279,8 @@
     {
       "skill": "blind-control-plan",
       "path": "skills/blind-control-plan/SKILL.md",
-      "content_hash": "8b22a7d080aab81d62f76803d8bbd174fd889a9f4b804986482ec2342b73a899",
-      "description": "Best-of-2 retention floor that proves the framework plan is never worse than a bare-model \"blind\" plan. Generates a context-starved blind plan B, deterministically diffs it against the framework plan F, and — when F silently removes or weakens a correct B-element without an independent cross-family judge certifying a strict improvement — ships B verbatim (floor_verdict=blind-adopted). Emits a control-plan ROI receipt. v1 is WARN/shadow, default OFF (armed via .svc/chain-policy.json dual_track:\"measured\"); it is a gate, not a pipeline step. Use between plan-changeset and review-plan on infra-path + M+ plans when dual-track is armed. WI-410.",
+      "content_hash": "0df473aa0adcd7d4a811195c1de675af76e29c6ec754be1edd21d714bebf5af3",
+      "description": "Canonical Two-Box Planning entry for current substantive work (skill id remains blind-control-plan). Use between plan-changeset and review-plan when live-recomputed staged eligibility is not accepted. Independent Open and Contract boxes, Contract-only exactly two scouts, distinct original and revised Contract, grounded assessor, complete conversion before review-plan, and a separate seal after. Triggers: two-box, two-box planning, blind-control-plan, control-plan v2, runTwoBox. Legacy v1 F>=B floor helpers are historical inspection only and never grant current execution.",
       "aliases": [],
       "positive_triggers": [],
       "negative_triggers": [],
@@ -549,7 +549,7 @@
     {
       "skill": "design-tech",
       "path": "skills/design-tech/SKILL.md",
-      "content_hash": "469836306b41d40de0611302c757f568918e2cb6bcef957f8cf827d5f414ad6a",
+      "content_hash": "6728402b62544d16b64deb284381ad647c1028e7b99b23e744dad7d1fb25610b",
       "description": "Use when you have a DESIGNED feature spec (after UX and UI design) and need to define architecture, tech choices, and component design before implementation",
       "aliases": [
         "technical design",
@@ -753,7 +753,7 @@
     {
       "skill": "execute-changeset",
       "path": "skills/execute-changeset/SKILL.md",
-      "content_hash": "7c460371c77cfa8e486e5eaa832a9c297fcabec4d9021209ab751cb91047d4b4",
+      "content_hash": "74a55ebd96a4a2d0da61c3668a76fde65b506dc3dc2a8f5dcc2a54a0e0810683",
       "description": "Use after plan-changeset has produced a manifest and task graph. Triggers on \"execute the plan\", \"implement the changeset\", \"run the tasks\", \"start building\", or when a plan-changeset manifest exists and is ready for execution.",
       "aliases": [],
       "positive_triggers": [],
@@ -771,7 +771,7 @@
     {
       "skill": "explore-solutions",
       "path": "skills/explore-solutions/SKILL.md",
-      "content_hash": "a8cd5d86f38e390d8261cedc365232f18b75e38c9774b051bde0221966647bb9",
+      "content_hash": "a0ce3fe23bf94b03616694c0433435a5ad83d2b391beb8858af15565f0ec6081",
       "description": "Use after design-tech to challenge the chosen approach with alternative paradigms and evidence-based comparison. Triggers on \"explore alternatives\", \"is this the best approach\", \"compare options\", \"solution exploration\", \"challenge the design\", or when technical design has high-stakes decisions (new data model, new external dependency, hard-to-reverse architecture). Runs automatically in progressive mode after tech design. Can be skipped when a bootstrap template covers the paradigm.",
       "aliases": [],
       "positive_triggers": [],
@@ -1110,7 +1110,7 @@
     {
       "skill": "manage-learnings",
       "path": "skills/manage-learnings/SKILL.md",
-      "content_hash": "abb559f002b7ae1295433bce223e38a85f2a18a627a0302fe52dfc7d014aa719",
+      "content_hash": "79f23716ae80a8b90a0a5855c8547015b7dfcf67407a89470371ce5da865f763",
       "description": "Manage project learnings that compound across sessions. Review, search, prune, and export what was discovered during pipeline runs. Use when \"what did we learn\", \"show learnings\", \"prune stale learnings\", \"search learnings for <topic>\", or when starting a new session to load context.",
       "aliases": [],
       "positive_triggers": [],
@@ -1236,7 +1236,7 @@
     {
       "skill": "plan-changeset",
       "path": "skills/plan-changeset/SKILL.md",
-      "content_hash": "fdbfdf8303b835e7ced6c9fa1f86ef2c661d82a49187feda1cf29d8201b07eaa",
+      "content_hash": "189c3e35f385d2bd212b7752ace97524e40cee6a04c8528a8822a095bdf99620",
       "description": "Use when you have a BASELINED feature spec with technical design and need to produce the implementation plan for branch-first execution — task graph, file set, validation plan, checkpoints, and AC/test mapping",
       "aliases": [],
       "positive_triggers": [],
@@ -1380,8 +1380,8 @@
     {
       "skill": "recall-stack-knowledge",
       "path": "skills/recall-stack-knowledge/SKILL.md",
-      "content_hash": "df0cdc5dfe84e6fbfc595a058da1d8b18aacda7871031651183671d2498a3837",
-      "description": "Knowledge Spine recall gate — reads stack-profile.md and the calling skill's requires_topics[], injects the minimal knowledge slice (domains, specs, learnings, decisions), logs to .svc/knowledge-recall.jsonl; a 0-hit on a declared topic fails with a knowledge-gap signal feeding the research auto-loop. Use when: \"what do I need to know\" before touching a known stack/provider.",
+      "content_hash": "e269bb7e7193c21fbd489528bd8a508643ff46ee0d1790609b5975867f5ce213",
+      "description": "Knowledge Spine recall gate — reads stack-profile.md and the calling skill's requires_topics[], injects the minimal knowledge slice (domains, specs, learnings, decisions), logs to .svc/knowledge-recall.jsonl; a 0-hit on a declared topic is a knowledge-gap analysis signal, not an automatic research spawn. Use when: \"what do I need to know\" before touching a known stack/provider.",
       "aliases": [],
       "positive_triggers": [],
       "negative_triggers": [],
@@ -1416,8 +1416,8 @@
     {
       "skill": "research",
       "path": "skills/research/SKILL.md",
-      "content_hash": "98955474f820ec276bb4cf0def70ed6d1496b94209faf2bf79169223807a53af",
-      "description": "On-demand, lightweight in-flow research when a skill or workflow encounters uncertainty about an API, library, framework version, pattern, or domain concept. Discovers via GitHub + package registries FIRST, then vendor docs, then WebSearch last; tiers source credibility and triangulates load-bearing claims across ≥2 independent sources; date-bounds volatile facts; reads/writes per-domain source heuristics; hands off multi-source / high-stakes / contested questions to the external `deep-research` plugin. Logs findings to docs/specs/research-log.md. Use when: \"research\", \"look up\", \"find out\", \"how does X work\", \"what's the best practice for\", or when any skill declares uncertainty. Also works standalone.",
+      "content_hash": "4ab7c9d6074bea2c1ece0aa47d3c3b3d9c8a13a051e86fd60c90daab4d60a0de",
+      "description": "On-demand, lightweight in-flow research when a skill or workflow encounters uncertainty about an API, library, framework version, pattern, or domain concept. Discovers via GitHub + package registries FIRST, then vendor docs, then WebSearch last; tiers source credibility and triangulates load-bearing claims across ≥2 independent sources; date-bounds volatile facts; reads/writes per-domain source heuristics; hands off multi-source / high-stakes / contested questions to the external `deep-research` plugin. Logs findings to docs/specs/research-log.md. Use when: the user explicitly asks to \"research\", \"look up\", \"find out\", \"how does X work\", or \"what's the best practice for\" a named scope; when researchDecision(question) from scripts/lib/research-decision.mjs returns external_research_required; or for Analysis Mode extraction of a named source. Not for ordinary coding/design uncertainty, local unknowns, or a new dependency/API choice. Also works standalone.",
       "aliases": [
         "look up",
         "how does X work",
@@ -1467,7 +1467,7 @@
     {
       "skill": "review-cross-model",
       "path": "skills/review-cross-model/SKILL.md",
-      "content_hash": "ee026267c79c5648e38a0ac9f4f6c13b44149d94f084e8bdb5ba74d77e2b492d",
+      "content_hash": "4a98912c8cb4fb364ddba5f975c2b9fdda58460e875ec43488aca9f32cee11c8",
       "description": "Adversarial code review using the canonical deterministic external-review launcher. Sends diff + goals + spec to the second model, gets findings back, then Claude evaluates each finding: accept with justification or reject with justification. Back and forth until all remaining findings are medium severity max. Use when \"cross-model review\", \"second opinion\", \"codex review\", \"adversarial review\", or when `review-gate` leaves residual risk on changes involving new data models or integrations.",
       "aliases": [],
       "positive_triggers": [],
@@ -1521,7 +1521,7 @@
     {
       "skill": "review-plan",
       "path": "skills/review-plan/SKILL.md",
-      "content_hash": "037df975f3f6d904cd42f47741ca55da561014f79cbe8ace949211562217db4f",
+      "content_hash": "cc9ff711eb50dbae24554bca25a1959c0e5e4848600b29215ee7d0d82c4e0d8d",
       "description": "Plan-level adversarial review gate. Runs after plan-changeset produces a manifest + task graph and BEFORE any execute-changeset dispatch. Two gates: (1) compiled mechanical/coverage checks — free, in-session; (2) one holistic adversarial review via the canonical external-review launcher with structured findings and a tuple receipt. Corrections recheck only invalidated lenses; disputed product/security authority routes to the owner, not a second model. Iteration loop with justified accept/reject responses — same discipline on both sides. Use when: plan-changeset manifest exists and is about to be promoted. Blocks promotion until all findings have resolutions.",
       "aliases": [],
       "positive_triggers": [],
@@ -1726,7 +1726,7 @@
     {
       "skill": "svc-advisor",
       "path": "skills/svc-advisor/SKILL.md",
-      "content_hash": "04fa23588aca41a515e52bd88930c0752a09a0569922eb5a7cbe5416fff6ac42",
+      "content_hash": "e7e9d57241e7901f103609335812a3adf4f2d1d4a1640c616d9c8ce5d001b05f",
       "description": "Answer questions about the svc framework grounded in stored knowledge — not improvised. Use when the user asks \"is svc good at X?\", \"how does svc handle Y?\", \"what's missing for Z scenario?\", \"compare svc to gstack/superpowers for X\", \"is there a skill for X?\", \"what do you think about this case?\", or any question about framework quality, capability, or coverage on a specific scenario. Always invoke this before giving an opinion about the framework — your improvised answer will be weaker than what the analyzed knowledge says.",
       "aliases": [],
       "positive_triggers": [],
@@ -1888,7 +1888,7 @@
     {
       "skill": "validate-feature",
       "path": "skills/validate-feature/SKILL.md",
-      "content_hash": "07099be3b72eaa107997fd12b389d6c9f14d072042930d144bc853ec11e4cf6d",
+      "content_hash": "d027f705015f1c71d7f86c161e277f8934c736c8f787f462f61b70f595af234a",
       "description": "First stop for any new feature idea — cross-validates against personas, journeys, and specs, resolves consequential business decisions, produces a Feature Ship Brief, and routes to the right downstream skill. Use when: \"what if we built X\", \"I have a feature idea\", \"should we add\", \"validate this idea\". Also: \"new feature\", \"should we add\", \"I have a feature idea\".",
       "aliases": [],
       "positive_triggers": [],
@@ -1960,7 +1960,7 @@
     {
       "skill": "write-spec",
       "path": "skills/write-spec/SKILL.md",
-      "content_hash": "794cee998647d2a5d1d1e196d9e37afd30343ae293db7b3441b585656ad225d6",
+      "content_hash": "d4c85c538a9aa4195e648f24d4bf398774316c76fb8390c8805c6373cf977405",
       "description": "Use when defining a new feature or change — produces a DRAFT feature spec with user stories, ACs, and journeys before any technical design or code. Supports greenfield new-feature work and brownfield delta-spec work for extensions, bugfix behavior, and contract changes.",
       "aliases": [
         "specify feature",

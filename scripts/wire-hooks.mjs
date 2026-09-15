@@ -97,6 +97,8 @@ function buildHookEntries(skillsPath) {
     Notification: [],
   };
 
+  // Cursor imports Claude hook settings. Retain the launching host identity
+  // for both authority checks and heartbeats; native Claude still defaults here.
   // ── PreToolUse guards ─────────────────────────────────────────────────────
 
   // WI-FW-HOOKS-SAFETY-01 (AC-6/FP-07): ONE deny-capable pre-tool decision
@@ -114,7 +116,7 @@ function buildHookEntries(skillsPath) {
     entries.PreToolUse.push({
       id: "svc-pretool-decision-engine",
       matcher: "Bash|Edit|Write|MultiEdit|StrReplaceFile|NotebookEdit|apply_patch",
-      hooks: [{ type: "command", command: `SVC_HOST=claude node ${hooksDir}/codex/svc-codex-pretool-dispatcher.mjs` }],
+      hooks: [{ type: "command", command: `SVC_HOST="\${SVC_HOST:-claude}" node ${hooksDir}/codex/svc-codex-pretool-dispatcher.mjs` }],
     });
   }
 
@@ -167,7 +169,7 @@ function buildHookEntries(skillsPath) {
     entries.PostToolUse.push({
       id: "svc-posttool-heartbeat",
       matcher: "Bash|Edit|Write|MultiEdit|StrReplaceFile|NotebookEdit|apply_patch",
-      hooks: [{ type: "command", command: `SVC_HOST=claude node ${hooksDir}/codex/svc-codex-posttool-heartbeat.mjs` }],
+      hooks: [{ type: "command", command: `SVC_HOST="\${SVC_HOST:-claude}" node ${hooksDir}/codex/svc-codex-posttool-heartbeat.mjs` }],
     });
   }
 

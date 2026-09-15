@@ -137,9 +137,12 @@ requested.
 
 The confidence artifact must cover current implementation, prior decisions,
 web/mobile/native surfaces, user perception, cache/freshness classes, cost
-model, at least five sourced real-world examples, options considered, tradeoff
-matrix, action-by-action approval packet, outcome coverage, proof gates, and
-triage of external/AI suggestions. The approval packet must state what changes,
+model, options considered, tradeoff matrix, action-by-action approval packet,
+outcome coverage, proof gates, and triage of external/AI suggestions.
+Repository inspection and reasoning are ANALYSIS, never internal research.
+There is no five-example floor and no mandatory external examples merely because
+confidence was requested. Invoke `research` only when `researchDecision(question)`
+from `scripts/lib/research-decision.mjs` returns `external_research_required`. The approval packet must state what changes,
 why each action exists, how it would be achieved, positive outcome,
 negative/risk outcome, impact if skipped, and required proof before closeout.
 Suggestions from Base44 or other assistants must be evaluated as evidence, not
@@ -161,7 +164,7 @@ right one to build on.
    finalizing design. Use project-local truth first, then route to the right
    skill:
    - missing business capability -> `validate-feature`
-   - unknown provider/API behavior -> `research`
+   - unknown provider/API behavior -> local analysis first; `research` only if `researchDecision(question)` from `scripts/lib/research-decision.mjs` returns `external_research_required`. A new dependency/configuration/API choice is a consequential amendment, not an automatic research trigger. Bind `requesting_decision_id` and `requesting_task_id`; completed status is not resolution; do not fabricate a completed `research` receipt when only local analysis ran
    - capability inventory or project-fit question -> `capability-registry` /
      `capability-concierge`
    - auth/token/provider setup blocker -> the provider environment skill
@@ -194,8 +197,10 @@ Every technical recommendation falls into one of three layers. Tag each one.
 
 **[Layer 1] Tried and true** — don't reinvent. Use what exists. Flag any
 custom solution where a built-in or well-established library already solves
-the problem. Search npm, PyPI, crates.io, or the relevant ecosystem before
-building. If the team is writing a custom date parser, a bespoke HTTP client,
+the problem. Inspect the current repo and installed ecosystem first (ANALYSIS).
+Do not unconditionally search npm, PyPI, crates.io, or the web before building.
+External registry or docs lookup runs only when `researchDecision(question)`
+returns `external_research_required`. If the team is writing a custom date parser, a bespoke HTTP client,
 or a hand-rolled state machine that `xstate` already handles — that's a
 Layer 1 violation.
 
@@ -420,7 +425,7 @@ Rule of thumb: if you can't explain the feature's technical design in a
 | Check | What P0 verifies | Layer |
 |-------|-----------------|-------|
 | Scope smell | >8 new files or 2+ new classes/services → trigger scope reduction | All |
-| Search-before-build | Every new dependency: is there a simpler built-in way? | [Layer 1] |
+| Analyze-before-build | Every new dependency: is there a simpler built-in/in-repo way? New dependency/API choice is a consequential amendment, not an automatic research trigger. | [Layer 1] |
 | Completeness | Build/deploy pipeline included? Not just app code? | [Layer 1] |
 | DRY | Any duplicated patterns across the proposed components? | [Layer 1] |
 | Boring by default | Using well-known patterns unless there's a strong reason not to? | [Layer 1] |
@@ -748,7 +753,7 @@ Based on signals detected during technical design, conditionally insert these sk
 |--------|-------|-----------------|-----|
 | Cost Model pillar unanswered or requires infrastructure/platform selection | `manage-finops` | After Cost Model pillar evaluation | Hosting/provider choice blocks architecture decisions |
 | Spec references tier gating, usage limits, or pricing boundaries but `docs/specs/monetization-architecture.md` is missing | `monetization-architecture` | After tech architecture pillar, before explore-solutions | Gating matrix must exist before hard-to-reverse architecture decisions |
-| Unknown API, pattern, framework version, or domain concept encountered | `research` | Inline before the design step that needs the answer | Prevents architecture decisions based on stale training data |
+| `researchDecision(question)` from `scripts/lib/research-decision.mjs` returns `external_research_required` (explicit user research request, or necessary freshness with reason AND external_resolvable AND insufficient current cited evidence, or consequential unresolved external question with confidence < 7) | `research` | Inline for that named scope only; bind `requesting_decision_id` and `requesting_task_id`; reuse matching task on resume; reevaluate before unblocking | External research only by the predicate. Missing ordinary confidence, missing evidence alone, local unknowns, and new dependency/API choices stay analysis. Do not fabricate a completed `research` receipt when only local analysis ran |
 
 If any on-demand skill is inserted, update `.svc/lane-tasks-<WI>.json` with the new task and set `blocked_by` so downstream work waits for the on-demand skill's output. Log the insertion as a `mechanical` decision in `.svc/pipeline-decisions.jsonl`.
 
@@ -799,17 +804,29 @@ requiring chrome controls to be testable before implementation starts.
 
 ## Retrieval-Augmented Reasoning (cutting-edge technique #9)
 
-When you hit uncertainty mid-design, do NOT guess:
+When you hit uncertainty mid-design, do NOT guess. Repository inspection and
+reasoning are ANALYSIS, never internal research:
 1. **Pause** the reasoning chain.
-2. **Retrieve** the specific fact — grep the codebase, read the file slice, check the API doc or `references/knowledge/` node.
+2. **Analyze locally** — grep the codebase, read the file slice, check installed
+   docs or a current cited `references/knowledge/` node.
 3. **Incorporate** it, then **continue** from where you paused.
+4. Invoke `research` only if `researchDecision(question)` from
+   `scripts/lib/research-decision.mjs` returns `external_research_required`.
 
 Rules:
-- Never guess when you can retrieve — retrieval cost < rework cost.
-- Retrieve the minimum: grep before read; read the slice, not the whole file.
+- Missing ordinary confidence and local unknowns stay analysis.
+- Missing evidence alone is not necessary freshness. Evidence has source, basis,
+  and freshness. Confidence is an integer 1..10 or null, not evidence by itself.
+- A new dependency, configuration, or API choice is a consequential amendment,
+  not an automatic research trigger.
+- Retrieve the minimum locally: grep before read; read the slice, not the whole file.
 - Log non-trivial retrievals (what + why) in `.svc/pipeline-decisions.jsonl`.
+- Bind `requesting_decision_id` and `requesting_task_id` when research runs;
+  completed status is not resolution; do not fabricate a completed `research`
+  receipt when only local analysis ran.
 
-Formalizes `rules/common/research-before-build.md` as a mid-reasoning loop, not just a session-start step.
+Formalizes `rules/common/research-before-build.md` as a mid-reasoning analysis
+loop, with external research only by the predicate.
 
 ## Pipeline Continuation
 

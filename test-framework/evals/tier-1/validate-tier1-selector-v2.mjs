@@ -59,6 +59,7 @@ check("proposal selects complete v2 focused closure", () => {
     "validate-skill-runtime-contracts-v2.mjs",
     "validate-story-receipt-delivery-projection-v2.mjs",
     "validate-tier1-selector-v2.mjs",
+    "validate-two-box-transmutation.sh",
     "validate-ux-graduation.mjs",
     "validate-wi546-cursor-live-acceptance.sh"
   ]);
@@ -133,7 +134,7 @@ check("surface exact file selects its owning contracts and nothing else", () => 
 
 check("surface directory prefix selects every contract under the tree", () => {
   const result = selectTier1ValidatorsForSurfaces(["schemas/"]);
-  for (const expected of ["validate-execution-controller-v2.mjs", "validate-product-proof-compiler-v2.mjs", "validate-review-topology-v2.mjs"]) {
+  for (const expected of ["validate-execution-controller-v2.mjs", "validate-product-proof-compiler-v2.mjs", "validate-review-topology-v2.mjs", "validate-two-box-transmutation.sh"]) {
     assert.ok(result.selected.includes(expected), `missing ${expected} under schemas/ prefix`);
   }
   assert.ok(!result.selected.includes("validate-concern-compiler-v2.mjs"), "concerns/REGISTRY.json must not match a schemas/ prefix");
@@ -168,6 +169,24 @@ check("skill judgment consumers select the focused contract", () => {
   assert.equal(selectTier1Validators(["future/unmapped-skill.md"]).fallback_full, true);
   assert.equal(selectTier1Validators(["AGENTS.md"]).fallback_full, true);
   assert.deepEqual(selectTier1ValidatorsForSurfaces(["definitely-unmapped-skill-judgment-surface"]).selected, []);
+});
+
+check("two-box transmutation inputs select the focused validator", () => {
+  for (const input of ["scripts/two-box-plan.mjs", "scripts/lib/research-decision.mjs", "scripts/lib/two-box-protocol.mjs", "schemas/receipts/control-plan.schema.json", "skills/blind-control-plan/SKILL.md", "README.md", "test-framework/tests/two-box-plan.test.mjs", "test-framework/tests/research-decision.test.mjs", "test-framework/tests/two-box-learning.test.mjs", "test-framework/tests/two-box-receipts.test.mjs", "test-framework/evals/tier-1/validate-two-box-transmutation.sh"]) {
+    const result = selectTier1Validators([input]);
+    assert.equal(result.valid, true, input);
+    assert.equal(result.fallback_full, false, input);
+    assert.ok(result.selected.includes("validate-two-box-transmutation.sh"), input);
+  }
+  assert.deepEqual(selectTier1Validators(["scripts/two-box-plan.mjs"]).selected, ["validate-two-box-transmutation.sh"]);
+  const research = selectTier1Validators(["skills/research/SKILL.md"]);
+  assert.equal(research.fallback_full, false);
+  assert.ok(research.selected.includes("validate-two-box-transmutation.sh"));
+  assert.ok(research.selected.includes("validate-owner-decision-v2.mjs"));
+  const wrapper = selectTier1Validators(["scripts/review-plan-codex.sh"]);
+  assert.equal(wrapper.fallback_full, false);
+  assert.ok(wrapper.selected.includes("validate-two-box-transmutation.sh"));
+  assert.ok(selectTier1ValidatorsForSurfaces(["scripts/two-box-plan.mjs"]).selected.includes("validate-two-box-transmutation.sh"));
 });
 
 if (process.exitCode) process.stderr.write(`tier1 selector v2: ${passed} passed, failures present\n`);

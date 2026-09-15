@@ -2,7 +2,7 @@
 name: recall-stack-knowledge
 version: "1.0"
 description: >-
-  Knowledge Spine recall gate — reads stack-profile.md and the calling skill's requires_topics[], injects the minimal knowledge slice (domains, specs, learnings, decisions), logs to .svc/knowledge-recall.jsonl; a 0-hit on a declared topic fails with a knowledge-gap signal feeding the research auto-loop. Use when: "what do I need to know" before touching a known stack/provider.
+  Knowledge Spine recall gate — reads stack-profile.md and the calling skill's requires_topics[], injects the minimal knowledge slice (domains, specs, learnings, decisions), logs to .svc/knowledge-recall.jsonl; a 0-hit on a declared topic is a knowledge-gap analysis signal, not an automatic research spawn. Use when: "what do I need to know" before touching a known stack/provider.
 inputs:
   required: []
   optional:
@@ -103,10 +103,10 @@ If `.sources.jsonl` is missing or empty:
    ```
    legacy-unverified: UNVERIFIED Spine slice — domain `<topic>` lacks .sources.jsonl provenance.
    Treat all claims as low-confidence training-data heuristics, not authoritative.
-   Trigger gap → research to re-extract from cited sources.
+   Treat claims as analysis until cited current evidence exists; spawn `research` only when `researchDecision(question)` returns `external_research_required`.
    ```
 2. **Log** the recall entry with `outcome: "unverified-served"` (instead of `hit-all` / `partial`).
-3. **Append** a `provenance-gap` event to `.svc/knowledge-recall.jsonl` so the gap → research auto-loop picks up the domain for re-extraction.
+3. **Append** a `provenance-gap` event to `.svc/knowledge-recall.jsonl`. Missing provenance is analysis. Spawn `research` only when `researchDecision(question)` returns `external_research_required` under the shared question predicate.
 4. **Check** `references/knowledge/domains/legacy-backfill-queue.json`; if the domain appears there, include `legacy_backfill_status: "legacy-unverified"` and the queued due date in the recall log entry.
 
 **Phase A (current):** WARN — slice is still served with the warning header so the caller can proceed but is alerted.
@@ -114,17 +114,17 @@ If `.sources.jsonl` is missing or empty:
 
 This closes the structural gap exposed when commit `5607ad9` (reverted by `46728e8`) wrote training-data-confabulated knowledge files that the recall gate would have served as authoritative. The tier-1 validator `validate-knowledge-domain-provenance.sh` enforces the same check at lint time.
 
-## Gap → Research Auto-Loop
+## Knowledge gaps and conditional research
 
 When recall returns 0 hits for a topic in the caller's `requires_topics[]`:
 
-1. Append `{event: "knowledge-gap", skill: <caller>, topic: <topic>, lane: <lane>, wi: <wi>, ts: <iso>}` to `.svc/knowledge-recall.jsonl`.
+1. Append `{event: "knowledge-gap", skill: <caller>, topic: <topic>, lane: <lane>, wi: <wi>, ts: <iso>}` to `.svc/knowledge-recall.jsonl`. A 0-hit / missing assessment is analysis, not automatic research.
 2. **Phase A behavior (this WI):** WARN. Print a clear "knowledge gap detected" message; do not block.
-3. **Phase B+ behavior (WI-SPINE-002, ACTIVE):** SPAWN `research` task at the head of the lane-tasks graph via:
+3. **Phase B+ behavior (WI-SPINE-002, ACTIVE):** SPAWN `research` only when `researchDecision(question)` from `scripts/lib/research-decision.mjs` returns `external_research_required` under the shared question predicate. Missing ordinary confidence stays analysis. If required, spawn via:
    ```bash
-   node scripts/spine-gap-spawn.mjs .svc/lane-tasks-<WI>.json <caller_skill> <topic> <WI>
+   node scripts/spine-gap-spawn.mjs .svc/lane-tasks-<WI>.json <caller_skill> <topic> <WI> --question <question.json>
    ```
-   The helper (a) appends `knowledge-gap` to `.svc/knowledge-recall.jsonl`, (b) inserts a `research` task at index 0 of the lane-tasks graph, (c) sets the requesting task to `blocked` with `blockedBy: [research_task_id]`, (d) appends a `mechanical` entry to `.svc/pipeline-decisions.jsonl`. The research output is deposited at `references/knowledge/domains/<topic-domain>/`.
+   Supply the canonical question record from `references/solution-confidence-protocol.md`. The helper reevaluates the shared predicate, binds the actual `requesting_decision_id` and `requesting_task_id`, and resumes the existing delivery graph atomically. It reuses matching research, preserves unrelated evidence and explicit human gates, and keeps an unresolved requester blocked through `blocked_by`. Changed input invalidates only that decision's old proof. Without a question it logs analysis and leaves the task graph unchanged. It never fabricates a completed research receipt. Research output is deposited at `references/knowledge/domains/<topic-domain>/`.
 4. **Phase E behavior (WI-SPINE-005):** BLOCK. The recall gate refuses to proceed for `infra-*` lanes; app lanes remain advisory.
 
 ## Output Contract — `.svc/knowledge-recall.jsonl` schema
@@ -191,7 +191,7 @@ orchestrator has applied the lane's current gap policy.
 This skill ships in three behavior phases:
 
 - **Phase A (this WI, WI-SPINE-001):** advisory. Logs gaps, never blocks. App lanes get the spec-index speedup; infra lanes don't exist yet.
-- **Phase B (WI-SPINE-002):** auto-spawn `research` on knowledge gaps; first knowledge domain populated.
+- **Phase B (WI-SPINE-002):** auto-spawn `research` on knowledge gaps only when `researchDecision` returns `external_research_required`; first knowledge domain populated.
 - **Phase E (WI-SPINE-005):** blocking gate for infra lanes. Hit-rate ≥80% required to flip.
 
 ## Why This Beats Fine-Tuning
@@ -201,7 +201,7 @@ A fine-tuned model is a frozen snapshot. The Spine is a living retrieval archite
 ## Limitations (Phase A)
 
 - Spec-index (L2): query via `scripts/query-spec-index.mjs --wi <WI>` / `--surface <term>` (bounded ≤2K tokens, WI-389) — never raw-load the 692KB index. If the index is missing, fall back to grepping `docs/specs/**/*.md`.
-- Gap → research is advisory only in Phase A; auto-spawn lands in WI-SPINE-002.
+- Gap handling is advisory only in Phase A; Phase B+ auto-spawn runs only when `researchDecision` returns `external_research_required`.
 - Blocking enforcement is opt-in via the lane (infra-* lanes only, added in WI-SPINE-003); app lanes remain advisory through Phase E.
 
 ## Pipeline Continuation

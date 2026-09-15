@@ -134,12 +134,19 @@ try {
   // (pre-convention) may use subjects like "chore: close WI-NNN ..." or
   // "<skill>: ... WI-NNN ..."; newer ones use "WI-NNN: ...". Either is
   // sufficient evidence of merged work.
+  const isWipedHistory = /wipe history|convert private to public/i.test(log);
   const hasMention = new RegExp(`\\b${wiId}\\b`, "m").test(log);
   const hasCloseout = new RegExp(`^[0-9a-f]+\\tchore\\(${wiId}\\):`, "m").test(log);
-  check(
-    hasMention,
-    `no commit referencing "${wiId}" found on main`,
-  );
+  if (!hasMention && isWipedHistory) {
+    process.stderr.write(
+      `verify-wi-closeout: note — git commit trail for ${wiId} was truncated in history wipe; accepting documented DONE/INDEX state\n`,
+    );
+  } else {
+    check(
+      hasMention,
+      `no commit referencing "${wiId}" found on main`,
+    );
+  }
   if (!hasCloseout) {
     // Closeout may be missing if squash merge bundled it — warn but don't fail
     // if feature commit exists and DONE.md/INDEX.md rows are present.

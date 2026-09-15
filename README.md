@@ -4,76 +4,148 @@
   <img src="assets/logo.png" alt="SSVE Logo" width="320" />
 </p>
 
-> Vibe coding, but the vibe is governed engineering rigor.
+> Governed engineering for agentic software: living specifications, progressive narrowing, executable changesets, and inspectable evidence.
 
-**From a goal to a shipped product, a live business, and an autonomous
-company. One pipeline. No improvisation.**
+**SSVE turns product intent into verified software.** Living product specs record who it is for, what must be true, how it should work, and how you will prove it. The pipeline narrows that intent, converts a reviewed solution into an executable changeset, and binds inspectable evidence to the result.
 
----
+**Product goal:** reduce unresolved implementation choices while preserving the
+user's intent and room for a better solution. Judge a delivery by its requirement
+coverage, justified decisions, reproducible checks, and observed outcomes.
 
-Most AI coding tools generate code. Some of them generate good code.
-None of them ship a business.
+**Operational determinism** means named phases, identified inputs, and the same validators on the same artifacts. You can replay a check. Model wording can still vary; hashes prove the bindings, not that a judgment was correct.
 
-SSVE is a deterministic development doctrine that starts where you actually
-are — broke developer working evenings, funded founder with a team, or
-anything in between — and walks a governed pipeline from raw intent to a
-deployed product with landing pages, video ads, monetization architecture,
-and an autonomous 15-brain executive fleet managing growth.
-
-Every phase transition is cryptographically anchored in Git. Every agent
-decision passes through a kernel-level enforcement engine. The system
-doesn't improvise. It either delivers through progressive narrowing, or
-rejects your idea with evidence and proposes alternatives.
+**Open Box** may find a better approach than current habit. **Contract Box** independently uses applicable SSVE specs. **Dual-Pass Re-exploration Narrowing** challenges only the Contract original. **Deterministic Transmutation** prepares the complete implementation contract, runs the existing holistic review, and seals it for bounded execution. Neither model prestige nor framework convention wins automatically. The executor keeps local repair and evidence-backed disagreement inside published limits.
 
 ## Why This Exists
 
 Three pain points from years of vibe coding:
 
-1. **Unpredictability.** Same prompt, different output every run. No
-   deterministic path from intent to working code.
-2. **No end-to-end pipeline.** Most frameworks stop at code generation.
-   Nobody closes the loop from high-level intent through spec, design,
-   implementation, testing, verified delivery, and commercial launch —
-   let alone ships the landing page, the video ad, and the operating
-   company behind it.
-3. **No rejection path.** Agents always say yes and produce *something*.
-   There is no honest "this won't work, here's what might" path with
-   structured evidence and scored alternatives.
+1. **Unpredictability.** The same unconstrained prompt can yield a different
+   design every run. SSVE narrows the path with living specs, reviews, and
+   input-bound validation. Model wording can still vary.
+2. **A stop at generated code.** A patch is not the same as a specified,
+   reviewed, executed, and verified change. SSVE's delivery spine runs living
+   specs through design, Two-Box conversion, bounded execution, and promotion
+   checks. Commercial launch skills are optional supporting capabilities.
+3. **A weak rejection path.** Work that should not ship needs an honest no.
+   `validate-feature` can NO-SHIP with scored kill signals, evidence, and
+   alternative directions.
 
 The idea: you give a high-level intent — a product idea or a feature within
 an existing product — and the system either **delivers it** through
 progressive narrowing, or **rejects it with evidence and proposes
 alternatives** that you can accept or reject.
 
-**It starts with you, not the product.** Before building anything, the
-pipeline mines your builder profile — financial situation, time budget,
-skills, team, social presence, existing subscriptions, business entity
-status, and strategic goal. A broke developer working evenings gets
-different recommendations than a funded founder with a marketer co-founder.
-The profile persists across projects and gets smarter after each one.
+### Living specifications, phases, and conversion
 
-**Don't know what to build? The pipeline finds it.** If your goal is
-"I need money" but you don't have an idea, say so. The system reverse-
-engineers what's making money RIGHT NOW, matches it to your skills and
-distribution channels, and presents the top 3 opportunities — each with
-evidence of existing revenue, a 1-2 week build plan, and a self-sustaining
-free-tier stack. Target: $1K/mo within 1 month of launch. If you have a
-big idea but need money first, the system proposes a staging plan — a
-fast-money project (ideally feeding your big idea) before the main build.
-"Build my idea anyway" always works.
+Product specs are living artifacts. Personas, stories, acceptance criteria, and BDD journeys (`.feature.md`) stay traceable across UX, UI, technical design, the implementation contract, and E2E assertions. Later phases may refine approved artifacts through the relevant gate. They do not silently replace an approved decision. Accepted consequential Two-Box choices reconcile back into specs and designs before conversion. Unexpected changes to required facts invalidate affected planning decisions. Code and specs are reconciled through `sync-spec-code` and promotion verification.
 
-**One prompt to product.** In `--autorun` mode, a single high-level intent
-(or a selected opportunity) runs the full pipeline end-to-end. The virtual
-founder (P0) makes taste decisions informed by your builder profile and
-logs them for review. The only hard stops are: feature rejection (NO-SHIP),
-unresolvable test failures, critical security findings, and merge
-conflicts. Everything else flows.
+Nine delivery phases still run. Living specs, Two-Box Planning, and Deterministic Transmutation run on the **canonical checkout** (typically main). `execute-changeset`, review-exec, and `audit-implementation` run in a **feature worktree**. `land-changeset` and `verify-promotion` return to **main**.
 
-**Designed for modern multi-agent economics** — provisions across 9 supported
-agent CLI hosts, supporting worktree isolation, kernel-level Landlock sandboxing,
-and a four-layer token cache that maximizes prompt cache hits.
+```
+canonical checkout (typically main)
+  Phases 1–6: vision → personas → spec (stories/ACs) → journeys → UX → UI → tech
+  Phase 7 plan (same checkout):
+    Two-Box Planning (once, unless eligibility recomputes true on a real diff)
+      Open Box  (original requirements + frozen facts; no SSVE methodology)
+      Contract Box (independent SSVE-informed candidate)
+      Dual-Pass Re-exploration Narrowing (two scouts, Contract original only)
+      assessor → open_win | contract_win | combination
+    Deterministic Transmutation
+      prepare complete v5 contract → existing review-plan → seal envelope
+  └── feature worktree
+        execute-changeset (bounded local repair vs consequential amendment)
+        review-exec / audit-implementation
+  main
+        land-changeset (squash-merge)
+        verify-promotion
+```
 
-### What actually happens when you run it
+### Two-Box Planning and Dual-Pass Re-exploration Narrowing
+
+**Two-Box Planning** runs once before each substantive changeset conversion (features, bugs, refactors, and framework changes). The existing mechanically eligible lightweight path remains, with its spec synchronization and proof obligations. File-count shortcuts and `.svc/dual-track.off` do not exempt new substantive plans.
+
+1. **Open Box** — a fresh planner receives original user requirements and read-only repository facts. It does not receive SSVE planning instructions, a preferred solution, a competing draft, or inherited chat. Native host safety instructions may remain. The immutable original is stored before any harness normalization. Open Box is allowed to find a better approach.
+2. **Contract Box** — a second fresh process independently forms a solution from applicable SSVE specs, designs, decisions, and constraints. It does not see Open Box output until both originals exist.
+3. **Dual-Pass Re-exploration Narrowing** — exactly two inexpensive assigned scout processes inspect **only** the initial Contract Box original. Forward traversal follows requirements and entrypoints through behavior, state, dependencies, and tests. Reverse traversal follows affected internals to callers, consumers, lifecycle, and regressions. Coverage is supplied files and observed reads. Citations cannot prove complete coverage.
+4. A revised Contract is a distinct object from the original, even when the bytes are unchanged. A fresh assessor selects `open_win`, `contract_win`, or `combination`. `reject_innovation` is a disposition, not a winner. Unresolved conflict blocks conversion.
+
+Grounded selection does not automatically favor the framework or the more prestigious model. `blind-control-plan` remains the compatibility skill identifier; it is not a theoretical best-of-two quality guarantee.
+
+### Deterministic Transmutation and bounded executor freedom
+
+**Deterministic Transmutation** is the complete transition from a finalized solution to an executable changeset: prepare the implementation contract for review, obtain the existing holistic `review-plan` verdict, then seal the reviewed contract into the executor handoff without unreviewed semantic changes. It is not a new lane and not a second holistic review.
+
+The prepared contract carries original ACs, intended behavior, implementation approach, architecture/interfaces/state ownership, material failure handling, exact task/file scope and dependencies, validation commands and expected proof, recovery, and explicitly permitted local decisions.
+
+After the seal, the executor may repair a missing import of an already-approved dependency, task-caused syntax/type errors in owned files, and in-scope tests that do not change AC/proof/envelope; apply a justified reversible alternative that preserves consequential decisions and authority, with validation; and reopen only the affected decision and review lens for new/upgraded dependencies, new config/env, changed APIs/behavior, broadened files/authority, or changed proof/AC. The executor must not silently reduce requirements or treat contradicted instructions as automatic authority.
+
+### Receipts, hashes, and what still needs observation
+
+Two evidence families exist:
+
+| Family | Where | What it records | What it does not prove |
+|---|---|---|---|
+| **Phase / task receipts** | task-graph phase records (`.svc/lane-tasks-*.json`) | That a named pipeline step recorded its declared evidence kind | Semantic correctness of the skill's judgment |
+| **Git-note chain receipts** | `refs/notes/svc-receipts` (regenerable mirror under `.svc/receipts/`) | Schema-validated plan, review, execution, audit, land/verify envelopes bound to commits | That every nested decision was right, or that production operations succeeded |
+
+Hashes bind inputs, artifacts, and receipts. A matching digest means the bytes and declared bindings agree. Authentic historical notes remain readable under their original schema and do not grant current execution authority. New substantive issuance requires current planning/transmutation evidence (plan-manifest v5 with control-plan v2, or a lightweight contract whose eligibility was recomputed on the real bound diff). Coverage for present notes follows strict-validate-if-present (WI-556), not a claim that every historical commit carries a full envelope.
+
+### Analysis versus research
+
+Repository reading, reasoning, comparison, and local checks are **analysis**, not internal research. Each consequential uncertainty is a question record with cited evidence, confidence 1–10 or missing, external resolvability, explicit request, and freshness. A number is not evidence.
+
+- Missing question record → analysis.
+- Explicit user research request → research for that external scope.
+- Necessary freshness of an externally resolvable question, and no sufficient current evidence → research (even if the score is missing). Missing evidence alone is not a freshness requirement.
+- Missing ordinary confidence → analysis.
+- Sufficient current cited evidence and confidence ≥ 7 → resolved.
+- Consequential unresolved external question and confidence < 7 → research.
+- Otherwise analysis. Local questions stay analysis until resolved.
+
+Research returns only to the requesting decision. A missing score is unknown, not a skip and not an automatic network call.
+
+### Advisory role recipes (2026-09-15)
+
+Dated advice, not availability promises. Host, model, effort, fallback, and reviewer topology stay owner-configurable through existing policy.
+
+| Role | Advisory recipe (2026-09-15) |
+|---|---|
+| Open Box, Contract Box, assessor | Astra xhigh (`PLAN`) |
+| Reviewers | Comparable high-effort reviewers |
+| Dual-Pass scouts | Luna max |
+| Executor after transmutation | Luna max or Grok xhigh (`EXEC`) |
+
+All of these remain configurable.
+
+### Design choices in this repository
+
+| Choice | What SSVE does here |
+|---|---|
+| Product specs | Living personas, stories, ACs, and journeys with lifecycle states and gate transitions |
+| Planning | Specs, Two-Box Planning, and Deterministic Transmutation on the canonical checkout (typically main) |
+| Implementation | `execute-changeset`, review-exec, and `audit-implementation` in a feature worktree |
+| Merge and verify | `land-changeset` and `verify-promotion` on main |
+| Evidence | Phase/task receipts on the lane-tasks graph; Git-note chain receipts on `refs/notes/svc-receipts` (strict-validate-if-present) |
+| Rejection | `validate-feature` kill signals and NO-SHIP with alternatives |
+| Hosts | Nine provisioned CLIs via `./setup --all-hosts` |
+| Memory | Builder profile, 5-layer knowledge spine, learnings JSONL |
+
+### Optional supporting capabilities
+
+Landing pages, video ads, monetization, and the company operating fleet are supporting capabilities for innovation and business development. They do not promise income, a live business, or an autonomous company.
+
+For opportunity discovery, an optional builder profile records relevant goals,
+skills, available time, resources, and distribution channels. `find-opportunity`
+and `stage-revenue` can propose opportunities and staged product plans from
+cited market evidence. Revenue and delivery dates remain assumptions to test.
+
+**Autorun** carries an authorized intent through the applicable lane and logs
+delegated decisions. It advances when the phase evidence and authority allow
+it. Unresolved decisions, failed checks, and explicit user checkpoints remain
+visible in the task graph.
+
+**Nine supported hosts.** `./setup --all-hosts` provisions the nine CLIs. A four-layer loading order is meant to improve prompt-cache prefix hits.
 
 ```
          YOU
@@ -88,14 +160,13 @@ and a four-layer token cache that maximizes prompt cache hits.
    ┌──────────────┐
    │ Opportunity   │  Don't have an idea? The system finds what's
    │ Discovery     │  making money NOW, matches it to your profile,
-   └──────┬───────┘  proposes 1-2 week builds. Target: $1K/mo.
+   └──────┬───────┘  proposes 1-2 week builds. Aspirational target only.
           │
           ▼
    ┌──────────────┐  9 phases. 7 review gates. 105 skills.
    │ Progressive   │  Vision → Personas → Spec → UX → UI →
    │ Narrowing     │  Tech Design → Code → Promote → Verify.
-   └──────┬───────┘  Each phase constrains the next. By Phase 7,
-          │          the agent executes, not generates.
+   └──────┬───────┘  Planning on the canonical checkout; execute in a worktree.
           ▼
    ┌──────────────┐
    │ Commercial    │  Landing page (≥7.5 quality gate), video ads
@@ -108,18 +179,6 @@ and a four-layer token cache that maximizes prompt cache hits.
    │ Fleet         │  on SQLite FTS5 compounding memory ledgers.
    └──────┘
 ```
-
-### What makes this different
-
-| | Most AI tools | SSVE |
-|---|---|---|
-| **Starts from** | A ticket or prompt | Your identity, finances, and goals |
-| **Ends at** | Generated code | Deployed product + business + operating company |
-| **When it fails** | Silent hallucination | Structured rejection with evidence + alternatives |
-| **Memory** | None | Builder profile + 5-layer knowledge spine + company memory ledgers |
-| **Determinism** | "Run it again" | Cryptographic receipt chain + pipeline baton staleness detection |
-| **Agent governance** | Trust the model | 10 lifecycle guards + PreTool AST engine + Landlock kernel sandbox |
-| **Host lock-in** | One vendor | 9 hosts, zero-drift convergence, content-addressed installation |
 
 ### What's Built vs. What's Next
 
@@ -136,9 +195,10 @@ and a four-layer token cache that maximizes prompt cache hits.
 | Persona Trace Contract | Built — strict persona ID traceability across specs, BDD journeys (`.feature.md`), UX, UI, tech designs, plans, and E2E assertions |
 | Full commercial engine | Built — `landing-page` orchestrator (requires ≥7.5 weighted aggregate), `benchmark-landing` 10-dim rubric v2 gate (blocks <7), `ad-video-script` (6×~10s beat sheets) + `produce-ad-video` (modular I2V rendering, ducked audio), FinOps, and monetization audits |
 | Company Operating Fleet | Built — 15 executive brains (`cos`, `counsel`, `fin-analyst`, `growth-lead`, `product-lead`, etc.) operating on-demand over SQLite FTS5 compounding memory ledgers (`company-memory.mjs`) |
-| Domain expertise & Knowledge Spine | Built — 5-layer spine (L1 world, L2 intent, L3 learnings, L4 decisions, L5 identity); JIT topic recall (`recall-stack-knowledge`); `.sources.jsonl` provenance; auto-research gap loop |
+| Domain expertise & Knowledge Spine | Built — 5-layer spine (L1 world, L2 intent, L3 learnings, L4 decisions, L5 identity); JIT topic recall (`recall-stack-knowledge`); `.sources.jsonl` provenance; question-bound research only when the shared predicate requires it |
 | Grounded Framework Advisor | Built — `svc-advisor` backed by canonical `references/advisor/framework-knowledge-index.md`; cite-before-assert doctrine; executable verification commands |
 | Self-evolution & context blending | Built — `audit-session-execution` → `evolve-framework` → `improve-framework` loop; SQLite candidate reservoir (WI-508); `blend-registry.json` tracking upstream frameworks |
+| Multi-agent coordination | Architecture support, not scheduler — architecture support, not a runtime scheduler; no automatic multi-instance scheduling or global lock layer |
 | Pipeline decision log | Built — structured audit trail at `.svc/pipeline-decisions.jsonl`, with bootstrap files under `.svc/` and safe append helper `scripts/pipeline-log.mjs` |
 | Worktree isolation per feature | Built — `worktree.sh` with guard, create, promote, cleanup |
 | Subagent dispatch for parallel tasks | Built — transport scripts (`dispatch-worker.sh`, `fanout.sh`, `wait-for-output.sh`) across claude/openclaw/opencode harnesses |
@@ -169,11 +229,11 @@ graph TD
 ### 1. Universal Multi-Host Runtime (9 Provisioned Hosts)
 SSVE is host-agnostic. A single content-addressed command (`./setup --all-hosts`) provisions, wires, and verifies skills and lifecycle hooks across 9 major CLI platforms with zero drift:
 - **Claude Code** (28 lifecycle hooks), **Kimi Code CLI** (13 hooks), **OpenAI Codex CLI** (6 hooks, consolidated PreToolUse launcher dispatcher), **Google Gemini CLI** (11 hooks, strict JSON stdout), **OpenCode CLI** (6 plugin events), **Google Antigravity (AGY)** (managed skills target & review station), **MiMo-Code** (6 plugin events via unified portable dispatcher), **Cursor Agent** (6 hook events, hooks.json), and **xAI Grok Build CLI** (8 hooks, TOML).
-- Governed by **Durable Mutation Authority v2**: Generation-locked Git CAS controller leases, Linux Landlock kernel sandboxing (`scripts/svc-contained-exec.mjs`, runtime-probed for child tasks on Linux hosts with graceful fallback), and an authoritative PreToolUse decision engine separating instant read-only queries from guarded state mutations.
+- Governed by **Durable Mutation Authority v2**: Generation-locked Git CAS controller leases, Linux Landlock write confinement (`scripts/svc-contained-exec.mjs`, runtime-probed for child tasks on Linux hosts with graceful fallback), and an authoritative PreToolUse decision engine separating instant read-only queries from guarded state mutations. Landlock is not read isolation and not a kernel judge of model decisions.
 
 ### 2. Cryptographic Chain Receipts & The Pipeline Baton
 Every phase transition is anchored in cryptographic proof, not agent honesty:
-- **Git Notes Receipts (`refs/notes/svc-receipts`):** Every plan, review, execution, and audit emits a schema-validated JSON receipt attached directly to commit objects in Git. Receipts survive branch deletions and are verified by the L3 `svc-reconcile` gate (strict-validate-if-present coverage per WI-556).
+- **Git Notes Receipts (`refs/notes/svc-receipts`):** Plan, review, execution, and audit steps emit schema-validated JSON receipts attached to commit objects in Git. Receipts survive branch deletions and are verified by the L3 `svc-reconcile` gate (strict-validate-if-present coverage per WI-556). A note is integrity evidence for that envelope, not proof of every nested decision or of production success. Phase/task receipts on the lane-tasks graph are a separate, narrower family.
 - **Multi-Family Adversarial Reviews:** Code is cross-examined by independent model families (Codex, Claude, AGY Gemini, Cursor Grok via `cursor-grok-4.6-high`) with signed identities via `scripts/run-external-review.mjs`.
 - **Dual-Identity Bounded Reviews (WI-566):** Multi-model review orchestration is strictly capped at 3 rounds with HMAC-bound cycle tracking, preventing infinite review churn (distinct from the 5-step review gate convergence loop).
 - **The Pipeline Baton (`ac_digests`):** A SHA-256 hash over normalized acceptance criteria signatures binds the plan to the spec as a staleness-bound navigation index. The live spec markdown remains authoritative; any mid-flight spec drift immediately detects mismatch and halts execution.
@@ -192,12 +252,12 @@ Agents often suffer from memory loss or build against outdated assumptions. SSVE
   - **L4 Episodic (Decisions):** Append-only architectural and vendor decision records (`.svc/pipeline-decisions.jsonl`).
   - **L5 Identity:** The builder's persistent profile (`~/.svc/builder-profile.md`) and project stack profile.
 - **Just-in-Time Topic Recall:** Skills declare required topics in frontmatter (`requires_topics: [stack.iac-tool, domain.compliance]`, `recall_depth: layer-2`). The Spine gate injects only the exact matching slice.
-- **Automated Gap-to-Research Loop:** When a skill encounters an unknown topic, it triggers an automated research loop that analyzes the domain, writes the knowledge node, and persists it into L1 World for all future projects.
+- **Question-bound research, not an automatic gap loop:** Repository inspection is analysis. External research runs only for an explicit user request, necessary freshness of an externally resolvable question, or an unresolved consequential external question below confidence 7. A missing score or missing evidence alone is not an external research trigger. Completed research returns only to the requesting decision.
 
 ### 5. Grounded Framework Advisor & Cite-Before-Assert Doctrine
 When developers or agents need architectural guidance, `svc-advisor` provides answers strictly anchored in the canonical knowledge index (`references/advisor/framework-knowledge-index.md`):
 - **Cite-Before-Assert:** Every material claim must cite an exact file path and section (`path § section`). Improvised opinions are rejected.
-- **Verify Beats Memory Beats Stamps:** Critical facts (skill counts, gates, host wiring, hook event protocols) include executable shell verification commands that the advisor can run dynamically to guarantee ground-truth accuracy.
+- **Verify Beats Memory Beats Stamps:** Critical facts (skill counts, gates, host wiring, hook event protocols) include executable verification commands so the advisor can check current repository evidence.
 - **Atomic Restamping:** Whenever framework capabilities, lanes, or hosts change, the knowledge index is restamped in the exact same commit.
 
 ### 6. The Direct-to-Revenue Commercial Engine
@@ -217,7 +277,7 @@ The framework improves every time it is used:
 - **The Empirical Self-Improvement Loop:** `audit-session-execution` inspects session logs and transcripts → `evolve-framework` identifies structural gaps → `improve-framework` implements and verifies fixes via automated replays.
 - **Candidate Reservoir & Triage Engine (WI-508):** SQLite-backed feature intake engine scoring ideas via Chief of Staff weighted criteria before turning them into work items.
 - **Context Blending Engine (`blend-external` / `blend-private`):** Systematically ingests best-of-breed industry patterns (Corey Haines marketing loops, GSD, superpowers, gstack) with automated redaction maps and upstream staleness tracking.
-- **Retention Floors (`blind-control-plan`, `craft-prompt`):** Mathematical validation proving framework-governed output outperforms raw model prompts.
+- **Planning comparisons:** `blind-control-plan` is the current Two-Box entry. `craft-prompt` retains its optional prompt comparison. They do not prove that framework-governed output is universally better than a raw prompt, and they are not a theoretical best-of-two quality guarantee.
 
 ## The Lifecycle Hooks & Runtime Enforcement Engine
 
@@ -339,41 +399,31 @@ Phase 8:  Promotion           → squash-merges the worktree to main
 Phase 9:  Verification        → proves the merge matches the manifest
 ```
 
-At Phase 1, the agent is generating. By Phase 7, the agent is executing against
-a constrained implementation plan inside a worktree branched from main. The
-creative work happens in Phases 1-6 and in any explicit loop-backs. Phase 7 is
-controlled execution with task reviews and checkpoints. Phase 8 is a squash
-merge. Phase 9 is checking.
+At Phase 1, the agent is generating. Two-Box Planning and Deterministic
+Transmutation run on the canonical checkout and produce a sealed contract.
+`execute-changeset` then runs that contract inside a feature worktree.
+Creative work happens in Phases 1-6, in Open Box / Contract Box, and in any
+explicit loop-backs. Open Box may still propose a better approach than the
+framework default. Execution is bounded: local repair versus consequential
+amendment. Phase 8 squash-merges on main. Phase 9 verifies on main.
 
-## Why This Works (Technical Argument)
+## Rationale and evidence
 
-An LLM's output variance is inversely proportional to the constraints in its
-context window. More context = less variance. The progressive narrowing model
-exploits this:
+The working hypothesis is that named constraints, reviewed artifacts, and
+input-bound validation reduce avoidable ambiguity before a model writes code.
+Related papers, opened 2026-09-15:
 
-1. **Context loading.** Each phase reads ALL prior artifacts. The agent writing
-   the change set has read the vision, personas, spec, UX design, UI design,
-   technical design, journeys, and existing code. Every constraint is in context.
+- [Lost in the Middle: How Language Models Use Long Contexts](https://arxiv.org/abs/2307.03172) — placement effects under the paper's studied tasks. Not proof that checkpoints reset attention.
+- [Large Language Models Cannot Self-Correct Reasoning Yet](https://arxiv.org/abs/2310.01798) — unaided intrinsic reasoning correction under the paper's study conditions. Not a proof about current models or this review protocol.
+- [Improving Factuality and Reasoning in Language Models through Multiagent Debate](https://arxiv.org/abs/2305.14325) — task-specific improvements in that debate setup. Not a universal SSVE proof.
 
-2. **Variance reduction.** A one-line ticket produces 50 implementations.
-   A spec with 12 acceptance criteria produces 5. A detailed implementation
-   manifest with explicit tasks, files, validations, and checkpoints reduces
-   the remaining variance to a small, reviewable branch diff.
+What this repository operationalizes:
 
-3. **Review before generation.** Traditional: agent generates code, human
-   reviews code. SSVE: human reviews intent (spec, design, plan),
-   then the agent executes that intent task by task on a branch. Reviewing
-   intent early is cheaper than reviewing a fully improvised implementation late.
-
-4. **Deterministic promotion.** The worktree IS the code. Promotion is
-   `git merge --squash` to main. Deviations are detected by diffing the
-   merged result against the manifest. Nothing is left to interpretation.
-
-5. **Attention decay mitigation.** LLMs suffer from positional attention
-   decay — tokens loaded early in context receive less attention during
-   generation. Checkpoints (commits at each phase boundary) reset this by
-   forcing the agent to re-read artifacts fresh. The worktree keeps all
-   artifacts consistent and accessible as the agent's external memory.
+1. **Context loading.** Each phase reads the artifacts that phase requires. Execution loads targeted code from spec annotations, the manifest file list, and follow-on imports.
+2. **Variance reduction.** Stories, acceptance criteria, journeys, designs, and a sealed implementation contract shrink the remaining branch diff that review and tests must judge.
+3. **Review before execution.** Intent is reviewed before `execute-changeset` so late rework is less likely. That is the aim, not a claim that review is universally cheaper or that every error is caught.
+4. **Promotion as a merge of reviewed branch state.** The worktree holds the executed code. Promotion is `git merge --squash` to main. Deviations are detected by diffing the merged result against the manifest.
+5. **Checkpoints as durable re-read points.** Named commits keep artifacts on disk at a known SHA so the next step can re-read them.
 
 ## The Review Protocol
 
@@ -445,8 +495,8 @@ Full convention: [`references/feature-toggles.md`](references/feature-toggles.md
 | 6. Technical Design | `design-tech` | Architecture, data model, feasibility | G4 |
 | 6b. Alternatives | `explore-solutions` | Challenge baseline with alternative paradigms | — |
 | 6c. Code Style | `define-code-style` | Code style contract for the project | — |
-| 7. Plan | `plan-changeset` | Implementation manifest, task graph, AC/test mapping | — |
-| 7b. Execute | `execute-changeset` | Code in worktree, staged diffs, checkpoint commits | G5 |
+| 7. Plan | `plan-changeset` | Two-Box Planning (unless eligibility recomputes), Deterministic Transmutation into a sealed v5 manifest, task graph, AC/test mapping | — |
+| 7b. Execute | `execute-changeset` | Code in worktree, staged diffs, checkpoint commits; local repair vs amendment per sealed discretion | G5 |
 | 7c. Visual Diff | `track-visuals` | Screenshot diffs after UI-affecting code changes | — |
 | 7d. Correctness | `audit-implementation` | Deep correctness audit before landing | — |
 | 8. Promote | `land-changeset` | Squash merge to main, version bump, PR | G6 |
@@ -480,7 +530,7 @@ SSVE routes work into lanes based on repo state and change type.
 Use `route-workflow` to detect the right lane automatically, or pick one manually.
 
 > [!NOTE]
-> **Compiled-in Review Spine:** The macro lane sequences below reflect `laneDefinitions` in `skills-manifest.json`. During actual delivery execution, the runtime delivery graph (`skills/route-workflow/references/lane-model.md` and `task-graph.mjs`) automatically compiles in the mandatory review spine: `review-plan` runs immediately after `plan-changeset` before code execution, and `review-exec` runs immediately after `execute-changeset` before `review-gate` evaluation.
+> **Compiled-in Review Spine:** The macro lane sequences below reflect `laneDefinitions` in `skills-manifest.json`. During actual delivery execution, the runtime delivery graph (`skills/route-workflow/references/lane-model.md` and `task-graph.mjs`) automatically compiles in the mandatory review spine: `review-plan` runs immediately after `plan-changeset` before code execution, and `review-exec` runs immediately after `execute-changeset` before `review-gate` evaluation. Two-Box Planning runs once in the plan stage before conversion; Deterministic Transmutation prepares the complete v5 contract for that same `review-plan`. This is not a new lane and not a duplicate holistic review.
 
 ### Greenfield
 
@@ -587,35 +637,30 @@ Use when: improving the framework, integrating upstream external patterns, repai
 
 ## The Worktree Model
 
-All implementation phases happen in a single worktree branched from main.
-Code lives in actual files, not markdown documents.
+Living specs, Two-Box Planning, and Deterministic Transmutation run on the
+canonical checkout (typically main). `execute-changeset`, review-exec, and
+`audit-implementation` run in a feature worktree branched from main. Land and
+verify return to main. Code lives in actual files, not markdown documents.
 
 ```
-feature/match-discovery (worktree branch)
-  src/...                  ← real code, real tests, real files
-  docs/plans/manifest.md   ← what changed, why, task graph, validations
-  checkpoint commits:
-    phase-3-spec
-    phase-4-ux-design
-    phase-5-ui-design
-    phase-6-technical-design
-    task-1-types
-    task-2-data-model
-    task-3-tests
-    ...
+canonical checkout (typically main)
+  docs/specs/...           ← living specs, journeys, designs
+  docs/plans/manifest.md    ← prepared and sealed contract
+  └── feature/match-discovery (worktree)
+        src/...            ← real code, real tests
+        task checkpoint commits
 ```
 
-Each phase creates a checkpoint commit on the feature branch. The manifest
-describes what changed, how tasks are grouped, and what validation should
-happen, preserving reviewability. Promotion is `git merge --squash` to main —
-one clean commit with the full context.
+The manifest describes what will change and what validation should happen.
+Promotion is `git merge --squash` of the reviewed implementation branch to main.
 
 Full worktree model: [`WORKTREES.md`](WORKTREES.md)
 
 ## Token Efficiency
 
-SSVE uses a four-layer cache architecture that reduces token costs by
-50-60% compared to naive approaches:
+SSVE uses a four-layer loading order so stable prefixes can match provider
+prompt cache. Layer sizes below are a loading sketch, not a measured savings
+study and not a cost-reduction promise:
 
 | Layer | Scope | Cached across | Tokens |
 |-------|-------|---------------|--------|
@@ -635,8 +680,8 @@ Key optimizations:
 
 ### Platform
 
-svc runs inside [Claude Code](https://docs.anthropic.com/en/docs/claude-code),
-which executes bash commands, git operations, and file I/O through a Unix shell.
+SSVE provisions across nine CLI hosts. Shell, git, and file I/O assume a POSIX
+environment. Claude Code is one supported host, not a required exclusive runtime.
 This means:
 
 | Platform | Status | Notes |
@@ -659,9 +704,9 @@ the Linux home directory.
 |-------------|---------|-------------|
 | **Node.js** | 18+ | 20+ (LTS) |
 | **Git** | 2.25+ | Latest |
-| **Claude Code** | Latest | Latest |
+| **One supported agent host** | Installed host CLI | Any of the nine provisioned hosts after `./setup --host <host>` or `./setup --all-hosts` |
 | **GitHub CLI** (`gh`) | Optional | Install for `land-changeset` PR creation |
-| **Anthropic account** | Required | Claude Pro ($20/mo) or Max ($200/mo for 100 instances) |
+| **Host account** | Per chosen host | Owner-configured; advisory model recipes below are dated 2026-09-15 and are not access or pricing promises |
 
 ### Before Your First Product
 
@@ -794,7 +839,7 @@ Mode contract and detection logic: [`REPO_MODES.md`](REPO_MODES.md)
 - `benchmark-landing` — Score a landing page against sector reference bank on 8 dimensions
 - `blend-external` — Analyze external repos and blend in useful patterns with version tracking
 - `blend-private` — Blend patterns from a private repo you own or have rights to, without leaving source identifiers in the tree (authorization gate + redaction map + 30% diff ceiling)
-- `blind-control-plan` — Best-of-2 retention floor: prove the framework plan is never worse than a bare-model blind baseline (cross-family judge + control-plan ROI receipt; WARN/shadow, default OFF)
+- `blind-control-plan` — Two-Box Planning: independent Open and Contract plans, two Contract-only scouts, grounded selection, and bound control-plan v2 evidence
 - `build-personas` — Build user personas from vision and challenge libraries
 - `capability-concierge` — Three-lens recommendations (ship / idle-resource / side-earning) grounded in registry + snapshot
 - `capability-registry` — Per-builder inventory of AI/dev resources (paid + trial + free) with sub-budgets and reset cadence
@@ -803,7 +848,7 @@ Mode contract and detection logic: [`REPO_MODES.md`](REPO_MODES.md)
 - `comms` — Draft-only company communications proposals; never sends or publishes.
 - `cos` — Chief-of-staff synthesis for company briefings and ranked priorities.
 - `counsel` — Legal issue spotting and reviewable risk proposals; not legal advice.
-- `craft-prompt` — Craft a world-class output-shaped prompt for a task and prove it never worse than a baseline/viral prompt via a cheap best-of-2 floor (rubric + WI-410 floor; WARN/shadow, default OFF)
+- `craft-prompt` — Craft an output-shaped prompt and compare it with a baseline using a bounded rubric (rubric + WI-410 floor; WARN/shadow, default OFF)
 - `create-skill` — Create new skills with eval infrastructure (forked from anthropics/skills)
 - `customer-cs` — Customer-success analysis for churn, onboarding, and support patterns.
 - `decide` — Present a decision to the founder so it can actually be decided — one choice at a time, options as outcomes, grounded confidence per option
@@ -912,7 +957,7 @@ How svc compares to gstack and superpowers:
 | **Supported Hosts** | Single Host | 1–2 Hosts | Single Host | **9 Hosts Converged (Claude, Kimi, Codex, Gemini, OpenCode, AGY, MiMo, Cursor, Grok)** |
 | **Execution Governance** | None | Ad-hoc TDD | None | **Durable Authority v2 + Landlock Kernel Sandboxing** |
 | **Review Integrity** | Self-Prompted | 2-Stage Review | Adversarial Review | **Multi-Family Signed Reviews (Codex/Claude/Gemini/Grok) + Dual-Identity Bounded Caps** |
-| **Audit Verification** | None | Markdown Logs | None | **Cryptographic Git Notes (`refs/notes/svc-receipts`) + Zero-Waiver L3 Reconcile** |
+| **Audit Verification** | None | Markdown Logs | None | **Cryptographic Git Notes (`refs/notes/svc-receipts`) + L3 reconcile (strict-validate-if-present)** |
 | **Pipeline State Handoff** | Context Resend | Linear Scratchpad | None | **Pipeline Baton (`ac_digests`) with SHA-256 Normalized AC Staleness Binding** |
 | **User Grounding** | Vibes | Ad-hoc Personas | Founder P0 | **Persona Trace Contract (Strict spec → journey → UX → UI → code → E2E trace)** |
 | **Domain & Industry Knowledge** | Training Cutoff / Hallucinations | Ad-hoc Notes | Basic Founder Advice | **5-Layer Knowledge Spine (L1–L5) with JIT topic recall, provenance checks, and persistent cross-project library** |

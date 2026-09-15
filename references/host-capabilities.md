@@ -34,6 +34,7 @@ Reference doc for orchestrator hosts supported by Serious Vibe Coding. Skills an
 | **Session Export/Import** | Save and resume session state |
 | **Stable Authority Identity** | Stable session and, for children, independently attributable dispatch principal |
 | **Filesystem Containment** | Host sandbox or probed wrapper that kernel-denies writes outside the delegated worktree |
+| **Isolated Plan Analysis** | Availability of a frozen-payload, tool-free planning adapter with invocation-scoped prompt-inspection and live canary. Declared on all nine hosts. **Never grants runtime isolation by itself**; each invocation still needs passing effective preflight. Distinct from `fresh_session_launch` and from Landlock write confinement. |
 
 ---
 
@@ -75,6 +76,32 @@ but it is an authority guardrail, not a complete shell security boundary. Shell
 execution containment comes from the host sandbox or
 `scripts/svc-contained-exec.mjs`. If the configured backend cannot be probed,
 dispatch denies before child launch.
+
+## Isolated plan analysis
+
+`authority_capabilities.isolated_plan_analysis` is an **availability** declaration.
+It never grants runtime isolation by itself. `fresh_session_launch` remains a
+separate continuation capability and is unchanged by this field. Landlock /
+`scripts/svc-contained-exec.mjs` remains write confinement, not Open Box read
+isolation. `--read-only` is not a Codex exec flag, and `--ignore-rules` is not
+instruction isolation.
+
+| Host | Adapter available | Notes |
+|------|:-----------------:|-------|
+| Codex CLI | yes (`enabled: true`) | `codex-exec` frozen-payload, tool-free transport. Required argv includes `--ephemeral`, `--sandbox read-only`, `--ignore-user-config`, `--skip-git-repo-check`, `--json`, `--output-schema`. Required invocation-scoped `codex debug prompt-input` inspection and live canary (`abort_on_any` tool events; offline output never unlocks live). Each invocation still needs passing effective preflight. |
+| Claude Code | no | Pending equivalent adapter proof. |
+| Cursor | no | Pending equivalent adapter proof. |
+| Gemini CLI | no | Pending equivalent adapter proof. |
+| Grok Build | no | `fresh_session_launch` is not this capability. Pending equivalent adapter proof. |
+| Kimi Code CLI | no | Pending equivalent adapter proof. |
+| OpenCode CLI | no | Pending equivalent adapter proof. |
+| MiMo Code | no | Pending equivalent adapter proof. |
+| Antigravity | no | Skills-only; pending equivalent adapter proof. |
+
+A chosen unsupported host/tuple fails explicitly or follows only an already
+configured owner fallback with recorded identity. The host-authority validator
+checks the concrete Codex controls, inspection, and canary **shape**, not merely
+the presence of a few flag strings.
 
 ---
 

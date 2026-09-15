@@ -21,8 +21,8 @@ grep -Eq "Human gates happen after design only when the user requests one" refer
   || fail "protocol does not make gates request-only after design"
 grep -Eq "SOLUTION-CONFIDENCE.md" references/solution-confidence-protocol.md \
   || fail "protocol does not define required artifact"
-grep -Eq "at least five" references/solution-confidence-protocol.md \
-  || fail "protocol does not require five real-world examples"
+grep -Eq "researchDecision" references/solution-confidence-protocol.md \
+  || fail "protocol does not use the question-bound research predicate"
 grep -Eq "Cost And Cache Rules" references/solution-confidence-protocol.md \
   || fail "protocol does not define cost/cache rules"
 grep -Eq "Suggestion Triage Rules" references/solution-confidence-protocol.md \
@@ -69,9 +69,9 @@ perl -0ne 'exit(/approval packet.*what changes.*why.*how.*positive.*negative.*im
   || fail "design-tech does not require approval packet coverage"
 grep -Eq "Do not skip.*solution_confidence_required" skills/explore-solutions/SKILL.md \
   || fail "explore-solutions can still skip confidence mode"
-grep -Eq "five sourced" skills/explore-solutions/SKILL.md \
-  || fail "explore-solutions lacks five-example grounding"
-grep -Eq "adopt.*modify.*defer.*reject.*unrelated" skills/explore-solutions/SKILL.md \
+grep -Eq "researchDecision" skills/explore-solutions/SKILL.md \
+  || fail "explore-solutions does not use the research predicate"
+perl -0ne 'exit(/adopt.*modify.*defer.*reject.*unrelated/s ? 0 : 1)' skills/explore-solutions/SKILL.md \
   || fail "explore-solutions lacks suggestion triage vocabulary"
 grep -Eq "action-by-action approval packet" skills/explore-solutions/SKILL.md \
   || fail "explore-solutions does not feed approval packet"
@@ -101,7 +101,8 @@ const dg = graph.delivery_graph;
 const task = (skill) => graph.tasks.find((item) => item.metadata?.skill === skill);
 if (dg.solution_confidence?.required !== true) throw new Error("solution confidence not required");
 if (dg.solution_confidence?.mode !== "post_design_human_gate") throw new Error("wrong mode");
-for (const skill of ["research", "design-tech", "explore-solutions", "plan-changeset"]) {
+if (task("research")) throw new Error("missing question must not create research");
+for (const skill of ["design-tech", "explore-solutions", "plan-changeset"]) {
   if (!task(skill)) throw new Error(`missing task ${skill}`);
 }
 const plan = task("plan-changeset");
@@ -140,12 +141,15 @@ node - "$tmpdir/intake-only.json" <<'NODE' \
 const fs = require("node:fs");
 const graph = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 const task = (skill) => graph.tasks.find((item) => item.metadata?.skill === skill);
-for (const skill of ["research", "design-tech", "explore-solutions", "execute-changeset"]) {
+if (task("research")) throw new Error("intake without a question must not create research");
+for (const skill of ["design-tech", "explore-solutions", "execute-changeset"]) {
   const item = task(skill);
   if (!item) throw new Error(`missing ${skill}`);
   if (item.status !== "blocked") throw new Error(`${skill} is not blocked`);
   if (item.metadata?.solution_confidence_intake_stop !== true) throw new Error(`${skill} lacks intake stop marker`);
 }
 NODE
+
+node --test test-framework/tests/research-decision.test.mjs
 
 echo "solution confidence protocol validation: PASS"

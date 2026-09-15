@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { execFileSync, execSync } from "node:child_process";
 import { claimFreshness, normalizeClaimOwner, readClaimAbsolute } from "./wi-claim.mjs";
 import { validateTaskGraphShape } from "./validate-task-graph-shape.mjs";
-import { WI_ID_RE, extractWiId } from "./wi-id.mjs";
+import { WI_ID_RE, extractWiId, isValidWiId } from "./wi-id.mjs";
 
 // Keep authority resolution self-contained because several supported host and
 // eval runtimes install this synchronous resolver as a deliberately minimal
@@ -178,6 +178,8 @@ export function wiFromBranch(cwd = process.cwd()) {
     const branch = execSync("git symbolic-ref --short HEAD 2>/dev/null", { cwd, encoding: "utf8", timeout: 5000 }).trim();
     const explicit = extractWiId(branch);
     if (explicit) return explicit;
+    const embedded = branch.match(/(?:^|[^A-Za-z0-9])(WI-[A-Za-z0-9]+)(?:$|[^A-Za-z0-9])/i);
+    if (embedded && isValidWiId(embedded[1].toUpperCase())) return embedded[1].toUpperCase();
     const legacy = branch.match(/(?:feature|bugfix|refactor)-([A-Za-z0-9]+)/i);
     return legacy ? `WI-${legacy[1].toUpperCase()}` : "";
   } catch {

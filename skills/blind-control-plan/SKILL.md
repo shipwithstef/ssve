@@ -4,20 +4,20 @@ version: "1.0"
 self_verify: true
 human_checkpoint: false
 description: >
-  Best-of-2 retention floor that proves the framework plan is never worse than a
-  bare-model "blind" plan. Generates a context-starved blind plan B, deterministically
-  diffs it against the framework plan F, and — when F silently removes or weakens a
-  correct B-element without an independent cross-family judge certifying a strict
-  improvement — ships B verbatim (floor_verdict=blind-adopted). Emits a control-plan
-  ROI receipt. v1 is WARN/shadow, default OFF (armed via .svc/chain-policy.json
-  dual_track:"measured"); it is a gate, not a pipeline step. Use between plan-changeset
-  and review-plan on infra-path + M+ plans when dual-track is armed. WI-410.
+  Canonical Two-Box Planning entry for current substantive work (skill id remains
+  blind-control-plan). Use between plan-changeset and review-plan when live-recomputed
+  staged eligibility is not accepted. Independent Open and Contract boxes, Contract-only
+  exactly two scouts, distinct original and revised Contract, grounded assessor, complete
+  conversion before review-plan, and a separate seal after. Triggers: two-box, two-box
+  planning, blind-control-plan, control-plan v2, runTwoBox. Legacy v1 F>=B floor helpers
+  are historical inspection only and never grant current execution.
 inputs:
   required:
-    - blind-plan-B (context-starved: spec + ACs only, no svc skills/checklists)
-    - framework-plan-F (the plan-changeset manifest, structured as elements)
+    - original-requirements (owner intent and constraints)
+    - living-specs-and-designs (carried into Contract and conversion)
   optional:
-    - judge-verdicts (cross-family certifications for REMOVE/ALTER rows)
+    - frozen-facts (bounded annotations; source bytes come from the repo snapshot)
+    - contract-context (contained spec/design paths)
 outputs:
   produces:
     - artifact: control-plan-receipt
@@ -26,39 +26,36 @@ chain:
   lanes: {}   # gate, not a pipeline step (mirrors review-plan); inserted adjacent, not as a lane position
 ---
 
-**Announce at start:** "I'm using blind-control-plan to prove the framework plan is never worse than the blind baseline."
+**Announce at start:** "I'm using blind-control-plan as the Two-Box Planning entry (independent Open/Contract, two Contract-only scouts, assessor, conversion, then existing review-plan and a separate seal)."
 
-# Blind-Control-Plan Floor
+# Two-Box Planning
 
-The framework only earns its tokens if its plan beats what the bare model would have produced. This gate makes that measurable and makes "never worse than blind" true *by construction* (best-of-2 retention), not by trusting a judge.
+Current orchestration is `node scripts/two-box-plan.mjs --input <json>` (default `--mode prepare`, no paid call). Explicit `--mode live` runs exactly one `runTwoBox`. Current control evidence is strict control-plan v2. Legacy `blind-floor-check` / `blind-floor-judge` / `decide()` are historical/read-only inspection and never current execution authority.
 
-> **NOT a refinement loop.** The framework never *edits* the blind plan — intrinsic self-correction degrades quality (Huang et al. ICLR 2024; OAgents reflection −6.62% on hard tasks). B and F are independent candidates; B is kept immutable and returnable.
-
-## Arming (v1: WARN/shadow, default OFF)
-Run only when `scripts/blind-floor-route.mjs` returns `run:true` — armed by `.svc/chain-policy.json` `{"dual_track":"measured"}`, infra-path + M+, no `.svc/dual-track.off` kill-switch. Otherwise SKIP (blind==framework for trivial/exempt work; the floor trivially holds). In v1 this gate is **WARN-only**: it logs + emits the receipt but does NOT block promotion, and `control-plan` is NOT in `REQUIRED_TYPES_FULL`.
+Do not skip current substantive work via opt-in dual_track, `.svc/dual-track.off`, file-count, class, size, caller `eligible`, or a historical SHA. Recompute staged eligibility with `evaluateEligibility`. Unproved current routing is `run:true` unless that live recompute accepts lightweight eligibility. OFFLINE fixtures are nonauthoritative.
 
 ## Process
 
-### P1 — generate-blind
-Spawn a context-starved sub-invocation (spec + ACs only; explicit "no svc skills/checklists/review-tier knowledge"), same model family as the framework author. Emit B as `{elements:[{key,content}]}` keyed by `(path, task-id, AC-id)`. Log `contamination_note` (B is not provably framework-free — accepted risk). Read the probe-free tuple policy from `resolve-adversarial-reviewer.sh`; the canonical launcher's primary invocation is the availability probe.
+### P1 — eligibility
+Ignore any supplied eligible boolean. `runTwoBox` recomputes `scripts/quick-fix-eligibility.mjs` on the real consumer staged tree. No staged/real diff => not eligible. Eligible true + bound tree hash => v5 lightweight alternative (no control_plan_ref). Else continue.
 
-### P2 — deterministic-delta
-`node scripts/blind-floor-check.mjs --blind B.json --merged F.json` classifies every B-element KEEP/REFINE/ADD/REMOVE/ALTER. Isolate the REMOVE/ALTER rows — they are the only rows needing a verdict.
+### P2 — independent boxes
+Controller-owned read-only tool-free harness subprocesses. Open Box: original requirements + frozen facts only; no SSVE methodology or competing plan. Contract Box: same originals plus living specs/designs; no Open output. Persist original Open and original Contract as distinct objects before either scout.
 
-### P3 — judge-removals
-For REMOVE/ALTER rows only: `bash scripts/blind-floor-judge.sh --blind B.json --merged F.json --rows rows.json`. The judge is cross-family (Claude never judges Claude), OUTPUT-FIRST, instructed "longer is NOT better", defaults to REJECT on uncertainty. Exit 4 is an actionable canonical-launcher failure: preserve its receipt and halt; exit 3 remains reserved for the retired no-judge retention hatch. Only a substantive negative certification adopts B.
+### P3 — exactly two Contract-only scouts
+`scout_forward` and `scout_reverse` are separate processes on the Contract original only. They never receive Open. Empty or identical assignments fail. Incomplete reports stay incomplete; the assessor must dispose consequential gaps.
 
-### P4 — floor-decision
-Re-run `blind-floor-check.mjs --verdicts judge.json`: `pass` (zero uncertified REMOVE/ALTER → ship F), or repair F to re-add the element, or `--adopt-blind` → ship B verbatim (`blind-adopted`). svc NEVER writes `certified_strict_improvement` — only the judge verdicts file does.
+### P4 — revise + assess
+Revised Contract is a distinct object (same digest allowed only if bytes unchanged). Assessor sees both originals, revised Contract, scout reports, and source facts. Winner is only `open_win`, `contract_win`, or `combination`. `reject_innovation` is a disposition. Unresolved conflict blocks conversion.
 
-### P5 — emit receipt
-`node scripts/emit-receipt.mjs --type control-plan --wi <WI>` with `floor_verdict`, `element_ledger`, `judge{reviewer_family,certifications}`, model/profile/registry_version, `tree_hash`. `blind-adopted` is a logged negative-ROI signal ("framework did not beat blind here").
+### P5 — convert, then review, then seal
+Reconcile selected consequential decisions into specs/designs and prepare the complete current contract BEFORE review-plan. Run existing holistic review-plan once. Seal is a separate envelope; do not rewrite reviewed bytes. Then execute-changeset.
 
 ### P6 — self-verify
-Run the Self-Verify table; record the phase receipt.
+Run the Self-Verify table. A v1 `floor_verdict` does not grant current execution.
 
 ## Pipeline Continuation
-Source of truth: `.svc/lane-tasks-<WI>.json`. This is a gate invoked adjacent to plan-changeset (not a lane position). On `pass` → continue to `review-plan`. On `blind-adopted` → the shipped plan is B; continue with B. Mark the gate task complete; mirror host task state. In v1 (WARN/shadow) a `fail` verdict is logged + receipted but does not block — it is the measurement that gates the v2 flip to BLOCK (≥20 shadow plans + ≥1 real catch).
+Source of truth: `.svc/lane-tasks-<WI>.json`. This is a gate invoked adjacent to plan-changeset (not a lane position). Lightweight-eligible work continues without control-plan v2. Otherwise: prepared complete contract → review-plan → seal → execute-changeset. Mark the gate task complete; mirror host task state.
 
 ### Task-graph mode
 source of truth: `.svc/lane-tasks-<WI>.json`. Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume. In Claude Code mirror file state with `TaskList`/`TaskUpdate`; in Kimi use `/task` as observation only; in Codex and other hosts without native task-mutation APIs, mirror only the active step in `update_plan` (never the full graph). Treat `Invoke: /skill-name` + `metadata.skill` as routing instructions.
@@ -67,8 +64,8 @@ source of truth: `.svc/lane-tasks-<WI>.json`. Read and update `.svc/lane-tasks-<
 
 | # | Check | How | PASS/FAIL |
 |---|-------|-----|-----------|
-| 1 | Deterministic floor | `bash test-framework/evals/tier-1/validate-blind-floor.sh` exits 0 (run-twice golden, both negatives exit non-zero) | |
-| 2 | Anti-self-grade | gate/check output never carries `certified_strict_improvement`; only the judge verdicts file does | |
-| 3 | Judge independence | `reviewer_family != anthropic` on any pass/refined certification (`resolve-adversarial-reviewer.sh`) | |
-| 4 | No degraded review | judge-unavailable / kill-switch / budget / capability failure halts with the canonical receipt; only a substantive negative certification may produce `blind-adopted` | |
-| 5 | WARN/shadow honored | v1 emits the receipt but does not block; `control-plan` NOT in `REQUIRED_TYPES_FULL` | |
+| 1 | Current entry | Live orchestration is `scripts/two-box-plan.mjs` / `runTwoBox`; this skill does not author Open/Contract/scout judgments | |
+| 2 | Eligibility | Caller eligible/opt-in/kill-switch/file-count/SHA cannot skip; `evaluateEligibility` on the staged tree decides lightweight vs Two-Box | |
+| 3 | Isolation + scouts | Open and initial Contract are independent; exactly two scouts on Contract original only; original/revised remain distinct | |
+| 4 | Conversion order | Complete current contract exists before review-plan; seal is a separate post-review envelope | |
+| 5 | No v1 authority | `floor_verdict` / historical `decide()` / OFFLINE fixtures do not grant current execution | |

@@ -6,9 +6,11 @@ solution before planning or implementation.
 This is an automatic confidence protocol, not a new implementation lane and not
 a default human gate. It forces the framework to build the same picture a senior
 product engineer would build before changing behavior: what exists now, why it
-may have been built that way, what users need, what the world standard looks
-like, what the cost and cache consequences are, and which solution survives
-comparison.
+may have been built that way, what users need, what current cited evidence says,
+what the cost and cache consequences are, and which solution survives
+comparison. Repository inspection and reasoning are ANALYSIS, never internal
+research. Solution-confidence does not require unconditional external research,
+a five-example floor, or external examples merely because confidence was requested.
 
 ## Operating Modes
 
@@ -20,12 +22,66 @@ Use one of these modes:
 
 | Mode | Trigger | Behavior |
 |---|---|---|
-| `design_auto` | Default when user wants confidence/right design/all cards on table and does not explicitly request a gate | Automatically run the needed grounding, research, UX/tech design, solution exploration, planning, and implementation through the normal lane once the confidence artifact selects a direction and its approval packet/proof gates are complete. |
-| `post_design_human_gate` | User explicitly asks to wait before plan, review the design first, approve before implementation, or otherwise requests a gate | Automatically run grounding, research, UX/tech design, and solution exploration until the design direction is ready. Then stop before `plan-changeset` with an approval-ready user checkpoint backed by the action-by-action approval packet. |
+| `design_auto` | Default when user wants confidence/right design/all cards on table and does not explicitly request a gate | Automatically run the needed grounding, local analysis, UX/tech design, solution exploration, planning, and implementation through the normal lane once the confidence artifact selects a direction and its approval packet/proof gates are complete. Invoke `research` only when `researchDecision(question)` from `scripts/lib/research-decision.mjs` returns `external_research_required`. |
+| `post_design_human_gate` | User explicitly asks to wait before plan, review the design first, approve before implementation, or otherwise requests a gate | Automatically run grounding, local analysis, UX/tech design, and solution exploration until the design direction is ready. Then stop before `plan-changeset` with an approval-ready user checkpoint backed by the action-by-action approval packet. External research only by the same predicate, and only for the requested scope. |
 | `intake_only` | User explicitly says "no design yet", "intake only", "only create WI", "do not decide yet", or asks only for a parking lot | Create/update WI and decision workspace. Append evidence/questions. Keep design/exploration/planning/implementation inactive under the explicit intake stop. |
 
 Human gates happen after design only when the user requests one. Otherwise the
-framework continues automatically after design using the normal lane.
+framework continues automatically after design using the normal lane. Do not add
+approvals for reversible analysis or execution.
+
+## Research Decision Contract
+
+Evaluate any proposed external lookup with `researchDecision(question)` from
+`scripts/lib/research-decision.mjs`. Apply these ordered rules:
+
+1. missing question record => `analysis_required`
+2. explicit user research request => `external_research_required` for the requested scope
+3. necessary freshness (with a stated reason) AND `external_resolvable` AND insufficient current cited evidence => `external_research_required` even if confidence is missing
+4. missing ordinary confidence => `analysis_required`
+5. sufficient current cited evidence AND confidence >= 7 => `resolved`
+6. consequential unresolved external question AND confidence < 7 => `external_research_required`
+7. otherwise `analysis_required`
+
+Evidence has source, basis, freshness, and a verification result. Sufficient
+evidence includes a cited item with `verified: true` and `freshness: "current"`
+(or `freshness.status: "current"`). Record why it supports the specific claim;
+a citation or timestamp alone does not establish that support. Missing evidence
+alone is not necessary freshness. Confidence is an integer 1..10 or null; it is not evidence
+by itself. Local unknowns stay analysis. A new dependency, configuration, or
+API choice is a consequential amendment, not an automatic research trigger.
+
+Use a question record such as:
+
+```json
+{
+  "id": "cancellation-contract",
+  "claim": "The selected API supports cancellation before dispatch.",
+  "evidence": [],
+  "consequential": true,
+  "external_resolvable": true,
+  "confidence": 6,
+  "explicit_request": false,
+  "freshness_required": {"necessary": false, "reason": ""}
+}
+```
+
+Research tasks bind `requesting_decision_id` and `requesting_task_id`, return
+updated question/evidence/confidence to that decision, reevaluate the predicate
+before unblocking, and reuse a matching existing task on resume. Completed
+status alone is not resolution. Fulfill an explicit research request once and
+keep its provenance; do not repeat it forever. Do not fabricate a completed
+`research` skill receipt when only local analysis ran. Preserve user-explicit
+research and intentional market-research scope; when external research does run,
+keep useful extraction and quality methods.
+
+The graph retains the exact input as `metadata.research_trigger_question`.
+Research records `observed_evidence`, `observed_confidence`, and, for an explicit
+request, `fulfilled_scope` matching its requested scope. Resume consumes these
+results only while the input still matches. A changed claim reopens the same
+task and archives its previous proof in `research_history`. An unresolved result
+keeps the requesting decision blocked; resolution removes only that research
+dependency and preserves unrelated receipts and explicit human gates.
 
 ## Trigger Phrases
 
@@ -90,10 +146,12 @@ packet and proof gates. A missing approval packet blocks approval requests,
 6. **Cost Model** — current cold/warm call path, payload/read amplification,
    provider/API charges if relevant, and target state aiming for same or lower
    recurring cost unless quality requires an explicit exception.
-7. **World Grounding** — at least five real examples from successful products,
-   official provider docs, or production-grade open-source projects. Each row
-   must cite a source and map the example to one design lesson. Do not use
-   unsourced "everyone does X" claims.
+7. **World Grounding** — cite current evidence that already has source, basis,
+   and freshness. External examples are not a floor and are not required merely
+   because solution confidence was requested. Add external examples only when
+   `researchDecision(question)` returns `external_research_required` for that
+   scope. When such rows exist, each must cite a source and map to one design
+   lesson. Do not use unsourced "everyone does X" claims.
 8. **Options Considered** — at least three materially different options,
    including "keep current and tune only" when the current behavior might be
    deliberate.
@@ -110,8 +168,9 @@ packet and proof gates. A missing approval packet blocks approval requests,
    scalability, implementation complexity, reversibility, and support/ops
    impact. State when a category is not applicable rather than omitting it.
 12. **Decision Or Remaining Unknowns** — either select the design direction
-   with confidence level, or state exactly what measurement/research is still
-   required before design can close.
+   with confidence level (integer 1..10 or null; confidence is not evidence),
+   or state exactly what measurement or predicate-required external research is
+   still required before design can close. Local unknowns stay analysis.
 13. **Base44/AI Suggestions Triage** — classify external suggestions as
    `adopt`, `modify`, `defer`, `reject`, or `unrelated`, with reasons.
 14. **User-Facing Summary** — 5-7 bullets maximum, written for a non-expert
@@ -158,8 +217,10 @@ reappear as an unexamined recommendation later.
 
 ## World Grounding Rules
 
-The five-example floor is a floor, not a target, when the decision is broad.
-For location/search/discovery problems, acceptable grounding examples include:
+There is no five-example floor and no per-paradigm mandatory search. Do not
+require external examples just because solution confidence was requested.
+When `researchDecision(question)` returns `external_research_required` for an
+intentional world/market/provider scope, useful grounding sources include:
 
 - official product/API behavior from Google Places, Yelp, Foursquare, Algolia,
   Mapbox, Apple/Google Maps, Airbnb, DoorDash, Uber, or similar leaders,
@@ -168,15 +229,15 @@ For location/search/discovery problems, acceptable grounding examples include:
 - provider docs showing limits, pagination, cost, geo filtering, caching, or
   lifecycle behavior.
 
-The comparison must distinguish product UX examples from provider/API examples.
-For example, Google Places pagination behavior is provider grounding; Yelp's
-search result limit/offset contract is provider grounding; an Airbnb map/list
-interaction article would be product UX grounding.
+When those examples are used, distinguish product UX examples from provider/API
+examples. For example, Google Places pagination behavior is provider grounding;
+Yelp's search result limit/offset contract is provider grounding; an Airbnb
+map/list interaction article would be product UX grounding.
 
 ## Current-State Grounding Rules
 
 Do not design from the user's symptom alone. Inspect all relevant current
-surfaces:
+surfaces. This inspection and reasoning is ANALYSIS, never internal research:
 
 - product docs: vision, personas, journeys, feature specs, domain profile,
 - prior decisions and WIs: `.svc/pipeline-decisions.jsonl`,
@@ -218,8 +279,13 @@ When this protocol is active:
 - When a delivery graph is compiled, `solution_confidence` is core graph state.
   In `post_design_human_gate`, `plan-changeset` must be blocked until explicit
   approval; graph validation rejects an unblocked planning task in that mode.
-- `research` is required when the world-standard or provider behavior is not
-  already fresh and sourced.
+- `research` is invoked only when `researchDecision(question)` from
+  `scripts/lib/research-decision.mjs` returns `external_research_required`.
+  Bind `requesting_decision_id` and `requesting_task_id`, return updated
+  question/evidence/confidence, reevaluate before unblocking, and reuse a
+  matching existing task on resume. Completed status alone is not resolution.
+  Do not fabricate a completed `research` skill receipt when only local
+  analysis ran.
 - `manage-finops` is required when provider/platform cost can change.
 - `design-ux` is required when the user-facing interaction or surface density
   changes.

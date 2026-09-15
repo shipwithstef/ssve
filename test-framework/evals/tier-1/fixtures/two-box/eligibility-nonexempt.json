@@ -1,0 +1,15 @@
+{
+  "evidence_class": "OFFLINE",
+  "kind": "eligibility_classifier_record",
+  "executable": false,
+  "notes": "Synthetic classifier stdout for OFFLINE tests. Not a live receipt and not a Git note.",
+  "status": 1,
+  "stdout": {
+    "eligible": false,
+    "reasons": [
+      "structural change detected: \"+export function canaryScale(value, factor) {\""
+    ],
+    "files": ["src/helper.mjs"],
+    "tree_hash": "unknown"
+  }
+}

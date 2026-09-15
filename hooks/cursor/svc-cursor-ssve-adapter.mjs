@@ -167,7 +167,36 @@ function handleBeforeSubmitPrompt(payload) {
 }
 
 function handlePreTool(payload, { isShellExecEvent = false } = {}) {
-  const rawToolName = isShellExecEvent ? "Shell" : String(payload.tool_name || payload.toolName || payload.tool || "");
+  let extractedToolName = "";
+  let extractedToolInput = null;
+  if (payload?.tool_call && typeof payload.tool_call === "object") {
+    const keys = Object.keys(payload.tool_call);
+    if (keys.length > 0) {
+      extractedToolName = keys[0];
+      const callObj = payload.tool_call[keys[0]];
+      extractedToolInput = callObj?.args || callObj?.arguments || callObj?.input || callObj;
+    }
+  } else if (payload?.toolCall && typeof payload.toolCall === "object") {
+    const keys = Object.keys(payload.toolCall);
+    if (keys.length > 0) {
+      extractedToolName = keys[0];
+      const callObj = payload.toolCall[keys[0]];
+      extractedToolInput = callObj?.args || callObj?.arguments || callObj?.input || callObj;
+    }
+  }
+  let mappedToolName = extractedToolName;
+  if (extractedToolName === "shellToolCall") mappedToolName = "Shell";
+
+  const rawToolName = isShellExecEvent ? "Shell" : String(payload?.tool_name || payload?.toolName || payload?.tool || mappedToolName || "");
+
+  const initialInput = isShellExecEvent
+    ? { command: payload?.command || "", cwd: payload?.cwd || payload?.workingDirectory || process.cwd() }
+    : (payload?.tool_input || payload?.toolInput || payload?.arguments || payload?.args || extractedToolInput || {});
+  const toolInput = initialInput && typeof initialInput === "object" ? { ...initialInput } : {};
+
+  // Payload identity first. Launch-env conversation IDs must not preempt
+  // repo-local recovery when Cursor omits conversation_id or a later chat
+  // owns the active session file.
   let sid = String(
     payload?.session_id ||
     payload?.sessionId ||
@@ -179,13 +208,14 @@ function handlePreTool(payload, { isShellExecEvent = false } = {}) {
     payload?.metadata?.sessionId ||
     payload?.metadata?.conversation_id ||
     payload?.metadata?.conversationId ||
-    process.env.CURSOR_CONVERSATION_ID ||
-    process.env.CURSOR_SESSION_ID ||
     ""
   );
   let turn = String(payload?.turn_id || payload?.turnId || payload?.generation_id || payload?.generationId || "");
   let emptyIdRecovered = false;
-  const rawCwd = payload.cwd || payload.working_directory || (Array.isArray(payload.workspace_roots) && payload.workspace_roots[0]) || process.cwd();
+  const rawCwd = payload?.cwd || payload?.working_directory || payload?.workingDirectory ||
+    toolInput?.workingDirectory || toolInput?.workdir || toolInput?.cwd ||
+    (Array.isArray(payload?.workspace_roots) && payload.workspace_roots[0]) ||
+    process.cwd();
   const repo = findRepoRoot(rawCwd);
 
   if (!sid && repo) {
@@ -268,10 +298,6 @@ function handlePreTool(payload, { isShellExecEvent = false } = {}) {
   };
 
   try {
-    const toolInput = isShellExecEvent
-      ? { command: payload.command || "", cwd: payload.cwd || process.cwd() }
-      : (payload.tool_input || payload.toolInput || payload.arguments || payload.args || {});
-
     const normalized = {
       ...payload,
       tool_name: rawToolName,

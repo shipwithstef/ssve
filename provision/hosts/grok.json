@@ -28,6 +28,12 @@
       "event": "SessionStart",
       "launch_command": null,
       "note": "WI-552: lifecycle wiring only. Live launch adapter + fixtures are WI-546 scope, not this WI unit budget."
+    },
+    "isolated_plan_analysis": {
+      "enabled": false,
+      "grants_runtime_isolation": false,
+      "availability_only": true,
+      "reason": "Grok Build CLI fresh_session_launch is not isolated_plan_analysis; this host has no tested frozen-payload tool-free adapter with invocation-scoped prompt-inspection and live canary. Pending equivalent adapter proof."
     }
   },
   "hook_events": [

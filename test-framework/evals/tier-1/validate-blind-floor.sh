@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# validate-blind-floor.sh — tier-1 gate for WI-410 blind-control-plan floor.
-# Proves the deterministic floor check (scripts/blind-floor-check.mjs):
+# validate-blind-floor.sh — tier-1 gate for Two-Box Planning (legacy id: blind-control-plan).
+# Active claims: live staged eligibility, independent Open/Contract roles, exactly two
+# Contract-only scouts, and historical fixtures as non-authority. The active gate does
+# not require scripts/blind-floor-judge.sh. Historical floor-check fixtures remain:
 #   - exits non-zero on uncertified REMOVE/ALTER (AC1: planted-silent-removal, weakening-as-refinement)
 #   - ships blind verbatim on the retention escape hatch (AC2: judge-unavailable)
 #   - is run-twice-golden deterministic (AC4)
@@ -46,6 +48,22 @@ if echo "$asg_out" | grep -q "certified_strict_improvement"; then
   echo "FAIL: blind-floor-check.mjs OUTPUT carries certified_strict_improvement (anti-self-grade violation)"; fails=$((fails+1))
 else
   echo "PASS[anti-self-grade]: check output never carries certified_strict_improvement (reads-only from judge verdicts)"
+fi
+
+ROUTE="$ROOT/scripts/blind-floor-route.mjs"
+PROTO="$ROOT/scripts/lib/two-box-protocol.mjs"
+PLANNER="$ROOT/scripts/two-box-plan.mjs"
+if [ ! -f "$ROUTE" ] || [ ! -f "$PROTO" ] || [ ! -f "$PLANNER" ]; then
+  echo "FAIL: missing Two-Box routing/protocol modules"; fails=$((fails+1))
+elif grep -q "evaluateEligibility" "$ROUTE" && grep -q "historical fixture inspection only" "$ROUTE" && grep -q "current substantive work requires Two-Box" "$ROUTE" && grep -q "open_box" "$PLANNER" && grep -q "contract_box" "$PLANNER" && grep -q "scout_forward" "$PLANNER" && grep -q "scout_reverse" "$PLANNER"; then
+  echo "PASS[active-two-box]: live eligibility; independent roles; historical decide() is non-authority"
+else
+  echo "FAIL: active Two-Box eligibility/roles claims missing"; fails=$((fails+1))
+fi
+if node --input-type=module -e "import {decide} from 'file://$ROOT/scripts/blind-floor-route.mjs'; import {PLANNING_ROLES} from 'file://$ROOT/scripts/lib/two-box-protocol.mjs'; const docs=decide({cls:'docs',size:'XL',files:20,optedIn:true,killSwitch:false}); const armed=decide({cls:'infra',size:'M',files:10,optedIn:true,killSwitch:false}); const off=decide({cls:'infra',size:'M',files:10,optedIn:false,killSwitch:false}); if (docs.run!==false||armed.run!==true||off.run!==false) process.exit(1); const scouts=PLANNING_ROLES.filter(r=>r==='scout_forward'||r==='scout_reverse'); if (scouts.length!==2||!PLANNING_ROLES.includes('open_box')||!PLANNING_ROLES.includes('contract_box')) process.exit(1);"; then
+  echo "PASS[historical-classifier]: decide() fixtures remain nonauthoritative; exactly two scouts"
+else
+  echo "FAIL: historical decide() coverage or scout cardinality"; fails=$((fails+1))
 fi
 
 if [ "$fails" -gt 0 ]; then echo "validate-blind-floor: $fails failure(s)"; exit 1; fi

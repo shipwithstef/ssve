@@ -128,8 +128,8 @@ SUMMARY=.svc/external-review-artifacts/cross-model/summary.json
 node scripts/run-external-review.mjs \
   --orchestrator "${SVC_HOST:-claude}" \
   --review-kind exec \
-  --artifacts-dir .svc/external-review-artifacts/cross-model \
-  < .svc/review-cross-model-package.md > "$SUMMARY"
+  --input-file .svc/review-cross-model-package.md \
+  --artifacts-dir .svc/external-review-artifacts/cross-model > "$SUMMARY"
 node - "$SUMMARY" <<'NODE'
 const fs = require('fs');
 const summary = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
@@ -140,7 +140,7 @@ NODE
 ```
 
 The launcher is the sole paid invocation path. It pins the requested model and
-effort, takes the exact package on stdin, constrains findings to the shared
+effort, takes the exact package from `--input-file` or stdin, constrains findings to the shared
 schema, writes an invocation receipt, and hard-fails on unavailable capability.
 Do not construct provider commands in this skill.
 
@@ -490,3 +490,6 @@ Reference: `references/chain-receipt-contract.md`.
 ## Automatic report recovery
 The canonical launcher permits at most one same-model report-repair attempt inside the original timeout. Claude repair requires trustworthy observed spend and uses the remaining enforced dollar ceiling. Other transports report no enforced dollar ceiling; if an explicit dollar cap was requested, they cannot retry automatically. Without such a cap, the bound is one correction and the remaining timeout, not a claimed dollar limit. It preserves both raw attempts and signs only the final validated report. Incomplete/malformed reports require normal validation after repair; parsed negative findings, failed certifications, rubric failures or unread dependencies prevent automatic completion. Certification-scope repair may only remove unbound false entries; verdict, findings, dependencies, summary and every bound certification remain identical. An actual negative source observation must remain and block; no local rewriting of reviewer output is allowed. Authorization, provider safety, model mismatch, missing proof and substantive defects are not recovery bypasses.
 A zero-invocation verified cache replay retains its signed issuance history but consumes no new adversarial round. The three-substantive-round cap remains; historical notes and counters are not erased. Grok receives the whole prompt with --verbatim. Do not ask the owner to authorize these mechanical recoveries.
+
+## Automatic input recovery
+Persist the review request and pass `--input-file` to both preflight and review. Interactive stdin fails immediately; incomplete pipes stop after 30 seconds (configurable up to 60 seconds). On a zero-provider `input_invalid` failure, recover the exact saved request, verify the current candidate and reviewer policy still match, and retry once using the file. Preserve the failed attempt; never invent a replacement prompt or accept partial input. If an old launcher is still waiting, verify its command, worktree and zero-provider state before stopping that exact process. Keep this recovery internal and continue the existing task; ask the owner only when the request or authority cannot be recovered.

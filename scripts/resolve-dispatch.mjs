@@ -25,6 +25,15 @@ const ROLE_BY_LABEL = {
   DISC: 'disc',
   PASS: 'pass',
 };
+export const NAMED_PLANNING_ROLES = Object.freeze({
+  open_box: Object.freeze({ label: 'PLAN', inherit_role: 'plan' }),
+  contract_box: Object.freeze({ label: 'PLAN', inherit_role: 'plan' }),
+  assessor: Object.freeze({ label: 'PLAN', inherit_role: 'plan' }),
+  scout_forward: Object.freeze({ label: 'EXEC', inherit_role: 'implementor' }),
+  scout_reverse: Object.freeze({ label: 'EXEC', inherit_role: 'implementor' }),
+});
+const MODE_NON_ROLE_KEYS = new Set(['labels', 'review', 'roles', 'planning_transport']);
+const PLANNING_TRANSPORT_RETRY_KEYS = new Set(['enabled', 'max_classified_spawn_retries', 'retry_class']);
 const HOST_FAMILY = {
   claude: 'anthropic',
   codex: 'openai',
@@ -131,9 +140,76 @@ function validateStation(station, scope) {
   if (station.kind === 'external' && station.authority === 'independent' && station.tuple.host === 'cursor' && !cursorIndependentEligible(station)) fail(`${scope}/${station.id} Cursor cannot be independent because its runtime provider family is not attested`);
 }
 
+function validatePlanningTransport(policy) {
+  if (!Object.prototype.hasOwnProperty.call(policy, 'planning_transport')) return;
+  if (!isObject(policy.planning_transport)) fail('planning_transport must be an object', 'dispatch_policy_invalid');
+  for (const key of Object.keys(policy.planning_transport)) {
+    if (key !== 'pre_content_retry') fail(`planning_transport has unsupported key "${key}"`, 'dispatch_policy_invalid');
+  }
+  const retry = policy.planning_transport.pre_content_retry;
+  if (retry === undefined) return;
+  if (!isObject(retry)) fail('planning_transport.pre_content_retry must be an object', 'dispatch_policy_invalid');
+  for (const key of Object.keys(retry)) {
+    if (!PLANNING_TRANSPORT_RETRY_KEYS.has(key)) fail(`planning_transport.pre_content_retry has unsupported key "${key}"`, 'dispatch_policy_invalid');
+  }
+  if (typeof retry.enabled !== 'boolean') fail('planning_transport.pre_content_retry.enabled must be boolean', 'dispatch_policy_invalid');
+  if (retry.max_classified_spawn_retries !== undefined) {
+    if (!Number.isInteger(retry.max_classified_spawn_retries) || retry.max_classified_spawn_retries < 0 || retry.max_classified_spawn_retries > 1) {
+      fail('planning_transport.pre_content_retry.max_classified_spawn_retries must be an integer 0 or 1', 'dispatch_policy_invalid');
+    }
+  }
+  if (retry.retry_class !== undefined && retry.retry_class !== 'pre_content_spawn_failure') {
+    fail('planning_transport.pre_content_retry.retry_class must be pre_content_spawn_failure', 'dispatch_policy_invalid');
+  }
+}
+
+function assertRoleRouteEntry(entry, scope) {
+  if (!isObject(entry)) fail(`${scope} must be a role route object; malformed named entries cannot silently inherit`, 'dispatch_policy_invalid');
+  if (isObject(entry.tuple)) {
+    validateTuple(entry.tuple, scope);
+    return;
+  }
+  if (typeof entry.host === 'string' && typeof entry.family === 'string' && typeof entry.model === 'string' && typeof entry.effort === 'string') {
+    validateTuple(entry, scope);
+    return;
+  }
+  if (typeof entry.native === 'string' && entry.native.trim()) {
+    if (typeof entry.family !== 'string' || !entry.family.trim() || typeof entry.model !== 'string' || !entry.model.trim() || typeof entry.effort !== 'string') {
+      fail(`${scope} native route requires family, model, and effort`, 'dispatch_policy_invalid');
+    }
+    if (!EFFORTS.has(entry.effort)) fail(`${scope} tuple.effort must be one of: ${[...EFFORTS].join(', ')}`);
+    return;
+  }
+  fail(`${scope} is malformed; named role entries cannot silently inherit a label default`, 'dispatch_policy_invalid');
+}
+
+function validateNamedModeRoles(modeName, mode) {
+  if (isObject(mode.roles)) {
+    for (const [roleName, entry] of Object.entries(mode.roles)) {
+      assertRoleRouteEntry(entry, `mode "${modeName}" roles.${roleName}`);
+    }
+  }
+  for (const roleName of Object.keys(NAMED_PLANNING_ROLES)) {
+    if (Object.prototype.hasOwnProperty.call(mode, roleName)) {
+      assertRoleRouteEntry(mode[roleName], `mode "${modeName}" ${roleName}`);
+    }
+  }
+}
+
+function getExplicitNamedRoleEntry(modeConfig, role) {
+  if (isObject(modeConfig.roles) && Object.prototype.hasOwnProperty.call(modeConfig.roles, role)) {
+    return { present: true, entry: modeConfig.roles[role] };
+  }
+  if (!MODE_NON_ROLE_KEYS.has(role) && Object.prototype.hasOwnProperty.call(modeConfig, role)) {
+    return { present: true, entry: modeConfig[role] };
+  }
+  return { present: false, entry: undefined };
+}
+
 function validateDispatchPolicy(policy) {
   const schemaResult = validate(DISPATCH_SCHEMA, policy);
   if (!schemaResult.valid) fail(`dispatch policy schema violation: ${schemaResult.errors.join('; ')}`, 'dispatch_policy_invalid');
+  validatePlanningTransport(policy);
   if (!policy.modes?.[policy.default_mode]) fail(`dispatch default_mode "${policy.default_mode}" is missing from modes`, 'dispatch_policy_invalid');
   for (const [modeName, mode] of Object.entries(policy.modes || {})) {
     if (!isObject(mode)) fail(`mode "${modeName}" must be an object`, 'dispatch_policy_invalid');
@@ -153,6 +229,7 @@ function validateDispatchPolicy(policy) {
         phaseConfig.stations.forEach((station, index) => validateStation(station, `mode "${modeName}" review.${phase}[${index}]`));
       }
     }
+    validateNamedModeRoles(modeName, mode);
   }
 }
 
@@ -446,10 +523,14 @@ export function resolveDispatchModel(options = {}) {
     source: 'owner-dispatch-policy',
     config_path: context.config_path,
     config_sha256: context.config_sha256,
+    effective_policy_sha256: hash(context.policy),
     mode: context.mode,
     orchestrator,
     label,
     role,
+    requested_role: role,
+    inherited_role: null,
+    inherited_label: null,
     tuple: { orchestrator, ...tuple },
     harness: tuple.host,
     provider: tuple.host,
@@ -484,6 +565,11 @@ export function resolveDispatchModel(options = {}) {
 // with the SAME fail-closed, no-silent-remap semantics as resolveDispatchModel.
 // A host with no configured route for the role fails closed — it is never
 // silently remapped to Claude/Codex (WI-552 AC-552-6).
+// WI-FW-TWO-BOX-01: named planning roles inherit PLAN/EXEC only when absent.
+// An explicit named entry always wins over label defaults; malformed named
+// entries fail closed and never inherit. Deny/allow applies to the requested
+// role and, when inheriting, the inherited role. Reviewer/executor topology is
+// a separate authority. No hardcoded model or effort.
 export function resolveDispatchRoleTuple(options = {}) {
   const role = String(options.role || '').trim();
   if (!role) fail('role resolution requires --role', 'dispatch_input_invalid');
@@ -491,18 +577,37 @@ export function resolveDispatchRoleTuple(options = {}) {
   if (!orchestrator) fail('role resolution requires --orchestrator or SVC_HOST', 'dispatch_input_invalid');
   if (orchestrator === 'agy') fail('AGY is reviewer transport only and cannot be an orchestrator', 'dispatch_input_invalid');
   const context = normalizeDispatchContext(options);
-  const entry = normalizeRoleEntry(context.mode_config, role, null);
-  if (!entry) fail(`role "${role}" is not configured in mode "${context.mode}"`, 'dispatch_policy_invalid');
+  const explicit = getExplicitNamedRoleEntry(context.mode_config, role);
+  let entry;
+  let inherited_role = null;
+  let inherited_label = null;
+  if (explicit.present) {
+    if (!isObject(explicit.entry)) fail(`role "${role}" is malformed and cannot silently inherit`, 'dispatch_policy_invalid');
+    entry = explicit.entry;
+  } else if (NAMED_PLANNING_ROLES[role]) {
+    const inherit = NAMED_PLANNING_ROLES[role];
+    entry = normalizeRoleEntry(context.mode_config, inherit.inherit_role, inherit.label);
+    if (!entry) fail(`role "${role}" is not configured and label "${inherit.label}" is missing for inherit`, 'dispatch_policy_invalid');
+    inherited_role = inherit.inherit_role;
+    inherited_label = inherit.label;
+  } else {
+    fail(`role "${role}" is not configured in mode "${context.mode}"`, 'dispatch_policy_invalid');
+  }
   const tuple = tupleFromRoleEntry(entry, role, orchestrator);
   applyDenyAllow(context.policy, tuple, role);
+  if (inherited_role) applyDenyAllow(context.policy, tuple, inherited_role);
   return {
     schema_version: 1,
     source: 'owner-dispatch-policy',
     config_path: context.config_path,
     config_sha256: context.config_sha256,
+    effective_policy_sha256: hash(context.policy),
     mode: context.mode,
     orchestrator,
     role,
+    requested_role: role,
+    inherited_role,
+    inherited_label,
     tuple: { orchestrator, ...tuple },
     harness: tuple.host,
     provider: tuple.host,
@@ -510,6 +615,7 @@ export function resolveDispatchRoleTuple(options = {}) {
     effort: tuple.effort,
     thinking: entry?.thinking ?? null,
     invocation: entry?.invocation ?? null,
+    planning_transport: isObject(context.policy.planning_transport) ? deepClone(context.policy.planning_transport) : null,
     layering: {
       overlay: {
         requested: Boolean(options.workOverlayPath || process.env.SVC_DISPATCH_WORK_OVERLAY),

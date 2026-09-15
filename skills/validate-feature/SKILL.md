@@ -237,7 +237,7 @@ After completing {T}.1 (context-scan), evaluate the HARD-GATE condition:
   Claude task system. Proceed directly to {T}.8 (route).
 - If the project has existing context → evaluate the applicability below; retain relevant cross-validation and routing, and skip only work whose evidence is already sufficient.
 
-**Market-check applicability:** Run market research before a business decision only when current evidence leaves consequential demand, timing, differentiation, or ship uncertainty. Tool availability does not itself justify research. For an already-authorized bounded change, reuse accepted scope and current AC/persona/spec/code evidence; do not create a new market-validation cycle or rescore its business case without new contradictory evidence.
+**Market-check applicability:** Evaluate each market question with `researchDecision(question)` from `scripts/lib/research-decision.mjs`. External research runs only for an explicit request, necessary freshness with a stated reason, or a consequential externally answerable question below 7/10. Missing ordinary confidence is analysis. Sufficient verified current cited evidence can resolve the question; a numerical score alone is not evidence. Tool availability does not itself justify research. For an already-authorized bounded change, reuse accepted scope and current AC/persona/spec/code evidence; do not create a new market-validation cycle or rescore its business case without new contradictory evidence.
 
 For concept fragmentation, an existing pipeline break, or a missing journey describing existing functionality, P2 reuses the established expected behavior and skips P3–P5 when no new consequential business uncertainty exists. Route to diagnose-bug, plan-changeset, write-journeys or audit-ac according to the actual gap; retain relevant dependency and spec/code conflict checks.
 
@@ -513,13 +513,12 @@ RECOMMENDATION: Based on P1's profile, this serves self-directed learners who [p
 → Accept / Customize / Override?
 ```
 
-If you're **not confident** in your recommendation, say so:
+If ordinary confidence is missing, analyze current cited evidence — a missing score is not a research trigger:
 ```
 Q4: What's the bet?
-I'm not certain about the strategic thesis here. Let me research what's working
-in this space before recommending.
-[invoke research skill → return with finding]
-RECOMMENDATION (based on research): [finding-informed answer]
+I'm not certain about the strategic thesis here. Current evidence: [source / basis / freshness].
+Invoke research only if researchDecision(question) returns external_research_required.
+RECOMMENDATION: [finding-informed answer]
 → Accept / Customize / Override?
 ```
 
@@ -530,7 +529,7 @@ Answer questions yourself using this priority:
 1. **Current owner intent plus spec/code evidence** — use the context scan; expose conflicts rather than treating existing code as approval
 2. **Persona/journey data** — what existing artifacts say about this user/problem
 3. **Domain conventions** — what the industry pattern suggests (from training data)
-4. **Research** — if 1-3 leave uncertainty, invoke the `research` skill, take decision based on finding
+4. **External research** — only if `researchDecision(question)` returns `external_research_required`; otherwise continue as analysis. Missing ordinary confidence is analysis. Sufficient verified current cited evidence can resolve the question.
 
 For each question, log the answer and its source in the brief:
 ```
@@ -557,13 +556,9 @@ Auto mode covers relevant business dimensions from evidence without manufacturin
 
 ### When to invoke research
 
-Invoke the `research` skill when:
-- The domain is unfamiliar (framework, API, market segment you lack confidence about)
-- The strategic thesis (Q4) requires external validation
-- The user asks "what's the best practice for X?" and you're not confident
-- Auto mode encounters a question where codebase + personas + training data leave genuine uncertainty
+Per question, call `researchDecision(question)` from `scripts/lib/research-decision.mjs`. Insert `research` only when it returns `external_research_required`: explicit user request, necessary freshness (stated reason, externally resolvable, insufficient current cited evidence), or a consequential externally answerable question with confidence below 7. Bind `requesting_decision_id` and `requesting_task_id`; reuse a matching existing task on the same decision ID; keep the requester blocked while unresolved; a changed claim invalidates only that claim's old proof.
 
-Do NOT research what the codebase already answers. Do NOT research general knowledge you're confident about.
+Missing ordinary confidence is analysis. Repository reading, knowledge recall, and codebase answers are analysis. A numerical score alone is not evidence. Sufficient verified current cited evidence can resolve ordinary questions. Do not fabricate a completed `research` receipt when only local analysis ran.
 
 ### Live market signals (recommended: last30days)
 
@@ -604,10 +599,7 @@ Q3: Why now?
   — source: last30days research (2026-04-05)
 ```
 
-**If last30days is not available:** Fall back to `research` skill (WebSearch).
-Less grounded — no engagement metrics, no cross-platform scoring — but still
-better than training data alone. The business questions still work; the
-answers are just less evidence-backed.
+**If last30days is not available:** Stay on analysis unless `researchDecision(question)` returns `external_research_required`. Then invoke `research` for that question only. The business questions still work from current cited evidence; a missing score is not a research trigger.
 
 ### Informed by Step 0
 
@@ -960,7 +952,7 @@ Based on signals detected during validation, conditionally insert these skills i
 | Ship Brief = NO-SHIP and builder needs revenue-generating alternatives | `find-opportunity` | Immediately after NO-SHIP | Produces ranked alternatives table before re-routing |
 | Timeline > 2 weeks + no proven revenue model + builder profile shows limited capital/runway | `stage-revenue` | After DEFER or SHIP with high capital risk | Produces Stage 1/2/3 revenue plan before big-vision execution |
 | SHIP decision made and competitive differentiators or product-market fit angles discovered | `analyze-marketing` | After SHIP decision, before write-spec | Marketing context must exist before design-phase product positioning |
-| Business question answer is uncertain and domain knowledge base has no answer | `research` | Inline before the uncertain question | Validates strategic thesis with live market signals |
+| `researchDecision(question)` returns `external_research_required` | `research` | Inline before the requesting question; reuse matching decision ID; keep requester blocked while unresolved | Predicate-required external evidence; missing score stays analysis |
 
 If any on-demand skill is inserted, update `.svc/lane-tasks-<WI>.json` with the new task and set `blocked_by` so downstream work waits for the on-demand skill's output. Log the insertion as a `mechanical` decision in `.svc/pipeline-decisions.jsonl`.
 

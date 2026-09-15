@@ -204,7 +204,7 @@ These skills are not in any lane's linear pipeline. They auto-insert into the ta
 
 | On-Demand Skill | Detected by | Signal | Insertion Point | Blocks |
 |-----------------|-------------|--------|-----------------|--------|
-| `research` | `analyze-domain`, `design-tech`, `execute-changeset`, `validate-feature`, `improve-framework` | Skill declares uncertainty AND knowledge base / stored research has no answer | Inline before the step that needs the answer | The dependent step |
+| `research` | `analyze-domain`, `design-tech`, `execute-changeset`, `validate-feature`, `improve-framework` | `researchDecision(question)` from `scripts/lib/research-decision.mjs` returns `external_research_required` | Inline before the requesting step; bind `requesting_decision_id` / `requesting_task_id`; reuse matching decision ID; keep requester blocked while unresolved | The requesting step |
 | `manage-finops` | `validate-feature` (Q7), `design-tech` (Cost Model pillar) | External API, hosting, infra, or platform cost is a factor and builder profile shows budget sensitivity | After the unanswered cost question | Cost-dependent decisions (tech choice, hosting provider) |
 | `monetization-architecture` | `validate-feature`, `design-tech` | Pricing tiers, freemium, subscriptions, usage limits, or paywall boundaries are in scope | After feature approval / during tech design when tier gating is in spec | `execute-changeset` until gating matrix exists |
 | `review-cross-model` | `review-gate` | HIGH/CRITICAL severity finding on new data models, external integrations, auth, or payment flows | After `review-gate` if residual risk detected | `land-changeset` until convergence |

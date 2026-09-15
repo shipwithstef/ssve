@@ -4,7 +4,7 @@
   "generated_at": "2026-08-15",
   "method": "Normalize each current SSVE or registered-Example Marketplace proposal claim by whitespace and case, count identical copies once, then assign one evidence-backed disposition.",
   "source_manifest": "proposals/done/2026-08-15-evolution-marketplace-transition.md",
-  "source_manifest_sha256": "41a309a980865be78efc8f9ad5282d66c89e7285e4bd16881ba52256e1eac69c",
+  "source_manifest_sha256": "8bf03dd585268786f09dbd6e27d059de008995fda2f1401c62ef6523b6b1ce9c",
   "source_rows": [
     {"family":"mandatory-chain-parity","source_sha256":"bff9b6fa36b38fa29804c8a7e90179cfb97c83abe521da3dd923319ff8334704"},
     {"family":"bash-guard-coverage","source_sha256":"81d8cdcf7fa3b0ca5006df02779f2fb42d81652334554ac75571c58079cef274"},

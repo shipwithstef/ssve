@@ -167,7 +167,7 @@ require_contains "$GEMINI_HOST" "\"task_graph\"" "gemini task-graph contract blo
 require_contains "$KIMI_HOST" "\"task_graph\"" "kimi task-graph contract block"
 require_contains "$KIMI_HOST" "\"TaskList\", \"TaskOutput\"" "kimi native task read tools"
 require_contains "$KIMI_HOST" "\"background_tasks\": true" "kimi background task capability"
-require_contains "$INFRA_DETAIL" "Five hosts supported: claude, codex, gemini, kimi, and opencode." "infrastructure host support detail"
+require_contains "$INFRA_DETAIL" "Nine provisioned hosts supported: claude, kimi, codex, gemini, opencode, mimo-code, antigravity, cursor, and grok." "infrastructure host support detail"
 
 SKILLS=$(node -e "
   const m = require('$MANIFEST');

@@ -28,7 +28,7 @@ const fails = [];
 const warns = [];
 
 // Historical record dirs: never rewritten, absolute old-machine paths allowed.
-const HISTORICAL_PREFIXES = ["proposals/done/", "docs/plans/", "docs/specs/research-prescope-", ".worktrees/", "node_modules/", ".git/", "test-framework/results/"];
+const HISTORICAL_PREFIXES = ["proposals/done/", "docs/plans/", "docs/specs/research-prescope-", ".worktrees/", "node_modules/", ".git/", "test-framework/results/", ".svc/external-review-artifacts/"];
 
 function isHistorical(rel) {
   return HISTORICAL_PREFIXES.some((p) => rel.startsWith(p));

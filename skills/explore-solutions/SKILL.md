@@ -73,14 +73,15 @@ chain:
   human_checkpoint: true
 ---
 
-> **Cognitive routing:** 🧠 [STRAT-OPUS] + 🌐 [DISC-SEARCH] — alternative-paradigm comparison needs Opus reasoning with search-grounded evidence. See `references/model-routing.md`.
+> **Cognitive routing:** labels, host, model, and effort stay configurable via the active profile (`references/model-routing.md`). Alternative-paradigm comparison is ANALYSIS of current specs, code, and cited evidence. Do not hard-require DISC-SEARCH or any fixed default old recipe. Invoke search/`research` only when `researchDecision(question)` from `scripts/lib/research-decision.mjs` returns `external_research_required`.
 
 # Solution Explorer
 
 Challenge the technical design with alternative paradigms before committing
 to implementation. The LLM already picked its best approach in
-`design-tech`. This skill contests that choice with research,
-alternatives, and evidence — so you commit with confidence, not default.
+`design-tech`. This skill contests that choice with local analysis,
+alternatives, and current cited evidence — so you commit with confidence, not default.
+External research is not unconditional and is not required per paradigm.
 
 Derived from petekp/claude-code-setup (MIT, Copyright 2024 Pete Petrash).
 Adapted for svc's spec-first pipeline with full upstream context.
@@ -94,10 +95,11 @@ pattern-matches to the most common approach for the stated problem. That's
 a local maximum — the most obvious solution is rarely the best across all
 dimensions that matter for THIS project, THIS team, THESE constraints.
 
-This skill forces the discipline a senior engineer applies: survey the
-landscape before committing. The initial tech design becomes Approach A —
-the baseline to beat. Exploration either confirms it (with evidence) or
-finds something better.
+This skill forces the discipline a senior engineer applies: compare alternatives
+against current constraints and cited evidence before committing. Repository
+inspection and reasoning are ANALYSIS, never internal research. The initial tech
+design becomes Approach A — the baseline to beat. Exploration either confirms it
+(with evidence) or finds something better.
 
 ## When to Skip
 
@@ -254,14 +256,20 @@ strategy entirely. Different bet about what matters most.
    - What would make the hardest AC trivially easy?
    - What's the laziest solution that still meets every MUST?
 
-3. **Research each paradigm.** Use web search, documentation, codebase exploration.
-   For each: libraries, patterns, failure modes, who has done this before.
+3. **Analyze each paradigm** from the current repo, specs, bootstraps, and cited
+   evidence (ANALYSIS). Do not run per-paradigm mandatory search and do not require
+   external examples because solution confidence was requested. For each paradigm:
+   libraries already in play, patterns, failure modes, and currently cited prior art.
 
-   When solution-confidence mode is active, include at least five sourced
-   real-world examples across the total exploration. Separate product UX
-   examples from provider/API examples, and include cost/cache/freshness lessons
-   where relevant. External/AI suggestions are not accepted directly; classify
-   them as `adopt`, `modify`, `defer`, `reject`, or `unrelated`.
+   If `researchDecision(question)` from `scripts/lib/research-decision.mjs` returns
+   `external_research_required`, bind `requesting_decision_id` and
+   `requesting_task_id`, invoke `research` for that scope only, return updated
+   question/evidence/confidence, reevaluate before unblocking, and reuse a matching
+   existing task on resume. Completed status alone is not resolution. When external
+   research does run, separate product UX examples from provider/API examples and
+   include cost/cache/freshness lessons where relevant. External/AI suggestions are
+   not accepted directly; classify them as `adopt`, `modify`, `defer`, `reject`, or
+   `unrelated`.
 
 4. **Generate concrete approaches.** 1-3 per paradigm. Each needs:
    - How it works (concrete, not hand-waving)
@@ -319,7 +327,7 @@ These EUREKA learnings are the highest-value entries in the learning system — 
 Do not proceed to Phase 3 until:
 - At least 3 distinct paradigms (including baseline) with substantive analysis
 - At least 5 total approaches across paradigms
-- Research conducted (not just training-data brainstorming)
+- Local analysis conducted against current cited evidence (not uncited brainstorming); external research only if `researchDecision(question)` returned `external_research_required` for a named scope and that work actually ran
 - Non-obvious section genuinely attempted
 
 If the baseline seems "obviously best" — that's the satisficing instinct this
@@ -413,7 +421,7 @@ matrix and component table change.
 **<name>** — <one-line description>
 
 ## Confidence
-<high (prototyped + researched) / medium (researched + analyzed) / low (analyzed only)>
+<integer 1..10 or null; high means prototyped + analyzed from current cited evidence. External research is not required for a high score and is included only if `researchDecision` required it and it ran. Confidence is not evidence by itself.>
 
 ## Evidence chain
 - Problem framing: PROBLEM_BRIEF.md

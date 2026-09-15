@@ -1,0 +1,536 @@
+{
+  "schema_version": 1,
+  "scope": "exact planned write paths; not proof of implementation",
+  "entries": [
+    {
+      "task": "T0",
+      "operation": "CREATE",
+      "path": "docs/plans/two-box-transmutation/manifest.md"
+    },
+    {
+      "task": "T0",
+      "operation": "CREATE",
+      "path": "docs/plans/two-box-transmutation/plan-contract.json"
+    },
+    {
+      "task": "T0",
+      "operation": "CREATE",
+      "path": "docs/plans/two-box-transmutation/planning-summary.md"
+    },
+    {
+      "task": "T0",
+      "operation": "CREATE",
+      "path": "docs/plans/two-box-transmutation/immutable-baseline.md"
+    },
+    {
+      "task": "T0",
+      "operation": "CREATE",
+      "path": "docs/plans/two-box-transmutation/rollback-rolling.md"
+    },
+    {
+      "task": "T0",
+      "operation": "CREATE",
+      "path": "docs/plans/two-box-transmutation/simulation.md"
+    },
+    {
+      "task": "T0",
+      "operation": "CREATE",
+      "path": "docs/plans/two-box-transmutation/research-consumer-census.md"
+    },
+    {
+      "task": "T0",
+      "operation": "CREATE",
+      "path": "docs/plans/two-box-transmutation/solution-plan.md"
+    },
+    {
+      "task": "T0",
+      "operation": "CREATE",
+      "path": "docs/plans/two-box-transmutation/solution-review-dispositions.md"
+    },
+    {
+      "task": "T0",
+      "operation": "CREATE",
+      "path": "docs/plans/two-box-transmutation/root-design-review.md"
+    },
+    {
+      "task": "T0",
+      "operation": "CREATE",
+      "path": "docs/plans/two-box-transmutation/planned-files.json"
+    },
+    {
+      "task": "T0",
+      "operation": "CREATE",
+      "path": "docs/specs/work-items/WI-FW-TWO-BOX-01.md"
+    },
+    {
+      "task": "T0",
+      "operation": "CREATE",
+      "path": "docs/specs/features/two-box-transmutation.md"
+    },
+    {
+      "task": "T0",
+      "operation": "CREATE",
+      "path": "docs/specs/tech/two-box-transmutation.md"
+    },
+    {
+      "task": "T0",
+      "operation": "CREATE",
+      "path": "docs/specs/journeys/J-FW-07-two-box-transmutation.feature.md"
+    },
+    {
+      "task": "T0",
+      "operation": "CREATE",
+      "path": "docs/specs/relations/two-box-transmutation.branches.md"
+    },
+    {
+      "task": "T0",
+      "operation": "CREATE",
+      "path": "docs/specs/privacy/v4-bootstrap-snapshot.json"
+    },
+    {
+      "task": "T1",
+      "operation": "MODIFY",
+      "path": "README.md"
+    },
+    {
+      "task": "T1",
+      "operation": "MODIFY",
+      "path": "DOCTRINE.md"
+    },
+    {
+      "task": "T2",
+      "operation": "MODIFY",
+      "path": "skills/blind-control-plan/SKILL.md"
+    },
+    {
+      "task": "T2",
+      "operation": "MODIFY",
+      "path": "scripts/blind-floor-route.mjs"
+    },
+    {
+      "task": "T2",
+      "operation": "MODIFY",
+      "path": "scripts/blind-floor-check.mjs"
+    },
+    {
+      "task": "T2",
+      "operation": "MODIFY",
+      "path": "scripts/blind-floor-judge.sh"
+    },
+    {
+      "task": "T2",
+      "operation": "MODIFY",
+      "path": "provision/hosts/antigravity.json"
+    },
+    {
+      "task": "T2",
+      "operation": "MODIFY",
+      "path": "provision/hosts/claude.json"
+    },
+    {
+      "task": "T2",
+      "operation": "MODIFY",
+      "path": "provision/hosts/codex.json"
+    },
+    {
+      "task": "T2",
+      "operation": "MODIFY",
+      "path": "provision/hosts/cursor.json"
+    },
+    {
+      "task": "T2",
+      "operation": "MODIFY",
+      "path": "provision/hosts/gemini.json"
+    },
+    {
+      "task": "T2",
+      "operation": "MODIFY",
+      "path": "provision/hosts/grok.json"
+    },
+    {
+      "task": "T2",
+      "operation": "MODIFY",
+      "path": "provision/hosts/kimi.json"
+    },
+    {
+      "task": "T2",
+      "operation": "MODIFY",
+      "path": "provision/hosts/mimo-code.json"
+    },
+    {
+      "task": "T2",
+      "operation": "MODIFY",
+      "path": "provision/hosts/opencode.json"
+    },
+    {
+      "task": "T2",
+      "operation": "MODIFY",
+      "path": "scripts/validate-host-authority-capabilities.mjs"
+    },
+    {
+      "task": "T2",
+      "operation": "MODIFY",
+      "path": "references/host-capabilities.md"
+    },
+    {
+      "task": "T2",
+      "operation": "MODIFY",
+      "path": "scripts/resolve-dispatch.mjs"
+    },
+    {
+      "task": "T2",
+      "operation": "MODIFY",
+      "path": "agents/svc-stage-plan.md"
+    },
+    {
+      "task": "T2",
+      "operation": "MODIFY",
+      "path": "scripts/stage-segment.mjs"
+    },
+    {
+      "task": "T2",
+      "operation": "MODIFY",
+      "path": "references/skill-runtime-contracts-v2.json"
+    },
+    {
+      "task": "T2",
+      "operation": "MODIFY",
+      "path": "references/model-routing.md"
+    },
+    {
+      "task": "T2",
+      "operation": "MODIFY",
+      "path": "schemas/dispatch-policy.schema.json"
+    },
+    {
+      "task": "T2",
+      "operation": "MODIFY",
+      "path": "scripts/run-external-review.mjs"
+    },
+    {
+      "task": "T2",
+      "operation": "CREATE",
+      "path": "scripts/two-box-plan.mjs"
+    },
+    {
+      "task": "T2",
+      "operation": "CREATE",
+      "path": "scripts/lib/two-box-protocol.mjs"
+    },
+    {
+      "task": "T2",
+      "operation": "CREATE",
+      "path": "scripts/lib/isolated-plan-analysis.mjs"
+    },
+    {
+      "task": "T2",
+      "operation": "CREATE",
+      "path": "scripts/lib/two-box-scout-assign.mjs"
+    },
+    {
+      "task": "T2",
+      "operation": "CREATE",
+      "path": "scripts/lib/two-box-role-launch.mjs"
+    },
+    {
+      "task": "T3",
+      "operation": "MODIFY",
+      "path": "schemas/receipts/control-plan.schema.json"
+    },
+    {
+      "task": "T3",
+      "operation": "MODIFY",
+      "path": "schemas/receipts/plan-manifest.schema.json"
+    },
+    {
+      "task": "T3",
+      "operation": "MODIFY",
+      "path": "scripts/emit-receipt.mjs"
+    },
+    {
+      "task": "T3",
+      "operation": "MODIFY",
+      "path": "scripts/check-chain-receipts.mjs"
+    },
+    {
+      "task": "T3",
+      "operation": "MODIFY",
+      "path": "scripts/lib/plan-manifest-contract.mjs"
+    },
+    {
+      "task": "T3",
+      "operation": "MODIFY",
+      "path": "scripts/prepare-plan-handoff.mjs"
+    },
+    {
+      "task": "T3",
+      "operation": "MODIFY",
+      "path": "scripts/lib/review-inputs.mjs"
+    },
+    {
+      "task": "T3",
+      "operation": "MODIFY",
+      "path": "skills/plan-changeset/SKILL.md"
+    },
+    {
+      "task": "T3",
+      "operation": "MODIFY",
+      "path": "skills/plan-changeset/references/manifest-templates.md"
+    },
+    {
+      "task": "T3",
+      "operation": "MODIFY",
+      "path": "skills/review-plan/SKILL.md"
+    },
+    {
+      "task": "T3",
+      "operation": "MODIFY",
+      "path": "scripts/review-plan-codex.sh"
+    },
+    {
+      "task": "T3",
+      "operation": "MODIFY",
+      "path": "scripts/review-plan-kimi.sh"
+    },
+    {
+      "task": "T3",
+      "operation": "MODIFY",
+      "path": "references/plan-review-protocol.md"
+    },
+    {
+      "task": "T3",
+      "operation": "MODIFY",
+      "path": "references/chain-receipt-contract.md"
+    },
+    {
+      "task": "T3",
+      "operation": "MODIFY",
+      "path": "agents/plan-reviewer.md"
+    },
+    {
+      "task": "T3",
+      "operation": "CREATE",
+      "path": "scripts/lib/control-plan-validate.mjs"
+    },
+    {
+      "task": "T3",
+      "operation": "CREATE",
+      "path": "scripts/lib/transmutation-seal.mjs"
+    },
+    {
+      "task": "T3",
+      "operation": "CREATE",
+      "path": "scripts/lib/receipt-issuance-epoch.mjs"
+    },
+    {
+      "task": "T3",
+      "operation": "MODIFY",
+      "path": "test-framework/tests/delivery-plan-contract.test.mjs"
+    },
+    {
+      "task": "T4",
+      "operation": "MODIFY",
+      "path": "skills/execute-changeset/SKILL.md"
+    },
+    {
+      "task": "T4",
+      "operation": "MODIFY",
+      "path": "skills/execute-changeset/references/process-details.md"
+    },
+    {
+      "task": "T4",
+      "operation": "MODIFY",
+      "path": "skills/execute-changeset/references/subagent-dispatch.md"
+    },
+    {
+      "task": "T5",
+      "operation": "CREATE",
+      "path": "scripts/lib/research-decision.mjs"
+    },
+    {
+      "task": "T5",
+      "operation": "MODIFY",
+      "path": "scripts/compile-delivery-graph.mjs"
+    },
+    {
+      "task": "T5",
+      "operation": "MODIFY",
+      "path": "scripts/validate-delivery-graph.mjs"
+    },
+    {
+      "task": "T5",
+      "operation": "MODIFY",
+      "path": "references/solution-confidence-protocol.md"
+    },
+    {
+      "task": "T5",
+      "operation": "MODIFY",
+      "path": "skills/research/SKILL.md"
+    },
+    {
+      "task": "T5",
+      "operation": "MODIFY",
+      "path": "skills/explore-solutions/SKILL.md"
+    },
+    {
+      "task": "T5",
+      "operation": "MODIFY",
+      "path": "skills/design-tech/SKILL.md"
+    },
+    {
+      "task": "T5",
+      "operation": "MODIFY",
+      "path": "skills/write-spec/SKILL.md"
+    },
+    {
+      "task": "T5",
+      "operation": "MODIFY",
+      "path": "skills/validate-feature/SKILL.md"
+    },
+    {
+      "task": "T5",
+      "operation": "MODIFY",
+      "path": "skills/analyze-domain/SKILL.md"
+    },
+    {
+      "task": "T5",
+      "operation": "MODIFY",
+      "path": "skills/recall-stack-knowledge/SKILL.md"
+    },
+    {
+      "task": "T5",
+      "operation": "MODIFY",
+      "path": "skills/route-workflow/references/lane-model.md"
+    },
+    {
+      "task": "T5",
+      "operation": "MODIFY",
+      "path": "skills/route-workflow/references/intent-routing.md"
+    },
+    {
+      "task": "T5",
+      "operation": "MODIFY",
+      "path": "skills/route-workflow/references/routing-rules.md"
+    },
+    {
+      "task": "T5",
+      "operation": "MODIFY",
+      "path": "rules/common/research-before-build.md"
+    },
+    {
+      "task": "T5",
+      "operation": "MODIFY",
+      "path": "rules/host-capability-research.md"
+    },
+    {
+      "task": "T6",
+      "operation": "MODIFY",
+      "path": "skills/manage-learnings/SKILL.md"
+    },
+    {
+      "task": "T6",
+      "operation": "MODIFY",
+      "path": "scripts/learning-lifecycle.mjs"
+    },
+    {
+      "task": "T7",
+      "operation": "MODIFY",
+      "path": "scripts/select-tier1-validators-v2.mjs"
+    },
+    {
+      "task": "T7",
+      "operation": "MODIFY",
+      "path": "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs"
+    },
+    {
+      "task": "T7",
+      "operation": "MODIFY",
+      "path": "FRAMEWORK-STATE.md"
+    },
+    {
+      "task": "T7",
+      "operation": "MODIFY",
+      "path": "docs/specs/work-items/INDEX.md"
+    },
+    {
+      "task": "T7",
+      "operation": "MODIFY",
+      "path": "test-framework/evals/tier-1/validate-blind-floor.sh"
+    },
+    {
+      "task": "T7",
+      "operation": "MODIFY",
+      "path": ".claude/agents/plan-reviewer.md"
+    },
+    {
+      "task": "T7",
+      "operation": "MODIFY",
+      "path": ".claude/agents/svc-stage-plan.md"
+    },
+    {
+      "task": "T7",
+      "operation": "MODIFY",
+      "path": "references/skill-routing-index.json"
+    },
+    {
+      "task": "T7",
+      "operation": "CREATE",
+      "path": "test-framework/tests/two-box-plan.test.mjs"
+    },
+    {
+      "task": "T7",
+      "operation": "CREATE",
+      "path": "test-framework/tests/research-decision.test.mjs"
+    },
+    {
+      "task": "T7",
+      "operation": "CREATE",
+      "path": "test-framework/tests/two-box-receipts.test.mjs"
+    },
+    {
+      "task": "T7",
+      "operation": "CREATE",
+      "path": "test-framework/tests/two-box-learning.test.mjs"
+    },
+    {
+      "task": "T7",
+      "operation": "CREATE",
+      "path": "test-framework/evals/tier-1/validate-two-box-transmutation.sh"
+    },
+    {
+      "task": "T7",
+      "operation": "CREATE",
+      "path": "test-framework/evals/tier-1/fixtures/two-box/isolation-canary-facts.json"
+    },
+    {
+      "task": "T7",
+      "operation": "CREATE",
+      "path": "test-framework/evals/tier-1/fixtures/two-box/eligibility-nonexempt.json"
+    },
+    {
+      "task": "T7",
+      "operation": "CREATE",
+      "path": "scripts/run-live-two-box-canary.mjs"
+    },
+    {
+      "task": "T7",
+      "operation": "CREATE",
+      "path": "docs/plans/two-box-transmutation/review-log.yaml"
+    },
+    {
+      "task": "T7",
+      "operation": "CREATE",
+      "path": "docs/plans/two-box-transmutation/implementation-report.md"
+    },
+    {
+      "task": "T7",
+      "operation": "CREATE",
+      "path": "test-framework/evals/tier-1/fixtures/two-box/control-plan-v1.json"
+    },
+    {
+      "task": "T7",
+      "operation": "CREATE",
+      "path": "test-framework/evals/tier-1/fixtures/two-box/executor-discretion-cases.json"
+    }
+  ]
+}

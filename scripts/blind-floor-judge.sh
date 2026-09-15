@@ -4,6 +4,7 @@
 # reserved for the retired no-judge retention hatch; exit 4 is an actionable
 # launcher/CLI hard failure. There is no anonymous degraded judge.
 set -euo pipefail
+printf 'blind-floor-judge: historical/read-only F>=B inspection; not current control authority. Current orchestration: node scripts/two-box-plan.mjs (control-plan v2).\n' >&2
 
 BLIND='' MERGED='' ROWS='' ORCH_FAMILY='anthropic'
 while [[ $# -gt 0 ]]; do
@@ -12,6 +13,7 @@ while [[ $# -gt 0 ]]; do
     --merged) MERGED="$2"; shift 2 ;;
     --rows) ROWS="$2"; shift 2 ;;
     --orchestrator-family) ORCH_FAMILY="$2"; shift 2 ;;
+    --current|--as-current) printf 'blind-floor-judge: not current control authority; use node scripts/two-box-plan.mjs\n' >&2; exit 2 ;;
     *) printf 'unknown arg: %s\n' "$1" >&2; exit 2 ;;
   esac
 done

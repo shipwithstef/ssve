@@ -280,7 +280,7 @@ export function continuationIntent(text, { distinguishNegative = false } = {}) {
   return best;
 }
 
-const READ_ONLY_TOOLS = new Set(["Read", "Glob", "Grep", "Search", "View", "view_image"]);
+const READ_ONLY_TOOLS = new Set(["Read", "Glob", "Grep", "Search", "View", "view_image", "readToolCall", "grepToolCall", "fileSearchToolCall", "findToolCall"]);
 const SAFE_BASH = [
   /^(ls|pwd|cat|head|tail|wc|sha256sum|stat|realpath|readlink|dirname|basename|cut|tr)(?:\s+[^;&|`$<>]*)?$/,
   /^test(?:\s+[^;&|`$<>]*)+$/,

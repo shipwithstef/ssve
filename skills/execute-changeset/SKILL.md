@@ -35,7 +35,7 @@ chain:
 
 # Executing Change Set
 
-> **Cognitive routing:** ⚙️ [EXEC] — high-volume file editing per the svc-default profile (Sonnet 4.6 since WI-357). See `references/model-routing.md`.
+> **Cognitive routing:** ⚙️ [EXEC] — use the existing owner-configured resolver (`scripts/resolve-model.sh EXEC`). After Deterministic Transmutation, a lighter EXEC tuple is advised; dated recipes are nonauthoritative. See `references/model-routing.md`.
 
 **Announce at start:** "I'm using the execute-changeset skill to implement the planned changeset."
 
@@ -59,9 +59,11 @@ Read **as needed** (`_shared/before-starting.md`): `docs/specs/project-state.md`
 
 ## Original requirement handoff
 
-For a v4 inline plan, run `node scripts/prepare-plan-handoff.mjs --manifest <manifest> --check` before implementation, then `--task <task-id>` for each task. Read the emitted original AC section and hash-bound UX/technical excerpts. Treat its AC IDs as the attention guide; never replace the original temporal, manual-choice, transaction or performance clauses with a short digest. A stale hash stops that task for correction and affected-lens review.
+Before any task mutation, `assertCurrentExecution` from `scripts/lib/receipt-issuance-epoch.mjs` (or the stage-segment current plan gate) must accept current plan-manifest v5, control-plan v2 or recomputed real lightweight eligibility, and the verified transmutation seal. Fail if missing. Historical v1 control-plan and v3/v4 plan readers are non-executable; the sole pinned genuine bootstrap v4 snapshot is the only active v4 exception. No caller `historical:true`, eligible flag, or kill switch exempts current work.
 
-Use normal bounded repository reads to inspect current local code after prerequisites complete; such reads are runtime context, not reviewed context_refs. Keep exact write authority and existing delegation/containment. Local reversible elaboration inside the task needs no new plan review; consequential discoveries reopen the affected decision and proof. A release producer description is handled only by its named existing land/verify skill and pre-use checks; it is not an implementation-task status or a second scheduler.
+For a sealed v5 plan, run `node scripts/prepare-plan-handoff.mjs --manifest <manifest> --check` before implementation, then `--task <task-id>` for each task. `--task` requires the verified seal and must not rewrite reviewed bytes. Read the emitted original AC section and hash-bound UX/technical excerpts. Treat its AC IDs as the attention guide; never replace the original temporal, manual-choice, transaction or performance clauses with a short digest. A stale hash stops that task for correction and affected-lens review.
+
+Use normal bounded repository reads to inspect current local code after prerequisites complete; such reads are analysis/runtime context, not reviewed context_refs and not the `research` skill. Keep exact write authority and existing delegation/containment. Local repairs (missing import of an already-approved dependency; in-scope task-caused syntax/type/test/naming fixes; justified reversible alternative preserving scope/behavior/API/state/AC/proof/authority) record reason+evidence then revalidate. Amendments (new/upgraded dependency; config/env; external side effect; API/behavior; architecture/state ownership; larger paths/authority; changed proof/AC) reopen the affected source decision/contract and review proof using already-given owner intent; do not repeatedly ask routine permission. Never silent rewrite or relax tests. Never autogenerate success. A release producer description is handled only by its named existing land/verify skill and pre-use checks; it is not an implementation-task status or a second scheduler.
 
 ## Step 0 — MANDATORY dispatch preflight (hard rule, 2026-04-20)
 
@@ -101,6 +103,7 @@ them from source.
 
 ## Core Rules
 
+- **Current execution gate.** Before any task mutation, `assertCurrentExecution` (or the stage-segment current plan gate) must accept current v5 (or the pinned genuine bootstrap v4 snapshot), control-plan v2 or recomputed real lightweight eligibility, and the verified transmutation seal. Fail if missing.
 - **Write once.** Code is written directly on the branch — not described in
   a plan and re-implemented. The manifest provides intent and constraints.
   The execution produces code. The diff IS the changeset. No double-spend.
@@ -333,11 +336,11 @@ Skip trailers for trivial commits (typo fixes, formatting). Include for every im
 
 ## What Not To Do
 
-No code serialized into docs for reapplication; no multi-task staging; no skipping failed validation; no files beyond the manifest list without a deviation note; no partial-suite success claims.
+No code serialized into docs for reapplication; no multi-task staging; no skipping failed validation; no files beyond the manifest list without a deviation note; no partial-suite success claims; no silent rewrite; no relaxing tests; no autogenerated success; no task mutation without `assertCurrentExecution` plus the verified seal.
 
 ## Handoff
 
-On all tasks checkpointed + final validation green: feature status → `CHANGE-SET-APPROVED`; if the change has a browser-visible surface, capture `track-visuals --mode diff` before G5 review; hand to `review-exec` (G5-enforcing gate) / `review-gate` G5 surface. **Auto-invoke:** new external dependency discovered mid-exec → `research` inline; security-sensitive surface touched → flag for `review-security` at the post-exec review wave. Log insertions as `mechanical` decisions.
+On all tasks checkpointed + final validation green: feature status → `CHANGE-SET-APPROVED`; if the change has a browser-visible surface, capture `track-visuals --mode diff` before G5 review; hand to `review-exec` (G5-enforcing gate) / `review-gate` G5 surface. A new/upgraded dependency is an amendment (reopen the affected source decision/contract and review proof using already-given owner intent), not an automatic `research` skill run. Invoke `research` only when `researchDecision` from `scripts/lib/research-decision.mjs` returns `external_research_required`. Security-sensitive surface touched → flag for `review-security` at the post-exec review wave. Log insertions as `mechanical` decisions.
 
 ## Retrieval-Augmented Reasoning (cutting-edge technique #9)
 
@@ -351,7 +354,7 @@ Rules:
 - Retrieve the minimum: grep before read; read the slice, not the whole file.
 - Log non-trivial retrievals (what + why) in `.svc/pipeline-decisions.jsonl`.
 
-Formalizes `rules/common/research-before-build.md` as a mid-reasoning loop.
+Formalizes `rules/common/research-before-build.md` as a mid-reasoning loop. Repository reading is analysis. Invoke the `research` skill only when `researchDecision` from `scripts/lib/research-decision.mjs` returns `external_research_required`.
 
 ## Pipeline Continuation
 
