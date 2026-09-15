@@ -34,6 +34,7 @@ git -C "$REPO" config user.email fixture@example.test
 git -C "$REPO" checkout -qb main
 mkdir -p "$REPO/hooks/lib"
 cp "$ROOT/hooks/lib/wi-claim.mjs" "$REPO/hooks/lib/wi-claim.mjs"
+cp "$ROOT/hooks/lib/authoritative-binding.mjs" "$REPO/hooks/lib/authoritative-binding.mjs"
 cp "$ROOT/hooks/lib/svc-runtime-root.mjs" "$REPO/hooks/lib/svc-runtime-root.mjs"
 printf '.worktrees/\n.svc/claims/\n.svc/bindings/\n.svc/bootstrap-intent/\n' > "$REPO/.gitignore"
 printf 'fixture\n' > "$REPO/README.md"
