@@ -2,7 +2,7 @@
 
 import crypto from "node:crypto";
 import { appendJsonlLine } from "./state-io.mjs";
-import { authorityStateRoot, repositoryId, readController, recoverController, resumeController, rearmReleasedController, principalId, processIsAlive } from '../hooks/lib/authority-store.mjs';
+import { authorityStateRoot, repositoryId, readController, recoverController, resumeController, rearmReleasedController, rearmExpiredController, principalId, processIsAlive } from '../hooks/lib/authority-store.mjs';
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -626,7 +626,12 @@ export function adoptExistingWorktree(options = {}, env = process.env) {
         expectedGeneration: Number(controller.generation), expectedLeaseId: controller.lease_id,
       });
     } else if (controller.controller_principal === principal && controller.worktree_root === target.path) {
-      lease = resumeController({ ...v2ctx, principal, worktreeRoot: target.path });
+      lease = Date.parse(controller.expires_at) <= Date.now()
+        ? rearmExpiredController({
+          ...v2ctx, worktreeRoot: target.path, principal,
+          expectedGeneration: Number(controller.generation), expectedLeaseId: controller.lease_id,
+        })
+        : resumeController({ ...v2ctx, principal, worktreeRoot: target.path });
     } else {
       lease = recoverController({ ...v2ctx, principal, worktreeRoot: target.path, expectedGeneration: controller.generation,
           reason: 'Authorized resume of the unique registered WI worktree',
@@ -893,7 +898,12 @@ function resumeExisting({ repo, wi, branch, from, owner, host, env, worktree, ma
           expectedGeneration: Number(controller.generation), expectedLeaseId: controller.lease_id,
         });
       } else if (controller.controller_principal === principal && controller.worktree_root === worktree) {
-        lease = resumeController({ ...v2ctx, principal, worktreeRoot: worktree });
+        lease = Date.parse(controller.expires_at) <= Date.now()
+          ? rearmExpiredController({
+            ...v2ctx, worktreeRoot: worktree, principal,
+            expectedGeneration: Number(controller.generation), expectedLeaseId: controller.lease_id,
+          })
+          : resumeController({ ...v2ctx, principal, worktreeRoot: worktree });
       } else {
         lease = recoverController({ ...v2ctx, principal, worktreeRoot: worktree, expectedGeneration: controller.generation,
             reason: 'Authorized resume of the unique registered WI worktree',

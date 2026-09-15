@@ -52,6 +52,11 @@ function commonGitDir(worktreeRoot) {
   return fs.realpathSync(path.isAbsolute(value) ? value : path.resolve(root, value));
 }
 
+function fsyncDirectory(dir) {
+  const fd = fs.openSync(dir, fs.constants.O_RDONLY | (fs.constants.O_DIRECTORY || 0));
+  try { fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
+}
+
 function assertNoFollowDirectoryPath(dir, { requireFinalOwner = false } = {}) {
   const absolute = path.resolve(dir);
   const parsed = path.parse(absolute);
@@ -74,12 +79,28 @@ function assertNoFollowDirectoryPath(dir, { requireFinalOwner = false } = {}) {
 
 function ensureDir(dir) {
   const absolute = assertNoFollowDirectoryPath(dir, { requireFinalOwner: true });
+  const created = [];
+  for (let cursor = absolute; ; cursor = path.dirname(cursor)) {
+    try {
+      fs.lstatSync(cursor);
+      break;
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
+    created.push(cursor);
+    if (path.dirname(cursor) === cursor) break;
+  }
   fs.mkdirSync(absolute, { recursive: true, mode: 0o700 });
   assertNoFollowDirectoryPath(absolute, { requireFinalOwner: true });
   fs.chmodSync(absolute, 0o700);
   const stat = fs.lstatSync(absolute);
   if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error(`unsafe authority directory: ${dir}`);
   if (typeof process.getuid === "function" && stat.uid !== process.getuid()) throw new Error(`foreign authority directory: ${dir}`);
+  for (const createdDir of created) {
+    fsyncDirectory(createdDir);
+    const parent = path.dirname(createdDir);
+    if (parent !== createdDir) fsyncDirectory(parent);
+  }
 }
 
 function readJson(file, { required = false } = {}) {
@@ -110,6 +131,7 @@ function atomicWrite(file, value) {
   }
   fs.renameSync(temp, file);
   fs.chmodSync(file, 0o600);
+  fsyncDirectory(path.dirname(file));
 }
 
 function atomicWriteBytes(file, bytes) {
@@ -119,6 +141,14 @@ function atomicWriteBytes(file, bytes) {
   try { fs.writeFileSync(fd, bytes); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
   fs.renameSync(temp, file);
   fs.chmodSync(file, 0o600);
+  fsyncDirectory(path.dirname(file));
+}
+
+function durableUnlink(file) {
+  try { fs.unlinkSync(file); } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+  fsyncDirectory(path.dirname(file));
 }
 
 function withLock(stateRoot, key, operation) {
@@ -152,6 +182,7 @@ function pathsFor(stateRoot, repoId, wi) {
     root, key,
     lease: path.join(root, "leases", `${key}.json`),
     handover: path.join(root, "handovers", `${key}.json`),
+    transition: path.join(root, "transitions", `${key}.json`),
     receipts: path.join(root, "receipts"),
   };
 }
@@ -245,89 +276,150 @@ export function bootstrapController({ stateRoot, repoId, wi, worktreeRoot, princ
     const existing = readJson(paths.lease);
     if (existing) {
       assertLease(existing, { repoId, wi });
-      if (existing.state === "active") throw new Error("active controller lease already exists; use resume or handover");
+      throw new Error("controller lease already exists; use resume, rearm, handover, or recover");
     }
     const lease = {
       schema_version: 2, lease_id: crypto.randomUUID(), repo_id: repoId, wi,
       worktree_root: canonicalWorktree, controller_principal: principal,
-      generation: existing ? existing.generation + 1 : initialGeneration, state: "active",
+      generation: initialGeneration, state: "active",
       owner_process: ownerProcessIdentity(),
       issued_at: iso(now), renewed_at: iso(now), expires_at: iso(now + ttlMs),
-      backend_revision: existing ? existing.backend_revision + 1 : 1,
+      backend_revision: 1,
     };
     atomicWrite(paths.lease, lease);
-    if (existing?.state === "released") {
-      writeHandoffRecord(paths, {
-        kind: "recovery", wi, repo_id: repoId, lease_id: lease.lease_id,
-        generation: lease.generation, old_generation: existing.generation,
-        principal, predecessor_principal: existing.controller_principal,
-        worktree_realpath: lease.worktree_root || "",
-        base_sha: typeof existing.base_sha === "string" ? existing.base_sha : "",
-        ttl_ms: ttlMs,
-        evidence_digests: digestEvidence({ rearmed_from_released: true }),
-        ts: iso(now),
-      });
-    }
     return lease;
   });
 }
 
 export function rearmReleasedController({
-  stateRoot, repoId, wi, worktreeRoot, principal, expectedGeneration, expectedLeaseId = null,
+  stateRoot, repoId, wi, worktreeRoot, principal, expectedGeneration, expectedLeaseId,
   ttlMs = DEFAULT_TTL_MS, now = Date.now(),
 }) {
   requireString(repoId, "repo id"); requireString(wi, "WI"); requireString(principal, "principal");
-  if (!Number.isInteger(expectedGeneration) || expectedGeneration < 1) throw new Error("expected released generation must be a positive integer");
   const canonicalWorktree = fs.realpathSync(requireString(worktreeRoot, "worktree root"));
   const paths = pathsFor(stateRoot, repoId, wi);
-  return withLock(paths.root, paths.key, () => {
-    const existing = assertLease(readJson(paths.lease, { required: true }), { repoId, wi });
-    if (existing.state !== "released") throw new Error("controller lease is not released");
-    if (String(existing.controller_principal) !== String(principal)) {
-      throw new Error("released lease belongs to a different principal; explicit handover required");
-    }
-    if (Number(existing.generation) !== Number(expectedGeneration)) {
-      throw new Error("released lease generation changed; inspect again");
-    }
-    if (expectedLeaseId && String(existing.lease_id) !== String(expectedLeaseId)) {
-      throw new Error("released lease id changed; inspect again");
-    }
-    if (fs.realpathSync(existing.worktree_root) !== canonicalWorktree) {
-      throw new Error("released controller worktree mismatch");
-    }
-    const lease = {
-      schema_version: 2, lease_id: crypto.randomUUID(), repo_id: repoId, wi,
-      worktree_root: canonicalWorktree, controller_principal: principal,
-      generation: existing.generation + 1, state: "active",
-      owner_process: ownerProcessIdentity(),
-      issued_at: iso(now), renewed_at: iso(now), expires_at: iso(now + ttlMs),
-      backend_revision: existing.backend_revision + 1,
-    };
-    atomicWrite(paths.lease, lease);
-    writeHandoffRecord(paths, {
-      kind: "recovery", wi, repo_id: repoId, lease_id: lease.lease_id,
-      generation: lease.generation, old_generation: existing.generation,
-      principal, predecessor_principal: existing.controller_principal,
-      worktree_realpath: lease.worktree_root || "",
-      base_sha: typeof existing.base_sha === "string" ? existing.base_sha : "",
-      ttl_ms: ttlMs,
-      evidence_digests: digestEvidence({ rearmed_from_released: true, expected_generation: expectedGeneration }),
-      ts: iso(now),
-    });
-    return lease;
-  });
+  return withLock(paths.root, paths.key, () => runTransition({
+    paths, repoId, wi, kind: "rearm-released", principal, worktree: canonicalWorktree,
+    expectedGeneration, expectedLeaseId, now,
+    prepare(existing) {
+      if (existing.state !== "released") throw new Error("controller lease is not released");
+      if (String(existing.controller_principal) !== String(principal)) {
+        throw new Error("released lease belongs to a different principal; explicit handover required");
+      }
+      if (Number(existing.generation) !== Number(expectedGeneration)) {
+        throw new Error("released lease generation changed; inspect again");
+      }
+      if (String(existing.lease_id) !== String(expectedLeaseId)) {
+        throw new Error("released lease id changed; inspect again");
+      }
+      if (fs.realpathSync(existing.worktree_root) !== canonicalWorktree) {
+        throw new Error("released controller worktree mismatch");
+      }
+      const planned = {
+        schema_version: 2, lease_id: crypto.randomUUID(), repo_id: repoId, wi,
+        worktree_root: canonicalWorktree, controller_principal: principal,
+        generation: existing.generation + 1, state: "active",
+        owner_process: ownerProcessIdentity(),
+        issued_at: iso(now), renewed_at: iso(now), expires_at: iso(now + ttlMs),
+        backend_revision: existing.backend_revision + 1,
+        lifecycle_bound: true,
+      };
+      const receiptId = crypto.randomUUID();
+      const recordId = crypto.randomUUID();
+      return {
+        planned,
+        freeze: { lease_id: existing.lease_id, generation: existing.generation },
+        handoff: {
+          record_id: recordId, kind: "recovery", wi, repo_id: repoId, lease_id: planned.lease_id,
+          generation: planned.generation, old_generation: existing.generation,
+          principal, predecessor_principal: existing.controller_principal,
+          worktree_realpath: canonicalWorktree,
+          base_sha: typeof existing.base_sha === "string" ? existing.base_sha : "",
+          ttl_ms: ttlMs,
+          evidence_digests: priorLeaseEvidence(expectedLeaseId, expectedGeneration, { rearmed_from_released: true }),
+        },
+        lifecycle: {
+          schema_version: 1, receipt_id: receiptId, kind: "recovery", lease_id: planned.lease_id,
+          repo_id: repoId, wi, old_controller_principal: existing.controller_principal,
+          new_controller_principal: principal, old_generation: existing.generation,
+          new_generation: planned.generation, evidence: { rearmed_from_released: true },
+        },
+      };
+    },
+  }));
+}
+
+export function rearmExpiredController({
+  stateRoot, repoId, wi, worktreeRoot, principal, expectedGeneration, expectedLeaseId,
+  ttlMs = DEFAULT_TTL_MS, now = Date.now(),
+}) {
+  requireString(repoId, "repo id"); requireString(wi, "WI"); requireString(principal, "principal");
+  const canonicalWorktree = fs.realpathSync(requireString(worktreeRoot, "worktree root"));
+  const paths = pathsFor(stateRoot, repoId, wi);
+  return withLock(paths.root, paths.key, () => runTransition({
+    paths, repoId, wi, kind: "rearm-expired", principal, worktree: canonicalWorktree,
+    expectedGeneration, expectedLeaseId, now,
+    prepare(existing) {
+      if (existing.state !== "active") throw new Error("controller lease is not active");
+      if (String(existing.controller_principal) !== String(principal)) {
+        throw new Error("expired lease belongs to a different principal; explicit handover required");
+      }
+      if (Number(existing.generation) !== Number(expectedGeneration)) {
+        throw new Error("expired lease generation changed; inspect again");
+      }
+      if (String(existing.lease_id) !== String(expectedLeaseId)) {
+        throw new Error("expired lease id changed; inspect again");
+      }
+      if (fs.realpathSync(existing.worktree_root) !== canonicalWorktree) {
+        throw new Error("expired controller worktree mismatch");
+      }
+      const expiresAt = Date.parse(existing.expires_at || "");
+      if (!Number.isFinite(expiresAt) || expiresAt > now) throw new Error("controller lease is not expired");
+      const planned = {
+        ...existing,
+        generation: existing.generation + 1,
+        owner_process: ownerProcessIdentity(),
+        renewed_at: iso(now), expires_at: iso(now + ttlMs),
+        backend_revision: existing.backend_revision + 1,
+        lifecycle_bound: true,
+      };
+      const receiptId = crypto.randomUUID();
+      const recordId = crypto.randomUUID();
+      return {
+        planned,
+        freeze: { lease_id: existing.lease_id, generation: existing.generation },
+        handoff: {
+          record_id: recordId, kind: "recovery", wi, repo_id: repoId, lease_id: planned.lease_id,
+          generation: planned.generation, old_generation: existing.generation,
+          principal, predecessor_principal: existing.controller_principal,
+          worktree_realpath: canonicalWorktree,
+          base_sha: typeof existing.base_sha === "string" ? existing.base_sha : "",
+          ttl_ms: ttlMs,
+          evidence_digests: priorLeaseEvidence(expectedLeaseId, expectedGeneration, { rearmed_from_expired: true }),
+        },
+        lifecycle: {
+          schema_version: 1, receipt_id: receiptId, kind: "recovery", lease_id: planned.lease_id,
+          repo_id: repoId, wi, old_controller_principal: existing.controller_principal,
+          new_controller_principal: principal, old_generation: existing.generation,
+          new_generation: planned.generation, evidence: { rearmed_from_expired: true },
+        },
+      };
+    },
+  }));
 }
 
 export function resumeController({ stateRoot, repoId, wi, worktreeRoot, principal, ttlMs = DEFAULT_TTL_MS, now = Date.now() }) {
   const paths = pathsFor(stateRoot, repoId, wi);
   return withLock(paths.root, paths.key, () => {
-    const lease = assertLease(readJson(paths.lease, { required: true }), { repoId, wi });
+    completeProvenPendingLifecycleLocked(paths, { repoId, wi, now });
+    let lease = assertLease(readJson(paths.lease, { required: true }), { repoId, wi });
     if (lease.state !== "active") throw new Error("controller lease is not active");
     if (lease.controller_principal !== principal) throw new Error("controller principal mismatch");
     if (fs.realpathSync(worktreeRoot) !== fs.realpathSync(lease.worktree_root)) throw new Error("controller worktree mismatch");
-    // WI-562 IP-H6: resume consumes handoff RECORDS, not prose. The newest
-    // normalized record must agree with the live lease; disagreement means the
-    // on-disk authority state is ambiguous — refuse with actionable detail.
+    const expiresAt = Date.parse(lease.expires_at || "");
+    if (!Number.isFinite(expiresAt) || expiresAt <= now) {
+      throw new Error("controller lease expired; generation-bound expired recovery required");
+    }
     verifyLatestHandoffRecord(paths, lease);
     const renewed = { ...lease, owner_process: ownerProcessIdentity(), renewed_at: iso(now), expires_at: iso(now + ttlMs), backend_revision: lease.backend_revision + 1 };
     atomicWrite(paths.lease, renewed);
@@ -350,6 +442,8 @@ export function renewControllerIfCurrent({ stateRoot, repoId, wi, worktreeRoot, 
   if (!Number.isInteger(generation) || generation < 1) return { status: "stale_decision", reason: "invalid expected generation" };
   const paths = pathsFor(stateRoot, repoId, wi);
   return withLock(paths.root, paths.key, () => {
+    try { completeProvenPendingLifecycleLocked(paths, { repoId, wi, now }); }
+    catch (error) { return { status: "stale_decision", reason: error.message }; }
     let lease;
     try { lease = assertLease(readJson(paths.lease, { required: true }), { repoId, wi }); }
     catch (error) { return { status: "stale_decision", reason: `unreadable or corrupt lease (${error.message})` }; }
@@ -392,38 +486,422 @@ export function renewalDue(lease, { timeoutMs = 0, safetyWindowMs = RENEW_SAFETY
   return sinceRenewal >= minIntervalMs || remaining <= emergencyFloorMs;
 }
 
-function verifyLatestHandoffRecord(paths, lease) {
+function latestOwnHandoff(paths, lease) {
   const dir = path.join(paths.receipts, "handoff");
   let files = [];
   try { files = fs.readdirSync(dir).filter((f) => f.endsWith(".json")); } catch { return null; }
   if (files.length === 0) return null;
-  // WI-562 round-5 review: order by the record's OWN ts (UUID filenames are
-  // unordered); unreadable records refuse loudly rather than being skipped.
   const stamped = [];
   for (const f of files) {
     let parsed;
     try { parsed = JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")); }
     catch (e) { throw new Error(`resume refused: handoff record unreadable (${f}: ${e.message})`); }
-    // WI-562 round-5: records are namespaced per lease — only THIS repo+wi's
-    // records participate in the latest-check; unrelated/corrupt-for-other-WI
-    // records cannot block an unrelated resume.
     if (parsed.repo_id !== lease.repo_id || parsed.wi !== lease.wi) continue;
     if (!Number.isFinite(Date.parse(parsed.ts))) {
       throw new Error(`resume refused: own handoff record has invalid ts (${f})`);
     }
     stamped.push({ f, ts: Date.parse(parsed.ts), record: parsed });
   }
-  if (stamped.length === 0) return null; // no own records: nothing to verify
+  if (stamped.length === 0) return null;
   stamped.sort((a, b) => a.ts - b.ts);
-  const latestPath = path.join(dir, stamped[stamped.length - 1].f);
-  let record;
-  try { record = JSON.parse(fs.readFileSync(latestPath, "utf8")); }
-  catch (e) { throw new Error(`resume refused: latest handoff record unreadable (${latestPath}: ${e.message})`); }
+  return stamped[stamped.length - 1].record;
+}
+
+function hitTransitionFailpoint(name) {
+  if (String(process.env.SVC_AUTHORITY_TRANSITION_FAILPOINT || "") === name) {
+    throw new Error(`injected failpoint: ${name}`);
+  }
+}
+
+function snapshotLease(lease) {
+  return JSON.parse(JSON.stringify(lease));
+}
+
+function assertPositiveIntegerRevision(value, label) {
+  if (!Number.isInteger(value) || value < 1) {
+    throw new Error(`open transition ${label} revision is invalid`);
+  }
+  return value;
+}
+
+function plannedLeaseIdentityMatches(planned, live) {
+  return Boolean(planned && live
+    && String(live.lease_id) === String(planned.lease_id)
+    && Number(live.generation) === Number(planned.generation)
+    && String(live.state) === String(planned.state)
+    && String(live.controller_principal) === String(planned.controller_principal)
+    && String(live.worktree_root) === String(planned.worktree_root)
+    && String(live.repo_id) === String(planned.repo_id)
+    && String(live.wi) === String(planned.wi));
+}
+
+function plannedMatchesLive(planned, live) {
+  return plannedLeaseIdentityMatches(planned, live)
+    && Number.isInteger(live.backend_revision)
+    && Number.isInteger(planned.backend_revision)
+    && live.backend_revision === planned.backend_revision;
+}
+
+function sameLeaseIdentity(left, right) {
+  return Boolean(left && right
+    && String(left.lease_id) === String(right.lease_id)
+    && Number(left.generation) === Number(right.generation)
+    && String(left.state) === String(right.state)
+    && Number(left.backend_revision) === Number(right.backend_revision)
+    && String(left.controller_principal) === String(right.controller_principal)
+    && String(left.worktree_root) === String(right.worktree_root)
+    && String(left.repo_id) === String(right.repo_id)
+    && String(left.wi) === String(right.wi));
+}
+
+function sameCanonicalWorktree(left, right) {
+  try { return fs.realpathSync(left) === fs.realpathSync(right); }
+  catch { return false; }
+}
+
+function assertCallerMatchesLive(existing, { principal, worktree, repoId, wi }) {
+  if (String(existing.repo_id) !== String(repoId)) throw new Error("controller lease repository mismatch");
+  if (String(existing.wi) !== String(wi)) throw new Error("controller lease WI mismatch");
+  if (String(existing.controller_principal) !== String(principal)) {
+    throw new Error("controller belongs to a different principal");
+  }
+  if (!sameCanonicalWorktree(existing.worktree_root, worktree)) {
+    throw new Error("controller worktree mismatch");
+  }
+}
+
+function assertOpenTransitionIntent(intent, { kind, principal, worktree, repoId, wi, expectedGeneration, expectedLeaseId }) {
+  if (!intent || intent.schema_version !== 1 || !intent.intent_id) {
+    throw new Error("corrupt transition intent");
+  }
+  const prior = intent.prior_lease;
+  const planned = intent.planned_lease;
+  const handoff = intent.handoff;
+  const lifecycle = intent.lifecycle;
+  const freeze = intent.freeze;
+  if (!prior?.lease_id || !planned?.lease_id || !handoff?.record_id || !lifecycle?.receipt_id || !freeze?.lease_id) {
+    throw new Error("corrupt transition intent");
+  }
+  const priorRevision = assertPositiveIntegerRevision(prior.backend_revision, "prior");
+  const plannedRevision = assertPositiveIntegerRevision(planned.backend_revision, "planned");
+  if (plannedRevision !== priorRevision + 1) {
+    throw new Error("open transition planned revision conflict");
+  }
+  if (intent.kind !== kind) throw new Error("open transition kind conflict");
+  if (String(intent.repo_id) !== String(repoId) || String(prior.repo_id) !== String(repoId) || String(planned.repo_id) !== String(repoId)) {
+    throw new Error("open transition repository mismatch");
+  }
+  if (String(intent.wi) !== String(wi) || String(prior.wi) !== String(wi) || String(planned.wi) !== String(wi)) {
+    throw new Error("open transition WI mismatch");
+  }
+  if (String(intent.principal) !== String(principal) || String(planned.controller_principal) !== String(principal)) {
+    throw new Error("open transition belongs to a different principal");
+  }
+  if (!sameCanonicalWorktree(intent.worktree_root, worktree) || String(planned.worktree_root) !== String(intent.worktree_root)) {
+    throw new Error("open transition worktree mismatch");
+  }
+  if (Number(prior.generation) !== Number(expectedGeneration) || Number(intent.prior_lease.generation) !== Number(expectedGeneration)) {
+    throw new Error("open transition generation mismatch");
+  }
+  if (String(prior.lease_id) !== String(expectedLeaseId)) {
+    throw new Error("open transition lease id mismatch");
+  }
+  if (String(freeze.lease_id) !== String(prior.lease_id) || Number(freeze.generation) !== Number(prior.generation)) {
+    throw new Error("open transition freeze tuple conflict");
+  }
+  if (String(handoff.repo_id) !== String(repoId) || String(handoff.wi) !== String(wi)
+      || String(handoff.lease_id) !== String(planned.lease_id)
+      || Number(handoff.generation) !== Number(planned.generation)
+      || String(handoff.principal) !== String(principal)
+      || Number(handoff.old_generation) !== Number(prior.generation)
+      || String(handoff.predecessor_principal) !== String(prior.controller_principal)
+      || String(handoff.worktree_realpath) !== String(intent.worktree_root)) {
+    throw new Error("open transition handoff tuple conflict");
+  }
+  if (String(lifecycle.repo_id) !== String(repoId) || String(lifecycle.wi) !== String(wi)
+      || String(lifecycle.lease_id) !== String(planned.lease_id)
+      || Number(lifecycle.old_generation) !== Number(prior.generation)
+      || Number(lifecycle.new_generation) !== Number(planned.generation)
+      || String(lifecycle.old_controller_principal) !== String(prior.controller_principal)
+      || String(lifecycle.new_controller_principal) !== String(principal)) {
+    throw new Error("open transition lifecycle tuple conflict");
+  }
+  if (kind === "release") {
+    if (handoff.kind !== "release" || lifecycle.kind !== "release") throw new Error("open transition kind conflict");
+    if (String(planned.lease_id) !== String(prior.lease_id) || Number(planned.generation) !== Number(prior.generation) || planned.state !== "released") {
+      throw new Error("open transition planned lease identity conflict");
+    }
+  } else if (kind === "rearm-released" || kind === "rearm-expired") {
+    if (handoff.kind !== "recovery" || lifecycle.kind !== "recovery") throw new Error("open transition kind conflict");
+    if (Number(planned.generation) !== Number(prior.generation) + 1 || planned.state !== "active") {
+      throw new Error("open transition planned lease identity conflict");
+    }
+    if (kind === "rearm-expired" && String(planned.lease_id) !== String(prior.lease_id)) {
+      throw new Error("open transition planned lease identity conflict");
+    }
+    if (kind === "rearm-released" && String(planned.lease_id) === String(prior.lease_id)) {
+      throw new Error("open transition planned lease identity conflict");
+    }
+  } else if (kind === "explicit-takeover" || kind === "recovery-displace") {
+    if (kind === "explicit-takeover" && (handoff.kind !== "explicit_takeover" || lifecycle.kind !== "explicit_takeover")) {
+      throw new Error("open transition kind conflict");
+    }
+    if (kind === "recovery-displace" && (handoff.kind !== "recovery" || lifecycle.kind !== "recovery")) {
+      throw new Error("open transition kind conflict");
+    }
+    if (Number(planned.generation) !== Number(prior.generation) + 1 || planned.state !== "active") {
+      throw new Error("open transition planned lease identity conflict");
+    }
+    if (String(planned.lease_id) !== String(prior.lease_id)) {
+      throw new Error("open transition planned lease identity conflict");
+    }
+    if (!planned.lifecycle_bound) throw new Error("open transition planned lease identity conflict");
+  } else {
+    throw new Error("open transition kind conflict");
+  }
+}
+
+function priorLeaseEvidence(expectedLeaseId, expectedGeneration, extra = {}) {
+  return digestEvidence({ prior_lease_id: expectedLeaseId, expected_generation: expectedGeneration, ...extra });
+}
+
+function replayCompletedTransition(existing, latest, { kind, principal, worktree, expectedGeneration, expectedLeaseId }) {
+  if (!existing || !latest) return null;
+  if (String(latest.principal) !== String(principal)) return null;
+  if (String(existing.controller_principal) !== String(principal)) return null;
+  if (!sameCanonicalWorktree(existing.worktree_root, worktree)) return null;
+  if (!sameCanonicalWorktree(latest.worktree_realpath || existing.worktree_root, worktree)) return null;
+  const priorDigest = digestEvidence({ prior_lease_id: expectedLeaseId }).prior_lease_id;
+  if (latest.evidence_digests?.prior_lease_id && latest.evidence_digests.prior_lease_id !== priorDigest) return null;
+  if (kind === "release") {
+    if (existing.state !== "released") return null;
+    if (latest.kind !== "release") return null;
+    if (Number(latest.generation) !== Number(expectedGeneration)) return null;
+    if (String(existing.lease_id) !== String(expectedLeaseId)) return null;
+    return existing;
+  }
+  if (kind === "explicit-takeover" || kind === "recovery-displace") {
+    if (existing.state !== "active") return null;
+    if (latest.kind !== (kind === "explicit-takeover" ? "explicit_takeover" : "recovery")) return null;
+    if (Number(latest.old_generation) !== Number(expectedGeneration)) return null;
+    if (Number(latest.generation) !== Number(existing.generation)) return null;
+    if (Number(existing.generation) !== Number(expectedGeneration) + 1) return null;
+    if (String(existing.lease_id) !== String(expectedLeaseId)) return null;
+    if (!existing.lifecycle_bound) return null;
+    return existing;
+  }
+  if (kind !== "rearm-released" && kind !== "rearm-expired") return null;
+  if (existing.state !== "active") return null;
+  if (latest.kind !== "recovery") return null;
+  if (Number(latest.old_generation) !== Number(expectedGeneration)) return null;
+  if (Number(latest.generation) !== Number(existing.generation)) return null;
+  if (Number(existing.generation) !== Number(expectedGeneration) + 1) return null;
+  if (kind === "rearm-expired" && String(existing.lease_id) !== String(expectedLeaseId)) return null;
+  if (kind === "rearm-released" && String(existing.lease_id) === String(expectedLeaseId)) return null;
+  return existing;
+}
+
+function completeTransitionSteps(paths, intent, now) {
+  freezeOldGenerationDelegations(paths.root, intent.freeze.lease_id, intent.freeze.generation, now);
+  hitTransitionFailpoint("after-freeze-before-handoff");
+  writeHandoffRecord(paths, intent.handoff);
+  hitTransitionFailpoint("after-handoff-before-complete");
+  if (intent.lifecycle) writeLifecycleReceipt(paths, intent.lifecycle);
+  durableUnlink(paths.transition);
+}
+
+function runTransition({
+  paths, repoId, wi, kind, principal, worktree, expectedGeneration, expectedLeaseId, now, prepare,
+  successor = false, expectedPriorPrincipal = null,
+}) {
+  requireString(expectedLeaseId, "expected lease id");
+  if (!Number.isInteger(expectedGeneration) || expectedGeneration < 1) throw new Error("expected generation must be a positive integer");
+  completeProvenPendingLifecycleLocked(paths, { repoId, wi, now });
+  const existing = assertLease(readJson(paths.lease, { required: true }), { repoId, wi });
+  const latest = latestOwnHandoff(paths, existing);
+  const intent = readJson(paths.transition);
+  if (intent) {
+    assertOpenTransitionIntent(intent, { kind, principal, worktree, repoId, wi, expectedGeneration, expectedLeaseId });
+    if (plannedMatchesLive(intent.planned_lease, existing)) {
+      completeTransitionSteps(paths, intent, now);
+      return assertLease(readJson(paths.lease, { required: true }), { repoId, wi });
+    }
+    if (sameLeaseIdentity(existing, intent.prior_lease)) {
+      hitTransitionFailpoint("after-intent-before-lease");
+      atomicWrite(paths.lease, intent.planned_lease);
+      hitTransitionFailpoint("after-lease-before-freeze");
+      completeTransitionSteps(paths, intent, now);
+      return intent.planned_lease;
+    }
+    throw new Error("controller lease conflicts with the durable transition intent");
+  }
+  if (successor) {
+    requireString(expectedPriorPrincipal, "expected prior principal");
+    if (String(existing.controller_principal) === String(principal)) {
+      const replayed = replayCompletedTransition(existing, latest, { kind, principal, worktree, expectedGeneration, expectedLeaseId });
+      if (replayed) return existing;
+    }
+    if (String(existing.controller_principal) !== String(expectedPriorPrincipal)) {
+      throw new Error("controller belongs to a different principal");
+    }
+    if (Number(existing.generation) !== Number(expectedGeneration) || String(existing.lease_id) !== String(expectedLeaseId)) {
+      throw new Error("controller lease changed; inspect again");
+    }
+  } else {
+    assertCallerMatchesLive(existing, { principal, worktree, repoId, wi });
+  }
+  if (replayCompletedTransition(existing, latest, { kind, principal, worktree, expectedGeneration, expectedLeaseId })) {
+    return existing;
+  }
+  const prepared = prepare(existing);
+  const ts = iso(now);
+  const lifecycle = prepared.lifecycle ? { ...prepared.lifecycle, completed_at: ts } : null;
+  const intentDoc = {
+    schema_version: 1,
+    intent_id: crypto.randomUUID(),
+    kind,
+    repo_id: repoId,
+    wi,
+    principal,
+    worktree_root: worktree,
+    prior_lease: snapshotLease(existing),
+    planned_lease: prepared.planned,
+    freeze: prepared.freeze,
+    handoff: { ...prepared.handoff, ts },
+    lifecycle,
+    created_at: ts,
+  };
+  atomicWrite(paths.transition, intentDoc);
+  hitTransitionFailpoint("after-intent-before-lease");
+  atomicWrite(paths.lease, intentDoc.planned_lease);
+  hitTransitionFailpoint("after-lease-before-freeze");
+  completeTransitionSteps(paths, intentDoc, now);
+  return intentDoc.planned_lease;
+}
+
+function finalizeOpenTransitionIntent(paths, lease, { principal, worktree }) {
+  const intent = readJson(paths.transition);
+  if (!intent) return lease;
+  const completable = intent.kind === "rearm-released" || intent.kind === "rearm-expired"
+    || intent.kind === "explicit-takeover" || intent.kind === "recovery-displace";
+  if (!completable) {
+    throw new Error(`open ${intent.kind} transition must be completed by its own operation`);
+  }
+  assertCallerMatchesLive(lease, { principal, worktree, repoId: lease.repo_id, wi: lease.wi });
+  assertOpenTransitionIntent(intent, {
+    kind: intent.kind, principal, worktree, repoId: lease.repo_id, wi: lease.wi,
+    expectedGeneration: Number(intent.prior_lease?.generation), expectedLeaseId: String(intent.prior_lease?.lease_id || ""),
+  });
+  if (!plannedMatchesLive(intent.planned_lease, lease)) {
+    throw new Error("controller lease conflicts with the durable transition intent");
+  }
+  completeTransitionSteps(paths, intent, Date.now());
+  return assertLease(readJson(paths.lease, { required: true }), { repoId: lease.repo_id, wi: lease.wi });
+}
+
+function tryFinalizeStrandedHandover(paths, lease, { repoId, wi, now }) {
+  const handover = readJson(paths.handover);
+  if (!handover || handover.status !== "prepared") return lease;
+  if (lease.accepted_handover_id !== handover.handover_id || lease.accepted_token_hash !== handover.token_hash) {
+    return lease;
+  }
+  return finalizeHandoverLocked(paths, { repoId, wi, now }).lease || lease;
+}
+
+function isProvenAcceptedHandover(lease, handover) {
+  return Boolean(lease && handover
+    && handover.status === "prepared"
+    && String(lease.accepted_handover_id) === String(handover.handover_id)
+    && String(lease.accepted_token_hash) === String(handover.token_hash)
+    && String(lease.lease_id) === String(handover.lease_id));
+}
+
+function completeProvenAcceptedHandoverLocked(paths, { repoId, wi, now }) {
+  const lease = readJson(paths.lease);
+  if (!lease) return null;
+  const asserted = assertLease(lease, { repoId, wi });
+  const handover = readJson(paths.handover);
+  if (!isProvenAcceptedHandover(asserted, handover)) return asserted;
+  return finalizeHandoverLocked(paths, { repoId, wi, now }).lease || asserted;
+}
+
+function completeProvenPendingTransitionLocked(paths, { repoId, wi, now }) {
+  const intent = readJson(paths.transition);
+  const lease = readJson(paths.lease);
+  if (!intent || !lease) return lease ? assertLease(lease, { repoId, wi }) : null;
+  const asserted = assertLease(lease, { repoId, wi });
+  if (!plannedLeaseIdentityMatches(intent.planned_lease, asserted)) return asserted;
+  assertOpenTransitionIntent(intent, {
+    kind: intent.kind,
+    principal: intent.principal,
+    worktree: intent.worktree_root,
+    repoId, wi,
+    expectedGeneration: Number(intent.prior_lease?.generation),
+    expectedLeaseId: String(intent.prior_lease?.lease_id || ""),
+  });
+  if (!plannedMatchesLive(intent.planned_lease, asserted)) {
+    throw new Error("controller lease conflicts with the durable transition intent");
+  }
+  completeTransitionSteps(paths, intent, now);
+  return assertLease(readJson(paths.lease, { required: true }), { repoId, wi });
+}
+
+function completeProvenPendingLifecycleLocked(paths, { repoId, wi, now }) {
+  completeProvenAcceptedHandoverLocked(paths, { repoId, wi, now });
+  return completeProvenPendingTransitionLocked(paths, { repoId, wi, now });
+}
+
+function leaseIsMutationReady(paths, lease, now = Date.now()) {
+  if (!lease || lease.state !== "active") return false;
+  const expires = Date.parse(lease.expires_at);
+  if (!Number.isFinite(expires) || expires <= now) return false;
+  if (readJson(paths.transition)) return false;
+  if (isProvenAcceptedHandover(lease, readJson(paths.handover))) return false;
+  if (lease.lifecycle_bound) {
+    try { verifyLatestHandoffRecord(paths, lease); }
+    catch { return false; }
+  }
+  return true;
+}
+
+export function reconcileControllerLifecycle({ stateRoot, repoId, wi, now = Date.now() }) {
+  const paths = pathsFor(stateRoot, repoId, wi);
+  return withLock(paths.root, paths.key, () => {
+    completeProvenPendingLifecycleLocked(paths, { repoId, wi, now });
+    const lease = readJson(paths.lease);
+    if (!lease) return { lease: null, mutation_ready: false };
+    const asserted = assertLease(lease, { repoId, wi });
+    return { lease: asserted, mutation_ready: leaseIsMutationReady(paths, asserted, now) };
+  });
+}
+
+function matchingOpenSuccessorIntent(paths, { kind, principal, expectedGeneration = null, expectedPrincipal = null }) {
+  const intent = readJson(paths.transition);
+  if (!intent || intent.kind !== kind || String(intent.principal) !== String(principal)) return null;
+  if (expectedPrincipal != null && String(intent.prior_lease?.controller_principal) !== String(expectedPrincipal)) return null;
+  if (expectedGeneration != null && Number(intent.prior_lease?.generation) !== Number(expectedGeneration)) return null;
+  const lease = readJson(paths.lease);
+  if (!lease) return null;
+  if (plannedMatchesLive(intent.planned_lease, lease) || sameLeaseIdentity(lease, intent.prior_lease)) return intent;
+  return null;
+}
+
+function verifyLatestHandoffRecord(paths, lease) {
+  const record = latestOwnHandoff(paths, lease);
+  if (!record) {
+    // Only NEW release/rearm transitions stamp lifecycle_bound onto the lease in
+    // the same atomic write as the planned tuple. Unmarked legacy controllers,
+    // v1 migrations, and bootstrap(initialGeneration>1) keep same-owner resume.
+    if (lease?.lifecycle_bound) {
+      throw new Error("resume refused: lifecycle evidence missing; cannot reconstruct without a durable transition intent");
+    }
+    return null;
+  }
   if (Number(record.generation) !== Number(lease.generation)) {
-    throw new Error(`resume refused: handoff record generation ${record.generation} != lease generation ${lease.generation} (${latestPath})`);
+    throw new Error(`resume refused: handoff record generation ${record.generation} != lease generation ${lease.generation}`);
   }
   if (String(record.principal) !== String(lease.controller_principal)) {
-    throw new Error(`resume refused: handoff record principal differs from live controller principal (${latestPath})`);
+    throw new Error("resume refused: handoff record principal differs from live controller principal");
   }
   return record;
 }
@@ -431,7 +909,12 @@ function verifyLatestHandoffRecord(paths, lease) {
 export function prepareHandover({ stateRoot, repoId, wi, principal, intendedPrincipal = null, ttlMs = 15 * 60_000, now = Date.now() }) {
   const paths = pathsFor(stateRoot, repoId, wi);
   return withLock(paths.root, paths.key, () => {
-    const lease = assertLease(readJson(paths.lease, { required: true }), { repoId, wi });
+    const lease = completeProvenPendingLifecycleLocked(paths, { repoId, wi, now })
+      || assertLease(readJson(paths.lease, { required: true }), { repoId, wi });
+    const leftover = readJson(paths.handover);
+    if (isProvenAcceptedHandover(lease, leftover)) {
+      throw new Error("cannot prepare a new handover while accepted handover proof is incomplete");
+    }
     if (lease.state !== "active" || lease.controller_principal !== principal) throw new Error("only the active controller principal may prepare handover");
     const token = crypto.randomBytes(32).toString("base64url");
     const record = {
@@ -453,9 +936,60 @@ function freezeOldGenerationDelegations(stateRoot, leaseId, generation, now = Da
 
 function writeLifecycleReceipt(paths, receipt) {
   ensureDir(paths.receipts);
+  const match = findMatchingLifecycleReceipt(paths, receipt);
+  if (match) {
+    return path.join(paths.receipts, match.file);
+  }
   const file = path.join(paths.receipts, `${receipt.completed_at.replace(/[:.]/g, "-")}-${receipt.receipt_id}.json`);
+  const existing = readJson(file);
+  if (existing) {
+    if (existing.receipt_id === receipt.receipt_id && existing.kind === receipt.kind && existing.lease_id === receipt.lease_id) return file;
+    throw new Error("lifecycle receipt id conflict");
+  }
   atomicWrite(file, receipt);
   return file;
+}
+
+function findMatchingLifecycleReceipt(paths, receipt) {
+  let names = [];
+  try { names = fs.readdirSync(paths.receipts).filter((name) => name.endsWith(".json")); }
+  catch { return null; }
+  for (const name of names) {
+    const parsed = readJson(path.join(paths.receipts, name));
+    if (parsed?.kind === receipt.kind && String(parsed.lease_id) === String(receipt.lease_id)
+      && String(parsed.wi) === String(receipt.wi)
+      && Number(parsed.new_generation) === Number(receipt.new_generation)
+      && String(parsed.new_controller_principal) === String(receipt.new_controller_principal)) {
+      return { file: name, receipt: parsed };
+    }
+  }
+  return null;
+}
+
+function findHandoverLifecycleReceipt(paths, handoverId) {
+  let names = [];
+  try { names = fs.readdirSync(paths.receipts).filter((name) => name.endsWith(".json")); }
+  catch { return null; }
+  for (const name of names) {
+    const parsed = readJson(path.join(paths.receipts, name));
+    if (parsed?.kind === "handover" && parsed.evidence?.handover_id === handoverId) return parsed;
+  }
+  return null;
+}
+
+function findHandoverHandoffRecord(paths, { tokenHash, generation, leaseId }) {
+  const dir = path.join(paths.receipts, "handoff");
+  let names = [];
+  try { names = fs.readdirSync(dir).filter((name) => name.endsWith(".json")); }
+  catch { return null; }
+  for (const name of names) {
+    const parsed = readJson(path.join(dir, name));
+    if (parsed?.kind === "handover" && parsed.token_hash === tokenHash
+      && Number(parsed.generation) === Number(generation) && String(parsed.lease_id) === String(leaseId)) {
+      return parsed;
+    }
+  }
+  return null;
 }
 
 // WI-562 IP-H6: normalized handoff records — a SEPARATE object from lifecycle
@@ -485,9 +1019,38 @@ function writeHandoffRecord(paths, partial) {
   const record = { schema_version: 1, record_id: crypto.randomUUID(), allowed_paths: [], ...partial };
   validateHandoffRecord(record);
   ensureDir(path.join(paths.receipts, "handoff"));
+  const match = findMatchingHandoffRecord(paths, record);
+  if (match) return path.join(paths.receipts, "handoff", match.file);
   const file = path.join(paths.receipts, "handoff", `${record.record_id}.json`);
+  const existing = readJson(file);
+  if (existing) {
+    if (existing.record_id === record.record_id && existing.kind === record.kind
+        && existing.generation === record.generation && existing.old_generation === record.old_generation
+        && existing.lease_id === record.lease_id && existing.principal === record.principal) {
+      return file;
+    }
+    throw new Error("handoff record id conflict");
+  }
   atomicWrite(file, record);
   return file;
+}
+
+function findMatchingHandoffRecord(paths, record) {
+  const dir = path.join(paths.receipts, "handoff");
+  let names = [];
+  try { names = fs.readdirSync(dir).filter((name) => name.endsWith(".json")); }
+  catch { return null; }
+  for (const name of names) {
+    const parsed = readJson(path.join(dir, name));
+    if (parsed?.kind === record.kind && String(parsed.lease_id) === String(record.lease_id)
+      && Number(parsed.generation) === Number(record.generation)
+      && Number(parsed.old_generation) === Number(record.old_generation)
+      && String(parsed.principal) === String(record.principal)
+      && String(parsed.wi) === String(record.wi)) {
+      return { file: name, record: parsed };
+    }
+  }
+  return null;
 }
 
 function digestEvidence(evidence) {
@@ -501,8 +1064,16 @@ function digestEvidence(evidence) {
 export function acceptHandover({ stateRoot, repoId, wi, principal, token, ttlMs = DEFAULT_TTL_MS, now = Date.now() }) {
   const paths = pathsFor(stateRoot, repoId, wi);
   return withLock(paths.root, paths.key, () => {
+    completeProvenPendingTransitionLocked(paths, { repoId, wi, now });
     const lease = assertLease(readJson(paths.lease, { required: true }), { repoId, wi });
     const handover = readJson(paths.handover, { required: true });
+    if (isProvenAcceptedHandover(lease, handover)) {
+      if (handover.token_hash !== sha256(Buffer.from(requireString(token, "handover token")))) throw new Error("invalid handover token");
+      if (handover.intended_principal && handover.intended_principal !== principal) throw new Error("handover intended principal mismatch");
+      if (lease.controller_principal !== principal) throw new Error("handover intended principal mismatch");
+      const finalized = finalizeHandoverLocked(paths, { repoId, wi, now });
+      return { lease: finalized.lease || lease, receipt: finalized.receipt, receipt_path: finalized.receipt_path };
+    }
     if (handover.status !== "prepared") throw new Error("handover token already consumed");
     if (Date.parse(handover.expires_at) <= now) throw new Error("handover token expired");
     if (handover.intended_principal && handover.intended_principal !== principal) throw new Error("handover intended principal mismatch");
@@ -519,6 +1090,7 @@ export function acceptHandover({ stateRoot, repoId, wi, principal, token, ttlMs 
       accepted_token_hash: handover.token_hash,
       owner_process: ownerProcessIdentity(),
       renewed_at: iso(now), expires_at: iso(now + ttlMs), backend_revision: lease.backend_revision + 1,
+      lifecycle_bound: true,
     };
     atomicWrite(paths.lease, next);
     const frozen_delegations = freezeOldGenerationDelegations(paths.root, lease.lease_id, lease.generation, now);
@@ -559,31 +1131,39 @@ export function acceptHandover({ stateRoot, repoId, wi, principal, token, ttlMs 
 // belongs to acceptHandover and requires the secret token.
 export function finalizeHandover({ stateRoot, repoId, wi, now = Date.now() }) {
   const paths = pathsFor(stateRoot, repoId, wi);
-  return withLock(paths.root, paths.key, () => {
-    const lease = assertLease(readJson(paths.lease, { required: true }), { repoId, wi });
-    let handover;
-    try { handover = readJson(paths.handover, { required: true }); }
-    catch (e) { throw new Error(`finalizeHandover: no handover record (${e.message})`); }
-    if (handover.status !== "prepared") return { completed: false, reason: "handover already consumed" };
-    if (handover.lease_id !== lease.lease_id) throw new Error("finalizeHandover refused: cross-lease stranding (operator recovery required)");
-    if (lease.accepted_handover_id !== handover.handover_id || lease.accepted_token_hash !== handover.token_hash) {
-      throw new Error("finalizeHandover refused: lease was advanced by takeover/recovery, not by token acceptance");
-    }
-    if (Number(lease.backend_revision) !== Number(handover.expected_revision) + 1) {
-      throw new Error("finalizeHandover refused: backend revision does not match acceptance");
-    }
-    if (handover.intended_principal && handover.intended_principal !== lease.controller_principal) {
-      throw new Error("finalizeHandover refused: controller principal differs from intended successor");
-    }
-    const frozen_delegations = freezeOldGenerationDelegations(paths.root, lease.lease_id, Number(handover.expected_generation), now);
-    const receipt = {
-      schema_version: 1, receipt_id: crypto.randomUUID(), kind: "handover", lease_id: lease.lease_id,
-      repo_id: repoId, wi, old_controller_principal: String(handover.source_principal || ""),
-      new_controller_principal: lease.controller_principal,
-      old_generation: Number(handover.expected_generation), new_generation: lease.generation,
-      evidence: { handover_id: handover.handover_id, finalized_forward: true, frozen_delegations }, completed_at: iso(now),
-    };
-    const receipt_path = writeLifecycleReceipt(paths, receipt);
+  return withLock(paths.root, paths.key, () => finalizeHandoverLocked(paths, { repoId, wi, now }));
+}
+
+function finalizeHandoverLocked(paths, { repoId, wi, now }) {
+  const lease = assertLease(readJson(paths.lease, { required: true }), { repoId, wi });
+  let handover;
+  try { handover = readJson(paths.handover, { required: true }); }
+  catch (e) { throw new Error(`finalizeHandover: no handover record (${e.message})`); }
+  if (handover.status !== "prepared") return { completed: false, reason: "handover already consumed", lease };
+  if (handover.lease_id !== lease.lease_id) throw new Error("finalizeHandover refused: cross-lease stranding (operator recovery required)");
+  if (lease.accepted_handover_id !== handover.handover_id || lease.accepted_token_hash !== handover.token_hash) {
+    throw new Error("finalizeHandover refused: lease was advanced by takeover/recovery, not by token acceptance");
+  }
+  if (Number(lease.backend_revision) !== Number(handover.expected_revision) + 1) {
+    throw new Error("finalizeHandover refused: backend revision does not match acceptance");
+  }
+  if (handover.intended_principal && handover.intended_principal !== lease.controller_principal) {
+    throw new Error("finalizeHandover refused: controller principal differs from intended successor");
+  }
+  const frozen_delegations = freezeOldGenerationDelegations(paths.root, lease.lease_id, Number(handover.expected_generation), now);
+  const existingReceipt = findHandoverLifecycleReceipt(paths, handover.handover_id);
+  const receipt = existingReceipt || {
+    schema_version: 1, receipt_id: crypto.randomUUID(), kind: "handover", lease_id: lease.lease_id,
+    repo_id: repoId, wi, old_controller_principal: String(handover.source_principal || ""),
+    new_controller_principal: lease.controller_principal,
+    old_generation: Number(handover.expected_generation), new_generation: lease.generation,
+    evidence: { handover_id: handover.handover_id, finalized_forward: true, frozen_delegations }, completed_at: iso(now),
+  };
+  const receipt_path = existingReceipt ? null : writeLifecycleReceipt(paths, receipt);
+  const existingHandoff = findHandoverHandoffRecord(paths, {
+    tokenHash: handover.token_hash, generation: lease.generation, leaseId: lease.lease_id,
+  });
+  if (!existingHandoff) {
     writeHandoffRecord(paths, {
       kind: "handover", wi, repo_id: repoId, lease_id: lease.lease_id,
       generation: lease.generation, old_generation: Number(handover.expected_generation),
@@ -595,9 +1175,9 @@ export function finalizeHandover({ stateRoot, repoId, wi, now = Date.now() }) {
       evidence_digests: digestEvidence({ handover_id: handover.handover_id, finalized_forward: true, frozen_delegations }),
       ts: iso(now),
     });
-    atomicWrite(paths.handover, { ...handover, status: "consumed", consumed_at: iso(now), finalized_forward: true });
-    return { completed: true, receipt, receipt_path, frozen_delegations };
-  });
+  }
+  atomicWrite(paths.handover, { ...handover, status: "consumed", consumed_at: iso(now), finalized_forward: true });
+  return { completed: true, receipt, receipt_path, frozen_delegations, lease };
 }
 
 // Explicit user-directed takeover. This never inspects, signals, or terminates
@@ -606,31 +1186,58 @@ export function takeoverController({ stateRoot, repoId, wi, principal, expectedP
   const paths = pathsFor(stateRoot, repoId, wi);
   if (!String(reason || "").trim()) throw new Error("explicit takeover requires a reason");
   if (!Number.isInteger(Number(expectedGeneration)) || Number(expectedGeneration) < 1) throw new Error("explicit takeover requires the observed generation");
+  requireString(principal, "takeover principal");
   return withLock(paths.root, paths.key, () => {
+    completeProvenPendingLifecycleLocked(paths, { repoId, wi, now });
     const lease = assertLease(readJson(paths.lease, { required: true }), { repoId, wi });
-    if (lease.state !== "active") throw new Error("controller lease is not active");
-    if (lease.controller_principal !== String(expectedPrincipal || "")) throw new Error("takeover owner compare-and-swap mismatch");
-    if (lease.generation !== Number(expectedGeneration)) throw new Error("takeover generation compare-and-swap mismatch");
-    const next = { ...lease, controller_principal: principal, generation: lease.generation + 1,
-      owner_process: ownerProcessIdentity(), renewed_at: iso(now), expires_at: iso(now + ttlMs), backend_revision: lease.backend_revision + 1 };
-    atomicWrite(paths.lease, next);
-    const frozen_delegations = freezeOldGenerationDelegations(paths.root, lease.lease_id, lease.generation, now);
-    const receipt = { schema_version: 1, receipt_id: crypto.randomUUID(), kind: "explicit_takeover", lease_id: lease.lease_id,
-      repo_id: repoId, wi, old_controller_principal: lease.controller_principal, new_controller_principal: principal,
-      old_generation: lease.generation, new_generation: next.generation,
-      evidence: { reason: String(reason).trim(), frozen_delegations }, completed_at: iso(now) };
-    const receipt_path = writeLifecycleReceipt(paths, receipt);
-    writeHandoffRecord(paths, {
-      kind: "explicit_takeover", wi, repo_id: repoId, lease_id: lease.lease_id,
-      generation: next.generation, old_generation: lease.generation,
-      principal, predecessor_principal: lease.controller_principal,
-      worktree_realpath: lease.worktree_root || "",
-      base_sha: typeof lease.base_sha === "string" ? lease.base_sha : "",
-      ttl_ms: ttlMs,
-      evidence_digests: digestEvidence({ reason: String(reason).trim(), frozen_delegations }),
-      ts: iso(now),
+    const open = matchingOpenSuccessorIntent(paths, {
+      kind: "explicit-takeover", principal, expectedGeneration, expectedPrincipal,
     });
-    return { lease: next, receipt, receipt_path };
+    if (!open) {
+      const replayed = replayCompletedTransition(lease, latestOwnHandoff(paths, lease), {
+        kind: "explicit-takeover", principal, worktree: lease.worktree_root,
+        expectedGeneration: Number(expectedGeneration), expectedLeaseId: lease.lease_id,
+      });
+      if (replayed) return { lease, receipt: latestOwnHandoff(paths, lease), receipt_path: null };
+      if (lease.state !== "active") throw new Error("controller lease is not active");
+      if (lease.controller_principal !== String(expectedPrincipal || "")) throw new Error("takeover owner compare-and-swap mismatch");
+      if (lease.generation !== Number(expectedGeneration)) throw new Error("takeover generation compare-and-swap mismatch");
+    }
+    const prior = open ? open.prior_lease : lease;
+    const worktree = fs.realpathSync(open ? open.worktree_root : lease.worktree_root);
+    const successor = String(principal) !== String(prior.controller_principal);
+    const nextLease = runTransition({
+      paths, repoId, wi, kind: "explicit-takeover", principal, worktree,
+      expectedGeneration: Number(prior.generation), expectedLeaseId: prior.lease_id, now,
+      successor, expectedPriorPrincipal: prior.controller_principal,
+      prepare(existing) {
+        const planned = {
+          ...existing, controller_principal: principal, generation: existing.generation + 1,
+          owner_process: ownerProcessIdentity(), renewed_at: iso(now), expires_at: iso(now + ttlMs),
+          backend_revision: existing.backend_revision + 1, lifecycle_bound: true,
+        };
+        return {
+          planned,
+          freeze: { lease_id: existing.lease_id, generation: existing.generation },
+          handoff: {
+            record_id: crypto.randomUUID(), kind: "explicit_takeover", wi, repo_id: repoId, lease_id: planned.lease_id,
+            generation: planned.generation, old_generation: existing.generation,
+            principal, predecessor_principal: existing.controller_principal,
+            worktree_realpath: worktree,
+            base_sha: typeof existing.base_sha === "string" ? existing.base_sha : "",
+            ttl_ms: ttlMs,
+            evidence_digests: digestEvidence({ reason: String(reason).trim() }),
+          },
+          lifecycle: {
+            schema_version: 1, receipt_id: crypto.randomUUID(), kind: "explicit_takeover", lease_id: planned.lease_id,
+            repo_id: repoId, wi, old_controller_principal: existing.controller_principal,
+            new_controller_principal: principal, old_generation: existing.generation,
+            new_generation: planned.generation, evidence: { reason: String(reason).trim() },
+          },
+        };
+      },
+    });
+    return { lease: nextLease, receipt: latestOwnHandoff(paths, nextLease), receipt_path: null };
   });
 }
 
@@ -639,86 +1246,140 @@ export function recoverController({ stateRoot, repoId, wi, principal, reason, wo
   principal = requireString(principal, "recovery principal");
   const paths = pathsFor(stateRoot, repoId, wi);
   return withLock(paths.root, paths.key, () => {
+    completeProvenPendingLifecycleLocked(paths, { repoId, wi, now });
     const lease = assertLease(readJson(paths.lease, { required: true }), { repoId, wi });
-    if (lease.state !== "active") throw new Error("controller lease is not active");
-    const ownerAlive = processIsAlive(lease.owner_process);
-    if (evidence.owner_live === true || ownerAlive === true) throw new Error("controller authority conflict: a provably live owner cannot be displaced");
-    const expired = evidence.expired === true && Date.parse(lease.expires_at) <= now;
-    const sameHostDead = evidence.same_host_dead === true && ownerAlive === false;
-    if (!expired && !sameHostDead) throw new Error("recovery requires positive dead-owner evidence or lease expiry");
-    if (expectedGeneration !== null && lease.generation !== expectedGeneration) throw new Error("recovery generation changed; inspect again");
-    let target = lease.worktree_root;
-    if (worktreeRoot && path.resolve(worktreeRoot) !== path.resolve(target)) {
-      if (fs.existsSync(target)) throw new Error("old controller worktree still exists; explicit handover required");
-      target = fs.realpathSync(worktreeRoot);
-      assertNoFollowDirectoryPath(worktreeRoot, { requireFinalOwner: true });
-      if (repositoryId(target) !== repoId) throw new Error("recovery target belongs to another repository");
-      const rows = execFileSync('git', ['-C', target, 'worktree', 'list', '--porcelain'], { encoding: 'utf8' });
-      if (!rows.split('\n').includes(`worktree ${target}`) || target === path.dirname(commonGitDir(target))) throw new Error("recovery requires a registered non-default worktree");
-      const claim = readJson(path.join(target, '.svc', 'claims', `${wi}.claim.json`), { required: true });
-      const bindingsDir = path.join(target, '.svc', 'bindings');
-      const bindings = fs.readdirSync(bindingsDir).filter(n => n.endsWith('.json')).map(n => readJson(path.join(bindingsDir, n), { required: true }));
-      const matches = bindings.filter(b => !b.released_at && b.role === 'mutating');
-      if (matches.length !== 1 || matches[0].session_id !== claim.session_id || matches[0].generation !== claim.generation || matches[0].wi !== wi || matches[0].worktree_root !== target || matches[0].branch !== claim.branch) throw new Error('recovery target binding mismatch');
-      const candidates = rows.split('\n').filter(v => v.startsWith('worktree ')).map(v => v.slice(9)).filter(w => fs.existsSync(path.join(w, '.svc', `lane-tasks-${wi}.json`)));
-      if (candidates.length !== 1 || candidates[0] !== target) throw new Error('recovery target selection is ambiguous');
-      const branch = execFileSync('git', ['-C', target, 'branch', '--show-current'], { encoding: 'utf8' }).trim();
-      if (claim.schema_version !== 1 || claim.wi !== wi || claim.role !== 'mutating' || claim.worktree_root !== target || claim.branch !== branch || fs.realpathSync(claim.repo_root) !== path.dirname(commonGitDir(target))) throw new Error("recovery target claim mismatch");
-      const renewed = Date.parse(claim.renewed_at || claim.started_at);
-      const ttl = Number(claim.ttl_hours);
-      if (!Number.isFinite(renewed) || !Number.isFinite(ttl) || ttl <= 0 || renewed + ttl * 3600000 > now) throw new Error("recovery target claim is live or uncertain");
-      const graph = readJson(path.join(target, '.svc', `lane-tasks-${wi}.json`), { required: true });
-      if (graph.wi !== wi || !validateTaskGraphShape(graph).ok || !selectRecoveryTask(graph)) throw new Error("recovery target graph is ambiguous");
-    }
-    const next = {
-      ...lease, worktree_root: target, controller_principal: principal, generation: lease.generation + 1,
-      owner_process: ownerProcessIdentity(),
-      renewed_at: iso(now), expires_at: iso(now + ttlMs), backend_revision: lease.backend_revision + 1,
-    };
-    atomicWrite(paths.lease, next);
-    const frozen_delegations = freezeOldGenerationDelegations(paths.root, lease.lease_id, lease.generation, now);
-    const receipt = {
-      schema_version: 1, receipt_id: crypto.randomUUID(), kind: "recovery", lease_id: lease.lease_id,
-      repo_id: repoId, wi, old_controller_principal: lease.controller_principal,
-      new_controller_principal: principal, old_generation: lease.generation,
-      new_generation: next.generation, old_worktree_root: lease.worktree_root, new_worktree_root: next.worktree_root, evidence: { ...evidence, reason, frozen_delegations }, completed_at: iso(now),
-    };
-    const receipt_path = writeLifecycleReceipt(paths, receipt);
-    writeHandoffRecord(paths, {
-      kind: "recovery", wi, repo_id: repoId, lease_id: lease.lease_id,
-      generation: next.generation, old_generation: lease.generation,
-      principal, predecessor_principal: lease.controller_principal,
-      worktree_realpath: next.worktree_root || "",
-      base_sha: typeof lease.base_sha === "string" ? lease.base_sha : "",
-      ttl_ms: ttlMs,
-      evidence_digests: digestEvidence({ ...evidence, reason: requireString(reason, "recovery reason"), frozen_delegations }),
-      ts: iso(now),
+    const open = matchingOpenSuccessorIntent(paths, {
+      kind: "recovery-displace", principal, expectedGeneration,
     });
-    return { lease: next, receipt, receipt_path };
+    let target = lease.worktree_root;
+    if (!open) {
+      const replayed = expectedGeneration != null
+        ? replayCompletedTransition(lease, latestOwnHandoff(paths, lease), {
+            kind: "recovery-displace", principal, worktree: lease.worktree_root,
+            expectedGeneration: Number(expectedGeneration), expectedLeaseId: lease.lease_id,
+          })
+        : null;
+      if (replayed) return { lease, receipt: latestOwnHandoff(paths, lease), receipt_path: null };
+      if (lease.state !== "active") throw new Error("controller lease is not active");
+      const ownerAlive = processIsAlive(lease.owner_process);
+      if (evidence.owner_live === true || ownerAlive === true) throw new Error("controller authority conflict: a provably live owner cannot be displaced");
+      const expired = evidence.expired === true && Date.parse(lease.expires_at) <= now;
+      const sameHostDead = evidence.same_host_dead === true && ownerAlive === false;
+      if (!expired && !sameHostDead) throw new Error("recovery requires positive dead-owner evidence or lease expiry");
+      if (expectedGeneration !== null && lease.generation !== expectedGeneration) throw new Error("recovery generation changed; inspect again");
+      if (worktreeRoot && path.resolve(worktreeRoot) !== path.resolve(target)) {
+        if (fs.existsSync(target)) throw new Error("old controller worktree still exists; explicit handover required");
+        target = fs.realpathSync(worktreeRoot);
+        assertNoFollowDirectoryPath(worktreeRoot, { requireFinalOwner: true });
+        if (repositoryId(target) !== repoId) throw new Error("recovery target belongs to another repository");
+        const rows = execFileSync('git', ['-C', target, 'worktree', 'list', '--porcelain'], { encoding: 'utf8' });
+        if (!rows.split('\n').includes(`worktree ${target}`) || target === path.dirname(commonGitDir(target))) throw new Error("recovery requires a registered non-default worktree");
+        const claim = readJson(path.join(target, '.svc', 'claims', `${wi}.claim.json`), { required: true });
+        const bindingsDir = path.join(target, '.svc', 'bindings');
+        const bindings = fs.readdirSync(bindingsDir).filter(n => n.endsWith('.json')).map(n => readJson(path.join(bindingsDir, n), { required: true }));
+        const matches = bindings.filter(b => !b.released_at && b.role === 'mutating');
+        if (matches.length !== 1 || matches[0].session_id !== claim.session_id || matches[0].generation !== claim.generation || matches[0].wi !== wi || matches[0].worktree_root !== target || matches[0].branch !== claim.branch) throw new Error('recovery target binding mismatch');
+        const candidates = rows.split('\n').filter(v => v.startsWith('worktree ')).map(v => v.slice(9)).filter(w => fs.existsSync(path.join(w, '.svc', `lane-tasks-${wi}.json`)));
+        if (candidates.length !== 1 || candidates[0] !== target) throw new Error('recovery target selection is ambiguous');
+        const branch = execFileSync('git', ['-C', target, 'branch', '--show-current'], { encoding: 'utf8' }).trim();
+        if (claim.schema_version !== 1 || claim.wi !== wi || claim.role !== 'mutating' || claim.worktree_root !== target || claim.branch !== branch || fs.realpathSync(claim.repo_root) !== path.dirname(commonGitDir(target))) throw new Error("recovery target claim mismatch");
+        const renewed = Date.parse(claim.renewed_at || claim.started_at);
+        const ttl = Number(claim.ttl_hours);
+        if (!Number.isFinite(renewed) || !Number.isFinite(ttl) || ttl <= 0 || renewed + ttl * 3600000 > now) throw new Error("recovery target claim is live or uncertain");
+        const graph = readJson(path.join(target, '.svc', `lane-tasks-${wi}.json`), { required: true });
+        if (graph.wi !== wi || !validateTaskGraphShape(graph).ok || !selectRecoveryTask(graph)) throw new Error("recovery target graph is ambiguous");
+      }
+    }
+    const prior = open ? open.prior_lease : lease;
+    const worktree = fs.realpathSync(open ? open.worktree_root : target);
+    const successor = String(principal) !== String(prior.controller_principal)
+      || !sameCanonicalWorktree(prior.worktree_root, worktree);
+    const recovered = runTransition({
+      paths, repoId, wi, kind: "recovery-displace", principal, worktree,
+      expectedGeneration: Number(prior.generation), expectedLeaseId: prior.lease_id, now,
+      successor, expectedPriorPrincipal: prior.controller_principal,
+      prepare(existing) {
+        const planned = {
+          ...existing, worktree_root: worktree, controller_principal: principal,
+          generation: existing.generation + 1, owner_process: ownerProcessIdentity(),
+          renewed_at: iso(now), expires_at: iso(now + ttlMs),
+          backend_revision: existing.backend_revision + 1, lifecycle_bound: true,
+        };
+        return {
+          planned,
+          freeze: { lease_id: existing.lease_id, generation: existing.generation },
+          handoff: {
+            record_id: crypto.randomUUID(), kind: "recovery", wi, repo_id: repoId, lease_id: planned.lease_id,
+            generation: planned.generation, old_generation: existing.generation,
+            principal, predecessor_principal: existing.controller_principal,
+            worktree_realpath: worktree,
+            base_sha: typeof existing.base_sha === "string" ? existing.base_sha : "",
+            ttl_ms: ttlMs,
+            evidence_digests: digestEvidence({ ...evidence, reason }),
+          },
+          lifecycle: {
+            schema_version: 1, receipt_id: crypto.randomUUID(), kind: "recovery", lease_id: planned.lease_id,
+            repo_id: repoId, wi, old_controller_principal: existing.controller_principal,
+            new_controller_principal: principal, old_generation: existing.generation,
+            new_generation: planned.generation,
+            evidence: { ...evidence, reason, old_worktree_root: existing.worktree_root, new_worktree_root: planned.worktree_root },
+          },
+        };
+      },
+    });
+    return { lease: recovered, receipt: latestOwnHandoff(paths, recovered), receipt_path: null };
   });
 }
 
-export function releaseController({ stateRoot, repoId, wi, principal, now = Date.now() }) {
+export function releaseController({
+  stateRoot, repoId, wi, principal, expectedGeneration = null, expectedLeaseId = null, now = Date.now(),
+}) {
+  requireString(principal, "principal");
   const paths = pathsFor(stateRoot, repoId, wi);
   return withLock(paths.root, paths.key, () => {
-    const lease = assertLease(readJson(paths.lease, { required: true }), { repoId, wi });
-    if (lease.state !== "active" || lease.controller_principal !== principal) throw new Error("only the active controller principal may release authority");
-    const released = { ...lease, state: "released", renewed_at: iso(now), expires_at: iso(now), backend_revision: lease.backend_revision + 1 };
-    atomicWrite(paths.lease, released);
-    freezeOldGenerationDelegations(paths.root, lease.lease_id, lease.generation, now);
-    // WI-562 IP-H6: release transitions were previously invisible to the record
-    // stream (no lifecycle receipt existed); the normalized record closes that.
-    writeHandoffRecord(paths, {
-      kind: "release", wi, repo_id: repoId, lease_id: lease.lease_id,
-      generation: lease.generation, old_generation: lease.generation,
-      principal, predecessor_principal: lease.controller_principal,
-      worktree_realpath: lease.worktree_root || "",
-      base_sha: typeof lease.base_sha === "string" ? lease.base_sha : "",
-      ttl_ms: Math.max(1, Date.parse(lease.expires_at) - now),
-      evidence_digests: digestEvidence({ released: true }),
-      ts: iso(now),
+    completeProvenPendingLifecycleLocked(paths, { repoId, wi, now });
+    const current = assertLease(readJson(paths.lease, { required: true }), { repoId, wi });
+    const generation = expectedGeneration == null ? Number(current.generation) : Number(expectedGeneration);
+    const leaseId = expectedLeaseId == null ? String(current.lease_id) : String(expectedLeaseId);
+    const worktree = fs.realpathSync(current.worktree_root);
+    return runTransition({
+      paths, repoId, wi, kind: "release", principal, worktree,
+      expectedGeneration: generation, expectedLeaseId: leaseId, now,
+      prepare(existing) {
+        if (existing.state !== "active" || existing.controller_principal !== principal) {
+          throw new Error("only the active controller principal may release authority");
+        }
+        if (Number(existing.generation) !== generation) throw new Error("release generation changed; inspect again");
+        if (String(existing.lease_id) !== String(leaseId)) throw new Error("release lease id changed; inspect again");
+        const planned = {
+          ...existing, state: "released", renewed_at: iso(now), expires_at: iso(now),
+          backend_revision: existing.backend_revision + 1,
+          lifecycle_bound: true,
+        };
+        const ttlMs = Math.max(1, Date.parse(existing.expires_at) - now);
+        const receiptId = crypto.randomUUID();
+        const recordId = crypto.randomUUID();
+        return {
+          planned,
+          freeze: { lease_id: existing.lease_id, generation: existing.generation },
+          handoff: {
+            record_id: recordId, kind: "release", wi, repo_id: repoId, lease_id: existing.lease_id,
+            generation: existing.generation, old_generation: existing.generation,
+            principal, predecessor_principal: existing.controller_principal,
+            worktree_realpath: worktree,
+            base_sha: typeof existing.base_sha === "string" ? existing.base_sha : "",
+            ttl_ms: ttlMs,
+            evidence_digests: priorLeaseEvidence(leaseId, generation, { released: true }),
+          },
+          lifecycle: {
+            schema_version: 1, receipt_id: receiptId, kind: "release", lease_id: existing.lease_id,
+            repo_id: repoId, wi, old_controller_principal: existing.controller_principal,
+            new_controller_principal: principal, old_generation: existing.generation,
+            new_generation: existing.generation, evidence: { released: true },
+          },
+        };
+      },
     });
-    return released;
   });
 }
 
@@ -734,7 +1395,7 @@ export function writeControllerForTest({ stateRoot, lease, expectedRevision }) {
   });
 }
 
-export function migrateV1Claim({ stateRoot, claimPath, repoId, worktreeRoot, host, env = process.env }) {
+export function migrateV1Claim({ stateRoot, claimPath, repoId, worktreeRoot, host, env = process.env, actorSessionId = null }) {
   const absoluteClaim = path.resolve(claimPath);
   const stat = fs.lstatSync(absoluteClaim);
   if (!stat.isFile() || stat.isSymbolicLink()) throw new Error("v1 claim is not a secure regular file");
@@ -746,6 +1407,9 @@ export function migrateV1Claim({ stateRoot, claimPath, repoId, worktreeRoot, hos
     throw new Error(owner.ambiguous ? "v1 claim carries ambiguous session owners" : "v1 claim lacks a stable session owner");
   }
   const principal = principalId({ host, session_id: requireString(owner.session_id, "v1 stable session id") });
+  if (actorSessionId != null && String(actorSessionId) !== "" && String(owner.session_id) !== String(actorSessionId)) {
+    throw new Error("v1 claim session owner does not match the authenticated actor; explicit handover required");
+  }
   const wi = requireString(claim.wi, "v1 WI");
   const canonicalWorktree = fs.realpathSync(requireString(worktreeRoot, "worktree root"));
   if (claim.worktree_root && fs.realpathSync(claim.worktree_root) !== canonicalWorktree) {
@@ -763,6 +1427,7 @@ export function migrateV1Claim({ stateRoot, claimPath, repoId, worktreeRoot, hos
   const paths = pathsFor(stateRoot, repoId, wi);
 
   return withLock(paths.root, paths.key, () => {
+    completeProvenPendingLifecycleLocked(paths, { repoId, wi, now: Date.now() });
     // Compatibility path for controller-v2 leases created before deterministic
     // v1 migration intents existed. The exact same principal/worktree/generation
     // is already authoritative, so resume it without fabricating retroactive
@@ -771,7 +1436,12 @@ export function migrateV1Claim({ stateRoot, claimPath, repoId, worktreeRoot, hos
     let intent = readJson(intentPath);
     let lease = readJson(paths.lease);
     if (lease) lease = assertLease(lease, { repoId, wi });
-    if (!intent && lease?.state === "active") {
+    if (!intent && lease) {
+      const expiresAt = Date.parse(lease.expires_at);
+      const live = Number.isFinite(expiresAt) && expiresAt > Date.now();
+      if (lease.state !== "active" || !live) {
+        throw new Error("v2 controller lease already exists; use resume, rearm, handover, or recover");
+      }
       const exactLegacyController = lease.controller_principal === principal &&
         fs.realpathSync(lease.worktree_root) === canonicalWorktree &&
         lease.generation === initialGeneration;
@@ -900,10 +1570,7 @@ export function rollbackV1Migration({ migrationReceiptPath }) {
     atomicWriteBytes(receipt.claim_path, bytes);
     if (plannedCurrent) {
       if (prior) atomicWrite(paths.lease, prior);
-      else {
-        fs.unlinkSync(paths.lease);
-        try { const fd = fs.openSync(path.dirname(paths.lease), "r"); fs.fsyncSync(fd); fs.closeSync(fd); } catch {}
-      }
+      else durableUnlink(paths.lease);
     }
     return { restored: receipt.claim_path, sha256: receipt.source_sha256, controller_restored: true };
   });
