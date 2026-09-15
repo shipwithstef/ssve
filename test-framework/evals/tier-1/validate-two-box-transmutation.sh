@@ -19,6 +19,7 @@ TESTS=(
   test-framework/tests/research-decision.test.mjs
   test-framework/tests/two-box-learning.test.mjs
   test-framework/tests/two-box-receipts.test.mjs
+  test-framework/tests/released-lease-recovery.test.mjs
 )
 for rel in "${TESTS[@]}"; do
   [[ -f "$ROOT/$rel" ]] || fail "missing $rel"

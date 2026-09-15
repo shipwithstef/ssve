@@ -47,10 +47,11 @@ git -C "$WT_REPO" config user.name fixture
 git -C "$WT_REPO" config user.email fixture@example.test
 cp "$ROOT/scripts/worktree.sh" "$WT_REPO/scripts/worktree.sh"
 cp "$ROOT/hooks/lib/wi-claim.mjs" "$WT_REPO/hooks/lib/wi-claim.mjs"
+cp "$ROOT/hooks/lib/authoritative-binding.mjs" "$WT_REPO/hooks/lib/authoritative-binding.mjs"
 cp "$ROOT/hooks/lib/svc-runtime-root.mjs" "$WT_REPO/hooks/lib/svc-runtime-root.mjs"
 printf '.worktrees/\n' > "$WT_REPO/.gitignore"
 printf 'fixture\n' > "$WT_REPO/README.md"
-git -C "$WT_REPO" add .gitignore README.md scripts/worktree.sh hooks/lib/wi-claim.mjs hooks/lib/svc-runtime-root.mjs
+git -C "$WT_REPO" add .gitignore README.md scripts/worktree.sh hooks/lib/wi-claim.mjs hooks/lib/authoritative-binding.mjs hooks/lib/svc-runtime-root.mjs
 git -C "$WT_REPO" commit -qm init
 if (
   cd "$WT_REPO"

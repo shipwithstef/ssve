@@ -346,7 +346,7 @@
       "id": 5,
       "subject": "Cursor implements reviewed changeset fully",
       "skill": "execute-changeset",
-      "status": "in_progress",
+      "status": "completed",
       "blocked_by": [
         4
       ],
@@ -374,47 +374,337 @@
                 "path": "docs/plans/two-box-transmutation/manifest.md"
               }
             ]
+          },
+          {
+            "id": "P3-Verification",
+            "ts": "2026-09-15T11:30:12.203Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/external-review-artifacts/two-box/cursor-finalization-20260915/full-tier1-summary.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-Checkpoint",
+            "ts": "2026-09-15T11:42:05.773Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/external-review-artifacts/two-box/cursor-finalization-20260915/full-tier1-summary.json"
+              }
+            ]
           }
         ]
       },
       "delivery_attempt": 1,
-      "delivery_started_at": "2026-09-15T01:41:16.697Z"
+      "delivery_started_at": "2026-09-15T01:41:16.697Z",
+      "completed_at": "2026-09-15T11:42:05.944Z"
     },
     {
       "id": 6,
       "subject": "Review execution against requirements",
       "skill": "review-exec",
-      "status": "pending",
+      "status": "completed",
       "blocked_by": [
         5
-      ]
+      ],
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-09-15T11:42:06.091Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SelfReview",
+            "ts": "2026-09-15T11:42:06.390Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/two-box/cursor-finalization-20260915/review-exec-self.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-ResolveAdversarialPair",
+            "ts": "2026-09-15T11:42:06.538Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/two-box/cursor-finalization-20260915/reviewer-policy-agy-independent.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-AdversarialReview",
+            "ts": "2026-09-15T11:42:06.686Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/two-box/cursor-finalization-20260915/exec-review-agy-focused/receipt.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-VerdictAndReceiptFinalize",
+            "ts": "2026-09-15T11:42:06.828Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipts/staging/b61c1159a30405bf0a23504cf50ee5966347b9a1/review-exec.json"
+              }
+            ]
+          }
+        ]
+      },
+      "delivery_attempt": 1,
+      "delivery_started_at": "2026-09-15T11:42:06.236Z",
+      "completed_at": "2026-09-15T11:42:06.973Z"
     },
     {
       "id": 7,
       "subject": "Audit implementation and run release checks",
       "skill": "audit-implementation",
-      "status": "pending",
+      "status": "completed",
       "blocked_by": [
         6
-      ]
+      ],
+      "skill_receipt": {
+        "skill": "audit-implementation",
+        "loaded_at": "2026-09-15T11:43:02.102Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-09-15T11:43:02.423Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/lane-tasks-WI-FW-TWO-BOX-01.json"
+              }
+            ]
+          },
+          {
+            "id": "P1-UpstreamContextScopeConcern",
+            "ts": "2026-09-15T11:43:10.552Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/two-box/cursor-finalization-20260915/ac-audit.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecialistDispatchCoverageLedger",
+            "ts": "2026-09-15T11:43:10.701Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/two-box/cursor-finalization-20260915/audit-implementation.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-HypothesisGeneration",
+            "ts": "2026-09-15T11:43:10.853Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/two-box/cursor-finalization-20260915/audit-implementation.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-SubsystemBehaviorAudit",
+            "ts": "2026-09-15T11:43:11.021Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/two-box/cursor-finalization-20260915/audit-implementation.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-FindingsConvergenceReport",
+            "ts": "2026-09-15T11:43:11.163Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/two-box/cursor-finalization-20260915/audit-implementation.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-09-15T11:43:11.297Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/receipts/staging/b61c1159a30405bf0a23504cf50ee5966347b9a1/audit-implementation.json"
+              }
+            ]
+          }
+        ]
+      },
+      "delivery_attempt": 1,
+      "delivery_started_at": "2026-09-15T11:42:19.142Z",
+      "completed_at": "2026-09-15T11:43:11.436Z"
     },
     {
       "id": 8,
       "subject": "Land reviewed changeset",
       "skill": "land-changeset",
-      "status": "pending",
+      "status": "completed",
       "blocked_by": [
         7
-      ]
+      ],
+      "skill_receipt": {
+        "skill": "land-changeset",
+        "loaded_at": "2026-09-15T11:43:37.162Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-WorktreeManifestContext",
+            "ts": "2026-09-15T12:05:11.272Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-context.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-DiffTaskCompletionAudit",
+            "ts": "2026-09-15T12:05:11.411Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-diff-audit.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-FinalValidationCoverageAudit",
+            "ts": "2026-09-15T12:05:11.548Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-validation.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-PushPrCreation",
+            "ts": "2026-09-15T12:05:11.690Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/land-changeset-push.log"
+              }
+            ]
+          },
+          {
+            "id": "P5-MergeDecisionCleanup",
+            "ts": "2026-09-15T12:05:11.829Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/external-review-artifacts/two-box/cursor-finalization-20260915/merge-pr-58.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SpecStatusSelfVerify",
+            "ts": "2026-09-15T12:05:11.971Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/leftover-dispositions/WI-FW-TWO-BOX-01.json"
+              }
+            ]
+          }
+        ]
+      },
+      "delivery_attempt": 1,
+      "delivery_started_at": "2026-09-15T11:43:37.162Z",
+      "completed_at": "2026-09-15T12:05:12.111Z"
     },
     {
       "id": 9,
       "subject": "Verify promotion and all-host installation",
       "skill": "verify-promotion",
-      "status": "pending",
+      "status": "in_progress",
       "blocked_by": [
         8
-      ]
+      ],
+      "skill_receipt": {
+        "skill": "verify-promotion",
+        "loaded_at": "2026-09-15T12:05:12.243Z",
+        "loaded_via": "cursor-grok",
+        "phases_executed": [
+          {
+            "id": "P1-PromotionEvidence",
+            "ts": "2026-09-15T12:05:12.382Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/two-box/cursor-finalization-20260915/promotion-evidence.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-SpecACVerification",
+            "ts": "2026-09-15T12:06:07.606Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/two-box/cursor-finalization-20260915/ac-audit.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-09-15T12:06:07.739Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/external-review-artifacts/two-box/cursor-finalization-20260915/pre-push-focused-tier1.log"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-09-15T12:06:26.041Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/two-box/cursor-finalization-20260915/verify-closeout-blocker.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-RuntimeRegression",
+            "ts": "2026-09-15T12:26:29.735Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/two-box/cursor-finalization-20260915/post-promotion-followup.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-StateCloseout",
+            "ts": "2026-09-15T12:26:29.912Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/two-box/cursor-finalization-20260915/post-promotion-followup.json"
+              }
+            ]
+          }
+        ]
+      },
+      "delivery_attempt": 1,
+      "delivery_started_at": "2026-09-15T12:05:12.243Z"
     }
   ],
   "delivery_cycle": {

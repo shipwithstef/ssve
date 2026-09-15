@@ -32,6 +32,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import {
   IsolationUnsupported,
   sha256Bytes,
@@ -65,6 +66,10 @@ const MAX_BYTES = Number(DEFAULT_LIMITS?.maxOutputBytes ?? DEFAULT_LIMITS?.max_o
 const INJECT_RE = /AGENTS\.md|CLAUDE\.md|\bSKILL\.md\b|includedSkills|route-workflow|plan-changeset|Serious Serious Vibe Engineering|\bDOCTRINE\.md\b|FRAMEWORK-STATE|skills-manifest|<project_instructions>|<user_instructions>|<additional_instructions>|<repo_instructions>/i;
 const SOURCE_RE = /skills\/|AGENTS\.md|\bSSVE\b|DOCTRINE|SKILL\.md/;
 const AUTH_DROP = /(?:^|_)(SESSION|CONTROLLER|DELEGATION|LEASE)(_|$)/;
+const NATIVE_TEAM_COLLABORATION_TEMPLATE = fs.readFileSync(
+  path.join(path.dirname(fileURLToPath(import.meta.url)), "native-codex-team-collaboration.wrapper.txt"),
+  "utf8",
+);
 
 function fail(msg) {
   throw new IsolationUnsupported(msg);
@@ -226,10 +231,27 @@ function itemText(item) {
   return "";
 }
 
-function wrapperKind(text) {
+function nativeTeamAgent(text) {
+  const prefix = "You are `";
+  if (!text.startsWith(prefix)) return null;
+  const end = text.indexOf("`", prefix.length);
+  if (end < 0) return null;
+  const agent = text.slice(prefix.length, end);
+  if (!/^[A-Za-z0-9._/-]{1,64}$/.test(agent) || agent.includes("..")) return null;
+  return agent;
+}
+
+export function isNativeTeamCollaborationWrapper(text) {
+  const agent = nativeTeamAgent(text);
+  if (!agent) return false;
+  return text === NATIVE_TEAM_COLLABORATION_TEMPLATE.replaceAll("{{AGENT}}", agent);
+}
+
+export function wrapperKind(text) {
   if (text.startsWith("<permissions instructions>") || text.startsWith("<permissions>")) return "permissions";
   if (text.startsWith("<collaboration_mode>")) return "collaboration";
   if (text.startsWith("<multi_agent_role>") || text.startsWith("<multi_agent_mode>")) return "multi_agent";
+  if (isNativeTeamCollaborationWrapper(text)) return "team_collaboration";
   return null;
 }
 

@@ -12,7 +12,7 @@ cp "$ROOT/scripts/lib/review-report-recovery.mjs" "$ROOT/scripts/lib/normalize-a
 cp "$ROOT/scripts/lib/review-inputs.mjs" "$ROOT/scripts/lib/plan-manifest-contract.mjs" "$TMP/repo/scripts/lib/"
 cp "$ROOT/scripts/lib/reviewer-resources.mjs" "$TMP/repo/scripts/lib/"
 cp "$ROOT/scripts/lib/history-epoch.mjs" "$TMP/repo/scripts/lib/"
-cp "$ROOT/scripts/lib/two-box-protocol.mjs" "$ROOT/scripts/lib/receipt-issuance-epoch.mjs" "$ROOT/scripts/lib/control-plan-validate.mjs" "$ROOT/scripts/lib/transmutation-seal.mjs" "$ROOT/scripts/lib/isolated-plan-analysis.mjs" "$ROOT/scripts/lib/two-box-role-launch.mjs" "$ROOT/scripts/lib/two-box-scout-assign.mjs" "$TMP/repo/scripts/lib/"
+cp "$ROOT/scripts/lib/two-box-protocol.mjs" "$ROOT/scripts/lib/receipt-issuance-epoch.mjs" "$ROOT/scripts/lib/control-plan-validate.mjs" "$ROOT/scripts/lib/transmutation-seal.mjs" "$ROOT/scripts/lib/isolated-plan-analysis.mjs" "$ROOT/scripts/lib/native-codex-team-collaboration.wrapper.txt" "$ROOT/scripts/lib/two-box-role-launch.mjs" "$ROOT/scripts/lib/two-box-scout-assign.mjs" "$TMP/repo/scripts/lib/"
 mkdir -p "$TMP/repo/docs/specs/privacy"
 cp "$ROOT/docs/specs/privacy/history-epoch.json" "$TMP/repo/docs/specs/privacy/"
 cp "$ROOT/schemas/receipts/retroactive-attestation.schema.json" "$TMP/repo/schemas/receipts/"

@@ -20,16 +20,16 @@ function fixture({v2=true}={}){
  const claimPath=bind.binding.claim_path;const claim=JSON.parse(fs.readFileSync(claimPath));claim.started_at=claim.renewed_at=new Date(Date.now()-3*86400000).toISOString();fs.writeFileSync(claimPath,JSON.stringify(claim));
  const graph={schema_version:1,wi,lane:'bugfix',status:'in_progress',tasks:[{id:1,skill:'land-changeset',subject:'resume',status:'in_progress',blocked_by:[]}]};fs.writeFileSync(path.join(target,'.svc',`lane-tasks-${wi}.json`),JSON.stringify(graph));
  fs.writeFileSync(path.join(target,'.svc','session-contract.jsonl'),JSON.stringify({wi,ts:'2020-01-01T00:00:00Z',authorization_envelope:{rules:[{decision:'deny',action:'activate-production',environment:'production',purpose:'keep dark'}]}})+'\n');fs.writeFileSync(path.join(target,'uncommitted'),'keep');
- const ctx={stateRoot:authorityStateRoot(target),repoId:repositoryId(target),wi};let lease=bootstrapController({...ctx,worktreeRoot:old,principal:principalId({host:'codex',session_id:oldSid}),now:Date.now()-3*86400000});
+ const ctx={stateRoot:authorityStateRoot(target, {SVC_AUTHORITY_STATE_ROOT:path.join(tmp,'authority')}),repoId:repositoryId(target),wi};let lease=bootstrapController({...ctx,worktreeRoot:old,principal:principalId({host:'codex',session_id:oldSid}),now:Date.now()-3*86400000});
  process.env.NODE_ENV='test';lease=writeControllerForTest({...ctx,lease:{...lease,owner_process:{hostname:os.hostname(),pid:2147483647,start_token:'missing'}},expectedRevision:lease.backend_revision});git('worktree','remove',old);
  if(!v2)fs.rmSync(ctx.stateRoot,{recursive:true,force:true});
- return {tmp,repo,target,ctx,lease,env:{...process.env,SVC_HOST:'codex',SVC_SESSION_ID:sid,CODEX_THREAD_ID:sid}};
+ return {tmp,repo,target,ctx,lease,env:{...process.env,SVC_HOST:'codex',SVC_SESSION_ID:sid,CODEX_THREAD_ID:sid,CODEX_SESSION_ID:sid,CURSOR_CONVERSATION_ID:'',CURSOR_SESSION_ID:'',GROK_SESSION_ID:'',SVC_AGENT_ID:'',SVC_AUTHORITY_STATE_ROOT:path.join(tmp,'authority')}};
 }
 test('expired v2 at deleted path recovers exact registered external worktree; repeat preserves generation and files',()=>{
  const f=fixture();try{
   const r=adoptExistingWorktree({wi,cwd:f.repo},f.env);assert.equal(r.absolute_worktree,f.target);assert.equal(r.authority_v2.lease.generation,2);assert.equal(fs.readFileSync(path.join(f.target,'uncommitted'),'utf8'),'keep');
   const second=adoptExistingWorktree({wi,cwd:f.target},f.env);assert.equal(second.authority_v2.lease.generation,2);
-  const p=prepareRecoveredSession({worktree:f.target,wi,sessionId:sid,turnId:'turn2',authorization:{eligible:true,wi}});assert.equal(p.skill,'land-changeset');const lines=fs.readFileSync(path.join(f.target,'.svc','session-contract.jsonl'),'utf8').trim().split('\n');assert.equal(JSON.parse(lines.at(-1)).authorization_envelope.rules[0].decision,'deny');
+  const p=prepareRecoveredSession({worktree:f.target,wi,sessionId:sid,turnId:'turn2',authorization:{eligible:true,wi},env:f.env,host:'codex'});assert.equal(p.skill,'land-changeset');const lines=fs.readFileSync(path.join(f.target,'.svc','session-contract.jsonl'),'utf8').trim().split('\n');assert.equal(JSON.parse(lines.at(-1)).authorization_envelope.rules[0].decision,'deny');
  }finally{fs.rmSync(f.tmp,{recursive:true,force:true});}
 });
 test('live owner refuses without changing lease',()=>{
