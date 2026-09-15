@@ -5,7 +5,7 @@ import {
   authorityStateRoot,
   listControllers,
   principalId,
-  readController,
+  reconcileControllerLifecycle,
   repositoryId,
 } from "./authority-store.mjs";
 
@@ -68,16 +68,17 @@ export function isAuthoritativeMutatingBinding(binding, {
   if (!worktree || !wi) return false;
   let lease = null;
   try {
-    lease = readController({
+    const reconciled = reconcileControllerLifecycle({
       stateRoot: authorityStateRoot(worktree, env),
       repoId: repositoryId(worktree),
       wi,
     });
+    if (!reconciled.lease) return true;
+    if (!reconciled.mutation_ready) return false;
+    lease = reconciled.lease;
   } catch {
     return false;
   }
-  if (!lease) return true;
-  if (!leaseIsLive(lease)) return false;
   if (realpathOrEmpty(lease.worktree_root) !== worktree) return false;
   if (host && sessionId) {
     const principal = principalId({ host, session_id: sessionId, agent_id: agentId || null });
@@ -129,12 +130,22 @@ function collectV2OnlyBatons(roots, { sessionId, host, agentId, env }) {
         states: ["active"],
       }).filter((lease) => leaseIsLive(lease));
     } catch { continue; }
-    if (matches.length !== 1) continue;
-    const lease = matches[0];
-    found.push({
-      worktree: candidate,
-      binding: { session_id: sessionId, role: "mutating", wi: lease.wi, worktree_root: candidate },
-    });
+    if (matches.length === 0) continue;
+    for (const lease of matches) {
+      let ready = null;
+      try {
+        ready = reconcileControllerLifecycle({
+          stateRoot: authorityStateRoot(candidate, env),
+          repoId: repositoryId(candidate),
+          wi: lease.wi,
+        });
+      } catch { continue; }
+      if (!ready?.mutation_ready) continue;
+      found.push({
+        worktree: candidate,
+        binding: { session_id: sessionId, role: "mutating", wi: lease.wi, worktree_root: candidate },
+      });
+    }
   }
   return found;
 }
@@ -163,7 +174,17 @@ export function collectSessionBatons({
   }
   if (!roots.length) return null;
   const found = collectV1Batons(roots, { sessionId, host, agentId, env });
-  const selected = found.length ? found : collectV2OnlyBatons(roots, { sessionId, host, agentId, env });
+  const v2Only = collectV2OnlyBatons(roots, { sessionId, host, agentId, env });
+  const selected = [];
+  const seenBaton = new Set();
+  for (const row of [...found, ...v2Only]) {
+    const worktree = realpathOrEmpty(row.worktree);
+    const wi = String(row.binding?.wi || "");
+    const key = `${worktree}\0${wi}`;
+    if (!worktree || seenBaton.has(key)) continue;
+    seenBaton.add(key);
+    selected.push(row);
+  }
   if (selected.length === 1) return selected[0];
   if (selected.length > 1) return { conflict: true };
   return null;

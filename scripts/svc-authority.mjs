@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import {
   acceptHandover, authorityStateRoot, bootstrapController, migrateV1Claim,
   prepareHandover, principalId, readController, recoverController,
-  releaseController, repositoryId, resumeController, rollbackV1Migration, takeoverController,
+  rearmExpiredController, rearmReleasedController, releaseController, repositoryId, resumeController, rollbackV1Migration, takeoverController, finalizeHandover,
 } from "../hooks/lib/authority-store.mjs";
 import { resolveAuthorityHost } from "../hooks/lib/resolve-wi.mjs";
 import { writeSessionBinding, releaseAssociatedCompatibilityBindings } from "../hooks/lib/wi-claim.mjs";
@@ -91,12 +91,25 @@ export function run(argv = process.argv.slice(2), env = process.env) {
   if (command === "status") return emit({ lease: readController(ctx), state_root: ctx.stateRoot, repo_id: ctx.repoId });
   const actor = identity(flags, env);
   if (command === "bootstrap") {
-    const res = bootstrapController({ ...ctx, principal: actor.principal });
+    const current = readController(ctx);
+    const res = current?.state === "released"
+      ? rearmReleasedController({
+        ...ctx, principal: actor.principal,
+        expectedGeneration: Number(current.generation), expectedLeaseId: current.lease_id,
+      })
+      : bootstrapController({ ...ctx, principal: actor.principal });
     syncBinding(ctx, actor, env);
     return emit(res);
   }
   if (command === "resume" || command === "renew") {
-    const res = resumeController({ ...ctx, principal: actor.principal });
+    const current = readController(ctx);
+    const expired = current && Number.isFinite(Date.parse(current.expires_at)) && Date.parse(current.expires_at) <= Date.now();
+    const res = expired
+      ? rearmExpiredController({
+        ...ctx, principal: actor.principal,
+        expectedGeneration: Number(current.generation), expectedLeaseId: current.lease_id,
+      })
+      : resumeController({ ...ctx, principal: actor.principal });
     syncBinding(ctx, actor, env);
     return emit(res);
   }
@@ -110,6 +123,9 @@ export function run(argv = process.argv.slice(2), env = process.env) {
     const res = acceptHandover({ ...ctx, principal: actor.principal, token: required(flags, "--token") });
     syncBinding(ctx, actor, env);
     return emit(res);
+  }
+  if (command === "handover finalize") {
+    return emit(finalizeHandover(ctx));
   }
   if (command === "takeover") {
     const res = takeoverController({ ...ctx, principal: actor.principal,
@@ -127,25 +143,22 @@ export function run(argv = process.argv.slice(2), env = process.env) {
     return emit(res);
   }
   if (command === "migrate") {
-    return emit(migrateV1Claim({ ...ctx, claimPath: required(flags, "--claim"), host: actor.host }));
+    return emit(migrateV1Claim({
+      ...ctx, claimPath: required(flags, "--claim"), host: actor.host, actorSessionId: actor.session_id,
+    }));
   }
   if (command === "release") {
     const current = readController(ctx);
-    if (current?.state === "released") {
-      if (String(current.controller_principal) !== String(actor.principal)) {
-        throw new Error("only the releasing controller principal may retry compatibility cleanup");
-      }
-      if (fs.realpathSync(current.worktree_root) !== ctx.worktreeRoot) {
-        throw new Error("released controller worktree mismatch");
-      }
-      releaseCompatibility(ctx, actor, current, env);
-      return emit(current);
-    }
-    const released = releaseController({ ...ctx, principal: actor.principal });
+    if (!current) throw new Error("controller lease is missing");
+    const released = releaseController({
+      ...ctx, principal: actor.principal,
+      expectedGeneration: Number(current.generation),
+      expectedLeaseId: current.lease_id,
+    });
     releaseCompatibility(ctx, actor, released, env);
     return emit(released);
   }
-  throw new Error("Usage: svc-authority.mjs <status|bootstrap|resume|renew|handover prepare|handover accept|takeover|recover|migrate|rollback|release> --wi WI-N [options]");
+  throw new Error("Usage: svc-authority.mjs <status|bootstrap|resume|renew|handover prepare|handover accept|handover finalize|takeover|recover|migrate|rollback|release> --wi WI-N [options]");
 }
 
 function isMainModule(argvPath, moduleUrl) {
