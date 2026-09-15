@@ -22,7 +22,16 @@ import {
   isReadOnlyTool, toolName, splitUnquoted, stripDevNullRedirections,
   hookContext, authorityPath,
 } from "../codex/lib/codex-hook-context.mjs";
-import { resolveWI } from "./resolve-wi.mjs";
+import { resolveWI, resolveAuthorityHost } from "./resolve-wi.mjs";
+import {
+  authorityStateRoot,
+  listControllers,
+  principalId,
+  readController,
+  repositoryId,
+} from "./authority-store.mjs";
+import { defaultCheckoutRoot, uniqueLaneWi } from "./authoritative-binding.mjs";
+import { readSessionBinding } from "./wi-claim.mjs";
 
 export const DECISION_ENGINE_SCHEMA_VERSION = 1;
 
@@ -222,6 +231,103 @@ export function evaluateSelfHealAuthority(payload, env = process.env, expected =
     }
   } catch { return ineligible("AUTH_TUPLE_REPO_MISMATCH"); }
   return { eligible: true, wi, reason_code: "FRESH_POSITIVE_INTENT" };
+}
+
+const POSITIVE_CONTINUATION = new Set(["resume", "continue", "finish", "complete", "end_to_end", "work_on"]);
+
+export function evaluateExactWorktreeRecovery(payload, env = process.env, expected = {}) {
+  const ineligible = (reason_code) => ({ eligible: false, wi: null, reason_code });
+  let ctx;
+  try { ctx = hookContext(payload, env); } catch { return ineligible("PROMPT_AUTHORITY_UNREADABLE"); }
+  if (!ctx.session_id) return ineligible("SESSION_IDENTITY_MISSING");
+  try {
+    const document = JSON.parse(fs.readFileSync(authorityPath(ctx), "utf8"));
+    if (document && typeof document === "object" && String(document.session_id || "") === String(ctx.session_id)) {
+      const intent = String(document.continuation_intent || "none");
+      if (!POSITIVE_CONTINUATION.has(intent)) return ineligible("EXPLICIT_STOP_OR_CANCEL");
+    }
+  } catch {}
+  const host = resolveAuthorityHost(payload, env);
+  if (!host) return ineligible("HOST_IDENTITY_MISSING");
+  const worktree = String(expected.worktree_root || "");
+  if (!worktree) return ineligible("AUTH_TUPLE_INCOMPLETE");
+  let target = "";
+  try { target = fs.realpathSync(worktree); } catch { return ineligible("WORKTREE_UNRESOLVED"); }
+  const defaultRoot = defaultCheckoutRoot(target);
+  if (!defaultRoot) return ineligible("WORKTREE_UNRESOLVED");
+  if (target === defaultRoot) return ineligible("DEFAULT_CHECKOUT");
+  const principal = principalId({
+    host,
+    session_id: ctx.session_id,
+    agent_id: payload.agent_id || payload.agentId || env.SVC_AGENT_ID || null,
+  });
+  let owned = [];
+  try {
+    owned = listControllers({
+      stateRoot: authorityStateRoot(target, env),
+      repoId: repositoryId(target),
+      worktreeRoot: target,
+      principal,
+    });
+  } catch { return ineligible("CONTROLLER_UNREADABLE"); }
+  const liveForeign = [];
+  try {
+    liveForeign.push(...listControllers({
+      stateRoot: authorityStateRoot(target, env),
+      repoId: repositoryId(target),
+      worktreeRoot: target,
+      states: ["active"],
+    }).filter((lease) => String(lease.controller_principal) !== String(principal) && Date.parse(lease.expires_at) > Date.now()));
+  } catch { return ineligible("CONTROLLER_UNREADABLE"); }
+  if (liveForeign.length) return ineligible("FOREIGN_LIVE_OWNER");
+  let wi = "";
+  let lease = null;
+  if (owned.length === 1) {
+    lease = owned[0];
+    wi = String(lease.wi || "");
+  } else if (owned.length > 1) {
+    return ineligible("NO_UNIQUE_WI");
+  } else {
+    wi = uniqueLaneWi(target);
+    if (!wi) {
+      const binding = readSessionBinding(target, ctx.session_id);
+      if (binding && binding.role === "mutating" && binding.wi && !binding.released_at) {
+        return { eligible: true, wi: binding.wi, reason_code: "SAME_SESSION_V1_BINDING" };
+      }
+      return ineligible("NO_SAME_OWNER_AUTHORITY");
+    }
+    try {
+      lease = readController({
+        stateRoot: authorityStateRoot(target, env),
+        repoId: repositoryId(target),
+        wi,
+      });
+    } catch { return ineligible("CONTROLLER_UNREADABLE"); }
+  }
+  if (!wi) return ineligible("NO_UNIQUE_WI");
+  if (lease) {
+    try {
+      if (fs.realpathSync(lease.worktree_root) !== target) return ineligible("CONTROLLER_WORKTREE_MISMATCH");
+    } catch { return ineligible("CONTROLLER_WORKTREE_MISMATCH"); }
+    if (lease.state === "active") {
+      if (String(lease.controller_principal) !== String(principal)) return ineligible("FOREIGN_LIVE_OWNER");
+      const expires = Date.parse(lease.expires_at);
+      if (Number.isFinite(expires) && expires <= Date.now()) {
+        return { eligible: true, wi, reason_code: "SAME_OWNER_EXPIRED_LEASE" };
+      }
+      return { eligible: true, wi, reason_code: "SAME_OWNER_EXACT_WORKTREE" };
+    }
+    if (lease.state === "released") {
+      if (String(lease.controller_principal) !== String(principal)) return ineligible("FOREIGN_RELEASED_LEASE");
+      return { eligible: true, wi, reason_code: "SAME_OWNER_RELEASED_LEASE" };
+    }
+    return ineligible("LEASE_NOT_RECOVERABLE");
+  }
+  const binding = readSessionBinding(target, ctx.session_id);
+  if (binding && binding.role === "mutating" && binding.wi === wi && !binding.released_at) {
+    return { eligible: true, wi, reason_code: "SAME_SESSION_V1_BINDING" };
+  }
+  return ineligible("NO_SAME_OWNER_AUTHORITY");
 }
 
 // Typed decision envelope for the observation fast path. Returns null when the

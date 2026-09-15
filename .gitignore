@@ -106,6 +106,7 @@ docs/specs/company/
 # Ephemeral learning & review lints
 .svc/auto-learnings.jsonl
 .svc/auto-learnings.draft.jsonl
+.svc/learning-fires.jsonl
 .svc/proposal-lints/
 .svc/concern-hits.jsonl
 # Machine-local diagnose capability cache (regenerable per checkout)

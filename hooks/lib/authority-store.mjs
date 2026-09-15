@@ -190,6 +190,39 @@ export function readController({ stateRoot, repoId, wi }) {
   return lease ? assertLease(lease, { repoId, wi }) : null;
 }
 
+export function listControllers({ stateRoot, repoId, worktreeRoot = null, principal = null, states = null }) {
+  const dir = path.join(path.resolve(stateRoot), "leases");
+  if (!fs.existsSync(dir)) return [];
+  let wantedWorktree = "";
+  if (worktreeRoot) {
+    try { wantedWorktree = fs.realpathSync(worktreeRoot); }
+    catch { return []; }
+  }
+  const matches = [];
+  let names = [];
+  try { names = fs.readdirSync(dir); } catch { return []; }
+  for (const name of names) {
+    if (!/^[0-9a-f]{64}\.json$/.test(name)) continue;
+    const file = path.join(dir, name);
+    let lease;
+    try {
+      const stat = fs.lstatSync(file);
+      if (!stat.isFile() || stat.isSymbolicLink()) continue;
+      lease = JSON.parse(fs.readFileSync(file, "utf8"));
+    } catch { continue; }
+    if (lease?.schema_version !== 2 || String(lease.repo_id) !== String(repoId)) continue;
+    if (Array.isArray(states) && !states.includes(lease.state)) continue;
+    if (principal && String(lease.controller_principal) !== String(principal)) continue;
+    if (wantedWorktree) {
+      let leaseWorktree = "";
+      try { leaseWorktree = fs.realpathSync(lease.worktree_root); } catch { continue; }
+      if (leaseWorktree !== wantedWorktree) continue;
+    }
+    matches.push(lease);
+  }
+  return matches;
+}
+
 // Serialize a compound compatibility operation with every controller mutation.
 // The callback receives the exact lease observed while the repository-shared
 // controller lock is held; no handover, takeover, recovery, release, or
@@ -223,6 +256,64 @@ export function bootstrapController({ stateRoot, repoId, wi, worktreeRoot, princ
       backend_revision: existing ? existing.backend_revision + 1 : 1,
     };
     atomicWrite(paths.lease, lease);
+    if (existing?.state === "released") {
+      writeHandoffRecord(paths, {
+        kind: "recovery", wi, repo_id: repoId, lease_id: lease.lease_id,
+        generation: lease.generation, old_generation: existing.generation,
+        principal, predecessor_principal: existing.controller_principal,
+        worktree_realpath: lease.worktree_root || "",
+        base_sha: typeof existing.base_sha === "string" ? existing.base_sha : "",
+        ttl_ms: ttlMs,
+        evidence_digests: digestEvidence({ rearmed_from_released: true }),
+        ts: iso(now),
+      });
+    }
+    return lease;
+  });
+}
+
+export function rearmReleasedController({
+  stateRoot, repoId, wi, worktreeRoot, principal, expectedGeneration, expectedLeaseId = null,
+  ttlMs = DEFAULT_TTL_MS, now = Date.now(),
+}) {
+  requireString(repoId, "repo id"); requireString(wi, "WI"); requireString(principal, "principal");
+  if (!Number.isInteger(expectedGeneration) || expectedGeneration < 1) throw new Error("expected released generation must be a positive integer");
+  const canonicalWorktree = fs.realpathSync(requireString(worktreeRoot, "worktree root"));
+  const paths = pathsFor(stateRoot, repoId, wi);
+  return withLock(paths.root, paths.key, () => {
+    const existing = assertLease(readJson(paths.lease, { required: true }), { repoId, wi });
+    if (existing.state !== "released") throw new Error("controller lease is not released");
+    if (String(existing.controller_principal) !== String(principal)) {
+      throw new Error("released lease belongs to a different principal; explicit handover required");
+    }
+    if (Number(existing.generation) !== Number(expectedGeneration)) {
+      throw new Error("released lease generation changed; inspect again");
+    }
+    if (expectedLeaseId && String(existing.lease_id) !== String(expectedLeaseId)) {
+      throw new Error("released lease id changed; inspect again");
+    }
+    if (fs.realpathSync(existing.worktree_root) !== canonicalWorktree) {
+      throw new Error("released controller worktree mismatch");
+    }
+    const lease = {
+      schema_version: 2, lease_id: crypto.randomUUID(), repo_id: repoId, wi,
+      worktree_root: canonicalWorktree, controller_principal: principal,
+      generation: existing.generation + 1, state: "active",
+      owner_process: ownerProcessIdentity(),
+      issued_at: iso(now), renewed_at: iso(now), expires_at: iso(now + ttlMs),
+      backend_revision: existing.backend_revision + 1,
+    };
+    atomicWrite(paths.lease, lease);
+    writeHandoffRecord(paths, {
+      kind: "recovery", wi, repo_id: repoId, lease_id: lease.lease_id,
+      generation: lease.generation, old_generation: existing.generation,
+      principal, predecessor_principal: existing.controller_principal,
+      worktree_realpath: lease.worktree_root || "",
+      base_sha: typeof existing.base_sha === "string" ? existing.base_sha : "",
+      ttl_ms: ttlMs,
+      evidence_digests: digestEvidence({ rearmed_from_released: true, expected_generation: expectedGeneration }),
+      ts: iso(now),
+    });
     return lease;
   });
 }

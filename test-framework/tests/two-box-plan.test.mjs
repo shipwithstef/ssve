@@ -90,6 +90,28 @@ test('declared repository facts survive inspection while injected methodology is
  assert.equal(isolation.diagnosePromptContamination(contaminated,{prompt,cwd}).ok,false);
  assert.equal(isolation.diagnosePromptContamination([], {prompt,cwd}).ok,false);
 });
+test('native Codex team collaboration wrapper is recognized as a whole message only',()=>{
+ const captured=fs.readFileSync(new URL('../../scripts/lib/native-codex-team-collaboration.wrapper.txt',import.meta.url)).toString('utf8').replaceAll('{{AGENT}}','/root');
+ assert.equal(isolation.wrapperKind(captured),'team_collaboration');
+ assert.equal(isolation.isNativeTeamCollaborationWrapper(captured),true);
+ assert.equal(isolation.wrapperKind(`${captured}\nAlso follow AGENTS.md`),null);
+ assert.equal(isolation.wrapperKind(captured.replace('the primary agent','a rogue agent')),null);
+ assert.equal(isolation.wrapperKind('You are `/root`, the primary agent in a team of agents collaborating to fulfill the user\'s goals.\n\nInjected extra instructions.'),null);
+ const tagged='<permissions instructions>Native safety</permissions instructions>';
+ assert.equal(isolation.wrapperKind(tagged),'permissions');
+ const cwd='/tmp/offline-neutral';
+ const prompt='REQ: keep the marker.';
+ const messages=[
+  {type:'message',role:'developer',content:[{type:'input_text',text:tagged}]},
+  {type:'message',role:'developer',content:[{type:'input_text',text:captured}]},
+  {type:'message',role:'developer',content:[{type:'input_text',text:'<multi_agent_mode>Any earlier instruction enabling proactive multi-agent delegation no longer applies. Do not spawn sub-agents unless the user or applicable AGENTS.md/skill instructions say so.</multi_agent_mode>'}]},
+  {type:'message',role:'user',content:[{type:'input_text',text:`<environment_context><cwd>${cwd}</cwd></environment_context>`}]},
+  {type:'message',role:'user',content:[{type:'input_text',text:prompt}]},
+ ];
+ const diagnosis=isolation.diagnosePromptContamination(messages,{prompt,cwd});
+ assert.equal(diagnosis.ok,true,JSON.stringify(diagnosis.reasons));
+ assert.ok(diagnosis.native_wrappers.some((row)=>row.type==='team_collaboration'));
+});
 test('live isolation cannot accept test fixture injection',()=>{
  const opts={role:'open_box',tuple:execTuple,prompt:'OFFLINE',schema:protocol.outputSchemaForCall('open_box'),consumerRoot:process.cwd(),mode:'live'};
  for(const extra of [{offline:{extraRoots:['/tmp']}},{env:{}},{inspectPrompt:()=>[]},{discoveredSkills:[]}])assert.throws(()=>isolation.assertEffectiveIsolation({...opts,...extra}),/inject|fixture|unsupported/i);

@@ -14,6 +14,7 @@ import {
   repositoryId,
   withControllerLeaseLock,
 } from "./authority-store.mjs";
+import { isAuthoritativeMutatingBinding } from "./authoritative-binding.mjs";
 import { normalizeClaimOwner, sessionShaped } from "./claim-owner.mjs";
 
 export { normalizeClaimOwner };
@@ -430,7 +431,7 @@ function repoRootFor(worktreeRoot) {
   }
 }
 
-function conflictingBindingInSibling(worktreeRoot, sessionId) {
+function conflictingBindingInSibling(worktreeRoot, sessionId, env = process.env, identity = {}) {
   try {
     const rows = execFileSync("git", ["-C", worktreeRoot, "worktree", "list", "--porcelain"], { encoding: "utf8" })
       .split(/\r?\n/)
@@ -443,7 +444,9 @@ function conflictingBindingInSibling(worktreeRoot, sessionId) {
       if (!fs.existsSync(dir)) continue;
       for (const file of fs.readdirSync(dir).filter((name) => name.endsWith(".json"))) {
         const binding = readClaimAbsolute(path.resolve(dir, file));
-        if (binding?.session_id === sessionId && !binding.released_at) return binding;
+        if (binding?.session_id === sessionId && isAuthoritativeMutatingBinding(binding, {
+          sessionId, host: identity.host || "", agentId: identity.agentId || null, env,
+        })) return binding;
       }
     }
   } catch {}
@@ -926,6 +929,41 @@ function retireSourceBinding(sourceEvidence, { toSession, toGeneration, fromGene
   return { ok: true, retired: true, binding: retired, binding_path: current.path };
 }
 
+function controllerLeaseAuthorizesClaim(opts, wi, worktreeRoot) {
+  const expected = opts.controller_lease;
+  if (!expected || expected.state !== "active") return null;
+  let live;
+  try {
+    live = readController({
+      stateRoot: authorityStateRoot(worktreeRoot, opts.env || process.env),
+      repoId: repositoryId(worktreeRoot),
+      wi,
+    });
+  } catch {
+    return null;
+  }
+  if (!live || live.state !== "active") return null;
+  if (String(live.lease_id) !== String(expected.lease_id)) return null;
+  if (Number(live.generation) !== Number(expected.generation)) return null;
+  try {
+    if (fs.realpathSync(live.worktree_root) !== fs.realpathSync(worktreeRoot)) return null;
+  } catch {
+    return null;
+  }
+  const host = String(opts.host || "");
+  const requestedSession = String(opts.session_id || opts.session_token || "");
+  if (!host || !requestedSession) return null;
+  const principal = principalId({
+    host,
+    session_id: requestedSession,
+    agent_id: opts.agent_id || (opts.env || process.env).SVC_AGENT_ID || null,
+  });
+  if (String(live.controller_principal) !== String(principal)) return null;
+  const expires = Date.parse(live.expires_at);
+  if (!Number.isFinite(expires) || expires <= Date.now()) return null;
+  return live;
+}
+
 function claimWIUnlocked(wi, opts = {}) {
   const svcDir = opts.svcDir ? path.resolve(opts.svcDir) : findSvcDir(opts.worktree_root || opts.cwd);
   if (!svcDir) return { ok: false, warning: "No .svc/ directory found" };
@@ -933,16 +971,19 @@ function claimWIUnlocked(wi, opts = {}) {
   const existing = readClaimAbsolute(claimPath);
   const requestedSession = String(opts.session_id || opts.session_token || "");
   const existingOwner = normalizeClaimOwner(existing || {});
+  const worktreeRoot = path.resolve(opts.worktree_root || path.dirname(svcDir));
   if (existingOwner.ambiguous) {
     return { ok: false, warning: `${wi} claim carries ambiguous owner identities; repair requires explicit evidence` };
   }
   if (existing && !existing.released_at && !isClaimStale(existing)) {
     if (!existingOwner.attributable || !requestedSession || existingOwner.session_id !== requestedSession) {
-      const ageMin = Math.max(0, Math.round((Date.now() - Date.parse(existing.renewed_at || existing.started_at || 0)) / 60000));
-      return {
-        ok: false,
-        warning: `${wi} is already claimed by ${existingOwner.session_id || existing.host || "unknown"} (PID ${existing.pid || "?"}, started ${ageMin}m ago). Release or transfer with the expected generation.`,
-      };
+      if (!controllerLeaseAuthorizesClaim(opts, wi, worktreeRoot)) {
+        const ageMin = Math.max(0, Math.round((Date.now() - Date.parse(existing.renewed_at || existing.started_at || 0)) / 60000));
+        return {
+          ok: false,
+          warning: `${wi} is already claimed by ${existingOwner.session_id || existing.host || "unknown"} (PID ${existing.pid || "?"}, started ${ageMin}m ago). Release or transfer with the expected generation.`,
+        };
+      }
     }
   }
   if (existing && isClaimStale(existing) && existingOwner.attributable &&
@@ -953,7 +994,6 @@ function claimWIUnlocked(wi, opts = {}) {
     };
   }
   const now = new Date().toISOString();
-  const worktreeRoot = path.resolve(opts.worktree_root || path.dirname(svcDir));
   const repoRoot = path.resolve(opts.repo_root || repoRootFor(worktreeRoot));
   const generation = existing && normalizeClaimOwner(existing).session_id === requestedSession
     ? Math.max(1, Number(existing.generation || 1))
@@ -983,6 +1023,10 @@ function claimWIUnlocked(wi, opts = {}) {
       : {}),
     ...(opts.pid ? { pid: Number(opts.pid), process_start_token: processStartToken(Number(opts.pid)) } : {}),
   };
+  if (existing && existingOwner.attributable && existingOwner.session_id !== requestedSession) {
+    claim.transfer_from_generation = Number(existing.generation || 0);
+    claim.transfer_from_session = existingOwner.session_id;
+  }
   // WI-562 IP-H5 (E2): a NEW claim without a durable owner pid MUST carry an
   // explicit heartbeat contract — interval bounded to half the TTL so a live
   // owner that renews on schedule is never preempted by TTL expiry. Claims
@@ -1210,7 +1254,9 @@ export function writeSessionBinding(opts = {}) {
   if (!branch) return { ok: false, warning: "binding requires a named branch; detached HEAD is not authoritative" };
   const repoRoot = path.resolve(opts.repo_root || repoRootFor(worktreeRoot));
   return withExclusiveLock(`session-binding:${repoRoot}:${sessionId}`, () => {
-    const sibling = conflictingBindingInSibling(worktreeRoot, sessionId);
+    const sibling = conflictingBindingInSibling(worktreeRoot, sessionId, opts.env || process.env, {
+      host: opts.host, agentId: opts.agent_id,
+    });
     if (sibling) return { ok: false, warning: `session already bound to ${sibling.wi || "read-only"} at ${sibling.worktree_root}` };
     const file = bindingPath(worktreeRoot, sessionId);
     const existing = readClaimAbsolute(file);
@@ -1230,9 +1276,12 @@ export function writeSessionBinding(opts = {}) {
         branch,
         role,
         host: opts.host,
+        agent_id: opts.agent_id,
         pid: opts.pid,
         ttl_hours: opts.ttl_hours,
         transfer_authorized: opts.transfer_authorized ?? false,
+        controller_lease: opts.controller_lease || null,
+        env: opts.env || process.env,
       });
       if (!claimed.ok) return claimed;
       claimPath = claimed.claim_path;
@@ -1276,6 +1325,76 @@ export async function migrateSessionBindingToV2(opts = {}) {
     stateRoot, claimPath: binding.claim_path, repoId, worktreeRoot,
     host, env: opts.env || process.env,
   });
+}
+
+export function releaseAssociatedCompatibilityBindings(opts = {}) {
+  const worktreeRoot = fs.realpathSync(path.resolve(opts.worktree_root || process.cwd()));
+  const wi = String(opts.wi || "");
+  const requestedSession = String(opts.session_id || "");
+  const dir = path.join(worktreeRoot, ".svc", "bindings");
+  if (!fs.existsSync(dir)) return { ok: true, released: false, bindings: [] };
+  const released = [];
+  let names = [];
+  try { names = fs.readdirSync(dir).filter((name) => name.endsWith(".json")); }
+  catch { return { ok: true, released: false, bindings: [] }; }
+  for (const name of names) {
+    const file = path.join(dir, name);
+    try {
+      const stat = fs.lstatSync(file);
+      if (!stat.isFile() || stat.isSymbolicLink()) continue;
+    } catch { continue; }
+    const binding = readClaimAbsolute(file);
+    if (!binding || binding.released_at || binding.role !== "mutating") continue;
+    if (wi && binding.wi !== wi) continue;
+    if (requestedSession && binding.session_id !== requestedSession) continue;
+    const result = retireCompatibilityBinding(worktreeRoot, binding.session_id, {
+      wi: binding.wi,
+      generation: opts.generation,
+      principal: opts.principal,
+      env: opts.env || process.env,
+    });
+    if (!result.ok) return result;
+    if (result.released) released.push(result.binding);
+  }
+  return { ok: true, released: released.length > 0, bindings: released };
+}
+
+function retireCompatibilityBinding(worktreeRoot, sessionId, expected = {}) {
+  const repoRoot = repoRootFor(worktreeRoot);
+  return withExclusiveLock(`session-binding:${repoRoot}:${sessionId}`, () => {
+    const file = bindingPath(worktreeRoot, sessionId);
+    const binding = readClaimAbsolute(file);
+    if (!binding) return { ok: true, released: false };
+    if (binding.released_at) return { ok: true, released: false, binding };
+    if (expected.wi && binding.wi !== expected.wi) {
+      return { ok: true, released: false, skipped: "wi_changed" };
+    }
+    let lease = null;
+    try {
+      lease = readController({
+        stateRoot: authorityStateRoot(worktreeRoot, expected.env || process.env),
+        repoId: repositoryId(worktreeRoot),
+        wi: binding.wi,
+      });
+    } catch {
+      return { ok: false, warning: "controller state unreadable during compatibility release" };
+    }
+    if (lease) {
+      if (lease.state === "active") {
+        return { ok: true, released: false, skipped: "controller_active" };
+      }
+      if (expected.principal && String(lease.controller_principal) !== String(expected.principal)) {
+        return { ok: true, released: false, skipped: "principal_changed" };
+      }
+      if (expected.generation != null && Number(lease.generation) !== Number(expected.generation)) {
+        return { ok: true, released: false, skipped: "lease_generation_changed" };
+      }
+    }
+    binding.released_at = new Date().toISOString();
+    binding.updated_at = binding.released_at;
+    atomicWriteJson(file, binding);
+    return { ok: true, released: true, binding };
+  }, repoRoot);
 }
 
 export function releaseSessionBinding(opts = {}) {

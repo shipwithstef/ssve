@@ -8,7 +8,7 @@ import {
   releaseController, repositoryId, resumeController, rollbackV1Migration, takeoverController,
 } from "../hooks/lib/authority-store.mjs";
 import { resolveAuthorityHost } from "../hooks/lib/resolve-wi.mjs";
-import { writeSessionBinding } from "../hooks/lib/wi-claim.mjs";
+import { writeSessionBinding, releaseAssociatedCompatibilityBindings } from "../hooks/lib/wi-claim.mjs";
 
 function parseArgs(argv) {
   const positional = [];
@@ -40,10 +40,10 @@ function identity(flags, env = process.env) {
   return { host, session_id, agent_id, principal: principalId({ host, session_id, agent_id }) };
 }
 
-function context(flags) {
+function context(flags, env = process.env) {
   const worktreeRoot = fs.realpathSync(path.resolve(String(flags["--worktree"] || process.cwd())));
   const repoId = String(flags["--repo-id"] || repositoryId(worktreeRoot));
-  const stateRoot = path.resolve(String(flags["--state-root"] || authorityStateRoot(worktreeRoot)));
+  const stateRoot = path.resolve(String(flags["--state-root"] || authorityStateRoot(worktreeRoot, env)));
   const wi = required(flags, "--wi");
   return { worktreeRoot, repoId, stateRoot, wi };
 }
@@ -52,36 +52,52 @@ function emit(value) {
   process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
 }
 
-function syncBinding(ctx, actor) {
-  try {
-    if (ctx.worktreeRoot && fs.existsSync(path.join(ctx.worktreeRoot, ".svc"))) {
-      writeSessionBinding({
-        worktree_root: ctx.worktreeRoot,
-        session_id: actor.session_id,
-        role: "mutating",
-        wi: ctx.wi,
-        host: actor.host,
-        transfer_authorized: true,
-      });
-    }
-  } catch {}
+function syncBinding(ctx, actor, env = process.env) {
+  if (!ctx.worktreeRoot || !fs.existsSync(path.join(ctx.worktreeRoot, ".svc"))) return;
+  const lease = readController(ctx);
+  const written = writeSessionBinding({
+    worktree_root: ctx.worktreeRoot,
+    session_id: actor.session_id,
+    role: "mutating",
+    wi: ctx.wi,
+    host: actor.host,
+    agent_id: actor.agent_id,
+    transfer_authorized: true,
+    controller_lease: lease && lease.state === "active" ? lease : null,
+    env,
+  });
+  if (!written.ok) throw new Error(written.warning || "session binding sync failed");
+}
+
+function releaseCompatibility(ctx, actor, lease, env = process.env) {
+  const worktreeRoot = lease?.worktree_root || ctx.worktreeRoot;
+  if (!worktreeRoot || !fs.existsSync(path.join(worktreeRoot, ".svc"))) return;
+  const released = releaseAssociatedCompatibilityBindings({
+    worktree_root: worktreeRoot,
+    wi: ctx.wi,
+    session_id: actor.session_id,
+    principal: actor.principal,
+    generation: lease?.generation,
+    env,
+  });
+  if (!released.ok) throw new Error(released.warning || "compatibility binding release failed");
 }
 
 export function run(argv = process.argv.slice(2), env = process.env) {
   const { positional, flags } = parseArgs(argv);
   const command = positional.join(" ");
   if (command === "rollback") return emit(rollbackV1Migration({ migrationReceiptPath: required(flags, "--receipt") }));
-  const ctx = context(flags);
+  const ctx = context(flags, env);
   if (command === "status") return emit({ lease: readController(ctx), state_root: ctx.stateRoot, repo_id: ctx.repoId });
   const actor = identity(flags, env);
   if (command === "bootstrap") {
     const res = bootstrapController({ ...ctx, principal: actor.principal });
-    syncBinding(ctx, actor);
+    syncBinding(ctx, actor, env);
     return emit(res);
   }
   if (command === "resume" || command === "renew") {
     const res = resumeController({ ...ctx, principal: actor.principal });
-    syncBinding(ctx, actor);
+    syncBinding(ctx, actor, env);
     return emit(res);
   }
   if (command === "handover prepare") {
@@ -92,7 +108,7 @@ export function run(argv = process.argv.slice(2), env = process.env) {
   }
   if (command === "handover accept") {
     const res = acceptHandover({ ...ctx, principal: actor.principal, token: required(flags, "--token") });
-    syncBinding(ctx, actor);
+    syncBinding(ctx, actor, env);
     return emit(res);
   }
   if (command === "takeover") {
@@ -100,20 +116,35 @@ export function run(argv = process.argv.slice(2), env = process.env) {
       expectedPrincipal: required(flags, "--expected-principal"),
       expectedGeneration: Number(required(flags, "--expected-generation")), reason: required(flags, "--reason"),
       ttlMs: Math.min(30 * 60_000, Math.max(1, Number(flags["--ttl-min"] || 15)) * 60_000) });
-    syncBinding(ctx, actor);
+    syncBinding(ctx, actor, env);
     return emit(res);
   }
   if (command === "recover") {
     const evidencePath = required(flags, "--evidence");
     const evidence = JSON.parse(fs.readFileSync(path.resolve(evidencePath), "utf8"));
     const res = recoverController({ ...ctx, principal: actor.principal, reason: required(flags, "--reason"), evidence });
-    syncBinding(ctx, actor);
+    syncBinding(ctx, actor, env);
     return emit(res);
   }
   if (command === "migrate") {
     return emit(migrateV1Claim({ ...ctx, claimPath: required(flags, "--claim"), host: actor.host }));
   }
-  if (command === "release") return emit(releaseController({ ...ctx, principal: actor.principal }));
+  if (command === "release") {
+    const current = readController(ctx);
+    if (current?.state === "released") {
+      if (String(current.controller_principal) !== String(actor.principal)) {
+        throw new Error("only the releasing controller principal may retry compatibility cleanup");
+      }
+      if (fs.realpathSync(current.worktree_root) !== ctx.worktreeRoot) {
+        throw new Error("released controller worktree mismatch");
+      }
+      releaseCompatibility(ctx, actor, current, env);
+      return emit(current);
+    }
+    const released = releaseController({ ...ctx, principal: actor.principal });
+    releaseCompatibility(ctx, actor, released, env);
+    return emit(released);
+  }
   throw new Error("Usage: svc-authority.mjs <status|bootstrap|resume|renew|handover prepare|handover accept|takeover|recover|migrate|rollback|release> --wi WI-N [options]");
 }
 

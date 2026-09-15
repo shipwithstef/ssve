@@ -23,6 +23,7 @@ import {
   repoIdentity,
 } from "../codex/lib/codex-hook-context.mjs";
 import { findSvcDir } from "../lib/resolve-wi.mjs";
+import { isAuthoritativeMutatingBinding } from "../lib/authoritative-binding.mjs";
 import { armOwnerLease } from "../codex/lib/owner-lease.mjs";
 import { evaluatePreToolObservation } from "../lib/pretool-decision-engine.mjs";
 import { isShellTool } from "../lib/shell-tools.mjs";
@@ -245,7 +246,7 @@ function handlePreTool(payload, { isShellExecEvent = false } = {}) {
             for (const name of fs.readdirSync(bDir)) {
               if (!name.endsWith(".json")) continue;
               const b = readJson(path.join(bDir, name));
-              if (b?.session_id && b?.role === "mutating" && !b?.released_at) {
+              if (b?.session_id && isAuthoritativeMutatingBinding(b, { sessionId: b.session_id, host: "cursor", env: process.env })) {
                 activeBindings.push(b);
               }
             }
