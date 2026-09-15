@@ -65,9 +65,9 @@ chain:
 **Runtime v2 continuation:** Register the implementation manifest and its declared consumers via
 `references/skill-runtime-contracts-v2.json`; follow `references/runtime-continuation-v2.md`.
 The canonical DAG has exactly one plan review and one final review. Preserve all plan-specific
-scope, dependency, proof, rollback and G5 obligations.
+scope, dependency, proof, rollback, worktree, task-graph, receipt, owner-authorization and G5 obligations. Deterministic Transmutation prepares a complete strict v5 contract (inline or dispatch) before that existing holistic `review-plan`; a verified separate seal follows review. Do not rewrite reviewed JSON/Markdown with `sealed:true`.
 
-> **Cognitive routing:** 📐 [PLAN-OPUS] — architectural blueprinting demands Opus 4.8 for strict dependency graphs. See `references/model-routing.md`.
+> **Cognitive routing:** 📐 [PLAN] — use the existing owner-configured resolver (`scripts/resolve-model.sh PLAN`). Advise a high-effort frontier PLAN tuple and a similar-capability reviewer; dated recipes are nonauthoritative. See `references/model-routing.md`.
 
 **Announce at start:** "I'm using the plan-changeset skill to produce the implementation plan."
 
@@ -141,7 +141,13 @@ Before coding settle the user-visible states (including empty/error/loading), st
 
 A decision is consequential when reversing it changes user behavior/data/authority, another behavior part, delivery strategy, or a major proof. Apply that rule to retry/idempotency, caching, accessibility and performance. Local reversible helpers, naming and implementation details stay with execution within the declared files. Discovering one new consequential issue reopens its affected decision/lens, not every completed phase. Do not substitute source/unit evidence for browser, device, hosted or performance observations required by the feature.
 
-For new inline plans use the v4 body/projection protocol in `references/manifest-templates.md` after `node scripts/prepare-plan-handoff.mjs --capabilities` passes. Keep legacy v1–3 and dispatch contracts valid; unsupported/mixed consumers require continuing the existing contract or a complete package update. Required checks/reviews remain. Use the original clauses at handoff; a condensed AC digest is navigation only.
+For new work, run Two-Box Planning then Deterministic Transmutation to a complete strict v5 body (inline or dispatch) per `references/manifest-templates.md` after `node scripts/prepare-plan-handoff.mjs --capabilities` passes. Historical v1–4 plan-manifest and v1 control-plan readers remain schema-readable and non-executable; the sole pinned genuine bootstrap v4 snapshot is the only active v4 execution exception. Do not issue new v3/v4. Unsupported or mixed consumers must take a complete package update before current issuance. Required checks/reviews remain. Use original clauses at handoff; a condensed AC digest is navigation only. Repository reading is analysis. Invoke `research` only when `researchDecision` from `scripts/lib/research-decision.mjs` returns `external_research_required`.
+
+## Two-Box Planning and Deterministic Transmutation
+
+Preserve existing review gates, topology, owner authorization, worktree, task-graph and receipt paths. **Deterministic Transmutation** converts all behavior, implementation approach, scope/interfaces/state/failure/proof decisions into a complete strict v5 inline or dispatch body **before** the existing holistic `review-plan`. The seal is a separate post-review envelope. Do not rewrite reviewed JSON/Markdown with `sealed:true`. Do not autogenerate success.
+
+Flow: original requirements → independent Two-Box harness (`node scripts/two-box-plan.mjs --input <json> [--mode prepare|live|OFFLINE] [--out <json>]`; default prepare; no caller `eligible`, historical SHA, or kill switch) → exactly two Contract-only scout processes → Contract revised preserved → assessor → reconcile living specs/designs → prepare complete v5 → self-review + existing holistic `review-plan` → verified separate seal → `execute-changeset`. Not the old F>=B floor, not an opt-in/kill switch, not mandatory external research. Field shapes, CLI, and issuance: `references/manifest-templates.md`.
 
 ## Manifest Contents (templates: `references/manifest-templates.md`)
 
@@ -150,7 +156,7 @@ For new inline plans use the v4 body/projection protocol in `references/manifest
 3. **Files Planned** table + **3a. Changeset Blueprint** (dispatch mode only — full payloads/diff blueprints, NO placeholders; SKIPPED on the inline path per Execution Mode above)
 4. **Task Graph** — id, title, files, deps, AC coverage, validation command, checkpoint, parallel group
 5. **AC-to-Task** + 6. **AC-to-Test** mapping (Unit/E2E/Manual/N-A-with-reason) + 6a. **Prerequisite Alignment Matrix** (UX/UI/tech/style/persona traces — concrete persona IDs, never "all users")
-7. **Validation Plan** + 7a. **Execution Command Sequence** (legacy/dispatch: copy-pasteable bash; explicit inline v4: ready-now commands and established-release producer/verifier descriptions, never invented future IDs)
+7. **Validation Plan** + 7a. **Execution Command Sequence** (legacy/dispatch: copy-pasteable bash; explicit inline v5: ready-now commands and established-release producer/verifier descriptions, never invented future IDs)
 8. **Checkpoint Plan** + 9. **Promotion Readiness Checklist** (incl. schema-drift check: ORM file modified ⇒ migration task exists, else pre-flight blocker)
 
 ## External State Lifecycle (MANDATORY)
@@ -202,7 +208,7 @@ After the manifest, BEFORE handoff: walk the task graph in dependency order agai
 
 ## Adversarial Plan Review
 
-Plans face structured opposition before execution: mechanical checks (free), then `review-plan` (primary adversarial, structured YAML findings), convergence loop until residual ≤ MEDIUM. Product-sensitive, parallel, deletion-bearing, or claim-heavy plans place `plan-contract.json` beside the manifest; `verify-plan-mechanical.sh` consumes it through `scripts/validate-plan-contract.mjs` and rejects overlapping ownership, unsafe reversible writers, unbounded absence/completeness claims, and executables without named consumers. Self-review prompts + check catalog: `references/adversarial-review-detail.md`.
+After the complete v5 contract is prepared (and living specs/designs reconciled), plans face the existing holistic `review-plan` once: mechanical checks (free), then primary adversarial review (structured YAML findings), convergence until residual ≤ MEDIUM. Transmutation is not a second review and not a new lane. Product-sensitive, parallel, deletion-bearing, or claim-heavy plans place `plan-contract.json` beside the manifest; `verify-plan-mechanical.sh` consumes it through `scripts/validate-plan-contract.mjs` and rejects overlapping ownership, unsafe reversible writers, unbounded absence/completeness claims, and executables without named consumers. Self-review prompts + check catalog: `references/adversarial-review-detail.md`.
 
 **Risk-triggered contract sections (WI-553):** if `diagnose-bug`, `write-spec`, or this skill's own classification declared any AC-553-1 flag (`runtime_concurrency`, `external_state_writer`, `config_schema_migration`, `lossless_rmw`, `idempotent_rewriter`, `cross_runtime_integration` — see `scripts/lib/risk-flags.mjs`), the manifest MUST carry a `**Risk Flags:**` line naming them AND `plan-contract.json` MUST declare the same flags in its `risk_flags` array with the matching section(s) filled in. Unmatched plans (no flags) add nothing — `plan-contract.json` grows only matched sections (AC-553-3). Section contract, required fields, and the exact WI-542 shapes each section mechanically rejects: `references/plan-contract-risk-sections.md`.
 
@@ -226,11 +232,11 @@ Fail → add the missing mandatory skills as tasks and re-run until PASS (preven
 
 ### Step 5: Review the Plan (Mandatory)
 
-`review-plan` is a built-in sub-step, not optional: mechanical verification → primary adversarial review → convergence (residual ≤ MEDIUM). Insert as a lane task between manifest completion and `execute-changeset`; set `blocked_by`. Log outcome.
+`review-plan` remains the one built-in holistic gate, not optional: mechanical verification → primary adversarial review → convergence (residual ≤ MEDIUM). Insert as a lane task between complete v5 preparation and `execute-changeset`; set `blocked_by`. After PASS, persist a separate seal envelope over the exact reviewed prepared JSON and full manifest (`createTransmutationSeal` / `verifyTransmutationSeal`); never rewrite the reviewed body or Markdown to `sealed:true`. Log outcome.
 
 ### Route to execution
 
-→ `execute-changeset`. G5 happens after execution using staged diffs + task checkpoints. The manifest is the map; the branch is the territory.
+→ `execute-changeset` only after `assertCurrentExecution` (or the stage-segment current plan gate) accepts current v5/control/lightweight evidence plus the verified seal. G5 happens after execution using staged diffs + task checkpoints. The manifest is the map; the branch is the territory.
 
 ## Scope Reduction Prohibition
 
@@ -320,15 +326,15 @@ On new delivery-graph signals, emit `skill_outcome` per `references/skill-outcom
 
 ## Chain Receipt Emission (Mandatory Chain)
 
-This skill emits receipt type `plan-manifest` per `references/chain-receipt-contract.md`: written to `.svc/receipts/staging/<tree-hash>/plan-manifest.json` pre-commit (post-commit hook promotes to the SHA mirror + consolidated git note on `refs/notes/svc-receipts`). Before commit, stage the reviewed manifest, spec and context, then emit via `node scripts/emit-receipt.mjs --type plan-manifest --wi <WI> --body <file>` with **no `--sha`**: the emitter validates and binds the Git index candidate. Reserve `--sha <exact-committed-SHA>` for intentional post-commit issuance against that committed source. Self-verify staging placement before commit, then schema validity and the consolidated note after promotion.
+This skill emits receipt type `plan-manifest` per `references/chain-receipt-contract.md`: written to `.svc/receipts/staging/<tree-hash>/plan-manifest.json` pre-commit (post-commit hook promotes to the SHA mirror + consolidated git note on `refs/notes/svc-receipts`). Before commit, stage the reviewed manifest, spec and context, then emit via `node scripts/emit-receipt.mjs --type plan-manifest --wi <WI> --body <exact-prepared.json> --manifest <manifest.md> --seal-ref <ObjectRef-JSON-or-SHA-hex>` with **no `--sha`**: pass the exact prepared JSON bytes as `--body` with no semantic additions; `--seal-ref` is the separate verified seal ObjectRef (`{type:"object",sha256}` or SHA hex). The emitter runs `assertCurrentIssuance` and binds the Git index candidate. Reserve `--sha <exact-committed-SHA>` for intentional post-commit issuance against that committed source. Self-verify staging placement before commit, then schema validity and the consolidated note after promotion.
 
-**Pipeline baton — legacy/dispatch emit `schema_version: 3`; new supported inline plans emit version 4.** After `review-plan` PASS, distill the spec's acceptance criteria into the receipt's `ac_digests` so the 5 downstream chain skills read a one-page nav index instead of re-reading the whole spec:
+**Pipeline baton — new issuance is `schema_version: 5` for both `inline` and `dispatch`.** Historical v1–4 remain readable and non-executable except the pinned genuine bootstrap v4 snapshot. Before `review-plan`, distill the spec's acceptance criteria into the receipt's `ac_digests` so the 5 downstream chain skills read a one-page nav index instead of re-reading the whole spec:
 - `ac_digests.spec_path` — the authoritative spec (e.g. `docs/specs/features/<name>.md`, or the WI doc for framework work).
 - `ac_digests.spec_ac_table_sha256` — `SPEC=docs/specs/features/<name>.md node -e 'import("./scripts/lib/normalize-ac-table.mjs").then(m=>console.log(m.acTableSha256(require("fs").readFileSync(process.env.SPEC,"utf8"))))'`. This hash-binds the baton to the spec AC table; `check-chain-receipts` recomputes it and FAILS if the ACs are revised after distillation (forcing a re-distill).
 - `ac_digests.entries[]` — one `{ac_id, digest, anchor}` per AC; `digest` is a one-line attention router, NEVER the authoritative text. The live spec at `spec_path` remains the sole AC source.
 - `mocked_deps[]` — `{dep, reason, mock_location}` for anything the plan stubs (optional).
-For v4, author the full receipt body once inside SVC_PLAN_BODY, compute the AC binding before review, and run prepare-plan-handoff --write --out .svc/external-review-artifacts/plan-handoff/body.json to generate views and the emitter input. Do not independently author duplicate AC/task/test mappings or regenerate reviewed fields silently. Regenerate the baton on any manifest/AC revision — it can only carry reviewed content. Legacy v1/v2 plan-manifests without the baton stay valid (grandfathered).
+For v5, author the full receipt body once inside SVC_PLAN_BODY (including `planning_contract`, `implementation_approach`, and `executor_discretion`), compute the AC binding before review, and run `node scripts/prepare-plan-handoff.mjs --manifest <path> --write --out .svc/external-review-artifacts/plan-handoff/body.json` to generate views and the pre-review emitter input. `--write --out` is pre-review only. `--task` is execution handoff and requires a verified seal; do not use `--task` to rewrite reviewed bytes. Do not independently author duplicate AC/task/test mappings or regenerate reviewed fields silently. Regenerate the baton on any manifest/AC revision — it can only carry reviewed content. Legacy v1/v2 plan-manifests without the baton stay readable (grandfathered, non-executable).
 
 ### Stable implementation handoff
 
-Freeze the validated inline v4 JSON before paid plan review. Express future release identities through the existing producer/verifier references; derive the eventual candidate from execution evidence rather than hardcoding an implementation SHA into the plan. A source correction that preserves ACs, write scope, dependencies and validation obligations does not itself require another plan review. Reuse only the existing exact plan review evidence; never rebind implementation approval to a changed candidate.
+Freeze the validated complete v5 JSON before paid plan review. Express future release identities through the existing producer/verifier references; derive the eventual candidate from execution evidence rather than hardcoding an implementation SHA into the plan. Persist the seal envelope outside the body; issuance and execution re-read those exact prepared bytes and call `verifyReviewerEvidence` on the actual review-plan receipt. Never rewrite the reviewed plan with `sealed:true` and never autogenerate success. A local repair that preserves ACs, write scope, dependencies, behavior, API, state, proof and authority records reason+evidence and revalidates; a consequential amendment reopens the affected source decision/contract and review proof using already-given owner intent (do not repeatedly ask routine permission). Reuse only the existing exact plan review evidence; never rebind implementation approval to a changed candidate.

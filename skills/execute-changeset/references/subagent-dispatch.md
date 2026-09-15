@@ -6,11 +6,10 @@
 
 | Role | Model | Effort | What it does |
 |------|-------|--------|-------------|
-| **Orchestrator** | Opus 4.8 | medium | Reads manifest, identifies groups, spawns subagents via `scripts/dispatch-worker.sh`, runs holistic review |
-| **Implementor** | resolver-routed (`resolve-model.sh EXEC` — Sonnet 4.6 under svc-default per WI-357) | high | Receives task + file constraints, writes test → writes code → runs test → commits |
+| **Orchestrator** | existing owner-configured resolver; dated recipes are nonauthoritative | as resolved | Reads the sealed v5 contract, identifies groups, spawns subagents via `scripts/dispatch-worker.sh`, runs holistic review |
+| **Implementor** | existing `resolve-model.sh EXEC`; after Deterministic Transmutation a lighter EXEC tuple is advised; recipes are nonauthoritative | as resolved | Receives task + file constraints, writes test → writes code → runs test → commits |
 
-On the explicitly selected dispatch path, the orchestrator coordinates and implementor subagents write code. Inline execution remains controller-owned. This separation means the orchestrator (Opus) spends tokens
-on decisions, and the EXEC-resolved model (Sonnet under svc-default per WI-357; MiMo under keyed profiles) spends tokens on generation.
+On the explicitly selected dispatch path, the orchestrator coordinates and implementor subagents write code. Inline execution remains controller-owned. Routing stays on existing owner config; after Deterministic Transmutation, EXEC is the remaining lighter implementation work. Dated recipes are nonauthoritative.
 
 **CRITICAL ORCHESTRATOR CONSTRAINT:** Mutating children MUST be launched through the durable delegation and containment path. Persist the parent-to-child edge before launch, use a stable child principal and one-time acceptance token, and explicitly pass the file scope. If host capability validation denies child mutation, execute under the controller.
 
@@ -68,7 +67,7 @@ serialized controller task.
 
 ### Original clauses before dispatch
 
-Alongside the complete dispatch blueprint, include the applicable ORIGINAL AC/UX/technical text and source references. Preserve temporal behavior, manual overrides, ownership, transaction and performance constraints verbatim. Read targeted imports within the permitted repository context; never treat read permission as a widened write grant. Dispatch still requires a complete task packet and durable isolated delegation. Inline's later local elaboration is not permission to send an incomplete child packet.
+Alongside the complete dispatch blueprint, include the applicable ORIGINAL AC/UX/technical text and source references. Preserve temporal behavior, manual overrides, ownership, transaction and performance constraints verbatim. Read targeted imports within the permitted repository context; never treat read permission as a widened write grant. Dispatch still requires a complete task packet and durable isolated delegation. `prepare-plan-handoff --task` requires the verified seal. Inline's later local repair is not permission to send an incomplete child packet or to apply an amendment without reopening the affected source decision/contract.
 
 ### Subagent context (what each implementor receives)
 
@@ -100,8 +99,8 @@ You are implementing one task from a feature implementation plan.
 
 ## Original requirements and reviewed context
 [INSERT applicable original AC/UX/technical clauses verbatim with source references;
-for inline v4 use prepare-plan-handoff --task output. Dispatch retains its complete
-packet below; the v4-only helper is not a legacy/dispatch receipt reader.]
+for sealed v5 use prepare-plan-handoff --task output (requires verified seal; must not rewrite reviewed bytes). Dispatch retains its complete
+packet below; the helper is not a historical v1–4 execution reader.]
 
 ## Changeset Blueprint
 [INSERT the precise, context-rich diff or CREATE payload from the manifest's Changeset Blueprint section for this task]

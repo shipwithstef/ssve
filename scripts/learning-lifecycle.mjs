@@ -67,6 +67,17 @@ function verifyEvaluateRuleAdapter(root, key, adapter, outcomeSha256) {
   return true;
 }
 const hasText = (value) => typeof value === "string" && value.trim().length > 0;
+export const TWO_BOX_LEARNING_ORIGINS = Object.freeze(["open_box", "contract_box"]);
+const ALLOWED_LEARNING_ORIGINS = new Set(TWO_BOX_LEARNING_ORIGINS);
+function parseLearningOrigin(argv, required) {
+  const origin = arg(argv, "--origin");
+  if (!origin) {
+    if (required) throw new Error("capture requires --origin open_box|contract_box");
+    return null;
+  }
+  if (!ALLOWED_LEARNING_ORIGINS.has(origin)) throw new Error("origin must be open_box or contract_box");
+  return origin;
+}
 
 export function hasFrameworkLearningCredit(root, key) {
   const real = path.resolve(root); const rows = lifecycleRows(real).filter((row) => row.key === key);
@@ -94,8 +105,14 @@ export function run(argv = process.argv.slice(2), env = process.env) {
       process.stdout.write(JSON.stringify({ ...view, learnings: view.learnings.slice(0, limit), total: view.learnings.length }, null, 2) + "\n");
       return view.findings.length ? 1 : 0;
     }
+    if (command === "capture") {
+      const key = arg(argv, "--key"); const origin = parseLearningOrigin(argv, true);
+      if (!key) throw new Error("capture requires --key and --origin open_box|contract_box");
+      appendJsonlLine(ledger, { ts: new Date().toISOString(), event: "candidate", key, origin, elevated: false });
+      process.stdout.write(JSON.stringify({ captured: true, key, origin, elevated: false }) + "\n"); return 0;
+    }
     if (command === "record") {
-      const key = arg(argv, "--key"); const decision = arg(argv, "--decision"); const outcome = arg(argv, "--outcome");
+      const key = arg(argv, "--key"); const decision = arg(argv, "--decision"); const outcome = arg(argv, "--outcome"); const origin = parseLearningOrigin(argv, false);
       if (!key || !["used", "ignored"].includes(decision)) throw new Error("record requires --key and --decision used|ignored");
       if (decision === "used" && !outcome) throw new Error("used learning requires --outcome evidence before credit");
       let outcomeReceipt = null; let outcomeSha256 = null;
@@ -106,17 +123,20 @@ export function run(argv = process.argv.slice(2), env = process.env) {
         verifyCandidateSha(root, receipt.candidate_sha); verifyArtifacts(root, receipt.evidence, receipt.candidate_sha);
         outcomeReceipt = path.relative(root, file); outcomeSha256 = sha256File(file);
       }
-      appendJsonlLine(ledger, { ts: new Date().toISOString(), event: "consumption", key, decision, outcome_receipt: outcomeReceipt, outcome_sha256: outcomeSha256 });
-      process.stdout.write(JSON.stringify({ recorded: true, key, decision }) + "\n"); return 0;
+      appendJsonlLine(ledger, { ts: new Date().toISOString(), event: "consumption", key, decision, origin, outcome_receipt: outcomeReceipt, outcome_sha256: outcomeSha256 });
+      process.stdout.write(JSON.stringify({ recorded: true, key, decision, origin }) + "\n"); return 0;
     }
     if (command === "elevate") {
-      const key = arg(argv, "--key"); const evaluation = secureEvidenceFile(root, path.resolve(arg(argv, "--evaluation")), ".svc/evaluations");
+      const key = arg(argv, "--key"); const origin = parseLearningOrigin(argv, false);
+      if (!arg(argv, "--evaluation")) throw new Error("elevate requires --evaluation passing evaluate-rule receipt; origin or confidence is not sufficient");
+      const evaluation = secureEvidenceFile(root, path.resolve(arg(argv, "--evaluation")), ".svc/evaluations");
       const receipt = JSON.parse(fs.readFileSync(evaluation, "utf8"));
       const consumed = [...lifecycleRows(root)].reverse().find((row) => row.key === key && row.event === "consumption" && row.decision === "used");
       if (!consumed?.outcome_sha256) throw new Error("evaluation has no recorded product outcome");
       verifyEvaluateRuleAdapter(root, key, receipt, consumed.outcome_sha256);
-      appendJsonlLine(ledger, { ts: new Date().toISOString(), event: "elevated", key, evaluation: path.relative(root, evaluation), evaluation_sha256: sha256File(evaluation), source_outcome_sha256: consumed.outcome_sha256, candidate_sha: receipt.candidate_sha });
-      process.stdout.write(JSON.stringify({ elevated: true, key }) + "\n"); return 0;
+      const captured = [...lifecycleRows(root)].reverse().find((row) => row.key === key && row.event === "candidate" && ALLOWED_LEARNING_ORIGINS.has(row.origin));
+      appendJsonlLine(ledger, { ts: new Date().toISOString(), event: "elevated", key, origin: origin || captured?.origin || null, evaluation: path.relative(root, evaluation), evaluation_sha256: sha256File(evaluation), source_outcome_sha256: consumed.outcome_sha256, candidate_sha: receipt.candidate_sha });
+      process.stdout.write(JSON.stringify({ elevated: true, key, origin: origin || captured?.origin || null }) + "\n"); return 0;
     }
     if (command === "federate") {
       const sourceRoot = realOwnedDirectory(path.resolve(arg(argv, "--source-root")));
@@ -126,7 +146,7 @@ export function run(argv = process.argv.slice(2), env = process.env) {
       appendJsonlLine(ledger, { ts: new Date().toISOString(), event: "federated", source_root: sourceRoot, accepted: view.learnings.length, malformed: view.findings.length });
       process.stdout.write(JSON.stringify({ source_root: sourceRoot, ...view }, null, 2) + "\n"); return view.findings.length ? 1 : 0;
     }
-    throw new Error("usage: learning-lifecycle.mjs <normalize|triage|record|elevate|federate> --root <repo> ...");
+    throw new Error("usage: learning-lifecycle.mjs <normalize|triage|capture|record|elevate|federate> --root <repo> ...");
   } catch (error) { process.stderr.write(`[learning-lifecycle] ${error.message}\n`); return 2; }
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) process.exitCode = run();

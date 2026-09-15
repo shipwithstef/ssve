@@ -70,6 +70,8 @@ outcome evidence object, and a recorded next product decision. Compile the link 
 
 Use `node scripts/learning-lifecycle.mjs triage --root "$(git rev-parse --show-toplevel)" --limit 50` for the bounded normalized view. Record each applied or ignored row with `record --key <key> --decision used|ignored`; `used` requires `--outcome <evidence>`. Elevation requires `elevate --evaluation <passing-evaluate-rule-receipt>`. Never rewrite malformed historical JSONL; emit findings and append lifecycle events.
 
+Two-Box Planning may capture learning **candidates** from either side with `capture --key <key> --origin open_box` or `--origin contract_box`. `origin` is only `open_box` or `contract_box`. Capture, an origin field, a box label, or a confidence number does not promote a learning, rewrite dispatch policy, or grant framework learning credit. Promotion still requires a recorded `used` outcome evidence object and a passing `evaluate-rule` receipt on `elevate`. Adding a field alone is insufficient.
+
 Manage the project's institutional memory. Every skill logs operational
 discoveries during pipeline runs. This skill lets you review, search,
 prune, and export those learnings.
@@ -133,6 +135,7 @@ logs into active guardrails.
 | `source` | yes | One of: `observed`, `user-stated`, `inferred`, `cross-model` |
 | `files` | no | Array of file paths relevant to this learning |
 | `saves_minutes` | yes | Estimated minutes saved if this learning is applied in a future session |
+| `origin` | no | Two-Box candidate source: `open_box` or `contract_box`. Presence does not promote the learning or skip outcome / evaluate-rule evidence. |
 
 ### Confidence Scoring
 
@@ -218,6 +221,17 @@ done
 
 If a file no longer exists, mark the learning as stale candidate. Present all stale
 candidates to the user for confirmation before removing.
+
+### `capture --origin open_box|contract_box` (Two-Box candidates)
+
+Findings from Open Box or Contract Box enter the existing lifecycle as candidates:
+
+```bash
+node scripts/learning-lifecycle.mjs capture --root "$(git rev-parse --show-toplevel)" --key <key> --origin open_box
+node scripts/learning-lifecycle.mjs capture --root "$(git rev-parse --show-toplevel)" --key <key> --origin contract_box
+```
+
+This appends a `candidate` event. It does not elevate, does not rewrite policy, and does not satisfy `hasFrameworkLearningCredit`. After an observed implementation outcome, `record --decision used --outcome <evidence>` then `elevate --evaluation <passing-evaluate-rule-receipt>` remain mandatory. Numeric confidence and origin are not substitutes.
 
 ### `promote --from-auto` (review and promote auto-captured candidates)
 

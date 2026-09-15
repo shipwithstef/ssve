@@ -798,7 +798,9 @@ function loadSchema(receiptType) {
   }
 }
 
-export const PLAN_MANIFEST_MAX_VERSION = 4;
+export const PLAN_MANIFEST_MAX_VERSION = 5;
+import {assertCurrentExecution,assertCommittedPlanEvidence,loadPlanAuthority,readHistoricalReceipt} from "./lib/receipt-issuance-epoch.mjs";
+import {validateControlPlan} from "./lib/control-plan-validate.mjs";
 const planContract = existsSync(join(SCRIPT_DIR, "lib/plan-manifest-contract.mjs"))
   ? await import("./lib/plan-manifest-contract.mjs") : null;
 
@@ -820,7 +822,7 @@ export function validateReceipt(receiptType, receipt, sha = null) {
   }
   if (receiptType === "plan-manifest") {
     if (!Number.isInteger(receipt.schema_version) || receipt.schema_version < 1 || receipt.schema_version > PLAN_MANIFEST_MAX_VERSION) return { valid: false, reasons: ["unsupported plan schema_version"] };
-    if (receipt.schema_version === 4) {
+    if (receipt.schema_version >= 4) {
       if (!planContract || !sha) return { valid: false, reasons: ["v4 requires shared plan validator and explicit Git candidate"] };
       const result = planContract.validatePlanBody(receipt, {
         readSpec: (p) => execFileSync("git", ["show", `${sha}:${p}`], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }),
@@ -953,6 +955,23 @@ function checkShaAgainstReceipts(sha, envelope, options = {}) {
     if (selected) receiptEntries[type] = selected.receipt;
   }
 
+  // Historical inspection is never current execution authority. Active consumers
+  // verify the exact body and external seal before any shortcut/receipt-key check.
+  if (consumer && receiptEntries["plan-manifest"]) {
+    try {
+      const body=receiptEntries["plan-manifest"];
+      const inputs=options.planBytes ? {planBytes:options.planBytes,manifestPath:options.manifestPath,sealRef:options.sealRef} : loadPlanAuthority({consumerRoot:process.cwd(),body});
+      if (body.schema_version === 5 && body.planning_contract?.kind === "lightweight") {
+        assertCommittedPlanEvidence({consumerRoot:process.cwd(),body,...inputs,candidateSha:sha});
+        if (!["verify-promotion", "final-report", "push", "reconcile"].includes(consumer)) {
+          const currentHead = execFileSync("git", ["rev-parse", "--verify", "HEAD^{commit}"], {encoding:"utf8"}).trim();
+          const dirty = execFileSync("git", ["diff", sha, "--name-only"], {encoding:"utf8"}).trim();
+          if (currentHead !== sha || dirty) throw new Error("current-task consumer requires the exact target HEAD and matching tracked checkout/index");
+          assertCurrentExecution({consumerRoot:process.cwd(),body,...inputs});
+        }
+      } else assertCurrentExecution({consumerRoot:process.cwd(),body,...inputs});
+    } catch(error) { return {sha,ok:false,missing:[`current plan execution: ${error.message}`],type:"invalid"}; }
+  }
   if (wi && Object.keys(receiptEntries).length === 0) {
     return { sha, ok: false, missing: [`no receipts found for ${wi} at ${sha}`], type: "incomplete" };
   }
@@ -1175,6 +1194,7 @@ async function main() {
   let consumer = null;
   let expectedStage = null;
   let coverageMode = false;
+  let historicalType = null;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--sha") {
@@ -1197,6 +1217,8 @@ async function main() {
       consumer = args[++i];
     } else if (args[i] === "--expected-stage") {
       expectedStage = args[++i];
+    } else if (args[i] === "--historical-type") {
+      historicalType = args[++i];
     } else if (args[i] === "--coverage") {
       coverageMode = true;
     }
@@ -1216,6 +1238,10 @@ async function main() {
     process.exit(1);
   }
 
+  if (historicalType) {
+    if(consumer || shas.length!==1 || sawRange || sawPr) throw new RangeConfigError("historical read requires one --sha and no execution consumer");
+    console.log(JSON.stringify(readHistoricalReceipt({consumerRoot:process.cwd(),commitSha:shas[0],receiptType:historicalType,wi}),null,2));return;
+  }
   const notesTip = gitTry(["rev-parse", "refs/notes/svc-receipts"]);
   const fingerprint = policyFingerprint();
   const canUseCache = !wi && !consumer;

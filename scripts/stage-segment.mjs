@@ -2,8 +2,7 @@
 /**
  * stage-segment — the deterministic substrate for mandatory-chain stage-context
  * isolation (WI-380). The 7 chain skills run in ONE degrading orchestrator
- * context per WI today (context-budget.md classifies that as DEGRADING→POOR,
- * ~25-45% step dropout). This re-bases the chain onto per-stage FRESH subagents:
+ * context per WI today. This re-bases the chain onto per-stage FRESH subagents:
  * each stage boots a clean context with only its SKILL.md + the prior stage's
  * hash-bound baton/receipt, works in the SHARED worktree, and returns a ≤1K
  * schema-forced summary + the SHA whose receipt its own shell emitted. Stages
@@ -21,6 +20,8 @@
 
 import { execFileSync } from "node:child_process";   // Gemini G6 #3: no shell → no injection
 import path from "node:path";
+import {createHash} from "node:crypto";
+import {isDeepStrictEqual} from "node:util";
 import { fileURLToPath } from "node:url";
 import { deriveMandatoryChainSegments, loadStageRegistry } from "./lib/stage-registry.mjs";
 
@@ -69,31 +70,173 @@ export function nextStageAction(findings, iterationCount = 0) {
 
 // AC3: the orchestration VERIFIES the receipt SHA the stage agent's own shell
 // emitted — it does NOT re-emit. Returns { ok, present, reason }.
-export function verifyStageReceipt(sha, expectedType, repoRoot = ".") {
-  try {
-    // Gemini G6 #3: execFileSync (no shell) — JSON.stringify double-quotes do NOT
-    // stop $()/backtick subshell evaluation in /bin/sh; pass args directly instead.
-    const note = execFileSync("git", ["-C", String(repoRoot), "notes", "--ref=svc-receipts", "show", String(sha)], { encoding: "utf8", stdio: ["pipe", "pipe", "ignore"] });
-    const env = JSON.parse(note);
-    const present = Object.prototype.hasOwnProperty.call(env, expectedType);
-    return { ok: present, present, reason: present ? `${expectedType} receipt present on ${String(sha).slice(0, 8)}` : `${expectedType} receipt MISSING on ${String(sha).slice(0, 8)} — stage segment must HALT (never silently continue)` };
-  } catch (e) {
-    return { ok: false, present: false, reason: `no receipt envelope on ${String(sha).slice(0, 8)} — fail-closed (${String(e && e.message || e).slice(0, 60)})` };
+export function selectStageReceipt(envelope, {sha, expectedType, wi} = {}) {
+  if (!envelope || typeof envelope !== "object" || Array.isArray(envelope)) throw new Error("receipt envelope required");
+  const matches = [];
+  for (const [key, value] of Object.entries(envelope)) {
+    if (!key.startsWith(`slot::${expectedType}::`)) continue;
+    const parts = key.split("::");
+    if (parts.length !== 4 || parts[3] !== sha || !value || value.receipt_type !== expectedType || value.wi !== parts[2]
+        || (value.target_sha && value.target_sha !== sha)) throw new Error("canonical receipt slot identity mismatch");
+    const digest = createHash("sha256").update(JSON.stringify(value)).digest("hex");
+    if (envelope.digests?.[`${expectedType}::${parts[2]}`] !== digest) throw new Error("canonical receipt slot digest mismatch");
+    if (!wi || parts[2] === wi) matches.push(value);
   }
+  const alias = envelope[expectedType];
+  if (alias && (!wi || alias.wi === wi)) {
+    if (!matches.some(value => isDeepStrictEqual(value, alias))) matches.push(alias);
+  }
+  if (matches.length !== 1) throw new Error(matches.length ? "ambiguous stage receipt" : "stage receipt missing for WI/SHA");
+  return matches[0];
+}
+
+export function verifyStageReceipt(sha, expectedType, repoRoot = ".", wi = null) {
+  try {
+    const resolved = execFileSync("git", ["-C", String(repoRoot), "rev-parse", "--verify", `${sha}^{commit}`], {encoding:"utf8",stdio:["ignore","pipe","ignore"]}).trim();
+    const note = execFileSync("git", ["-C", String(repoRoot), "notes", "--ref=svc-receipts", "show", resolved], {encoding:"utf8",stdio:["ignore","pipe","ignore"]});
+    const body = selectStageReceipt(JSON.parse(note), {sha:resolved, expectedType, wi});
+    return {ok:true,present:true,body,sha:resolved,reason:`${expectedType} receipt present on ${resolved.slice(0,8)}`};
+  } catch(error) {
+    return {ok:false,present:false,reason:`stage receipt failed closed: ${error.message}`};
+  }
+}
+
+export async function verifyCurrentPlanExecution({
+  sha,
+  repoRoot = ".",
+  planBytes,
+  manifestPath,
+  sealRef,
+  body,
+  wi,
+} = {}) {
+  const presence = verifyStageReceipt(sha, "plan-manifest", repoRoot, wi || body?.wi);
+  if (!presence.present) {
+    return { ok: false, executable: false, present: false, reason: presence.reason };
+  }
+  let assertCurrentExecution, loadPlanAuthority;
+  try {
+    const mod = await import("./lib/receipt-issuance-epoch.mjs");
+    assertCurrentExecution = mod.assertCurrentExecution;
+    loadPlanAuthority = mod.loadPlanAuthority;
+  } catch (e) {
+    return { ok: false, executable: false, present: true, reason: `current execution checker unavailable (fail-closed): ${String(e && e.message || e)}` };
+  }
+  if (typeof assertCurrentExecution !== "function") {
+    return { ok: false, executable: false, present: true, reason: "assertCurrentExecution missing — fail-closed" };
+  }
+  if (body != null && !isDeepStrictEqual(body, presence.body)) {
+    return {ok:false,present:true,executable:false,reason:"supplied plan body differs from selected note slot"};
+  }
+  const envBody = presence.body;
+  if (planBytes == null || !manifestPath) {
+    try { const found=loadPlanAuthority({consumerRoot:repoRoot,body:envBody});planBytes=found.planBytes;manifestPath=found.manifestPath;sealRef=sealRef||found.sealRef; }
+    catch(error) { return {ok:false,executable:false,present:true,reason:`exact plan authority unavailable: ${error.message}`}; }
+  }
+  try {
+    const evidence = assertCurrentExecution({
+      consumerRoot: repoRoot,
+      body: envBody,
+      planBytes: Buffer.isBuffer(planBytes) ? planBytes : Buffer.from(planBytes),
+      manifestPath,
+      sealRef: sealRef || (envBody && (envBody.seal_ref || (envBody.planning_contract && envBody.planning_contract.seal_ref))) || null,
+    });
+    if (!evidence || evidence.executable !== true) {
+      return { ok: false, executable: false, present: true, reason: "assertCurrentExecution did not return executable:true" };
+    }
+    return { ok: true, executable: true, present: true, kind: evidence.kind, reason: "current execution verified", verifiedBindings: evidence.verifiedBindings };
+  } catch (e) {
+    return { ok: false, executable: false, present: true, reason: `assertCurrentExecution failed closed: ${String(e && e.message || e)}` };
+  }
+}
+
+export async function invokePlanning({ input, mode = "prepare", consumerRoot = ".", signal, limits } = {}) {
+  if (mode !== "prepare" && mode !== "live" && mode !== "OFFLINE") {
+    throw new Error(`unknown planning mode: ${mode}`);
+  }
+  let runTwoBox;
+  try {
+    const mod = await import("./two-box-plan.mjs");
+    runTwoBox = mod.runTwoBox;
+  } catch (e) {
+    throw new Error(`two-box planning entry unavailable (fail-closed): ${String(e && e.message || e)}`);
+  }
+  if (typeof runTwoBox !== "function") throw new Error("runTwoBox missing — fail-closed");
+  if (input == null || typeof input !== "object" || Array.isArray(input)) {
+    throw new Error("planning --input must be a JSON object");
+  }
+  return runTwoBox({
+    consumerRoot: input.consumerRoot || consumerRoot,
+    wi: input.wi,
+    originalRequirements: input.originalRequirements,
+    scope: input.scope,
+    baseSha: input.baseSha,
+    facts: input.facts,
+    contractContext: input.contractContext,
+    mode,
+    dispatch: input.dispatch,
+    signal,
+    limits: limits || input.limits,
+    offline: input.offline,
+  });
 }
 
 function argVal(name) { const i = process.argv.indexOf(name); return i === -1 ? null : process.argv[i + 1] || null; }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+async function mainCli() {
   const cmd = process.argv[2];
   if (cmd === "verify-receipt") {
-    const r = verifyStageReceipt(argVal("--sha") || "HEAD", argVal("--type") || "exec-record", argVal("--root") || ".");
+    const type = argVal("--type") || "exec-record";
+    const sha = argVal("--sha") || "HEAD";
+    const root = argVal("--root") || ".";
+    if (type === "plan-manifest") {
+      const planFile = argVal("--plan-file");
+      const manifestPath = argVal("--manifest");
+      let planBytes = null;
+      if (planFile) {
+        const fs = await import("node:fs");
+        planBytes = fs.readFileSync(planFile);
+      }
+      const r = await verifyCurrentPlanExecution({
+        sha,
+        repoRoot: root,
+        wi: argVal("--wi"),
+        planBytes,
+        manifestPath,
+        sealRef: argVal("--seal-ref") ? {type:"object",sha256:argVal("--seal-ref")} : undefined,
+      });
+      process.stdout.write(JSON.stringify(r, null, 2) + "\n");
+      process.exit(r.ok && r.executable === true ? 0 : 1);
+    }
+    const r = verifyStageReceipt(sha, type, root);
     process.stdout.write(JSON.stringify(r, null, 2) + "\n");
     process.exit(r.ok ? 0 : 1);
+  } else if (cmd === "plan") {
+    const inputPath = argVal("--input");
+    const mode = argVal("--mode") || "prepare";
+    const root = argVal("--root") || ".";
+    if (!inputPath) {
+      console.error("usage: stage-segment plan --input <json> [--mode prepare|live|OFFLINE] [--root <dir>] [--out <json>]");
+      process.exit(2);
+    }
+    const fs = await import("node:fs");
+    const input = JSON.parse(fs.readFileSync(inputPath, "utf8"));
+    const result = await invokePlanning({ input, mode, consumerRoot: root });
+    const text = JSON.stringify(result, null, 2) + "\n";
+    const out = argVal("--out");
+    if (out) fs.writeFileSync(out, text);
+    else process.stdout.write(text);
   } else if (cmd === "segments") {
     process.stdout.write(JSON.stringify(SEGMENTS, null, 2) + "\n");
   } else {
-    console.error("usage: stage-segment (segments | verify-receipt --sha <sha> --type <receipt-type> [--root <dir>])");
+    console.error("usage: stage-segment (segments | plan --input <json> [--mode prepare|live|OFFLINE] | verify-receipt --sha <sha> --type <receipt-type> [--root <dir>] [--plan-file <json> --manifest <path>])");
     process.exit(2);
   }
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  mainCli().catch((e) => {
+    process.stderr.write(`${String(e && e.message || e)}\n`);
+    process.exit(1);
+  });
 }

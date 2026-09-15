@@ -153,6 +153,9 @@ else
 fi
 
 # AC-550-9: transition-matrix consumers validate WI+SHA identities.
+# Generic identity transport uses current exec-record emission. A fabricated v1
+# plan-manifest is an OFFLINE historical fixture: inspectable without a consumer and
+# never current execute-changeset authority.
 R4="$TMP/r4"
 init_repo "$R4"
 SHA4="$(git -C "$R4" rev-parse HEAD)"
@@ -165,10 +168,9 @@ EXEC_BODY='{"receipt_type":"exec-record","schema_version":2,"wi":"'"$WI4"'","dif
 REVIEW_EXEC_BODY='{"receipt_type":"review-exec","schema_version":2,"wi":"'"$WI4"'","diff_hash":"'"$HASH4"'","self_review":{},"adversarial_review":{},"verdict":"pass","tree_hash":"'"$TREE4"'","timestamp":"2026-08-18T07:33:00Z"}'
 AUDIT_BODY='{"receipt_type":"audit-implementation","schema_version":1,"wi":"'"$WI4"'","verdict":"pass","findings":[],"timestamp":"2026-08-18T07:34:00Z"}'
 VERIFY_BODY="$(verify_body "$WI4" "$SHA4" "2026-08-18T07:35:00Z")"
-emit_generic "$R4" "plan-manifest" "$WI4" "$SHA4" "$PLAN_BODY"
+emit_generic "$R4" "exec-record" "$WI4" "$SHA4" "$EXEC_BODY"
 write_note_receipt "$R4" "review-plan" "$WI4" "$SHA4" "$REVIEW_PLAN_BODY"
-write_note_receipt "$R4" "exec-record" "$WI4" "$SHA4" "$EXEC_BODY"
-if check_wi "$R4" "$SHA4" "$WI4" "execute-changeset"; then pass "execute-changeset consumer enforces plan+review-plan+exec"; else fail "execute-changeset consumer failed with complete identity set"; fi
+if check_wi "$R4" "$SHA4" "$WI4" "execute-changeset"; then fail "execute-changeset consumer passed without a current sealed plan-manifest"; else pass "execute-changeset consumer fails closed without current sealed plan-manifest"; fi
 if check_wi "$R4" "$SHA4" "$WI4" "review-exec"; then fail "review-exec consumer passed without review-exec receipt"; else pass "review-exec consumer fails closed without review-exec"; fi
 write_note_receipt "$R4" "review-exec" "$WI4" "$SHA4" "$REVIEW_EXEC_BODY"
 if check_wi "$R4" "$SHA4" "$WI4" "review-exec"; then pass "review-exec consumer validates exec+review-exec"; else fail "review-exec consumer failed with required identities"; fi
@@ -179,6 +181,42 @@ if check_wi "$R4" "$SHA4" "$WI4" "verify-promotion"; then fail "verify-promotion
 write_note_receipt "$R4" "verify-promotion" "$WI4" "$SHA4" "$VERIFY_BODY"
 if check_wi "$R4" "$SHA4" "$WI4" "verify-promotion"; then pass "verify-promotion consumer validates WI-scoped receipt"; else fail "verify-promotion consumer failed with valid receipt"; fi
 if check_wi "$R4" "$SHA4" "$WI4" "final-report"; then pass "final-report consumer requires canonical WI+SHA check"; else fail "final-report consumer did not pass with canonical identities"; fi
+write_note_receipt "$R4" "plan-manifest" "$WI4" "$SHA4" "$PLAN_BODY"
+if HIST_OUT="$(cd "$R4" && node "$REPO_ROOT/scripts/check-chain-receipts.mjs" --sha "$SHA4" --wi "$WI4" --historical-type plan-manifest)" && grep -q '"executable": false' <<< "$HIST_OUT" && grep -q '"kind": "historical"' <<< "$HIST_OUT"; then
+  pass "historical v1 plan fixture is inspectable without a consumer"
+else
+  fail "historical v1 plan fixture was not inspectable as non-executable"
+fi
+if check_wi "$R4" "$SHA4" "$WI4" "execute-changeset"; then fail "execute-changeset granted current execution from a historical plan-manifest"; else pass "execute-changeset consumer rejects historical plan-manifest (missing current seal)"; fi
+if ( cd "$R4" && node --input-type=module - "$REPO_ROOT" "$PLAN_BODY" <<'NODE'
+import { pathToFileURL } from "node:url";
+import path from "node:path";
+const [root, bodyRaw] = process.argv.slice(2);
+const { assertCurrentExecution, loadPlanAuthority } = await import(pathToFileURL(path.join(root, "scripts/lib/receipt-issuance-epoch.mjs")).href);
+const body = JSON.parse(bodyRaw);
+try {
+  assertCurrentExecution({
+    consumerRoot: process.cwd(),
+    body,
+    planBytes: Buffer.from(bodyRaw),
+    manifestPath: "docs/plans/two-box-transmutation/manifest.md",
+  });
+  process.exit(2);
+} catch (error) {
+  if (!/schema_version 5|bootstrap|issuance|seal|authority/.test(String(error && error.message))) process.exit(3);
+}
+try {
+  loadPlanAuthority({ consumerRoot: process.cwd(), body });
+  process.exit(4);
+} catch (error) {
+  if (!/schema_version 5|bootstrap|authority/.test(String(error && error.message))) process.exit(5);
+}
+NODE
+); then
+  pass "missing current seal/epoch rejects historical plan execution"
+else
+  fail "assertCurrentExecution did not reject historical plan (missing seal/epoch)"
+fi
 
 # AC-550-4/6: Stop denies success on canonical failure; allows valid dual-WI closeout.
 R3="$TMP/r3"

@@ -29,7 +29,7 @@ import { relocateTree } from './lib/review-evidence-store.mjs';
 
 import { reviewerAvailability, recordReviewerFailure } from './lib/reviewer-resources.mjs';
 
-const LAUNCHER_VERSION = '2.5.7';
+const LAUNCHER_VERSION = '2.5.8';
 export const EXTERNAL_REVIEW_LAUNCHER_VERSION = LAUNCHER_VERSION;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FINDINGS_SCHEMA = path.join(ROOT, 'schemas/external-review-findings.schema.json');
@@ -62,7 +62,7 @@ let emergencyReceipt;
 
 function usage(message = '') {
   const prefix = message ? `external-review: ${message}\n` : '';
-  return `${prefix}usage: run-external-review.mjs --orchestrator HOST --review-kind KIND --artifacts-dir DIR [--context-root DIR] [--plan-file FILE] [--context-files JSON_FILE] [--preflight] [--reviewer-config FILE --reviewer-mode MODE --reviewer-phase plan|exec|design --reviewer-station ID] [--owner-override-file FILE] [--phase-binding FILE] [--phase-override-file FILE]\n       run-external-review.mjs --validate-capabilities --orchestrator HOST --artifacts-dir DIR [reviewer config options]\n       run-external-review.mjs --policy-status --orchestrator HOST\n       run-external-review.mjs --select-profile fable-high --reason TEXT [--expires-at ISO]\n       run-external-review.mjs --clear-profile-selection --reason TEXT\n       run-external-review.mjs --gc-cache [--artifacts-dir DIR]`;
+  return `${prefix}usage: run-external-review.mjs --orchestrator HOST --review-kind KIND --artifacts-dir DIR [--input-file FILE | stdin] [--context-root DIR] [--plan-file FILE] [--context-files JSON_FILE] [--preflight] [--reviewer-config FILE --reviewer-mode MODE --reviewer-phase plan|exec|design --reviewer-station ID] [--owner-override-file FILE] [--phase-binding FILE] [--phase-override-file FILE]\n       run-external-review.mjs --validate-capabilities --orchestrator HOST --artifacts-dir DIR [reviewer config options]\n       run-external-review.mjs --policy-status --orchestrator HOST\n       run-external-review.mjs --select-profile fable-high --reason TEXT [--expires-at ISO]\n       run-external-review.mjs --clear-profile-selection --reason TEXT\n       run-external-review.mjs --gc-cache [--artifacts-dir DIR]`;
 }
 
 function parseArgs(argv) {
@@ -75,6 +75,10 @@ function parseArgs(argv) {
     else if (arg === '--policy-status') options.policyStatus = true;
     else if (arg === '--clear-profile-selection') options.clearProfileSelection = true;
     else if (arg === '--help' || arg === '-h') options.help = true;
+    else if (arg === '--input-file') {
+      if (!argv[index + 1] || argv[index + 1].startsWith('--')) throw new Error('missing value for --input-file');
+      options.inputFile = argv[++index];
+    }
     else if (['--plan-file', '--context-files', '--orchestrator', '--review-kind', '--candidate-digest', '--artifacts-dir', '--context-root', '--reviewer-config', '--reviewer-mode', '--reviewer-phase', '--reviewer-station', '--owner-override-file', '--phase-binding', '--phase-override-file', '--select-profile', '--reason', '--expires-at'].includes(arg)) {
       if (!argv[index + 1]) throw new Error(`missing value for ${arg}`);
       const key = { '--plan-file': 'planFile', '--context-files': 'contextFiles', '--orchestrator': 'orchestrator', '--review-kind': 'reviewKind', '--candidate-digest': 'candidateDigest', '--artifacts-dir': 'artifactsDir', '--context-root': 'contextRoot', '--reviewer-config': 'reviewerConfig', '--reviewer-mode': 'reviewerMode', '--reviewer-phase': 'reviewerPhase', '--reviewer-station': 'reviewerStation', '--owner-override-file': 'ownerOverrideFile', '--phase-binding': 'phaseBinding', '--phase-override-file': 'phaseOverrideFile', '--select-profile': 'selectProfile', '--reason': 'reason', '--expires-at': 'expiresAt' }[arg];
@@ -142,6 +146,10 @@ async function buildReviewPackage(baseBytes, reviewKind, contextRoot, options = 
       ? ['skills/review-exec/SKILL.md', 'skills/review-cross-model/SKILL.md']
       : ['skills/review-cross-model/SKILL.md'];
   const files = [...targetFiles, ...prepared.files];
+  if (reviewKind === 'plan' && options.planFile
+      && JSON.parse(await readFile(path.resolve(contextRoot, options.planFile), 'utf8')).schema_version === 5) {
+    files.push({label: 'candidate:git-tree', bytes: Buffer.from(JSON.stringify(candidateTreeIdentity(contextRoot)) + '\n')});
+  }
   for (const relative of frameworkPaths) files.push({ label: `framework:${relative}`, bytes: await readFile(path.join(ROOT, relative)) });
   const manifest = {
     version: 1,
@@ -353,10 +361,50 @@ async function resolvePolicy(policy, orchestrator, now, selectionPath) {
   return { tuple: configured.tuple, fallback: configured.fallback, metadata: { version: policy.version, profile, source, resolved_at: now.toISOString(), effective_window: window, cutover_utc: policy.cutover_utc, cutover_local: policy.cutover_local, timezone: policy.timezone, selection_sha256: selection?.selection_sha256 || null, selection_expires_at: selection?.document.expires_at || null, selection_authority: selection?.document.authority || null } };
 }
 
-async function readStdin() {
-  const chunks = [];
-  for await (const chunk of process.stdin) chunks.push(Buffer.from(chunk));
-  return Buffer.concat(chunks);
+export async function readReviewInput(options = {}, input = process.stdin) {
+  const invalid = detail => Object.assign(new Error(`${detail}; resume with --input-file pointing to the saved review request`), { classification: 'input_invalid' });
+  const checked = bytes => {
+    if (!bytes.toString('utf8').trim()) throw invalid('review request is empty');
+    return bytes;
+  };
+  // Keep the original request; never infer a replacement or consume partial input.
+  if (options.inputFile) {
+    try {
+      const filename = path.resolve(options.inputFile);
+      if (!(await stat(filename)).isFile()) throw invalid('review input must be a regular file');
+      return checked(await readFile(filename));
+    } catch (error) { throw invalid(`cannot load review request: ${error.message}`); }
+  }
+  if (input.isTTY) throw invalid('review request was not supplied; interactive stdin is not supported');
+  const timeoutMs = positiveInteger('SVC_EXTERNAL_REVIEW_INPUT_TIMEOUT_MS', 30_000);
+  if (timeoutMs > 60_000) throw invalid('review input timeout must not exceed 60000 ms');
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    const cleanupInput = () => {
+      clearTimeout(timer);
+      input.removeListener('data', onData);
+      input.removeListener('end', onEnd);
+      input.removeListener('error', onError);
+      input.removeListener('close', onClose);
+      input.pause();
+    };
+    const onData = chunk => chunks.push(Buffer.from(chunk));
+    const onError = error => { cleanupInput(); reject(invalid(`review input failed: ${error.message}`)); };
+    const onClose = () => onError(new Error('stream closed before the complete request arrived'));
+    const onEnd = () => {
+      cleanupInput();
+      try { resolve(checked(Buffer.concat(chunks))); } catch (error) { reject(error); }
+    };
+    const timer = setTimeout(() => {
+      cleanupInput();
+      input.destroy();
+      reject(invalid(`review input did not finish within ${timeoutMs} ms; partial input discarded`));
+    }, timeoutMs);
+    input.on('data', onData);
+    input.once('end', onEnd);
+    input.once('error', onError);
+    input.once('close', onClose);
+  });
 }
 
 function parseJsonObjectEnvelope(value) {
@@ -1358,6 +1406,13 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
 async function main() {
   let options;
   try { options = parseArgs(process.argv.slice(2)); } catch (error) { process.stderr.write(`${usage(error.message)}\n`); process.exitCode = 2; return; }
+  // Planning candidates need the frozen, tool-free Two-Box transport. The
+  // review package intentionally includes methodology and a competing candidate.
+  if (['open_box', 'contract_box', 'contract_revise', 'scout_forward', 'scout_reverse', 'assessor'].includes(String(options.reviewKind || '').replaceAll('-', '_'))) {
+    process.stderr.write('external-review: input_invalid: Two-Box planning roles require scripts/two-box-plan.mjs; a review package cannot provide their isolation.\n');
+    process.exitCode = 2;
+    return;
+  }
   if (options.help) { process.stdout.write(`${usage()}\n`); return; }
 
   const fixture = process.env.SVC_EXTERNAL_REVIEW_FIXTURE === '1';
@@ -1473,7 +1528,7 @@ async function main() {
       if (configError) throw configError;
       if (!options.planFile || !['plan', 'exec'].includes(options.reviewKind)) throw new Error('--preflight requires --plan-file and --review-kind plan|exec');
       const contextRoot = path.resolve(options.contextRoot || process.cwd());
-      const bytes = await readStdin();
+      const bytes = await readReviewInput(options);
       const bundle = await buildReviewPackage(bytes, options.reviewKind, contextRoot, options);
       const reviewer = resolveExternalReviewer({ configPath: options.reviewerConfig, mode: options.reviewerMode,
         orchestrator: options.orchestrator, phase: options.reviewerPhase || options.reviewKind, stationId: options.reviewerStation || null,
@@ -1510,7 +1565,12 @@ async function main() {
   const schemaBytes = await readFile(FINDINGS_SCHEMA);
   const findingsSchema = JSON.parse(schemaBytes.toString('utf8'));
   const receiptSchema = JSON.parse(await readFile(RECEIPT_SCHEMA, 'utf8'));
-  const rawPackageBytes = options.validateCapabilities ? Buffer.alloc(0) : await readStdin();
+  let rawPackageBytes = Buffer.alloc(0);
+  let inputError = null;
+  if (!options.validateCapabilities) {
+    try { rawPackageBytes = await readReviewInput(options); }
+    catch (error) { inputError = error; }
+  }
   const contextRoot = path.resolve(options.contextRoot || process.env.SVC_EXTERNAL_REVIEW_CONTEXT_ROOT || process.cwd());
   let packageBundle = { bytes: rawPackageBytes, context: { version: 1, context_root: contextRoot, base_package_sha256: sha256(rawPackageBytes), files: [] } };
   let packageError = null;
@@ -1677,8 +1737,8 @@ async function main() {
     process.exitCode = 1;
   };
 
-  if (!options.orchestrator || options.orchestrator === 'agy' || !options.artifactsDir || (!options.validateCapabilities && (!options.reviewKind || rawPackageBytes.length === 0))) {
-    await finishFailure('input_invalid');
+  if (inputError || !options.orchestrator || options.orchestrator === 'agy' || !options.artifactsDir || (!options.validateCapabilities && (!options.reviewKind || rawPackageBytes.length === 0))) {
+    await finishFailure('input_invalid', inputError ? { detail: inputError.message } : {});
     return;
   }
   if (options.reviewerStation && !options.validateCapabilities && (!/^[a-f0-9]{64}$/.test(options.candidateDigest ?? '') || !rawPackageBytes.includes(Buffer.from(options.candidateDigest)))) {

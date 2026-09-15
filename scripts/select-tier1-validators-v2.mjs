@@ -288,6 +288,36 @@ const CONTRACTS = [
       "test-framework/evals/tier-1/validate-wi546-cursor-live-acceptance.sh",
       "test-framework/evals/tier-1/validate-task-graph-cross-host.sh"
     ]
+  },
+  {
+    validator: "validate-two-box-transmutation.sh",
+    inputs: [
+      "README.md",
+      "schemas/receipts/control-plan.schema.json",
+      "schemas/receipts/plan-manifest.schema.json",
+      "scripts/blind-floor-route.mjs",
+      "scripts/lib/control-plan-validate.mjs",
+      "scripts/lib/isolated-plan-analysis.mjs",
+      "scripts/lib/plan-manifest-contract.mjs",
+      "scripts/lib/receipt-issuance-epoch.mjs",
+      "scripts/lib/research-decision.mjs",
+      "scripts/lib/review-inputs.mjs",
+      "scripts/lib/transmutation-seal.mjs",
+      "scripts/lib/two-box-protocol.mjs",
+      "scripts/lib/two-box-role-launch.mjs",
+      "scripts/lib/two-box-scout-assign.mjs",
+      "scripts/review-plan-codex.sh",
+      "scripts/review-plan-kimi.sh",
+      "scripts/two-box-plan.mjs",
+      "skills/blind-control-plan/SKILL.md",
+      "skills/research/SKILL.md",
+      "test-framework/evals/tier-1/validate-blind-floor.sh",
+      "test-framework/evals/tier-1/validate-two-box-transmutation.sh",
+      "test-framework/tests/research-decision.test.mjs",
+      "test-framework/tests/two-box-learning.test.mjs",
+      "test-framework/tests/two-box-plan.test.mjs",
+      "test-framework/tests/two-box-receipts.test.mjs"
+    ]
   }
 ];
 

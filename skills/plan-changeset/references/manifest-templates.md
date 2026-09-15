@@ -100,7 +100,7 @@ Include:
 
 ### 7a. Execution Command Sequence
 
-Legacy v1–3 and dispatch use a single, copy-pasteable, non-interactive fenced `bash` block detailing the sequential CLI execution flow:
+Historical v1–3 (readers only) and dispatch use a single, copy-pasteable, non-interactive fenced `bash` block detailing the sequential CLI execution flow:
 1. Branch/Worktree creation.
 2. Dependency installations.
 3. Host-adaptive file patching (using replace/edit tools for native hosts, or fallback heredocs for shell-only).
@@ -142,7 +142,11 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P5-
 node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-HandoffSelfVerify --evidence command_output:.svc/plan-changeset-self-verify.log
 ```
 
-## Explicit inline v4 body and generated views
+## Two-Box, Deterministic Transmutation, and explicit v5 body
+
+New issuance is schema_version 5 for both inline and dispatch. Historical v1–4 plan-manifest and v1 control-plan remain schema-readable and non-executable; the sole pinned genuine bootstrap v4 snapshot is the only active v4 execution exception. Do not issue new v3/v4. Do not copy a permissive v4 extra field into v5. No optional arbitrary-object escape hatch. This is not the old F>=B floor, not an opt-in/kill switch, and not mandatory external research. Repository reading is analysis; `researchDecision` from `scripts/lib/research-decision.mjs` is the sole external-research predicate.
+
+Flow: original requirements → `node scripts/two-box-plan.mjs --input <json> [--mode prepare|live|OFFLINE] [--out <json>]` (default prepare; OFFLINE is named fixtures only and cannot issue control-plan receipts; `--self-check` is offline with zero provider calls) → exactly two Contract-only scout processes → Contract revised preserved as a distinct object → assessor → reconcile chosen requirements into living specs/designs → prepare complete v5 → self-review + existing holistic `review-plan` once → persist a separate seal envelope → execute. `runTwoBox` ignores caller `eligible` and uses existing protected dispatch resolution. Prepare has no completed control ref. LIVE may complete control-plan v2 after all six stages; OFFLINE never promotes to LIVE issuance.
 
 Use one complete plan-manifest receipt body between these exact markers, with one fenced json block:
 
@@ -152,7 +156,15 @@ Use one complete plan-manifest receipt body between these exact markers, with on
     ```
     <!-- /SVC_PLAN_BODY -->
 
-The placeholder above describes placement, not a valid plan. Author receipt_type=plan-manifest, schema_version=4, mode=inline, wi, a fixed authoring timestamp, scope, dependencies, decision_trace, task_graph, validation_plan, risk_rollback, execution_command_sequence and ac_digests. `schemas/receipts/plan-manifest.schema.json` is the shape contract.
+The placeholder above describes placement, not a valid plan. Author receipt_type=plan-manifest, schema_version=5, mode=inline|dispatch, wi, a fixed authoring timestamp, scope, dependencies, decision_trace, task_graph, validation_plan, risk_rollback, execution_command_sequence, ac_digests, planning_contract, implementation_approach, and executor_discretion. `schemas/receipts/plan-manifest.schema.json` is the shape contract. v5 is strict: unknown keys are rejected; do not copy a permissive v4 extra field into v5.
+
+`planning_contract` has exactly: `kind` (two_box|lightweight); `original_requirements_ref` (ObjectRef); two_box: `source_snapshot_ref` and `control_plan_ref` (ObjectRefs); lightweight: `eligibility_ref` (ObjectRef) and `eligibility_tree` (DigestRef of the bound tree). Variant-specific fields are forbidden on the other kind. Optional legacy `sealed`, `sealed_at`, `semantic_contract_sha256` are never authority (default absent). The separate seal ref is supplied outside the body.
+
+`implementation_approach` is an array of `{id,requirement_ids,source_ids,approach,interfaces,state_and_ownership,failure_and_recovery,task_ids,validation_ids}`; ID arrays are nonempty unique strings; descriptive fields are substantive strings (explicit justified N/A allowed). Every original requirement must be covered; every linked task/validation must exist; for two_box, source_ids must be actual assessor-selected source IDs.
+
+`executor_discretion` is exactly `{local_repairs,amendment_triggers,disagreement_protocol}`: first two nonempty arrays of strings, protocol a substantive string. All three v5 objects enter the semantic digest (`semanticContractDigest`), which excludes only timestamp, tree_hash, target_sha, planning_contract.sealed, planning_contract.sealed_at, and planning_contract.semantic_contract_sha256.
+
+Strict v5 `risk_rollback` is `{risks,rollback,verification}` (risks: string array; others strings). Dispatch `changeset_blueprints` are `{file,action,blueprint}` covering the included file set once; CREATE/MODIFY need substantive implementation content, DELETE a reason. Inline tasks retain the historical v4 exact shape and hashed original context. `validatePlanBody(body,{readSpec,readFile})` is schema plus local semantic completeness, not current issuance. Export `validatePlanSchema(body)` for strict schema-only v5 validation. `parsePlanBytes(markdown)` exposes exact JSON bytes from one SVC_PLAN_BODY fenced block; parsePlanManifest delegates to it.
 
 - task_graph: unique string id, exact files, blocked_by IDs, ac_ids, validation_ids, context_refs. Every AC has an implementing task and linked validation.
 - validation_plan: id, ac_ids, observation_kind (source/unit/browser/device/hosted/performance), executable command, expected_outcome and why that observation is sufficient.
@@ -160,8 +172,12 @@ The placeholder above describes placement, not a valid plan. Author receipt_type
 - execution_command_sequence: increasing step integers and either command + expected_outcome, or producer={artifact,field,command}, verifier={command,expected_outcome}, consumer_skill=land-changeset|verify-promotion, expected_outcome. Existing release adapters produce and verify actual identities. No task-ID mapping, producer scheduling or shell interpolation of artifact fields is introduced.
 - ac_digests: canonical spec_path, normalized AC hash from scripts/lib/normalize-ac-table.mjs and the exact AC entry set. Digest prose only routes attention. The original AC section accompanies handoff.
 
-Run `node scripts/prepare-plan-handoff.mjs --capabilities` before issuance. Run `node scripts/prepare-plan-handoff.mjs --manifest <path> --write --out .svc/external-review-artifacts/plan-handoff/body.json` before review: it generates the bounded SVC_PLAN_VIEWS section and the emitter input, preserving other prose. Do not author AC/task/test views independently. `--check` verifies generated bytes and source/context bindings without writes; `--task <id>` emits original context. A changed binding requires explicit correction and affected review, never silent regeneration.
+Run `node scripts/prepare-plan-handoff.mjs --capabilities` before issuance. Pre-review: `node scripts/prepare-plan-handoff.mjs --manifest <path> --write --out .svc/external-review-artifacts/plan-handoff/body.json` generates the bounded SVC_PLAN_VIEWS section and the exact prepared JSON emitter input, preserving other prose. Do not author AC/task/test views independently. `--check` verifies generated bytes and source/context bindings without writes. `--task <id>` emits original context for execution and requires a verified transmutation seal; it must not rewrite reviewed bytes. A changed binding requires explicit correction and affected review, never silent regeneration. Do not treat `--write --out` as a seal or as autogenerated success.
 
-Keep the existing file/action scope table and Prerequisite Alignment Matrix. C7 validates the v4 body instead of demanding a future branch-to-merge shell transcript; all existing C9/authority/receipt requirements remain. Stage the reviewed manifest, authoritative spec and immutable context inputs before emission: the emitter validates the frozen Git index, so unstaged source bytes cannot certify it. Pass the generated body to emit-receipt; it remains the only canonical receipt writer. Old v3 inline plans and complete dispatch packets remain valid.
+Keep the existing file/action scope table and Prerequisite Alignment Matrix. C7 validates the v5 body instead of demanding a future branch-to-merge shell transcript; all existing C9/authority/receipt requirements remain. Stage the reviewed manifest, authoritative spec and immutable context inputs before emission: the emitter validates the frozen Git index, so unstaged source bytes cannot certify it. Pass the exact prepared JSON to `node scripts/emit-receipt.mjs --type plan-manifest --wi <WI> --body <exact-prepared.json> --manifest <path> --seal-ref <ObjectRef or SHA hex>` with no semantic additions to `--body`. Persist the seal envelope externally (`createTransmutationSeal`); verify with `verifyTransmutationSeal` and `verifyReviewerEvidence` on the actual review-plan receipt. `assertCurrentIssuance` is required for emit. Historical v3 inline plans and complete dispatch packets remain readable and non-executable. Do not rewrite reviewed JSON/Markdown to `sealed:true`.
+
+Local repairs (record reason+evidence, then relevant revalidation): missing import of an already-approved dependency; in-scope task-caused syntax/type/test/naming fixes; justified reversible alternative preserving scope/behavior/API/state/AC/proof/authority. Amendments (reopen the affected source decision/contract and review proof using already-given owner intent; do not repeatedly ask routine permission): new/upgraded dependency; config/env; external side effect; API/behavior; architecture/state ownership; larger paths/authority; changed proof/AC. Never silent rewrite or relax tests.
 
 Capability identity is the framework source/install package reported by --capabilities. The product Git candidate supplies its own spec and context bytes; it need not vendor the framework's five helper/schema files. Validate package compatibility at its canonical source_root and requirements at the product's frozen candidate, keeping these separate identities explicit.
+
+After the existing review passes, run `node scripts/prepare-plan-handoff.mjs --manifest <manifest.md> --seal-after-review <review-receipt-ObjectRef-SHA256>`. This verifies the signed review and stores the separate seal plus a repository-shared locator. The locator only finds evidence; every `--task` handoff revalidates it. Pass the returned seal ref to `emit-receipt --seal-ref`. Neither sealing nor handoff rewrites reviewed bytes.

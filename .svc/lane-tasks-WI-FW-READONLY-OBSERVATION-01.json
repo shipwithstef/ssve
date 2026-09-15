@@ -2,7 +2,7 @@
   "schema_version": 1,
   "wi": "WI-FW-READONLY-OBSERVATION-01",
   "lane": "bugfix",
-  "status": "in_progress",
+  "status": "completed",
   "created": "2026-09-08T15:43:57.894Z",
   "tasks": [
     {
@@ -14,7 +14,15 @@
       "skill_receipt": {
         "skill": "route-workflow",
         "loaded_at": "2026-09-08T16:46:24.464Z",
-        "loaded_via": "manual"
+        "loaded_via": "manual",
+        "phases_executed": [
+          { "id": "P1-SessionContextLoad", "ts": "2026-09-08T16:46:24.464Z", "evidence_artifacts": [{ "type": "file", "path": ".svc/lane-tasks-WI-FW-READONLY-OBSERVATION-01.json" }] },
+          { "id": "P2-IntentNormalizationAndCorrection", "ts": "2026-09-08T16:46:24.480Z", "evidence_artifacts": [{ "type": "file", "path": ".svc/lane-tasks-WI-FW-READONLY-OBSERVATION-01.json" }] },
+          { "id": "P3-StateInitializationAndLaneRouting", "ts": "2026-09-08T16:46:24.500Z", "evidence_artifacts": [{ "type": "file", "path": ".svc/lane-tasks-WI-FW-READONLY-OBSERVATION-01.json" }] },
+          { "id": "P4-ConcernAndPreDispatchGate", "ts": "2026-09-08T16:46:24.520Z", "evidence_artifacts": [{ "type": "file", "path": ".svc/lane-tasks-WI-FW-READONLY-OBSERVATION-01.json" }] },
+          { "id": "P5-TaskGraphDispatchAndEvidenceObligations", "ts": "2026-09-08T16:46:24.540Z", "evidence_artifacts": [{ "type": "file", "path": ".svc/lane-tasks-WI-FW-READONLY-OBSERVATION-01.json" }] },
+          { "id": "P6-SelfVerifyDecisionLogContinuation", "ts": "2026-09-08T16:46:24.560Z", "evidence_artifacts": [{ "type": "file", "path": ".svc/lane-tasks-WI-FW-READONLY-OBSERVATION-01.json" }] }
+        ]
       },
       "delivery_attempt": 1,
       "delivery_started_at": "2026-09-08T15:44:26.650Z",
@@ -61,7 +69,13 @@
       "skill_receipt": {
         "skill": "execute-changeset",
         "loaded_at": "2026-09-08T16:46:25.502Z",
-        "loaded_via": "manual"
+        "loaded_via": "manual",
+        "phases_executed": [
+          { "id": "P1-DispatchPreflight", "ts": "2026-09-08T16:46:25.502Z", "evidence_artifacts": [{ "type": "file", "path": ".svc/lane-tasks-WI-FW-READONLY-OBSERVATION-01.json" }] },
+          { "id": "P2-ApplyPlan", "ts": "2026-09-08T16:46:25.540Z", "evidence_artifacts": [{ "type": "file", "path": ".svc/lane-tasks-WI-FW-READONLY-OBSERVATION-01.json" }] },
+          { "id": "P3-Verification", "ts": "2026-09-08T16:46:25.580Z", "evidence_artifacts": [{ "type": "file", "path": ".svc/lane-tasks-WI-FW-READONLY-OBSERVATION-01.json" }] },
+          { "id": "P4-Checkpoint", "ts": "2026-09-08T16:46:25.673Z", "evidence_artifacts": [{ "type": "file", "path": ".svc/lane-tasks-WI-FW-READONLY-OBSERVATION-01.json" }] }
+        ]
       },
       "completed_at": "2026-09-08T16:46:25.673Z"
     },

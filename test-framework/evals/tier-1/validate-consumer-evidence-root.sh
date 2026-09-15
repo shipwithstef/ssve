@@ -40,6 +40,7 @@ import { pathToFileURL } from "node:url";
 
 const [root, tmp, checker] = process.argv.slice(2);
 const { EXTERNAL_REVIEW_LAUNCHER_VERSION } = await import(pathToFileURL(path.join(root, "scripts/run-external-review.mjs")));
+const { assertCurrentExecution, loadPlanAuthority } = await import(pathToFileURL(path.join(root, "scripts/lib/receipt-issuance-epoch.mjs")).href);
 const wi = "WI-T554";
 const sha = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 const run = (cmd, args, opts = {}) => {
@@ -262,7 +263,7 @@ const reviewPlan = {
     parse_collect_evidence: [],
   },
 };
-// schema_version 1 plan/exec — grandfathered shapes used by other tier-1 fixtures
+// schema_version 1 plan/exec — OFFLINE historical fixtures; not current execution authority
 const planManifest = {
   receipt_type: "plan-manifest",
   schema_version: 1,
@@ -322,20 +323,47 @@ const emitReview = spawnSync(
 );
 assert.equal(emitReview.status, 0, `emit review-plan failed: ${emitReview.stderr || emitReview.stdout}`);
 
-// Central checker (SCRIPT_DIR under framework) with cwd = consumer.
+const isolatedEnv = {
+  ...process.env,
+  GIT_ALTERNATE_OBJECT_DIRECTORIES: "",
+  SVC_REVIEW_EVIDENCE_STORE: "",
+};
+const historical = spawnSync(process.execPath, [checker, "--sha", head, "--wi", wi, "--historical-type", "plan-manifest"], {
+  cwd: consumer,
+  encoding: "utf8",
+  env: isolatedEnv,
+});
+assert.equal(historical.status, 0, `historical fixture must remain readable without a consumer\n${historical.stderr || historical.stdout}`);
+const historicalBody = JSON.parse(historical.stdout);
+assert.equal(historicalBody.executable, false);
+assert.equal(historicalBody.kind, "historical");
+
 const check = () =>
   spawnSync(process.execPath, [checker, "--sha", head, "--wi", wi, "--consumer", "execute-changeset"], {
     cwd: consumer,
     encoding: "utf8",
-    env: {
-      ...process.env,
-      GIT_ALTERNATE_OBJECT_DIRECTORIES: "",
-      SVC_REVIEW_EVIDENCE_STORE: "",
-    },
+    env: isolatedEnv,
   });
+const execConsumer = check();
+assert.notEqual(execConsumer.status, 0, "execute-changeset must reject unsealed historical plan");
+assert.match(`${execConsumer.stderr}\n${execConsumer.stdout}`, /current plan execution/);
+assert.throws(() => assertCurrentExecution({
+  consumerRoot: consumer,
+  body: planManifest,
+  planBytes: Buffer.from(JSON.stringify(planManifest)),
+  manifestPath: "docs/plans/two-box-transmutation/manifest.md",
+}), /schema_version 5|bootstrap|issuance|seal|authority/);
+assert.throws(() => loadPlanAuthority({ consumerRoot: consumer, body: planManifest }), /schema_version 5|bootstrap|authority/);
 
-const good = check();
-assert.equal(good.status, 0, `valid consumer evidence must pass central checker\n${good.stderr || good.stdout}`);
+const previousCwd = process.cwd();
+process.chdir(consumer);
+const { validateReceipt } = await import(pathToFileURL(checker).href);
+try {
+  const goodReview = validateReceipt("review-plan", reviewPlan, head);
+  assert.equal(goodReview.valid, true, `valid consumer evidence must pass central checker\n${goodReview.reasons.join("; ")}`);
+} finally {
+  process.chdir(previousCwd);
+}
 
 // Tamper candidate digest in the note envelope; keep launcher bytes intact.
 const show = spawnSync("git", ["notes", "--ref=svc-receipts", "show", head], {
@@ -356,9 +384,14 @@ const tamper = spawnSync("git", ["notes", "--ref=svc-receipts", "add", "-f", "-F
 assert.equal(tamper.status, 0, tamper.stderr);
 // Drop mirror cache so the checker re-reads the tampered note.
 fs.rmSync(path.join(consumer, ".svc/receipts"), { recursive: true, force: true });
-const bad = check();
-assert.notEqual(bad.status, 0, "candidate digest mismatch must fail closed");
-assert.match(`${bad.stderr}\n${bad.stdout}`, /candidate|digest|evidence|invalid|missing/i);
+process.chdir(consumer);
+try {
+  const badReview = validateReceipt("review-plan", target, head);
+  assert.equal(badReview.valid, false, "candidate digest mismatch must fail closed");
+  assert.match(badReview.reasons.join("\n"), /candidate|digest|evidence|invalid|missing/i);
+} finally {
+  process.chdir(previousCwd);
+}
 NODE
 
 echo "PASS: central check-chain-receipts uses consumer repoRootForCache for reviewer evidence"

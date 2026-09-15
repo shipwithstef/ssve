@@ -10,6 +10,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { validateResearchGraph } from "./lib/research-decision.mjs";
 
 const CUTOFF = Date.parse("2026-05-11T00:00:00.000Z");
 const EVIDENCE_KEYS = [
@@ -227,9 +228,6 @@ function validateGraph(graph, filePath, validSkipIds) {
         addIssue(issues, `solution confidence required_skills omits ${skill}`);
       }
     }
-    if (mode !== "intake_only" && !taskSkills.has("research") && skipsFor(graph, "research", validSkipIds).length === 0) {
-      addIssue(issues, "solution confidence graph lacks research task or valid skip for world grounding");
-    }
     const planTask = firstTaskWithSkill(tasks, "plan-changeset");
     if (!planTask && mode !== "intake_only") {
       addIssue(issues, "solution confidence graph lacks plan-changeset task");
@@ -377,6 +375,10 @@ function validateGraph(graph, filePath, validSkipIds) {
     if (completed && evidence.session_forensics !== "satisfied" && evidence.session_forensics !== "n/a") {
       addIssue(issues, "retroactive/challenged completed graph lacks session forensics evidence satisfaction or valid N/A");
     }
+  }
+
+  for (const issue of validateResearchGraph(graph, { validSkipIds })) {
+    addIssue(issues, issue);
   }
 
   return { pass: issues.length === 0, issues, legacy: false };

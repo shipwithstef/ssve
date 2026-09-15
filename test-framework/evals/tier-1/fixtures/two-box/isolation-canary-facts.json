@@ -1,0 +1,5 @@
+{
+  "schema_version": 1,
+  "evidence_class": "OFFLINE",
+  "facts": "# Widget product facts\n\nFACTUAL_MARKER: LIVE_CANARY_FACT_MARKER_7F3A9C\n\nThe widget exports numeric addition and a string report. The report includes\nthe factual marker. Existing tests assert numeric addition and marker retention.\nA scale factor must be a positive integer; the report contract stays stable.\n"
+}

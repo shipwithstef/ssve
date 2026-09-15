@@ -1,77 +1,753 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "svc-receipt-control-plan",
-  "title": "control-plan receipt (WI-410 blind-control-plan floor)",
+  "title": "control-plan receipt (v1 WI-410 floor; v2 Two-Box LIVE)",
   "type": "object",
-  "additionalProperties": true,
   "required": [
     "receipt_type",
     "schema_version",
-    "wi",
-    "blind_model",
-    "framework_model",
-    "profile",
-    "registry_version",
-    "floor_verdict",
-    "element_ledger",
-    "judge",
-    "tree_hash",
-    "timestamp"
+    "wi"
   ],
   "properties": {
-    "receipt_type": { "const": "control-plan" },
-    "schema_version": { "type": "integer", "minimum": 1 },
-    "wi": { "type": "string", "pattern": "^WI-" },
-    "blind_model": { "type": "string", "minLength": 1, "description": "model family/id that authored the context-starved blind plan B" },
-    "framework_model": { "type": "string", "minLength": 1, "description": "model that authored the framework plan F" },
-    "profile": { "type": "string", "minLength": 1 },
-    "registry_version": { "type": "string", "minLength": 1, "description": "model-registry version — anchors the v2 model-upgrade rot sentinel" },
-    "floor_verdict": {
-      "enum": ["pass", "blind-adopted", "fail"],
-      "description": "pass = F shipped, zero uncertified REMOVE/ALTER; blind-adopted = B shipped verbatim (retention escape hatch); fail = uncertified removal/weakening detected (WARN in v1, BLOCK in v2)"
+    "receipt_type": {
+      "const": "control-plan"
     },
-    "element_ledger": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["kept", "added", "refined", "removed", "altered"],
-      "properties": {
-        "kept": { "type": "array", "items": { "type": "string" } },
-        "added": { "type": "array", "items": { "type": "string" } },
-        "refined": { "type": "array", "items": { "type": "string" }, "description": "changed B-elements with a valid cross-family certified_strict_improvement" },
-        "removed": { "type": "array", "items": { "type": "string" }, "description": "B-elements absent from F WITHOUT a valid cross-family certification (violations)" },
-        "altered": { "type": "array", "items": { "type": "string" }, "description": "changed B-elements WITHOUT a valid cross-family certification (violations)" }
+    "schema_version": {
+      "type": "integer",
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "wi": {
+      "type": "string",
+      "pattern": "^WI-"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": 1
+          }
+        },
+        "required": [
+          "schema_version"
+        ]
+      },
+      "then": {
+        "$ref": "#/$defs/v1"
       }
     },
-    "judge": {
-      "type": "object",
-      "additionalProperties": true,
-      "required": ["reviewer_host", "reviewer_family", "certifications"],
-      "properties": {
-        "reviewer_host": { "type": "string" },
-        "reviewer_family": {
-          "type": "string",
-          "description": "MUST differ from the orchestrator family (anthropic). check-chain-receipts re-derives this; a pass/refined row certified by reviewer_family==anthropic is a forged verdict (rejected)."
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": 2
+          }
         },
-        "certifications": {
+        "required": [
+          "schema_version"
+        ]
+      },
+      "then": {
+        "$ref": "#/$defs/v2"
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "git40": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "objectRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "sha256"
+      ],
+      "properties": {
+        "type": {
+          "const": "object"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "scoutBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "report_ref",
+        "coverage_ref"
+      ],
+      "properties": {
+        "role": {
+          "type": "string",
+          "enum": [
+            "scout_forward",
+            "scout_reverse"
+          ]
+        },
+        "report_ref": {
+          "$ref": "#/$defs/objectRef"
+        },
+        "coverage_ref": {
+          "$ref": "#/$defs/objectRef"
+        }
+      }
+    },
+    "selectedDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "original_requirement_id",
+        "decision_id",
+        "source_ids",
+        "origin",
+        "reason"
+      ],
+      "properties": {
+        "original_requirement_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decision_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_ids": {
           "type": "array",
+          "minItems": 1,
           "items": {
-            "type": "object",
-            "additionalProperties": true,
-            "required": ["key", "certified_strict_improvement", "reviewer_family"],
-            "properties": {
-              "key": { "type": "string" },
-              "certified_strict_improvement": { "type": "boolean" },
-              "reviewer_family": { "type": "string" }
-            }
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "origin": {
+          "type": "string",
+          "enum": [
+            "open_box",
+            "contract_box",
+            "combination"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "rejectionDisposition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision_id",
+        "disposition",
+        "reason"
+      ],
+      "properties": {
+        "decision_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "disposition": {
+          "type": "string",
+          "enum": [
+            "reject",
+            "reject_innovation"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "unresolvedConflict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "original_requirement_ids",
+        "reason"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "original_requirement_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "disposition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target_id",
+        "target_kind",
+        "disposition",
+        "reason"
+      ],
+      "properties": {
+        "target_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target_kind": {
+          "type": "string",
+          "enum": [
+            "finding",
+            "consequential_gap"
+          ]
+        },
+        "disposition": {
+          "type": "string",
+          "enum": [
+            "accept",
+            "reject",
+            "reject_innovation",
+            "defer"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "sourceIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checkout",
+        "gitCommonDir",
+        "repoRoot"
+      ],
+      "properties": {
+        "checkout": {
+          "type": "string",
+          "minLength": 1
+        },
+        "gitCommonDir": {
+          "type": "string",
+          "minLength": 1
+        },
+        "repoRoot": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "scopedFileDigest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256",
+        "truncated"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity",
+        "base_sha",
+        "tree",
+        "scoped_file_digests"
+      ],
+      "properties": {
+        "identity": {
+          "$ref": "#/$defs/sourceIdentity"
+        },
+        "base_sha": {
+          "$ref": "#/$defs/git40"
+        },
+        "tree": {
+          "$ref": "#/$defs/git40"
+        },
+        "scoped_file_digests": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/scopedFileDigest"
           }
         }
       }
     },
-    "contamination_note": {
-      "type": "string",
-      "description": "honest disclosure: B was authored context-starved but by the same model family as F, so it is not provably framework-free (WI-410 accepted risk)"
+    "tuple": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "host",
+        "family",
+        "model",
+        "effort"
+      ],
+      "properties": {
+        "host": {
+          "type": "string",
+          "minLength": 1
+        },
+        "family": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "effort": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
     },
-    "tree_hash": { "type": "string", "description": "WI-396 squash-invariant bind" },
-    "timestamp": { "type": "string" }
+    "nativeWrapper": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "sha256"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "permissions",
+            "collaboration",
+            "multi_agent"
+          ]
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "sourceExposure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "in_declared_payload"
+      ],
+      "properties": {
+        "in_declared_payload": {
+          "type": "boolean"
+        }
+      }
+    },
+    "contaminationDiagnosis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ok",
+        "unknown",
+        "reasons",
+        "native_wrappers",
+        "exact_prompt_count",
+        "source_exposure"
+      ],
+      "properties": {
+        "ok": {
+          "const": true
+        },
+        "unknown": {
+          "const": false
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "native_wrappers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nativeWrapper"
+          }
+        },
+        "exact_prompt_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "source_exposure": {
+          "$ref": "#/$defs/sourceExposure"
+        }
+      }
+    },
+    "chosenSolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "winner",
+        "selected_decisions",
+        "rejection_dispositions",
+        "unresolved_conflicts"
+      ],
+      "properties": {
+        "winner": {
+          "type": "string",
+          "enum": [
+            "open_win",
+            "contract_win",
+            "combination"
+          ]
+        },
+        "selected_decisions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/selectedDecision"
+          }
+        },
+        "rejection_dispositions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/rejectionDisposition"
+          }
+        },
+        "unresolved_conflicts": {
+          "type": "array",
+          "maxItems": 0,
+          "items": {
+            "$ref": "#/$defs/unresolvedConflict"
+          }
+        }
+      }
+    },
+    "v1": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "receipt_type",
+        "schema_version",
+        "wi",
+        "blind_model",
+        "framework_model",
+        "profile",
+        "registry_version",
+        "floor_verdict",
+        "element_ledger",
+        "judge",
+        "tree_hash",
+        "timestamp"
+      ],
+      "properties": {
+        "receipt_type": {
+          "const": "control-plan"
+        },
+        "schema_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "wi": {
+          "type": "string",
+          "pattern": "^WI-"
+        },
+        "blind_model": {
+          "type": "string",
+          "minLength": 1,
+          "description": "model family/id that authored the context-starved blind plan B"
+        },
+        "framework_model": {
+          "type": "string",
+          "minLength": 1,
+          "description": "model that authored the framework plan F"
+        },
+        "profile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "registry_version": {
+          "type": "string",
+          "minLength": 1,
+          "description": "model-registry version \u2014 anchors the v2 model-upgrade rot sentinel"
+        },
+        "floor_verdict": {
+          "enum": [
+            "pass",
+            "blind-adopted",
+            "fail"
+          ],
+          "description": "pass = F shipped, zero uncertified REMOVE/ALTER; blind-adopted = B shipped verbatim (retention escape hatch); fail = uncertified removal/weakening detected (WARN in v1, BLOCK in v2)"
+        },
+        "element_ledger": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kept",
+            "added",
+            "refined",
+            "removed",
+            "altered"
+          ],
+          "properties": {
+            "kept": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "added": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "refined": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "changed B-elements with a valid cross-family certified_strict_improvement"
+            },
+            "removed": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "B-elements absent from F WITHOUT a valid cross-family certification (violations)"
+            },
+            "altered": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "changed B-elements WITHOUT a valid cross-family certification (violations)"
+            }
+          }
+        },
+        "judge": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "reviewer_host",
+            "reviewer_family",
+            "certifications"
+          ],
+          "properties": {
+            "reviewer_host": {
+              "type": "string"
+            },
+            "reviewer_family": {
+              "type": "string",
+              "description": "MUST differ from the orchestrator family (anthropic). check-chain-receipts re-derives this; a pass/refined row certified by reviewer_family==anthropic is a forged verdict (rejected)."
+            },
+            "certifications": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true,
+                "required": [
+                  "key",
+                  "certified_strict_improvement",
+                  "reviewer_family"
+                ],
+                "properties": {
+                  "key": {
+                    "type": "string"
+                  },
+                  "certified_strict_improvement": {
+                    "type": "boolean"
+                  },
+                  "reviewer_family": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "contamination_note": {
+          "type": "string",
+          "description": "honest disclosure: B was authored context-starved but by the same model family as F, so it is not provably framework-free (WI-410 accepted risk)"
+        },
+        "tree_hash": {
+          "type": "string",
+          "description": "WI-396 squash-invariant bind"
+        },
+        "timestamp": {
+          "type": "string"
+        }
+      }
+    },
+    "v2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "receipt_type",
+        "schema_version",
+        "wi",
+        "original_requirements_ref",
+        "frozen_facts_ref",
+        "source_snapshot_ref",
+        "assessor_ref",
+        "source",
+        "policy_digest",
+        "prompt_digest",
+        "tuple",
+        "open_original_ref",
+        "contract_original_ref",
+        "contract_revised_ref",
+        "scout_reports",
+        "chosen_solution",
+        "dispositions",
+        "contamination_diagnosis",
+        "usage",
+        "cost",
+        "evidence_class",
+        "timestamp",
+        "tree_hash"
+      ],
+      "properties": {
+        "receipt_type": {
+          "const": "control-plan"
+        },
+        "schema_version": {
+          "const": 2
+        },
+        "wi": {
+          "type": "string",
+          "pattern": "^WI-"
+        },
+        "original_requirements_ref": {
+          "$ref": "#/$defs/objectRef"
+        },
+        "frozen_facts_ref": {
+          "$ref": "#/$defs/objectRef"
+        },
+        "source_snapshot_ref": {
+          "$ref": "#/$defs/objectRef"
+        },
+        "assessor_ref": {
+          "$ref": "#/$defs/objectRef"
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "policy_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "prompt_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "tuple": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "open_box",
+            "contract_box",
+            "scout_forward",
+            "scout_reverse",
+            "contract_revise",
+            "assessor"
+          ],
+          "properties": {
+            "open_box": {
+              "$ref": "#/$defs/tuple"
+            },
+            "contract_box": {
+              "$ref": "#/$defs/tuple"
+            },
+            "scout_forward": {
+              "$ref": "#/$defs/tuple"
+            },
+            "scout_reverse": {
+              "$ref": "#/$defs/tuple"
+            },
+            "contract_revise": {
+              "$ref": "#/$defs/tuple"
+            },
+            "assessor": {
+              "$ref": "#/$defs/tuple"
+            }
+          }
+        },
+        "open_original_ref": {
+          "$ref": "#/$defs/objectRef"
+        },
+        "contract_original_ref": {
+          "$ref": "#/$defs/objectRef"
+        },
+        "contract_revised_ref": {
+          "$ref": "#/$defs/objectRef"
+        },
+        "scout_reports": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/scoutBinding"
+          }
+        },
+        "chosen_solution": {
+          "$ref": "#/$defs/chosenSolution"
+        },
+        "dispositions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/disposition"
+          }
+        },
+        "contamination_diagnosis": {
+          "$ref": "#/$defs/contaminationDiagnosis"
+        },
+        "usage": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "cost": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "evidence_class": {
+          "const": "LIVE"
+        },
+        "timestamp": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tree_hash": {
+          "type": "string",
+          "pattern": "^([0-9a-f]{40}|[0-9a-f]{64})$"
+        }
+      }
+    }
   }
 }

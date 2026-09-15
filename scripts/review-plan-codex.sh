@@ -26,8 +26,48 @@ if [[ -z "$ORCHESTRATOR" || "$ORCHESTRATOR" == "agy" ]]; then
   exit 3
 fi
 
-PLAN_SHA="$(sha256sum "$PLAN" | awk '{print $1}')"
 CONTEXT_ROOT="$(git -C "$(dirname "$PLAN")" rev-parse --show-toplevel 2>/dev/null || pwd -P)"
+PLAN_FILE_ARGS=()
+if grep -Fq '<!-- SVC_PLAN_BODY -->' "$PLAN"; then
+  # Retain exact prepared bytes, including the authentic v4 bootstrap bytes.
+  PLAN_SHA="$(node --input-type=module - "$ROOT" "$CONTEXT_ROOT" "$PLAN" <<'NODE'
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import {pathToFileURL} from 'node:url';
+const [pkg,root,manifest] = process.argv.slice(2);
+const {parsePlanBytes,containedReader} = await import(pathToFileURL(path.join(pkg,'scripts/lib/plan-manifest-contract.mjs')));
+const {loadPlanAuthority} = await import(pathToFileURL(path.join(pkg,'scripts/lib/receipt-issuance-epoch.mjs')));
+const {withStateLock} = await import(pathToFileURL(path.join(pkg,'scripts/state-io.mjs')));
+const rel=path.relative(root,path.resolve(manifest)).split(path.sep).join('/');
+const markdown=containedReader(root)(rel);
+let bytes=parsePlanBytes(markdown);
+const body=JSON.parse(bytes);
+if(body.schema_version===4) bytes=loadPlanAuthority({consumerRoot:root,body}).planBytes;
+const sha=crypto.createHash('sha256').update(bytes).digest('hex');
+const dir=path.join(root,'.svc/external-review-artifacts/review-plan-inputs',sha);
+for(let p=dir;p!==root;p=path.dirname(p)) {
+  if(fs.existsSync(p) && fs.lstatSync(p).isSymbolicLink()) throw new Error('symlink review input path');
+  if(path.dirname(p)===p) throw new Error('review inputs outside consumer');
+}
+fs.mkdirSync(dir,{recursive:true,mode:0o700});
+for(const [name,content] of [['prepared-plan.json',bytes],['context-files.json',JSON.stringify([rel])+'\n']]) {
+  const target=path.join(dir,name);
+  withStateLock(target,()=>{
+    if(fs.existsSync(target)&&fs.lstatSync(target).isSymbolicLink())throw new Error('symlink review input');
+    const temp=target+'.'+process.pid+'.tmp';
+    try {fs.writeFileSync(temp,content,{flag:'wx',mode:0o600});fs.renameSync(temp,target);}
+    finally {if(fs.existsSync(temp))fs.unlinkSync(temp);}
+  });
+}
+process.stdout.write(sha);
+NODE
+)"
+  INPUT_DIR=".svc/external-review-artifacts/review-plan-inputs/$PLAN_SHA"
+  PLAN_FILE_ARGS=(--plan-file "$INPUT_DIR/prepared-plan.json" --context-files "$INPUT_DIR/context-files.json")
+else
+  PLAN_SHA="$(sha256sum "$PLAN" | awk '{print $1}')"
+fi
 ARTIFACTS="${SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR:-$ROOT/.svc/external-review-artifacts/plan/$PLAN_SHA/$(date -u +%Y%m%dT%H%M%SZ)-$$}"
 mkdir -p "$ARTIFACTS"
 SUMMARY="$ARTIFACTS/summary.json"
@@ -121,7 +161,7 @@ EOF
   cat "$PROTOCOL_REF"
   printf '\nPLAN TO REVIEW:\n'
   cat "$PLAN"
-} | node "$LAUNCHER" --orchestrator "$ORCHESTRATOR" --review-kind plan --candidate-digest "$PLAN_SHA" --context-root "$CONTEXT_ROOT" ${REVIEWER_ARGS[@]+"${REVIEWER_ARGS[@]}"} ${PHASE_ARGS[@]+"${PHASE_ARGS[@]}"} --artifacts-dir "$ARTIFACTS" > "$SUMMARY" || exit 1
+} | node "$LAUNCHER" --orchestrator "$ORCHESTRATOR" --review-kind plan --candidate-digest "$PLAN_SHA" --context-root "$CONTEXT_ROOT" ${REVIEWER_ARGS[@]+"${REVIEWER_ARGS[@]}"} ${PHASE_ARGS[@]+"${PHASE_ARGS[@]}"} ${PLAN_FILE_ARGS[@]+"${PLAN_FILE_ARGS[@]}"} --artifacts-dir "$ARTIFACTS" > "$SUMMARY" || exit 1
 
 FINDINGS="$(node -e 'const fs=require("fs");const s=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(!s.ok||!s.findings)process.exit(2);process.stdout.write(s.findings)' "$SUMMARY")" || {
   printf 'review-plan-codex: findings missing from launcher summary; artifact=%s\n' "$SUMMARY" >&2

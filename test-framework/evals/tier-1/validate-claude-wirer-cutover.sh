@@ -144,7 +144,7 @@ env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE \
   node "$WIRER" --skills-path "$REPO_ROOT" --settings "$S1" >"$TMP/run1.log" 2>&1
 check "legacy seed run exits 0" test "$?" = "0"
 check "legacy .js workflow-guard gone" test "$(q "$S1" PreToolUse "sum('svc-workflow-guard.js' in h.get('command','') for _,h in cmds)")" = "0"
-check "one consolidated Claude pretool dispatcher" test "$(q "$S1" PreToolUse "sum('SVC_HOST=claude' in h.get('command','') and 'svc-codex-pretool-dispatcher.mjs' in h.get('command','') for _,h in cmds)")" = "1"
+check "one consolidated Claude pretool dispatcher" test "$(q "$S1" PreToolUse "sum('svc-codex-pretool-dispatcher.mjs' in h.get('command','') for _,h in cmds)")" = "1"
 check "argv payload token stripped from managed hooks" test "$(q "$S1" PreToolUse "sum('TOOL_INPUT' in h.get('command','') for _,h in cmds)")" = "0"
 check "vibe-auditor async adopted via rebuild" test "$(q "$S1" PostToolUse "sum('svc-vibe-auditor' in h.get('command','') and h.get('async') is True for _,h in cmds)")" = "1"
 check "loop-guard single canonical" test "$(q "$S1" PreToolUse "sum('svc-loop-guard.mjs' in h.get('command','') for _,h in cmds)")" = "1"

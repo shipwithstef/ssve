@@ -46,7 +46,8 @@ import { verifyReviewerEvidence } from "./lib/reviewer-evidence.mjs";
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const SCHEMA_DIR = join(SCRIPT_DIR, "..", "schemas", "receipts");
 const SLOT_PREFIX = "slot::";
-export const PLAN_MANIFEST_MAX_VERSION = 4;
+export const PLAN_MANIFEST_MAX_VERSION = 5;
+import {assertCurrentIssuance,recordPlanAuthority,loadPlanAuthority} from "./lib/receipt-issuance-epoch.mjs";
 const planContract = existsSync(join(SCRIPT_DIR, "lib/plan-manifest-contract.mjs"))
   ? await import("./lib/plan-manifest-contract.mjs") : null;
 
@@ -68,6 +69,8 @@ function parseArgs(argv) {
     if (a === "--type") out.type = argv[++i];
     else if (a === "--wi") out.wi = argv[++i];
     else if (a === "--body") out.body = argv[++i];
+    else if (a === "--manifest") out.manifest = argv[++i];
+    else if (a === "--seal-ref") { const raw=argv[++i];out.sealRef=/^[a-f0-9]{64}$/.test(raw||"")?{type:"object",sha256:raw}:JSON.parse(raw); }
     else if (a === "--no-note") out.noNote = true;
     else if (a === "--sha") out.sha = argv[++i];
     else if (a === "--phase") out.phase = argv[++i];
@@ -169,7 +172,7 @@ function loadSchema(type) {
   catch (e) { throw new Error(`schema unavailable: ${type} (${e.message})`); }
 }
 
-function validateReceipt(type, body, sourceSha = null) {
+export function validateReceipt(type, body, sourceSha = null, authority = {}) {
   let schema;
   try {
     schema = loadSchema(type);
@@ -184,7 +187,7 @@ function validateReceipt(type, body, sourceSha = null) {
   }
   if (type === "plan-manifest") {
     if (!Number.isInteger(body.schema_version) || body.schema_version < 1 || body.schema_version > PLAN_MANIFEST_MAX_VERSION) return { valid: false, reasons: ["unsupported plan schema_version"] };
-    if (body.schema_version === 4) {
+    if (body.schema_version >= 4) {
       if (!planContract) return { valid: false, reasons: ["v4 plan helper unavailable"] };
       try {
         planContract.packageCapabilities();
@@ -195,6 +198,13 @@ function validateReceipt(type, body, sourceSha = null) {
         if (!result.ok) return { valid: false, reasons: result.errors };
       } catch (error) { return { valid: false, reasons: [error.message] }; }
     }
+  }
+  if (type === "plan-manifest" || type === "control-plan") {
+    try {
+      let inputs=authority;
+      if(type==="plan-manifest" && !inputs.planBytes) inputs={...loadPlanAuthority({consumerRoot:process.cwd(),body}),...inputs};
+      assertCurrentIssuance({consumerRoot:process.cwd(),receiptType:type,body,...inputs});
+    } catch(error) { return {valid:false,reasons:[error.message]}; }
   }
   let required = schema.required || [];
   // WI-381: the plan-manifest pipeline baton (ac_digests) is required only for
@@ -371,12 +381,12 @@ export function resolveMirrorPaths({ type, wi, phase = null, targetShaOverride =
   };
 }
 
-export function writeReceiptMirror({ type, wi, body, phase = null, targetShaOverride = null }) {
+export function writeReceiptMirror({ type, wi, body, phase = null, targetShaOverride = null, authority = {} }) {
   const resolved = resolveMirrorPaths({ type, wi, phase, targetShaOverride });
   const candidate = targetShaOverride || resolved.tree_hash;
-  const v = validateReceipt(type, body, candidate);
+  const v = validateReceipt(type, body, candidate, authority);
   if (!v.valid) throw new Error(`receipt invalid: ${v.reasons.join("; ")}`);
-  if (type === "plan-manifest" && body.schema_version === 4 && !targetShaOverride && git(["write-tree"]) !== candidate) throw new Error("candidate index changed during v4 validation; retry");
+  if (type === "plan-manifest" && body.schema_version >= 4 && !targetShaOverride && git(["write-tree"]) !== candidate) throw new Error("candidate index changed during v4 validation; retry");
   writeJsonAtomic(resolved.mirror_path, body);
   // Compatibility alias: preserve historical <type>.json readers only when this
   // does not clobber a different WI's receipt.
@@ -403,11 +413,19 @@ function main() {
   try { body = JSON.parse(raw); }
   catch (e) { fail(`body is not valid JSON: ${e.message}`, 1); }
 
+  const immutablePlan = args.type === "plan-manifest" || args.type === "control-plan";
+  if (!immutablePlan) {
   body.receipt_type = body.receipt_type || args.type;
   body.schema_version = body.schema_version || 1;
   body.wi = body.wi || args.wi;
   if (args.phase) body.phase = body.phase || args.phase;
   body.timestamp = body.timestamp || new Date().toISOString();
+  }
+  if (immutablePlan && (body.wi!==args.wi || body.receipt_type!==args.type)) fail("immutable planning receipt identity mismatch");
+  const authority = immutablePlan ? {planBytes:Buffer.from(raw),manifestPath:args.manifest,sealRef:args.sealRef} : {};
+  if (args.type === "plan-manifest" && [4,5].includes(body.schema_version) && !authority.manifestPath) {
+    try { Object.assign(authority,loadPlanAuthority({consumerRoot:process.cwd(),body}),{planBytes:Buffer.from(raw)}); } catch(error) { fail(error.message); }
+  }
 
   // Every review receipt produced after the WI-541 contract is v3. Historical
   // v1/v2 receipts remain readable, but the producer can no longer mint a new
@@ -435,7 +453,7 @@ function main() {
     } catch { /* fail-open here only means families stay as-is → check-chain re-derives + verifies */ }
   }
 
-  const v = validateReceipt(args.type, body, explicitTargetSha);
+  const v = validateReceipt(args.type, body, explicitTargetSha, authority);
   if (!v.valid) fail(`receipt invalid: ${v.reasons.join("; ")}`, 1);
 
   let targetSha = explicitTargetSha;
@@ -481,7 +499,7 @@ function main() {
     body.schema_version = Math.max(2, Number(body.schema_version) || 1);
   }
 
-  if (targetSha) {
+  if (targetSha && !immutablePlan) {
     body.target_sha = body.target_sha || targetSha;
     body.sha = body.sha || targetSha;
   }
@@ -494,6 +512,7 @@ function main() {
     }
   }
 
+  if(args.type === "plan-manifest") recordPlanAuthority({consumerRoot:process.cwd(),body,...authority});
   let noteWritten = false;
   let noteSlotKey = null;
   if (!args.noNote && targetSha) {
@@ -505,7 +524,7 @@ function main() {
     }
   }
 
-  const written = writeReceiptMirror({ type: args.type, wi: args.wi, body, phase: phaseIdentity, targetShaOverride: explicitTargetSha });
+  const written = writeReceiptMirror({ type: args.type, wi: args.wi, body, phase: phaseIdentity, targetShaOverride: explicitTargetSha, authority });
   mirrorPath = written.mirror_path;
   mirrorAliasPath = written.mirror_alias_path;
 

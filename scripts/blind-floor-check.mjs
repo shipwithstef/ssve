@@ -2,8 +2,8 @@
 /**
  * blind-floor-check.mjs — WI-410 blind-control-plan floor (the pure, deterministic core).
  *
- * Best-of-2 retention floor: classify every element of the blind plan B against the
- * framework plan F, and DECIDE whether F may ship (never worse than blind).
+ * Historical/read-only F>=B classifier. Not current control authority.
+ * Current orchestration: node scripts/two-box-plan.mjs (strict control-plan v2).
  *
  * Invariant (honest bound):
  *   - KEEP / ADD / certified-REFINE  → allowed.
@@ -52,6 +52,7 @@ function parseArgs(argv) {
     else if (a === "--verdicts") out.verdicts = argv[++i];
     else if (a === "--adopt-blind") out.adoptBlind = true;
     else if (a === "--orchestrator-family") out.orchestratorFamily = argv[++i];
+    else if (a === "--as-current" || a === "--current") fail("not current control authority; use node scripts/two-box-plan.mjs");
   }
   return out;
 }
@@ -160,6 +161,8 @@ function main() {
   const verdicts = args.verdicts ? readJson(args.verdicts, "verdicts") : null;
 
   const result = classify(B, F, verdicts, args.orchestratorFamily, args.adoptBlind);
+
+  process.stderr.write("blind-floor-check: historical/read-only F>=B inspection; not current control authority. Current orchestration: node scripts/two-box-plan.mjs (control-plan v2).\n");
 
   // Deterministic output: ledger + verdict ONLY (no timestamp → run-twice golden).
   process.stdout.write(JSON.stringify({

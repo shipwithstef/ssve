@@ -243,6 +243,21 @@ elif [[ "$HARNESS" == "opencode" ]]; then
     #   --pure                          skip plugin loading (trimmer context)
     # Prompt goes as positional arg at the end.
     EXEC_ARGV=(opencode run --model "$FULL_MODEL" --dangerously-skip-permissions --pure)
+elif [[ "$HARNESS" == "cursor" ]]; then
+    # --- Cursor Agent CLI Harness ---
+    if ! command -v agent &>/dev/null; then
+      echo "ERROR: cursor harness requested but 'agent' binary not found on PATH." >&2
+      echo "Grok couldn't start safely. Your work is saved." >&2
+      exit 1
+    fi
+    CURSOR_MODEL="${MODEL:-cursor-grok-4.6-xhigh}"
+    if ! agent models 2>/dev/null | grep -q "^${CURSOR_MODEL}\b"; then
+      echo "ERROR: requested model '$CURSOR_MODEL' is not available in cursor agent models" >&2
+      echo "Grok couldn't start safely. Your work is saved." >&2
+      exit 1
+    fi
+    echo "Grok is working on your change."
+    EXEC_ARGV=(agent --print --model "$CURSOR_MODEL" --sandbox disabled --force --trust --workspace "$(pwd -P)")
 else
     echo "ERROR: unsupported harness: $HARNESS" >&2
     exit 2
@@ -251,7 +266,14 @@ fi
 CONTAINMENT_ARGV=()
 if [[ -n "$DELEGATION_ID" ]]; then
   GIT_RUNTIME_ROOT="$(git rev-parse --absolute-git-dir)"
-  CONTAINMENT_ARGV=(node "$FRAMEWORK_ROOT/scripts/svc-contained-exec.mjs" run --root "$(pwd -P)" --policy "$TRANSPORT_RECEIPT" --runtime-root "$GIT_RUNTIME_ROOT" --)
+  if [[ "$HARNESS" == "cursor" ]]; then
+    CONTAINMENT_ARGV=(node "$FRAMEWORK_ROOT/scripts/svc-contained-exec.mjs" run --root "$(pwd -P)" --profile cursor --policy "$TRANSPORT_RECEIPT" --runtime-root "$GIT_RUNTIME_ROOT" --)
+  else
+    CONTAINMENT_ARGV=(node "$FRAMEWORK_ROOT/scripts/svc-contained-exec.mjs" run --root "$(pwd -P)" --policy "$TRANSPORT_RECEIPT" --runtime-root "$GIT_RUNTIME_ROOT" --)
+  fi
+elif [[ "$HARNESS" == "cursor" ]]; then
+  FRAMEWORK_ROOT="${FRAMEWORK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+  CONTAINMENT_ARGV=(node "$FRAMEWORK_ROOT/scripts/svc-contained-exec.mjs" run --root "$(pwd -P)" --profile cursor --)
 fi
 
 echo "============================================================"
@@ -425,7 +447,24 @@ if [ -n "$WORKER_WI" ]; then
   fi
   write_worker_result "$RESULT_STATUS" "$EXIT_CODE" "$RUN_LOG"
   write_worker_progress "finished" "$RESULT_STATUS"
+  if [[ "$HARNESS" == "cursor" ]]; then
+    if [[ "$RESULT_STATUS" == "success" ]]; then
+      echo "Grok finished the changes; review is running."
+    else
+      echo "Grok couldn't start safely. Your work is saved." >&2
+    fi
+  fi
   exit "$EXIT_CODE"
 fi
 
-"${CONTAINMENT_ARGV[@]}" "${EXEC_ARGV[@]}" "$PROMPT"
+if "${CONTAINMENT_ARGV[@]}" "${EXEC_ARGV[@]}" "$PROMPT"; then
+  if [[ "$HARNESS" == "cursor" ]]; then
+    echo "Grok finished the changes; review is running."
+  fi
+else
+  EXIT_CODE=$?
+  if [[ "$HARNESS" == "cursor" ]]; then
+    echo "Grok couldn't start safely. Your work is saved." >&2
+  fi
+  exit "$EXIT_CODE"
+fi

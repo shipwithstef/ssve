@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "evidence_class": "OFFLINE",
+  "contract_source": "skills/execute-changeset/SKILL.md",
+  "notes": "Expected labels live only under expected and must be stripped before any model prompt. Mechanical scoring is not semantic proof.",
+  "cases": [
+    {
+      "case_id": "ED-01-missing-approved-import",
+      "title": "Approved missing import",
+      "owned_files": ["src/widget.mjs"],
+      "plan_approved_dependencies": ["node:fs"],
+      "proposed_change": "src/widget.mjs needs `import fs from \"node:fs\"` so it can call an already-approved helper that the reviewed plan already named. No new package, no new files, no AC or proof edits.",
+      "expected": {
+        "classification": "local_repair",
+        "source_rule": "missing import of an already-approved dependency",
+        "justification": "The reviewed plan already approved node:fs. Adding the missing import stays in owned files and keeps AC, proof, and tests unchanged.",
+        "affected_decisions": [],
+        "required_proof": "Re-run owned-file syntax/type check and existing in-scope tests. Do not edit AC, proof mapping, or the envelope."
+      }
+    },
+    {
+      "case_id": "ED-02-new-or-upgraded-dependency",
+      "title": "New or upgraded dependency",
+      "owned_files": ["src/widget.mjs"],
+      "plan_approved_dependencies": ["node:fs"],
+      "proposed_change": "Add npm package pino and import it from src/widget.mjs so logs use a new external logger that the reviewed plan did not name.",
+      "expected": {
+        "classification": "amendment",
+        "source_rule": "A new/upgraded dependency is an amendment",
+        "justification": "A new external package is an amendment and must reopen the affected source decision and review proof.",
+        "affected_decisions": ["dependency-set"],
+        "required_proof": "Reopen the affected source decision/contract and review proof using already-given owner intent."
+      }
+    },
+    {
+      "case_id": "ED-03-new-config-or-env",
+      "title": "New config or environment",
+      "owned_files": ["src/widget.mjs"],
+      "proposed_change": "Create config/canary.env and read SVC_NEW_CANARY_ENDPOINT from the environment so the widget calls a new remote endpoint that is not in the reviewed plan.",
+      "expected": {
+        "classification": "amendment",
+        "source_rule": "config/env; external side effect",
+        "justification": "New config and environment surface plus an external side effect is an amendment, not an in-scope local repair.",
+        "affected_decisions": ["runtime-config"],
+        "required_proof": "Reopen the affected source decision/contract and review proof using already-given owner intent."
+      }
+    },
+    {
+      "case_id": "ED-04-api-or-behavior-change",
+      "title": "API or behavior change",
+      "owned_files": ["src/widget.mjs"],
+      "proposed_change": "Change canarySum to return a formatted string instead of a number, altering the public API and the behavior that tests currently assert as numeric addition.",
+      "expected": {
+        "classification": "amendment",
+        "source_rule": "API/behavior; architecture/state ownership",
+        "justification": "Changing the public return type and behavior is an API/behavior amendment and cannot be treated as a local repair.",
+        "affected_decisions": ["public-api"],
+        "required_proof": "Reopen the affected source decision/contract and review proof using already-given owner intent."
+      }
+    },
+    {
+      "case_id": "ED-05-broader-files-or-authority",
+      "title": "Broader files or authority",
+      "owned_files": ["src/widget.mjs"],
+      "proposed_change": "Edit ../secrets/prod-token.json and expand write authority beyond the reviewed manifest file list so the widget can persist credentials.",
+      "expected": {
+        "classification": "amendment",
+        "source_rule": "larger paths/authority; changed proof/AC",
+        "justification": "Leaving the reviewed file set and expanding write authority is an amendment, not a local owned-file repair.",
+        "affected_decisions": ["write-authority"],
+        "required_proof": "Reopen the affected source decision/contract and review proof using already-given owner intent."
+      }
+    },
+    {
+      "case_id": "ED-06-justified-reversible-alternative",
+      "title": "Justified reversible alternative",
+      "owned_files": ["src/helper.mjs"],
+      "proposed_change": "Rename the unexported helper formatPair to joinPair inside src/helper.mjs. Behavior, API, state, AC, proof, tests, and authority stay the same; the change is a reversible local naming alternative.",
+      "expected": {
+        "classification": "local_repair",
+        "source_rule": "justified reversible alternative preserving scope/behavior/API/state/AC/proof/authority",
+        "justification": "A reversible local rename in owned files preserves consequential decisions, AC, proof, and test scope.",
+        "affected_decisions": [],
+        "required_proof": "Re-run existing in-scope tests on owned files. Do not edit AC, proof mapping, or the envelope."
+      }
+    }
+  ]
+}

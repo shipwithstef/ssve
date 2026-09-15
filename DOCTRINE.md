@@ -7,7 +7,11 @@
 
 ## Whole-solution planning and delivery cost
 
-Close consequential product/UX/technical choices before implementation; preserve the original requirements through execution. A reversible local helper is not a missing product decision. Explicit inline plan-manifest v4 uses one authored AC/task/proof mapping and generated views, with hash-bound original context. Dispatch retains complete packets. Ready-now commands remain executable; existing land/verify adapters resolve future release identities under their established pre-use checks. See `skills/plan-changeset/references/manifest-templates.md`.
+Close consequential product/UX/technical choices before implementation; preserve the original requirements through execution. A reversible local helper is not a missing product decision.
+
+New substantive plans run **Two-Box Planning** once before conversion, unless `quick-fix-eligibility` recomputes eligible on a real consumer diff. **Open Box** and **Contract Box** produce independent originals. **Dual-Pass Re-exploration Narrowing** assigns two fresh scouts to the Contract original only. The assessor chooses `open_win`, `contract_win`, or `combination`. Unresolved conflict blocks. **Deterministic Transmutation** then prepares the complete plan-manifest (`schema_version` 5, inline or dispatch) before the existing holistic `review-plan`, and seals from the actual review-plan receipt without adding semantic choices.
+
+Inline v5 retains original-context/generated-view discipline. Dispatch retains complete `changeset_blueprints`. Historical v1 control-plan and v3/v4 plan-manifest readers remain for genuine notes. Current issuance and execution require v5 plus control-plan v2, or the mechanically recomputed lightweight alternative. Ready-now commands remain executable; existing land/verify adapters resolve future release identities under their established pre-use checks. See `skills/plan-changeset/references/manifest-templates.md`.
 
 Keep fresh branch indexes byte-identical when no facts changed. Reinspect and review stale cited facts; never restamp merely because HEAD advanced. Use the existing one holistic review plus changed-lens corrections and bounded round cap. Do not substitute local/source checks for necessary UX, device, hosted or performance observations.
 
@@ -40,42 +44,41 @@ The developer reads the ticket, remembers the architecture, understands the
 codebase, and produces coherent code. When the developer is an LLM, this
 assumption breaks. The methodology must compensate.
 
-## The Science
+## Rationale and evidence
 
-The scientific foundation of why progressive narrowing works, based on LLM
-architecture.
+Long-context models do not attend uniformly. Placement and recency can change
+what the model uses. That is a reason to keep living specs, checkpointed
+artifacts, and explicit re-reads — not a proof that a git commit resets
+attention or restores reliability.
 
-### Attention Decay and Drift
+Related papers, opened 2026-09-15:
 
-LLMs use self-attention to relate every token to every other token in context.
-But attention is not uniform — positional encoding biases attention toward
-recent tokens. When generating line 400 of a service file, spec tokens loaded
-at the beginning of the context receive diminishing attention. The agent follows
-code-internal patterns instead of the spec. This is drift.
+- [Lost in the Middle: How Language Models Use Long Contexts](https://arxiv.org/abs/2307.03172) — placement effects under the paper's studied tasks. Not proof that SSVE checkpoints reset attention.
+- [Large Language Models Cannot Self-Correct Reasoning Yet](https://arxiv.org/abs/2310.01798) — unaided intrinsic reasoning correction under the paper's study conditions. Not a proof about current models or this review protocol.
+- [Improving Factuality and Reasoning in Language Models through Multiagent Debate](https://arxiv.org/abs/2305.14325) — task-specific improvements in that debate setup. Not a universal SSVE proof.
 
-### Checkpoints as Attention Resets
+### Checkpoints as engineering control points
 
-Each task checkpoint forces a stop. The next task re-reads the spec (fresh,
-high attention) and the code so far (fresh, high attention). The positional
-bias resets. The spec is never more than one task's worth of tokens from the
-generation point.
+Each task checkpoint is a git commit on the feature branch. The next task can
+re-read the spec and the code so far from disk. That is an operational control:
+artifacts are durable and identified. It is not a claim that positional
+attention has been reset or that model entropy was reduced by an equation.
 
 ### The Worktree as External Memory
 
-An LLM has no long-term memory. Its context window IS its entire mind. When a
-session ends, everything is gone. The worktree is the agent's external brain —
-every artifact from every phase persists on disk, accessible by reading a file.
-The worktree guarantees that everything the agent reads is consistent with a
-single point in time (the base commit).
+Session context and host memory are not the repository's authority. Specs and
+plans persist on the canonical checkout so a later session can recover the
+same requirements and decisions. The feature worktree starts from a named base
+commit so execution reads that snapshot while writing code.
 
-### The Entropy Argument
+### Sequential constraint accumulation (engineering hypothesis)
 
-An LLM's output entropy (variance) is bounded by:
-`H(output) ≤ H(model) + H(context)`. We cannot control `H(model)`. We CAN
-minimize `H(context)` through progressive constraint accumulation. Each phase
-eliminates a specific class of uncertainty:
+We cannot control the model's internal sampling. We can accumulate named
+constraints so later phases are not asked to invent product, persona, UX,
+UI, and architecture at once. Each phase is responsible for a different class
+of uncertainty:
 
-| Phase | Uncertainty Eliminated |
+| Phase | Uncertainty addressed |
 |-------|----------------------|
 | Vision | What product? What boundaries? |
 | Personas | Who uses it? What do they need? |
@@ -83,71 +86,77 @@ eliminates a specific class of uncertainty:
 | UX Design | How do users experience it? What states? |
 | UI Design | How does it look? What components? |
 | Tech Design | How to build it? What architecture? |
-| Code | Only remaining: exact syntax |
+| Two-Box + transmutation | Which solution, with what sealed execution contract? |
+| Code | Remaining local syntax and in-scope repair inside that contract |
 
-Sequential narrowing compounds. Six small entropy reductions are more effective
-than one large reduction because each phase catches a DIFFERENT CLASS of
-uncertainty. A single "detailed ticket" tries to eliminate all uncertainty at
-once — it cannot, because the ticket author hasn't resolved UX states,
-component design, or data model implications.
+This is a process hypothesis, not a reliability-maximization theorem. Specs,
+reviews, receipts, and tests are the evidence when those steps run. A single
+detailed ticket still cannot substitute for unresolved UX states, component
+design, or data-model implications.
 
 ### The Completeness Principle
 
-AI-assisted coding makes the marginal cost of completeness near-zero. When
-the complete implementation costs minutes more than the shortcut — do the
-complete thing.
+For a **bounded** planned slice, prefer completing the accepted scope — error
+paths, edge cases, and mapped proof — rather than shipping a silent 90% cut.
+This is a scope-quality rule, not a claim that completeness is free or that
+AI work has a measured speedup versus a human team.
 
 **Lake vs ocean:** A "lake" is boilable — all error paths, all edge cases,
 complete test coverage for a module. An "ocean" is not — rewriting an entire
 system, multi-quarter migration. The pipeline boils lakes. It flags oceans
 as out of scope.
 
-| Task type | Human team | AI-assisted | Ratio |
-|-----------|-----------|-------------|-------|
-| Boilerplate | 2 days | 15 min | ~100x |
-| Tests | 1 day | 15 min | ~50x |
-| Features | 1 week | 30 min | ~30x |
-| Bug fix + regression | 4 hours | 15 min | ~20x |
-| Architecture | 2 days | 4 hours | ~5x |
-
-When evaluating "approach A (complete, 150 LOC) vs approach B (90%, 80 LOC)"
-— prefer A. The 70-line delta costs seconds. Shipping shortcuts is legacy
-thinking from when human engineering time was the bottleneck.
-
 This principle complements the scope prohibition in plan-changeset: scope
 prohibition prevents REDUCING planned scope; the completeness principle
-encourages COMPLETING all planned scope to full depth.
+encourages COMPLETING all planned scope to full depth. Timing figures elsewhere
+in this document are targets, not measured results and not exemptions.
 
 Source: gstack ETHOS.md (Boil the Lake), MIT, Copyright 2025 Garry Tan.
 
 ### Review Gates as Adversarial Debiasing
 
-During generation, attention is biased toward producing coherent output
-(generation mode). During self-review, attention shifts to finding errors
-(evaluation mode). Self-judgment forces a third pattern: evaluating the
-evaluation. Cross-review introduces a completely fresh attention state with
-no bias from the generation process. Each step creates a different attention
-pattern over the same content.
+Self-review asks the author to find faults in its own artifact. Self-judgment
+requires accept/reject of those findings. Cross-review brings a second agent
+that can reject rubber-stamped findings and add new ones. The protocol is a
+process control, not a claim that attention states reset or that every error is
+caught.
 
-### The Fundamental Claim
+### The working claim
 
-For any LLM with fixed model entropy `H(model)`, output reliability is
-maximized by minimizing context entropy `H(context)` through sequential
-phase-gated constraint accumulation, where each phase: (a) reduces a specific
-class of uncertainty, (b) is reviewed before the next phase begins, (c)
-persists in a consistent accessible state (the worktree), and (d) is re-loaded
-into the attention window at each checkpoint to prevent positional attention
-decay.
+For a probabilistic coding agent, reliability of the *delivery process* is
+improved by sequential phase-gated constraint accumulation, where each phase:
+(a) reduces a specific class of uncertainty, (b) is reviewed before the next
+phase begins, (c) persists in a consistent accessible state (the worktree), and
+(d) can re-read those artifacts at checkpoints. Hashes prove the bindings.
+They do not prove the judgments. This does not maximize reliability by formula
+and does not eliminate model variance.
 
 ## Consequential decisions and applicable work
 
 Quality comes from relevant evidence and judgment, not question totals. Apply `_shared/product-question-format.md`: carry current owner authorization and accepted decisions forward; compare relevant current specs, ACs, journeys/personas and actual code/dependencies; expose conflicts and resolve consequential owner choices before dependent work. Retain meaningful alternatives, risk/reversibility, measurable success and useful innovation without forcing competitor counts or decorative UX. Existing signed `decide` and release authority contracts remain controlling.
 
+Repository reading, reasoning, comparison and local checks are analysis, never
+internal research. Compiler, validator, and skill consumers share one predicate:
+evaluate the ordered rules in [Solution Confidence Protocol](references/solution-confidence-protocol.md).
+An explicit external research request takes precedence. Necessary freshness
+requires a stated reason and insufficient current evidence. Otherwise, missing
+confidence stays analysis; sufficient current cited evidence with confidence
+≥ 7 resolves; a consequential unresolved external question below 7 requires
+research. A missing score alone never triggers a network call. Research returns
+only to its requesting decision.
+
+Phase/task receipts on the lane-tasks graph record that a named step stored its
+declared evidence. Git-note chain receipts on `refs/notes/svc-receipts` bind
+plan/review/exec/audit envelopes to commits. Hashes prove integrity of those
+bytes. Neither family proves every nested judgment or a successful production
+operation. Historical notes stay readable under their original schema without
+granting current execution.
+
 Load the evidence needed for the task. The installed skill corpus is not the worker's loaded context; measure actual reads separately. Pilot applicability summaries derive from source phase contracts and preserve triggered verification. Use focused existing validator selection during iteration; unknown/global changed inputs retain full fallback and an explicitly requested unmapped surface remains a runner error. Full release validation and truthful failure attribution remain required.
 
 ## The Core Principle
 
-**Progressive narrowing eliminates non-determinism.**
+**Progressive narrowing reduces avoidable ambiguity before execution.**
 
 ### Product-outcome execution invariant (Engine v2)
 
@@ -186,9 +195,9 @@ uncertainty. The executable normative contract is
 `references/product-outcome-improvement-protocol-v2.md`.
 
 Each phase of the pipeline constrains the space of possible outputs for the
-next phase. By the time code is written, the implementation is essentially
-determined — not by the agent's pattern matching, but by the accumulated
-constraints from every prior phase.
+next phase. By the time code is written, remaining executor freedom is bounded
+by living specs and the sealed contract — not by a claim that the model can
+only emit one implementation.
 
 ```
 Phase 1: Vision          → infinite possibilities
@@ -202,10 +211,12 @@ Phase 8: Promotion       → squash-merges the reviewed branch to main
 Phase 9: Verification    → proves the promoted result matches the manifest
 ```
 
-At Phase 1, the agent is generating. By Phase 7, the agent is executing
-against a constrained implementation plan. The creative work happens in
-Phases 1-6 and in explicit loop-backs when later phases expose defects
-upstream. Phase 7 is controlled execution with task reviews and checkpoints.
+At Phase 1, the agent is generating. Two-Box Planning and Deterministic
+Transmutation run on the canonical checkout and produce a sealed contract.
+`execute-changeset` then runs that contract in a feature worktree. Creative
+work happens in Phases 1-6, in Open Box / Contract Box (Open Box may find a
+better approach), and in explicit loop-backs. Execution is bounded: local
+repair versus consequential amendment.
 
 ## Phases and Artifacts
 
@@ -224,7 +235,7 @@ Every state transition requires a review gate.
 | 4 | UX Design | `design-ux` | `docs/specs/ux/<name>.md` | Screen flows, states, interactions, information architecture | DRAFT → UX-REVIEWED |
 | 5 | UI Design | `design-ui` | `docs/specs/ui/<name>.md` + `docs/specs/design-system.md` | Component specs, visual language, responsive behavior | UX-REVIEWED → DESIGNED |
 | 6 | Technical Design | `design-tech` | Updated feature spec: Technical Design section | Architecture, data model, feasibility matrix | DESIGNED → BASELINED |
-| 7 | Change Set Planning | `plan-changeset` + `execute-changeset` | `docs/plans/<date>-<name>/` + branch checkpoints | Implementation manifest, task graph, staged diffs, checkpoint commits | BASELINED → CHANGE-SET-APPROVED |
+| 7 | Change Set Planning | `plan-changeset` + `execute-changeset` | `docs/plans/<date>-<name>/` + branch checkpoints | Two-Box Planning, Dual-Pass Re-exploration Narrowing, Deterministic Transmutation, sealed v5 manifest, task graph, staged diffs, checkpoint commits | BASELINED → CHANGE-SET-APPROVED |
 | 8 | Promotion | `land-changeset` | Actual codebase files | Squash merge + manifest/diff validation | CHANGE-SET-APPROVED → PROMOTED |
 | 9 | Verification | `verify-promotion` | Updated feature spec: VERIFIED status | Test results, QA status, E2E status | PROMOTED → VERIFIED |
 
@@ -309,9 +320,21 @@ discovery tool.
 
 ## The Change Set
 
-The change set is the worktree branch itself. Code lives in actual files, not
-in markdown documents. The agent writes real code into real files during
-Phase 7, and those files are committed as checkpoints on the feature branch.
+The executed change set is the worktree branch. Code lives in actual files, not
+in markdown documents. Two-Box Planning and Deterministic Transmutation run on
+the canonical checkout. The agent then writes real code in the feature worktree,
+with task checkpoints on that branch.
+
+Before that writing, Two-Box Planning produces isolated Open and Contract originals;
+ Dual-Pass scouts inspect only the Contract original; the assessor selects a winner;
+consequential choices reconcile into specs; Deterministic Transmutation prepares
+the complete v5 contract, obtains the existing holistic review-plan, and seals
+it. The executor then holds original clauses plus bounded discretion: missing
+import of an already-approved dependency is local repair; new/upgraded
+dependency, new config/env, changed API, or broadened files/authority is a
+consequential amendment. A justified reversible alternative that preserves
+consequential decisions may be applied with validation. Do not silently reduce
+requirements.
 
 ### Why the Branch IS the Change Set
 
@@ -331,10 +354,10 @@ Checkpoint:    commit task-1 when accepted, then continue
 Promotion:     git merge --squash the reviewed branch, no doc-to-code replay
 ```
 
-The agent writes code while holding full context — every spec, every journey,
-every AC is in the worktree. The code is reviewed on the branch before it
-touches main. Promotion is a deterministic merge of reviewed branch state,
-not a second generation step.
+The executor reads living specs from the canonical checkout while writing code
+in the worktree. The code is reviewed on that branch before it touches main.
+Promotion squash-merges the reviewed implementation branch; it is not a second
+generation step.
 
 ### The Manifest
 
@@ -483,15 +506,15 @@ branch is preserved (not deleted) so checkpoint history remains available.
 
 ## Checkpoints
 
-Every phase ends with a checkpoint — a commit on the feature branch. Checkpoints
-are the mechanism that makes the worktree model work.
+Planning phases checkpoint on the canonical checkout. Execute tasks checkpoint
+on the feature worktree branch.
 
 ### Why Checkpoints Matter
 
-1. **Attention resets.** When the agent starts a new task, it re-reads the
-   relevant artifacts fresh. The checkpoint guarantees those artifacts are on
-   disk and consistent. The positional attention bias resets — the spec is at
-   the top of the context, not buried under 10K tokens of generated code.
+1. **Re-read from a known commit.** When the agent starts a new task, it can
+   re-read the relevant artifacts from disk. The checkpoint guarantees those
+   artifacts exist at a named SHA. That is durability, not a positional
+   attention reset.
 
 2. **Rollback to any phase.** If Phase 6 reveals that the spec is wrong, you
    can roll back to the Phase 3 checkpoint and re-run from there. No
@@ -659,7 +682,7 @@ the style contract already encoded.
 
 LLM providers cache the KV pairs (key-value attention states) of prompt
 prefixes. When a request starts with the same tokens as a previous request,
-the cached computation is loaded at ~90% discount. The cache matches on
+providers may discount matching cached prefixes. The cache matches on
 EXACT PREFIX — same tokens, same order, from the start.
 
 Serious Vibe Coding exploits this by loading artifacts in a stable order, most stable
@@ -669,15 +692,15 @@ first:
 ┌──────────────────────────────────────────────────────────────┐
 │ Layer 1: Project (cached across ALL features, ALL tasks)      │
 │   Skill instructions + vision + personas + design system      │
-│   ~15K tokens. Changes rarely. Cache hit rate: ~95%           │
+│   ~15K tokens. Changes rarely.                               │
 ├──────────────────────────────────────────────────────────────┤
 │ Layer 2: Feature (cached across all tasks of one feature)     │
 │   Feature spec + UX design + UI design + tech design          │
-│   ~20K tokens. Changes at phase boundaries. Hit rate: ~80%    │
+│   ~20K tokens. Changes at phase boundaries.                     │
 ├──────────────────────────────────────────────────────────────┤
-│ Layer 3: Code (cached across parallel sub-agents in Phase 7)  │
+│ Layer 3: Code (cached across parallel sub-agents in execution)│
 │   ONLY files referenced by spec annotations                   │
-│   ~30K tokens. Empty during Phases 3-6. Hit rate: ~70%        │
+│   ~30K tokens. Empty during Phases 3-6.                      │
 ├──────────────────────────────────────────────────────────────┤
 │ Layer 4: Task (unique per task, always computed fresh)         │
 │   Task instructions + task-specific code segments             │
@@ -701,7 +724,7 @@ Naive (load everything every time):
 Cache-optimized:
   Phases 3-6 (no code, Layer 1+2 only):
     Phase 3: 35K (full price, first load)
-    Phases 4-6: 15K cached (90% off) + 20K feature = ~23K each × 3 = 69K
+    Phases 4-6: 15K cached prefix + 20K feature = ~23K each × 3 = 69K
     Subtotal: 104K equivalent
 
   Phase 7 (code loaded, 6 tasks):
@@ -713,9 +736,8 @@ Cache-optimized:
     140K (Layer 1+2 cached for most)
     Subtotal: ~80K equivalent
 
-  Total: ~394K equivalent
-  Savings vs naive: ~80%
-  Realistic (accounting for TTL misses): ~50-60% savings
+  These layer sizes are a loading-order sketch so prefixes can match provider
+  prompt cache. They are not a measured cost study and not a savings promise.
 ```
 
 ### Execution Model: Sequential Phases, Parallel Tasks
@@ -747,10 +769,9 @@ Where obra falls short:
    understand the problem (planning), then used AGAIN to understand the same
    problem (execution). The translation from plan description to code is lossy.
 
-3. **No checkpoint-as-attention-reset.** Obra's executor runs tasks
+3. **No required re-read at task boundaries.** Obra's executor runs tasks
    sequentially in one session or dispatches sub-agents. Neither model
-   explicitly re-reads prior artifacts at task boundaries. The spec fades from
-   attention as code accumulates.
+   is required to re-read prior artifacts at each task boundary.
 
 4. **No cache-aware loading.** Obra doesn't specify artifact loading order.
    Each sub-agent loads what it needs in whatever order. Cache prefix overlap
@@ -782,19 +803,19 @@ Where obra falls short:
    spec constraints make per-task reviews redundant. One review of the full
    diff after all tasks catches cross-task issues that per-task reviews miss.
 
-6. **Checkpoints at phase boundaries** reset attention — the agent re-reads
-   artifacts fresh, preventing positional decay.
+6. **Checkpoints at phase boundaries** keep artifacts on disk so the next step
+   can re-read them from a known SHA.
 
-7. **Cache-optimized loading order** ensures Layer 1-2 tokens are cached across
-   all tasks, reducing cost by 50-60%.
+7. **Cache-aware loading order** keeps Layer 1-2 prefixes stable across tasks so
+   provider prompt cache can hit. This is a design, not a measured savings rate.
 
 8. **Authority and containment are distinct.** Canonical operation scope plus
    controller/delegation checks decide who may mutate what. PreTool hooks are an
    authority guardrail, not a complete shell security boundary; the host sandbox
    or contained command wrapper is the filesystem boundary.
 
-5. **The worktree** is the consistent state — all artifacts from all phases
-   are co-located and checkpointed until promotion.
+5. **The worktree** holds the executing implementation snapshot. Living specs
+   remain on the canonical checkout and are read from there.
 
 ### Sequential vs Parallel: When Each Checkpoint Stacks
 
@@ -827,12 +848,10 @@ If the agent writes 500 lines across 5 tasks and Task 5 reveals that Task 2
 was wrong, rolling back to Task 2 means redoing Tasks 3-5. This burns tokens.
 
 The mitigation is the review protocol at checkpoints. A lightweight review
-after each task catches drift early — before 3 more tasks build on it. The
-cost of reviewing each task (~10K tokens) is far less than the cost of
-redoing 3 tasks (~60K tokens).
+after each task catches drift early — before 3 more tasks build on it. A checkpoint review aims to catch drift before later tasks stack on it. That
+is the aim, not a claim that review is universally cheaper than rework.
 
-**The principle:** Review early, review each layer. The cost of a checkpoint
-review is always less than the cost of rolling back stacked work.
+**The principle:** Review each layer before stacking more work on it.
 
 ### Feature-Level Dependencies and Parallel Features
 
@@ -869,14 +888,14 @@ A can start its spec as soon as B's spec passes G1. A doesn't wait for B's
 full pipeline. But A's Phase 7 waits for B to merge — because A's code calls
 B's code.
 
-**Independent features** get their own worktrees from main and run the full
-pipeline in parallel:
+**Independent features** plan on the canonical checkout and get their own
+execution worktrees from main:
 
 ```
-main
-  ├── worktree: feature-chat       (Phases 3-9, independent)
-  ├── worktree: feature-payments   (Phases 3-9, independent)
-  └── worktree: feature-matching   (Phases 3-7, waits for enabler)
+main (specs, Two-Box, transmutation)
+  ├── worktree: feature-chat       (execute / review / audit)
+  ├── worktree: feature-payments   (execute / review / audit)
+  └── worktree: feature-matching   (execute waits for enabler merge)
 ```
 
 **Cross-feature cache sharing:** Independent features sharing the same vision,
@@ -892,9 +911,8 @@ the first feature, cached for all parallel features within the TTL window.
 | Bug fix (spec + change set only) | 50K-100K tokens | Phases 4-6 skipped |
 | "Ticket → code" (no svc) | 20K-50K initial + 75K-150K fix cycles | Cheaper upfront, more expensive total |
 
-The structured approach costs more per feature but produces fewer fix cycles.
-For features that would have required 3+ fix cycles, svc is cheaper
-in total tokens spent.
+The structured approach spends more tokens up front. It is meant to reduce
+later fix cycles. That is not a measured savings guarantee.
 
 ## Why This Is Necessary Now
 
@@ -907,33 +925,35 @@ persistent context. The agent IS the stochastic element. If the methodology
 doesn't account for this, every feature is a gamble — sometimes the agent
 produces what you wanted, sometimes it produces something confidently wrong.
 
-Serious Vibe Coding is the methodology that makes agentic development deterministic.
-Not by fixing the models — that's Anthropic's, OpenAI's, and Google's job.
-But by structuring the process so that by the time the agent generates code,
-the implementation is already tightly constrained by everything that came before it.
+Serious Vibe Coding is the methodology that makes agentic delivery *governed*.
+Not by fixing the models — that's the model providers' job — but by structuring
+the process so that by the time the agent writes code, the remaining freedom is
+bounded by living specs, a selected solution, a sealed contract, and receipts.
 
-**The progressive narrowing model is not optional.** It is the only way to
-get reliable output from a probabilistic system. Every methodology that skips
-phases — that goes from ticket to code, from spec to implementation, from
-design to "let the agent figure it out" — is accepting non-determinism as
-a feature. Serious Vibe Coding rejects that.
+**Progressive narrowing is the default delivery spine, not a claim of unique
+necessity or universal superiority.** Methodologies that skip from ticket to code
+leave more unreviewed choice in the model. SSVE still allows Open Box creativity
+and bounded executor disagreement; it does not treat framework convention as an
+automatic win, and it does not claim identical output on every run.
 
 ## The Complete Pipeline
 
-All phases happen in a single worktree branched from main. Each phase produces
-a checkpoint. The worktree is the time capsule — nothing changes under the
-agent between phases. Promotion is a squash merge to main.
+Living specs and Two-Box conversion run on the canonical checkout. Execution,
+review-exec, and audit run in a feature worktree. Land and verify return to main.
 
 ```
-main (frozen at SHA)
+canonical checkout (typically main)
+  Phase 3: write-spec             → checkpoint → [G1 Review]
+  Phase 4: design-ux            → checkpoint → [G2 Review]
+  Phase 5: design-ui            → checkpoint → [G3 Review]
+  Phase 6: design-tech          → checkpoint → [G4 Review]
+  Phase 7 plan: Two-Box + transmutation → review-plan
   └── worktree: feature-<name>
-        Phase 3: write-spec             → checkpoint → [G1 Review]
-        Phase 4: design-ux        → checkpoint → [G2 Review]
-        Phase 5: design-ui        → checkpoint → [G3 Review]
-        Phase 6: design-tech → checkpoint → [G4 Review]
-        Phase 7: plan + execute on branch → checkpoint per task → [G5 Review]
-        Phase 8: squash merge to main = promotion → [G6 Review]
-        Phase 9: verify on main           → [G7 Review]
+        execute-changeset → task checkpoints → [G5 Review]
+        audit-implementation
+  main
+        land-changeset (squash-merge) → [G6 Review]
+        verify-promotion               → [G7 Review]
 ```
 
 ## Feedback Loops
@@ -970,8 +990,8 @@ relevant gate. Specifically:
 - `verify-promotion` may find coverage gaps → route to `write-e2e` before next promotion, not during verification
 
 If a later phase materially changes what an earlier gate approved, that
-gate must re-run on the changed artifact. The cost of re-review is lower
-than the cost of shipping an unreviewed change.
+gate must re-run on the changed artifact. Re-review aims to avoid shipping
+an unreviewed change.
 
 All other feedback loops re-enter the Review Protocol at the destination
 phase. The artifact's state regresses to the destination phase's state
@@ -1040,7 +1060,8 @@ checkpoints:
 - `validate-feature`: P0 reviews the business case. **Exception:** NO-SHIP
   decisions always surface to the user — killing a feature is never silent.
 - `write-spec`: P0 reviews the spec and logs concerns as Taste decisions.
-- `explore-solutions`: P0 selects the approach based on research.
+- `explore-solutions`: P0 selects the approach from grounded analysis and any
+  external research required by the question's confidence and freshness.
 - `plan-changeset`: P0 approves if the plan covers all ACs.
 - `execute-changeset`: P0 reviews diffs and approves if tests pass.
 - `land-changeset`: P0 merges in solo mode; opens PR and stops in team mode.

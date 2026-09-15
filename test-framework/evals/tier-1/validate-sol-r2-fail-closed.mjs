@@ -125,7 +125,7 @@ execFileSync('git', ['notes', '--ref=svc-receipts', 'add', '-f', '-F', leftoverN
 const stopInferred = check(['--sha', sha, '--wi', wi, '--consumer', 'stop']);
 assert.equal(stopInferred.row?.ok, false, 'SOL-R2-004 stop must not pass on leftover plan-manifest alone');
 const missing = (stopInferred.row?.missing || []).join(' ');
-assert.match(missing, /review-plan|exec-record|review-exec|audit-implementation|ALL|no receipts|incomplete|missing/);
+assert.match(missing, /review-plan|exec-record|review-exec|audit-implementation|ALL|no receipts|incomplete|missing|current plan authority requires schema_version 5/);
 
 // SOL-R2-002: identified continuation child + missing ledger / foreign cwd is denied.
 const missingLedger = isPhaseForbiddenForSession({

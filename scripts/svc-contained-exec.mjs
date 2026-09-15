@@ -148,47 +148,172 @@ function policyWriteRoots(worktree, policyFile) {
   return roots;
 }
 
-export function probeContainment() {
+export function verifyDirectoryAncestry(targetPath, label) {
+  const uid = typeof process.getuid === "function" ? process.getuid() : 1000;
+  const normalized = path.resolve(targetPath);
+  const segments = normalized.split(path.sep);
+  let current = "";
+
+  for (let i = 0; i < segments.length; i++) {
+    const part = segments[i];
+    current = i === 0 ? (part === "" ? path.sep : part) : path.join(current, part);
+    if (!fs.existsSync(current)) {
+      fs.mkdirSync(current, { mode: 0o700 });
+    }
+    const stat = fs.lstatSync(current);
+    if (stat.isSymbolicLink()) {
+      throw new Error(`${label}: ancestry component '${current}' is a symbolic link`);
+    }
+    if (!stat.isDirectory()) {
+      throw new Error(`${label}: ancestry component '${current}' is not a directory`);
+    }
+    if (typeof process.getuid === "function") {
+      const home = os.homedir();
+      const isSystemRoot = current === path.sep || current === "/tmp" || current === "/home" || (home.startsWith(current) && current !== home);
+      if (isSystemRoot) {
+        if (stat.uid !== 0 && stat.uid !== uid) {
+          throw new Error(`${label}: system component '${current}' not owned by root or current user (uid ${stat.uid})`);
+        }
+      } else if (stat.uid !== uid) {
+        throw new Error(`${label}: ancestry component '${current}' not owned by current user (uid ${stat.uid} != ${uid})`);
+      }
+    }
+  }
+  return fs.realpathSync(normalized);
+}
+
+export function cursorRuntimeRoots(options = {}) {
+  const uid = typeof process.getuid === "function" ? process.getuid() : 1000;
+  const roots = [];
+  const home = os.homedir();
+
+  // 1. Persist directory & logs in /tmp with full ancestry and ownership checks
+  roots.push(verifyDirectoryAncestry(`/tmp/cursor-agent-persist-${uid}`, "cursor persist"));
+  roots.push(verifyDirectoryAncestry(`/tmp/cursor-agent-logs-${uid}`, "cursor logs"));
+
+  // 2. Sandbox policies scratch directory
+  roots.push(verifyDirectoryAncestry(path.join(home, ".cursor", "sandbox-policies"), "cursor sandbox policies"));
+
+  // 3. Scoped project access (only the active project, not all ~/.cursor/projects)
+  const worktree = options.worktree || options.root || null;
+  if (worktree) {
+    const projectSlug = path.resolve(worktree).replace(/[^a-zA-Z0-9]/g, "-").replace(/^-+/, "");
+    if (projectSlug) {
+      roots.push(verifyDirectoryAncestry(path.join(home, ".cursor", "projects", projectSlug), `cursor project (${projectSlug})`));
+    }
+  }
+
+  // 4. Scoped chat access (only the active conversation, if known)
+  const conversationId = options.conversationId || process.env.CURSOR_CONVERSATION_ID || process.env.SVC_SESSION_ID || null;
+  if (conversationId && typeof conversationId === "string") {
+    const cleanId = conversationId.replace(/-/g, "");
+    if (/^[a-f0-9]+$/i.test(cleanId)) {
+      roots.push(verifyDirectoryAncestry(path.join(home, ".cursor", "chats", cleanId), `cursor chat (${cleanId})`));
+    }
+  }
+
+  // 5. Scoped runtime config directory (/tmp/cursor-agent-config-${uid})
+  const configDir = process.env.CURSOR_CONFIG_DIR || `/tmp/cursor-agent-config-${uid}`;
+  if (configDir) {
+    if (!fs.existsSync(configDir)) {
+      fs.mkdirSync(configDir, { recursive: true, mode: 0o700 });
+      const srcConfig = path.join(home, ".cursor", "cli-config.json");
+      if (fs.existsSync(srcConfig)) {
+        try { fs.copyFileSync(srcConfig, path.join(configDir, "cli-config.json")); } catch {}
+      }
+      const srcHooks = path.join(home, ".cursor", "hooks.json");
+      if (fs.existsSync(srcHooks)) {
+        try { fs.symlinkSync(srcHooks, path.join(configDir, "hooks.json")); } catch {}
+      }
+    }
+    roots.push(verifyDirectoryAncestry(configDir, "cursor config"));
+  }
+
+  // 6. Scoped hook & session runtime directory (/tmp/cursor-agent-runtime-${uid})
+  const runtimeDir = process.env.SVC_RUNTIME_DIR || `/tmp/cursor-agent-runtime-${uid}`;
+  if (runtimeDir) {
+    if (!fs.existsSync(runtimeDir)) {
+      fs.mkdirSync(runtimeDir, { recursive: true, mode: 0o700 });
+    }
+    try { fs.chmodSync(runtimeDir, 0o700); } catch {}
+    roots.push(verifyDirectoryAncestry(runtimeDir, "cursor runtime"));
+  }
+
+  return roots;
+}
+
+export function probeContainment(profile = null) {
   if (process.platform !== "linux") return { available: false, backend: "landlock", reason: "Landlock requires Linux" };
   try {
     const helper = helperPath();
     const testRoot = fs.mkdtempSync(path.join(os.tmpdir(), "svc-landlock-probe-"));
     try {
       const result = spawnSync(helper, [testRoot, "--", "sh", "-c", "touch allowed && ! touch /svc-landlock-probe-denied"], { cwd: testRoot, encoding: "utf8" });
-      return result.status === 0
-        ? { available: true, backend: "landlock", helper }
-        : { available: false, backend: "landlock", reason: (result.stderr || `probe exited ${result.status}`).trim() };
+      if (result.status !== 0) {
+        return { available: false, backend: "landlock", reason: (result.stderr || `probe exited ${result.status}`).trim() };
+      }
     } finally {
       fs.rmSync(testRoot, { recursive: true, force: true });
     }
+    if (profile === "cursor") {
+      try {
+        const roots = cursorRuntimeRoots();
+        return { available: true, backend: "landlock", helper, profile: "cursor", runtime_roots: roots };
+      } catch (err) {
+        return { available: false, backend: "landlock", reason: `cursor profile verification failed: ${err.message}` };
+      }
+    }
+    return { available: true, backend: "landlock", helper };
   } catch (error) { return { available: false, backend: "landlock", reason: error.message }; }
 }
 
 function parse(argv) {
-  const command = argv.shift(); const roots = []; let root = null; let runtimeRoot = null; let policy = null; let json = false;
+  const command = argv.shift(); const roots = []; let root = null; let runtimeRoot = null; let policy = null; let profile = null; let json = false;
   while (argv.length && argv[0] !== "--") {
     const flag = argv.shift();
     if (flag === "--root") root = argv.shift();
     else if (flag === "--runtime-root" || flag === "--write-root") { const value = argv.shift(); roots.push(value); if (flag === "--runtime-root") runtimeRoot = value; }
     else if (flag === "--policy") policy = argv.shift();
+    else if (flag === "--profile") profile = argv.shift();
     else if (flag === "--json") json = true;
     else throw new Error(`unknown option: ${flag}`);
   }
   if (argv[0] === "--") argv.shift();
-  return { command, root, runtimeRoot, roots, policy, json, childArgv: argv };
+  return { command, root, runtimeRoot, roots, policy, profile, json, childArgv: argv };
 }
 
 export function run(argv = process.argv.slice(2)) {
   const args = parse([...argv]);
   if (args.command === "probe") {
-    const result = probeContainment(); process.stdout.write(`${JSON.stringify(result, null, args.json ? 2 : 0)}\n`); return result.available ? 0 : 3;
+    const result = probeContainment(args.profile); process.stdout.write(`${JSON.stringify(result, null, args.json ? 2 : 0)}\n`); return result.available ? 0 : 3;
   }
-  if (args.command !== "run" || args.childArgv.length === 0) throw new Error("Usage: svc-contained-exec.mjs probe [--json] | run --root PATH --policy RECEIPT [--runtime-root PATH] [--write-root PATH] -- COMMAND...");
+  if (args.command !== "run" || args.childArgv.length === 0) throw new Error("Usage: svc-contained-exec.mjs probe [--profile cursor] [--json] | run --root PATH [--profile cursor] [--policy RECEIPT] [--runtime-root PATH] [--write-root PATH] -- COMMAND...");
   const worktree = canonicalDirectory(args.root, "--root");
   const policyRoots = args.policy ? policyWriteRoots(worktree, args.policy) : [];
   const controllerRoots = !args.policy && args.roots.length === 0 ? [worktree] : [];
-  const allowed = [...new Set([...policyRoots, ...controllerRoots, ...args.roots.filter(Boolean).map((value) => canonicalWritable(value, "write root"))])];
-  const probe = probeContainment(); if (!probe.available) throw new Error(`filesystem containment unavailable: ${probe.reason}`);
+  let profileRoots = [];
+  if (args.profile === "cursor") {
+    const uid = typeof process.getuid === "function" ? process.getuid() : 1000;
+    if (!process.env.CURSOR_CONFIG_DIR) {
+      process.env.CURSOR_CONFIG_DIR = `/tmp/cursor-agent-config-${uid}`;
+    }
+    if (!process.env.SVC_RUNTIME_DIR && !process.env.SVC_CODEX_RUNTIME_DIR) {
+      process.env.SVC_RUNTIME_DIR = `/tmp/cursor-agent-runtime-${uid}`;
+    }
+    profileRoots = cursorRuntimeRoots({
+      worktree,
+      conversationId: process.env.CURSOR_CONVERSATION_ID || process.env.SVC_SESSION_ID || null,
+    });
+  } else if (args.profile) {
+    throw new Error(`unknown containment profile: ${args.profile}`);
+  }
+  const allowed = [...new Set([
+    ...policyRoots,
+    ...controllerRoots,
+    ...profileRoots,
+    ...args.roots.filter(Boolean).map((value) => canonicalWritable(value, "write root")),
+  ])];
+  const probe = probeContainment(args.profile); if (!probe.available) throw new Error(`filesystem containment unavailable: ${probe.reason}`);
   const result = spawnSync(probe.helper, [...allowed, "/dev/null", "--", ...args.childArgv], { cwd: worktree, stdio: "inherit", env: process.env });
   if (result.error) throw result.error;
   return result.status ?? 126;

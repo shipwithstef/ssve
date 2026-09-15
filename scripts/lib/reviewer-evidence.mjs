@@ -19,7 +19,9 @@ const EXTERNAL_FINDINGS_SCHEMA = JSON.parse(fs.readFileSync(path.join(SCHEMA_DIR
 // 2.5.5 changed cycle locking/atomic issuance, not the successful receipt
 // contract. Compatibility still requires all schema, semantic and signed
 // provenance checks below; version strings alone never grant authority.
-const SUPPORTED_LAUNCHER_VERSIONS = new Set([EXTERNAL_REVIEW_LAUNCHER_VERSION, "2.5.6", "2.5.5", "2.5.4"]);
+// Resolve after module initialization: review input preparation now shares the
+// issuance gate, which also consumes this verifier.
+const supportedLauncherVersions = () => new Set([EXTERNAL_REVIEW_LAUNCHER_VERSION, "2.5.7", "2.5.6", "2.5.5", "2.5.4"]);
 
 function localCheckoutArtifact(root, value, { externalOnly = true } = {}) {
   const absolute = path.isAbsolute(value.path) ? path.resolve(value.path) : path.resolve(root, value.path);
@@ -130,7 +132,7 @@ function verifyReviewerEvidenceInternal({ root = process.cwd(), reviewKind, body
       if (schemaErrors.length) throw new Error(`launcher receipt schema invalid: ${schemaErrors.slice(0, 3).join("; ")}`);
       const semanticErrors = validateExternalReviewReceiptSemantics(receipt);
       if (semanticErrors.length) throw new Error(`launcher receipt semantics invalid: ${semanticErrors.slice(0, 3).join("; ")}`);
-      if (!SUPPORTED_LAUNCHER_VERSIONS.has(receipt.launcher_version)) reasons.push(`launcher version is unsupported: ${entry.path}`);
+      if (!supportedLauncherVersions().has(receipt.launcher_version)) reasons.push(`launcher version is unsupported: ${entry.path}`);
       if (receipt.fixture_mode !== false || !Array.isArray(runReceipt.attempts) || runReceipt.attempts.length === 0) reasons.push(`launcher receipt is not a real external attempt: ${entry.path}`);
       if (!selfBindHolds(repository, entry, receipt, bytes)) reasons.push(`launcher receipt does not self-bind its canonical path: ${entry.path}`);
       if (receipt.findings_schema_sha256 !== digest(fs.readFileSync(path.join(SCHEMA_DIR, "external-review-findings.schema.json")))) reasons.push(`launcher findings schema digest mismatch: ${entry.path}`);

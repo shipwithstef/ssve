@@ -1,5 +1,23 @@
 #!/usr/bin/env node
 import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const KNOWN_HOSTS = ["codex", "claude", "kimi", "gemini", "opencode", "mimo-code", "antigravity", "cursor", "grok"];
+
+function hostIdentity(p = null) {
+  const explicit = String(process.env.SVC_HOST || "").toLowerCase();
+  if (explicit) return KNOWN_HOSTS.includes(explicit) ? explicit : "";
+  if (p?.cursor_version || p?.conversation_id || String(process.env.CURSOR_CONVERSATION_ID || "").trim() || String(process.env.CURSOR_AGENT || "").trim() || String(process.env.CURSOR_TRACE_ID || "").trim()) return "cursor";
+  if (String(process.env.GROK_SESSION_ID || "").trim()) return "grok";
+  if (String(process.env.CODEX_THREAD_ID || "").trim()) return "codex";
+  if (String(process.env.CODEX_SESSION_ID || "").trim()) return "codex";
+  if (String(process.env.CODEX_HOME || "").trim()) return "codex";
+  try { if (path.basename(HERE) === "codex") return "codex"; } catch {}
+  return "";
+}
+
 function deny(reason, host = "") {
   if (host === "cursor") { process.stdout.write(`${JSON.stringify({permission:"deny",user_message:String(reason)})}\n`); process.exit(0); }
   process.stdout.write(`${JSON.stringify({hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"deny",permissionDecisionReason:String(reason)}})}\n`); process.exit(0);
@@ -26,34 +44,9 @@ const { encodeSimpleCommand } = await import("./lib/argv-encode.mjs");
 const { createBootstrapHandoff } = await import("./lib/session-handoff.mjs");
 const { readOwnerLease, renewOwnerLease } = await import("./lib/owner-lease.mjs");
 const { authorizeObservedAction } = await import("../../scripts/svc-authorized-action.mjs");
-const path = await import("node:path");
 const { spawnSync } = await import("node:child_process");
-const { fileURLToPath } = await import("node:url");
-const HERE = path.dirname(fileURLToPath(import.meta.url));
 const HOOK_ROOT = path.resolve(HERE, "..");
 const CHILDREN = [["svc-worktree-isolation-guard.mjs"],["svc-workflow-guard.mjs","--bash-guard"],["svc-workflow-guard.mjs"],["svc-loop-guard.mjs"],["svc-skill-artifact-authenticity.mjs"],["svc-session-contract-freshness.mjs"],["svc-inertia-check.mjs"],["codex","svc-codex-skill-load-enforcer.mjs"],["svc-impact-triad-guard.mjs"]];
-// EXTREV-EXEC-006: host identity is wiring-supplied, never hardcoded. The
-// shared engine path must produce distinct principals per host and fail closed
-// when the identity is missing.
-// WI-FW-CODEX-SVC-HOST-DISPATCH-01: ad-hoc `nohup codex exec` lane dispatches
-// do not export SVC_HOST into the spawned session, so every governed call was
-// denied ("host identity missing") and killed the iOS pipeline lane even with
-// BREAK-GLASS armed. When wiring evidence is absent, infer THIS host from
-// codex-exclusive signals in strict order — thread id, session id, CODEX_HOME,
-// then this dispatcher's own canonical hooks/codex install path. Each signal
-// is produced only by a Codex runtime, so inference cannot impersonate a
-// foreign host; an explicit but UNKNOWN SVC_HOST still fails closed.
-const KNOWN_HOSTS=["codex","claude","kimi","gemini","opencode","mimo-code","antigravity","cursor","grok"];
-function hostIdentity(p = null){
-const explicit=String(process.env.SVC_HOST||"").toLowerCase();
-if(explicit)return KNOWN_HOSTS.includes(explicit)?explicit:"";
-if(p?.cursor_version||p?.conversation_id||String(process.env.CURSOR_CONVERSATION_ID||"").trim()||String(process.env.CURSOR_AGENT||"").trim()||String(process.env.CURSOR_TRACE_ID||"").trim())return "cursor";
-if(String(process.env.GROK_SESSION_ID||"").trim())return "grok";
-if(String(process.env.CODEX_THREAD_ID||"").trim())return "codex";
-if(String(process.env.CODEX_SESSION_ID||"").trim())return "codex";
-if(String(process.env.CODEX_HOME||"").trim())return "codex";
-try{if(path.basename(HERE)==="codex")return "codex";}catch{}
-return "";}
 function sidOf(p) {
   return String(
     p?.session_id ||
@@ -96,11 +89,9 @@ process.stdout.write(JSON.stringify({systemMessage:"SSVE restored the authorized
 }
 deny(`SSVE restored the authorized WI. Load its current skill before retrying: ${loader}`, host);
 }
-try { const key=payload.tool_input?"tool_input":payload.toolInput?"toolInput":payload.arguments?"arguments":"args";{// WI-FW-HOOKS-SAFETY-01 (FP-03/EXTREV-EXEC-008): ONE engine decision. The
-// original input is
-// per-Git-argv `--no-optional-locks` normalization — never an `export`
-// prefix that a sibling classifier could re-read as an unbound mutation.
-const observation=evaluatePreToolObservation(payload);if(observation){if(observation.execution_input){allow(observation.execution_input,hostIdentity(payload));}else{allow(null,hostIdentity(payload));}process.exit(0);}}const sid=sidOf(payload);const hostId=hostIdentity(payload);if(!sid)deny("Codex session identity is missing; recovery: resume with a stable session_id.",hostId);if(!hostId)deny("host identity missing: wiring must set SVC_HOST for this host and no codex session evidence exists; recovery: relaunch detached lanes via scripts/lib/dispatch-codex-lane.sh or reinstall hooks via ./setup --host <host>.",hostId);const ctx=operationHookContext(payload,{...process.env,SVC_HOST:hostId});const scope=resolveOperationScope(payload,{host:hostId,env:process.env});if(!scope.ok)deny(`invalid mutation operation scope (${scope.contradictions[0]?.code||"scope contradiction"})`,hostId);const repo=scope.operation_repository?.worktree_root||scope.session_repository?.worktree_root||ctx.repo_root;let b=baton(repo,sid,payload);if(b?.conflict)deny("multiple active bindings for this session; recovery: select one WI explicitly.",hostId);let effective=payload;const input=payload[key];if(b?.worktree&&!scope.explicit_workdir.present&&input&&typeof input==="object")effective={...payload,[key]:{...input,workdir:b.worktree}};const command=mutationPayload(effective);const boot=parseBootstrapCommand(command);if(boot&&!boot.handoff){// WI-FW-HOOKS-SAFETY-01 (FP-04): operation scope outranks stale session cwd.
+const hostId = hostIdentity(payload);
+try { const key=payload.tool_input?"tool_input":payload.toolInput?"toolInput":payload.arguments?"arguments":"args";{
+const observation=evaluatePreToolObservation(payload);if(observation){if(observation.execution_input){allow(observation.execution_input,hostId);}else{allow(null,hostId);}process.exit(0);}}const sid=sidOf(payload);if(!sid)deny("Codex session identity is missing; recovery: resume with a stable session_id.",hostId);if(!hostId)deny("host identity missing: wiring must set SVC_HOST for this host and no codex session evidence exists; recovery: relaunch detached lanes via scripts/lib/dispatch-codex-lane.sh or reinstall hooks via ./setup --host <host>.",hostId);const ctx=operationHookContext(payload,{...process.env,SVC_HOST:hostId});const scope=resolveOperationScope(payload,{host:hostId,env:process.env});if(!scope.ok)deny(`invalid mutation operation scope (${scope.contradictions[0]?.code||"scope contradiction"})`,hostId);const repo=scope.operation_repository?.worktree_root||scope.session_repository?.worktree_root||ctx.repo_root;let b=baton(repo,sid,payload);if(b?.conflict)deny("multiple active bindings for this session; recovery: select one WI explicitly.",hostId);let effective=payload;const input=payload[key];if(b?.worktree&&!scope.explicit_workdir.present&&input&&typeof input==="object")effective={...payload,[key]:{...input,workdir:b.worktree}};const command=mutationPayload(effective);const boot=parseBootstrapCommand(command);if(boot&&!boot.handoff){// WI-FW-HOOKS-SAFETY-01 (FP-04): operation scope outranks stale session cwd.
 // The default-checkout requirement is evaluated against the repository the
 // EXPLICIT operation evidence resolves to when present; session cwd is
 // context, never mutation authority.

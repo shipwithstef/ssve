@@ -1,0 +1,288 @@
+// Offline policy and planning boundary checks; fixtures cannot authorize live execution.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {resolveDispatchRoleTuple} from '../../scripts/resolve-dispatch.mjs';
+const planTuple={host:'codex',family:'openai',model:'offline-plan',effort:'xhigh'};
+const execTuple={host:'codex',family:'openai',model:'offline-exec',effort:'max'};
+function withPolicy(edit,run){
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'two-box-policy-'));
+ const policy={schema_version:1,authority:'repository-owner',default_mode:'offline',modes:{offline:{labels:{PLAN:planTuple,EXEC:execTuple}}}};
+ try{
+  edit(policy);const configPath=path.join(root,'policy.json');fs.writeFileSync(configPath,JSON.stringify(policy),{mode:0o600});
+  run({configPath,cwd:root,orchestrator:'codex',wi:'WI-OFFLINE-TWO-BOX',sessionOverrideRequested:false},root);
+ }finally{fs.rmSync(root,{recursive:true,force:true});}
+}
+test('named planning roles inherit the owner PLAN/EXEC tuple with recorded origin',()=>{
+ withPolicy(()=>{},opts=>{
+  for(const role of ['open_box','contract_box','assessor','scout_forward','scout_reverse']){
+   const r=resolveDispatchRoleTuple({...opts,role});const scout=role.startsWith('scout');
+   assert.equal(r.model,scout?execTuple.model:planTuple.model);assert.equal(r.effort,scout?'max':'xhigh');
+   assert.equal(r.requested_role,role);assert.equal(r.inherited_label,scout?'EXEC':'PLAN');assert.match(r.effective_policy_sha256,/^[a-f0-9]{64}$/);
+  }
+ });
+});
+test('an explicit named tuple wins over label defaults',()=>{
+ withPolicy(p=>{p.modes.offline.roles={open_box:{...planTuple,model:'offline-explicit'}};},opts=>{
+  const r=resolveDispatchRoleTuple({...opts,role:'open_box'});assert.equal(r.model,'offline-explicit');assert.equal(r.inherited_role,null);
+ });
+});
+test('malformed named entries never silently inherit',()=>{
+ for(const entry of [null,{},false,{host:'codex',model:'missing-effort'}])withPolicy(p=>{p.modes.offline.roles={open_box:entry};},opts=>assert.throws(()=>resolveDispatchRoleTuple({...opts,role:'open_box'}),/invalid|malformed|schema|route/i));
+});
+test('requested and inherited deny rules cannot be escaped by role inheritance',()=>{
+ for(const deniedRole of ['open_box','plan','*'])withPolicy(p=>{p.deny={[deniedRole]:['offline-plan']};},opts=>assert.throws(()=>resolveDispatchRoleTuple({...opts,role:'open_box'}),e=>e.code==='dispatch_denied'));
+});
+test('a WI overlay affects only its WI and changes the effective binding',()=>{
+ withPolicy(()=>{},(opts,root)=>{
+  const before=resolveDispatchRoleTuple({...opts,role:'assessor'});const workOverlayPath=path.join(root,'overlay.json');
+  fs.writeFileSync(workOverlayPath,JSON.stringify({scope:{wi:opts.wi},patch:{modes:{offline:{roles:{assessor:{...planTuple,model:'offline-overlay'}}}}}}),{mode:0o600});
+  const after=resolveDispatchRoleTuple({...opts,role:'assessor',workOverlayPath});assert.equal(after.model,'offline-overlay');assert.notEqual(after.effective_policy_sha256,before.effective_policy_sha256);
+  const other=resolveDispatchRoleTuple({...opts,wi:'WI-OTHER',role:'assessor',workOverlayPath});assert.equal(other.model,'offline-plan');
+ });
+});
+
+const protocol=await import('../../scripts/lib/two-box-protocol.mjs');
+test('tree DigestRefs contain a SHA256, distinct from raw Git tree ids',()=>{
+ const raw='a'.repeat(40);const digest=protocol.sha256Utf8(`git-tree:${raw}\n`);
+ assert.deepEqual(protocol.digestRef(digest,'tree'),{type:'digest',of:'tree',sha256:digest});
+ assert.throws(()=>protocol.digestRef(raw,'tree'));
+});
+test('every provider object schema explicitly forbids undeclared fields',()=>{
+ function check(s){
+  if(s.type==='object'){assert.equal(s.additionalProperties,false);assert.deepEqual(s.required.slice().sort(),Object.keys(s.properties).sort());for(const child of Object.values(s.properties))check(child);}
+  if(s.items)check(s.items);
+ }
+ for(const role of ['open_box','contract_box','scout_forward','scout_reverse','contract_revise','assessor'])check(protocol.outputSchemaForCall(role));
+ assert.throws(()=>protocol.validateRoleOutput('open_box',{plan:'   '}));
+});
+test('an unresolved selection cannot become a draft control contract',()=>{
+ const ref=protocol.objectRef('a'.repeat(64));
+ assert.throws(()=>protocol.draftControlPlanV2({wi:'WI-OFFLINE',mode:'OFFLINE',original_requirements_ref:ref,frozen_facts_ref:ref,source:{identity:{},base_sha:'a'.repeat(40),tree:'a'.repeat(40)},policy_digest:'b'.repeat(64),open_original_ref:ref,contract_original_ref:ref,contract_revised_ref:ref,scout_reports:[{role:'scout_forward',report_ref:ref,coverage_ref:ref},{role:'scout_reverse',report_ref:ref,coverage_ref:ref}],chosen_solution:{winner:'contract_win',selected_decisions:[],rejection_dispositions:[],unresolved_conflicts:[{id:'C1',original_requirement_ids:['AC1'],reason:'contradicted contract'}]}}),/conflict|selected/i);
+});
+
+const isolation=await import('../../scripts/lib/isolated-plan-analysis.mjs');
+test('installed skill disabling uses path entries and keeps identical content at distinct paths',()=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'two-box-skills-'));
+ try{
+  for(const name of ['first','second']){const dir=path.join(root,'.codex','skills',name);fs.mkdirSync(dir,{recursive:true});fs.writeFileSync(path.join(dir,'SKILL.md'),'Identical OFFLINE instructions\n');}
+  fs.symlinkSync(path.join(root,'.codex','skills','first'),path.join(root,'.codex','skills','alias'));
+  const skills=isolation.discoverDisabledSkills({home:root});assert.equal(skills.length,3);
+  const args=isolation.buildCodexConfigFlags({tuple:execTuple,disabledSkills:skills});const config=args.find(s=>s.startsWith('skills.config='));
+  assert.ok(config.startsWith('skills.config=['));assert.equal((config.match(/enabled=false/g)||[]).length,3);
+ }finally{fs.rmSync(root,{recursive:true,force:true});}
+});
+test('prompt inspection never receives exec-only flags and strips inherited authority',()=>{
+ const args=isolation.buildPromptInspectArgv({tuple:execTuple,disabledSkills:[],prompt:'OFFLINE_INPUT'});
+ for(const flag of ['--ephemeral','--sandbox','--ignore-user-config','--skip-git-repo-check','--json','--output-schema','-m'])assert.ok(!args.includes(flag));
+ assert.equal(args.at(-1),'OFFLINE_INPUT');
+ const env=isolation.inheritEnv({HOME:'/home/fixture',CODEX_HOME:'/home/fixture/.codex',CODEX_THREAD_ID:'parent',SVC_AGENT_ID:'parent',SVC_HOST:'codex',CURSOR_CONVERSATION_ID:'parent',PATH:'/bin'});
+ assert.deepEqual(env,{HOME:'/home/fixture',CODEX_HOME:'/home/fixture/.codex',PATH:'/bin'});
+});
+test('declared repository facts survive inspection while injected methodology is rejected',()=>{
+ const cwd='/tmp/offline-neutral';const prompt='Source facts: AGENTS.md defines SSVE behavior.';
+ const messages=[{type:'message',role:'developer',content:[{type:'input_text',text:'<permissions instructions>Native safety</permissions instructions>'}]},{type:'message',role:'user',content:[{type:'input_text',text:`<environment_context><cwd>${cwd}</cwd></environment_context>`}]},{type:'message',role:'user',content:[{type:'input_text',text:prompt}]}];
+ assert.equal(isolation.diagnosePromptContamination(messages,{prompt,cwd}).ok,true);
+ assert.equal(isolation.diagnosePromptContamination(messages,{prompt,cwd}).source_exposure.in_declared_payload,true);
+ const contaminated=structuredClone(messages);contaminated.unshift({type:'message',role:'developer',content:[{type:'input_text',text:'Use skills/plan-changeset/SKILL.md and DOCTRINE.md.'}]});
+ assert.equal(isolation.diagnosePromptContamination(contaminated,{prompt,cwd}).ok,false);
+ assert.equal(isolation.diagnosePromptContamination([], {prompt,cwd}).ok,false);
+});
+test('live isolation cannot accept test fixture injection',()=>{
+ const opts={role:'open_box',tuple:execTuple,prompt:'OFFLINE',schema:protocol.outputSchemaForCall('open_box'),consumerRoot:process.cwd(),mode:'live'};
+ for(const extra of [{offline:{extraRoots:['/tmp']}},{env:{}},{inspectPrompt:()=>[]},{discoveredSkills:[]}])assert.throws(()=>isolation.assertEffectiveIsolation({...opts,...extra}),/inject|fixture|unsupported/i);
+});
+
+test('the actual external-review CLI refuses Two-Box roles before provider work',async()=>{
+ const {spawnSync}=await import('node:child_process');
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'two-box-review-purpose-'));
+ try{
+  const r=spawnSync(process.execPath,[new URL('../../scripts/run-external-review.mjs',import.meta.url).pathname,'--review-kind','open_box','--artifacts-dir',path.join(root,'artifacts')],{cwd:root,input:'OFFLINE test, no model request',encoding:'utf8'});
+  assert.equal(r.status,2,r.stderr);assert.match(r.stderr,/Two-Box planning roles require/);assert.equal(fs.existsSync(path.join(root,'artifacts')),false);
+ }finally{fs.rmSync(root,{recursive:true,force:true});}
+});
+
+async function withSourceFixture(run){
+ const {spawnSync}=await import('node:child_process');const root=fs.mkdtempSync(path.join(os.tmpdir(),'two-box-source-'));
+ const git=(...args)=>{const r=spawnSync('git',args,{cwd:root,encoding:'utf8'});assert.equal(r.status,0,r.stderr);return r.stdout.trim();};
+ try{
+  git('init','-q');fs.writeFileSync(path.join(root,'source.mjs'),'export const value = 1;\n'.repeat(16));fs.symlinkSync('source.mjs',path.join(root,'linked.mjs'));
+  git('add','.');git('-c','user.name=Offline Fixture','-c','user.email=fixture@example.invalid','-c','commit.gpgsign=false','commit','-qm','Offline source fixture');
+  await run(root,git('rev-parse','HEAD'));
+ }finally{fs.rmSync(root,{recursive:true,force:true});}
+}
+test('source snapshots distinguish full-file hash from bounded retained bytes',async()=>{
+ await withSourceFixture((root,baseSha)=>{
+  const bytes=fs.readFileSync(path.join(root,'source.mjs'));
+  const source=protocol.buildSourceSnapshot({consumerRoot:root,baseSha,scope:['source.mjs'],maxFileBytes:64});const file=source.scoped_files[0];
+  assert.equal(file.sha256,protocol.sha256Bytes(bytes));assert.equal(file.retained_sha256,protocol.sha256Bytes(bytes.subarray(0,64)));assert.equal(file.truncated,true);
+  assert.equal(protocol.getByRef(file.object_ref,{start:root}).bytes.length,64);
+  assert.notEqual(file.sha256,file.retained_sha256);
+ });
+});
+test('source snapshots reject traversal and historical Git symlinks even when absent from disk',async()=>{
+ await withSourceFixture((root,baseSha)=>{
+  assert.throws(()=>protocol.buildSourceSnapshot({consumerRoot:root,baseSha,scope:['folder/../source.mjs']}),/path|traversal/i);
+  fs.unlinkSync(path.join(root,'linked.mjs'));
+  assert.throws(()=>protocol.buildSourceSnapshot({consumerRoot:root,baseSha,scope:['linked.mjs']}),/symlink|regular/i);
+ });
+});
+test('stage storage retains parsed output, raw bytes, usage, and input bindings',async()=>{
+ await withSourceFixture((root,baseSha)=>{
+  const source=protocol.buildSourceSnapshot({consumerRoot:root,baseSha,scope:['source.mjs']});
+  const launch={evidence_class:'OFFLINE',output:{plan:'Keep the original behavior.'},rawStdout:'OFFLINE recorded output',rawStderr:'OFFLINE diagnostic',requested:execTuple,invocation:execTuple,observed:null,exit_code:0,usage:{input_tokens:2,output_tokens:3},prompt_digest:'a'.repeat(64),proof:{mode:'OFFLINE',effective:{usable_live:false}}};
+  const stored=protocol.storeStageEnvelope({wi:'WI-OFFLINE-TWO-BOX',role:'open_box',input:{requirements:['Keep behavior']},launch,policy:{fixture:true},source,start:root});const loaded=protocol.getStageEnvelope(stored.ref,{start:root});
+  assert.deepEqual(loaded.output,launch.output);assert.deepEqual(loaded.launch.usage,launch.usage);assert.equal(loaded.evidence_class,'OFFLINE');assert.equal(loaded.launch.proof.effective.usable_live,false);
+  assert.equal(protocol.getByRef(loaded.launch.raw_stdout_ref,{start:root}).bytes.toString(),launch.rawStdout);
+  assert.equal(loaded.input_digest,protocol.sha256Utf8(protocol.canonicalJson(loaded.input)));
+ });
+});
+
+const scouts=await import('../../scripts/lib/two-box-scout-assign.mjs');
+const contractFixture={plan:'Preserve the declared value and check its consumers.',decisions:[{id:'D1',original_requirement_ids:['AC1'],source_citations:[{path:'source.mjs',start_line:5,end_line:5,sha256:null}],text:'Keep the public behavior.'}]};
+test('two scouts get distinct grounded roots within retained ranges, without Open output',async()=>{
+ await withSourceFixture((root,baseSha)=>{
+  const sourceSnapshot=protocol.buildSourceSnapshot({consumerRoot:root,baseSha,scope:['source.mjs'],ranges:[{path:'source.mjs',start_line:5,end_line:12}]});
+  const a=scouts.assignDualPass({sourceSnapshot,initialContract:contractFixture,consumerRoot:root});
+  assert.notEqual(a.scout_forward.id,a.scout_reverse.id);assert.notDeepEqual(a.scout_forward.roots,a.scout_reverse.roots);
+  for(const assignment of Object.values(a))for(const excerpt of assignment.excerpts){assert.ok(excerpt.start_line>=5);assert.ok(excerpt.end_line<=12);assert.equal(protocol.sha256Utf8(excerpt.text),excerpt.input_excerpt_sha256);}
+  assert.throws(()=>scouts.assignDualPass({sourceSnapshot,initialContract:contractFixture,consumerRoot:root,openPlan:'Secret competing draft'}),/Open/);
+ });
+});
+test('scout citations cannot inflate supplied coverage or invent tool reads',async()=>{
+ await withSourceFixture((root,baseSha)=>{
+  const sourceSnapshot=protocol.buildSourceSnapshot({consumerRoot:root,baseSha,scope:['source.mjs']});
+  const {scout_forward:assignment}=scouts.assignDualPass({sourceSnapshot,initialContract:contractFixture,consumerRoot:root});
+  const parsed={findings:[],citations:[],unread_gaps:[],supplied_denominator:assignment.supplied_denominator,incomplete:false};
+  assert.equal(scouts.assignmentCoverage({assignment,parsed}).semantic_complete,false);
+  const excerpt=assignment.excerpts[0];
+  const citation={path:excerpt.path,start_line:excerpt.start_line,end_line:excerpt.end_line,sha256:'a'.repeat(63)+'\n'};
+  assert.throws(()=>protocol.validateRoleOutput('scout_forward',{...parsed,citations:[citation]}),/pattern|minLength/);
+  const finding={id:'F1',claim:'Concrete missing recovery',path:excerpt.path,start_line:excerpt.start_line,end_line:excerpt.end_line,excerpt:excerpt.text,consequential:true};
+  assert.equal(scouts.assignmentCoverage({assignment,parsed:{...parsed,findings:[finding]}}).semantic_complete,false);
+  assert.throws(()=>scouts.assignmentCoverage({assignment,parsed:{...parsed,findings:[{...finding,excerpt:'invented source'}]}}),/excerpt differs/);
+
+  assert.throws(()=>scouts.assignmentCoverage({assignment,parsed,observed_reads:[{path:'source.mjs'}]}),/tool-free/);
+  assert.throws(()=>scouts.assignmentCoverage({assignment,parsed:{...parsed,citations:[{path:'unseen.mjs',start_line:1,end_line:1,sha256:null}]}}),/unknown cited path/);
+  assert.throws(()=>scouts.assignmentCoverage({assignment,parsed:{...parsed,supplied_denominator:{files:['source.mjs'],ranges:[]}}}),/denominator/);
+ });
+});
+test('snapshot truncation remains an explicit consequential coverage gap',async()=>{
+ await withSourceFixture((root,baseSha)=>{
+  const sourceSnapshot=protocol.buildSourceSnapshot({consumerRoot:root,baseSha,scope:['source.mjs'],maxFileBytes:128});
+  const {scout_forward:assignment}=scouts.assignDualPass({sourceSnapshot,initialContract:{...contractFixture,decisions:[{...contractFixture.decisions[0],source_citations:[]}]},consumerRoot:root});
+  const parsed={findings:[],citations:[],unread_gaps:[],supplied_denominator:assignment.supplied_denominator,incomplete:true};
+  const coverage=scouts.assignmentCoverage({assignment,parsed});assert.ok(coverage.unresolved_gaps.some(g=>g.consequential&&g.reason.includes('truncated')));assert.equal(coverage.semantic_complete,false);
+ });
+});
+
+const launcher=await import('../../scripts/lib/two-box-role-launch.mjs');
+const codexEvents=extra=>[{type:'thread.started',thread_id:'OFFLINE'},{type:'turn.started'},...extra,{type:'item.completed',item:{type:'agent_message',text:JSON.stringify({plan:'Use the inspected interface.'})}},{type:'turn.completed',usage:{input_tokens:2,output_tokens:3}}].map(x=>JSON.stringify(x)).join('\n');
+test('strict role parser rejects tools, broken lines, truncated turns, and wrong types',()=>{
+ assert.deepEqual(launcher.parseCodexJsonl(codexEvents([]),'open_box'),{plan:'Use the inspected interface.'});
+ for(const type of ['command_execution','file_change','web_search','mcp_tool_call','unknown_tool'])assert.throws(()=>launcher.parseCodexJsonl(codexEvents([{type:'item.completed',item:{type}}]),'open_box'),/tool|unknown/);
+ assert.throws(()=>launcher.parseCodexJsonl('BROKEN\n'+codexEvents([]),'open_box'),/malformed/);
+ assert.throws(()=>launcher.parseCodexJsonl(codexEvents([]).split('\n').slice(0,-1).join('\n'),'open_box'),/terminal|truncated/);
+ assert.throws(()=>launcher.parseCodexJsonl(codexEvents([]).replace('Use the inspected interface.',''),'open_box'),/minLength/);
+ assert.throws(()=>launcher.parseCodexJsonl(codexEvents([{type:'turn.started'}]),'open_box'),/duplicate/);
+ assert.throws(()=>launcher.parseCodexJsonl(codexEvents([])+'\n{}','open_box'),/trailing/);
+ const invalidUtf8=Buffer.concat([Buffer.from(codexEvents([]).replace('Use the inspected interface.','REPLACE').split('REPLACE')[0]),Buffer.from([0xff]),Buffer.from(codexEvents([]).replace('Use the inspected interface.','REPLACE').split('REPLACE')[1])]);
+ assert.throws(()=>launcher.parseCodexJsonl(invalidUtf8,'open_box'));
+});
+test('combined stdout and stderr overflow closes the real fixture process',async()=>{
+ const run=await launcher.runBoundedProcess({binary:process.execPath,args:['-e','process.stdout.write("x".repeat(40)); process.stderr.write("y".repeat(40)); setInterval(()=>{},1000)'],cwd:os.tmpdir(),env:process.env,prompt:'',timeoutMs:3000,maxBytes:64});
+ assert.equal(run.status,'overflow');assert.ok(run.rawStdout.length+run.rawStderr.length<=64);assert.ok(run.signal || run.exit_code!==null);
+});
+test('timeout waits until a TERM-resistant fixture is actually gone',async()=>{
+ const run=await launcher.runBoundedProcess({binary:process.execPath,args:['-e','process.on("SIGTERM",()=>{}); process.stdout.write(String(process.pid)+"\\n"); setInterval(()=>{},1000)'],cwd:os.tmpdir(),env:process.env,prompt:'',timeoutMs:300,maxBytes:1024});
+ assert.equal(run.status,'timeout');const pid=Number(run.rawStdout.toString().trim());assert.ok(pid>0);assert.throws(()=>process.kill(pid,0),e=>e.code==='ESRCH');
+});
+test('a pre-aborted bounded invocation never creates a child result',async()=>{
+ const controller=new AbortController();controller.abort();const r=await launcher.runBoundedProcess({binary:process.execPath,args:['-e','throw Error("must not run")'],cwd:os.tmpdir(),env:process.env,prompt:'',timeoutMs:100,maxBytes:64,signal:controller.signal});
+ assert.equal(r.status,'abort');assert.equal(r.gotBytes,false);assert.equal(r.rawStderr.length,0);
+});
+
+const {runTwoBox}=await import('../../scripts/two-box-plan.mjs');
+async function cycleFixture(run){
+ await withSourceFixture(async(root,baseSha)=>{
+  const configPath=path.join(root,'policy.json');
+  fs.writeFileSync(configPath,JSON.stringify({schema_version:1,authority:'repository-owner',default_mode:'offline',modes:{offline:{labels:{PLAN:planTuple,EXEC:execTuple}}}}),{mode:0o600});
+  const sourceSnapshot=protocol.buildSourceSnapshot({consumerRoot:root,baseSha,scope:['source.mjs']});
+  const assignments=scouts.assignDualPass({sourceSnapshot,initialContract:contractFixture,consumerRoot:root});
+  const outputs={open_box:{plan:'  Preserve the public value.\n\nKeep its consumers compatible.  '},contract_box:contractFixture,
+   contract_revise:{...contractFixture,dispositions:[]},assessor:{winner:'open_win',selected_decisions:[{original_requirement_id:'AC1',decision_id:'open:P1',source_ids:['open:P1'],origin:'open_box',reason:'Preserves the original requirement with the simpler grounded approach.'}],rejection_dispositions:[],unresolved_conflicts:[]}};
+  for(const role of ['scout_forward','scout_reverse'])outputs[role]={findings:[],citations:[],unread_gaps:[],supplied_denominator:assignments[role].supplied_denominator,incomplete:false};
+  for (const [role, output] of Object.entries(outputs)) outputs[role] = {output, stdout: [
+   {type:'thread.started',thread_id:'OFFLINE-FIXTURE'}, {type:'turn.started'},
+   {type:'item.completed',item:{id:'offline-answer',type:'agent_message',text:JSON.stringify(output)}},
+   {type:'turn.completed',usage:{input_tokens:0,output_tokens:0}},
+  ].map(row=>JSON.stringify(row)).join('\n')+'\n'};
+  const opts={consumerRoot:root,wi:'WI-OFFLINE-CYCLE',originalRequirements:[{id:'AC1',text:'Keep public behavior.'}],scope:['source.mjs'],baseSha,facts:{},contractContext:[],mode:'OFFLINE',dispatch:{configPath,orchestrator:'codex',sessionOverrideRequested:false},offline:{outputs}};
+  await run(opts,root,outputs);
+ });
+}
+test('OFFLINE full cycle preserves independent originals, exactly two scouts, and reusable stage objects',async()=>{
+ await cycleFixture(async(opts,root)=>{
+  const first=await runTwoBox(opts);assert.equal(first.evidence_class,'OFFLINE');assert.equal(first.control_plan.draft,true);assert.equal(first.control_plan.issuance,'draft');
+  assert.deepEqual(Object.keys(first.stages).sort(),protocol.PLANNING_ROLES.slice().sort());
+  const stages=Object.fromEntries(Object.entries(first.stages).map(([r,s])=>[r,protocol.getStageEnvelope(s.ref,{start:root})]));
+  assert.equal(stages.open_box.output.plan,opts.offline.outputs.open_box.output.plan);assert.equal('original_open' in stages.contract_box.input,false);
+  assert.notDeepEqual(first.stages.contract_box.ref,first.stages.contract_revise.ref);
+  for(const role of ['scout_forward','scout_reverse']){assert.deepEqual(stages[role].parents,[first.stages.contract_box.ref]);assert.equal('facts' in stages[role].input,false);}
+  const resumed=await runTwoBox(opts);assert.deepEqual(resumed.stages,first.stages);
+  const {validateControlPlan}=await import('../../scripts/lib/control-plan-validate.mjs');assert.equal(validateControlPlan({consumerRoot:root,body:first.control_plan}).ok,false);
+ });
+});
+test('a failed scout cannot produce a complete control record or silently retry unchanged content',async()=>{
+ await cycleFixture(async(opts,root)=>{
+  opts.offline.outputs.scout_reverse={...opts.offline.outputs.scout_reverse.output,supplied_denominator:{files:[],ranges:[]}};
+  await assert.rejects(runTwoBox(opts),/denominator/);
+  const journal=JSON.parse(fs.readFileSync(path.join(root,'.svc/two-box',opts.wi,'journal.json')));
+  assert.equal(journal.stages.assessor,undefined);
+ });
+});
+
+test('OFFLINE complete control fixture recomputes all six prompts, source bytes, assignments, and selection',async()=>{
+ await cycleFixture(async(opts,root)=>{
+  const run=await runTwoBox(opts);const body={...run.control_plan,timestamp:'2026-09-15T00:00:00Z',tree_hash:run.control_plan.source.tree};
+  delete body.draft;delete body.draft_for;delete body.issuance;
+  const {validateControlPlanFixture,validateControlPlan}=await import('../../scripts/lib/control-plan-validate.mjs');
+  const result=validateControlPlanFixture({consumerRoot:root,body});assert.equal(result.ok,true,result.errors.join('\n'));assert.equal(result.executable,false);
+  assert.equal(validateControlPlan({consumerRoot:root,body}).ok,false);
+  for(const change of [b=>{b.chosen_solution.selected_decisions[0].source_ids=['invented'];},b=>{b.prompt_digest='a'.repeat(64);},b=>{b.tuple.scout_forward.model='other';},b=>{b.frozen_facts_ref=b.original_requirements_ref;}]){
+   const changed=structuredClone(body);change(changed);assert.equal(validateControlPlanFixture({consumerRoot:root,body:changed}).ok,false);
+  }
+ });
+});
+
+
+test('a declared Contract winner cannot hand off Open-only decisions',async()=>{
+ await cycleFixture(async(opts)=>{
+  const answer=opts.offline.outputs.assessor.output;
+  answer.winner='contract_win';
+  opts.offline.outputs.assessor.stdout=JSON.stringify({type:'thread.started',thread_id:'OFFLINE'})+'\n'+JSON.stringify({type:'turn.started'})+'\n'+JSON.stringify({type:'item.completed',item:{type:'agent_message',text:JSON.stringify(answer)}})+'\n'+JSON.stringify({type:'turn.completed',usage:{input_tokens:0,output_tokens:0}})+'\n';
+  await assert.rejects(runTwoBox(opts),/Contract winner cannot retain Open/);
+ });
+});
+
+
+test('only exact native startup diagnostics precede an otherwise complete tool-free turn',()=>{
+ const events=codexEvents([]).split('\n');
+ const warning='Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`.';
+ events.splice(1,0,JSON.stringify({type:'item.completed',item:{id:'diagnostic',type:'error',message:warning}}));
+ assert.equal(launcher.parseCodexJsonl(events.join('\n'),'open_box').plan,'Use the inspected interface.');
+ assert.throws(()=>launcher.parseCodexJsonl(events.join('\n').replace(warning,'Permission denied'),'open_box'),/unrecognized native startup/);
+ events.splice(1,1);events.splice(2,0,JSON.stringify({type:'item.completed',item:{type:'error',message:warning}}));
+ assert.throws(()=>launcher.parseCodexJsonl(events.join('\n'),'open_box'),/unknown item/);
+});
+
+test('retained native startup warnings replay across user homes without widening errors',()=>{
+ for(const home of ['/home/second-user/.codex','/Users/reviewer/custom-codex','C:\\Users\\reviewer\\.codex']) {
+  const message='Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in '+home+'/config.toml.';
+  const events=codexEvents([]).split('\n');events.splice(1,0,JSON.stringify({type:'item.completed',item:{type:'error',message}}));
+  assert.equal(launcher.parseCodexJsonl(events.join('\n'),'open_box').plan,'Use the inspected interface.');
+  assert.throws(()=>launcher.parseCodexJsonl(events.join('\n').replace('skip_host_skill_discovery','unexpected_feature'),'open_box'),/unrecognized/);
+ }
+});

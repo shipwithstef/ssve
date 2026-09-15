@@ -241,6 +241,67 @@ run_review() {
 }
 receipt_from_summary() { node -e 'const fs=require("fs");const s=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));process.stdout.write(s.receipt)' "$1"; }
 
+# Missing redirection must never leave a reviewer task silently waiting on a PTY
+# or an open pipe. Exercise real child processes and verify zero model calls.
+if python3 - "$LAUNCHER" "$TMP" "$LAUNCHER_CANDIDATE" <<'PY_INPUT'
+import json, os, pathlib, pty, subprocess, sys, time
+launcher, tmp, candidate = sys.argv[1:]
+root = pathlib.Path(tmp)
+call_log = pathlib.Path(os.environ['SVC_FAKE_LOG']) / 'calls'
+base = ['node', launcher, '--orchestrator', 'claude', '--review-kind', 'plan', '--candidate-digest', candidate]
+env = {**os.environ, 'SVC_EXTERNAL_REVIEW_INPUT_TIMEOUT_MS': '100'}
+for phase in ('preflight', 'review'):
+    for kind in ('terminal', 'open-pipe', 'partial-pipe'):
+        out = root / 'out' / ('input-' + phase + '-' + kind)
+        args = base + ['--artifacts-dir', str(out)]
+        if phase == 'preflight': args += ['--preflight', '--plan-file', str(root / 'absent-plan.json')]
+        master, slave = pty.openpty() if kind == 'terminal' else (None, None)
+        proc = subprocess.Popen(args, stdin=slave if slave is not None else subprocess.PIPE,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+        if slave is not None: os.close(slave)
+        try:
+            if kind == 'partial-pipe': proc.stdin.write(b'incomplete review request'); proc.stdin.flush()
+            proc.wait(timeout=8)
+            stdout, stderr = proc.communicate()
+        finally:
+            if proc.poll() is None: proc.kill(); proc.wait()
+            if master is not None: os.close(master)
+        assert proc.returncode != 0, (phase, kind, stdout)
+        assert b'--input-file' in stderr, (phase, kind, stderr)
+        if phase == 'review':
+            receipt = json.loads((out / 'receipt.json').read_text())
+            assert receipt['classification'] == 'input_invalid' and receipt['attempts'] == [], receipt
+        assert not call_log.exists(), 'missing input launched a provider'
+
+# An explicit bad file must not fall back to otherwise valid stdin.
+empty = root / 'empty-request.txt'; empty.write_text('  \n')
+for name, source in [('missing', root / 'absent-request.txt'), ('empty', empty), ('directory', root)]:
+    out = root / 'out' / ('input-file-' + name)
+    result = subprocess.run(base + ['--input-file', str(source), '--artifacts-dir', str(out)],
+                            input=b'do not silently use this request', capture_output=True, env=env, timeout=8)
+    receipt = json.loads((out / 'receipt.json').read_text())
+    assert result.returncode != 0 and receipt['classification'] == 'input_invalid' and receipt['attempts'] == [], result
+assert not call_log.exists(), 'invalid file launched a provider'
+
+# Recovery uses saved bytes even with terminal stdin; large prompts stay out of argv.
+saved = root / 'saved-request.txt'
+request = b'saved original review request\n' + b'x' * (2 * 1024 * 1024) + b'\nend of original request\n'
+saved.write_bytes(request)
+master, slave = pty.openpty()
+try:
+    result = subprocess.run(base + ['--input-file', str(saved), '--artifacts-dir', str(root / 'out' / 'input-recovered')],
+                            stdin=slave, capture_output=True, env=env, timeout=15)
+finally:
+    os.close(slave); os.close(master)
+assert result.returncode == 0, result.stderr
+received = (pathlib.Path(os.environ['SVC_FAKE_LOG']) / 'codex.stdin').read_bytes()
+assert request in received, 'saved request bytes changed'
+assert len(call_log.read_text().splitlines()) == 1, 'recovery invoked duplicate reviews'
+print('input recovery: 10 process cases passed; original bytes preserved; no premature provider calls')
+PY_INPUT
+then ok "bounded review input and saved-request recovery"; else bad "bounded review input and saved-request recovery"; fi
+rm -rf "$SVC_FAKE_LOG"; mkdir -p "$SVC_FAKE_LOG"
+
 for REPAIR in scope placeholder drift; do
   rm -rf "$SVC_FAKE_LOG"; mkdir -p "$SVC_FAKE_LOG"
   set +e
@@ -794,8 +855,11 @@ expect "cache replay is bound to key and package/schema hashes" test "$(grep -c 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache" "$TMP/runtime-copy"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache" "$TMP/runtime-copy/scripts/lib" "$TMP/runtime-copy/schemas" "$TMP/runtime-copy/references" "$TMP/runtime-copy/skills/review-exec" "$TMP/runtime-copy/skills/review-cross-model" "$TMP/runtime-copy/hooks/lib" "$TMP/runtime-copy/skills/research/scripts"
 cp "$LAUNCHER" "$TMP/runtime-copy/scripts/run-external-review.mjs"
 cp "$ROOT/scripts/lib/review-report-recovery.mjs" "$ROOT/scripts/lib/review-inputs.mjs" "$ROOT/scripts/lib/plan-manifest-contract.mjs" "$ROOT/scripts/lib/normalize-ac-table.mjs" "$ROOT/scripts/lib/evidence-schema.mjs" "$TMP/runtime-copy/scripts/lib/"
+cp "$ROOT/scripts/lib/two-box-protocol.mjs" "$ROOT/scripts/lib/receipt-issuance-epoch.mjs" "$ROOT/scripts/lib/control-plan-validate.mjs" "$ROOT/scripts/lib/transmutation-seal.mjs" "$ROOT/scripts/lib/isolated-plan-analysis.mjs" "$ROOT/scripts/lib/two-box-role-launch.mjs" "$ROOT/scripts/lib/two-box-scout-assign.mjs" "$TMP/runtime-copy/scripts/lib/"
 mkdir -p "$TMP/runtime-copy/schemas/receipts"
-cp "$ROOT/schemas/receipts/plan-manifest.schema.json" "$TMP/runtime-copy/schemas/receipts/"
+cp "$ROOT/schemas/receipts/plan-manifest.schema.json" "$ROOT/schemas/receipts/control-plan.schema.json" "$TMP/runtime-copy/schemas/receipts/"
+cp "$ROOT/scripts/lib/reviewer-evidence.mjs" "$ROOT/scripts/lib/bounded-exit.mjs" "$TMP/runtime-copy/scripts/lib/"
+cp "$ROOT/schemas/receipts/bounded-exit.schema.json" "$ROOT/schemas/receipts/bounded-exit-evidence.schema.json" "$TMP/runtime-copy/schemas/receipts/"
 cp "$ROOT/scripts/review-topology-v2.mjs" "$TMP/runtime-copy/scripts/review-topology-v2.mjs"
 cp "$ROOT/scripts/resolve-dispatch.mjs" "$TMP/runtime-copy/scripts/resolve-dispatch.mjs"
 cp "$ROOT/scripts/state-io.mjs" "$TMP/runtime-copy/scripts/state-io.mjs"

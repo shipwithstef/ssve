@@ -13,8 +13,12 @@ description: >
   independent sources; date-bounds volatile facts; reads/writes per-domain source
   heuristics; hands off multi-source / high-stakes / contested questions to the
   external `deep-research` plugin. Logs findings to docs/specs/research-log.md.
-  Use when: "research", "look up", "find out", "how does X work", "what's the best
-  practice for", or when any skill declares uncertainty. Also works standalone.
+  Use when: the user explicitly asks to "research", "look up", "find out",
+  "how does X work", or "what's the best practice for" a named scope; when
+  researchDecision(question) from scripts/lib/research-decision.mjs returns
+  external_research_required; or for Analysis Mode extraction of a named
+  source. Not for ordinary coding/design uncertainty, local unknowns, or a
+  new dependency/API choice. Also works standalone.
 phases:
   - id: P1-InvocationReceiptModeFrame
     trigger: always
@@ -89,6 +93,16 @@ confidently know. For multi-source, fact-checked, high-stakes reports, hand off 
 
 **Announce at start:** "I'm using the research skill to investigate [topic]."
 
+Bind `requesting_decision_id` and `requesting_task_id` on the task and in the
+invocation receipt. Return updated question/evidence/confidence to that
+decision. Reevaluate `researchDecision(question)` from
+`scripts/lib/research-decision.mjs` before unblocking. If a matching task for
+the same decision, requester, and scope already exists, resume it. Completed
+status alone is not resolution. Fulfill an explicit research request once and
+keep its provenance; do not repeat it forever. Repository inspection and
+reasoning are ANALYSIS, never internal research. If this run only does local
+analysis, do not fabricate a completed external-research skill receipt.
+
 ## Before Starting
 
 1. **Emit the invocation receipt** (Step 0) before any artifact write — the G-4 hook blocks
@@ -124,9 +138,13 @@ mkdir -p .svc && printf '{"timestamp":"%s","skill":"research","event":"skill_inv
   "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> .svc/pipeline-decisions.jsonl
 ```
 
-Required: `timestamp` (ISO-8601, parses via `Date.parse`), `skill: "research"`. Run ONCE
-at the top; subsequent writes within the 90-min window are covered by the same receipt.
+Required: `timestamp` (ISO-8601, parses via `Date.parse`), `skill: "research"`,
+plus `requesting_decision_id` and `requesting_task_id` when a caller decision
+exists (`null` only for standalone user-explicit research). Run ONCE at the
+top; subsequent writes within the 90-min window are covered by the same receipt.
 (Prevents the wedge observed 2026-04-26: sub-agent returns content, log write blocked.)
+If only local analysis ran, keep `mode` as `analysis` and do not treat this
+receipt as completed external research.
 
 ## Boundary: research (this skill) vs deep-research (handoff target)
 
@@ -160,16 +178,20 @@ agy-cli → Claude fallback — a partial is not a terminal state):
 
 Detect mode automatically. The user says WHAT to analyze; the skill knows HOW.
 
-- **URL or repo name → Analysis Mode** (full extraction, all 3 layers in one pass). The
-  goal: after analysis you NEVER read the source again. Scope qualifiers ("only pipelines")
-  narrow it; otherwise extract everything. URL-shaped inputs are FORCED into Analysis Mode
+- **URL or repo name → Analysis Mode** (full extraction, all 3 layers in one pass) when
+  the user asked to extract that named source or `researchDecision(question)` scoped it.
+  Inspecting the current project worktree is ANALYSIS, never this mode and never
+  internal research. The goal: after analysis you NEVER read the source again. Scope
+  qualifiers ("only pipelines") narrow it; otherwise extract everything. URL-shaped
+  inputs that are in-scope for this skill are FORCED into Analysis Mode
   (validator `validate-research-mode-detection.sh`).
 - **A question → Question Mode** (targeted answer). Check knowledge base first, discover,
   triangulate, persist. **Layer 3 exception:** if a source has ≥3 distinct reusable areas,
   still write `details/<area>.md` files (Mechanism + Analysis + L4 Pointers) — mode decides
   whether you clone a repo, not whether you persist reusable knowledge fully.
 
-**Mandatory Deep-Dive Research Protocol (SIP 2026-05-11)** — all repository analyses:
+**Mandatory Deep-Dive Extraction Protocol (SIP 2026-05-11)** — when Analysis Mode
+extracts a named source repository (not current-worktree inspection):
 1. **Systematic Sweep** — list all dirs; sample largest files in `bin/`, `src/`, `sdk/`, `tests/`.
 2. **Tiered Extraction** — Layer 3 categorized into Unique Mechanics / Common Implementations / Intelligence Data.
 3. **Reliability Proofs** — SHA-256 ledger for 100% of manifest files in `.sources.jsonl`; cross-verify ≥1 complex algorithm/regex against raw source before commit.
@@ -442,10 +464,12 @@ competitor homepages / JS-rendered / incomplete indexes.
 **The coverage check is mandatory.** The #1 failure of research is "read the main file, skim
 the rest, declare done." If the repo has 7 reference docs, you read 7.
 
-**Model:** Sonnet, medium effort. Mechanical extraction. Use Opus only for blend/creative
-analysis. **Session interrupts:** resume from the first area in CAPABILITIES.md lacking a
-`details/` file. **The output is always layered knowledge** — INDEX.md entry, CAPABILITIES.md,
-details/*.md, .version — never a chat response that disappears.
+**Model/host/effort:** configurable via the active profile and existing overrides
+(`SVC_RESEARCH_AGENT`, `resolve-model.sh`). Do not pin a fixed default old recipe.
+Mechanical extraction stays mechanical. **Session interrupts:** resume from the first
+area in CAPABILITIES.md lacking a `details/` file. **The output is always layered
+knowledge** — INDEX.md entry, CAPABILITIES.md, details/*.md, .version — never a chat
+response that disappears.
 
 ## ingest-guide Handoff Format
 
@@ -510,6 +534,11 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P4-
 node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P5-VerificationLanding --evidence command_output:.svc/research-verification-landing.log
 node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-SelfVerifyReturnControl --evidence command_output:.svc/research-self-verify.log
 ```
+
+Keep these phase ids. Record P3 as performed external research or Analysis Mode
+prescope only when that work actually ran. If only local analysis ran, P3 evidence
+must say external research/prescope did not run, and task `completed` must not be
+treated as resolving `external_research_required`.
 
 ## Pipeline Continuation
 

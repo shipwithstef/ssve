@@ -1,0 +1,123 @@
+{
+  "wi": "WI-FW-TWO-BOX-01",
+  "status": "implementation-present; release-validation-incomplete",
+  "reviewed_plan_digest": "b5fcee9a07c6aa09c3346f9784c9458224e9dd7141095c200718aff980bf11b0",
+  "root_review": "root-design-review.md",
+  "solution_review": {
+    "receipt": ".svc/external-review-artifacts/two-box/solution-review-r1/receipt.json",
+    "verdict": "fail",
+    "disposition": "Resolved before conversion; not formal approval"
+  },
+  "formal_reviews": [
+    {
+      "receipt": ".svc/external-review-artifacts/two-box/formal-plan-review/receipt.json",
+      "status": "timeout; no verdict"
+    },
+    {
+      "receipt": ".svc/external-review-artifacts/two-box/formal-plan-review-r2/receipt.json",
+      "verdict": "fail",
+      "findings": "F-001 through F-005 resolved; see root-design-review.md"
+    },
+    {
+      "receipt": ".svc/external-review-artifacts/two-box/formal-plan-review-r3/receipt.json",
+      "verdict": "pass",
+      "findings": []
+    }
+  ],
+  "self_review": {
+    "status": "pass",
+    "remaining_findings": []
+  },
+  "bootstrap": {
+    "snapshot": {
+      "ok": true,
+      "snapshot": "docs/specs/privacy/v4-bootstrap-snapshot.json",
+      "sha256": "e283a25d22cfb65416df2d5d2eca3116bf5cc732e7d11afa28a444cfc122c20c",
+      "mode": "check"
+    },
+    "producer_correction": "Corrected launcher.context to actual signed launcher.package_context before freeze; unchanged binding predicate. Parent checked actual signed field and canonical evidence verification. The reviewer certified previous producer bytes; corrected producer retained separately in snapshot CAS."
+  },
+  "attestation": "Exact requested Cursor model accepted by CLI; server model identity not echoed",
+  "execution": {
+    "author": "Cursor Grok 4.6 Extra High",
+    "applier": "Codex controller",
+    "transport": "Landlock read-only output bundles; hooks enabled; parent applies current-hash-checked paths sequentially",
+    "proof_maintenance_deviations": [
+      {
+        "id": "D-PROOF-01",
+        "path": "test-framework/evals/tier-1/validate-solution-confidence-protocol.sh",
+        "reason": "Existing validator requires five examples and unconditional external research, behavior explicitly removed by AC11/AC12. This existing proof consumer was omitted from immutable T7 scope.",
+        "root_review": "Allow bounded test maintenance for the changed behavior; retain all explicit approval/intake assertions and test actual compiler/validator behavior. No product scope expansion, receipt waiver, or edit to frozen plan. Final execution review must include this deviation.",
+        "authorization": "Original user requests conditional external research and complete implementation; execute-changeset permits documented necessary proof maintenance.",
+        "time": "2026-09-15T02:22:21.275685+00:00"
+      },
+      {
+        "id": "D-PROOF-04",
+        "paths": [
+          "test-framework/evals/tier-1/validate-bounded-review-exit.mjs",
+          "test-framework/evals/tier-1/validate-conditional-plan-blueprints.sh",
+          "test-framework/evals/tier-1/validate-consumer-evidence-root.sh",
+          "test-framework/evals/tier-1/validate-receipt-identity-collision.sh"
+        ],
+        "reason": "Existing proof consumers omitted from immutable scope expected fabricated legacy plans to grant current execution. Preserve their original schema, identity, collision, bounded-review and consumer-root coverage while asserting historical readability and current denial.",
+        "root_review": "Necessary proof maintenance for AC13; final execution review includes all four exact diffs. No runtime waiver or frozen-plan rewrite."
+      },
+      {
+        "id": "D-PROOF-05",
+        "paths": [
+          "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+          "test-framework/evals/tier-1/validate-retroactive-attestation.sh",
+          "test-framework/evals/tier-1/validate-sol-r2-fail-closed.mjs",
+          "scripts/audit-framework-docs.mjs"
+        ],
+        "reason": "Existing test runtime copies require new dependency closure; old-plan negative accepts the new fail-closed reason; generated .svc review artifacts are not live documentation. Original authority and historical assertions retained."
+      }
+    ],
+    "affected_decision_amendments": [
+      {
+        "id": "D-RESEARCH-02",
+        "path": "scripts/spine-gap-spawn.mjs",
+        "problem": "Recall skill still invokes this existing helper. Its actual code inserts research unconditionally, uses legacy blockedBy, and cannot bind or reuse requesting question evidence. Changing prose alone would leave an executable bypass.",
+        "approach": "Keep CLI positional compatibility; missing question logs analysis and inserts no research. Optional --question JSON supplies the canonical record; use shared predicate and existing compileDeliveryGraph resume inside updateJsonAtomic for eligible external decisions. Preserve WI/requester and unrelated task evidence. No provider call or extra approval authority.",
+        "scope": "One existing helper plus its already-in-scope skill instructions and research regression tests. No change to reviewed product behavior or immutable T0.",
+        "root_review": "Necessary AC11/AC12 consumer repair, authorized by the original request. Include exact diff and proof in final execution review.",
+        "time": "2026-09-15T02:29:27.202276+00:00"
+      },
+      {
+        "id": "D-EPOCH-03",
+        "path": "scripts/lib/reviewer-evidence.mjs",
+        "problem": "Adding the shared execution gate creates a real ESM initialization cycle through review input preparation; direct canonical reviewer CLI failed before its own input checks.",
+        "approach": "Read the existing supported-launcher version set at verification time, retaining exactly the same versions/provenance checks. No policy or evidence relaxation.",
+        "root_review": "Necessary integration correction; direct actual CLI boundary regression reproduced and corrected. Include in final execution review.",
+        "time": "2026-09-15T03:43:39.668Z"
+      },
+      {
+        "id": "D-LIVE-06",
+        "path": "scripts/run-live-two-box-canary.mjs",
+        "reason": "One explicit recovery after strict citation correction; max five new planning calls plus one held-out comprehension; previous claims and attempts retained. Recovery stopped at first native call without a response. No automatic further retry."
+      }
+    ],
+    "root_integration": {
+      "author": "Codex parent reviewer/controller",
+      "note": "Cursor-authored source bundles preserved; root corrected runtime interfaces, frozen facts, source/selection linkage, strict v5 schema/preparation, actual issuer/checker wiring and independent regression tests. Final bytes have both authors.",
+      "evidence": "55 focused tests and 172 launcher assertions pass; full suite 361 PASS/10 FAIL; live recovery ended without a Contract response. No complete LIVE control or newly sealed v5 positive flow.",
+      "time": "2026-09-15T04:07:23.153Z"
+    },
+    "final_execution_review": {
+      "receipt": ".svc/external-review-artifacts/two-box/final-exec-review-r1/receipt.json",
+      "verdict": "fail",
+      "findings": [
+        "F-AC07-SEAL-CANDIDATE-TREE-TYPE",
+        "F-AC03-PARSER-HOME-INTERPOLATION",
+        "F-AC08-EXEC-MISSING-FILE-BASE-V4-FIELD"
+      ],
+      "disposition": "Root patches applied; local proof passes; independent patch review not completed"
+    },
+    "handoff": {
+      "time": "2026-09-15T05:23:10.445747+00:00",
+      "report": "implementation-report.md",
+      "further_model_calls": "stopped after owner cost/duration feedback",
+      "release_certified": false
+    }
+  }
+}

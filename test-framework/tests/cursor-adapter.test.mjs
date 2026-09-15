@@ -29,11 +29,11 @@ function setupCursorSessionFixture(tmp, wi = 'WI-CURSOR-FIXTURE-01', cursorSid =
   const repo = path.join(tmp, 'repo');
   const target = path.join(repo, '.worktrees', `wt-${wi.toLowerCase()}`);
   fs.mkdirSync(repo, { recursive: true });
-
   const git = (...args) => execFileSync('git', ['-C', repo, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
   git('init', '-b', 'main');
   git('config', 'user.name', 'cursor-fixture');
   git('config', 'user.email', 'cursor@example.invalid');
+  fs.writeFileSync(path.join(repo, '.gitignore'), ".worktrees/\n.svc/\n");
   fs.writeFileSync(path.join(repo, 'seed.txt'), 'seed');
   git('add', '.');
   git('commit', '-qm', 'seed');
@@ -71,6 +71,10 @@ function setupCursorSessionFixture(tmp, wi = 'WI-CURSOR-FIXTURE-01', cursorSid =
   const env = {
     SVC_HOST: 'cursor',
     SVC_CODEX_RUNTIME_DIR: runtimeDir,
+    CODEX_SKILLS_DIR: path.join(root, 'skills'),
+    CURSOR_CONVERSATION_ID: '',
+    CURSOR_SESSION_ID: '',
+    SVC_SESSION_ID: '',
   };
 
   return { repo, target, env, wi, cursorSid };
@@ -159,51 +163,7 @@ test('Cursor adapter: child dispatcher errors, empty output, and unparseable out
 
 test('Cursor adapter: end-to-end prompt capture, lease recovery, skill loading, and governed mutation', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'svc-cursor-e2e-'));
-  const repo = path.join(tmp, 'repo');
-  const target = path.join(repo, '.worktrees', 'wt-cursor-live');
-  fs.mkdirSync(repo);
-
-  const git = (...args) => execFileSync('git', ['-C', repo, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-  git('init', '-b', 'main');
-  git('config', 'user.name', 'cursor-fixture');
-  git('config', 'user.email', 'cursor@example.invalid');
-  fs.writeFileSync(path.join(repo, 'seed.txt'), 'seed');
-  git('add', '.');
-  git('commit', '-qm', 'seed');
-  git('update-ref', 'refs/remotes/origin/main', 'HEAD');
-  fs.mkdirSync(path.join(repo, '.worktrees'));
-  git('worktree', 'add', '-b', 'fix/cursor-e2e', target);
-
-  const wi = 'WI-CURSOR-E2E-01';
-  const cursorSid = '2f538175-c2a2-461e-a2ab-29a7042adf73'; // Real Cursor conversation UUID format
-
-  fs.mkdirSync(path.join(target, '.svc'));
-  const graph = {
-    schema_version: 1,
-    wi,
-    lane: 'bugfix',
-    status: 'in_progress',
-    tasks: [
-      {
-        id: 1,
-        skill: 'execute-changeset',
-        subject: 'Cursor governed mutation test',
-        status: 'in_progress',
-        metadata: { skill: 'execute-changeset', wi },
-        blocked_by: [],
-      },
-    ],
-  };
-  fs.writeFileSync(path.join(target, '.svc', `lane-tasks-${wi}.json`), JSON.stringify(graph, null, 2));
-  fs.writeFileSync(
-    path.join(target, '.svc', 'session-contract.jsonl'),
-    JSON.stringify({ wi, ts: new Date().toISOString(), authorization_envelope: { rules: [] } }) + '\n'
-  );
-
-  const env = {
-    SVC_HOST: 'cursor',
-    CURSOR_CONVERSATION_ID: cursorSid,
-  };
+  const { repo, target, env, wi, cursorSid } = setupCursorSessionFixture(tmp, 'WI-CURSOR-E2E-01', '2f538175-c2a2-461e-a2ab-29a7042adf73');
 
   try {
     // Step 1: Prompt authority capture via beforeSubmitPrompt
@@ -252,7 +212,7 @@ test('Cursor adapter: end-to-end prompt capture, lease recovery, skill loading, 
     // Step 3: Load skill using codex-load-skill under Cursor host identity
     const loadRes = spawnSync(
       process.execPath,
-      [loaderPath, '--graph', path.join(target, '.svc', `lane-tasks-${wi}.json`), '--task', '1', '--skill', 'execute-changeset', '--session', cursorSid],
+      [loaderPath, '--graph', path.join(target, '.svc', `lane-tasks-${wi}.json`), '--task', '1', '--skill', 'execute-changeset', '--session', cursorSid, '--host', 'cursor'],
       {
         encoding: 'utf8',
         cwd: target,
@@ -833,3 +793,173 @@ test('Cursor adapter: in-process chat switch/resume updates Prompt, Shell, and T
   }
 });
 
+test('Cursor adapter: native tool_call unpacking and editToolCall with workdir and target path in worktree', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'svc-cursor-toolcall-'));
+  try {
+    const { target, repo, env, wi, cursorSid } = setupCursorSessionFixture(tmp, 'WI-CURSOR-TOOLCALL-01', '7c9e6679-7425-40de-944b-e07fc1f90ae7');
+
+    // 1. Native readToolCall inside tool_call allows via observation fast-path
+    const readCall = runAdapter(
+      '--pretool',
+      {
+        tool_call: {
+          readToolCall: {
+            args: { path: path.join(target, 'seed.txt') },
+          },
+        },
+        workingDirectory: target,
+        conversation_id: cursorSid,
+      },
+      env
+    );
+    assert.equal(readCall.status, 0);
+    assert.equal(readCall.json?.permission, 'allow');
+
+    // 2. Submit prompt for WI to establish authority
+    const promptRes = runAdapter(
+      '--before-submit-prompt',
+      {
+        prompt: `work on ${wi} and implement changes`,
+        session_id: cursorSid,
+        turn_id: 'turn-edit-1',
+        cwd: target,
+      },
+      env
+    );
+    assert.equal(promptRes.status, 0);
+    assert.equal(promptRes.json?.continue, true);
+
+    // 2.3. Initial pretool triggers self-heal adoption and emits skill loader command
+    const preSkillMutation = runAdapter(
+      '--pretool',
+      {
+        tool_name: 'Shell',
+        tool_input: { command: 'echo "mutation" >> seed.txt' },
+        conversation_id: cursorSid,
+        turn_id: 'turn-edit-1',
+        cwd: target,
+      },
+      env
+    );
+    assert.equal(preSkillMutation.status, 0);
+    assert.equal(preSkillMutation.json?.permission, 'allow', `Expected allow, got: ${JSON.stringify(preSkillMutation.json)}`);
+    assert.match(preSkillMutation.json?.updated_input?.command || '', /codex-load-skill/);
+
+    // 2.5. Load skill to create skill load receipt
+    const loadRes = spawnSync(
+      process.execPath,
+      [loaderPath, '--graph', path.join(target, '.svc', `lane-tasks-${wi}.json`), '--task', '1', '--skill', 'execute-changeset', '--session', cursorSid, '--host', 'cursor'],
+      {
+        encoding: 'utf8',
+        cwd: target,
+        env: { ...process.env, ...env, PWD: target },
+      }
+    );
+    assert.equal(loadRes.status, 0, `loader failed: status=${loadRes.status}, stderr=${loadRes.stderr}, stdout=${loadRes.stdout}`);
+
+    // 3. Native editToolCall inside tool_call with absolute target in authorized worktree allows
+    const editCall = runAdapter(
+      '--pretool',
+      {
+        tool_call: {
+          editToolCall: {
+            args: {
+              path: path.join(target, 'seed.txt'),
+              content: 'updated content',
+            },
+          },
+        },
+        workingDirectory: target,
+        conversation_id: cursorSid,
+        turn_id: 'turn-edit-1',
+      },
+      env
+    );
+    assert.equal(editCall.status, 0);
+    assert.equal(editCall.json?.permission, 'allow', `Expected allow, got: ${JSON.stringify(editCall.json)}`);
+
+    // 4. Contradictory target outside authorized worktree denies
+    const outsideTarget = runAdapter(
+      '--pretool',
+      {
+        tool_call: {
+          editToolCall: {
+            args: {
+              path: path.join(repo, 'outside-target.txt'),
+              content: 'illegal write',
+            },
+          },
+        },
+        workingDirectory: target,
+        conversation_id: cursorSid,
+        turn_id: 'turn-edit-1',
+      },
+      env
+    );
+    assert.equal(outsideTarget.status, 0);
+    assert.equal(outsideTarget.json?.permission, 'deny');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+
+
+
+test('Claude imported hooks preserve explicit host and keep the native Claude default', () => {
+  const output = execFileSync(process.execPath, [path.join(root, 'scripts/wire-hooks.mjs'), '--skills-path', root, '--list-all'], { encoding: 'utf8' });
+  const entries = JSON.parse(output.slice(output.indexOf('{'))).hooks;
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'svc-imported-host-'));
+  try {
+    const probe = path.join(tmp, 'host.mjs');
+    fs.writeFileSync(probe, 'process.stdout.write(process.env.SVC_HOST || "missing");');
+    for (const [event, suffix] of [['PreToolUse', 'svc-codex-pretool-dispatcher.mjs'], ['PostToolUse', 'svc-codex-posttool-heartbeat.mjs']]) {
+      const original = entries[event].flatMap(e => e.hooks).find(h => h.command.endsWith(suffix)).command;
+      const command = original.replace(path.join(root, 'hooks/codex', suffix), probe);
+      for (const expected of ['claude', 'cursor', 'codex']) {
+        const env = { ...process.env };
+        if (expected === 'claude') delete env.SVC_HOST;
+        else env.SVC_HOST = expected;
+        const result = spawnSync('/bin/sh', ['-c', command], { encoding: 'utf8', env });
+        assert.equal(result.status, 0, result.stderr);
+        assert.equal(result.stdout, expected, `${event} must retain the real launcher host`);
+      }
+    }
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+});
+
+test('Cursor and imported Claude dispatcher share one v2 controller without identity churn', async () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'svc-cursor-imported-'));
+  const f = setupCursorSessionFixture(tmp, 'WI-CURSOR-IMPORTED-01');
+  const env = { ...process.env, ...f.env, CURSOR_CONVERSATION_ID: f.cursorSid, SVC_SESSION_ID: f.cursorSid, PWD: f.target };
+  const { authorityStateRoot, repositoryId, principalId, bootstrapController, readController } = await import('../../hooks/lib/authority-store.mjs');
+  const ctx = { stateRoot: authorityStateRoot(f.target), repoId: repositoryId(f.target), wi: f.wi };
+  const principal = principalId({ host: 'cursor', session_id: f.cursorSid });
+  try {
+    bootstrapController({ ...ctx, worktreeRoot: f.target, principal });
+    const prompt = runAdapter('--before-submit-prompt', { prompt: `Work on ${f.wi}`, conversation_id: f.cursorSid, cwd: f.target }, env);
+    assert.equal(prompt.json?.continue, true);
+    const loaded = spawnSync(process.execPath, [loaderPath, '--graph', path.join(f.target, '.svc', `lane-tasks-${f.wi}.json`), '--task', '1', '--skill', 'execute-changeset'], { cwd: f.target, encoding: 'utf8', env });
+    assert.equal(loaded.status, 0, loaded.stderr);
+    const listed = execFileSync(process.execPath, [path.join(root, 'scripts/wire-hooks.mjs'), '--skills-path', root, '--list-all'], { encoding: 'utf8' });
+    const entries = JSON.parse(listed.slice(listed.indexOf('{'))).hooks;
+    const importedCommand = entries.PreToolUse.flatMap(e => e.hooks).find(h => h.command.endsWith('svc-codex-pretool-dispatcher.mjs')).command;
+    const payload = { tool_name: 'Shell', tool_input: { command: 'node -e "process.stdout.write(123)"', workdir: f.target }, conversation_id: f.cursorSid, session_id: f.cursorSid, cwd: f.target };
+    const native = runAdapter('--pretool', payload, env);
+    assert.equal(native.json?.permission, 'allow');
+    const before = readController(ctx);
+    const imported = spawnSync('/bin/sh', ['-c', importedCommand], { cwd: f.target, input: JSON.stringify(payload), encoding: 'utf8', env });
+    assert.equal(imported.status, 0, imported.stderr);
+    const verdict = JSON.parse(imported.stdout.trim().split('\n').at(-1));
+    assert.notEqual(verdict.permission || verdict.hookSpecificOutput?.permissionDecision, 'deny', imported.stdout);
+    const after = readController(ctx);
+    assert.equal(after.controller_principal, principal);
+    assert.equal(after.generation, before.generation, 'importing the hook cannot transfer the controller');
+    const foreign = { ...payload, session_id: 'foreign-session', conversation_id: 'foreign-session' };
+    const denied = spawnSync('/bin/sh', ['-c', importedCommand], { cwd: f.target, input: JSON.stringify(foreign), encoding: 'utf8', env: { ...env, CURSOR_CONVERSATION_ID: 'foreign-session', SVC_SESSION_ID: 'foreign-session' } });
+    const rejection = JSON.parse(denied.stdout.trim().split('\n').at(-1));
+    assert.equal(rejection.permission || rejection.hookSpecificOutput?.permissionDecision, 'deny', denied.stdout);
+    assert.equal(readController(ctx).controller_principal, principal);
+    assert.equal(readController(ctx).generation, before.generation);
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+});

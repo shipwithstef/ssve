@@ -1,0 +1,30 @@
+{
+  "evidence_class": "OFFLINE",
+  "kind": "historical_schema_fixture",
+  "executable": false,
+  "notes": "Synthetic original-schema v1 floor receipt body. Not a public-root Git note.",
+  "body": {
+    "receipt_type": "control-plan",
+    "schema_version": 1,
+    "wi": "WI-SYNTHETIC-CONTROL-PLAN-V1",
+    "blind_model": "offline-blind-fixture",
+    "framework_model": "offline-framework-fixture",
+    "profile": "svc-default",
+    "registry_version": "offline-registry-v1",
+    "floor_verdict": "pass",
+    "element_ledger": {
+      "kept": ["B1"],
+      "added": [],
+      "refined": [],
+      "removed": [],
+      "altered": []
+    },
+    "judge": {
+      "reviewer_host": "codex",
+      "reviewer_family": "openai",
+      "certifications": []
+    },
+    "tree_hash": "0000000000000000000000000000000000000000",
+    "timestamp": "2026-01-01T00:00:00.000Z"
+  }
+}

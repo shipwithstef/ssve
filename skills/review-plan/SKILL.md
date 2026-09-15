@@ -81,7 +81,7 @@ chain:
 
 ## Overview
 
-This skill is the mandatory gate between `plan-changeset` and `execute-changeset`. It catches ambiguity, rename-drift, forbidden patterns, and scope creep BEFORE MiMo (or any executor) dispatches against a broken plan. A broken plan wastes an entire execute-changeset cycle — this gate costs ~$0.05 to prevent.
+This skill is the mandatory gate between `plan-changeset` and `execute-changeset`. It reviews the complete prepared v5 contract (inline or dispatch) after Two-Box + Deterministic Transmutation, using the existing owner reviewer topology. It is not a second holistic review and not a new lane. It catches ambiguity, rename-drift, forbidden patterns, and scope creep BEFORE any executor dispatches against a broken plan. A broken plan wastes an entire execute-changeset cycle — this gate costs ~$0.05 to prevent. Advise a similar-capability high-effort reviewer via existing config; dated recipes are nonauthoritative.
 
 The protocol is enforced by the canonical `references/plan-review-protocol.md`. Read that file if you need the full finding format, accept/reject shape, or iteration rules.
 
@@ -157,7 +157,7 @@ drains cheap defects before that review without paying for repeated full rereads
 
 ### Inline readiness boundary
 
-Use the mode-aware rubric in references/plan-review-protocol.md. For inline, reject missing consequential behavior, state ownership, interfaces, proof or scope; do not reject absent code blueprints or harmless local choices. Explicit v4 release producer descriptions replace guessed future shell identities. Require original AC/UX/technical context, not only a concise digest. Dispatch keeps complete packets. Keep the integer transport, owner reviewer topology and one holistic review plus invalidated-lens corrections.
+Use the mode-aware rubric in references/plan-review-protocol.md. For inline, reject missing consequential behavior, state ownership, interfaces, proof or scope, and incomplete v5 `planning_contract` / `implementation_approach` / `executor_discretion`; do not reject absent code blueprints or harmless local choices. Explicit v5 release producer descriptions replace guessed future shell identities. Require original AC/UX/technical context, not only a concise digest. Dispatch keeps complete packets. Keep the integer transport, owner reviewer topology and one holistic review plus invalidated-lens corrections. Do not treat `planning_contract.sealed` as authority.
 
 ### Step 2 — Tier 2: Primary adversarial review (cross-model preferred)
 
@@ -366,11 +366,11 @@ Follow the canonical task-graph chaining contract: see `references/task-graph-ch
 - If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
 - Per `route-workflow` Task-Graph Execution Protocol
 
-**Default chain:** `plan-changeset` → `review-plan` → (if PASS) `execute-changeset`. review-plan is a gate, not a pipeline step — the task graph position is inside plan-changeset's self-verify, not as a separate task unless the user explicitly promotes it.
+**Default chain:** `plan-changeset` (Two-Box + complete v5 prepare) → `review-plan` → (if PASS, issuer persists a separate verified seal) → `execute-changeset`. review-plan remains the one existing holistic gate, not a new lane and not a duplicate review — the task graph position is inside plan-changeset's self-verify, not as a separate task unless the user explicitly promotes it.
 
 ## Non-goals
 
-- This skill does NOT rewrite the plan. It reviews. Orchestrator applies revisions.
+- This skill does NOT rewrite the plan. It reviews. Orchestrator applies revisions. It does not set `sealed:true` on reviewed JSON/Markdown; after PASS the issuer persists a separate seal envelope over the exact prepared bytes and full manifest.
 - This skill does NOT do taste review — "is this the prettiest architecture" is out of scope.
 - This skill does NOT run tests, builds, or installs. Read + analyze only.
 - This skill does NOT edit files outside `docs/plans/<date>-<name>/review-log.yaml`.
@@ -468,6 +468,6 @@ Reference: `references/chain-receipt-contract.md`.
 
 ### Input preflight and certification closeout
 
-Before paid review, run the canonical launcher with `--preflight --plan-file <validated-v4-json>` and the same reviewer, phase-binding, context and candidate-digest arguments as the actual invocation. Pass `--plan-file` again during review so the same schema validation and declared source packaging run on the consumed bytes. Put extra declared source paths in a JSON array passed as `--context-files`; do not silently omit missing dependencies. Preflight makes no reviewer call and does not certify credentials or approval.
+Before paid review, run the canonical launcher with `--preflight --plan-file <exact-prepared-v5-json>` and the same reviewer, phase-binding, context and candidate-digest arguments as the actual invocation. `--plan-file` is the exact prepared JSON bytes (`planBytes`), not a reconstructed `JSON.stringify(body)`. Pass `--plan-file` again during review so the same schema validation and declared source packaging run on the consumed bytes. Include the full supporting Markdown manifest as declared context. Put extra declared source paths in a JSON array passed as `--context-files`; do not silently omit missing dependencies. Preflight makes no reviewer call and does not certify credentials, approval, or a seal.
 
 A terminal `pass`/`pass-with-findings` with failed plan certifications may use the same bounded closeout as raw `fail`: exactly three authoritative rounds, fixed non-Critical findings and complete candidate-bound certification proof. Use the canonical builder; all identity, census, unread-dependency and Critical checks still apply. Never reinterpret a failed execution certification this way.

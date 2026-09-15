@@ -1,0 +1,444 @@
+{
+  "schema_version": 1,
+  "wi": "WI-FW-TWO-BOX-01",
+  "lane": "framework",
+  "status": "in_progress",
+  "created": "2026-09-14T23:22:02.823Z",
+  "tasks": [
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "route-workflow",
+      "subject": "route workflow",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-09-14T23:22:25.746Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-09-14T23:25:42.834Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/two-box-transmutation/solution-plan.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-09-14T23:25:43.519Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/two-box-transmutation/solution-plan.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-09-14T23:25:44.191Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-FW-TWO-BOX-01.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-09-14T23:25:44.857Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/two-box-transmutation/solution-plan.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-09-14T23:25:45.545Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-FW-TWO-BOX-01.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-09-14T23:25:46.220Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/pipeline-decisions.jsonl"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-09-14T23:27:10.772Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/external-review-artifacts/two-box/concern-scan.json"
+              }
+            ]
+          }
+        ]
+      },
+      "completed_at": "2026-09-14T23:25:46.889Z"
+    },
+    {
+      "id": 2,
+      "subject": "Self-review and Cursor review of accepted solution plan",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "metadata": {
+        "stage": "solution-review",
+        "skill": "review-cross-model",
+        "review_kind": "solution-plan",
+        "verdict": "author-dispositions-ready-for-conversion; formal-plan-review-pending"
+      },
+      "delivery_attempt": 1,
+      "delivery_started_at": "2026-09-14T23:25:47.574Z",
+      "completed_at": "2026-09-14T23:34:24.927Z",
+      "skill_receipt": {
+        "skill": "review-cross-model",
+        "loaded_at": "2026-09-15T00:11:26.383Z",
+        "loaded_via": "file_read",
+        "phases_executed": [
+          {
+            "id": "P1-ReviewPackagePreparation",
+            "ts": "2026-09-15T00:11:26.551Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/two-box/solution-review-package.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-SecondModelDispatch",
+            "ts": "2026-09-15T00:11:26.716Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/two-box/solution-review-r1/receipt.json"
+              }
+            ]
+          },
+          {
+            "id": "P3-FindingEvaluation",
+            "ts": "2026-09-15T00:11:26.875Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/two-box-transmutation/solution-review-dispositions.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConvergenceLoop",
+            "ts": "2026-09-15T00:11:27.034Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/two-box-transmutation/solution-plan.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewDocumentation",
+            "ts": "2026-09-15T00:11:27.201Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/two-box-transmutation/solution-review-dispositions.md"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-09-15T00:11:27.388Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/external-review-artifacts/two-box/solution-review-evidence-check.log"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-09-15T00:11:50.980Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/external-review-artifacts/two-box/solution-review-evidence-check.log"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "subject": "Cursor converts approved solution to spec and complete changeset",
+      "skill": "plan-changeset",
+      "status": "completed",
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-09-14T23:54:52.441Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-09-15T00:47:37.280Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-FW-TWO-BOX-01.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-09-15T00:47:37.446Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/tech/two-box-transmutation.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-09-15T00:47:37.609Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/two-box-transmutation/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-09-15T00:47:37.770Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/two-box-transmutation/simulation.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-09-15T01:41:14.549Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/two-box/formal-plan-review-r3/receipt.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-09-15T01:41:14.712Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/external-review-artifacts/two-box/bootstrap-check.json"
+              }
+            ]
+          }
+        ]
+      },
+      "delivery_attempt": 1,
+      "delivery_started_at": "2026-09-14T23:54:52.441Z",
+      "completed_at": "2026-09-15T01:41:14.878Z"
+    },
+    {
+      "id": 4,
+      "subject": "Orchestrator reviews changeset and records formal review evidence",
+      "skill": "review-plan",
+      "status": "completed",
+      "blocked_by": [
+        3
+      ],
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-09-15T01:41:15.044Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-MechanicalPlanValidation",
+            "ts": "2026-09-15T01:41:15.370Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/external-review-artifacts/two-box/plan-mechanical-r2.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-ExternalStateCouplingCheck",
+            "ts": "2026-09-15T01:41:15.548Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/two-box-transmutation/simulation.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-PrimaryAdversarialReview",
+            "ts": "2026-09-15T01:41:15.718Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/two-box/formal-plan-review-r3/receipt.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ResponseTier3Decision",
+            "ts": "2026-09-15T01:41:15.881Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/two-box-transmutation/root-design-review.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-ReviewLogPersistence",
+            "ts": "2026-09-15T01:41:16.043Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/two-box-transmutation/review-log.yaml"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-09-15T01:41:16.203Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/external-review-artifacts/two-box/bootstrap-check.json"
+              }
+            ]
+          }
+        ]
+      },
+      "delivery_attempt": 1,
+      "delivery_started_at": "2026-09-15T01:41:15.207Z",
+      "completed_at": "2026-09-15T01:41:16.365Z"
+    },
+    {
+      "id": 5,
+      "subject": "Cursor implements reviewed changeset fully",
+      "skill": "execute-changeset",
+      "status": "in_progress",
+      "blocked_by": [
+        4
+      ],
+      "skill_receipt": {
+        "skill": "execute-changeset",
+        "loaded_at": "2026-09-15T01:41:16.532Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-DispatchPreflight",
+            "ts": "2026-09-15T01:41:16.857Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/external-review-artifacts/two-box/dispatch-preflight.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-ApplyPlan",
+            "ts": "2026-09-15T11:19:45.477Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/two-box-transmutation/manifest.md"
+              }
+            ]
+          }
+        ]
+      },
+      "delivery_attempt": 1,
+      "delivery_started_at": "2026-09-15T01:41:16.697Z"
+    },
+    {
+      "id": 6,
+      "subject": "Review execution against requirements",
+      "skill": "review-exec",
+      "status": "pending",
+      "blocked_by": [
+        5
+      ]
+    },
+    {
+      "id": 7,
+      "subject": "Audit implementation and run release checks",
+      "skill": "audit-implementation",
+      "status": "pending",
+      "blocked_by": [
+        6
+      ]
+    },
+    {
+      "id": 8,
+      "subject": "Land reviewed changeset",
+      "skill": "land-changeset",
+      "status": "pending",
+      "blocked_by": [
+        7
+      ]
+    },
+    {
+      "id": 9,
+      "subject": "Verify promotion and all-host installation",
+      "skill": "verify-promotion",
+      "status": "pending",
+      "blocked_by": [
+        8
+      ]
+    }
+  ],
+  "delivery_cycle": {
+    "root_wi": "WI-FW-TWO-BOX-01",
+    "cycle_started_at": null
+  },
+  "mid_task_hints": [
+    {
+      "ts": "2026-09-15T09:50:53.699Z",
+      "user_text": "WE SAID SUCH STUFF SHOUDL BE AUTO ROCVERAGE SAEMESS UX HIDDEN FOR REGUARL USER :)",
+      "normalized_intent": "Automatically recover the stalled Two-Box review and prevent silent missing-input hangs; keep routine recovery internal and preserve review gates.",
+      "classification": "method-correction",
+      "applied_method_swap": "Recover existing review and prevent silent input waits",
+      "new_artifacts_allowed": true,
+      "resolved_skill_hints": []
+    },
+    {
+      "ts": "2026-09-15T11:09:07.214Z",
+      "user_text": "Resume WI-FW-TWO-BOX-01 after the imported-hook identity repair",
+      "normalized_intent": "Continue existing Two-Box finalization after canonical imported-hook identity repair; finish implementation, review, audit, install, land, and verification.",
+      "classification": "method-correction",
+      "applied_method_swap": "Use repaired Cursor host identity and continue remaining tasks 5-9",
+      "new_artifacts_allowed": true,
+      "resolved_skill_hints": []
+    }
+  ]
+}

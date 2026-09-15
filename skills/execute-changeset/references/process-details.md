@@ -200,7 +200,7 @@ When a task execution or test run fails, rather than a simple blind retry or spa
    Prioritized options are tried *sequentially* (Option A first). A trial for the next option is only dispatched if the preceding option fails to compile, lint, or pass tests. Cheap static checks/compilers are used first to immediately discard syntactically broken variations.
 
 5. **Model Tiering & Escalation:**
-   To maximize the reasoning accuracy and success rate of diagnostic probes, debugging/exploratory tasks should not default to Haiku when Claude Code is used. Instead, route them to **Sonnet 4.6 with thinking enabled (high)** if available, or **Codex with high reasoning** if Sonnet 4.6 is unavailable. Other model profiles and hosts must use their own available models (defaulting to the best model from the active parent session if undefined). If all options are completely exhausted, the Orchestrator rolls back the workspace to the last clean task checkpoint, cancels the execution, and escalates to the user with a detailed **Exploration & Attempt Ledger**.
+   Diagnostic probes use the existing owner-configured resolver (do not hardcode a host or model family). Dated recipes are nonauthoritative. Other profiles and hosts use their own available models from the active session resolver. If all options are completely exhausted, the Orchestrator rolls back the workspace to the last clean task checkpoint, cancels the execution, and escalates to the user with a detailed **Exploration & Attempt Ledger**.
 
 #### exit_status gap schema (.svc/task-context-gap.json)
 ```json
@@ -269,16 +269,14 @@ Source: superpowers subagent-driven-development two-stage review ordering
 
 ### Deviation Rules
 
-When execution encounters something unexpected, classify it before acting:
+When execution encounters something unexpected, classify it against sealed `executor_discretion` before acting. Record reason+evidence, then run the relevant revalidation. Never silent rewrite or relax tests.
 
-| Rule | When | Action | Example |
+| Class | When | Action | Example |
 |------|------|--------|---------|
-| **Auto-fix: bugs** | Test reveals a bug in code you just wrote | Fix immediately, no approval needed | Off-by-one in loop, null check missing |
-| **Auto-fix: missing critical** | Implementation needs validation, error handling, or security that the plan didn't mention | Add it, log as deviation | Input sanitization, null guard, error boundary |
-| **Auto-fix: blocking** | Missing import, dependency, or config that prevents the task from running | Fix immediately | `npm install` a missing dep, add a missing env var |
-| **STOP and ask** | Architectural change — new DB table, switching libraries, changing API contract, modifying files outside the plan's scope | Do NOT proceed. Present the issue and wait. | "The plan says use REST but this needs WebSocket" |
+| **Local repair** | Missing import of an already-approved dependency; task-caused syntax/type error in owned files; in-scope test fix that does not change AC/proof/envelope; reversible naming/format in owned files; justified reversible alternative preserving scope/behavior/API/state/AC/proof/authority | Apply, record reason+evidence, revalidate | Add the planned import; fix a type error the task introduced |
+| **Amendment** | New/upgraded dependency; new config/env; external side effect; changed API/behavior; architecture/state ownership; broadened files/authority; changed proof/AC | Reopen the affected source decision/contract and review proof using already-given owner intent; do not repeatedly ask routine permission | New package, new env var, REST→WebSocket, extra paths |
 
-**Scope boundary:** Only fix issues DIRECTLY caused by the current task's changes.
+**Scope boundary:** Only repair issues DIRECTLY caused by the current task's changes.
 Do not fix pre-existing bugs, unrelated tech debt, or "while I'm here" improvements.
 Those go to `docs/learnings/` as future work items.
 

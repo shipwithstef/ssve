@@ -26,6 +26,12 @@
     "fresh_session_launch": {
       "enabled": false,
       "reason": "No automatable fresh-session transport declared for this host yet (WI-552 migration note: disabled by default until a host manifest declares fresh_session_launch)."
+    },
+    "isolated_plan_analysis": {
+      "enabled": false,
+      "grants_runtime_isolation": false,
+      "availability_only": true,
+      "reason": "Gemini CLI has no tested equivalent frozen-payload tool-free isolated_plan_analysis adapter with invocation-scoped prompt-inspection and live canary. Pending equivalent adapter proof."
     }
   },
   "hook_events": [

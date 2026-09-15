@@ -168,6 +168,27 @@ When writing a SKILL.md that spawns an external agent or recommends a model:
 
 This keeps skills portable across all orchestrators and profiles.
 
+## Two-Box named planning roles (advisory)
+
+Named roles `open_box`, `contract_box`, and `assessor` inherit the owner **[PLAN]**
+route **only when absent**. Named roles `scout_forward` and `scout_reverse` inherit
+the owner **[EXEC]** route **only when absent**. An explicit
+`modes.<mode>.roles.<role>` (or `modes.<mode>.<role>`) entry always wins over those
+label defaults. A malformed named entry fails closed and does not inherit.
+Deny/allow, protected owner policy, and WI-scoped overlays apply to the resolved
+tuple. Reviewer topology and executor routing remain the existing separate
+authority. Resolve with `node scripts/resolve-dispatch.mjs role --role <name>`.
+The framework does not hardcode model or effort. Results record `requested_role`,
+`inherited_role` / `inherited_label`, and `effective_policy_sha256`.
+
+Optional owner `planning_transport.pre_content_retry` may allow one classified
+pre-content spawn retry. It is not a parallel policy authority.
+
+Advisory owner recipe only (fully configurable; not a framework default, not a
+benchmark, and not a savings claim): Astra at xhigh for Open/Contract planning;
+Luna at max for scouts and executor, or Grok at xhigh as an executor alternative;
+a capable high-effort assessor/reviewer.
+
 ---
 
 ## Detached Kimi Runner — Per-Skill Cap Defaults

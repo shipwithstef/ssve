@@ -16,10 +16,13 @@
     { "skill": "design-ui", "artifact": "design-system", "consumers": ["design-tech", "review-plan"], "condition": "visual system is applicable", "invalidation": "token or component contract changes" },
     { "skill": "design-ui", "artifact": "live-page-screenshots", "consumers": ["review-plan", "verify-promotion"], "condition": "browser-visible UI is applicable", "invalidation": "rendered UI or environment identity changes" },
     { "skill": "design-tech", "artifact": "feature-spec", "consumers": ["plan-changeset", "review-plan"], "condition": "technical baseline is required", "invalidation": "architecture, provider or system contract changes" },
-    { "skill": "plan-changeset", "artifact": "implementation-manifest", "consumers": ["review-plan", "execute-changeset"], "condition": "change is not eligible quick-fix", "invalidation": "scope, plan lens or relevant source digest changes" }
+    { "skill": "plan-changeset", "artifact": "implementation-manifest", "consumers": ["blind-control-plan", "review-plan", "execute-changeset"], "condition": "change is not eligible quick-fix", "invalidation": "scope, plan lens, original requirements, source snapshot or relevant source digest changes" },
+    { "skill": "blind-control-plan", "artifact": "control-plan-receipt", "consumers": ["review-plan", "execute-changeset"], "condition": "live staged eligibility is not accepted", "invalidation": "original requirements, frozen facts, source snapshot, dispatch policy, scout assignment or selected decisions change" }
   ],
   "continuation_dag": [
     ["plan-changeset", "review-plan"],
+    ["plan-changeset", "blind-control-plan"],
+    ["blind-control-plan", "review-plan"],
     ["review-plan", "execute-changeset"],
     ["execute-changeset", "review-exec"],
     ["review-exec", "audit-implementation"],

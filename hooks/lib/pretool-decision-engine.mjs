@@ -22,6 +22,7 @@ import {
   isReadOnlyTool, toolName, splitUnquoted, stripDevNullRedirections,
   hookContext, authorityPath,
 } from "../codex/lib/codex-hook-context.mjs";
+import { resolveWI } from "./resolve-wi.mjs";
 
 export const DECISION_ENGINE_SCHEMA_VERSION = 1;
 
@@ -152,10 +153,56 @@ export function evaluateSelfHealAuthority(payload, env = process.env, expected =
   if (!String(ctx.turn_id || "")) return ineligible("TURN_UNPROVABLE");
   let document = null;
   try { document = JSON.parse(fs.readFileSync(authorityPath(ctx), "utf8")); }
-  catch { return ineligible("PROMPT_AUTHORITY_ABSENT"); }
+  catch {
+    const targetRoot = String(expected.repo_root || ctx.repo_root || ctx.session_cwd || "");
+    if (targetRoot) {
+      try {
+        const resolved = resolveWI({ ...payload, cwd: targetRoot, session_id: ctx.session_id }, env);
+        if (resolved?.authority && resolved?.tuple?.wi && resolved.classification === "owned") {
+          const tuple = resolved.tuple;
+          document = {
+            schema_version: 1,
+            session_id: ctx.session_id,
+            turn_id: ctx.turn_id,
+            prompt_hash: "sha256:durable-authority-restored",
+            cwd: tuple.worktree_root || targetRoot,
+            session_cwd: tuple.worktree_root || targetRoot,
+            repo_root: tuple.repo_root || targetRoot,
+            governance_worktree: tuple.worktree_root || targetRoot,
+            explicit_wi: tuple.wi,
+            continuation_intent: "resume",
+            authorization_prompt_hash: "sha256:durable-authority-restored",
+            authorization_turn_id: ctx.turn_id,
+            recorded_at: new Date().toISOString(),
+          };
+          try {
+            fs.mkdirSync(path.dirname(authorityPath(ctx)), { recursive: true, mode: 0o700 });
+            fs.writeFileSync(authorityPath(ctx), JSON.stringify(document, null, 2), { mode: 0o600 });
+          } catch {}
+        }
+      } catch {}
+    }
+    if (!document) return ineligible("PROMPT_AUTHORITY_ABSENT");
+  }
   if (!document || typeof document !== "object") return ineligible("PROMPT_AUTHORITY_MALFORMED");
   if (String(document.session_id || "") !== String(ctx.session_id)) return ineligible("PROMPT_AUTHORITY_FOREIGN_SESSION");
-  if (String(document.turn_id || "") !== String(ctx.turn_id)) return ineligible("STALE_TURN");
+  if (String(document.turn_id || "") !== String(ctx.turn_id)) {
+    const targetRoot = String(expected.repo_root || ctx.repo_root || ctx.session_cwd || "");
+    let turnRecovered = false;
+    if (targetRoot) {
+      try {
+        const resolved = resolveWI({ ...payload, cwd: targetRoot, session_id: ctx.session_id }, env);
+        if (resolved?.authority && resolved?.tuple?.wi === document.explicit_wi && resolved.classification === "owned") {
+          document.turn_id = ctx.turn_id;
+          try {
+            fs.writeFileSync(authorityPath(ctx), JSON.stringify(document, null, 2), { mode: 0o600 });
+            turnRecovered = true;
+          } catch {}
+        }
+      } catch {}
+    }
+    if (!turnRecovered) return ineligible("STALE_TURN");
+  }
   const ttlMinutes = Number(env.SVC_CODEX_AUTHORITY_TTL_MIN || 240);
   const recorded = Date.parse(document.recorded_at || "");
   if (!Number.isFinite(recorded) || Date.now() - recorded > Math.max(1, ttlMinutes) * 60_000) {

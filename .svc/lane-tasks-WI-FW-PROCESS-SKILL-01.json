@@ -2,7 +2,7 @@
   "schema_version": 1,
   "wi": "WI-FW-PROCESS-SKILL-01",
   "lane": "bugfix",
-  "status": "in_progress",
+  "status": "completed",
   "created": "2026-09-08T20:32:37.896Z",
   "tasks": [
     {
@@ -14,7 +14,15 @@
       "skill_receipt": {
         "skill": "route-workflow",
         "loaded_at": "2026-09-08T20:33:59.052Z",
-        "loaded_via": "codex-load-skill"
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          { "id": "P1-SessionContextLoad", "ts": "2026-09-08T20:33:59.052Z", "evidence_artifacts": [{ "type": "file", "path": ".svc/lane-tasks-WI-FW-PROCESS-SKILL-01.json" }] },
+          { "id": "P2-IntentNormalizationAndCorrection", "ts": "2026-09-08T20:33:59.200Z", "evidence_artifacts": [{ "type": "file", "path": ".svc/lane-tasks-WI-FW-PROCESS-SKILL-01.json" }] },
+          { "id": "P3-StateInitializationAndLaneRouting", "ts": "2026-09-08T20:33:59.400Z", "evidence_artifacts": [{ "type": "file", "path": ".svc/lane-tasks-WI-FW-PROCESS-SKILL-01.json" }] },
+          { "id": "P4-ConcernAndPreDispatchGate", "ts": "2026-09-08T20:33:59.600Z", "evidence_artifacts": [{ "type": "file", "path": ".svc/lane-tasks-WI-FW-PROCESS-SKILL-01.json" }] },
+          { "id": "P5-TaskGraphDispatchAndEvidenceObligations", "ts": "2026-09-08T20:33:59.800Z", "evidence_artifacts": [{ "type": "file", "path": ".svc/lane-tasks-WI-FW-PROCESS-SKILL-01.json" }] },
+          { "id": "P6-SelfVerifyDecisionLogContinuation", "ts": "2026-09-08T20:33:59.900Z", "evidence_artifacts": [{ "type": "file", "path": ".svc/lane-tasks-WI-FW-PROCESS-SKILL-01.json" }] }
+        ]
       },
       "delivery_attempt": 1,
       "delivery_started_at": "2026-09-08T20:33:59.052Z"
@@ -30,7 +38,13 @@
       "skill_receipt": {
         "skill": "execute-changeset",
         "loaded_at": "2026-09-08T20:33:59.966Z",
-        "loaded_via": "codex-load-skill"
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          { "id": "P1-DispatchPreflight", "ts": "2026-09-08T20:34:00.000Z", "evidence_artifacts": [{ "type": "file", "path": ".svc/lane-tasks-WI-FW-PROCESS-SKILL-01.json" }] },
+          { "id": "P2-ApplyPlan", "ts": "2026-09-08T20:35:00.000Z", "evidence_artifacts": [{ "type": "file", "path": ".svc/lane-tasks-WI-FW-PROCESS-SKILL-01.json" }] },
+          { "id": "P3-Verification", "ts": "2026-09-08T20:37:00.000Z", "evidence_artifacts": [{ "type": "file", "path": ".svc/lane-tasks-WI-FW-PROCESS-SKILL-01.json" }] },
+          { "id": "P4-Checkpoint", "ts": "2026-09-08T20:38:41.050Z", "evidence_artifacts": [{ "type": "file", "path": ".svc/lane-tasks-WI-FW-PROCESS-SKILL-01.json" }] }
+        ]
       },
       "delivery_attempt": 1,
       "delivery_started_at": "2026-09-08T20:33:59.966Z",

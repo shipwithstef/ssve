@@ -26,6 +26,88 @@
     "fresh_session_launch": {
       "enabled": false,
       "reason": "No automatable fresh-session transport declared for this host yet (WI-552 migration note: disabled by default until a host manifest declares fresh_session_launch)."
+    },
+    "isolated_plan_analysis": {
+      "enabled": true,
+      "grants_runtime_isolation": false,
+      "availability_only": true,
+      "adapter": "codex-exec",
+      "transport": "frozen-payload",
+      "tool_free": true,
+      "note": "enabled means the Codex exec frozen-payload adapter is available. Each invocation still requires passing effective preflight. This field describes availability and never grants runtime isolation by itself.",
+      "exec_argv": [
+        "--ephemeral",
+        "--sandbox",
+        "read-only",
+        "--ignore-user-config",
+        "--skip-git-repo-check",
+        "--json",
+        "--output-schema"
+      ],
+      "model_flag": "-m",
+      "effort_flag": "-c",
+      "effort_config_key": "model_reasoning_effort",
+      "stdin_prompt": true,
+      "neutral_cwd": true,
+      "no_resume_or_fork": true,
+      "forbidden_isolation_substitutes": [
+        "--read-only",
+        "--ignore-rules",
+        "landlock",
+        "svc-contained-exec",
+        "fresh_session_launch"
+      ],
+      "invocation_overrides": {
+        "project_doc_max_bytes": 0,
+        "web_search": "disabled",
+        "developer_instructions": "",
+        "features": {
+          "skip_host_skill_discovery": true,
+          "shell_tool": false,
+          "unified_exec": false,
+          "multi_agent": false,
+          "multi_agent_v2": false,
+          "plugins": false,
+          "apps": false,
+          "view_image": false,
+          "browser_use": false,
+          "computer_use": false,
+          "memories": false,
+          "remote_plugin": false,
+          "workspace_dependencies": false,
+          "skill_search": false,
+          "image_generation": false,
+          "hooks": false,
+          "code_mode": false,
+          "code_mode_host": false,
+          "tool_suggest": false
+        },
+        "skills_config": {
+          "disable_discovered": true,
+          "scope": ["global", "system", "plugin"],
+          "mutate_skill_files": false
+        }
+      },
+      "prompt_inspection": {
+        "required": true,
+        "command": "codex debug prompt-input",
+        "builder": "same_as_live_launch",
+        "scope": "invocation",
+        "cwd": "neutral_temporary_directory",
+        "must_absent": [
+          "ssve_skill_catalog",
+          "project_or_global_methodology_injection",
+          "competing_candidate"
+        ],
+        "native_host_safety_message_allowed": true
+      },
+      "live_canary": {
+        "required": true,
+        "tool_events": "abort_on_any",
+        "offline_never_unlocks_live": true,
+        "facts_marker_required": true,
+        "bounded": true
+      }
     }
   },
   "hook_events": [

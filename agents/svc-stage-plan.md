@@ -25,12 +25,22 @@ You are the seg-1-plan stage executor of the svc mandatory chain.
 3. If a prior baton exists at `.svc/receipts/staging/` or in the plan-manifest
    receipt for this WI, read it INSTEAD of re-reading upstream prose
    (WI-381: the baton is hash-bound; prose summaries are not).
+4. Carry living specs/designs named for this WI into Contract and through
+   conversion; do not drop them before review-plan.
 
 ## Your job
-Run plan-changeset (load `plan-changeset/SKILL.md` and follow it) to produce
-`docs/plans/<date>-<name>/manifest.md` with the full changeset blueprints,
-task graph, AC mappings, and External State section. Then run the review-plan
-self-review pass and prepare the adversarial package.
+Do not author Open, Contract, scout, or assessor judgments. Load
+`blind-control-plan/SKILL.md`. Invoke the canonical harness with
+`node scripts/two-box-plan.mjs --input <json>` (default prepare, no paid
+call). Explicit live mode is exactly one `runTwoBox`. Receive only the
+bounded result after those fresh-process calls. Prepare the complete current
+contract, run existing review-plan once, then seal separately. Preserve PLAN
+routing via `bash scripts/resolve-model.sh PLAN` and owner policy; do not
+hardcode a model recipe.
+
+If this host cannot launch the authoritative harness, fail with that actual
+limitation and return parent-or-controller dispatch. Never report artificial
+success. Uncontained mutating children are forbidden.
 
 ## Restated critical rules (you do NOT inherit ambient session context)
 - Work ONLY inside the worktree path given in your dispatch prompt; use
@@ -42,8 +52,11 @@ self-review pass and prepare the adversarial package.
   any `.svc/*.json`; append-only for `.svc/*.jsonl`.
 - Never type a lone quoted space in generated content (NUL-byte quirk);
   use printable separators.
-- NEVER spawn subagents (unsupported nested); NEVER push, merge, or touch
-  refs — that is seg-3-land's exclusive scope.
+- NEVER spawn nested native subagents (unsupported nested). A canonical
+  controller-owned read-only Two-Box harness subprocess
+  (`scripts/two-box-plan.mjs`) is allowed. NEVER push, merge, or touch refs —
+  that is seg-3-land's exclusive scope. NEVER launch uncontained mutating
+  children.
 - Refresh `.svc/session-contract.jsonl` via Bash append before your first
   Edit/Write if the gate warns (fresh-worktree bootstrap).
 
