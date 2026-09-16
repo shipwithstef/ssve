@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "wi": "WI-FW-CENTRALIZED-WORKTREE-01",
+  "lane": "framework",
+  "status": "completed",
+  "created": "2026-09-16T07:11:27.056Z",
+  "tasks": [
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "plan-changeset",
+      "subject": "plan centralized external worktree governance",
+      "blocked_by": [],
+      "output_artifact": "docs/plans/2026-09-16-centralized-worktree-governance/manifest.md"
+    },
+    {
+      "id": 2,
+      "status": "completed",
+      "skill": "review-plan",
+      "subject": "gate and adversarial review of worktree governance plan",
+      "blocked_by": [1],
+      "output_artifact": "docs/plans/2026-09-16-centralized-worktree-governance/review-log.yaml"
+    },
+    {
+      "id": 3,
+      "status": "completed",
+      "skill": "execute-changeset",
+      "subject": "implement centralized worktree policy engine, hook resolver, and installer",
+      "blocked_by": [2]
+    },
+    {
+      "id": 4,
+      "status": "completed",
+      "skill": "review-exec",
+      "subject": "verify execution against spec and test suites",
+      "blocked_by": [3]
+    },
+    {
+      "id": 5,
+      "status": "completed",
+      "skill": "audit-implementation",
+      "subject": "audit tier-1 security, containment anchor, and multi-host parity",
+      "blocked_by": [4]
+    }
+  ]
+}
