@@ -1,11 +1,9 @@
 # Worktree Model
 
-All repository mutation runs in a linked git worktree. By default, worktrees are
-governed centrally under `~/worktrees/{repo-name}/{branch}` (configured via
-`~/.svc/worktree-policy.json`), with legacy backward-compatible support for in-repo `.worktrees/`.
+All repository mutation runs in a linked git worktree under `.worktrees/`.
 This includes planning documents, framework docs, generated files, tests, and
 repo-local `.svc` state. Worktrees isolate in-progress changes from the default
-checkout, enable parallel multi-agent work without repository bloat, and make squash-merge promotion clean.
+checkout, enable parallel work, and make squash-merge promotion clean.
 
 ## When to Create a Worktree
 
@@ -48,12 +46,11 @@ The branch name is defined in the `plan-changeset` manifest header.
 
 ## Rules
 
-1. **Worktrees live in the governed root** — default `~/worktrees/{repo-name}/{branch}`,
-   or legacy in-repo `.worktrees/` when configured in `~/.svc/worktree-policy.json`.
-   Never arbitrary unapproved roots or `/tmp/`.
+1. **All worktrees live under `.worktrees/`** — never `/tmp/`, never a sibling directory.
    Exception: `test-framework` eval tier-2 uses temp dirs (not git worktrees).
 
-2. **Legacy `.worktrees/` remains in `.gitignore`** — enforced for in-repo worktrees.
+2. **`.worktrees/` must be in `.gitignore`** — enforced by `scripts/worktree.sh preflight`
+   and validated by `test-framework/evals/tier-1/validate-worktree-safety.sh`.
 
 3. **One worktree per branch** — the branch name is the worktree directory name.
 

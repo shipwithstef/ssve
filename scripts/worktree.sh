@@ -34,11 +34,7 @@ _find_repo_root() {
 }
 
 REPO_ROOT="$(_find_repo_root 2>/dev/null || pwd)"
-if command -v node >/dev/null 2>&1 && [[ -f "$REPO_ROOT/scripts/lib/resolve-worktree-root.mjs" ]]; then
-  WORKTREE_DIR="$(node "$REPO_ROOT/scripts/lib/resolve-worktree-root.mjs" --repo "$REPO_ROOT" --ensure 2>/dev/null || echo "$REPO_ROOT/.worktrees")"
-else
-  WORKTREE_DIR="$REPO_ROOT/.worktrees"
-fi
+WORKTREE_DIR="$REPO_ROOT/.worktrees"
 GITIGNORE="$REPO_ROOT/.gitignore"
 
 # --- Colors ---
@@ -81,17 +77,6 @@ _derive_wi() {
     printf 'WI-%s' "${BASH_REMATCH[1]}"
   elif [[ "$branch_name" =~ (feature|bugfix|refactor)-([0-9]+) ]]; then
     printf 'WI-%s' "${BASH_REMATCH[2]}"
-  fi
-}
-
-_resolve_wt_path() {
-  local branch="$1"
-  if [[ -d "$WORKTREE_DIR/$branch" ]]; then
-    echo "$WORKTREE_DIR/$branch"
-  elif [[ -d "$REPO_ROOT/.worktrees/$branch" ]]; then
-    echo "$REPO_ROOT/.worktrees/$branch"
-  else
-    echo "$WORKTREE_DIR/$branch"
   fi
 }
 
@@ -542,7 +527,7 @@ cmd_enter() {
     exit 1
   fi
 
-  local wt_path="$(_resolve_wt_path "$branch_name")"
+  local wt_path="$WORKTREE_DIR/$branch_name"
 
   if [[ ! -d "$wt_path" ]]; then
     fail "No worktree at $wt_path"
@@ -591,7 +576,7 @@ cmd_promote() {
     exit 1
   fi
 
-  local wt_path="$(_resolve_wt_path "$branch_name")"
+  local wt_path="$WORKTREE_DIR/$branch_name"
 
   if [[ ! -d "$wt_path" ]]; then
     fail "No worktree at $wt_path"
@@ -744,7 +729,7 @@ cmd_remove() {
     exit 1
   fi
 
-  local wt_path="$(_resolve_wt_path "$branch_name")"
+  local wt_path="$WORKTREE_DIR/$branch_name"
 
   if [[ ! -d "$wt_path" ]]; then
     fail "No worktree at $wt_path"
@@ -899,10 +884,10 @@ NODE_BINDING_REMOVE
     warn "Branch $branch_name kept (not merged to main or origin/main)"
   fi
 
-  # Remove legacy in-repo .worktrees/ only if now empty; external repository roots are kept intact
-  if [[ "$WORKTREE_DIR" == "$REPO_ROOT/.worktrees" ]] && [[ -d "$WORKTREE_DIR" ]] && [[ -z "$(ls -A "$WORKTREE_DIR" 2>/dev/null)" ]]; then
+  # Remove .worktrees/ if now empty
+  if [[ -d "$WORKTREE_DIR" ]] && [[ -z "$(ls -A "$WORKTREE_DIR" 2>/dev/null)" ]]; then
     rmdir "$WORKTREE_DIR"
-    ok "Removed empty in-repo .worktrees/ directory"
+    ok "Removed empty .worktrees/ directory"
   fi
 }
 

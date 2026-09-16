@@ -105,7 +105,7 @@ export function classifySource(candidatePath, opts = {}) {
   }
   // Worktree segment check.
   const segments = real.split(path.sep);
-  if (segments.includes(".worktrees") || segments.includes("worktrees")) return "worktree-bound";
+  if (segments.includes(".worktrees")) return "worktree-bound";
   if (st.isDirectory()) {
     try { fs.accessSync(real, fs.constants.R_OK); } catch { return "dangling"; }
     return "durable-canonical";
