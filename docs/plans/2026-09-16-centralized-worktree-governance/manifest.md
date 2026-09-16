@@ -46,6 +46,11 @@ Key changes include:
 | `WORKTREES.md` | MODIFY | task-5-docs | Framework doctrine update for centralized worktree governance. |
 | `test-framework/tests/worktree-policy.test.mjs` | CREATE | task-6-tests | Unit tests for worktree policy and resolution. |
 | `test-framework/evals/tier-1/validate-literal-branch-worktree.sh` | MODIFY | task-6-tests | Tier-1 eval updated for external worktree path formats. |
+| `hooks/lib/durable-source.mjs` | MODIFY | task-7-hooks | Robust git-dir/git-common-dir worktree detection. |
+| `hooks/lib/enforcement-core.mjs` | MODIFY | task-7-hooks | Broaden classifySource for worktrees directory segment. |
+| `hooks/svc-pre-commit-multi-host-check.sh` | MODIFY | task-7-hooks | Accurate worktree detection in pre-commit hook. |
+| `hooks/svc-session-start-healthcheck.mjs` | MODIFY | task-7-hooks | Accurate worktree detection in session-start healthcheck. |
+| `scripts/check-install-drift.sh` | MODIFY | task-7-hooks | Accurate worktree detection in drift check. |
 
 ---
 
@@ -86,6 +91,12 @@ Key changes include:
 - **Dependencies:** task-1-policy, task-2-security
 - **AC Coverage:** 100% passing tests across unit and tier-1 suites.
 - **Validation Command:** `node --test test-framework/tests/worktree-policy.test.mjs && bash test-framework/evals/tier-1/validate-literal-branch-worktree.sh`
+
+### task-7-hooks
+- **Touched Files:** `hooks/lib/durable-source.mjs`, `hooks/lib/enforcement-core.mjs`, `hooks/svc-pre-commit-multi-host-check.sh`, `hooks/svc-session-start-healthcheck.mjs`, `scripts/check-install-drift.sh`
+- **Dependencies:** task-2-security
+- **AC Coverage:** Eliminate hardcoded /.worktrees/ patterns across all hooks and drift checkers using git rev-parse.
+- **Validation Command:** `bash scripts/check-install-drift.sh --all-hosts`
 
 ---
 
