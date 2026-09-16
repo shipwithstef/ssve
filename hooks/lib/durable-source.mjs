@@ -42,7 +42,22 @@ export function resolveDurableCanonical(fromDir) {
   } catch {
     root = path.resolve(commonAbs, "..");
   }
-  const isWorktree = path.resolve(dir).split(path.sep).includes(".worktrees");
+  let isWorktree = false;
+  try {
+    const gitDir = execFileSync("git", ["rev-parse", "--git-dir"], {
+      cwd: dir,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    if (gitDir) {
+      const gitDirAbs = path.isAbsolute(gitDir) ? gitDir : path.resolve(dir, gitDir);
+      isWorktree = path.resolve(gitDirAbs) !== path.resolve(commonAbs);
+    }
+  } catch {}
+  if (!isWorktree) {
+    const dirSegments = path.resolve(dir).split(path.sep);
+    isWorktree = dirSegments.includes(".worktrees") || dirSegments.includes("worktrees");
+  }
   return { root, isWorktree };
 }
 

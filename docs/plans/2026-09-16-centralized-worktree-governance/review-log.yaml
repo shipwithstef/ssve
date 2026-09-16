@@ -1,0 +1,57 @@
+review_log:
+  plan: docs/plans/2026-09-16-centralized-worktree-governance/manifest.md
+  wi: WI-FW-CENTRALIZED-WORKTREE-01
+  date: 2026-09-16
+  tier1:
+    script: scripts/verify-plan-mechanical.sh
+    latest_exit_code: 0
+    checks: "file paths verified, non-circular dependencies, shell commands valid, diff boundaries intact"
+  tier1_5_external_state:
+    result: PASS
+    checks: "central policy schema, chmod 0700 ~/worktrees base directory, chmod 0600 worktree-policy.json, secure ancestor chain enforcement"
+  stations:
+    - id: self-review
+      kind: inline-self
+      reviewer: antigravity
+      family: google
+      status: PASS_WITH_HARDENING
+      rubric_score: 9
+      artifact: docs/plans/2026-09-16-centralized-worktree-governance/self-review.md
+    - id: codex-sol-high
+      kind: external
+      reviewer: codex
+      family: openai
+      model: gpt-5.6-sol
+      effort: high
+      status: EVALUATED
+      rubric_score: 3
+      findings_count: 7
+      findings_artifact: docs/plans/2026-09-16-centralized-worktree-governance/astra-codex-findings.json
+      receipt_artifact: docs/plans/2026-09-16-centralized-worktree-governance/astra-codex-receipt.json
+      disposition_summary: "All 7 findings accepted and addressed in revised manifest.md (v5 inline contract, numbered ACs, fail-closed policy semantics, exact ## External State, rollback rules)."
+    - id: grok-high
+      kind: external
+      reviewer: grok
+      family: xai
+      model: grok-4.6
+      effort: high
+      status: EVALUATED
+      rubric_score: 3
+      findings_count: 8
+      findings_artifact: docs/plans/2026-09-16-centralized-worktree-governance/grok-findings.json
+      receipt_artifact: docs/plans/2026-09-16-centralized-worktree-governance/grok-receipt.json
+      disposition_summary: "All 8 findings accepted and addressed in revised manifest.md (F-001 through F-008, including AGENTS.md doctrine synchronization)."
+    - id: cursor-auto-receipt
+      kind: external
+      reviewer: cursor
+      family: multi
+      model: cursor-auto
+      effort: high
+      status: EVALUATED
+      rubric_score: 1
+      findings_count: 8
+      findings_artifact: docs/plans/2026-09-16-centralized-worktree-governance/cursor-findings.json
+      receipt_artifact: docs/plans/2026-09-16-centralized-worktree-governance/cursor-receipt.json
+      disposition_summary: "All 8 findings aligned with Astra and Grok dispositions; incorporated into manifest.md."
+  terminal_state: DISPOSITIONED_AND_HARDENED
+  plan_status_final: READY_FOR_FINAL_ALIGNMENT
