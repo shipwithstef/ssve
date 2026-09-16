@@ -28,11 +28,8 @@
     "kind": "path-sanitization-derivative",
     "source_path": "docs/specs/evidence/framework-large-input/native-1mib-inspect.json",
     "source_sha256": "1486a30613884d33bc46cd4ccb7cf5d9dc07ee682247b164f1a7ccef7c514490",
-    "replacements": [
-      {
-        "from": "/home/dianast",
-        "to": "/home/builder"
-      }
+    "replacement_rules": [
+      "personal_home_to_builder_home"
     ],
     "created_at": "2026-09-16T20:13:53Z",
     "note": "Publication derivative only. Canonical historical evidence is the unsuffixed file."

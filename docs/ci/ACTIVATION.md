@@ -133,13 +133,14 @@ Do these in order. Do not require a check name before hosted proof.
 
 ## Local reproduction (dormant)
 
-From the repository root, with `/usr/bin/node` for local validation:
+From the repository root, with `node` on PATH (or `NODE_BIN`) for local validation:
 
 ```bash
-/usr/bin/node --test test-framework/tests/oss-ci-workflow.test.mjs
-EVALS=0 /usr/bin/node scripts/lint-skills-manifest.mjs
-# Wrapper also refuses EVALS=1 and then runs the contract test, linter, and
-# free Tier-1 suite. Known sibling Tier-1 failures are not hidden.
+node --test test-framework/tests/oss-ci-workflow.test.mjs
+EVALS=0 node scripts/lint-skills-manifest.mjs
+# Direct wrapper execution refuses EVALS=1 and then runs the linter and
+# free Tier-1 suite only. The hosted workflow runs the contract test as a
+# separate preceding step. Known sibling Tier-1 failures are not hidden.
 EVALS=0 bash scripts/ci/run-free-checks.sh
 ```
 

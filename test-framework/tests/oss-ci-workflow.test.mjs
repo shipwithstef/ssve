@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
@@ -73,11 +74,11 @@ function nextMeaningful(rows, start) {
 }
 
 function loadYaml(file) {
-  const rows = fs.readFileSync(file, 'utf8').split(/\r?\n/).map(stripYamlComment);
+  const rawRows = fs.readFileSync(file, 'utf8').split(/\r?\n/);
   const root = {};
   const stack = [{indent: -1, value: root}];
-  for (let index = 0; index < rows.length; index += 1) {
-    const row = rows[index];
+  for (let index = 0; index < rawRows.length; index += 1) {
+    const row = stripYamlComment(rawRows[index]);
     if (row.trim() === '') continue;
     const indent = row.match(/^ */)[0].length;
     const trimmed = row.slice(indent);
@@ -95,7 +96,7 @@ function loadYaml(file) {
       const rest = body.slice(colon + 1).trim();
       let item;
       if (rest === '|' || rest === '|-' || rest === '>' || rest === '>-') {
-        const block = readBlockScalar(rows, index + 1, indent);
+        const block = readBlockScalar(rawRows, index + 1, indent);
         item = {[key]: block.text};
         index = block.next;
       } else if (rest === '') {
@@ -113,11 +114,11 @@ function loadYaml(file) {
     const rest = trimmed.slice(colon + 1).trim();
     if (!parent || Array.isArray(parent)) throw new Error(`yaml mapping outside object in ${file}: ${trimmed}`);
     if (rest === '|' || rest === '|-' || rest === '>' || rest === '>-') {
-      const block = readBlockScalar(rows, index + 1, indent);
+      const block = readBlockScalar(rawRows, index + 1, indent);
       parent[key] = block.text;
       index = block.next;
     } else if (rest === '') {
-      const next = nextMeaningful(rows, index + 1);
+      const next = nextMeaningful(rawRows.map(stripYamlComment), index + 1);
       const nextIndent = next.match(/^ */)[0].length;
       const child = next.trimStart().startsWith('- ') && nextIndent > indent ? [] : {};
       parent[key] = child;
@@ -272,10 +273,33 @@ test('stable required check fails on skipped, cancelled, or failed prerequisites
   }
 });
 
+test('subset YAML reader keeps hash tokens inside block scalars', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'oss-ci-yaml-'));
+  const file = path.join(tmp, 'block.yml');
+  fs.writeFileSync(file, [
+    'jobs:',
+    '  x:',
+    '    steps:',
+    '      - run: |',
+    '          echo kept # token',
+    '          # full-line script comment',
+    '',
+  ].join('\n'));
+  try {
+    const doc = loadYaml(file);
+    assert.match(doc.jobs.x.steps[0].run, /echo kept # token/);
+    assert.match(doc.jobs.x.steps[0].run, /# full-line script comment/);
+  } finally {
+    fs.rmSync(tmp, {recursive: true, force: true});
+  }
+});
+
 test('wrapper refuses paid tiers and propagates command failures', () => {
   assert.match(wrapper, /^set -euo pipefail$/m);
   assert.match(wrapper, /EVALS=1/);
   assert.match(wrapper, /export EVALS=0/);
+  assert.match(wrapper, /command -v node/);
+  assert.doesNotMatch(wrapper, /NODE_BIN:-\/usr\/bin\/node/);
   assert.match(wrapper, /scripts\/lint-skills-manifest\.mjs/);
   assert.match(wrapper, /test-framework\/evals\/run-all-evals\.sh/);
   assert.doesNotMatch(wrapper, /\|\|\s*true/);

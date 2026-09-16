@@ -256,7 +256,7 @@
         5
       ],
       "delivery_started_at": "2026-09-16T20:07:55Z",
-      "notes": "Initial governed-triple exec stations on 55893fed failed. Accepted remediations are on the dirty/remediating tree. Hermetic remediating full free Tier-1 is 371/0 (env -u SVC_WORKER_WI). One remediating exec review per required station is next. No review-exec receipt until those stations return.",
+      "notes": "Initial exec reviews on 55893fed failed. Remediating reviews on 66c34f4 also failed (codex-sol-high 3a5b85bc, grok-high 1ad66ccc). Review budget is exhausted. Task 4/5 remain pending: paid plan review is refused after implementation and no receipts were invented. Post-budget local repairs address F-REM-002, F-REM-003, F-EXEC-R1-001, and F-EXEC-R1-002 and are unreviewed. No review-exec pass receipt.",
       "skill_receipt": {
         "skill": "review-exec",
         "loaded_at": "2026-09-16T21:27:46.557Z",

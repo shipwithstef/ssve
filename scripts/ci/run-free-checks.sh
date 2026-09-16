@@ -12,17 +12,14 @@ export EVALS=0
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
 
-if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
-  if ! NODE_BIN="$(command -v node)"; then
-    echo "REFUSE: node not on PATH after setup-node" >&2
-    exit 2
-  fi
-else
-  NODE_BIN="${NODE_BIN:-/usr/bin/node}"
+if [[ -n "${NODE_BIN:-}" ]]; then
   if [[ ! -x "$NODE_BIN" ]]; then
-    echo "REFUSE: local free checks require executable ${NODE_BIN}" >&2
+    echo "REFUSE: NODE_BIN is set but not executable: ${NODE_BIN}" >&2
     exit 2
   fi
+elif ! NODE_BIN="$(command -v node)"; then
+  echo "REFUSE: node not on PATH" >&2
+  exit 2
 fi
 
 echo "ssve-free-checks: node=${NODE_BIN} ($("${NODE_BIN}" --version)) EVALS=${EVALS}"

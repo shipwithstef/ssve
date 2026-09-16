@@ -44,7 +44,7 @@ Working-tree scan after launch writes: 18 findings, 7 files.
 
 | Kind | Count | Disposition |
 |------|------:|-------------|
-| personal-workstation-path | 15 | Neutralized to `/workspace/ssve` or `/home/builder/.codex` |
+| personal-workstation-path | 15 | Canonical unsuffixed evidence keeps historical workstation paths. Named `*.redacted.json` derivatives are the publication sanitization. |
 | non-publication-email | 3 | Fixture addresses on `scripts/run-live-two-box-canary.mjs`; moved to `example.invalid` |
 
 No other scanner category appeared on the tracked tip. This is a

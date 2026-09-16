@@ -40,15 +40,19 @@ PROVIDER
   # Join only non-empty components: an empty PATH entry is the current
   # directory in POSIX lookup. Do not bake a workstation node path into this
   # helper.
-  local fixture_path part
+  local fixture_path part saved_ifs
   fixture_path="$fixture_root/bin"
   if [[ -n "${PATH:-}" ]]; then
-    local IFS=':'
+    saved_ifs="$IFS"
+    IFS=':'
+    set -f
     for part in $PATH; do
       if [[ -n "$part" && "$part" != "." && "$part" != "./" ]]; then
         fixture_path="$fixture_path:$part"
       fi
     done
+    set +f
+    IFS="$saved_ifs"
   fi
   fixture_path="$fixture_path:/usr/bin:/bin"
   env -i \
