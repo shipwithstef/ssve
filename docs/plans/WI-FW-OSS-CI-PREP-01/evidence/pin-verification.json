@@ -1,0 +1,18 @@
+{
+  "wi": "WI-FW-OSS-CI-PREP-01",
+  "verified_at": "2026-09-16T17:23:53Z",
+  "note": "Current primary-source observations only. Not an unlimited-free or future-pricing guarantee. Duplicate of the run-directory copy.",
+  "source": ".svc/external-review-artifacts/oss-worker-20260916/pin-verification.json",
+  "actions": [
+    {
+      "name": "actions/checkout",
+      "tag": "v7.0.1",
+      "sha": "3d3c42e5aac5ba805825da76410c181273ba90b1"
+    },
+    {
+      "name": "actions/setup-node",
+      "tag": "v7.0.0",
+      "sha": "820762786026740c76f36085b0efc47a31fe5020"
+    }
+  ]
+}

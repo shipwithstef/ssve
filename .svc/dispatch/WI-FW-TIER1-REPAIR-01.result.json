@@ -1,0 +1,42 @@
+{
+  "wi": "WI-FW-TIER1-REPAIR-01",
+  "status": "prepared",
+  "finished_at": "2026-09-16T18:12:45Z",
+  "session": "6da62b77-1dc3-4e41-8cf5-722b34028259",
+  "worker_summary": "Diagnosed and repaired the four OSS-prep Tier-1 failures on 355f3c9 with fixture isolation, honest FRAMEWORK-STATE wording, and a staged durable graph. Production deny paths and Two-Box fixtures unchanged. Focused reds/greens plus receipt-shape are green. Two full free Tier-1 runs were 370/1: first missing graph phase receipts (fixed), second a Two-Box 300ms pid-spawn flake that later passed in isolation. No commit/PR; CI and public conversion remain dormant.",
+  "changed_files": [
+    "FRAMEWORK-STATE.md",
+    "test-framework/evals/tier-1/lib/fixture-home.sh",
+    "test-framework/evals/tier-1/validate-codex-first-task-activation.sh",
+    "test-framework/evals/tier-1/validate-runtime-root-portability.sh",
+    ".svc/lane-tasks-WI-FW-TIER1-REPAIR-01.json",
+    "docs/specs/work-items/WI-FW-TIER1-REPAIR-01.md",
+    ".svc/pipeline-decisions.jsonl",
+    ".svc/session-contract.jsonl",
+    ".svc/dispatch/WI-FW-TIER1-REPAIR-01.result.json"
+  ],
+  "validation_evidence": {
+    "head_sha": "355f3c9279e609110da08c553bb4fd8a19766807",
+    "source_and_graph_staged_diff_sha256": "ac97207e0bf99306f9e876a1013b5df1a32e03aa0ade27549835e97b6577f56b",
+    "focused": {
+      "validate-no-svc-residue.sh": { "red": 1, "green": 0 },
+      "validate-framework-docs-audit.sh": { "red": 1, "green": 0 },
+      "validate-codex-first-task-activation.sh": { "red": 1, "green": 0 },
+      "validate-runtime-root-portability.sh": { "red": 1, "green": 0 },
+      "validate-skill-receipt-shape.sh": { "rc": 0, "phase_d_failures": 0 },
+      "validate-two-box-transmutation.sh": { "full_suite_1": "PASS", "full_suite_2": 1, "focused_retry": 0 }
+    },
+    "full_free_tier1": [
+      { "log": ".svc/external-review-artifacts/oss-worker-20260916/tier1-full.out", "passed": 370, "failed": 1, "failure": "validate-skill-receipt-shape.sh" },
+      { "log": ".svc/external-review-artifacts/oss-worker-20260916/tier1-full-final.out", "passed": 370, "failed": 1, "failure": "validate-two-box-transmutation.sh" }
+    ],
+    "run_dir": ".svc/external-review-artifacts/oss-worker-20260916/result.json"
+  },
+  "clean_worktree": false,
+  "parent_graph_mutation": false,
+  "commit_sha": null,
+  "pr_url": null,
+  "merged": false,
+  "hosted": false,
+  "activated": false
+}

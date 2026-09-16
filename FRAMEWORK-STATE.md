@@ -763,17 +763,17 @@ recent entries; when adding a new one, move the oldest live entry to
 `FRAMEWORK-STATE-ARCHIVE/analysis-history-<date>-and-earlier.md`. Per-WI
 closeout sections live in `FRAMEWORK-STATE-ARCHIVE/wi-closeouts-<period>.md`.
 Never delete archives; never let the live file exceed 50KB.
-Status (WI-FW-DOCS-AUDIT-01, 2026-08-26): archive directory now exists;
-known debt — this live file is ~79KB, over the 50KB ceiling. Diet queued as a
-follow-up WI; not silently executed here.
+Status (WI-FW-TIER1-REPAIR-01, 2026-09-16): the archive directory is
+gitignored and is not a committed publication surface. Closed-gap text
+stays in this live file and in git history. Known debt — this live file
+is over the 50KB ceiling. Diet remains a follow-up; not silently executed here.
 
 ## Closed Gaps
 
-Resolved gaps are archived (audit trail) at
-[`FRAMEWORK-STATE-ARCHIVE/closed-gaps.md`](FRAMEWORK-STATE-ARCHIVE/closed-gaps.md)
-to keep this live file under the WI-362 50KB ceiling. The Known Gaps table above
-holds only actionable open items. (Link target materialized 2026-08-26,
-WI-FW-DOCS-AUDIT-01 — previously referenced but never committed.)
+Resolved gaps remain in this live file and in git history. A committed
+`closed-gaps.md` archive was never published; recreating private historical
+content only to satisfy a link is forbidden. The Known Gaps table above
+holds only actionable open items.
 
 ### Released follow-up: isolated evaluation and phase validation
 

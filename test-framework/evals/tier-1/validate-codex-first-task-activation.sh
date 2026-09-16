@@ -12,6 +12,13 @@
 #              tasks (graph byte-identical on reject) + idempotent no-write reload.
 set -euo pipefail
 export NODE_ENV=test
+# Host sessions leak SVC_HOST / SVC_WORKER_WI / session ids. The official
+# runner already uses env -i; standalone invocations must drop the same
+# inherited authority and runtime overrides so deny cases stay unresolved.
+unset SVC_HOST SVC_WORKER_WI SVC_SESSION_ID SVC_AUTHORITY_STATE_ROOT \
+  SVC_RUNTIME_DIR SVC_CODEX_RUNTIME_DIR SVC_REQUIRE_SESSION_BINDING \
+  CURSOR_CONVERSATION_ID CURSOR_SESSION_ID CLAUDE_SESSION_ID \
+  KIMI_SESSION_ID GEMINI_SESSION_ID GROK_SESSION_ID
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 TMP="$(mktemp -d)"
@@ -67,6 +74,21 @@ JSON
   echo "$d/.svc/lane-tasks-WI-FIX-01.json"
 }
 
+# NODE_ENV=production disables the hermetic test-fixture bypass. A consumer
+# that already has a claim-v1 binding is resolved authority, so the deny
+# preflight must use a graph-only fixture (no binding/claim).
+new_unbound_consumer() {
+  local d="$1"; local id="$2"
+  rm -rf "$d"; mkdir -p "$d/.svc"
+  git -C "$d" init -q
+  git -C "$d" config user.email t@t
+  git -C "$d" config user.name t
+  cat > "$d/.svc/lane-tasks-WI-FIX-01.json" <<JSON
+{"schema_version":1,"wi":"WI-FIX-01","lane":"framework","status":"pending","tasks":[{"id":$id,"status":"pending","skill":"route-workflow","subject":"rw","blocked_by":[]}]}
+JSON
+  echo "$d/.svc/lane-tasks-WI-FIX-01.json"
+}
+
 # WI-506 RED/GREEN probe: a predictable runtime-root rejection must happen
 # before activate-skill mutates the task graph. The unsafe existing XDG root is
 # intentionally mode 0755; it must fail closed, never fall back.
@@ -89,7 +111,7 @@ if [ "${SVC_WI506_RED_ONLY:-0}" = 1 ]; then
 fi
 
 echo "== WI-506 preflight byte-identity matrix =="
-GP="$(new_consumer "$TMP/c-preflight" 1)"
+GP="$(new_unbound_consumer "$TMP/c-preflight" 1)"
 UNSAFE_RUNTIME="$TMP/unsafe-runtime"; mkdir -m 755 "$UNSAFE_RUNTIME"
 REPO_KEY="$(printf '%s' "$(realpath "$TMP/c-preflight")" | sha256sum | cut -c1-24)"
 SESSION_KEY="$(printf '%s' "$SID" | sha256sum | cut -c1-32)"

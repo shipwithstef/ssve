@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "wi": "WI-FW-OSS-READINESS-01",
+  "lane": "framework",
+  "status": "in_progress",
+  "created": "2026-09-16T15:14:41.286Z",
+  "tasks": [
+    {
+      "id": 1,
+      "status": "in_progress",
+      "skill": "route-workflow",
+      "subject": "route workflow",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-09-16T15:15:31.966Z",
+        "loaded_via": "codex-load-skill"
+      },
+      "delivery_attempt": 1,
+      "delivery_started_at": "2026-09-16T15:15:31.966Z"
+    }
+  ],
+  "delivery_cycle": {
+    "root_wi": "WI-FW-OSS-READINESS-01",
+    "cycle_started_at": "2026-09-16T15:14:41.286Z"
+  }
+}

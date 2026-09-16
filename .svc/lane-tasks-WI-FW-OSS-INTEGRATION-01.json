@@ -1,0 +1,284 @@
+{
+  "schema_version": 1,
+  "wi": "WI-FW-OSS-INTEGRATION-01",
+  "lane": "framework",
+  "status": "in_progress",
+  "created": "2026-09-16T19:29:23.881Z",
+  "tasks": [
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "route-workflow",
+      "subject": "route workflow",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-09-16T19:29:25.591Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-09-16T19:33:04.443Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-FW-OSS-INTEGRATION-01.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-09-16T19:33:05.274Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-FW-OSS-INTEGRATION-01.json"
+              }
+            ]
+          },
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-09-16T19:33:11.687Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/session-contract.jsonl"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-09-16T19:33:11.870Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/oss-worker-20260916/request.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-09-16T19:33:12.055Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-FW-OSS-INTEGRATION-01.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-09-16T19:33:12.273Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/oss-worker-20260916/ownership.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-09-16T19:33:12.473Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-FW-OSS-INTEGRATION-01.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-09-16T19:33:12.925Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/lane-tasks-WI-FW-OSS-INTEGRATION-01.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-09-16T19:36:02.421Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/pipeline-decisions.jsonl"
+              }
+            ]
+          }
+        ]
+      },
+      "delivery_attempt": 1,
+      "delivery_started_at": "2026-09-16T19:29:25.591Z",
+      "completed_at": "2026-09-16T19:36:02.592Z"
+    },
+    {
+      "id": 2,
+      "status": "skipped",
+      "skill": "design-tech",
+      "subject": "skip product design-tech; reuse existing candidate designs",
+      "blocked_by": [],
+      "skip_reason": "Owner forbade a new feature design cycle. This WI integrates already-designed privacy, Tier-1 repair, and dormant CI candidates plus one test-determinism fix. No new product architecture, data model, or UI. Existing artifacts: docs/specs/tech/WI-FW-OSS-CI-PREP-01.md, docs/specs/reviews/2026-09-16-oss-early-preview-publication-decision.md, and the test-worker diagnosis.",
+      "completed_at": "2026-09-16T19:40:30.000Z"
+    },
+    {
+      "id": 3,
+      "status": "completed",
+      "skill": "plan-changeset",
+      "subject": "integration plan for privacy, tests, dormant CI, and two-box flake",
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-09-16T19:36:02.770Z",
+        "loaded_via": "cursor-session",
+        "phases_executed": [
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-09-16T19:36:03.159Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/lane-tasks-WI-FW-OSS-INTEGRATION-01.json"
+              }
+            ]
+          },
+          {
+            "id": "P1-ArchetypeClassification",
+            "ts": "2026-09-16T19:36:48.474Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-archetype.log"
+              }
+            ]
+          },
+          {
+            "id": "P2-InputCompressionAndScopeExtraction",
+            "ts": "2026-09-16T19:37:03.753Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/plan-changeset-scope.log"
+              }
+            ]
+          },
+          {
+            "id": "P3-ManifestTaskGraphMapping",
+            "ts": "2026-09-16T19:38:00.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/WI-FW-OSS-INTEGRATION-01/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-ExternalStateAndSimulationReport",
+            "ts": "2026-09-16T19:38:30.000Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/plans/WI-FW-OSS-INTEGRATION-01/manifest.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-09-16T19:44:15.740Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/oss-worker-20260916/gate-probe-2.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-HandoffSelfVerify",
+            "ts": "2026-09-16T19:44:15.740Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/oss-worker-20260916/closeout-probe.json"
+              }
+            ]
+          }
+        ]
+      },
+      "delivery_attempt": 1,
+      "delivery_started_at": "2026-09-16T19:36:02.770Z",
+      "completed_at": "2026-09-16T19:44:15.740Z"
+    },
+    {
+      "id": 4,
+      "status": "in_progress",
+      "skill": "review-plan",
+      "subject": "adversarial review of the integration plan",
+      "blocked_by": [
+        3
+      ],
+      "delivery_started_at": "2026-09-16T19:44:15.740Z",
+      "notes": "Adapter fail-closed: governed-triple has 2 independent stations; one-station retry refused 4 WIs in plan text before any provider call. No paid review launched. v5 issuance also blocked.",
+      "skill_receipt": {
+        "skill": "review-plan",
+        "loaded_at": "2026-09-16T19:44:19.779Z",
+        "loaded_via": "codex-load-skill"
+      }
+    },
+    {
+      "id": 5,
+      "status": "pending",
+      "skill": "execute-changeset",
+      "subject": "apply integrated candidate and deterministic two-box readiness",
+      "blocked_by": [
+        4
+      ]
+    },
+    {
+      "id": 6,
+      "status": "pending",
+      "skill": "review-exec",
+      "subject": "self-review plus policy-required independent exec review",
+      "blocked_by": [
+        5
+      ]
+    },
+    {
+      "id": 7,
+      "status": "pending",
+      "skill": "audit-implementation",
+      "subject": "implementation audit of the integrated candidate",
+      "blocked_by": [
+        6
+      ]
+    },
+    {
+      "id": 8,
+      "status": "pending",
+      "skill": "land-changeset",
+      "subject": "canonical PR and squash merge",
+      "blocked_by": [
+        7
+      ]
+    },
+    {
+      "id": 9,
+      "status": "pending",
+      "skill": "verify-promotion",
+      "subject": "post-merge identity and remaining publication decision",
+      "blocked_by": [
+        8
+      ]
+    }
+  ],
+  "change_type": "framework",
+  "persona_coverage": {
+    "status": "not_required",
+    "reason": "Framework validation, publication hygiene and dormant CI integration; no persona-dependent application interface is introduced."
+  },
+  "delivery_cycle": {
+    "root_wi": "WI-FW-OSS-INTEGRATION-01",
+    "cycle_started_at": "2026-09-16T19:29:23.881Z"
+  }
+}

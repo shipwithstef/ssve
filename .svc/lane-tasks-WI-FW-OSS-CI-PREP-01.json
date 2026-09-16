@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "wi": "WI-FW-OSS-CI-PREP-01",
+  "lane": "framework",
+  "status": "in_progress",
+  "created": "2026-09-16T17:21:00.567Z",
+  "tasks": [
+    {
+      "id": 1,
+      "status": "in_progress",
+      "skill": "route-workflow",
+      "subject": "route workflow",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-09-16T17:21:01.418Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-09-16T17:27:53.609Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-FW-OSS-CI-PREP-01.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-09-16T17:27:54.194Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-FW-OSS-CI-PREP-01.json"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-09-16T17:33:51.190Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/pipeline-decisions.jsonl"
+              }
+            ]
+          },
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-09-16T17:33:51.324Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/session-contract.jsonl"
+              }
+            ]
+          }
+        ]
+      },
+      "delivery_attempt": 1,
+      "delivery_started_at": "2026-09-16T17:21:01.419Z"
+    },
+    {
+      "id": 2,
+      "status": "completed",
+      "skill": "design-tech",
+      "subject": "local technical design for dormant GitHub CI",
+      "blocked_by": [],
+      "completed_at": "2026-09-16T17:26:30.000Z",
+      "skill_receipt": {
+        "skill": "design-tech",
+        "loaded_at": "2026-09-16T17:26:00.000Z",
+        "loaded_via": "manual"
+      }
+    }
+  ],
+  "delivery_cycle": {
+    "root_wi": "WI-FW-OSS-CI-PREP-01",
+    "cycle_started_at": "2026-09-16T17:21:00.567Z"
+  }
+}

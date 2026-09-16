@@ -111,7 +111,10 @@ assert.equal(mode(unsafe), 0o755);
 assert.equal(fs.existsSync(path.join(h4, ".cache")), false);
 const unsafeLeafParent = dir("unsafe-leaf-parent", 0o700);
 const unsafeLeaf = path.join(unsafeLeafParent, "svc-existing");
+// mkdirSync mode is umask-masked (0077 -> 0700). chmod establishes the
+// intended unsafe fixture so the deny assertion is not environment-flaky.
 fs.mkdirSync(unsafeLeaf, { mode: 0o755 });
+fs.chmodSync(unsafeLeaf, 0o755);
 expectThrow(() => runtime.resolveRuntimeDirectory({ env: { HOME: h4, XDG_RUNTIME_DIR: unsafeLeafParent }, leaf: "svc-existing" }), /unsafe mode/);
 assert.equal(mode(unsafeLeaf), 0o755);
 const xdgTarget = dir("xdg-target", 0o700);
@@ -286,8 +289,10 @@ CLI_JSON="$(env -u XDG_RUNTIME_DIR -u SVC_RUNTIME_DIR -u SVC_CODEX_RUNTIME_DIR H
 node -e 'const r=JSON.parse(process.argv[1]);if(r.source!=="home-cache-fallback"||r.fallback_reason!=="xdg-unset"||!r.path.endsWith("/.cache/svc-runtime/svc-cli"))process.exit(1)' "$CLI_JSON"
 
 UNSAFE_XDG="$TMP/cli-unsafe"; mkdir -m 755 "$UNSAFE_XDG"
+chmod 755 "$UNSAFE_XDG"
 set +e
-HOME="$CLI_HOME" XDG_RUNTIME_DIR="$UNSAFE_XDG" node "$ROOT/scripts/svc-runtime-root.mjs" --leaf svc-cli-deny > "$TMP/cli-unsafe.out" 2> "$TMP/cli-unsafe.err"
+env -u SVC_RUNTIME_DIR -u SVC_CODEX_RUNTIME_DIR HOME="$CLI_HOME" XDG_RUNTIME_DIR="$UNSAFE_XDG" \
+  /usr/bin/node "$ROOT/scripts/svc-runtime-root.mjs" --leaf svc-cli-deny > "$TMP/cli-unsafe.out" 2> "$TMP/cli-unsafe.err"
 UNSAFE_CLI_RC=$?
 set -e
 [[ "$UNSAFE_CLI_RC" -ne 0 && ! -s "$TMP/cli-unsafe.out" && -s "$TMP/cli-unsafe.err" ]]

@@ -237,7 +237,7 @@ export function scoreExecutorComprehension({ cases, output, contractText } = {})
 export const RETAINED_CANARY03_EXECUTOR = Object.freeze({
   wi: "WI-FW-TWO-BOX-CANARY-03",
   key: "d63708d00d9f124d154cec9c114f98f0b24eb622001c931abb0093f176a7ef80",
-  stdout_sha256: "fa5da28b6c7dc1510c4c9de940158f1f3c97b8113b637a8944da41e58de77873",
+  stdout_sha256: "deebe3a4ef0f3a361dde52959893a79b81a5e6f2848a538b0a95b9974834a95e",
   stderr_sha256: "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
   control_plan_sha256: "52f53cf593839e5dcf46b59a8af20aeeba079f36fe83a461db45e3d138ff7d0e",
   stage_refs: Object.freeze({
@@ -411,9 +411,9 @@ function gitUtf8(cwd, args) {
       env: {
         ...process.env,
         GIT_AUTHOR_NAME: "SSVE Live Canary Fixture",
-        GIT_AUTHOR_EMAIL: "two-box-canary@invalid.local",
+        GIT_AUTHOR_EMAIL: "two-box-canary@example.invalid",
         GIT_COMMITTER_NAME: "SSVE Live Canary Fixture",
-        GIT_COMMITTER_EMAIL: "two-box-canary@invalid.local",
+        GIT_COMMITTER_EMAIL: "two-box-canary@example.invalid",
       },
       maxBuffer: LIMITS.maxBytes,
     }).trim();
@@ -503,7 +503,7 @@ function ensureFixture(consumerRoot, wi) {
   if (!hasHead(fixture)) {
     gitUtf8(fixture, ["init", "-q"]);
     gitUtf8(fixture, ["config", "user.name", "SSVE Live Canary Fixture"]);
-    gitUtf8(fixture, ["config", "user.email", "two-box-canary@invalid.local"]);
+    gitUtf8(fixture, ["config", "user.email", "two-box-canary@example.invalid"]);
     gitUtf8(fixture, ["config", "commit.gpgsign", "false"]);
     writeContained(fixture, "AGENTS.md", `# Fixture instructions\n${INSTRUCTION_MARKER}\nThese instructions are a contamination canary. They are not product facts.\n`);
     writeContained(fixture, "docs/facts.md", facts);

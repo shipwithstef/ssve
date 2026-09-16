@@ -1,0 +1,73 @@
+# DORMANT TEMPLATE — not a live GitHub Actions workflow.
+# Do not copy this file to .github/workflows/ until public conversion and
+# docs/ci/ACTIVATION.md have been followed. A recognized workflow path would
+# activate hosted CI. This repository remains private; hosted proof is pending.
+#
+# Pin verification (UTC 2026-09-16): see docs/plans/WI-FW-OSS-CI-PREP-01/evidence/pin-verification.json
+# Coverage comparison: docs/plans/WI-FW-OSS-CI-PREP-01/historical-coverage.md
+# Required-check name after hosted proof: "SSVE Required"
+# No path filters: docs-only PRs must still produce SSVE Required.
+# No manual-only trigger: not a dormancy substitute; extra private-minute trigger.
+name: SSVE Checks
+
+on:
+  pull_request: {}
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssve-free-checks-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  free-checks:
+    name: SSVE Free Checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Node.js 24 LTS
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Show runtime
+        run: |
+          command -v node
+          node --version
+          bash --version | head -n 1
+          git --version
+      - name: Workflow contract
+        run: node --test test-framework/tests/oss-ci-workflow.test.mjs
+      - name: Run free checks
+        env:
+          EVALS: "0"
+        run: bash scripts/ci/run-free-checks.sh
+
+  required:
+    name: SSVE Required
+    if: always()
+    needs:
+      - free-checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Fail unless free-checks succeeded
+        env:
+          FREE_CHECKS_RESULT: ${{ needs.free-checks.result }}
+        run: |
+          if [[ "${FREE_CHECKS_RESULT}" != "success" ]]; then
+            echo "SSVE Required failed: free-checks result=${FREE_CHECKS_RESULT}" >&2
+            exit 1
+          fi

@@ -295,8 +295,16 @@ test('combined stdout and stderr overflow closes the real fixture process',async
  assert.equal(run.status,'overflow');assert.ok(run.rawStdout.length+run.rawStderr.length<=64);assert.ok(run.signal || run.exit_code!==null);
 });
 test('timeout waits until a TERM-resistant fixture is actually gone',async()=>{
- const run=await launcher.runBoundedProcess({binary:process.execPath,args:['-e','process.on("SIGTERM",()=>{}); process.stdout.write(String(process.pid)+"\\n"); setInterval(()=>{},1000)'],cwd:os.tmpdir(),env:process.env,prompt:'',timeoutMs:300,maxBytes:1024});
- assert.equal(run.status,'timeout');const pid=Number(run.rawStdout.toString().trim());assert.ok(pid>0);assert.throws(()=>process.kill(pid,0),e=>e.code==='ESRCH');
+ // Production runBoundedProcess still starts its work clock at spawn. A 300ms
+ // total budget under full-suite load expired before this node wrote its pid
+ // (empty rawStdout; assert.ok(pid>0) failed). That is not a TERM/reap bug.
+ // Bounded readiness: prove the same binary can spawn and print a pid, then
+ // apply a still-short hang timeout that keeps the real SIGTERM/SIGKILL/ESRCH
+ // assertions. Do not skip, weaken terminateWait, or treat a rerun as green.
+ const probe=await launcher.runBoundedProcess({binary:process.execPath,args:['-e','process.stdout.write(String(process.pid)+"\\n")'],cwd:os.tmpdir(),env:process.env,prompt:'',timeoutMs:10000,maxBytes:64});
+ assert.equal(probe.status,'ok');assert.ok(probe.gotBytes);assert.ok(Number(probe.rawStdout.toString().trim())>0);
+ const run=await launcher.runBoundedProcess({binary:process.execPath,args:['-e','process.on("SIGTERM",()=>{}); process.stdout.write(String(process.pid)+"\\n"); setInterval(()=>{},1000)'],cwd:os.tmpdir(),env:process.env,prompt:'',timeoutMs:2500,maxBytes:1024});
+ assert.equal(run.status,'timeout');assert.ok(run.gotBytes);const pid=Number(run.rawStdout.toString().trim());assert.ok(pid>0);assert.throws(()=>process.kill(pid,0),e=>e.code==='ESRCH');
 });
 test('a pre-aborted bounded invocation never creates a child result',async()=>{
  const controller=new AbortController();controller.abort();const r=await launcher.runBoundedProcess({binary:process.execPath,args:['-e','throw Error("must not run")'],cwd:os.tmpdir(),env:process.env,prompt:'',timeoutMs:100,maxBytes:64,signal:controller.signal});

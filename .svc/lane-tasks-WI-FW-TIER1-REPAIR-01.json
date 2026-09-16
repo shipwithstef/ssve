@@ -1,0 +1,345 @@
+{
+  "schema_version": 1,
+  "wi": "WI-FW-TIER1-REPAIR-01",
+  "lane": "bugfix",
+  "status": "in_progress",
+  "created": "2026-09-16T17:21:00.553Z",
+  "tasks": [
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "route-workflow",
+      "subject": "route workflow",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "route-workflow",
+        "loaded_at": "2026-09-16T17:21:01.409Z",
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P1-SessionContextLoad",
+            "ts": "2026-09-16T18:00:58.735Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/session-contract.jsonl"
+              }
+            ]
+          },
+          {
+            "id": "P2-IntentNormalizationAndCorrection",
+            "ts": "2026-09-16T18:00:58.910Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/oss-worker-20260916/request.md"
+              }
+            ]
+          },
+          {
+            "id": "P3-StateInitializationAndLaneRouting",
+            "ts": "2026-09-16T18:00:59.084Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-FW-TIER1-REPAIR-01.json"
+              }
+            ]
+          },
+          {
+            "id": "P4-ConcernAndPreDispatchGate",
+            "ts": "2026-09-16T18:00:59.253Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/oss-worker-20260916/ownership.json"
+              }
+            ]
+          },
+          {
+            "id": "P5-TaskGraphDispatchAndEvidenceObligations",
+            "ts": "2026-09-16T18:00:59.426Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/lane-tasks-WI-FW-TIER1-REPAIR-01.json"
+              }
+            ]
+          },
+          {
+            "id": "P6-SelfVerifyDecisionLogContinuation",
+            "ts": "2026-09-16T18:00:59.602Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/pipeline-decisions.jsonl"
+              }
+            ]
+          }
+        ]
+      },
+      "delivery_attempt": 1,
+      "delivery_started_at": "2026-09-16T17:21:01.409Z"
+    },
+    {
+      "id": 2,
+      "status": "completed",
+      "skill": "diagnose-bug",
+      "subject": "diagnose-bug: four Tier-1 failures on main-identical tree",
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "diagnose-bug",
+        "loaded_at": "2026-09-16T17:26:57.858Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P1-Inputs",
+            "ts": "2026-09-16T18:00:59.773Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-FW-TIER1-REPAIR-01.md"
+              }
+            ]
+          },
+          {
+            "id": "P2-Reproduction",
+            "ts": "2026-09-16T18:00:59.938Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/external-review-artifacts/oss-worker-20260916/repro-fixture-validate-no-svc-residue.sh.out"
+              }
+            ]
+          },
+          {
+            "id": "P3-RootCause",
+            "ts": "2026-09-16T18:01:00.109Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/oss-worker-20260916/diagnosis.md"
+              }
+            ]
+          },
+          {
+            "id": "P4-FixPlan",
+            "ts": "2026-09-16T18:01:00.285Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": ".svc/external-review-artifacts/oss-worker-20260916/diagnosis.md"
+              }
+            ]
+          },
+          {
+            "id": "P5-PillarRevisit",
+            "ts": "2026-09-16T18:01:00.458Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "docs/specs/work-items/WI-FW-TIER1-REPAIR-01.md"
+              }
+            ]
+          }
+        ]
+      },
+      "process_tasks": [
+        {
+          "id": "1.1",
+          "name": "diagnose-bug|spec-anchor",
+          "status": "completed",
+          "blocked_by": [],
+          "subject": "Read WI + four validator contracts"
+        },
+        {
+          "id": "1.2",
+          "name": "diagnose-bug|repro-classify",
+          "status": "completed",
+          "blocked_by": [
+            "1.1"
+          ],
+          "subject": "Trigger/Expected/Actual for each of four checks"
+        },
+        {
+          "id": "1.3",
+          "name": "diagnose-bug|reading-list",
+          "status": "completed",
+          "blocked_by": [
+            "1.2"
+          ],
+          "subject": "Four validators + loader + runtime-root + FRAMEWORK-STATE"
+        },
+        {
+          "id": "1.4",
+          "name": "diagnose-bug|code-read",
+          "status": "completed",
+          "blocked_by": [
+            "1.3"
+          ],
+          "subject": "Match/drift/gap per validator"
+        },
+        {
+          "id": "1.5",
+          "name": "diagnose-bug|fault-isolate",
+          "status": "completed",
+          "blocked_by": [
+            "1.4"
+          ],
+          "subject": "Trace: fixture isolation + umask + binding + gitignored archive + untracked graph"
+        },
+        {
+          "id": "1.6",
+          "name": "diagnose-bug|root-cause",
+          "status": "completed",
+          "blocked_by": [
+            "1.5"
+          ],
+          "subject": "Four independent causes recorded in diagnosis brief"
+        },
+        {
+          "id": "1.7",
+          "name": "diagnose-bug|pillar-audit",
+          "status": "completed",
+          "blocked_by": [
+            "1.6"
+          ],
+          "subject": "8 pillars + eval_matrix"
+        },
+        {
+          "id": "1.8",
+          "name": "diagnose-bug|pattern-scan",
+          "status": "completed",
+          "blocked_by": [
+            "1.7"
+          ],
+          "subject": "Same-class scan"
+        },
+        {
+          "id": "1.9",
+          "name": "diagnose-bug|register-disc",
+          "status": "completed",
+          "blocked_by": [
+            "1.8"
+          ],
+          "subject": "single correction cluster — no INDEX decomposition"
+        },
+        {
+          "id": "1.10",
+          "name": "diagnose-bug|brief",
+          "status": "completed",
+          "blocked_by": [
+            "1.9"
+          ],
+          "subject": "docs/plans/WI-FW-TIER1-REPAIR-01/diagnosis.md"
+        }
+      ],
+      "eval_matrix": {
+        "product_fit": "N/A — framework validator/docs integrity, not a product capability",
+        "journey": "N/A — no user-facing journey; operator eval surface only",
+        "acceptance_criteria": "UNCHANGED — VERIFIED — docs/specs/work-items/WI-FW-TIER1-REPAIR-01.md:11",
+        "ux": "N/A — no user-visible UI or copy change",
+        "ui": "N/A — no visual or component change",
+        "tech_architecture": "UNCHANGED — VERIFIED — production deny paths unchanged; fixture isolation only",
+        "cost_model": "N/A — free Tier-1 only; no paid provider or new compute path",
+        "operations": "UNCHANGED — VERIFIED — CI remains dormant; no hosted activation"
+      }
+    },
+    {
+      "id": 3,
+      "status": "in_progress",
+      "skill": "improve-framework",
+      "subject": "improve-framework: honest FRAMEWORK-STATE closed-gaps claim",
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "improve-framework",
+        "loaded_at": "2026-09-16T17:26:57.858Z",
+        "loaded_via": "manual",
+        "phases_executed": [
+          {
+            "id": "P6-ImprovementRecordAndStateMutation",
+            "ts": "2026-09-16T17:50:46.951Z",
+            "evidence_artifacts": [
+              {
+                "type": "file",
+                "path": "FRAMEWORK-STATE.md"
+              }
+            ]
+          },
+          {
+            "id": "P7-ProposalDoneAndRemoteSync",
+            "ts": "2026-09-16T18:01:00.865Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": "git"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "status": "pending",
+      "skill": "execute-changeset",
+      "subject": "execute-changeset: fixture isolation + durable graph staging",
+      "blocked_by": [
+        3
+      ]
+    },
+    {
+      "id": 5,
+      "status": "pending",
+      "skill": "review-gate",
+      "subject": "review-gate: focused red/green plus full free Tier-1",
+      "blocked_by": [
+        4
+      ],
+      "conditions": "No paid/independent reviewers in this launch; mechanical self-review only"
+    },
+    {
+      "id": 6,
+      "status": "pending",
+      "skill": "write-e2e",
+      "subject": "write-e2e: SKIP background-only validator/docs fix",
+      "blocked_by": [
+        5
+      ],
+      "conditions": "SKIP — no user-facing surface"
+    },
+    {
+      "id": 7,
+      "status": "pending",
+      "skill": "land-changeset",
+      "subject": "land-changeset: local commit/draft PR only; no merge or global install",
+      "blocked_by": [
+        6
+      ]
+    },
+    {
+      "id": 8,
+      "status": "pending",
+      "skill": "verify-promotion",
+      "subject": "verify-promotion: SKIP — no merge/hosted activation authorized",
+      "blocked_by": [
+        7
+      ],
+      "conditions": "SKIP — public conversion and CI remain dormant"
+    }
+  ],
+  "delivery_cycle": {
+    "root_wi": "WI-FW-TIER1-REPAIR-01",
+    "cycle_started_at": "2026-09-16T17:21:00.553Z"
+  },
+  "flags": [],
+  "change_type": "bugfix",
+  "persona_coverage": {
+    "status": "not_required",
+    "reason": "Repair framework validator fixtures and documentation integrity; no product user interface or persona-dependent feature is being introduced."
+  }
+}

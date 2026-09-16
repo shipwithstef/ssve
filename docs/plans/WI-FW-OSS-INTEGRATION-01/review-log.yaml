@@ -1,0 +1,26 @@
+# Honest review-plan closeout — not a pass receipt
+wi: WI-FW-OSS-INTEGRATION-01
+terminal_state: blocked
+self_review_passes: 1
+paid_provider_calls: 0
+mechanical:
+  command: bash scripts/verify-plan-mechanical.sh docs/plans/WI-FW-OSS-INTEGRATION-01/manifest.md
+  result: PASS
+  note: First run failed C4 on a prose mention of hook bypass; wording was changed to "do not skip git hooks".
+deploy_dependency:
+  command: node scripts/check-plan-deploy-dependency.mjs --lane-tasks .svc/lane-tasks-WI-FW-OSS-INTEGRATION-01.json
+  result: '{"violations":[]}'
+issuance:
+  two_box_live: unauthorized
+  lightweight_eligibility: refused
+  emit_receipt: "ENOENT plan-authority object; v5 plan-manifest not issued"
+cursor_policy:
+  detect_host: cursor
+  reviewer_policy_v2: "config_invalid: mode has no cursor/plan route"
+  dispatch_policy_default_mode: governed-triple
+  dispatch_release_authority: false
+  review_plan_codex_default_mode_production: "mode production is not configured"
+  review_plan_codex_governed_triple: "expected exactly one required independent external station, found 2"
+  one_station_retry: "exit 4; four WIs named in the integration plan; refuse before any provider call"
+verdict: do_not_promote
+note: No review-plan receipt was emitted. Do not treat this log as independent review evidence.

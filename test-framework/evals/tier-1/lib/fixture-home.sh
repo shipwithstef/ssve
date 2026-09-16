@@ -35,8 +35,13 @@ exit 78
 PROVIDER
     chmod 700 "$fixture_root/bin/$provider"
   done
+  # Keep the caller PATH (actions/setup-node, nvm, or the suite node) ahead of
+  # /usr/bin:/bin so fixtures do not silently select an older system Node.
+  # Append the portable coreutils dirs so chmod/mkdir still resolve when PATH
+  # was empty or fixture-only. Do not bake a workstation node path into this
+  # helper.
   env -i \
-    PATH="$fixture_root/bin:$PATH" \
+    PATH="$fixture_root/bin:$PATH:/usr/bin:/bin" \
     HOME="$fixture_root/home" \
     XDG_CONFIG_HOME="$fixture_root/config" \
     XDG_CACHE_HOME="$fixture_root/cache" \

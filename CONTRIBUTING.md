@@ -4,6 +4,14 @@ This is an opinionated blend of the best patterns from the Claude Code
 ecosystem. Contributions that make the pipeline faster, the specs tighter,
 or the output more reliable are welcome.
 
+## Early preview
+
+This repository is an early preview. Read
+[`docs/EARLY-PREVIEW.md`](docs/EARLY-PREVIEW.md) before installing.
+Keep default host hooks enabled. Do not disable PreToolUse or other
+protection hooks to “recover” a session; that is not a supported
+install or contributor procedure.
+
 ## How to Contribute
 
 ### 1. Fix something broken
