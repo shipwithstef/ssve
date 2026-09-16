@@ -1,6 +1,6 @@
 # WI-FW-TWO-BOX-01 — Two-Box Planning and Deterministic Transmutation
 
-Status: BASELINED; changeset conversion awaiting root review after RD01–RD12 corrections. Type: Enabler. Mode: contract-change. Lane: framework. Owner: repository owner.
+Status: VERIFIED. Promoted by https://github.com/shipwithstef/ssve/pull/62 squash `e016e443ea95c20d151f1703e4a63584aa26c81d` (tree `a383ed61c34d9df45c1eb0fb85d87713d006040b`, digest `35624d9b78b68f668950e7022c03b3b15bfea7d78fcbe562a27d9603ee24349a`). Type: Enabler. Mode: contract-change. Lane: framework. Owner: repository owner.
 
 ## Intent
 
@@ -11,6 +11,8 @@ Owner authorization: conversation of 2026-09-14. Sequence: self-review; Cursor G
 ## Evidence and decisions
 
 Accepted solution: docs/plans/two-box-transmutation/solution-plan.md. Solution-review dispositions preserved (original FAIL 5/10). Root design review: docs/plans/two-box-transmutation/root-design-review.md. Binding decisions 1–10 and SR1–SR6 remain authoritative; RD01–RD12 correct the conversion design, not those ACs.
+
+Promoted evidence: r22 FULL Tier-1 371/0/0; pinned Sol+AGY execution reviews PASS with 0 findings on digest `35624d9b…`; r20 no-inference rescore of retained CANARY03 (`corrected_verification=true`; original executor `failed_score` preserved). LIVE budget consumed is 12 planning calls + 1 executor; no further LIVE calls. r23 installed all nine hosts from canonical main with zero package drift at that time. r24 current aggregate drift is not zero: Codex governed command remains owner-disabled in `~/.codex/hooks.json` and is preserved. Promotion index id `d640496bd22dcb2c80879c391833f51e7f5dbc21319bec6f41ca9df9631a0f1e`. Companion WI-FW-PROMPT-INSPECTION-01 confirmed scope closed on this same implementation.
 
 ## Acceptance Criteria
 
