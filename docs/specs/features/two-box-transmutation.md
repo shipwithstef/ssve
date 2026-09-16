@@ -1,5 +1,5 @@
 ---
-status: BASELINED
+status: VERIFIED
 type: Enabler
 mode: contract-change
 wi: WI-FW-TWO-BOX-01
@@ -10,7 +10,7 @@ created: 2026-09-14
 
 # Feature: Two-Box Planning and Deterministic Transmutation
 
-**Status:** BASELINED (design corrected after RD01–RD12; implementation awaits reviewed changeset). Draft did not pass review.
+**Status:** VERIFIED (PR 62 squash `e016e443ea95c20d151f1703e4a63584aa26c81d`; tree `a383ed61c34d9df45c1eb0fb85d87713d006040b`). Draft did not pass review; later reviewed source did.
 **Consumers:** plan-changeset, review-plan, review-inputs, execute-changeset, emit-receipt, check-chain-receipts, compile-delivery-graph, validate-delivery-graph, stage-segment, svc-stage-plan, resolve-dispatch, host-capability validator, manage-learnings, nine-host setup/drift
 **Source of truth:** docs/specs/work-items/WI-FW-TWO-BOX-01.md
 **Approved solution:** docs/plans/two-box-transmutation/solution-plan.md (AC01–AC18, binding decisions 1–10, SR1–SR6)

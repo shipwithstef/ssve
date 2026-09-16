@@ -1,6 +1,20 @@
 # Two-Box Planning handoff and AGY repair brief
 
-Status: implementation retained; automatic review-input recovery is being verified. The latest completed full suite reported 370/371 passing, so the earlier 371/371 result below is historical. Independent release approval remains outstanding.
+Status: VERIFIED. PR [62](https://github.com/shipwithstef/ssve/pull/62) promoted commit `e016e443ea95c20d151f1703e4a63584aa26c81d`, tree `a383ed61c34d9df45c1eb0fb85d87713d006040b`. The dated release record immediately below supersedes the historical investigation and failures retained later in this report.
+
+## Verified release — 2026-09-16
+
+- The r22 full Tier-1 run passed all 371 validators with zero failures or timeouts. Its reviewed source tree is identical to the promoted tree; this is retained matching evidence, not a new execution against later status-only documentation changes.
+- Pinned Sol advisory and AGY independent execution reviews passed with zero findings for candidate digest `35624d9b78b68f668950e7022c03b3b15bfea7d78fcbe562a27d9603ee24349a`.
+- Six completed planning stages and the actual executor response are retained. The r20 scorer correction validated that immutable response without another model call; its original `failed_score` journal is preserved. Total LIVE budget consumed: 12 planning calls and one executor call.
+- r23 installed the promoted source from canonical main on all nine hosts and verified zero drift at that time. Actual native inspection captured exactly 1,048,576 frozen request bytes with zero inference calls. The stress fixture exceeds the live token budget (`usable_live=false`); this does not claim a successful 1 MiB model execution.
+- The passing G7 receipt is attached to the promoted commit in `refs/notes/svc-receipts`. The canonical promotion index contains entry `d640496bd22dcb2c80879c391833f51e7f5dbc21319bec6f41ca9df9631a0f1e` for that same commit.
+- The later r24 install check found current package files on all nine hosts and one owner-directed deviation: the Codex PreToolUse hook was explicitly disabled by the owner. That setting is preserved; current aggregate drift is therefore not zero.
+- WI-FW-TWO-BOX-01 is VERIFIED and the confirmed WI-FW-PROMPT-INSPECTION-01 scope is CLOSED on this implementation. The foreign prompt-inspection worktree and its uncommitted proposal remain untouched.
+
+Evidence resides beneath `.svc/external-review-artifacts/two-box/cursor-finalization-20260915/`: `promote-verified-repair-r22/release-result.json`, the two r22 pinned review receipts, `scorer-citation-repair-r20/canary-03-rescore.json`, `finish-after-owner-revert-r23/g7-promotion-evidence.json`, `finish-after-owner-revert-r23/native-1mib-inspect-g7.json`, and `closeout-r24/promotion-index-result.json`. Earlier outstanding-review and incomplete-LIVE statements below describe earlier attempts, not the current release.
+
+## Historical investigation
 
 Start with [why Grok could not write](#why-grok-could-not-write-evidence-and-responsibility), then [AGY repair assignment](#agy-repair-assignment). The current implementation and verification record is preserved below.
 

@@ -1,6 +1,6 @@
 # WI-FW-PROMPT-INSPECTION-01 — Complete large-input transport across review harnesses
 
-Status: IMPLEMENTING in WI-FW-TWO-BOX-01 worktree `framework-two-box-transmutation`; companion original and failed-stage history preserved. Type: Bug. Lane: bugfix. Severity: high (delivery blocker).
+Status: CLOSED. Confirmed PI-01..PI-12 scope delivered by the same WI-FW-TWO-BOX-01 implementation, PR 62 squash `e016e443ea95c20d151f1703e4a63584aa26c81d`, and r23 native 1 MiB inspect proof (zero inference; stress fixture beyond live token budget). Foreign session worktree and uncommitted proposal were not mutated. Type: Bug. Lane: bugfix. Severity: high (delivery blocker).
 
 ## Intent and authorization
 
@@ -58,3 +58,5 @@ No new dependency,
 model choice, credential change or public endpoint. The normal delivery chain
 applies because inspection behavior changes. Rollback reverts the integration;
 oversized plans must fail explicitly rather than silently lose requirements.
+
+Confirmed closeout: PI-01..PI-12 shipped in the same PR 62 tree as WI-FW-TWO-BOX-01. Evidence: r23 `native-1mib-inspect-g7.json` (`inference_calls=0`, `usable_live=false`, `exact_prompt_count=1`, 1 MiB frozen request) plus r22 FULL 371 and all-nine install. The foreign PI worktree `.worktrees/wi-fw-prompt-inspection-01-WI-FW-PROMPT-INSPECTION-01-0f88316a33ef` and its uncommitted proposal were not mutated.
