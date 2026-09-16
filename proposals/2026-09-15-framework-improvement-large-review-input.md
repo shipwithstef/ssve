@@ -1,9 +1,8 @@
 # Framework improvement — complete large review input across harnesses
 
-**Status:** DIAGNOSED; assessment complete locally, implementation pending.
-**backlog_wi:** WI-FW-PROMPT-INSPECTION-01
-**Reason:** Existing owned WI now carries the generic transport contract, immediate
-Two-Box regression and compatibility assessment; this is not release approval.
+Status: ACCEPTED into the combined Two-Box repair.
+accepted_wi: WI-FW-TWO-BOX-01
+reason: Owner folded PI-01..PI-12 into WI-FW-TWO-BOX-01; companion WI-FW-PROMPT-INSPECTION-01 remains the original foreign-worktree record, not a second execution track.
 **Severity:** High — blocks authorized delivery when a required planning packet
 exceeds the inspection transport limit.
 

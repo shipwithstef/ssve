@@ -304,6 +304,19 @@ test('a pre-aborted bounded invocation never creates a child result',async()=>{
 });
 
 const {runTwoBox}=await import('../../scripts/two-box-plan.mjs');
+const {putObject}=await import('../../scripts/lib/review-evidence-store.mjs');
+function journalFile(root,wi){return path.join(root,'.svc/two-box',wi,'journal.json');}
+function rewriteRoleProof(root,wi,role,mutate){
+  const journal=JSON.parse(fs.readFileSync(journalFile(root,wi),'utf8'));
+  const row=journal.stages[role];
+  const envelope=protocol.getStageEnvelope(row.ref,{start:root});
+  mutate(envelope.launch.proof);
+  const stored=putObject(Buffer.from(`${protocol.canonicalJson(envelope)}\n`),{start:root});
+  const newRef=protocol.objectRef(stored.sha256);
+  journal.stages[role]={...row,ref:newRef};
+  fs.writeFileSync(journalFile(root,wi),`${JSON.stringify(journal,null,2)}\n`);
+  return {oldRef:row.ref,newRef,key:row.key};
+}
 async function cycleFixture(run,{contextText=null}={}){
  await withSourceFixture(async(root,baseSha)=>{
   const configPath=path.join(root,'policy.json');
@@ -371,8 +384,124 @@ test('OFFLINE full cycle preserves independent originals, exactly two scouts, an
   assert.equal(stages.open_box.output.plan,opts.offline.outputs.open_box.output.plan);assert.equal('original_open' in stages.contract_box.input,false);
   assert.notDeepEqual(first.stages.contract_box.ref,first.stages.contract_revise.ref);
   for(const role of ['scout_forward','scout_reverse']){assert.deepEqual(stages[role].parents,[first.stages.contract_box.ref]);assert.equal('facts' in stages[role].input,false);}
-  const resumed=await runTwoBox(opts);assert.deepEqual(resumed.stages,first.stages);
+  const resumed=await runTwoBox(opts);assert.deepEqual(resumed.stages,first.stages);assert.equal(first.new_provider_calls,6);assert.equal(resumed.new_provider_calls,0);
   const {validateControlPlan}=await import('../../scripts/lib/control-plan-validate.mjs');assert.equal(validateControlPlan({consumerRoot:root,body:first.control_plan}).ok,false);
+ });
+});
+test('obsolete or corrupt cached proofs with matching keys invalidate descendants and keep CAS history',async()=>{
+ await cycleFixture(async(opts,root)=>{
+  const first=await runTwoBox(opts);
+  assert.equal(first.new_provider_calls,6);
+  const reused=await runTwoBox(opts);
+  assert.equal(reused.new_provider_calls,0);
+  assert.deepEqual(reused.stages,first.stages);
+  const missing=rewriteRoleProof(root,opts.wi,'open_box',proof=>{delete proof.frozen_request;});
+  const afterMissing=await runTwoBox(opts);
+  assert.equal(afterMissing.new_provider_calls,2);
+  assert.notEqual(afterMissing.stages.open_box.ref.sha256,first.stages.open_box.ref.sha256);
+  assert.equal(afterMissing.stages.contract_box.ref.sha256,first.stages.contract_box.ref.sha256);
+  const hist=JSON.parse(fs.readFileSync(journalFile(root,opts.wi),'utf8')).history;
+  assert.ok(hist.some(h=>h.role==='open_box'&&h.reason==='incompatible_isolation_proof'&&h.ref.sha256===missing.newRef.sha256));
+  assert.ok(hist.some(h=>h.role==='assessor'&&h.reason==='incompatible_isolation_proof'));
+  assert.notEqual(protocol.getStageEnvelope(missing.oldRef,{start:root}).launch.proof.frozen_request,undefined);
+  assert.equal(protocol.getStageEnvelope(missing.newRef,{start:root}).launch.proof.frozen_request,undefined);
+  const corrupt=rewriteRoleProof(root,opts.wi,'contract_box',proof=>{proof.frozen_request={...proof.frozen_request,sha256:'0'.repeat(64)};});
+  const afterCorrupt=await runTwoBox(opts);
+  assert.equal(afterCorrupt.new_provider_calls,5);
+  assert.equal(afterCorrupt.stages.open_box.ref.sha256,afterMissing.stages.open_box.ref.sha256);
+  assert.notEqual(afterCorrupt.stages.contract_box.ref.sha256,first.stages.contract_box.ref.sha256);
+  const hist2=JSON.parse(fs.readFileSync(journalFile(root,opts.wi),'utf8')).history;
+  assert.ok(hist2.some(h=>h.role==='contract_box'&&h.reason==='incompatible_isolation_proof'));
+  assert.ok(hist2.some(h=>h.role==='scout_forward'&&h.reason==='incompatible_isolation_proof'));
+  assert.equal(protocol.getStageEnvelope(corrupt.newRef,{start:root}).launch.proof.frozen_request.sha256,'0'.repeat(64));
+  assert.notEqual(protocol.getStageEnvelope(corrupt.oldRef,{start:root}).launch.proof.frozen_request.sha256,'0'.repeat(64));
+ });
+});
+test('internally valid mismatched proof and missing token_budget invalidate matching-key stages',async()=>{
+ await cycleFixture(async(opts,root)=>{
+  const first=await runTwoBox(opts);
+  const donor=protocol.getStageEnvelope(first.stages.contract_box.ref,{start:root}).launch.proof;
+  const swapped=rewriteRoleProof(root,opts.wi,'open_box',proof=>{
+    for(const k of Object.keys(proof))delete proof[k];
+    Object.assign(proof,structuredClone(donor));
+  });
+  const afterSwap=await runTwoBox(opts);
+  assert.equal(afterSwap.new_provider_calls,2);
+  assert.notEqual(afterSwap.stages.open_box.ref.sha256,first.stages.open_box.ref.sha256);
+  assert.equal(afterSwap.stages.contract_box.ref.sha256,first.stages.contract_box.ref.sha256);
+  const hist=JSON.parse(fs.readFileSync(journalFile(root,opts.wi),'utf8')).history;
+  assert.ok(hist.some(h=>h.role==='open_box'&&h.reason==='incompatible_isolation_proof'&&h.ref.sha256===swapped.newRef.sha256));
+  assert.ok(hist.some(h=>h.role==='assessor'&&h.reason==='incompatible_isolation_proof'));
+  assert.notEqual(protocol.getStageEnvelope(swapped.oldRef,{start:root}).launch.proof.prompt_sha256,donor.prompt_sha256);
+  assert.equal(protocol.getStageEnvelope(swapped.newRef,{start:root}).launch.proof.prompt_sha256,donor.prompt_sha256);
+  const missingBudget=rewriteRoleProof(root,opts.wi,'open_box',proof=>{delete proof.token_budget;});
+  const afterBudget=await runTwoBox(opts);
+  assert.equal(afterBudget.new_provider_calls,2);
+  const hist2=JSON.parse(fs.readFileSync(journalFile(root,opts.wi),'utf8')).history;
+  assert.ok(hist2.some(h=>h.role==='open_box'&&h.reason==='incompatible_isolation_proof'&&h.ref.sha256===missingBudget.newRef.sha256));
+  assert.equal(protocol.getStageEnvelope(missingBudget.oldRef,{start:root}).launch.proof.token_budget.checked,false);
+  assert.equal(protocol.getStageEnvelope(missingBudget.newRef,{start:root}).launch.proof.token_budget,undefined);
+ });
+});
+test('missing prompt and other final-validator proof gaps invalidate matching-key stages before descendants',async()=>{
+ await cycleFixture(async(opts,root)=>{
+  const first=await runTwoBox(opts);
+  const {collectRetainedStageProofErrors}=await import('../../scripts/lib/control-plan-validate.mjs');
+  const expectReject=(ref,re)=>{
+   const env=protocol.getStageEnvelope(ref,{start:root});
+   const errors=collectRetainedStageProofErrors(env,{consumerRoot:root,fixture:true,role:'open_box'});
+   assert.ok(errors.some(e=>re.test(e)),errors.join('\n'));
+  };
+  const missingPrompt=rewriteRoleProof(root,opts.wi,'open_box',proof=>{delete proof.prompt;});
+  expectReject(missingPrompt.newRef,/prompt/);
+  const afterPrompt=await runTwoBox(opts);
+  assert.equal(afterPrompt.new_provider_calls,2);
+  assert.equal(afterPrompt.stages.contract_box.ref.sha256,first.stages.contract_box.ref.sha256);
+  const hist=JSON.parse(fs.readFileSync(journalFile(root,opts.wi),'utf8')).history;
+  assert.ok(hist.some(h=>h.role==='open_box'&&h.reason==='incompatible_isolation_proof'&&h.ref.sha256===missingPrompt.newRef.sha256));
+  assert.ok(protocol.getStageEnvelope(missingPrompt.oldRef,{start:root}).launch.proof.prompt);
+  assert.equal(protocol.getStageEnvelope(missingPrompt.newRef,{start:root}).launch.proof.prompt,undefined);
+  const missingNative=rewriteRoleProof(root,opts.wi,'open_box',proof=>{delete proof.native_prompt;});
+  expectReject(missingNative.newRef,/native/);
+  const afterNative=await runTwoBox(opts);
+  assert.equal(afterNative.new_provider_calls,2);
+  const missingTransport=rewriteRoleProof(root,opts.wi,'open_box',proof=>{delete proof.frozen_request.transport;});
+  expectReject(missingTransport.newRef,/transport/);
+  const afterTransport=await runTwoBox(opts);
+  assert.equal(afterTransport.new_provider_calls,2);
+  const wrongBytes=rewriteRoleProof(root,opts.wi,'open_box',proof=>{proof.frozen_request={...proof.frozen_request,byteLength:1};});
+  expectReject(wrongBytes.newRef,/byteLength/);
+  const afterBytes=await runTwoBox(opts);
+  assert.equal(afterBytes.new_provider_calls,2);
+  const liveShaped=rewriteRoleProof(root,opts.wi,'open_box',proof=>{proof.effective={...proof.effective,usable_live:true};proof.mode='live';});
+  expectReject(liveShaped.newRef,/provenance class mismatch/);
+  const afterLive=await runTwoBox(opts);
+  assert.equal(afterLive.new_provider_calls,2);
+  const badConfig=rewriteRoleProof(root,opts.wi,'open_box',proof=>{proof.config_flags=[...proof.config_flags,'--unexpected-isolation-flag'];});
+  expectReject(badConfig.newRef,/isolation controls|invocation\/config/);
+  const afterConfig=await runTwoBox(opts);
+  assert.equal(afterConfig.new_provider_calls,2);
+  const reused=await runTwoBox(opts);
+  assert.equal(reused.new_provider_calls,0);
+  assert.deepEqual(reused.stages,afterConfig.stages);
+ });
+});
+test('matching-key obsolete Open and Contract proofs require six fresh planning roles',async()=>{
+ await cycleFixture(async(opts,root)=>{
+  const first=await runTwoBox(opts);
+  rewriteRoleProof(root,opts.wi,'open_box',proof=>{delete proof.frozen_request;});
+  rewriteRoleProof(root,opts.wi,'contract_box',proof=>{delete proof.frozen_request;});
+  const jp=journalFile(root,opts.wi);
+  const journal=JSON.parse(fs.readFileSync(jp,'utf8'));
+  journal.stages.assessor={status:'failed',key:journal.stages.assessor.key,error:'fixture content fail'};
+  fs.writeFileSync(jp,`${JSON.stringify(journal,null,2)}\n`);
+  const resumed=await runTwoBox(opts);
+  assert.equal(resumed.new_provider_calls,6);
+  for(const role of protocol.PLANNING_ROLES)assert.notEqual(resumed.stages[role].ref.sha256,first.stages[role].ref.sha256);
+  const hist=JSON.parse(fs.readFileSync(jp,'utf8')).history;
+  assert.ok(hist.some(h=>h.role==='open_box'&&h.reason==='incompatible_isolation_proof'));
+  assert.ok(hist.some(h=>h.role==='contract_box'&&h.reason==='incompatible_isolation_proof'));
+  assert.ok(hist.some(h=>h.role==='assessor'&&h.status==='failed'));
  });
 });
 test('a failed scout cannot produce a complete control record or silently retry unchanged content',async()=>{

@@ -422,6 +422,20 @@ export function diagnosePromptContamination(messages, {
 
 export const LIVE_INSPECTION_AUTHORITIES = Object.freeze(["native_prompt_input", "qualified_native_request_inspect"]);
 
+/** Identity of executable isolation-proof requirements. Changing this invalidates cached stage keys. */
+export const ISOLATION_PROOF_CONTRACT = Object.freeze({
+  required_fields: Object.freeze(["frozen_request", "inspection_authority", "prompt_sha256", "token_budget"]),
+  frozen_request_fields: Object.freeze(["sha256", "byteLength", "transport"]),
+  live_authorities: LIVE_INSPECTION_AUTHORITIES,
+  fixture_authority: "offline_fixture",
+  diagnostic_cannot_authorize_live: true,
+  token_budget_separate_from_bytes: true,
+});
+
+export function isolationProofContractDigest() {
+  return sha256Utf8(canonicalJson(ISOLATION_PROOF_CONTRACT));
+}
+
 function advertisementHashes(ads) {
   if (ads == null) return [];
   if (!Array.isArray(ads)) fail("native_tool_advertisements must be an array");
@@ -488,6 +502,10 @@ export function assertIsolationAuthority(proof, { fixture = false, requested, sc
     fail("frozen_request sha256 and byteLength required");
   }
   if (frozen.sha256 !== proof.prompt_sha256) fail("frozen_request sha256 must match prompt_sha256");
+  if (typeof frozen.transport !== "string" || !frozen.transport) fail("frozen_request.transport required");
+  if (typeof proof.prompt === "string" && frozen.byteLength !== Buffer.byteLength(proof.prompt)) {
+    fail("frozen_request.byteLength must match prompt bytes");
+  }
   const auth = proof.inspection_authority;
   const usable = proof.effective?.usable_live;
   if (auth === "diagnostic_capture_not_live") {
@@ -497,7 +515,11 @@ export function assertIsolationAuthority(proof, { fixture = false, requested, sc
   if (fixture) {
     if (proof.mode !== "OFFLINE") fail("fixture proof mode must be OFFLINE");
     if (auth !== "offline_fixture") fail("fixture inspection_authority must be offline_fixture");
+    if (frozen.transport !== "offline_fixture") fail("fixture frozen_request.transport must be offline_fixture");
     if (usable !== false) fail("fixture cannot be usable_live");
+    if (!proof.token_budget || typeof proof.token_budget !== "object") fail("token_budget required");
+    if (proof.token_budget.checked !== false) fail("fixture token_budget.checked must be false");
+    if (proof.token_budget.fits !== false) fail("fixture token_budget.fits must be false");
     return proof;
   }
   if (!LIVE_INSPECTION_AUTHORITIES.includes(auth)) fail(`inspection_authority ${auth} cannot authorize live`);
@@ -507,7 +529,7 @@ export function assertIsolationAuthority(proof, { fixture = false, requested, sc
     if (proof.capture_inference !== false) fail("qualified capture must refuse inference");
     if (frozen.transport !== "native_request_capture") fail("qualified capture frozen_request.transport mismatch");
   }
-  if (auth === "native_prompt_input" && frozen.transport && frozen.transport !== "positional_prompt_input") {
+  if (auth === "native_prompt_input" && frozen.transport !== "positional_prompt_input") {
     fail("native_prompt_input transport mismatch");
   }
   assertNativeProfileReplay(proof, { requested, schema, inspectMessages });

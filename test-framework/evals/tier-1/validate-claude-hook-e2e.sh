@@ -23,6 +23,19 @@ set -x
 
 set -euo pipefail
 
+# grep -q closes stdin on the first match. Combined with pipefail, a producer still
+# writing a long denial receipt can exit 141 and invert a true match. Consume the
+# complete haystack through a here-string instead of an early-exit pipe.
+contains_ci() {
+  grep -qi -- "$1" <<<"$2"
+}
+
+PIPE_LOCK=$(python3 -c 'print("BLOCKED" + chr(10) + "x"*131072)')
+if ! contains_ci "BLOCKED" "$PIPE_LOCK"; then
+  echo "  ✗ here-string must match BLOCKED in a 128KiB haystack without pipefail inversion"
+  exit 1
+fi
+
 REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 ERRORS=0
 
@@ -63,7 +76,7 @@ echo "=== Tier 1: Claude Hook End-to-End Validation ==="
 
 CONFIG_PAYLOAD='{"file_path":"/home/user/project/package-lock.json","content":"{}"}'
 CONFIG_RESULT=$(run_workflow_guard "" "$CONFIG_PAYLOAD")
-if echo "$CONFIG_RESULT" | grep -qi "BLOCKED"; then
+if contains_ci "BLOCKED" "$CONFIG_RESULT"; then
   pass "config-protection blocks package-lock.json"
 else
   fail "config-protection should block package-lock.json (output: $CONFIG_RESULT)"
@@ -74,7 +87,7 @@ fi
 # =============================================================================
 README_PAYLOAD='{"file_path":"/home/user/project/README.md","content":"# Hello"}'
 README_RESULT=$(run_workflow_guard "" "$README_PAYLOAD")
-if echo "$README_RESULT" | grep -qi "BLOCKED"; then
+if contains_ci "BLOCKED" "$README_RESULT"; then
   fail "config-protection should allow README.md (output: $README_RESULT)"
 else
   pass "config-protection allows README.md"
@@ -102,7 +115,7 @@ EOF
 
 PHASE_PAYLOAD='{"file_path":"docs/specs/tech-design.md","content":"# Tech Design"}'
 PHASE_RESULT=$(cd "$TMP_DIR" && run_workflow_guard "--phase-boundary" "$PHASE_PAYLOAD")
-if echo "$PHASE_RESULT" | grep -qi "BLOCKED"; then
+if contains_ci "BLOCKED" "$PHASE_RESULT"; then
   pass "phase-boundary blocks tech-design.md when design-ui is pending"
 else
   fail "phase-boundary should block tech-design.md when prerequisite pending (output: $PHASE_RESULT)"
@@ -125,7 +138,7 @@ cat > "$TMP_DIR/.svc/lane-tasks-WI-999.json" <<'EOF'
 EOF
 
 PHASE_RESULT2=$(cd "$TMP_DIR" && run_workflow_guard "--phase-boundary" "$PHASE_PAYLOAD")
-if echo "$PHASE_RESULT2" | grep -qi "BLOCKED"; then
+if contains_ci "BLOCKED" "$PHASE_RESULT2"; then
   fail "phase-boundary should allow tech-design.md when prerequisite completed (output: $PHASE_RESULT2)"
 else
   pass "phase-boundary allows tech-design.md when design-ui is completed"
@@ -136,7 +149,7 @@ fi
 # =============================================================================
 BASH_PAYLOAD='{"command":"git commit --no-verify -m \"test\""}'
 BASH_RESULT=$(run_workflow_guard "--bash-guard" "$BASH_PAYLOAD" "Bash")
-if echo "$BASH_RESULT" | grep -qi "BLOCKED"; then
+if contains_ci "BLOCKED" "$BASH_RESULT"; then
   pass "bash-guard blocks git commit --no-verify"
 else
   fail "bash-guard should block --no-verify (output: $BASH_RESULT)"
@@ -147,7 +160,7 @@ fi
 # =============================================================================
 BASH_PAYLOAD2='{"command":"git commit -m \"fix typo\" -m \"Co-Authored-By: Test <test@example.com>\""}'
 BASH_RESULT2=$(run_workflow_guard "--bash-guard" "$BASH_PAYLOAD2" "Bash")
-if echo "$BASH_RESULT2" | grep -qi "BLOCKED"; then
+if contains_ci "BLOCKED" "$BASH_RESULT2"; then
   fail "bash-guard should allow commit with Co-Authored-By (output: $BASH_RESULT2)"
 else
   pass "bash-guard allows commit with Co-Authored-By trailer"
@@ -185,7 +198,7 @@ sed -i 's/\r$//' "$TMP_DIR/stop-result-7.txt"
 STOP_RESULT=$(cat "$TMP_DIR/stop-result-7.txt" || true)
 cd "$REPO_ROOT"
 
-if echo "$STOP_RESULT" | grep -qi '"decision":"block"'; then
+if contains_ci '"decision":"block"' "$STOP_RESULT"; then
   pass "task-completion-guard blocks stop when pending tasks exist"
 else
   fail "task-completion-guard should block when pending tasks exist (output: $STOP_RESULT)"
@@ -233,7 +246,7 @@ sed -i 's/\r$//' "$TMP_DIR/stop-result-8.txt"
 STOP_RESULT2=$(cat "$TMP_DIR/stop-result-8.txt" || true)
 cd "$REPO_ROOT"
 
-if echo "$STOP_RESULT2" | grep -qi '"decision":"block"'; then
+if contains_ci '"decision":"block"' "$STOP_RESULT2"; then
   fail "task-completion-guard should allow stop when all tasks completed (output: $STOP_RESULT2)"
 else
   pass "task-completion-guard allows stop when no actionable tasks remain"
@@ -268,9 +281,9 @@ sed -i 's/\r$//' "$TMP_DIR/stop-result-9.txt"
 STOP_RESULT3=$(cat "$TMP_DIR/stop-result-9.txt" || true)
 cd "$REPO_ROOT"
 
-if echo "$STOP_RESULT3" | grep -qi '"decision":"block"'; then
+if contains_ci '"decision":"block"' "$STOP_RESULT3"; then
   fail "task-completion-guard should not hard-block backlog when session contract is framework-bound (output: $STOP_RESULT3)"
-elif echo "$STOP_RESULT3" | grep -qi "advisory only"; then
+elif contains_ci "advisory only" "$STOP_RESULT3"; then
   pass "task-completion-guard is advisory-only for non-backlog session contract"
 else
   fail "task-completion-guard should emit advisory text for non-backlog session contract (output: $STOP_RESULT3)"

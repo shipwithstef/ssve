@@ -93,6 +93,107 @@ function loadCas(ref, consumerRoot, errors, label) {
   }
 }
 
+export function collectRetainedStageProofErrors(env, { consumerRoot, fixture = false, role } = {}) {
+  const errors = [];
+  const fail = (msg) => { errors.push(msg); };
+  const launch = env?.launch || {};
+  if (!("requested" in launch) || !("invocation" in launch) || !("observed" in launch)) fail(`${role}: requested/invocation/observed required`);
+  if (!isPlain(launch.requested) || !isPlain(launch.invocation)) fail(`${role}: requested and invocation identities required`);
+  if (launch.requested === launch.invocation || launch.requested === launch.observed || launch.invocation === launch.observed) {
+    fail(`${role}: requested/invocation/observed must be separate identities`);
+  }
+  if (launch.observed !== null && !isPlain(launch.observed)) fail(`${role}: observed identity invalid`);
+  if (isPlain(launch.observed) && !Object.prototype.hasOwnProperty.call(launch.observed, "model")) {
+    fail(`${role}: observed.model may be null but must not be fabricated`);
+  }
+  if (callerFlag(launch) || callerFlag(launch.requested) || callerFlag(launch.invocation) || callerFlag(launch.observed)) {
+    fail(`${role}: caller verified/effective is not authority`);
+  }
+  const proof = launch.proof;
+  if (!isPlain(proof)) {
+    fail(`${role}: launch.proof required`);
+    return errors;
+  }
+  if (callerFlag(proof) || callerFlag(proof.effective)) fail(`${role}: proof verified/effective is not authority`);
+  let proofPrompt;
+  try { proofPrompt = buildRolePrompt({role, payload: env.input}); } catch (err) { fail(`${role}: prompt reconstruction ${err.message}`); proofPrompt = ""; }
+  if (typeof proof.prompt !== "string") fail(`${role}: proof/payload prompt required`);
+  else if (proof.prompt !== proofPrompt) fail(`${role}: proof prompt differs from exact role input`);
+  const proofCwd = launch.invocation?.cwd;
+  if (proof.cwd !== proofCwd) fail(`${role}: native cwd differs from invocation`);
+  if (proof.mode !== (fixture ? "OFFLINE" : "live") || proof.effective?.usable_live !== !fixture) fail(`${role}: effective provenance class mismatch`);
+  if (typeof proofPrompt !== "string") fail(`${role}: proof/payload prompt required`);
+  if (typeof proofCwd !== "string" || !proofCwd) fail(`${role}: proof.cwd required`);
+  if (SHA_RE.test(String(proofPrompt).trim())) fail(`${role}: prompt must include content, not only hashes`);
+  if (sha256Utf8(proofPrompt) !== proof.prompt_sha256 || proof.prompt_sha256 !== launch.prompt_digest) fail(`${role}: prompt hash mismatch`);
+  if (typeof proof.prompt === "string" && proof.frozen_request && Number.isInteger(proof.frozen_request.byteLength)
+    && proof.frozen_request.byteLength !== Buffer.byteLength(proof.prompt)) {
+    fail(`${role}: frozen_request.byteLength must match prompt bytes`);
+  }
+  const nativeGot = loadCas(proof.native_prompt, consumerRoot, errors, `${role} native_prompt`);
+  let messages = null;
+  if (nativeGot) {
+    if (sha256Bytes(nativeGot.bytes) !== proof.native_prompt_sha256 || proof.native_prompt.sha256 !== nativeGot.sha256) {
+      fail(`${role}: native_prompt hash mismatch`);
+    }
+    try { messages = JSON.parse(nativeGot.bytes.toString("utf8").trim()); } catch (err) {
+      fail(`${role}: native prompt bytes are not JSON: ${err.message}`);
+    }
+  } else {
+    fail(`${role}: native inspection object required`);
+  }
+  try {
+    assertIsolationAuthority(proof, {
+      fixture,
+      requested: launch.requested,
+      schema: outputSchemaForCall(role),
+      inspectMessages: messages || undefined,
+    });
+  } catch (err) { fail(`${role}: isolation authority: ${err.message}`); }
+  if (messages) {
+    const diagnosis = diagnosePromptContamination(messages, {
+      prompt: proofPrompt,
+      cwd: proofCwd,
+      profile: proof.native_profile,
+      requireEnv: true,
+    });
+    if (!diagnosis.ok || diagnosis.unknown) fail(`${role}: prompt contamination: ${(diagnosis.reasons || []).join("; ")}`);
+    if (isPlain(proof.diagnosis) && proof.diagnosis.ok !== diagnosis.ok) fail(`${role}: recorded diagnosis disagrees with recomputation`);
+  }
+  try {
+    const expectedConfig = buildCodexConfigFlags({tuple: launch.requested, disabledSkills: proof.disabled_skills});
+    if (canonicalJson(expectedConfig) !== canonicalJson(proof.config_flags)) fail(`${role}: isolation controls differ from canonical builder`);
+    const at = proof.exec_args?.indexOf("--output-schema");
+    const expectedArgs = buildCodexExecArgs({tuple: launch.requested, disabledSkills: proof.disabled_skills, outputSchemaPath: proof.exec_args?.[at + 1]});
+    if (canonicalJson(expectedArgs) !== canonicalJson(proof.exec_args) || canonicalJson(launch.invocation.exec_args) !== canonicalJson(proof.exec_args)) fail(`${role}: actual invocation/config/tuple disagreement`);
+  } catch (err) { fail(`${role}: controls ${err.message}`); }
+  if (!Array.isArray(proof.config_flags)) fail(`${role}: config_flags required`);
+  if (Array.isArray(proof.config_flags) && proof.config_sha256 !== sha256Utf8(canonicalJson(proof.config_flags))) {
+    fail(`${role}: config_sha256 mismatch`);
+  }
+  if (proof.schema_sha256 !== sha256Utf8(`${JSON.stringify(outputSchemaForCall(role))}\n`)) fail(`${role}: proof.schema_sha256 mismatch`);
+  const bin = proof.binary;
+  if (!isPlain(bin) || !SHA_RE.test(bin.sha256) || typeof bin.path !== "string") fail(`${role}: binary identity required`);
+  else {
+    try {
+      const real = path.resolve(bin.path);
+      const pkg = path.resolve(PACKAGE_ROOT);
+      if (real === pkg || real.startsWith(pkg + path.sep)) {
+        const st = fs.lstatSync(real);
+        if (st.isSymbolicLink()) fail(`${role}: refusing symlink binary`);
+        else if (sha256Bytes(fs.readFileSync(real)) !== bin.sha256) fail(`${role}: package binary bytes mismatch`);
+      }
+    } catch (err) { fail(`${role} binary: ${err.message}`); }
+  }
+  return errors;
+}
+
+export function assertRetainedStageProof(env, options = {}) {
+  const errors = collectRetainedStageProofErrors(env, options);
+  if (errors.length) throw new Error(errors[0]);
+  return env;
+}
+
 function parseJson(got, errors, label) {
   if (!got) return null;
   try {
@@ -302,18 +403,6 @@ function validateControlPlanCore({
     if (parents.length !== want.length || want.some((p, i) => !refEq(parents[i], p))) fail(`${role}: parent graph mismatch`);
 
     const launch = env.launch || {};
-    if (!("requested" in launch) || !("invocation" in launch) || !("observed" in launch)) fail(`${role}: requested/invocation/observed required`);
-    if (!isPlain(launch.requested) || !isPlain(launch.invocation)) fail(`${role}: requested and invocation identities required`);
-    if (launch.requested === launch.invocation || launch.requested === launch.observed || launch.invocation === launch.observed) {
-      fail(`${role}: requested/invocation/observed must be separate identities`);
-    }
-    if (launch.observed !== null && !isPlain(launch.observed)) fail(`${role}: observed identity invalid`);
-    if (isPlain(launch.observed) && !Object.prototype.hasOwnProperty.call(launch.observed, "model")) {
-      fail(`${role}: observed.model may be null but must not be fabricated`);
-    }
-    if (callerFlag(launch) || callerFlag(launch.requested) || callerFlag(launch.invocation) || callerFlag(launch.observed)) {
-      fail(`${role}: caller verified/effective is not authority`);
-    }
     try { validateRoleOutput(role, env.output); } catch (err) { fail(`${role} output: ${err.message}`); }
 
     const stdoutGot = loadCas(launch.raw_stdout_ref, consumerRoot, errors, `${role} raw_stdout`);
@@ -329,74 +418,7 @@ function validateControlPlanCore({
     const stderrGot = loadCas(launch.raw_stderr_ref, consumerRoot, errors, `${role} raw_stderr`);
     if (stderrGot && sha256Bytes(stderrGot.bytes) !== launch.stderr_sha256) fail(`${role}: stderr_sha256 mismatch`);
 
-    const proof = launch.proof;
-    if (!isPlain(proof)) fail(`${role}: launch.proof required`);
-    else {
-      if (callerFlag(proof) || callerFlag(proof.effective)) fail(`${role}: proof verified/effective is not authority`);
-      let proofPrompt;
-      try { proofPrompt = buildRolePrompt({role,payload:env.input}); } catch (err) { fail(`${role}: prompt reconstruction ${err.message}`); proofPrompt = ""; }
-      if (proof.prompt !== proofPrompt) fail(`${role}: proof prompt differs from exact role input`);
-      const proofCwd = launch.invocation?.cwd;
-      if (proof.cwd !== proofCwd) fail(`${role}: native cwd differs from invocation`);
-      if (proof.mode !== (fixture ? "OFFLINE" : "live") || proof.effective?.usable_live !== !fixture) fail(`${role}: effective provenance class mismatch`);
-      if (typeof proofPrompt !== "string") fail(`${role}: proof/payload prompt required`);
-      if (typeof proofCwd !== "string" || !proofCwd) fail(`${role}: proof.cwd required`);
-      if (SHA_RE.test(String(proofPrompt).trim())) fail(`${role}: prompt must include content, not only hashes`);
-      if (sha256Utf8(proofPrompt) !== proof.prompt_sha256 || proof.prompt_sha256 !== launch.prompt_digest) fail(`${role}: prompt hash mismatch`);
-      const nativeGot = loadCas(proof.native_prompt, consumerRoot, errors, `${role} native_prompt`);
-      let messages = null;
-      if (nativeGot) {
-        if (sha256Bytes(nativeGot.bytes) !== proof.native_prompt_sha256 || proof.native_prompt.sha256 !== nativeGot.sha256) {
-          fail(`${role}: native_prompt hash mismatch`);
-        }
-        try { messages = JSON.parse(nativeGot.bytes.toString("utf8").trim()); } catch (err) {
-          fail(`${role}: native prompt bytes are not JSON: ${err.message}`);
-        }
-      }
-      try {
-        assertIsolationAuthority(proof, {
-          fixture,
-          requested: launch.requested,
-          schema: outputSchemaForCall(role),
-          inspectMessages: messages || undefined,
-        });
-      } catch (err) { fail(`${role}: isolation authority: ${err.message}`); }
-      if (messages) {
-          const diagnosis = diagnosePromptContamination(messages, {
-            prompt: proofPrompt,
-            cwd: proofCwd,
-            profile: proof.native_profile,
-            requireEnv: true,
-          });
-          if (!diagnosis.ok || diagnosis.unknown) fail(`${role}: prompt contamination: ${(diagnosis.reasons || []).join("; ")}`);
-          if (isPlain(proof.diagnosis) && proof.diagnosis.ok !== diagnosis.ok) fail(`${role}: recorded diagnosis disagrees with recomputation`);
-      }
-      try {
-        const expectedConfig = buildCodexConfigFlags({tuple:launch.requested,disabledSkills:proof.disabled_skills});
-        if (canonicalJson(expectedConfig) !== canonicalJson(proof.config_flags)) fail(`${role}: isolation controls differ from canonical builder`);
-        const at = proof.exec_args?.indexOf("--output-schema");
-        const expectedArgs = buildCodexExecArgs({tuple:launch.requested,disabledSkills:proof.disabled_skills,outputSchemaPath:proof.exec_args?.[at+1]});
-        if (canonicalJson(expectedArgs) !== canonicalJson(proof.exec_args) || canonicalJson(launch.invocation.exec_args) !== canonicalJson(proof.exec_args)) fail(`${role}: actual invocation/config/tuple disagreement`);
-      } catch (err) { fail(`${role}: controls ${err.message}`); }
-      if (!Array.isArray(proof.config_flags)) fail(`${role}: config_flags required`);
-      if (Array.isArray(proof.config_flags) && proof.config_sha256 !== sha256Utf8(canonicalJson(proof.config_flags))) {
-        fail(`${role}: config_sha256 mismatch`);
-      }
-      if (proof.schema_sha256 !== sha256Utf8(`${JSON.stringify(outputSchemaForCall(role))}\n`)) fail(`${role}: proof.schema_sha256 mismatch`);
-      const bin = proof.binary;
-      if (!isPlain(bin) || !SHA_RE.test(bin.sha256) || typeof bin.path !== "string") fail(`${role}: binary identity required`);
-      else {
-        try {
-          const real = path.resolve(bin.path);
-          const pkg = path.resolve(PACKAGE_ROOT);
-          if (real === pkg || real.startsWith(pkg + path.sep)) {
-            const st = fs.lstatSync(real);
-            if (st.isSymbolicLink()) fail(`${role}: refusing symlink binary`);
-            else if (sha256Bytes(fs.readFileSync(real)) !== bin.sha256) fail(`${role}: package binary bytes mismatch`);
-          }
-        } catch (err) { fail(`${role} binary: ${err.message}`); }
-      }
-    }
+    for (const msg of collectRetainedStageProofErrors(env, { consumerRoot, fixture, role })) fail(msg);
 
     if ((role === "open_box" || role === "contract_box" || role === "contract_revise" || role === "assessor") && reqGot && env.input?.requirements != null) {
       const actual = typeof env.input.requirements === "string"

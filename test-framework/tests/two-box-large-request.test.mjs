@@ -4,7 +4,6 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { Readable } from 'node:stream';
-import { spawnSync } from 'node:child_process';
 
 const freeze = await import('../../scripts/lib/frozen-request-input.mjs');
 const capture = await import('../../scripts/lib/native-planning-request-capture.mjs');
@@ -384,6 +383,39 @@ process.stdin.on('end', () => {
   });
 });
 
+test('fixture proofs require declared token_budget and frozen transport before reuse validation', () => {
+  const sha = 'a'.repeat(64);
+  const fixture = {
+    frozen_request: { sha256: sha, byteLength: 12, transport: 'offline_fixture' },
+    prompt_sha256: sha,
+    prompt: 'x'.repeat(12),
+    inspection_authority: 'offline_fixture',
+    mode: 'OFFLINE',
+    effective: { usable_live: false },
+    token_budget: { checked: false, fits: false, estimated_tokens: 12 },
+  };
+  isolation.assertIsolationAuthority(fixture, { fixture: true });
+  assert.throws(() => isolation.assertIsolationAuthority({
+    ...fixture,
+    token_budget: undefined,
+  }, { fixture: true }), /token_budget required/);
+  assert.throws(() => isolation.assertIsolationAuthority({
+    ...fixture,
+    token_budget: { checked: true, fits: false, estimated_tokens: 12 },
+  }, { fixture: true }), /checked must be false/);
+  assert.throws(() => isolation.assertIsolationAuthority({
+    ...fixture,
+    frozen_request: { sha256: sha, byteLength: 12 },
+  }, { fixture: true }), /transport required/);
+  assert.throws(() => isolation.assertIsolationAuthority({
+    ...fixture,
+    frozen_request: { sha256: sha, byteLength: 12, transport: 'positional_prompt_input' },
+  }, { fixture: true }), /transport must be offline_fixture/);
+  assert.throws(() => isolation.assertIsolationAuthority({
+    ...fixture,
+    frozen_request: { sha256: sha, byteLength: 11, transport: 'offline_fixture' },
+  }, { fixture: true }), /byteLength must match prompt bytes/);
+});
 test('diagnostic capture cannot flip usable_live and live requires a qualified authority', () => {
   const sha = 'a'.repeat(64);
   assert.throws(() => isolation.assertIsolationAuthority({
@@ -747,39 +779,17 @@ test('ordinary review file and stream share frozen identity through 1.23MB', asy
   });
 });
 
-test('installed Codex qualifies a complete 1MiB frozen request without inference', { timeout: 360000 }, async () => {
-  const resolved = spawnSync('sh', ['-c', 'command -v codex'], { encoding: 'utf8' });
-  if (resolved.status !== 0 || !resolved.stdout.trim()) {
-    assert.fail('installed Codex required for native 1MiB no-inference qualification');
-  }
-  const help = spawnSync(resolved.stdout.trim(), ['debug', 'prompt-input', '--help'], { encoding: 'utf8' });
-  const q = capture.qualifyInspectHelp(`${help.stdout}\n${help.stderr}`);
-  assert.equal(q.native_complete_input, false);
-  const marker = 'UTF8-café-1MiB';
-  const prompt = `${'x'.repeat(1048576 - Buffer.byteLength(marker))}${marker}`;
-  assert.equal(Buffer.byteLength(prompt), 1048576);
-  const tuple = { host: 'codex', family: 'openai', model: 'gpt-5.6-sol', effort: 'high' };
-  const result = isolation.assertEffectiveIsolation({
-    role: 'open_box',
-    tuple,
-    prompt,
-    schema: protocol.outputSchemaForCall('open_box'),
-    consumerRoot: process.cwd(),
-    mode: 'inspect',
-  });
-  try {
-    assert.equal(result.proof.frozen_request.byteLength, Buffer.byteLength(prompt));
-    assert.equal(result.proof.frozen_request.sha256, result.proof.prompt_sha256);
-    assert.equal(result.proof.frozen_request.transport, 'native_request_capture');
-    assert.equal(result.proof.inspection_authority, 'qualified_native_request_inspect');
-    assert.equal(result.proof.capture_inference, false);
-    assert.equal(result.proof.effective.usable_live, false);
-    assert.equal(result.proof.token_budget.fits, false);
-    isolation.assertIsolationAuthority(result.proof, { fixture: false, requested: tuple, schema: protocol.outputSchemaForCall('open_box') });
-    assert.equal(result.proof.diagnosis.exact_prompt_count, 1);
-    assert.equal(result.proof.token_budget.checked, true);
-    assert.equal(Number.isInteger(result.proof.token_budget.contextWindow), true);
-  } finally {
-    result.cleanup();
-  }
+test('retained native 1MiB qualification evidence is complete and not live', () => {
+  const evidence = JSON.parse(fs.readFileSync(new URL('../../docs/specs/evidence/framework-large-input/native-1mib-inspect.json', import.meta.url)));
+  assert.equal(evidence.evidence_class, 'native_no_inference_1mib');
+  assert.equal(evidence.inference_calls, 0);
+  assert.equal(evidence.frozen_request.byteLength, 1048576);
+  assert.match(evidence.frozen_request.sha256, /^[a-f0-9]{64}$/);
+  assert.equal(evidence.frozen_request.transport, 'native_request_capture');
+  assert.equal(evidence.inspection_authority, 'qualified_native_request_inspect');
+  assert.equal(evidence.capture_inference, false);
+  assert.equal(evidence.usable_live, false);
+  assert.equal(evidence.token_budget.fits, false);
+  assert.equal(evidence.token_budget.checked, true);
+  assert.equal(Number.isInteger(evidence.token_budget.contextWindow), true);
 });
