@@ -19,40 +19,13 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd -P)"
 INSTALL_SOURCE_DIR="$(realpath "$SCRIPT_DIR" 2>/dev/null || echo "$SCRIPT_DIR")"
-git_in_source() {
-  # Isolated copies and eval caches can inherit GIT_DIR from a parent worktree
-  # session. Probe the script's own tree, never that leaked identity.
-  env -u GIT_DIR -u GIT_WORK_TREE git -C "$SCRIPT_DIR" "$@"
-}
-IS_WORKTREE=0
-if command -v git >/dev/null 2>&1; then
-  SOURCE_GIT_DIR="$(git_in_source rev-parse --git-dir 2>/dev/null || true)"
-  SOURCE_GIT_COMMON_DIR="$(git_in_source rev-parse --git-common-dir 2>/dev/null || true)"
-  if [[ -n "$SOURCE_GIT_DIR" && -n "$SOURCE_GIT_COMMON_DIR" && "$SOURCE_GIT_DIR" != "$SOURCE_GIT_COMMON_DIR" ]]; then
-    IS_WORKTREE=1
-  elif [[ "$SCRIPT_DIR" == *"/.worktrees/"* || "$SCRIPT_DIR" == *"/worktrees/"* ]]; then
-    IS_WORKTREE=1
-  fi
-fi
-if [[ "$IS_WORKTREE" -eq 1 ]]; then
+if [[ "$SCRIPT_DIR" == *"/.worktrees/"* ]] && command -v git >/dev/null 2>&1; then
   # Consume the full producer stream under pipefail. An early `awk ... exit`
   # closes the pipe while `git worktree list` is still writing and turns a valid
   # worktree check into SIGPIPE/141, which pre-commit misclassifies as host drift.
-  LISTED_WORKTREES="$(git_in_source worktree list --porcelain 2>/dev/null | awk '/^worktree / {print substr($0,10)}')"
-  SCRIPT_IS_LISTED=0
-  while IFS= read -r listed; do
-    [ -n "$listed" ] || continue
-    listed_real="$(cd "$listed" 2>/dev/null && pwd || true)"
-    if [ "$listed" = "$SCRIPT_DIR" ] || [ "$listed_real" = "$SCRIPT_DIR" ]; then
-      SCRIPT_IS_LISTED=1
-      break
-    fi
-  done <<< "$LISTED_WORKTREES"
-  if [ "$SCRIPT_IS_LISTED" -eq 1 ]; then
-    CANONICAL_WORKTREE="$(printf '%s\n' "$LISTED_WORKTREES" | awk 'NR==1 {print; exit}')"
-    if [ -n "$CANONICAL_WORKTREE" ] && [ -d "$CANONICAL_WORKTREE" ]; then
-      INSTALL_SOURCE_DIR="$(cd "$CANONICAL_WORKTREE" && pwd)"
-    fi
+  CANONICAL_WORKTREE="$(git -C "$SCRIPT_DIR" worktree list --porcelain 2>/dev/null | awk '/^worktree / && !found {print substr($0,10); found=1}')"
+  if [ -n "$CANONICAL_WORKTREE" ] && [ -d "$CANONICAL_WORKTREE" ]; then
+    INSTALL_SOURCE_DIR="$(cd "$CANONICAL_WORKTREE" && pwd)"
   fi
 fi
 HOST="claude"
@@ -235,7 +208,7 @@ done < <(find "$SKILLS_TARGET" -maxdepth 1 -xtype l -print0 2>/dev/null)
 while IFS= read -r -d '' link; do
   name="$(basename "$link")"
   target="$(realpath "$link" 2>/dev/null || readlink -f "$link" 2>/dev/null || python3 -c "import os; print(os.path.realpath('$link'))" 2>/dev/null || true)"
-  if [[ "$target" == *"/.worktrees/"* || "$target" == *"/worktrees/"* ]]; then
+  if [[ "$target" == *"/.worktrees/"* ]]; then
     WORKTREE_BOUND+=("$name (host skill points into a git worktree → $target)")
     continue
   fi

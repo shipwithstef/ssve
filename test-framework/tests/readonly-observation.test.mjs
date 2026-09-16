@@ -181,21 +181,7 @@ test('production resolver never recommends a same-UID foreign owner graph', () =
     execFileSync('git', ['-C', dir, 'update-ref', 'refs/remotes/origin/main', 'HEAD']);
     const clean = Object.fromEntries(Object.entries(process.env).filter(([k]) => !/^(SVC_|CODEX_|GROK_)/.test(k)));
     const owner = '11111111-1111-4111-8111-111111111111';
-    const env = {
-      ...clean,
-      HOME: dir,
-      SVC_SESSION_ID: owner,
-      SVC_HOST: 'codex',
-      SVC_WORKTREES_ROOT: path.join(dir, '.worktrees'),
-      SVC_WORKTREE_POLICY: path.join(dir, 'worktree-policy.json'),
-    };
-    fs.writeFileSync(env.SVC_WORKTREE_POLICY, JSON.stringify({
-      schema_version: 1,
-      default_root: env.SVC_WORKTREES_ROOT,
-      naming_strategy: 'flat',
-      permissions: '0700',
-      projects: {},
-    }));
+    const env = { ...clean, HOME: dir, SVC_SESSION_ID: owner, SVC_HOST: 'codex' };
     const create = spawnSync('node', [path.join(root, 'scripts/svc-ensure-worktree.mjs'), '--wi', 'WI-FOREIGN-READ-01', '--branch', 'bugfix-fixture', '--from', 'origin/main', '--json'], { cwd: dir, env, encoding: 'utf8' });
     assert.equal(create.status, 0, create.stderr);
     const worktree = path.join(dir, '.worktrees/bugfix-fixture');

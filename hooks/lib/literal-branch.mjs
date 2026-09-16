@@ -19,7 +19,6 @@ import fs from "node:fs";
 import os from "node:os";
 import { lexSimpleCommand } from "../codex/lib/argv-lex.mjs";
 import { encodeSimpleCommand } from "../codex/lib/argv-encode.mjs";
-import { resolveApprovedRoots, resolveWorktreesRoot } from "./worktree-policy.mjs";
 
 // Documented byte cap: far above every practical branch name, far below Git's
 // own pathname limits, and cheap to enforce before any subprocess call.
@@ -80,11 +79,23 @@ export function needsDerivedWorktreeLeaf(branch) {
   return typeof branch === "string" && branch.includes("/");
 }
 
-// AC-3/T03: approved canonical worktree roots. Uses centralized worktree-policy
-// resolution (defaulting to ~/worktrees/<repo-name>), the repository's own legacy
-// `.worktrees` fallback, any project overrides, and SVC_APPROVED_WORKTREE_ROOTS.
+// AC-3/T03: approved canonical worktree roots. The repository's own
+// `.worktrees` is always approved. Additional roots are owner-configured via
+// SVC_APPROVED_WORKTREE_ROOTS (absolute directories, ':'-separated); each must
+// already exist as a real directory (no symlink component) before approval.
 export function approvedWorktreeRoots(repoRoot, env = process.env) {
-  return resolveApprovedRoots(repoRoot, env);
+  const roots = [path.join(repoRoot, ".worktrees")];
+  const raw = String(env.SVC_APPROVED_WORKTREE_ROOTS || "");
+  for (const entry of raw.split(":")) {
+    if (!entry) continue;
+    let real = null;
+    try { real = fs.realpathSync(path.resolve(entry)); } catch { continue; }
+    try {
+      if (!fs.statSync(real).isDirectory()) continue;
+    } catch { continue; }
+    if (!roots.includes(real)) roots.push(real);
+  }
+  return roots;
 }
 
 function isRealpathContained(rootReal, candidateReal) {
@@ -126,8 +137,8 @@ export function isApprovedExistingWorktreeRoot(worktreePath, repoRoot, env = pro
   return { ok: false, reason_code: "WORKTREE_ROOT_UNAPPROVED", reason: `no approved canonical worktree root contains ${real}` };
 }
 
-export function defaultWorktreeRoot(repoRoot, env = process.env) {
-  return resolveWorktreesRoot(repoRoot, env);
+export function defaultWorktreeRoot(repoRoot) {
+  return path.join(fs.realpathSync(repoRoot), ".worktrees");
 }
 
 export function platformPathSeparatorNote() {

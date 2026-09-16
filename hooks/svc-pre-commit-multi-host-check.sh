@@ -29,12 +29,7 @@ HOSTS="$(find provision/hosts -maxdepth 1 -name '*.json' -printf '%f\n' | sed 's
 DRIFT_FOUND=0
 FAILED_SETUPS=""
 
-IS_WORKTREE=0
-if [[ "$(git rev-parse --git-dir 2>/dev/null)" != "$(git rev-parse --git-common-dir 2>/dev/null)" ]] || [[ "$(git rev-parse --show-toplevel 2>/dev/null)" == *"/worktrees/"* ]] || [[ "$(git rev-parse --show-toplevel 2>/dev/null)" == *"/.worktrees/"* ]]; then
-  IS_WORKTREE=1
-fi
-
-if [[ "$IS_WORKTREE" -eq 1 ]]; then
+if [[ "$(git rev-parse --show-toplevel)" == *"/.worktrees/"* ]]; then
   echo "[svc-pre-commit] Feature worktree detected. Validating all hosts without changing live installs..."
   for host in $HOSTS; do
     if SVC_SETUP_VALIDATE_ONLY=1 ./setup --host "$host" >/dev/null 2>&1; then

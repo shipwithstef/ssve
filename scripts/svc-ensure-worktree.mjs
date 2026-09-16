@@ -43,11 +43,6 @@ import {
   isApprovedExistingWorktreeRoot,
   secureAncestorChain,
 } from "../hooks/lib/literal-branch.mjs";
-import {
-  resolveWorktreesRoot,
-  ensureWorktreesDirectory,
-  loadWorktreePolicy,
-} from "../hooks/lib/worktree-policy.mjs";
 const SHA_RE = /^[0-9a-f]{40}$/;
 const CROSS_HOST_TTL_MS = 24 * 3_600_000;
 
@@ -298,15 +293,15 @@ function ensureGraph(worktree, wi, branch) {
   return { path: graphPath, created: true };
 }
 
-function createWorktreeAndBranch(repoRoot, worktree, branch, baseSha, containmentAnchor = repoRoot) {
+function createWorktreeAndBranch(repoRoot, worktree, branch, baseSha) {
   let branchExists = true;
   try { git(["show-ref", "--verify", `refs/heads/${branch}`], repoRoot); }
   catch { branchExists = false; }
   if (branchExists) throw new Error(`branch ${branch} already exists but is not linked at ${worktree}`);
   // F-004: re-verify at write time (not just at transaction()'s authorization-time
-  // check) -- a symlinked worktree parent could redirect the mkdir+`git worktree
-  // add` below outside the containment root.
-  if (!secureAncestors(containmentAnchor, worktree)) {
+  // check) -- a symlinked .worktrees parent could redirect the mkdir+`git worktree
+  // add` below outside the repository.
+  if (!secureAncestors(repoRoot, worktree)) {
     throw new Error(`unsafe worktree path ${worktree}: an ancestor directory is a symlink or not owned by the current user`);
   }
   fs.mkdirSync(path.dirname(worktree), { recursive: true });
@@ -654,26 +649,16 @@ export function adoptExistingWorktree(options = {}, env = process.env) {
   }
   // Approved-root containment + same-UID/no-symlink ancestry, identical to the
   // bootstrap transaction's authorization surface.
-  const worktreesRoot = resolveWorktreesRoot(repo.root, env);
-  const relativeWorktree = path.relative(worktreesRoot, target.path);
+  const relativeWorktree = path.relative(path.join(repo.root, ".worktrees"), target.path);
   const insideDefaultRoot = !!relativeWorktree && !relativeWorktree.startsWith("..") && !path.isAbsolute(relativeWorktree);
-  const relativeLegacy = path.relative(path.join(repo.root, ".worktrees"), target.path);
-  const insideLegacyRoot = !!relativeLegacy && !relativeLegacy.startsWith("..") && !path.isAbsolute(relativeLegacy);
-
-  if (insideDefaultRoot) {
-    if (!secureAncestors(worktreesRoot, target.path)) {
-      throw new Error("SELF_HEAL_INELIGIBLE: unsafe worktree path (symlinked or foreign-owned ancestor)");
-    }
-  } else if (insideLegacyRoot) {
-    if (!secureAncestors(repo.root, target.path)) {
-      throw new Error("SELF_HEAL_INELIGIBLE: unsafe worktree path (symlinked or foreign-owned ancestor)");
-    }
-  } else {
+  if (!insideDefaultRoot) {
     const approval = existingResumeApproval({ repo, wi, branch: target.branch, owner, worktree: target.path, env });
     if (!approval.ok) throw new Error(`SELF_HEAL_INELIGIBLE (${approval.reason_code || "WORKTREE_ROOT_UNAPPROVED"}: ${approval.reason})`);
     if (!secureAncestors(approval.root, approval.root === target.path ? path.join(target.path, ".svc", ".svc-state-probe") : target.path)) {
       throw new Error("SELF_HEAL_INELIGIBLE: unsafe approved worktree path (symlinked or foreign-owned ancestor)");
     }
+  } else if (!secureAncestors(repo.root, target.path)) {
+    throw new Error("SELF_HEAL_INELIGIBLE: unsafe worktree path (symlinked or foreign-owned ancestor)");
   }
   const stateProbe = path.join(target.path, ".svc", ".svc-state-probe");
   if (!secureAncestors(target.path, stateProbe)) {
@@ -705,9 +690,7 @@ export function ensureWorktree(options = {}, env = process.env) {
 
 function transaction({ repo, wi, branch, from, owner, host, env }) {
   assertIgnored(repo.root);
-  const policy = loadWorktreePolicy(env);
-  const worktreesRoot = resolveWorktreesRoot(repo.root, env);
-  ensureWorktreesDirectory(worktreesRoot, policy.permissions || "0700");
+  const worktreesRoot = path.join(repo.root, ".worktrees");
   // AC-1/FP-02: the requested NEW-worktree path is derived independently of the
   // branch ref. Slash-free filesystem-safe branches keep the legacy layout;
   // Git-valid slash branches get `<wi>-<slug>-<sha256[0:12]>` so no ref byte is
@@ -747,11 +730,10 @@ function transaction({ repo, wi, branch, from, owner, host, env }) {
   // For an approved external worktree the containment anchor is the approved
   // canonical root (repo-root-relative containment does not apply there), and
   // the same same-UID/no-symlink guarantees are enforced from that root.
-  const containmentAnchor = insideDefaultRoot ? worktreesRoot : (approvedExternalRoot || repo.root);
   if (!insideDefaultRoot && approvedExternalRoot) {
     const externalChain = secureAncestors(approvedExternalRoot, approvedExternalRoot === worktree ? stateProbePath(worktree) : worktree);
     if (!externalChain) throw new Error("unsafe approved worktree path: an ancestor beneath the approved root is a symlink or not owned by the current user");
-  } else if (!secureAncestors(containmentAnchor, worktree)) {
+  } else if (!secureAncestors(repo.root, worktree)) {
     throw new Error("unsafe worktree path: an ancestor directory is a symlink or not owned by the current user");
   }
   const stateProbe = path.join(worktree, ".svc", ".svc-state-probe");
@@ -793,7 +775,7 @@ function transaction({ repo, wi, branch, from, owner, host, env }) {
       path.resolve(String(existingMarker.target_worktree || "")) === worktree) {
     const baseSha = resolveBase(repo.root, from);
     if (String(existingMarker.base_sha) === baseSha) {
-      return forwardComplete({ repo, wi, branch, owner, host, env, worktree, markerPath, marker: existingMarker, baseSha, containmentAnchor });
+      return forwardComplete({ repo, wi, branch, owner, host, env, worktree, markerPath, marker: existingMarker, baseSha });
     }
   }
 
@@ -806,7 +788,7 @@ function transaction({ repo, wi, branch, from, owner, host, env }) {
     }
     return resumeExisting({ repo, wi, branch, from, owner, host, env, worktree, markerPath, existingMarker });
   }
-  return createFresh({ repo, wi, branch, from, owner, host, env, worktree, markerPath, existingMarker, containmentAnchor });
+  return createFresh({ repo, wi, branch, from, owner, host, env, worktree, markerPath, existingMarker });
 }
 
 // SIB-14/15: exact same-session complete tuple resumes unchanged; a released or
@@ -957,7 +939,7 @@ function resumeExisting({ repo, wi, branch, from, owner, host, env, worktree, ma
   return result({ wi, branch, baseSha, worktree, owner, graphPath: graph.path, generation: Number(verified.tuple.claim_generation || 0), created: false, resumed: true });
 }
 
-function createFresh({ repo, wi, branch, from, owner, host, env, worktree, markerPath, existingMarker, containmentAnchor = repo.root }) {
+function createFresh({ repo, wi, branch, from, owner, host, env, worktree, markerPath, existingMarker }) {
   const baseSha = resolveBase(repo.root, from);
 
   // Same-session partial tuple -> forward-complete idempotently (SIB-14). The
@@ -966,7 +948,7 @@ function createFresh({ repo, wi, branch, from, owner, host, env, worktree, marke
   if (existingMarker && String(existingMarker.session_id) === owner &&
       path.resolve(String(existingMarker.target_worktree || "")) === worktree &&
       String(existingMarker.branch) === branch) {
-    return forwardComplete({ repo, wi, branch, owner, host, env, worktree, markerPath, marker: existingMarker, baseSha, containmentAnchor });
+    return forwardComplete({ repo, wi, branch, owner, host, env, worktree, markerPath, marker: existingMarker, baseSha });
   }
 
   // Foreign / ambiguous marker -> classify owner liveness. A LIVE foreign owner
@@ -992,7 +974,7 @@ function createFresh({ repo, wi, branch, from, owner, host, env, worktree, marke
   try {
     recordIntent(markerPath, marker, worktree, repo.root);
     if (env.SVC_ENSURE_FAILPOINT === "after-worktree") throw new Error("injected failpoint: after-worktree");
-    createWorktreeAndBranch(repo.root, worktree, branch, baseSha, containmentAnchor);
+    createWorktreeAndBranch(repo.root, worktree, branch, baseSha);
     worktreeCreated = true;
 
     const graphP = path.join(worktree, ".svc", `lane-tasks-${wi}.json`);
@@ -1073,11 +1055,11 @@ function verifyCompleteTuple({ repo, wi, branch, owner, worktree, graphP, marker
   return { ok: true, tuple: t };
 }
 
-function forwardComplete({ repo, wi, branch, owner, host, env, worktree, markerPath, marker, baseSha, containmentAnchor = repo.root }) {
+function forwardComplete({ repo, wi, branch, owner, host, env, worktree, markerPath, marker, baseSha }) {
   try {
     if (!fs.existsSync(worktree)) {
       recordIntent(markerPath, marker, worktree, repo.root);
-      createWorktreeAndBranch(repo.root, worktree, branch, baseSha, containmentAnchor);
+      createWorktreeAndBranch(repo.root, worktree, branch, baseSha);
     }
     const graphP = path.join(worktree, ".svc", `lane-tasks-${wi}.json`);
     if (!fs.existsSync(graphP)) {

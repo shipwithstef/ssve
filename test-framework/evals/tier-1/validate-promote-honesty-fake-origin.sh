@@ -39,9 +39,6 @@ printf '#!/usr/bin/env bash\necho "push denied by fixture" >&2\nexit 1\n' >"$TMP
 chmod +x "$TMP/clienthooks/pre-push"
 git -C "$FIX" config core.hooksPath "$TMP/clienthooks"
 mkdir -p "$FIX/.worktrees/promote-me"
-export SVC_WORKTREES_ROOT="$FIX/.worktrees"
-export SVC_WORKTREE_POLICY="$TMP/worktree-policy.json"
-printf '{"schema_version":1,"default_root":"%s","naming_strategy":"flat","permissions":"0700","projects":{}}\n' "$FIX/.worktrees" > "$SVC_WORKTREE_POLICY"
 cd "$FIX"
 env -u GIT_DIR -u GIT_WORK_TREE git -C "$FIX" checkout --quiet -b promote-me 2>/dev/null || env -u GIT_DIR -u GIT_WORK_TREE git -C "$FIX" checkout --quiet promote-me
 echo change >"$FIX/feature.txt"
@@ -93,7 +90,7 @@ fi
 mkdir -p "$FIX/.worktrees/orphan-test/deep"
 echo "precious" >"$FIX/.worktrees/orphan-test/deep/data.txt"
 bash scripts/worktree.sh __inner_cleanup >/dev/null 2>&1 || true
-Q=$(find "$FIX/.worktrees/.quarantine" -name data.txt 2>/dev/null | head -1 || true)
+Q=$(find "$FIX/.worktrees/.quarantine" -name data.txt 2>/dev/null | head -1)
 if [[ -n "$Q" && "$(cat "$Q")" == "precious" ]]; then
   check "cleanup quarantines orphans with bytes preserved" true
 else

@@ -264,7 +264,7 @@ The test framework uses a **tiered cost model**:
 
 ## 7. Worktree Model & Branching
 
-All feature work that produces code runs in an isolated **git worktree** under `~/worktrees/{repo-name}/{branch}` by default (or legacy `.worktrees/` for existing checkouts).
+All feature work that produces code runs in a **git worktree** under `.worktrees/`.
 
 | Phase | Runs on main | Runs in worktree |
 |-------|-------------|------------------|
@@ -281,9 +281,9 @@ All feature work that produces code runs in an isolated **git worktree** under `
 | Framework Test | `test-<name>` | `test-autopilot-s1` |
 
 ### Rules
-1. Worktrees live under `~/worktrees/<repo-name>/<branch>` by default (governed by `~/.svc/worktree-policy.json`). Legacy in-repo `.worktrees/` is supported for backward compatibility. Never create worktrees in `/tmp/` or unapproved sibling paths.
-2. `.worktrees/` remains in `.gitignore` for legacy checkouts (enforced by `scripts/worktree.sh preflight` and tier-1 validation).
-3. One worktree per branch — the branch name is the worktree leaf directory name.
+1. All worktrees live under `.worktrees/` — never `/tmp/`, never a sibling directory.
+2. `.worktrees/` must be in `.gitignore` (enforced by `scripts/worktree.sh preflight` and tier-1 validation).
+3. One worktree per branch — the branch name is the worktree directory name.
 4. `worktree.sh create` is idempotent — safe to re-run after interruption.
 
 ---

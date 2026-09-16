@@ -19,9 +19,9 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
 # ~/.claude/skills/ will be repointed at the worktree path. When the worktree
 # is later removed (after PR merge), every symlink dangles and every hook
 # breaks. Force the user back to the main checkout.
-if [[ ("$SCRIPT_DIR" == *"/.worktrees/"* || "$SCRIPT_DIR" == *"/worktrees/"*) && "${SVC_SETUP_VALIDATE_ONLY:-0}" == "1" ]]; then
+if [[ "$SCRIPT_DIR" == *"/.worktrees/"* && "${SVC_SETUP_VALIDATE_ONLY:-0}" == "1" ]]; then
   echo "NOTICE: setup validate-only mode running from worktree source: $SCRIPT_DIR" >&2
-elif [[ "$SCRIPT_DIR" == *"/.worktrees/"* || "$SCRIPT_DIR" == *"/worktrees/"* ]]; then
+elif [[ "$SCRIPT_DIR" == *"/.worktrees/"* ]]; then
   echo "NOTICE: setup invoked from a git worktree." >&2
   echo "  Detected SCRIPT_DIR: $SCRIPT_DIR" >&2
   echo "  Symlinks must resolve to the main checkout, NOT the worktree, or they" >&2
@@ -395,25 +395,6 @@ if missing_from is not None:
 PY_SECURE_STATE_ROOT
 mkdir -p "$SETUP_STATE_ROOT/locks" "$SETUP_STATE_ROOT/digests"
 chmod 700 "$SETUP_STATE_ROOT" "$SETUP_STATE_ROOT/locks" "$SETUP_STATE_ROOT/digests" 2>/dev/null || true
-
-# Initialize centralized worktrees directory and default policy
-WORKTREES_BASE="${SVC_WORKTREES_ROOT:-$HOME/worktrees}"
-mkdir -p "$WORKTREES_BASE"
-chmod 700 "$WORKTREES_BASE" 2>/dev/null || true
-
-WORKTREE_POLICY_FILE="$SETUP_STATE_ROOT/worktree-policy.json"
-if [ ! -f "$WORKTREE_POLICY_FILE" ]; then
-  cat > "$WORKTREE_POLICY_FILE" << 'POLICY_EOF'
-{
-  "schema_version": 1,
-  "default_root": "~/worktrees",
-  "naming_strategy": "hierarchical",
-  "permissions": "0700",
-  "projects": {}
-}
-POLICY_EOF
-  chmod 600 "$WORKTREE_POLICY_FILE" 2>/dev/null || true
-fi
 SETUP_LOCK_FILE="$SETUP_STATE_ROOT/locks/$HOST.lock"
 if [ -L "$SETUP_LOCK_FILE" ]; then
   echo "ERROR: setup lock must not be a symlink: $SETUP_LOCK_FILE" >&2
