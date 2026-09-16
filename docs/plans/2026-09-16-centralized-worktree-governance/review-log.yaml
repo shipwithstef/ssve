@@ -9,22 +9,49 @@ review_log:
   tier1_5_external_state:
     result: PASS
     checks: "central policy schema, chmod 0700 ~/worktrees base directory, chmod 0600 worktree-policy.json, secure ancestor chain enforcement"
-  adversarial_review:
-    reviewer: antigravity
-    reviewer_family: google
-    findings_count: 3
-    findings_summary:
-      - id: F-001
-        severity: high
-        claim: "createWorktreeAndBranch asserts secureAncestors(repoRoot, worktree), which fails when worktree sits under external ~/worktrees"
-        resolution: "ACCEPT — parameterized createWorktreeAndBranch, forwardComplete, and createFresh with dynamic containmentAnchor"
-      - id: F-002
-        severity: medium
-        claim: "test assertion in validate-literal-branch-worktree.sh hardcodes .worktrees/ substring"
-        resolution: "ACCEPT — broadened assertion to accept both /worktrees/ and .worktrees/"
-      - id: F-003
-        severity: low
-        claim: "backward compatibility for existing repos with in-repo .worktrees/ folders must not break"
-        resolution: "ACCEPT — resolveApprovedRoots includes legacy .worktrees/ and adoptOrResumeControllerSession checks insideLegacyRoot"
-  terminal_state: APPROVED
-  plan_status_final: VERIFIED
+  stations:
+    - id: self-review
+      kind: inline-self
+      reviewer: antigravity
+      family: google
+      status: PASS_WITH_HARDENING
+      rubric_score: 9
+      artifact: docs/plans/2026-09-16-centralized-worktree-governance/self-review.md
+    - id: codex-sol-high
+      kind: external
+      reviewer: codex
+      family: openai
+      model: gpt-5.6-sol
+      effort: high
+      status: EVALUATED
+      rubric_score: 3
+      findings_count: 7
+      findings_artifact: docs/plans/2026-09-16-centralized-worktree-governance/astra-codex-findings.json
+      receipt_artifact: docs/plans/2026-09-16-centralized-worktree-governance/astra-codex-receipt.json
+      disposition_summary: "All 7 findings accepted and addressed in revised manifest.md (v5 inline contract, numbered ACs, fail-closed policy semantics, exact ## External State, rollback rules)."
+    - id: grok-high
+      kind: external
+      reviewer: grok
+      family: xai
+      model: grok-4.6
+      effort: high
+      status: EVALUATED
+      rubric_score: 3
+      findings_count: 8
+      findings_artifact: docs/plans/2026-09-16-centralized-worktree-governance/grok-findings.json
+      receipt_artifact: docs/plans/2026-09-16-centralized-worktree-governance/grok-receipt.json
+      disposition_summary: "All 8 findings accepted and addressed in revised manifest.md (F-001 through F-008, including AGENTS.md doctrine synchronization)."
+    - id: cursor-auto-receipt
+      kind: external
+      reviewer: cursor
+      family: multi
+      model: cursor-auto
+      effort: high
+      status: EVALUATED
+      rubric_score: 1
+      findings_count: 8
+      findings_artifact: docs/plans/2026-09-16-centralized-worktree-governance/cursor-findings.json
+      receipt_artifact: docs/plans/2026-09-16-centralized-worktree-governance/cursor-receipt.json
+      disposition_summary: "All 8 findings aligned with Astra and Grok dispositions; incorporated into manifest.md."
+  terminal_state: DISPOSITIONED_AND_HARDENED
+  plan_status_final: READY_FOR_FINAL_ALIGNMENT
