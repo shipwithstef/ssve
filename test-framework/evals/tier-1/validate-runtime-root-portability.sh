@@ -292,7 +292,7 @@ UNSAFE_XDG="$TMP/cli-unsafe"; mkdir -m 755 "$UNSAFE_XDG"
 chmod 755 "$UNSAFE_XDG"
 set +e
 env -u SVC_RUNTIME_DIR -u SVC_CODEX_RUNTIME_DIR HOME="$CLI_HOME" XDG_RUNTIME_DIR="$UNSAFE_XDG" \
-  /usr/bin/node "$ROOT/scripts/svc-runtime-root.mjs" --leaf svc-cli-deny > "$TMP/cli-unsafe.out" 2> "$TMP/cli-unsafe.err"
+  node "$ROOT/scripts/svc-runtime-root.mjs" --leaf svc-cli-deny > "$TMP/cli-unsafe.out" 2> "$TMP/cli-unsafe.err"
 UNSAFE_CLI_RC=$?
 set -e
 [[ "$UNSAFE_CLI_RC" -ne 0 && ! -s "$TMP/cli-unsafe.out" && -s "$TMP/cli-unsafe.err" ]]

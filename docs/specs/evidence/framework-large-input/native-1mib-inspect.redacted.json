@@ -3,7 +3,7 @@
   "evidence_class": "native_no_inference_1mib",
   "inference_calls": 0,
   "binary": {
-    "path": "/home/dianast/.codex/packages/standalone/releases/0.154.0-x86_64-unknown-linux-musl/bin/codex",
+    "path": "/home/builder/.codex/packages/standalone/releases/0.154.0-x86_64-unknown-linux-musl/bin/codex",
     "sha256": "3188814c35471432d4123203e0eb38e5bddc60226e3d7ddf0e59e649ea140022"
   },
   "frozen_request": {
@@ -23,5 +23,18 @@
     "outputReserveTokens": 16384
   },
   "prompt_sha256": "0ac3ed107a024a98abff1fdf1b5aa12d53481d0de781711c81ae6f87c74aae44",
-  "exact_prompt_count": 1
+  "exact_prompt_count": 1,
+  "_redaction": {
+    "kind": "path-sanitization-derivative",
+    "source_path": "docs/specs/evidence/framework-large-input/native-1mib-inspect.json",
+    "source_sha256": "1486a30613884d33bc46cd4ccb7cf5d9dc07ee682247b164f1a7ccef7c514490",
+    "replacements": [
+      {
+        "from": "/home/dianast",
+        "to": "/home/builder"
+      }
+    ],
+    "created_at": "2026-09-16T20:13:53Z",
+    "note": "Publication derivative only. Canonical historical evidence is the unsuffixed file."
+  }
 }

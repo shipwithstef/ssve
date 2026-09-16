@@ -37,11 +37,22 @@ PROVIDER
   done
   # Keep the caller PATH (actions/setup-node, nvm, or the suite node) ahead of
   # /usr/bin:/bin so fixtures do not silently select an older system Node.
-  # Append the portable coreutils dirs so chmod/mkdir still resolve when PATH
-  # was empty or fixture-only. Do not bake a workstation node path into this
+  # Join only non-empty components: an empty PATH entry is the current
+  # directory in POSIX lookup. Do not bake a workstation node path into this
   # helper.
+  local fixture_path part
+  fixture_path="$fixture_root/bin"
+  if [[ -n "${PATH:-}" ]]; then
+    local IFS=':'
+    for part in $PATH; do
+      if [[ -n "$part" && "$part" != "." && "$part" != "./" ]]; then
+        fixture_path="$fixture_path:$part"
+      fi
+    done
+  fi
+  fixture_path="$fixture_path:/usr/bin:/bin"
   env -i \
-    PATH="$fixture_root/bin:$PATH:/usr/bin:/bin" \
+    PATH="$fixture_path" \
     HOME="$fixture_root/home" \
     XDG_CONFIG_HOME="$fixture_root/config" \
     XDG_CACHE_HOME="$fixture_root/cache" \

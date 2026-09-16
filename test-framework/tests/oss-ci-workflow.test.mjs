@@ -16,16 +16,117 @@ const liveDependabotPath = path.join(root, '.github/dependabot.yml');
 const checkoutSha = '3d3c42e5aac5ba805825da76410c181273ba90b1';
 const setupNodeSha = '820762786026740c76f36085b0efc47a31fe5020';
 const requiredCheckName = 'SSVE Required';
-const nodeBin = process.env.GITHUB_ACTIONS === 'true' ? 'node' : '/usr/bin/node';
+const nodeBin = process.execPath;
+
+function parseScalar(raw) {
+  const value = raw.trim();
+  if (value === '{}' || value === '') return value === '{}' ? {} : '';
+  if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+    return value.slice(1, -1);
+  }
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  if (/^-?\d+$/.test(value)) return Number(value);
+  return value;
+}
+
+function stripYamlComment(line) {
+  let quote = null;
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    if (quote) {
+      if (char === quote && line[index - 1] !== '\\') quote = null;
+      continue;
+    }
+    if (char === '"' || char === "'") quote = char;
+    else if (char === '#' && (index === 0 || /\s/.test(line[index - 1]))) return line.slice(0, index).trimEnd();
+  }
+  return line.trimEnd();
+}
+
+function readBlockScalar(rows, start, parentIndent) {
+  const chunks = [];
+  let index = start;
+  let base = null;
+  while (index < rows.length) {
+    const row = rows[index];
+    if (row.trim() === '') {
+      chunks.push('');
+      index += 1;
+      continue;
+    }
+    const indent = row.match(/^ */)[0].length;
+    if (indent <= parentIndent) break;
+    if (base === null) base = indent;
+    chunks.push(row.slice(base));
+    index += 1;
+  }
+  while (chunks.length && chunks.at(-1) === '') chunks.pop();
+  return {text: chunks.join('\n'), next: index - 1};
+}
+
+function nextMeaningful(rows, start) {
+  for (let index = start; index < rows.length; index += 1) {
+    if (rows[index].trim() !== '') return rows[index];
+  }
+  return '';
+}
 
 function loadYaml(file) {
-  const result = spawnSync('/usr/bin/python3', [
-    '-c',
-    'import json,sys,yaml; json.dump(yaml.safe_load(open(sys.argv[1], encoding="utf-8")), sys.stdout)',
-    file,
-  ], {encoding: 'utf8'});
-  assert.equal(result.status, 0, result.stderr || `yaml parse failed for ${file}`);
-  return JSON.parse(result.stdout);
+  const rows = fs.readFileSync(file, 'utf8').split(/\r?\n/).map(stripYamlComment);
+  const root = {};
+  const stack = [{indent: -1, value: root}];
+  for (let index = 0; index < rows.length; index += 1) {
+    const row = rows[index];
+    if (row.trim() === '') continue;
+    const indent = row.match(/^ */)[0].length;
+    const trimmed = row.slice(indent);
+    while (stack.length > 1 && indent <= stack.at(-1).indent) stack.pop();
+    const parent = stack.at(-1).value;
+    if (trimmed.startsWith('- ')) {
+      if (!Array.isArray(parent)) throw new Error(`yaml list outside array in ${file}: ${trimmed}`);
+      const body = trimmed.slice(2);
+      const colon = body.indexOf(':');
+      if (colon === -1) {
+        parent.push(parseScalar(body));
+        continue;
+      }
+      const key = body.slice(0, colon).trim();
+      const rest = body.slice(colon + 1).trim();
+      let item;
+      if (rest === '|' || rest === '|-' || rest === '>' || rest === '>-') {
+        const block = readBlockScalar(rows, index + 1, indent);
+        item = {[key]: block.text};
+        index = block.next;
+      } else if (rest === '') {
+        item = {};
+      } else {
+        item = {[key]: parseScalar(rest)};
+      }
+      parent.push(item);
+      stack.push({indent, value: item});
+      continue;
+    }
+    const colon = trimmed.indexOf(':');
+    if (colon === -1) throw new Error(`yaml mapping missing colon in ${file}: ${trimmed}`);
+    const key = trimmed.slice(0, colon).trim();
+    const rest = trimmed.slice(colon + 1).trim();
+    if (!parent || Array.isArray(parent)) throw new Error(`yaml mapping outside object in ${file}: ${trimmed}`);
+    if (rest === '|' || rest === '|-' || rest === '>' || rest === '>-') {
+      const block = readBlockScalar(rows, index + 1, indent);
+      parent[key] = block.text;
+      index = block.next;
+    } else if (rest === '') {
+      const next = nextMeaningful(rows, index + 1);
+      const nextIndent = next.match(/^ */)[0].length;
+      const child = next.trimStart().startsWith('- ') && nextIndent > indent ? [] : {};
+      parent[key] = child;
+      stack.push({indent, value: child});
+    } else {
+      parent[key] = parseScalar(rest);
+    }
+  }
+  return root;
 }
 
 function triggerBlock(doc) {

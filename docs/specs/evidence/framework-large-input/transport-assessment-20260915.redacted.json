@@ -2,7 +2,7 @@
   "recorded_at": "2026-09-15T21:11:51.525Z",
   "evidence_class": "local deterministic transport assessment; not native reviewer execution",
   "wi": "WI-FW-PROMPT-INSPECTION-01",
-  "source_root": "/home/dianast/app-workspaces/ssve",
+  "source_root": "/workspace/ssve",
   "source_sha256": {
     "scripts/run-external-review.mjs": "97a2eac16071b3f6f6e1e87d6c99be5de6f190b74b7d03b0a42e641584d33e47",
     "scripts/lib/isolated-plan-analysis.mjs": "e99d79c9fc3647db2e890d555f8b4b5bd20be678c97135d2cc296104ff0961a2",
@@ -51,5 +51,18 @@
     }
   ],
   "paid_model_calls": 0,
-  "live_harness_large_input_qualification": false
+  "live_harness_large_input_qualification": false,
+  "_redaction": {
+    "kind": "path-sanitization-derivative",
+    "source_path": "docs/specs/evidence/framework-large-input/transport-assessment-20260915.json",
+    "source_sha256": "683ec688e17a06ff85be830999ee0342b7b9430fafa7f207e5d9dfbb07b2b24f",
+    "replacements": [
+      {
+        "from": "/home/dianast/app-workspaces/ssve",
+        "to": "/workspace/ssve"
+      }
+    ],
+    "created_at": "2026-09-16T20:13:53Z",
+    "note": "Publication derivative only. Canonical historical evidence is the unsuffixed file."
+  }
 }

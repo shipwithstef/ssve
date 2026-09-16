@@ -212,18 +212,30 @@
     },
     {
       "id": 4,
-      "status": "in_progress",
+      "status": "pending",
       "skill": "review-plan",
       "subject": "adversarial review of the integration plan",
       "blocked_by": [
         3
       ],
       "delivery_started_at": "2026-09-16T19:44:15.740Z",
-      "notes": "Adapter fail-closed: governed-triple has 2 independent stations; one-station retry refused 4 WIs in plan text before any provider call. No paid review launched. v5 issuance also blocked.",
+      "notes": "Paid plan review still refused after implementation without a receipted owner retro-plan override. Exec reviews launched instead via run-external-review.mjs --orchestrator cursor --review-kind exec with SVC_WI=WI-FW-OSS-INTEGRATION-01. No plan-manifest receipt invented.",
       "skill_receipt": {
         "skill": "review-plan",
         "loaded_at": "2026-09-16T19:44:19.779Z",
-        "loaded_via": "codex-load-skill"
+        "loaded_via": "codex-load-skill",
+        "phases_executed": [
+          {
+            "id": "P6-SelfVerifyContinuation",
+            "ts": "2026-09-16T20:14:08.764Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/lane-tasks-WI-FW-OSS-INTEGRATION-01.json"
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -237,12 +249,19 @@
     },
     {
       "id": 6,
-      "status": "pending",
+      "status": "in_progress",
       "skill": "review-exec",
       "subject": "self-review plus policy-required independent exec review",
       "blocked_by": [
         5
-      ]
+      ],
+      "delivery_started_at": "2026-09-16T20:07:55Z",
+      "notes": "Initial governed-triple exec stations on 55893fed failed. Accepted remediations are on the dirty/remediating tree. Hermetic remediating full free Tier-1 is 371/0 (env -u SVC_WORKER_WI). One remediating exec review per required station is next. No review-exec receipt until those stations return.",
+      "skill_receipt": {
+        "skill": "review-exec",
+        "loaded_at": "2026-09-16T21:27:46.557Z",
+        "loaded_via": "codex-load-skill"
+      }
     },
     {
       "id": 7,
