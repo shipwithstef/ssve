@@ -971,6 +971,7 @@ cp "$ROOT/hooks/lib/claim-owner.mjs" "$WI494_MUT/boot/hooks/lib/claim-owner.mjs"
 cp "$ROOT/hooks/lib/wi-id.mjs" "$WI494_MUT/boot/hooks/lib/wi-id.mjs"  # WI-497 canonical dep
 # WI-FW-HOOKS-SAFETY-01: the enforcer now imports the shared literal-ref validator
 cp "$ROOT/hooks/lib/literal-branch.mjs" "$WI494_MUT/boot/hooks/lib/literal-branch.mjs"
+cp "$ROOT/hooks/lib/worktree-policy.mjs" "$WI494_MUT/boot/hooks/lib/worktree-policy.mjs"
 cp "$ROOT/hooks/codex/lib/argv-encode.mjs" "$WI494_MUT/boot/hooks/codex/lib/argv-encode.mjs"
 node -e '
 const fs = require("fs");
@@ -1037,6 +1038,7 @@ cp "$ROOT/hooks/lib/claim-owner.mjs" "$WI494_MUT/marker/hooks/lib/claim-owner.mj
 cp "$ROOT/hooks/lib/wi-id.mjs" "$WI494_MUT/marker/hooks/lib/wi-id.mjs"  # WI-497 canonical dep
 # WI-FW-HOOKS-SAFETY-01: enforcer dependency tree includes the ref validator
 cp "$ROOT/hooks/lib/literal-branch.mjs" "$WI494_MUT/marker/hooks/lib/literal-branch.mjs"
+cp "$ROOT/hooks/lib/worktree-policy.mjs" "$WI494_MUT/marker/hooks/lib/worktree-policy.mjs"
 cp "$ROOT/hooks/codex/lib/argv-encode.mjs" "$WI494_MUT/marker/hooks/codex/lib/argv-encode.mjs"
 cat > "$WI494_MUT/marker/hooks/codex/lib/bootstrap-marker.mjs" <<'MUTEOF'
 import path from "node:path";

@@ -17,11 +17,13 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const source = fs.readFileSync(process.argv[2], "utf8");
-const worktreeBranch = source.match(/if \[\[ "\$\(git rev-parse --show-toplevel\)" == \*"\/\.worktrees\/"\* \]\]; then([\s\S]*?)\nfi/);
+const worktreeBranch = source.match(/if \[\[ "\$IS_WORKTREE" -eq 1 \]\][\s\S]*?exit 0\nfi/);
 assert.ok(worktreeBranch, "hook must have an explicit feature-worktree branch");
-assert.match(worktreeBranch[1], /SVC_SETUP_VALIDATE_ONLY=1 \.\/setup --host/);
-assert.doesNotMatch(worktreeBranch[1], /SVC_SETUP_ALLOW_WORKTREE|check-install-drift/);
-assert.match(worktreeBranch[1], /live installs remain on canonical main/);
+assert.match(worktreeBranch[0], /SVC_SETUP_VALIDATE_ONLY=1 \.\/setup --host/);
+assert.doesNotMatch(worktreeBranch[0], /SVC_SETUP_ALLOW_WORKTREE/);
+assert.doesNotMatch(worktreeBranch[0], /check-install-drift/);
+assert.match(worktreeBranch[0], /live installs remain on canonical main/);
+assert.match(source, /\/\.worktrees\/|\/worktrees\//);
 
 const canonicalBranch = source.slice(worktreeBranch.index + worktreeBranch[0].length);
 assert.match(canonicalBranch, /check-install-drift\.sh --host/);
@@ -29,8 +31,8 @@ assert.match(canonicalBranch, /\.\/setup --host/);
 assert.doesNotMatch(canonicalBranch, /SVC_SETUP_ALLOW_WORKTREE/);
 
 const mutant = source.replace("SVC_SETUP_VALIDATE_ONLY=1 ./setup --host", "SVC_SETUP_ALLOW_WORKTREE=1 ./setup --host");
-const mutantBranch = mutant.match(/if \[\[ "\$\(git rev-parse --show-toplevel\)" == \*"\/\.worktrees\/"\* \]\]; then([\s\S]*?)\nfi/);
-assert.ok(mutantBranch && !/SVC_SETUP_VALIDATE_ONLY=1/.test(mutantBranch[1]), "mutation must prove the worktree no-write assertion is live");
+const mutantBranch = mutant.match(/if \[\[ "\$IS_WORKTREE" -eq 1 \]\][\s\S]*?exit 0\nfi/);
+assert.ok(mutantBranch && !/SVC_SETUP_VALIDATE_ONLY=1/.test(mutantBranch[0]), "mutation must prove the worktree no-write assertion is live");
 
 console.log("validate-precommit-worktree-host-install-boundary: PASS (candidate validate-only; canonical-main install)");
 NODE

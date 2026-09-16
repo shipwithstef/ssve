@@ -42,6 +42,10 @@ git -C "$REPO" add .
 git -C "$REPO" commit -qm init
 git -C "$REPO" push -qu origin main
 git -C "$TMP/origin.git" symbolic-ref HEAD refs/heads/main
+export SVC_WORKTREES_ROOT="$REPO/.worktrees"
+export SVC_WORKTREE_POLICY="$TMP/worktree-policy.json"
+printf '{"schema_version":1,"default_root":"%s","naming_strategy":"flat","permissions":"0700","projects":{}}\n' "$REPO/.worktrees" > "$SVC_WORKTREE_POLICY"
+mkdir -p "$REPO/.worktrees"
 
 SESSION="019f6169-73d2-7831-b562-fc1565171ccc"
 SESSION_B="019f616a-0000-7000-8000-00000000b002"
