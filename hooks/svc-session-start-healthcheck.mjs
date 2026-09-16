@@ -15,7 +15,7 @@
 // from provision/hosts/<host>.json instead of checking Claude only.
 import { execFileSync, spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync, existsSync, lstatSync, realpathSync, statSync, mkdirSync, chmodSync } from "node:fs";
-import { basename, dirname, join } from "node:path";
+import { basename, dirname, join, resolve, isAbsolute } from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolveHostPaths } from "../scripts/resolve-host-paths.mjs";
 
@@ -206,7 +206,22 @@ function claimSameSession(host, sessionId, home, env = process.env) {
 // self-heal whenever the install was once done from a worktree that has
 // since been cleaned up.
 function isWorktreePath(p) {
-  return typeof p === "string" && p.includes("/.worktrees/");
+  if (typeof p !== "string") return false;
+  if (p.includes("/.worktrees/") || p.includes("/worktrees/")) return true;
+  try {
+    const gitDir = execFileSync("git", ["-C", p, "rev-parse", "--git-dir"], {
+      encoding: "utf8", timeout: 1000, stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    const gitCommon = execFileSync("git", ["-C", p, "rev-parse", "--git-common-dir"], {
+      encoding: "utf8", timeout: 1000, stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    if (gitDir && gitCommon) {
+      const absGitDir = isAbsolute(gitDir) ? gitDir : resolve(p, gitDir);
+      const absGitCommon = isAbsolute(gitCommon) ? gitCommon : resolve(p, gitCommon);
+      if (resolve(absGitDir) !== resolve(absGitCommon)) return true;
+    }
+  } catch {}
+  return false;
 }
 
 // WI-134: validate that a candidate path looks like the canonical svc repo.

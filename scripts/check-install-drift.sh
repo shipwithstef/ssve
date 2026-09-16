@@ -19,7 +19,17 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd -P)"
 INSTALL_SOURCE_DIR="$(realpath "$SCRIPT_DIR" 2>/dev/null || echo "$SCRIPT_DIR")"
-if [[ "$SCRIPT_DIR" == *"/.worktrees/"* ]] && command -v git >/dev/null 2>&1; then
+IS_WORKTREE=0
+if command -v git >/dev/null 2>&1; then
+  GIT_DIR="$(git -C "$SCRIPT_DIR" rev-parse --git-dir 2>/dev/null || true)"
+  GIT_COMMON_DIR="$(git -C "$SCRIPT_DIR" rev-parse --git-common-dir 2>/dev/null || true)"
+  if [[ -n "$GIT_DIR" && -n "$GIT_COMMON_DIR" && "$GIT_DIR" != "$GIT_COMMON_DIR" ]]; then
+    IS_WORKTREE=1
+  elif [[ "$SCRIPT_DIR" == *"/.worktrees/"* || "$SCRIPT_DIR" == *"/worktrees/"* ]]; then
+    IS_WORKTREE=1
+  fi
+fi
+if [[ "$IS_WORKTREE" -eq 1 ]]; then
   # Consume the full producer stream under pipefail. An early `awk ... exit`
   # closes the pipe while `git worktree list` is still writing and turns a valid
   # worktree check into SIGPIPE/141, which pre-commit misclassifies as host drift.
@@ -208,7 +218,7 @@ done < <(find "$SKILLS_TARGET" -maxdepth 1 -xtype l -print0 2>/dev/null)
 while IFS= read -r -d '' link; do
   name="$(basename "$link")"
   target="$(realpath "$link" 2>/dev/null || readlink -f "$link" 2>/dev/null || python3 -c "import os; print(os.path.realpath('$link'))" 2>/dev/null || true)"
-  if [[ "$target" == *"/.worktrees/"* ]]; then
+  if [[ "$target" == *"/.worktrees/"* || "$target" == *"/worktrees/"* ]]; then
     WORKTREE_BOUND+=("$name (host skill points into a git worktree → $target)")
     continue
   fi
