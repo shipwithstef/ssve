@@ -4,6 +4,7 @@
  * Default --prepare: contained fixture + isolation preflight, no provider exec.
  * Explicit --live: exactly six runTwoBox planning calls, then one EXEC comprehension.
  * --self-check: OFFLINE scorer assertions, zero provider calls.
+ * --rescore-retained: parse retained stdout/control-plan, zero provider calls.
  */
 import fs from "node:fs";
 import os from "node:os";
@@ -12,7 +13,7 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { runTwoBox } from "./two-box-plan.mjs";
 import { resolveDispatchModel, resolveDispatchRoleTuple } from "./resolve-dispatch.mjs";
-import { putObject } from "./lib/review-evidence-store.mjs";
+import { putObject, reviewEvidenceStoreRoot } from "./lib/review-evidence-store.mjs";
 import { updateJsonAtomic } from "./state-io.mjs";
 import {
   DEFAULT_LIMITS,
@@ -49,7 +50,7 @@ const EXECUTOR_ITEM = {
     required_proof: { type: "string", minLength: 1 },
   },
 };
-const EXECUTOR_SCHEMA = {
+export const EXECUTOR_SCHEMA = {
   type: "object",
   additionalProperties: false,
   required: ["output"],
@@ -103,6 +104,65 @@ export function publicExecutorCases(cases) {
   });
 }
 
+export function heldOutSourceRules(expected) {
+  const errors = [];
+  const rules = [];
+  if (!isPlainObject(expected)) return { rules, errors: ["expected object required"] };
+  if (typeof expected.source_rule === "string" && expected.source_rule.trim()) rules.push(expected.source_rule);
+  if (Object.hasOwn(expected, "accepted_source_rules")) {
+    if (!Array.isArray(expected.accepted_source_rules) || expected.accepted_source_rules.length < 1) {
+      errors.push("accepted_source_rules must be a nonempty array when present");
+    } else {
+      for (const rule of expected.accepted_source_rules) {
+        if (typeof rule !== "string" || !rule.trim()) errors.push("accepted_source_rules entries must be nonempty strings");
+        else rules.push(rule);
+      }
+    }
+  }
+  return { rules: [...new Set(rules)], errors };
+}
+
+export function executorComprehensionPrompt(contractText, publicCases) {
+  return [
+    "Classify every case using only the execute-changeset contract.",
+    "Reply with one JSON object {\"output\":[{case_id,classification,source_rule,justification,affected_decisions,required_proof}]}.",
+    "classification must be local_repair or amendment.",
+    "source_rule must be an exact contiguous excerpt copied from the contract.",
+    "Do not weaken AC, proof, tests, or scope.",
+    "",
+    "CONTRACT:",
+    contractText,
+    "",
+    "CASES:",
+    canonicalJson(publicCases),
+    "",
+  ].join("\n");
+}
+
+export function executorComprehensionInputKey({ cases, contractText, tuple, schema = EXECUTOR_SCHEMA } = {}) {
+  if (!isPlainObject(tuple) || typeof tuple.host !== "string" || typeof tuple.family !== "string" || typeof tuple.model !== "string" || typeof tuple.effort !== "string") {
+    throw new Error("tuple host/family/model/effort required");
+  }
+  if (typeof contractText !== "string" || !contractText.trim()) throw new Error("contractText required");
+  const publicCases = publicExecutorCases(cases);
+  const visible = canonicalJson(publicCases);
+  if (visible.includes('"expected"')) throw new Error("expected object leaked into model-visible cases");
+  if (visible.includes("accepted_source_rules")) throw new Error("accepted_source_rules leaked into model-visible cases");
+  const prompt = executorComprehensionPrompt(contractText, publicCases);
+  return {
+    key: sha256Utf8(canonicalJson({
+      role: "executor_comprehension",
+      prompt,
+      schema,
+      tuple: { host: tuple.host, family: tuple.family, model: tuple.model, effort: tuple.effort },
+      evidence_class: "LIVE",
+    })),
+    prompt,
+    publicCases,
+    schema,
+  };
+}
+
 export function scoreExecutorComprehension({ cases, output, contractText } = {}) {
   const errors = [];
   if (!Array.isArray(cases) || !cases.length) errors.push("cases required");
@@ -121,10 +181,14 @@ export function scoreExecutorComprehension({ cases, output, contractText } = {})
     if (!isPlainObject(entry.expected) || (entry.expected.classification !== "local_repair" && entry.expected.classification !== "amendment")) {
       errors.push(`${entry.case_id}: expected.classification required`);
     }
-    if (typeof entry.expected?.source_rule === "string" && entry.expected.source_rule && typeof contractText === "string" && !contractText.includes(entry.expected.source_rule)) {
-      errors.push(`${entry.case_id}: expected.source_rule is not an excerpt of the actual skill contract`);
+    const held = heldOutSourceRules(entry.expected || {});
+    for (const msg of held.errors) errors.push(`${entry.case_id}: ${msg}`);
+    for (const rule of held.rules) {
+      if (typeof contractText === "string" && !contractText.includes(rule)) {
+        errors.push(`${entry.case_id}: accepted excerpt is not an excerpt of the actual skill contract`);
+      }
     }
-    expectedById.set(entry.case_id, entry);
+    expectedById.set(entry.case_id, { entry, heldOutRules: held.rules });
   }
   const seen = new Set();
   for (const row of rows) {
@@ -139,7 +203,7 @@ export function scoreExecutorComprehension({ cases, output, contractText } = {})
       errors.push(`unexpected case_id ${row.case_id}`);
       continue;
     }
-    const expected = held.expected || {};
+    const expected = held.entry.expected || {};
     if (row.classification !== expected.classification) {
       errors.push(`${row.case_id}: expected ${expected.classification}, got ${row.classification}`);
     }
@@ -147,7 +211,7 @@ export function scoreExecutorComprehension({ cases, output, contractText } = {})
     else if (typeof contractText === "string" && !contractText.includes(row.source_rule)) {
       errors.push(`${row.case_id}: source_rule is not an excerpt of the actual skill contract`);
     }
-    if (typeof expected.source_rule === "string" && typeof row.source_rule === "string" && !row.source_rule.includes(expected.source_rule)) {
+    if (typeof row.source_rule === "string" && held.heldOutRules.length && !held.heldOutRules.some((rule) => row.source_rule.includes(rule))) {
       errors.push(`${row.case_id}: source_rule must identify the applicable held-out rule`);
     }
     if (typeof row.justification !== "string" || !row.justification.trim()) errors.push(`${row.case_id}: justification required`);
@@ -168,6 +232,175 @@ export function scoreExecutorComprehension({ cases, output, contractText } = {})
     if (!seen.has(id)) errors.push(`missing case ${id}`);
   }
   return { ok: errors.length === 0, errors, mechanical: true, limitation: MECHANICAL };
+}
+
+export const RETAINED_CANARY03_EXECUTOR = Object.freeze({
+  wi: "WI-FW-TWO-BOX-CANARY-03",
+  key: "d63708d00d9f124d154cec9c114f98f0b24eb622001c931abb0093f176a7ef80",
+  stdout_sha256: "fa5da28b6c7dc1510c4c9de940158f1f3c97b8113b637a8944da41e58de77873",
+  stderr_sha256: "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+  control_plan_sha256: "52f53cf593839e5dcf46b59a8af20aeeba079f36fe83a461db45e3d138ff7d0e",
+  stage_refs: Object.freeze({
+    open_box: "661bf378bc841377bad77b17a99bccb6a0450c89e6c2f839a65f6fe35c8c3704",
+    contract_box: "56f4f1f1d3cad45032fd43052a416bd478ce0d382330ff56176563d079588733",
+    scout_forward: "b823625ae73a8f73033b24445ee32507a294932dccdabdfb74f5f36c4d5f9997",
+    scout_reverse: "2368808f461dca6900e7ef9509d97c09485c1b125cdd9d5d81c314536e56b319",
+    contract_revise: "32dd327fd479d151085dc8e15bcae433c65bc73867cb39bf47d45544cb71ec6e",
+    assessor: "cb92ff5c50b10546441944ea284e25a71c6fffe308ba9e9c5b4d62737f8bb77b",
+  }),
+  original_status: "failed_score",
+  original_error: "ED-02-new-or-upgraded-dependency: source_rule must identify the applicable held-out rule",
+});
+
+export function rescoreRetainedExecutorBytes({
+  stdoutBytes,
+  expectedStdoutSha = RETAINED_CANARY03_EXECUTOR.stdout_sha256,
+  expectedKey,
+  cases,
+  contractText,
+  tuple,
+} = {}) {
+  const raw = Buffer.isBuffer(stdoutBytes) ? stdoutBytes : Buffer.from(stdoutBytes || "");
+  const stdoutSha = sha256Bytes(raw);
+  if (typeof expectedStdoutSha !== "string" || stdoutSha !== expectedStdoutSha) {
+    throw new Error(`stdout hash mismatch: ${stdoutSha}`);
+  }
+  const parsed = parseCodexJsonl(raw, EXECUTOR_SCHEMA);
+  const input = executorComprehensionInputKey({ cases, contractText, tuple });
+  if (typeof expectedKey === "string" && input.key !== expectedKey) {
+    throw new Error("executor input key does not match retained key");
+  }
+  return {
+    inference_calls: 0,
+    stdout_sha256: stdoutSha,
+    parsed,
+    score: scoreExecutorComprehension({ cases, output: parsed, contractText }),
+    ...input,
+  };
+}
+
+function findMatchingControlPlan({ fixtureRoot, wi, assessorSha }) {
+  const objects = path.join(reviewEvidenceStoreRoot(fixtureRoot), "objects");
+  const hits = [];
+  for (const dir of fs.readdirSync(objects)) {
+    const folder = path.join(objects, dir);
+    if (!fs.statSync(folder).isDirectory()) continue;
+    for (const name of fs.readdirSync(folder)) {
+      const bytes = fs.readFileSync(path.join(folder, name));
+      if (bytes[0] !== 0x7b) continue;
+      let body;
+      try { body = JSON.parse(bytes.toString("utf8")); } catch { continue; }
+      if (body?.receipt_type === "control-plan" && body.wi === wi && body.assessor_ref?.sha256 === assessorSha) {
+        hits.push({ sha256: `${dir}${name}`, body });
+      }
+    }
+  }
+  if (hits.length !== 1) throw new Error(`expected exactly one matching control-plan, got ${hits.length}`);
+  return hits[0];
+}
+
+export function rescoreRetainedCanary({ consumerRoot, wi } = {}) {
+  if (!consumerRoot || !wi) throw new Error("explicit --wi and --root required");
+  const fixtureRoot = fixtureRootFor(consumerRoot, wi);
+  if (!fs.existsSync(fixtureRoot)) throw new Error("retained live canary fixture missing");
+  const cases = loadCases();
+  const contractText = loadExecContract();
+  const journal = JSON.parse(fs.readFileSync(path.join(fixtureRoot, ".svc", "two-box", wi, "journal.json"), "utf8"));
+  const executor = JSON.parse(fs.readFileSync(path.join(fixtureRoot, ".svc", "two-box", wi, "executor-comprehension.json"), "utf8"));
+  const budget = JSON.parse(fs.readFileSync(path.join(fixtureRoot, ".svc", "two-box", wi, "live-canary-budget.json"), "utf8"));
+  if (executor.status !== "failed_score") throw new Error(`retained executor status is ${executor.status}, not failed_score`);
+  if (executor.key !== RETAINED_CANARY03_EXECUTOR.key) throw new Error("retained executor key mismatch");
+  if (canonicalJson(executor.score) !== canonicalJson({
+    ok: false,
+    errors: [RETAINED_CANARY03_EXECUTOR.original_error],
+    mechanical: true,
+    limitation: MECHANICAL,
+  })) {
+    throw new Error("retained original score must stay the historical failed_score payload");
+  }
+  for (const role of PLANNING_ROLES) {
+    const stage = journal.stages?.[role];
+    if (stage?.status !== "completed" || !stage.ref) throw new Error(`planning role ${role} is not a completed retained stage`);
+    if (stage.ref.sha256 !== RETAINED_CANARY03_EXECUTOR.stage_refs[role]) {
+      throw new Error(`planning role ${role} envelope sha mismatch`);
+    }
+    getStageEnvelope(stage.ref, { start: fixtureRoot });
+  }
+  const stdoutGot = getByRef(executor.raw_stdout_ref, { start: fixtureRoot });
+  const stderrGot = getByRef(executor.raw_stderr_ref, { start: fixtureRoot });
+  if (sha256Bytes(stderrGot.bytes) !== RETAINED_CANARY03_EXECUTOR.stderr_sha256) {
+    throw new Error("stderr hash mismatch");
+  }
+  const rescored = rescoreRetainedExecutorBytes({
+    stdoutBytes: stdoutGot.bytes,
+    expectedStdoutSha: RETAINED_CANARY03_EXECUTOR.stdout_sha256,
+    expectedKey: RETAINED_CANARY03_EXECUTOR.key,
+    cases,
+    contractText,
+    tuple: executor.requested,
+  });
+  const assessorSha = journal.stages.assessor.ref.sha256;
+  const control = findMatchingControlPlan({ fixtureRoot, wi, assessorSha });
+  if (control.sha256 !== RETAINED_CANARY03_EXECUTOR.control_plan_sha256) {
+    throw new Error("control-plan sha mismatch");
+  }
+  if ("draft" in control.body || "draft_for" in control.body || "issuance" in control.body) {
+    throw new Error("complete LIVE control-plan must not retain draft fields");
+  }
+  const controlVerdict = validateControlPlan({
+    consumerRoot: fixtureRoot,
+    body: control.body,
+    requirementsRef: control.body.original_requirements_ref,
+    sourceSnapshotRef: control.body.source_snapshot_ref,
+  });
+  verifyLiveOpenAndSource({
+    stages: Object.fromEntries(PLANNING_ROLES.map((role) => [role, journal.stages[role]])),
+    control_plan: control.body,
+  }, fixtureRoot);
+  const corrected = rescored.score.ok === true && controlVerdict?.ok === true && rescored.key === executor.key;
+  return {
+    status: "rescore-retained",
+    evidence_class: "LIVE",
+    inference_calls: 0,
+    wi,
+    original: {
+      executor_status: executor.status,
+      score: executor.score,
+      claimed_attempt_at: executor.claimed_attempt_at,
+      usage: executor.usage,
+      key: executor.key,
+    },
+    budget_claim_preserved: {
+      claimed_at: budget.claimed_at,
+      recovery: budget.recovery ?? null,
+    },
+    hashes: {
+      stdout: RETAINED_CANARY03_EXECUTOR.stdout_sha256,
+      stderr: RETAINED_CANARY03_EXECUTOR.stderr_sha256,
+      cases: sha256Bytes(namedFixture("executor-discretion-cases.json")),
+      contract: sha256Bytes(contractText),
+      scorer: sha256Bytes(fs.readFileSync(fileURLToPath(import.meta.url))),
+    },
+    input_key_matches: rescored.key === executor.key,
+    public_cases_leak: false,
+    planning_stages: Object.fromEntries(PLANNING_ROLES.map((role) => [role, {
+      status: journal.stages[role].status,
+      key: journal.stages[role].key,
+      ref: journal.stages[role].ref,
+    }])),
+    control_plan_ref: { type: "object", sha256: control.sha256 },
+    control_plan: {
+      ok: controlVerdict?.ok === true,
+      errors: controlVerdict?.errors || [],
+      winner: control.body.chosen_solution?.winner ?? null,
+      unresolved_conflicts: control.body.chosen_solution?.unresolved_conflicts ?? null,
+      evidence_class: control.body.evidence_class,
+    },
+    corrected_score: rescored.score,
+    corrected_verification: corrected,
+    limitation: MECHANICAL,
+    note: "Original failed_score remains historical. This record is a no-inference rescore of retained bytes against the corrected oracle.",
+  };
 }
 
 function gitUtf8(cwd, args) {
@@ -544,30 +777,8 @@ function goldRows(cases) {
 }
 
 async function runSeventh({ fixtureRoot, wi, implementor, transport, cases, contractText }) {
-  const publicCases = publicExecutorCases(cases);
-  if (canonicalJson(publicCases).includes('"expected"')) throw new Error("expected object leaked into model-visible cases");
-  const prompt = [
-    "Classify every case using only the execute-changeset contract.",
-    "Reply with one JSON object {\"output\":[{case_id,classification,source_rule,justification,affected_decisions,required_proof}]}.",
-    "classification must be local_repair or amendment.",
-    "source_rule must be an exact contiguous excerpt copied from the contract.",
-    "Do not weaken AC, proof, tests, or scope.",
-    "",
-    "CONTRACT:",
-    contractText,
-    "",
-    "CASES:",
-    canonicalJson(publicCases),
-    "",
-  ].join("\n");
   const tuple = implementor.tuple;
-  const key = sha256Utf8(canonicalJson({
-    role: "executor_comprehension",
-    prompt,
-    schema: EXECUTOR_SCHEMA,
-    tuple: { host: tuple.host, family: tuple.family, model: tuple.model, effort: tuple.effort },
-    evidence_class: "LIVE",
-  }));
+  const { key, prompt } = executorComprehensionInputKey({ cases, contractText, tuple });
   const journalPath = path.join(fixtureRoot, ".svc", "two-box", wi, "executor-comprehension.json");
   containRel(fixtureRoot, `.svc/two-box/${wi}/executor-comprehension.json`);
   updateJsonAtomic(journalPath, (cur) => {
@@ -717,6 +928,17 @@ async function selfCheck() {
     : row));
   const wk = scoreExecutorComprehension({ cases, output: { output: weak }, contractText });
   if (wk.ok) throw new Error("scorer must reject weakening AC justification");
+  const ed02 = cases.find((c) => c.case_id === "ED-02-new-or-upgraded-dependency");
+  const alts = heldOutSourceRules(ed02.expected).rules;
+  if (alts.length < 2) throw new Error("ED-02 must declare equivalent accepted contract excerpts");
+  const line66 = alts.find((rule) => rule.startsWith("Amendments (new/upgraded dependency;"));
+  if (!line66 || !contractText.includes(line66)) throw new Error("ED-02 line-66 alternate missing from contract");
+  const altGold = gold.map((row) => (row.case_id === "ED-02-new-or-upgraded-dependency" ? { ...row, source_rule: line66 } : row));
+  const alt = scoreExecutorComprehension({ cases, output: { output: altGold }, contractText });
+  if (!alt.ok) throw new Error(`equivalent ED-02 excerpt failed: ${alt.errors.join("; ")}`);
+  const unrelated = gold.map((row) => (row.case_id === "ED-02-new-or-upgraded-dependency" ? { ...row, source_rule: gold[0].source_rule } : row));
+  const un = scoreExecutorComprehension({ cases, output: { output: unrelated }, contractText });
+  if (un.ok) throw new Error("scorer must reject an unrelated contract rule for ED-02");
   process.stdout.write("self-check ok\n");
 }
 
@@ -727,6 +949,7 @@ function parseCli(argv) {
     if (token === "--prepare") out.command = "prepare";
     else if (token === "--live") out.command = "live";
     else if (token === "--self-check") out.command = "self-check";
+    else if (token === "--rescore-retained") out.command = "rescore-retained";
     else if (token === "--wi") out.wi = argv[++i];
     else if (token === "--root") out.root = argv[++i];
     else if (token === "--resume-after-fix") out.resumeReason = argv[++i];
@@ -749,6 +972,13 @@ async function main(argv) {
   }
   if (!args.wi || !args.root) throw new Error("explicit --wi and --root required");
   const consumerRoot = path.resolve(args.root);
+  if (args.command === "rescore-retained") {
+    if (args.resumeReason) throw new Error("rescore-retained does not take --resume-after-fix");
+    const record = rescoreRetainedCanary({ consumerRoot, wi: args.wi });
+    writeReport(args, record);
+    if (record.corrected_verification !== true) process.exitCode = 1;
+    return;
+  }
   const setup = ensureFixture(consumerRoot, args.wi);
   const shared = dispatchShared(args, args.wi, setup.fixtureRoot);
   const tuples = resolveCanaryTuples(shared);

@@ -99,7 +99,17 @@
           "project_or_global_methodology_injection",
           "competing_candidate"
         ],
-        "native_host_safety_message_allowed": true
+        "native_host_safety_message_allowed": true,
+        "large_request": {
+          "planning_max_bytes": 1048576,
+          "native_inspect": "positional_prompt_input",
+          "native_inspect_complete_input": false,
+          "oversized_prompt_transport": "native_request_capture",
+          "capture_is_live_authority": false,
+          "qualified_inspect_authorizes_live_stdin": true,
+          "token_budget_separate_from_bytes": true,
+          "inference_uses_stdin": true
+        }
       },
       "live_canary": {
         "required": true,

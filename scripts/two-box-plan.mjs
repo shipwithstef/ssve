@@ -31,8 +31,9 @@ import {
   storeStageEnvelope,
   validateRoleOutput,
 } from "./lib/two-box-protocol.mjs";
-import { diagnosePromptContamination } from "./lib/isolated-plan-analysis.mjs";
-import { assignDualPass, assignmentCoverage } from "./lib/two-box-scout-assign.mjs";
+import { diagnosePromptContamination, isolationProofContractDigest } from "./lib/isolated-plan-analysis.mjs";
+import { assertRetainedStageProof } from "./lib/control-plan-validate.mjs";
+import { assignDualPass, assignmentCoverage, constraintSources } from "./lib/two-box-scout-assign.mjs";
 import { buildRolePrompt, launchRole, preflightRole, parseCodexJsonl } from "./lib/two-box-role-launch.mjs";
 
 const PROBE = "CAPABILITY_PROBE_NOT_STAGE_RESULT";
@@ -358,6 +359,7 @@ function stageKey({ role, input, prompt, schema, sourceDigest, policyDigest, tup
     binary_sha256: proof.binary?.sha256 ?? null,
     skills_sha256: proof.disabled_skills_sha256 ?? null,
     config_sha256: proof.config_sha256 ?? null,
+    proof_contract: isolationProofContractDigest(),
     parents,
     evidence_class: evidenceClass,
   }));
@@ -382,6 +384,19 @@ function verifyEnvelope(ref, { consumerRoot, wi, role, input, policyDigest, sour
   if(envelope.launch.prompt_digest !== sha256Utf8(buildRolePrompt({role,payload:input}))) return null;
   if(envelope.launch.exit_code !== 0 || envelope.input_digest !== sha256Utf8(canonicalJson(input))) return null;
   return envelope;
+}
+
+function retainedProofCurrent(envelope, { consumerRoot, evidenceClass }) {
+  try {
+    assertRetainedStageProof(envelope, {
+      consumerRoot,
+      fixture: evidenceClass === "OFFLINE",
+      role: envelope.role,
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function probePayload(role, bindings, probeRef, requirements) {
@@ -521,6 +536,7 @@ async function runSix(ctx) {
   const frozenFacts = JSON.parse(getByRef(bindings.frozen_facts_ref, { start }).bytes.toString("utf8"));
   const factsPayload = frozenFacts;
   const constraints = readConstraints(consumerRoot, snapshot.base_sha, contractContext);
+  constraintSources(constraints);
   const probeRef = putJson({ [PROBE]: true }, start);
   const cleanups = [];
   try {
@@ -581,9 +597,11 @@ async function runSix(ctx) {
           consumerRoot, wi, role, input: payload, policyDigest: policyHash,
           sourceDigest: sourceHash, parents, evidenceClass, context,
         });
-        if (!reused) throw new Error(`completed ${role} failed CAS/binding verification`);
-        collected[role] = { ref: current.ref, envelope: reused, key };
-        return collected[role];
+        if (reused && retainedProofCurrent(reused, { consumerRoot, evidenceClass })) {
+          collected[role] = { ref: current.ref, envelope: reused, key };
+          return collected[role];
+        }
+        patchJournal(journalPath, wi, (j) => invalidateFrom(j, role, reused ? "incompatible_isolation_proof" : "completed_envelope_unverified"));
       }
       if (newProviderCalls >= maxNewCalls) throw new Error("new provider call budget exhausted; retained stages remain resumable");
       newProviderCalls += 1;
@@ -660,6 +678,7 @@ async function runSix(ctx) {
     sourceSnapshot: snapshot,
     initialContract,
     consumerRoot,
+    constraints,
     changeArchetype: typeof frozenFacts.annotations?.change_archetype === "string" ? frozenFacts.annotations.change_archetype : "feature",
   });
   const assignRefs = {
@@ -706,6 +725,7 @@ async function runSix(ctx) {
     bindings,
     requirements,
     facts: factsPayload,
+    ...(constraints.paths.length ? { constraints } : {}),
     original_open: { ref: collected.open_box.ref, output: collected.open_box.envelope.output, source_id_namespace: "open" },
     original_contract: { ref: collected.contract_box.ref, output: initialContract, source_id_namespace: "contract-original" },
     revised_contract: { ref: collected.contract_revise.ref, output: revised, source_id_namespace: "contract-revised" },

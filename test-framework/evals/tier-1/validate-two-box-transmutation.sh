@@ -14,8 +14,37 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 [[ -f "$ROOT/scripts/validate-host-authority-capabilities.mjs" ]] || fail "missing host-authority validator"
 [[ -f "$ROOT/scripts/review-plan-codex.sh" ]] || fail "missing scripts/review-plan-codex.sh"
 
+[[ -f "$ROOT/scripts/qualify-native-planning-request.mjs" ]] || fail "missing scripts/qualify-native-planning-request.mjs"
+[[ -f "$ROOT/test-framework/tests/two-box-native-qualification.test.mjs" ]] || fail "missing host-dependent native qualification test"
+[[ -f "$ROOT/docs/specs/evidence/framework-large-input/native-1mib-inspect.json" ]] || fail "missing retained native 1MiB evidence"
+
+node --input-type=module -e '
+import fs from "node:fs";
+const e = JSON.parse(fs.readFileSync("docs/specs/evidence/framework-large-input/native-1mib-inspect.json", "utf8"));
+if (e.evidence_class !== "native_no_inference_1mib") throw new Error("evidence_class");
+if (e.inference_calls !== 0) throw new Error("inference_calls");
+if (e.frozen_request?.byteLength !== 1048576) throw new Error("1MiB byteLength");
+if (!/^[a-f0-9]{64}$/.test(e.frozen_request?.sha256 || "")) throw new Error("frozen sha256");
+if (e.frozen_request.transport !== "native_request_capture") throw new Error("transport");
+if (e.inspection_authority !== "qualified_native_request_inspect") throw new Error("inspection_authority");
+if (e.capture_inference !== false) throw new Error("capture_inference");
+if (e.usable_live !== false) throw new Error("usable_live");
+if (e.token_budget?.checked !== true || e.token_budget?.fits !== false) throw new Error("token_budget");
+'
+
+node --input-type=module -e '
+import fs from "node:fs";
+import crypto from "node:crypto";
+const b = fs.readFileSync("test-framework/evals/tier-1/fixtures/two-box/canary03-executor-stdout.jsonl");
+const sha = crypto.createHash("sha256").update(b).digest("hex");
+if (sha !== "fa5da28b6c7dc1510c4c9de940158f1f3c97b8113b637a8944da41e58de77873") throw new Error(sha);
+if (b.length !== 6143) throw new Error(String(b.length));
+'
+
 TESTS=(
   test-framework/tests/two-box-plan.test.mjs
+  test-framework/tests/two-box-large-request.test.mjs
+  test-framework/tests/two-box-executor-scorer.test.mjs
   test-framework/tests/research-decision.test.mjs
   test-framework/tests/two-box-learning.test.mjs
   test-framework/tests/two-box-receipts.test.mjs

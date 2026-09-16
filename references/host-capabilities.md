@@ -88,7 +88,7 @@ instruction isolation.
 
 | Host | Adapter available | Notes |
 |------|:-----------------:|-------|
-| Codex CLI | yes (`enabled: true`) | `codex-exec` frozen-payload, tool-free transport. Required argv includes `--ephemeral`, `--sandbox read-only`, `--ignore-user-config`, `--skip-git-repo-check`, `--json`, `--output-schema`. Required invocation-scoped `codex debug prompt-input` inspection and live canary (`abort_on_any` tool events; offline output never unlocks live). Each invocation still needs passing effective preflight. |
+| Codex CLI | yes (`enabled: true`) | `codex-exec` frozen-payload, tool-free transport. Required argv includes `--ephemeral`, `--sandbox read-only`, `--ignore-user-config`, `--skip-git-repo-check`, `--json`, `--output-schema`. Required invocation-scoped `codex debug prompt-input` inspection and live canary (`abort_on_any` tool events; offline output never unlocks live). Planning request bytes freeze at 1 MiB with hash/length; token/context/output reserve is a separate catalog-bound check using one token per UTF-8 byte plus native envelope bytes. Missing catalog output reserve fails closed. Installed `debug prompt-input` is positional-only; oversized prompts use no-inference native-request capture qualified against a same-binary probe profile. Replay recomputes the native profile digest and binds binary/model/effort/schema/frames/tools/cwd. The capture overlay is never live; live inference uses the same frozen stdin bytes only when the token budget fits. Each invocation still needs passing effective preflight. |
 | Claude Code | no | Pending equivalent adapter proof. |
 | Cursor | no | Pending equivalent adapter proof. |
 | Gemini CLI | no | Pending equivalent adapter proof. |

@@ -1,0 +1,27 @@
+{
+  "recorded_at": "2026-09-16T07:02:22.008Z",
+  "evidence_class": "native_no_inference_1mib",
+  "inference_calls": 0,
+  "binary": {
+    "path": "/home/dianast/.codex/packages/standalone/releases/0.154.0-x86_64-unknown-linux-musl/bin/codex",
+    "sha256": "3188814c35471432d4123203e0eb38e5bddc60226e3d7ddf0e59e649ea140022"
+  },
+  "frozen_request": {
+    "sha256": "0ac3ed107a024a98abff1fdf1b5aa12d53481d0de781711c81ae6f87c74aae44",
+    "byteLength": 1048576,
+    "transport": "native_request_capture"
+  },
+  "inspection_authority": "qualified_native_request_inspect",
+  "capture_inference": false,
+  "usable_live": false,
+  "token_budget": {
+    "checked": true,
+    "fits": false,
+    "estimated_tokens": 1084636,
+    "envelope_bytes": 1084636,
+    "contextWindow": 828400,
+    "outputReserveTokens": 16384
+  },
+  "prompt_sha256": "0ac3ed107a024a98abff1fdf1b5aa12d53481d0de781711c81ae6f87c74aae44",
+  "exact_prompt_count": 1
+}

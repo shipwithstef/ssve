@@ -1,0 +1,55 @@
+{
+  "recorded_at": "2026-09-15T21:11:51.525Z",
+  "evidence_class": "local deterministic transport assessment; not native reviewer execution",
+  "wi": "WI-FW-PROMPT-INSPECTION-01",
+  "source_root": "/home/dianast/app-workspaces/ssve",
+  "source_sha256": {
+    "scripts/run-external-review.mjs": "97a2eac16071b3f6f6e1e87d6c99be5de6f190b74b7d03b0a42e641584d33e47",
+    "scripts/lib/isolated-plan-analysis.mjs": "e99d79c9fc3647db2e890d555f8b4b5bd20be678c97135d2cc296104ff0961a2",
+    "scripts/lib/two-box-role-launch.mjs": "0e4e414dbcab0b974f59ffff759450cc4d16795f571181edbe50fe4e9031985f",
+    "skills/research/scripts/dispatch-agy.mjs": "98522185a8484d8e019183706355b90c475290670a004df12d67b3e8d878e015"
+  },
+  "general_review_input": {
+    "bytes": 1235010,
+    "sha256": "354f1793c8fd8e060edd5ee7318dd0ffd47b00b4af7d05ee9eb710322f2c5134",
+    "file_exact": true,
+    "stdin_exact": true,
+    "multibyte_utf8_and_shell_literals_preserved": true
+  },
+  "single_argument_boundary": [
+    {
+      "argument_bytes": 100000,
+      "exit_code": 0,
+      "error_code": null
+    },
+    {
+      "argument_bytes": 131071,
+      "exit_code": 0,
+      "error_code": null
+    },
+    {
+      "argument_bytes": 131072,
+      "exit_code": null,
+      "error_code": "E2BIG"
+    },
+    {
+      "argument_bytes": 1048576,
+      "exit_code": null,
+      "error_code": "E2BIG"
+    }
+  ],
+  "two_box_role_guard": [
+    {
+      "facts_bytes": 90000,
+      "prompt_bytes": 90269,
+      "accepted": true
+    },
+    {
+      "facts_bytes": 110000,
+      "accepted": false,
+      "error": "frozen role input exceeds bounded prompt-inspection argv; narrow factual scope explicitly"
+    }
+  ],
+  "paid_model_calls": 0,
+  "live_harness_large_input_qualification": false
+}

@@ -3,7 +3,7 @@
  * Dual-pass scout assignment and coverage accounting.
  * No provider launches. Frozen snapshot ObjectRefs only.
  */
-import { canonicalJson, sha256Bytes, sha256Utf8, CoverageGap, getByRef, validateRoleOutput } from "./two-box-protocol.mjs";
+import { canonicalJson, sha256Bytes, sha256Utf8, CoverageGap, DEFAULT_LIMITS, getByRef, validateRoleOutput } from "./two-box-protocol.mjs";
 
 const KEYWORDS = new Set(["if", "for", "while", "switch", "catch", "return", "function", "typeof", "await", "new", "throw", "case"]);
 const FWD_KIND = new Set(["requirement", "entrypoint"]);
@@ -123,6 +123,30 @@ function loadSources(snapshot, consumerRoot) {
     byPath.set(rec.path, rec);
   }
   return { files, byPath };
+}
+
+// These bytes come from the immutable Contract input, never a later disk read.
+// Keep them separate from factual source so Open and traversal roots stay intact.
+export function constraintSources(constraints = { paths: [] }) {
+  if (!isPlainObject(constraints) || Object.keys(constraints).join() !== "paths" || !Array.isArray(constraints.paths)) {
+    throw new CoverageGap("constraints.paths required");
+  }
+  const seen = new Set();
+  return constraints.paths.map((file) => {
+    if (!isPlainObject(file) || Object.keys(file).sort().join() !== "path,sha256,text"
+        || typeof file.path !== "string" || !file.path || posixNorm(file.path) !== file.path
+        || file.path.includes("\\") || file.path === ".git" || file.path.startsWith(".git/")
+        || typeof file.text !== "string" || seen.has(file.path)) {
+      throw new CoverageGap("invalid or duplicate constraint path/text");
+    }
+    const bytes = Buffer.from(file.text, "utf8");
+    if (bytes.includes(0) || bytes.length > DEFAULT_LIMITS.maxBytes || sha256Bytes(bytes) !== file.sha256) {
+      throw new CoverageGap(`constraint bytes/hash mismatch or text budget exceeded: ${file.path}`);
+    }
+    seen.add(file.path);
+    return { path: file.path, sha256: file.sha256, retained_sha256: file.sha256,
+      truncated: false, ranges: [], lines: file.text.split("\n"), symbols: [], refs: [] };
+  });
 }
 
 function scanSymbols(lines) {
@@ -271,11 +295,11 @@ function buildGraph(files) {
   return { edges, gaps };
 }
 
-function collectCandidates(contract, files, byPath, edges, changeArchetype, gaps) {
+function collectCandidates(contract, files, byPath, edges, changeArchetype, gaps, contextByPath = new Map()) {
   const cands = [];
   for (const d of contract.decisions) {
     for (const c of d.source_citations) {
-      const file = byPath.get(c.path);
+      const file = byPath.get(c.path) || contextByPath.get(c.path);
       if (!file) {
         gaps.push({
           id: sid("gap", { path: c.path, reason: "cited path not in source snapshot" }),
@@ -298,6 +322,9 @@ function collectCandidates(contract, files, byPath, edges, changeArchetype, gaps
         });
         continue;
       }
+      // Constraint excerpts are supplied to both scouts, outside their distinct
+      // traversal roots. They must still resolve the Contract's source citations.
+      if (contextByPath.has(c.path)) continue;
       cands.push({
         path: c.path,
         start_line: c.start_line,
@@ -478,10 +505,19 @@ function stampRoots(role, roots) {
   }));
 }
 
-function buildAssignment(role, rawRoots, byPath, edges, changeArchetype, maxExcerptLines, maxTotalBytes, priorGaps) {
+function buildAssignment(role, rawRoots, byPath, edges, changeArchetype, maxExcerptLines, maxTotalBytes, priorGaps, contextFiles = []) {
   const gaps = [...priorGaps];
   const roots = stampRoots(role, rawRoots);
-  const excerpts = selectExcerpts(byPath, roots, maxExcerptLines, maxTotalBytes, gaps);
+  const contextRoots = contextFiles.map(file => {
+    if (file.lines.length > maxExcerptLines) gaps.push({
+      id: sid("gap", { path: file.path, reason: "constraint exceeds excerpt line budget", start: maxExcerptLines + 1 }),
+      path: file.path, reason: "constraint exceeds excerpt line budget",
+      start_line: maxExcerptLines + 1, end_line: file.lines.length, consequential: true,
+    });
+    return { path: file.path, start_line: 1, end_line: Math.min(file.lines.length, maxExcerptLines) };
+  });
+  const supplied = new Map([...byPath, ...contextFiles.map(file => [file.path, file])]);
+  const excerpts = selectExcerpts(supplied, [...roots, ...contextRoots], maxExcerptLines, maxTotalBytes, gaps);
   const supplied_denominator = denominator(excerpts);
   const questions = questionsFor(role, roots, changeArchetype);
   const known_gaps = uniqueGaps(gaps);
@@ -520,6 +556,7 @@ export function assignDualPass({
   changeArchetype = "feature",
   maxExcerptLines = 200,
   maxTotalBytes = 64000,
+  constraints = { paths: [] },
   ...rest
 } = {}) {
   if (Object.keys(rest).some((k) => /open/i.test(k))) {
@@ -533,12 +570,20 @@ export function assignDualPass({
   const snapshot = requireSnapshot(sourceSnapshot);
   const { files, byPath } = loadSources(snapshot, consumerRoot);
   if (!files.length) throw new CoverageGap("empty scout assignment");
+  const contextFiles = constraintSources(constraints);
+  for (const file of contextFiles) {
+    const factual = byPath.get(file.path);
+    if (factual && (factual.truncated || factual.retained_sha256 !== file.sha256)) {
+      throw new CoverageGap(`conflicting factual and constraint bytes: ${file.path}`);
+    }
+  }
+  const contextByPath = new Map(contextFiles.map(file => [file.path, file]));
   const { edges, gaps: graphGaps } = buildGraph(files);
   const seedGaps = [];
-  const cands = collectCandidates(contract, files, byPath, edges, changeArchetype, seedGaps);
+  const cands = collectCandidates(contract, files, byPath, edges, changeArchetype, seedGaps, contextByPath);
   const { forward, reverse } = pickDual(cands, files);
-  const scout_forward = buildAssignment("scout_forward", forward, byPath, edges, changeArchetype, maxExcerptLines, maxTotalBytes, [...graphGaps, ...seedGaps]);
-  const scout_reverse = buildAssignment("scout_reverse", reverse, byPath, edges, changeArchetype, maxExcerptLines, maxTotalBytes, [...graphGaps, ...seedGaps]);
+  const scout_forward = buildAssignment("scout_forward", forward, byPath, edges, changeArchetype, maxExcerptLines, maxTotalBytes, [...graphGaps, ...seedGaps], contextFiles);
+  const scout_reverse = buildAssignment("scout_reverse", reverse, byPath, edges, changeArchetype, maxExcerptLines, maxTotalBytes, [...graphGaps, ...seedGaps], contextFiles);
   if (!scout_forward.roots.length || !scout_reverse.roots.length || !scout_forward.questions.length || !scout_reverse.questions.length) {
     throw new CoverageGap("empty scout assignment");
   }

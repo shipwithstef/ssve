@@ -99,6 +99,19 @@ function validateIsolatedPlanAnalysis(host, value) {
       if (inspection.command !== "codex debug prompt-input") errors.push("codex: prompt_inspection.command must be codex debug prompt-input");
       if (inspection.scope !== "invocation") errors.push("codex: prompt_inspection.scope must be invocation");
       if (inspection.builder !== "same_as_live_launch") errors.push("codex: prompt_inspection.builder must be same_as_live_launch");
+      const large = inspection.large_request;
+      if (!isPlainObject(large)) {
+        errors.push("codex: prompt_inspection.large_request must declare planning byte and inspect transports");
+      } else {
+        if (large.planning_max_bytes !== 1048576) errors.push("codex: prompt_inspection.large_request.planning_max_bytes must be 1048576");
+        if (large.native_inspect !== "positional_prompt_input") errors.push("codex: prompt_inspection.large_request.native_inspect must be positional_prompt_input until help advertises file/stdin");
+        if (large.native_inspect_complete_input !== false) errors.push("codex: prompt_inspection.large_request.native_inspect_complete_input must be false for installed prompt-input");
+        if (large.oversized_prompt_transport !== "native_request_capture") errors.push("codex: prompt_inspection.large_request.oversized_prompt_transport must be native_request_capture");
+        if (large.capture_is_live_authority !== false) errors.push("codex: prompt_inspection.large_request.capture_is_live_authority must be false");
+        if (large.qualified_inspect_authorizes_live_stdin !== true) errors.push("codex: prompt_inspection.large_request.qualified_inspect_authorizes_live_stdin must be true");
+        if (large.token_budget_separate_from_bytes !== true) errors.push("codex: prompt_inspection.large_request.token_budget_separate_from_bytes must be true");
+        if (large.inference_uses_stdin !== true) errors.push("codex: prompt_inspection.large_request.inference_uses_stdin must be true");
+      }
     }
     const canary = value.live_canary;
     if (!isPlainObject(canary) || canary.required !== true) {
