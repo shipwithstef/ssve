@@ -21,6 +21,7 @@ import path from 'node:path';
 import { reportRepairKind, isIncompleteReviewReport, reportRepairPrompt, validateReportRepair, hasNegativeReviewEvidence, remainingReportRepairBudget } from './lib/review-report-recovery.mjs';
 import process from 'node:process';
 import { prepareReviewInputs } from './lib/review-inputs.mjs';
+import { readFrozenFile, readFrozenStream, GENERAL_REVIEW_MAX_BYTES } from './lib/frozen-request-input.mjs';
 import { fileURLToPath } from 'node:url';
 import { WI_ID_RE } from "../hooks/lib/wi-id.mjs";
 import { loadReviewerPolicy, resolveExternalReviewer } from './review-topology-v2.mjs';
@@ -370,41 +371,26 @@ export async function readReviewInput(options = {}, input = process.stdin) {
   // Keep the original request; never infer a replacement or consume partial input.
   if (options.inputFile) {
     try {
-      const filename = path.resolve(options.inputFile);
-      if (!(await stat(filename)).isFile()) throw invalid('review input must be a regular file');
-      return checked(await readFile(filename));
+      const frozen = readFrozenFile(path.resolve(options.inputFile), { maxBytes: GENERAL_REVIEW_MAX_BYTES });
+      return checked(frozen.bytes);
     } catch (error) { throw invalid(`cannot load review request: ${error.message}`); }
   }
   if (input.isTTY) throw invalid('review request was not supplied; interactive stdin is not supported');
   const timeoutMs = positiveInteger('SVC_EXTERNAL_REVIEW_INPUT_TIMEOUT_MS', 30_000);
   if (timeoutMs > 60_000) throw invalid('review input timeout must not exceed 60000 ms');
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    const cleanupInput = () => {
-      clearTimeout(timer);
-      input.removeListener('data', onData);
-      input.removeListener('end', onEnd);
-      input.removeListener('error', onError);
-      input.removeListener('close', onClose);
-      input.pause();
-    };
-    const onData = chunk => chunks.push(Buffer.from(chunk));
-    const onError = error => { cleanupInput(); reject(invalid(`review input failed: ${error.message}`)); };
-    const onClose = () => onError(new Error('stream closed before the complete request arrived'));
-    const onEnd = () => {
-      cleanupInput();
-      try { resolve(checked(Buffer.concat(chunks))); } catch (error) { reject(error); }
-    };
-    const timer = setTimeout(() => {
-      cleanupInput();
-      input.destroy();
-      reject(invalid(`review input did not finish within ${timeoutMs} ms; partial input discarded`));
-    }, timeoutMs);
-    input.on('data', onData);
-    input.once('end', onEnd);
-    input.once('error', onError);
-    input.once('close', onClose);
-  });
+  try {
+    const frozen = await readFrozenStream(input, { maxBytes: GENERAL_REVIEW_MAX_BYTES, timeoutMs });
+    return checked(frozen.bytes);
+  } catch (error) {
+    const message = String(error.message || error);
+    if (/did not finish within/.test(message)) {
+      throw invalid(message.replace('frozen request', 'review input'));
+    }
+    if (/stream closed before EOF/.test(message)) {
+      throw invalid('stream closed before the complete request arrived');
+    }
+    throw invalid(message);
+  }
 }
 
 function parseJsonObjectEnvelope(value) {

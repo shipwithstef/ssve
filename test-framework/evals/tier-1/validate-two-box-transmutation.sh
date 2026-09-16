@@ -16,6 +16,7 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 
 TESTS=(
   test-framework/tests/two-box-plan.test.mjs
+  test-framework/tests/two-box-large-request.test.mjs
   test-framework/tests/research-decision.test.mjs
   test-framework/tests/two-box-learning.test.mjs
   test-framework/tests/two-box-receipts.test.mjs

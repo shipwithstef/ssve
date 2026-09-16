@@ -6,7 +6,6 @@
  */
 import { spawn } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { validate } from "./json-schema-validator.mjs";
 import { assertEffectiveIsolation } from "./isolated-plan-analysis.mjs";
@@ -20,6 +19,7 @@ import {
   sha256Utf8,
   validateRoleOutput,
 } from "./two-box-protocol.mjs";
+import { PLANNING_REQUEST_MAX_BYTES, resolvePlanningTokenBudget } from "./frozen-request-input.mjs";
 
 const EVENTS = new Set(["thread.started", "turn.started", "turn.completed", "turn.failed", "item.started", "item.completed", "error"]);
 const ITEM_OK = new Set(["reasoning", "agent_message"]);
@@ -102,29 +102,21 @@ function requireRoleTuple(role, tuple) {
 }
 
 function localCatalogSupport(tuple) {
-  const catalogPath = path.join(os.homedir(), ".codex", "models_cache.json");
-  let raw;
-  try { raw = fs.readFileSync(catalogPath); }
-  catch { throw new IsolationUnsupported("local Codex models_cache.json is not installed"); }
-  let doc;
-  try { doc = JSON.parse(raw.toString("utf8")); }
-  catch { throw new IsolationUnsupported("local Codex models_cache.json is malformed"); }
-  const models = Array.isArray(doc.models) ? doc.models : [];
-  const row = models.find((m) => isPlainObject(m) && m.slug === tuple.model);
-  if (!row) throw new IsolationUnsupported(`local catalog does not list slug ${tuple.model}`);
-  const levels = Array.isArray(row.supported_reasoning_levels) ? row.supported_reasoning_levels : [];
-  if (!levels.some((lv) => isPlainObject(lv) && lv.effort === tuple.effort)) {
-    throw new IsolationUnsupported(`local catalog does not list effort ${tuple.effort} for ${tuple.model}`);
-  }
+  const budget = resolvePlanningTokenBudget(tuple);
   return {
-    path: catalogPath,
-    sha256: sha256Bytes(raw),
-    fetched_at: doc.fetched_at ?? null,
-    client_version: doc.client_version ?? null,
-    slug: tuple.model,
-    effort: tuple.effort,
+    path: budget.path,
+    sha256: budget.sha256,
+    fetched_at: budget.fetched_at,
+    client_version: budget.client_version,
+    slug: budget.slug,
+    effort: budget.effort,
     identity: "local_support_not_server",
     evidence: "local_models_cache",
+    context_window: budget.context_window,
+    max_context_window: budget.max_context_window,
+    contextWindow: budget.contextWindow,
+    outputReserveTokens: budget.outputReserveTokens,
+    maxInputTokens: budget.maxInputTokens,
   };
 }
 
@@ -137,7 +129,7 @@ export function buildRolePrompt({role, payload} = {}) {
     scout_forward:["initial_contract","assignment"],
     scout_reverse:["initial_contract","assignment"],
     contract_revise:["requirements","facts","constraints","initial_contract","scout_reports"],
-    assessor:["requirements","facts","original_open","original_contract","revised_contract","scout_reports","open_paragraphs"],
+    assessor:["requirements","facts","original_open","original_contract","revised_contract","scout_reports","open_paragraphs", ...(Object.hasOwn(payload,"constraints") ? ["constraints"] : [])],
   }[role];
   const allowed = new Set([...common,...fields]);
   for (const key of Object.keys(payload)) if (!allowed.has(key)) throw new Error(`unexpected ${role} input: ${key}`);
@@ -147,7 +139,9 @@ export function buildRolePrompt({role, payload} = {}) {
   if (fields.includes("assignment") && (!payload.assignment.ref || !isPlainObject(payload.assignment.value) || !Array.isArray(payload.assignment.value.excerpts))) throw new Error("actual assignment excerpts required");
   if (fields.includes("scout_reports") && (!Array.isArray(payload.scout_reports) || payload.scout_reports.length !== 2 || payload.scout_reports.some(report => !report.ref || !isPlainObject(report.output)))) throw new Error("both actual scout reports required");
   const prompt = `${ROLE_INSTRUCTIONS[role]}\n\n${canonicalJson(payload)}\n`;
-  if (Buffer.byteLength(prompt) > 100000) throw new IsolationUnsupported("frozen role input exceeds bounded prompt-inspection argv; narrow factual scope explicitly");
+  if (Buffer.byteLength(prompt) > PLANNING_REQUEST_MAX_BYTES) {
+    throw new IsolationUnsupported(`frozen role input exceeds byte limit ${PLANNING_REQUEST_MAX_BYTES}; token/context/output budgets are separate`);
+  }
   return prompt;
 }
 

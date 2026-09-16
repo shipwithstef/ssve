@@ -348,7 +348,8 @@
           "enum": [
             "permissions",
             "collaboration",
-            "multi_agent"
+            "multi_agent",
+            "team_collaboration"
           ]
         },
         "sha256": {

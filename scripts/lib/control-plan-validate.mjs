@@ -24,8 +24,8 @@ import {
   normalizeSelection,
   outputSchemaForCall,
 } from "./two-box-protocol.mjs";
-import { buildCodexConfigFlags, buildCodexExecArgs, diagnosePromptContamination } from "./isolated-plan-analysis.mjs";
-import { assignDualPass, assignmentCoverage } from "./two-box-scout-assign.mjs";
+import { buildCodexConfigFlags, buildCodexExecArgs, diagnosePromptContamination, assertIsolationAuthority } from "./isolated-plan-analysis.mjs";
+import { assignDualPass, assignmentCoverage, constraintSources } from "./two-box-scout-assign.mjs";
 import { buildRolePrompt, parseCodexJsonl } from "./two-box-role-launch.mjs";
 
 const SCHEMA = JSON.parse(
@@ -286,7 +286,8 @@ function validateControlPlanCore({
       fail(`${role}: common bindings mismatch`);
     }
     const keys = Object.keys(env.input || {}).filter((k) => k !== "bindings").sort();
-    if (canonicalJson(keys) !== canonicalJson([...INPUT_KEYS[role]].sort())) fail(`${role}: input shape ${keys.join(",")}`);
+    const expectedKeys = [...INPUT_KEYS[role], ...(role === "assessor" && Object.hasOwn(env.input || {}, "constraints") ? ["constraints"] : [])];
+    if (canonicalJson(keys) !== canonicalJson(expectedKeys.sort())) fail(`${role}: input shape ${keys.join(",")}`);
     if ((role === "scout_forward" || role === "scout_reverse" || role === "contract_revise")
       && Object.keys(env.input || {}).some((k) => /open/i.test(k))) {
       fail(`${role}: Open content refused`);
@@ -343,19 +344,32 @@ function validateControlPlanCore({
       if (SHA_RE.test(String(proofPrompt).trim())) fail(`${role}: prompt must include content, not only hashes`);
       if (sha256Utf8(proofPrompt) !== proof.prompt_sha256 || proof.prompt_sha256 !== launch.prompt_digest) fail(`${role}: prompt hash mismatch`);
       const nativeGot = loadCas(proof.native_prompt, consumerRoot, errors, `${role} native_prompt`);
+      let messages = null;
       if (nativeGot) {
         if (sha256Bytes(nativeGot.bytes) !== proof.native_prompt_sha256 || proof.native_prompt.sha256 !== nativeGot.sha256) {
           fail(`${role}: native_prompt hash mismatch`);
         }
-        let messages;
         try { messages = JSON.parse(nativeGot.bytes.toString("utf8").trim()); } catch (err) {
           fail(`${role}: native prompt bytes are not JSON: ${err.message}`);
         }
-        if (messages) {
-          const diagnosis = diagnosePromptContamination(messages, { prompt: proofPrompt, cwd: proofCwd });
+      }
+      try {
+        assertIsolationAuthority(proof, {
+          fixture,
+          requested: launch.requested,
+          schema: outputSchemaForCall(role),
+          inspectMessages: messages || undefined,
+        });
+      } catch (err) { fail(`${role}: isolation authority: ${err.message}`); }
+      if (messages) {
+          const diagnosis = diagnosePromptContamination(messages, {
+            prompt: proofPrompt,
+            cwd: proofCwd,
+            profile: proof.native_profile,
+            requireEnv: true,
+          });
           if (!diagnosis.ok || diagnosis.unknown) fail(`${role}: prompt contamination: ${(diagnosis.reasons || []).join("; ")}`);
           if (isPlain(proof.diagnosis) && proof.diagnosis.ok !== diagnosis.ok) fail(`${role}: recorded diagnosis disagrees with recomputation`);
-        }
       }
       try {
         const expectedConfig = buildCodexConfigFlags({tuple:launch.requested,disabledSkills:proof.disabled_skills});
@@ -394,6 +408,17 @@ function validateControlPlanCore({
       if (sha256Utf8(canonicalJson(env.input.facts)) !== factsGot.sha256) fail(`${role}: facts payload !== frozen_facts_ref`);
     }
   }
+
+  const constraints = stages.contract_box?.input?.constraints;
+  try {
+    constraintSources(constraints);
+    if (canonicalJson(stages.contract_revise?.input?.constraints) !== canonicalJson(constraints)) fail("revision constraints differ from frozen Contract input");
+    // Historic empty-context packets need no new assessor field. Nonempty
+    // constraints must be supplied identically to the decision maker.
+    if (constraints?.paths?.length || stages.assessor?.input?.constraints != null) {
+      if (canonicalJson(stages.assessor?.input?.constraints) !== canonicalJson(constraints)) fail("assessor constraints differ from frozen Contract input");
+    }
+  } catch (err) { fail(`constraints: ${err.message}`); }
 
   const promptDigests = ROLES.map(role => stages[role]?.launch?.prompt_digest);
   if (promptDigests.some(x=>!SHA_RE.test(x || "")) || body.prompt_digest !== sha256Utf8(canonicalJson(promptDigests))) fail("body.prompt_digest must bind all six launch prompts");
@@ -459,7 +484,7 @@ function validateControlPlanCore({
   if (assignments.scout_forward && assignments.scout_reverse && snapshot && stages.contract_box) {
     try {
       const facts = JSON.parse(factsGot.bytes.toString("utf8"));
-      const computed = assignDualPass({sourceSnapshot:snapshot,initialContract:stages.contract_box.output,consumerRoot,changeArchetype:facts.annotations?.change_archetype || "feature"});
+      const computed = assignDualPass({sourceSnapshot:snapshot,initialContract:stages.contract_box.output,consumerRoot,constraints,changeArchetype:facts.annotations?.change_archetype || "feature"});
       for (const role of ["scout_forward","scout_reverse"]) if (canonicalJson(assignments[role]) !== canonicalJson(computed[role])) fail(`${role}: assignment not derived from actual source snapshot`);
       const exposure = facts.source_exposure;
       if (!exposure || exposure.base_sha !== snapshot.base_sha || exposure.tree !== snapshot.tree || exposure.gitCommonDir !== identity.gitCommonDir || exposure.repoRoot !== identity.repoRoot) fail("factual source exposure differs from actual snapshot");

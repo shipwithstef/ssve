@@ -172,7 +172,7 @@ check("skill judgment consumers select the focused contract", () => {
 });
 
 check("two-box transmutation inputs select the focused validator", () => {
-  for (const input of ["scripts/two-box-plan.mjs", "scripts/lib/research-decision.mjs", "scripts/lib/two-box-protocol.mjs", "schemas/receipts/control-plan.schema.json", "skills/blind-control-plan/SKILL.md", "README.md", "test-framework/tests/two-box-plan.test.mjs", "test-framework/tests/research-decision.test.mjs", "test-framework/tests/two-box-learning.test.mjs", "test-framework/tests/two-box-receipts.test.mjs", "test-framework/evals/tier-1/validate-two-box-transmutation.sh"]) {
+  for (const input of ["scripts/two-box-plan.mjs", "scripts/lib/research-decision.mjs", "scripts/lib/two-box-protocol.mjs", "scripts/lib/frozen-request-input.mjs", "scripts/lib/native-planning-request-capture.mjs", "schemas/receipts/control-plan.schema.json", "skills/blind-control-plan/SKILL.md", "README.md", "test-framework/tests/two-box-plan.test.mjs", "test-framework/tests/two-box-large-request.test.mjs", "test-framework/tests/research-decision.test.mjs", "test-framework/tests/two-box-learning.test.mjs", "test-framework/tests/two-box-receipts.test.mjs", "test-framework/evals/tier-1/validate-two-box-transmutation.sh"]) {
     const result = selectTier1Validators([input]);
     assert.equal(result.valid, true, input);
     assert.equal(result.fallback_full, false, input);

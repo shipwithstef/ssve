@@ -32,7 +32,7 @@ import {
   validateRoleOutput,
 } from "./lib/two-box-protocol.mjs";
 import { diagnosePromptContamination } from "./lib/isolated-plan-analysis.mjs";
-import { assignDualPass, assignmentCoverage } from "./lib/two-box-scout-assign.mjs";
+import { assignDualPass, assignmentCoverage, constraintSources } from "./lib/two-box-scout-assign.mjs";
 import { buildRolePrompt, launchRole, preflightRole, parseCodexJsonl } from "./lib/two-box-role-launch.mjs";
 
 const PROBE = "CAPABILITY_PROBE_NOT_STAGE_RESULT";
@@ -521,6 +521,7 @@ async function runSix(ctx) {
   const frozenFacts = JSON.parse(getByRef(bindings.frozen_facts_ref, { start }).bytes.toString("utf8"));
   const factsPayload = frozenFacts;
   const constraints = readConstraints(consumerRoot, snapshot.base_sha, contractContext);
+  constraintSources(constraints);
   const probeRef = putJson({ [PROBE]: true }, start);
   const cleanups = [];
   try {
@@ -660,6 +661,7 @@ async function runSix(ctx) {
     sourceSnapshot: snapshot,
     initialContract,
     consumerRoot,
+    constraints,
     changeArchetype: typeof frozenFacts.annotations?.change_archetype === "string" ? frozenFacts.annotations.change_archetype : "feature",
   });
   const assignRefs = {
@@ -706,6 +708,7 @@ async function runSix(ctx) {
     bindings,
     requirements,
     facts: factsPayload,
+    ...(constraints.paths.length ? { constraints } : {}),
     original_open: { ref: collected.open_box.ref, output: collected.open_box.envelope.output, source_id_namespace: "open" },
     original_contract: { ref: collected.contract_box.ref, output: initialContract, source_id_namespace: "contract-original" },
     revised_contract: { ref: collected.contract_revise.ref, output: revised, source_id_namespace: "contract-revised" },
