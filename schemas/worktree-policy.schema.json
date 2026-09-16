@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seriousvibecoding.dev/schemas/worktree-policy.schema.json",
+  "title": "Owner Worktree Policy",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "default_root"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "default_root": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Base directory for centralized worktrees (e.g. '~/worktrees'). Will be created with configured permissions if missing."
+    },
+    "naming_strategy": {
+      "type": "string",
+      "enum": ["hierarchical", "flat"],
+      "default": "hierarchical",
+      "description": "'hierarchical' places worktrees under {default_root}/{repo-name}/{leaf}. 'flat' places worktrees under {default_root}/{repo-name}-{leaf}."
+    },
+    "permissions": {
+      "type": "string",
+      "pattern": "^0[0-7]{3}$",
+      "default": "0700",
+      "description": "Octal permissions string for the worktrees root directory (e.g. '0700')."
+    },
+    "projects": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "root": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Explicit custom root directory for this repository."
+          },
+          "naming_strategy": {
+            "type": "string",
+            "enum": ["hierarchical", "flat"],
+            "description": "Override naming strategy for this project."
+          },
+          "legacy_fallback": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether to also approve legacy in-repo .worktrees/ as an authorized fallback."
+          }
+        }
+      }
+    }
+  }
+}

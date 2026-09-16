@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "review_kind": "plan",
+  "rubric_score": 3,
+  "rubric_failures": [
+    2,
+    3,
+    4,
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "dependencies_needing_read": [],
+  "reviewer": {
+    "host": "grok",
+    "family": "xai",
+    "model": "grok-4.6",
+    "effort": "high"
+  },
+  "verdict": "fail",
+  "summary": "The plan names a hot-path security change (dynamic worktree-root whitelist, containment anchors, installer writes into $HOME) but does not bind the security interface, path layout, migration, or executor authority, and it has no mode-aware v5 contract or dispatch blueprints. AC trace and framework-lane upstream artifacts are missing (the cited spec is project-state.md). External-state coupling, commit-scoped rollback, and task-graph proof are not executable as written. Do not dispatch execute-changeset until those choices and contracts are in the plan.",
+  "findings": [
+    {
+      "id": "F-001",
+      "severity": "critical",
+      "claim": "Containment and root-whitelist behavior on the hook hot path is unspecified, so an executor would invent the security model.",
+      "analysis": "This changeset modifies literal-branch approval, svc-ensure-worktree containment, and several worktree detectors. Those run on tool/session/install paths and currently exist to prevent worktree/path escape. The plan only says roots will be 'dynamically whitelist[ed]' from policy while 'maintaining strict UID and symlink checks,' and that a 'containment anchor' will be 'passed through' creation, fresh setup, and forward completion. It does not specify the policy document shape, which paths may become approved roots, whether a user-writable ~/.svc/worktree-policy.json can add arbitrary same-UID directories, how symlink/UID checks compose with the new whitelist, what the containment anchor is (repo git-common-dir, policy root, both), or the deny behavior when policy is present but the candidate path is outside approved roots. Missing-policy fallback to 'standard layout' is not a fail-closed rule for a malformed or overly broad policy. Guessing any of this during execute can either reintroduce false-positive ancestor failures or weaken ancestry containment.",
+      "evidence": [
+        "Implementation Summary item 2: 'Updated hooks/lib/literal-branch.mjs to dynamically whitelist policy-approved roots while maintaining strict UID and symlink checks.'",
+        "Implementation Summary item 2: 'Updated scripts/svc-ensure-worktree.mjs to dynamically pass containment anchor through worktree creation, fresh setup, and forward completion, eliminating false-positive ancestor checks.'",
+        "External State: 'If policy is absent or unparseable, resolver defaults gracefully to standard layout.'",
+        "External State: 'Config File: User policy located at ~/.svc/worktree-policy.json (mode 0600).' with no schema fields, allowlist rule, or deny/fail-closed matrix.",
+        "No v5 implementation_approach or function/CLI contract for hooks/lib/worktree-policy.mjs, literal-branch.mjs, or svc-ensure-worktree.mjs."
+      ],
+      "proposed_fix": "Add a binding security contract before execution: schema fields for worktree-policy.json; exact approved-root algorithm (default root only vs explicit allowlist); deny vs fallback matrix for missing, unreadable, extra-root, symlink, and cross-UID cases; the concrete containment-anchor value and every call site in svc-ensure-worktree.mjs; and a negative proof (symlink ancestor, foreign UID, path outside approved roots) that must fail closed. Do not leave whitelist or fallback behavior to executor discretion."
+    },
+    {
+      "id": "F-002",
+      "severity": "high",
+      "claim": "Mode is unset and the plan has neither dispatch blueprints nor a complete inline v5 contract, leaving path layout and migration as unresolved consequential choices.",
+      "analysis": "The manifest has no mode: inline|dispatch field, no planning_contract / implementation_approach / executor_discretion, and no code or command blueprints. Under dispatch/absent rules that is incomplete-packet rejection; under inline rules the missing v5 fields and unresolved choices still fail readiness. The only layout stated is base directory ~/worktrees. Child identity is unspecified: ~/worktrees/<branch> collides across repositories that share a branch name; ~/worktrees/<repo>/<branch> and a content-addressed prefix do not. Existing in-repo .worktrees/ checkouts have no migrate / coexist / refuse rule, yet worktree.sh is supposed to 'seamlessly handle both' roots and svc-ensure-worktree is supposed to create/resume worktrees. Default policy JSON contents, resolver CLI argv/stdout, and setup's 'default policy settings' are also unbound. An executor cannot implement this without choosing identity, migration, and installer writes that the plan never sealed.",
+      "evidence": [
+        "Manifest header has Status APPROVED_FOR_EXECUTION but no mode, planning_contract, implementation_approach, or executor_discretion.",
+        "External State: 'Directory Root: Base external directory at ~/worktrees (mode 0700).' with no per-repo suffix rule.",
+        "task-3-cli AC Coverage: 'Command list, enter, remove, create work across centralized and legacy roots.' with no migration or collision rule.",
+        "task-1-policy creates schemas/worktree-policy.schema.json and two resolvers with no field list, defaults, or CLI contract.",
+        "task-4-setup: 'Initializes default policy settings if missing' with no default document bytes."
+      ],
+      "proposed_fix": "Declare mode: inline and fill v5 planning_contract, implementation_approach, and executor_discretion (or switch to dispatch and attach complete blueprints). Seal the checkout identity as an exact function of repo + branch, the legacy .worktrees/ coexistence/migration algorithm, the default policy JSON, and resolve-worktree-root.mjs argv/stdout. Re-review those lenses before execute."
+    },
+    {
+      "id": "F-003",
+      "severity": "high",
+      "claim": "AC-to-task coverage cannot be verified because the originating spec is the wrong artifact and no AC identifiers exist.",
+      "analysis": "The feature-spec path is docs/specs/project-state.md. In this repository that file is per-project pipeline state, not a feature spec, and this WI is framework work (WI-FW-CENTRALIZED-WORKTREE-01), which is supposed to trace through FRAMEWORK-STATE.md plus a real spec/work-item with acceptance criteria. The task graph only has informal 'AC Coverage' sentences ('Schema validates…', '100% passing tests…') with no AC-n IDs, no user-visible expected behavior, and no mapping table. Dimension (a) and inline rubric point 9 require original AC/technical trace, not a digest of hoped-for outcomes. Without numbered ACs, later review-exec cannot test implementation-vs-spec.",
+      "evidence": [
+        "Header: 'Feature Spec Path: docs/specs/project-state.md'",
+        "task-1 AC Coverage: 'Schema validates, policy loads defaults or custom overrides, paths resolve correctly.'",
+        "task-6 AC Coverage: '100% passing tests across unit and tier-1 suites.'",
+        "No AC table, no docs/specs/features/*, and no docs/specs/work-items/WI-FW-CENTRALIZED-WORKTREE-01 citation."
+      ],
+      "proposed_fix": "Point Feature Spec Path at the real WI/spec that contains numbered ACs (or write that spec first). Add an AC-to-task matrix with stable AC IDs covering policy load, legacy vs centralized paths, deny cases, setup init, and detector updates. Do not treat project-state.md as a spec."
+    },
+    {
+      "id": "F-004",
+      "severity": "high",
+      "claim": "Framework-lane upstream skills are neither completed with artifacts nor skipped with a cited decision.",
+      "analysis": "plan-changeset-trigger.md correctly requires this change to go through write-spec → plan-changeset → execute-changeset: it is a contract change (new schema/CLI) and a hot-path behavior change (hooks/lib, setup, worktree.sh, check-install-drift, tier-1). Lane dimension (g) still requires every mandatory upstream skill to be named with a completed artifact or a skip in .svc/pipeline-decisions.jsonl. This plan names no write-spec output, no design-tech, no review-security (despite UID/symlink/allowlist), and no skip receipts. Marking the plan APPROVED_FOR_EXECUTION before review-plan closes skips the gate this review is for.",
+      "evidence": [
+        "WI id WI-FW-CENTRALIZED-WORKTREE-01 and files include hooks/lib/*, setup, scripts/worktree.sh, test-framework/evals/tier-1/*.",
+        "Prerequisite Alignment Matrix lists Technical Design / Security Contract as column headers, not artifact paths.",
+        "No citation of docs/specs/features/*, docs/specs/decisions/*, review-security output, or .svc/pipeline-decisions.jsonl skip reasons.",
+        "Header Status: APPROVED_FOR_EXECUTION while this artifact is the review-plan input."
+      ],
+      "proposed_fix": "Add a lane-compliance table: write-spec, design-tech, and review-security each with artifact path + SHA, or an explicit skip line citing .svc/pipeline-decisions.jsonl. Change status to READY_FOR_REVIEW until this gate promotes the plan."
+    },
+    {
+      "id": "F-005",
+      "severity": "high",
+      "claim": "External-state writes to ~/.svc/worktree-policy.json and ~/worktrees are declared without coupling wiring, taxonomy coverage, probe evidence, or authority limits.",
+      "analysis": "The External State section is not an empty heading, but it is not a coupling table. It names a user config and a home-directory root, then lists invariants in prose. It does not mark rows coupled vs decoupled-justified, does not point each coupled row at a file/script/check, does not walk the 15-entry taxonomy, and does not cite a live probe of whether those paths already exist, their owners, or their modes. 'Defaults gracefully to standard layout' is a shared-namespace claim (all repos, this user, this host) with no denominator. The plan also changes identity, parallel ownership of checkouts, and deletion (worktree remove) without the adjacent plan-contract.json the mechanical protocol requires for those classes. Setup is tasked to create those paths at 0700/0600 with no executor_discretion cap on $HOME mutation, no 'already exists with wrong mode' behavior, and no guard against running that initialization from an unexpected cwd.",
+      "evidence": [
+        "Section '4. External State Lifecycle & Verification' lists Config File, Directory Root, Security Invariants, Rollback Safety — no coupled/wiring columns.",
+        "No line 'Untouched environments (walked the taxonomy, found nothing): …'.",
+        "No plan-contract.json despite identity, parallel worktree ownership, and remove/deletion.",
+        "task-4-setup validation is 'bash scripts/check-install-drift.sh --all-hosts', which does not probe ~/worktrees mode/owner or ~/.svc/worktree-policy.json.",
+        "No executor_discretion limiting installer writes outside the repo."
+      ],
+      "proposed_fix": "Replace section 4 with the protocol table (environment, state, coupled|decoupled-justified, wiring path). Add probe commands and required stdout for ls/stat/id on ~/worktrees and ~/.svc/worktree-policy.json, a taxonomy-untouched list, plan-contract.json for identity/ownership/deletion, and executor_discretion that names the exact mkdir/chmod/write operations allowed in $HOME."
+    },
+    {
+      "id": "F-006",
+      "severity": "high",
+      "claim": "There is no commit-scoped rollback path, and rerun/partial-failure semantics for installer and policy state are unspecified.",
+      "analysis": "Dimension (c) requires a concrete revert of the implementing commit(s). The plan's 'Rollback Safety' is a runtime fallback when policy is absent or unparseable, which is the opposite of restoring a known tree and does not undo ~/worktrees, policy.json, gitdir files, or hook behavior already deployed. Idempotency is also unbound: re-running setup if ~/worktrees exists with 0755, if policy.json exists with extra roots, if task-1 landed and task-2 failed, or if some hooks resolve the new root while worktree.sh still uses .worktrees/. Mixed hook/CLI roots after a partial execute is a likely broken state, and the plan gives no recovery command other than hoping missing policy maps to 'standard layout'.",
+      "evidence": [
+        "External State Rollback Safety: 'If policy is absent or unparseable, resolver defaults gracefully to standard layout.'",
+        "No git revert / restore --source / worktree cleanup sequence scoped to the feature commit.",
+        "task-4 'Initializes worktrees directory and default policy; guards against linked worktree execution' with no exists-wrong-mode or partial-rerun rule.",
+        "task-3 and task-2 can proceed in parallel after task-1, so a failed security patch still leaves new resolvers live."
+      ],
+      "proposed_fix": "Add a recovery section: revert the implementation commit(s); delete only WI-created git worktrees under the sealed layout after an explicit listing; leave pre-existing user policy/directories untouched unless created by this WI (record those paths in the exec receipt). Specify setup rerun: no chmod of a pre-existing ~/worktrees it did not create; refuse to overwrite a valid policy.json; and a single sequential cutover so resolvers and callers cannot diverge."
+    },
+    {
+      "id": "F-007",
+      "severity": "high",
+      "claim": "Task validation is inverted and the proof commands do not observe the claimed ACs or the 'all hooks' scope.",
+      "analysis": "task-1's validation command runs test-framework/tests/worktree-policy.test.mjs, but that file is CREATEd in task-6. task-2 validates with validate-literal-branch-worktree.sh, which task-6 MODIFIES. Those proofs are unreachable at the tasks that claim them. The execution sequence then runs validate-worktree-safety.sh, which is not in Files Planned; if that eval still asserts in-repo .worktrees/, execute fails, and if it does not get updated, the 'eliminate hardcoded /.worktrees/ patterns across all hooks' claim is unproven. task-3 success is `worktree.sh list` while ACs require create/enter/remove on both roots. task-4/task-7 success is `check-install-drift.sh --all-hosts`, which does not prove 0700 init, linked-worktree setup guard, or git rev-parse detection. task-5 success is `git diff WORKTREES.md`, which is file presence/diff, not doctrine correctness. The Prerequisite Alignment Matrix also omits task-7 entirely even though the task graph includes five hook/drift files.",
+      "evidence": [
+        "task-1 Validation Command: 'node --test test-framework/tests/worktree-policy.test.mjs' vs Files Planned CREATE of that file in task-6-tests.",
+        "task-2 Validation Command: 'bash test-framework/evals/tier-1/validate-literal-branch-worktree.sh' vs MODIFY of that file in task-6-tests.",
+        "Execution Command Sequence item 3 runs validate-worktree-safety.sh, which is absent from Files Planned.",
+        "task-7 AC Coverage: 'Eliminate hardcoded /.worktrees/ patterns across all hooks and drift checkers using git rev-parse' but Touched Files lists only durable-source.mjs, enforcement-core.mjs, svc-pre-commit-multi-host-check.sh, svc-session-start-healthcheck.mjs, check-install-drift.sh.",
+        "task-3 Validation Command: 'bash scripts/worktree.sh list'.",
+        "Prerequisite Alignment Matrix rows stop at task-6-tests; task-7-hooks is missing."
+      ],
+      "proposed_fix": "Move test-file creation to task-1 (or make task-1 validation a schema/node import smoke that does not need the later test file). Make task-2 depend on the eval update or fold the eval into task-2. Put validate-worktree-safety.sh in Files Planned if it must change, or add a grep proof that it already accepts external roots. Replace success commands with ones that observe create/enter/remove on both roots, stat 0700/0600, setup-in-worktree denial, and a repo-wide grep that no remaining runtime detector hardcodes /.worktrees/. Add task-7 to the alignment matrix."
+    },
+    {
+      "id": "F-008",
+      "severity": "medium",
+      "claim": "Declared write scope updates WORKTREES.md Rule 1 but leaves the in-repo .worktrees/ rule in AGENTS.md, so doctrine will fork on execute.",
+      "analysis": "AGENTS.md §7 Rule 1 currently requires all worktrees to live under .worktrees/ and never a sibling directory. This plan's purpose is to move checkouts to an external root and to rewrite WORKTREES.md Rule 1 accordingly. AGENTS.md is a required operator/agent contract in this repository and is not in Files Planned. Executing the plan as scoped produces two contradictory rules. FRAMEWORK-STATE.md is likewise the framework state file for this class of work and is not listed. This is not an invitation to expand into unrelated docs; it is a missing named write for documents that the change falsifies.",
+      "evidence": [
+        "Files Planned task-5-docs: only WORKTREES.md.",
+        "Implementation Summary item 3/5: centralized external paths plus 'Rule 1 and operational docs updated' limited to WORKTREES.md.",
+        "AGENTS.md §7 Rule 1 (review constraint): 'All worktrees live under `.worktrees/` — never `/tmp/`, never a sibling directory.'",
+        "AGENTS.md §9: framework work reads FRAMEWORK-STATE.md; that file is not in Files Planned."
+      ],
+      "proposed_fix": "Add AGENTS.md worktree-model rules (and FRAMEWORK-STATE.md if framework self-knowledge is required for this WI) to Files Planned and task-5, with the same Rule 1 text as WORKTREES.md. If those edits are intentionally deferred, record a skip decision that names the contradiction and a follow-up WI; do not execute a doctrine split."
+    }
+  ],
+  "certifications": []
+}

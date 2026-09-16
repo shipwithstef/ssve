@@ -1,0 +1,275 @@
+{
+  "schema_version": 2,
+  "launcher_version": "2.5.8",
+  "cli_version": "codex-cli-exec 0.154.0",
+  "request_id": "8be1062d-8d12-4320-aaa9-43042a3885b1",
+  "review_kind": "plan",
+  "candidate_digest": "976cabb6a022ad3af43df2e0c2008054479977e17c3c69292dd589cb9745335c",
+  "package_sha256": "e433c8aab56e99c7343d1931e3f30040893e3e83fbfd3d37014950747345a173",
+  "findings_schema_sha256": "bf012594cbd4a0500398beeb506538f5d6050379e0d6e31a30628cf55eb5a3fa",
+  "findings_sha256": "734998d102f1ede9db594d5e9b4995102fa4d7689560abbacd84bb259ac6b69a",
+  "cache_key": "a1abd7b4da382b90d3f0e597f905d4f3a975c975f9cddd200c85c8444c11305a",
+  "fixture_mode": false,
+  "started_at": "2026-09-16T08:24:55.228Z",
+  "finished_at": "2026-09-16T08:26:32.091Z",
+  "status": "success",
+  "classification": "success",
+  "requested_tuple": {
+    "orchestrator": "claude",
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6-sol",
+    "effort": "high"
+  },
+  "invocation_tuple": {
+    "orchestrator": "claude",
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6-sol",
+    "effort": "high"
+  },
+  "effective_tuple": {
+    "orchestrator": "claude",
+    "host": "codex",
+    "family": "openai",
+    "model": "gpt-5.6-sol",
+    "effort": "high"
+  },
+  "attempts": [
+    {
+      "index": 1,
+      "tuple": {
+        "orchestrator": "claude",
+        "host": "codex",
+        "family": "openai",
+        "model": "gpt-5.6-sol",
+        "effort": "high"
+      },
+      "started_at": "2026-09-16T08:25:02.923Z",
+      "finished_at": "2026-09-16T08:26:32.090Z",
+      "exit_code": 0,
+      "classification": "success",
+      "command": {
+        "binary": "codex",
+        "argv": [
+          "exec",
+          "--skip-git-repo-check",
+          "--sandbox",
+          "read-only",
+          "--ephemeral",
+          "--ignore-user-config",
+          "--ignore-rules",
+          "--strict-config",
+          "--model",
+          "gpt-5.6-sol",
+          "-c",
+          "model_reasoning_effort=\"high\"",
+          "--output-schema",
+          "/home/dianast/app-workspaces/ssve/.worktrees/feature-centralized-worktree-governance/schemas/external-review-findings.schema.json",
+          "--json",
+          "--output-last-message",
+          "/home/dianast/app-workspaces/ssve/.worktrees/feature-centralized-worktree-governance/.svc/external-review-artifacts/plan/976cabb6a022ad3af43df2e0c2008054479977e17c3c69292dd589cb9745335c/20260916T082455Z-2101709/attempt-1-findings.json",
+          "--color",
+          "never",
+          "-"
+        ]
+      },
+      "artifacts": {
+        "events": "/home/dianast/app-workspaces/ssve/.worktrees/feature-centralized-worktree-governance/.svc/external-review-artifacts/plan/976cabb6a022ad3af43df2e0c2008054479977e17c3c69292dd589cb9745335c/20260916T082455Z-2101709/attempt-1-events.jsonl",
+        "stderr": "/home/dianast/app-workspaces/ssve/.worktrees/feature-centralized-worktree-governance/.svc/external-review-artifacts/plan/976cabb6a022ad3af43df2e0c2008054479977e17c3c69292dd589cb9745335c/20260916T082455Z-2101709/attempt-1-stderr.log",
+        "findings": "/home/dianast/app-workspaces/ssve/.worktrees/feature-centralized-worktree-governance/.svc/external-review-artifacts/plan/976cabb6a022ad3af43df2e0c2008054479977e17c3c69292dd589cb9745335c/20260916T082455Z-2101709/attempt-1-findings.json"
+      },
+      "usage": {
+        "input_tokens": 58806,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 3639,
+        "reasoning_output_tokens": 1684,
+        "observed_models": []
+      }
+    }
+  ],
+  "reviewer_run": {
+    "commands": [
+      {
+        "binary": "codex",
+        "argv": [
+          "exec",
+          "--skip-git-repo-check",
+          "--sandbox",
+          "read-only",
+          "--ephemeral",
+          "--ignore-user-config",
+          "--ignore-rules",
+          "--strict-config",
+          "--model",
+          "gpt-5.6-sol",
+          "-c",
+          "model_reasoning_effort=\"high\"",
+          "--output-schema",
+          "/home/dianast/app-workspaces/ssve/.worktrees/feature-centralized-worktree-governance/schemas/external-review-findings.schema.json",
+          "--json",
+          "--output-last-message",
+          "/home/dianast/app-workspaces/ssve/.worktrees/feature-centralized-worktree-governance/.svc/external-review-artifacts/plan/976cabb6a022ad3af43df2e0c2008054479977e17c3c69292dd589cb9745335c/20260916T082455Z-2101709/attempt-1-findings.json",
+          "--color",
+          "never",
+          "-"
+        ]
+      }
+    ],
+    "output_artifacts": [
+      "/home/dianast/app-workspaces/ssve/.worktrees/feature-centralized-worktree-governance/.svc/external-review-artifacts/plan/976cabb6a022ad3af43df2e0c2008054479977e17c3c69292dd589cb9745335c/20260916T082455Z-2101709/attempt-1-events.jsonl",
+      "/home/dianast/app-workspaces/ssve/.worktrees/feature-centralized-worktree-governance/.svc/external-review-artifacts/plan/976cabb6a022ad3af43df2e0c2008054479977e17c3c69292dd589cb9745335c/20260916T082455Z-2101709/attempt-1-stderr.log",
+      "/home/dianast/app-workspaces/ssve/.worktrees/feature-centralized-worktree-governance/.svc/external-review-artifacts/plan/976cabb6a022ad3af43df2e0c2008054479977e17c3c69292dd589cb9745335c/20260916T082455Z-2101709/attempt-1-findings.json"
+    ]
+  },
+  "fallback": {
+    "eligible": false,
+    "used": false,
+    "reason": null
+  },
+  "override": {
+    "used": false,
+    "authority": null,
+    "source": null,
+    "path": null,
+    "expected_sha256": null,
+    "actual_sha256": null
+  },
+  "policy": {
+    "version": 2,
+    "profile": "governed-triple:codex-sol-high",
+    "source": "owner-config",
+    "resolved_at": "2026-09-16T08:24:55.228Z",
+    "effective_window": {
+      "starts_at": null,
+      "ends_at": null
+    },
+    "cutover_utc": null,
+    "cutover_local": null,
+    "timezone": null,
+    "selection_sha256": "373ae8811d84db55fe4baf3a828ac4e834a3fc66012aa5bcad437a920740cd30",
+    "selection_expires_at": null,
+    "selection_authority": "repository-owner"
+  },
+  "protocol": {
+    "process_invocations": 1,
+    "configured_turn_ceiling": null,
+    "configured_budget_usd": null,
+    "reported_turns": null,
+    "stop_reason": null,
+    "terminal_reason": null,
+    "errors": []
+  },
+  "route": {
+    "kind": "owner_config_primary",
+    "switching_enabled": false,
+    "cli_fallback_configured": false,
+    "evidence": "requested_primary"
+  },
+  "effective_effort": {
+    "value": "high",
+    "provenance": "requested"
+  },
+  "model_attestation": {
+    "level": "requested_accepted",
+    "requested_model": "gpt-5.6-sol",
+    "observed_models": [],
+    "evidence": "exact_model_argv_plus_successful_auth_schema_exit_no_server_model_echo"
+  },
+  "phase_guard": {
+    "applicable": true,
+    "kind": "plan",
+    "decision": "allow-override",
+    "reason": "owner_retro_plan_override",
+    "wi": "WI-FW-CENTRALIZED-WORKTREE-01",
+    "pre_execution_base": "780c766bd21d857a746efc3e044ed9ae9134cdcc",
+    "plan_manifest_sha256": "976cabb6a022ad3af43df2e0c2008054479977e17c3c69292dd589cb9745335c",
+    "exec_record_present": false,
+    "exec_record_path": null,
+    "implementation_diverged": true,
+    "diverged_files": [
+      "WORKTREES.md",
+      "hooks/lib/durable-source.mjs",
+      "hooks/lib/enforcement-core.mjs",
+      "hooks/lib/literal-branch.mjs",
+      "hooks/lib/worktree-policy.mjs",
+      "hooks/svc-pre-commit-multi-host-check.sh",
+      "hooks/svc-session-start-healthcheck.mjs",
+      "schemas/worktree-policy.schema.json",
+      "scripts/check-install-drift.sh",
+      "scripts/lib/resolve-worktree-root.mjs",
+      "scripts/svc-ensure-worktree.mjs",
+      "scripts/worktree.sh",
+      "setup",
+      "test-framework/evals/tier-1/validate-literal-branch-worktree.sh",
+      "test-framework/tests/worktree-policy.test.mjs"
+    ],
+    "base_resolved": true,
+    "override": {
+      "used": true,
+      "authority": "repository-owner",
+      "source": "owner-interactive",
+      "path": "/home/dianast/app-workspaces/ssve/.worktrees/feature-centralized-worktree-governance/.svc/phase-override.json",
+      "expected_sha256": "71e508a4fcdbbc3a17194114bd41446373614975ccaebd3cbe04f8ca3ac6fbb9",
+      "actual_sha256": "71e508a4fcdbbc3a17194114bd41446373614975ccaebd3cbe04f8ca3ac6fbb9",
+      "kind": "retro-plan-review"
+    }
+  },
+  "package_context": {
+    "version": 1,
+    "context_root": "/home/dianast/app-workspaces/ssve/.worktrees/feature-centralized-worktree-governance",
+    "base_package_sha256": "61702823c3db4ba15088c4d5c6d65e40f6de4d35247ca43d6aef538d46bd3976",
+    "files": [
+      {
+        "path": "target:AGENTS.md",
+        "sha256": "b2b56d3a07f2a0042cfde526ff19b3092addc9d9ab07cc6b60613c140c62ae56",
+        "bytes": 27836
+      },
+      {
+        "path": "target:CLAUDE.md",
+        "sha256": "79a934cf738c4f60001e3173f6ef82d44b23292f84121f41bf7aba73923f5a54",
+        "bytes": 11597
+      },
+      {
+        "path": "framework:skills/review-plan/SKILL.md",
+        "sha256": "cc9ff711eb50dbae24554bca25a1959c0e5e4848600b29215ee7d0d82c4e0d8d",
+        "bytes": 30215
+      },
+      {
+        "path": "framework:skills/review-cross-model/SKILL.md",
+        "sha256": "4a98912c8cb4fb364ddba5f975c2b9fdda58460e875ec43488aca9f32cee11c8",
+        "bytes": 27249
+      },
+      {
+        "path": "framework:references/plan-review-protocol.md",
+        "sha256": "d280186de4646a6e82217b9be17db46facc9653d082b02c0080772403e7afe12",
+        "bytes": 12889
+      },
+      {
+        "path": "framework:rules/plan-changeset-trigger.md",
+        "sha256": "63385c5d1d31e0afb83118184bbe8c5ff20fabf2f9c815a1d81679d3b956ebba",
+        "bytes": 3661
+      }
+    ]
+  },
+  "cache": {
+    "disposition": "published",
+    "reusable": true,
+    "entry": "/home/dianast/app-workspaces/ssve/.worktrees/feature-centralized-worktree-governance/.svc/external-review-cache/v1/a1abd7b4da382b90d3f0e597f905d4f3a975c975f9cddd200c85c8444c11305a"
+  },
+  "artifacts": {
+    "findings": "/home/dianast/app-workspaces/ssve/.worktrees/feature-centralized-worktree-governance/.svc/external-review-artifacts/plan/976cabb6a022ad3af43df2e0c2008054479977e17c3c69292dd589cb9745335c/20260916T082455Z-2101709/findings.json",
+    "receipt": "/home/dianast/app-workspaces/ssve/.worktrees/feature-centralized-worktree-governance/.svc/external-review-artifacts/plan/976cabb6a022ad3af43df2e0c2008054479977e17c3c69292dd589cb9745335c/20260916T082455Z-2101709/receipt.json",
+    "package": "/home/dianast/app-workspaces/ssve/.worktrees/feature-centralized-worktree-governance/.svc/external-review-artifacts/plan/976cabb6a022ad3af43df2e0c2008054479977e17c3c69292dd589cb9745335c/20260916T082455Z-2101709/review-package.bin",
+    "capabilities": "/home/dianast/app-workspaces/ssve/.worktrees/feature-centralized-worktree-governance/.svc/external-review-artifacts/plan/976cabb6a022ad3af43df2e0c2008054479977e17c3c69292dd589cb9745335c/20260916T082455Z-2101709/capabilities.log"
+  },
+  "usage": {
+    "input_tokens": 58806,
+    "cached_input_tokens": 0,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 3639,
+    "reasoning_output_tokens": 1684,
+    "observed_models": []
+  }
+}
