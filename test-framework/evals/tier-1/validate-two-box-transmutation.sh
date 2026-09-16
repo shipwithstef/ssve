@@ -32,9 +32,19 @@ if (e.usable_live !== false) throw new Error("usable_live");
 if (e.token_budget?.checked !== true || e.token_budget?.fits !== false) throw new Error("token_budget");
 '
 
+node --input-type=module -e '
+import fs from "node:fs";
+import crypto from "node:crypto";
+const b = fs.readFileSync("test-framework/evals/tier-1/fixtures/two-box/canary03-executor-stdout.jsonl");
+const sha = crypto.createHash("sha256").update(b).digest("hex");
+if (sha !== "fa5da28b6c7dc1510c4c9de940158f1f3c97b8113b637a8944da41e58de77873") throw new Error(sha);
+if (b.length !== 6143) throw new Error(String(b.length));
+'
+
 TESTS=(
   test-framework/tests/two-box-plan.test.mjs
   test-framework/tests/two-box-large-request.test.mjs
+  test-framework/tests/two-box-executor-scorer.test.mjs
   test-framework/tests/research-decision.test.mjs
   test-framework/tests/two-box-learning.test.mjs
   test-framework/tests/two-box-receipts.test.mjs

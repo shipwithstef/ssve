@@ -27,6 +27,9 @@
       "expected": {
         "classification": "amendment",
         "source_rule": "A new/upgraded dependency is an amendment",
+        "accepted_source_rules": [
+          "Amendments (new/upgraded dependency; config/env; external side effect; API/behavior; architecture/state ownership; larger paths/authority; changed proof/AC) reopen the affected source decision/contract and review proof using already-given owner intent; do not repeatedly ask routine permission."
+        ],
         "justification": "A new external package is an amendment and must reopen the affected source decision and review proof.",
         "affected_decisions": ["dependency-set"],
         "required_proof": "Reopen the affected source decision/contract and review proof using already-given owner intent."
