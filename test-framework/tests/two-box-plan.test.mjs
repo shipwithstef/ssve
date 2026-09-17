@@ -283,6 +283,7 @@ test('strict role parser rejects tools, broken lines, truncated turns, and wrong
  assert.deepEqual(launcher.parseCodexJsonl(codexEvents([]),'open_box'),{plan:'Use the inspected interface.'});
  for(const type of ['command_execution','file_change','web_search','mcp_tool_call','unknown_tool'])assert.throws(()=>launcher.parseCodexJsonl(codexEvents([{type:'item.completed',item:{type}}]),'open_box'),/tool|unknown/);
  assert.throws(()=>launcher.parseCodexJsonl('BROKEN\n'+codexEvents([]),'open_box'),/malformed/);
+ assert.throws(()=>launcher.parseCodexJsonl(codexEvents([{type:'turn.failed',error:{message:'maximum context length exceeded'}}]),'open_box'),/turn.failed: maximum context length exceeded/);
  assert.throws(()=>launcher.parseCodexJsonl(codexEvents([]).split('\n').slice(0,-1).join('\n'),'open_box'),/terminal|truncated/);
  assert.throws(()=>launcher.parseCodexJsonl(codexEvents([]).replace('Use the inspected interface.',''),'open_box'),/minLength/);
  assert.throws(()=>launcher.parseCodexJsonl(codexEvents([{type:'turn.started'}]),'open_box'),/duplicate/);

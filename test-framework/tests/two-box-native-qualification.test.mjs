@@ -8,8 +8,10 @@ test('installed Codex qualifies a complete 1MiB frozen request without inference
   assert.equal(evidence.frozen_request.transport, 'native_request_capture');
   assert.equal(evidence.inspection_authority, 'qualified_native_request_inspect');
   assert.equal(evidence.capture_inference, false);
-  assert.equal(evidence.usable_live, false);
-  assert.equal(evidence.token_budget.fits, false);
+  assert.equal(evidence.usable_live, true);
+  assert.equal(evidence.token_budget.fits, null);
+  assert.equal(evidence.token_budget.enforcement, 'native_runner');
+  assert.equal(evidence.token_budget.estimate_kind, 'utf8_byte_upper_bound');
   assert.equal(evidence.token_budget.checked, true);
   assert.equal(evidence.inference_calls, 0);
   assert.equal(evidence.exact_prompt_count, 1);

@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 import * as isolation from "./lib/isolated-plan-analysis.mjs";
 import * as capture from "./lib/native-planning-request-capture.mjs";
 import * as protocol from "./lib/two-box-protocol.mjs";
+import { getObject } from "./lib/review-evidence-store.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const EVIDENCE = path.join(ROOT, "docs/specs/evidence/framework-large-input/native-1mib-inspect.json");
@@ -45,6 +46,7 @@ export async function qualifyNative1MiB({ writeEvidence = false } = {}) {
       fixture: false,
       requested: tuple,
       schema: protocol.outputSchemaForCall("open_box"),
+      inspectMessages: JSON.parse(getObject(result.proof.native_prompt.sha256, { start: ROOT }).bytes.toString("utf8")),
     });
     const evidence = {
       recorded_at: new Date().toISOString(),
@@ -59,6 +61,8 @@ export async function qualifyNative1MiB({ writeEvidence = false } = {}) {
         checked: result.proof.token_budget.checked,
         fits: result.proof.token_budget.fits,
         estimated_tokens: result.proof.token_budget.estimated_tokens,
+        estimate_kind: result.proof.token_budget.estimate_kind,
+        enforcement: result.proof.token_budget.enforcement,
         envelope_bytes: result.proof.token_budget.envelope_bytes,
         contextWindow: result.proof.token_budget.contextWindow,
         outputReserveTokens: result.proof.token_budget.outputReserveTokens,

@@ -28,8 +28,13 @@ if (!/^[a-f0-9]{64}$/.test(e.frozen_request?.sha256 || "")) throw new Error("fro
 if (e.frozen_request.transport !== "native_request_capture") throw new Error("transport");
 if (e.inspection_authority !== "qualified_native_request_inspect") throw new Error("inspection_authority");
 if (e.capture_inference !== false) throw new Error("capture_inference");
-if (e.usable_live !== false) throw new Error("usable_live");
-if (e.token_budget?.checked !== true || e.token_budget?.fits !== false) throw new Error("token_budget");
+if (e.token_budget?.checked !== true) throw new Error("token_budget");
+if (e.token_budget.enforcement === "native_runner") {
+  if (e.usable_live !== true || e.token_budget.fits !== null || e.token_budget.estimate_kind !== "utf8_byte_upper_bound") throw new Error("unknown token fit");
+} else {
+  // Retain the original no-inference inspection as historical evidence.
+  if (e.usable_live !== false || e.token_budget.fits !== false || e.token_budget.enforcement != null) throw new Error("historical token_budget");
+}
 '
 
 node --input-type=module -e '

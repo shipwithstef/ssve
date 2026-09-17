@@ -110,17 +110,24 @@ export function assertTokenContextOutputReserve({
   for (const [label, value] of [["maxInputTokens", maxInputTokens], ["contextWindow", contextWindow], ["outputReserveTokens", outputReserveTokens]]) {
     if (value != null && (!Number.isInteger(value) || value < 0)) fail(`${label} must be a non-negative integer`);
   }
+  if (maxInputTokens === 0) fail("maxInputTokens must allow input");
+  if (contextWindow != null && (outputReserveTokens ?? 0) >= contextWindow) {
+    fail("output reserve leaves no input space in contextWindow");
+  }
   const estimated = conservativeTokenUpperBound(requestBytes);
-  if (maxInputTokens != null && estimated > maxInputTokens) {
-    fail(`estimated input tokens ${estimated} exceed maxInputTokens ${maxInputTokens}; byte limit is a separate check`);
-  }
-  if (contextWindow != null) {
-    const reserve = outputReserveTokens ?? 0;
-    if (estimated + reserve > contextWindow) {
-      fail(`estimated input tokens ${estimated} plus output reserve ${reserve} exceed contextWindow ${contextWindow}; byte limit is a separate check`);
-    }
-  }
-  return { estimated_tokens: estimated, checked: true };
+  const upperBoundFits = (maxInputTokens == null || estimated <= maxInputTokens)
+    && (contextWindow == null || estimated + (outputReserveTokens ?? 0) <= contextWindow);
+  // An upper bound below the limit can establish fit; one above it cannot
+  // establish overflow. Do not reject valid text as though bytes were tokens.
+  // The native runner enforces actual model capacity when fit is unknown.
+  return {
+    estimated_tokens: estimated,
+    estimate_kind: "utf8_byte_upper_bound",
+    checked: true, // Budget metadata checked, not a model-specific token count.
+    fits: upperBoundFits ? true : null,
+    enforcement: upperBoundFits ? "byte_upper_bound" : "native_runner",
+    reason: upperBoundFits ? null : "Token fit unknown: byte upper bound exceeds budget; native runner enforces actual context capacity.",
+  };
 }
 
 export function freezeRequestBytes({ bytes, dir, filename = "frozen-request.txt", maxBytes = PLANNING_REQUEST_MAX_BYTES } = {}) {

@@ -537,8 +537,9 @@ export function assertIsolationAuthority(proof, { fixture = false, requested, sc
     fail("usable_live requires inspect evidence to authenticate envelope bytes");
   }
   if (proof.token_budget?.checked !== true) fail("live inspection requires checked token/context/output reserve");
+  if (![true, false, null].includes(proof.token_budget.fits)) fail("token_budget.fits must be true, false, or null");
   if (proof.token_budget.fits !== false) {
-    assertTokenContextOutputReserve({
+    const checked = assertTokenContextOutputReserve({
       requestBytes: Number.isInteger(proof.token_budget.envelope_bytes) && proof.token_budget.envelope_bytes > 0
         ? proof.token_budget.envelope_bytes
         : frozen.byteLength + (Number.isInteger(proof.token_budget.envelope_bytes) ? proof.token_budget.envelope_bytes : 0),
@@ -547,6 +548,14 @@ export function assertIsolationAuthority(proof, { fixture = false, requested, sc
       outputReserveTokens: proof.token_budget.outputReserveTokens ?? null,
       requireChecked: true,
     });
+    if (proof.token_budget.fits !== checked.fits) fail("token_budget.fits does not match byte upper bound; unknown is not proven fit");
+    if (checked.fits === null || proof.token_budget.enforcement != null) {
+      if (proof.token_budget.enforcement !== checked.enforcement
+        || proof.token_budget.estimate_kind !== checked.estimate_kind
+        || proof.token_budget.estimated_tokens !== checked.estimated_tokens) {
+        fail("token_budget must declare the reproduced estimate and native runner enforcement for unknown fit");
+      }
+    }
   }
   return proof;
 }
@@ -706,7 +715,7 @@ export function assertEffectiveIsolation({
           outputReserveTokens: tokenBudget.outputReserveTokens,
           requireChecked: true,
         });
-        return { ...checked, fits: true };
+        return checked;
       } catch (error) {
         if (mustFit) throw error;
         return {
@@ -862,7 +871,8 @@ export function assertEffectiveIsolation({
       tokenCheck.captured_body_bytes = Number.isInteger(captureProof?.body_bytes) ? captureProof.body_bytes : null;
     }
     const stored = putObject(inspectRaw, { start: consumerRoot });
-    const liveEligible = !offlineMode && tokenCheck.fits === true;
+    const liveEligible = !offlineMode && (tokenCheck.fits === true
+      || (tokenCheck.fits === null && tokenCheck.enforcement === "native_runner"));
     const proof = {
       role,
       prompt,
@@ -896,8 +906,10 @@ export function assertEffectiveIsolation({
       },
       token_budget: offlineMode ? { checked: false, fits: false, estimated_tokens: tokenCheck.estimated_tokens } : {
         checked: true,
-        fits: tokenCheck.fits === true,
+        fits: tokenCheck.fits,
         estimated_tokens: tokenCheck.estimated_tokens,
+        estimate_kind: tokenCheck.estimate_kind ?? null,
+        enforcement: tokenCheck.enforcement ?? null,
         envelope_bytes: tokenCheck.envelope_bytes ?? 0,
         captured_body_bytes: tokenCheck.captured_body_bytes ?? null,
         maxInputTokens: tokenBudget.maxInputTokens,

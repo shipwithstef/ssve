@@ -78,16 +78,16 @@ test('frozen request identity covers 99KB 101KB 256KB and 1MiB with UTF-8 and sh
     assert.throws(() => freeze.assertTokenContextOutputReserve({
       requestBytes: 1048576, requireChecked: true,
     }), /token\/context\/output reserve required/);
-    assert.throws(() => freeze.assertTokenContextOutputReserve({ requestBytes: 1048576, maxInputTokens: 10 }), /maxInputTokens/);
+    assert.equal(freeze.assertTokenContextOutputReserve({ requestBytes: 1048576, maxInputTokens: 10 }).fits, null);
     assert.throws(() => freeze.assertTokenContextOutputReserve({
       requestBytes: 40, contextWindow: 20, outputReserveTokens: 20,
     }), /contextWindow/);
     assert.equal(freeze.assertTokenContextOutputReserve({
       requestBytes: 40, contextWindow: 1000, outputReserveTokens: 16, maxInputTokens: 100,
     }).checked, true);
-    assert.throws(() => freeze.assertTokenContextOutputReserve({
+    assert.equal(freeze.assertTokenContextOutputReserve({
       requestBytes: 1048576, contextWindow: 828400, outputReserveTokens: 16384, maxInputTokens: 828400,
-    }), /contextWindow|maxInputTokens/);
+    }).fits, null);
     assert.equal(freeze.assertTokenContextOutputReserve({
       requestBytes: 200000, contextWindow: 828400, outputReserveTokens: 16384, maxInputTokens: 828400,
     }).checked, true);
@@ -95,6 +95,23 @@ test('frozen request identity covers 99KB 101KB 256KB and 1MiB with UTF-8 and sh
     assert.equal(capture.PLANNING_CAPTURE_BODY_MAX_BYTES, 8 * 1048576);
     assert.equal(JSON.stringify({ prompt: '"'.repeat(1048576) }).length < capture.PLANNING_CAPTURE_BODY_MAX_BYTES, true);
   });
+});
+
+test('byte upper bound exceeding a token budget is unknown, not proof of overflow', () => {
+  const budget = { contextWindow: 828400, maxInputTokens: 828400, outputReserveTokens: 16384, requireChecked: true };
+  const result = freeze.assertTokenContextOutputReserve({ requestBytes: 965752, ...budget });
+  assert.equal(result.estimated_tokens, 965752);
+  assert.equal(result.estimate_kind, 'utf8_byte_upper_bound');
+  assert.equal(result.fits, null);
+  assert.equal(result.enforcement, 'native_runner');
+  assert.equal(result.checked, true);
+  const fitting = freeze.assertTokenContextOutputReserve({ requestBytes: 812016, ...budget });
+  assert.equal(fitting.fits, true);
+  assert.equal(fitting.enforcement, 'byte_upper_bound');
+  assert.equal(freeze.assertTokenContextOutputReserve({ requestBytes: 812017, ...budget }).fits, null);
+  assert.throws(() => freeze.assertTokenContextOutputReserve({ requestBytes: 10, ...budget, maxInputTokens: 0 }), /must allow input/);
+  assert.throws(() => freeze.assertTokenContextOutputReserve({ requestBytes: 10, ...budget, outputReserveTokens: 828400 }), /no input space/);
+  assert.throws(() => freeze.assertTokenContextOutputReserve({ requestBytes: 10, ...budget, contextWindow: NaN }), /non-negative integer/);
 });
 
 test('missing truncated altered and empty frozen files fail closed', async () => {
@@ -481,6 +498,21 @@ test('diagnostic capture cannot flip usable_live and live requires a qualified a
     requested: { model: 'gpt-5.6-sol', effort: 'high' },
     inspectMessages,
   });
+  const unknown = {
+    ...proof,
+    token_budget: {
+      ...token,
+      ...freeze.assertTokenContextOutputReserve({ requestBytes: envelope_bytes, maxInputTokens: 10, contextWindow: 1000, outputReserveTokens: 16 }),
+      maxInputTokens: 10,
+    },
+  };
+  assert.equal(unknown.token_budget.fits, null);
+  isolation.assertIsolationAuthority(unknown, { fixture: false, requested: { model: 'gpt-5.6-sol', effort: 'high' }, inspectMessages });
+  for (const mutation of [{ fits: true }, { enforcement: undefined }, { estimate_kind: 'model_token_count' }, { estimated_tokens: 1 }, { fits: undefined }]) {
+    assert.throws(() => isolation.assertIsolationAuthority({ ...unknown, token_budget: { ...unknown.token_budget, ...mutation } }, {
+      fixture: false, requested: { model: 'gpt-5.6-sol', effort: 'high' }, inspectMessages,
+    }), /token_budget/);
+  }
   assert.throws(() => isolation.assertIsolationAuthority({
     ...proof,
     native_profile: { ...profile, sha256: 'd'.repeat(64) },
@@ -672,13 +704,13 @@ test('complete request bytes count the serialized envelope, not digest summaries
     contextWindow: 280,
     outputReserveTokens: 16,
   });
-  assert.throws(() => freeze.assertTokenContextOutputReserve({
+  assert.equal(freeze.assertTokenContextOutputReserve({
     requestBytes: measured,
     maxInputTokens: 250,
     contextWindow: 280,
     outputReserveTokens: 16,
     requireChecked: true,
-  }), /contextWindow|maxInputTokens/);
+  }).fits, null);
   const padded = capture.completeRequestBytes({
     items,
     schema,
@@ -691,13 +723,13 @@ test('complete request bytes count the serialized envelope, not digest summaries
     contextWindow: measured + 80,
     outputReserveTokens: 16,
   });
-  assert.throws(() => freeze.assertTokenContextOutputReserve({
+  assert.equal(freeze.assertTokenContextOutputReserve({
     requestBytes: padded,
     maxInputTokens: measured + 50,
     contextWindow: measured + 80,
     outputReserveTokens: 16,
     requireChecked: true,
-  }), /contextWindow|maxInputTokens/);
+  }).fits, null);
   const capturedBody = measured + 80;
   assert.equal(capture.completeRequestBytes({ items, schema, semantic, capturedBodyBytes: capturedBody }), capturedBody);
   const binarySha = 'c'.repeat(64);
@@ -779,7 +811,7 @@ test('ordinary review file and stream share frozen identity through 1.23MB', asy
   });
 });
 
-test('retained native 1MiB qualification evidence is complete and not live', () => {
+test('retained native 1MiB qualification evidence is complete and never claims inference', () => {
   const evidence = JSON.parse(fs.readFileSync(new URL('../../docs/specs/evidence/framework-large-input/native-1mib-inspect.json', import.meta.url)));
   assert.equal(evidence.evidence_class, 'native_no_inference_1mib');
   assert.equal(evidence.inference_calls, 0);
@@ -788,8 +820,15 @@ test('retained native 1MiB qualification evidence is complete and not live', () 
   assert.equal(evidence.frozen_request.transport, 'native_request_capture');
   assert.equal(evidence.inspection_authority, 'qualified_native_request_inspect');
   assert.equal(evidence.capture_inference, false);
-  assert.equal(evidence.usable_live, false);
-  assert.equal(evidence.token_budget.fits, false);
+  if (evidence.token_budget.enforcement === 'native_runner') {
+    assert.equal(evidence.usable_live, true);
+    assert.equal(evidence.token_budget.fits, null);
+    assert.equal(evidence.token_budget.estimate_kind, 'utf8_byte_upper_bound');
+  } else {
+    assert.equal(evidence.token_budget.enforcement == null, true);
+    assert.equal(evidence.usable_live, false);
+    assert.equal(evidence.token_budget.fits, false);
+  }
   assert.equal(evidence.token_budget.checked, true);
   assert.equal(Number.isInteger(evidence.token_budget.contextWindow), true);
 });
