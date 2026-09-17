@@ -37,7 +37,7 @@ import fs from "node:fs";
 import crypto from "node:crypto";
 const b = fs.readFileSync("test-framework/evals/tier-1/fixtures/two-box/canary03-executor-stdout.jsonl");
 const sha = crypto.createHash("sha256").update(b).digest("hex");
-if (sha !== "fa5da28b6c7dc1510c4c9de940158f1f3c97b8113b637a8944da41e58de77873") throw new Error(sha);
+if (sha !== "deebe3a4ef0f3a361dde52959893a79b81a5e6f2848a538b0a95b9974834a95e") throw new Error(sha);
 if (b.length !== 6143) throw new Error(String(b.length));
 '
 

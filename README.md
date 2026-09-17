@@ -16,6 +16,16 @@ coverage, justified decisions, reproducible checks, and observed outcomes.
 
 **Open Box** may find a better approach than current habit. **Contract Box** independently uses applicable SSVE specs. **Dual-Pass Re-exploration Narrowing** challenges only the Contract original. **Deterministic Transmutation** prepares the complete implementation contract, runs the existing holistic review, and seals it for bounded execution. Neither model prestige nor framework convention wins automatically. The executor keeps local repair and evidence-backed disagreement inside published limits.
 
+Most AI coding tools generate code. Some of them generate good code.
+None of them ship a business or reliably maintain complex production systems.
+
+SSVE is a production-oriented deterministic development engine and meta-runtime harness. It is not just an MVP builder for greenfield ideas—it is engineered to construct, maintain, refactor, and govern real-world codebases across their entire lifecycle, from greenfield systems and brownfield conversions to deep bug diagnosis, refactoring, and spec-enforced feature additions.
+
+While some spec-driven kits scratch the surface of structured planning, SSVE lives and breathes by it—and takes it infinitely further into fully governed, end-to-end execution:
+- **Full Product Grasp & Deep Marketing Context:** It never writes code in an architectural or commercial vacuum. It integrates product thinking with real marketing context—grounding every system in customer personas, competitor differentiation, positioning angles, and conversion value before a single line of code is written.
+- **Deterministic Progressive Narrowing:** Instead of letting LLMs guess in an infinite search space, each phase mathematically and logically constrains the next (`Vision → Marketing Context → Personas → Spec → UX → UI → Tech Architecture → Plan → Execution`). By the time code is executed, the agent is deterministically fulfilling a bounded spec, not improvising.
+- **Full Production Lifecycle & Living Governance:** Engineered not just for greenfield builds, but for maintaining, refactoring, and fixing deep bugs in real-world brownfield codebases under cryptographic review gates, AST guardrails, and verifiable Git receipts.
+
 ## Why This Exists
 
 Three pain points from years of vibe coding:
@@ -230,6 +240,11 @@ graph TD
 SSVE is host-agnostic. A single content-addressed command (`./setup --all-hosts`) provisions, wires, and verifies skills and lifecycle hooks across 9 major CLI platforms with zero drift:
 - **Claude Code** (28 lifecycle hooks), **Kimi Code CLI** (13 hooks), **OpenAI Codex CLI** (6 hooks, consolidated PreToolUse launcher dispatcher), **Google Gemini CLI** (11 hooks, strict JSON stdout), **OpenCode CLI** (6 plugin events), **Google Antigravity (AGY)** (managed skills target & review station), **MiMo-Code** (6 plugin events via unified portable dispatcher), **Cursor Agent** (6 hook events, hooks.json), and **xAI Grok Build CLI** (8 hooks, TOML).
 - Governed by **Durable Mutation Authority v2**: Generation-locked Git CAS controller leases, Linux Landlock write confinement (`scripts/svc-contained-exec.mjs`, runtime-probed for child tasks on Linux hosts with graceful fallback), and an authoritative PreToolUse decision engine separating instant read-only queries from guarded state mutations. Landlock is not read isolation and not a kernel judge of model decisions.
+- **Interactive & Non-Interactive Execution Modes:** Runs seamlessly in both interactive pair-programming mode (collaborative driver with human checkpoints at G1–G7 review gates) and non-interactive / headless mode (`--autorun`, CI, or background subprocess execution where supported by the underlying CLI host).
+- **Meta-Runtime Harness Architecture & 100% ToS Compliance:** Operates as a local-first governance and task orchestration layer wrapping the developer's official, locally installed CLI tools:
+  - **Bring-Your-Own-Environment (BYOE) & Dual Economics:** While standard API credits and keys are fully supported, the system is designed to use your existing, officially authenticated developer CLI subscriptions (Claude Code, agy, Codex CLI, etc.) as the primary driver—saving massive token costs through client-side subprocess IPC.
+  - **Requires a Supported Host Orchestrator:** SSVE is a governance and orchestration meta-runtime, not a standalone LLM. It requires at least one supported AI provider CLI harness (Claude Code, OpenAI Codex CLI, Google Antigravity / agy, Kimi, OpenCode, Cursor, Grok, or MiMo-Code) installed and authenticated in your local environment to serve as the driving host.
+  - **Zero Reverse-Engineering:** Does not scrape web interfaces, hijack session cookies, pool multi-tenant credentials, or bypass vendor safety filters or rate limits. It functions strictly client-side as an advanced build and governance harness (similar to `make`, `cargo`, or a local CI runner).
 
 ### 2. Cryptographic Chain Receipts & The Pipeline Baton
 Every phase transition is anchored in cryptographic proof, not agent honesty:
@@ -260,8 +275,9 @@ When developers or agents need architectural guidance, `svc-advisor` provides an
 - **Verify Beats Memory Beats Stamps:** Critical facts (skill counts, gates, host wiring, hook event protocols) include executable verification commands so the advisor can check current repository evidence.
 - **Atomic Restamping:** Whenever framework capabilities, lanes, or hosts change, the knowledge index is restamped in the exact same commit.
 
-### 6. The Direct-to-Revenue Commercial Engine
-SSVE does not stop at code generation—it ships the business:
+### 6. Deep Marketing Context & The Commercial Engine
+SSVE bridges software engineering with market reality—treating marketing and distribution not as post-launch afterthoughts, but as foundational inputs to the code itself:
+- **Integrated Marketing Context:** Analyzes competitor positioning, customer pain points, and distribution angles early in the pipeline. Technical features are mapped directly to customer value propositions, messaging hooks, and conversion triggers.
 - **Landing Page Generation (`landing-page`):** An end-to-end orchestrator fusing marketing context, sector reference banks, copy variants, and component scaffolding. Requires a ≥7.5 weighted aggregate score before handoff to `execute-changeset`.
 - **Benchmark Landing Gate (`benchmark-landing`):** Captures multi-viewport rendering, motion, and visual delta against sector reference banks, scoring across 10 dimensions (rubric v2). Hard-blocks below a 7.0 score.
 - **Direct-Response Video Ad Suite (`ad-video-script` + `produce-ad-video`):** `ad-video-script` writes modular DR scripts with render-ready 6×~10s beat sheets (per-beat image/motion prompts, character lock, last-frame seeding), which `produce-ad-video` renders with modular I2V stitching, ducked audio beds, and spectrogram QA.
@@ -343,6 +359,10 @@ That's the goal. The current focus is the foundation it all rests on:
 **deterministic delivery that self-evolves** — a meta wrapper across
 agent harnesses that governs execution, learns from every session, and
 converges toward that goal one verifiable step at a time.
+
+This is not a weekend vibe-coded experiment: it has been used to build and maintain multiple real projects. Off-the-shelf, **every major AI model provider failed to deliver what was actually needed.** Getting here required being deeply hands-on and collaborating across many different AI providers through countless architectural brainstorming sessions. While this initial release represents a solid, stable earlier checkpoint, the further checkpoints in the private repository hold significantly more innovation that solves these deeper gaps.
+
+SSVE proudly stands on the shoulders of giant frameworks and pioneering tools across the ecosystem. But in practice, when it came to creating and maintaining production-ready software with true engineering rigor, existing frameworks fell short for me. They lacked the deterministic governance, cryptographic auditability, and progressive narrowing required to keep complex systems from breaking over time.
 
 I had my own methodology — fully testable specs, every acceptance criterion
 covered by E2E tests, progressive narrowing from vision to verified code. The

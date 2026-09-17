@@ -242,7 +242,7 @@ These are starting points, not permission to refactor every file.
 ### Copy-and-paste instruction for AGY
 
 ```text
-Read /home/dianast/app-workspaces/ssve/.worktrees/framework-two-box-transmutation/docs/plans/two-box-transmutation/implementation-report.md.
+Read /workspace/ssve/.worktrees/framework-two-box-transmutation/docs/plans/two-box-transmutation/implementation-report.md.
 
 Fix the direct-writer launch/self-heal problem described in “AGY repair assignment,” then finish the listed outstanding Two-Box work. Preserve the current implementation and frozen original plan; do not restart planning or rewrite the feature from scratch.
 

@@ -27,7 +27,7 @@
 - [WI-542](WI-542.md) — Grok SessionStart 1 is red: healthcheck false-positive `~` paths re-run setup past the 5s timeout (severity:high) — status:VERIFIED-L3 (PR #10)
 - [WI-543](WI-543.md) — Grok-native `[[hooks]]` tables are not the hooks Grok executes (severity:high) — status:VERIFIED-L3 (PR #10); sibling of WI-542
 
-- [WI-537](WI-537.md) — Privacy-safe single-root history reset with verified private recovery archive (severity:critical) — status:IN_PROGRESS
+- [WI-537](WI-537.md) — Privacy-safe single-root history reset with verified private recovery archive (severity:critical) — status:VERIFIED (reset evidence stands; later commits and extra remote refs mean `--history-root` is no longer the live publication state)
 
 - [WI-531](WI-531.md) — Zero-block hooks and instant governed provisioning; parent for Phase A recovery UX plus WI-532..WI-536 Tier-1 closure (severity:critical) — status:VERIFIED-L3
 - [WI-532](WI-532.md) — Tier-1 routing, prompt-composer, and read-only classification closure (severity:high) — status:VERIFIED-L3; parent WI-531
@@ -444,3 +444,5 @@
 
 - [WI-FW-TWO-BOX-01](WI-FW-TWO-BOX-01.md) — Living-spec phases, independent Two-Box Planning, Contract-only dual re-exploration, deterministic transmutation and verified receipt seals, conditional research, and bounded execution (severity:high) — status:VERIFIED; PR62 squash `e016e44`; tree `a383ed61`; r23 all-nine install; r24 Codex hook remains owner-disabled
 - [WI-FW-PROMPT-INSPECTION-01](WI-FW-PROMPT-INSPECTION-01.md) — Complete large-input planning transport through 1 MiB with inspect/execute on the same frozen bytes (severity:high) — status:CLOSED; delivered by the same PR62 Two-Box implementation; foreign PI worktree not mutated
+
+- [WI-FW-OSS-READINESS-01](WI-FW-OSS-READINESS-01.md) — Open-source early-release preparation: privacy, history inventory, and known issues; broader framework repairs remain follow-ups — status:in-progress

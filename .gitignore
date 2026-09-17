@@ -76,6 +76,7 @@ suno-outputs/
 .svc/evidence/
 FRAMEWORK-STATE-ARCHIVE/
 docs/specs/company/
+company-state/
 *.log
 *.err
 .svc/pending-push.json

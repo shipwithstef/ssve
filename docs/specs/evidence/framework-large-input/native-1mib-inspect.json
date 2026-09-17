@@ -3,7 +3,7 @@
   "evidence_class": "native_no_inference_1mib",
   "inference_calls": 0,
   "binary": {
-    "path": "/home/dianast/.codex/packages/standalone/releases/0.154.0-x86_64-unknown-linux-musl/bin/codex",
+    "path": "/home/builder/.codex/packages/standalone/releases/0.154.0-x86_64-unknown-linux-musl/bin/codex",
     "sha256": "3188814c35471432d4123203e0eb38e5bddc60226e3d7ddf0e59e649ea140022"
   },
   "frozen_request": {
