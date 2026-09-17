@@ -917,6 +917,17 @@ test('exact recover retry completes a stranded after-lease intent', () => {
     const childScript = `import fs from 'node:fs';import {bootstrapController} from ${JSON.stringify(path.join(root, 'hooks/lib/authority-store.mjs'))};process.stdout.write(JSON.stringify(bootstrapController(JSON.parse(fs.readFileSync(0,'utf8')))));`;
     const ctx = { stateRoot: f.origCtx.stateRoot, repoId: f.origCtx.repoId, wi: 'WI-RECOVER-RETRY', worktreeRoot: f.original, principal: principalId({ host: 'codex', session_id: sid }) };
     const old = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', childScript], { input: JSON.stringify(ctx), encoding: 'utf8' }));
+    process.env.NODE_ENV = 'test';
+    writeControllerForTest({
+      stateRoot: ctx.stateRoot,
+      lease: {
+        ...old,
+        owner_process: { hostname: 'fixture', pid: 2147483647, start_token: 'missing' },
+        owner_harness_tracked: false,
+        expires_at: new Date(Date.now() - 60_000).toISOString(),
+      },
+      expectedRevision: old.backend_revision,
+    });
     const args = {
       ...ctx, principal: successor, expectedGeneration: old.generation, evidence: { same_host_dead: true }, reason: 'exact-retry',
     };

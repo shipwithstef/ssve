@@ -66,8 +66,8 @@ export function buildCursorHookEntries(skillsPath) {
   };
 
   if (!DISABLED.has("svc-cursor-ssve-adapter")) {
-    entries.beforeSubmitPrompt.push({ command: `${NODE_CMD} ${q(`${hooksDir}/cursor/svc-cursor-ssve-adapter.mjs`)} --before-submit-prompt` });
-    entries.preToolUse.push({ command: `${NODE_CMD} ${q(`${hooksDir}/cursor/svc-cursor-ssve-adapter.mjs`)} --pretool` });
+    entries.beforeSubmitPrompt.push({ command: `env SVC_HOST=cursor ${NODE_CMD} ${q(`${hooksDir}/cursor/svc-cursor-ssve-adapter.mjs`)} --before-submit-prompt` });
+    entries.preToolUse.push({ command: `env SVC_HOST=cursor ${NODE_CMD} ${q(`${hooksDir}/cursor/svc-cursor-ssve-adapter.mjs`)} --pretool` });
   }
 
   if (!DISABLED.has("svc-worktree-isolation-guard")) {

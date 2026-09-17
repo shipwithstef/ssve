@@ -30,7 +30,7 @@ let ctx;
 try { ctx = hookContext(payload); } catch { allow(); process.exit(0); }
 if (!ctx.repo_root || !ctx.session_id || !ctx.turn_id || !ctx.session_dir) { allow(); process.exit(0); }
 const authority = readJson(authorityPath(ctx));
-const ttlMs = Math.max(1, Number(process.env.SVC_CODEX_AUTHORITY_TTL_MIN || 240)) * 60_000;
+const ttlMs = Math.max(1, Number(process.env.SVC_CODEX_AUTHORITY_TTL_MIN || 1440)) * 60_000;
 const authorityTime = Date.parse(authority?.recorded_at);
 if (!authority || authority.session_id !== ctx.session_id || authority.turn_id !== ctx.turn_id || authority.cwd !== ctx.cwd || authority.repo_root !== ctx.repo_root || !Number.isFinite(authorityTime) || Date.now() - authorityTime > ttlMs) { allow(); process.exit(0); }
 if (!new Set(["continue", "resume", "end_to_end"]).has(authority.continuation_intent)) { allow(); process.exit(0); }

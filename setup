@@ -14,56 +14,41 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
 
-# Refuse to run from inside a git worktree. If a user runs ./setup from a
-# worktree (e.g. while working on a feature branch), every skill symlink in
-# ~/.claude/skills/ will be repointed at the worktree path. When the worktree
-# is later removed (after PR merge), every symlink dangles and every hook
-# breaks. Force the user back to the main checkout.
-if [[ "$SCRIPT_DIR" == *"/.worktrees/"* && "${SVC_SETUP_VALIDATE_ONLY:-0}" == "1" ]]; then
+# If invoked from a git worktree, execute against the canonical main checkout
+# so skill/hook symlinks never dangle after worktree removal (AP-30). The
+# harness must not tell the operator to cd; it re-points automatically.
+CANONICAL_MAIN="$(cd "$SCRIPT_DIR" && dirname "$(git rev-parse --git-common-dir 2>/dev/null || echo "$SCRIPT_DIR/.git")")"
+if [[ "$CANONICAL_MAIN" != /* ]]; then
+  CANONICAL_MAIN="$(cd "$SCRIPT_DIR/$CANONICAL_MAIN" && pwd)"
+fi
+
+_canon_existing() {
+  local p="$1"
+  [[ -n "$p" ]] || { echo ""; return 0; }
+  [[ "$p" == /* ]] || p="$SCRIPT_DIR/$p"
+  realpath "$p" 2>/dev/null || readlink -f "$p" 2>/dev/null || echo "$p"
+}
+
+_IN_WORKTREE_SOURCE=false
+if [[ "$SCRIPT_DIR" == *"/.worktrees/"* || "$SCRIPT_DIR" == "$HOME/worktrees/"* ]]; then
+  _IN_WORKTREE_SOURCE=true
+elif [[ -n "$CANONICAL_MAIN" && "$SCRIPT_DIR" != "$CANONICAL_MAIN" ]]; then
+  _GIT_DIR_NOW="$(_canon_existing "$(cd "$SCRIPT_DIR" && git rev-parse --git-dir 2>/dev/null || true)")"
+  _GIT_COMMON_NOW="$(_canon_existing "$(cd "$SCRIPT_DIR" && git rev-parse --git-common-dir 2>/dev/null || true)")"
+  if [[ -n "$_GIT_DIR_NOW" && -n "$_GIT_COMMON_NOW" && "$_GIT_DIR_NOW" != "$_GIT_COMMON_NOW" ]]; then
+    _IN_WORKTREE_SOURCE=true
+  fi
+fi
+
+if [[ "$_IN_WORKTREE_SOURCE" == true && "${SVC_SETUP_VALIDATE_ONLY:-0}" == "1" ]]; then
   echo "NOTICE: setup validate-only mode running from worktree source: $SCRIPT_DIR" >&2
-elif [[ "$SCRIPT_DIR" == *"/.worktrees/"* ]]; then
-  echo "NOTICE: setup invoked from a git worktree." >&2
-  echo "  Detected SCRIPT_DIR: $SCRIPT_DIR" >&2
-  echo "  Symlinks must resolve to the main checkout, NOT the worktree, or they" >&2
-  echo "  dangle when the worktree is removed (see anti-pattern AP-30)." >&2
-
-  # Always re-point SCRIPT_DIR at the canonical main checkout.
-  # `git rev-parse --git-common-dir` returns the shared .git directory; its parent
-  # is the main repository working tree. This resolution succeeds from any
-  # worktree in the repo. If it ever fails (detached / corrupt), fall through to
-  # the legacy refusal path so we never silently install with a bad source root.
-  CANONICAL_GIT_DIR="$(cd "$SCRIPT_DIR" && git rev-parse --git-common-dir 2>/dev/null || true)"
-  if [[ -n "$CANONICAL_GIT_DIR" ]]; then
-    if [[ "$CANONICAL_GIT_DIR" != /* ]]; then
-      CANONICAL_GIT_DIR="$(cd "$SCRIPT_DIR" && cd "$CANONICAL_GIT_DIR" && pwd)"
-    fi
-    CANONICAL_REPO_ROOT="$(cd "$CANONICAL_GIT_DIR/.." && pwd)"
-  else
-    CANONICAL_REPO_ROOT=""
-  fi
-
-  if [[ -z "$CANONICAL_REPO_ROOT" || ! -f "$CANONICAL_REPO_ROOT/setup" ]]; then
+elif [[ "$_IN_WORKTREE_SOURCE" == true ]]; then
+  if [[ -z "$CANONICAL_MAIN" || ! -f "$CANONICAL_MAIN/setup" ]]; then
     echo "ERROR: could not resolve the canonical main checkout from this worktree." >&2
-    echo "  cd to the main repository checkout and re-run ./setup there." >&2
     exit 1
   fi
-
-  if [[ "${SVC_SETUP_ALLOW_WORKTREE:-0}" != "1" ]]; then
-    echo "  Refusing to install. cd to $CANONICAL_REPO_ROOT and re-run ./setup there." >&2
-    echo "  Override (advanced): SVC_SETUP_ALLOW_WORKTREE=1 SVC_SETUP_ALLOW_WORKTREE_REASON='<text>' ./setup --host <host>" >&2
-    exit 1
-  fi
-  if [[ -z "${SVC_SETUP_ALLOW_WORKTREE_REASON:-}" ]]; then
-    echo "  SVC_SETUP_ALLOW_WORKTREE=1 set, but SVC_SETUP_ALLOW_WORKTREE_REASON is empty." >&2
-    echo "  Refusing the bypass without an explicit, non-empty reason." >&2
-    echo "  Re-run with: SVC_SETUP_ALLOW_WORKTREE=1 SVC_SETUP_ALLOW_WORKTREE_REASON='why this is safe' ./setup --host <host>" >&2
-    exit 1
-  fi
-
-  echo "  SVC_SETUP_ALLOW_WORKTREE=1 set (reason: ${SVC_SETUP_ALLOW_WORKTREE_REASON})." >&2
-  echo "  Re-pointing symlink source from $SCRIPT_DIR" >&2
-  echo "                              to $CANONICAL_REPO_ROOT (canonical main)." >&2
-  SCRIPT_DIR="$CANONICAL_REPO_ROOT"
+  echo "NOTICE: setup invoked from a git worktree; executing against canonical main: $CANONICAL_MAIN" >&2
+  SCRIPT_DIR="$CANONICAL_MAIN"
 fi
 
 # Dry-run hook: print the resolved symlink-source root and exit. Used by
@@ -395,6 +380,12 @@ if missing_from is not None:
 PY_SECURE_STATE_ROOT
 mkdir -p "$SETUP_STATE_ROOT/locks" "$SETUP_STATE_ROOT/digests"
 chmod 700 "$SETUP_STATE_ROOT" "$SETUP_STATE_ROOT/locks" "$SETUP_STATE_ROOT/digests" 2>/dev/null || true
+if [ -L "$HOME/worktrees" ]; then
+  echo "ERROR: \$HOME/worktrees must not be a symlink" >&2
+  exit 1
+fi
+mkdir -p "$HOME/worktrees"
+chmod 0700 "$HOME/worktrees" 2>/dev/null || true
 SETUP_LOCK_FILE="$SETUP_STATE_ROOT/locks/$HOST.lock"
 if [ -L "$SETUP_LOCK_FILE" ]; then
   echo "ERROR: setup lock must not be a symlink: $SETUP_LOCK_FILE" >&2

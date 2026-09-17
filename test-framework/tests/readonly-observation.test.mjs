@@ -184,7 +184,9 @@ test('production resolver never recommends a same-UID foreign owner graph', () =
     const env = { ...clean, HOME: dir, SVC_SESSION_ID: owner, SVC_HOST: 'codex' };
     const create = spawnSync('node', [path.join(root, 'scripts/svc-ensure-worktree.mjs'), '--wi', 'WI-FOREIGN-READ-01', '--branch', 'bugfix-fixture', '--from', 'origin/main', '--json'], { cwd: dir, env, encoding: 'utf8' });
     assert.equal(create.status, 0, create.stderr);
-    const worktree = path.join(dir, '.worktrees/bugfix-fixture');
+    let created;
+    try { created = JSON.parse(create.stdout); } catch { created = {}; }
+    const worktree = created.absolute_worktree || path.join(dir, '.worktrees/bugfix-fixture');
     const graphPath = path.join(worktree, '.svc/lane-tasks-WI-FOREIGN-READ-01.json');
     const before = fs.readFileSync(graphPath);
     const foreign = '22222222-2222-4222-8222-222222222222';

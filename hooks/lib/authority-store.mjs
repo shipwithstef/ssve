@@ -8,8 +8,21 @@ import { freezeDelegations } from "./delegation-authority.mjs";
 import { normalizeClaimOwner } from "./claim-owner.mjs";
 import { validateTaskGraphShape, selectRecoveryTask } from "./validate-task-graph-shape.mjs";
 // WI-562 IP-H5: liveness primitives unified into one source.
-import { processStartToken, ownerProcessIdentity, processIsAlive } from "./process-liveness.mjs";
-export { processStartToken, ownerProcessIdentity, processIsAlive };
+import { processStartToken, ownerProcessIdentity, processIsAlive, findHarnessProcessIdentity, isSameLiveHarnessSuccessor } from "./process-liveness.mjs";
+export { processStartToken, ownerProcessIdentity, processIsAlive, findHarnessProcessIdentity, isSameLiveHarnessSuccessor };
+
+function ownerLeaseFields() {
+  const identity = ownerProcessIdentity();
+  return {
+    owner_process: {
+      hostname: identity.hostname,
+      pid: identity.pid,
+      start_token: identity.start_token,
+      harness_tracked: identity.harness_tracked === true,
+    },
+    owner_harness_tracked: identity.harness_tracked === true,
+  };
+}
 
 const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -282,7 +295,7 @@ export function bootstrapController({ stateRoot, repoId, wi, worktreeRoot, princ
       schema_version: 2, lease_id: crypto.randomUUID(), repo_id: repoId, wi,
       worktree_root: canonicalWorktree, controller_principal: principal,
       generation: initialGeneration, state: "active",
-      owner_process: ownerProcessIdentity(),
+      ...ownerLeaseFields(),
       issued_at: iso(now), renewed_at: iso(now), expires_at: iso(now + ttlMs),
       backend_revision: 1,
     };
@@ -319,7 +332,7 @@ export function rearmReleasedController({
         schema_version: 2, lease_id: crypto.randomUUID(), repo_id: repoId, wi,
         worktree_root: canonicalWorktree, controller_principal: principal,
         generation: existing.generation + 1, state: "active",
-        owner_process: ownerProcessIdentity(),
+        ...ownerLeaseFields(),
         issued_at: iso(now), renewed_at: iso(now), expires_at: iso(now + ttlMs),
         backend_revision: existing.backend_revision + 1,
         lifecycle_bound: true,
@@ -378,7 +391,7 @@ export function rearmExpiredController({
       const planned = {
         ...existing,
         generation: existing.generation + 1,
-        owner_process: ownerProcessIdentity(),
+        ...ownerLeaseFields(),
         renewed_at: iso(now), expires_at: iso(now + ttlMs),
         backend_revision: existing.backend_revision + 1,
         lifecycle_bound: true,
@@ -421,7 +434,7 @@ export function resumeController({ stateRoot, repoId, wi, worktreeRoot, principa
       throw new Error("controller lease expired; generation-bound expired recovery required");
     }
     verifyLatestHandoffRecord(paths, lease);
-    const renewed = { ...lease, owner_process: ownerProcessIdentity(), renewed_at: iso(now), expires_at: iso(now + ttlMs), backend_revision: lease.backend_revision + 1 };
+    const renewed = { ...lease, ...ownerLeaseFields(), renewed_at: iso(now), expires_at: iso(now + ttlMs), backend_revision: lease.backend_revision + 1 };
     atomicWrite(paths.lease, renewed);
     return renewed;
   });
@@ -462,7 +475,7 @@ export function renewControllerIfCurrent({ stateRoot, repoId, wi, worktreeRoot, 
     if (expiresAt <= now) return { status: "not_renewable", reason: "lease expired" };
     try { verifyLatestHandoffRecord(paths, lease); }
     catch (error) { return { status: "stale_decision", reason: error.message }; }
-    const renewed = { ...lease, owner_process: ownerProcessIdentity(), renewed_at: iso(now), expires_at: iso(now + ttlMs), backend_revision: lease.backend_revision + 1 };
+    const renewed = { ...lease, ...ownerLeaseFields(), renewed_at: iso(now), expires_at: iso(now + ttlMs), backend_revision: lease.backend_revision + 1 };
     atomicWrite(paths.lease, renewed);
     return { status: "renewed", lease: renewed };
   });
@@ -1088,7 +1101,7 @@ export function acceptHandover({ stateRoot, repoId, wi, principal, token, ttlMs 
       // stranded post-crash tuple is positive proof of token acceptance.
       accepted_handover_id: handover.handover_id,
       accepted_token_hash: handover.token_hash,
-      owner_process: ownerProcessIdentity(),
+      ...ownerLeaseFields(),
       renewed_at: iso(now), expires_at: iso(now + ttlMs), backend_revision: lease.backend_revision + 1,
       lifecycle_bound: true,
     };
@@ -1213,7 +1226,7 @@ export function takeoverController({ stateRoot, repoId, wi, principal, expectedP
       prepare(existing) {
         const planned = {
           ...existing, controller_principal: principal, generation: existing.generation + 1,
-          owner_process: ownerProcessIdentity(), renewed_at: iso(now), expires_at: iso(now + ttlMs),
+          ...ownerLeaseFields(), renewed_at: iso(now), expires_at: iso(now + ttlMs),
           backend_revision: existing.backend_revision + 1, lifecycle_bound: true,
         };
         return {
@@ -1261,11 +1274,29 @@ export function recoverController({ stateRoot, repoId, wi, principal, reason, wo
         : null;
       if (replayed) return { lease, receipt: latestOwnHandoff(paths, lease), receipt_path: null };
       if (lease.state !== "active") throw new Error("controller lease is not active");
-      const ownerAlive = processIsAlive(lease.owner_process);
-      if (evidence.owner_live === true || ownerAlive === true) throw new Error("controller authority conflict: a provably live owner cannot be displaced");
-      const expired = evidence.expired === true && Date.parse(lease.expires_at) <= now;
-      const sameHostDead = evidence.same_host_dead === true && ownerAlive === false;
-      if (!expired && !sameHostDead) throw new Error("recovery requires positive dead-owner evidence or lease expiry");
+      // Stored-lease invariants only. Caller-supplied evidence must not forge
+      // expiry or a dead PID. Dead-OR-expired from the stored lease remains
+      // the anti-paralysis gate.
+      const storedOwner = lease.owner_process;
+      const storedPid = Number.isInteger(storedOwner)
+        ? storedOwner
+        : (storedOwner && Number.isInteger(storedOwner.pid) ? storedOwner.pid : null);
+      const ownerAlive = processIsAlive(storedOwner);
+      const sameHarnessSuccessor = isSameLiveHarnessSuccessor(lease);
+      if (Number.isInteger(storedPid) && storedPid > 1 && ownerAlive === true && !sameHarnessSuccessor) {
+        throw new Error("FOREIGN_LIVE_OWNER: a provably live owner cannot be displaced");
+      }
+      const pidKnownDead = Number.isInteger(storedPid) && storedPid > 1 && ownerAlive === false;
+      const expired = Number.isFinite(Date.parse(lease.expires_at)) && Date.parse(lease.expires_at) <= now;
+      // Immediate dead-PID reclaim is only safe when the recorded pid is the
+      // persistent harness. An untracked/ephemeral shell pid dying must wait
+      // for lease expiry — the agent harness may still be live.
+      // A live same-harness conversation successor (new tab/conversation under
+      // this exact harness PID) re-attaches without waiting for expiry.
+      const immediateDeadReclaim = lease.owner_harness_tracked === true && pidKnownDead;
+      if (!sameHarnessSuccessor && !immediateDeadReclaim && !expired) {
+        throw new Error("recovery requires a dead owner process (integer pid > 1) or an expired lease");
+      }
       if (expectedGeneration !== null && lease.generation !== expectedGeneration) throw new Error("recovery generation changed; inspect again");
       if (worktreeRoot && path.resolve(worktreeRoot) !== path.resolve(target)) {
         if (fs.existsSync(target)) throw new Error("old controller worktree still exists; explicit handover required");
@@ -1301,7 +1332,7 @@ export function recoverController({ stateRoot, repoId, wi, principal, reason, wo
       prepare(existing) {
         const planned = {
           ...existing, worktree_root: worktree, controller_principal: principal,
-          generation: existing.generation + 1, owner_process: ownerProcessIdentity(),
+          generation: existing.generation + 1, ...ownerLeaseFields(),
           renewed_at: iso(now), expires_at: iso(now + ttlMs),
           backend_revision: existing.backend_revision + 1, lifecycle_bound: true,
         };
@@ -1470,7 +1501,7 @@ export function migrateV1Claim({ stateRoot, claimPath, repoId, worktreeRoot, hos
         schema_version: 2, lease_id: crypto.randomUUID(), repo_id: repoId, wi,
         worktree_root: canonicalWorktree, controller_principal: principal,
         generation: lease ? lease.generation + 1 : initialGeneration, state: "active",
-        owner_process: ownerProcessIdentity(), issued_at: iso(now), renewed_at: iso(now),
+        ...ownerLeaseFields(), issued_at: iso(now), renewed_at: iso(now),
         expires_at: iso(now + DEFAULT_TTL_MS), backend_revision: lease ? lease.backend_revision + 1 : 1,
       };
       intent = {

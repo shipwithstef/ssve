@@ -179,6 +179,14 @@ else
   fi
 fi
 
+# ── Check 12: AGY/Gemini authored plans must record User Intent ───────────
+if grep -qiE '^[[:space:]]*(author|orchestrator):[[:space:]]*["'"'"']?(antigravity|gemini|agy)["'"'"']?' "$PLAN"; then
+  intent_body=$(awk '/^## (4\. )?User Intent/{flag=1; next} /^## /{flag=0} flag' "$PLAN" | sed '/^[[:space:]]*$/d')
+  if [ -z "$intent_body" ]; then
+    report "[FAIL] AGY/Gemini authored plan must include a non-empty '## User Intent' section"
+  fi
+fi
+
 # ── Report ────────────────────────────────────────────────────────────────
 PLAN_CONTRACT="$(dirname "$PLAN")/plan-contract.json"
 if [ -f "$PLAN_CONTRACT" ]; then

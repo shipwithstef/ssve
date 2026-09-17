@@ -28,7 +28,7 @@ import os from "node:os";
 // process is provably dead (pid gone, or /proc start-token mismatch = PID reuse)
 // is reclaimed immediately. Locks without a usable same-host pid (pre-WI-562
 // bytes, cross-host writers, unreadable /proc) keep the legacy mtime path.
-import { ownerProcessIdentity, processIsAlive } from "../hooks/lib/process-liveness.mjs";
+import { processStartToken, processIsAlive } from "../hooks/lib/process-liveness.mjs";
 
 const DEFAULT_LOCK_TIMEOUT_MS = 5000;
 const DEFAULT_STALE_LOCK_MS = 10 * 60 * 1000;
@@ -77,8 +77,9 @@ function acquireStateLock(filePath, opts = {}) {
   while (true) {
     try {
       const fd = openSync(lockPath, constants.O_CREAT | constants.O_EXCL | constants.O_WRONLY, 0o600);
-      const identity = ownerProcessIdentity();
-      writeFileSync(fd, JSON.stringify({ pid: identity.pid, start_token: identity.start_token, hostname: identity.hostname, ts: new Date().toISOString(), filePath }));
+      // File locks need PROCESS-LOCAL identity (who holds this lock NOW),
+      // not harness identity (who owns the governance session).
+      writeFileSync(fd, JSON.stringify({ pid: process.pid, start_token: processStartToken(process.pid), hostname: os.hostname(), ts: new Date().toISOString(), filePath }));
       closeSync(fd);
       return () => {
         try { unlinkSync(lockPath); } catch {}

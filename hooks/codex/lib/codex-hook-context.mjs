@@ -10,6 +10,7 @@ import { isValidWiId, WI_ID_BODY, WI_EXTRACT_RE, extractWiId } from "../../lib/w
 import { resolveOperationScope } from "../../lib/operation-scope.mjs";
 import { assertPrivateDirectory, ensurePrivateDirectory, resolveRuntimeDirectory } from "../../lib/svc-runtime-root.mjs";
 import { isShellTool } from "../../lib/shell-tools.mjs";
+import { processIsAlive } from "../../lib/process-liveness.mjs";
 
 export const SCHEMA_VERSION = 1;
 
@@ -23,18 +24,102 @@ export function parseHookInput(raw) {
   }
 }
 
+function loadCursorAliases(env = process.env) {
+  try {
+    const root = runtimeRoot(env);
+    if (!root) return {};
+    const file = path.join(root, "cursor-session-aliases.json");
+    if (fs.existsSync(file)) {
+      return JSON.parse(fs.readFileSync(file, "utf8")) || {};
+    }
+  } catch {}
+  return {};
+}
+
+function pauseMs(ms) {
+  const buf = new Int32Array(new SharedArrayBuffer(4));
+  Atomics.wait(buf, 0, 0, ms);
+}
+
+function isCursorHost(payload, env = process.env) {
+  const host = String(payload?.host || env?.SVC_HOST || "").trim().toLowerCase();
+  return host === "cursor";
+}
+
+export function upsertCursorAlias(child, parent, env = process.env) {
+  if (!isCursorHost({}, env)) return;
+  const root = runtimeRoot(env);
+  if (!root) return;
+  const file = path.join(root, "cursor-session-aliases.json");
+  const lockPath = `${file}.lock`;
+  for (let attempt = 0; attempt < 40; attempt++) {
+    let fd;
+    try {
+      fd = fs.openSync(lockPath, fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_WRONLY, 0o600);
+      fs.writeFileSync(fd, JSON.stringify({ pid: process.pid, time: Date.now() }));
+    } catch (err) {
+      if (err && err.code === "EEXIST") {
+        try {
+          const lock = JSON.parse(fs.readFileSync(lockPath, "utf8"));
+          if (typeof lock.pid === "number" && processIsAlive(lock.pid) === false) {
+            fs.unlinkSync(lockPath);
+          }
+        } catch {
+          // Empty, truncated, or unparseable lock: check age to avoid racing with active writer
+          try {
+            const st = fs.statSync(lockPath);
+            if (Date.now() - st.mtimeMs > 250) {
+              fs.unlinkSync(lockPath);
+            }
+          } catch {}
+        }
+        pauseMs(25);
+        continue;
+      }
+      throw err;
+    }
+    try {
+      const aliases = loadCursorAliases(env);
+      if (aliases[child] === parent) return;
+      aliases[child] = parent;
+      atomicWriteJson(file, aliases);
+      return;
+    } finally {
+      try { fs.closeSync(fd); } catch {}
+      try {
+        const lock = JSON.parse(fs.readFileSync(lockPath, "utf8"));
+        if (lock.pid === process.pid) fs.unlinkSync(lockPath);
+      } catch {}
+    }
+  }
+}
+
 export function sessionId(payload, env = process.env) {
+  // WI-FW-ZERO-BLOCK-01: conversation_id takes precedence over ephemeral tool session_id
+  const convo = payload?.conversation_id || payload?.conversationId ||
+                payload?.metadata?.conversation_id || payload?.metadata?.conversationId;
+  const child = payload?.session_id || payload?.sessionId ||
+                payload?.metadata?.session_id || payload?.metadata?.sessionId ||
+                payload?.thread_id || payload?.threadId;
+  const cursorHost = isCursorHost(payload, env);
+  const aliasEnv = cursorHost ? { ...env, SVC_HOST: "cursor" } : env;
+
+  if (cursorHost && convo && child && String(convo).trim() !== String(child).trim()) {
+    try {
+      upsertCursorAlias(String(child).trim(), String(convo).trim(), aliasEnv);
+    } catch {}
+  }
+
+  if (convo && String(convo).trim()) return String(convo).trim();
+
+  if (child && String(child).trim()) {
+    const cStr = String(child).trim();
+    if (!cursorHost) return cStr;
+    const aliases = loadCursorAliases(aliasEnv);
+    return aliases[cStr] || cStr;
+  }
+
   return String(
-    payload?.session_id ||
-    payload?.sessionId ||
-    payload?.conversation_id ||
-    payload?.conversationId ||
-    payload?.thread_id ||
-    payload?.threadId ||
-    payload?.metadata?.session_id ||
-    payload?.metadata?.sessionId ||
-    payload?.metadata?.conversation_id ||
-    payload?.metadata?.conversationId ||
     env.CURSOR_CONVERSATION_ID ||
     env.CURSOR_SESSION_ID ||
     env.SVC_SESSION_ID ||
@@ -44,6 +129,7 @@ export function sessionId(payload, env = process.env) {
     env.CLAUDE_SESSION_ID ||
     env.KIMI_SESSION_ID ||
     env.GEMINI_SESSION_ID ||
+    env.OPENCODE_SESSION_ID ||
     ""
   );
 }

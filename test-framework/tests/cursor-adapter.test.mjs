@@ -963,3 +963,19 @@ test('Cursor and imported Claude dispatcher share one v2 controller without iden
     assert.equal(readController(ctx).generation, before.generation);
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 });
+
+test('Cursor alias resolution is host-scoped and ignored under Codex', async () => {
+  const { sessionId } = await import('../../hooks/codex/lib/codex-hook-context.mjs');
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'svc-cursor-alias-scope-'));
+  try {
+    const convo = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+    const child = '11111111-2222-3333-4444-555555555555';
+    const cursorEnv = { SVC_CODEX_RUNTIME_DIR: tmp, SVC_HOST: 'cursor' };
+    assert.equal(sessionId({ conversation_id: convo, session_id: child }, cursorEnv), convo);
+    assert.equal(sessionId({ session_id: child }, cursorEnv), convo);
+    const codexEnv = { SVC_CODEX_RUNTIME_DIR: tmp, SVC_HOST: 'codex' };
+    assert.equal(sessionId({ session_id: child }, codexEnv), child);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});

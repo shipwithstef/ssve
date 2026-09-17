@@ -104,33 +104,49 @@ if [[ -f "$REVIEWER_CONFIG" && ! -L "$REVIEWER_CONFIG" ]]; then
         });' "$REVIEWER_STATION")"
   REVIEWER_ARGS+=(--reviewer-config "$REVIEWER_CONFIG" --reviewer-mode "$REVIEWER_MODE" --reviewer-phase plan --reviewer-station "$REVIEWER_STATION")
 fi
-# Derive EXACTLY ONE authoritative WI. The branch name is authoritative; fall back
-# to plan text only when the branch has none. Ambiguity (multiple distinct WIs) or
-# absence is FAIL-CLOSED: refuse before any provider call rather than silently
-# restoring the original unguarded paid-plan path (EXTREV-136 / EXTREV-EXEC-002).
-WI_PATTERN='WI-[A-Z0-9]+(-[A-Z0-9]+)*'
-WI_CANDIDATES="$(git -C "$CONTEXT_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null | tr '[:lower:]' '[:upper:]' | grep -oE "$WI_PATTERN" | sort -u || true)"
-[[ -z "$WI_CANDIDATES" ]] && WI_CANDIDATES="$(tr '[:lower:]' '[:upper:]' < "$PLAN" | grep -oE "$WI_PATTERN" | sort -u || true)"
-WI_COUNT="$(printf '%s\n' "$WI_CANDIDATES" | grep -c . || true)"
-if [[ "$WI_COUNT" -ne 1 ]]; then
-  printf 'review-plan-codex: cannot derive exactly one authoritative WI (found %s: %s); refusing plan review before any provider call. Use an unambiguous WI branch or plan, or run review-exec if implementation has begun.\n' "$WI_COUNT" "$(printf '%s' "$WI_CANDIDATES" | tr '\n' ' ')" >&2
+# Derive EXACTLY ONE authoritative WI from the plan frontmatter work_item field.
+# Do not scan the markdown body for WI- occurrences — body mentions of other
+# WIs (dependencies, history) must not bind or ambiguate the review.
+manifest_path="$PLAN"
+plan_wi=$(sed -n '/^---$/,/^---$/p' "$manifest_path" | grep -E '^work_item:[[:space:]]*' | head -n 1 | awk '{print $2}' | tr -d '\r\n"' || true)
+if [[ -z "$plan_wi" ]]; then
+  printf 'review-plan-codex: cannot derive exactly one authoritative WI (found 0: ); refusing plan review before any provider call. Frontmatter work_item is required.\n' >&2
   exit 4
 fi
-WI="$WI_CANDIDATES"
-# EXTREV-EXEC-007: a stale/reused WI branch could otherwise bind the branch WI
-# while reviewing a plan for a DIFFERENT WI. If the plan names any WI at all,
-# require the derived WI to be one of them; otherwise fail closed.
-PLAN_WIS="$(tr '[:lower:]' '[:upper:]' < "$PLAN" | grep -oE "$WI_PATTERN" | sort -u || true)"
-if [[ -n "$PLAN_WIS" ]] && ! printf '%s\n' "$PLAN_WIS" | grep -qx "$WI"; then
-  printf 'review-plan-codex: derived WI %s does not appear in the plan (%s); refusing to bind a stale/reused branch WI. Rebase the review onto the correct WI branch/plan.\n' "$WI" "$(printf '%s' "$PLAN_WIS" | tr '\n' ' ')" >&2
-  exit 4
-fi
+WI="$plan_wi"
 PRE_EXEC_BASE="$(git -C "$CONTEXT_ROOT" merge-base HEAD origin/main 2>/dev/null || git -C "$CONTEXT_ROOT" rev-parse origin/main 2>/dev/null || echo origin/main)"
 PHASE_BINDING="$ARTIFACTS/phase-binding.json"
 printf '{"wi":"%s","pre_execution_base":"%s","plan_manifest_sha256":"%s"}\n' "$WI" "$PRE_EXEC_BASE" "$PLAN_SHA" > "$PHASE_BINDING"
 PHASE_ARGS+=(--phase-binding "$PHASE_BINDING")
 if [[ -n "${SVC_EXTERNAL_REVIEW_PHASE_OVERRIDE_FILE:-}" ]]; then
   PHASE_ARGS+=(--phase-override-file "$SVC_EXTERNAL_REVIEW_PHASE_OVERRIDE_FILE")
+fi
+
+IS_AGY_PLAN=false
+if grep -qiE '^[[:space:]]*(author|orchestrator):[[:space:]]*["'"'"']?(antigravity|gemini|agy)["'"'"']?' "$PLAN" 2>/dev/null || [[ "${SVC_ORCHESTRATOR:-}" == "agy" || "${SVC_HOST:-}" == "gemini" ]]; then
+  IS_AGY_PLAN=true
+fi
+
+USER_INTENT_BODY="$(awk '/^## (4\. )?User Intent/{flag=1; next} /^## /{flag=0} flag' "$PLAN")"
+if [[ "$IS_AGY_PLAN" == true ]]; then
+  intent_body="$(printf '%s' "$USER_INTENT_BODY" | sed '/^[[:space:]]*$/d')"
+  if [[ -z "$intent_body" ]]; then
+    printf 'review-plan-codex: AGY/Gemini authored plan is missing a non-empty ## User Intent section; refusing plan review before any provider call.\n' >&2
+    exit 4
+  fi
+fi
+
+branch_name="$(git -C "$CONTEXT_ROOT" branch --show-current 2>/dev/null || true)"
+branch_token="$(cd "$ROOT" && node --input-type=module -e 'import {extractWiId} from "./hooks/lib/wi-id.mjs"; const raw = process.argv[1] || ""; const isolated = String(raw).match(/WI-[A-Z0-9]+(?:-[A-Z0-9]+)*/); process.stdout.write(extractWiId(raw) || extractWiId(isolated ? isolated[0] : "") || "")' "$branch_name" 2>/dev/null || true)"
+if [[ -n "$branch_token" ]]; then
+  plan_wi_lc="$(printf '%s' "$plan_wi" | tr '[:upper:]' '[:lower:]')"
+  token_lc="$(printf '%s' "$branch_token" | tr '[:upper:]' '[:lower:]')"
+  if [[ "$plan_wi_lc" == "$token_lc" ]]; then
+    :
+  else
+    printf 'review-plan-codex: frontmatter work_item %q does not match branch WI token %q; refusing plan review before any provider call.\n' "$plan_wi" "$branch_token" >&2
+    exit 4
+  fi
 fi
 
 # OUTPUT-FIRST PROTOCOL remains in the package so the review content contract
@@ -153,11 +169,25 @@ FOCUS DIMENSIONS:
   (e) idempotency and rerun safety
   (f) execute risk
   (g) lane compliance: every mandatory upstream skill must be completed with an artifact or skipped with a cited decision; an unnamed mandatory skill is a failing finding
+  (j) user intent and request fidelity (mandatory for AGY/Gemini authored plans)
 
 Use review_kind "plan" and set integer rubric_score to the 0-10 mode-aware score. For explicit inline mode, score these same ten dimensions as solution readiness: (1) exact resolvable or declared future files; (2) complete consequential behavior and interfaces, not authored code; (3) appropriate executable proof and outcomes; (4) meaningful action/authority limits; (5) exact write scope; (6) recovery path; (7) correct dependencies; (8) observable success; (9) original AC/UX/technical trace; (10) no unresolved consequential choice. Reversible local details are allowed. v4 release identities may use the validated existing-adapter producer form. Keep integer rubric_score 0–10 and concrete findings. For dispatch/absent mode, retain the complete-code/command packet rubric below. For zero findings, use verdict "pass" and findings []. Every finding needs id, severity, claim, analysis, evidence, and proposed_fix.
 
 PROTOCOL REFERENCE:
 EOF
+  if [[ "$IS_AGY_PLAN" == true ]]; then
+    cat <<'EOF'
+MANDATORY USER INTENT EVALUATION:
+This plan was authored by an AGY/Gemini orchestrator. You MUST evaluate Dimension (j) User Intent & Request Fidelity against the following recorded User Intent:
+<USER_INTENT>
+EOF
+    printf '%s\n' "$USER_INTENT_BODY"
+    cat <<'EOF'
+</USER_INTENT>
+If the plan fails to address or distorts any part of the user intent, issue a HIGH severity finding.
+
+EOF
+  fi
   cat "$PROTOCOL_REF"
   printf '\nPLAN TO REVIEW:\n'
   cat "$PLAN"

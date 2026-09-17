@@ -18,7 +18,7 @@ vision → domain → competitors → personas → validate → spec → UX → 
 
 Core principles:
 - **Progressive narrowing** — each phase constrains the solution space until code generation is essentially deterministic.
-- **Worktree isolation** — feature implementation runs in git worktrees under `.worktrees/`.
+- **Worktree isolation** — feature implementation runs in git worktrees under `~/worktrees/{repo}/{branch}` (mode `0700`, governed by `~/.svc/worktree-policy.json`). Legacy in-repo `.worktrees/` remains fully recognized.
 - **Seven review gates (G1–G7)** — adversarial review protocol at fixed checkpoints.
 - **Local-first, mock-by-default** — external dependencies are mocked unless explicitly enabled.
 - **Four-layer token cache** — 50–60% cost reduction through structured caching.
@@ -82,7 +82,7 @@ seriousvibecoding/
 │   ├── logs/                  # Session logs
 │   └── plans/                 # Changeset plans
 ├── .svc/                      # Pipeline state (lane tasks, decision logs)
-├── .worktrees/                # Git worktrees for feature isolation
+├── .worktrees/                # Legacy in-repo worktrees (still recognized; default is ~/worktrees/{repo}/{branch})
 ├── skills-manifest.json       # Central registry: skills, lanes, gates, rules, artifacts
 ├── DOCTRINE.md                # Complete methodology documentation
 ├── FRAMEWORK-STATE.md         # Living framework self-knowledge
@@ -264,7 +264,10 @@ The test framework uses a **tiered cost model**:
 
 ## 7. Worktree Model & Branching
 
-All feature work that produces code runs in a **git worktree** under `.worktrees/`.
+All feature work that produces code runs in a **git worktree**. Default location:
+`~/worktrees/{repo}/{branch}` (mode `0700`), governed by
+`~/.svc/worktree-policy.json`. Legacy in-repo `.worktrees/` remains fully
+recognized.
 
 | Phase | Runs on main | Runs in worktree |
 |-------|-------------|------------------|
@@ -281,7 +284,7 @@ All feature work that produces code runs in a **git worktree** under `.worktrees
 | Framework Test | `test-<name>` | `test-autopilot-s1` |
 
 ### Rules
-1. All worktrees live under `.worktrees/` — never `/tmp/`, never a sibling directory.
+1. Worktrees default to `~/worktrees/{repo}/{branch}` (mode `0700`) via `~/.svc/worktree-policy.json`. Legacy in-repo `.worktrees/` remains fully recognized. Never `/tmp/`.
 2. `.worktrees/` must be in `.gitignore` (enforced by `scripts/worktree.sh preflight` and tier-1 validation).
 3. One worktree per branch — the branch name is the worktree directory name.
 4. `worktree.sh create` is idempotent — safe to re-run after interruption.

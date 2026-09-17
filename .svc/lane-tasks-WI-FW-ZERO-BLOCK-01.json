@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "wi": "WI-FW-ZERO-BLOCK-01",
+  "lane": "framework",
+  "status": "completed",
+  "created": "2026-09-17T09:45:36.559Z",
+  "updated": "2026-09-17T09:56:30.000Z",
+  "tasks": [
+    {
+      "id": 1,
+      "status": "completed",
+      "skill": "diagnose-bug",
+      "subject": "Forensic investigation of Cursor CLI deadlocks (Incidents 1 & 2)",
+      "blocked_by": []
+    },
+    {
+      "id": 2,
+      "status": "completed",
+      "skill": "review-plan",
+      "subject": "Adversarial architecture review via Grok Build 4.6 and Astra",
+      "blocked_by": [1]
+    },
+    {
+      "id": 3,
+      "status": "completed",
+      "skill": "execute-changeset",
+      "subject": "Cursor session ID aliasing and conversation_id priority",
+      "blocked_by": [2]
+    },
+    {
+      "id": 4,
+      "status": "completed",
+      "skill": "execute-changeset",
+      "subject": "Dead-PID auto-reclaim in evaluateExactWorktreeRecovery",
+      "blocked_by": [3]
+    },
+    {
+      "id": 5,
+      "status": "completed",
+      "skill": "execute-changeset",
+      "subject": "Authority TTL extension to 24 hours (1440m) and sliding refresh",
+      "blocked_by": [4]
+    },
+    {
+      "id": 6,
+      "status": "completed",
+      "skill": "execute-changeset",
+      "subject": "Zero-friction worktree creation in scripts/worktree.sh",
+      "blocked_by": [5]
+    },
+    {
+      "id": 7,
+      "status": "completed",
+      "skill": "execute-changeset",
+      "subject": "Deny-storm circuit breaker and magic phrase retirement",
+      "blocked_by": [6]
+    },
+    {
+      "id": 8,
+      "status": "completed",
+      "skill": "review-gate",
+      "subject": "Verification test suite and full Tier-1 regression suite",
+      "blocked_by": [7]
+    }
+  ]
+}

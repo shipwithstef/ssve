@@ -43,6 +43,13 @@ import {
   isApprovedExistingWorktreeRoot,
   secureAncestorChain,
 } from "../hooks/lib/literal-branch.mjs";
+import {
+  resolveApprovedRoots,
+  isApprovedWorktreeRoot,
+  resolveWorktreesRoot,
+  ensureWorktreesDirectory,
+  assertConfiguredRootSafe,
+} from "../hooks/lib/worktree-policy.mjs";
 const SHA_RE = /^[0-9a-f]{40}$/;
 const CROSS_HOST_TTL_MS = 24 * 3_600_000;
 
@@ -103,7 +110,11 @@ function withLock(repoRoot, wi, env, operation) {
   return result;
 }
 
-function assertIgnored(repoRoot) {
+export function assertIgnored(repoRoot, worktreesRoot) {
+  // Only require .worktrees/ to be in .gitignore if worktrees are actually stored in-repo!
+  if (worktreesRoot && !worktreesRoot.startsWith(repoRoot + path.sep) && worktreesRoot !== path.join(repoRoot, ".worktrees")) {
+    return;
+  }
   try { git(["check-ignore", "-q", ".worktrees/.svc-isolation-probe"], repoRoot); }
   catch { throw new Error(".worktrees/ is not ignored; repair .gitignore before ensuring a worktree"); }
 }
@@ -293,19 +304,28 @@ function ensureGraph(worktree, wi, branch) {
   return { path: graphPath, created: true };
 }
 
-function createWorktreeAndBranch(repoRoot, worktree, branch, baseSha) {
+function containmentAnchor(worktreePath, repoRoot, env) {
+  const approval = isApprovedWorktreeRoot(worktreePath, repoRoot, env);
+  if (approval.ok) return approval.root;
+  const roots = resolveApprovedRoots(repoRoot, env);
+  return roots[0] || path.join(repoRoot, ".worktrees");
+}
+
+function createWorktreeAndBranch(repoRoot, worktree, branch, baseSha, env = process.env) {
   let branchExists = true;
   try { git(["show-ref", "--verify", `refs/heads/${branch}`], repoRoot); }
   catch { branchExists = false; }
   if (branchExists) throw new Error(`branch ${branch} already exists but is not linked at ${worktree}`);
   // F-004: re-verify at write time (not just at transaction()'s authorization-time
-  // check) -- a symlinked .worktrees parent could redirect the mkdir+`git worktree
-  // add` below outside the repository.
-  if (!secureAncestors(repoRoot, worktree)) {
+  // check) -- a symlinked parent could redirect the mkdir+`git worktree
+  // add` below outside an approved root.
+  const anchor = containmentAnchor(worktree, repoRoot, env);
+  if (!secureAncestors(anchor, worktree)) {
     throw new Error(`unsafe worktree path ${worktree}: an ancestor directory is a symlink or not owned by the current user`);
   }
-  fs.mkdirSync(path.dirname(worktree), { recursive: true });
+  ensureWorktreesDirectory(path.dirname(worktree));
   git(["worktree", "add", worktree, "-b", branch, baseSha], repoRoot);
+  fs.chmodSync(worktree, 0o700);
   // R2-F004: a same-uid race window between the git-worktree-add above and these
   // mkdirs is a theoretical residual, not gold-plated further for this WI (see
   // the R2-F004 note in bootstrap-marker.mjs).
@@ -648,16 +668,17 @@ export function adoptExistingWorktree(options = {}, env = process.env) {
     return { wi, branch: target.branch, absolute_worktree: target.path, owner_session: owner, graph_path: graphPathFor(target), resumed: true, authority_v2: { lease } };
   }
   // Approved-root containment + same-UID/no-symlink ancestry, identical to the
-  // bootstrap transaction's authorization surface.
-  const relativeWorktree = path.relative(path.join(repo.root, ".worktrees"), target.path);
-  const insideDefaultRoot = !!relativeWorktree && !relativeWorktree.startsWith("..") && !path.isAbsolute(relativeWorktree);
-  if (!insideDefaultRoot) {
+  // bootstrap transaction's authorization surface. Centralized external roots
+  // (~/worktrees/...) and legacy in-repo .worktrees are both valid anchors.
+  const containment = isApprovedWorktreeRoot(target.path, repo.root, env);
+  const insideApprovedRoot = containment.ok && containment.root !== (containment.realpath || path.resolve(target.path));
+  if (!insideApprovedRoot) {
     const approval = existingResumeApproval({ repo, wi, branch: target.branch, owner, worktree: target.path, env });
     if (!approval.ok) throw new Error(`SELF_HEAL_INELIGIBLE (${approval.reason_code || "WORKTREE_ROOT_UNAPPROVED"}: ${approval.reason})`);
     if (!secureAncestors(approval.root, approval.root === target.path ? path.join(target.path, ".svc", ".svc-state-probe") : target.path)) {
       throw new Error("SELF_HEAL_INELIGIBLE: unsafe approved worktree path (symlinked or foreign-owned ancestor)");
     }
-  } else if (!secureAncestors(repo.root, target.path)) {
+  } else if (!secureAncestors(containment.root, target.path)) {
     throw new Error("SELF_HEAL_INELIGIBLE: unsafe worktree path (symlinked or foreign-owned ancestor)");
   }
   const stateProbe = path.join(target.path, ".svc", ".svc-state-probe");
@@ -689,8 +710,12 @@ export function ensureWorktree(options = {}, env = process.env) {
 }
 
 function transaction({ repo, wi, branch, from, owner, host, env }) {
-  assertIgnored(repo.root);
-  const worktreesRoot = path.join(repo.root, ".worktrees");
+  resolveApprovedRoots(repo.root, env);
+  const worktreesRoot = resolveWorktreesRoot(repo.root, env);
+  assertIgnored(repo.root, worktreesRoot);
+  // Reject a symlinked configured root before any directory is created.
+  assertConfiguredRootSafe(worktreesRoot);
+  ensureWorktreesDirectory(worktreesRoot);
   // AC-1/FP-02: the requested NEW-worktree path is derived independently of the
   // branch ref. Slash-free filesystem-safe branches keep the legacy layout;
   // Git-valid slash branches get `<wi>-<slug>-<sha256[0:12]>` so no ref byte is
@@ -705,14 +730,14 @@ function transaction({ repo, wi, branch, from, owner, host, env }) {
   }
   const registeredBranch = registeredBranches[0];
   const worktree = registeredBranch?.path || requestedWorktree;
-  const relativeWorktree = path.relative(worktreesRoot, worktree);
-  const insideDefaultRoot = !!relativeWorktree && !relativeWorktree.startsWith("..") && !path.isAbsolute(relativeWorktree);
+  const containment = isApprovedWorktreeRoot(worktree, repo.root, env);
+  const insideApprovedRoot = containment.ok && containment.root !== (containment.realpath || path.resolve(worktree));
   let approvedExternalRoot = null;
-  if (!insideDefaultRoot) {
-    // FP-02/AC-3: a registered linked worktree outside the repository's default
-    // root is adoptable ONLY when its realpath sits beneath an owner-approved
-    // canonical root with a same-UID, symlink-free ancestry chain. Unapproved
-    // roots stay fail-closed and are never auto-approved.
+  if (!insideApprovedRoot) {
+    // FP-02/AC-3: a registered linked worktree outside approved roots
+    // (centralized external or legacy in-repo) is adoptable ONLY when its
+    // realpath sits beneath an owner-approved canonical root with a same-UID,
+    // symlink-free ancestry chain. Unapproved roots stay fail-closed.
     if (registeredBranch) {
       const approval = existingResumeApproval({ repo, wi, branch, owner, worktree: registeredBranch.path, env });
       if (!approval.ok) {
@@ -724,14 +749,15 @@ function transaction({ repo, wi, branch, from, owner, host, env }) {
     }
   }
   // F-004 (round 2, CONFIRMED HIGH): the lexical dirname comparison above does NOT
-  // notice a PRE-PLANTED symlink at .worktrees itself -- it would redirect the
-  // worktree creation below outside the repository while still satisfying the
+  // notice a PRE-PLANTED symlink at the worktrees parent -- it would redirect the
+  // worktree creation below outside the approved root while still satisfying the
   // lexical check. Canonicalize every existing ancestor before authorizing.
   // For an approved external worktree the containment anchor is the approved
   // canonical root (repo-root-relative containment does not apply there), and
   // the same same-UID/no-symlink guarantees are enforced from that root.
-  if (!insideDefaultRoot && approvedExternalRoot) {
-    const externalChain = secureAncestors(approvedExternalRoot, approvedExternalRoot === worktree ? stateProbePath(worktree) : worktree);
+  const anchor = insideApprovedRoot ? containment.root : approvedExternalRoot;
+  if (anchor) {
+    const externalChain = secureAncestors(anchor, anchor === worktree ? stateProbePath(worktree) : worktree);
     if (!externalChain) throw new Error("unsafe approved worktree path: an ancestor beneath the approved root is a symlink or not owned by the current user");
   } else if (!secureAncestors(repo.root, worktree)) {
     throw new Error("unsafe worktree path: an ancestor directory is a symlink or not owned by the current user");
@@ -974,7 +1000,7 @@ function createFresh({ repo, wi, branch, from, owner, host, env, worktree, marke
   try {
     recordIntent(markerPath, marker, worktree, repo.root);
     if (env.SVC_ENSURE_FAILPOINT === "after-worktree") throw new Error("injected failpoint: after-worktree");
-    createWorktreeAndBranch(repo.root, worktree, branch, baseSha);
+    createWorktreeAndBranch(repo.root, worktree, branch, baseSha, env);
     worktreeCreated = true;
 
     const graphP = path.join(worktree, ".svc", `lane-tasks-${wi}.json`);
@@ -1059,7 +1085,7 @@ function forwardComplete({ repo, wi, branch, owner, host, env, worktree, markerP
   try {
     if (!fs.existsSync(worktree)) {
       recordIntent(markerPath, marker, worktree, repo.root);
-      createWorktreeAndBranch(repo.root, worktree, branch, baseSha);
+      createWorktreeAndBranch(repo.root, worktree, branch, baseSha, env);
     }
     const graphP = path.join(worktree, ".svc", `lane-tasks-${wi}.json`);
     if (!fs.existsSync(graphP)) {

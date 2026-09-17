@@ -277,8 +277,8 @@ function checkSessionContractFreshness(cwd: string): string | null {
     );
   }
 
-  // WI-558 policy parity: same 4h default as hooks/svc-session-contract-freshness.mjs
-  const maxAgeHours = parseInt(process.env.SVC_CONTRACT_MAX_AGE_HOURS || "4", 10);
+  // WI-558 policy parity: same 24h / 1440-minute default as hooks/svc-session-contract-freshness.mjs
+  const maxAgeHours = parseInt(process.env.SVC_CONTRACT_MAX_AGE_HOURS || "24", 10);
   if (maxAgeHours === 0) {
     return null; // bypass age check
   }

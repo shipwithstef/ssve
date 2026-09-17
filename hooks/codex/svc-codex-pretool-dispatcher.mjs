@@ -2,6 +2,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { runtimeRoot, atomicWriteJson, sessionId, hookContext } from "./lib/codex-hook-context.mjs";
+import { renewSlidingPromptAuthority } from "../lib/pretool-decision-engine.mjs";
+import { autoProvisionMissingBinding, isPreProvisionIsolationDenial, rebindMutationPayload } from "../lib/auto-provision-worktree.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const KNOWN_HOSTS = ["codex", "claude", "kimi", "gemini", "opencode", "mimo-code", "antigravity", "cursor", "grok"];
@@ -18,11 +21,77 @@ function hostIdentity(p = null) {
   return "";
 }
 
-function deny(reason, host = "") {
-  if (host === "cursor") { process.stdout.write(`${JSON.stringify({permission:"deny",user_message:String(reason)})}\n`); process.exit(0); }
-  process.stdout.write(`${JSON.stringify({hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"deny",permissionDecisionReason:String(reason)}})}\n`); process.exit(0);
+let currentSessionId = "";
+let currentHookContext = null;
+
+function trackDenial(reason, sid, env = process.env) {
+  if (!sid) return false;
+  try {
+    const root = runtimeRoot(env);
+    if (!root) return false;
+    const file = path.join(root, "deny-storm-tracker.json");
+    let tracker = {};
+    if (fs.existsSync(file)) {
+      try { tracker = JSON.parse(fs.readFileSync(file, "utf8")) || {}; } catch {}
+    }
+    const current = tracker[sid] || { lastReason: "", count: 0, lastTs: 0 };
+    const now = Date.now();
+    if (current.lastReason === reason && (now - current.lastTs < 300_000)) {
+      current.count += 1;
+      current.lastTs = now;
+      tracker[sid] = current;
+      atomicWriteJson(file, tracker);
+      return current.count >= 2;
+    } else {
+      tracker[sid] = { lastReason: reason, count: 1, lastTs: now };
+      atomicWriteJson(file, tracker);
+      return false;
+    }
+  } catch {
+    return false;
+  }
 }
-function allow(updatedInput = null, host = "") {
+
+function resetDenial(sid, env = process.env) {
+  if (!sid) return;
+  try {
+    const root = runtimeRoot(env);
+    if (!root) return;
+    const file = path.join(root, "deny-storm-tracker.json");
+    if (fs.existsSync(file)) {
+      let tracker = JSON.parse(fs.readFileSync(file, "utf8")) || {};
+      if (tracker[sid]) {
+        delete tracker[sid];
+        atomicWriteJson(file, tracker);
+      }
+    }
+  } catch {}
+}
+
+function deny(reason, host = "") {
+  let finalReason = String(reason);
+  let halt = false;
+  if (currentSessionId && !isPreProvisionIsolationDenial(finalReason) && trackDenial(finalReason, currentSessionId, process.env)) {
+    halt = true;
+    finalReason = `[SSVE CIRCUIT BREAKER] Deny storm halted: consecutive identical denial detected. Recovery: invoke node scripts/svc-ensure-worktree.mjs for the bound WI (harness self-heal). (${finalReason})`;
+  }
+  if (host === "cursor") {
+    const body = { permission: "deny", user_message: finalReason };
+    if (halt) body.continue = false;
+    process.stdout.write(`${JSON.stringify(body)}\n`);
+    process.exit(0);
+  }
+  const body = { hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: finalReason } };
+  if (halt) body.continue = false;
+  process.stdout.write(`${JSON.stringify(body)}\n`);
+  process.exit(0);
+}
+function allow(updatedInput = null, host = "", options = {}) {
+  if (!options.observation) {
+    if (currentSessionId) resetDenial(currentSessionId, process.env);
+    const hostId = host || hostIdentity(payload);
+    renewSlidingPromptAuthority(options.ctx || hookContext(payload, { ...process.env, SVC_HOST: hostId }));
+  }
   if (host === "cursor") { process.stdout.write(updatedInput ? `${JSON.stringify({permission:"allow",updated_input:updatedInput})}\n` : "{}\n"); process.exit(0); }
   process.stdout.write(updatedInput ? `${JSON.stringify({hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"allow",updatedInput}})}\n` : "{}\n");
 }
@@ -33,7 +102,7 @@ function lightPayload(raw){try{const value=JSON.parse(String(raw||"{}"));return 
 // the typed decision envelope to the host protocol.
 const payload=lightPayload(fs.readFileSync(0,"utf8"));
 async function governed() {
-const { parseHookInput, operationHookContext, isReadOnlyTool, mutationPayload, toolName } = await import("./lib/codex-hook-context.mjs");
+const { parseHookInput, operationHookContext, isReadOnlyTool, mutationPayload, toolName, sessionId, runtimeRoot, atomicWriteJson } = await import("./lib/codex-hook-context.mjs");
 const { evaluatePreToolObservation, evaluateSelfHealAuthority, evaluateExactWorktreeRecovery } = await import("../lib/pretool-decision-engine.mjs");
 const { renewControllerIfCurrent, renewalDue, readController, repositoryId, authorityStateRoot, principalId } = await import("../lib/authority-store.mjs");
 const { writeToolCallReceipt, canonicalOriginalDigest } = await import("../lib/tool-call-receipt.mjs");
@@ -48,28 +117,7 @@ const { spawnSync } = await import("node:child_process");
 const HOOK_ROOT = path.resolve(HERE, "..");
 const CHILDREN = [["svc-worktree-isolation-guard.mjs"],["svc-workflow-guard.mjs","--bash-guard"],["svc-workflow-guard.mjs"],["svc-loop-guard.mjs"],["svc-skill-artifact-authenticity.mjs"],["svc-session-contract-freshness.mjs"],["svc-inertia-check.mjs"],["codex","svc-codex-skill-load-enforcer.mjs"],["svc-impact-triad-guard.mjs"]];
 function sidOf(p) {
-  return String(
-    p?.session_id ||
-    p?.sessionId ||
-    p?.conversation_id ||
-    p?.conversationId ||
-    p?.thread_id ||
-    p?.threadId ||
-    p?.metadata?.session_id ||
-    p?.metadata?.sessionId ||
-    p?.metadata?.conversation_id ||
-    p?.metadata?.conversationId ||
-    process.env.CURSOR_CONVERSATION_ID ||
-    process.env.CURSOR_SESSION_ID ||
-    process.env.SVC_SESSION_ID ||
-    process.env.GROK_SESSION_ID ||
-    process.env.CODEX_THREAD_ID ||
-    process.env.CODEX_SESSION_ID ||
-    process.env.CLAUDE_SESSION_ID ||
-    process.env.KIMI_SESSION_ID ||
-    process.env.GEMINI_SESSION_ID ||
-    ""
-  );
+  return sessionId(p, process.env);
 }
 function worktreeRows(repo) { const rows=[]; for(const x of (spawnSync("git",["-C",repo,"worktree","list","--porcelain"],{encoding:"utf8"}).stdout||"").split(/\r?\n/)){ if(x.startsWith("worktree ")){ try { rows.push(fs.realpathSync(x.slice(9))); } catch {} } } return rows; }
 function baton(repo,sid,payload,host,explicitWorktree) { return collectSessionBatons({repo,sessionId:sid,host,agentId:payload.agent_id||payload.agentId||process.env.SVC_AGENT_ID||null,env:process.env,explicitWorktree}); }
@@ -91,7 +139,7 @@ deny(`SSVE restored the authorized WI. Load its current skill before retrying: $
 }
 const hostId = hostIdentity(payload);
 try { const key=payload.tool_input?"tool_input":payload.toolInput?"toolInput":payload.arguments?"arguments":"args";{
-const observation=evaluatePreToolObservation(payload);if(observation){if(observation.execution_input){allow(observation.execution_input,hostId);}else{allow(null,hostId);}process.exit(0);}}const sid=sidOf(payload);if(!sid)deny("Codex session identity is missing; recovery: resume with a stable session_id.",hostId);if(!hostId)deny("host identity missing: wiring must set SVC_HOST for this host and no codex session evidence exists; recovery: relaunch detached lanes via scripts/lib/dispatch-codex-lane.sh or reinstall hooks via ./setup --host <host>.",hostId);const ctx=operationHookContext(payload,{...process.env,SVC_HOST:hostId});const scope=resolveOperationScope(payload,{host:hostId,env:process.env});if(!scope.ok)deny(`invalid mutation operation scope (${scope.contradictions[0]?.code||"scope contradiction"})`,hostId);const repo=scope.operation_repository?.worktree_root||scope.session_repository?.worktree_root||ctx.repo_root;const boundRoot=scope.explicit_workdir?.present?(scope.operation_repository?.worktree_root||scope.explicit_workdir.canonical):null;let b=baton(repo,sid,payload,hostId,boundRoot);if(b?.conflict)deny("multiple active bindings for this session; recovery: select one WI explicitly.",hostId);let effective=payload;const input=payload[key];if(b?.worktree&&!scope.explicit_workdir.present&&input&&typeof input==="object")effective={...payload,[key]:{...input,workdir:b.worktree}};const command=mutationPayload(effective);const boot=parseBootstrapCommand(command);if(boot&&!boot.handoff){// WI-FW-HOOKS-SAFETY-01 (FP-04): operation scope outranks stale session cwd.
+const observation=evaluatePreToolObservation(payload);if(observation){if(observation.execution_input){allow(observation.execution_input,hostId,{observation:true});}else{allow(null,hostId,{observation:true});}process.exit(0);}}const sid=sidOf(payload);currentSessionId=sid;if(!sid)deny("Codex session identity is missing; recovery: resume with a stable session_id.",hostId);if(!hostId)deny("host identity missing: wiring must set SVC_HOST for this host and no codex session evidence exists; recovery: relaunch detached lanes via scripts/lib/dispatch-codex-lane.sh or reinstall hooks via ./setup --host <host>.",hostId);currentHookContext=hookContext(payload,{...process.env,SVC_HOST:hostId});const ctx=operationHookContext(payload,{...process.env,SVC_HOST:hostId});const scope=resolveOperationScope(payload,{host:hostId,env:process.env});if(!scope.ok)deny(`invalid mutation operation scope (${scope.contradictions[0]?.code||"scope contradiction"})`,hostId);const repo=scope.operation_repository?.worktree_root||scope.session_repository?.worktree_root||ctx.repo_root;const boundRoot=scope.explicit_workdir?.present?(scope.operation_repository?.worktree_root||scope.explicit_workdir.canonical):null;let b=baton(repo,sid,payload,hostId,boundRoot);if(b?.conflict)deny("multiple active bindings for this session; recovery: select one WI explicitly.",hostId);let effective=payload;const input=payload[key];if(b?.worktree&&!scope.explicit_workdir.present&&input&&typeof input==="object")effective={...payload,[key]:{...input,workdir:b.worktree}};const command=mutationPayload(effective);const boot=parseBootstrapCommand(command);if(boot&&!boot.handoff){// WI-FW-HOOKS-SAFETY-01 (FP-04): operation scope outranks stale session cwd.
 // The default-checkout requirement is evaluated against the repository the
 // EXPLICIT operation evidence resolves to when present; session cwd is
 // context, never mutation authority.
@@ -109,17 +157,26 @@ const finalScope=resolveOperationScope(effective,{host:hostId,env:process.env});
 // a unique registered non-default worktree with this session's released or
 // active controller may re-arm. Foreign live owners and default checkout stay denied.
 const gate=evaluateSelfHealAuthority(payload,process.env,{repo_root:repo});
-const recoveryRoot=scope.explicit_workdir?.present
-  ?(scope.operation_repository?.worktree_root||scope.explicit_workdir.canonical)
-  :(scope.session_repository && scope.session_repository.default_worktree_root && scope.session_repository.worktree_root!==scope.session_repository.default_worktree_root
-    ?scope.session_repository.worktree_root
-    :null);
+const recoveryRoot=(scope.operation_repository && scope.operation_repository.default_worktree_root && scope.operation_repository.worktree_root!==scope.operation_repository.default_worktree_root)
+  ?scope.operation_repository.worktree_root
+  :(scope.explicit_workdir?.present
+    ?(scope.operation_repository?.worktree_root||scope.explicit_workdir.canonical)
+    :(scope.session_repository && scope.session_repository.default_worktree_root && scope.session_repository.worktree_root!==scope.session_repository.default_worktree_root
+      ?scope.session_repository.worktree_root
+      :null));
 const exact=(!gate.eligible && recoveryRoot)
   ?evaluateExactWorktreeRecovery(payload,process.env,{worktree_root:recoveryRoot})
   :{eligible:false,reason_code:"NOT_ATTEMPTED"};
 const chosen=gate.eligible?gate:exact;
-if(!chosen?.eligible)deny(`mutation requires a bound WI worktree (AUTH_BINDING_MISSING_SELF_HEAL_INELIGIBLE: ${gate.reason_code}; EXACT_WORKTREE_RECOVERY: ${exact.reason_code}); recovery: resume the exact owned worktree or arm SVC OWNER OVERRIDE.`,hostId);let adopted=null;try{const ensureModule=await import("../../scripts/svc-ensure-worktree.mjs");adopted=ensureModule.adoptExistingWorktree({wi:chosen.wi,cwd:repo,prepareSession:true,sessionId:sid},{...process.env,SVC_SESSION_ID:sid,SVC_AGENT_ID:payload.agent_id||payload.agentId||process.env.SVC_AGENT_ID||""});}catch(error){deny(`self-heal could not complete (${error.message})`,hostId);}if(adopted)await loadRecoverySkill(adopted.absolute_worktree,chosen,input,ctx,sid,hostId);
+if(chosen?.eligible){
+let adopted=null;try{const ensureModule=await import("../../scripts/svc-ensure-worktree.mjs");adopted=ensureModule.adoptExistingWorktree({wi:chosen.wi,cwd:repo,prepareSession:true,sessionId:sid},{...process.env,SVC_SESSION_ID:sid,SVC_AGENT_ID:payload.agent_id||payload.agentId||process.env.SVC_AGENT_ID||""});}catch(error){deny(`self-heal could not complete (${error.message})`,hostId);}if(adopted)await loadRecoverySkill(adopted.absolute_worktree,chosen,input,ctx,sid,hostId);
 deny("self-heal completed but the binding did not resolve; inspect the WI ownership before retrying.",hostId);}
+if(exact.reason_code==="FOREIGN_LIVE_OWNER")deny("FOREIGN_LIVE_OWNER: a provably live owner cannot be displaced",hostId);
+const provisioned=await autoProvisionMissingBinding({payload:effective,env:process.env,repo,sessionId:sid,host:hostId});
+if(!provisioned.ok)deny(`mutation requires a bound WI worktree (AUTH_BINDING_MISSING_SELF_HEAL_INELIGIBLE: ${gate.reason_code}; EXACT_WORKTREE_RECOVERY: ${exact.reason_code}; SELF_PROVISION_ATTEMPTED: ${provisioned.reason})`,hostId);
+effective=rebindMutationPayload(effective,provisioned.defaultRoot,provisioned.worktree);
+b=baton(provisioned.worktree,sid,payload,hostId,provisioned.worktree);
+}
 // A crash after controller recovery must not strand the now-owned session.
 // Reuse the actual enforcer's receipt decision instead of duplicating its rules.
 if(b?.worktree&&!boot){
@@ -155,7 +212,7 @@ const principal=principalId({host:hostId,session_id:sid,agent_id:payload.agent_i
 currentLease=readController({stateRoot,repoId,wi:b.binding.wi});
 if(currentLease&&currentLease.state==="active"&&String(currentLease.controller_principal)===principal&&renewalDue(currentLease)){
 const renewed=renewControllerIfCurrent({stateRoot,repoId,wi:b.binding.wi,worktreeRoot:b.worktree,principal:currentLease.controller_principal,leaseId:currentLease.lease_id,generation:Number(currentLease.generation)});
-if(renewed.status!=="renewed")deny(`lease renewal refused (${renewed.status}: ${renewed.reason}); recovery: re-arm authority with ‘work on ${b.binding.wi}’.`,hostId);
+if(renewed.status!=="renewed")deny(`lease renewal refused (${renewed.status}: ${renewed.reason}); recovery: invoke node scripts/svc-ensure-worktree.mjs --wi ${b.binding.wi}`,hostId);
 currentLease=renewed.lease||currentLease;
 }
 }catch{currentLease=null;}
@@ -168,12 +225,12 @@ const stateRoot=authorityStateRoot(b.worktree,process.env);
 const repoId=repositoryId(b.worktree);
 const principal=principalId({host:hostId,session_id:sid,agent_id:payload.agent_id||payload.agentId||process.env.SVC_AGENT_ID||null});
 let live=null;
-try{live=readController({stateRoot,repoId,wi:b.binding.wi});}catch(e){deny(`controller state unreadable (${e.message}); recovery: re-arm authority with ‘work on ${b.binding.wi}’.`,hostId);}
+try{live=readController({stateRoot,repoId,wi:b.binding.wi});}catch(e){deny(`controller state unreadable (${e.message}); recovery: invoke node scripts/svc-ensure-worktree.mjs --wi ${b.binding.wi}`,hostId);}
 // A null read means NO v2 state exists yet (fresh adoption runs on the v1
 // claim/binding until first renewal arms v2) — corruption, by contrast,
 // THROWS above. Only EXISTING v2 state must prove liveness here.
 if(live){
-if(live.state!=="active")deny(`controller lease is ${live.state} for ${b.binding.wi}; recovery: re-arm authority with ‘work on ${b.binding.wi}’.`,hostId);
+if(live.state!=="active")deny(`controller lease is ${live.state} for ${b.binding.wi}; recovery: invoke node scripts/svc-ensure-worktree.mjs --wi ${b.binding.wi}`,hostId);
 if(String(live.controller_principal)!==principal)deny("controller principal changed; recovery: request handover from the current owner.",hostId);
 if(currentLease&&Number(live.generation)<Number(currentLease.generation))deny("controller generation moved backwards; possible state corruption; recovery: re-arm authority.",hostId);
 }

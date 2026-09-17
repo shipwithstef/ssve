@@ -14,7 +14,7 @@ function promptText(payload) {
 }
 
 function sweep(repoRoot, currentDir, env) {
-  const ttlMinutes = Number(env.SVC_CODEX_AUTHORITY_TTL_MIN || 240);
+  const ttlMinutes = Number(env.SVC_CODEX_AUTHORITY_TTL_MIN || 1440);
   const repoDir = path.dirname(currentDir);
   const cutoff = Date.now() - Math.max(1, ttlMinutes) * 60_000;
   try {

@@ -52,7 +52,7 @@ repository owner/founder; model disagreement cannot manufacture product authorit
 
 ## Review focus dimensions (per WI-075)
 
-Reviewers must cover all nine dimensions. Lane compliance (dimension g) was added 2026-04-24 after both Kimi and Codex missed the `improve-framework` skip in WI-073.
+Reviewers must cover all ten dimensions (a–j). Lane compliance (dimension g) was added 2026-04-24 after both Kimi and Codex missed the `improve-framework` skip in WI-073. Dimension (j) is mandatory for plans authored by AGY/Gemini.
 
 | # | Dimension | Prompt |
 |---|---|---|
@@ -65,6 +65,7 @@ Reviewers must cover all nine dimensions. Lane compliance (dimension g) was adde
 | g | **Lane compliance** | For the declared lane, list every mandatory upstream skill. Is each either completed (cite artifact) or skipped-with-justification (cite `.svc/pipeline-decisions.jsonl`)? An unnamed lane skill = **REJECT** finding. |
 | h | **Executable actions** | Legacy/dispatch: complete concrete shell sequence. Explicit inline v5: validate ready-now commands and existing land/verify producer descriptions; future identities must be produced and verified at their action boundary, never invented. Historical v4 bodies remain readable. |
 | i | **Blueprint Completeness** | **Dispatch mode (`mode: dispatch` / unset):** does copying the blueprints produce a lint-clean and fully compiled codebase state? An absent/incomplete blueprint = REJECT. **Inline mode (`mode: inline`, WI-386):** §3a is intentionally skipped — do NOT raise a missing-blueprint finding; instead verify the manifest still gives the orchestrator enough (file set + task graph + execution sequence) to apply the change with its already-loaded context. |
+| j | **User Intent & Request Fidelity** | For plans authored by AGY/Gemini (`orchestrator: agy` / `author: antigravity`), verify whether the plan faithfully, completely, and accurately fulfills the original user prompt and instructions. Check: (1) Did the author omit explicit user requirements? (2) Did the author distort or misinterpret constraints? (3) Did the author introduce unprompted or conflicting architectural bloat? Any unfulfilled explicit user requirement is a HIGH severity finding that BLOCKS plan approval. |
 
 For explicit inline mode, score these same ten dimensions as solution readiness: (1) exact resolvable or declared future files; (2) complete consequential behavior and interfaces, not authored code, bound in v5 `implementation_approach`; (3) appropriate executable proof and outcomes; (4) meaningful action/authority limits, including `executor_discretion`; (5) exact write scope; (6) recovery path; (7) correct dependencies; (8) observable success; (9) original AC/UX/technical trace; (10) no unresolved consequential choice. Reversible local details are allowed. v5 (and the pinned genuine bootstrap v4) release identities may use the validated existing-adapter producer form. Do not require a body rewrite to `sealed:true`. Keep integer rubric_score 0–10 and concrete findings. For dispatch/absent mode, retain the complete-code/command packet rubric below.
 

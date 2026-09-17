@@ -19,6 +19,7 @@ import fs from "node:fs";
 import os from "node:os";
 import { lexSimpleCommand } from "../codex/lib/argv-lex.mjs";
 import { encodeSimpleCommand } from "../codex/lib/argv-encode.mjs";
+import { resolveApprovedRoots, resolveWorktreesRoot } from "./worktree-policy.mjs";
 
 // Documented byte cap: far above every practical branch name, far below Git's
 // own pathname limits, and cheap to enforce before any subprocess call.
@@ -79,20 +80,30 @@ export function needsDerivedWorktreeLeaf(branch) {
   return typeof branch === "string" && branch.includes("/");
 }
 
-// AC-3/T03: approved canonical worktree roots. The repository's own
-// `.worktrees` is always approved. Additional roots are owner-configured via
-// SVC_APPROVED_WORKTREE_ROOTS (absolute directories, ':'-separated); each must
-// already exist as a real directory (no symlink component) before approval.
+// AC-3/T03: approved canonical worktree roots. Includes the centralized
+// policy root, the parent base (e.g. ~/worktrees), legacy in-repo `.worktrees`,
+// project-specific roots, and SVC_APPROVED_WORKTREE_ROOTS. Each existing root
+// must be a real directory owned by the current UID with no symlink component.
 export function approvedWorktreeRoots(repoRoot, env = process.env) {
-  const roots = [path.join(repoRoot, ".worktrees")];
-  const raw = String(env.SVC_APPROVED_WORKTREE_ROOTS || "");
-  for (const entry of raw.split(":")) {
-    if (!entry) continue;
-    let real = null;
-    try { real = fs.realpathSync(path.resolve(entry)); } catch { continue; }
-    try {
-      if (!fs.statSync(real).isDirectory()) continue;
-    } catch { continue; }
+  const roots = [];
+  for (const candidate of resolveApprovedRoots(repoRoot, env)) {
+    let real;
+    try { real = fs.realpathSync(path.resolve(candidate)); } catch { continue; }
+    let stat;
+    try { stat = fs.lstatSync(real); } catch { continue; }
+    if (!stat.isDirectory() || stat.isSymbolicLink()) continue;
+    if (typeof process.getuid === "function" && stat.uid !== process.getuid()) continue;
+    let current = real;
+    let symlinkRejected = false;
+    while (current !== path.parse(current).root) {
+      let ancestor;
+      try { ancestor = fs.lstatSync(current); } catch { symlinkRejected = true; break; }
+      if (ancestor.isSymbolicLink()) { symlinkRejected = true; break; }
+      const parent = path.dirname(current);
+      if (parent === current) break;
+      current = parent;
+    }
+    if (symlinkRejected) continue;
     if (!roots.includes(real)) roots.push(real);
   }
   return roots;
@@ -137,8 +148,12 @@ export function isApprovedExistingWorktreeRoot(worktreePath, repoRoot, env = pro
   return { ok: false, reason_code: "WORKTREE_ROOT_UNAPPROVED", reason: `no approved canonical worktree root contains ${real}` };
 }
 
-export function defaultWorktreeRoot(repoRoot) {
-  return path.join(fs.realpathSync(repoRoot), ".worktrees");
+export function defaultWorktreeRoot(repoRoot, env = process.env) {
+  try {
+    return resolveWorktreesRoot(repoRoot, env);
+  } catch {
+    return path.join(fs.realpathSync(repoRoot), ".worktrees");
+  }
 }
 
 export function platformPathSeparatorNote() {

@@ -5,7 +5,7 @@ import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 const STATE_BASENAME = "active-intent-state.json";
-const DEFAULT_TTL_MINUTES = 240;
+const DEFAULT_TTL_MINUTES = 1440;
 
 export function findSvcDir(startDir = process.cwd()) {
   let dir = path.resolve(startDir || process.cwd());

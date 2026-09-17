@@ -16,7 +16,7 @@
  *     ledger.
  *
  * Checks (hard block on failure):
- *   1. Contract timestamp is < SVC_CONTRACT_MAX_AGE_HOURS old (default 4h).
+ *   1. Contract timestamp is < SVC_CONTRACT_MAX_AGE_HOURS old (default 24h / 1440 minutes).
  *   2. Contract.skill matches SVC_CURRENT_SKILL (if env var is set).
  *
  * Fail-open on: missing/unparsable payload, no file path, target outside any
@@ -86,6 +86,9 @@ function denyContract(reasonCode, humanReason, { target, recovery } = {}) {
 }
 
 const WORKTREE_BOOTSTRAP_WINDOW_MS = 60 * 60 * 1000; // contract untouched ≤1h after worktree creation
+// Host-uniform 24h window (Claude, Codex, Cursor, OpenCode, Grok, others).
+// Do not shorten this per host; OpenCode's plugin default must stay in lockstep.
+const MAX_CONTRACT_AGE_MINUTES = 1440; // 24h — aligned with sliding prompt-authority TTL
 
 function isDisabled() {
   const disabled = (process.env.SVC_DISABLED_HOOKS || "")
@@ -163,11 +166,28 @@ function checkFreshness(contract) {
   if (isTerminalUnbound) {
     return null;
   }
-  const maxAgeHours = parseInt(process.env.SVC_CONTRACT_MAX_AGE_HOURS || "4", 10);
-  if (maxAgeHours === 0) {
+  const hoursEnv = process.env.SVC_CONTRACT_MAX_AGE_HOURS;
+  const minutesEnv = process.env.SVC_CONTRACT_MAX_AGE_MINUTES;
+  if (hoursEnv === "0" || minutesEnv === "0") {
     return null; // bypass age check
   }
-  const maxAgeMs = maxAgeHours * 60 * 60 * 1000;
+  let maxAgeMs;
+  let maxAgeHours;
+  if (hoursEnv !== undefined && hoursEnv !== "") {
+    maxAgeHours = parseInt(hoursEnv, 10);
+    if (!Number.isFinite(maxAgeHours) || maxAgeHours < 0) {
+      maxAgeHours = MAX_CONTRACT_AGE_MINUTES / 60;
+    }
+    maxAgeMs = maxAgeHours * 60 * 60 * 1000;
+  } else if (minutesEnv !== undefined && minutesEnv !== "") {
+    const minutes = parseInt(minutesEnv, 10);
+    const resolved = Number.isFinite(minutes) && minutes > 0 ? minutes : MAX_CONTRACT_AGE_MINUTES;
+    maxAgeHours = resolved / 60;
+    maxAgeMs = resolved * 60 * 1000;
+  } else {
+    maxAgeHours = MAX_CONTRACT_AGE_MINUTES / 60;
+    maxAgeMs = MAX_CONTRACT_AGE_MINUTES * 60 * 1000;
+  }
 
   const ts = parseTs(contract.ts);
   if (ts === null) {
@@ -237,6 +257,12 @@ async function main() {
   if (!mutationTargets.length) process.exit(0);
   const checkedRepos = new Set();
   for (const absTarget of mutationTargets) {
+    // Never block writes TO the session contract itself — that's the recovery path.
+    // Blocking it creates a circular lockout (WI-FW-ZERO-BLOCK-01 Phase 7).
+    if (path.basename(absTarget) === "session-contract.jsonl" &&
+        absTarget.includes(path.join(".svc", "session-contract.jsonl"))) {
+      continue;
+    }
     const repo = findRepoRoot(path.dirname(absTarget));
     if (!repo || checkedRepos.has(repo.root)) continue;
     checkedRepos.add(repo.root);

@@ -21,12 +21,15 @@ import {
   isReadOnlyTool,
   runtimeRoot,
   repoIdentity,
+  upsertCursorAlias,
 } from "../codex/lib/codex-hook-context.mjs";
 import { findSvcDir } from "../lib/resolve-wi.mjs";
 import { isAuthoritativeMutatingBinding } from "../lib/authoritative-binding.mjs";
 import { armOwnerLease } from "../codex/lib/owner-lease.mjs";
 import { evaluatePreToolObservation } from "../lib/pretool-decision-engine.mjs";
 import { isShellTool } from "../lib/shell-tools.mjs";
+
+process.env.SVC_HOST = process.env.SVC_HOST || "cursor";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..", "..");
@@ -47,7 +50,7 @@ function promptText(payload) {
 }
 
 function sweep(repoRoot, currentDir, env) {
-  const ttlMinutes = Number(env.SVC_CODEX_AUTHORITY_TTL_MIN || 240);
+  const ttlMinutes = Number(env.SVC_CODEX_AUTHORITY_TTL_MIN || 1440);
   const repoDir = path.dirname(currentDir);
   const cutoff = Date.now() - Math.max(1, ttlMinutes) * 60_000;
   try {
@@ -57,6 +60,38 @@ function sweep(repoRoot, currentDir, env) {
       const stat = fs.lstatSync(candidate);
       if (stat.isSymbolicLink() || (typeof process.getuid === "function" && stat.uid !== process.getuid())) continue;
       if (stat.mtimeMs < cutoff) fs.rmSync(candidate, { recursive: true, force: false });
+    }
+  } catch {}
+}
+
+function loadCursorAliases(env = process.env) {
+  try {
+    const root = runtimeRoot(env);
+    if (!root) return {};
+    const file = path.join(root, "cursor-session-aliases.json");
+    if (fs.existsSync(file)) {
+      return JSON.parse(fs.readFileSync(file, "utf8")) || {};
+    }
+  } catch {}
+  return {};
+}
+
+function recordCursorAlias(childSid, parentSid, env = process.env) {
+  if (!childSid || !parentSid || childSid === parentSid) return;
+  try {
+    upsertCursorAlias(childSid, parentSid, env);
+  } catch {}
+}
+
+function touchActiveCursorSession(repo, sid) {
+  if (!repo || !sid) return;
+  try {
+    const repoDir = path.join(runtimeRoot(process.env), repoIdentity(repo));
+    const activeFile = path.join(repoDir, "active-cursor-session.json");
+    const active = readJson(activeFile);
+    if (active?.session_id === sid) {
+      active.recorded_at = new Date().toISOString();
+      atomicWriteJson(activeFile, active);
     }
   } catch {}
 }
@@ -77,6 +112,11 @@ function logCursorHookEvent(eventData) {
 function handleBeforeSubmitPrompt(payload) {
   try {
     const text = promptText(payload);
+    const pConvo = payload?.conversation_id || payload?.conversationId || payload?.metadata?.conversation_id || payload?.metadata?.conversationId;
+    const pChild = payload?.session_id || payload?.sessionId || payload?.metadata?.session_id || payload?.metadata?.sessionId;
+    if (pConvo && pChild && String(pConvo).trim() !== String(pChild).trim()) {
+      recordCursorAlias(String(pChild).trim(), String(pConvo).trim(), process.env);
+    }
     const match = String(text).match(/(?:^|\r?\n)\s*SVC OWNER OVERRIDE:\s*(.+?)(?:\r?\n|$)/i);
     let overrideMessage = null;
     let overrideWorktree = null;
@@ -124,7 +164,7 @@ function handleBeforeSubmitPrompt(payload) {
         session_cwd: ctx.session_cwd || ctx.cwd,
         repo_root: ctx.repo_root,
         governance_worktree: ctx.governance_worktree || overrideWorktree || null,
-        explicit_wi: explicit || (sameGoal ? previous.explicit_wi : null) || ctx.governance_tuple?.wi || bound?.tuple?.wi || (match ? "owner-override" : null),
+        explicit_wi: explicit || (sameGoal ? previous.explicit_wi : null) || ctx.governance_tuple?.wi || (match ? "owner-override" : null),
         continuation_intent: revoked ? "none" : resumed ? intent : inherited ? previous.continuation_intent : intent,
         authorization_prompt_hash: inherited ? (previous.authorization_prompt_hash || previous.prompt_hash) : sha256(text),
         authorization_turn_id: inherited ? (previous.authorization_turn_id || previous.turn_id) : ctx.turn_id,
@@ -195,22 +235,36 @@ function handlePreTool(payload, { isShellExecEvent = false } = {}) {
     : (payload?.tool_input || payload?.toolInput || payload?.arguments || payload?.args || extractedToolInput || {});
   const toolInput = initialInput && typeof initialInput === "object" ? { ...initialInput } : {};
 
-  // Payload identity first. Launch-env conversation IDs must not preempt
-  // repo-local recovery when Cursor omits conversation_id or a later chat
-  // owns the active session file.
-  let sid = String(
-    payload?.session_id ||
-    payload?.sessionId ||
+  // Payload identity first. conversation_id takes precedence over child session_id.
+  // Child session_id is resolved via aliases if conversation_id is omitted.
+  const payloadConvo = String(
     payload?.conversation_id ||
     payload?.conversationId ||
-    payload?.thread_id ||
-    payload?.threadId ||
-    payload?.metadata?.session_id ||
-    payload?.metadata?.sessionId ||
     payload?.metadata?.conversation_id ||
     payload?.metadata?.conversationId ||
     ""
-  );
+  ).trim();
+
+  const payloadChild = String(
+    payload?.session_id ||
+    payload?.sessionId ||
+    payload?.metadata?.session_id ||
+    payload?.metadata?.sessionId ||
+    payload?.thread_id ||
+    payload?.threadId ||
+    ""
+  ).trim();
+
+  if (payloadConvo && payloadChild && payloadConvo !== payloadChild) {
+    recordCursorAlias(payloadChild, payloadConvo, process.env);
+  }
+
+  let sid = payloadConvo;
+  if (!sid && payloadChild) {
+    const aliases = loadCursorAliases(process.env);
+    sid = aliases[payloadChild] || payloadChild;
+  }
+
   let turn = String(payload?.turn_id || payload?.turnId || payload?.generation_id || payload?.generationId || "");
   let emptyIdRecovered = false;
   const rawCwd = payload?.cwd || payload?.working_directory || payload?.workingDirectory ||
@@ -225,7 +279,7 @@ function handlePreTool(payload, { isShellExecEvent = false } = {}) {
       const activeFile = path.join(repoDir, "active-cursor-session.json");
       const active = readJson(activeFile);
       if (active?.session_id) {
-        const ttlMinutes = Number(process.env.SVC_CODEX_AUTHORITY_TTL_MIN || 240);
+        const ttlMinutes = Number(process.env.SVC_CODEX_AUTHORITY_TTL_MIN || 1440);
         const recorded = Date.parse(active.recorded_at || "");
         if (Number.isFinite(recorded) && Date.now() - recorded <= Math.max(1, ttlMinutes) * 60_000) {
           sid = String(active.session_id);
@@ -358,7 +412,11 @@ function handlePreTool(payload, { isShellExecEvent = false } = {}) {
     if (isDeny) {
       const reason = decision?.user_message || decision?.hookSpecificOutput?.permissionDecisionReason || decision?.reason || "operation denied";
       logExit("deny", reason);
-      process.stdout.write(JSON.stringify({ permission: "deny", user_message: reason }) + "\n");
+      const body = { permission: "deny", user_message: reason };
+      if (decision?.continue === false || decision?.hookSpecificOutput?.continue === false) {
+        body.continue = false;
+      }
+      process.stdout.write(JSON.stringify(body) + "\n");
       process.exit(0);
     }
 
@@ -408,9 +466,10 @@ function handlePreTool(payload, { isShellExecEvent = false } = {}) {
       process.exit(0);
     }
 
-    logExit("allow", null);
-    process.stdout.write(JSON.stringify({ permission: "allow" }) + "\n");
-    process.exit(0);
+      touchActiveCursorSession(repo, sid);
+      logExit("allow", null);
+      process.stdout.write(JSON.stringify({ permission: "allow" }) + "\n");
+      process.exit(0);
   } catch (error) {
     const reason = `Cursor pretool failed closed: ${error.message}`;
     logExit("deny", reason);

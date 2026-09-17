@@ -2,7 +2,9 @@
 # svc worktree manager
 #
 # Central utility for creating, entering, promoting from, and cleaning up
-# git worktrees. All worktrees live under .worktrees/ in the repo root.
+# git worktrees. Default location is ~/worktrees/{repo}/{branch} (mode 0700),
+# governed by ~/.svc/worktree-policy.json. Legacy in-repo .worktrees/ remains
+# recognized for backward compatibility.
 #
 # Usage:
 #   scripts/worktree.sh create <branch-name> [--from <base>] [--wi WI-N] [--session ID] [--role ROLE]
@@ -34,8 +36,209 @@ _find_repo_root() {
 }
 
 REPO_ROOT="$(_find_repo_root 2>/dev/null || pwd)"
-WORKTREE_DIR="$REPO_ROOT/.worktrees"
+LEGACY_WORKTREE_DIR="$REPO_ROOT/.worktrees"
+_SVC_SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+RESOLVED_ERR="$(node "$REPO_ROOT/scripts/lib/resolve-worktree-root.mjs" "$REPO_ROOT" 2>&1)" || {
+  if [[ "$RESOLVED_ERR" == *WORKTREE_POLICY_INVALID* ]]; then
+    printf '[FAIL] %s\n' "$RESOLVED_ERR" >&2
+    exit 1
+  fi
+}
+RESOLVED_CENTRAL="$(node "$REPO_ROOT/scripts/lib/resolve-worktree-root.mjs" "$REPO_ROOT" 2>/dev/null || true)"
+if [[ -z "$RESOLVED_CENTRAL" ]]; then
+  RESOLVED_ERR="$(node "$_SVC_SCRIPT_ROOT/scripts/lib/resolve-worktree-root.mjs" "$REPO_ROOT" 2>&1)" || {
+    if [[ "$RESOLVED_ERR" == *WORKTREE_POLICY_INVALID* ]]; then
+      printf '[FAIL] %s\n' "$RESOLVED_ERR" >&2
+      exit 1
+    fi
+  }
+  RESOLVED_CENTRAL="$(node "$_SVC_SCRIPT_ROOT/scripts/lib/resolve-worktree-root.mjs" "$REPO_ROOT" 2>/dev/null || true)"
+fi
+if [[ -n "$RESOLVED_CENTRAL" ]]; then
+  WORKTREE_DIR="$RESOLVED_CENTRAL"
+else
+  WORKTREE_DIR="$REPO_ROOT/.worktrees"
+fi
 GITIGNORE="$REPO_ROOT/.gitignore"
+
+_is_in_worktree_dir() {
+  local cwd="$1"
+  [[ "$cwd" == "$WORKTREE_DIR"/* || "$cwd" == "$LEGACY_WORKTREE_DIR"/* ]]
+}
+
+_wt_registered_path_for_branch() {
+  local branch_name="$1"
+  local line wt="" branch=""
+  while IFS= read -r line; do
+    case "$line" in
+      worktree\ *)
+        wt="${line#worktree }"
+        branch=""
+        ;;
+      branch\ *)
+        branch="${line#branch }"
+        if [[ "$branch" == "refs/heads/$branch_name" && -n "$wt" ]]; then
+          printf '%s' "$wt"
+          return 0
+        fi
+        ;;
+    esac
+  done < <(git worktree list --porcelain 2>/dev/null || true)
+  return 1
+}
+
+_wt_path_for_branch() {
+  local branch_name="$1"
+  local registered
+  registered="$(_wt_registered_path_for_branch "$branch_name")" || true
+  if [[ -n "$registered" ]]; then
+    printf '%s' "$registered"
+    return 0
+  fi
+  if [[ -d "$WORKTREE_DIR/$branch_name" ]]; then
+    printf '%s' "$WORKTREE_DIR/$branch_name"
+    return 0
+  fi
+  if [[ "$WORKTREE_DIR" != "$LEGACY_WORKTREE_DIR" && -d "$LEGACY_WORKTREE_DIR/$branch_name" ]]; then
+    printf '%s' "$LEGACY_WORKTREE_DIR/$branch_name"
+    return 0
+  fi
+  printf '%s' "$WORKTREE_DIR/$branch_name"
+}
+
+_is_under_approved_root() {
+  local target="$1"
+  local canon root extra
+  canon="$(_canonical_path "$target")"
+  for root in "$WORKTREE_DIR" "$LEGACY_WORKTREE_DIR"; do
+    [[ -n "$root" ]] || continue
+    extra="$(_canonical_path "$root")"
+    if [[ "$canon" == "$extra" || "$canon" == "$extra"/* ]]; then
+      return 0
+    fi
+  done
+  local saved_ifs="$IFS"
+  IFS=':'
+  for extra in ${SVC_APPROVED_WORKTREE_ROOTS:-}; do
+    IFS="$saved_ifs"
+    [[ -n "$extra" ]] || continue
+    root="$(_canonical_path "$extra")"
+    if [[ "$canon" == "$root" || "$canon" == "$root"/* ]]; then
+      return 0
+    fi
+  done
+  IFS="$saved_ifs"
+  return 1
+}
+
+_assert_worktree_leaf() {
+  local target="$1"
+  local leaf parent
+  leaf="$(basename -- "$target")"
+  parent="$(dirname -- "$target")"
+  if [[ -z "$leaf" || "$leaf" == "." || "$leaf" == ".." ]]; then
+    fail "Refusing to remove non-leaf path: $target"
+    exit 1
+  fi
+  if [[ "$target" == "$WORKTREE_DIR" || "$target" == "$LEGACY_WORKTREE_DIR" || "$target" == "$REPO_ROOT" ]]; then
+    fail "Refusing to remove worktree container: $target"
+    exit 1
+  fi
+  local canonical listed=false line wt
+  canonical="$(_canonical_path "$target")"
+  while IFS= read -r line; do
+    case "$line" in
+      worktree\ *)
+        wt="${line#worktree }"
+        if [[ "$(_canonical_path "$wt")" == "$canonical" ]]; then
+          listed=true
+          break
+        fi
+        ;;
+    esac
+  done < <(git worktree list --porcelain 2>/dev/null || true)
+  if [[ "$listed" == true ]] && _is_under_approved_root "$canonical"; then
+    return 0
+  fi
+  if [[ "$parent" != "$WORKTREE_DIR" && "$parent" != "$LEGACY_WORKTREE_DIR" ]]; then
+    fail "Refusing to remove path that is not a worktree leaf: $target"
+    exit 1
+  fi
+}
+
+_canonical_path() {
+  local p="$1"
+  if command -v realpath >/dev/null 2>&1; then
+    realpath -m -- "$p"
+    return 0
+  fi
+  python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$p"
+}
+
+_git_common_realpath() {
+  local cwd="${1:-}"
+  local common
+  if [[ -n "$cwd" ]]; then
+    common="$(git -C "$cwd" rev-parse --git-common-dir 2>/dev/null)" || return 1
+    [[ "$common" != /* ]] && common="$cwd/$common"
+  else
+    common="$(git rev-parse --git-common-dir 2>/dev/null)" || return 1
+    [[ "$common" != /* ]] && common="$(pwd)/$common"
+  fi
+  _canonical_path "$common"
+}
+
+_assert_target_belongs_to_this_repo() {
+  local target="$1"
+  local canonical listed=false line wt
+  canonical="$(_canonical_path "$target")"
+  while IFS= read -r line; do
+    case "$line" in
+      worktree\ *)
+        wt="${line#worktree }"
+        if [[ "$(_canonical_path "$wt")" == "$canonical" ]]; then
+          listed=true
+          break
+        fi
+        ;;
+    esac
+  done < <(git worktree list --porcelain)
+  if [[ "$listed" != true ]]; then
+    fail "Refusing to remove $target: not registered in this repository's git worktree list"
+    exit 1
+  fi
+  local this_common target_common
+  this_common="$(_git_common_realpath)" || {
+    fail "Cannot resolve this repository git-common-dir"
+    exit 1
+  }
+  target_common="$(_git_common_realpath "$target")" || {
+    fail "Refusing to remove $target: cannot resolve git-common-dir (not this repository)"
+    exit 1
+  }
+  if [[ "$this_common" != "$target_common" ]]; then
+    fail "Refusing to remove $target: git-common-dir mismatch (cross-repo)"
+    exit 1
+  fi
+}
+
+# True when $1/.git is a regular file whose gitdir: line points at this
+# repository's common dir ($2, or GIT_COMMON_DIR / _git_common_realpath).
+_dir_gitdir_belongs_to_this_repo() {
+  local target="$1"
+  local common="${2:-}"
+  local gitfile="$target/.git"
+  [[ -f "$gitfile" && ! -L "$gitfile" ]] || return 1
+  local gitdir
+  gitdir="$(sed -n 's/^gitdir:[[:space:]]*//p' "$gitfile" | head -n 1)"
+  gitdir="${gitdir%"${gitdir##*[![:space:]]}"}"
+  [[ -n "$gitdir" ]] || return 1
+  [[ "$gitdir" != /* ]] && gitdir="$target/$gitdir"
+  local gitdir_canon
+  gitdir_canon="$(_canonical_path "$gitdir")"
+  [[ -n "$common" ]] || common="$(_git_common_realpath)" || return 1
+  [[ "$gitdir_canon" == "$common" || "$gitdir_canon" == "$common"/* ]]
+}
 
 # --- Colors ---
 RED='\033[0;31m'
@@ -68,7 +271,45 @@ fail() { echo -e "  ${RED}[FAIL]${NC} $1"; }
 info() { echo -e "  ${CYAN}[INFO]${NC} $1"; }
 
 _host_session_id() {
-  printf '%s' "${SVC_SESSION_ID:-${CURSOR_CONVERSATION_ID:-${CODEX_THREAD_ID:-${CODEX_SESSION_ID:-${CLAUDE_SESSION_ID:-${KIMI_SESSION_ID:-${GEMINI_SESSION_ID:-}}}}}}}"
+  printf '%s' "${CURSOR_CONVERSATION_ID:-${CURSOR_SESSION_ID:-${SVC_SESSION_ID:-${GROK_SESSION_ID:-${CODEX_THREAD_ID:-${CODEX_SESSION_ID:-${CLAUDE_SESSION_ID:-${KIMI_SESSION_ID:-${GEMINI_SESSION_ID:-${OPENCODE_SESSION_ID:-${SESSION_ID:-}}}}}}}}}}}"
+}
+
+_existing_binding_session() {
+  local wt_path="$1"
+  local dir="$wt_path/.svc/bindings"
+  [[ -d "$dir" ]] || return 0
+  local f sid
+  for f in "$dir"/*.json; do
+    [[ -f "$f" ]] || continue
+    sid="$(node -e 'const fs=require("fs");try{const b=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(!b.released_at&&b.session_id)process.stdout.write(String(b.session_id))}catch{}' "$f" 2>/dev/null || true)"
+    if [[ -n "$sid" ]]; then
+      printf '%s' "$sid"
+      return 0
+    fi
+  done
+}
+
+_durable_session_id() {
+  local wt_path="$1" wi="$2" branch_name="$3"
+  # Host session identity first: never invent a sibling id when the harness
+  # already named this conversation.
+  local sid="$(_host_session_id)"
+  if [[ -n "$sid" ]]; then
+    printf '%s' "$sid"
+    return 0
+  fi
+  local key="${wi:-$branch_name}"
+  key="${key//[^A-Za-z0-9._-]/}"
+  [[ -n "$key" ]] || key="worktree"
+  local generated="session-$(whoami)-${key}-${PPID:-$$}"
+  # Reuse an existing binding only when it is this process's generated id.
+  # Never steal a live session or a different process's identity.
+  sid="$(_existing_binding_session "$wt_path")"
+  if [[ -n "$sid" && "$sid" == "$generated" ]]; then
+    printf '%s' "$sid"
+    return 0
+  fi
+  printf '%s' "$generated"
 }
 
 _derive_wi() {
@@ -84,30 +325,28 @@ _write_binding() {
   local wt_path="$1" session_id="$2" wi="$3" role="$4"
   if [[ -z "$session_id" ]]; then
     if [[ "$role" == "mutating" ]]; then
-      fail "Mutating worktree binding requires --session ID or a host session environment variable"
-      return 1
+      session_id="$(_durable_session_id "$wt_path" "$wi" "$(basename -- "$wt_path")")"
+    else
+      info "No host session id available — read-only binding omitted"
+      return 0
     fi
-    info "No host session id available — read-only binding omitted"
-    return 0
   fi
   local args=(binding write --worktree-root "$wt_path" --session-id "$session_id" --role "$role")
   [[ "$role" == "mutating" ]] && args+=(--wi "$wi")
+  local claim_script="${REPO_ROOT:-$PWD}/hooks/lib/wi-claim.mjs"
+  [[ -f "$claim_script" ]] || claim_script="$wt_path/hooks/lib/wi-claim.mjs"
   local result warning
-  if ! result=$(node "$wt_path/hooks/lib/wi-claim.mjs" "${args[@]}"); then
+  if ! result=$(node "$claim_script" "${args[@]}"); then
     warning=$(node -e 'try{process.stdout.write(String(JSON.parse(process.argv[1]).warning||"binding conflict"))}catch{process.stdout.write("binding conflict")}' "$result")
     fail "$warning"
-    echo "  Inspect: node $wt_path/hooks/lib/wi-claim.mjs binding status --worktree-root $wt_path --session-id $session_id"
-    echo "  Release owned binding: node $wt_path/hooks/lib/wi-claim.mjs binding release --worktree-root $wt_path --session-id $session_id"
-    if [[ -n "$wi" ]]; then
-      echo "  Transfer stale claim: node $wt_path/hooks/lib/wi-claim.mjs claim transfer --worktree-root $wt_path --wi $wi --expected-generation <generation> --session-id $session_id --role $role"
-    fi
+    info "Worktree binding conflict at $wt_path for session $session_id."
     return 1
   fi
   info "Bound session $session_id to ${wi:-read-only} at $wt_path"
   # WI-562 IP-H5 E2: heartbeat touch — every binding write renews the WI claim
   # so pid-less heartbeat-contract claims stay fresh through long sessions.
   if [[ -n "$wi" && -f "$wt_path/.svc/claims/$wi.claim.json" ]]; then
-    node "$wt_path/hooks/lib/wi-claim.mjs" claim renew --wi "$wi" --svc-dir "$wt_path/.svc" >/dev/null 2>&1 || true
+    node "$claim_script" claim renew --wi "$wi" --svc-dir "$wt_path/.svc" >/dev/null 2>&1 || true
   fi
 }
 
@@ -174,7 +413,7 @@ preflight() {
     ok ".gitignore contains .worktrees/"
   fi
 
-  if ! git check-ignore -q "$WORKTREE_DIR/" 2>/dev/null; then
+  if ! git check-ignore -q "$REPO_ROOT/.worktrees/" 2>/dev/null; then
     fail ".worktrees/ is not being ignored by git"
     errors=$((errors + 1))
   else
@@ -239,9 +478,13 @@ cmd_guard() {
   # Detect current location
   local cwd in_worktree=false current_branch=""
   cwd="$(pwd)"
-  if [[ "$cwd" == "$WORKTREE_DIR"/* ]]; then
+  if _is_in_worktree_dir "$cwd"; then
     in_worktree=true
-    current_branch=$(basename "$(echo "$cwd" | sed "s|$WORKTREE_DIR/||" | cut -d/ -f1)")
+    if [[ "$cwd" == "$WORKTREE_DIR"/* ]]; then
+      current_branch=$(basename "$(echo "$cwd" | sed "s|$WORKTREE_DIR/||" | cut -d/ -f1)")
+    else
+      current_branch=$(basename "$(echo "$cwd" | sed "s|$LEGACY_WORKTREE_DIR/||" | cut -d/ -f1)")
+    fi
   fi
 
   # --- Promoting: transitions from worktree to main ---
@@ -250,8 +493,7 @@ cmd_guard() {
     # But it first validates the branch, so the branch must exist.
     if $in_worktree; then
       echo "LEAVE_WORKTREE"
-      info "'$skill' squash-merges to main — switch to repo root first"
-      echo "  cd $REPO_ROOT"
+      ok "'$skill' squash-merges to main — target root: $REPO_ROOT"
       return 0
     fi
 
@@ -261,7 +503,7 @@ cmd_guard() {
       return 1
     fi
 
-    if [[ -d "$WORKTREE_DIR/$target" ]] || git show-ref --verify --quiet "refs/heads/$target" 2>/dev/null; then
+    if [[ -d "$(_wt_path_for_branch "$target")" ]] || git show-ref --verify --quiet "refs/heads/$target" 2>/dev/null; then
       echo "STAY_MAIN"
       ok "On main. Branch '$target' ready to promote."
       echo "  Run: scripts/worktree.sh promote $target"
@@ -281,8 +523,7 @@ cmd_guard() {
   if $is_post; then
     if $in_worktree; then
       echo "LEAVE_WORKTREE"
-      warn "'$skill' runs on main after merge — worktree should already be removed"
-      echo "  cd $REPO_ROOT"
+      ok "'$skill' runs on main after merge — target root: $REPO_ROOT"
     else
       echo "STAY_MAIN"
     fi
@@ -301,7 +542,7 @@ cmd_guard() {
       local wi
       wi="$(_derive_wi "$branch")"
       info "'$skill' must mutate in the ensured worktree '$branch'"
-      echo "  node scripts/svc-ensure-worktree.mjs --wi ${wi:-WI-N} --branch $branch --from origin/main --print-cd"
+      ok "'$skill' target worktree required: branch='$branch' wi='${wi:-WI-N}'. Autonomous harness will ensure worktree."
     else
       warn "'$skill' needs a worktree before its first write; supply --branch"
     fi
@@ -316,11 +557,16 @@ cmd_status() {
   local cwd
   cwd="$(pwd)"
 
-  # Check if we're inside .worktrees/
-  if [[ "$cwd" == "$WORKTREE_DIR"/* ]]; then
-    local branch_name
-    branch_name=$(basename "$(echo "$cwd" | sed "s|$WORKTREE_DIR/||" | cut -d/ -f1)")
-    local wt_path="$WORKTREE_DIR/$branch_name"
+  # Check if we're inside a managed worktree directory
+  if _is_in_worktree_dir "$cwd"; then
+    local branch_name container
+    if [[ "$cwd" == "$WORKTREE_DIR"/* ]]; then
+      container="$WORKTREE_DIR"
+    else
+      container="$LEGACY_WORKTREE_DIR"
+    fi
+    branch_name=$(basename "$(echo "$cwd" | sed "s|$container/||" | cut -d/ -f1)")
+    local wt_path="$container/$branch_name"
 
     echo "=== Worktree Status ==="
     ok "Inside worktree"
@@ -349,7 +595,7 @@ cmd_status() {
   fi
 
   # Check if we're in the main worktree
-  if [[ "$cwd" == "$REPO_ROOT"* && "$cwd" != "$WORKTREE_DIR"* ]]; then
+  if [[ "$cwd" == "$REPO_ROOT"* && "$cwd" != "$WORKTREE_DIR"* && "$cwd" != "$LEGACY_WORKTREE_DIR"* ]]; then
     echo "=== Worktree Status ==="
     info "On main worktree (not inside a feature worktree)"
 
@@ -398,18 +644,23 @@ cmd_create() {
     exit 1
   fi
 
-  local wt_path="$WORKTREE_DIR/$branch_name"
+  local wt_path="$(_wt_path_for_branch "$branch_name")"
   local wt_wi="${explicit_wi:-$(_derive_wi "$branch_name")}"
 
-  # Reject an unbindable mutating worktree before preflight can edit
-  # .gitignore or git worktree add can materialize a branch/worktree.
-  if [[ "$role" == "mutating" && -z "$session_id" ]]; then
-    fail "Mutating worktree binding requires --session ID or a host session environment variable"
-    exit 1
-  fi
+  # Auto-derive WI if absent
   if [[ "$role" == "mutating" && -z "$wt_wi" ]]; then
-    fail "Mutating worktree requires --wi WI-N or a WI-bearing branch"
-    exit 1
+    local sanitized_name="${branch_name//[^a-zA-Z0-9]/-}"
+    sanitized_name="$(printf '%s' "$sanitized_name" | sed -E 's/^-+|-+$//g; s/-+/-/g')"
+    if [[ -n "$sanitized_name" ]]; then
+      wt_wi="WI-${sanitized_name^^}"
+    else
+      wt_wi="WI-AUTO-$(date +%s)"
+    fi
+  fi
+  # Auto-assign a durable session ID if absent so successive flag-free
+  # invocations on the same branch/WI share identity instead of colliding.
+  if [[ -z "$session_id" ]]; then
+    session_id="$(_durable_session_id "$wt_path" "$wt_wi" "$branch_name")"
   fi
 
   if [[ "$role" == "mutating" ]]; then
@@ -428,9 +679,10 @@ cmd_create() {
     echo "  Path:    $ensured_path"
     echo "  Branch:  $ensured_branch"
     echo "  Owner:   $owner"
+    chmod 0700 "$ensured_path" 2>/dev/null || true
     _print_chain_policy "$ensured_path"
     echo ""
-    echo "  cd $ensured_path"
+    echo "  [OK] Autonomous harness target ready: $ensured_path"
     return 0
   fi
 
@@ -442,6 +694,8 @@ cmd_create() {
 
   # If worktree already exists, report it and exit 0 (idempotent for chain resume)
   if [[ -d "$wt_path" ]]; then
+    # Never bind or create .svc on a foreign checkout sitting at this path.
+    _assert_target_belongs_to_this_repo "$wt_path"
     ok "Worktree already exists — resuming"
     echo "  Path:   $wt_path"
     echo "  Branch: $branch_name"
@@ -454,9 +708,10 @@ cmd_create() {
       warn "Worktree has uncommitted changes"
     fi
     mkdir -p "$wt_path/.svc/claims" "$wt_path/.svc/bindings"
+    chmod 0700 "$wt_path" 2>/dev/null || true
     _write_binding "$wt_path" "$session_id" "$wt_wi" "$role"
     echo ""
-    echo "  cd $wt_path"
+    echo "  [OK] Autonomous harness target ready: $wt_path"
     return 0
   fi
 
@@ -468,6 +723,7 @@ cmd_create() {
   echo ""
 
   mkdir -p "$WORKTREE_DIR"
+  chmod 0700 "$WORKTREE_DIR" 2>/dev/null || true
 
   # If branch already exists (e.g., from a prior remote push), use it
   if git show-ref --verify --quiet "refs/heads/$branch_name" 2>/dev/null; then
@@ -476,6 +732,7 @@ cmd_create() {
   else
     git worktree add -b "$branch_name" "$wt_path" "$base_ref" 2>&1
   fi
+  chmod 0700 "$wt_path" 2>/dev/null || true
 
   ok "Worktree created"
 
@@ -512,7 +769,7 @@ LANE_EOF
   echo "  Path:   $wt_path"
   echo "  Branch: $branch_name"
   echo ""
-  echo "  cd $wt_path"
+  echo "  [OK] Autonomous harness target ready: $wt_path"
   echo ""
 }
 
@@ -527,12 +784,12 @@ cmd_enter() {
     exit 1
   fi
 
-  local wt_path="$WORKTREE_DIR/$branch_name"
+  local wt_path="$(_wt_path_for_branch "$branch_name")"
 
   if [[ ! -d "$wt_path" ]]; then
     fail "No worktree at $wt_path"
     echo "  Available worktrees:"
-    for d in "$WORKTREE_DIR"/*/; do
+    for d in "$WORKTREE_DIR"/*/ "$LEGACY_WORKTREE_DIR"/*/; do
       [[ -d "$d" ]] && echo "    $(basename "$d")"
     done 2>/dev/null || echo "    (none)"
     exit 1
@@ -551,7 +808,8 @@ cmd_enter() {
   fi
 
   echo ""
-  echo "  cd $wt_path"
+  echo "  [OK] Autonomous harness target ready: $wt_path"
+  echo "  Resolve via: node scripts/svc-ensure-worktree.mjs --branch $branch_name"
 }
 
 # ============================================================
@@ -576,7 +834,7 @@ cmd_promote() {
     exit 1
   fi
 
-  local wt_path="$WORKTREE_DIR/$branch_name"
+  local wt_path="$(_wt_path_for_branch "$branch_name")"
 
   if [[ ! -d "$wt_path" ]]; then
     fail "No worktree at $wt_path"
@@ -729,15 +987,20 @@ cmd_remove() {
     exit 1
   fi
 
-  local wt_path="$WORKTREE_DIR/$branch_name"
+  local wt_path="$(_wt_path_for_branch "$branch_name")"
+  local TARGET="$wt_path"
 
-  if [[ ! -d "$wt_path" ]]; then
-    fail "No worktree at $wt_path"
+  if [[ ! -d "$TARGET" ]]; then
+    fail "No worktree at $TARGET"
     exit 1
   fi
 
+  # Ownership must be proven before any target-worktree code (wi-claim.mjs) runs.
+  _assert_target_belongs_to_this_repo "$TARGET"
+  _assert_worktree_leaf "$TARGET"
+
   echo "=== Removing Worktree ==="
-  echo "  Path:   $wt_path"
+  echo "  Path:   $TARGET"
   echo "  Branch: $branch_name"
   echo ""
 
@@ -758,12 +1021,13 @@ cmd_remove() {
     fi
   fi
 
-  if ! node --input-type=module - "$wt_path" "$session_id" <<'NODE_BINDING_REMOVE'
+  if ! REPO_ROOT="$REPO_ROOT" node --input-type=module - "$wt_path" "$session_id" <<'NODE_BINDING_REMOVE'
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 const [root, session] = process.argv.slice(2);
-const claims = await import(pathToFileURL(path.join(path.resolve(root), "hooks", "lib", "wi-claim.mjs")));
+const canonicalRoot = process.env.REPO_ROOT || root;
+const claims = await import(pathToFileURL(path.join(path.resolve(canonicalRoot), "hooks", "lib", "wi-claim.mjs")));
 const dir = path.join(path.resolve(root), ".svc", "bindings");
 if (!fs.existsSync(dir)) process.exit(0);
 for (const file of fs.readdirSync(dir).filter((name) => name.endsWith(".json"))) {
@@ -783,7 +1047,9 @@ NODE_BINDING_REMOVE
     exit 1
   fi
   if [[ -n "$session_id" ]]; then
-    node "$wt_path/hooks/lib/wi-claim.mjs" binding release --worktree-root "$wt_path" --session-id "$session_id" >/dev/null || {
+    local claim_script="${REPO_ROOT:-$PWD}/hooks/lib/wi-claim.mjs"
+    [[ -f "$claim_script" ]] || claim_script="$wt_path/hooks/lib/wi-claim.mjs"
+    node "$claim_script" binding release --worktree-root "$wt_path" --session-id "$session_id" >/dev/null || {
       fail "Could not release owned binding"
       exit 1
     }
@@ -863,9 +1129,21 @@ NODE_BINDING_REMOVE
   fi
 
   if $force; then
-    git worktree remove --force "$wt_path" 2>&1
+    if ! git worktree remove --force "$TARGET"; then
+      fail "git worktree remove --force failed for $TARGET; refusing leftover rm -rf"
+      exit 1
+    fi
   else
-    git worktree remove "$wt_path" 2>&1
+    if ! git worktree remove "$TARGET"; then
+      fail "git worktree remove failed for $TARGET; refusing leftover rm -rf"
+      exit 1
+    fi
+  fi
+
+  # git worktree remove is the only deletion path. A leftover directory is
+  # evidence, not a license to rm -rf.
+  if [[ -e "$TARGET" ]]; then
+    warn "Directory remains after git worktree remove: $TARGET (leaving in place; no leftover rm -rf)"
   fi
 
   ok "Worktree removed"
@@ -882,12 +1160,6 @@ NODE_BINDING_REMOVE
     git branch -D "$branch_name" 2>&1 && ok "Branch $branch_name deleted (merged to origin/main)"
   else
     warn "Branch $branch_name kept (not merged to main or origin/main)"
-  fi
-
-  # Remove .worktrees/ if now empty
-  if [[ -d "$WORKTREE_DIR" ]] && [[ -z "$(ls -A "$WORKTREE_DIR" 2>/dev/null)" ]]; then
-    rmdir "$WORKTREE_DIR"
-    ok "Removed empty .worktrees/ directory"
   fi
 }
 
@@ -927,7 +1199,7 @@ cmd_list() {
   if [[ $count -eq 0 ]]; then
     echo "  No active worktrees."
     echo ""
-    echo "  Create one: scripts/worktree.sh create <branch-name>"
+    echo "  Provision one via: node scripts/svc-ensure-worktree.mjs --wi <WI> --branch <branch>"
   else
     echo "  Total: $count worktree(s)"
   fi
@@ -952,8 +1224,12 @@ cmd_cleanup() {
   fi
 
   if [[ -d "$WORKTREE_DIR" ]]; then
-    local known_paths
+    local known_paths GIT_COMMON_DIR
     known_paths=$(git worktree list --porcelain | grep '^worktree ' | sed 's/^worktree //')
+    GIT_COMMON_DIR="$(_git_common_realpath)" || {
+      fail "Cannot resolve this repository git-common-dir; refusing cleanup quarantine"
+      exit 1
+    }
 
     for dir in "$WORKTREE_DIR"/*/; do
       [[ ! -d "$dir" ]] && continue
@@ -963,6 +1239,13 @@ cmd_cleanup() {
       [[ "$dir" == *"/.quarantine" || "$dir" == *"/.quarantine/"* ]] && continue
 
       if ! echo "$known_paths" | grep -q "^${dir}$"; then
+        # Only quarantine directories whose .git file gitdir: points at THIS
+        # repository's common dir. No git metadata, a full clone, or a foreign
+        # gitdir must never be moved.
+        if ! _dir_gitdir_belongs_to_this_repo "$dir" "$GIT_COMMON_DIR"; then
+          warn "Skipping foreign directory (not this repository): $dir"
+          continue
+        fi
         warn "Orphaned directory: $dir"
         # WI-562 IP-H3: quarantine instead of bare rm -rf — bytes are preserved
         # under .worktrees/.quarantine/<ts>/ for inspection and manual disposal.
@@ -1127,7 +1410,7 @@ case "${1:-}" in
     ;;
   __inner_remove)
     shift
-    assert_not_frozen "$WORKTREE_DIR/$1"
+    assert_not_frozen "$(_wt_path_for_branch "$1")"
     cmd_remove "$@"
     ;;
   __inner_cleanup)

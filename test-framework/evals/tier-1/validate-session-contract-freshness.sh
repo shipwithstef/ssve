@@ -11,8 +11,13 @@ svc_require_fixture "$@"
 REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 HOOK="$REPO_ROOT/hooks/svc-session-contract-freshness.mjs"
 echo "=== Tier 1: Session Contract Freshness Fixtures ==="
-if ! grep -Fq 'SVC_CONTRACT_MAX_AGE_HOURS || "4"' "$HOOK"; then
-  echo "FAIL: hook default must remain four hours"
+if ! grep -Fq 'MAX_CONTRACT_AGE_MINUTES = 1440' "$HOOK"; then
+  echo "FAIL: hook default must remain 1440 minutes (24 hours)"
+  exit 1
+fi
+OPENCODE="$REPO_ROOT/hooks/opencode/svc-opencode-plugin.ts"
+if [[ -f "$OPENCODE" ]] && ! grep -Eq 'SVC_CONTRACT_MAX_AGE_HOURS \|\| "24"' "$OPENCODE"; then
+  echo "FAIL: OpenCode freshness default must be 24 hours (1440 minutes)"
   exit 1
 fi
 CLOCK="$(mktemp)"
@@ -68,7 +73,7 @@ for row in \
     "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$T/file.txt\",\"content\":\"x\"},\"cwd\":\"$T\"}" 0
 done
 for row in \
-  '{"ts":"2026-09-06T07:59:59Z","wi":"WI-FIXTURE"}' \
+  '{"ts":"2026-09-05T11:59:59Z","wi":"WI-FIXTURE"}' \
   '{"ts":"2026-01-01T00:00:00Z","bound_to":"unknown"}'; do
   printf '%s\n' "$row" > "$T/.svc/session-contract.jsonl"
   probe "expired or ambiguous active binding blocks: $row" \

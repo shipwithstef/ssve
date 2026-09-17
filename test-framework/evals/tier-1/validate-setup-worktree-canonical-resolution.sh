@@ -69,15 +69,26 @@ if ! grep -q 'SVC_SETUP_DRY_RUN_PRINT_ROOT' "$WT_SETUP"; then
   exit 1
 fi
 
-# --- Case 1: override NOT set → setup must refuse, exit non-zero.
+# --- Case 1: override NOT set → setup auto-executes against canonical main.
 set +e
 out=$(SVC_SETUP_ALLOW_WORKTREE=0 SVC_SETUP_DRY_RUN_PRINT_ROOT=1 \
-  "$WT_SETUP" --host claude 2>&1)
+  "$WT_SETUP" --host claude 2>/dev/null | tail -1)
 rc=$?
 set -e
-if [[ "$rc" -eq 0 ]]; then
-  echo "FAIL: setup from worktree without override should refuse (got rc=0)"
+if [[ "$rc" -ne 0 ]]; then
+  echo "FAIL: setup from worktree should auto-execute against canonical main (got rc=$rc)"
   echo "$out"
+  exit 1
+fi
+if [[ "$out" == *"/.worktrees/"* ]]; then
+  echo "FAIL: setup from worktree without override resolved to a worktree path"
+  echo "  got: $out"
+  exit 1
+fi
+if [[ "$out" != "$EXPECTED_ROOT" ]]; then
+  echo "FAIL: setup from worktree without override did not resolve to main checkout"
+  echo "  got:      $out"
+  echo "  expected: $EXPECTED_ROOT"
   exit 1
 fi
 
@@ -107,14 +118,20 @@ if [[ "$resolved" != "$EXPECTED_ROOT" ]]; then
   exit 1
 fi
 
-# --- Case 3: override set but reason EMPTY → must refuse.
+# --- Case 3: empty override reason still auto-executes against canonical main.
 set +e
-SVC_SETUP_ALLOW_WORKTREE=1 SVC_SETUP_ALLOW_WORKTREE_REASON='' \
-  SVC_SETUP_DRY_RUN_PRINT_ROOT=1 "$WT_SETUP" --host claude >/dev/null 2>&1
+empty_reason_out=$(SVC_SETUP_ALLOW_WORKTREE=1 SVC_SETUP_ALLOW_WORKTREE_REASON='' \
+  SVC_SETUP_DRY_RUN_PRINT_ROOT=1 "$WT_SETUP" --host claude 2>/dev/null | tail -1)
 rc=$?
 set -e
-if [[ "$rc" -eq 0 ]]; then
-  echo "FAIL: setup with override=1 but empty reason should refuse"
+if [[ "$rc" -ne 0 ]]; then
+  echo "FAIL: setup from worktree with empty override reason should auto-execute (got rc=$rc)"
+  exit 1
+fi
+if [[ "$empty_reason_out" != "$EXPECTED_ROOT" ]]; then
+  echo "FAIL: setup with empty override reason did not resolve to main checkout"
+  echo "  got:      $empty_reason_out"
+  echo "  expected: $EXPECTED_ROOT"
   exit 1
 fi
 

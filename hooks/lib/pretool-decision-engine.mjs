@@ -15,12 +15,14 @@
 //     prefix that sibling classifiers would re-read as a mutation).
 import { createHash } from "node:crypto";
 import fs from "node:fs";
+import path from "node:path";
+
 import { lexSimpleCommand } from "../codex/lib/argv-lex.mjs";
 import { encodeSimpleCommand, assertArgvRoundTrip } from "../codex/lib/argv-encode.mjs";
 import { isShellTool } from "./shell-tools.mjs";
 import {
   isReadOnlyTool, toolName, splitUnquoted, stripDevNullRedirections,
-  hookContext, authorityPath,
+  hookContext, authorityPath, atomicWriteJson,
 } from "../codex/lib/codex-hook-context.mjs";
 import { resolveWI, resolveAuthorityHost } from "./resolve-wi.mjs";
 import {
@@ -30,6 +32,7 @@ import {
   readController,
   repositoryId,
 } from "./authority-store.mjs";
+import { processIsAlive, isSameLiveHarnessSuccessor } from "./process-liveness.mjs";
 import { defaultCheckoutRoot, uniqueLaneWi } from "./authoritative-binding.mjs";
 import { readSessionBinding } from "./wi-claim.mjs";
 
@@ -212,7 +215,7 @@ export function evaluateSelfHealAuthority(payload, env = process.env, expected =
     }
     if (!turnRecovered) return ineligible("STALE_TURN");
   }
-  const ttlMinutes = Number(env.SVC_CODEX_AUTHORITY_TTL_MIN || 240);
+  const ttlMinutes = Number(env.SVC_CODEX_AUTHORITY_TTL_MIN || 1440);
   const recorded = Date.parse(document.recorded_at || "");
   if (!Number.isFinite(recorded) || Date.now() - recorded > Math.max(1, ttlMinutes) * 60_000) {
     return ineligible("PROMPT_AUTHORITY_EXPIRED");
@@ -234,6 +237,29 @@ export function evaluateSelfHealAuthority(payload, env = process.env, expected =
 }
 
 const POSITIVE_CONTINUATION = new Set(["resume", "continue", "finish", "complete", "end_to_end", "work_on"]);
+
+function ownerProcessPid(ownerProcess) {
+  if (typeof ownerProcess === "number") return ownerProcess;
+  if (ownerProcess && typeof ownerProcess === "object" && typeof ownerProcess.pid === "number") {
+    return ownerProcess.pid;
+  }
+  return null;
+}
+
+function isDeadOwnerAutoReclaimable(lease) {
+  const pid = ownerProcessPid(lease?.owner_process);
+  const ownerAlive = processIsAlive(lease?.owner_process);
+  // A provably live owner on this host is never auto-reclaimed.
+  if (ownerAlive === true) return false;
+  const deadKnown = typeof pid === "number" && pid > 1 && ownerAlive === false;
+  // Immediate reclaim without waiting for expiry is only allowed when the
+  // recorded pid is the persistent harness. An untracked/ephemeral shell
+  // pid dying is not proof that the agent harness is gone.
+  const expires = Date.parse(lease?.expires_at);
+  const expired = Number.isFinite(expires) && expires <= Date.now();
+  if (lease?.owner_harness_tracked === true && deadKnown) return true;
+  return expired;
+}
 
 export function evaluateExactWorktreeRecovery(payload, env = process.env, expected = {}) {
   const ineligible = (reason_code) => ({ eligible: false, wi: null, reason_code });
@@ -277,7 +303,14 @@ export function evaluateExactWorktreeRecovery(payload, env = process.env, expect
       repoId: repositoryId(target),
       worktreeRoot: target,
       states: ["active"],
-    }).filter((lease) => String(lease.controller_principal) !== String(principal) && Date.parse(lease.expires_at) > Date.now()));
+    }).filter((lease) => {
+      if (String(lease.controller_principal) === String(principal)) return false;
+      if (isSameLiveHarnessSuccessor(lease)) return false;
+      if (isDeadOwnerAutoReclaimable(lease)) return false;
+      if (Date.parse(lease.expires_at) <= Date.now()) return false;
+      if (processIsAlive(lease.owner_process) === false) return false;
+      return true;
+    }));
   } catch { return ineligible("CONTROLLER_UNREADABLE"); }
   if (liveForeign.length) return ineligible("FOREIGN_LIVE_OWNER");
   let wi = "";
@@ -310,7 +343,15 @@ export function evaluateExactWorktreeRecovery(payload, env = process.env, expect
       if (fs.realpathSync(lease.worktree_root) !== target) return ineligible("CONTROLLER_WORKTREE_MISMATCH");
     } catch { return ineligible("CONTROLLER_WORKTREE_MISMATCH"); }
     if (lease.state === "active") {
-      if (String(lease.controller_principal) !== String(principal)) return ineligible("FOREIGN_LIVE_OWNER");
+      if (String(lease.controller_principal) !== String(principal)) {
+        if (isDeadOwnerAutoReclaimable(lease)) {
+          return { eligible: true, wi, reason_code: "DEAD_OWNER_AUTO_RECLAIM" };
+        }
+        if (isSameLiveHarnessSuccessor(lease)) {
+          return { eligible: true, wi, reason_code: "SAME_HARNESS_SUCCESSOR" };
+        }
+        return ineligible("FOREIGN_LIVE_OWNER");
+      }
       const expires = Date.parse(lease.expires_at);
       if (Number.isFinite(expires) && expires <= Date.now()) {
         return { eligible: true, wi, reason_code: "SAME_OWNER_EXPIRED_LEASE" };
@@ -415,4 +456,19 @@ export function evaluatePreToolObservation(payload, env = process.env) {
     };
   }
   return { ...base, execution_input: null, operation: { repo_id: null, worktree_root: null, targets: [] }, latency_ms: Date.now() - started };
+}
+
+export function renewSlidingPromptAuthority(ctx) {
+  try {
+    if (!ctx?.session_dir) return;
+    const authPath = authorityPath(ctx);
+    if (!fs.existsSync(authPath)) return;
+    const raw = JSON.parse(fs.readFileSync(authPath, "utf8"));
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return;
+    raw.recorded_at = new Date().toISOString();
+    atomicWriteJson(authPath, raw);
+    // Session-contract freshness is owned by svc-session-contract-freshness.mjs
+    // (MAX_CONTRACT_AGE_MINUTES = 1440). Do not rewrite session-contract.jsonl
+    // on every sliding authority renewal.
+  } catch {}
 }

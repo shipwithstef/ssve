@@ -1,9 +1,12 @@
 # Worktree Model
 
-All repository mutation runs in a linked git worktree under `.worktrees/`.
-This includes planning documents, framework docs, generated files, tests, and
-repo-local `.svc` state. Worktrees isolate in-progress changes from the default
-checkout, enable parallel work, and make squash-merge promotion clean.
+All repository mutation runs in a linked git worktree. The default location is
+`~/worktrees/{repo}/{branch}` with mode `0700`, governed by
+`~/.svc/worktree-policy.json`. Legacy in-repo `.worktrees/` remains fully
+recognized for backward compatibility. This includes planning documents,
+framework docs, generated files, tests, and repo-local `.svc` state. Worktrees
+isolate in-progress changes from the default checkout, enable parallel work, and
+make squash-merge promotion clean.
 
 ## When to Create a Worktree
 
@@ -46,11 +49,14 @@ The branch name is defined in the `plan-changeset` manifest header.
 
 ## Rules
 
-1. **All worktrees live under `.worktrees/`** — never `/tmp/`, never a sibling directory.
-   Exception: `test-framework` eval tier-2 uses temp dirs (not git worktrees).
+1. **Worktrees default to `~/worktrees/{repo}/{branch}`** (mode `0700`),
+   configured by `~/.svc/worktree-policy.json`. Legacy in-repo `.worktrees/`
+   remains fully recognized. Never `/tmp/`. Exception: `test-framework` eval
+   tier-2 uses temp dirs (not git worktrees).
 
 2. **`.worktrees/` must be in `.gitignore`** — enforced by `scripts/worktree.sh preflight`
    and validated by `test-framework/evals/tier-1/validate-worktree-safety.sh`.
+   External `~/worktrees/` is outside the repository and is not tracked.
 
 3. **One worktree per branch** — the branch name is the worktree directory name.
 
@@ -65,7 +71,20 @@ The branch name is defined in the `plan-changeset` manifest header.
    `.svc` state are not safe to mutate in the default checkout.
 
 8. **Bootstrap is narrow** — the exact `svc-ensure-worktree` command may create
-   git metadata and `.worktrees/<branch>` only; it may not edit tracked files.
+   git metadata and the worktree leaf (`~/worktrees/{repo}/{branch}` or
+   `.worktrees/<branch>`) only; it may not edit tracked files.
+
+## Policy file
+
+Owner configuration lives at `~/.svc/worktree-policy.json` (schema:
+`schemas/worktree-policy.schema.json`). A missing file uses defaults
+(`default_root: ~/worktrees`, `naming_strategy: hierarchical`,
+`permissions: 0700`). A present but corrupt file fails closed
+(`WORKTREE_POLICY_INVALID`). Override the path with `SVC_WORKTREE_POLICY`.
+
+Hierarchical naming places worktrees at `{default_root}/{repo}/{branch}`.
+Flat naming places them directly under `{default_root}/{branch}`. Per-project
+roots may be declared in `projects.<repo>.root`.
 
 ## Authority and Nested Execution
 
@@ -151,7 +170,7 @@ main ─────────────────────────
       │                                           ▲
       │ worktree.sh create                        │ gh pr merge --squash
       ▼                                           │
-   .worktrees/feature-x                           │
+   ~/worktrees/{repo}/feature-x                   │
       ├── execute (TDD per task)                  │
       ├── review (G5 in branch)                   │
       ├── E2E (all tests green)                   │

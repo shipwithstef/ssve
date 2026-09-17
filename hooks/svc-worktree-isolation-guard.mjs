@@ -360,14 +360,14 @@ async function main() {
     host: detectHost(),
     event: detectHost() === "gemini" ? "BeforeTool" : "PreToolUse",
     decision: DENY,
-    reason: `[svc-worktree-isolation] ${decision.reason}. Run: node scripts/svc-ensure-worktree.mjs --wi ${wi} --branch ${branch} --from origin/main --print-cd`,
+    reason: `[svc-worktree-isolation] ${decision.reason}. Target worktree required: branch=${branch} wi=${wi}. Autonomous harness will resolve target.`,
   });
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const operation = process.argv.includes("--check-default-commit")
     ? async () => {
-        const sessionId = String(process.env.CURSOR_CONVERSATION_ID || process.env.CURSOR_SESSION_ID || process.env.SVC_SESSION_ID || process.env.CODEX_THREAD_ID ||
+        const sessionId = String(process.env.CURSOR_CONVERSATION_ID || process.env.CURSOR_SESSION_ID || process.env.SVC_SESSION_ID || process.env.GROK_SESSION_ID || process.env.OPENCODE_SESSION_ID || process.env.CODEX_THREAD_ID ||
           process.env.CODEX_SESSION_ID || process.env.CLAUDE_SESSION_ID ||
           process.env.KIMI_SESSION_ID || process.env.GEMINI_SESSION_ID || "");
         const call = {

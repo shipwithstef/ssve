@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WorktreePolicy",
+  "description": "Configuration schema for SSVE centralized external worktree governance (~/.svc/worktree-policy.json)",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "default_root": {
+      "type": "string",
+      "description": "Default base directory for worktrees, e.g. ~/worktrees"
+    },
+    "naming_strategy": {
+      "type": "string",
+      "enum": ["hierarchical", "flat"],
+      "default": "hierarchical"
+    },
+    "permissions": {
+      "type": "string",
+      "pattern": "^0[0-7]{3}$",
+      "default": "0700"
+    },
+    "projects": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "root": {
+            "type": "string"
+          },
+          "permissions": {
+            "type": "string",
+            "pattern": "^0[0-7]{3}$"
+          }
+        },
+        "required": ["root"]
+      }
+    }
+  },
+  "required": ["schema_version", "default_root"]
+}
