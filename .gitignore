@@ -74,7 +74,6 @@ suno-outputs/
 .svc/external-review-cache/
 .svc/external-review-policy/
 .svc/evidence/
-FRAMEWORK-STATE-ARCHIVE/
 docs/specs/company/
 company-state/
 *.log

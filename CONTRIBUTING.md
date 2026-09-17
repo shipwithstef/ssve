@@ -17,7 +17,7 @@ Fork the repository on GitHub, then clone **your fork**:
 ```bash
 git clone https://github.com/<your-username>/ssve.git
 cd ssve
-git remote add upstream https://github.com/s7an-it/ssve.git
+git remote add upstream https://github.com/shipwithstef/ssve.git
 ```
 
 Work on a POSIX host (Linux, macOS, or Windows with WSL2). Native Windows
@@ -106,7 +106,7 @@ If you touched skills, also run the relevant focused validators listed in
 
 1. Commit on the worktree branch. Use the message format below.
 2. Push the branch to **your fork**.
-3. Open a PR against `s7an-it/ssve` `main`.
+3. Open a PR against `shipwithstef/ssve` `main`.
 4. In the PR body, say what you changed, how you tested it, and which
    command output you relied on (`lint-skills-manifest`, tier-1 evals).
 5. Do not squash-merge your own PR unless a maintainer asks you to.
@@ -114,6 +114,27 @@ If you touched skills, also run the relevant focused validators listed in
 Small, obvious fixes do not need a pre-existing issue. Larger changes
 (new skills, blend sources, hook behavior) should start as a proposal
 under `proposals/` or a discussion on the issue tracker.
+
+## Branch Policies & PR Rules
+
+The `shipwithstef/ssve` repository follows standard open-source branch protection and release governance:
+
+- **Protected `main` branch:**
+  - Direct pushes and force pushes (`git push --force`) are blocked.
+  - All changes to `main` must land through a Pull Request.
+  - All discussion threads on the Pull Request must be resolved before merging.
+  - Stale approvals are automatically dismissed when new commits are pushed.
+- **Linear History & Squash Merges:**
+  - Merge commits are disabled. Pull Requests are merged using **Squash and merge** (or rebase) to keep git history clean, linear, and bisectable.
+  - Head branches are automatically deleted upon PR merge to keep the repository clean.
+- **Branch Naming Conventions:**
+  - `feature/<name>` or `feature-<name>`: New capabilities or skill additions
+  - `bugfix/<name>` or `fix/<name>`: Bug fixes and issue remediations
+  - `refactor/<name>` or `refactor-<name>`: Internal refactoring without behavioral drift
+  - `docs/<name>`: Documentation, guides, and doctrine updates
+  - `test/<name>`: Test fixtures, validators, and evaluation additions
+- **Release Tag Immutability:**
+  - Version tags (`v*`, e.g., `v1.0.0-rc.1`) are governed by GitHub Rulesets. Existing tags cannot be deleted or force-updated.
 
 ## No bypasses
 
