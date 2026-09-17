@@ -17,6 +17,12 @@ if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
     echo "REFUSE: node not on PATH after setup-node" >&2
     exit 2
   fi
+  if ! command -v rg >/dev/null 2>&1; then
+    echo "Installing system dependency: ripgrep..."
+    sudo apt-get update -qq
+    sudo apt-get install -y -qq ripgrep
+  fi
+  git fetch origin "+refs/notes/*:refs/notes/*" 2>/dev/null || echo "notes unreadable or absent"
 else
   NODE_BIN="${NODE_BIN:-/usr/bin/node}"
   if [[ ! -x "$NODE_BIN" ]]; then
