@@ -20,7 +20,7 @@ node --check "$ROOT/hooks/lib/active-intent.mjs"
 bash -n "$ROOT/hooks/svc-task-completion-guard.sh"
 bash -n "$ROOT/scripts/worktree.sh"
 ! grep -q 'CLAIM_FILE="\.svc/' "$ROOT/hooks/svc-task-completion-guard.sh" || fail "legacy relative claim path remains"
-grep -q 'Mutating worktree binding requires --session ID' "$ROOT/scripts/worktree.sh" || fail "mutating worktree can silently omit binding"
+grep -q '_durable_session_id' "$ROOT/scripts/worktree.sh" || fail "zero-block durable session id derivation missing"
 ok "binding and guard sources parse"
 
 node -e 'const s=require(process.argv[1]);const r=s.required||[];for(const k of ["session_id","role","wi","repo_root","worktree_root","branch","claim_path","generation"])if(!r.includes(k))process.exit(1);if(s.additionalProperties!==false)process.exit(1)' "$ROOT/schemas/session-worktree-binding.schema.json" || fail "binding schema contract"
@@ -37,42 +37,39 @@ git -C "$REPO" add README.md
 git -C "$REPO" commit -qm init
 git -C "$REPO" branch -m framework-WI-484-fixture
 
-# Worktree creation must reject a missing mutating-session identity before it
-# creates either a branch or worktree. Read-only creation may proceed without
-# a session and must not create a mutation claim.
+# Zero-block mutating creation automatically derives a durable session ID and binds.
+# Read-only creation may proceed without a session and must not create a mutation claim.
 WT_REPO="$TMP/worktree-repo"
-mkdir -p "$WT_REPO/scripts" "$WT_REPO/hooks/lib"
+mkdir -p "$WT_REPO"
 git -C "$WT_REPO" init -q
 git -C "$WT_REPO" config user.name fixture
 git -C "$WT_REPO" config user.email fixture@example.test
-cp "$ROOT/scripts/worktree.sh" "$WT_REPO/scripts/worktree.sh"
-cp "$ROOT/hooks/lib/wi-claim.mjs" "$WT_REPO/hooks/lib/wi-claim.mjs"
-cp "$ROOT/hooks/lib/authoritative-binding.mjs" "$WT_REPO/hooks/lib/authoritative-binding.mjs"
-cp "$ROOT/hooks/lib/svc-runtime-root.mjs" "$WT_REPO/hooks/lib/svc-runtime-root.mjs"
+cp -r "$ROOT/scripts" "$WT_REPO/"
+cp -r "$ROOT/hooks" "$WT_REPO/"
 printf '.worktrees/\n' > "$WT_REPO/.gitignore"
 printf 'fixture\n' > "$WT_REPO/README.md"
-git -C "$WT_REPO" add .gitignore README.md scripts/worktree.sh hooks/lib/wi-claim.mjs hooks/lib/authoritative-binding.mjs hooks/lib/svc-runtime-root.mjs
+git -C "$WT_REPO" add .
 git -C "$WT_REPO" commit -qm init
-if (
+git -C "$WT_REPO" update-ref refs/remotes/origin/main HEAD
+
+export SVC_WORKTREES_ROOT="$WT_REPO/.worktrees"
+(
   cd "$WT_REPO"
   env -u SVC_SESSION_ID -u CODEX_THREAD_ID -u CODEX_SESSION_ID \
     -u CLAUDE_SESSION_ID -u KIMI_SESSION_ID -u GEMINI_SESSION_ID \
     bash scripts/worktree.sh create framework-WI-991-no-session
-) >"$TMP/no-session.out" 2>"$TMP/no-session.err"; then
-  fail "mutating create without a session succeeded"
-fi
-[[ ! -e "$WT_REPO/.worktrees/framework-WI-991-no-session" ]] || fail "rejected mutating create materialized a worktree"
-! git -C "$WT_REPO" show-ref --verify --quiet refs/heads/framework-WI-991-no-session || fail "rejected mutating create materialized a branch"
-grep -q 'Mutating worktree binding requires --session ID' "$TMP/no-session.out" || fail "missing-session create lacked diagnostic"
+) >"$TMP/no-session.out" 2>"$TMP/no-session.err" || fail "zero-block mutating create without session failed"
+[[ -d "$WT_REPO/.worktrees/framework-WI-991-no-session" ]] || fail "zero-block mutating create failed to materialize worktree"
+git -C "$WT_REPO" show-ref --verify --quiet refs/heads/framework-WI-991-no-session || fail "zero-block mutating create failed to materialize branch"
 (
   cd "$WT_REPO"
   env -u SVC_SESSION_ID -u CODEX_THREAD_ID -u CODEX_SESSION_ID \
     -u CLAUDE_SESSION_ID -u KIMI_SESSION_ID -u GEMINI_SESSION_ID \
     bash scripts/worktree.sh create review-read-only --role reviewer
-) >"$TMP/reviewer-create.out" 2>"$TMP/reviewer-create.err"
-[[ -d "$WT_REPO/.worktrees/review-read-only" ]] || fail "read-only create without session failed"
-! find "$WT_REPO/.worktrees/review-read-only/.svc/claims" -type f -name '*.json' | grep -q . || fail "read-only create wrote a mutation claim"
-ok "worktree creation rejects unbound mutation before side effects"
+) >"$TMP/reviewer-create.out" 2>"$TMP/reviewer-create.err" || fail "read-only create without session failed"
+[[ -d "$WT_REPO/.worktrees/review-read-only" ]] || fail "read-only create without session failed to materialize worktree"
+! find "$WT_REPO/.worktrees/review-read-only/.svc/claims" -type f -name '*.json' 2>/dev/null | grep -q . || fail "read-only create wrote a mutation claim"
+ok "worktree creation handles zero-block mutation and read-only without side effects"
 
 SESSION_A="019f6169-73d2-7831-b562-fc1565171ccc"
 SESSION_B="019f616a-0000-7000-8000-000000000002"

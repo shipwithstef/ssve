@@ -27,6 +27,7 @@ grep -q '^\.svc/bootstrap-intent/$' "$ROOT/.gitignore" || fail "bootstrap-intent
 ok "isolation sources parse and runtime binding + bootstrap-intent dirs are ignored"
 
 REPO="$TMP/repo"
+export SVC_WORKTREES_ROOT="$REPO/.worktrees"
 git -C "$TMP" init -q --bare origin.git
 git -C "$TMP" clone -q "$TMP/origin.git" "$REPO"
 git -C "$REPO" config user.name fixture

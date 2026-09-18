@@ -71,6 +71,8 @@ test('formatReconciliationPrompt constructs targeted prompt preserving session c
 test('reconciliationSessionFlags returns correct flags for grok, cursor, claude', () => {
   assert.deepEqual(reconciliationSessionFlags({ host: 'grok' }), ['--continue', '--always-approve']);
   assert.deepEqual(reconciliationSessionFlags({ host: 'grok', sessionId: '123-abc' }), ['--resume', '123-abc', '--always-approve']);
+  assert.deepEqual(reconciliationSessionFlags({ host: 'grok', effort: 'xhigh' }), ['--continue', '--always-approve', '--reasoning-effort', 'xhigh']);
+  assert.deepEqual(reconciliationSessionFlags({ host: 'grok', sessionId: '123-abc', effort: 'high' }), ['--resume', '123-abc', '--always-approve', '--reasoning-effort', 'high']);
   assert.deepEqual(reconciliationSessionFlags({ host: 'cursor' }), ['--continue']);
   assert.deepEqual(reconciliationSessionFlags({ host: 'cursor', sessionId: '456-def' }), ['--resume', '456-def']);
   assert.deepEqual(reconciliationSessionFlags({ host: 'claude' }), ['--continue']);

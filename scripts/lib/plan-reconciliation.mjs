@@ -128,10 +128,13 @@ ${reqList}
 /**
  * Return native command-line session continuation flags for supported host CLIs.
  */
-export function reconciliationSessionFlags({ host, sessionId = null }) {
+export function reconciliationSessionFlags({ host, sessionId = null, effort = null }) {
   switch (host) {
-    case 'grok':
-      return sessionId ? ['--resume', sessionId, '--always-approve'] : ['--continue', '--always-approve'];
+    case 'grok': {
+      const flags = sessionId ? ['--resume', sessionId, '--always-approve'] : ['--continue', '--always-approve'];
+      if (effort) flags.push('--reasoning-effort', effort);
+      return flags;
+    }
     case 'cursor':
       return sessionId ? ['--resume', sessionId] : ['--continue'];
     case 'claude':

@@ -187,6 +187,9 @@ export function repoIdentifier(repoRoot) {
 }
 
 export function resolveWorktreesRoot(repoRoot, env = process.env) {
+  if (env?.SVC_WORKTREES_ROOT) {
+    return canonicalizeExisting(env.SVC_WORKTREES_ROOT);
+  }
   const policy = loadWorktreePolicy(env);
   const repoName = repoIdentifier(repoRoot);
   const project = policy.projects?.[repoName];

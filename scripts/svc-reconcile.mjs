@@ -64,7 +64,7 @@ function git(args) {
 
 function expectedGithubOwner() {
   const remote = git(["remote", "get-url", "origin"]);
-  const match = remote.match(/github\.com[:/]([^/]+)\//);
+  const match = remote.match(/github\.com[^:/]*[:/]([^/]+)\//);
   const owner = match?.[1] || "";
   return /^[A-Za-z0-9-]+$/.test(owner) ? owner : "";
 }
