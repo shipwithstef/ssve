@@ -330,6 +330,16 @@ const CONTRACTS = [
       "test-framework/tests/two-box-receipts.test.mjs",
       "test-framework/tests/released-lease-recovery.test.mjs"
     ]
+  },
+  {
+    validator: "validate-cross-repo-orch-01.mjs",
+    inputs: [
+      "scripts/lib/cross-repo-orch.mjs",
+      "scripts/svc-orchestrate.mjs",
+      "hooks/lib/orchestrate-command.mjs",
+      "test-framework/evals/tier-1/validate-cross-repo-orch-01.mjs",
+      "test-framework/evals/tier-1/fixtures/cross-repo-orch-2026-09-18.json"
+    ]
   }
 ];
 

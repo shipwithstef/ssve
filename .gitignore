@@ -53,6 +53,8 @@ suno-outputs/
 .svc/claims/
 .svc/bindings/
 .svc/archive/
+.svc/orchestration/
+.svc/handoffs/
 
 # Local session context and hook states
 .svc/sessions/

@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "role": "EXEC",
+  "host": "grok",
+  "wi": "WI-FW-CROSS-REPO-ORCH-01",
+  "worktree": "/home/dianast/worktrees/ssve/feature-wi-fw-cross-repo-orch-01",
+  "argv": [
+    "grok",
+    "--cwd",
+    "/home/dianast/worktrees/ssve/feature-wi-fw-cross-repo-orch-01",
+    "--permission-mode",
+    "auto",
+    "--output-format",
+    "json",
+    "--max-turns",
+    "80",
+    "--prompt-file",
+    "/home/dianast/worktrees/ssve/feature-wi-fw-cross-repo-orch-01/.svc/handoffs/WI-FW-CROSS-REPO-ORCH-01-exec.md"
+  ],
+  "prompt_file": "/home/dianast/worktrees/ssve/feature-wi-fw-cross-repo-orch-01/.svc/handoffs/WI-FW-CROSS-REPO-ORCH-01-exec.md",
+  "paste_required": false,
+  "agy_required": false,
+  "dry_run": true,
+  "receipt_path": "/home/dianast/worktrees/ssve/feature-wi-fw-cross-repo-orch-01/.svc/orchestration/WI-FW-CROSS-REPO-ORCH-01.exec.json"
+}

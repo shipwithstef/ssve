@@ -54,7 +54,7 @@ Inspect `node scripts/mine-receipts.mjs --delivery-cycle <root-WI> --json`: over
    intent wins. Treat that guard as advisory unless the user explicitly says
    `continue WI-XXX` or `resume WI-XXX` for the same WI.
 3. Select repo mode, change type, lane, WI, branch, and next skill from `references/lane-model.md`, `references/routing-rules.md`, and `references/intent-routing.md` using read-only evidence.
-4. Before the first repository write — including session-contract refresh, WI/plan creation, task-graph initialization, claim, append, or generated output — run `node scripts/svc-ensure-worktree.mjs --wi <WI> --branch <branch> --from origin/main --json --print-cd`. Change to its returned absolute worktree path. Retain and pass the exact `wi`, `absolute_worktree`, `branch`, and `owner_session` baton to every mutating skill; refuse identity or cwd mismatch.
+4. Before the first repository write — including session-contract refresh, WI/plan creation, task-graph initialization, claim, append, or generated output — if the named WI/worktree is this repository, run `node scripts/svc-ensure-worktree.mjs --wi <WI> --branch <branch> --from origin/main --json --print-cd`. If the named WI/worktree is another checkout (Cursor origin orchestrator), run `node scripts/svc-orchestrate.mjs migrate --wi <WI> --worktree <absolute-worktree> --json --print-cd` instead of paste/agy. Change to its returned absolute worktree path. Retain and pass the exact `wi`, `absolute_worktree`, `branch`, and `owner_session` baton to every mutating skill; refuse identity or cwd mismatch.
 5. Check whether the user is asking for confidence in the right design before planning. If the prompt says "best solution", "right design", "all cards on the table", "golden standard", "real examples", "cost/caching", "by design auto", or equivalent, load `references/solution-confidence-protocol.md`, set `solution_confidence_required: true`, and choose a mode:
    - `design_auto` by default. The framework evaluates, grounds, designs, plans, and implements automatically through the normal lane once the confidence artifact selects a direction.
    - `post_design_human_gate` only when the user explicitly asks to review/approve after design or wait before the plan/implementation part.
@@ -76,6 +76,32 @@ bridges the payload session identity to `svc-ensure-worktree`. Preserve this
 baton for every continuation:
 
 `repository → WI → branch → absolute_worktree → session_id → binding_generation`.
+
+### Cursor origin orchestrator (WI-FW-CROSS-REPO-ORCH-01)
+
+When the host is Cursor (or any host with `origin_orchestrator.enabled`) and the
+request names a WI or worktree that is not the current cwd — including another
+repository — do **not** emit a prompt-composer paste package and do **not**
+escape through agy. First mutation is:
+
+```bash
+node scripts/svc-orchestrate.mjs migrate --wi <WI> --worktree <absolute-worktree> --origin-host cursor --json --print-cd
+```
+
+Then dispatch without paste:
+
+```bash
+node scripts/svc-orchestrate.mjs dispatch --role PLAN --wi <WI> --worktree <absolute-worktree> --dry-run --json
+# after Fable review of the plan:
+node scripts/svc-orchestrate.mjs dispatch --role EXEC --wi <WI> --worktree <absolute-worktree> --json
+node scripts/svc-orchestrate.mjs dispatch --role REVIEW --wi <WI> --worktree <absolute-worktree> --json
+```
+
+PLAN/EXEC launch Grok CLI in the target worktree. REVIEW launches the existing
+Fable/cursor external-review station. Same-owner session rebind is automatic.
+Foreign/ambiguous owners stay denied. The 2026-09-18 HoursHub→SSVE lock is the
+regression: isolation allows this CLI from a foreign worktree; it does not
+allow arbitrary writes there.
 
 The bound worktree is the default mutation directory. Reads may inspect another
 location, but an explicit conflicting workdir, target, repository, or worktree is

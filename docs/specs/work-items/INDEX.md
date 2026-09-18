@@ -1,5 +1,7 @@
 # Work Items Index
 
+- [WI-FW-CROSS-REPO-ORCH-01](WI-FW-CROSS-REPO-ORCH-01.md) — Cursor origin orchestrates any named WI/worktree (session migrates, Grok + Fable dispatch, no paste, no agy-only escape) — status:in_progress
+
 - [WI-FW-UX-GRADUATION-01](WI-FW-UX-GRADUATION-01.md) — Graduate grounded UX proposals and preserve original drafts — status:in_progress
 
 - [WI-FW-CLEAN-MAIN-FOLLOWUP-01](WI-FW-CLEAN-MAIN-FOLLOWUP-01.md) — Current recovery, UX integration and clean-main installation — status:in_progress

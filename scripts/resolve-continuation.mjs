@@ -399,13 +399,25 @@ export function launch(options = {}) {
   let pid = null;
   if (!fake && launchCommand) {
     // Best-effort real transport: fire-and-forget, never awaited (the whole
-    // point is a NEW process/session). Live host wiring/fixtures are WI-546's
-    // unit budget, not WI-552's (AC-552-10) — this call site is the seam.
+    // point is a NEW process/session). WI-FW-CROSS-REPO-ORCH-01 supplies a
+    // prompt file so launch_command is no longer a ghost spawn.
     try {
+      const promptDir = path.join(cwd, '.svc', 'continuation');
+      fs.mkdirSync(promptDir, { recursive: true, mode: 0o700 });
+      const promptFile = path.join(promptDir, `${wi}.launch-prompt.md`);
+      fs.writeFileSync(promptFile, `Continue ${wi} as the configured continuation child. Session ${childSessionId}. Do not paste. Return structured evidence.\n`, { mode: 0o600 });
       const child = spawn('bash', ['-lc', launchCommand], {
         detached: true,
         stdio: 'ignore',
-        env: { ...process.env, SVC_SESSION_ID: childSessionId, SVC_WI: wi, SVC_CONTINUATION_TOKEN: configDigest },
+        cwd,
+        env: {
+          ...process.env,
+          SVC_SESSION_ID: childSessionId,
+          SVC_WI: wi,
+          SVC_CONTINUATION_TOKEN: configDigest,
+          SVC_PROMPT_FILE: promptFile,
+          SVC_LAUNCH_CWD: cwd,
+        },
       });
       child.unref();
       pid = child.pid || null;

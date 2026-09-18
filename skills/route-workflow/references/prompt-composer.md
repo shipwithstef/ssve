@@ -15,6 +15,13 @@ turn to execute the correct skill with the correct evidence and proof gates.
 
 If the mode is ambiguous, default to `human_prompt_composer`.
 
+**Origin orchestrator exception (WI-FW-CROSS-REPO-ORCH-01):** when the host
+declares `authority_capabilities.origin_orchestrator.enabled` (Cursor) and the
+user names a WI/worktree — including another repo — do not treat paste as
+success. Run `scripts/svc-orchestrate.mjs migrate` then `dispatch`. A
+"Prompt To Send" block is a failure for this path, not the deliverable.
+agy is not required.
+
 ## Search Contract
 
 Before composing the prompt, search the framework surface that can affect the
