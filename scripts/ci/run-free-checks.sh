@@ -24,7 +24,7 @@ if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
   fi
   git fetch origin "+refs/notes/*:refs/notes/*" 2>/dev/null || echo "notes unreadable or absent"
   if git rev-parse --verify origin/main >/dev/null 2>&1 && ! git rev-parse --verify refs/heads/main >/dev/null 2>&1; then
-    git branch main origin/main || true
+    git branch main origin/main
   fi
 else
   NODE_BIN="${NODE_BIN:-/usr/bin/node}"
