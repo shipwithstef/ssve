@@ -42,6 +42,17 @@ separately and never authorizes another Opus call.
 
 Every canonical-launcher path emits the same schema-constrained JSON findings envelope. YAML below is used only for the durable human-readable review log.
 
+### 3-Way Triangulation Audit & Bounded Session-Reuse Reconciliation
+
+For multi-host and cross-family orchestration:
+1. **3-Way Triangulation:** The independent reviewer cross-checks three orthogonal dimensions:
+   - *Axis 1 (Orchestrator Scope):* Did the orchestrator capture user intent and scout findings without omission in `v5-preplanning-intent-packet.md`?
+   - *Axis 2 (Planner Manifest Scope):* Did the planner faithfully bind all Two-Box contract decisions and ACs into `manifest.v5.md`?
+   - *Axis 3 (Target Reality Scope):* Are all touched paths, build scripts, database schemas, and deploy constraints grounded in physical repository reality?
+2. **Review Execution Mode:** Review stations run in non-interactive print mode (`-p --output-format text` in Cursor, `--headless` in Grok, `claude -p`). Running reviewers with `--mode plan` is strictly forbidden to prevent reasoning token burning.
+3. **Session-Reuse Reconciliation:** The planner reconciles review findings by resuming its existing CLI session (`--continue` or `--resume` in Grok and Cursor via `scripts/lib/plan-reconciliation.mjs`), eliminating cold-start repository rereads.
+4. **Dispute Boundary (Max 1 Round):** If the planner disputes a finding with counter-evidence, the auditor is re-invoked for exactly one round on disputed points. Persistent disagreement routes immediately to the repository owner/founder. Infinite back-and-forth loops are strictly prohibited.
+
 ### Bounded invalidated-lens remediation
 
 Accepted corrections rerun mechanical checks and only the semantic lenses whose

@@ -159,11 +159,17 @@ drains cheap defects before that review without paying for repeated full rereads
 
 Use the mode-aware rubric in references/plan-review-protocol.md. For inline, reject missing consequential behavior, state ownership, interfaces, proof or scope, and incomplete v5 `planning_contract` / `implementation_approach` / `executor_discretion`; do not reject absent code blueprints or harmless local choices. Explicit v5 release producer descriptions replace guessed future shell identities. Require original AC/UX/technical context, not only a concise digest. Dispatch keeps complete packets. Keep the integer transport, owner reviewer topology and one holistic review plus invalidated-lens corrections. Do not treat `planning_contract.sealed` as authority.
 
-### Step 2 — Tier 2: Primary adversarial review (cross-model preferred)
+### Step 2 — Tier 2: Primary adversarial review (3-Way Triangulation)
 
-Build the plan package, then invoke the sole external-review adapter. The
-primary invocation doubles as the availability probe; never run a paid smoke
-call or consumer-local fallback.
+Build the plan package, then invoke the external-review adapter or station.
+The review evaluates a **3-Way Triangulation**:
+1. **Axis 1 (Orchestrator Scope):** Did the orchestrator capture user prompt requirements, work item scope, ACs, and scout findings accurately in `v5-preplanning-intent-packet.md`?
+2. **Axis 2 (Planner Manifest Scope):** Did the planner faithfully bind all contract decisions and ACs without dropping or diluting requirements in `manifest.v5.md`?
+3. **Axis 3 (Target Reality Scope):** Are paths, configuration files, storage keys, schema migrations, and deployment targets grounded in actual repository files and platform constraints?
+
+**CRITICAL EXECUTION RULE (Zero Token Burning):**
+Review stations MUST execute in non-interactive print/audit mode (`-p --output-format text` in Cursor, `--headless` in Grok, `claude -p`).
+**NEVER** run review stations with `--mode plan`, `--plan`, or planning subagents. Running a reviewer in plan mode causes severe reasoning token burning on recursive plan generation instead of producing an audit report.
 
 ```bash
 SVC_HOST="${SVC_HOST:-claude}" \
@@ -171,7 +177,7 @@ SVC_HOST="${SVC_HOST:-claude}" \
     > /tmp/review-tier2.json 2>/tmp/review-tier2.err
 ```
 
-Output: the shared findings JSON. The launcher receipt path is reported on
+Output: the shared findings JSON or structured Markdown audit report (`fable-plan-review.md`). The launcher receipt path is reported on
 stderr and must be copied into the durable review log.
 
 Missing CLI controls, authentication, shared quota, timeout, network, schema,
@@ -180,12 +186,18 @@ tuple mismatch are hard failures. The launcher alone owns profile resolution,
 same-process provider routing, and the separate narrowly classified
 Fable-availability fallback.
 
-### Step 3 — Parse findings and decide
+### Step 3 — Bounded Session-Reuse Reconciliation (Tier 2.5)
 
-Parse `/tmp/review-tier2.json`:
+Parse the review report via `scripts/lib/plan-reconciliation.mjs`:
 
-- `rubric_score: 10` AND `findings: []` → PROMOTE the plan. Copy review to `docs/plans/<date>-<name>/review-log.yaml`. Skill completes.
-- Else → orchestrator (Opus) writes responses for each finding per the accept/reject format in `references/plan-review-protocol.md`. NO bare ACCEPT or REJECT — every decision must carry `justification` and (for REJECTs) `counter_evidence`.
+- `rubric_score: 10` AND `findings: []` (or `verdict: PASS`) → PROMOTE the plan. Copy review to `docs/plans/<date>-<name>/review-log.yaml`. Skill completes.
+- Else (`verdict: REVISE` or `PASS WITH FINDINGS`):
+  1. Orchestrator extracts the findings table and constructs the reconciliation directive via `formatReconciliationPrompt()`.
+  2. The **Planner** receives the findings table and reconciles them. **MANDATORY:** The planner reuses its existing session/context (using flags from `reconciliationSessionFlags()` e.g. `grok --continue` or `cursor-agent -p --continue`) to prevent expensive full-repository rereads.
+  3. The planner categorizes each finding:
+     - `ACCEPT`: applies the patch directly to `manifest.v5.md`.
+     - `JUSTIFY_REFUTE`: provides concrete code/contract counter-evidence.
+  4. **Dispute Boundary (Max 1 Round):** If findings are disputed, the auditor receives a single follow-up turn (`formatAuditorDisputeRecheckPrompt()`) to concede or confirm. If disagreement persists after 1 round, the framework halts and escalates to the owner/human checkpoint (`evaluateDisputeStatus()`). Infinite loops are strictly prohibited.
 
 ### Step 4 — Apply responses and invalidate exact lenses
 

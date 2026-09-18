@@ -33,11 +33,7 @@ ORCHESTRATOR="$(detect_orchestrator)"
 POLICY_PATH="${SVC_DISPATCH_POLICY:-${SVC_REVIEWER_POLICY:-$HOME/.svc/dispatch-policy.json}}"
 POLICY_SCHEMA="$(policy_schema_version "$POLICY_PATH")"
 case "$ORCHESTRATOR" in
-  agy)
-    printf 'resolve-adversarial-reviewer: AGY is reviewer transport only and cannot orchestrate review routing\n' >&2
-    exit 1
-    ;;
-  claude|codex|grok|cursor|gemini|kimi|opencode|antigravity|mimo-code)
+  agy|antigravity|claude|codex|grok|cursor|gemini|kimi|opencode|mimo-code)
     if [[ "$POLICY_SCHEMA" == "2" ]]; then
       exec node "$SCRIPT_DIR/run-external-review.mjs" --policy-status --orchestrator "$ORCHESTRATOR" --reviewer-config "$POLICY_PATH" --reviewer-phase plan
     fi
