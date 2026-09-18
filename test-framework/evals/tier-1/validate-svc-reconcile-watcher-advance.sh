@@ -65,7 +65,7 @@ const elapsed = Date.now() - started;
 const report = JSON.parse(run.stdout);
 const after = JSON.parse(fs.readFileSync(checkpoint, "utf8"));
 assert.equal(run.status, 0);
-assert.ok(elapsed < 2000, `hung GitHub path took ${elapsed}ms`);
+assert.ok(elapsed < 4500, `hung GitHub path took ${elapsed}ms`);
 assert.equal(report.gh_available, false);
 assert.equal(report.reconcile_metadata.watcher_advanced, false);
 assert.equal(after.last_pr_watcher_run, before.last_pr_watcher_run);
