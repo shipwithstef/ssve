@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "wi": "WI-FW-CROSS-REPO-ORCH-01",
+  "lane": "framework",
+  "status": "in_progress",
+  "created": "2026-09-18T14:32:50.038Z",
+  "flags": ["cross_runtime_integration"],
+  "tasks": [
+    {
+      "id": 1,
+      "status": "in_progress",
+      "skill": "route-workflow",
+      "subject": "route framework origin-orchestration lock",
+      "blocked_by": []
+    },
+    {
+      "id": 2,
+      "status": "pending",
+      "skill": "write-spec",
+      "subject": "spec Cursor origin migrate + Grok/Fable dispatch",
+      "blocked_by": [1]
+    },
+    {
+      "id": 3,
+      "status": "pending",
+      "skill": "execute-changeset",
+      "subject": "implement migrate/dispatch and 2026-09-18 regression",
+      "blocked_by": [2]
+    },
+    {
+      "id": 4,
+      "status": "pending",
+      "skill": "review-gate",
+      "subject": "framework-lane review for WI-FW-CROSS-REPO-ORCH-01",
+      "blocked_by": [3],
+      "metadata": { "skill": "review-gate" }
+    }
+  ]
+}

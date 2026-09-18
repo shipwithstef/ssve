@@ -26,8 +26,8 @@
       "enabled": true,
       "transport": "cli-launch",
       "event": "SessionStart",
-      "launch_command": null,
-      "note": "WI-552: lifecycle wiring only. Live launch adapter + fixtures are WI-546 scope, not this WI unit budget."
+      "launch_command": "grok --cwd \"${SVC_LAUNCH_CWD:-$PWD}\" --permission-mode auto --output-format json --max-turns \"${SVC_GROK_MAX_TURNS:-80}\" --prompt-file \"${SVC_PROMPT_FILE}\"",
+      "note": "WI-FW-CROSS-REPO-ORCH-01: real Grok CLI launch. Continuation spawn sets SVC_PROMPT_FILE and SVC_LAUNCH_CWD. Cursor origin dispatches PLAN/EXEC here; this is not isolated_plan_analysis."
     },
     "isolated_plan_analysis": {
       "enabled": false,

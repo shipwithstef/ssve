@@ -1,5 +1,17 @@
 # Framework State
 
+## Cursor origin orchestration (WI-FW-CROSS-REPO-ORCH-01)
+
+A hooks-active Cursor origin can name any WI/worktree, including another
+repository. `scripts/svc-orchestrate.mjs migrate` same-owner rebinds the
+session, writes a fresh target contract, and returns `paste_required:false`
+`agy_required:false`. PLAN/EXEC dispatch Grok CLI (`launch_command` is a real
+`--cwd`/`--prompt-file` template). REVIEW dispatches the existing Fable/cursor
+external-review launcher. Isolation allows only that exact CLI from a foreign
+worktree; mixed-repo Writes stay denied. The 2026-09-18 HoursHub→SSVE lock is
+the regression (`validate-cross-repo-orch-01.mjs`). Cursor
+`fresh_session_launch` stays disabled — Cursor is origin, not a launched child.
+
 ## Two-Box Planning and Deterministic Transmutation (WI-FW-TWO-BOX-01)
 
 Candidate implementation in `.worktrees/framework-two-box-transmutation` foregrounds living specs, phased narrowing, exact reviewed contracts, and receipts. Independent Open/Contract originals, two Contract-only source scouts, revision, and a grounded assessor feed complete v5 inline/dispatch contracts; a separate signed-review seal precedes bounded execution. Fresh issuance checks staged evidence; current execution and read-only committed verification enforce separate authority boundaries. Historical versions remain inspection-only except this WI's exact pinned, genuinely reviewed bootstrap v4.

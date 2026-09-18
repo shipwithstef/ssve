@@ -24,7 +24,17 @@
     "mutating_child_execution": true,
     "fresh_session_launch": {
       "enabled": false,
-      "reason": "No automatable fresh-session transport declared for this host yet (WI-552 migration note: disabled by default until a host manifest declares fresh_session_launch)."
+      "reason": "Cursor is the origin orchestrator, not a launched child. WI-FW-CROSS-REPO-ORCH-01 dispatches Grok for PLAN/EXEC and Fable for REVIEW; do not set launch_command here."
+    },
+    "origin_orchestrator": {
+      "enabled": true,
+      "paste_required": false,
+      "agy_required": false,
+      "plan_host": "grok",
+      "exec_host": "grok",
+      "review_host": "cursor",
+      "review_family": "anthropic",
+      "cli": "scripts/svc-orchestrate.mjs"
     },
     "isolated_plan_analysis": {
       "enabled": false,

@@ -16,8 +16,12 @@ import { resolveRuntimeDirectory } from "./lib/svc-runtime-root.mjs";
 import { authorizeDelegatedMutation, readDelegation } from "./lib/delegation-authority.mjs";
 import { readController, repositoryId } from "./lib/authority-store.mjs";
 import { parseBootstrapCommand } from "./codex/lib/bootstrap-command.mjs";
+import { parseOrchestrateCommand } from "./lib/orchestrate-command.mjs";
 import { readOwnerLease } from "./codex/lib/owner-lease.mjs";
 import { isShellTool } from "./lib/shell-tools.mjs";
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.resolve(HERE, "..");
 
 const WRITE_TOOLS = new Set([
   "apply_patch", "Edit", "Write", "WriteFile", "StrReplaceFile",
@@ -221,6 +225,23 @@ export function classifyMutation(call, env = process.env, now = Date.now()) {
 
   if (isReadOnlyTool(canonicalReadContext(normalized)) || extraReadOnly(normalized)) {
     return { classification: "read-only", allow: true, ...(cwdGit || {}) };
+  }
+
+  // WI-FW-CROSS-REPO-ORCH-01: same-owner origin may migrate/dispatch a named
+  // WI/worktree from a foreign (even non-default) checkout. Arbitrary mixed-repo
+  // Writes remain denied by the scope/target checks below.
+  if (isShellTool(normalized.toolName)) {
+    const orchestrate = parseOrchestrateCommand(extractCommand(normalized.toolInput).trim());
+    if (orchestrate) {
+      const expected = path.resolve(ROOT, "scripts", "svc-orchestrate.mjs");
+      let got = null;
+      try { got = fs.realpathSync(path.resolve(normalized.cwd, orchestrate.script)); } catch { got = null; }
+      let expectedReal = expected;
+      try { expectedReal = fs.realpathSync(expected); } catch {}
+      if (got && got === expectedReal) {
+        return { classification: "origin-orchestrate", allow: true, orchestrate, ...(cwdGit || {}) };
+      }
+    }
   }
 
   const scopeHost = resolveAuthorityHost(normalized.raw, env);

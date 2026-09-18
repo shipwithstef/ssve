@@ -1,0 +1,24 @@
+{
+  "incident_id": "2026-09-18-cursor-origin-locked",
+  "date": "2026-09-18",
+  "origin_host": "cursor",
+  "origin_cwd_example": "/home/dianast/app-workspaces/hourshub-worktrees/wt-lane-account-customer-billing-live",
+  "named_wi": "WI-FW-CROSS-REPO-ORCH-01",
+  "named_repo": "ssve",
+  "failure_then": [
+    "grok fresh_session_launch.launch_command is null",
+    "cursor fresh_session_launch.enabled is false and origin_orchestrator is missing",
+    "prompt-composer requires paste",
+    "STRAT host is agy-only",
+    "isolation allows svc-ensure-worktree only from a repo default checkout",
+    "session bound to HoursHub cannot migrate onto a named SSVE WI"
+  ],
+  "required_after": [
+    "cursor origin can migrate to named WI worktree without paste",
+    "grok launch_command is a real argv/template",
+    "PLAN dispatches grok, REVIEW dispatches fable/cursor, EXEC dispatches grok",
+    "agy is not required",
+    "same-owner rebind succeeds",
+    "arbitrary mixed-repo writes remain denied"
+  ]
+}
