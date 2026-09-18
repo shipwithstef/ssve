@@ -645,6 +645,9 @@ git clone --quiet --local --no-hardlinks "$ROOT" "$WI494_REPO"
 rm -rf "$WI494_REPO/.svc"/lane-tasks-*.json "$WI494_REPO/.svc/bootstrap-intent"
 git -C "$WI494_REPO" config user.email t@t
 git -C "$WI494_REPO" config user.name t
+if ! git -C "$WI494_REPO" rev-parse --verify origin/main >/dev/null 2>&1; then
+  git -C "$WI494_REPO" update-ref refs/remotes/origin/main HEAD
+fi
 WI494_RUNTIME="$(mktemp -d)"; chmod 700 "$WI494_RUNTIME"
 WI494_SESSION="sess-Alonger-than-8"
 WI494_WI="WI-$RANDOM$RANDOM"

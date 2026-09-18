@@ -192,7 +192,14 @@ function runningFrameworkRoot() {
 
 function isMainWorktree(identity) {
   if (!identity || identity.worktree_root !== identity.default_worktree_root) return false;
-  return true;
+  try {
+    const branch = execFileSync("git", ["-C", identity.worktree_root, "branch", "--show-current"], {
+      encoding: "utf8", stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    return branch === "main";
+  } catch {
+    return false;
+  }
 }
 
 function unquote(value) {
