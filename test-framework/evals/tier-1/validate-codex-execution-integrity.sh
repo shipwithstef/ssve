@@ -645,6 +645,9 @@ git clone --quiet --local --no-hardlinks "$ROOT" "$WI494_REPO"
 rm -rf "$WI494_REPO/.svc"/lane-tasks-*.json "$WI494_REPO/.svc/bootstrap-intent"
 git -C "$WI494_REPO" config user.email t@t
 git -C "$WI494_REPO" config user.name t
+if ! git -C "$WI494_REPO" rev-parse --verify origin/main >/dev/null 2>&1; then
+  git -C "$WI494_REPO" update-ref refs/remotes/origin/main HEAD
+fi
 WI494_RUNTIME="$(mktemp -d)"; chmod 700 "$WI494_RUNTIME"
 WI494_SESSION="sess-Alonger-than-8"
 WI494_WI="WI-$RANDOM$RANDOM"
@@ -971,6 +974,7 @@ cp "$ROOT/hooks/lib/claim-owner.mjs" "$WI494_MUT/boot/hooks/lib/claim-owner.mjs"
 cp "$ROOT/hooks/lib/wi-id.mjs" "$WI494_MUT/boot/hooks/lib/wi-id.mjs"  # WI-497 canonical dep
 # WI-FW-HOOKS-SAFETY-01: the enforcer now imports the shared literal-ref validator
 cp "$ROOT/hooks/lib/literal-branch.mjs" "$WI494_MUT/boot/hooks/lib/literal-branch.mjs"
+cp "$ROOT/hooks/lib/worktree-policy.mjs" "$WI494_MUT/boot/hooks/lib/worktree-policy.mjs"
 cp "$ROOT/hooks/codex/lib/argv-encode.mjs" "$WI494_MUT/boot/hooks/codex/lib/argv-encode.mjs"
 node -e '
 const fs = require("fs");
@@ -1037,6 +1041,7 @@ cp "$ROOT/hooks/lib/claim-owner.mjs" "$WI494_MUT/marker/hooks/lib/claim-owner.mj
 cp "$ROOT/hooks/lib/wi-id.mjs" "$WI494_MUT/marker/hooks/lib/wi-id.mjs"  # WI-497 canonical dep
 # WI-FW-HOOKS-SAFETY-01: enforcer dependency tree includes the ref validator
 cp "$ROOT/hooks/lib/literal-branch.mjs" "$WI494_MUT/marker/hooks/lib/literal-branch.mjs"
+cp "$ROOT/hooks/lib/worktree-policy.mjs" "$WI494_MUT/marker/hooks/lib/worktree-policy.mjs"
 cp "$ROOT/hooks/codex/lib/argv-encode.mjs" "$WI494_MUT/marker/hooks/codex/lib/argv-encode.mjs"
 cat > "$WI494_MUT/marker/hooks/codex/lib/bootstrap-marker.mjs" <<'MUTEOF'
 import path from "node:path";

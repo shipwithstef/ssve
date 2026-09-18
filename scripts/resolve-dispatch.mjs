@@ -39,7 +39,11 @@ const HOST_FAMILY = {
   codex: 'openai',
   gemini: 'google',
   agy: 'google',
+  antigravity: 'google',
   grok: 'xai',
+  cursor: 'multi',
+  'mimo-code': 'mimo',
+  opencode: 'multi',
 };
 
 function fail(message, code = 'dispatch_invalid') {
@@ -124,8 +128,12 @@ function validateTuple(tuple, scope) {
 
 export function cursorIndependentEligible(station) {
   const t = station?.tuple;
-  return station?.identity_requirement === 'requested_accepted' && t?.host === 'cursor' &&
-    t.family === 'xai' && t.model === 'cursor-grok-4.6-high' && t.effort === 'high';
+  if (station?.identity_requirement !== 'requested_accepted' || t?.host !== 'cursor') return false;
+  if (t.family === 'xai' && t.model === 'cursor-grok-4.6-high' && t.effort === 'high') return true;
+  if (t.family === 'xai' && t.model === 'cursor-grok-4.6-xhigh' && t.effort === 'xhigh') return true;
+  if (t.family === 'anthropic' && t.model === 'claude-fable-5-1-medium' && t.effort === 'medium') return true;
+  if (t.family === 'openai' && (t.model === 'gpt-5' || t.model.startsWith('o3')) && EFFORTS.has(t.effort)) return true;
+  return false;
 }
 
 function validateStation(station, scope) {
@@ -270,7 +278,7 @@ function applyDenyAllow(policy, tuple, role) {
 }
 
 function selectMode(policy, requestedMode = null) {
-  const selectedMode = requestedMode || policy.default_mode;
+  const selectedMode = (requestedMode && policy.modes?.[requestedMode]) ? requestedMode : (policy.default_mode || requestedMode);
   const modeConfig = policy.modes?.[selectedMode];
   if (!isObject(modeConfig)) fail(`mode "${selectedMode}" is not configured`, 'dispatch_policy_invalid');
   return { selectedMode, modeConfig };

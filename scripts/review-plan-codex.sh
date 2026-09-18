@@ -110,8 +110,23 @@ fi
 manifest_path="$PLAN"
 plan_wi=$(sed -n '/^---$/,/^---$/p' "$manifest_path" | grep -E '^work_item:[[:space:]]*' | head -n 1 | awk '{print $2}' | tr -d '\r\n"' || true)
 if [[ -z "$plan_wi" ]]; then
-  printf 'review-plan-codex: cannot derive exactly one authoritative WI (found 0: ); refusing plan review before any provider call. Frontmatter work_item is required.\n' >&2
-  exit 4
+  branch_name="$(git -C "$CONTEXT_ROOT" branch --show-current 2>/dev/null || true)"
+  branch_token="$(cd "$ROOT" && node --input-type=module -e 'import {extractWiId} from "./hooks/lib/wi-id.mjs"; const raw = process.argv[1] || ""; const isolated = String(raw).match(/WI-[A-Z0-9]+(?:-[A-Z0-9]+)*/); process.stdout.write(extractWiId(raw) || extractWiId(isolated ? isolated[0] : "") || "")' "$branch_name" 2>/dev/null || true)"
+  plan_wis="$(cd "$ROOT" && node --input-type=module -e 'import fs from "node:fs"; import {WI_EXTRACT_RE} from "./hooks/lib/wi-id.mjs"; const text = fs.readFileSync(process.argv[1], "utf8"); const re = new RegExp(WI_EXTRACT_RE.source, "g"); const matches = [...new Set((text.match(re) || []).map(s => s.toUpperCase()))]; console.log(matches.join("\n"));' "$PLAN" 2>/dev/null || true)"
+  if [[ -n "$branch_token" ]]; then
+    plan_wi="$branch_token"
+    if [[ -n "$plan_wis" ]] && ! printf '%s\n' "$plan_wis" | grep -qx "$plan_wi"; then
+      printf 'review-plan-codex: derived WI %s does not appear in the plan (%s); refusing to bind a stale/reused branch WI. Rebase the review onto the correct WI branch/plan.\n' "$plan_wi" "$(printf '%s' "$plan_wis" | tr '\n' ' ')" >&2
+      exit 4
+    fi
+  else
+    wi_count="$(printf '%s\n' "$plan_wis" | grep -c . || true)"
+    if [[ "$wi_count" -ne 1 ]]; then
+      printf 'review-plan-codex: cannot derive exactly one authoritative WI (found %s: %s); refusing plan review before any provider call. Frontmatter work_item is required.\n' "$wi_count" "$(printf '%s' "$plan_wis" | tr '\n' ' ')" >&2
+      exit 4
+    fi
+    plan_wi="$plan_wis"
+  fi
 fi
 WI="$plan_wi"
 PRE_EXEC_BASE="$(git -C "$CONTEXT_ROOT" merge-base HEAD origin/main 2>/dev/null || git -C "$CONTEXT_ROOT" rev-parse origin/main 2>/dev/null || echo origin/main)"

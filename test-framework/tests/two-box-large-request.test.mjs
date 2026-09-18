@@ -73,7 +73,7 @@ test('frozen request identity covers 99KB 101KB 256KB and 1MiB with UTF-8 and sh
       assert.equal(reread.bytes.includes(Buffer.from('café', 'utf8')), true);
       assert.equal(reread.bytes.includes(Buffer.from('$HOME; echo', 'utf8')), true);
     }
-    assert.throws(() => freeze.assertRequestBudget(Buffer.alloc(1048577)), /byte limit 1048576/);
+    assert.throws(() => freeze.assertRequestBudget(Buffer.alloc(freeze.PLANNING_REQUEST_MAX_BYTES + 1)), new RegExp(`byte limit ${freeze.PLANNING_REQUEST_MAX_BYTES}`));
     assert.equal(freeze.assertTokenContextOutputReserve({ requestBytes: 1048576 }).checked, false);
     assert.throws(() => freeze.assertTokenContextOutputReserve({
       requestBytes: 1048576, requireChecked: true,
@@ -92,7 +92,7 @@ test('frozen request identity covers 99KB 101KB 256KB and 1MiB with UTF-8 and sh
       requestBytes: 200000, contextWindow: 828400, outputReserveTokens: 16384, maxInputTokens: 828400,
     }).checked, true);
     assert.equal(freeze.conservativeTokenUpperBound(1048576), 1048576);
-    assert.equal(capture.PLANNING_CAPTURE_BODY_MAX_BYTES, 8 * 1048576);
+    assert.equal(capture.PLANNING_CAPTURE_BODY_MAX_BYTES, 8 * freeze.PLANNING_REQUEST_MAX_BYTES);
     assert.equal(JSON.stringify({ prompt: '"'.repeat(1048576) }).length < capture.PLANNING_CAPTURE_BODY_MAX_BYTES, true);
   });
 });
@@ -204,7 +204,7 @@ test('OFFLINE isolation freezes 101KB 256KB and 1MiB and inspects the exact byte
       assert.equal(result.proof.diagnosis.exact_prompt_count, 1);
       assert.equal(result.proof.effective.usable_live, false);
       assert.equal(result.proof.inspection_authority, 'offline_fixture');
-      assert.equal(result.proof.limits.request_bytes, 1048576);
+      assert.equal(result.proof.limits.request_bytes, freeze.PLANNING_REQUEST_MAX_BYTES);
     } finally { result.cleanup(); }
   }
 });

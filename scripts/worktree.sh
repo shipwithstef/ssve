@@ -1164,6 +1164,92 @@ NODE_BINDING_REMOVE
 }
 
 # ============================================================
+# MIGRATE — move an existing worktree to the canonical policy path
+# (or user-specified destination), preserving branch, CAS, and mode 0700.
+# ============================================================
+cmd_migrate() {
+  local target_branch=""
+  local custom_dest=""
+  local force=false
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --to) custom_dest="$2"; shift 2 ;;
+      --force) force=true; shift ;;
+      *) target_branch="$1"; shift ;;
+    esac
+  done
+
+  if [[ -z "$target_branch" ]]; then
+    local current_wt
+    current_wt="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+    if [[ -n "$current_wt" && "$current_wt" != "$REPO_ROOT" ]]; then
+      target_branch="$(git -C "$current_wt" rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+    fi
+  fi
+
+  if [[ -z "$target_branch" ]]; then
+    echo "Usage: worktree.sh migrate <branch-or-path> [--to <destination>] [--force]"
+    exit 1
+  fi
+
+  local src_path=""
+  if [[ -d "$target_branch" ]]; then
+    src_path="$(cd "$target_branch" && pwd -P)"
+    target_branch="$(git -C "$src_path" rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+    if [[ -z "$target_branch" || "$target_branch" == "HEAD" ]]; then
+      fail "Could not determine branch from worktree path: $src_path"
+      exit 1
+    fi
+  else
+    src_path="$(_wt_path_for_branch "$target_branch")"
+  fi
+
+  if [[ -z "$src_path" || ! -d "$src_path" ]]; then
+    fail "Could not find worktree for '$target_branch'"
+    exit 1
+  fi
+
+  src_path="$(cd "$src_path" && pwd -P)"
+
+  local dest_path="${custom_dest:-$WORKTREE_DIR/$target_branch}"
+  mkdir -p "$(dirname "$dest_path")"
+  dest_path="$(cd "$(dirname "$dest_path")" && pwd -P)/$(basename "$dest_path")"
+
+  if [[ "$src_path" == "$dest_path" ]]; then
+    ok "Worktree '$target_branch' is already at canonical location: $dest_path"
+    chmod 0700 "$dest_path" 2>/dev/null || true
+    return 0
+  fi
+
+  if [[ -e "$dest_path" ]]; then
+    if [[ "$force" == "true" ]]; then
+      warn "Destination $dest_path exists, removing..."
+      rm -rf "$dest_path"
+    else
+      fail "Destination already exists: $dest_path (use --force to overwrite)"
+      exit 1
+    fi
+  fi
+
+  info "Migrating worktree '$target_branch'..."
+  info "  From: $src_path"
+  info "  To:   $dest_path"
+
+  if ! git worktree move "$src_path" "$dest_path"; then
+    fail "git worktree move failed"
+    exit 1
+  fi
+
+  chmod 0700 "$dest_path" 2>/dev/null || true
+  ok "Worktree migrated successfully to $dest_path"
+  echo "  WI:     $(_derive_wi "$target_branch")"
+  echo "  Path:   $dest_path"
+  echo "  Branch: $target_branch"
+  echo "  Mode:   0700"
+}
+
+# ============================================================
 # LIST — show all active worktrees
 # ============================================================
 cmd_list() {
@@ -1372,6 +1458,10 @@ Commands:
   remove <branch>    Remove a worktree and clean up
     --force          Remove even with uncommitted changes
 
+  migrate <branch>   Migrate worktree to canonical policy location
+    --to <dest>      Custom destination path
+    --force          Overwrite destination if exists
+
   list               Show all active worktrees with status
 
   cleanup            Find and remove orphaned worktrees
@@ -1424,6 +1514,10 @@ case "${1:-}" in
   remove)
     shift
     exec node "$REPO_ROOT/hooks/lib/worktree-verb-lock.mjs" --verb remove --repo-root "$REPO_ROOT" -- bash "$0" __inner_remove "$@"
+    ;;
+  migrate)
+    shift
+    cmd_migrate "$@"
     ;;
   list)     cmd_list ;;
   cleanup)

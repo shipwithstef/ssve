@@ -26,7 +26,8 @@ if [[ ! -d "$FIX/.git" ]]; then
   cp "$ROOT/scripts/worktree.sh" "$FIX/"
 else
   mkdir -p "$FIX/scripts"
-  cp "$ROOT/scripts/worktree.sh" "$FIX/scripts/"
+  cp -r "$ROOT/hooks" "$FIX/"
+  cp -r "$ROOT/scripts" "$FIX/"
 fi
 git -C "$FIX" config user.email t@i; git -C "$FIX" config user.name t
 git -C "$FIX" remote set-url origin "$ORIGIN" 2>/dev/null || true
@@ -87,8 +88,12 @@ else
 fi
 
 # 3. Quarantine preserves bytes: an orphan dir under .worktrees is MOVED, not deleted.
+export SVC_WORKTREES_ROOT="$FIX/.worktrees"
 mkdir -p "$FIX/.worktrees/orphan-test/deep"
 echo "precious" >"$FIX/.worktrees/orphan-test/deep/data.txt"
+COMMON="$(git -C "$FIX" rev-parse --git-common-dir)"
+[[ "$COMMON" != /* ]] && COMMON="$FIX/$COMMON"
+echo "gitdir: $COMMON/worktrees/orphan-test" >"$FIX/.worktrees/orphan-test/.git"
 bash scripts/worktree.sh __inner_cleanup >/dev/null 2>&1 || true
 Q=$(find "$FIX/.worktrees/.quarantine" -name data.txt 2>/dev/null | head -1)
 if [[ -n "$Q" && "$(cat "$Q")" == "precious" ]]; then

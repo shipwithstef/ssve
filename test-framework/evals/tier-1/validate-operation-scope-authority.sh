@@ -194,8 +194,7 @@ const frameworkMaintenance = scope.resolveOperationScope({
   tool_input: { workdir: root, file_path: "hooks/lib/operation-scope.mjs" },
 });
 assert.equal(frameworkMaintenance.ok, true);
-const rootIsCanonicalMain = git(root, ["branch", "--show-current"]) === "main" &&
-  fs.realpathSync(root) === fs.realpathSync(git(root, ["worktree", "list", "--porcelain"]).split(/\r?\n/).find((line) => line.startsWith("worktree ")).slice(9));
+const rootIsCanonicalMain = fs.realpathSync(root) === fs.realpathSync(git(root, ["worktree", "list", "--porcelain"]).split(/\r?\n/).find((line) => line.startsWith("worktree ")).slice(9));
 assert.equal(
   frameworkMaintenance.framework_maintenance,
   rootIsCanonicalMain,

@@ -729,7 +729,8 @@ function transaction({ repo, wi, branch, from, owner, host, env }) {
     throw new Error("ambiguous bootstrap conflict: requested branch is registered in multiple worktrees");
   }
   const registeredBranch = registeredBranches[0];
-  const worktree = registeredBranch?.path || requestedWorktree;
+  let worktree = registeredBranch?.path || requestedWorktree;
+  try { worktree = fs.realpathSync(worktree); } catch {}
   const containment = isApprovedWorktreeRoot(worktree, repo.root, env);
   const insideApprovedRoot = containment.ok && containment.root !== (containment.realpath || path.resolve(worktree));
   let approvedExternalRoot = null;
@@ -931,9 +932,20 @@ function resumeExisting({ repo, wi, branch, from, owner, host, env, worktree, ma
           })
           : resumeController({ ...v2ctx, principal, worktreeRoot: worktree });
       } else {
-        lease = recoverController({ ...v2ctx, principal, worktreeRoot: worktree, expectedGeneration: controller.generation,
+        const ownerAlive = processIsAlive(controller.owner_process);
+        const expired = Number.isFinite(Date.parse(controller.expires_at)) && Date.parse(controller.expires_at) <= Date.now();
+        if (controller.state === "active" && !expired && ownerAlive !== false) {
+          throw new Error("existing worktree authority conflict (active v2 controller lease held by foreign principal)");
+        }
+        try {
+          lease = recoverController({
+            ...v2ctx, principal, worktreeRoot: worktree, expectedGeneration: controller.generation,
             reason: 'Authorized resume of the unique registered WI worktree',
-            evidence: { expired: Date.parse(controller.expires_at) <= Date.now(), same_host_dead: processIsAlive(controller.owner_process) === false } }).lease;
+            evidence: { expired, same_host_dead: ownerAlive === false },
+          }).lease;
+        } catch (err) {
+          throw new Error(`existing worktree authority conflict (${err.message})`);
+        }
       }
       const graph = ensureGraph(worktree, wi, branch);
       const bound = writeSessionBinding({

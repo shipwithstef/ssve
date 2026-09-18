@@ -1236,7 +1236,7 @@
     {
       "skill": "plan-changeset",
       "path": "skills/plan-changeset/SKILL.md",
-      "content_hash": "189c3e35f385d2bd212b7752ace97524e40cee6a04c8528a8822a095bdf99620",
+      "content_hash": "e4e6729b508e92ce3c198816d115c2b0cc4756334c235d55febdd36d211d56d4",
       "description": "Use when you have a BASELINED feature spec with technical design and need to produce the implementation plan for branch-first execution — task graph, file set, validation plan, checkpoints, and AC/test mapping",
       "aliases": [],
       "positive_triggers": [],
@@ -1521,7 +1521,7 @@
     {
       "skill": "review-plan",
       "path": "skills/review-plan/SKILL.md",
-      "content_hash": "cc9ff711eb50dbae24554bca25a1959c0e5e4848600b29215ee7d0d82c4e0d8d",
+      "content_hash": "7923ca53215553c7819c0c6698854bd2264ab2e6938833f1c5d9c4aa11189787",
       "description": "Plan-level adversarial review gate. Runs after plan-changeset produces a manifest + task graph and BEFORE any execute-changeset dispatch. Two gates: (1) compiled mechanical/coverage checks — free, in-session; (2) one holistic adversarial review via the canonical external-review launcher with structured findings and a tuple receipt. Corrections recheck only invalidated lenses; disputed product/security authority routes to the owner, not a second model. Iteration loop with justified accept/reject responses — same discipline on both sides. Use when: plan-changeset manifest exists and is about to be promoted. Blocks promotion until all findings have resolutions.",
       "aliases": [],
       "positive_triggers": [],

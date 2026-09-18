@@ -354,6 +354,7 @@ assert.throws(
 console.log('validate-dispatch-resolver-wi551: PASS (AC-551-1..9 + proposal AC-10 replay matrix)');
 
 assert.equal(cursorIndependentEligible({ identity_requirement: 'requested_accepted', tuple: { host: 'cursor', family: 'xai', model: 'cursor-grok-4.6-high', effort: 'high' } }), true);
+assert.equal(cursorIndependentEligible({ identity_requirement: 'requested_accepted', tuple: { host: 'cursor', family: 'xai', model: 'cursor-grok-4.6-xhigh', effort: 'xhigh' } }), true);
 assert.equal(cursorIndependentEligible({ identity_requirement: 'requested_accepted', tuple: { host: 'cursor', family: 'multi', model: 'cursor-auto', effort: 'high' } }), false);
 
 const exactCursorPolicy = structuredClone(cursorAutoLaunderingPolicy);

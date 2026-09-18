@@ -172,6 +172,8 @@ if(chosen?.eligible){
 let adopted=null;try{const ensureModule=await import("../../scripts/svc-ensure-worktree.mjs");adopted=ensureModule.adoptExistingWorktree({wi:chosen.wi,cwd:repo,prepareSession:true,sessionId:sid},{...process.env,SVC_SESSION_ID:sid,SVC_AGENT_ID:payload.agent_id||payload.agentId||process.env.SVC_AGENT_ID||""});}catch(error){deny(`self-heal could not complete (${error.message})`,hostId);}if(adopted)await loadRecoverySkill(adopted.absolute_worktree,chosen,input,ctx,sid,hostId);
 deny("self-heal completed but the binding did not resolve; inspect the WI ownership before retrying.",hostId);}
 if(exact.reason_code==="FOREIGN_LIVE_OWNER")deny("FOREIGN_LIVE_OWNER: a provably live owner cannot be displaced",hostId);
+const isDefaultCheckout=!recoveryRoot||(scope.operation_repository?.default_worktree_root&&recoveryRoot===scope.operation_repository.default_worktree_root);
+if(!isDefaultCheckout){deny(`mutation requires a bound WI worktree (AUTH_BINDING_MISSING_SELF_HEAL_INELIGIBLE: ${gate.reason_code}; EXACT_WORKTREE_RECOVERY: ${exact.reason_code})`,hostId);}
 const provisioned=await autoProvisionMissingBinding({payload:effective,env:process.env,repo,sessionId:sid,host:hostId});
 if(!provisioned.ok)deny(`mutation requires a bound WI worktree (AUTH_BINDING_MISSING_SELF_HEAL_INELIGIBLE: ${gate.reason_code}; EXACT_WORKTREE_RECOVERY: ${exact.reason_code}; SELF_PROVISION_ATTEMPTED: ${provisioned.reason})`,hostId);
 effective=rebindMutationPayload(effective,provisioned.defaultRoot,provisioned.worktree);

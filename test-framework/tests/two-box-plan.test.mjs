@@ -273,11 +273,11 @@ test('constraint excerpt limits preserve explicit gaps and reject coverage outsi
 
 const launcher=await import('../../scripts/lib/two-box-role-launch.mjs');
 const codexEvents=extra=>[{type:'thread.started',thread_id:'OFFLINE'},{type:'turn.started'},...extra,{type:'item.completed',item:{type:'agent_message',text:JSON.stringify({plan:'Use the inspected interface.'})}},{type:'turn.completed',usage:{input_tokens:2,output_tokens:3}}].map(x=>JSON.stringify(x)).join('\n');
-test('role prompts accept 101KB and reject over 1MiB independently of token budgets',()=>{
+test('role prompts accept 101KB and reject over configured limit independently of token budgets',()=>{
  const pad='x'.repeat(101*1024);
  const ok=launcher.buildRolePrompt({role:'open_box',payload:{bindings:{wi:'WI-X'},requirements:[{id:'AC1',text:'Keep'}],facts:{pad}}});
  assert.ok(Buffer.byteLength(ok)>101*1024);
- assert.throws(()=>launcher.buildRolePrompt({role:'open_box',payload:{bindings:{wi:'WI-X'},requirements:[{id:'AC1',text:'Keep'}],facts:{pad:'x'.repeat(1048576)}}}),/byte limit 1048576/);
+ assert.throws(()=>launcher.buildRolePrompt({role:'open_box',payload:{bindings:{wi:'WI-X'},requirements:[{id:'AC1',text:'Keep'}],facts:{pad:'x'.repeat(launcher.PLANNING_REQUEST_MAX_BYTES)}}}),new RegExp(`byte limit ${launcher.PLANNING_REQUEST_MAX_BYTES}`));
 });
 test('strict role parser rejects tools, broken lines, truncated turns, and wrong types',()=>{
  assert.deepEqual(launcher.parseCodexJsonl(codexEvents([]),'open_box'),{plan:'Use the inspected interface.'});
