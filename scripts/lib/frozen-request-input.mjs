@@ -10,8 +10,9 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { IsolationUnsupported, sha256Bytes } from "./two-box-protocol.mjs";
 
-export const PLANNING_REQUEST_MAX_BYTES = 1048576;
-/** Ordinary external-review packages already exceed the planning 1 MiB bound. */
+export const DEFAULT_PLANNING_REQUEST_MAX_BYTES = 8 * 1024 * 1024;
+export const PLANNING_REQUEST_MAX_BYTES = Number.parseInt(process.env.SVC_PLANNING_REQUEST_MAX_BYTES || "", 10) || DEFAULT_PLANNING_REQUEST_MAX_BYTES;
+/** Ordinary external-review packages already reach the 8 MiB bound. */
 export const GENERAL_REVIEW_MAX_BYTES = 8 * 1024 * 1024;
 /** Linux MAX_ARG_STRLEN is 131072 including NUL; one fewer usable payload byte. */
 export const PLATFORM_SINGLE_ARG_MAX = 131071;

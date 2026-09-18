@@ -20,6 +20,7 @@ import {
   validateRoleOutput,
 } from "./two-box-protocol.mjs";
 import { PLANNING_REQUEST_MAX_BYTES, resolvePlanningTokenBudget } from "./frozen-request-input.mjs";
+export { PLANNING_REQUEST_MAX_BYTES };
 
 const EVENTS = new Set(["thread.started", "turn.started", "turn.completed", "turn.failed", "item.started", "item.completed", "error"]);
 const ITEM_OK = new Set(["reasoning", "agent_message"]);
