@@ -430,8 +430,15 @@ export function resolveOwnerReviewStation({
   for (const file of [...new Set(files)]) {
     const extracted = requiredExternalCandidates(file, { phase, orchestrator });
     if (extracted.reviewLabelDeclared) {
+      const complete = completeReviewLabel(extracted.reviewLabel);
+      if (!complete) {
+        fail(
+          `REVIEW dispatch owner policy ${file} labels.REVIEW must declare host, family, model, and effort`,
+          "orch_review_policy_invalid",
+        );
+      }
       reviewLabelDeclared = true;
-      reviewLabel = extracted.reviewLabel;
+      reviewLabel = complete;
     }
     candidates.push(...extracted.candidates);
   }

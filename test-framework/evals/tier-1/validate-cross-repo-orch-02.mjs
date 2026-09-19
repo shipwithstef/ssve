@@ -455,6 +455,34 @@ check("AC-DISPATCH-3 explicit reviewer-policy still composes default dispatch-po
   assert.equal(argvFlag(execReview.argv, "--reviewer-config"), path.join(home, ".svc", "dispatch-policy.json"));
 });
 
+check("AC-DISPATCH-3E incomplete v2 REVIEW label is not masked by dispatch-policy", () => {
+  const home = path.join(tmp, "mask-home");
+  const incompleteV2 = structuredClone(v2Policy);
+  incompleteV2.modes["owner-test"].labels = {
+    REVIEW: { host: "codex", family: "openai", model: "gpt-6-astra" },
+  };
+  writeOwnerPolicy(path.join(home, ".svc", "reviewer-policy-v2.json"), incompleteV2);
+  writeOwnerPolicy(path.join(home, ".svc", "dispatch-policy.json"), dispatchPolicy);
+  const env = isolatedEnv({ HOME: home });
+  let threw = false;
+  try {
+    dispatchRole({
+      role: "REVIEW",
+      review_kind: "exec",
+      wi: "WI-FW-CROSS-REPO-ORCH-02",
+      worktree: ssveWt,
+      origin_host: "cursor",
+      dry_run: true,
+      manifest_root: ROOT,
+    }, env);
+  } catch (error) {
+    threw = true;
+    assert.equal(error.code, "orch_review_policy_invalid");
+    assert.match(String(error.message), /host, family, model, and effort/);
+  }
+  assert.equal(threw, true);
+});
+
 check("AC-DISPATCH-3E labels.REVIEW missing host fail-closes", () => {
   const missingHost = structuredClone(dispatchPolicy);
   delete missingHost.modes["governed-test"].labels.REVIEW.host;
