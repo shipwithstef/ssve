@@ -286,17 +286,13 @@ export function ownerReviewPolicyPaths(env = process.env) {
   const home = policyHome(env);
   const reviewerDefault = path.join(home, ".svc", "reviewer-policy-v2.json");
   const dispatchDefault = path.join(home, ".svc", "dispatch-policy.json");
-  const reviewer = env.SVC_REVIEWER_POLICY ? path.resolve(env.SVC_REVIEWER_POLICY) : null;
-  const dispatch = env.SVC_DISPATCH_POLICY ? path.resolve(env.SVC_DISPATCH_POLICY) : null;
-  if (reviewer || dispatch) {
-    return { reviewer, dispatch, reviewerDefault, dispatchDefault };
-  }
-  return {
-    reviewer: fs.existsSync(reviewerDefault) ? reviewerDefault : null,
-    dispatch: fs.existsSync(dispatchDefault) ? dispatchDefault : null,
-    reviewerDefault,
-    dispatchDefault,
-  };
+  const reviewer = env.SVC_REVIEWER_POLICY
+    ? path.resolve(env.SVC_REVIEWER_POLICY)
+    : (fs.existsSync(reviewerDefault) ? reviewerDefault : null);
+  const dispatch = env.SVC_DISPATCH_POLICY
+    ? path.resolve(env.SVC_DISPATCH_POLICY)
+    : (fs.existsSync(dispatchDefault) ? dispatchDefault : null);
+  return { reviewer, dispatch, reviewerDefault, dispatchDefault };
 }
 
 export function ownerReviewPolicyPath(env = process.env) {
@@ -350,6 +346,14 @@ function extractPhaseStations(policy, { phase, orchestrator }) {
     return { stations: selected, orchestrator, reviewLabel, format: "legacy-v2" };
   }
   return null;
+}
+
+function tupleMatchesReviewLabel(tuple, label) {
+  if (!label?.host || !label?.model) return false;
+  for (const key of ["host", "family", "model", "effort"]) {
+    if (label[key] && tuple?.[key] !== label[key]) return false;
+  }
+  return true;
 }
 
 function requiredExternalCandidates(policyPath, { phase, orchestrator }) {
@@ -412,10 +416,14 @@ export function resolveOwnerReviewStation({
   }
   let pool = candidates;
   if (reviewLabel?.host && reviewLabel?.model) {
-    const matched = candidates.filter((row) =>
-      row.station.tuple?.host === reviewLabel.host && row.station.tuple?.model === reviewLabel.model,
-    );
-    if (matched.length) pool = matched;
+    const matched = candidates.filter((row) => tupleMatchesReviewLabel(row.station.tuple, reviewLabel));
+    if (!matched.length) {
+      fail(
+        `REVIEW dispatch owner policy labels.REVIEW ${reviewLabel.host}/${reviewLabel.model} matches no required external ${phase} station`,
+        "orch_review_station_missing",
+      );
+    }
+    pool = matched;
   }
   const independent = pool.filter((row) => row.station.authority === "independent");
   if (independent.length) pool = independent;

@@ -431,6 +431,60 @@ check("AC-DISPATCH-3 REVIEW label from dispatch-policy wins over v2 last-exec", 
   assert.equal(argvFlag(execReview.argv, "--reviewer-config"), path.join(home, ".svc", "dispatch-policy.json"));
 });
 
+check("AC-DISPATCH-3 explicit reviewer-policy still composes default dispatch-policy", () => {
+  const home = path.join(tmp, "compose-home");
+  const v2OnlyMid = structuredClone(v2Policy);
+  v2OnlyMid.modes["owner-test"].orchestrators.grok.exec.stations = [
+    v2Policy.modes["owner-test"].orchestrators.grok.exec.stations[0],
+    v2Policy.modes["owner-test"].orchestrators.grok.exec.stations[1],
+  ];
+  const v2Path = path.join(tmp, "compose-v2", "reviewer-policy-v2.json");
+  writeOwnerPolicy(v2Path, v2OnlyMid);
+  writeOwnerPolicy(path.join(home, ".svc", "dispatch-policy.json"), dispatchPolicy);
+  const env = isolatedEnv({ HOME: home, SVC_REVIEWER_POLICY: v2Path });
+  const execReview = dispatchRole({
+    role: "REVIEW",
+    review_kind: "exec",
+    wi: "WI-FW-CROSS-REPO-ORCH-02",
+    worktree: ssveWt,
+    origin_host: "cursor",
+    dry_run: true,
+    manifest_root: ROOT,
+  }, env);
+  assert.equal(argvFlag(execReview.argv, "--reviewer-station"), "owner-final-exec");
+  assert.equal(argvFlag(execReview.argv, "--reviewer-config"), path.join(home, ".svc", "dispatch-policy.json"));
+});
+
+check("AC-DISPATCH-3E labels.REVIEW with no matching station fail-closes", () => {
+  const drift = structuredClone(dispatchPolicy);
+  drift.modes["governed-test"].labels.REVIEW = {
+    host: "codex",
+    family: "openai",
+    model: "gpt-6-unconfigured",
+    effort: "high",
+  };
+  const dispatchPath = path.join(tmp, "drift-dispatch", "dispatch-policy.json");
+  writeOwnerPolicy(dispatchPath, drift);
+  const env = isolatedEnv({ SVC_DISPATCH_POLICY: dispatchPath, HOME: path.join(tmp, "empty-home") });
+  let threw = false;
+  try {
+    dispatchRole({
+      role: "REVIEW",
+      review_kind: "exec",
+      wi: "WI-FW-CROSS-REPO-ORCH-02",
+      worktree: ssveWt,
+      origin_host: "cursor",
+      dry_run: true,
+      manifest_root: ROOT,
+    }, env);
+  } catch (error) {
+    threw = true;
+    assert.equal(error.code, "orch_review_station_missing");
+    assert.match(String(error.message), /labels\.REVIEW/);
+  }
+  assert.equal(threw, true);
+});
+
 check("AC-DISPATCH-3E missing owner policy fail-closes with no default station", () => {
   const emptyHome = path.join(tmp, "no-policy-home");
   fs.mkdirSync(emptyHome, { recursive: true });
