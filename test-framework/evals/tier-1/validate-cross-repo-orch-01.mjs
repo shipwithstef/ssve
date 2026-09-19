@@ -218,6 +218,10 @@ check("AC-3 PLAN/EXEC argv is grok; REVIEW is Fable launcher; not agy", () => {
       },
     },
   }, null, 2)}\n`, { mode: 0o600 });
+  const isolatedHome = path.join(tmp, "empty-home");
+  fs.mkdirSync(isolatedHome, { recursive: true, mode: 0o700 });
+  const reviewEnv = { ...process.env, SVC_REVIEWER_POLICY: reviewPolicy, HOME: isolatedHome };
+  delete reviewEnv.SVC_DISPATCH_POLICY;
   const review = dispatchRole({
     role: "REVIEW",
     wi: "WI-FW-CROSS-REPO-ORCH-01",
@@ -225,7 +229,7 @@ check("AC-3 PLAN/EXEC argv is grok; REVIEW is Fable launcher; not agy", () => {
     origin_host: "cursor",
     dry_run: true,
     manifest_root: ROOT,
-  }, { ...process.env, SVC_REVIEWER_POLICY: reviewPolicy });
+  }, reviewEnv);
   assert.equal(review.host, "cursor");
   assert.ok(review.argv.some((arg) => String(arg).endsWith("run-external-review.mjs")));
   assert.ok(!review.argv.includes("agy"));
