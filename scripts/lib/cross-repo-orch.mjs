@@ -389,6 +389,7 @@ function requiredExternalCandidates(policyPath, { phase, orchestrator }) {
   return {
     reviewLabel: extracted.reviewLabel,
     reviewLabelDeclared: extracted.reviewLabelDeclared,
+    format: extracted.format,
     candidates: required.map((station) => ({
       station,
       policy_path: policyPath,
@@ -426,7 +427,8 @@ export function resolveOwnerReviewStation({
   }
   let reviewLabel = null;
   let reviewLabelDeclared = false;
-  const candidates = [];
+  const v2Candidates = [];
+  const dispatchCandidates = [];
   for (const file of [...new Set(files)]) {
     const extracted = requiredExternalCandidates(file, { phase, orchestrator });
     if (extracted.reviewLabelDeclared) {
@@ -440,13 +442,18 @@ export function resolveOwnerReviewStation({
       reviewLabelDeclared = true;
       reviewLabel = complete;
     }
-    candidates.push(...extracted.candidates);
+    if (extracted.format === "legacy-v2") v2Candidates.push(...extracted.candidates);
+    else dispatchCandidates.push(...extracted.candidates);
   }
+  // Prefer grok.exec / grok.plan from reviewer-policy-v2 when that phase has
+  // required externals. labels.REVIEW is the plan reviewer identity, never the
+  // exec station.
+  const candidates = v2Candidates.length ? v2Candidates : dispatchCandidates;
   if (!candidates.length) {
     fail(`REVIEW dispatch owner policy has no required external ${phase} station`, "orch_review_station_missing");
   }
   let pool = candidates;
-  if (reviewLabelDeclared) {
+  if (phase === "plan" && reviewLabelDeclared) {
     const complete = completeReviewLabel(reviewLabel);
     if (!complete) {
       fail(

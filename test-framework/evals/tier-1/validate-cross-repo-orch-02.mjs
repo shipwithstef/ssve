@@ -248,13 +248,6 @@ const v2Policy = {
                 authority: "independent",
                 tuple: { host: "codex", family: "openai", model: "gpt-5.6-sol", effort: "high" },
               },
-              {
-                id: "owner-final-exec",
-                kind: "external",
-                required: true,
-                authority: "independent",
-                tuple: { host: "codex", family: "openai", model: "gpt-6-astra", effort: "high" },
-              },
             ],
           },
         },
@@ -301,18 +294,18 @@ const dispatchPolicy = {
               tuple: { host: "grok", family: "xai", model: "grok-4.6", effort: "high" },
             },
             {
+              id: "owner-astra-exec",
+              kind: "external",
+              required: true,
+              authority: "independent",
+              tuple: { host: "codex", family: "openai", model: "gpt-6-astra", effort: "high" },
+            },
+            {
               id: "owner-mid-exec",
               kind: "external",
               required: true,
               authority: "independent",
               tuple: { host: "codex", family: "openai", model: "gpt-5.6-sol", effort: "high" },
-            },
-            {
-              id: "owner-final-exec",
-              kind: "external",
-              required: true,
-              authority: "independent",
-              tuple: { host: "codex", family: "openai", model: "gpt-6-astra", effort: "high" },
             },
           ],
         },
@@ -358,7 +351,7 @@ check("AC-DISPATCH-3 REVIEW station ids come from owner policy, not literals", (
     manifest_root: ROOT,
   }, v2Env);
   assert.equal(argvFlag(planReview.argv, "--reviewer-station"), "owner-plan-station");
-  assert.equal(argvFlag(execReview.argv, "--reviewer-station"), "owner-final-exec");
+  assert.equal(argvFlag(execReview.argv, "--reviewer-station"), "owner-mid-exec");
   assert.equal(argvFlag(planReview.argv, "--reviewer-config"), v2Path);
   assert.equal(argvFlag(execReview.argv, "--reviewer-config"), v2Path);
   assert.equal(argvFlag(planReview.argv, "--orchestrator"), "grok");
@@ -371,7 +364,7 @@ check("AC-DISPATCH-3 REVIEW station ids come from owner policy, not literals", (
   assert.ok(!execReview.argv.includes("astra-high-exec"));
 });
 
-check("AC-DISPATCH-3 REVIEW dispatch-policy uses phase REVIEW station, last exec external", () => {
+check("AC-DISPATCH-3 REVIEW dispatch-policy plan uses REVIEW label, exec uses last exec station", () => {
   const dispatchPath = path.join(tmp, "owner-dispatch", "dispatch-policy.json");
   writeOwnerPolicy(dispatchPath, dispatchPolicy);
   const env = isolatedEnv({ SVC_DISPATCH_POLICY: dispatchPath, HOME: path.join(tmp, "empty-home") });
@@ -394,18 +387,14 @@ check("AC-DISPATCH-3 REVIEW dispatch-policy uses phase REVIEW station, last exec
     manifest_root: ROOT,
   }, env);
   assert.equal(argvFlag(planReview.argv, "--reviewer-station"), "owner-review-plan");
-  assert.equal(argvFlag(execReview.argv, "--reviewer-station"), "owner-final-exec");
+  assert.equal(argvFlag(execReview.argv, "--reviewer-station"), "owner-mid-exec");
+  assert.ok(!execReview.argv.includes("owner-astra-exec"));
   assert.equal(argvFlag(planReview.argv, "--reviewer-config"), dispatchPath);
 });
 
-check("AC-DISPATCH-3 REVIEW label from dispatch-policy wins over v2 last-exec", () => {
+check("AC-DISPATCH-3 labels.REVIEW Astra does not select exec station when exec ends in sol", () => {
   const home = path.join(tmp, "both-policy-home");
-  const v2OnlyMid = structuredClone(v2Policy);
-  v2OnlyMid.modes["owner-test"].orchestrators.grok.exec.stations = [
-    v2Policy.modes["owner-test"].orchestrators.grok.exec.stations[0],
-    v2Policy.modes["owner-test"].orchestrators.grok.exec.stations[1],
-  ];
-  writeOwnerPolicy(path.join(home, ".svc", "reviewer-policy-v2.json"), v2OnlyMid);
+  writeOwnerPolicy(path.join(home, ".svc", "reviewer-policy-v2.json"), v2Policy);
   writeOwnerPolicy(path.join(home, ".svc", "dispatch-policy.json"), dispatchPolicy);
   const env = isolatedEnv({ HOME: home });
   const planReview = dispatchRole({
@@ -427,19 +416,16 @@ check("AC-DISPATCH-3 REVIEW label from dispatch-policy wins over v2 last-exec", 
     manifest_root: ROOT,
   }, env);
   assert.equal(argvFlag(planReview.argv, "--reviewer-station"), "owner-plan-station");
-  assert.equal(argvFlag(execReview.argv, "--reviewer-station"), "owner-final-exec");
-  assert.equal(argvFlag(execReview.argv, "--reviewer-config"), path.join(home, ".svc", "dispatch-policy.json"));
+  assert.equal(argvFlag(execReview.argv, "--reviewer-station"), "owner-mid-exec");
+  assert.ok(!execReview.argv.includes("owner-astra-exec"));
+  assert.ok(!execReview.argv.includes("astra-high-exec"));
+  assert.equal(argvFlag(execReview.argv, "--reviewer-config"), path.join(home, ".svc", "reviewer-policy-v2.json"));
 });
 
-check("AC-DISPATCH-3 explicit reviewer-policy still composes default dispatch-policy", () => {
+check("AC-DISPATCH-3 explicit reviewer-policy exec stays on grok.exec last station", () => {
   const home = path.join(tmp, "compose-home");
-  const v2OnlyMid = structuredClone(v2Policy);
-  v2OnlyMid.modes["owner-test"].orchestrators.grok.exec.stations = [
-    v2Policy.modes["owner-test"].orchestrators.grok.exec.stations[0],
-    v2Policy.modes["owner-test"].orchestrators.grok.exec.stations[1],
-  ];
   const v2Path = path.join(tmp, "compose-v2", "reviewer-policy-v2.json");
-  writeOwnerPolicy(v2Path, v2OnlyMid);
+  writeOwnerPolicy(v2Path, v2Policy);
   writeOwnerPolicy(path.join(home, ".svc", "dispatch-policy.json"), dispatchPolicy);
   const env = isolatedEnv({ HOME: home, SVC_REVIEWER_POLICY: v2Path });
   const execReview = dispatchRole({
@@ -451,8 +437,9 @@ check("AC-DISPATCH-3 explicit reviewer-policy still composes default dispatch-po
     dry_run: true,
     manifest_root: ROOT,
   }, env);
-  assert.equal(argvFlag(execReview.argv, "--reviewer-station"), "owner-final-exec");
-  assert.equal(argvFlag(execReview.argv, "--reviewer-config"), path.join(home, ".svc", "dispatch-policy.json"));
+  assert.equal(argvFlag(execReview.argv, "--reviewer-station"), "owner-mid-exec");
+  assert.ok(!execReview.argv.includes("owner-astra-exec"));
+  assert.equal(argvFlag(execReview.argv, "--reviewer-config"), v2Path);
 });
 
 check("AC-DISPATCH-3E incomplete v2 REVIEW label is not masked by dispatch-policy", () => {
@@ -573,7 +560,7 @@ check("AC-DISPATCH-3E labels.REVIEW with no matching station fail-closes", () =>
   try {
     dispatchRole({
       role: "REVIEW",
-      review_kind: "exec",
+      review_kind: "plan",
       wi: "WI-FW-CROSS-REPO-ORCH-02",
       worktree: ssveWt,
       origin_host: "cursor",
