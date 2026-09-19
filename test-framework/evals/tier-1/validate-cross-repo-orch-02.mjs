@@ -186,6 +186,40 @@ check("AC-DISPATCH-2 EXEC high", () => {
   assert.equal(exec.effort, "high");
 });
 
+check("AC-DISPATCH-3 REVIEW astra stations, no cursor-fable", () => {
+  const planReview = dispatchRole({
+    role: "REVIEW",
+    review_kind: "plan",
+    wi: "WI-FW-CROSS-REPO-ORCH-02",
+    worktree: ssveWt,
+    origin_host: "cursor",
+    dry_run: true,
+    manifest_root: ROOT,
+  });
+  const execReview = dispatchRole({
+    role: "REVIEW",
+    review_kind: "exec",
+    wi: "WI-FW-CROSS-REPO-ORCH-02",
+    worktree: ssveWt,
+    origin_host: "cursor",
+    dry_run: true,
+    manifest_root: ROOT,
+  });
+  const planStation = planReview.argv.indexOf("--reviewer-station");
+  const execStation = execReview.argv.indexOf("--reviewer-station");
+  assert.ok(planStation >= 0);
+  assert.ok(execStation >= 0);
+  assert.equal(planReview.argv[planStation + 1], "astra-high-plan");
+  assert.equal(execReview.argv[execStation + 1], "astra-high-exec");
+  assert.ok(planReview.argv.some((arg) => String(arg).endsWith("run-external-review.mjs")));
+  assert.ok(!planReview.argv.includes("--model"));
+  assert.ok(!planReview.argv.includes("--profile"));
+  assert.ok(!planReview.argv.includes("cursor-fable-plan"));
+  assert.ok(!execReview.argv.includes("cursor-fable-exec"));
+  assert.ok(!planReview.argv.includes("cursor-fable-exec"));
+  assert.ok(!execReview.argv.includes("cursor-fable-plan"));
+});
+
 check("AC-BIND-5 idempotent migrate does not double-append contract", () => {
   const sessionId = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
   const first = migrateSession({

@@ -2,7 +2,7 @@
 /**
  * WI-FW-CROSS-REPO-ORCH-01 — Cursor origin orchestrates a named WI/worktree.
  *
- * Same-owner session migrate + Grok PLAN/EXEC + Fable REVIEW dispatch.
+ * Same-owner session migrate + Grok PLAN/EXEC + Astra REVIEW dispatch.
  * No paste. No agy-only escape. Foreign/ambiguous owners stay fail-closed.
  */
 import fs from "node:fs";
@@ -270,7 +270,7 @@ export function migrateSession(options = {}, env = process.env) {
 
 function handoffPrompt({ wi, role, worktree }) {
   if (role === "PLAN") {
-    return `Assemble and write the plan for ${wi} in ${worktree}. Do not ask the user to paste. After the plan exists, stop for Fable review.`;
+    return `Assemble and write the plan for ${wi} in ${worktree}. Do not ask the user to paste. After the plan exists, stop for Astra review.`;
   }
   if (role === "EXEC") {
     return `Execute the reviewed plan for ${wi} in ${worktree}. Do not paste. Stay inside this worktree.`;
@@ -301,7 +301,7 @@ export function dispatchRole(options = {}, env = process.env) {
     host = origin.review_host || "cursor";
     const reviewKind = options.review_kind || "plan";
     const policy = env.SVC_REVIEWER_POLICY || path.join(os.homedir(), ".svc", "reviewer-policy-v2.json");
-    const station = reviewKind === "exec" ? "cursor-fable-exec" : "cursor-fable-plan";
+    const station = reviewKind === "exec" ? "astra-high-exec" : "astra-high-plan";
     argv = [
       process.execPath,
       path.join(options.manifest_root || ROOT, "scripts", "run-external-review.mjs"),
