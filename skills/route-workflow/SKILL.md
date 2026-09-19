@@ -80,12 +80,14 @@ baton for every continuation:
 ### Cursor origin orchestrator (WI-FW-CROSS-REPO-ORCH-01)
 
 When the host is Cursor (or any host with `origin_orchestrator.enabled`) and the
-request names a WI or worktree that is not the current cwd — including another
-repository — do **not** emit a prompt-composer paste package and do **not**
-escape through agy. First mutation is:
+request names a WI, project, or worktree that is not the current cwd — including
+another repository — do **not** emit a prompt-composer paste package and do
+**not** escape through agy. The **user does not run a command**. SessionStart /
+UserPromptSubmit inject the bind. You stay origin. First mutation you perform
+yourself (never print it as homework):
 
 ```bash
-node scripts/svc-orchestrate.mjs migrate --wi <WI> --worktree <absolute-worktree> --origin-host cursor --json --print-cd
+node ~/.cursor/skills/scripts/svc-orchestrate.mjs migrate --wi <WI> --worktree <absolute-worktree> --origin-host cursor --json --print-cd
 ```
 
 Then dispatch without paste:

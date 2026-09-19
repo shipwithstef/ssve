@@ -230,6 +230,18 @@ function buildHookEntries(skillsPath) {
       timeout: 10,
     },
     {
+      event: "SessionStart",
+      matcher: "",
+      command: `SVC_HOST=kimi node ${hooksDir}/svc-origin-orchestrator-prompt.mjs`,
+      timeout: 10,
+    },
+    {
+      event: "UserPromptSubmit",
+      matcher: "",
+      command: `SVC_HOST=kimi node ${hooksDir}/svc-origin-orchestrator-prompt.mjs`,
+      timeout: 10,
+    },
+    {
       event: "UserPromptSubmit",
       matcher: "",
       command: `node ${hooksDir}/svc-prompt-stale-state.mjs`,

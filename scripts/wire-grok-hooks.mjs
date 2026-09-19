@@ -164,6 +164,21 @@ export function buildGrokHookEntries(skillsPath) {
     });
   }
 
+  if (!DISABLED.has("svc-origin-orchestrator-prompt")) {
+    hooks.push({
+      event: "SessionStart",
+      matcher: "*",
+      command: `SVC_HOST=grok ${NODE_CMD} ${hooksDir}/svc-origin-orchestrator-prompt.mjs`,
+      timeout: 10,
+    });
+    hooks.push({
+      event: "UserPromptSubmit",
+      matcher: "*",
+      command: `SVC_HOST=grok ${NODE_CMD} ${hooksDir}/svc-origin-orchestrator-prompt.mjs`,
+      timeout: 10,
+    });
+  }
+
   // Session start healthcheck
   if (!DISABLED.has("svc-session-start-healthcheck")) {
     hooks.push({

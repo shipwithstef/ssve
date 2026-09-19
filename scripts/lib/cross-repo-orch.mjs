@@ -19,7 +19,13 @@ export { parseOrchestrateCommand };
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const ROLES = new Set(["PLAN", "EXEC", "REVIEW"]);
-const ORIGIN_HOSTS = new Set(["cursor", "grok", "codex", "claude", "kimi", "gemini", "opencode"]);
+export const ORIGIN_HOSTS = new Set(["cursor", "grok", "codex", "claude", "kimi", "gemini", "opencode"]);
+
+export function resolveOriginHost(host) {
+  const originHost = String(host || "").toLowerCase();
+  if (!ORIGIN_HOSTS.has(originHost)) fail(`unsupported origin host: ${originHost || "(empty)"}`, "orch_host_invalid");
+  return originHost;
+}
 
 function fail(message, code = "orch_invalid") {
   const error = new Error(message);
@@ -166,48 +172,100 @@ function appendSessionContract(worktree, { wi, sessionId, originHost, request })
   return file;
 }
 
+function sleepMs(ms) {
+  const end = Date.now() + ms;
+  while (Date.now() < end) { /* spin for exclusive migrate lock */ }
+}
+
+function withMigrateLock(worktree, sessionId, fn) {
+  const lockDir = path.join(worktree, ".svc", "orchestration", `.lock-${sessionId}`);
+  fs.mkdirSync(path.dirname(lockDir), { recursive: true, mode: 0o700 });
+  for (let i = 0; i < 80; i += 1) {
+    try {
+      fs.mkdirSync(lockDir);
+      try {
+        return fn();
+      } finally {
+        try { fs.rmdirSync(lockDir); } catch { /* ignore */ }
+      }
+    } catch (error) {
+      if (error?.code !== "EEXIST") throw error;
+      sleepMs(15);
+    }
+  }
+  return fn();
+}
+
 export function migrateSession(options = {}, env = process.env) {
-  const originHost = String(options.origin_host || env.SVC_HOST || "cursor");
-  if (!ORIGIN_HOSTS.has(originHost)) fail(`unsupported origin host: ${originHost}`, "orch_host_invalid");
+  const originHost = resolveOriginHost(options.origin_host || env.SVC_HOST || "cursor");
   const sessionId = sessionIdFrom(env, options.session_id);
   if (!sessionId) fail("same-owner migrate requires a session-shaped id", "orch_session_missing");
   const target = resolveNamedWork(options);
   const originCwd = options.origin_cwd ? path.resolve(options.origin_cwd) : path.resolve(env.PWD || process.cwd());
   fs.mkdirSync(path.join(target.worktree, ".svc"), { recursive: true, mode: 0o700 });
-  const retired = retireSameSessionBinding(originCwd, sessionId, target.worktree);
-  const bindingPath = writeTargetBinding({
-    worktree: target.worktree,
-    repoRoot: target.repo_root,
-    wi: target.wi,
-    branch: target.branch,
-    sessionId,
-    originHost,
+  return withMigrateLock(target.worktree, sessionId, () => {
+    const existing = readJson(bindingFile(target.worktree, sessionId));
+    const sameTuple = existing
+      && existing.session_id === sessionId
+      && existing.wi === target.wi
+      && !existing.released_at;
+    const receipt = path.join(target.worktree, ".svc", "orchestration", `${target.wi}.migrate.json`);
+    if (sameTuple) {
+      const baton = {
+        schema_version: 1,
+        wi: target.wi,
+        branch: target.branch,
+        absolute_worktree: target.worktree,
+        repo_root: target.repo_root,
+        session_id: sessionId,
+        origin_host: originHost,
+        binding_path: bindingFile(target.worktree, sessionId),
+        contract_path: path.join(target.worktree, ".svc", "session-contract.jsonl"),
+        retired_origin_binding: false,
+        paste_required: false,
+        agy_required: false,
+        next: "dispatch",
+        skipped_contract_append: true,
+      };
+      if (!fs.existsSync(receipt)) atomicWriteJson(receipt, { ...baton, recorded_at: new Date().toISOString() });
+      baton.receipt_path = receipt;
+      return baton;
+    }
+    const retired = retireSameSessionBinding(originCwd, sessionId, target.worktree);
+    const bindingPath = writeTargetBinding({
+      worktree: target.worktree,
+      repoRoot: target.repo_root,
+      wi: target.wi,
+      branch: target.branch,
+      sessionId,
+      originHost,
+    });
+    const contractPath = appendSessionContract(target.worktree, {
+      wi: target.wi,
+      sessionId,
+      originHost,
+      request: options.request,
+    });
+    const baton = {
+      schema_version: 1,
+      wi: target.wi,
+      branch: target.branch,
+      absolute_worktree: target.worktree,
+      repo_root: target.repo_root,
+      session_id: sessionId,
+      origin_host: originHost,
+      binding_path: bindingPath,
+      contract_path: contractPath,
+      retired_origin_binding: Boolean(retired.retired),
+      paste_required: false,
+      agy_required: false,
+      next: "dispatch",
+      skipped_contract_append: false,
+    };
+    atomicWriteJson(receipt, { ...baton, recorded_at: new Date().toISOString() });
+    baton.receipt_path = receipt;
+    return baton;
   });
-  const contractPath = appendSessionContract(target.worktree, {
-    wi: target.wi,
-    sessionId,
-    originHost,
-    request: options.request,
-  });
-  const baton = {
-    schema_version: 1,
-    wi: target.wi,
-    branch: target.branch,
-    absolute_worktree: target.worktree,
-    repo_root: target.repo_root,
-    session_id: sessionId,
-    origin_host: originHost,
-    binding_path: bindingPath,
-    contract_path: contractPath,
-    retired_origin_binding: Boolean(retired.retired),
-    paste_required: false,
-    agy_required: false,
-    next: "dispatch",
-  };
-  const receipt = path.join(target.worktree, ".svc", "orchestration", `${target.wi}.migrate.json`);
-  atomicWriteJson(receipt, { ...baton, recorded_at: new Date().toISOString() });
-  baton.receipt_path = receipt;
-  return baton;
 }
 
 function handoffPrompt({ wi, role, worktree }) {
@@ -262,6 +320,8 @@ export function dispatchRole(options = {}, env = process.env) {
     argv = [
       "grok",
       "--cwd", target.worktree,
+      "--model", "grok-4.6",
+      "--effort", role === "PLAN" ? "xhigh" : "high",
       "--permission-mode", "auto",
       "--output-format", "json",
       "--max-turns", env.SVC_GROK_MAX_TURNS || "80",
@@ -279,6 +339,8 @@ export function dispatchRole(options = {}, env = process.env) {
     paste_required: false,
     agy_required: false,
     dry_run: Boolean(options.dry_run),
+    effort: role === "PLAN" ? "xhigh" : role === "EXEC" ? "high" : null,
+    svc_grok_effort: role === "PLAN" ? "xhigh" : role === "EXEC" ? "high" : null,
   };
   if (!options.dry_run && role !== "REVIEW" && options.spawn === true) {
     const child = spawn(argv[0], argv.slice(1), {

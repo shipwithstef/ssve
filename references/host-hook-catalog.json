@@ -351,6 +351,23 @@
       "host_commands": {}
     },
     {
+      "id": "svc-origin-orchestrator-prompt",
+      "hosts": [
+        "claude",
+        "grok",
+        "kimi"
+      ],
+      "events": [
+        "SessionStart",
+        "UserPromptSubmit"
+      ],
+      "command_template": "node {HOOKS_DIR}/svc-origin-orchestrator-prompt.mjs",
+      "host_commands": {
+        "grok": "node {HOOKS_DIR}/svc-origin-orchestrator-prompt.mjs",
+        "kimi": "node {HOOKS_DIR}/svc-origin-orchestrator-prompt.mjs"
+      }
+    },
+    {
       "id": "svc-prompt-stale-state",
       "hosts": [
         "claude"

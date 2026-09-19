@@ -404,6 +404,19 @@ function buildHookEntries(skillsPath) {
     });
   }
 
+  if (!DISABLED.has("svc-origin-orchestrator-prompt")) {
+    entries.SessionStart.push({
+      id: "svc-origin-orchestrator-prompt",
+      matcher: "*",
+      hooks: [{ type: "command", command: `SVC_HOST=claude node ${hooksDir}/svc-origin-orchestrator-prompt.mjs` }],
+    });
+    entries.UserPromptSubmit.push({
+      id: "svc-origin-orchestrator-prompt",
+      matcher: "*",
+      hooks: [{ type: "command", command: `SVC_HOST=claude node ${hooksDir}/svc-origin-orchestrator-prompt.mjs` }],
+    });
+  }
+
   if (!DISABLED.has("svc-prompt-stale-state")) {
     entries.UserPromptSubmit.push({
       id: "svc-prompt-stale-state",

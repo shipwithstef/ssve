@@ -1,0 +1,13 @@
+{
+  "incident": "2026-09-18-owner-ux-no-cli-auto-bind",
+  "origin_host": "cursor",
+  "named_project_examples": ["hourshub", "ssve", "acme"],
+  "discovery": "any onboarded svc project under ~/worktrees/<id>/ or ~/app-workspaces/<id>-worktrees/",
+  "named_wi": "WI-FW-CROSS-REPO-ORCH-02",
+  "user_runs_cli": false,
+  "plan_effort": "xhigh",
+  "exec_effort": "high",
+  "default_checkout_refused": true,
+  "mixed_repo_write_denied": true,
+  "local_setup_is_not_promotion": true
+}
