@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "base_sha": "483e26b322739e2ac7cf13149cf1a37653afdaef",
+  "manifest": "docs/plans/2026-09-18-wi-fw-cross-repo-orch-02/manifest.md",
+  "risk_flags": [
+    "runtime_concurrency",
+    "external_state_writer",
+    "lossless_rmw",
+    "idempotent_rewriter",
+    "cross_runtime_integration"
+  ],
+  "ownership": [
+    {
+      "task": "T1",
+      "paths": [
+        "scripts/lib/resolve-named-worktree.mjs",
+        "scripts/lib/cross-repo-orch.mjs",
+        "provision/hosts/grok.json"
+      ]
+    },
+    {
+      "task": "T2",
+      "paths": [
+        "hooks/svc-origin-orchestrator-prompt.mjs",
+        "hooks/cursor/svc-cursor-ssve-adapter.mjs"
+      ]
+    },
+    {
+      "task": "T3",
+      "paths": [
+        "hooks/hooks.json",
+        "scripts/wire-hooks.mjs",
+        "scripts/wire-grok-hooks.mjs",
+        "scripts/wire-kimi-hooks.mjs",
+        "references/host-hook-catalog.json",
+        "hooks/hook-coverage-spec.md",
+        "docs/specs/test-evidence/WI-487/blocking-hook-inventory.json"
+      ]
+    },
+    {
+      "task": "T4",
+      "paths": [
+        "hooks/svc-worktree-isolation-guard.mjs"
+      ]
+    },
+    {
+      "task": "T5",
+      "paths": [
+        "test-framework/evals/tier-1/validate-cross-repo-orch-02.mjs",
+        "test-framework/evals/tier-1/fixtures/cross-repo-orch-02.json",
+        "scripts/select-tier1-validators-v2.mjs"
+      ]
+    },
+    {
+      "task": "T6",
+      "paths": [
+        "docs/specs/work-items/INDEX.md",
+        "skills/route-workflow/SKILL.md",
+        "skills/route-workflow/references/prompt-composer.md",
+        "FRAMEWORK-STATE.md"
+      ]
+    },
+    {
+      "task": "T7",
+      "paths": [
+        "docs/plans/2026-09-18-wi-fw-cross-repo-orch-02/manifest.md",
+        "docs/plans/2026-09-18-wi-fw-cross-repo-orch-02/plan-contract.json",
+        "docs/plans/2026-09-18-wi-fw-cross-repo-orch-02/eligibility.md",
+        "docs/plans/2026-09-18-wi-fw-cross-repo-orch-02/self-review.md",
+        "docs/plans/2026-09-18-wi-fw-cross-repo-orch-02/blueprints/resolve-named-worktree.mjs",
+        "docs/plans/2026-09-18-wi-fw-cross-repo-orch-02/blueprints/svc-origin-orchestrator-prompt.mjs",
+        "docs/plans/2026-09-18-wi-fw-cross-repo-orch-02/blueprints/validate-cross-repo-orch-02.mjs",
+        "docs/plans/2026-09-18-wi-fw-cross-repo-orch-02/blueprints/cross-repo-orch-02.json",
+        "docs/specs/features/wi-fw-cross-repo-orch-02.md",
+        "docs/specs/bugfix/wi-fw-cross-repo-orch-02-gap-brief.md",
+        "docs/specs/work-items/WI-FW-CROSS-REPO-ORCH-02.md"
+      ]
+    }
+  ],
+  "volatile_paths": [".svc"],
+  "concurrency": {
+    "atomic_primitive": "mkdir_exclusive",
+    "owner_key": "session_id",
+    "concurrent_invoke_behavior": "migrateSession acquires mkdir_exclusive at <target>/.svc/orchestration/.migrate-<session_id>.lock before reading the binding or appending session-contract. Holder that finds binding.wi+worktree_root match and !released_at loads .svc/orchestration/<wi>.migrate.json (or reconstructs the baton from the binding if the receipt is missing) and returns skipped_contract_append:true without retire/writeTargetBinding/appendSessionContract. Second concurrent caller waits, then takes the skip path. Binding JSON still uses atomic_rename. Distinct sessions use distinct lock dirs.",
+    "stale_lock_cleanup": "Lock dir older than 15 seconds is removed. Bindings are not locks; retire sets released_at. Orphan temp files matching *.tmp under .svc/bindings are unlinked if older than 15 minutes.",
+    "concurrency_test": "test-framework/evals/tier-1/validate-cross-repo-orch-02.mjs"
+  },
+  "external_writer": {
+    "immutable_baseline": "~/.grok/config.toml.pre-migration.bak",
+    "rolling_rollback": "~/.grok/config.toml.svc-wire.rollback",
+    "read_failure_policy": "abort the wirer rewrite and restore rolling_rollback; never proceed on an unreadable host config",
+    "file_mode_preservation": "copyPreservingMode already in scripts/wire-grok-hooks.mjs; Claude/Cursor JSON wirers keep existing mode on atomic rename"
+  },
+  "lossless_rmw": {
+    "entry_types": [
+      {
+        "type": "grok-unknown-user-hook-table",
+        "fixture": "test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh"
+      },
+      {
+        "type": "claude-settings-unknown-hook-entry",
+        "fixture": "test-framework/evals/tier-1/fixtures/wire-hooks-variant-dup.json"
+      }
+    ]
+  },
+  "idempotent_rewriter": {
+    "proof": "AC-BIND-5 in validate-cross-repo-orch-02.mjs: second migrateSession of the same session+WI+worktree tuple returns skipped_contract_append and does not append session-contract; missing receipt reconstructs without append; two concurrent callers produce one contract line. Second wirer run is a no-op for an already-present svc-origin-orchestrator-prompt id and must not duplicate the hook or rewrite the immutable pre-migration backup."
+  },
+  "resource_review": {
+    "verification": "changed-executable-census",
+    "denominator": 8,
+    "disposition": "declared-risky-resource-writers",
+    "evidence": "Census is the planned executable set (resolver, hook, three wirers, isolation guard, orch lib, 02 validator). Identity writer is migrateSession binding JSON only; no quota or money."
+  },
+  "resource_writers": [
+    {
+      "resource": "identity",
+      "ordering": "Resolve linked onboarded worktree and session-shaped id before any binding write; refuse default checkout and foreign session before rename.",
+      "compensation": "Denied binds write nothing. Same-tuple retry returns existing baton. Origin binding retire happens only after target write via atomic rename of the origin file with released_at.",
+      "property_sweep": "foreign deny, default-checkout deny, missing session id, same-tuple idempotent, mixed-repo Write still denied"
+    }
+  ],
+  "claims": [],
+  "executables": [
+    {
+      "path": "scripts/lib/resolve-named-worktree.mjs",
+      "consumers": [
+        {
+          "path": "hooks/svc-origin-orchestrator-prompt.mjs",
+          "query": "resolve-named-worktree.mjs"
+        },
+        {
+          "path": "hooks/cursor/svc-cursor-ssve-adapter.mjs",
+          "query": "resolve-named-worktree.mjs"
+        }
+      ]
+    },
+    {
+      "path": "hooks/svc-origin-orchestrator-prompt.mjs",
+      "consumers": [
+        {
+          "path": "scripts/wire-hooks.mjs",
+          "query": "svc-origin-orchestrator-prompt"
+        },
+        {
+          "path": "scripts/wire-grok-hooks.mjs",
+          "query": "svc-origin-orchestrator-prompt"
+        }
+      ]
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-cross-repo-orch-02.mjs",
+      "consumers": [
+        {
+          "path": "scripts/select-tier1-validators-v2.mjs",
+          "query": "validate-cross-repo-orch-02.mjs"
+        }
+      ]
+    }
+  ]
+}

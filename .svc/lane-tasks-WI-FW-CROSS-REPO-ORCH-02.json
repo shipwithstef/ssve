@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "wi": "WI-FW-CROSS-REPO-ORCH-02",
+  "lane": "framework",
+  "status": "in_progress",
+  "created": "2026-09-18T18:35:09Z",
+  "change_type": "enabler",
+  "persona_coverage": {
+    "status": "not_required",
+    "reason": "Framework origin auto-bind enabler with no product UI, personas, or end-user journeys; operator UX is no-CLI bind only."
+  },
+  "flags": [
+    "runtime_concurrency",
+    "external_state_writer",
+    "lossless_rmw",
+    "idempotent_rewriter",
+    "cross_runtime_integration"
+  ],
+  "tasks": [
+    {
+      "id": 1,
+      "skill": "write-spec",
+      "subject": "enabler spec any onboarded svc project auto-bind",
+      "status": "completed",
+      "blocked_by": [],
+      "skill_receipt": {
+        "skill": "write-spec",
+        "loaded_at": "2026-09-18T17:51:00Z",
+        "loaded_via": "plan-agent"
+      }
+    },
+    {
+      "id": 2,
+      "skill": "design-tech",
+      "subject": "hook hot path + discovery + effort pins",
+      "status": "completed",
+      "blocked_by": [
+        1
+      ],
+      "skill_receipt": {
+        "skill": "design-tech",
+        "loaded_at": "2026-09-18T17:51:00Z",
+        "loaded_via": "plan-agent"
+      }
+    },
+    {
+      "id": 3,
+      "skill": "plan-changeset",
+      "subject": "Fable-ready manifest for WI-FW-CROSS-REPO-ORCH-02",
+      "status": "in_progress",
+      "blocked_by": [
+        2
+      ],
+      "skill_receipt": {
+        "skill": "plan-changeset",
+        "loaded_at": "2026-09-18T18:35:09Z",
+        "loaded_via": "plan-agent",
+        "phases_executed": [
+          {
+            "id": "P5-AdversarialReviewAndLaneValidation",
+            "ts": "2026-09-18T18:41:40.471Z",
+            "evidence_artifacts": [
+              {
+                "type": "command_output",
+                "path": ".svc/lane-tasks-WI-FW-CROSS-REPO-ORCH-02.json"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "skill": "review-plan",
+      "subject": "Fable review-plan of orch-02 manifest",
+      "status": "pending",
+      "blocked_by": [
+        3
+      ]
+    },
+    {
+      "id": 5,
+      "skill": "execute-changeset",
+      "subject": "implement auto-bind from reviewed manifest",
+      "status": "pending",
+      "blocked_by": [
+        4
+      ]
+    }
+  ]
+}

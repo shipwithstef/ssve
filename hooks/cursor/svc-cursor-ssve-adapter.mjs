@@ -28,6 +28,7 @@ import { isAuthoritativeMutatingBinding } from "../lib/authoritative-binding.mjs
 import { armOwnerLease } from "../codex/lib/owner-lease.mjs";
 import { evaluatePreToolObservation } from "../lib/pretool-decision-engine.mjs";
 import { isShellTool } from "../lib/shell-tools.mjs";
+import { resolveOriginIntent, originOrchestratorContext, bindIfNeeded } from "../../scripts/lib/resolve-named-worktree.mjs";
 
 process.env.SVC_HOST = process.env.SVC_HOST || "cursor";
 
@@ -197,7 +198,29 @@ function handleBeforeSubmitPrompt(payload) {
       });
       sweep(ctx.repo_root, ctx.session_dir, process.env);
     }
-    process.stdout.write(JSON.stringify({ continue: true, ...(overrideMessage ? { user_message: overrideMessage } : {}) }) + "\n");
+    let orchContext = null;
+    try {
+      const intent = resolveOriginIntent(text);
+      if (intent?.worktree) {
+        orchContext = originOrchestratorContext(intent, { host: "cursor" });
+        if (intent.wi) {
+          try {
+            const bind = bindIfNeeded(intent, {
+              host: "cursor",
+              cwd: ctx.cwd || process.cwd(),
+              sessionId: ctx.session_id,
+              request: String(text).slice(0, 400),
+            });
+            orchContext = originOrchestratorContext(intent, { host: "cursor", bound: Boolean(bind?.bound) });
+          } catch {}
+        }
+      }
+    } catch {}
+    process.stdout.write(JSON.stringify({
+      continue: true,
+      ...(overrideMessage ? { user_message: overrideMessage } : {}),
+      ...(orchContext ? { additional_context: orchContext } : {}),
+    }) + "\n");
     process.exit(0);
   } catch (err) {
     // Fail open for prompt submit so author can communicate even if advisory fails

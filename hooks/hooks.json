@@ -154,6 +154,12 @@
     ],
     "SessionStart": [
       {
+        "id": "svc-origin-orchestrator-prompt",
+        "description": "Session start: if the opening prompt names a WI/project, inject origin-orchestrator bind context. Never blocks.",
+        "matcher": "*",
+        "command": "node hooks/svc-origin-orchestrator-prompt.mjs"
+      },
+      {
         "id": "svc-session-start-healthcheck",
         "description": "SOFT WARN: on session start, resolves the active host via provision/hosts/<host>.json, scans that host's skills path for dangling symlinks and hook command paths, then self-heals with ./setup --host <host> when possible. Never blocks.",
         "matcher": "*",
@@ -169,6 +175,12 @@
       }
     ],
     "UserPromptSubmit": [
+      {
+        "id": "svc-origin-orchestrator-prompt",
+        "description": "When the prompt names a WI or project, bind origin orchestrator to that linked worktree and inject dispatch context. User never runs a CLI. Never blocks.",
+        "matcher": "*",
+        "command": "node hooks/svc-origin-orchestrator-prompt.mjs"
+      },
       {
         "id": "svc-prompt-stale-state",
         "description": "SOFT WARN: per-prompt scan of .svc/orchestrator-state.json for active WIs without a matching lane-tasks file. Never blocks.",

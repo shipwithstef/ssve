@@ -1,6 +1,7 @@
 # Work Items Index
 
-- [WI-FW-CROSS-REPO-ORCH-01](WI-FW-CROSS-REPO-ORCH-01.md) — Cursor origin orchestrates any named WI/worktree (session migrates, Grok + Fable dispatch, no paste, no agy-only escape) — status:in_progress
+- [WI-FW-CROSS-REPO-ORCH-02](WI-FW-CROSS-REPO-ORCH-02.md) — Origin auto-bind for any onboarded svc project: name a WI or project from any folder, session binds and schedules PLAN xhigh → Fable → EXEC high; user never runs a CLI — status:planned
+- [WI-FW-CROSS-REPO-ORCH-01](WI-FW-CROSS-REPO-ORCH-01.md) — Cursor origin orchestrates any named WI/worktree (session migrates, Grok + Fable dispatch, no paste, no agy-only escape) — status:merged #66 `483e26b`
 
 - [WI-FW-UX-GRADUATION-01](WI-FW-UX-GRADUATION-01.md) — Graduate grounded UX proposals and preserve original drafts — status:in_progress
 
