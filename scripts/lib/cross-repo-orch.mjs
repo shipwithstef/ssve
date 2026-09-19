@@ -331,21 +331,31 @@ function readOwnerReviewPolicy(policyPath) {
 }
 
 function extractPhaseStations(policy, { phase, orchestrator }) {
+  const version = Number(policy.schema_version);
+  if (version !== 1 && version !== 2) {
+    fail(
+      `REVIEW dispatch owner policy schema_version must be 1 or 2, got ${policy.schema_version ?? "<missing>"}`,
+      "orch_review_policy_invalid",
+    );
+  }
   const modeName = policy.default_mode;
   const mode = policy.modes?.[modeName];
   if (!mode || typeof mode !== "object") return null;
-  const reviewLabel = mode.labels?.REVIEW || null;
-  if (Number(policy.schema_version) === 1) {
+  const reviewLabelDeclared = Boolean(mode.labels && Object.prototype.hasOwnProperty.call(mode.labels, "REVIEW"));
+  const reviewLabel = reviewLabelDeclared ? mode.labels.REVIEW : null;
+  if (version === 1) {
     const stations = mode.review?.[phase]?.stations;
-    if (!Array.isArray(stations) || stations.length === 0) return null;
-    return { stations, orchestrator, reviewLabel, format: "dispatch-v1" };
+    if (!Array.isArray(stations) || stations.length === 0) {
+      return { stations: [], orchestrator, reviewLabel, reviewLabelDeclared, format: "dispatch-v1" };
+    }
+    return { stations, orchestrator, reviewLabel, reviewLabelDeclared, format: "dispatch-v1" };
   }
   const orchestrators = mode.orchestrators && typeof mode.orchestrators === "object" ? mode.orchestrators : {};
   const selected = orchestrator && orchestrators[orchestrator]?.[phase]?.stations;
   if (Array.isArray(selected) && selected.length > 0) {
-    return { stations: selected, orchestrator, reviewLabel, format: "legacy-v2" };
+    return { stations: selected, orchestrator, reviewLabel, reviewLabelDeclared, format: "legacy-v2" };
   }
-  return null;
+  return { stations: [], orchestrator, reviewLabel, reviewLabelDeclared, format: "legacy-v2" };
 }
 
 function completeReviewLabel(label) {
@@ -368,7 +378,7 @@ function tupleMatchesReviewLabel(tuple, label) {
 function requiredExternalCandidates(policyPath, { phase, orchestrator }) {
   const policy = readOwnerReviewPolicy(policyPath);
   const extracted = extractPhaseStations(policy, { phase, orchestrator });
-  if (!extracted) return { reviewLabel: null, candidates: [] };
+  if (!extracted) return { reviewLabel: null, reviewLabelDeclared: false, candidates: [] };
   const required = extracted.stations.filter((station) =>
     station
     && station.kind === "external"
@@ -378,6 +388,7 @@ function requiredExternalCandidates(policyPath, { phase, orchestrator }) {
   );
   return {
     reviewLabel: extracted.reviewLabel,
+    reviewLabelDeclared: extracted.reviewLabelDeclared,
     candidates: required.map((station) => ({
       station,
       policy_path: policyPath,
@@ -414,17 +425,21 @@ export function resolveOwnerReviewStation({
     }
   }
   let reviewLabel = null;
+  let reviewLabelDeclared = false;
   const candidates = [];
   for (const file of [...new Set(files)]) {
     const extracted = requiredExternalCandidates(file, { phase, orchestrator });
-    if (extracted.reviewLabel?.host && extracted.reviewLabel?.model) reviewLabel = extracted.reviewLabel;
+    if (extracted.reviewLabelDeclared) {
+      reviewLabelDeclared = true;
+      reviewLabel = extracted.reviewLabel;
+    }
     candidates.push(...extracted.candidates);
   }
   if (!candidates.length) {
     fail(`REVIEW dispatch owner policy has no required external ${phase} station`, "orch_review_station_missing");
   }
   let pool = candidates;
-  if (reviewLabel && typeof reviewLabel === "object") {
+  if (reviewLabelDeclared) {
     const complete = completeReviewLabel(reviewLabel);
     if (!complete) {
       fail(
