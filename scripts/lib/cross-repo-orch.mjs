@@ -348,12 +348,21 @@ function extractPhaseStations(policy, { phase, orchestrator }) {
   return null;
 }
 
-function tupleMatchesReviewLabel(tuple, label) {
-  if (!label?.host || !label?.model) return false;
-  for (const key of ["host", "family", "model", "effort"]) {
-    if (label[key] && tuple?.[key] !== label[key]) return false;
+function completeReviewLabel(label) {
+  if (!label || typeof label !== "object") return null;
+  const keys = ["host", "family", "model", "effort"];
+  const complete = {};
+  for (const key of keys) {
+    if (typeof label[key] !== "string" || !label[key].trim()) return null;
+    complete[key] = label[key];
   }
-  return true;
+  return complete;
+}
+
+function tupleMatchesReviewLabel(tuple, label) {
+  const complete = completeReviewLabel(label);
+  if (!complete) return false;
+  return ["host", "family", "model", "effort"].every((key) => tuple?.[key] === complete[key]);
 }
 
 function requiredExternalCandidates(policyPath, { phase, orchestrator }) {
@@ -415,11 +424,18 @@ export function resolveOwnerReviewStation({
     fail(`REVIEW dispatch owner policy has no required external ${phase} station`, "orch_review_station_missing");
   }
   let pool = candidates;
-  if (reviewLabel?.host && reviewLabel?.model) {
-    const matched = candidates.filter((row) => tupleMatchesReviewLabel(row.station.tuple, reviewLabel));
+  if (reviewLabel && typeof reviewLabel === "object") {
+    const complete = completeReviewLabel(reviewLabel);
+    if (!complete) {
+      fail(
+        "REVIEW dispatch owner policy labels.REVIEW must declare host, family, model, and effort",
+        "orch_review_policy_invalid",
+      );
+    }
+    const matched = candidates.filter((row) => tupleMatchesReviewLabel(row.station.tuple, complete));
     if (!matched.length) {
       fail(
-        `REVIEW dispatch owner policy labels.REVIEW ${reviewLabel.host}/${reviewLabel.model} matches no required external ${phase} station`,
+        `REVIEW dispatch owner policy labels.REVIEW ${complete.host}/${complete.model} matches no required external ${phase} station`,
         "orch_review_station_missing",
       );
     }

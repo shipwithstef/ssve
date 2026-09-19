@@ -455,6 +455,31 @@ check("AC-DISPATCH-3 explicit reviewer-policy still composes default dispatch-po
   assert.equal(argvFlag(execReview.argv, "--reviewer-config"), path.join(home, ".svc", "dispatch-policy.json"));
 });
 
+check("AC-DISPATCH-3E incomplete labels.REVIEW fail-closes", () => {
+  const incomplete = structuredClone(dispatchPolicy);
+  delete incomplete.modes["governed-test"].labels.REVIEW.effort;
+  const dispatchPath = path.join(tmp, "incomplete-review-label", "dispatch-policy.json");
+  writeOwnerPolicy(dispatchPath, incomplete);
+  const env = isolatedEnv({ SVC_DISPATCH_POLICY: dispatchPath, HOME: path.join(tmp, "empty-home") });
+  let threw = false;
+  try {
+    dispatchRole({
+      role: "REVIEW",
+      review_kind: "plan",
+      wi: "WI-FW-CROSS-REPO-ORCH-02",
+      worktree: ssveWt,
+      origin_host: "cursor",
+      dry_run: true,
+      manifest_root: ROOT,
+    }, env);
+  } catch (error) {
+    threw = true;
+    assert.equal(error.code, "orch_review_policy_invalid");
+    assert.match(String(error.message), /host, family, model, and effort/);
+  }
+  assert.equal(threw, true);
+});
+
 check("AC-DISPATCH-3E labels.REVIEW with no matching station fail-closes", () => {
   const drift = structuredClone(dispatchPolicy);
   drift.modes["governed-test"].labels.REVIEW = {
