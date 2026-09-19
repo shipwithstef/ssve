@@ -186,6 +186,419 @@ check("AC-DISPATCH-2 EXEC high", () => {
   assert.equal(exec.effort, "high");
 });
 
+function argvFlag(argv, flag) {
+  const index = argv.indexOf(flag);
+  assert.ok(index >= 0, `missing ${flag}`);
+  return argv[index + 1];
+}
+
+function isolatedEnv(overrides = {}) {
+  const env = { ...process.env, ...overrides };
+  delete env.SVC_REVIEWER_POLICY;
+  delete env.SVC_DISPATCH_POLICY;
+  return Object.assign(env, overrides);
+}
+
+function writeOwnerPolicy(file, policy) {
+  fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
+  fs.writeFileSync(file, `${JSON.stringify(policy, null, 2)}\n`, { mode: 0o600 });
+}
+
+const v2Policy = {
+  schema_version: 2,
+  authority: "repository-owner",
+  default_mode: "owner-test",
+  modes: {
+    "owner-test": {
+      orchestrators: {
+        grok: {
+          plan: {
+            release_authority: false,
+            stations: [
+              {
+                id: "self-plan",
+                kind: "inline-self",
+                required: true,
+                authority: "advisory",
+                tuple: { host: "current", family: "xai", model: "grok-4.6", effort: "high" },
+              },
+              {
+                id: "owner-plan-station",
+                kind: "external",
+                required: true,
+                authority: "independent",
+                tuple: { host: "codex", family: "openai", model: "gpt-6-astra", effort: "high" },
+              },
+            ],
+          },
+          exec: {
+            release_authority: false,
+            stations: [
+              {
+                id: "self-exec",
+                kind: "inline-self",
+                required: true,
+                authority: "advisory",
+                tuple: { host: "current", family: "xai", model: "grok-4.6", effort: "high" },
+              },
+              {
+                id: "owner-mid-exec",
+                kind: "external",
+                required: true,
+                authority: "independent",
+                tuple: { host: "codex", family: "openai", model: "gpt-5.6-sol", effort: "high" },
+              },
+            ],
+          },
+        },
+      },
+    },
+  },
+};
+
+const dispatchPolicy = {
+  schema_version: 1,
+  authority: "repository-owner",
+  default_mode: "governed-test",
+  modes: {
+    "governed-test": {
+      labels: {
+        REVIEW: { host: "codex", family: "openai", model: "gpt-6-astra", effort: "high" },
+      },
+      review: {
+        plan: {
+          stations: [
+            {
+              id: "grok-plan-station",
+              kind: "external",
+              required: true,
+              authority: "independent",
+              tuple: { host: "grok", family: "xai", model: "grok-4.6", effort: "xhigh" },
+            },
+            {
+              id: "owner-review-plan",
+              kind: "external",
+              required: true,
+              authority: "independent",
+              tuple: { host: "codex", family: "openai", model: "gpt-6-astra", effort: "high" },
+            },
+          ],
+        },
+        exec: {
+          stations: [
+            {
+              id: "grok-exec-station",
+              kind: "external",
+              required: true,
+              authority: "independent",
+              tuple: { host: "grok", family: "xai", model: "grok-4.6", effort: "high" },
+            },
+            {
+              id: "owner-astra-exec",
+              kind: "external",
+              required: true,
+              authority: "independent",
+              tuple: { host: "codex", family: "openai", model: "gpt-6-astra", effort: "high" },
+            },
+            {
+              id: "owner-mid-exec",
+              kind: "external",
+              required: true,
+              authority: "independent",
+              tuple: { host: "codex", family: "openai", model: "gpt-5.6-sol", effort: "high" },
+            },
+          ],
+        },
+      },
+    },
+  },
+};
+
+check("AC-DISPATCH-3 REVIEW station ids come from owner policy, not literals", () => {
+  const orchSrc = fs.readFileSync(path.join(ROOT, "scripts/lib/cross-repo-orch.mjs"), "utf8");
+  const dispatchStart = orchSrc.indexOf("export function dispatchRole");
+  const resolveStart = orchSrc.indexOf("export function resolveOwnerReviewStation");
+  const pathStart = orchSrc.indexOf("export function ownerReviewPolicyPath");
+  assert.ok(dispatchStart >= 0, "dispatchRole missing");
+  assert.ok(resolveStart >= 0, "resolveOwnerReviewStation missing");
+  assert.ok(pathStart >= 0, "ownerReviewPolicyPath missing");
+  assert.match(orchSrc, /reviewer-policy-v2\.json/);
+  assert.match(orchSrc, /dispatch-policy\.json/);
+  assert.match(orchSrc, /SVC_DISPATCH_POLICY/);
+  assert.match(orchSrc, /SVC_REVIEWER_POLICY/);
+  assert.doesNotMatch(orchSrc, /cursor-fable-(plan|exec)/);
+  assert.doesNotMatch(orchSrc, /astra-high-(plan|exec)/);
+
+  const v2Path = path.join(tmp, "owner-v2", "reviewer-policy-v2.json");
+  writeOwnerPolicy(v2Path, v2Policy);
+  const v2Env = isolatedEnv({ SVC_REVIEWER_POLICY: v2Path, HOME: path.join(tmp, "empty-home") });
+  const planReview = dispatchRole({
+    role: "REVIEW",
+    review_kind: "plan",
+    wi: "WI-FW-CROSS-REPO-ORCH-02",
+    worktree: ssveWt,
+    origin_host: "cursor",
+    dry_run: true,
+    manifest_root: ROOT,
+  }, v2Env);
+  const execReview = dispatchRole({
+    role: "REVIEW",
+    review_kind: "exec",
+    wi: "WI-FW-CROSS-REPO-ORCH-02",
+    worktree: ssveWt,
+    origin_host: "cursor",
+    dry_run: true,
+    manifest_root: ROOT,
+  }, v2Env);
+  assert.equal(argvFlag(planReview.argv, "--reviewer-station"), "owner-plan-station");
+  assert.equal(argvFlag(execReview.argv, "--reviewer-station"), "owner-mid-exec");
+  assert.equal(argvFlag(planReview.argv, "--reviewer-config"), v2Path);
+  assert.equal(argvFlag(execReview.argv, "--reviewer-config"), v2Path);
+  assert.equal(argvFlag(planReview.argv, "--orchestrator"), "grok");
+  assert.ok(planReview.argv.some((arg) => String(arg).endsWith("run-external-review.mjs")));
+  assert.ok(!planReview.argv.includes("--model"));
+  assert.ok(!planReview.argv.includes("--profile"));
+  assert.ok(!planReview.argv.includes("cursor-fable-plan"));
+  assert.ok(!execReview.argv.includes("cursor-fable-exec"));
+  assert.ok(!planReview.argv.includes("astra-high-plan"));
+  assert.ok(!execReview.argv.includes("astra-high-exec"));
+});
+
+check("AC-DISPATCH-3 REVIEW dispatch-policy plan uses REVIEW label, exec uses last exec station", () => {
+  const dispatchPath = path.join(tmp, "owner-dispatch", "dispatch-policy.json");
+  writeOwnerPolicy(dispatchPath, dispatchPolicy);
+  const env = isolatedEnv({ SVC_DISPATCH_POLICY: dispatchPath, HOME: path.join(tmp, "empty-home") });
+  const planReview = dispatchRole({
+    role: "REVIEW",
+    review_kind: "plan",
+    wi: "WI-FW-CROSS-REPO-ORCH-02",
+    worktree: ssveWt,
+    origin_host: "cursor",
+    dry_run: true,
+    manifest_root: ROOT,
+  }, env);
+  const execReview = dispatchRole({
+    role: "REVIEW",
+    review_kind: "exec",
+    wi: "WI-FW-CROSS-REPO-ORCH-02",
+    worktree: ssveWt,
+    origin_host: "cursor",
+    dry_run: true,
+    manifest_root: ROOT,
+  }, env);
+  assert.equal(argvFlag(planReview.argv, "--reviewer-station"), "owner-review-plan");
+  assert.equal(argvFlag(execReview.argv, "--reviewer-station"), "owner-mid-exec");
+  assert.ok(!execReview.argv.includes("owner-astra-exec"));
+  assert.equal(argvFlag(planReview.argv, "--reviewer-config"), dispatchPath);
+});
+
+check("AC-DISPATCH-3 labels.REVIEW Astra does not select exec station when exec ends in sol", () => {
+  const home = path.join(tmp, "both-policy-home");
+  writeOwnerPolicy(path.join(home, ".svc", "reviewer-policy-v2.json"), v2Policy);
+  writeOwnerPolicy(path.join(home, ".svc", "dispatch-policy.json"), dispatchPolicy);
+  const env = isolatedEnv({ HOME: home });
+  const planReview = dispatchRole({
+    role: "REVIEW",
+    review_kind: "plan",
+    wi: "WI-FW-CROSS-REPO-ORCH-02",
+    worktree: ssveWt,
+    origin_host: "cursor",
+    dry_run: true,
+    manifest_root: ROOT,
+  }, env);
+  const execReview = dispatchRole({
+    role: "REVIEW",
+    review_kind: "exec",
+    wi: "WI-FW-CROSS-REPO-ORCH-02",
+    worktree: ssveWt,
+    origin_host: "cursor",
+    dry_run: true,
+    manifest_root: ROOT,
+  }, env);
+  assert.equal(argvFlag(planReview.argv, "--reviewer-station"), "owner-plan-station");
+  assert.equal(argvFlag(execReview.argv, "--reviewer-station"), "owner-mid-exec");
+  assert.ok(!execReview.argv.includes("owner-astra-exec"));
+  assert.ok(!execReview.argv.includes("astra-high-exec"));
+  assert.equal(argvFlag(execReview.argv, "--reviewer-config"), path.join(home, ".svc", "reviewer-policy-v2.json"));
+});
+
+check("AC-DISPATCH-3 explicit reviewer-policy exec stays on grok.exec last station", () => {
+  const home = path.join(tmp, "compose-home");
+  const v2Path = path.join(tmp, "compose-v2", "reviewer-policy-v2.json");
+  writeOwnerPolicy(v2Path, v2Policy);
+  writeOwnerPolicy(path.join(home, ".svc", "dispatch-policy.json"), dispatchPolicy);
+  const env = isolatedEnv({ HOME: home, SVC_REVIEWER_POLICY: v2Path });
+  const execReview = dispatchRole({
+    role: "REVIEW",
+    review_kind: "exec",
+    wi: "WI-FW-CROSS-REPO-ORCH-02",
+    worktree: ssveWt,
+    origin_host: "cursor",
+    dry_run: true,
+    manifest_root: ROOT,
+  }, env);
+  assert.equal(argvFlag(execReview.argv, "--reviewer-station"), "owner-mid-exec");
+  assert.ok(!execReview.argv.includes("owner-astra-exec"));
+  assert.equal(argvFlag(execReview.argv, "--reviewer-config"), v2Path);
+});
+
+check("AC-DISPATCH-3E incomplete v2 REVIEW label is not masked by dispatch-policy", () => {
+  const home = path.join(tmp, "mask-home");
+  const incompleteV2 = structuredClone(v2Policy);
+  incompleteV2.modes["owner-test"].labels = {
+    REVIEW: { host: "codex", family: "openai", model: "gpt-6-astra" },
+  };
+  writeOwnerPolicy(path.join(home, ".svc", "reviewer-policy-v2.json"), incompleteV2);
+  writeOwnerPolicy(path.join(home, ".svc", "dispatch-policy.json"), dispatchPolicy);
+  const env = isolatedEnv({ HOME: home });
+  let threw = false;
+  try {
+    dispatchRole({
+      role: "REVIEW",
+      review_kind: "exec",
+      wi: "WI-FW-CROSS-REPO-ORCH-02",
+      worktree: ssveWt,
+      origin_host: "cursor",
+      dry_run: true,
+      manifest_root: ROOT,
+    }, env);
+  } catch (error) {
+    threw = true;
+    assert.equal(error.code, "orch_review_policy_invalid");
+    assert.match(String(error.message), /host, family, model, and effort/);
+  }
+  assert.equal(threw, true);
+});
+
+check("AC-DISPATCH-3E labels.REVIEW missing host fail-closes", () => {
+  const missingHost = structuredClone(dispatchPolicy);
+  delete missingHost.modes["governed-test"].labels.REVIEW.host;
+  const dispatchPath = path.join(tmp, "missing-host-label", "dispatch-policy.json");
+  writeOwnerPolicy(dispatchPath, missingHost);
+  const env = isolatedEnv({ SVC_DISPATCH_POLICY: dispatchPath, HOME: path.join(tmp, "empty-home") });
+  let threw = false;
+  try {
+    dispatchRole({
+      role: "REVIEW",
+      review_kind: "exec",
+      wi: "WI-FW-CROSS-REPO-ORCH-02",
+      worktree: ssveWt,
+      origin_host: "cursor",
+      dry_run: true,
+      manifest_root: ROOT,
+    }, env);
+  } catch (error) {
+    threw = true;
+    assert.equal(error.code, "orch_review_policy_invalid");
+    assert.match(String(error.message), /host, family, model, and effort/);
+  }
+  assert.equal(threw, true);
+});
+
+check("AC-DISPATCH-3E unsupported policy schema_version fail-closes", () => {
+  const future = structuredClone(dispatchPolicy);
+  future.schema_version = 3;
+  const dispatchPath = path.join(tmp, "future-schema", "dispatch-policy.json");
+  writeOwnerPolicy(dispatchPath, future);
+  const env = isolatedEnv({ SVC_DISPATCH_POLICY: dispatchPath, HOME: path.join(tmp, "empty-home") });
+  let threw = false;
+  try {
+    dispatchRole({
+      role: "REVIEW",
+      review_kind: "plan",
+      wi: "WI-FW-CROSS-REPO-ORCH-02",
+      worktree: ssveWt,
+      origin_host: "cursor",
+      dry_run: true,
+      manifest_root: ROOT,
+    }, env);
+  } catch (error) {
+    threw = true;
+    assert.equal(error.code, "orch_review_policy_invalid");
+    assert.match(String(error.message), /schema_version/);
+  }
+  assert.equal(threw, true);
+});
+
+check("AC-DISPATCH-3E incomplete labels.REVIEW fail-closes", () => {
+  const incomplete = structuredClone(dispatchPolicy);
+  delete incomplete.modes["governed-test"].labels.REVIEW.effort;
+  const dispatchPath = path.join(tmp, "incomplete-review-label", "dispatch-policy.json");
+  writeOwnerPolicy(dispatchPath, incomplete);
+  const env = isolatedEnv({ SVC_DISPATCH_POLICY: dispatchPath, HOME: path.join(tmp, "empty-home") });
+  let threw = false;
+  try {
+    dispatchRole({
+      role: "REVIEW",
+      review_kind: "plan",
+      wi: "WI-FW-CROSS-REPO-ORCH-02",
+      worktree: ssveWt,
+      origin_host: "cursor",
+      dry_run: true,
+      manifest_root: ROOT,
+    }, env);
+  } catch (error) {
+    threw = true;
+    assert.equal(error.code, "orch_review_policy_invalid");
+    assert.match(String(error.message), /host, family, model, and effort/);
+  }
+  assert.equal(threw, true);
+});
+
+check("AC-DISPATCH-3E labels.REVIEW with no matching station fail-closes", () => {
+  const drift = structuredClone(dispatchPolicy);
+  drift.modes["governed-test"].labels.REVIEW = {
+    host: "codex",
+    family: "openai",
+    model: "gpt-6-unconfigured",
+    effort: "high",
+  };
+  const dispatchPath = path.join(tmp, "drift-dispatch", "dispatch-policy.json");
+  writeOwnerPolicy(dispatchPath, drift);
+  const env = isolatedEnv({ SVC_DISPATCH_POLICY: dispatchPath, HOME: path.join(tmp, "empty-home") });
+  let threw = false;
+  try {
+    dispatchRole({
+      role: "REVIEW",
+      review_kind: "plan",
+      wi: "WI-FW-CROSS-REPO-ORCH-02",
+      worktree: ssveWt,
+      origin_host: "cursor",
+      dry_run: true,
+      manifest_root: ROOT,
+    }, env);
+  } catch (error) {
+    threw = true;
+    assert.equal(error.code, "orch_review_station_missing");
+    assert.match(String(error.message), /labels\.REVIEW/);
+  }
+  assert.equal(threw, true);
+});
+
+check("AC-DISPATCH-3E missing owner policy fail-closes with no default station", () => {
+  const emptyHome = path.join(tmp, "no-policy-home");
+  fs.mkdirSync(emptyHome, { recursive: true });
+  const env = isolatedEnv({ HOME: emptyHome });
+  let threw = false;
+  try {
+    dispatchRole({
+      role: "REVIEW",
+      review_kind: "plan",
+      wi: "WI-FW-CROSS-REPO-ORCH-02",
+      worktree: ssveWt,
+      origin_host: "cursor",
+      dry_run: true,
+      manifest_root: ROOT,
+    }, env);
+  } catch (error) {
+    threw = true;
+    assert.equal(error.code, "orch_review_policy_missing");
+    assert.match(String(error.message), /fail-closed|requires owner policy/i);
+    assert.doesNotMatch(String(error.message), /cursor-fable|astra-high/);
+  }
+  assert.equal(threw, true);
+});
+
 check("AC-BIND-5 idempotent migrate does not double-append contract", () => {
   const sessionId = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
   const first = migrateSession({

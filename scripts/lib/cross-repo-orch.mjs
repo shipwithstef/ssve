@@ -2,7 +2,7 @@
 /**
  * WI-FW-CROSS-REPO-ORCH-01 — Cursor origin orchestrates a named WI/worktree.
  *
- * Same-owner session migrate + Grok PLAN/EXEC + Fable REVIEW dispatch.
+ * Same-owner session migrate + Grok PLAN/EXEC + owner-policy REVIEW dispatch.
  * No paste. No agy-only escape. Foreign/ambiguous owners stay fail-closed.
  */
 import fs from "node:fs";
@@ -270,12 +270,220 @@ export function migrateSession(options = {}, env = process.env) {
 
 function handoffPrompt({ wi, role, worktree }) {
   if (role === "PLAN") {
-    return `Assemble and write the plan for ${wi} in ${worktree}. Do not ask the user to paste. After the plan exists, stop for Fable review.`;
+    return `Assemble and write the plan for ${wi} in ${worktree}. Do not ask the user to paste. After the plan exists, stop for independent review.`;
   }
   if (role === "EXEC") {
     return `Execute the reviewed plan for ${wi} in ${worktree}. Do not paste. Stay inside this worktree.`;
   }
   return `Review ${wi} in ${worktree}.`;
+}
+
+function policyHome(env = process.env) {
+  return env.HOME || os.homedir();
+}
+
+export function ownerReviewPolicyPaths(env = process.env) {
+  const home = policyHome(env);
+  const reviewerDefault = path.join(home, ".svc", "reviewer-policy-v2.json");
+  const dispatchDefault = path.join(home, ".svc", "dispatch-policy.json");
+  const reviewer = env.SVC_REVIEWER_POLICY
+    ? path.resolve(env.SVC_REVIEWER_POLICY)
+    : (fs.existsSync(reviewerDefault) ? reviewerDefault : null);
+  const dispatch = env.SVC_DISPATCH_POLICY
+    ? path.resolve(env.SVC_DISPATCH_POLICY)
+    : (fs.existsSync(dispatchDefault) ? dispatchDefault : null);
+  return { reviewer, dispatch, reviewerDefault, dispatchDefault };
+}
+
+export function ownerReviewPolicyPath(env = process.env) {
+  const paths = ownerReviewPolicyPaths(env);
+  const chosen = paths.reviewer || paths.dispatch;
+  if (chosen) return chosen;
+  fail(
+    `REVIEW dispatch requires owner policy at ${paths.reviewerDefault} or ${paths.dispatchDefault} (or SVC_DISPATCH_POLICY / SVC_REVIEWER_POLICY). Missing policy is fail-closed; there is no default station.`,
+    "orch_review_policy_missing",
+  );
+}
+
+function readOwnerReviewPolicy(policyPath) {
+  let info;
+  try {
+    info = fs.lstatSync(policyPath);
+  } catch (error) {
+    fail(
+      `REVIEW dispatch cannot read owner policy ${policyPath}: ${error.code || error.message}`,
+      "orch_review_policy_missing",
+    );
+  }
+  if (info.isSymbolicLink() || !info.isFile()) {
+    fail(`REVIEW dispatch owner policy must be a regular file: ${policyPath}`, "orch_review_policy_invalid");
+  }
+  let policy;
+  try {
+    policy = JSON.parse(fs.readFileSync(policyPath, "utf8"));
+  } catch {
+    fail(`REVIEW dispatch owner policy is not valid JSON: ${policyPath}`, "orch_review_policy_invalid");
+  }
+  if (!policy || typeof policy !== "object") {
+    fail(`REVIEW dispatch owner policy is not an object: ${policyPath}`, "orch_review_policy_invalid");
+  }
+  return policy;
+}
+
+function extractPhaseStations(policy, { phase, orchestrator }) {
+  const version = Number(policy.schema_version);
+  if (version !== 1 && version !== 2) {
+    fail(
+      `REVIEW dispatch owner policy schema_version must be 1 or 2, got ${policy.schema_version ?? "<missing>"}`,
+      "orch_review_policy_invalid",
+    );
+  }
+  const modeName = policy.default_mode;
+  const mode = policy.modes?.[modeName];
+  if (!mode || typeof mode !== "object") return null;
+  const reviewLabelDeclared = Boolean(mode.labels && Object.prototype.hasOwnProperty.call(mode.labels, "REVIEW"));
+  const reviewLabel = reviewLabelDeclared ? mode.labels.REVIEW : null;
+  if (version === 1) {
+    const stations = mode.review?.[phase]?.stations;
+    if (!Array.isArray(stations) || stations.length === 0) {
+      return { stations: [], orchestrator, reviewLabel, reviewLabelDeclared, format: "dispatch-v1" };
+    }
+    return { stations, orchestrator, reviewLabel, reviewLabelDeclared, format: "dispatch-v1" };
+  }
+  const orchestrators = mode.orchestrators && typeof mode.orchestrators === "object" ? mode.orchestrators : {};
+  const selected = orchestrator && orchestrators[orchestrator]?.[phase]?.stations;
+  if (Array.isArray(selected) && selected.length > 0) {
+    return { stations: selected, orchestrator, reviewLabel, reviewLabelDeclared, format: "legacy-v2" };
+  }
+  return { stations: [], orchestrator, reviewLabel, reviewLabelDeclared, format: "legacy-v2" };
+}
+
+function completeReviewLabel(label) {
+  if (!label || typeof label !== "object") return null;
+  const keys = ["host", "family", "model", "effort"];
+  const complete = {};
+  for (const key of keys) {
+    if (typeof label[key] !== "string" || !label[key].trim()) return null;
+    complete[key] = label[key];
+  }
+  return complete;
+}
+
+function tupleMatchesReviewLabel(tuple, label) {
+  const complete = completeReviewLabel(label);
+  if (!complete) return false;
+  return ["host", "family", "model", "effort"].every((key) => tuple?.[key] === complete[key]);
+}
+
+function requiredExternalCandidates(policyPath, { phase, orchestrator }) {
+  const policy = readOwnerReviewPolicy(policyPath);
+  const extracted = extractPhaseStations(policy, { phase, orchestrator });
+  if (!extracted) return { reviewLabel: null, reviewLabelDeclared: false, candidates: [] };
+  const required = extracted.stations.filter((station) =>
+    station
+    && station.kind === "external"
+    && station.required === true
+    && typeof station.id === "string"
+    && station.id.trim(),
+  );
+  return {
+    reviewLabel: extracted.reviewLabel,
+    reviewLabelDeclared: extracted.reviewLabelDeclared,
+    format: extracted.format,
+    candidates: required.map((station) => ({
+      station,
+      policy_path: policyPath,
+      orchestrator: extracted.orchestrator,
+      format: extracted.format,
+    })),
+  };
+}
+
+export function resolveOwnerReviewStation({
+  reviewKind = "plan",
+  planHost,
+  execHost,
+  env = process.env,
+  configPath = null,
+} = {}) {
+  const phase = String(reviewKind || "plan").toLowerCase();
+  if (phase !== "plan" && phase !== "exec") {
+    fail(`REVIEW dispatch review_kind must be plan or exec, got ${reviewKind}`, "orch_review_kind_invalid");
+  }
+  const orchestrator = String((phase === "exec" ? execHost : planHost) || "grok").toLowerCase();
+  const files = [];
+  if (configPath) {
+    files.push(path.resolve(configPath));
+  } else {
+    const paths = ownerReviewPolicyPaths(env);
+    if (paths.reviewer) files.push(paths.reviewer);
+    if (paths.dispatch) files.push(paths.dispatch);
+    if (!files.length) {
+      fail(
+        `REVIEW dispatch requires owner policy at ${paths.reviewerDefault} or ${paths.dispatchDefault} (or SVC_DISPATCH_POLICY / SVC_REVIEWER_POLICY). Missing policy is fail-closed; there is no default station.`,
+        "orch_review_policy_missing",
+      );
+    }
+  }
+  let reviewLabel = null;
+  let reviewLabelDeclared = false;
+  const v2Candidates = [];
+  const dispatchCandidates = [];
+  for (const file of [...new Set(files)]) {
+    const extracted = requiredExternalCandidates(file, { phase, orchestrator });
+    if (extracted.reviewLabelDeclared) {
+      const complete = completeReviewLabel(extracted.reviewLabel);
+      if (!complete) {
+        fail(
+          `REVIEW dispatch owner policy ${file} labels.REVIEW must declare host, family, model, and effort`,
+          "orch_review_policy_invalid",
+        );
+      }
+      reviewLabelDeclared = true;
+      reviewLabel = complete;
+    }
+    if (extracted.format === "legacy-v2") v2Candidates.push(...extracted.candidates);
+    else dispatchCandidates.push(...extracted.candidates);
+  }
+  // Prefer grok.exec / grok.plan from reviewer-policy-v2 when that phase has
+  // required externals. labels.REVIEW is the plan reviewer identity, never the
+  // exec station.
+  const candidates = v2Candidates.length ? v2Candidates : dispatchCandidates;
+  if (!candidates.length) {
+    fail(`REVIEW dispatch owner policy has no required external ${phase} station`, "orch_review_station_missing");
+  }
+  let pool = candidates;
+  if (phase === "plan" && reviewLabelDeclared) {
+    const complete = completeReviewLabel(reviewLabel);
+    if (!complete) {
+      fail(
+        "REVIEW dispatch owner policy labels.REVIEW must declare host, family, model, and effort",
+        "orch_review_policy_invalid",
+      );
+    }
+    const matched = candidates.filter((row) => tupleMatchesReviewLabel(row.station.tuple, complete));
+    if (!matched.length) {
+      fail(
+        `REVIEW dispatch owner policy labels.REVIEW ${complete.host}/${complete.model} matches no required external ${phase} station`,
+        "orch_review_station_missing",
+      );
+    }
+    pool = matched;
+  }
+  const independent = pool.filter((row) => row.station.authority === "independent");
+  if (independent.length) pool = independent;
+  const chosen = phase === "exec" ? pool[pool.length - 1] : pool[0];
+  const stationId = String(chosen?.station?.id || "").trim();
+  if (!stationId) {
+    fail(`REVIEW dispatch owner policy ${phase} station id is missing`, "orch_review_station_missing");
+  }
+  return {
+    policy_path: chosen.policy_path,
+    phase,
+    orchestrator: chosen.orchestrator,
+    station_id: stationId,
+    format: chosen.format,
+  };
 }
 
 export function dispatchRole(options = {}, env = process.env) {
@@ -297,21 +505,27 @@ export function dispatchRole(options = {}, env = process.env) {
   }
   let argv;
   let host;
+  let reviewStation = null;
   if (role === "REVIEW") {
     host = origin.review_host || "cursor";
     const reviewKind = options.review_kind || "plan";
-    const policy = env.SVC_REVIEWER_POLICY || path.join(os.homedir(), ".svc", "reviewer-policy-v2.json");
-    const station = reviewKind === "exec" ? "cursor-fable-exec" : "cursor-fable-plan";
+    reviewStation = resolveOwnerReviewStation({
+      reviewKind,
+      planHost: origin.plan_host,
+      execHost: origin.exec_host,
+      env,
+      configPath: options.reviewer_config || null,
+    });
     argv = [
       process.execPath,
       path.join(options.manifest_root || ROOT, "scripts", "run-external-review.mjs"),
-      "--orchestrator", options.origin_host || "cursor",
+      "--orchestrator", reviewStation.orchestrator,
       "--review-kind", reviewKind,
       "--artifacts-dir", path.join(target.worktree, ".svc", "external-review-artifacts", target.wi),
       "--context-root", target.worktree,
-      "--reviewer-config", policy,
+      "--reviewer-config", reviewStation.policy_path,
       "--reviewer-phase", reviewKind,
-      "--reviewer-station", station,
+      "--reviewer-station", reviewStation.station_id,
     ];
   } else {
     host = role === "PLAN" ? (origin.plan_host || "grok") : (origin.exec_host || "grok");
@@ -341,6 +555,8 @@ export function dispatchRole(options = {}, env = process.env) {
     dry_run: Boolean(options.dry_run),
     effort: role === "PLAN" ? "xhigh" : role === "EXEC" ? "high" : null,
     svc_grok_effort: role === "PLAN" ? "xhigh" : role === "EXEC" ? "high" : null,
+    reviewer_station: reviewStation?.station_id || null,
+    reviewer_policy_path: reviewStation?.policy_path || null,
   };
   if (!options.dry_run && role !== "REVIEW" && options.spawn === true) {
     const child = spawn(argv[0], argv.slice(1), {
