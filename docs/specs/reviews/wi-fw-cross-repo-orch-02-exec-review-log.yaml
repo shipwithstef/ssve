@@ -1,0 +1,22 @@
+review: WI-FW-CROSS-REPO-ORCH-02-exec
+pr: https://github.com/shipwithstef/ssve/pull/68
+candidate_sha: 8d3aff7ee5515d6bba29d8f5bfca562e187a8d50
+station: sol-high
+unresolved_critical: 0
+remaining_high: 0
+terminal_state: PASS_WITH_REJECTED_FINDING
+findings_disposition:
+  - id: EXEC-REVIEW-NOT-LAUNCHED
+    severity: high
+    decision: reject-with-justification
+    justification: |
+      This is the WI-FW-CROSS-REPO-ORCH-01 origin contract, not a defect of
+      WI-FW-CROSS-REPO-ORCH-02. dispatchRole(REVIEW) must return argv for
+      run-external-review.mjs; the origin orchestrator supplies the review
+      package and invokes the launcher. The spawn guard `role !== "REVIEW"`
+      is required: auto-spawning REVIEW from dispatchRole would relaunch
+      Astra/Sol as a new child and wipe plan-review session context.
+      Owner contract: plan review = Astra, resume existing session, never
+      relaunch/wipe; exec review = Sol high, invoked by the origin via
+      run-external-review.mjs, not a new auto-spawned child from dispatchRole.
+      Station resolution is Sol. Do not implement auto-spawn.
