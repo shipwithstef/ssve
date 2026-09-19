@@ -166,6 +166,58 @@ check("AC-3 PLAN/EXEC argv is grok; REVIEW is Fable launcher; not agy", () => {
   assert.ok(plan.argv.includes(target) || plan.argv.includes(fs.realpathSync(target)));
   assert.equal(plan.paste_required, false);
   assert.equal(plan.agy_required, false);
+  const reviewPolicy = path.join(tmp, "owner-reviewer-policy-v2.json");
+  fs.writeFileSync(reviewPolicy, `${JSON.stringify({
+    schema_version: 2,
+    authority: "repository-owner",
+    default_mode: "owner-test",
+    modes: {
+      "owner-test": {
+        orchestrators: {
+          grok: {
+            plan: {
+              release_authority: false,
+              stations: [
+                {
+                  id: "self-plan",
+                  kind: "inline-self",
+                  required: true,
+                  authority: "advisory",
+                  tuple: { host: "current", family: "xai", model: "grok-4.6", effort: "high" },
+                },
+                {
+                  id: "owner-plan-station",
+                  kind: "external",
+                  required: true,
+                  authority: "independent",
+                  tuple: { host: "codex", family: "openai", model: "gpt-6-astra", effort: "high" },
+                },
+              ],
+            },
+            exec: {
+              release_authority: false,
+              stations: [
+                {
+                  id: "self-exec",
+                  kind: "inline-self",
+                  required: true,
+                  authority: "advisory",
+                  tuple: { host: "current", family: "xai", model: "grok-4.6", effort: "high" },
+                },
+                {
+                  id: "owner-final-exec",
+                  kind: "external",
+                  required: true,
+                  authority: "independent",
+                  tuple: { host: "codex", family: "openai", model: "gpt-6-astra", effort: "high" },
+                },
+              ],
+            },
+          },
+        },
+      },
+    },
+  }, null, 2)}\n`, { mode: 0o600 });
   const review = dispatchRole({
     role: "REVIEW",
     wi: "WI-FW-CROSS-REPO-ORCH-01",
@@ -173,7 +225,7 @@ check("AC-3 PLAN/EXEC argv is grok; REVIEW is Fable launcher; not agy", () => {
     origin_host: "cursor",
     dry_run: true,
     manifest_root: ROOT,
-  });
+  }, { ...process.env, SVC_REVIEWER_POLICY: reviewPolicy });
   assert.equal(review.host, "cursor");
   assert.ok(review.argv.some((arg) => String(arg).endsWith("run-external-review.mjs")));
   assert.ok(!review.argv.includes("agy"));
