@@ -1,14 +1,16 @@
 #!/usr/bin/env node
 // Resolve host install paths from provision/hosts/<host>.json.
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, isAbsolute, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+/** Resolve the checkout containing this module. */
 function defaultRepoRoot() {
   return resolve(dirname(fileURLToPath(import.meta.url)), "..");
 }
 
+/** Expand one manifest path without changing the filesystem. */
 export function expandPath(value, opts = {}) {
   if (!value) return "";
   const home = opts.home ?? process.env.HOME ?? "";
@@ -20,15 +22,28 @@ export function expandPath(value, opts = {}) {
   return out;
 }
 
+/** Discover installed manifest names without a duplicate host catalog.
+ * @param {object} opts Optional repository root.
+ * @returns {string[]} Deterministically ordered manifest names.
+ */
+export function listHosts(opts = {}) {
+  const directory = resolve(opts.repoRoot ?? defaultRepoRoot(), "provision", "hosts");
+  return readdirSync(directory, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
+    .map((entry) => entry.name.slice(0, -5)).sort();
+}
+
+/** Read one host manifest, preserving the existing resolver API. */
 export function loadHostManifest(host, opts = {}) {
   const repoRoot = opts.repoRoot ?? defaultRepoRoot();
   const manifestPath = resolve(repoRoot, "provision", "hosts", `${host}.json`);
   if (!existsSync(manifestPath)) {
-    throw new Error(`host manifest not found: ${manifestPath}`);
+    throw new Error(`host manifest not found: ${manifestPath}; available hosts: ${listHosts({ repoRoot }).join(", ") || "(none)"}`);
   }
   return JSON.parse(readFileSync(manifestPath, "utf8"));
 }
 
+/** Resolve the existing host paths, capabilities, and source manifest. */
 export function resolveHostPaths(host, opts = {}) {
   const repoRoot = opts.repoRoot ?? defaultRepoRoot();
   const manifest = loadHostManifest(host, { repoRoot });
@@ -43,20 +58,27 @@ export function resolveHostPaths(host, opts = {}) {
   };
 }
 
-function main() {
-  const host = process.argv[2];
-  if (!host || host === "--help" || host === "-h") {
-    console.error("Usage: resolve-host-paths.mjs <host>");
-    process.exit(2);
+const USAGE = "Usage: resolve-host-paths.mjs <host> [--root PATH] | --list [--root PATH]";
+
+/** Run the read-only CLI; usage errors are distinct from manifest errors. */
+function main(argv) {
+  if (argv.length === 1 && ["--help", "-h"].includes(argv[0])) { console.log(USAGE); return; }
+  let host; let repoRoot; let list = false;
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === "--root" && repoRoot === undefined && argv[i + 1] && !argv[i + 1].startsWith("-")) {
+      repoRoot = resolve(argv[++i]);
+    } else if (arg === "--list" && !list) { list = true; }
+    else if (!arg.startsWith("-") && host === undefined) { host = arg; }
+    else { console.error(USAGE); process.exitCode = 2; return; }
   }
-  console.log(JSON.stringify(resolveHostPaths(host), null, 2));
+  if ((list && host !== undefined) || (!list && host === undefined)) {
+    console.error(USAGE); process.exitCode = 2; return;
+  }
+  console.log(JSON.stringify(list ? listHosts({ repoRoot }) : resolveHostPaths(host, { repoRoot }), null, 2));
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  try {
-    main();
-  } catch (error) {
-    console.error(error.message);
-    process.exit(1);
-  }
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  try { main(process.argv.slice(2)); }
+  catch (error) { console.error(error.message); process.exitCode = 1; }
 }
