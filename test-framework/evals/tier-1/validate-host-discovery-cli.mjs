@@ -64,3 +64,36 @@ test("default resolution still works when the actual CLI path contains spaces", 
   const out = spawnSync(process.execPath,[path.join(dir,script),"alpha"],{cwd:dir,env:{...process.env,HOME:"/fixture-home"},encoding:"utf8",timeout:10000});
   const actual=json(out); assert.equal(actual.host,"alpha"); assert.equal(actual.skillsPath,"/fixture-home/skills"); assert.deepEqual(actual.manifest,host);
 });
+test("installed directory and file symlinks run the CLI using the source checkout", (t) => {
+  const dir = copied(t, true); const install = fixture(t);
+  const linkedScripts = path.join(install, "installed scripts");
+  const linkedFile = path.join(install, "host resolver.mjs");
+  fs.symlinkSync(path.join(dir, "scripts"), linkedScripts, "dir");
+  fs.symlinkSync(path.join(dir, script), linkedFile, "file");
+  const manifest = path.join(dir, "provision/hosts/alpha.json");
+  const before = fs.readFileSync(manifest); const mtime = fs.statSync(manifest).mtimeMs;
+  for (const entry of [path.join(linkedScripts, "resolve-host-paths.mjs"), linkedFile]) {
+    const invoke = (args) => spawnSync(process.execPath, [entry, ...args], {
+      cwd: install, env: { ...process.env, HOME: "/fixture-home" }, encoding: "utf8", timeout: 10000,
+    });
+    assert.deepEqual(json(invoke(["--list"])), ["alpha"]);
+    assert.equal(json(invoke(["alpha"])).skillsPath, "/fixture-home/skills");
+    const help = invoke(["--help"]); assert.equal(help.status, 0); assert.match(help.stdout, /Usage:/);
+    const invalid = invoke(["--unknown"]); assert.equal(invalid.status, 2); assert.equal(invalid.stdout, "");
+  }
+  assert.deepEqual(fs.readFileSync(manifest), before); assert.equal(fs.statSync(manifest).mtimeMs, mtime);
+});
+test("stdin imports preserve library use without resolving the dash as a file", (t) => {
+  const dir = copied(t); const url = pathToFileURL(path.join(dir, script)).href;
+  const input = `const api = await import(${JSON.stringify(url)}); console.log(api.expandPath("~", {home:"/fixture-home"}));`;
+  const out = spawnSync(process.execPath, ["--input-type=module", "-", "--list"], {
+    cwd: dir, input, encoding: "utf8", timeout: 10000,
+  });
+  assert.equal(out.status, 0, out.stderr); assert.equal(out.stdout, "/fixture-home\n"); assert.equal(out.stderr, "");
+});
+test("ordinary imports never dispatch resolver options supplied to another program", (t) => {
+  const dir = copied(t); const url = pathToFileURL(path.join(dir, script)).href;
+  const caller = put(dir, "caller.mjs", `const api = await import(${JSON.stringify(url)}); console.log(typeof api.resolveHostPaths);\n`);
+  const out = spawnSync(process.execPath, [caller, "--unknown"], { cwd: dir, encoding: "utf8", timeout: 10000 });
+  assert.equal(out.status, 0, out.stderr); assert.equal(out.stdout, "function\n"); assert.equal(out.stderr, "");
+});

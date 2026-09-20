@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Resolve host install paths from provision/hosts/<host>.json.
 
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, realpathSync } from "node:fs";
 import { dirname, isAbsolute, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -78,7 +78,16 @@ function main(argv) {
   console.log(JSON.stringify(list ? listHosts({ repoRoot }) : resolveHostPaths(host, { repoRoot }), null, 2));
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+/** Match the invoked file through install symlinks; stdin/import callers stay inert.
+ * @returns {boolean} Whether this module is the CLI entrypoint.
+ */
+function isMainModule() {
+  if (!process.argv[1]) return false;
+  try { return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url)); }
+  catch { return false; }  // Non-file entrypoints, including stdin, are library callers.
+}
+
+if (isMainModule()) {
   try { main(process.argv.slice(2)); }
   catch (error) { console.error(error.message); process.exitCode = 1; }
 }
