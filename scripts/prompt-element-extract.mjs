@@ -28,6 +28,8 @@
  *     forbidden-absent { pattern: "re" }    covered iff regex does NOT match
  */
 import { readFileSync, existsSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 function parseArgs(argv) {
   const o = {};
@@ -38,7 +40,7 @@ function parseArgs(argv) {
   }
   return o;
 }
-function fail(m) { process.stderr.write(`prompt-element-extract: ${m}\n`); process.exit(2); }
+function fail(m) { throw new Error(m); }
 
 function wordCount(s) { return (s.trim().match(/\S+/g) || []).length; }
 
@@ -51,13 +53,18 @@ function reTest(pattern, s, key) {
 
 /** PURE: which requirements does this output cover? */
 export function coverage(output, requirements) {
-  const elements = [];
+  if (typeof output !== "string" || !Array.isArray(requirements)) fail("output must be a string and requirements an array");
+  const elements = []; const keys = new Set(); const words = wordCount(output);
   for (const r of requirements) {
-    if (!r || typeof r.key !== "string") fail(`requirement missing string "key"`);
+    if (!r || typeof r.key !== "string" || !r.key.trim()) fail('requirement missing nonempty string "key"');
+    if (keys.has(r.key)) fail(`duplicate requirement key: ${r.key}`);
+    keys.add(r.key);
+    if (["min-words", "max-words"].includes(r.type) && (!Number.isSafeInteger(r.value) || r.value < 0)) fail(`requirement "${r.key}" needs a non-negative integer value`);
+    if (["present", "forbidden-absent"].includes(r.type) && typeof r.pattern !== "string") fail(`requirement "${r.key}" needs a string pattern`);
     let covered = false;
     switch (r.type) {
-      case "max-words": covered = wordCount(output) <= Number(r.value); break;
-      case "min-words": covered = wordCount(output) >= Number(r.value); break;
+      case "max-words": covered = words <= r.value; break;
+      case "min-words": covered = words >= r.value; break;
       case "present": covered = reTest(r.pattern, output, r.key); break;
       case "forbidden-absent": covered = !reTest(r.pattern, output, r.key); break;
       default: fail(`unknown requirement type: ${r.type}`);
@@ -81,4 +88,6 @@ function main() {
   process.stdout.write(JSON.stringify(coverage(output, reqs), null, 2) + "\n");
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main();
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  try { main(); } catch (error) { process.stderr.write(`prompt-element-extract: ${error.message}\n`); process.exitCode = 2; }
+}
