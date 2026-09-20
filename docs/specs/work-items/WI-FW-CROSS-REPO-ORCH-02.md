@@ -29,6 +29,20 @@ exists, dispatch children with `--cwd` that worktree. User never runs a
 command. Isolation still denies mixed-repo Writes. Default checkout still
 refused. Not HoursHub-only.
 
+## Affected Files
+- `docs/specs/features/wi-fw-cross-repo-orch-02.md`
+- `scripts/lib/resolve-named-worktree.mjs`
+- `scripts/lib/cross-repo-orch.mjs`
+- `hooks/svc-origin-orchestrator-prompt.mjs`
+- `hooks/cursor/svc-cursor-ssve-adapter.mjs`
+- `hooks/hooks.json` and `references/host-hook-catalog.json`
+- `scripts/wire-hooks.mjs`, `scripts/wire-grok-hooks.mjs`, and `scripts/wire-kimi-hooks.mjs`
+- `skills/route-workflow/SKILL.md`
+- `test-framework/evals/tier-1/validate-cross-repo-orch-02.mjs`
+
+## Evidence reconciliation (2026-09-20)
+The tracked graph marked specification and design tasks complete without complete phase evidence. CI repair reopens tasks 1–3 to pending in dependency order, preserving their existing receipts and the prior states in Git history. This is an incomplete-planning disposition, not a completion receipt or a claim that the original implementation was independently reviewed. Resume the required planning/review chain before promotion.
+
 ## Scout (unbound, not landed)
 
 Files already exist in this worktree and were copied into the local ssve
