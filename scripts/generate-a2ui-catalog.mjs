@@ -20,21 +20,23 @@ function generateCatalog() {
   }
 
   const components = {};
-  const files = fs.readdirSync(UI_DIR).filter(f => f.match(/\.(tsx|jsx|vue)$/));
+  const files = fs.readdirSync(UI_DIR).filter(f => f.match(/\.(tsx|jsx|vue)$/)).sort();
 
   for (const file of files) {
     const name = path.parse(file).name;
     const content = fs.readFileSync(path.join(UI_DIR, file), 'utf8');
 
-    // Basic heuristic prop extraction (Regex-based for speed in agentic runs)
+    // Heuristic for single-line primitive/literal declarations, not a TypeScript parser.
     const props = {};
-    const propMatches = content.matchAll(/(\w+)\??:\s*(string|number|boolean|['"]\w+['"]\s*\|\s*['"]\w+['"])/g);
-    
-    for (const match of propMatches) {
-      const [_, propName, type] = match;
-      props[propName] = {
-        type: type === 'number' ? 'number' : type === 'boolean' ? 'boolean' : 'string'
-      };
+    const propMatches = content.matchAll(/(\w+)\??:\s*((?=(?:string|number|boolean)\b|["'])(?:"[^"\r\n]*"|'[^'\r\n]*'|[^;,}\r\n])+)/g);
+    const literalUnion = /^(?:"[^"\\]*"|'[^'\\]*')(?:\s*\|\s*(?:"[^"\\]*"|'[^'\\]*'))*$/;
+    for (const [, propName, declaration] of propMatches) {
+      const type = declaration.trim().replace(/,$/, "").trim();
+      if (["string", "number", "boolean"].includes(type)) props[propName] = { type };
+      else if (literalUnion.test(type)) {
+        const values = [...type.matchAll(/"([^"\\]*)"|'([^'\\]*)'/g)].map((m) => m[1] ?? m[2]);
+        props[propName] = { type: "string", enum: [...new Set(values)] };
+      }
     }
 
     components[name] = {
