@@ -1,24 +1,46 @@
 #!/usr/bin/env node
-/** report-commit-ratio (WI-369 D4): monthly framework-vs-product commit ratio.
- * MEASUREMENT ONLY — explicitly NOT a gate (ship-gate declined 2026-06-06). */
-import { execSync } from "node:child_process";
-const MONTHS = (()=>{const i=process.argv.indexOf("--months");return i>-1?Number(process.argv[i+1]):6;})();
-const FRAMEWORK = /^(hooks\/|scripts\/|test-framework\/|skills-manifest\.json|provision\/|rules\/|_shared\/|references\/(?!knowledge\/)|[a-z0-9-]+\/SKILL\.md|FRAMEWORK-STATE)/;
+/** Monthly framework/product visibility; measurement only, never a release gate. */
+import { execFileSync } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+const FRAMEWORK = /^(hooks\/|scripts\/|test-framework\/|skills\/|skills-manifest\.json|provision\/|rules\/|_shared\/|references\/(?!knowledge\/)|[a-z0-9-]+\/SKILL\.md|FRAMEWORK-STATE)/;
 const PRODUCT = /^(docs\/specs\/(?!work-items|reviews|audit)|references\/knowledge\/|src\/|e2e\/)/;
-const log = execSync(`git log --since="${MONTHS} months ago" --pretty='format:%H|%ad' --date=format:%Y-%m --name-only`, { encoding: "utf8", maxBuffer: 64e6 });
-const months = {};
-let cur = null;
-for (const line of log.split("\n")) {
-  if (line.includes("|")) { const [, m] = line.split("|"); cur = months[m] ??= { fw: 0, prod: 0, mixed: 0, other: 0, n: 0 }; cur.n++; cur._fw = false; cur._pr = false; cur._counted = false; continue; }
-  if (!line.trim() || !cur) { if (cur && !cur._counted && (cur._fw || cur._pr)) { cur._counted = true; if (cur._fw && cur._pr) cur.mixed++; else if (cur._fw) cur.fw++; else cur.prod++; } cur && (cur._fw = cur._pr = false); continue; }
-  if (FRAMEWORK.test(line)) cur._fw = true; else if (PRODUCT.test(line)) cur._pr = true;
+
+/** Flush commits at headers and EOF, independent of blank-line formatting. */
+export function parseCommitLog(log) {
+  const months = {}; let current = null;
+  const flush = () => {
+    if (!current) return;
+    const row = months[current.month] ??= { fw: 0, prod: 0, mixed: 0, other: 0, n: 0 };
+    row.n++; row[current.fw && current.prod ? "mixed" : current.fw ? "fw" : current.prod ? "prod" : "other"]++;
+  };
+  for (const line of log.split(/\r?\n/)) {
+    const header = line.match(/^[a-f0-9]{40}\|(\d{4}-\d{2})$/i);
+    if (header) { flush(); current = { month: header[1], fw: false, prod: false }; continue; }
+    if (!line || !current) continue;
+    if (FRAMEWORK.test(line)) current.fw = true;
+    else if (PRODUCT.test(line)) current.prod = true;
+  }
+  flush(); return months;
 }
-console.log(`# Commit-ratio report — framework vs product (last ${MONTHS} months)\n`);
-console.log(`> **MEASUREMENT ONLY — explicitly not a gate** (ship-gate policy declined by user 2026-06-06). Purpose: visibility on the 54% framework-on-framework finding from the 2026-06-06 evaluation.\n`);
-console.log(`| Month | Commits | Framework | Product | Mixed | FW% |`);
-console.log(`|---|---|---|---|---|---|`);
-for (const [m, s] of Object.entries(months).sort()) {
-  const classified = s.fw + s.prod + s.mixed;
-  const fwPct = classified ? Math.round(((s.fw + s.mixed / 2) / classified) * 100) : 0;
-  console.log(`| ${m} | ${s.n} | ${s.fw} | ${s.prod} | ${s.mixed} | ${fwPct}% |`);
+
+/** Render the established report using a validated lookback and argument-array Git call. */
+function main(argv) {
+  if (argv[0] === "--help") { console.log("Usage: report-commit-ratio.mjs [--months <positive integer>]"); return; }
+  if (argv.length && (argv.length !== 2 || argv[0] !== "--months" || !/^\d+$/.test(argv[1]))) throw new Error("Usage: report-commit-ratio.mjs [--months <positive integer>]");
+  const count = argv.length ? Number(argv[1]) : 6;
+  if (!Number.isSafeInteger(count) || count < 1) throw new Error("--months must be a positive safe integer");
+  const log = execFileSync("git", ["log", `--since=${count} months ago`, "--pretty=format:%H|%ad", "--date=format:%Y-%m", "--name-only"], { encoding: "utf8", maxBuffer: 64e6 });
+  console.log(`# Commit-ratio report — framework vs product (last ${count} months)\n`);
+  console.log("> **MEASUREMENT ONLY — explicitly not a gate** (ship-gate policy declined by user 2026-06-06). Purpose: visibility on the 54% framework-on-framework finding from the 2026-06-06 evaluation.\n");
+  console.log("| Month | Commits | Framework | Product | Mixed | FW% |");
+  console.log("|---|---|---|---|---|---|");
+  for (const [month, row] of Object.entries(parseCommitLog(log)).sort()) {
+    const classified = row.fw + row.prod + row.mixed;
+    const percent = classified ? Math.round((row.fw + row.mixed / 2) / classified * 100) : 0;
+    console.log(`| ${month} | ${row.n} | ${row.fw} | ${row.prod} | ${row.mixed} | ${percent}% |`);
+  }
+}
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  try { main(process.argv.slice(2)); } catch (error) { console.error(`report-commit-ratio: ${error.message}`); process.exitCode = 1; }
 }
