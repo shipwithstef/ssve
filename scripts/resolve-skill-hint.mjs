@@ -49,7 +49,7 @@ const aliases = [
   },
   {
     skill: "track-visuals",
-    terms: ["visual tracking", "track visuals", "screenshot", "visual evidence"],
+    terms: ["visual tracking", "track visuals", "screenshot", "screenshots", "visual evidence"],
     reason: "visual evidence capture hint",
   },
   {
@@ -66,10 +66,12 @@ const aliases = [
 
 const normalized = normalize(args.text);
 const matches = [];
+/** Match complete normalized phrases, never a fragment of a larger word. */
+const includesPhrase = (candidate) => ` ${normalized} `.includes(` ${normalize(candidate)} `);
 
 for (const alias of aliases) {
   if (!included.has(alias.skill)) continue;
-  const term = alias.terms.find((candidate) => normalized.includes(normalize(candidate)));
+  const term = [...alias.terms].sort((a, b) => b.length - a.length).find(includesPhrase);
   if (!term) continue;
   matches.push({
     skill: alias.skill,
@@ -77,6 +79,12 @@ for (const alias of aliases) {
     reason: alias.reason,
     confidence: "high",
   });
+}
+
+// Explicit catalog names remain discoverable even without a curated synonym.
+for (const skill of [...included].filter((name) => typeof name === "string").sort()) {
+  if (matches.some((match) => match.skill === skill) || !includesPhrase(skill)) continue;
+  matches.push({ skill, matched: skill, reason: "explicit catalog skill name", confidence: "high" });
 }
 
 console.log(JSON.stringify({ input: args.text, normalized, matches }, null, 2));
