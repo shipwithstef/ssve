@@ -2,7 +2,7 @@
   "schema_version": 1,
   "wi": "WI-FW-CROSS-REPO-ORCH-02",
   "lane": "framework",
-  "status": "in_progress",
+  "status": "pending",
   "created": "2026-09-18T18:35:09Z",
   "change_type": "enabler",
   "persona_coverage": {
@@ -21,7 +21,7 @@
       "id": 1,
       "skill": "write-spec",
       "subject": "enabler spec any onboarded svc project auto-bind",
-      "status": "completed",
+      "status": "pending",
       "blocked_by": [],
       "skill_receipt": {
         "skill": "write-spec",
@@ -33,7 +33,7 @@
       "id": 2,
       "skill": "design-tech",
       "subject": "hook hot path + discovery + effort pins",
-      "status": "completed",
+      "status": "pending",
       "blocked_by": [
         1
       ],
@@ -47,7 +47,7 @@
       "id": 3,
       "skill": "plan-changeset",
       "subject": "Fable-ready manifest for WI-FW-CROSS-REPO-ORCH-02",
-      "status": "in_progress",
+      "status": "pending",
       "blocked_by": [
         2
       ],
@@ -87,5 +87,9 @@
         4
       ]
     }
-  ]
+  ],
+  "delivery_cycle": {
+    "root_wi": "WI-FW-CROSS-REPO-ORCH-02",
+    "cycle_started_at": null
+  }
 }
