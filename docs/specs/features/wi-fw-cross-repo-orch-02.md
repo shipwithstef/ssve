@@ -105,7 +105,20 @@ USER_CLI_HOMEWORK_RE and PROJECT_SUBJECT_RE byte contracts live in `scripts/lib/
 
 ## Industry Grounding
 
-Internal framework enabler. Landscape inapplicable: no customer-facing market flow.
+**Source:** `docs/specs/bugfix/wi-fw-cross-repo-orch-02-gap-brief.md`; parent WI-FW-CROSS-REPO-ORCH-01 and its existing orchestration contract.
+**Landscape state:** inapplicable — internal framework origin-orchestration contract, with no customer-facing market flow.
+
+### What the industry does
+An external market comparison is not applicable to this internal enabler. This section makes no external adoption, provider-availability, or performance claim; no new industry research is asserted.
+
+### What we're doing
+Extend the parent orchestration contract with prompt-time named-worktree discovery and same-owner binding. The origin session dispatches the existing PLAN/REVIEW/EXEC chain; the hook itself never launches paid children.
+
+### Why we differ
+The no-user-CLI requirement comes from the recorded owner incident, not a claim of superiority over another product. Preserve the parent's foreign-owner, default-checkout, and mixed-repository mutation denials.
+
+### Reversibility
+Revert the auto-bind hook and its managed wiring through the existing transactional installer to return to the parent's explicit orchestration entrypoint. Preserve owner-authored configuration and prior binding/receipt evidence; do not delete history or weaken isolation during rollback.
 
 ## Pillars Coverage Matrix
 
