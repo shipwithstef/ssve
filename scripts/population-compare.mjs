@@ -37,14 +37,16 @@ function comparePopulations(populationDir) {
   }
   const files = fs.readdirSync(populationDir).filter((f) => f.endsWith(".result.json"));
   const results = files.map((file) => ({
-    file,
     ...JSON.parse(fs.readFileSync(path.join(populationDir, file), "utf8")),
+    file,
   }));
   const scored = results
+    .filter((r) => r.status === "success")
     .map((r) => ({ ...r, score: scoreFromContractFields(r) }))
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) => b.score - a.score || (a.file < b.file ? -1 : a.file > b.file ? 1 : 0));
 
   const winners = scored.slice(0, Math.ceil(scored.length / 2));
+  if (winners.length === 0) return { winner: null, patterns: 0, total: results.length, eligible: 0 };
   const patterns = winners.map((w) => ({
     wi: w.wi,
     summary: w.worker_summary,
@@ -58,7 +60,7 @@ function comparePopulations(populationDir) {
   for (const p of patterns) {
     appendJsonlLine(patternsPath, { ts: new Date().toISOString(), source_population: populationDir, ...p });
   }
-  return { winner: scored[0]?.file || null, patterns: patterns.length, total: scored.length };
+  return { winner: scored[0]?.file || null, patterns: patterns.length, total: results.length, eligible: scored.length };
 }
 
 const populationDir = process.argv[2];
@@ -66,4 +68,8 @@ if (!populationDir) {
   console.error("Usage: population-compare.mjs <population-dir>");
   process.exit(1);
 }
-console.log(JSON.stringify(comparePopulations(populationDir), null, 2));
+try {
+  const result = comparePopulations(populationDir);
+  console.log(JSON.stringify(result, null, 2));
+  if (result.error) process.exitCode = 1;
+} catch (error) { console.error(`population-compare: ${error.message}`); process.exitCode = 1; }
