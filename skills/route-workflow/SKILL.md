@@ -67,43 +67,8 @@ Inspect `node scripts/mine-receipts.mjs --delivery-cycle <root-WI> --json`: over
 8. Run the concern/pre-dispatch gates for mutating or WI-bound work.
 9. For a normal human work request, Codex autorun mode self-dispatches after the baton is established: resolve repository/WI/branch, invoke `svc-ensure-worktree`, bind the session, retain the exact tuple, and continue in the same turn. If repository resolution is ambiguous, ask once; never guess. Prompt Composer remains the fallback for hosts without autorun support or when the user explicitly asks for a launch package.
 
-### Codex autorun baton
-
-When the host is Codex and the request is a mutation (`work on Y`, `resume Y here`,
-`take over Y`, or equivalent), route-workflow is operational, not advisory. The
-first mutation is the canonical bootstrap command; its private one-use handoff
-bridges the payload session identity to `svc-ensure-worktree`. Preserve this
-baton for every continuation:
-
-`repository → WI → branch → absolute_worktree → session_id → binding_generation`.
-
-### Cursor origin orchestrator (WI-FW-CROSS-REPO-ORCH-01)
-
-When the host is Cursor (or any host with `origin_orchestrator.enabled`) and the
-request names a WI, project, or worktree that is not the current cwd — including
-another repository — do **not** emit a prompt-composer paste package and do
-**not** escape through agy. The **user does not run a command**. SessionStart /
-UserPromptSubmit inject the bind. You stay origin. First mutation you perform
-yourself (never print it as homework):
-
-```bash
-node ~/.cursor/skills/scripts/svc-orchestrate.mjs migrate --wi <WI> --worktree <absolute-worktree> --origin-host cursor --json --print-cd
-```
-
-Then dispatch without paste:
-
-```bash
-node scripts/svc-orchestrate.mjs dispatch --role PLAN --wi <WI> --worktree <absolute-worktree> --dry-run --json
-# after Fable review of the plan:
-node scripts/svc-orchestrate.mjs dispatch --role EXEC --wi <WI> --worktree <absolute-worktree> --json
-node scripts/svc-orchestrate.mjs dispatch --role REVIEW --wi <WI> --worktree <absolute-worktree> --json
-```
-
-PLAN/EXEC launch Grok CLI in the target worktree. REVIEW launches the existing
-Fable/cursor external-review station. Same-owner session rebind is automatic.
-Foreign/ambiguous owners stay denied. The 2026-09-18 HoursHub→SSVE lock is the
-regression: isolation allows this CLI from a foreign worktree; it does not
-allow arbitrary writes there.
+### Host-specific orchestration
+For the Codex autorun baton and Cursor origin orchestration, **read and follow the complete host-specific procedure in `references/hot-path-operational-details.md#host-specific-orchestration` before the first mutation**. Preserve the exact repository/WI/worktree/session/generation baton. For origin orchestration, do **not** emit a prompt-composer paste package or escape through agy; the user never runs a CLI command.
 
 The bound worktree is the default mutation directory. Reads may inspect another
 location, but an explicit conflicting workdir, target, repository, or worktree is
