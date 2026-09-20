@@ -1606,7 +1606,7 @@
     {
       "skill": "route-workflow",
       "path": "skills/route-workflow/SKILL.md",
-      "content_hash": "feddaabd8028026dd117ae5da17e405ea6985f95e382de8678bc7fbef8306aff",
+      "content_hash": "2112ad3b152e1779a8e97d3c9723c8fc7cf0c7bfa7e8042bef29c6406d2c6459",
       "description": "Universal entry point for any work. Routes freeform intent to the right svc skill based on repo state, change type, and current project artifacts. Handles: \"do this\", \"build this\", \"I want to\", \"help me with\", \"make me a\", \"ship this\", \"fix this\", or ANY freeform description of work; also handles explicit routing questions like \"what should I do next\", \"which skill do I run\", \"what's the right order\", and \"what lane is this\".",
       "aliases": [
         "what should I do next",
