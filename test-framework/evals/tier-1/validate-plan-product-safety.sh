@@ -58,10 +58,12 @@ if node scripts/validate-plan-contract.mjs "$VOL_CONTRACT" "$VOL_ROOT" >"$TMP/vo
 grep -q 'volatile_paths entry outside the .svc/ session state root is not allowed: scripts' "$TMP/vol.out"
 grep -q 'changed path is undeclared in manifest ownership table: scripts/runtime.mjs' "$TMP/vol.out"
 node scripts/find-callers.mjs --identifier validate-plan-contract.mjs --root "$ROOT" > "$TMP/callers.json"
-node -e 'const r=require(process.argv[1]); if(r.scanned_files<1||r.denominator!==r.scanned_files||r.queries.length<5||r.matched_files<2)process.exit(1)' "$TMP/callers.json"
+node "$ROOT/test-framework/evals/tier-1/lib/assert-caller-scan-report.mjs" "$TMP/callers.json"
+node -e 'const r=require(process.argv[1]); if(r.scanned_files<1||r.queries.length<5||r.matched_files<2)process.exit(1)' "$TMP/callers.json"
 mkdir -p "$TMP/census"; printf 'invokeValidatePlanContract();\n' > "$TMP/census/caller.mjs"
 node scripts/find-callers.mjs --identifier validate-plan-contract.mjs --root "$TMP/census" > "$TMP/variant.json"
 node -e 'const r=require(process.argv[1]);if(!r.matches.some(x=>x.queries.some(q=>q.query==="invokeValidatePlanContract")))process.exit(1)' "$TMP/variant.json"
 if node scripts/find-callers.mjs --identifier definitely-absent-route --root "$TMP/census" > "$TMP/absent.json"; then echo "FAIL: absent caller returned success" >&2; exit 1; fi
+node "$ROOT/test-framework/evals/tier-1/lib/assert-caller-scan-report.mjs" "$TMP/absent.json"
 node -e 'const r=require(process.argv[1]);if(!r.canonical_absence_proven||r.denominator!==1)process.exit(1)' "$TMP/absent.json"
 echo "PASS: plan product safety blocks unsafe writers, unbounded claims, overlap, and inert executables"

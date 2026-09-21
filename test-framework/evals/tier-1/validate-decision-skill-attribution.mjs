@@ -57,3 +57,49 @@ test("the existing assessment consumer sees a newly recorded skill decision", (t
   const out = json(cli("scripts/assess-temperature.mjs", ["review-gate"], dir));
   assert.equal(out.metrics.avgConfidence, 0.25);
 });
+
+test("option-looking choice and reasoning text retain their literal bytes", (t) => {
+  const dir = fixture(t);
+  for (const value of ["--dry-run", "--skill", "--confidence", "--", "--choice=value"]) {
+    const out = json(cli(script, [...decision.slice(0, -1), value, "--reasoning", "--dry-run avoids writes"], dir));
+    assert.equal(out.choice, value); assert.equal(out.reasoning, "--dry-run avoids writes");
+  }
+  const rows = fs.readFileSync(path.join(dir, ".svc/agent-decisions.jsonl"), "utf8").trim().split("\n").map(JSON.parse);
+  assert.equal(rows.length, 5); assert.equal(rows[0].choice, "--dry-run");
+});
+test("meta-learning observation text also accepts option-looking values", (t) => {
+  const dir = fixture(t);
+  const out = json(cli(script, ["--type", "meta-learning", "--category", "cli", "--observation", "--dry-run avoids writes"], dir));
+  assert.equal(out.observation, "--dry-run avoids writes");
+});
+test("missing values and invalid typed options preserve existing append-only history", (t) => {
+  const dir = fixture(t); json(cli(script, decision, dir));
+  const file = path.join(dir, ".svc/agent-decisions.jsonl"); const before = fs.readFileSync(file, "utf8");
+  for (const extra of [["--skill"], ["--reasoning"], ["--confidence"], ["--confidence", "--skill"], ["bad", "value"], ["--skill", " "]]) {
+    const out = cli(script, [...decision, ...extra], dir);
+    assert.equal(out.status, 1, JSON.stringify(extra)); assert.equal(out.stdout, "");
+    assert.equal(fs.readFileSync(file, "utf8"), before);
+  }
+});
+for (const type of ["decision", "meta-learning"]) {
+  for (const confidence of [0, 0.5, 1, undefined]) {
+    test(`${type} writer-to-reader boundary confidence=${confidence}`, (t) => {
+      const dir = fixture(t);
+      const args = type === "decision" ? decision : ["--type", type, "--category", "cli", "--observation", "use fixtures"];
+      json(cli(script, [...args, "--skill", "review-gate", ...(confidence === undefined ? [] : ["--confidence", String(confidence)])], dir));
+      const file = path.join(dir, ".svc/agent-decisions.jsonl"); const before = fs.readFileSync(file, "utf8");
+      const out = json(cli("scripts/assess-temperature.mjs", ["review-gate"], dir));
+      assert.equal(out.metrics.avgConfidence, confidence ?? null);
+      assert.equal(out.temperature, confidence === 0 ? "high" : "low");
+      if (confidence !== undefined) { assert.doesNotMatch(out.reasons.join(" "), /no grade\/decision history/); }
+      assert.equal(fs.readFileSync(file, "utf8"), before);
+    });
+  }
+}
+test("mixed zero and one confidence averages correctly without crossing skill scope", (t) => {
+  const dir = fixture(t);
+  for (const confidence of [0, 1]) { json(cli(script, [...decision, "--skill", "review-gate", "--confidence", String(confidence)], dir)); }
+  json(cli(script, [...decision, "--skill", "write-spec", "--confidence", "0"], dir));
+  const out = json(cli("scripts/assess-temperature.mjs", ["review-gate"], dir));
+  assert.equal(out.metrics.avgConfidence, 0.5); assert.equal(out.temperature, "low");
+});

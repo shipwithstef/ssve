@@ -18,10 +18,15 @@ import path from "node:path";
 import { appendJsonlLine } from "./state-io.mjs";
 
 const projectDir = process.env.SVC_PROJECT_DIR || ".";
+/**
+ * Parse required option/value pairs without interpreting literal values as flags.
+ * @param {string[]} argv Node process arguments.
+ * @returns {Object<string, string>} Parsed options; later duplicates retain precedence.
+ */
 function parseArgs(argv) {
   const a = {};
   for (let i = 2; i < argv.length; i += 2) {
-    if (!argv[i]?.startsWith("--") || argv[i + 1] === undefined || argv[i + 1].startsWith("--")) {
+    if (!argv[i]?.startsWith("--") || argv[i + 1] === undefined) {
       throw new Error(`${argv[i] || "option"} requires a value`);
     }
     a[argv[i].slice(2)] = argv[i + 1];
