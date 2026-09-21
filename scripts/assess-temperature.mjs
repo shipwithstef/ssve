@@ -33,7 +33,7 @@ function assessTemperature(skillName) {
   // wrong log left avgConfidence permanently null (review finding F4).
   const decisions = readJsonl(path.join(projectDir, ".svc", "agent-decisions.jsonl"));
 
-  const skillGrades = grades.filter((g) => g.skill === skillName);
+  const skillGrades = grades.filter((g) => g.skill === skillName && ["pass", "fail"].includes(g.grade));
   const passRate =
     skillGrades.length > 0
       ? skillGrades.filter((g) => g.grade === "pass").length / skillGrades.length
@@ -41,11 +41,11 @@ function assessTemperature(skillName) {
   const recentFails = skillGrades.slice(-10).filter((g) => g.grade === "fail").length;
 
   const skillDecisions = decisions.filter(
-    (d) => d.skill === skillName && typeof d.confidence === "number"
+    (d) => d.skill === skillName && Number.isFinite(d.confidence) && d.confidence >= 0 && d.confidence <= 1
   );
   const avgConfidence =
     skillDecisions.length > 0
-      ? skillDecisions.reduce((s, d) => s + (d.confidence || 0.5), 0) / skillDecisions.length
+      ? skillDecisions.reduce((s, d) => s + d.confidence, 0) / skillDecisions.length
       : null;
 
   let temperature = "low"; // default: exploit proven patterns
@@ -62,11 +62,15 @@ function assessTemperature(skillName) {
     temperature = "high";
     reasons.push(`avg confidence ${avgConfidence.toFixed(2)} < 0.5`);
   }
-  if (passRate !== null && passRate > 0.9 && recentFails === 0) {
+  if (temperature !== "high" && passRate !== null && passRate > 0.9 && recentFails === 0) {
     temperature = "low";
     reasons.push(`pass rate ${(passRate * 100).toFixed(0)}% > 90%, no recent failures`);
   }
-  if (reasons.length === 0) reasons.push("no grade/decision history for this skill — default exploit");
+  if (reasons.length === 0) {
+    reasons.push(passRate === null && avgConfidence === null
+      ? "no grade/decision history for this skill — default exploit"
+      : "available history is within standard thresholds — default exploit");
+  }
 
   return {
     skill: skillName,

@@ -116,3 +116,6 @@ test("missing known-option values cannot modify an existing ledger", (t) => {
     assert.equal(fs.statSync(ledger).mtimeMs, mtime);
   }
 });
+
+// Keep writer-to-reader regressions in the permanent Tier-1 suite.
+import "../../tests/functional-compatibility.integration.test.mjs";
