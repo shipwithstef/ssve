@@ -4,6 +4,7 @@
 // (consolidated per the JSONL plan; distinguished by `type`). Append-only, gitignored.
 //
 // Optional --skill <name> attributes either record type to a skill for assessment.
+// Free text retains literal -- prefixes; --key=value is also accepted.
 // Decision (T4):
 //   node scripts/write-decision.mjs --type decision --task_id T3 \
 //     --decision_point "auth library" --choice jsonwebtoken --confidence 0.75 \
@@ -18,13 +19,29 @@ import path from "node:path";
 import { appendJsonlLine } from "./state-io.mjs";
 
 const projectDir = process.env.SVC_PROJECT_DIR || ".";
+const OPTIONS = new Set([
+  "--type", "--task_id", "--decision_point", "--choice", "--confidence", "--reasoning",
+  "--evidence_level", "--skill", "--category", "--observation", "--applies_to",
+]);
+const TEXT_OPTIONS = new Set(["decision_point", "choice", "reasoning", "observation", "category", "task_id"]);
+
+/**
+ * Parse value-bearing options without mistaking literal command text for a flag.
+ * @param {string[]} argv Process arguments, including the runtime and script.
+ * @returns {Record<string, string>} Parsed values; free-text fields retain legacy positional interpretation.
+ */
 function parseArgs(argv) {
   const a = {};
-  for (let i = 2; i < argv.length; i += 2) {
-    if (!argv[i]?.startsWith("--") || argv[i + 1] === undefined || argv[i + 1].startsWith("--")) {
-      throw new Error(`${argv[i] || "option"} requires a value`);
+  for (let i = 2; i < argv.length; i++) {
+    const option = argv[i];
+    if (!option?.startsWith("--") || option === "--") { throw new Error(`unexpected argument: ${option}`); }
+    const equals = option.indexOf("=");
+    const key = option.slice(2, equals < 0 ? undefined : equals);
+    const value = equals < 0 ? argv[++i] : option.slice(equals + 1);
+    if (!key || value === undefined || (equals < 0 && !TEXT_OPTIONS.has(key) && OPTIONS.has(value.split("=", 1)[0]))) {
+      throw new Error(`${option} requires a value; use --${key}=<text> for a literal option name`);
     }
-    a[argv[i].slice(2)] = argv[i + 1];
+    a[key] = value;
   }
   return a;
 }
