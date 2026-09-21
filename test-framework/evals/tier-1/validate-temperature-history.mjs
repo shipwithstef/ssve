@@ -58,5 +58,3 @@ test("existing failure thresholds and read-only behavior remain intact", (t) => 
   const out = json(cli(script, ["review-gate"], dir));
   assert.equal(out.temperature, "high"); assert.equal(out.metrics.recentFails, 3); assert.equal(fs.readFileSync(file, "utf8"), input);
 });
-
-import "../../tests/functional-compatibility.integration.test.mjs";

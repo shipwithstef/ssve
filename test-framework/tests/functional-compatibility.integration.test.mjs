@@ -32,7 +32,7 @@ function json(result) { assert.equal(result.status, 0, result.stderr); return JS
 const script = "scripts/write-decision.mjs";
 const decision = ["--type", "decision", "--decision_point", "approach", "--choice", "small change"];
 
-// Cross-PR assertions run on the verification branch with PR #74's actual reader.
+// Permanent writer-to-reader regressions use the actual assessment implementation.
 for (const [confidence, average, temperature] of [["0", 0, "high"], ["0.25", 0.25, "high"], ["1", 1, "low"], [null, null, "low"]]) {
   test(`attributed decision reaches assessment unchanged: confidence=${confidence}`, (t) => {
     const dir = fixture(t);
