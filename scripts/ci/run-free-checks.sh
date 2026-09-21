@@ -37,22 +37,4 @@ fi
 echo "ssve-free-checks: node=${NODE_BIN} ($("${NODE_BIN}" --version)) EVALS=${EVALS}"
 
 "${NODE_BIN}" scripts/lint-skills-manifest.mjs
-LOG="$(mktemp)"; trap 'rm -f "$LOG"' EXIT
-STATUS=0
-bash test-framework/evals/run-all-evals.sh >"$LOG" 2>&1 || STATUS=$?
-"${NODE_BIN}" --input-type=module - "$LOG" "$STATUS" <<'NODE'
-import fs from "node:fs";
-const lines = fs.readFileSync(process.argv[2], "utf8").replace(/\x1b\[[0-9;]*m/g, "").split("\n");
-const failures = [];
-for (let i = 0; i < lines.length; i++) {
-  if (/^\s*(FAIL|TIMEOUT):\s+validate-[^ ]+/.test(lines[i])) {
-    let start = i;
-    while (start > 0 && !/^\s*Running validate-/.test(lines[start])) start--;
-    failures.push(lines.slice(Math.max(start, i - 65), i + 1).join("\n"));
-  }
-}
-console.log(`DIAGNOSTIC: unchanged full-suite exit=${process.argv[3]}; named failures=${failures.length}`);
-for (const block of failures) console.log(block);
-console.log(lines.slice(-20).join("\n"));
-NODE
-exit "$STATUS"
+bash test-framework/evals/run-all-evals.sh
