@@ -69,3 +69,19 @@ stop for explicit user approval when any of these fields are true:
 
 If no threshold is crossed, keep working and record the continuation decision
 before mutating the next artifact.
+
+## Reopened-task continuation (recovery-ux)
+
+A reopened task **keeps all prior receipts** and receives a **fresh activation**
+event:
+
+1. Locate the task by id in `.svc/lane-tasks-<WI>.json`.
+2. Do not clear `process[]` — append a new `{"at": <now>, "event": "reopened-fresh-activation"}`.
+3. Set `status` back to `in_progress` via `activate-skill`.
+4. Root delivery_cycle: inherit `started_at` with `bind-delivery-cycle --inherit <root-graph>`
+   (never reset).
+5. Next eligible pending task (lowest `blocked_by` all completed) becomes the
+   active skill.
+
+Same-owner stale Codex skill-load uses this path automatically (see
+`skills/route-workflow/SKILL.md` Recovery UX). Foreign/ambiguous bindings refuse.

@@ -210,3 +210,24 @@ Before declaring routing complete, verify:
 | 19 | Change impact routed | Mutating work records classifier tier/reasons and has an owned impact-triad task; read-only work cites N/A evidence | |
 
 **Terminal skill tagging:** Terminal skills may declare `terminal: true`; after them, route-workflow defaults to advisory mode for backlog WIs unless the user explicitly switches context.
+
+## Recovery UX (same-owner stale Codex skill-load self-heal)
+
+When a Codex skill-load is stale **and the binding is the same owner** (canonical
+operation worktree matches this controller's worktree, principal + generation
+match), self-heal:
+
+1. Re-read the task graph; do not trust session memory.
+2. Keep all prior receipts for reopened tasks (never discard history).
+3. Issue a **fresh activation** (`activate-skill` + record a new activation event
+   with current UTC timestamp).
+4. Re-bind the delivery cycle with `--inherit` from the root graph (resumes
+   never reset `started_at`).
+5. Continue Hot Path from the reloaded next-pending task.
+
+**Foreign or ambiguous bindings FAIL CLOSED.** If the principal, generation, or
+worktree does not match exactly, do not mutate — emit a refusal receipt
+(`status: refused`, `reason: foreign_or_ambiguous_binding`) and stop.
+
+Apply: `rules/verify-state-before-context.md` (canonical worktree authority),
+AMENDMENT-A (reopened tasks keep old receipts + fresh activation).

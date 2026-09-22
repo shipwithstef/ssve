@@ -209,3 +209,13 @@ Fable/cursor external-review station. Same-owner session rebind is automatic.
 Foreign/ambiguous owners stay denied. The 2026-09-18 HoursHub→SSVE lock is the
 regression: isolation allows this CLI from a foreign worktree; it does not
 allow arbitrary writes there.
+
+## Recovery UX decision table — stale Codex skill-load
+
+| Binding check | Same owner (canonical WT = this WT, principal+gen match) | Foreign (different principal) | Ambiguous (mismatch / unknown gen) |
+|---|---|---|---|
+| Stale skill-load detected | **SELF-HEAL**: fresh activation, keep prior receipts, re-bind with `--inherit`, resume next pending | **FAIL CLOSED**: `status: refused`, `reason: foreign_or_ambiguous_binding`, no mutation | **FAIL CLOSED**: same as foreign |
+| Action verbs | re-read graph → keep receipts → activate-skill (new event) → bind-delivery-cycle --inherit → resume | stop; do not edit, do not merge, do not rebind | stop; do not edit, do not merge, do not rebind |
+
+Authority source: `git worktree` canonical path of the operation, not session
+memory. See `rules/verify-state-before-context.md` and AMENDMENT-A.
