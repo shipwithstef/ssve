@@ -137,7 +137,7 @@ Choose `propose-change`, `retain-current`, or `evidence-needed` from the observe
 - **Suggested next:** route-workflow (normal plan/review/execute chain; write-spec first when required)
 ```
 
-`css-token` = color, type, spacing, density, copy, empty-state treatment using existing components.  
+`css-token` = color, type, spacing, density, copy, empty-state treatment using existing components.
 `structural` = new regions, new states, chrome redesign, new components, information architecture.
 
 Forbidden proposals: “be more like Linear”; restyling the whole app; landing-page motion; changing product mechanics; HoursHub copy on Novisenti or the reverse.

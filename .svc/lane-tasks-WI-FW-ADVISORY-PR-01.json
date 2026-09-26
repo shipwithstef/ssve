@@ -88,7 +88,7 @@
   "delivery_tier": "full",
   "request": "Recover PR sweep; evaluate all PRs for product usefulness; implement advisory-default hooks and update project docs with GPT-6 Sol high",
   "review_limitations": "Canonical independent plan adapter failed with implementation_diverged; no review receipt asserted. Read-only Sol plan/code findings retained in docs/plans/2026-09-26-advisory-pr-resolution/review.md.",
-  "progress_note": "PR review, plan, implementation and focused-review artifacts exist in docs/plans/2026-09-26-advisory-pr-resolution/. Formal phase completion remains unclaimed because canonical skill/phase receipts are not complete. Full-suite corrections are still being validated.",
+  "progress_note": "Owner directed completion after review-limit disclosure. All unique PR sources integrated for combined release; formal canonical phase receipts remain unclaimed. Source, hosted checks and actual all-host installation are tracked separately.",
   "state_repair_note": "The canonical set-status writer refused to reopen an already invalid completed graph before mutation. Statuses were downgraded directly on 2026-09-26 to remove the unsupported completion claims; no receipt was synthesized.",
   "flags": [
     "runtime_concurrency",
