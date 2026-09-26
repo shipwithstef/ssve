@@ -89,9 +89,12 @@ if [[ "${EVALS:-0}" != "1" ]]; then
 exports `EVALS=0` and **refuses** `EVALS=1` so a mis-set environment cannot
 enable paid LLM tiers.
 
-## Exact post-publication steps
+## Historical activation procedure (retain for future installations)
 
-Do these in order. Do not require a check name before hosted proof.
+The visibility and installation steps below describe the original activation
+procedure; the observed state at the top of this document supersedes those
+historical prerequisites. For a new installation, follow the steps in order.
+Do not require a check name before hosted proof.
 
 1. **Confirm public visibility and applicable free runner conditions**
    - `gh repo view shipwithstef/ssve --json visibility,isPrivate`
@@ -103,7 +106,8 @@ Do these in order. Do not require a check name before hosted proof.
 
 2. **Install templates at the recognized paths**
    - Copy `docs/ci/workflows/ssve-checks.yml` → `.github/workflows/ssve-checks.yml`
-     as a byte-identical file (keep the header comment; GitHub ignores it).
+     with identical YAML configuration values. Update the header to describe
+     the active path; comments do not change GitHub execution.
    - Copy `docs/ci/workflows/dependabot.yml` → `.github/dependabot.yml`
    - Do not add other workflows in the same change.
    - Do not enable Actions secrets, provider keys, or write tokens.
@@ -146,7 +150,10 @@ EVALS=0 bash scripts/ci/run-free-checks.sh
 
 Hosted Actions were **not** run by the preparation worker.
 
-## Remaining work after this preparation
+## Historical preparation handoff (2026-09-16)
+
+This original handoff list is historical; it is not the current backlog. See the
+observed status and pending release matrix at the top for current limits.
 
 - Public conversion (separate authorization).
 - Copy to `.github/` and push (step 2–3).
