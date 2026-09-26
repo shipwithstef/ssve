@@ -59,6 +59,8 @@ function main() {
   const sections = (idx && idx.sections) || {};
 
   const wiNorm = o.wi ? String(o.wi).toUpperCase() : null;
+  const escapedWi = wiNorm?.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const wiPattern = escapedWi ? new RegExp(`(?<![A-Z0-9])${escapedWi}(?![A-Z0-9])`, "i") : null;
   const term = o.surface ? String(o.surface).toLowerCase() : null;
 
   const matches = [];
@@ -69,7 +71,7 @@ function main() {
     let hit = false;
     if (wiNorm) {
       // tag wi:<WI> (case-normalized) OR the anchor path carries the WI id.
-      if (tags.includes(`wi:${wiNorm.toLowerCase()}`) || anchor.toUpperCase().includes(wiNorm)) hit = true;
+      if (tags.includes(`wi:${wiNorm.toLowerCase()}`) || wiPattern.test(anchor)) hit = true;
     }
     if (term) {
       const hay = `${anchor} ${s.title || ""} ${tags.join(" ")} ${topics.join(" ")}`.toLowerCase();
