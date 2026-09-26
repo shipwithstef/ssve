@@ -1,6 +1,16 @@
 import fs from "node:fs";
 import path from "node:path";
 
+export function actualDelegatedCommand(command) {
+  if (!String(command).includes("svc-hook-boundary.mjs")) return String(command);
+  const match = String(command).match(/(?:^|\s)--spec\s+([A-Za-z0-9_-]+)(?:\s|$)/);
+  if (!match) return "";
+  try {
+    const spec = JSON.parse(Buffer.from(match[1], "base64url").toString("utf8"));
+    return typeof spec.command === "string" ? spec.command : "";
+  } catch { return ""; }
+}
+
 function jsonCommands(value, out = []) {
   if (Array.isArray(value)) {
     for (const item of value) jsonCommands(item, out);
@@ -106,6 +116,14 @@ export function governedRoutingStatus(configPath, wiring, options = {}) {
   const missing = tokens.filter((token) => !candidates[0].includes(token));
   if (missing.length) {
     return { ok: false, reason: `effective governed command is missing marker(s): ${missing.join(", ")}` };
+  }
+  // A boundary marker alone cannot prove launcher routing. Inspect the exact
+  // encoded delegated command whenever setup installed the hook-only adapter.
+  if (candidates[0].includes("svc-hook-boundary.mjs")) {
+    const delegated = actualDelegatedCommand(candidates[0]);
+    if (tokens.some((token) => !delegated.includes(token))) {
+      return { ok: false, reason: "wrapped governed command does not actually delegate through the launcher" };
+    }
   }
   if (wiring.effective_state?.type === "codex-hooks-state") {
     if (!jsonHooks || jsonHooks.length !== 1) {

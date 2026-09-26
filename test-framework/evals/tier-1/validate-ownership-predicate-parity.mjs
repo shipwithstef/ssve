@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// WI-562 IP-W2: ownership-predicate parity — identical fixtures yield identical
-// verdicts from the ONE shared predicate consumed by all three wirers.
+// Destructive migration uses one exact installed-package predicate on every host.
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const { isSvcOwnedCommand, isUserOwnedCommand } = await import(new URL(`file://${path.join(ROOT, "hooks/lib/svc-ownership.mjs")}`));
+const { isKnownManagedCommand } = await import(new URL(`file://${path.join(ROOT, "hooks/lib/svc-ownership.mjs")}`));
+const { wrapHookCommand } = await import(new URL(`file://${path.join(ROOT, "scripts/lib/hook-command.mjs")}`));
 
 // Also verify each wirer actually imports the shared lib (no drift back).
 import fs from "node:fs";
@@ -14,36 +14,31 @@ const ok = (m) => { console.log(`  ✓ ${m}`); pass++; };
 const problem = (m) => { console.error(`  ✗ ${m}`); fail++; };
 let pass = 0;
 
+const encoded = Buffer.from(JSON.stringify({ command: `node ${ROOT}/hooks/svc-workflow-guard.mjs`, host: "claude", event: "PreToolUse", timeoutMs: 20000 })).toString("base64url");
 const FIXTURES = [
-  ["node /home/x/.claude/skills/hooks/svc-bash-guard.mjs", true],
-  ["node \"$CLAUDE_PROJECT_DIR\"/hooks/svc-workflow-guard.mjs", true],
-  ["bash -c 'node ~/.cursor/skills/hooks/svc-lane-tasks-validator.mjs'", true],
-  ["node /skills/hooks/svc-enforce.mjs --consumer stop", true],
-  ["/usr/local/bin/svc-enforce --mode strict", true],
-  ["svc-enforce", true],
-  // Quoted-launcher governed forms (post-land OTA finding): the launcher path
-  // is shell-quoted, so svc-enforce is followed by a quote, not whitespace.
-  ["'/usr/bin/node' '/home/x/.svc/enforcement/1/bin/svc-enforce' svc-cursor-task-completion-guard", true],
-  ["node '/opt/tooling/svc-enforce' --mode strict", true],
-  ["node /home/user/.grok/skills/hooks/user-keep.mjs", false],
+  [`node ${ROOT}/hooks/svc-workflow-guard.mjs`, true],
+  [`node ${ROOT}/hooks/cos-briefing.mjs`, true],
+  [`node ${ROOT}/hooks/svc-workflow-guard.js \"$TOOL_INPUT\"`, true],
+  [`bash ${ROOT}/hooks/svc-custom.sh`, false],
+  [`echo ${ROOT}/hooks/svc-workflow-guard.mjs`, false],
+  [`node /opt/foreign/hooks/svc-workflow-guard.mjs`, false],
+  [`echo --spec ${encoded}`, false],
+  [`echo ${ROOT}/hooks/svc-hook-boundary.mjs svc-hook --spec ${encoded}`, false],
+  [wrapHookCommand(`node ${ROOT}/hooks/svc-workflow-guard.mjs`, { skillsPath: ROOT, host: "claude", event: "PreToolUse" }), true],
   ["eslint --fix .", false],
-  ["prettier --write src/", false],
-  ["/opt/company/deployscript.sh --env prod", false],
-  ["echo svc- is mentioned in prose but not a script call", false],
 ];
 
 for (const [cmd, expected] of FIXTURES) {
-  const got = isSvcOwnedCommand(cmd);
+  const got = isKnownManagedCommand(cmd, ROOT);
   if (got !== expected) { problem(`fixture verdict mismatch: ${JSON.stringify(cmd)} expected ${expected} got ${got}`); continue; }
-  if (isUserOwnedCommand(cmd) !== !expected) { problem(`inverse predicate inconsistent for: ${cmd}`); continue; }
 }
-ok(`${FIXTURES.length} shared-predicate fixtures agree (direct + inverse)`);
+ok(`${FIXTURES.length} exact installed-root fixtures agree`);
 
-for (const wirer of ["scripts/wire-hooks.mjs", "scripts/wire-cursor-hooks.mjs", "scripts/wire-grok-hooks.mjs"]) {
+for (const wirer of ["scripts/wire-hooks.mjs", "scripts/wire-cursor-hooks.mjs", "scripts/wire-grok-hooks.mjs", "scripts/wire-kimi-hooks.mjs", "scripts/wire-gemini-hooks.mjs"]) {
   const src = fs.readFileSync(path.join(ROOT, wirer), "utf8");
-  if (!src.includes("hooks/lib/svc-ownership.mjs")) problem(`${wirer} does not import the shared ownership predicate`);
+  if (!src.includes("hooks/lib/svc-ownership.mjs") || !src.includes("isKnownManagedCommand(")) problem(`${wirer} does not use the exact shared ownership predicate`);
 }
-ok("all three wirers import hooks/lib/svc-ownership.mjs");
+ok("all destructive wirers use hooks/lib/svc-ownership.mjs");
 
 console.log(`validate-ownership-predicate-parity: ${pass} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);

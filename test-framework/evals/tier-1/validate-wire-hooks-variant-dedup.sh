@@ -19,7 +19,7 @@ WIRER="scripts/wire-hooks.mjs"
 TMP="$(mktemp -d /tmp/wi359-dedup.XXXXXX)"
 trap 'rm -rf "$TMP"' EXIT
 S1="$TMP/settings.json"
-cp "$FIXTURE" "$S1"
+sed "s#/home/user/.claude/skills#$REPO_ROOT#g" "$FIXTURE" > "$S1"
 
 PASS=0
 FAIL=0
@@ -35,10 +35,15 @@ check() {
 # jq-free JSON probe: q <event> <py-expr-over-entries> ; entries = settings.hooks[event]
 q() {
   python3 - "$S1" "$1" "$2" <<'PY'
-import json,sys
+import base64,json,re,sys
 s=json.load(open(sys.argv[1]))
 entries=s.get("hooks",{}).get(sys.argv[2],[])
-cmds=[(r.get("matcher",""),h) for r in entries for h in r.get("hooks",[])]
+def delegated(command):
+    match=re.search(r'--spec ([A-Za-z0-9_-]+)',command)
+    if not match: return command
+    try: return json.loads(base64.urlsafe_b64decode(match.group(1)+'==='))['command']
+    except (ValueError,KeyError): return ''
+cmds=[(r.get("matcher",""),dict(h,command=delegated(h.get("command","")))) for r in entries for h in r.get("hooks",[])]
 print(int(eval(sys.argv[3])))
 PY
 }

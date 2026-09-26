@@ -88,6 +88,9 @@ cp "$REPO_ROOT/references/opencode-mimo-config.json" "$SRC/references/" 2>/dev/n
 for w in wire-hooks wire-codex-hooks wire-gemini-hooks wire-kimi-hooks wire-opencode-hooks wire-cursor-hooks wire-grok-hooks; do
   cp "$REPO_ROOT/scripts/$w.mjs" "$SRC/scripts/"
 done
+mkdir -p "$SRC/scripts/lib"
+cp "$REPO_ROOT/scripts/lib/hook-command.mjs" "$SRC/scripts/lib/"
+cp "$REPO_ROOT/scripts/lib/governed-routing.mjs" "$REPO_ROOT/scripts/lib/codex-hook-key.mjs" "$SRC/scripts/lib/"
 # WI-562: the wirers import shared libs from hooks/lib — copy the dependency set.
 for lib in svc-ownership.mjs hook-catalog.mjs process-liveness.mjs; do
   cp "$REPO_ROOT/hooks/lib/$lib" "$SRC/hooks/lib/" 2>/dev/null || true

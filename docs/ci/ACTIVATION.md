@@ -1,11 +1,10 @@
-# Activate dormant SSVE free GitHub checks
+# SSVE free GitHub checks: activation and current status
 
-**Status:** locally prepared, **not active CI**, **hosted proof pending**.
-Do not call this a verified public release. Do not change billing, credentials,
-Azure, or public visibility from this document.
+**Observed 2026-09-26:** the repository is public and `.github/workflows/ssve-checks.yml` is active. GitHub reports SSVE Checks, Dependabot Updates, and CodeQL as active; the API also retains a CI Repair Snapshot workflow entry whose source file is absent from the current main checkout. Do not infer an installed workflow file from that historical registration alone.
 
-Templates live outside recognized GitHub workflow locations so nothing launches
-while the repository is private.
+Read-only evidence: `gh api repos/shipwithstef/ssve` reports `private: false`; `gh api repos/shipwithstef/ssve/actions/workflows` reports the workflow states. Current PR check identities are retained in `docs/plans/2026-09-26-advisory-pr-resolution/pr-inventory.json`. For example, [#114 run 35537943565](https://github.com/shipwithstef/ssve/actions/runs/35537943565) passed on its historical head. This does not certify main or subsequent changes.
+
+The dormant preparation instructions below are retained as historical setup guidance. Recognized `.github/` files are now active; templates under `docs/ci/workflows/` remain reference copies. This documentation update changes no billing, credentials, visibility, workflow triggers, runner selection, action pins, or repository settings.
 
 | Artifact | Dormant path | Activation path |
 |---|---|---|
@@ -19,7 +18,7 @@ stand-in for dormancy. The dormant template has **no** `workflow_dispatch` and
 automatic GitHub workflows; this candidate keeps one `pull_request` + `push` to
 `main` check. See `docs/plans/WI-FW-OSS-CI-PREP-01/historical-coverage.md`.
 
-## Current observed conditions (2026-09-16 UTC)
+## Historical pre-activation observations (2026-09-16 UTC)
 
 Read-only probes this session:
 
@@ -131,7 +130,7 @@ Do these in order. Do not require a check name before hosted proof.
      GitHub displayed a different string.
    - Read back the ruleset/branch-protection setting after applying it.
 
-## Local reproduction (dormant)
+## Local reproduction
 
 From the repository root, with `/usr/bin/node` for local validation:
 

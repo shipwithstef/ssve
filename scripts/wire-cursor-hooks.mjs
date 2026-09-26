@@ -17,10 +17,11 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { isUserOwnedCommand } from "../hooks/lib/svc-ownership.mjs"; // WI-562 IP-W2
 import os from "node:os";
 import { fileURLToPath } from "node:url";
 import { MIGRATION_VERSION, resolveStateRoot, launcherRunnable } from "../hooks/lib/enforcement-core.mjs";
+import { wrapHookEntries } from "./lib/hook-command.mjs";
+import { isKnownManagedCommand } from "../hooks/lib/svc-ownership.mjs";
 
 const THIS_FILE = fileURLToPath(import.meta.url);
 
@@ -109,10 +110,11 @@ export function buildCursorHookEntries(skillsPath) {
     entries.stop.push({ command: stopGuardCommand(hooksDir) });
   }
 
-  return entries;
+  return Object.fromEntries(Object.entries(entries).map(([event, hooks]) =>
+    [event, wrapHookEntries(hooks, { skillsPath, host: "cursor", event })]));
 }
 
-export function mergeCursorConfig(existingConfig, newEntries) {
+export function mergeCursorConfig(existingConfig, newEntries, skillsPath = path.join(process.env.HOME || os.homedir(), ".cursor", "skills")) {
   const result = {
     version: existingConfig?.version || 1,
     hooks: { ...(existingConfig?.hooks || {}) },
@@ -128,7 +130,7 @@ export function mergeCursorConfig(existingConfig, newEntries) {
       const cmd = typeof item === "string"
         ? item
         : item?.command || item?.hooks?.[0]?.command || "";
-      return isUserOwnedCommand(cmd);
+      return !isKnownManagedCommand(cmd, skillsPath);
     }).map((item) => {
       if (item && typeof item === "object" && !item.command && item.hooks?.[0]?.command) {
         return { command: item.hooks[0].command };
@@ -169,7 +171,7 @@ export function wireCursor(options = {}) {
   }
 
   const entries = buildCursorHookEntries(skillsPath);
-  const merged = mergeCursorConfig(existing, entries);
+  const merged = mergeCursorConfig(existing, entries, skillsPath);
 
   if (dryRun) {
     process.stdout.write(JSON.stringify(merged, null, 2) + "\n");

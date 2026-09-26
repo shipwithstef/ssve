@@ -147,11 +147,13 @@ while IFS=$'\t' read -r kind gate host pattern; do
   if [[ "$host" == "claude" && "$gate" == "block-no-verify" ]]; then
     if node --input-type=module - "$REPO_ROOT" <<'JS'
 import fs from 'node:fs';import {execFileSync} from 'node:child_process';import path from 'node:path';
+import {pathToFileURL} from 'node:url';
 const root=process.argv[2];
+const {actualDelegatedCommand}=await import(pathToFileURL(path.join(root,'scripts/lib/governed-routing.mjs')));
 const raw=execFileSync(process.execPath,[path.join(root,'scripts/wire-hooks.mjs'),'--skills-path',root,'--list-all'],{encoding:'utf8'});
 const config=JSON.parse(raw.slice(raw.indexOf('{')));
 const dispatcher='hooks/codex/svc-codex-pretool-dispatcher.mjs';
-if(!config.hooks.PreToolUse.some(e=>e.matcher.split('|').includes('Bash') && e.hooks.some(h=>h.command.includes(dispatcher)))) process.exit(1);
+if(!config.hooks.PreToolUse.some(e=>e.matcher.split('|').includes('Bash') && e.hooks.some(h=>actualDelegatedCommand(h.command).includes(dispatcher)))) process.exit(1);
 const source=fs.readFileSync(path.join(root,dispatcher),'utf8');
 if(!source.includes('["svc-workflow-guard.mjs","--bash-guard"]')) process.exit(1);
 JS

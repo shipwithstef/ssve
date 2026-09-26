@@ -83,6 +83,22 @@ then
   fail "effective Codex composite dispatcher is not routed through the durable launcher"
 fi
 
+# The installed Codex surface is one consolidated dispatcher. Its legacy
+# compatibility identities still must distinguish wrapped Bash and edit guards.
+if ! node --input-type=module - "$REPO_ROOT" <<'NODE'
+import path from 'node:path';
+import {pathToFileURL} from 'node:url';
+const root = process.argv[2];
+const {wrapHookCommand} = await import(pathToFileURL(path.join(root,'scripts/lib/hook-command.mjs')));
+const {commandKey} = await import(pathToFileURL(path.join(root,'scripts/lib/codex-hook-key.mjs')));
+const bash = wrapHookCommand(`node ${root}/hooks/svc-workflow-guard.mjs --bash-guard`, {skillsPath:root,host:'codex',event:'PreToolUse'});
+const edit = wrapHookCommand(`node ${root}/hooks/svc-workflow-guard.mjs`, {skillsPath:root,host:'codex',event:'PreToolUse'});
+if (commandKey(bash) !== 'svc-bash-guard' || commandKey(edit) !== 'svc-edit-write-guard') process.exit(1);
+NODE
+then
+  fail "wrapped Codex Bash and edit guards collapsed into one identity"
+fi
+
 if ! grep -Fq "hooks = true" "$CONFIG"; then
   fail "wirer did not enable [features] hooks = true"
 fi

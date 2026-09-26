@@ -445,7 +445,14 @@ function healEnforcementSource(repoRoot, host) {
             } else commands = text.split(/\r?\n/).flatMap((line) => { const m = line.match(/^\s*command\s*=\s*("(?:[^"\\]|\\.)*")\s*(?:#.*)?$/); if (!m) return []; try { return [JSON.parse(m[1])]; } catch { return []; } });
             const toks = Array.isArray(w.governed_token) ? w.governed_token : [w.governed_token];
             const candidates = commands.filter((command) => command.includes(toks.at(-1)));
-            if (candidates.length !== 1 || toks.some((token) => !candidates[0].includes(token))) { process.stdout.write("loss"); process.exit(0); }
+            let delegated = candidates[0] || "";
+            if (delegated.includes("svc-hook-boundary.mjs")) {
+              try {
+                const encoded = delegated.match(/(?:^|\s)--spec\s+([A-Za-z0-9_-]+)(?:\s|$)/)?.[1] || "";
+                delegated = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")).command || "";
+              } catch { delegated = ""; }
+            }
+            if (candidates.length !== 1 || toks.some((token) => !candidates[0].includes(token) || !delegated.includes(token))) { process.stdout.write("loss"); process.exit(0); }
           }
         } catch { process.stdout.write("loss"); process.exit(0); }
         process.stdout.write("ok");
@@ -573,4 +580,3 @@ try {
     process.stderr.write(`[svc-session-start] self-heal: unexpected error: ${e?.message || e}\n`);
   } catch {}
 }
-

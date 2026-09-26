@@ -87,10 +87,13 @@ cleanup() { rm -rf "$SRC" "$FHOME" 2>/dev/null || true; }
 trap cleanup EXIT INT TERM
 
 mkdir -p "$SRC/bin" "$SRC/hooks/lib" "$SRC/hooks/grok" "$SRC/hooks/cursor" "$SRC/hooks/kimi" \
-         "$SRC/hooks/codex" "$SRC/scripts" "$SRC/provision/hosts"
+         "$SRC/hooks/codex/lib" "$SRC/scripts" "$SRC/provision/hosts"
 cp "$REPO_ROOT/scripts/svc-migrate-install.mjs" "$SRC/scripts/"
 cp "$REPO_ROOT/bin/svc-enforce.mjs" "$SRC/bin/"
 cp "$REPO_ROOT/hooks/lib/enforcement-core.mjs" "$SRC/hooks/lib/"
+cp "$REPO_ROOT/hooks/svc-hook-boundary.mjs" "$SRC/hooks/"
+cp "$REPO_ROOT/hooks/lib/hook-policy.mjs" "$SRC/hooks/lib/"
+cp "$REPO_ROOT/hooks/codex/lib/argv-lex.mjs" "$SRC/hooks/codex/lib/"
 cp "$REPO_ROOT/provision/hosts/grok.json" "$SRC/provision/hosts/"
 cp "$REPO_ROOT/hooks/svc-task-completion-guard.sh" "$SRC/hooks/"
 cp "$REPO_ROOT/hooks/kimi/svc-kimi-task-completion-guard.sh" "$SRC/hooks/kimi/"

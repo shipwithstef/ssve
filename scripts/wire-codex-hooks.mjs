@@ -35,6 +35,8 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { MIGRATION_VERSION, resolveStateRoot, launcherRunnable } from "../hooks/lib/enforcement-core.mjs";
+import { wrapHookEntries } from "./lib/hook-command.mjs";
+import { commandKey } from "./lib/codex-hook-key.mjs";
 
 const PROFILE = process.env.SVC_HOOK_PROFILE || "full";
 const DISABLED = new Set(
@@ -231,7 +233,8 @@ function buildHookEntries(skillsPath) {
       hooks: [{ type: "command", command: `SVC_HOST=codex ${NODE_CMD} ${shellQuote(path.join(codexHooksDir, "svc-codex-posttool-heartbeat.mjs"))}` }],
     });
   }
-  return entries;
+  return Object.fromEntries(Object.entries(entries).map(([event, hooks]) =>
+    [event, wrapHookEntries(hooks, { skillsPath, host: "codex", event })]));
 }
 
 // ---------------------------------------------------------------------------
@@ -374,26 +377,6 @@ function featureFlagCandidate(hooksConfig) {
 // ---------------------------------------------------------------------------
 // Merge hooks.json
 // ---------------------------------------------------------------------------
-
-function commandKey(cmd) {
-  if (cmd.includes("svc-codex-pretool-dispatcher")) return "svc-codex-pretool-dispatcher";
-  if (cmd.includes("svc-worktree-isolation-guard.mjs")) return "svc-worktree-isolation-guard";
-  if (cmd.includes("svc-workflow-guard.mjs --bash-guard")) return "svc-bash-guard";
-  if (cmd.includes("svc-workflow-guard.mjs")) return "svc-edit-write-guard";
-  if (cmd.includes("svc-loop-guard.mjs")) return "svc-loop-guard";
-  if (cmd.includes("svc-learning-preload.mjs")) return "svc-learning-preload";
-  if (cmd.includes("svc-session-start-healthcheck.mjs")) return "svc-session-start-healthcheck";
-  if (cmd.includes("svc-prompt-stale-state.mjs")) return "svc-prompt-stale-state";
-  if (cmd.includes("svc-codex-skill-load-enforcer") || cmd.includes("svc-kimi-skill-load-enforcer.sh")) return "svc-skill-load-enforcer";
-  if (cmd.includes("svc-codex-prompt-authority.mjs")) return "svc-codex-prompt-authority";
-  if (cmd.includes("svc-codex-stop-firewall.mjs")) return "svc-task-completion-guard";
-  if (cmd.includes("svc-skill-artifact-authenticity.mjs")) return "svc-skill-artifact-authenticity";
-  if (cmd.includes("svc-session-contract-freshness.mjs")) return "svc-session-contract-freshness";
-  if (cmd.includes("svc-inertia-check.mjs")) return "svc-inertia-check";
-  if (cmd.includes("svc-impact-triad-guard.mjs")) return "svc-impact-triad-guard";
-  if (cmd.includes("svc-task-completion-guard.sh")) return "svc-task-completion-guard";
-  return null;
-}
 
 function keyOf(entry) {
   const keys = [...new Set((entry.hooks || []).map((hook) => commandKey(hook.command || "")).filter(Boolean))];

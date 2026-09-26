@@ -152,10 +152,13 @@ function materializeLauncher(stateRoot, repoRoot, effectiveSource, registry) {
   const dir = enforcementDir(stateRoot);
   const binDir = path.join(dir, "bin");
   const libDir = path.join(dir, "lib");
+  const hookDir = path.join(dir, "hooks");
   // F-015: every bundle dir + write is fenced to the state root with a no-follow
   // ancestry walk so a symlinked/foreign-owned ~/.svc ancestor is refused.
   ensureSecureDir(binDir, { boundary: stateRoot });
   ensureSecureDir(libDir, { boundary: stateRoot });
+  ensureSecureDir(path.join(hookDir, "codex", "lib"), { boundary: stateRoot });
+  ensureSecureDir(path.join(hookDir, "lib"), { boundary: stateRoot });
   const srcLauncher = path.join(repoRoot, "bin", "svc-enforce.mjs");
   const srcCore = path.join(repoRoot, "hooks", "lib", "enforcement-core.mjs");
   const dstLauncher = path.join(binDir, "svc-enforce");
@@ -163,6 +166,15 @@ function materializeLauncher(stateRoot, repoRoot, effectiveSource, registry) {
   let changed = false;
   changed = copyVerified(srcLauncher, dstLauncher, 0o700, stateRoot) || changed;
   changed = copyVerified(srcCore, dstCore, 0o600, stateRoot) || changed;
+  // The advisory boundary must outlive a deleted checkout. Its policy and
+  // literal-argv parser are copied into the same no-follow durable bundle.
+  for (const [source, target, mode] of [
+    ["hooks/svc-hook-boundary.mjs", "hooks/svc-hook-boundary.mjs", 0o700],
+    ["hooks/lib/hook-policy.mjs", "hooks/lib/hook-policy.mjs", 0o600],
+    ["hooks/codex/lib/argv-lex.mjs", "hooks/codex/lib/argv-lex.mjs", 0o600],
+  ]) {
+    changed = copyVerified(path.join(repoRoot, source), path.join(dir, target), mode, stateRoot) || changed;
+  }
   // Sibling manifest (durable, outside the checkout) records effective_source.
   const manifestPath = path.join(dir, "manifest.json");
   const manifestBody = {
@@ -318,6 +330,16 @@ function governedRoutingStatus(configPath, wiring, options = {}) {
   if (candidates.length !== 1) return { ok: false, reason: `expected one '${identity}' command, found ${candidates.length}` };
   const missing = tokens.filter((token) => !candidates[0].includes(token));
   if (missing.length) return { ok: false, reason: `effective governed command missing: ${missing.join(", ")}` };
+  let delegated = candidates[0];
+  if (delegated.includes("svc-hook-boundary.mjs")) {
+    try {
+      const encoded = delegated.match(/(?:^|\s)--spec\s+([A-Za-z0-9_-]+)(?:\s|$)/)?.[1] || "";
+      delegated = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")).command || "";
+    } catch { delegated = ""; }
+  }
+  if (tokens.some((token) => !delegated.includes(token))) {
+    return { ok: false, reason: "wrapped governed command does not delegate through the launcher" };
+  }
   if (wiring.effective_state?.type === "codex-hooks-state") {
     if (!options.stateConfigPath || !fs.existsSync(options.stateConfigPath)) {
       return { ok: false, reason: "effective Codex state config is absent" };

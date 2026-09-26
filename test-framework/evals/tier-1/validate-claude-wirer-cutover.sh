@@ -80,6 +80,14 @@ settings = {
         "hooks": [{"type": "command", "command": "eslint --fix ."}]
       },
       {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": f"bash {hooks_dir}/svc-custom.sh"}]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": f"echo {hooks_dir}/svc-workflow-guard.mjs"}]
+      },
+      {
         "matcher": "Edit|Write",
         "hooks": [{
           "type": "command",
@@ -149,12 +157,14 @@ check "argv payload token stripped from managed hooks" test "$(q "$S1" PreToolUs
 check "vibe-auditor async adopted via rebuild" test "$(q "$S1" PostToolUse "sum('svc-vibe-auditor' in h.get('command','') and h.get('async') is True for _,h in cmds)")" = "1"
 check "loop-guard single canonical" test "$(q "$S1" PreToolUse "sum('svc-loop-guard.mjs' in h.get('command','') for _,h in cmds)")" = "1"
 
-check "no separately wired legacy mutation guards" test "$(q "$S1" PreToolUse "sum('svc-workflow-guard.mjs' in h.get('command','') for _,h in cmds)")" = "0"
+check "no separately wired legacy mutation guards" test "$(q "$S1" PreToolUse "sum('svc-workflow-guard.mjs' in h.get('command','') and not h.get('command','').startswith('echo ') for _,h in cmds)")" = "0"
 check "loop guard retains only Agent coverage" test "$(q "$S1" PreToolUse "sum(m == 'Agent' and 'svc-loop-guard.mjs' in h.get('command','') for m,h in cmds)")" = "1"
 check "Stop completion uses durable launcher" test "$(q "$S1" Stop "sum('svc-enforce svc-task-completion-guard' in h.get('command','') for _,h in cmds)")" = "1"
 
 # --- (b) foreign preservation ---
 check "foreign eslint preserved" test "$(q "$S1" PreToolUse "sum(h.get('command','')=='eslint --fix .' for _,h in cmds)")" = "1"
+check "foreign svc-custom preserved" test "$(q "$S1" PreToolUse "sum(h.get('command','').endswith('/svc-custom.sh') for _,h in cmds)")" = "1"
+check "argument-only managed path preserved" test "$(q "$S1" PreToolUse "sum(h.get('command','').startswith('echo ') and 'svc-workflow-guard.mjs' in h.get('command','') for _,h in cmds)")" = "1"
 check "foreign notify embedded-token preserved" test "$(q "$S1" Stop "sum('--payload=\$TOOL_INPUT' in h.get('command','') for _,h in cmds)")" = "1"
 check "foreign hooks/kimi path survives kimi safety-net (Cursor R2 F-003)" test "$(q "$S1" Stop "sum('hooks/kimi/' in h.get('command','') for _,h in cmds)")" = "1"
 
@@ -196,7 +206,7 @@ PYIDS
 )
 SVC_DISABLED_HOOKS="$ALL_DISABLED" node "$WIRER" --skills-path "$REPO_ROOT" --settings "$S_NONE" >"$TMP/none.log" 2>&1
 check "all-disabled rebuild exits zero" test "$?" = "0"
-check "all-disabled removes managed guards" test "$(q "$S_NONE" PreToolUse "sum('svc-' in h.get('command','') or h.get('command','').startswith('node ') for _,h in cmds)")" = "0"
+check "all-disabled removes managed guards" test "$(q "$S_NONE" PreToolUse "sum(('svc-' in h.get('command','') or h.get('command','').startswith('node ')) and not h.get('command','').startswith('echo ') and not h.get('command','').endswith('/svc-custom.sh') for _,h in cmds)")" = "0"
 check "all-disabled preserves foreign command" test "$(q "$S_NONE" PreToolUse "sum(h.get('command','') == 'eslint --fix .' for _,h in cmds)")" = "1"
 check "all-disabled removes managed Stop hook" test "$(q "$S_NONE" Stop "sum('svc-enforce' in h.get('command','') for _,h in cmds)")" = "0"
 

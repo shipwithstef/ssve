@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "wi": "WI-FW-ADVISORY-PR-01",
+  "lane": "framework",
+  "status": "in_progress",
+  "created": "2026-09-26T11:05:51.939Z",
+  "tasks": [
+    {
+      "id": 1,
+      "status": "in_progress",
+      "skill": "route-workflow",
+      "subject": "Recover handoff and review PRs, define advisory mode",
+      "blocked_by": []
+    },
+    {
+      "id": 6,
+      "status": "pending",
+      "skill": "design-tech",
+      "subject": "Close runtime boundary and external writer design evidence",
+      "blocked_by": [
+        1
+      ]
+    },
+    {
+      "id": 2,
+      "status": "pending",
+      "skill": "plan-changeset",
+      "subject": "Persist reviewed hook behavior and delivery plan",
+      "blocked_by": [
+        6
+      ]
+    },
+    {
+      "id": 7,
+      "status": "pending",
+      "skill": "review-plan",
+      "subject": "Close canonical plan review evidence without retrospective fabrication",
+      "blocked_by": [
+        2
+      ]
+    },
+    {
+      "id": 3,
+      "status": "pending",
+      "skill": "execute-changeset",
+      "subject": "Sol high implements hook boundary and regression checks",
+      "blocked_by": [
+        7
+      ]
+    },
+    {
+      "id": 4,
+      "status": "pending",
+      "skill": "review-exec",
+      "subject": "Review and run free checks on candidate",
+      "blocked_by": [
+        3
+      ]
+    },
+    {
+      "id": 8,
+      "status": "pending",
+      "skill": "audit-implementation",
+      "subject": "Audit candidate against advisory acceptance criteria",
+      "blocked_by": [
+        4
+      ]
+    },
+    {
+      "id": 5,
+      "status": "pending",
+      "skill": "land-changeset",
+      "subject": "Publish reviewed candidate subject to GitHub review policy",
+      "blocked_by": [
+        8
+      ]
+    },
+    {
+      "id": 9,
+      "status": "pending",
+      "skill": "verify-promotion",
+      "subject": "Verify promotion and live installation after required approval",
+      "blocked_by": [
+        5
+      ]
+    }
+  ],
+  "delivery_tier": "full",
+  "request": "Recover PR sweep; evaluate all PRs for product usefulness; implement advisory-default hooks and update project docs with GPT-6 Sol high",
+  "review_limitations": "Canonical independent plan adapter failed with implementation_diverged; no review receipt asserted. Read-only Sol plan/code findings retained in docs/plans/2026-09-26-advisory-pr-resolution/review.md.",
+  "progress_note": "PR review, plan, implementation and focused-review artifacts exist in docs/plans/2026-09-26-advisory-pr-resolution/. Formal phase completion remains unclaimed because canonical skill/phase receipts are not complete. Full-suite corrections are still being validated.",
+  "state_repair_note": "The canonical set-status writer refused to reopen an already invalid completed graph before mutation. Statuses were downgraded directly on 2026-09-26 to remove the unsupported completion claims; no receipt was synthesized.",
+  "flags": [
+    "runtime_concurrency",
+    "external_state_writer"
+  ],
+  "change_type": "enabler",
+  "persona_coverage": {
+    "status": "not_required",
+    "reason": "Framework operator hook behavior; no product UI or end-user persona change."
+  }
+}

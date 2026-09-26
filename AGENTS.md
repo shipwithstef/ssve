@@ -1,5 +1,9 @@
 # AGENTS.md — Serious Serious Vibe Engineering (SSVE)
 
+## Hook operating mode
+
+Managed SVC hooks are **advisory by default**. Statements below that describe hook blocking or fail-closed enforcement describe explicit `enforce` mode. Resolve `SVC_HOOK_MODE`, then `~/.svc/hook-policy.json`, then the advisory default. Follow [docs/hook-modes.md](docs/hook-modes.md) for migration and host coverage. Workflow guidance, native host permissions, foreign hooks, standalone validation commands, and GitHub review requirements remain applicable; advisory findings never constitute passing evidence.
+
 > AI-agent guidance for working in this repository. Read this first before making any changes.
 
 Bootstrap rule for onboarded projects: respect the project's local AGENTS.md/CLAUDE.md and svc route-workflow contract from its actual worktree; post-deploy/production validation asks require live post-deploy evidence, never local substitutes.
@@ -41,7 +45,7 @@ This repository is **documentation and script-driven**. There is no compiled app
 | **Host integration** | Claude Code, Kimi Code CLI, OpenAI Codex CLI, Gemini CLI, OpenCode CLI |
 | **Runtime deps** | `bash`, `git`, `node`, `python3`, `flock` (util-linux), `claude` (for tier 2/3 tests), optional `jq`, `gh` |
 
-There is **no Docker, no CI/CD platform, no traditional deploy target**. The "build" is `./setup`, a content-addressed installer that materializes skills and infrastructure into host-specific locations.
+There is **no Docker or traditional application deploy target**. GitHub Actions runs the free-check workflow and required aggregate. The "build" is `./setup`, a content-addressed installer that materializes skills and infrastructure into host-specific locations.
 
 ---
 

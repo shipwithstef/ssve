@@ -1,0 +1,147 @@
+{
+  "source_worktree": "/home/dianast/worktrees/ssve/feature-advisory-hooks-sol",
+  "reviewed_changed_file_list_sha256": "420065296410d669caa5b6b79ba2b7de3c821f9d5384dccb69b8d8ccc0da4e62",
+  "files": [
+    {
+      "path": "hooks/lib/hook-policy.mjs",
+      "sha256": "ffc21e985c600d0f8171f7070508e98667cbc23c640feb23e018afc2002f79b7"
+    },
+    {
+      "path": "hooks/lib/svc-ownership.mjs",
+      "sha256": "e3e7b357fafba9d48a28ed43e1d67c4b560fecf7ca976fdf19258cb9b655cce8"
+    },
+    {
+      "path": "hooks/opencode/svc-opencode-plugin.ts",
+      "sha256": "879034db0cf6991c7f65de205dcc1323b3b3a7abbef187c15a9d59c6987d4840"
+    },
+    {
+      "path": "hooks/svc-hook-boundary.mjs",
+      "sha256": "b5815555c9bd6139c135048448c61d86f02d2acf74b9a6a26683590fb21ee146"
+    },
+    {
+      "path": "hooks/svc-session-start-healthcheck.mjs",
+      "sha256": "9224e48f050611adbcc5e4f6bd582542abf5a74660fa79cd9eb02ba16b8dc7fc"
+    },
+    {
+      "path": "scripts/git-hook-slot.mjs",
+      "sha256": "0d1ba46c79020802e7f80243ac4f1cc1379f9c45cb95cbfb575ca8f35817d2e9"
+    },
+    {
+      "path": "scripts/hook-mode.mjs",
+      "sha256": "9f93baf4ab842122b4e5dd4973af4e51216a24787433a3715be46b12c6450647"
+    },
+    {
+      "path": "scripts/install-git-hooks.mjs",
+      "sha256": "f7efc3dbe00dd4f676e29f9dab7664830f5dd2aa5289248f82ebae18002467af"
+    },
+    {
+      "path": "scripts/lib/codex-hook-key.mjs",
+      "sha256": "31d67a0b81441a8362551373ec927eed1101d38e3fb6abe49500f44657c3a6c1"
+    },
+    {
+      "path": "scripts/lib/governed-routing.mjs",
+      "sha256": "654718249f87f302c465d046cad43b66374e2c02a63c8413a8a3b3b6a7991a65"
+    },
+    {
+      "path": "scripts/lib/hook-command.mjs",
+      "sha256": "50aaeb27b531cecc10addf793d0c8599dc3cb034c03f158bea7c16687b172f86"
+    },
+    {
+      "path": "scripts/svc-migrate-install.mjs",
+      "sha256": "ed5e4841f1b949c2f680f01e0540f9890697ff414209feeca52c1c90d9ef82d8"
+    },
+    {
+      "path": "scripts/wire-codex-hooks.mjs",
+      "sha256": "ac2fc6354f75d8612a33d6029a9cf0287fde6ee87c8b69161f8efa73c3793e2e"
+    },
+    {
+      "path": "scripts/wire-cursor-hooks.mjs",
+      "sha256": "8ee05ed9c69d88c0084265e3306c133645fd1170502842b8f032f5ddf35681bd"
+    },
+    {
+      "path": "scripts/wire-gemini-hooks.mjs",
+      "sha256": "e19701deee7b50db98795a5e9f3a22a5b829316d31453b4dc4eb80a900ada4b5"
+    },
+    {
+      "path": "scripts/wire-grok-hooks.mjs",
+      "sha256": "b5a17e44c54d8d2a79ede5b318b9775b3058d3996484bf322ea7758793228fa8"
+    },
+    {
+      "path": "scripts/wire-hooks.mjs",
+      "sha256": "e8ce14102819758ca3f9b084f3df4195fac58d44a55c526229f4bdbcc8a1a538"
+    },
+    {
+      "path": "scripts/wire-kimi-hooks.mjs",
+      "sha256": "68ac89a1c0596186dee346a9555cb48a69e0587dfb0d23d9ff8e6d6a807e7a69"
+    },
+    {
+      "path": "test-framework/evals/tier-1/lib/stage-governed-hooks.sh",
+      "sha256": "43a32992876b6997b0d0199a41eae94473a99c7a7d0bb3ae54dada3cc5021d71"
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-actionable-hook-denial.sh",
+      "sha256": "629a4303e228b3ad690fe2405627e8015afaa69adb62430fe6520fa30bc4e36d"
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-advisory-git-hooks.mjs",
+      "sha256": "529ae63a3ffcb932d3f72985c481f0e6a7d1f032b4043227aa728ad4b4c94ef2"
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-advisory-hook-boundary.mjs",
+      "sha256": "d7ee19c13fc95bd13f324eb298d10fc6a1c2b215536bcaf350254b22ce6ef1f3"
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-all-host-install-migration.sh",
+      "sha256": "961d47fe466249170a5a445b2dae5985ea0b9d3b63eead81c01d6024864ce8fb"
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-catalog-generation.sh",
+      "sha256": "19f1fe6b27071b5ae44c0e067ee12c25e43601425f896c519774d682f3e9ff24"
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-claude-wirer-cutover.sh",
+      "sha256": "cac449dc781b38d69d0e938027f903867811501525f93cbb98d4f84692cdae7a"
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-codex-hook-feature-flag.sh",
+      "sha256": "7bc407303c28a8eb14c071854394922cd7206b2d55deec408b81381120311bf7"
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-company-fleet-integration.sh",
+      "sha256": "7fbeaf5ad1ae395dc110b39313bfe76eecc7e37839ec837b855b996337a0be4e"
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-cross-host-hook-conformance.sh",
+      "sha256": "5ab49dbf2343258b63f5bf85fb21a50038eab9cd8d1362df060d30231bc9ef9a"
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-enforce-bash-hook-mode.sh",
+      "sha256": "12fda3b1207c513cd4e56e39cc546900303c9d4024bb2d68e2ac24407282391e"
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh",
+      "sha256": "d74d60f4910382c67647a7b0e5ef16a819cc1034f88ff77a400f827d0128b10d"
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-ownership-predicate-parity.mjs",
+      "sha256": "52b390804a58c3066bb5cf8a71bb625ffbc7cc80daed3af9f3cef543e72a9d27"
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-stop-hook-stdin-preservation.sh",
+      "sha256": "77ed649835aef382b083f1eab63a1fb875c1049feead3bb8473cfee06d1b2243"
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-wire-hooks-variant-dedup.sh",
+      "sha256": "705c720f0ea3f0b69d3b6d1aefa8e448fc3df32e95be98e58fe46a7c1ed42dcb"
+    },
+    {
+      "path": "test-framework/evals/tier-1/validate-wire-kimi-hooks-paths.sh",
+      "sha256": "3bbb8183ad052ffcbf8fd00ec1e9af41c154d48faa931367330ff34e2c92c8be"
+    },
+    {
+      "path": "test-framework/tests/cursor-adapter.test.mjs",
+      "sha256": "e25a5d0dc9f6896efee27af97a59a1c8948f5748edb0d7f57b8bc2a1834112ea"
+    }
+  ],
+  "note": "Recomputed child file content hashes at final integration; not a phase approval or receipt."
+}

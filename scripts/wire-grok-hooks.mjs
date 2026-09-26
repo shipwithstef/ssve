@@ -15,11 +15,12 @@
  */
 
 import fs from "node:fs";
-import { isSvcOwnedCommand } from "../hooks/lib/svc-ownership.mjs"; // WI-562 IP-W2
 import path from "node:path";
 import os from "node:os";
 import { fileURLToPath } from "node:url";
 import { MIGRATION_VERSION, resolveStateRoot, launcherRunnable } from "../hooks/lib/enforcement-core.mjs";
+import { wrapHookEntries } from "./lib/hook-command.mjs";
+import { isKnownManagedCommand } from "../hooks/lib/svc-ownership.mjs";
 
 const THIS_FILE = fileURLToPath(import.meta.url);
 
@@ -237,7 +238,10 @@ export function buildGrokHookEntries(skillsPath) {
     });
   }
 
-  return hooks.map((hook) => ({ ...hook, command: `SVC_HOST=grok ${hook.command}` }));
+  return hooks.map((hook) => wrapHookEntries(
+    { ...hook, command: `SVC_HOST=grok ${hook.command}` },
+    { skillsPath, host: "grok", event: hook.event, outerTimeout: 30 }
+  ));
 }
 
 function parseTomlScalar(raw) {
@@ -442,10 +446,15 @@ function isHookTableHeader(trimmed) {
   return trimmed === "[[hooks]]" || /^\[\[hooks\.[A-Za-z][A-Za-z0-9]*(?:\.hooks)?\]\]$/.test(trimmed);
 }
 
-function isSvcOwnedText(text) {
-  // WI-562 IP-W2: delegated to the ONE shared predicate so grok, cursor, and
-  // claude classifiers always agree on identical fixtures.
-  return isSvcOwnedCommand(text);
+function isSvcOwnedText(text, skillsPath) {
+  for (const line of String(text).split(/\r?\n/)) {
+    const value = line.match(/^\s*command\s*=\s*("(?:\\.|[^"\\])*"|'[^']*')\s*(?:#.*)?$/)?.[1];
+    if (!value) continue;
+    let command;
+    try { command = value[0] === '"' ? JSON.parse(value) : value.slice(1, -1); } catch { continue; }
+    if (isKnownManagedCommand(command, skillsPath)) return true;
+  }
+  return false;
 }
 
 function convergeCompatHookTable(content, vendor) {
@@ -523,10 +532,20 @@ export function splitTomlHookRegions(content) {
   return parts;
 }
 
-function composeWiredToml(content, svcHooks) {
+function composeWiredToml(content, svcHooks, skillsPath) {
   const kept = [];
   for (const part of splitTomlHookRegions(content)) {
-    if (part.kind === "text" || !isSvcOwnedText(part.text)) kept.push(part.text);
+    if (part.kind === "text") { kept.push(part.text); continue; }
+    const lines = part.text.split("\n");
+    const handlers = lines.flatMap((line, index) => /^\s*\[\[hooks\.[A-Za-z][A-Za-z0-9]*\.hooks\]\]\s*$/.test(line) ? [index] : []);
+    if (!handlers.length) {
+      if (!isSvcOwnedText(part.text, skillsPath)) kept.push(part.text);
+      continue;
+    }
+    const prefix = lines.slice(0, handlers[0]).join("\n");
+    const foreignHandlers = handlers.map((start, index) => lines.slice(start, handlers[index + 1] || lines.length).join("\n"))
+      .filter((handler) => !isSvcOwnedText(handler, skillsPath));
+    if (foreignHandlers.length) kept.push([prefix, ...foreignHandlers].join("\n"));
   }
   const prefix = convergeGrokCompatHooks(kept.join("\n\n").replace(/\n{3,}/g, "\n\n").trim()).trim();
   const svcBlock = serializeToml("", svcHooks).trim();
@@ -572,7 +591,7 @@ export function wireGrok(options = {}) {
   }
 
   const svcHooks = buildGrokHookEntries(skillsPath);
-  const output = composeWiredToml(content, svcHooks);
+  const output = composeWiredToml(content, svcHooks, skillsPath);
 
   if (dryRun) {
     process.stdout.write(output);
