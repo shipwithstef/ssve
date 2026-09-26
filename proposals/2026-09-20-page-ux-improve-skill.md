@@ -1,10 +1,13 @@
 # Framework Improvement: page-ux-improve skill (page-scoped competitive look)
 
 **Status:** DRAFT
+
+deferred_until: 2026-10-03
+reason: Preserve the reviewed page-level design outside the installable package; registration and routing evals are a separate follow-up after the PR baseline is repaired.
 **Date:** 2026-09-20
 **Severity:** medium — missing capability (founder-named)
 **Category:** missing capability
-**Route:** `create-skill` (draft only this change; do not register until evals)
+**Route:** `create-skill` (design draft only; unregistered, uninstalled, and unavailable for invocation until registration and evals)
 
 ## Evidence
 
@@ -40,17 +43,17 @@ A founder saying “make HoursHub `/home` look like a real product” or “Novi
 
 **Name:** `page-ux-improve`
 
-**Job:** Given one route/page, capture it, find 5–8 competitor **pages of the same job**, extract look techniques, propose 5–10 page-scoped improvements with citations. Stop. Do not implement.
+**Job:** Given one route/page, capture its supported viewport/theme combinations, find 5–8 competitor **pages of the same job**, extract look techniques, and propose only evidence-supported page-scoped improvements with citations. Retaining the current page or requesting missing evidence is a valid outcome. Stop. Do not implement.
 
 **Inputs:** one named route/page (e.g. HoursHub `/home`, Novisenti Idea Overview). Live URL or owner-authorized local preview. Optional existing competitor notes — **not a hard precondition**.
 
 **Process (contract, not a description dump):**
 
-1. Capture current page: light + dark × 375 + 1280.
+1. Capture current page at supported combinations of light/dark and 375/1280; record unsupported or unavailable combinations.
 2. Name the **user job** of that page (not the company category).
 3. Find 5–8 competitor **pages** that do that job. Company homepages are invalid unless the target *is* a homepage.
 4. Extract look techniques: type, density, hierarchy, empty states, chrome.
-5. Propose 5–10 improvements scoped to this page, each citing a competitor page (URL + technique).
+5. Choose propose-change, retain-current, or evidence-needed. For propose-change, include only supported improvements, each citing a competitor page (URL + technique); no minimum count is required.
 6. Write `docs/specs/page-ux/<page-slug>-<date>.md`. Optional labelled HTML after-mock. Hand off routing; do not execute.
 
 **Outputs:**
@@ -63,8 +66,8 @@ A founder saying “make HoursHub `/home` look like a real product” or “Novi
 
 | Finding class | Next |
 |---------------|------|
-| Small CSS / token / copy on this page | `execute-changeset` after owner accept |
-| Structural layout, new states, chrome change, new components | `write-spec` |
+| Small CSS / token / copy on this page | `route-workflow` → required plan/review/execute chain, reusing existing authorization |
+| Structural layout, new states, chrome change, new components | `route-workflow` → `write-spec` when required → required plan/review/execute chain |
 | Broken behavior, not look | `diagnose-bug` (wrong skill) |
 | Whole-app / multi-step flow vs competitors | `explore-ux` |
 | One control / region | `propose-ux-improvements` |
@@ -100,15 +103,16 @@ Do **not** auto-implement. Do **not** auto-file WIs. Do **not** halt for missing
 - **Route:** `create-skill` draft only.
 - **Expected files this change:**
   - `proposals/2026-09-20-page-ux-improve-skill.md` (this file)
-  - `skills/page-ux-improve/SKILL.md` (DRAFT)
+  - `proposals/drafts/page-ux-improve/SKILL.md` (unregistered design draft; not an installable skill)
 - **Deferred until create-skill evals:** `skills-manifest.json`, README / EXTERNAL_ADDONS mirrors, `intent-routing.md`, `hot-path-operational-details.md`, installer, tier-1.5/tier-2 evals.
+- **Registration is a later change:** only then move the validated contract into `skills/page-ux-improve/SKILL.md`, update the registry/routing mirrors, run install and evals, and make it callable.
 - **live-evidence:** not-applicable — proposal + optional mock; nothing ships to a deployed product from this skill.
 
 ## Replay verification (after registration)
 
-- `bash test-framework/evals/tier-1/validate-skill-structure.sh` against `skills/page-ux-improve/SKILL.md`
+- `bash test-framework/evals/tier-1/validate-skill-structure.sh` after moving the validated draft into `skills/page-ux-improve/SKILL.md` and registering it
 - Trigger evals: page-look prompts fire this skill; flow/region/landing/regression prompts do not
-- Contract: report path `docs/specs/page-ux/`, 5–8 competitor **pages**, 5–10 cited proposals, no auto-implementation
+- Contract: report path `docs/specs/page-ux/`, 5–8 competitor **pages** when current-page evidence exists, only evidence-supported cited proposals, retain-current/evidence-needed outcomes, no auto-implementation
 
 ## FRAMEWORK-STATE.md Mutations (when registered, not this draft)
 

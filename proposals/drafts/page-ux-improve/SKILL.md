@@ -8,16 +8,16 @@ description: >
   page”, “make /home look better”, “page UX vs competitors”, “competitor look
   for Idea Overview”, “HoursHub /home look”, “Novisenti Idea Overview polish”,
   “find competitor pages for this route”, “how should this screen look”.
-  Captures that page (light/dark, 375/1280), finds 5–8 equivalent competitor
-  PAGES, extracts look techniques, and proposes 5–10 cited page-scoped
-  improvements. Not explore-ux (whole-flow + required competitor KB). Not
+  Captures that page at supported viewports and themes, finds 5–8 equivalent
+  competitor PAGES, extracts look techniques, and proposes cited page-scoped
+  improvements when evidence supports a change. Not explore-ux (whole-flow + required competitor KB). Not
   propose-ux-improvements (one region, no competitor hunt). Not
   benchmark-landing (marketing landing only). Not track-visuals (regression).
   Not diagnose-bug. Does not auto-implement.
 phases:
-  - { id: P1-PageScopeAndCapture, trigger: always, reads: ["named route/page", "live or local preview"], writes: [".svc/page-ux/<run-id>/", "docs/specs/page-ux/<page-slug>-<date>.md"], evidence_kind: screenshot, required_for_completion: true }
-  - { id: P2-SameJobCompetitorPages, trigger: always, reads: ["page job", "web search / live browse", "optional competitor KB"], writes: ["docs/specs/page-ux/<page-slug>-<date>.md"], evidence_kind: file, required_for_completion: true }
-  - { id: P3-LookTechniquesAndProposals, trigger: always, reads: ["our captures", "competitor page evidence"], writes: ["docs/specs/page-ux/<page-slug>-<date>.md"], evidence_kind: file, required_for_completion: true }
+  - { id: P1-PageScopeAndCapture, trigger: always, reads: ["named route/page", "live or local preview"], writes: [".svc/page-ux/<run-id>/", "docs/specs/page-ux/<page-slug>-<date>.md"], evidence_kind: file, required_for_completion: true }
+  - { id: P2-SameJobCompetitorPages, trigger: current-page-evidence-available, reads: ["page job", "web search / live browse", "optional competitor KB"], writes: ["docs/specs/page-ux/<page-slug>-<date>.md"], evidence_kind: file, required_for_completion: true }
+  - { id: P3-LookTechniquesAndProposals, trigger: current-page-evidence-available, reads: ["our captures", "competitor page evidence"], writes: ["docs/specs/page-ux/<page-slug>-<date>.md"], evidence_kind: file, required_for_completion: true }
   - { id: P4-OptionalAfterMock, trigger: visual-change-proposed, reads: ["before captures", "selected look techniques"], writes: ["docs/specs/page-ux/<page-slug>-<date>-after.html"], evidence_kind: file, required_for_completion: false }
   - { id: P5-RouteAdviceSelfVerify, trigger: always, reads: ["proposal"], writes: [".svc/page-ux/<run-id>/self-verify.log"], evidence_kind: command_output, required_for_completion: true }
 inputs:
@@ -42,9 +42,11 @@ chain:
 
 # Improve one product page against competitor pages
 
+**DRAFT — unregistered and uninstalled.** This file records a proposed contract for review. It is not an available skill and must not be invoked or routed to until registered and validated.
+
 **Announce at start:** "I'm using page-ux-improve to capture this page, find same-job competitor pages, and propose look changes for that page only."
 
-This skill is a **proposal**. It does not edit product CSS, does not open a WI, and does not invoke `execute-changeset` or `write-spec` unless the owner later accepts the routing advice.
+The proposed skill produces an evidence-based report. It does not edit product CSS, open a WI, or invoke an implementation skill. Accepted changes later enter the normal chain through `route-workflow`, reusing authorization already given.
 
 ## When this is the wrong skill
 
@@ -81,7 +83,7 @@ Resolve:
 
 Ask only if the **page** is ambiguous. Do not expand to adjacent routes.
 
-Capture **four** stills of the current page into `.svc/page-ux/<run-id>/`:
+Capture the current page into `.svc/page-ux/<run-id>/` at every supported combination below that matters to the page's job. Record which viewport and theme combinations the product actually supports. Do not manufacture a dark theme or mobile layout to satisfy a fixed count.
 
 | File | Viewport | Theme |
 |------|----------|-------|
@@ -90,9 +92,9 @@ Capture **four** stills of the current page into `.svc/page-ux/<run-id>/`:
 | `ours-1280-light.png` | 1280×800 | light |
 | `ours-1280-dark.png` | 1280×800 | dark |
 
-Prefer project browse/auth helpers (`e2e/helpers/browse-auth.md`, `track-visuals` capture conventions). Do not log in or change access without authorization. If capture is impossible, write `evidence-needed` with the exact missing observation and stop — do not invent screenshots.
+Prefer project browse/auth helpers (`e2e/helpers/browse-auth.md`, `track-visuals` capture conventions). Do not log in or change access without authorization. If current-page capture is impossible, write an `evidence-needed` report with the exact missing observation, skip P2–P4 with reasons, and stop after P5. Do not invent screenshots.
 
-Record route, viewport, theme, state (empty/populated), date, and provenance in the report.
+Record route, viewport, theme, state (empty/populated), date, and provenance in the report. Explain omitted combinations (for example, no dark theme or unsupported mobile viewport). If an applicable combination cannot be captured, state the evidence limit and choose `evidence-needed` when it could change the recommendation.
 
 ### P2 — Same-job competitor pages (5–8)
 
@@ -119,9 +121,9 @@ Extract techniques **from the competitor pages**, not generic UX slogans:
 | **Empty states** | Illustration vs CTA vs honest zero; first action. |
 | **Chrome** | Header, nav, tabs, page title, persistent actions — how the page sits in the shell. |
 
-Score the **page** (not the company) 1–4 per lens against the best cited competitor page. Every score cites a URL.
+Score the **page** (not the company) 1–4 per applicable lens against the best cited competitor page. Every score cites a URL. Distinguish observed gaps from stylistic preference and retain the current design when it serves the user's job better.
 
-Propose **5–10** improvements. Each row:
+Choose `propose-change`, `retain-current`, or `evidence-needed` from the observed comparison. For `propose-change`, include only improvements the evidence supports; 5–10 is a useful upper range, not a quota. `retain-current` and `evidence-needed` may have zero proposals. For each proposed improvement write:
 
 ```markdown
 ### P<n>: <title>
@@ -132,7 +134,7 @@ Propose **5–10** improvements. Each row:
 - **Citation:** <competitor page URL> — <what they do>
 - **Change:** implementable on THIS page
 - **Class:** css-token | structural
-- **Suggested next:** execute-changeset | write-spec
+- **Suggested next:** route-workflow (normal plan/review/execute chain; write-spec first when required)
 ```
 
 `css-token` = color, type, spacing, density, copy, empty-state treatment using existing components.  
@@ -142,7 +144,7 @@ Forbidden proposals: “be more like Linear”; restyling the whole app; landing
 
 ### P4 — Optional after-mock
 
-If at least one visual change is proposed, a self-contained HTML mock **may** be written at `docs/specs/page-ux/<page-slug>-<date>-after.html`. Label it **illustrative**. Show the same page job at 375 and 1280. Do not call it deployed, user-tested, or verified. Retain-current / evidence-needed runs skip this phase.
+If at least one visual change is proposed, a self-contained HTML mock **may** be written at `docs/specs/page-ux/<page-slug>-<date>-after.html`. Label it **illustrative**. Show the same page job at applicable supported viewports. Do not call it deployed, user-tested, or verified. Retain-current / evidence-needed runs skip this phase.
 
 ### P5 — Route advice (do not run it)
 
@@ -151,13 +153,13 @@ Write the report, then stop.
 ```markdown
 ## Suggested routing (not executed)
 
-| ID | Class | Next skill | Why |
-|----|-------|------------|-----|
-| P1 | css-token | execute-changeset | spacing/type on this page |
-| P4 | structural | write-spec | empty state + chrome change |
+| ID | Class | Suggested route | Why |
+|----|-------|-----------------|-----|
+| P1 | css-token | route-workflow → required plan/review/execute chain | spacing/type on this page |
+| P4 | structural | route-workflow → write-spec when required → required plan/review/execute chain | empty state + chrome change |
 ```
 
-Owner authorization is required before any implementation skill. This terminal skill has no default successor.
+Reuse owner authorization already given for implementation; ask only when it is missing or a consequential choice remains unresolved. This terminal proposal has no default successor. Write `.svc/page-ux/<run-id>/self-verify.log` with the results of the checks below before marking the report complete.
 
 ## Report template
 
@@ -168,8 +170,10 @@ Save to `docs/specs/page-ux/<page-slug>-<date>.md`:
 
 **Route:**
 **Job:**
+**Outcome:** propose-change / retain-current / evidence-needed
 **Captures:** `.svc/page-ux/<run-id>/`
-**Viewports:** 375, 1280 × light, dark
+**Supported viewports/themes captured:**
+**Omitted combinations and reason:**
 
 ## Competitor pages (same job)
 
@@ -186,7 +190,7 @@ Save to `docs/specs/page-ux/<page-slug>-<date>.md`:
 | Empty states | | | |
 | Chrome | | | |
 
-## Proposals (5–10)
+## Proposals (only evidence-supported changes; may be none)
 
 …
 
@@ -216,7 +220,7 @@ Save to `docs/specs/page-ux/<page-slug>-<date>.md`:
 | `track-visuals` | Capture conventions / auth helper | No |
 | `analyze-competitors` | Optional notes if they name the same page job | No |
 | `design-ui` | Taste/tokens if a later spec needs visuals | No |
-| `execute-changeset` / `write-spec` | Named in routing advice only | No |
+| `route-workflow` / `write-spec` / `execute-changeset` | Referenced in later routing advice only | No |
 
 ## Rationalization table
 
@@ -225,15 +229,16 @@ Save to `docs/specs/page-ux/<page-slug>-<date>.md`:
 | “I’ll run explore-ux, we already have competitors” | explore-ux is flow + KB gate + auto-WIs. This ask is one page’s look. |
 | “No landing-bank, halt” | That gate belongs to explore-ux / benchmark-landing. Hunt same-job pages. |
 | “The marketing homepage is close enough” | Only if our target is that homepage. In-app pages need in-app comparables. |
-| “I’ll just implement the CSS, it’s small” | Proposal skill. Owner accepts, then execute-changeset. |
+| “I’ll just implement the CSS, it’s small” | Keep this run as a proposal; accepted work follows `route-workflow` and the required chain. |
 | “Ten pages of the whole app” | Out of grain. One named page. |
 
 ## Red flags
 
 - Report cites brands but no page URLs
-- Captures missing dark or 375
+- Missing a supported viewport or theme capture without a stated evidence limit
+- Change proposals forced despite evidence for retaining the current page
 - Proposals rewrite the product, not the page
-- Skill invoked `execute-changeset` in the same run without owner accept
+- Implementation invoked from this proposal instead of the normal `route-workflow` chain
 - Halted because competitor KB was empty
 - Mock labelled as shipped or verified
 
@@ -241,14 +246,15 @@ Save to `docs/specs/page-ux/<page-slug>-<date>.md`:
 
 | # | Check | How | PASS/FAIL |
 |---|-------|-----|-----------|
-| 1 | Four our-page captures exist (375/1280 × light/dark) or evidence-needed names the missing shot | `ls .svc/page-ux/<run-id>/ours-*.png` | |
-| 2 | 5–8 competitor entries are **pages of the same job** with URLs (or thin-market justification) | table in report; no marketing-homepage padding | |
-| 3 | 5–10 proposals each cite a competitor page + look lens | grep citations; no ungrounded “best practice” | |
+| 1 | Applicable supported viewport/theme captures exist, or evidence-needed names the missing observation | Check report support matrix and `.svc/page-ux/<run-id>/ours-*.png` | |
+| 2 | When current-page evidence exists, 5–8 competitor entries are **pages of the same job** with URLs (or thin-market justification) | table in report; no marketing-homepage padding; record skip reason for evidence-needed | |
+| 3 | Outcome follows the evidence; each actual proposal cites a competitor page and look lens | Check outcome and citations; zero proposals are valid for retain-current/evidence-needed | |
 | 4 | Report path is `docs/specs/page-ux/<page-slug>-<date>.md` | `test -f` | |
 | 5 | No product files were edited; routing is advice only | `git status` / diff scoped to docs + `.svc/page-ux/` | |
 
 If any check FAILs, fix the report before declaring done.
+Write each result and its evidence to `.svc/page-ux/<run-id>/self-verify.log`.
 
 ## Pipeline Continuation
 
-Terminal skill. Read `.svc/lane-tasks-<WI>.json` when a graph exists; mark this task completed after the report exists. Do not mark a successor `in_progress`. Accepted css-token items later enter `execute-changeset`; structural items later enter `write-spec` via `route-workflow` with owner authorization.
+Terminal proposal. Read `.svc/lane-tasks-<WI>.json` when a graph exists; mark this task completed after the report and self-verify log exist. Do not mark a successor `in_progress`. Accepted items later enter `route-workflow` and its required planning, review, and execution chain; structural changes enter `write-spec` when that route requires it. Reuse existing owner authorization.

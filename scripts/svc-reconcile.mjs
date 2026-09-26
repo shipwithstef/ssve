@@ -21,7 +21,20 @@ import { resolveChainPolicy } from "./lib/chain-policy.mjs";
 const CHECKPOINT_PATH = process.env.SVC_RECONCILE_CHECKPOINT_PATH || ".svc/reconcile-checkpoint.json";
 const GH_AUTH_RECOVERY_PATH = process.env.SVC_GH_AUTH_RECOVERY_PATH || ".svc/runtime/gh-auth-restore.json";
 const DRIVE_STATE_ROOT = process.env.SVC_RECONCILE_DRIVE_ROOT || ".svc/reconcile-drive";
-const CHILD_TIMEOUT_MS = Math.min(Number(process.env.SVC_RECONCILE_CHILD_TIMEOUT_MS || 10_000), 20_000);
+function boundedTimeout(name, fallback, maximum) {
+  const raw = process.env[name];
+  if (raw === undefined) return fallback;
+  const value = Number(raw);
+  if (!/^[1-9]\d*$/.test(raw) || !Number.isSafeInteger(value)) {
+    console.error(`svc-reconcile: invalid ${name}; using ${fallback}ms`);
+    return fallback;
+  }
+  return Math.min(value, maximum);
+}
+
+const CHILD_TIMEOUT_MS = boundedTimeout("SVC_RECONCILE_CHILD_TIMEOUT_MS", 10_000, 20_000);
+// A fixture or operator can bound GitHub more tightly without making local Git discovery race that deadline.
+const GH_TIMEOUT_MS = boundedTimeout("SVC_RECONCILE_GH_TIMEOUT_MS", CHILD_TIMEOUT_MS, CHILD_TIMEOUT_MS);
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const RECEIPT_CHECK_PATH = path.join(SCRIPT_DIR, "check-chain-receipts.mjs");
 const AUTO_DRIVE_PATH = path.join(SCRIPT_DIR, "svc-auto-drive.mjs");
@@ -54,7 +67,7 @@ function parseArgs(argv) {
 }
 
 function run(command, args, options = {}) {
-  return runBounded(command, args, { timeoutMs: CHILD_TIMEOUT_MS, ...options });
+  return runBounded(command, args, { timeoutMs: command === "gh" ? GH_TIMEOUT_MS : CHILD_TIMEOUT_MS, ...options });
 }
 
 function git(args) {
