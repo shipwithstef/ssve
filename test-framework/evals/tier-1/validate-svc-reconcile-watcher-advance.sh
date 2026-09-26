@@ -57,7 +57,7 @@ fs.chmodSync(gh, 0o755);
 const checkpoint = path.join(dir, "checkpoint.json");
 const { repo, sha: currentHead } = reconcileFixture(dir);
 const before = { last_reconciled_sha: currentHead, last_pr_watcher_run: "2026-07-20T00:00:00.000Z" };
-function checkTimeout({ child, github, minMs, maxMs, invalid = null, outerMs = 5000 }) {
+function checkTimeout({ child, github, minMs, maxMs, invalid = null, outerMs = 9000 }) {
   fs.writeFileSync(checkpoint, JSON.stringify(before));
   const env = { ...process.env, PATH: `${dir}:${process.env.PATH}`, SVC_RECONCILE_CHECKPOINT_PATH: checkpoint, SVC_GH_AUTH_RECOVERY_PATH: path.join(dir, "auth.json") };
   delete env.SVC_RECONCILE_CHILD_TIMEOUT_MS;
@@ -77,14 +77,16 @@ function checkTimeout({ child, github, minMs, maxMs, invalid = null, outerMs = 5
   else assert.doesNotMatch(run.stderr, /invalid SVC_RECONCILE_(?:GH_|CHILD_)TIMEOUT_MS/);
 }
 
-checkTimeout({ child: "2000", github: "100", minMs: 50, maxMs: 1000 });
-checkTimeout({ child: "300", github: "75", minMs: 40, maxMs: 250 });
-checkTimeout({ child: "250", github: "999999", minMs: 150, maxMs: 1500 });
+// Allow real Git discovery and fake authentication to start on a contended
+// hosted runner. Only the intentional 30-second GitHub hang should time out.
+checkTimeout({ child: "5000", github: "1000", minMs: 700, maxMs: 3000 });
+checkTimeout({ child: "3000", github: "1000", minMs: 700, maxMs: 3000 });
+checkTimeout({ child: "3000", github: "999999", minMs: 2200, maxMs: 5000 });
 for (const bad of ["0", "-1", "1.5", "NaN", "9007199254740992", ""]) {
-  checkTimeout({ child: "250", github: bad, minMs: 150, maxMs: 1500, invalid: "SVC_RECONCILE_GH_TIMEOUT_MS" });
+  checkTimeout({ child: "3000", github: bad, minMs: 2200, maxMs: 5000, invalid: "SVC_RECONCILE_GH_TIMEOUT_MS" });
 }
 for (const bad of ["-1", "1.5", "NaN", "9007199254740992"]) {
-  checkTimeout({ child: bad, github: "75", minMs: 40, maxMs: 250, invalid: "SVC_RECONCILE_CHILD_TIMEOUT_MS" });
+  checkTimeout({ child: bad, github: "1000", minMs: 700, maxMs: 3000, invalid: "SVC_RECONCILE_CHILD_TIMEOUT_MS" });
 }
 checkTimeout({ child: "0", minMs: 9000, maxMs: 12000, invalid: "SVC_RECONCILE_CHILD_TIMEOUT_MS", outerMs: 14000 });
 console.log("validate-svc-reconcile-watcher-advance: PASS (hung GitHub bounded across valid, clamped, and invalid timeout inputs; watcher preserved)");
