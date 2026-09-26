@@ -35,6 +35,31 @@ test("planned scope ends at sibling and parent headings, including rollback",(t)
   const out=extract(t,"## Files Planned\n"+table("src/app.js")+"## Rollback\n"+table("src/rollback.js")+"### Phase 1\n"+table("src/not-planned.js"));
   assert.equal(out.status,0,out.stderr);assert.equal(out.stdout,"M\tsrc/app.js\n");
 });
+test("nested non-phase sections cannot leak tables, and later planned phases re-enter",(t)=>{
+  const body="## Files Planned\n"+table("src/base.js")
+    +"### Rollback\n"+table("src/rollback.js")
+    +"#### Phase 1\n"+table("src/rollback-phase.js")
+    +"### External State\n"+table("src/external.js")
+    +"### Lane Compliance\n"+table("src/compliance.js")
+    +"### Implementation Summary\n"+table("src/summary.js")
+    +"### Notes\n"+table("src/notes.js")
+    +"### Phase 1\n"+table("src/phase.js","CREATE")
+    +"#### Notes\n"+table("src/phase-notes.js")
+    +"### Phase 2\n"+table("src/final.js","DELETE")
+    +"## Discussion\n"+table("src/discussion.js")
+    +"## Files Planned (follow-up)\n"+table("src/reentry.js");
+  const out=extract(t,body);
+  assert.equal(out.status,0,out.stderr);
+  assert.equal(out.stdout,"A\tsrc/phase.js\nD\tsrc/final.js\nM\tsrc/base.js\nM\tsrc/reentry.js\n");
+});
+test("standalone phase sections exclude nested notes and resume at a sibling phase",(t)=>{
+  const out=extract(t,"## Implementation\n### Phase 1\n"+table("src/first.js")
+    +"#### Notes\n"+table("src/note.js")
+    +"### Phase 2\n"+table("src/second.js")
+    +"## Rollback\n### Phase 3\n"+table("src/rollback.js"));
+  assert.equal(out.status,0,out.stderr);
+  assert.equal(out.stdout,"M\tsrc/first.js\nM\tsrc/second.js\n");
+});
 test("table headers define column positions and escaped pipe filenames",(t)=>{
   const out=extract(t,"## Files Planned\n| Notes | Action | File |\n|---|---|---|\n| x | CREATE | `src/a\\|b.js` |\n");
   assert.equal(out.status,0,out.stderr);assert.equal(out.stdout,"A\tsrc/a|b.js\n");

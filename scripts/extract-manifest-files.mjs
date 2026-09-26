@@ -8,6 +8,9 @@ import fs from "node:fs";
 
 const ACTION_MAP = { CREATE: "A", MODIFY: "M", DELETE: "D" };
 const USAGE = "Usage: extract-manifest-files.mjs <manifest.md>";
+const isPhase = (title) => /^Phase\s+\d+\b/i.test(title);
+const isFilesPlanned = (title) => /^Files Planned\b/i.test(title);
+const isExcluded = (title) => /^(Rollback|External State|Lane Compliance|Implementation Summary)\b/i.test(title);
 
 /** Split a pipe table, preserving escaped pipes in filenames. */
 function cells(line) {
@@ -15,11 +18,19 @@ function cells(line) {
     .split(/(?<!\\)\|/).map((cell) => cell.trim().replace(/\\\|/g, "|"));
 }
 
+/** A table belongs to Files Planned itself or to an unexcluded Phase heading. */
+function plannedScope(headings) {
+  if (!headings.length || headings.some(({ title }) => isExcluded(title))) return false;
+  const planned = headings.findLastIndex(({ title }) => isFilesPlanned(title));
+  if (planned >= 0) return headings.slice(planned + 1).every(({ title }) => isPhase(title));
+  return isPhase(headings.at(-1).title);
+}
+
 /** Scope table state to real Markdown headings and ignore fenced examples. */
 function extract(manifest) {
   const entries = new Set();
-  let sectionLevel = 0; let columns = null; let table = false; let fence = null;
-  let majorHeading = "";
+  const headings = [];
+  let columns = null; let table = false; let fence = null;
   for (const line of manifest.split(/\r?\n/)) {
     const marker = line.match(/^ {0,3}(`{3,}|~{3,})(.*)$/);
     if (fence) {
@@ -30,15 +41,11 @@ function extract(manifest) {
     const heading = line.match(/^ {0,3}(#{1,6})\s+(.+?)(?:\s+#+\s*)?$/);
     if (heading) {
       const level = heading[1].length; const title = heading[2].trim();
-      if (level <= 2) majorHeading = title;
-      if (sectionLevel && level <= sectionLevel) sectionLevel = 0;
-      if (/^Files Planned\b/i.test(title)) sectionLevel = level;
-      else if (/^Phase\s+\d+\b/i.test(title) && !/^(Rollback|External State|Lane Compliance|Implementation Summary)\b/i.test(majorHeading)) {
-        sectionLevel = sectionLevel || level;
-      }
+      while (headings.length && headings.at(-1).level >= level) headings.pop();
+      headings.push({ level, title });
       columns = null; table = false; continue;
     }
-    if (!sectionLevel || !/^\s*\|/.test(line)) { columns = null; table = false; continue; }
+    if (!plannedScope(headings) || !/^\s*\|/.test(line)) { columns = null; table = false; continue; }
     const row = cells(line);
     const fileColumn = row.findIndex((cell) => cell.toLowerCase() === "file");
     const actionColumn = row.findIndex((cell) => cell.toLowerCase() === "action");
