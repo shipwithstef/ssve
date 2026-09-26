@@ -62,6 +62,35 @@ test("bad inline data cannot overwrite an artifact or its source",(t)=>{
   }
   const dir=copied(t);const input=put(dir,"plan.md",manifest());assert.equal(run(dir,["--manifest",input,"--output",input]).status,1);assert.equal(fs.readFileSync(input,"utf8"),manifest());
 });
+test("symlink, hardlink, and parent-symlink output aliases leave the manifest unchanged",(t)=>{
+  for(const kind of ["symlink","hardlink","parent-symlink"]){
+    const dir=copied(t);const input=put(dir,"source/plan.md",manifest());
+    fs.utimesSync(input,1000000000,1000000000);
+    const before=fs.readFileSync(input);const mtime=fs.statSync(input).mtimeMs;
+    let output;
+    if(kind==="parent-symlink"){
+      fs.symlinkSync(path.join(dir,"source"),path.join(dir,"alias"),"dir");
+      output=path.join(dir,"alias/plan.md");
+    }else{
+      output=path.join(dir,`${kind}.json`);
+      if(kind==="symlink")fs.symlinkSync(input,output);
+      else fs.linkSync(input,output);
+    }
+    for(const args of [[],["--check"]]){
+      const result=run(dir,["--manifest",input,"--output",output,...args]);
+      assert.equal(result.status,1,`${kind}: ${result.stdout}`);
+      assert.deepEqual(fs.readFileSync(input),before);
+      assert.equal(fs.statSync(input).mtimeMs,mtime);
+    }
+  }
+});
+test("output symlinks are rejected even when their target is not the manifest",(t)=>{
+  const dir=copied(t);const input=put(dir,"plan.md",manifest());const target=put(dir,"target.json","original");
+  const output=path.join(dir,"artifact.json");fs.symlinkSync(target,output);
+  assert.equal(run(dir,["--manifest",input,"--output",output]).status,1);
+  assert.equal(fs.readFileSync(target,"utf8"),"original");
+  assert.equal(fs.lstatSync(output).isSymbolicLink(),true);
+});
 test("help and malformed arguments do not need or mutate historical project state",(t)=>{
   const dir=copied(t);assert.equal(run(dir,["--help"]).status,0);
   for(const args of [["--manifest"],["--check","--check"],["--unknown"]]){const out=run(dir,args);assert.equal(out.status,1);assert.equal(out.stdout,"");assert.doesNotMatch(out.stderr,/\n\s+at /);}

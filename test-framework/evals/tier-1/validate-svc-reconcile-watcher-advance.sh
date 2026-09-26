@@ -52,27 +52,44 @@ import { reconcileFixture } from "./test-framework/evals/tier-1/lib/reconcile-fi
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wi472-gh-hang-"));
 process.on("exit", () => fs.rmSync(dir, { recursive: true, force: true }));
 const gh = path.join(dir, "gh");
-fs.writeFileSync(gh, "#!/usr/bin/env bash\nsleep 10\n");
+fs.writeFileSync(gh, "#!/usr/bin/env bash\nif [[ \"$1 $2\" == \"auth status\" ]]; then echo '  ✓ Logged in to github.com account shipwithstef (keyring)'; echo '  - Active account: true'; exit 0; fi\nsleep 30\n");
 fs.chmodSync(gh, 0o755);
 const checkpoint = path.join(dir, "checkpoint.json");
 const { repo, sha: currentHead } = reconcileFixture(dir);
 const before = { last_reconciled_sha: currentHead, last_pr_watcher_run: "2026-07-20T00:00:00.000Z" };
-fs.writeFileSync(checkpoint, JSON.stringify(before));
-const started = Date.now();
-const run = spawnSync(process.execPath, ["scripts/svc-reconcile.mjs", "--repo", repo], {
-  encoding: "utf8",
-  timeout: 5000,
-  env: { ...process.env, PATH: `${dir}:${process.env.PATH}`, SVC_RECONCILE_CHECKPOINT_PATH: checkpoint, SVC_GH_AUTH_RECOVERY_PATH: path.join(dir, "auth.json"), SVC_RECONCILE_CHILD_TIMEOUT_MS: "2000", SVC_RECONCILE_GH_TIMEOUT_MS: "100" }
-});
-const elapsed = Date.now() - started;
-const report = JSON.parse(run.stdout);
-const after = JSON.parse(fs.readFileSync(checkpoint, "utf8"));
-assert.equal(run.status, 0, run.stderr);
-assert.ok(elapsed < 4500, `hung GitHub path took ${elapsed}ms`);
-assert.equal(report.gh_available, false);
-assert.equal(report.reconcile_metadata.watcher_advanced, false);
-assert.equal(after.last_pr_watcher_run, before.last_pr_watcher_run);
-console.log("validate-svc-reconcile-watcher-advance: PASS (hung GitHub bounded, watcher preserved)");
+function checkTimeout({ child, github, minMs, maxMs, invalid = null, outerMs = 9000 }) {
+  fs.writeFileSync(checkpoint, JSON.stringify(before));
+  const env = { ...process.env, PATH: `${dir}:${process.env.PATH}`, SVC_RECONCILE_CHECKPOINT_PATH: checkpoint, SVC_GH_AUTH_RECOVERY_PATH: path.join(dir, "auth.json") };
+  delete env.SVC_RECONCILE_CHILD_TIMEOUT_MS;
+  delete env.SVC_RECONCILE_GH_TIMEOUT_MS;
+  if (child !== undefined) env.SVC_RECONCILE_CHILD_TIMEOUT_MS = child;
+  if (github !== undefined) env.SVC_RECONCILE_GH_TIMEOUT_MS = github;
+  const run = spawnSync(process.execPath, ["scripts/svc-reconcile.mjs", "--repo", repo], { encoding: "utf8", timeout: outerMs, env });
+  assert.equal(run.status, 0, `child=${child} gh=${github}: ${run.stderr || run.error}`);
+  const report = JSON.parse(run.stdout);
+  const elapsed = report.reconcile_metadata.gh_check?.duration_ms;
+  assert.equal(report.reconcile_metadata.gh_check?.classification, "timeout");
+  assert.ok(elapsed >= minMs && elapsed < maxMs, `child=${child} gh=${github}: timeout took ${elapsed}ms`);
+  assert.equal(report.gh_available, false);
+  assert.equal(report.reconcile_metadata.watcher_advanced, false);
+  assert.equal(JSON.parse(fs.readFileSync(checkpoint, "utf8")).last_pr_watcher_run, before.last_pr_watcher_run);
+  if (invalid) assert.match(run.stderr, new RegExp(`invalid ${invalid}; using \\d+ms`));
+  else assert.doesNotMatch(run.stderr, /invalid SVC_RECONCILE_(?:GH_|CHILD_)TIMEOUT_MS/);
+}
+
+// Allow real Git discovery and fake authentication to start on a contended
+// hosted runner. Only the intentional 30-second GitHub hang should time out.
+checkTimeout({ child: "5000", github: "1000", minMs: 700, maxMs: 3000 });
+checkTimeout({ child: "3000", github: "1000", minMs: 700, maxMs: 3000 });
+checkTimeout({ child: "3000", github: "999999", minMs: 2200, maxMs: 5000 });
+for (const bad of ["0", "-1", "1.5", "NaN", "9007199254740992", ""]) {
+  checkTimeout({ child: "3000", github: bad, minMs: 2200, maxMs: 5000, invalid: "SVC_RECONCILE_GH_TIMEOUT_MS" });
+}
+for (const bad of ["-1", "1.5", "NaN", "9007199254740992"]) {
+  checkTimeout({ child: bad, github: "1000", minMs: 700, maxMs: 3000, invalid: "SVC_RECONCILE_CHILD_TIMEOUT_MS" });
+}
+checkTimeout({ child: "0", minMs: 9000, maxMs: 12000, invalid: "SVC_RECONCILE_CHILD_TIMEOUT_MS", outerMs: 14000 });
+console.log("validate-svc-reconcile-watcher-advance: PASS (hung GitHub bounded across valid, clamped, and invalid timeout inputs; watcher preserved)");
 NODE
 
 node --input-type=module <<'NODE'

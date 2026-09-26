@@ -2,6 +2,7 @@
 /** Materialize exact inline JSON, or check artifact drift without writing. */
 import fs from "node:fs";
 import path from "node:path";
+import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -27,6 +28,32 @@ function parse(argv) {
   return { manifest, output, check };
 }
 
+/** Resolve the parent once; reject links and any existing alias of the source. */
+function checkedOutput(manifest, output) {
+  const source = fs.realpathSync(manifest);
+  const destination = path.join(fs.realpathSync(path.dirname(output)), path.basename(output));
+  let entry;
+  try { entry = fs.lstatSync(destination); }
+  catch (error) { if (error.code !== "ENOENT") throw error; }
+  if (entry?.isSymbolicLink()) throw new Error("output must not be a symlink");
+  const sourceStat = fs.statSync(source);
+  if (destination === source || (entry && entry.dev === sourceStat.dev && entry.ino === sourceStat.ino)) {
+    throw new Error("manifest and output must be different files");
+  }
+  return destination;
+}
+
+/** Replace an output entry atomically instead of writing through a changed link. */
+function writeOutput(destination, bytes) {
+  const temporary = path.join(path.dirname(destination), `.${path.basename(destination)}.${process.pid}.${randomBytes(6).toString("hex")}.tmp`);
+  try {
+    fs.writeFileSync(temporary, bytes, { flag: "wx", mode: 0o600 });
+    fs.renameSync(temporary, destination);
+  } finally {
+    if (fs.existsSync(temporary)) fs.unlinkSync(temporary);
+  }
+}
+
 /** Preserve the fenced JSON bytes, including indentation and line endings. */
 function extract(manifest) {
   const start = manifest.indexOf(INTRO);
@@ -47,10 +74,11 @@ function extract(manifest) {
 function main(argv) {
   if (argv.length === 1 && ["--help", "-h"].includes(argv[0])) { console.log(USAGE); return; }
   const { manifest, output, check } = parse(argv);
+  const destination = checkedOutput(manifest, output);
   const bytes = extract(fs.readFileSync(manifest, "utf8"));
-  const equal = fs.existsSync(output) && fs.readFileSync(output, "utf8") === bytes;
+  const equal = fs.existsSync(destination) && fs.readFileSync(destination, "utf8") === bytes;
   if (check && !equal) throw new Error(`artifact missing or differs: ${output}`);
-  if (!check && !equal) fs.writeFileSync(output, bytes, { mode: 0o600 });
+  if (!check && !equal) writeOutput(destination, bytes);
   console.log(JSON.stringify({ ok: true, [check ? "checked" : "wrote"]: path.relative(ROOT, output), bytes: Buffer.byteLength(bytes), changed: !equal }));
 }
 
