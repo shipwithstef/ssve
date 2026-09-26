@@ -15,20 +15,23 @@
 set -eu
 
 LOG="${1:-}"
-if [ -z "$LOG" ] || [ ! -r "$LOG" ]; then
+if [ -z "$LOG" ] || [ ! -f "$LOG" ] || [ ! -r "$LOG" ]; then
   echo "usage: extract-summary.sh <log-file>" >&2
   echo "log file missing or unreadable: $LOG" >&2
   exit 2
 fi
 
-# awk the block between the marker lines (inclusive of both markers).
-BLOCK="$(awk '/=== SVC_WORKER_SUMMARY ===/,/=== END_SVC_WORKER_SUMMARY ===/' "$LOG")"
-
-# Validate the block contains both markers (guards against half-truncated logs).
-if ! echo "$BLOCK" | grep -q "=== SVC_WORKER_SUMMARY ===" \
-   || ! echo "$BLOCK" | grep -q "=== END_SVC_WORKER_SUMMARY ==="; then
+# Keep only the latest block; an interrupted retry is not a fresh completion.
+if ! BLOCK="$(awk '
+  /=== SVC_WORKER_SUMMARY ===/ { current = $0 ORS; collecting = 1; next }
+  collecting {
+    current = current $0 ORS
+    if (/=== END_SVC_WORKER_SUMMARY ===/) { last = current; collecting = 0 }
+  }
+  END { if (collecting || last == "") exit 1; printf "%s", last }
+' "$LOG")"; then
   echo "no valid summary block in $LOG" >&2
   exit 1
 fi
 
-echo "$BLOCK"
+printf '%s\n' "$BLOCK"
