@@ -29,7 +29,8 @@ function readJsonl(filepath) {
 
 function minePatterns() {
   const dispatchLog = readJsonl(path.join(projectDir, ".svc", "dispatch-log.jsonl"));
-  const grades = readJsonl(path.join(projectDir, ".svc", "auto-grades.jsonl"));
+  const rawGrades = readJsonl(path.join(projectDir, ".svc", "auto-grades.jsonl"));
+  const grades = rawGrades.filter((g) => typeof g.skill === "string" && g.skill && ["pass", "fail"].includes(g.grade));
   const decisions = readJsonl(path.join(projectDir, ".svc", "pipeline-decisions.jsonl"));
 
   // Pattern 1: skill pass rates
@@ -48,20 +49,25 @@ function minePatterns() {
     decisionFlows[key].count++;
   }
 
-  // Pattern 3: dead ends — a fail immediately followed by a pass on the same skill
-  const deadEnds = [];
-  for (let i = 1; i < grades.length; i++) {
-    if (
-      grades[i - 1].grade === "fail" &&
-      grades[i].grade === "pass" &&
-      grades[i - 1].skill === grades[i].skill
-    ) {
+  // Pattern 3: group only provenance-scoped tasks; legacy rows require adjacency.
+  const deadEnds = []; const lastByTask = new Map();
+  const scope = (g) => JSON.stringify([g.skill, g.wi ?? null, g.run_id ?? null, g.task_id ?? null]);
+  for (let i = 0; i < grades.length; i++) {
+    const grade = grades[i]; const attributed = grade.task_id !== undefined && grade.task_id !== null;
+    const scoped = attributed && (Boolean(grade.wi) || Boolean(grade.run_id));
+    const key = scope(grade);
+    const previous = scoped ? lastByTask.get(key) : grades[i - 1];
+    if (previous && scope(previous) === key && previous.grade === "fail" && grade.grade === "pass") {
       deadEnds.push({
-        skill: grades[i].skill,
-        recovery_iterations: grades[i].iterations || 1,
-        original_findings: grades[i - 1].findings || null,
+        skill: grade.skill,
+        ...(attributed ? { task_id: grade.task_id } : {}),
+        ...(grade.wi ? { wi: grade.wi } : {}),
+        ...(grade.run_id ? { run_id: grade.run_id } : {}),
+        recovery_iterations: grade.iterations ?? 1,
+        original_findings: previous.findings || null,
       });
     }
+    if (scoped) lastByTask.set(key, grade);
   }
 
   return {
@@ -69,7 +75,9 @@ function minePatterns() {
     skill_pass_rates: skillPassRates,
     decision_flows: decisionFlows,
     dead_end_patterns: deadEnds,
-    total_grades: grades.length,
+    total_grades: rawGrades.length,
+    valid_grades: grades.length,
+    ignored_grades: rawGrades.length - grades.length,
     total_dispatches: dispatchLog.length,
     total_decisions: decisions.length,
   };
