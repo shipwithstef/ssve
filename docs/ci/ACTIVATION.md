@@ -4,6 +4,8 @@
 
 Read-only evidence: `gh api repos/shipwithstef/ssve` reports `private: false`; `gh api repos/shipwithstef/ssve/actions/workflows` reports the workflow states. Current PR check identities are retained in `docs/plans/2026-09-26-advisory-pr-resolution/pr-inventory.json`. For example, [#114 run 35537943565](https://github.com/shipwithstef/ssve/actions/runs/35537943565) passed on its historical head. This does not certify main or subsequent changes.
 
+**Hosted proof pending for the complete release matrix:** individual same-repo PR runs are recorded above and in their PR checks, but current main, fork, and final candidate evidence must be verified separately. Do not call this a verified public release until that matrix and the required reviews are complete.
+
 The dormant preparation instructions below are retained as historical setup guidance. Recognized `.github/` files are now active; templates under `docs/ci/workflows/` remain reference copies. This documentation update changes no billing, credentials, visibility, workflow triggers, runner selection, action pins, or repository settings.
 
 | Artifact | Dormant path | Activation path |
