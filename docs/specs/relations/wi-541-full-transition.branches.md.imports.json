@@ -1,5 +1,5 @@
 {
-  "stamped_at": "59d4428889de58b256868ae39dc1c6adb7cf1286",
+  "stamped_at": "ea67d08151031df80810e2782567d42f88ed185a",
   "imports": {
     ".svc/lane-tasks-WI-541.json": [],
     "hooks/codex/svc-codex-pretool-dispatcher.mjs": [
@@ -12,6 +12,7 @@
     ],
     "scripts/compile-delivery-graph.mjs": [
       "./lib/mandatory-delivery-chain.mjs",
+      "./lib/research-decision.mjs",
       "./state-io.mjs",
       "node:fs",
       "node:path"
@@ -29,6 +30,7 @@
       "node:child_process",
       "node:crypto",
       "node:fs",
+      "node:fs/promises",
       "node:os",
       "node:path",
       "node:process",
@@ -39,9 +41,12 @@
       "../hooks/codex/lib/session-handoff.mjs",
       "../hooks/lib/authoritative-binding.mjs",
       "../hooks/lib/authority-store.mjs",
+      "../hooks/lib/literal-branch.mjs",
       "../hooks/lib/resolve-wi.mjs",
       "../hooks/lib/validate-task-graph-shape.mjs",
+      "../hooks/lib/wi-claim.mjs",
       "../hooks/lib/wi-id.mjs",
+      "../hooks/lib/worktree-policy.mjs",
       "./lib/chain-policy.mjs",
       "./state-io.mjs",
       "node:child_process",

@@ -1,5 +1,5 @@
 {
-  "stamped_at": "59d4428889de58b256868ae39dc1c6adb7cf1286",
+  "stamped_at": "ea67d08151031df80810e2782567d42f88ed185a",
   "imports": {
     "agents/svc-stage-plan.md": [],
     "docs/specs/privacy/v4-bootstrap-snapshot.json": [],
@@ -35,7 +35,10 @@
       "node:url"
     ],
     "scripts/lib/isolated-plan-analysis.mjs": [
+      "./frozen-request-input.mjs",
+      "./native-planning-request-capture.mjs",
       "./review-evidence-store.mjs",
+      "./two-box-protocol.mjs",
       "node:child_process",
       "node:fs",
       "node:os",
@@ -92,6 +95,7 @@
       "./lib/control-plan-validate.mjs",
       "./lib/isolated-plan-analysis.mjs",
       "./lib/review-evidence-store.mjs",
+      "./lib/two-box-protocol.mjs",
       "./lib/two-box-role-launch.mjs",
       "./lib/two-box-scout-assign.mjs",
       "./resolve-dispatch.mjs",

@@ -88,15 +88,17 @@ test("advisory mode quietly retains routine input normalization", () => temporar
   assert.deepEqual(JSON.parse(runBoundary(home, input, "enforce").stdout), input);
 }));
 
-test("advisory recovery reports that the skill loader was not substituted", () => temporaryHome((home) => {
+test("advisory recovery stays quiet when its skill-loader substitution is discarded", () => temporaryHome((home) => {
   const input = { systemMessage: "SSVE restored the authorized WI. This call loads its current skill; the original operation has not run. Read the skill output, then retry the original operation.",
     hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "allow", updatedInput: { command: "load skill" } } };
   const result = runBoundary(home, input);
   const output = JSON.parse(result.stdout);
   assert.equal(output.hookSpecificOutput?.updatedInput, undefined);
-  assert.match(output.hookSpecificOutput?.additionalContext || output.systemMessage, /did not load the skill/);
+  assert.equal(output.hookSpecificOutput?.additionalContext, undefined);
+  assert.equal(output.systemMessage, undefined);
   assert.doesNotMatch(result.stdout, /This call loads its current skill/);
-  assert.match(result.stderr, /retained the original tool input/);
+  assert.equal(result.stderr, "");
+  assert.deepEqual(JSON.parse(runBoundary(home, input, "enforce").stdout), input);
 }));
 
 test("missing post-tool receipt is quiet for advisory calls and proven reads", () => temporaryHome((home) => {
@@ -156,7 +158,7 @@ test("advisory rewrite preserves independent warning beside the discarded recove
   assert.equal(output.systemMessage, "Independent warning: source policy is stale.");
   assert.match(result.stderr, /Independent stderr: keep this diagnostic/);
   assert.match(output.hookSpecificOutput.additionalContext, /Independent context: inspect the policy/);
-  assert.match(output.hookSpecificOutput.additionalContext, /did not load the skill/);
+  assert.doesNotMatch(output.hookSpecificOutput.additionalContext, /restored|did not load the skill/);
   assert.doesNotMatch(result.stdout, /This call loads its current skill/);
 }));
 

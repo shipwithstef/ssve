@@ -25,8 +25,10 @@ export function cursorIndependentModelShape(tuple) {
   // Family is verified against Cursor's live catalog before launch; model IDs can
   // change their word order without a framework update. This only checks that
   // the owner selected an exact preset whose ID encodes the requested effort.
-  return /^[a-z][a-z0-9._-]+$/.test(tuple.model) &&
-    new RegExp(`-${tuple.effort}(?:-fast)?$`).test(tuple.model);
+  return typeof tuple.model === 'string' &&
+    ['low', 'medium', 'high', 'xhigh', 'max', 'provider-managed'].includes(tuple.effort) &&
+    /^[a-z][a-z0-9._-]+$/.test(tuple.model) &&
+    (tuple.model.endsWith(`-${tuple.effort}`) || tuple.model.endsWith(`-${tuple.effort}-fast`));
 }
 
 // Launcher 2.5.7 issued Cursor plan-mode receipts before exact catalog checks

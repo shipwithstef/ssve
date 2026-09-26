@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { classifyProviderFailure, validateExternalReviewReceiptSemantics } from '../../scripts/run-external-review.mjs';
 import { createReviewerPolicy } from '../../scripts/review-topology-v2.mjs';
 import { cursorIndependentEligible } from '../../scripts/resolve-dispatch.mjs';
-import { cursorCatalogDecision, cursorExactRouteEvidenceValid, resolveReviewTimeout } from '../../scripts/lib/review-launch-preflight.mjs';
+import { cursorCatalogDecision, cursorIndependentModelShape, cursorExactRouteEvidenceValid, resolveReviewTimeout } from '../../scripts/lib/review-launch-preflight.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const self = { host: 'current', family: 'openai', model: 'gpt-6-astra', effort: 'medium' };
@@ -42,6 +42,15 @@ test('Cursor independence follows exact provider shape and live catalog', () => 
   assert.equal(cursorCatalogDecision(catalog, reviewer('grok-4.7-high', 'anthropic').tuple).classification, 'model_mismatch');
   assert.equal(cursorCatalogDecision(catalog, reviewer('grok-9.9-high', 'xai').tuple).classification, 'model_unavailable');
   assert.equal(cursorCatalogDecision('future-high - Unknown Provider', reviewer('future-high', 'unknown', 'advisory').tuple, 'advisory').ok, true);
+});
+
+test('Cursor effort matching treats owner configuration as data, not a regular expression', () => {
+  const tuple = reviewer().tuple;
+  for (const effort of ['.*', 'high|low', '(', '(a+)+$', '', null]) {
+    assert.equal(cursorIndependentModelShape({ ...tuple, effort }), false);
+  }
+  assert.equal(cursorIndependentModelShape({ ...tuple, model: 'future-high-fast' }), true);
+  assert.equal(cursorIndependentModelShape({ ...tuple, model: 'future-high-other' }), false);
 });
 
 test('historical Cursor plan-mode evidence is readable only under launcher 2.5.7 rules', () => {

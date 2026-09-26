@@ -73,7 +73,6 @@ const result = spawnSync(process.execPath, [script, "--repo", repo], {
     SVC_CHAIN_POLICY: "warn",
     SVC_GH_AUTH_RECOVERY_PATH: path.join(state, "gh-recovery.json"),
     SVC_RECONCILE_DRIVE_ROOT: path.join(state, "drive"),
-    SVC_RECONCILE_CHILD_TIMEOUT_MS: "3000",
   },
 });
 assert.equal(result.status, 0, result.stderr || result.stdout);

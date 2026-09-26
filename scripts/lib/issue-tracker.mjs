@@ -362,9 +362,133 @@ export function adoptIssue(ctx, config, rawNumber, wi, dryRun = false) {
     const old = issues(map, config.repository)[wi];
     assertUniqueNumber(issues(map, config.repository), wi, number);
     if (old?.number && old.number !== number) fail("WI already mapped to another issue");
+    if (old?.origin === "github") fail("GitHub mirror already mapped; use digest-confirmed --accept-remote to preserve its provenance");
     if (dryRun) return {message: "Would adopt issue #" + number + " for " + wi};
     adoptExact(ctx, config, map, wi, issue);
     return {message: "Adopted issue #" + number + " for " + wi};
+  };
+  return dryRun ? work(loadMap(ctx)) : withMap(ctx, config, work);
+}
+function assertExactManagedMarkers(issue, config, wi, expectOwned) {
+  const prefix = "<!-- ssve-issue-tracker:";
+  const count = issue.body.split(prefix).length - 1;
+  const owned = parseBlock(issue.body, config.repository, wi);
+  if (expectOwned) {
+    if (!owned || count !== 2) fail("remote managed marker or owned block conflict");
+  } else if (owned || count !== 0) fail("unexpected managed marker on markerless issue");
+  return owned;
+}
+function assertLocalGithubProvenance(ctx, config, wi, entry) {
+  if (entry.origin !== "github" || !/^[0-9a-f]{64}$/.test(entry.mirror_sha256 || "") ||
+      !/^[0-9a-f]{64}$/.test(entry.source_sha256 || "")) fail("GitHub mirror provenance unavailable");
+  const content = localWI(ctx, wi);
+  const urls = [...content.matchAll(/^\*\*GitHub Issue:\*\*\s*(\S+)/gm)];
+  const sources = [...content.matchAll(/^\*\*Source SHA256:\*\* ([0-9a-f]{64})\s*$/gm)];
+  if (!content.startsWith("# " + wi + ": ") ||
+      (content.match(/^\*\*GitHub Issue:\*\*/gm) || []).length !== 1 ||
+      (content.match(/^\*\*Source SHA256:\*\*/gm) || []).length !== 1 ||
+      urls.length !== 1 || urls[0][1] !== entry.url || sources.length !== 1)
+    fail("local GitHub mirror provenance changed");
+}
+function assertObservedDigest(issue, expected, dryRun) {
+  const digest = sourceDigest(issue);
+  if (expected && digest !== expected) fail("remote title/body changed since preview; current source SHA256 is " + digest);
+  if (!dryRun && !expected) fail("current full remote title/body SHA256 is required");
+  return digest;
+}
+function remoteDecisionPreview(action, config, wi, issue, digest, effects) {
+  return JSON.stringify({action, repository: config.repository, wi, issue: issue.number,
+    source_sha256: digest, remote: {title: issue.title, body: issue.body, state: issue.state},
+    map_effects: effects, remote_write: false, local_wi_write: false}, null, 2);
+}
+export function acceptRemote(ctx, config, rawNumber, wi, expectedDigest, dryRun = false) {
+  requireRemote(config, "accept-remote");
+  validateWI(wi);
+  const number = validateNumber(rawNumber);
+  if (wi !== "WI-GH-" + number) fail("accept-remote requires the matching WI-GH-N mirror");
+  const work = map => {
+    assertRepoIsolation(ctx, config, map, wi);
+    const bucket = issues(map, config.repository), entry = bucket[wi];
+    if (!entry) fail("GitHub mirror is not mapped");
+    checkMappedEntry(entry, config, wi);
+    if (entry.number !== number) fail("GitHub mirror issue number mismatch");
+    assertUniqueNumber(bucket, wi, number);
+    assertLocalGithubProvenance(ctx, config, wi, entry);
+    if (entry.pending || entry.close_pending)
+      fail("pending creation or close must be resolved before --accept-remote");
+    const issue = getIssue(ctx, config, number);
+    const digest = assertObservedDigest(issue, expectedDigest, dryRun);
+    const pending = entry.pending_publish;
+    const owned = assertExactManagedMarkers(issue, config, wi, Boolean(pending) || entry.marker !== null);
+    if (pending) {
+      if (typeof pending.title !== "string" || !/^[0-9a-f]{64}$/.test(pending.inner_sha256 || "") ||
+          issue.title !== pending.title || sha(owned.inner) !== pending.inner_sha256)
+        fail("pending publication title or owned block differs; accept-remote cannot resolve ambiguous publication");
+    } else if (owned && (entry.marker !== marker(config.repository, wi, "begin") ||
+        sha(owned.inner) !== entry.owned_inner_sha256))
+      fail("remote owned block changed; accept-remote cannot take ownership of it");
+    const effects = {source_sha256: digest, title: issue.title, state: issue.state,
+      origin: "github", mirror_sha256: entry.mirror_sha256,
+      ...(owned ? {marker: marker(config.repository, wi, "begin"),
+        owned_inner_sha256: sha(owned.inner),
+        last_sync_sha256: syncHash(config.repository, wi, issue.title, owned.inner)} : {}),
+      ...(pending ? {clear: "pending_publish"} : {})};
+    if (dryRun) return {message: remoteDecisionPreview("accept-remote", config, wi, issue, digest, effects)};
+    entry.source_sha256 = digest;
+    entry.title = issue.title;
+    entry.state = issue.state === "closed" ? "closed" : "open";
+    if (owned) {
+      entry.marker = effects.marker;
+      entry.owned_inner_sha256 = effects.owned_inner_sha256;
+      entry.last_sync_sha256 = effects.last_sync_sha256;
+    }
+    if (pending) delete entry.pending_publish;
+    entry.updated_at = now();
+    return {message: "Accepted current remote title/body for " + wi + " at #" + number +
+      (pending ? "; cleared matching pending publication" : "") + "; local mirror unchanged" +
+      (issue.state === "closed" ? "; remote closure has no verified-close claim" : "")};
+  };
+  return dryRun ? work(loadMap(ctx)) : withMap(ctx, config, work);
+}
+export function abandonPending(ctx, config, wi, kind, expectedDigest, dryRun = false) {
+  requireRemote(config, "abandon-pending");
+  validateWI(wi);
+  if (kind !== "publish" && kind !== "close") fail("invalid pending action");
+  const work = map => {
+    assertRepoIsolation(ctx, config, map, wi);
+    const bucket = issues(map, config.repository), entry = bucket[wi];
+    if (!entry?.number) fail("WI has no mapped GitHub issue");
+    checkMappedEntry(entry, config, wi);
+    assertUniqueNumber(bucket, wi, entry.number);
+    localWI(ctx, wi);
+    const pending = kind === "publish" ? entry.pending_publish : entry.close_pending;
+    if (!pending) fail("no pending " + kind + " to abandon");
+    if (kind === "publish" && entry.close_pending || kind === "close" && entry.pending_publish)
+      fail("crossing pending actions require manual inspection");
+    const issue = getIssue(ctx, config, entry.number);
+    const digest = assertObservedDigest(issue, expectedDigest, dryRun);
+    const owned = assertExactManagedMarkers(issue, config, wi, entry.marker !== null);
+    if (owned && sha(owned.inner) !== entry.owned_inner_sha256) fail("remote owned block changed; pending action cannot be abandoned safely");
+    if (entry.origin === "github") assertLocalGithubProvenance(ctx, config, wi, entry);
+    if (kind === "publish") {
+      if (issue.title === pending.title && sha(issue.body) === pending.body_sha256)
+        fail("pending publish is applied; retry --publish to reconcile it");
+      if (!owned && issue.body.includes(marker(config.repository, wi, "begin")))
+        fail("pending publish may be partially applied; inspect remote issue");
+    } else if (entry.pending_close_body_sha256 && sha(issue.body) === entry.pending_close_body_sha256)
+      fail("pending close body is applied; retry --close-wi with its verified commit");
+    const effects = {clear: kind === "publish" ? "pending_publish" : "close_pending",
+      retained_source_sha256: entry.source_sha256 || null,
+      retained_origin: entry.origin, retained_mirror_sha256: entry.mirror_sha256 || null};
+    if (dryRun) return {message: remoteDecisionPreview("abandon-pending-" + kind, config, wi, issue, digest, effects)};
+    if (kind === "publish") delete entry.pending_publish;
+    else {
+      delete entry.close_pending; delete entry.pending_close_sha256;
+      delete entry.pending_close_body_sha256; delete entry.pending_close_commit;
+    }
+    entry.state = issue.state === "closed" ? "closed" : "open";
+    entry.updated_at = now();
+    return {message: "Abandoned unapplied pending " + kind + " for " + wi + "; remote baseline unchanged"};
   };
   return dryRun ? work(loadMap(ctx)) : withMap(ctx, config, work);
 }
@@ -406,7 +530,8 @@ export function publish(ctx, config, wi, title, bodyFile, dryRun = false) {
     assertRepoIsolation(ctx, config, map, wi);
     const bucket = issues(map, config.repository);
     let entry = bucket[wi];
-    if (entry?.close_pending) fail("close pending; retry --close-wi " + wi + " --commit " + entry.pending_close_commit + " before publishing");
+    if (entry?.close_pending) fail("close pending; retry --close-wi " + wi + " --commit " + entry.pending_close_commit +
+      " or explicitly --abandon-pending-close with the observed digest before publishing");
     if (entry?.pending) {
       if (dryRun) fail("pending creation requires explicit recovery");
       entry = recoverPending(ctx, config, map, wi);
@@ -415,20 +540,27 @@ export function publish(ctx, config, wi, title, bodyFile, dryRun = false) {
     if (entry?.number) {
       checkMappedEntry(entry, config, wi);
       const issue = getIssue(ctx, config, entry.number);
-      if (issue.state !== "open") fail("mapped issue is closed; publish cannot reopen");
       if (entry.pending_publish) {
         const pending = entry.pending_publish;
         if (issue.title === pending.title && sha(issue.body) === pending.body_sha256) {
           const applied = parseBlock(issue.body, config.repository, wi);
           if (!applied || sha(applied.inner) !== pending.inner_sha256) fail("pending publication owned block conflict");
-          if (dryRun) return {message: "Would reconcile confirmed pending publication for " + wi};
+          const sameRequest = curated.title === pending.title && sha(desiredInner) === pending.inner_sha256;
+          if (dryRun && sameRequest) return {message: "Would reconcile confirmed pending publication for " + wi +
+            (issue.state === "closed" ? "; remote issue remains closed without verified close evidence" : "")};
           recordPublished(entry, config, wi, issue, applied.inner);
-          return {message: "Reconciled published " + wi + " at #" + entry.number};
-        }
-        if (sourceDigest(issue) !== pending.before_sha256 ||
+          if (!dryRun) saveMap(ctx, map);
+          if (sameRequest) return {message: "Reconciled published " + wi + " at #" + entry.number +
+            (issue.state === "closed" ? "; remote issue remains closed without verified close evidence" : "")};
+          if (issue.state !== "open") fail("reconciled earlier publication; remote issue is closed, so revised publish cannot proceed");
+          // The earlier request is now durable. Continue this invocation through
+          // the ordinary publish path, which records its own pending PATCH.
+        } else if (sourceDigest(issue) !== pending.before_sha256 ||
             curated.title !== pending.title || sha(desiredInner) !== pending.inner_sha256)
-          fail("pending publication conflict; inspect issue #" + entry.number + " and retry the same --publish command only after restoring its exact pre-write state");
+          fail("pending publication conflict; inspect issue #" + entry.number +
+            ", retry the same --publish command from its exact pre-write state, or explicitly --abandon-pending-publish with the observed digest");
       }
+      if (issue.state !== "open") fail("mapped issue is closed; publish cannot reopen; reconcile or explicitly abandon any unapplied pending publication first");
       const owned = parseBlock(issue.body, config.repository, wi);
       if (entry.origin === "github" && entry.marker !== null && sourceDigest(issue) !== entry.source_sha256) fail("remote issue changed since adoption");
       if (entry.origin === "github" && entry.marker === null) {
@@ -538,7 +670,8 @@ export function closeIssue(ctx, config, wi, commit, dryRun = false) {
     const entry = issues(map, config.repository)[wi];
     if (!entry?.number) fail("WI has no mapped GitHub issue");
     checkMappedEntry(entry, config, wi);
-    if (entry.pending_publish) fail("publication pending; retry the same --publish command for " + wi + " before closing");
+    if (entry.pending_publish) fail("publication pending; retry the same --publish command for " + wi +
+      " or explicitly --abandon-pending-publish with the observed digest before closing");
     const issue = getIssue(ctx, config, entry.number);
     const owned = parseBlock(issue.body, config.repository, wi);
     const ownedDigest = owned ? sha(owned.inner) : null;

@@ -259,14 +259,9 @@ async function main() {
     const blocked = isBlockingPayload(payload);
     const rewritten = payload.updatedInput !== undefined || payload.updated_input !== undefined ||
       payload.hookSpecificOutput?.updatedInput !== undefined || payload.hookSpecificOutput?.updated_input !== undefined;
-    const recoveryText = [payload.systemMessage, payload.user_message,
-      payload.hookSpecificOutput?.additionalContext].filter(Boolean).join("\n");
-    const recoveryRewrite = rewritten && recoveryText.includes(RESTORED_OPERATION_CLAIM);
     const reason = blocked
       ? `would have blocked this call; the original tool input continues unchanged. Finding: ${payload.hookSpecificOutput?.permissionDecisionReason || payload.reason || payload.user_message || payload.stopReason || "SVC hook requested a block"}`
-      : recoveryRewrite
-        ? "SSVE restored the authorized WI, but advisory mode retained the original tool input. This call did not load the skill; load it separately before further governed work."
-        : "";
+      : "";
     const message = reason ? warning(marker, reason) : "";
     if (message) process.stderr.write(message + "\n");
     process.stdout.write(JSON.stringify(advisoryPayload(payload, message, { rewritten })) + "\n");

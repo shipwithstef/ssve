@@ -53,3 +53,5 @@ Setup migrates managed SVC entries idempotently. It does not rewrite foreign com
 Run free checks with `EVALS=0 bash scripts/ci/run-free-checks.sh`. Enforcement fixtures explicitly select enforce mode; default-mode fixtures leave mode unconfigured. Hosted check results apply to the tested commit, not later modifications.
 
 To recover from a regression, select advisory mode, repair the source and rerun setup. To restore the previous implementation, revert the source change and refresh installations from that revision. Keep evidence of failures visible throughout recovery.
+
+Routine skill-loader rewrites discarded by advisory mode are quiet: the original tool input runs, with no claim that the loader ran or that the operation must be retried. Missing post-tool receipts are quiet for advisory calls and proven read-only calls. Independent warnings and actual enforcement findings remain visible.

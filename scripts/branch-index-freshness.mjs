@@ -288,27 +288,25 @@ export function scopeDocsYield(indexPath, docPaths) {
 
 /**
  * §3f#3 — direct-import shape comparison (WI-512 Batch 4).
- *
- * Hand-rolled, no `dependency-cruiser` runtime dep — matches `import ... from
- * '...'` and `require('...')` on a single logical line. Good enough for a
- * direct-import set; it does not resolve re-exports or dynamic `import()`.
- *
- * Fix round (review findings, HIGH/MEDIUM): the previous version scraped its
- * own doc comment (this one) for a phantom `"..."` specifier, because
- * `import ... from '...'` written in prose reads exactly like real code to a
- * regex with no comment awareness. Comments are stripped first — best-effort,
- * not a parser: a `//` or `/* *\/` marker inside a STRING literal will still
- * truncate real code on that line, an accepted limitation of a hand-rolled
- * scanner. `require(` is additionally anchored so it must sit at line-start
- * or right after one of `=([,;{}` / whitespace — a `require(` immediately
- * preceded by a quote character (i.e. embedded in a string literal, the
- * `"require('FAKE-STRING-DEP')"` case) no longer matches.
+ * Match only static default, named, and namespace `import ... from` clauses,
+ * including legal line breaks. A named clause cannot cross a semicolon or a
+ * new statement start; malformed neighboring statements cannot supply `from`.
+ * Keep the existing `require(...)` matching and no runtime parser dependency.
+ * Comment stripping is best-effort: comment markers inside string literals
+ * can still truncate a real import on that line.
  */
 function stripComments(s) {
   return s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
 }
 
-const IMPORT_FROM_RE = /(?:^|\n)\s*import\s.*?from\s+['"](.+?)['"]/g;
+const IDENT = String.raw`[$A-Z_a-z][\w$]*`;
+const NAMED_IMPORT = String.raw`\{(?:[^\n{};]|\n(?![ \t]*(?:import|export|const|let|var|function|class)\b))*\}`;
+const NAMESPACE_IMPORT = String.raw`\*[ \t]+as[ \t]+${IDENT}`;
+const IMPORT_CLAUSE = String.raw`(?:${IDENT}(?:[ \t\r\n]*,[ \t\r\n]*(?:${NAMED_IMPORT}|${NAMESPACE_IMPORT}))?|${NAMED_IMPORT}|${NAMESPACE_IMPORT})`;
+const IMPORT_FROM_RE = new RegExp(
+  String.raw`(?:^|\n)[ \t]*import[ \t\r\n]+(?:type[ \t]+)?${IMPORT_CLAUSE}[ \t\r\n]+from[ \t\r\n]*(['"])([^'"\r\n]+)\1`,
+  'g',
+);
 const REQUIRE_RE = /(?:^|[=(,;{}\s])require\(\s*['"](.+?)['"]\s*\)/g;
 
 export function directImports(content) {
@@ -316,7 +314,7 @@ export function directImports(content) {
   const specs = new Set();
   let m;
   IMPORT_FROM_RE.lastIndex = 0;
-  while ((m = IMPORT_FROM_RE.exec(stripped))) { if (m[1]) specs.add(m[1]); }
+  while ((m = IMPORT_FROM_RE.exec(stripped))) { if (m[2]) specs.add(m[2]); }
   REQUIRE_RE.lastIndex = 0;
   while ((m = REQUIRE_RE.exec(stripped))) { if (m[1]) specs.add(m[1]); }
   return [...specs].sort();

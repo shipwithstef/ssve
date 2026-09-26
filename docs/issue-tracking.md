@@ -35,6 +35,21 @@ The public body file contains deliberately reviewed text, not the raw WI, plan, 
 
 An uncertain publish PATCH retains its expected request in the shared map. Retry the same publish command: an exact applied request is reconciled without a second write, while unchanged pre-write state permits a retry. Intervening human edits remain a conflict. Resolve a pending publish before closing, or a pending close before publishing; the opposite operation never silently discards the pending request.
 
+## Resolve a remote edit explicitly
+
+If a maintainer changes a pulled issue, review the current remote title/body before accepting that snapshot as the baseline for future actions:
+
+```bash
+node scripts/sync-github-issues.mjs --root . --accept-remote 42 --wi WI-GH-42 --dry-run
+node scripts/sync-github-issues.mjs --root . --accept-remote 42 --wi WI-GH-42 --source-sha256 <digest-from-preview>
+```
+
+Confirmation requires the exact preview digest. It updates only the shared map, preserves GitHub provenance and the original local mirror, and does not import new requirements into the execution plan. It never changes GitHub. Changed managed content or malformed/foreign markers still require inspection; acceptance cannot take ownership of them.
+
+Reconcile an uncertain operation first. If a publish lost its response and someone then edited only surrounding human text, the same acceptance preview can explicitly clear that pending publication when its title and managed content still match exactly. The preview names that map change; changed managed content or title still refuses. If it was not applied and intervening human edits prevent retry, preview `--abandon-pending-publish --wi ID --dry-run` or `--abandon-pending-close --wi ID --dry-run`, then confirm that same action with `--source-sha256 <digest-from-preview>`. This clears only the named unapplied request; accepting a new remote baseline remains a separate decision. Applied requests must be reconciled, not abandoned.
+
+A publish retry with revised curated content first records an earlier confirmed publication, then applies the revision through its own pending request. If the remote issue is already closed, the earlier publication can still be reconciled; it is never reopened, a revised publication is refused, and no verified close is inferred.
+
 ## Close after verification
 
 PR bodies for mapped issues use `Related to #N`, with no GitHub auto-close keyword. After the local WI reaches `VERIFIED`, the exact verified commit has a passing `verify-promotion` receipt in the durable Git note, and that commit is reachable from the local origin default branch, run:

@@ -10,9 +10,9 @@ import { createReviewerPolicy } from '../../scripts/review-topology-v2.mjs';
 const frameworkRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const adapter = path.join(frameworkRoot, 'scripts/review-plan-codex.sh');
 
-function run(binary, args, cwd, env = process.env) {
-  const result = spawnSync(binary, args, { cwd, env, encoding: 'utf8' });
-  assert.equal(result.status, 0, `${binary} ${args.join(' ')}\n${result.stderr}`);
+function runGit(args, cwd) {
+  const result = spawnSync('git', args, { cwd, encoding: 'utf8' });
+  assert.equal(result.status, 0, `git ${args.join(' ')}\n${result.stderr}`);
   return result;
 }
 
@@ -25,11 +25,11 @@ test('plan reviewer receives the test-value rubric in its actual launch request'
     fs.mkdirSync(bin);
     fs.writeFileSync(path.join(repo, 'CLAUDE.md'), '# Fixture instructions\n');
     fs.writeFileSync(path.join(repo, 'plan.md'), '# WI-570 fixture plan\n');
-    run('git', ['init', '-q', '-b', 'main'], repo);
-    run('git', ['add', '-A'], repo);
-    run('git', ['-c', 'user.name=SVC fixture', '-c', 'user.email=svc@example.com', '-c', 'commit.gpgsign=false', 'commit', '-q', '-m', 'fixture'], repo);
-    run('git', ['update-ref', 'refs/remotes/origin/main', 'HEAD'], repo);
-    run('git', ['checkout', '-q', '-b', 'framework-WI-570-test-value'], repo);
+    runGit(['init', '-q', '-b', 'main'], repo);
+    runGit(['add', '-A'], repo);
+    runGit(['-c', 'user.name=SVC fixture', '-c', 'user.email=svc@example.com', '-c', 'commit.gpgsign=false', 'commit', '-q', '-m', 'fixture'], repo);
+    runGit(['update-ref', 'refs/remotes/origin/main', 'HEAD'], repo);
+    runGit(['checkout', '-q', '-b', 'framework-WI-570-test-value'], repo);
     const realNode = process.execPath;
     const wrapper = path.join(bin, 'node');
     fs.writeFileSync(wrapper, `#!/usr/bin/env bash
@@ -70,7 +70,9 @@ fi
       SVC_REVIEWER_STATION: 'sol',
       SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR: path.join(root, 'artifacts'),
     };
-    const result = run('bash', [adapter, path.join(repo, 'plan.md')], repo, env);
+    // The script is a fixed repository file; fixture paths are positional data.
+    const result = spawnSync('bash', ['--', adapter, path.join(repo, 'plan.md')], { cwd: repo, env, encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
     assert.equal(JSON.parse(result.stdout).verdict, 'pass');
     const request = fs.readFileSync(capture, 'utf8');
     assert.match(request, /FOCUS DIMENSIONS:[\s\S]*\(f\) execute risk and test value:/);

@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { spawnSync, execFileSync } from 'node:child_process';
 
@@ -22,6 +23,9 @@ function issue(number, overrides = {}) {
     html_url: issueUrl(number), number, title: 'Sample request ' + number, body: 'A public issue body.',
     state: 'open', labels: [], comments: 0, created_at: '2026-09-20T12:00:00Z',
     updated_at: '2026-09-20T12:00:00Z', closed_at: null, ...overrides };
+}
+function sourceDigest(row) {
+  return createHash('sha256').update(JSON.stringify([row.number, row.title, row.body])).digest('hex');
 }
 function fakeGhMain() {
   const fs = require('node:fs');
@@ -770,4 +774,273 @@ test('pending close blocks publish until the original verified close is retried'
   assert.equal(settled.close_pending, undefined);
   assert.equal(settled.state, 'closed');
   assertTransport(f);
+});
+
+
+test('accept-remote reviews exact human changes before verified close without replacing the local mirror', t => {
+  const f = fixture(t, { issues: { 118: issue(118, { title: 'Human intake', body: 'Human intake body.' }) } });
+  f.configure('github-backed');
+  assert.equal(f.run(['--pull', '118']).status, 0);
+  const mirror = path.join(f.root, 'docs/specs/work-items/WI-GH-118.md');
+  fs.writeFileSync(mirror, fs.readFileSync(mirror, 'utf8').replace('**Status:** backlog', '**Status:** VERIFIED'));
+  const localBytes = fs.readFileSync(mirror);
+  const common = git(f.root, 'rev-parse', '--git-common-dir');
+  const mapFile = path.resolve(f.root, common, 'svc-issue-tracker/map.json');
+  const oldEntry = JSON.parse(fs.readFileSync(mapFile)).repositories[REPO].issues['WI-GH-118'];
+  f.mutate(s => { s.issues[118].body += '\nMaintainer triage note kept by GitHub.'; });
+  const proofSha = verifiedNote(f, 'WI-GH-118');
+  assertFailed(f.run(['--close-wi', 'WI-GH-118', '--commit', proofSha]), 'unacknowledged body edit');
+  const beforeReview = fs.readFileSync(mapFile);
+  const preview = f.run(['--accept-remote', '118', '--wi', 'WI-GH-118', '--dry-run']);
+  assert.equal(preview.status, 0, preview.stderr);
+  const reviewed = JSON.parse(preview.stdout);
+  assert.equal(reviewed.issue, 118);
+  assert.equal(reviewed.remote.title, 'Human intake');
+  assert.equal(reviewed.remote.body, 'Human intake body.\nMaintainer triage note kept by GitHub.');
+  assert.equal(reviewed.remote_write, false);
+  assert.equal(reviewed.local_wi_write, false);
+  assert.match(reviewed.source_sha256, /^[a-f0-9]{64}$/);
+  assert.notEqual(reviewed.source_sha256, oldEntry.source_sha256);
+  assert.deepEqual(fs.readFileSync(mapFile), beforeReview, 'dry-run leaves map unchanged');
+  assert.deepEqual(fs.readFileSync(mirror), localBytes, 'dry-run leaves local WI unchanged');
+  assert.equal(writes(f).length, 0, 'review is GET-only');
+  assertFailed(f.run(['--accept-remote', '118', '--wi', 'WI-GH-118', '--source-sha256', oldEntry.source_sha256]), 'stale decision');
+  assert.deepEqual(fs.readFileSync(mapFile), beforeReview, 'stale digest cannot alter map');
+  assert.equal(writes(f).length, 0);
+  const accepted = f.run(['--accept-remote', '118', '--wi', 'WI-GH-118', '--source-sha256', reviewed.source_sha256]);
+  assert.equal(accepted.status, 0, accepted.stderr);
+  const entry = JSON.parse(fs.readFileSync(mapFile)).repositories[REPO].issues['WI-GH-118'];
+  assert.equal(entry.origin, 'github');
+  assert.equal(entry.number, 118);
+  assert.equal(entry.mirror_sha256, oldEntry.mirror_sha256);
+  assert.equal(entry.source_sha256, reviewed.source_sha256);
+  assert.deepEqual(fs.readFileSync(mirror), localBytes, 'accept keeps the local verified WI');
+  const closed = f.run(['--close-wi', 'WI-GH-118', '--commit', proofSha]);
+  assert.equal(closed.status, 0, closed.stderr);
+  assert.equal(f.state().issues[118].state, 'closed');
+  assert.ok(f.state().issues[118].body.includes('Maintainer triage note kept by GitHub.'));
+  assert.equal(writes(f).filter(c => method(c) === 'PATCH').length, 1);
+  assertTransport(f);
+});
+
+test('accept-remote refuses unsafe owned markers and adoption cannot erase pulled provenance', t => {
+  const f = fixture(t, { issues: { 118: issue(118, { title: 'Human intake', body: 'Human intake body.' }) } });
+  f.configure('github-backed');
+  assert.equal(f.run(['--pull', '118']).status, 0);
+  assert.equal(f.publish('WI-GH-118', 'Reviewed public text.').status, 0);
+  const common = git(f.root, 'rev-parse', '--git-common-dir');
+  const mapFile = path.resolve(f.root, common, 'svc-issue-tracker/map.json');
+  const baseline = fs.readFileSync(mapFile);
+  assertFailed(f.run(['--adopt-issue', '118', '--wi', 'WI-GH-118']), 'adoption cannot discard pulled provenance');
+  assert.deepEqual(fs.readFileSync(mapFile), baseline);
+  const begin = '<!-- ssve-issue-tracker:example/project:WI-GH-118:begin -->';
+  const end = '<!-- ssve-issue-tracker:example/project:WI-GH-118:end -->';
+  f.mutate(s => { s.issues[118].body += '\n' + begin + '\nforged owned text\n' + end; });
+  const live = f.state().issues[118];
+  const exactDigest = sourceDigest(live);
+  assertFailed(f.run(['--accept-remote', '118', '--wi', 'WI-GH-118', '--source-sha256', exactDigest]), 'duplicated managed markers');
+  assert.deepEqual(fs.readFileSync(mapFile), baseline, 'unsafe marker leaves provenance intact');
+  assert.equal(writes(f).filter(c => method(c) === 'PATCH').length, 1, 'accept never writes GitHub');
+  assertTransport(f);
+});
+
+test('pending publish or close requires a separate digest-bound abandonment before remote acceptance', t => {
+  for (const operation of ['publish', 'close']) {
+    const f = fixture(t, { issues: { 118: issue(118, { title: 'Human intake', body: 'Human intake body.' }) } });
+    f.configure('github-backed');
+    assert.equal(f.run(['--pull', '118']).status, 0);
+    const mirror = path.join(f.root, 'docs/specs/work-items/WI-GH-118.md');
+    if (operation === 'close') {
+      fs.writeFileSync(mirror, fs.readFileSync(mirror, 'utf8').replace('**Status:** backlog', '**Status:** VERIFIED'));
+    }
+    const localBytes = fs.readFileSync(mirror);
+    const proofSha = operation === 'close' ? verifiedNote(f, 'WI-GH-118') : null;
+    f.mutate(s => { s.failPatch = true; });
+    if (operation === 'publish') assertFailed(f.publish('WI-GH-118', 'Curated first attempt.'), 'pending publication');
+    else assertFailed(f.run(['--close-wi', 'WI-GH-118', '--commit', proofSha]), 'pending close');
+    f.mutate(s => {
+      s.failPatch = false;
+      s.issues[118].body += '\nMaintainer decision after failed request.';
+    });
+    const common = git(f.root, 'rev-parse', '--git-common-dir');
+    const mapFile = path.resolve(f.root, common, 'svc-issue-tracker/map.json');
+    const pendingBytes = fs.readFileSync(mapFile);
+    const digest = sourceDigest(f.state().issues[118]);
+    const staleDigest = sourceDigest(issue(118, { title: 'Human intake', body: 'Human intake body.' }));
+    const accept = ['--accept-remote', '118', '--wi', 'WI-GH-118', '--source-sha256', digest];
+    assertFailed(f.run(accept), operation + ' pending without named abandonment');
+    const wrong = operation === 'publish' ? '--abandon-pending-close' : '--abandon-pending-publish';
+    assertFailed(f.run([wrong, '--wi', 'WI-GH-118', '--source-sha256', digest]), operation + ' pending with wrong abandonment');
+    assert.deepEqual(fs.readFileSync(mapFile), pendingBytes);
+    const correct = operation === 'publish' ? '--abandon-pending-publish' : '--abandon-pending-close';
+    assertFailed(f.run([correct, '--wi', 'WI-GH-118', '--source-sha256', staleDigest]), 'stale abandonment decision');
+    assert.deepEqual(fs.readFileSync(mapFile), pendingBytes, 'stale digest leaves pending state intact');
+    const abandoned = f.run([correct, '--wi', 'WI-GH-118', '--source-sha256', digest]);
+    assert.equal(abandoned.status, 0, abandoned.stderr);
+    const afterAbandon = JSON.parse(fs.readFileSync(mapFile)).repositories[REPO].issues['WI-GH-118'];
+    assert.equal(afterAbandon.pending_publish, undefined);
+    assert.equal(afterAbandon.close_pending, undefined);
+    assert.notEqual(afterAbandon.source_sha256, digest, 'abandonment does not silently accept the human edit');
+    const accepted = f.run(accept);
+    assert.equal(accepted.status, 0, accepted.stderr);
+    const entry = JSON.parse(fs.readFileSync(mapFile)).repositories[REPO].issues['WI-GH-118'];
+    assert.equal(entry.origin, 'github');
+    assert.equal(entry.source_sha256, digest);
+    assert.equal(entry.pending_publish, undefined);
+    assert.equal(entry.close_pending, undefined);
+    assert.deepEqual(fs.readFileSync(mirror), localBytes);
+    assert.equal(writes(f).filter(c => method(c) === 'PATCH').length, 1, 'accept is map-only');
+    assertTransport(f);
+  }
+});
+
+test('changed publish retry reconciles a lost applied response and publishes the current revision once', t => {
+  const f = fixture(t, { issues: { 118: issue(118, { title: 'Human intake', body: 'Human intake body.' }) } });
+  f.configure('github-backed');
+  assert.equal(f.run(['--pull', '118']).status, 0);
+  f.mutate(s => { s.losePatchResponse = true; });
+  assertFailed(f.publish('WI-GH-118', 'First reviewed public text.'), 'lost first PATCH response');
+  assert.ok(f.state().issues[118].body.includes('First reviewed public text.'));
+  const revised = f.publish('WI-GH-118', 'Current reviewed public text.');
+  assert.equal(revised.status, 0, revised.stderr);
+  assert.equal(writes(f).filter(c => method(c) === 'POST').length, 0);
+  const patches = writes(f).filter(c => method(c) === 'PATCH');
+  assert.equal(patches.length, 2, 'one first write and one revision write');
+  assert.ok(JSON.parse(patches[1].stdin).body.includes('Current reviewed public text.'));
+  assert.ok(f.state().issues[118].body.includes('Current reviewed public text.'));
+  assert.ok(!f.state().issues[118].body.includes('First reviewed public text.'));
+  const common = git(f.root, 'rev-parse', '--git-common-dir');
+  const mapFile = path.resolve(f.root, common, 'svc-issue-tracker/map.json');
+  assert.equal(JSON.parse(fs.readFileSync(mapFile)).repositories[REPO].issues['WI-GH-118'].pending_publish, undefined);
+  const same = f.publish('WI-GH-118', 'Current reviewed public text.');
+  assert.equal(same.status, 0, same.stderr);
+  assert.equal(writes(f).filter(c => method(c) === 'PATCH').length, 2, 'repeat revision is a no-op');
+  assert.equal(f.run(['--pull', '118']).status, 0, 'owned revision remains current to intake');
+  assertTransport(f);
+});
+
+test('applied pending publish on an already closed issue reconciles without reopening or inventing verification', t => {
+  const f = fixture(t, { issues: { 118: issue(118, { title: 'Human intake', body: 'Human intake body.' }) } });
+  f.configure('github-backed');
+  assert.equal(f.run(['--pull', '118']).status, 0);
+  const mirror = path.join(f.root, 'docs/specs/work-items/WI-GH-118.md');
+  const localBytes = fs.readFileSync(mirror);
+  f.mutate(s => { s.losePatchResponse = true; });
+  assertFailed(f.publish('WI-GH-118', 'Reviewed public text.'), 'lost applied publication response');
+  assert.equal(writes(f).filter(c => method(c) === 'PATCH').length, 1);
+  f.mutate(s => { s.issues[118].state = 'closed'; s.issues[118].closed_at = '2026-09-25T12:00:00Z'; });
+  const retry = f.publish('WI-GH-118', 'Reviewed public text.');
+  assert.equal(retry.status, 0, retry.stderr);
+  assert.match(retry.stdout, /closed/i);
+  const common = git(f.root, 'rev-parse', '--git-common-dir');
+  const mapFile = path.resolve(f.root, common, 'svc-issue-tracker/map.json');
+  const entry = JSON.parse(fs.readFileSync(mapFile)).repositories[REPO].issues['WI-GH-118'];
+  assert.equal(entry.pending_publish, undefined, retry.stdout + '\n' + retry.stderr);
+  assert.equal(entry.origin, 'github');
+  assert.equal(entry.number, 118);
+  assert.equal(entry.state, 'closed');
+  assert.equal(entry.source_sha256, sourceDigest(f.state().issues[118]));
+  assert.equal(f.state().issues[118].state, 'closed');
+  assert.deepEqual(fs.readFileSync(mirror), localBytes, 'remote close cannot mark local WI VERIFIED');
+  assert.match(fs.readFileSync(mirror, 'utf8'), /\*\*Status:\*\* backlog/);
+  assert.equal(writes(f).filter(c => method(c) === 'PATCH').length, 1, 'reconciliation never reopens');
+  assertFailed(f.run(['--close-wi', 'WI-GH-118', '--commit', 'f'.repeat(40)]), 'remote closure is not G7 proof');
+  assert.equal(writes(f).filter(c => method(c) === 'PATCH').length, 1);
+  assertTransport(f);
+});
+
+test('revised publish against a closed issue clears applied pending state but does not PATCH', t => {
+  const f = fixture(t, { issues: { 118: issue(118, { title: 'Human intake', body: 'Human intake body.' }) } });
+  f.configure('github-backed');
+  assert.equal(f.run(['--pull', '118']).status, 0);
+  f.mutate(s => { s.losePatchResponse = true; });
+  assertFailed(f.publish('WI-GH-118', 'Original public text.'), 'lost applied response');
+  f.mutate(s => { s.issues[118].state = 'closed'; s.issues[118].closed_at = '2026-09-25T12:00:00Z'; });
+  assertFailed(f.publish('WI-GH-118', 'Revised public text.'), 'closed issue cannot accept revised text');
+  const common = git(f.root, 'rev-parse', '--git-common-dir');
+  const map = JSON.parse(fs.readFileSync(path.resolve(f.root, common, 'svc-issue-tracker/map.json')));
+  const entry = map.repositories[REPO].issues['WI-GH-118'];
+  assert.equal(entry.pending_publish, undefined, 'applied original request is still reconciled');
+  assert.equal(entry.state, 'closed');
+  assert.equal(entry.source_sha256, sourceDigest(f.state().issues[118]));
+  assert.ok(f.state().issues[118].body.includes('Original public text.'));
+  assert.ok(!f.state().issues[118].body.includes('Revised public text.'));
+  assert.equal(writes(f).filter(c => method(c) === 'PATCH').length, 1);
+  assertTransport(f);
+});
+
+test('digest acceptance reconciles an applied pending publish after a human outside edit, then verified close preserves it', t => {
+  const f = fixture(t, { issues: { 118: issue(118, { title: 'Human intake', body: 'Human intake body.' }) } });
+  f.configure('github-backed');
+  assert.equal(f.run(['--pull', '118']).status, 0);
+  const mirror = path.join(f.root, 'docs/specs/work-items/WI-GH-118.md');
+  fs.writeFileSync(mirror, fs.readFileSync(mirror, 'utf8').replace('**Status:** backlog', '**Status:** VERIFIED'));
+  const localBytes = fs.readFileSync(mirror);
+  const common = git(f.root, 'rev-parse', '--git-common-dir');
+  const mapFile = path.resolve(f.root, common, 'svc-issue-tracker/map.json');
+  const original = JSON.parse(fs.readFileSync(mapFile)).repositories[REPO].issues['WI-GH-118'];
+  f.mutate(s => { s.losePatchResponse = true; });
+  assertFailed(f.publish('WI-GH-118', 'Reviewed public text.'), 'lost applied response');
+  f.mutate(s => { s.issues[118].body += '\nMaintainer clarification outside the owned block.'; });
+  assertFailed(f.publish('WI-GH-118', 'Reviewed public text.'), 'ordinary retry cannot absorb human text');
+  const pendingBytes = fs.readFileSync(mapFile);
+  const preview = f.run(['--accept-remote', '118', '--wi', 'WI-GH-118', '--dry-run']);
+  assert.equal(preview.status, 0, preview.stderr);
+  const reviewed = JSON.parse(preview.stdout);
+  assert.equal(reviewed.remote.body, f.state().issues[118].body);
+  assert.equal(reviewed.map_effects.clear, 'pending_publish');
+  assert.equal(reviewed.map_effects.origin, 'github');
+  assert.equal(reviewed.map_effects.mirror_sha256, original.mirror_sha256);
+  assert.equal(reviewed.remote_write, false);
+  assert.equal(reviewed.local_wi_write, false);
+  assert.equal(reviewed.source_sha256, sourceDigest(f.state().issues[118]));
+  assert.deepEqual(fs.readFileSync(mapFile), pendingBytes, 'preview cannot clear pending state');
+  assert.deepEqual(fs.readFileSync(mirror), localBytes);
+  assert.equal(writes(f).filter(c => method(c) === 'PATCH').length, 1);
+  assertFailed(f.run(['--accept-remote', '118', '--wi', 'WI-GH-118', '--source-sha256', original.source_sha256]), 'stale decision');
+  assert.deepEqual(fs.readFileSync(mapFile), pendingBytes, 'stale digest cannot clear pending state');
+  const accepted = f.run(['--accept-remote', '118', '--wi', 'WI-GH-118', '--source-sha256', reviewed.source_sha256]);
+  assert.equal(accepted.status, 0, accepted.stderr);
+  const entry = JSON.parse(fs.readFileSync(mapFile)).repositories[REPO].issues['WI-GH-118'];
+  assert.equal(entry.origin, 'github');
+  assert.equal(entry.number, 118);
+  assert.equal(entry.marker, '<!-- ssve-issue-tracker:example/project:WI-GH-118:begin -->');
+  assert.equal(entry.mirror_sha256, original.mirror_sha256);
+  assert.equal(entry.source_sha256, reviewed.source_sha256);
+  assert.equal(entry.pending_publish, undefined);
+  assert.deepEqual(fs.readFileSync(mirror), localBytes, 'acceptance does not rewrite local VERIFIED WI');
+  assert.ok(f.state().issues[118].body.includes('Maintainer clarification outside the owned block.'));
+  assert.equal(writes(f).filter(c => method(c) === 'PATCH').length, 1, 'acceptance never writes GitHub');
+  const sha = verifiedNote(f, 'WI-GH-118');
+  const close = f.run(['--close-wi', 'WI-GH-118', '--commit', sha]);
+  assert.equal(close.status, 0, close.stderr);
+  assert.equal(f.state().issues[118].state, 'closed');
+  assert.ok(f.state().issues[118].body.includes('Maintainer clarification outside the owned block.'));
+  assert.equal(writes(f).filter(c => method(c) === 'PATCH').length, 2, 'verified close is the only second PATCH');
+  assertTransport(f);
+});
+
+test('pending publication acceptance refuses a changed title or owned text without losing pending provenance', t => {
+  for (const change of ['title', 'owned text']) {
+    const f = fixture(t, { issues: { 118: issue(118, { title: 'Human intake', body: 'Human intake body.' }) } });
+    f.configure('github-backed');
+    assert.equal(f.run(['--pull', '118']).status, 0);
+    const mirror = path.join(f.root, 'docs/specs/work-items/WI-GH-118.md');
+    const localBytes = fs.readFileSync(mirror);
+    f.mutate(s => { s.losePatchResponse = true; });
+    assertFailed(f.publish('WI-GH-118', 'Reviewed public text.'), 'lost applied response');
+    const common = git(f.root, 'rev-parse', '--git-common-dir');
+    const mapFile = path.resolve(f.root, common, 'svc-issue-tracker/map.json');
+    const pendingBytes = fs.readFileSync(mapFile);
+    f.mutate(s => {
+      if (change === 'title') s.issues[118].title = 'Maintainer changed title';
+      else s.issues[118].body = s.issues[118].body.replace('Reviewed public text.', 'Maintainer changed owned text.');
+    });
+    const digest = sourceDigest(f.state().issues[118]);
+    assertFailed(f.run(['--accept-remote', '118', '--wi', 'WI-GH-118', '--source-sha256', digest]), change + ' must not be accepted');
+    assert.deepEqual(fs.readFileSync(mapFile), pendingBytes, 'rejection retains exact pending state');
+    assert.deepEqual(fs.readFileSync(mirror), localBytes);
+    assert.equal(writes(f).filter(c => method(c) === 'PATCH').length, 1);
+    assertTransport(f);
+  }
 });
