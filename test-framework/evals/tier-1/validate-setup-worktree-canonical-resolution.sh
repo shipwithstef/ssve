@@ -20,12 +20,12 @@ REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 . "$REPO_ROOT/test-framework/evals/tier-1/lib/stage-governed-hooks.sh"; STAGE_HOOKS_REPO="$REPO_ROOT"
 SETUP="$REPO_ROOT/setup"
 EXPECTED_ROOT="$REPO_ROOT"
-if [[ "$REPO_ROOT" == *"/.worktrees/"* ]]; then
-  COMMON_GIT_DIR="$(cd "$REPO_ROOT" && git rev-parse --git-common-dir 2>/dev/null || true)"
-  if [[ -n "$COMMON_GIT_DIR" ]]; then
-    [[ "$COMMON_GIT_DIR" != /* ]] && COMMON_GIT_DIR="$(cd "$REPO_ROOT" && cd "$COMMON_GIT_DIR" && pwd)"
-    EXPECTED_ROOT="$(cd "$COMMON_GIT_DIR/.." && pwd)"
-  fi
+# Git identity covers both legacy .worktrees/ and external ~/worktrees/ layouts.
+# A pathname convention cannot identify the canonical source checkout.
+COMMON_GIT_DIR="$(git -C "$REPO_ROOT" rev-parse --git-common-dir 2>/dev/null || true)"
+if [[ -n "$COMMON_GIT_DIR" ]]; then
+  [[ "$COMMON_GIT_DIR" != /* ]] && COMMON_GIT_DIR="$(cd "$REPO_ROOT/$COMMON_GIT_DIR" && pwd)"
+  EXPECTED_ROOT="$(cd "$COMMON_GIT_DIR/.." && pwd)"
 fi
 
 if [[ ! -x "$SETUP" ]]; then
