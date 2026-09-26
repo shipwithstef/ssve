@@ -15,9 +15,9 @@ description: Use when a UX-REVIEWED feature spec needs visual design — produce
 inputs:
   required:
     - { path: "docs/specs/ux/<name>.md", artifact: ux-design }
-    - { path: "docs/specs/marketing-context.md", artifact: marketing-context }
-    - { path: "references/landing-bank/<sector>/", artifact: reference-sample-bank, note: "10+ indie 2026 samples per target sector; if absent, invoke reference-bank-builder first" }
   optional:
+    - { path: "docs/specs/marketing-context.md", artifact: marketing-context, note: "Marketing pages only; product UI uses its feature job, UX design and personas" }
+    - { path: "references/landing-bank/<sector>/", artifact: reference-sample-bank, note: "Marketing pages only; product UI compares relevant same-job product screens" }
     - { path: "docs/specs/design-system.md", artifact: design-system }
     - { path: "docs/specs/domain-profile.md", artifact: domain-profile }
     - { path: "docs/specs/analyze-competitors.md", artifact: competitor-analysis }
@@ -25,7 +25,7 @@ outputs:
   produces:
     - { path: "docs/specs/ui/<name>.md", artifact: ui-design }
     - { path: "docs/specs/design-system.md", artifact: design-system }
-    - { path: "docs/specs/ui/<screen>/in-app-verification/", artifact: live-page-screenshots, note: "MANDATORY for browser-visible UI work: live light/dark screenshots for the designed screen. Route-workflow resolves this artifact path for its visual-output post-skill hook." }
+    - { path: "docs/specs/ui/<screen>/in-app-verification/", artifact: live-page-screenshots, note: "For browser-visible UI work, capture the implemented screen in supported themes and viewports; verify its real user journey. Route-workflow resolves this artifact path for its visual-output post-skill hook." }
 chain:
   lanes:
     greenfield: { position: 11, prev: design-ux, next: landing-page }
@@ -45,7 +45,9 @@ consumers via `references/skill-runtime-contracts-v2.json`; follow
 
 ## Overview
 
-UI design answers HOW it looks. It takes a UX-REVIEWED feature spec (screen flows, states, information hierarchy) plus the project's design system and produces component specifications, design token usage, visual hierarchy, dark mode behavior, animation, and responsive layout specifics.
+UI design answers HOW it looks. It takes a UX-REVIEWED feature spec (screen flows, states, information hierarchy) plus the project's design system and produces component specifications, design token usage, visual hierarchy, supported-theme behavior, purposeful motion when useful, and responsive layout specifics.
+
+**Route by surface:** Product/app screens use the named user job, current product UI, and real same-job product screens as comparisons. Marketing context, the landing bank, `landing-page`, and `benchmark-landing` apply only to marketing pages. The lane's static `next: landing-page` is conditional: marketing pages continue to `landing-page`, then applicable `track-visuals` and `design-tech`; product UI skips `landing-page` and continues to applicable `track-visuals` and `design-tech`. A missing marketing bank never blocks an app screen. Compare rendered states and the user's actual journey, not a standalone inspiration frame. Template sections for unsupported themes or unused motion are marked not applicable with a reason; they do not create new product requirements.
 
 This skill transitions a feature spec from UX-REVIEWED to DESIGNED.
 
@@ -132,11 +134,7 @@ Parity requirements:
 or HTML variants that do not include the affected existing component are not
 valid evidence for existing-component UI changes.
 
-**AI Slop guard:** Before finalizing any variant, check against AP-22
-(`references/anti-patterns.md`). Gradient hero sections, three-column
-benefit cards, generic CTAs, floating action buttons on desktop, and other
-statistically dominant AI patterns are blacklisted. Replace with
-project-specific alternatives derived from personas and competitive analysis.
+**Generic-design guard:** Use AP-22 (`references/anti-patterns.md`) as a critique lens, not a keyword ban. For each prominent pattern, ask which step of this screen's user job it helps, what current or same-job product screen supports the choice, and what would fail if it were removed. Replace generic copy, decorative structure, or borrowed layouts that have no answer. A familiar pattern can be the best choice when it makes the task clearer or faster.
 
 ### Step 2: Taste Memory
 
@@ -149,47 +147,38 @@ ls docs/specs/decisions/taste-*.md 2>/dev/null
 
 If prior approvals exist, bias toward the user's established preferences — font choices, density preferences, color temperature, decoration level. Taste compounds across sessions. A user who consistently picks minimal variants should not be shown maximalist options unless explicitly exploring a new direction.
 
-### Step 2b: Aesthetic Configuration (Design Dials)
+### Step 2b: Aesthetic Configuration
 
-To ensure deterministic control over the "vibe," use the following quantitative dials (1-10) to drive UI logic. These values should be agreed upon with the user or derived from the builder profile.
-
-| Dial | Level | Description |
-|------|-------|-------------|
-| **Creativity** | `8` | `1` = Ultra-minimal, Swiss, silent. `10` = Expressive, bold typography, inline images in headlines, strong asymmetry. |
-| **Density** | `4` | `1` = Gallery-airy, massive whitespace. `10` = Cockpit-dense, data-heavy. |
-| **Variance** | `8` | `1` = Predictable, symmetric grids. `10` = Artsy chaotic, no two sections alike. Banned centered Heroes at 8+. |
-| **Motion Intent**| `6` | `1` = Static. `10` = Cinematic orchestration in every component. |
-
-**Rationale:** These dials move the AI's output from "safe" defaults to specific aesthetic distributions.
+Set density, visual expression, and motion from the user's task, content shape, existing design system, accessibility needs, and any stated preference. If a numeric dial helps compare directions, choose and explain it for this product; there is no default creativity, variance, or motion score. A restrained screen can be distinctive through hierarchy, terminology, and precise use of real data.
 
 ### Step 3: Concept Generation
 
-Generate N text-only concepts (typically 3-5). Each concept is a **distinct creative direction**, not a variation on the same idea.
+Explore genuinely different text-only directions when the product decision is still open; include retaining the current pattern for an existing screen. Use only as many variants as needed to expose a meaningful tradeoff. Each direction must state the user job and expected effect on task success, comprehension, or trust, not merely change colors or shapes.
 
 Bad (variations):
 - Concept A: Blue buttons with rounded corners
 - Concept B: Blue buttons with square corners
 - Concept C: Teal buttons with rounded corners
 
-Good (directions):
-- Concept A: **Editorial** — generous whitespace, large serif headings, content-first with minimal chrome
-- Concept B: **Dashboard** — dense, data-forward, compact sidebar navigation, monospace accents
-- Concept C: **Boutique** — bold brand color, oversized typography, personality-driven with illustration accents
+Good (same-job directions for an operations screen):
+- Concept A: **Exceptions first** — unresolved issues lead; the owner can act before scanning the full schedule.
+- Concept B: **Timeline first** — shifts lead in time order; conflicts appear where they affect the plan.
+- Concept C: **Summary first** — current status and next action lead; details stay one step away.
 
-Each concept description should include: name, aesthetic philosophy, typography approach, color temperature, density, and what makes it appropriate for the target user.
+Each direction should name the user's job, information priority, relevant same-job screen evidence, expected task outcome, and resulting visual treatment. Typography, color, and density support that choice rather than define the concept.
 
 ### Step 4: Concept Confirmation
 
 Present the text concepts to the user BEFORE generating HTML. This is a gate.
 
 ```
-I've drafted 3 design directions for [screen name]:
+For [screen name], the user needs to [specific job]. The current screen and [same-job reference] suggest these meaningful choices:
 
-A) Editorial — generous whitespace, large serif headings, content-first...
-B) Dashboard — dense, data-forward, compact sidebar navigation...
-C) Boutique — bold brand color, oversized typography, personality-driven...
+A) [Choice tied to the primary action and expected outcome]
+B) [Different hierarchy or interaction tied to the same outcome]
+C) [Retain current pattern, if it already serves the job]
 
-Shall I generate HTML mockups for all 3, or would you like to adjust/replace any direction?
+Which consequential direction should guide the rendered comparison?
 ```
 
 In auto mode: P0 selects which concepts to generate with justification. In interactive mode: wait for user confirmation.
@@ -201,21 +190,21 @@ For each confirmed concept, generate a self-contained HTML/CSS file:
 - If Step 1.5 applies, the HTML/CSS must render the production-derived current
   component context and the intended final state side by side or in directly
   comparable states. Do not generate generic standalone mocks.
-- **50-100 lines of real HTML/CSS** — not pseudocode, not wireframes
+- Enough real HTML/CSS to render the affected screen and compare its meaningful states — not pseudocode or an isolated inspiration frame
 - Inline styles or a `<style>` block — no external dependencies except Google Fonts
 - Real content (not lorem ipsum) — use plausible data for the product's domain
 - Responsive: looks reasonable at both 375px and 1200px
-- All edge cases visible: show at least one empty state, one error state, or one overflow case per variant
+- Render the empty, error, overflow, or other states that the spec and current journey make material for this screen
 
 ```bash
 # Generate variants
-write docs/specs/ui/variants/<screen>-A-editorial.html
-write docs/specs/ui/variants/<screen>-B-dashboard.html
-write docs/specs/ui/variants/<screen>-C-boutique.html
+write docs/specs/ui/variants/<screen>-A-<job-choice>.html
+write docs/specs/ui/variants/<screen>-B-<job-choice>.html
+# Add another variant only when it exposes a consequential choice.
 
 # Open comparison board in browser
-gstack browse docs/specs/ui/variants/<screen>-A-editorial.html
-gstack browse docs/specs/ui/variants/<screen>-B-dashboard.html
+gstack browse docs/specs/ui/variants/<screen>-A-<job-choice>.html
+gstack browse docs/specs/ui/variants/<screen>-B-<job-choice>.html
 ```
 
 ### Step 6: Comparison and Selection
@@ -283,16 +272,16 @@ The primary orchestrator MUST NOT re-read the entire codebase to produce constra
 ```bash
 gemini generalist "Read the codebase and produce docs/specs/ui/constraint-matrix.md. \
 Include: exact hex values from design tokens, component names + their props, \
-dark-mode variables, Tailwind breakpoints, typography scale, and any brand \
+supported-theme variables, Tailwind breakpoints, typography scale, and any brand \
 personality signals from existing UI. Cite file:line for every claim. No prose, \
 table format only."
 ```
 
-The output file is the **single source of truth** for the external canvas. Hallucinations past this point are the external tool's fault, not the orchestrator's.
+The output file is the reviewed constraint source for the external canvas. Verify returned code against the actual product and supported states before accepting it.
 
 ### Step B — Compose the Vibe Contract prompt
 
-Load `references/vibe-contract-template.md`. Fill in: product context, aesthetic direction, signature hooks. Inline the `constraint-matrix.md` contents. The template explicitly bans slop and mandates materiality — do not shorten it to save tokens; the bans are the point.
+Load `references/vibe-contract-template.md`. Fill in: product context, aesthetic direction, signature hooks. Inline the `constraint-matrix.md` contents. Apply its materiality questions to the named user job and current design system. Treat style bans as prompts for justification, not automatic rejection of a pattern that demonstrably serves this product.
 
 **Submit the prompt + return the code — by canvas:**
 - **Claude Design** (the preferred external canvas): use the built-in **`/design-sync`** Claude Code skill — NOT a manual hand-roll. Per `references/claude-design-sync.md`: `/design-sync` pulls the project's design system into the repo as **DTCG tokens** (these ground the constraint matrix), Claude Code generates against the Vibe Contract + tokens, then the same `/design-sync` pushes the built UI back to the canvas for visual refinement. Pre-flight: confirm `/design-sync` is available (`/update` if not) and the user is on a paid plan; otherwise fall back to the in-session Design Shotgun (the default path) — never block on the external tool. **Code stays the source of truth** — sync tokens + visual polish, never reverse-author component structure (component parity is not a 2026 guarantee).
@@ -305,7 +294,7 @@ Before integrating returned code, run a zero-history Gemini subagent as adversar
 ```bash
 gemini generalist "Audit the returned code at <path> against docs/specs/ui/constraint-matrix.md. \
 Check: (1) every hex value matches the matrix, (2) no new npm dependencies introduced, \
-(3) component names match matrix, (4) dark-mode variables used, (5) no Inter/Roboto unless matrix specifies. \
+(3) component names match matrix, (4) supported themes and contrast are implemented, (5) typography follows approved product tokens. \
 Output: strict PASS or FAIL: <reason>. No prose."
 ```
 
@@ -313,7 +302,7 @@ On FAIL: iterate with the external canvas using the audit output as the correcti
 
 ### Cost comparison (informational — do NOT use as a routing trigger)
 
-In-session Design Shotgun generates 3 variants at ~5k tokens each (~15k/turn) and produces the standard, integration-ready React/Tailwind output. External handoff trades ~13k tokens of that for a user-in-the-loop external tool round-trip (~1.8k tokens on svc side, but adds manual wait time + integration friction + tool dependency).
+In-session variant exploration uses only enough directions to resolve the real design choice and produces integration-ready output. External handoff may reduce local generation cost but adds a user round-trip, integration work, and tool dependency.
 
 Token cost alone does NOT justify switching routes. The in-session path is production-grade; external handoff is for cases where the user explicitly wants external-tool-authored output despite the friction.
 
@@ -479,7 +468,9 @@ Before designing any feature's UI, the design system must exist. If `docs/specs/
 
 ---
 
-## Motion
+## Motion (if used)
+
+Record only tokens used by the approved interaction; write "none" when an immediate state change is clearer.
 
 | Token | Value | Usage |
 |-------|-------|-------|
@@ -498,7 +489,7 @@ Before designing any feature's UI, the design system must exist. If `docs/specs/
 
 ---
 
-## Dark Mode Strategy
+## Dark Mode Strategy (only when supported)
 
 [Approach: automatic from system preference / user toggle / both]
 [Surface elevation in dark mode — how depth is communicated without shadows]
@@ -576,55 +567,43 @@ Research only gaps not covered by these artifacts.
 
 ##### Phase 2: Research the Landscape
 
-Run a web search for 5-10 products in the same space. Look at direct competitors, adjacent products, and best-in-class examples from other domains that serve similar user needs.
-
-For each product noted, capture: name, URL, what they do well visually, what they do poorly.
+For product UI, inspect real product screens that serve the same user job. Reuse current competitor evidence where it names the relevant screen; otherwise inspect accessible live screens, product tours, or documented captures. Record the page/screen URL or capture, its job match, and the specific hierarchy, density, state, or interaction choice that helps or harms that job. A company's marketing homepage is not evidence for an in-app task. Use enough relevant comparisons to challenge the chosen direction, without a product-count quota; if access is limited, name the evidence gap. Marketing pages use the landing bank and `landing-page` instead.
 
 Then perform a **3-layer synthesis:**
 
-- **Layer 1 — Convention:** What patterns does EVERY product in this space share? These are user expectations. Violating them creates friction. (e.g., dashboards always have left nav, e-commerce always shows price prominently)
-- **Layer 2 — Trend:** What is trending or emerging? What are the best products doing that the average ones are not? (e.g., bento grids, glassmorphism fading out, variable fonts rising)
-- **Layer 3 — Differentiation:** Given THIS product's specific users and positioning, where should we deliberately break from convention? What design choices would make this product feel different without confusing users?
+- **Layer 1 — Familiar behavior:** Which patterns on same-job screens help users find the action or interpret the data? Keep them when they serve this job.
+- **Layer 2 — Observed alternatives:** Which relevant screens solve the same task better, and what evidence shows the improvement? A style trend alone is not evidence.
+- **Layer 3 — Product-specific choice:** Given this product's users and data, what should be retained, simplified, or changed so the task is clearer, faster, or more trustworthy?
 
 ##### Phase 3: Complete Design Proposal
 
 Present the design direction as one coherent package. For each dimension, mark decisions as **SAFE** (following convention) or **RISK** (deliberate departure from norms).
 
-**Always propose at least 2 RISKS** with clear rationale for why the departure serves this product's users.
+Propose a departure from convention only when it improves this product's task or positioning enough to justify its implementation and learning cost. Zero departures is valid when the existing pattern serves users best. For each chosen difference, name the compared screen, the expected user outcome, and the simplest implementable change.
 
 | Dimension | Description |
 |-----------|-------------|
-| **AESTHETIC** | Overall visual direction — minimal, dense, playful, corporate, editorial, etc. Reference 2-3 real products. SAFE or RISK. |
+| **AESTHETIC** | Overall visual direction tied to this screen's job; cite relevant real product screens when they inform it. SAFE or RISK. |
 | **DECORATION** | Border-radius, shadows, gradients, textures, dividers. How "decorated" vs "flat" is the UI? SAFE or RISK. |
 | **LAYOUT** | Grid system, max-width, sidebar vs top-nav, content density. SAFE or RISK. |
-| **COLOR** | Primary, secondary, accent, semantic colors — all with hex values. Light and dark mode. SAFE or RISK. |
-| **TYPOGRAPHY** | Display, body, UI, and code fonts — 3 specific font recommendations with rationale. SAFE or RISK. |
+| **COLOR** | Primary, secondary, accent, and semantic colors in supported themes. SAFE or RISK. |
+| **TYPOGRAPHY** | Existing or proposed display, body, UI, and code treatment with a readability and product-fit rationale; no font-change quota. SAFE or RISK. |
 | **SPACING** | Base unit, scale, density philosophy. SAFE or RISK. |
-| **MOTION** | Approach (restrained vs expressive), easing curves, duration ranges. SAFE or RISK. |
+| **MOTION** | State whether motion helps the task; if used, specify easing, duration, and reduced-motion behavior. SAFE or RISK. |
 
 Example RISK with rationale:
-> **TYPOGRAPHY — RISK:** Use Satoshi (geometric sans) for headings instead of the expected neutral grotesque. Rationale: the product targets creative professionals who respond to typographic personality; a generic font signals "another SaaS tool."
+> **HIERARCHY — RISK:** Put the exception list before summary cards because the operator must resolve failed items first; the current screen and a captured same-job product screen show how summaries can hide the next action.
 
 ##### Font Guidance
 
-**Recommended fonts** (distinctive, high-quality, well-hinted):
-- **Sans-serif:** Satoshi, Instrument Sans, DM Sans, Geist, Plus Jakarta Sans
-- **Monospace:** JetBrains Mono, Geist Mono, Berkeley Mono, Fira Code
-
-**Blacklisted** (never use under any circumstances):
-- Papyrus, Comic Sans, Lobster, Impact, Jokerman, Curlz MT
-
-**Overused** (never as primary — acceptable as fallback or body only if justified):
-- Inter, Roboto, Arial, Open Sans, Poppins, Montserrat, Lato, Nunito
-
-The goal is a font stack that gives the product a voice. If a user can't tell your product from a Tailwind template, the typography has failed.
+Start with the product's existing type system. Change it only when the current typography weakens comprehension, density, accessibility, or the approved brand direction. Compare candidates using rendered content from this screen, including real labels and data; explain readability, licensing, load cost, and consistency with existing surfaces. Familiar fonts are acceptable when they serve the job. No font is rejected or adopted solely because it appears often in generated UI.
 
 ##### Phase 4: Generate Font + Color Preview
 
 After the proposal is confirmed, generate an HTML preview page showing:
 - Typography specimens (display, heading, body, UI, code) at actual sizes
 - Color palette swatches with hex values and contrast ratios
-- Light and dark mode side by side
+- Every theme the product actually supports, side by side when there is more than one
 
 Open in browser for visual confirmation before writing DESIGN.md.
 
@@ -741,7 +720,7 @@ What makes this product feel like THIS product and not a generic template.]
 | Duration (normal) | [e.g., 200ms] | Standard transitions |
 | Duration (slow) | [e.g., 350ms] | Large transitions |
 
-**Reduced motion:** all animations collapse to instant or opacity-only.
+**Reduced motion:** where animation is used, provide an immediate or appropriately reduced transition.
 
 ---
 
@@ -749,9 +728,9 @@ What makes this product feel like THIS product and not a generic template.]
 
 | # | Decision | Classification | Rationale |
 |---|----------|---------------|-----------|
-| 1 | [e.g., Use Satoshi for display type] | RISK | [why this departure from convention serves the product] |
-| 2 | [e.g., 8px border-radius on all cards] | SAFE | [follows established SaaS convention] |
-| 3 | [e.g., No sidebar — top nav only] | RISK | [product is content-focused, sidebar wastes horizontal space] |
+| 1 | [e.g., Put unresolved exceptions before summary cards] | RISK | [helps the operator find the next action; cite a same-job screen] |
+| 2 | [e.g., Retain the existing card pattern] | SAFE | [familiar behavior already supports the task] |
+| 3 | [e.g., Keep the existing navigation] | SAFE | [no observed journey failure justifies a change] |
 
 ---
 
@@ -897,9 +876,9 @@ For each screen, map how the information hierarchy (from UX) translates to visua
 - Use typography scale, color, and spacing to create hierarchy — not decoration
 - Every priority level must be visually distinguishable from adjacent levels
 
-### Step 5: Dark Mode
+### Step 5: Supported Themes
 
-Specify how each screen behaves in dark mode. This is not just "swap light tokens for dark tokens" — dark mode has its own visual considerations.
+Specify each theme the product actually supports. When dark mode exists, describe its screen-specific behavior and contrast; do not add a new theme to satisfy a template.
 
 ```markdown
 ## Dark Mode
@@ -919,14 +898,14 @@ Specify how each screen behaves in dark mode. This is not just "swap light token
 ```
 
 **Rules:**
-- Every component from Step 2 that has color tokens must specify dark mode behavior
-- Check contrast ratios in dark mode (WCAG AA minimum: 4.5:1 for text, 3:1 for large text)
-- Elevated surfaces in dark mode use lighter shades (opposite of light mode shadow approach)
+- Every component from Step 2 must work in each supported theme.
+- Check text and control contrast in each supported theme; when dark mode exists, describe its screen-specific surface treatment.
+- Do not require a dark-mode design or capture for a product that does not support it.
 - Images may need treatment (dimming, border) to avoid visual harshness
 
 ### Step 6: Animation and Motion
 
-Specify animation behavior for state transitions (from UX state machines) and interactions.
+Specify motion only for state transitions or interactions where it improves feedback or comprehension. Record "none" for immediate transitions; omit unused animation rows.
 
 ```markdown
 ## Animation and Motion
@@ -935,24 +914,21 @@ Specify animation behavior for state transitions (from UX state machines) and in
 
 | Screen | Transition | Animation | Duration | Easing | Reduced Motion Fallback |
 |--------|-----------|-----------|----------|--------|------------------------|
-| S1 | LOADING → POPULATED | Fade in + stagger children | `motion.duration.normal` | `motion.easing.enter` | Instant (no animation) |
-| S1 | POPULATED → ACTION_PENDING | Button loading spinner | `motion.duration.fast` (loop) | linear | Static loading indicator |
-| S2 | Screen enter | Slide from right | `motion.duration.normal` | `motion.easing.enter` | Instant (no animation) |
+| S1 | LOADING → POPULATED | None; show content immediately | — | — | Same behavior |
+| S1 | POPULATED → ACTION_PENDING | Existing loading indicator, if needed | Existing token if animated | Existing token if animated | Static loading indicator |
 
 ### Micro-Interactions
 
 | Element | Interaction | Animation | Duration | Easing |
 |---------|------------|-----------|----------|--------|
-| Button | Hover | Scale 1.02 + shadow elevation | `motion.duration.fast` | `motion.easing.default` |
-| Card | Tap/Click | Scale 0.98 (press) | `motion.duration.fast` | `motion.easing.default` |
-| Toggle | State change | Slide + color morph | `motion.duration.fast` | `motion.easing.default` |
+| Button | Hover/focus | Existing visible state; animation only if useful | Existing token if animated | Existing token if animated |
+| Toggle | State change | Immediate state update or justified transition | Existing token if animated | Existing token if animated |
 ```
 
 **Rules:**
-- Every state machine transition (from UX Step 3) that the user can perceive must specify animation
-- Every interaction must have a reduced motion fallback
-- No animation should block user interaction (animations are decorative, not gating)
-- Reference motion tokens from the design system — do not invent ad-hoc durations
+- Specify motion only where it clarifies a state change, provides useful feedback, or is part of the approved interaction; an immediate transition is valid.
+- Every actual animation must have a reduced-motion fallback and must not block interaction.
+- Use existing design-system motion tokens for animations that remain.
 
 ### Step 7: Component States
 
@@ -968,8 +944,8 @@ For every interactive component in the feature, specify all visual states.
 | State | Background | Text | Border | Shadow | Cursor | Additional |
 |-------|-----------|------|--------|--------|--------|------------|
 | Default | `color.primary` | `color.text.on-primary` | none | `shadow.sm` | pointer | — |
-| Hover | `color.primary.hover` | `color.text.on-primary` | none | `shadow.md` | pointer | Scale 1.02 |
-| Active | `color.primary.active` | `color.text.on-primary` | none | `shadow.none` | pointer | Scale 0.98 |
+| Hover | `color.primary.hover` | `color.text.on-primary` | none | `shadow.md` | pointer | Visible state; no animation required |
+| Active | `color.primary.active` | `color.text.on-primary` | none | `shadow.none` | pointer | Visible pressed state |
 | Disabled | `color.primary` at 40% opacity | `color.text.disabled` | none | none | not-allowed | — |
 | Loading | `color.primary` | hidden | none | `shadow.sm` | wait | Spinner centered |
 | Focus | `color.primary` | `color.text.on-primary` | `color.border.focus` 2px | `shadow.sm` | pointer | Focus ring visible |
@@ -994,28 +970,9 @@ For every interactive component in the feature, specify all visual states.
 - All values must reference design system tokens
 - Disabled and loading states must prevent interaction (cursor, pointer-events)
 
-## Signature Premium Patterns (Anti-Slop)
+## Purposeful visual choices
 
-To differentiate from generic "AI Slop" patterns, implement these high-end techniques:
-
-### 1. Liquid Glass Refraction
-When using glassmorphism, go beyond simple `backdrop-blur`. Add:
-- **Refraction Border:** 1px solid `rgba(255, 255, 255, 0.1)`.
-- **Inner Highlight:** `box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1)`.
-- **Rationale:** Simulates physical edge refraction, making components feel like high-end hardware.
-
-### 2. Inline Image Typography (Hero Signature)
-For high-variance (8+) Hero sections, embed small, rounded, contextual photos directly between words or letters in the main headline.
-- **Pattern:** "We build [photo of hands] digital [photo of screen] products."
-- **Rationale:** Uses images as visual punctuation, breaking the "wall of text" and signaling intentional creative direction.
-
-### 3. Materiality Constraints
-- **Inter Ban:** `Inter` is BANNED for premium contexts. Use `Geist`, `Satoshi`, `Cabinet Grotesk`, or `Outfit`.
-- **Color Calibration:** Max 1 accent color per project. Saturation < 80%. BANNED "AI Purple/Blue" neon gradients.
-
-### 4. Spacing Hierarchy
-- **Macro-whitespace:** Double the standard spacing between sections.
-- **Micro-interactions:** Mandate `-1px translateY` or `scale(0.98)` on `:active` for tactile feedback.
+Distinctiveness comes from this product's data, language, user job, and hierarchy. Prefer the smallest change that makes the important action or result clearer. Do not add glass effects, headline imagery, a new font, accent colors, or tactile motion merely to signal polish. If a visual treatment is chosen, record the compared real screen, the intended user outcome, and how the implemented screen will show that outcome.
 
 ### Step 8: Responsive Layout Specifics
 
@@ -1192,11 +1149,13 @@ do not satisfy the UI trace.
 The UI design artifact is ready for Gate G3 review. Invoke the Review Protocol:
 
 **G3 checks:**
+- Does the rendered screen make the named user job and primary action clear, with any distinctive choice tied to an observed task outcome and relevant same-job comparison?
 - Is the design system referenced consistently (no ad-hoc values)?
 - Is every component state specified (hover, active, disabled, error, loading, focus)?
 - Does responsive layout preserve all ACs on all viewports?
-- Is dark mode specified for every colored element?
-- Are animations specified with reduced motion fallbacks?
+- Are all supported themes specified and contrast-checked?
+- Do actual animations have reduced-motion fallbacks, and are they purposeful?
+- Does the implemented visual hierarchy serve the named user job better than the current or compared same-job screen?
 - Does component reuse maximize (not duplicating similar components)?
 - Is every AC traceable to specific components and states?
 
@@ -1236,16 +1195,16 @@ Feature spec updated: docs/specs/features/<feature-name>.md
 Status: DESIGNED (was UX-REVIEWED)
 Components: N components specified across M screens
 New design system tokens: K tokens added
-Dark mode: fully specified
-Animation: N transitions, all with reduced motion fallbacks
+Supported themes: [names], with contrast and relevant states specified
+Motion: [none / N purposeful transitions], with reduced-motion fallbacks where used
 Responsive: all screens have small + large viewport layouts
 AC coverage: [all / N of M covered, gaps listed]
 
-Ready for technical design. Next step:
-  "If the feature has a browser-visible surface, run track-visuals in baseline mode. Then run design-tech against docs/specs/features/<feature-name>.md"
+Ready for the next lane step. Next step:
+  "For a marketing page, run landing-page; otherwise skip it. Then run applicable track-visuals baseline and design-tech against docs/specs/features/<feature-name>.md"
 ```
 
-**The terminal state is invoking design-tech.** This skill does not define architecture, data models, or technology choices.
+**The terminal state is a DESIGNED spec and a surface-specific handoff.** Marketing pages continue to `landing-page`; product UI skips it. Both then continue through applicable `track-visuals` to `design-tech`. This skill does not define architecture, data models, or technology choices.
 
 ## Feedback Loops
 
@@ -1283,18 +1242,19 @@ before E2E authors are forced into selector exceptions.
 |-------|-----|---------|
 | Add new screens or change flows | That is UX design (Phase 4) | Feed back to design-ux if flow changes are needed |
 | Use hardcoded values instead of tokens | Breaks design system consistency | Every color, spacing, and typography reference must use a design system token |
-| Skip dark mode | Users expect it; accessibility requires it | Specify dark mode behavior for every colored element |
+| Ignore a supported theme | Users lose contrast or state cues | Specify and verify every theme the product actually supports |
 | Skip component states | Hover, disabled, error, loading are not optional | Every interactive component must have all states specified |
 | Copy Material/Tailwind wholesale | The design system must reflect the project's brand | Use them as inspiration, adapt to the project |
 | Skip reduced motion fallbacks | Accessibility requirement, not optional | Every animation must specify what happens with prefers-reduced-motion |
-| Specify animations without duration tokens | Creates inconsistent timing across the product | Reference motion tokens from the design system |
+| Add decorative animation without a user purpose | Distracts from the task and adds maintenance cost | Use immediate state changes or justify purposeful motion with existing tokens |
 | Design for one viewport only | Responsive is required, not optional | Every screen must have small and large viewport layouts at minimum |
 
 ## Routing
 
 | Situation | Route to |
 |-----------|----------|
-| UI design complete, G3 passed, browser-visible feature | `track-visuals` (baseline) then `design-tech` |
+| UI design complete, G3 passed, marketing page | `landing-page`, then `track-visuals` (baseline) and `design-tech` |
+| UI design complete, G3 passed, product/app screen | Skip `landing-page`; `track-visuals` (baseline) then `design-tech` |
 | UI design complete, G3 passed, no visual surface | `design-tech` |
 | UX flow needs revision for visual coherence | `design-ux` (feedback loop) |
 | Design system needs new patterns | Extend `docs/specs/design-system.md` (then return) |
@@ -1370,22 +1330,23 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 **If `--progressive` flag is present AND self-verify passed:**
 - Check `--skip` list. If this skill is in the skip list, pass through to next.
-- If the feature has a browser-visible surface: invoke `track-visuals --mode baseline`, then `design-tech --progressive --lane <lane>`
-- If the feature has no visual surface: invoke `design-tech --progressive --lane <lane>`
+- If this is a marketing page: invoke `landing-page --progressive --lane <lane>`; that skill continues to applicable `track-visuals` and `design-tech`.
+- If this is a product/app screen: skip `landing-page` with a recorded reason, then invoke `track-visuals --mode baseline` and `design-tech --progressive --lane <lane>`.
+- If there is no visual surface: skip the visual-only steps with recorded reasons and invoke `design-tech --progressive --lane <lane>`.
 
 **If `--progressive` flag is absent:**
 - Report results to user
-- Suggest: "Next: run `track-visuals --mode baseline` for browser-visible work, then `design-tech`"
+- Suggest: "Next: run `landing-page` for a marketing page; otherwise continue with applicable `track-visuals --mode baseline`, then `design-tech`."
 
-## Phase Z — Live in-app verification (MANDATORY terminal gate)
+## Phase Z — Live in-app verification (post-execution promotion gate)
 
-Before declaring done on any UI design that has been wired into a deployed product, capture the affected screen(s) in BOTH light AND dark theme via Playwright and run the eyeball checklist in `_shared/live-evidence.md`. **No live screenshots, no done.**
+After implementation is deployed and before promotion is declared done, capture the affected screen(s) in every supported theme and shipping viewport via Playwright, follow the actual user journey through the changed states, and run the eyeball checklist in `_shared/live-evidence.md`. **No live screenshots, no done.**
 
-Output: `docs/specs/ui/<screen>/in-app-verification/{light,dark}.png`
+Output: `docs/specs/ui/<screen>/in-app-verification/` with labeled captures for the supported theme(s), viewports, and material states.
 
-Hard-fails (raw text leak from JSX swap, broken theme swap, contrast fail, layout overlap, cached old asset) loop back to component re-render. Tier-1 component preview alone is **not sufficient** — the live screenshot pair is the truth-teller.
+Hard-fails (raw text leak from JSX swap, broken theme swap, contrast fail, layout overlap, cached old asset) loop back to component re-render. Tier-1 component preview alone is **not sufficient** — the live journey and captures are the truth-teller.
 
-Skip condition: design-ui invoked greenfield with no deployed surface yet. In that case, this phase activates on first `execute-changeset` deploy and the screenshot pair is captured then.
+A pre-execution design-ui task records this as a downstream proof obligation; it does not claim a deployed capture before implementation. On first deploy, capture the supported themes, viewports, and affected journey before promotion.
 
 Origin: 2026-04-30 Example Marketplace run shipped a logo-swap that bundle-grep + build all PASSED while the live page rendered raw JSX text in the top-left. The component-preview was correct in isolation; only live capture caught it.
 

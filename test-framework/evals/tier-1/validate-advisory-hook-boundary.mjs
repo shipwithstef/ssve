@@ -91,7 +91,7 @@ try {
   ]) {
     const result = run({ payload: rewrite });
     assert.equal(result.status, 0);
-    assert.match(result.stderr, /original input retained/);
+    assert.equal(result.stderr, "", "routine rewrite has no advisory warning");
     const out = JSON.parse(result.stdout);
     assert.equal(out.updated_input, undefined);
     assert.equal(out.hookSpecificOutput?.updatedInput, undefined);

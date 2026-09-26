@@ -9,7 +9,7 @@ import { validate } from './lib/json-schema-validator.mjs';
 import { cursorIndependentEligible, resolveDispatchExternalReviewer, resolveDispatchReviewTopology } from './resolve-dispatch.mjs';
 
 import { validateResourcePolicy } from './lib/reviewer-resources.mjs';
-import { writeJsonAtomic } from './state-io.mjs';
+import { cursorExactRouteEvidenceValid } from './lib/review-launch-preflight.mjs';
 
 const DEFAULT_DISPATCH_CONFIG = path.join(os.homedir(), '.svc', 'dispatch-policy.json');
 const DEFAULT_LEGACY_CONFIG = path.join(os.homedir(), '.svc', 'reviewer-policy-v2.json');
@@ -110,14 +110,34 @@ export function validateReviewerPolicy(policy) {
   }
 }
 
-export function createReviewerPolicy({ orchestrator, self, advisories = [], reviewer, resource_policy }) {
+export function createReviewerPolicy({ orchestrator, self, advisories = [], reviewer, resource_policy, transport_options }) {
   const stations = [{ id: 'self', kind: 'inline-self', required: true, authority: 'advisory', tuple: self }, ...advisories, reviewer];
   const phase = { release_authority: reviewer?.authority === 'independent', stations };
   const policy = { schema_version: 2, authority: 'repository-owner', default_mode: 'production',
     modes: { production: { orchestrators: { [orchestrator]: { plan: structuredClone(phase), exec: structuredClone(phase) } } } },
-    ...(resource_policy === undefined ? {} : { resource_policy }) };
+    ...(resource_policy === undefined ? {} : { resource_policy }),
+    ...(transport_options === undefined ? {} : { transport_options }) };
   validateReviewerPolicy(policy);
   return policy;
+}
+
+export function writeReviewerPolicySecure(file, options) {
+  const policy = createReviewerPolicy(options);
+  const absolute = path.resolve(file);
+  const directory = path.dirname(absolute);
+  fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
+  const dirInfo = fs.lstatSync(directory);
+  if (!dirInfo.isDirectory() || dirInfo.isSymbolicLink() || (typeof process.getuid === 'function' && dirInfo.uid !== process.getuid()) || (dirInfo.mode & 0o077) !== 0) fail(`owner policy directory must be owned by the current principal and mode 0700: ${directory}`);
+  if (fs.existsSync(absolute)) {
+    const info = fs.lstatSync(absolute);
+    if (!info.isFile() || info.isSymbolicLink() || (typeof process.getuid === 'function' && info.uid !== process.getuid())) fail(`owner policy target is not a safe regular file: ${absolute}`);
+  }
+  const temporary = path.join(directory, `.reviewer-policy-${crypto.randomUUID()}.tmp`);
+  try {
+    fs.writeFileSync(temporary, `${JSON.stringify(policy, null, 2)}\n`, { flag: 'wx', mode: 0o600 });
+    fs.renameSync(temporary, absolute);
+  } finally { try { fs.unlinkSync(temporary); } catch {} }
+  return { file: absolute, policy };
 }
 
 export function loadReviewerPolicy(configPath = null) {
@@ -276,7 +296,7 @@ function validateExternalReceipt(report, station, candidateDigest, topology) {
     for (const t of [receipt.requested_tuple, receipt.invocation_tuple, receipt.effective_tuple]) {
       if (t?.host !== station.tuple.host || t?.family !== station.tuple.family || t?.model !== station.tuple.model || t?.effort !== station.tuple.effort) fail('external station identity tuple mismatch');
     }
-    if (station.tuple.host === 'cursor' && !replay && a.level === 'requested_accepted' && a.evidence !== 'cursor_plan_mode_exact_model_argv_plus_successful_json_exit_no_server_model_echo') fail('Cursor exact-route evidence missing');
+    if (station.tuple.host === 'cursor' && !replay && a.level === 'requested_accepted' && !cursorExactRouteEvidenceValid(receipt)) fail('Cursor exact-route evidence missing');
   }
 
   const findingsPath = receipt.artifacts?.findings;
@@ -386,14 +406,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const { command, options } = args(process.argv.slice(2));
   if (command === 'create-policy') {
     if (!options.input || !options.out) fail('create-policy requires --input and --out');
-    const policy = createReviewerPolicy(JSON.parse(fs.readFileSync(options.input, 'utf8')));
-    const out = path.resolve(options.out);
-    fs.mkdirSync(path.dirname(out), { recursive: true, mode: 0o700 });
-    const parent = fs.lstatSync(path.dirname(out));
-    if (parent.isSymbolicLink() || (parent.mode & 0o022) || (process.getuid && parent.uid !== process.getuid())) fail('policy directory must be protected and owned');
-    if (fs.existsSync(out) && (!fs.lstatSync(out).isFile() || fs.lstatSync(out).isSymbolicLink())) fail('policy output must be a regular file');
-    writeJsonAtomic(out, policy);
-    fs.chmodSync(out, 0o600);
+    const { file: out } = writeReviewerPolicySecure(options.out, JSON.parse(fs.readFileSync(options.input, 'utf8')));
     process.stdout.write(`${JSON.stringify({ ok: true, policy: out })}\n`);
   } else if (command === 'plan') {
     process.stdout.write(`${JSON.stringify(resolveReviewTopology({

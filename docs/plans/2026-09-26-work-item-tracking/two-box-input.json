@@ -1,0 +1,55 @@
+{
+  "consumerRoot": ".",
+  "wi": "WI-570",
+  "baseSha": "130db2bff74229348b1cf6db7892615ec9ca239d",
+  "originalRequirements": [
+    {
+      "id": "REQ-570-01",
+      "text": "Recover and implement the earlier work-item and GitHub Issues architecture with a local-only mode, a GitHub-backed mode, and an optimized governed hybrid mode."
+    },
+    {
+      "id": "REQ-570-02",
+      "text": "Keep work-item execution and verification local and offline-capable; make any remote publishing or intake an explicit project and item decision that avoids leaking private project information."
+    },
+    {
+      "id": "REQ-570-03",
+      "text": "Make GitHub Issue adoption, publication, updates, identity recovery, and closing correct under retries, conflicts, concurrent worktrees, and partial network failures."
+    },
+    {
+      "id": "REQ-570-04",
+      "text": "Close remote issues only after real local verified promotion evidence, while preserving the local result when remote synchronization fails."
+    },
+    {
+      "id": "REQ-570-05",
+      "text": "Integrate the selected tracking mode with existing work-item schema, routing, skills, installation, and multi-host behavior without creating a second execution authority."
+    },
+    {
+      "id": "REQ-570-06",
+      "text": "Improve plan validation so the plan proves that its tests and observations are necessary, meaningful, and independent of the implementation rather than merely numerous or structurally linked."
+    },
+    {
+      "id": "REQ-570-07",
+      "text": "Resolve findings from two real independent Opus and Grok plan reviews and prepare the complete governed plan contract before implementation."
+    }
+  ],
+  "scope": [
+    "scripts/sync-github-issues.mjs",
+    "skills/sync-work-items/SKILL.md",
+    "references/work-item-schema.md",
+    "skills/list-work-items/scripts/list_work_items.mjs",
+    "rules/github-projects.md",
+    "scripts/merge-pr-with-review-receipt.mjs",
+    "schemas/receipts/verify-promotion.schema.json",
+    "skills/plan-changeset/references/manifest-templates.md",
+    "skills/review-plan/SKILL.md",
+    "scripts/review-plan-codex.sh"
+  ],
+  "contractContext": {
+    "paths": [
+      "docs/specs/work-items/WI-570.md"
+    ]
+  },
+  "facts": {
+    "owner_decisions": "Local-only is default; github-backed publishes adopted WI-GH-N only; hybrid may publish local and adopted WIs; all public payloads are explicit and curated. close_trigger is manual by default or verify-promotion. The shared identity map is Git-common-dir/svc-issue-tracker/map.json, while repo config has no private terms. Remote closure requires validated durable verify-promotion note bound to a reachable commit. Review findings are REVISE, so no implementation authority has yet been granted."
+  }
+}

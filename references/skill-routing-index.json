@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "compiled_from": {
-    "manifest_sha256": "1b98fad7bec60939f90ce3a7091b9a7b44c356499f16c33e58f27160875d75d9",
-    "overrides_sha256": "ffe50a0a60e4feebe57a229aae3cb6fb4eae19dba97ed0099ed6ead998c48d93",
+    "manifest_sha256": "3c9a65ce9815a56397098d7ed093637b7c8c9b8952c566314ea68fcd756066b7",
+    "overrides_sha256": "14fa674603c6a84ddf5b2673fe072778aa69cfd415d3d58e55adf4486a685249",
     "concern_registry_sha256": "6c336c8832c4907ee78413a2b7d377b790bb55bba180783d2164892a130ea507"
   },
   "skills": [
@@ -225,8 +225,8 @@
     {
       "skill": "benchmark-landing",
       "path": "skills/benchmark-landing/SKILL.md",
-      "content_hash": "8bc33e9884b650e07172ef11a5af8a8cc43eb05b4f948666ccfbfbfd5ed7e512",
-      "description": "Score a landing page against the curated sector reference bank on 8 measurable dimensions. Emits a 1-10 score per dimension + weighted aggregate. Blocks promotion below 7 unless orchestrator provides written override. Runs at every production viewport the page ships at, not only the design canvas. Use when landing-page / marketing-page design is complete and before handing to execute-changeset or deploy.",
+      "content_hash": "1519dfcae61596b775ccfb8a8c39f3e12423b49b146a17622cad617f6a8e721e",
+      "description": "Score a landing page against the curated sector reference bank on 8 measurable dimensions. Emits a 1-10 score per dimension + weighted aggregate. Blocks promotion below 7 unless orchestrator provides written override. Runs at every production viewport the page ships at, not only the design canvas. Use when the marketing page has been implemented and rendered after `execute-changeset`, before promotion; deployed conversion-journey proof is a separate required check.",
       "aliases": [],
       "positive_triggers": [],
       "negative_triggers": [],
@@ -351,7 +351,7 @@
     {
       "skill": "capture-idea",
       "path": "skills/capture-idea/SKILL.md",
-      "content_hash": "f195054fe748964c375c177518e67e1ecbb3f68b4db73e72bb04d01dbcfa08cb",
+      "content_hash": "a0590d72bdf58ff79b46dcbda81461fc96d40885bce9533e02e333762df0cd59",
       "description": "Zero-friction backlog intake — formats a loose idea as a canonical repo work item without business validation or PRD ceremony. Use when: \"store this idea\", \"just an idea\", \"remember this for later\", \"put this in the backlog\", \"someday maybe\". Also: \"quick capture\", \"rough idea\", \"don't forget\", \"I was thinking about\"; From-Proposal Mode: \"I want to build this now\", \"add this feature\".",
       "aliases": [],
       "positive_triggers": [],
@@ -591,7 +591,7 @@
     {
       "skill": "design-ui",
       "path": "skills/design-ui/SKILL.md",
-      "content_hash": "1cd12edd69aba71a70fa49405efb28b6967d1f7a692410847beedd8ec75ddeae",
+      "content_hash": "b4d91e6285756e7bd8bee599e45f53241a1df02ed71d2b6d81ada554f079b416",
       "description": "Use when a UX-REVIEWED feature spec needs visual design — produces component specifications, design token usage, and responsive layout before technical design",
       "aliases": [],
       "positive_triggers": [],
@@ -877,6 +877,36 @@
       "required_rules": []
     },
     {
+      "skill": "grow-social",
+      "path": "skills/grow-social/SKILL.md",
+      "content_hash": "c45c6f0277985fc4c8ee892e0b0946c062fe34b1e45b694739d4b3c4eba401ef",
+      "description": "Use on explicit requests to turn a builder's real work, session lesson, draft, or pasted social analytics into useful organic posts and a practical 24-hour attention plan; to learn the builder's writing voice from approved examples and feedback; or to adapt one grounded idea to named social platforms. Includes requests such as \"write a post from this session\", \"help grow my social account\", \"make this sound like me\", and \"what should I post tomorrow\". For stakeholder communications use comms; for funnel experiments use growth-lead; for paid video scripts use ad-video-script.",
+      "aliases": [
+        "write a post from this session",
+        "help grow my social account"
+      ],
+      "positive_triggers": [],
+      "negative_triggers": [],
+      "domains": [
+        "organic-social-writing"
+      ],
+      "actions": [
+        "draft",
+        "adapt"
+      ],
+      "objects": [
+        "social-posts",
+        "voice",
+        "analytics"
+      ],
+      "repo_signals": [],
+      "lane_roles": [],
+      "invocation_policy": "explicit-only",
+      "risk": "low",
+      "requires": [],
+      "required_rules": []
+    },
+    {
       "skill": "growth-eng",
       "path": "skills/growth-eng/SKILL.md",
       "content_hash": "ce88afa161573a63a10023417a10d185c30d7f104d5ff83b8696147a540691cc",
@@ -1005,7 +1035,7 @@
     {
       "skill": "land-changeset",
       "path": "skills/land-changeset/SKILL.md",
-      "content_hash": "36726a1b6684a27bc7238369f2f7b836f12ab976434360f435f609066f881026",
+      "content_hash": "513ec06e306a2b66cdd3b6f890bdf6d9f69cfc4e2ca24fceb38c927facd36740",
       "description": "Use when an executed change set has been validated (tests, E2E, review all pass in the worktree) and is ready to land on main — validates manifest coverage, pushes branch, opens PR, merges via squash, cleans up worktree",
       "aliases": [],
       "positive_triggers": [],
@@ -1023,8 +1053,8 @@
     {
       "skill": "landing-page",
       "path": "skills/landing-page/SKILL.md",
-      "content_hash": "908ccb0c683ab3f8c01578a534820a303af5f4fbb25a6b106a82398fd6890bd0",
-      "description": "End-to-end landing-page generation for marketing/home/feature/pricing pages. Chains marketing-context + reference-bank + copywriting + generate-visuals + component scaffold + benchmark-landing gate. Use when \"build a landing\", \"ship the home page\", \"redesign hero\", \"marketing page\", \"fix the landing\", or any WI tagged `landing` / `marketing-page`. Replaces the manual orchestration between design-ui and execute-changeset for marketing-class pages.",
+      "content_hash": "c54c7d579502a548e04886ea77788ca574a21a4973caf9c2edcf94442d907799",
+      "description": "Marketing-page design handoff for home/feature/pricing pages. Chains marketing context, captured references, copy and optional assets into an implementation-ready brief; benchmark-landing gates the rendered result after execution. Use when \"build a landing\", \"ship the home page\", \"redesign hero\", \"marketing page\", \"fix the landing\", or any WI tagged `landing` / `marketing-page`. Runs after design-ui and before track-visuals/design-tech for marketing-class pages.",
       "aliases": [],
       "positive_triggers": [],
       "negative_triggers": [],
@@ -1059,7 +1089,7 @@
     {
       "skill": "list-work-items",
       "path": "skills/list-work-items/SKILL.md",
-      "content_hash": "631dd2f610d9db47bfb12393471cc814f0513b46b462c0f930842e7899d577d2",
+      "content_hash": "f723849fa9f27b408f328ee2bf7fd83fd293f1af71c17fc0048147dd87fb291a",
       "description": "List local svc work items ordered by dependency and priority. Use when you need to see the backlog, understand what to build next, and see why each item is needed without syncing to GitHub.",
       "aliases": [],
       "positive_triggers": [],
@@ -1182,7 +1212,7 @@
     {
       "skill": "onboard-repo",
       "path": "skills/onboard-repo/SKILL.md",
-      "content_hash": "f9755cb15387cd64e9f48f23c2c942e2b2c69b5de4923e231932718f38690530",
+      "content_hash": "566517d286490359f1d25331450610f2203798f8394b5017fcc9f9e8a6d634f7",
       "description": "Convert an existing repository into the svc way of working before applying the full pipeline. Use when the repo already has shipped behavior, docs, tests, or conventions that must be preserved and mapped instead of overwritten. Produces repo-canonical project state, compatibility notes, and structured work items for discovered features, bugs, regressions, drift, and chores.",
       "aliases": [],
       "positive_triggers": [],
@@ -1218,7 +1248,7 @@
     {
       "skill": "plan-capabilities",
       "path": "skills/plan-capabilities/SKILL.md",
-      "content_hash": "ba360c30f26c4078b7f083b724315935f79f68f1d842d098532ac16c6eb91331",
+      "content_hash": "272972f7640832850a028c3e67d4d80b27685657046c96a5c6c6722c2c6976ac",
       "description": "Classify the project type and produce a capability plan: recommended MCPs, installable skills, research sources, maintenance cadence, and framework gaps. Use when: starting a new project, entering a new domain, detecting missing capabilities, \"what tools do I need\", \"what MCPs should I add\", \"what skills should I install\", \"capability plan\", or when route-workflow detects a new project type that needs environment setup.",
       "aliases": [],
       "positive_triggers": [],
@@ -1236,7 +1266,7 @@
     {
       "skill": "plan-changeset",
       "path": "skills/plan-changeset/SKILL.md",
-      "content_hash": "e4e6729b508e92ce3c198816d115c2b0cc4756334c235d55febdd36d211d56d4",
+      "content_hash": "02c972a7f484c18bc97562ada08c972119e4bae7a6521b77ca30612e4d38bbcd",
       "description": "Use when you have a BASELINED feature spec with technical design and need to produce the implementation plan for branch-first execution — task graph, file set, validation plan, checkpoints, and AC/test mapping",
       "aliases": [],
       "positive_triggers": [],
@@ -1521,7 +1551,7 @@
     {
       "skill": "review-plan",
       "path": "skills/review-plan/SKILL.md",
-      "content_hash": "7923ca53215553c7819c0c6698854bd2264ab2e6938833f1c5d9c4aa11189787",
+      "content_hash": "69a62773e2cae73968dff664d2b9bc93c19d2f4649af079e96dc99f1d91b3961",
       "description": "Plan-level adversarial review gate. Runs after plan-changeset produces a manifest + task graph and BEFORE any execute-changeset dispatch. Two gates: (1) compiled mechanical/coverage checks — free, in-session; (2) one holistic adversarial review via the canonical external-review launcher with structured findings and a tuple receipt. Corrections recheck only invalidated lenses; disputed product/security authority routes to the owner, not a second model. Iteration loop with justified accept/reject responses — same discipline on both sides. Use when: plan-changeset manifest exists and is about to be promoted. Blocks promotion until all findings have resolutions.",
       "aliases": [],
       "positive_triggers": [],
@@ -1606,7 +1636,7 @@
     {
       "skill": "route-workflow",
       "path": "skills/route-workflow/SKILL.md",
-      "content_hash": "2112ad3b152e1779a8e97d3c9723c8fc7cf0c7bfa7e8042bef29c6406d2c6459",
+      "content_hash": "08da8a195617bc868297da4be315690a14c28929569fa4800dd88c230948189b",
       "description": "Universal entry point for any work. Routes freeform intent to the right svc skill based on repo state, change type, and current project artifacts. Handles: \"do this\", \"build this\", \"I want to\", \"help me with\", \"make me a\", \"ship this\", \"fix this\", or ANY freeform description of work; also handles explicit routing questions like \"what should I do next\", \"which skill do I run\", \"what's the right order\", and \"what lane is this\".",
       "aliases": [
         "what should I do next",
@@ -1762,8 +1792,8 @@
     {
       "skill": "sync-work-items",
       "path": "skills/sync-work-items/SKILL.md",
-      "content_hash": "8b9a1c29f562ec490934e3b1db6f9bcfd71861b9e1555ecb940847fe798ab69f",
-      "description": "Sync repo-canonical svc work items to GitHub Issues. Use after onboard-repo or whenever work-item files change and the team wants external execution visibility without making GitHub the source of truth. GitHub is the first-class integration target in v1. Linear is deferred.",
+      "content_hash": "983d9d440d3bd76bcf17d6625ce92cfdedd7c934804cd964e08a788562aa9ee0",
+      "description": "Manage optional, explicit GitHub Issue tracking for repo-canonical work items. Use after onboard-repo or when a user chooses to configure, pull, publish, preview, list, or close one issue. Local-only is the offline default; no bulk sync.",
       "aliases": [],
       "positive_triggers": [],
       "negative_triggers": [],
@@ -1798,7 +1828,7 @@
     {
       "skill": "teach-project",
       "path": "skills/teach-project/SKILL.md",
-      "content_hash": "3e02c6b9aa3e60d18f53e60722b6759ec160447da007b01b0b71c930543c3837",
+      "content_hash": "c03b5c8db0f590217af6383331afbc6af53a54521ee099875adb81dcdafcd204",
       "description": "Teach the builder what was built and how to manage it — socratic diagnostic across technical/product/operational knowledge gaps, taught from this repo's files; updates the builder profile so downstream skills recalibrate. Mode auto generates OWNER-GUIDE.md for autorun chains. Use when: \"teach me my project\", \"owner guide\", \"explain what was built\". Also: \"teach me about this project\", \"onboard me\", \"quiz me\", \"test me\", \"how do I manage this\". Also: \"check what I know\", \"I want to learn\", \"help me grow on this repo\".",
       "aliases": [],
       "positive_triggers": [],
@@ -1906,7 +1936,7 @@
     {
       "skill": "verify-promotion",
       "path": "skills/verify-promotion/SKILL.md",
-      "content_hash": "bc68cff37bc82f6b54605767c9db51a4248477c25e9acff450d1b785358061e8",
+      "content_hash": "1e08dd0a66f27ef74e834601a6f6c8373012ff7ad5b27fd69d3119e7ea8fb45b",
       "description": "Use after a reviewed branch has been promoted to verify that the promoted implementation matches specs, passes tests, satisfies acceptance criteria, and closes the loop back into spec/journey state — triggers G7 review",
       "aliases": [],
       "positive_triggers": [],

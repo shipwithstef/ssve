@@ -67,7 +67,7 @@ cat > "$TMP/home/.codex/hooks.json" <<JSON
 {"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"node $ROOT/hooks/svc-impact-triad-guard.mjs"}]}]}}
 JSON
 printf '[features]\nhooks = true\n' > "$TMP/home/.codex/config.toml"
-HOME="$TMP/home" node "$ROOT/scripts/wire-codex-hooks.mjs" --skills-path "$ROOT/skills" >/dev/null
+HOME="$TMP/home" node "$ROOT/scripts/wire-codex-hooks.mjs" --skills-path "$ROOT" >/dev/null
 node -e '
 const hooks=require(process.argv[1]).hooks?.PreToolUse||[];
 const commands=hooks.flatMap((entry)=>entry.hooks||[]).map((hook)=>hook.command||"");

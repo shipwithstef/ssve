@@ -443,6 +443,9 @@
           "type": "integer",
           "minimum": 0
         },
+        "configured_timeout_seconds": { "type": "integer", "minimum": 1, "maximum": 7200 },
+        "configured_timeout_source": { "enum": ["framework-default", "owner-policy", "environment"] },
+        "configured_lock_stale_seconds": { "type": "integer", "minimum": 1 },
         "configured_turn_ceiling": {
           "type": [
             "integer",

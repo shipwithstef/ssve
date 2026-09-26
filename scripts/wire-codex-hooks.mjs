@@ -37,6 +37,7 @@ import os from "node:os";
 import { MIGRATION_VERSION, resolveStateRoot, launcherRunnable } from "../hooks/lib/enforcement-core.mjs";
 import { wrapHookEntries } from "./lib/hook-command.mjs";
 import { commandKey } from "./lib/codex-hook-key.mjs";
+import { isKnownManagedCommand } from "../hooks/lib/svc-ownership.mjs";
 
 const PROFILE = process.env.SVC_HOOK_PROFILE || "full";
 const DISABLED = new Set(
@@ -378,15 +379,23 @@ function featureFlagCandidate(hooksConfig) {
 // Merge hooks.json
 // ---------------------------------------------------------------------------
 
+let generatedCommands = new Set();
+function managedCommand(command) {
+  // The current registry is authoritative for its exact generated command,
+  // even while a staged install has not copied the target script yet.
+  return generatedCommands.has(command || "") || isKnownManagedCommand(command || "", skillsPath);
+}
+
 function keyOf(entry) {
-  const keys = [...new Set((entry.hooks || []).map((hook) => commandKey(hook.command || "")).filter(Boolean))];
-  return keys.length === 1 ? keys[0] : null;
+  const hooks = Array.isArray(entry.hooks) ? entry.hooks : [];
+  if (hooks.length !== 1 || !managedCommand(hooks[0].command)) return null;
+  return commandKey(hooks[0].command || "");
 }
 
 function normalizeManagedEntries(entries) {
   return entries.flatMap((entry) => {
     const hooks = Array.isArray(entry.hooks) ? entry.hooks : [];
-    if (hooks.length <= 1 || !hooks.some((hook) => (hook.command || "").includes("svc-"))) return [entry];
+    if (hooks.length <= 1 || !hooks.some((hook) => managedCommand(hook.command))) return [entry];
     return hooks.map((hook) => ({ ...entry, hooks: [hook] }));
   });
 }
@@ -406,6 +415,8 @@ function mergeHooks() {
   if (!hooksConfig.hooks) hooksConfig.hooks = {};
 
   const registry = buildHookEntries(skillsPath);
+  generatedCommands = new Set(Object.values(registry).flatMap((entries) => entries.flatMap((entry) =>
+    (entry.hooks || []).map((hook) => hook.command || ""))));
   const declaredByEvent = new Map(Object.entries(registry).map(([event, entries]) => [event, new Set(entries.map(keyOf).filter(Boolean))]));
   const added = [];
   const skipped = [];
@@ -416,9 +427,11 @@ function mergeHooks() {
     if (!hooksConfig.hooks[event]) hooksConfig.hooks[event] = [];
     hooksConfig.hooks[event] = normalizeManagedEntries(hooksConfig.hooks[event]);
     hooksConfig.hooks[event] = hooksConfig.hooks[event].filter((entry) => {
+      const hook = entry.hooks?.[0];
+      if (!hook || !managedCommand(hook.command)) return true;
       const key = keyOf(entry);
-      if (!key || declaredByEvent.get(event)?.has(key)) return true;
-      pruned.push(`${event}/${key}`);
+      if (key && declaredByEvent.get(event)?.has(key)) return true;
+      pruned.push(`${event}/${key || "stale-managed"}`);
       return false;
     });
     for (const entry of newEntries) {
@@ -474,7 +487,7 @@ function effectiveStopAssertion(candidate) {
   const svcStops = configs.flatMap((config) => config.hooks?.Stop || [])
     .flatMap((entry) => entry.hooks || [])
     .map((hook) => hook.command || "")
-    .filter((command) => command.includes("svc-"));
+    .filter((command) => managedCommand(command));
   if (svcStops.length !== 1 || commandKey(svcStops[0]) !== "svc-task-completion-guard" || !svcStops[0].includes("svc-codex-stop-firewall.mjs")) {
     throw new Error(`effective Codex hook view must contain exactly one svc Stop firewall; found ${svcStops.length}`);
   }

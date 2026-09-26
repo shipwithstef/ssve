@@ -102,6 +102,7 @@
     "fin-analyst",
     "find-opportunity",
     "generate-visuals",
+    "grow-social",
     "growth-eng",
     "growth-lead",
     "honest-diagnosis",
@@ -446,7 +447,7 @@
     "G3": {
       "after": "design-ui",
       "transition": "UX-REVIEWED \u2192 DESIGNED",
-      "checks": "Design system consistency? Responsive? Dark mode? Component reuse?",
+      "checks": "Design system consistency? Responsive? Supported themes and contrast? Component reuse?",
       "enforced_by": [
         "design-ui"
       ]
@@ -558,7 +559,8 @@
         "land-changeset",
         "verify-promotion"
       ],
-      "defaultSkips": []
+      "defaultSkips": [],
+      "notes": "landing-page and benchmark-landing run only for marketing pages; product/app UI proceeds through design-ui, rendered journey and visual evidence, and design-tech without a marketing-bank precondition."
     },
     "brownfield-conversion": {
       "skills": [
@@ -592,7 +594,7 @@
         "verify-promotion"
       ],
       "defaultSkips": [],
-      "notes": "For pure background enablers or integrations with no human-visible surface, design-ux, design-ui, and track-visuals may self-skip only with explicit rationale. User-facing or admin-facing changes must not bypass them."
+      "notes": "For pure background enablers or integrations with no human-visible surface, design-ux, design-ui, and track-visuals may self-skip only with explicit rationale. User-facing or admin-facing changes must not bypass them. landing-page and benchmark-landing run only for marketing pages; product/app UI proceeds through design-ui, rendered journey and visual evidence, and design-tech without a marketing-bank precondition."
     },
     "bugfix": {
       "skills": [

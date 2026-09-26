@@ -103,6 +103,10 @@ This skill answers:
 - What should be refreshed over time?
 - What repeated gaps should feed back into framework improvement?
 
+## Project Skill Profile
+
+Run `node scripts/skill-profile.mjs select --project <project-root> --intent "<current task>" --host <host>` before proposing additional skills. Treat its selected set as the relevant installed baseline, not as an instruction to install or advertise the whole first-party catalog. Include the active and next lane skills, and an explicitly requested skill, even if the default profile omits them. For a product interface task, include UX/UI and relevant same-job product reference work; add landing-page benchmarking when the task calls for it. Do not propose company, marketing, retired, or unrelated environment skills for framework code work. Explain host exposure limits accurately; Grok's project profile currently guides routing but does not filter its native global catalog. Optional `.svc/project-preferences.json` `skills.include` and `skills.exclude` tune the project profile without affecting other projects or moving globally installed skills.
+
 ## Process
 
 ### Step 1: Read Available Context

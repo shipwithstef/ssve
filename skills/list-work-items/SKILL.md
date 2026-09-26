@@ -56,6 +56,8 @@ chain:
 
 # List Work Items
 
+Listing reads local `WI-*.md` files only in every tracker mode, including unpublished numeric WIs and adopted `WI-GH-N` mirrors. It never calls `gh`, configures a tracker, pulls issues, or publishes a backlog. For remote issue state, invoke the explicit `sync-work-items` operation separately.
+
 **Announce at start:** "I'm using list-work-items to show the local backlog."
 
 Compact, status-aware view of the local project backlog from `docs/specs/work-items/`.
@@ -65,7 +67,8 @@ Compact, status-aware view of the local project backlog from `docs/specs/work-it
 ```bash
 node skills/list-work-items/scripts/list_work_items.mjs            # linked worktree: open backlog + refresh DONE.md
 node skills/list-work-items/scripts/list_work_items.mjs --all      # linked worktree: also include closed items inline
-node skills/list-work-items/scripts/list_work_items.mjs --detail WI-087   # full body of a single item
+node skills/list-work-items/scripts/list_work_items.mjs --detail WI-087   # local numeric item
+node skills/list-work-items/scripts/list_work_items.mjs --detail WI-GH-42 # adopted issue mirror
 node skills/list-work-items/scripts/list_work_items.mjs --json     # read-only machine-readable dump
 ```
 
@@ -110,6 +113,7 @@ The parser accepts heading variants that the original version rejected:
 | Heading form | Example | Parsed? |
 |---|---|---|
 | `# WI-NNN: title` | `# WI-001: J29 remaining 20 AC E2E coverage` | ✓ |
+| `# WI-GH-N: title` | `# WI-GH-42: Imported community issue` | ✓ |
 | `# WI-NNN — title` | `# WI-081 — sop_friendly field missing` | ✓ |
 | `# WI-NNN - title` | `# WI-016a - subitem` | ✓ |
 | `# Plain Title` (no WI prefix) | `# Voice-Driven Deal & Event Generation` | ✓ (uses filename as ID) |

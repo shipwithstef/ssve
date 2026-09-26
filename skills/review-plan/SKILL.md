@@ -155,11 +155,22 @@ reruns this step only when its relevant lens digest changed. Record
 The one gap pass never substitutes for the independent holistic plan review; it
 drains cheap defects before that review without paying for repeated full rereads.
 
+Include the whole-solution value lens from `references/plan-review-protocol.md`: test the chosen approach against a simpler adequate alternative and the actual user outcome. UI changes need same-job product-screen evidence and specific design decisions; non-UI work does not inherit marketing or browser requirements.
+
+Include a test-value lens in that pass. Compare material ACs and credible risks
+with the existing and planned test inventory, then inspect each proposed check's
+independent expected result, failure sensitivity, observation boundary, and
+incremental value. A missing test for a material promise or a test that only
+confirms its own mock, implementation branch, or invented bug is a plan finding.
+Do not impose a test-count floor or a new review round.
+
 ### Inline readiness boundary
 
 Use the mode-aware rubric in references/plan-review-protocol.md. For inline, reject missing consequential behavior, state ownership, interfaces, proof or scope, and incomplete v5 `planning_contract` / `implementation_approach` / `executor_discretion`; do not reject absent code blueprints or harmless local choices. Explicit v5 release producer descriptions replace guessed future shell identities. Require original AC/UX/technical context, not only a concise digest. Dispatch keeps complete packets. Keep the integer transport, owner reviewer topology and one holistic review plus invalidated-lens corrections. Do not treat `planning_contract.sealed` as authority.
 
 ### Step 2 — Tier 2: Primary adversarial review (3-Way Triangulation)
+
+Before a paid launch, use the canonical reviewer resolver and package/preflight helper for the exact current candidate and configured tuple. Verify the adapter's concrete argv against the installed CLI's current help or source, and use a non-mutating host-supported status/model probe to check authentication and model availability where such a probe exists. `run-external-review.mjs --preflight` checks package and phase binding; its `credential_check: not performed` is not authentication evidence. Do not maintain a daily hardcoded model whitelist or invent a successful credential check for hosts without one. Classify unavailable or unproven reviewer capability accurately and hold only the proof that depends on it; never record a passing independent review without an actual matching reviewer receipt.
 
 Build the plan package, then invoke the external-review adapter or station.
 The review evaluates a **3-Way Triangulation**:
@@ -383,7 +394,7 @@ Follow the canonical task-graph chaining contract: see `references/task-graph-ch
 ## Non-goals
 
 - This skill does NOT rewrite the plan. It reviews. Orchestrator applies revisions. It does not set `sealed:true` on reviewed JSON/Markdown; after PASS the issuer persists a separate seal envelope over the exact prepared bytes and full manifest.
-- This skill does NOT do taste review — "is this the prettiest architecture" is out of scope.
+- Personal aesthetic preference is not an approval criterion. Evidence-based product fit, unnecessary complexity, generic design, and whether the planned UI serves its user job are in scope.
 - This skill does NOT run tests, builds, or installs. Read + analyze only.
 - This skill does NOT edit files outside `docs/plans/<date>-<name>/review-log.yaml`.
 

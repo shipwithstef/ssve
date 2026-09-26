@@ -15,7 +15,7 @@ Re-read the feature spec's AC list. For each AC, confirm the manifest's
 AC-to-task mapping covers it with a task that will actually implement it —
 not just reference it.
 
-Then answer these five questions (write answers inline in your response,
+Then answer these questions (write answers inline in your response,
 not in the manifest):
 
 1. **Missing tasks:** Is there any AC or journey step with no implementing task?
@@ -25,10 +25,17 @@ not in the manifest):
    If no → fix the dependency order.
 3. **Scope reduction:** Grep the manifest for banned phrases (see Scope
    Reduction Prohibition). If found → rewrite the task.
-4. **Validation strength:** For each task's validation command — will it
-   actually catch a failure in what the task builds? A `tsc --noEmit` does
-   not validate API behavior. An `npm test` without a test file does not
-   validate anything. If weak → strengthen or flag.
+4. **Validation inventory and value:** Compare the existing test inventory,
+   every material AC/journey, and credible failure risks against planned
+   validation entries. For each proposed test, name the wrong user-visible or
+   operational behavior it would catch, an expected result drawn from a spec,
+   interface, user journey, or independent response, and why existing proof
+   does not already suffice. A `tsc --noEmit` does not validate API behavior;
+   an `npm test` without a relevant test does not validate anything. Reject
+   mock echoes, implementation-mirroring assertions, speculative bugs, and
+   duplicate checks with no distinct failure sensitivity. Choose the cheapest
+   observation that proves the claim, with stronger boundary proof when the
+   claim requires it. If coverage is weak or wasteful → correct it before review.
 5. **First-task viability:** Can an agent execute Task 1 from a clean worktree
    with only the base branch + the spec + the manifest? If Task 1 assumes
    context from the current session that won't exist in a fresh worktree →

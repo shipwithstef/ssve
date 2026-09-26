@@ -22,7 +22,8 @@ import {
   readController,
   authorityStateRoot,
 } from "../lib/authority-store.mjs";
-import { mutationPayload, isReadOnlyTool } from "./lib/codex-hook-context.mjs";
+import { isReadOnlyTool, mutationPayload } from "./lib/codex-hook-context.mjs";
+import { resolveHookMode } from "../lib/hook-policy.mjs";
 
 function parsePayload(raw) {
   try {
@@ -63,6 +64,7 @@ function emit(value) {
 
 async function main() {
   const payload = parsePayload(fs.readFileSync(0, "utf8"));
+  const advisory = resolveHookMode().mode === "advisory";
   // Bounded housekeeping first: stale receipts are swept safely by owner+age.
   try { sweepExpiredReceipts({ env: process.env }); } catch {}
 
@@ -87,9 +89,14 @@ async function main() {
     session_id: sessionId, tool_use_id: toolUseId, host, original_digest: originalDigest,
     env: process.env,
   });
-  // Typed no-ops stay observable but can never block an already-completed
-  // result nor grant anything.
-  if (!consumed.ok) { emit(consumed.reason === "receipt_missing" && isReadOnlyTool(payload) ? {} : { systemMessage: `svc post-tool: heartbeat no-op (${consumed.reason})` }); return; }
+  // A missing receipt is routine after an advisory pre-tool call or a proven
+  // read-only tool. Keep enforce diagnostics for mutating calls and report
+  // actual correlation anomalies in either mode.
+  if (!consumed.ok) {
+    const routineMissing = consumed.reason === "receipt_missing" && (advisory || isReadOnlyTool(payload));
+    emit(routineMissing ? {} : { systemMessage: `svc post-tool: heartbeat no-op (${consumed.reason})` });
+    return;
+  }
 
   const leaseInfo = consumed.receipt?.lease;
   try {
@@ -102,7 +109,7 @@ async function main() {
           String(current.lease_id) === String(leaseInfo.lease_id) &&
           Number(current.generation) === Number(leaseInfo.generation || 0)) {
         if (!renewalDue(current)) {
-          emit({ systemMessage: "svc post-tool: heartbeat no-op (not due or not current)" });
+          emit(advisory ? {} : { systemMessage: "svc post-tool: heartbeat no-op (not due or not current)" });
           dropConsumedReceipt({ session_id: sessionId, tool_use_id: toolUseId, env: process.env });
           return;
         }

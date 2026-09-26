@@ -79,6 +79,7 @@ async function launcherFixture(t, rounds = 0) {
 const fs = require('node:fs');
 if (process.argv.includes('--help')) console.log('--print --mode --output-format --model --sandbox --workspace --trust');
 else if (process.argv.includes('--version')) console.log('2026.09-fixture');
+else if (process.argv.includes('--list-models')) console.log('cursor-grok-4.6-high - Grok 4.6 High');
 else {
   const packageText=fs.readFileSync(0,'utf8'); fs.appendFileSync(${JSON.stringify(calls)}, 'called\\n');
   if (process.env.SVC_TEST_DELAY_MS) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, Number(process.env.SVC_TEST_DELAY_MS));

@@ -6,6 +6,7 @@ import { generatePrReviewReceipt } from "./lib/pr-review-receipt.mjs";
 import { publishReceiptNotes, readPublishedReceiptNote, mergeReceiptEnvelopes } from "./lib/publish-receipt-notes.mjs";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { WI_ID_BODY, WI_EXTRACT_RE } from "../hooks/lib/wi-id.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -19,23 +20,25 @@ function hasFlag(name) {
 }
 
 export function namedWisFromText(text) {
-  return [...new Set(String(text || "").match(/WI-\d+/gi) || [])].map((id) => id.toUpperCase());
+  const grammar = new RegExp(WI_EXTRACT_RE.source, "g");
+  return [...new Set(String(text || "").toUpperCase().match(grammar) || [])];
 }
 
 export function omittedWisFromText(text) {
-  return [...String(text || "").matchAll(/\b(?:omitted|excluded|reverted):\s*(WI-\d+)/gi)]
-    .map((match) => match[1].toUpperCase());
+  const grammar = new RegExp(`\\b(?:OMITTED|EXCLUDED|REVERTED):\\s*(${WI_ID_BODY})(?![A-Z0-9_/-]|\\.[A-Z0-9]|:[A-Z0-9/:])`, "g");
+  return [...String(text || "").toUpperCase().matchAll(grammar)].map((match) => match[1]);
 }
 
 export function missingNamedWis({ namedWis = [], netFiles = [], dispositionText = "" } = {}) {
   const omitted = new Set(omittedWisFromText(dispositionText));
-  const files = (netFiles || []).map((file) => String(file).toLowerCase());
+  const files = (netFiles || []).map((file) => String(file).toUpperCase());
   const missing = [];
   for (const wi of namedWis) {
     const id = String(wi || "").toUpperCase();
     if (!id || omitted.has(id)) continue;
-    const token = id.toLowerCase();
-    if (files.some((file) => file.includes(token))) continue;
+    // Require an exact identifier boundary: WI-GH-4 cannot borrow WI-GH-42's diff.
+    const token = new RegExp(`(?:^|[^A-Z0-9_-])${id}(?=$|[^A-Z0-9_-])`);
+    if (files.some((file) => token.test(file))) continue;
     missing.push(id);
   }
   return missing;

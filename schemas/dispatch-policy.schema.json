@@ -48,6 +48,16 @@
     "fallback": {
       "$ref": "#/$defs/station"
     },
+    "transport_options": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "timeout_seconds": { "type": "integer", "minimum": 1, "maximum": 7200 }
+        }
+      }
+    },
     "planning_transport": {
       "type": "object",
       "additionalProperties": false,

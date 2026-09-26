@@ -301,6 +301,7 @@ export function route(options) {
     ts = new Date().toISOString(),
     semanticStatus = "unavailable",
     semanticReason = "semantic-provider-not-configured-this-wave",
+    eligibleSkills = null,
   } = options;
 
   if (!MODES.has(mode)) fail(`unknown mode ${mode}`);
@@ -332,10 +333,12 @@ export function route(options) {
   // mode "off" is the emergency rollback position: deterministic required
   // pins stay active, ALL optional discovery is disabled (plan §9).
   // A stale index likewise withholds optional discovery while pins survive.
+  const eligible = eligibleSkills === null ? null : new Set(eligibleSkills);
   const optional = mode === "off" || staleReason
     ? []
     : index.skills.filter(
-        (r) => !pins.has(r.skill) && (r.invocation_policy === "suggest-only" || r.invocation_policy === "implicit-allowed"),
+        (r) => !pins.has(r.skill) && (eligible === null || eligible.has(r.skill)) &&
+          (r.invocation_policy === "suggest-only" || r.invocation_policy === "implicit-allowed"),
       );
 
   const qTokens = tokenize(intent);

@@ -331,21 +331,32 @@ export function diagnosePromptContamination(messages, {
     const items = Array.isArray(msg.content) ? msg.content : (typeof msg.content === "string" ? [msg.content] : null);
     if (!items) { unknown = true; reasons.push("message content is not input_text list"); continue; }
     if (msg.role === "developer") {
-      for (const item of items) {
-        if (item && typeof item === "object" && item.type && item.type !== "input_text") {
-          unknown = true;
-          reasons.push("developer non-input_text");
-          continue;
-        }
-        const text = itemText(item);
+      if (items.some((item) => typeof item !== "string" &&
+          (!item || typeof item !== "object" || item.type !== "input_text" || typeof item.text !== "string"))) {
+        unknown = true;
+        reasons.push("developer non-input_text");
+        continue;
+      }
+      const texts = items.map(itemText);
+      // Native profiles bind one frame per message, even when Codex divides
+      // that message into multiple input_text items. Match the same joined
+      // bytes used by framesFromInspectMessages, then inspect every item.
+      const combined = texts.join("");
+      const row = profile ? rows.find((r) => r.role === "developer" && r.sha256 === sha256Utf8(combined)) : null;
+      if (profile && !row) {
+        unknown = true;
+        reasons.push("developer wrapper not in native profile");
+        continue;
+      }
+      const kinds = texts.map((text) => row?.kind || wrapperKind(text) || (profile ? "native_developer" : null));
+      const nativeCombined = combined.replaceAll("applicable AGENTS.md/skill instructions", "applicable native instructions").replaceAll("applicable `AGENTS.md` instructions", "applicable native instructions");
+      const joinedRule = kinds.every((kind) => kind === "codex_identity" || kind === "native_developer") ? SSVE_CATALOG_RE : INJECT_RE;
+      if (joinedRule.test(nativeCombined)) reasons.push("injected catalog/methodology in native developer wrapper");
+      for (const [index, text] of texts.entries()) {
         const digest = sha256Utf8(text);
-        let kind = wrapperKind(text);
+        let kind = kinds[index];
         const nativeText = text.replaceAll("applicable AGENTS.md/skill instructions", "applicable native instructions").replaceAll("applicable `AGENTS.md` instructions", "applicable native instructions");
-        if (profile) {
-          const row = rows.find((r) => r.sha256 === digest);
-          if (!row) { unknown = true; reasons.push("developer wrapper not in native profile"); continue; }
-          kind = row.kind || kind || "native_developer";
-        } else if (!kind) {
+        if (!profile && !kind) {
           if (!allowNativeDeveloper) { unknown = true; reasons.push("unknown developer wrapper"); continue; }
           kind = "native_developer";
         }

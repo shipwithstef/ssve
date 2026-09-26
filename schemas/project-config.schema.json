@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SSVE project configuration",
+  "type": "object",
+  "properties": {
+    "issue_tracker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "mode": { "enum": ["local-only", "github-backed", "hybrid-governed"] },
+        "repository": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9][A-Za-z0-9_.-]*$" },
+        "close_trigger": { "enum": ["manual", "verify-promotion"] }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "mode": { "enum": ["github-backed", "hybrid-governed"] } }, "required": ["mode"] },
+          "then": { "required": ["repository"] }
+        }
+      ]
+    }
+  },
+  "additionalProperties": true
+}

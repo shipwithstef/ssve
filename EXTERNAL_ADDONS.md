@@ -1,6 +1,6 @@
 # External Add-On Packs
 
-This repository ships a **core skill pack** (100 skills — source of truth: `skills-manifest.json` `includedSkills`; do not trust this prose count). Some routes in
+This repository ships a **core skill pack** (106 skills — source of truth: `skills-manifest.json` `includedSkills`; do not trust this prose count). Some routes in
 `route-workflow` support optional external ecosystems.
 
 Use this file as the contract for which external skills are optional and how
@@ -76,6 +76,7 @@ Validator: `test-framework/evals/tier-1/validate-visual-skills-have-live-evidenc
 - `fin-analyst`
 - `find-opportunity`
 - `generate-visuals`
+- `grow-social`
 - `growth-eng`
 - `growth-lead`
 - `honest-diagnosis`

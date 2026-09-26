@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { derivePrReviewReceipt, generatePrReviewReceipt } from '../../scripts/lib/pr-review-receipt.mjs';
 
 test('PR compatibility metadata derives from exact passing G5 evidence', () => {
@@ -24,4 +24,25 @@ test('matching GitHub metadata alone never generates approval without canonical 
   assert.equal(fs.existsSync(path.join(root,'.svc/review-receipts/pr-8.json')),false);
   assert.throws(()=>generatePrReviewReceipt({root,pr:8,repo:'fixture/repo',expectedHead:'other',expectedSha:sha}),/identity differs/);
  } finally {process.env.PATH=priorPath;fs.rmSync(root,{recursive:true,force:true});}
+});
+
+
+test('merge wrapper dry run binds named and adopted WI IDs to exact net-diff evidence', () => {
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'pr-named-wi-'));
+ const wrapper=path.resolve('scripts/merge-pr-with-review-receipt.mjs');
+ try {
+  const receiptDir=path.join(root,'.svc/review-receipts');fs.mkdirSync(receiptDir,{recursive:true});
+  fs.writeFileSync(path.join(receiptDir,'pr-8.json'),JSON.stringify({schema_version:1,pr:8,reviewed_at:'2026-09-26T00:00:00Z',review_gate_task:'review-exec',reviewer:'fixture independent reviewer',result:'PASS',evidence:['fixture review artifact'],review_gate_required:true}));
+  const run=(subject,body,files)=>spawnSync(process.execPath,[wrapper,'--pr','8','--root',root,'--repo','fixture/repo','--dry-run','--subject',subject,'--body',body,'--net-files',files],{cwd:root,encoding:'utf8'});
+  const adopted=run('Deliver WI-GH-42','Related to #42','docs/specs/work-items/WI-GH-42.md');
+  assert.equal(adopted.status,0,adopted.stderr);assert.match(adopted.stdout,/DRY-RUN: gh pr merge/);
+  const prefixCollision=run('Deliver WI-GH-4','Related to #4','docs/specs/work-items/WI-GH-42.md');
+  assert.equal(prefixCollision.status,2);assert.match(prefixCollision.stderr,/WI-GH-4.*no net-diff evidence/);
+  const named=run('Deliver WI-SPINE-003 and WI-570','Related to #42','docs/specs/work-items/WI-SPINE-003.md,docs/specs/work-items/WI-570.md');
+  assert.equal(named.status,0,named.stderr);
+  const omitted=run('Discuss WI-GH-42','omitted: WI-GH-42','docs/readme.md');
+  assert.equal(omitted.status,0,omitted.stderr);
+  const missing=run('Discuss WI-GH-42','Related to #42','docs/readme.md');
+  assert.equal(missing.status,2);assert.match(missing.stderr,/WI-GH-42.*no net-diff evidence/);
+ } finally {fs.rmSync(root,{recursive:true,force:true});}
 });

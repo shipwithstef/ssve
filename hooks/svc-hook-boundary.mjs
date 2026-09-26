@@ -37,6 +37,10 @@ export function parseManagedCommand(raw, env = process.env) {
 }
 
 const BLOCK_VALUES = new Set(["deny", "denied", "block", "blocked", "reject", "rejected", "ask"]);
+const RESTORED_OPERATION_CLAIM = "SSVE restored the authorized WI. This call loads its current skill; the original operation has not run. Read the skill output, then retry the original operation.";
+function withoutRestoredOperationClaim(value) {
+  return typeof value === "string" ? value.replaceAll(RESTORED_OPERATION_CLAIM, "").trim() : value;
+}
 export function isBlockingPayload(payload) {
   if (!payload || typeof payload !== "object") return false;
   const nested = payload.hookSpecificOutput || {};
@@ -45,7 +49,7 @@ export function isBlockingPayload(payload) {
     || payload.continue === false || payload.allow === false;
 }
 
-export function advisoryPayload(payload, message) {
+export function advisoryPayload(payload, message, { rewritten = false } = {}) {
   const clean = structuredClone(payload);
   delete clean.decision;
   delete clean.permission;
@@ -55,6 +59,20 @@ export function advisoryPayload(payload, message) {
   delete clean.stopReason;
   delete clean.updatedInput;
   delete clean.updated_input;
+  if (rewritten) {
+    // Remove only the claim tied to the discarded skill-loader substitution.
+    // Independent findings from the same hook must still reach the agent.
+    for (const key of ["systemMessage", "user_message"]) {
+      if (typeof clean[key] === "string") {
+        clean[key] = withoutRestoredOperationClaim(clean[key]);
+        if (!clean[key]) delete clean[key];
+      }
+    }
+    if (typeof clean.hookSpecificOutput?.additionalContext === "string") {
+      clean.hookSpecificOutput.additionalContext = withoutRestoredOperationClaim(clean.hookSpecificOutput.additionalContext);
+      if (!clean.hookSpecificOutput.additionalContext) delete clean.hookSpecificOutput.additionalContext;
+    }
+  }
   if (clean.hookSpecificOutput) {
     delete clean.hookSpecificOutput.permissionDecision;
     delete clean.hookSpecificOutput.permissionDecisionReason;
@@ -103,21 +121,39 @@ function decodeSpec(encoded) {
   return spec;
 }
 
-function readInputBounded() {
-  const chunks = [];
-  let bytes = 0;
-  const buffer = Buffer.alloc(65536);
-  for (;;) {
-    const count = fs.readSync(0, buffer, 0, buffer.length, null);
-    if (count === 0) break;
-    bytes += count;
-    if (bytes > MAX_INPUT) throw new Error("hook payload exceeds 8 MiB");
-    chunks.push(Buffer.from(buffer.subarray(0, count)));
-  }
-  return Buffer.concat(chunks);
+function readInputBounded(deadline) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let bytes = 0;
+    let settled = false;
+    const finish = (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      process.stdin.off("data", onData);
+      process.stdin.off("end", onEnd);
+      process.stdin.off("error", onError);
+      process.stdin.pause();
+      if (error) reject(error);
+      else resolve(Buffer.concat(chunks));
+    };
+    const onData = (chunk) => {
+      bytes += chunk.length;
+      if (bytes > MAX_INPUT) { finish(new Error("hook payload exceeds 8 MiB")); return; }
+      chunks.push(chunk);
+    };
+    const onEnd = () => finish(null);
+    const onError = (error) => finish(error);
+    const timer = setTimeout(() => finish(new Error("hook payload read timed out")), Math.max(1, deadline - Date.now()));
+    process.stdin.on("data", onData);
+    process.stdin.once("end", onEnd);
+    process.stdin.once("error", onError);
+    process.stdin.resume();
+  });
 }
 
-async function runChild(spec, input) {
+async function runChild(spec, input, deadline) {
+  if (Date.now() >= deadline) throw new Error("hook deadline exceeded before child start");
   const command = parseManagedCommand(spec.command);
   return new Promise((resolve) => {
     const child = spawn(command.file, command.args, { env: command.env, stdio: ["pipe", "pipe", "pipe"], detached: true });
@@ -126,10 +162,14 @@ async function runChild(spec, input) {
     let timedOut = false;
     let oversized = false;
     let spawnError = null;
+    let interrupted = null;
     const killGroup = () => {
       try { process.kill(-child.pid, "SIGKILL"); } catch { try { child.kill("SIGKILL"); } catch {} }
     };
-    const timer = setTimeout(() => { timedOut = true; killGroup(); }, spec.timeoutMs);
+    const signals = ["SIGTERM", "SIGINT", "SIGHUP"];
+    const onSignal = (signal) => { interrupted = signal; killGroup(); };
+    for (const signal of signals) process.once(signal, onSignal);
+    const timer = setTimeout(() => { timedOut = true; killGroup(); }, Math.max(1, deadline - Date.now()));
     const append = (which, chunk) => {
       const current = which === "stdout" ? stdout : stderr;
       if (current.length + chunk.length > MAX_OUTPUT) { oversized = true; killGroup(); return; }
@@ -141,7 +181,8 @@ async function runChild(spec, input) {
     child.on("error", (error) => { spawnError = error; });
     child.on("close", (code, signal) => {
       clearTimeout(timer);
-      resolve({ stdout, stderr, code: code ?? 2, signal, timedOut, oversized, spawnError });
+      for (const name of signals) process.off(name, onSignal);
+      resolve({ stdout, stderr, code: code ?? 2, signal, timedOut, oversized, spawnError, interrupted });
     });
     child.stdin.on("error", () => {});
     child.stdin.end(input);
@@ -159,12 +200,17 @@ async function main() {
     const deferred = deferredAdvisoryCommand(spec);
     if (deferred) { process.stderr.write(warning(marker, deferred) + "\n"); return; }
   }
+  const deadline = Date.now() + spec.timeoutMs;
   let input;
-  try { input = readInputBounded(); }
+  try { input = await readInputBounded(deadline); }
   catch (error) { process.stderr.write(warning(marker, `cannot read hook payload: ${error.message}`) + "\n"); process.exitCode = mode.mode === "enforce" ? 2 : 0; return; }
   let result;
-  try { result = await runChild(spec, input); }
+  try { result = await runChild(spec, input, deadline); }
   catch (error) { process.stderr.write(warning(marker, error.message) + "\n"); process.exitCode = mode.mode === "enforce" ? 2 : 0; return; }
+  if (result.interrupted) {
+    process.exitCode = { SIGHUP: 129, SIGINT: 130, SIGTERM: 143 }[result.interrupted] || 2;
+    return;
+  }
   if (mode.mode === "enforce") {
     process.stdout.write(result.stdout);
     process.stderr.write(result.stderr);
@@ -213,12 +259,17 @@ async function main() {
     const blocked = isBlockingPayload(payload);
     const rewritten = payload.updatedInput !== undefined || payload.updated_input !== undefined ||
       payload.hookSpecificOutput?.updatedInput !== undefined || payload.hookSpecificOutput?.updated_input !== undefined;
+    const recoveryText = [payload.systemMessage, payload.user_message,
+      payload.hookSpecificOutput?.additionalContext].filter(Boolean).join("\n");
+    const recoveryRewrite = rewritten && recoveryText.includes(RESTORED_OPERATION_CLAIM);
     const reason = blocked
-      ? payload.hookSpecificOutput?.permissionDecisionReason || payload.reason || payload.user_message || payload.stopReason || "SVC hook requested a block"
-      : "SVC hook proposed changing the tool input; original input retained";
-    const message = blocked || rewritten ? warning(marker, reason) : "";
+      ? `would have blocked this call; the original tool input continues unchanged. Finding: ${payload.hookSpecificOutput?.permissionDecisionReason || payload.reason || payload.user_message || payload.stopReason || "SVC hook requested a block"}`
+      : recoveryRewrite
+        ? "SSVE restored the authorized WI, but advisory mode retained the original tool input. This call did not load the skill; load it separately before further governed work."
+        : "";
+    const message = reason ? warning(marker, reason) : "";
     if (message) process.stderr.write(message + "\n");
-    process.stdout.write(JSON.stringify(advisoryPayload(payload, message)) + "\n");
+    process.stdout.write(JSON.stringify(advisoryPayload(payload, message, { rewritten })) + "\n");
     process.stderr.write(result.stderr);
     return;
   }

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-Serious Serious Vibe Engineering (SSVE) — a 105-skill framework for progressive deterministic development (count = `skills-manifest.json includedSkills.length`, verified 2026-09-06; check the manifest, don't trust this prose). This repo IS the framework, not a project built with it. Skills are SKILL.md files that Claude Code loads as prompts. The lowercase `svc` name remains the compatibility namespace for commands, paths, state, and hooks.
+Serious Serious Vibe Engineering (SSVE) — a 106-skill framework for progressive deterministic development (count = `skills-manifest.json includedSkills.length`, verified 2026-09-26; check the manifest, don't trust this prose). This repo IS the framework, not a project built with it. Skills are SKILL.md files that Claude Code loads as prompts. The lowercase `svc` name remains the compatibility namespace for commands, paths, state, and hooks.
 
 Bootstrap rule for onboarded projects: respect the project's local AGENTS.md/CLAUDE.md and svc route-workflow contract from its actual worktree; post-deploy/production validation asks require live post-deploy evidence, never local substitutes.
 
@@ -135,10 +135,12 @@ When running in parallel with Kimi, each orchestrator resolves labels through it
 
 ## Mandatory Plan-Exec-Review Chain (added 2026-05-13)
 
-This repo now ships a three-layer enforcement chain that makes
-plan-changeset + review-plan + execute-changeset + review-exec +
-audit-implementation + land-changeset + verify-promotion mandatory for
-every non-quick-fix change.
+This repo requires the plan-changeset + review-plan + execute-changeset +
+review-exec + audit-implementation + land-changeset + verify-promotion chain
+for non-quick-fix changes. Its standalone receipt validators and CI checks
+retain their normal failure behavior. Managed host and Git hook decisions are
+advisory by default; set `SVC_HOOK_MODE=enforce` or the owner policy to make
+those hook decisions blocking. See `docs/hook-modes.md` for precedence.
 
 Key entry points for this host:
 - `scripts/run-external-review.mjs` — sole paid independent-review launcher;
@@ -162,8 +164,9 @@ references/knowledge, append-only `.svc/*.jsonl` — WI-360) need only the
 auto-emitted quick-fix receipt, which is tree-bound to its commit; every
 other pushed non-quick-fix commit needs the 5-receipt envelope
 (plan-manifest, review-plan, exec-record, review-exec, audit-implementation),
-and the pre-push hook validates the ENTIRE `remote..local` range, not just
-the tip.
+and the pre-push hook checks the ENTIRE `remote..local` range, not just
+the tip. Its findings block only in enforce mode; an advisory warning is not
+receipt or merge approval.
 
 Rules load on demand since WI-361: 5 always-on behavioral rules live in the
 global rules dir (WI-393 demoted long-output-to-file to signal-injection on
