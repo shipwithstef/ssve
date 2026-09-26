@@ -1,10 +1,28 @@
 {
-  "stamped_at": "cf3ebd12",
+  "stamped_at": "aef570d3a2d3f8a7a2cf53b508bfe9576c438fda",
   "imports": {
     "scripts/branch-index-freshness.mjs": [
       "node:child_process",
       "node:fs",
       "node:url"
+    ],
+    "scripts/check-branch-index.mjs": [
+      "./branch-index-freshness.mjs",
+      "node:child_process"
+    ],
+    "test-framework/evals/tier-1/validate-branch-index-import-shape.mjs": [
+      "../../../scripts/branch-index-freshness.mjs",
+      "./comment-gap.mjs",
+      "./default-named.mjs",
+      "./last.mjs",
+      "./named.mjs",
+      "./namespace.mjs",
+      "./newline-boundaries.mjs",
+      "./required.cjs",
+      "./single.mjs",
+      "./typed.mjs",
+      "node:assert/strict",
+      "node:fs"
     ]
   }
 }
