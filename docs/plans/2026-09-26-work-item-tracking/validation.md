@@ -1,6 +1,6 @@
 # WI-570 implementation evidence
 
-Status: integration candidate; not yet merged or installed. The first full free suite exposed 14 integration failures; after correction, the complete suite passed 401/401 with zero failures or timeouts. Subsequent tracker and native-profile corrections passed 52/52 integrated tests before the final slow-holder case; fresh full validation is running; release checks remain pending. Opus execution findings and the cancelled Grok attempt are recorded in exec-review-resolutions.md.
+Status: integration candidate; not yet merged or installed. The first full free suite exposed 14 integration failures; after correction, the complete suite passed 401/401 with zero failures or timeouts. The final source at `59d4428889de58b256868ae39dc1c6adb7cf1286` also passed 401/401 with zero failures or timeouts. Release review, hosted checks, merge and installation remain pending. Opus execution findings and the cancelled Grok attempt are recorded in exec-review-resolutions.md.
 
 ## Observed checks
 
@@ -26,3 +26,5 @@ The live two-box harness stopped before model stages because its native-profile 
 ## Release checks still required
 
 Run the full free corpus on the integrated candidate; disposition independent execution findings; commit with post-commit checks; use the current strict GitHub required check through a normal PR; verify main; refresh all nine provisioned hosts and check drift. Close #118/#70 only after their corresponding discovery and real PR/main proof. Native host trust decisions are separate from SVC advisory mode and are never forged.
+
+Final source tracker evidence: 32/32 CLI cases and 4/4 Tier-1 canaries pass, including a 20-second in-flight POST with two successful sibling publishers and exactly one issue/map identity. A separate old-15-second replay was not run after automatic approval review rejected its temporary-copy/cleanup command; no observed red result is claimed for that case. The installed 1 MiB Codex inspection was repeated in the integration worktree, with qualified native inspection, exactly one prompt, and zero inference calls.

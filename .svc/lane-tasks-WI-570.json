@@ -7,14 +7,14 @@
   "tasks": [
     {
       "id": 1,
-      "status": "in_progress",
+      "status": "completed",
       "skill": "execute-changeset",
       "subject": "Integrate owner-authorized tracker and framework corrections; external findings dispositioned, formal v5 plan authority unissued",
       "blocked_by": []
     },
     {
       "id": 2,
-      "status": "pending",
+      "status": "in_progress",
       "skill": "review-exec",
       "subject": "Validate and independently review the integrated candidate",
       "blocked_by": [

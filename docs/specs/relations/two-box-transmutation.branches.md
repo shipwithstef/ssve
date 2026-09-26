@@ -1,4 +1,4 @@
-Derived-at: 0dcd69d255642dcc78db521e95afa2b18ea1276f
+Derived-at: 59d4428889de58b256868ae39dc1c6adb7cf1286
 Scope-paths:
   - scripts/**
   - skills/**
@@ -10,24 +10,23 @@ Scope-paths:
   - docs/plans/two-box-transmutation/**
 
 ## Entry points
-- IN: scripts/two-box-plan.mjs (planned) — Two-Box orchestration
-- IN: scripts/lib/isolated-plan-analysis.mjs (planned) — Open Box isolation
-- IN: scripts/lib/research-decision.mjs (planned) — shared research predicate
-- IN: scripts/lib/receipt-issuance-epoch.mjs (planned) — issuance vs historical vs bootstrap
-- IN: skills/plan-changeset/SKILL.md:1 — pre-P3 Two-Box then prepare/seal
+- IN: `scripts/two-box-plan.mjs:1` — implemented Two-Box prepare/live/OFFLINE orchestration.
+- IN: `scripts/lib/isolated-plan-analysis.mjs:1` — Open Box isolation.
+- IN: `scripts/lib/research-decision.mjs:1` — shared research decision predicate.
+- IN: `skills/plan-changeset/SKILL.md:1` — complete v5 planning and review handoff.
+- IN: `scripts/prepare-plan-handoff.mjs:1` — prepared plan body and review views.
 
-## Callers
-- IN: scripts/compile-delivery-graph.mjs and scripts/validate-delivery-graph.mjs
-- IN: scripts/emit-receipt.mjs, scripts/check-chain-receipts.mjs, scripts/lib/review-inputs.mjs
-- IN: scripts/stage-segment.mjs, agents/svc-stage-plan.md
-- IN: setup and scripts/check-install-drift.sh after promotion
+## Consumers
+- IN: `scripts/stage-segment.mjs:1` — planning entry and current-execution gate.
+- IN: `scripts/lib/review-inputs.mjs:1` — review input and plan-authority validation.
+- IN: `scripts/emit-receipt.mjs:1` and `scripts/check-chain-receipts.mjs:1` — issuance and verification.
+- IN: `scripts/lib/receipt-issuance-epoch.mjs:1` — current v5, historical readers, and the pinned v4 bootstrap exception.
+- IN: `agents/svc-stage-plan.md:1` — stage planner invocation.
 
-## Auth
-- IN: existing v2 controller lease, dispatch-policy, quick-fix-eligibility
-- OUT: no mutation of HOME, CODEX_HOME, or ~/.svc/dispatch-policy.json from recipes
+## Authority and state
+- IN: existing controller lease, owner dispatch policy, and recomputed eligibility.
+- IN: repository-shared review evidence objects and `docs/specs/privacy/v4-bootstrap-snapshot.json:1`.
+- OUT: recipes do not mutate HOME, CODEX_HOME, or the owner dispatch policy.
 
-## State
-- IN: git-common-dir svc-review-evidence objects; v4-bootstrap-snapshot after freeze
-
-## Promises
-- IN: original ACs; fail-closed isolation; no new legacy issuance except the frozen bootstrap body
+## Historical outcome and current limit
+`docs/specs/work-items/WI-FW-TWO-BOX-01.md:1` records this program as VERIFIED through PR #62. That historical outcome does not establish plan authority or receipts for a later WI. Current issuance and execution require reviewed, sealed v5 evidence, except the one pinned genuine v4 bootstrap.
