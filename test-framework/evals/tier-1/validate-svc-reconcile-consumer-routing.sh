@@ -92,5 +92,21 @@ while (Date.now() < waitUntil && !fs.existsSync(driveMarker)) {
 assert.equal(fs.existsSync(driveMarker), false, "consumer-local auto-drive must not shadow the central SVC executable");
 assert.equal(fs.existsSync(path.join(outside, ".svc")), false, "explicit --repo must anchor state away from caller cwd");
 
+// The packaged driver is detached. Keep its private fixture alive until it has
+// finished writing state; otherwise fixture cleanup races its final writes.
+const outcomePath = path.join(state, "drive", `${head}.outcome.json`);
+const lockPath = path.join(state, "drive", `${head}.lock.json`);
+const driveDeadline = Date.now() + 15000;
+let driveFinished = false;
+while (Date.now() < driveDeadline) {
+  try {
+    driveFinished = JSON.parse(fs.readFileSync(outcomePath, "utf8")).state === "terminal" && !fs.existsSync(lockPath);
+  } catch {}
+  if (driveFinished) break;
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25);
+}
+assert.equal(driveFinished, true, "packaged driver must finish before fixture cleanup");
+assert.equal(fs.existsSync(driveMarker), false, "consumer-local driver must never run");
+
 console.log("validate-svc-reconcile-consumer-routing: PASS (read-only help + explicit consumer repo + central helper)");
 NODE

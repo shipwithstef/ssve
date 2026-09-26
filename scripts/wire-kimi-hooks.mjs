@@ -24,6 +24,8 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { MIGRATION_VERSION, resolveStateRoot, launcherRunnable } from "../hooks/lib/enforcement-core.mjs";
+import { wrapHookEntries } from "./lib/hook-command.mjs";
+import { isKnownManagedCommand } from "../hooks/lib/svc-ownership.mjs";
 
 // WI-487 (F-010): route Kimi's GOVERNED Stop completion guard through the durable
 // launcher when it has been materialized (setup runs `svc-migrate-install
@@ -64,7 +66,7 @@ function buildHookEntries(skillsPath) {
   const hooksDir = path.join(portablePath, "hooks");
   const kimiHooksDir = path.join(hooksDir, "kimi");
 
-  return [
+  const hooks = [
     {
       event: "PreToolUse",
       matcher: "Shell|WriteFile|StrReplaceFile",
@@ -266,6 +268,7 @@ function buildHookEntries(skillsPath) {
       timeout: 10,
     },
   ];
+  return hooks.map((hook) => wrapHookEntries(hook, { skillsPath, host: "kimi", event: hook.event, outerTimeout: 30 }));
 }
 
 // ---------------------------------------------------------------------------
@@ -343,7 +346,7 @@ function serializeHook(hook) {
   const lines = ["[[hooks]]"];
   if (hook.event) lines.push(`event = "${hook.event}"`);
   if (hook.matcher) lines.push(`matcher = "${hook.matcher}"`);
-  if (hook.command) lines.push(`command = "${hook.command}"`);
+  if (hook.command) lines.push(`command = ${JSON.stringify(hook.command)}`);
   if (hook.timeout) lines.push(`timeout = ${hook.timeout}`);
   return lines.join("\n");
 }
@@ -435,6 +438,41 @@ if (args.listAll) {
 // distinct svc entries identical. Keep exactly one desired entry and remove only
 // duplicate svc-owned blocks; user hooks never match a complete desired tuple.
 let existingHooks = parseToml(originalText);
+function delegatedCommand(command) {
+  const encoded = String(command || "").match(/--spec ([A-Za-z0-9_-]+)/)?.[1];
+  if (!encoded) return String(command || "");
+  try { return JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")).command || ""; }
+  catch { return ""; }
+}
+const knownCommands = desiredHooks.map((desired) => ({
+  event: desired.event,
+  matcher: normalizeMatcher(desired.matcher),
+  command: normalizeCommand(delegatedCommand(desired.command)),
+}));
+function isManagedKimiHook(candidate) {
+  const command = normalizeCommand(delegatedCommand(candidate.command));
+  return knownCommands.some((known) =>
+    candidate.event === known.event && normalizeMatcher(candidate.matcher) === known.matcher && command === known.command) ||
+    isKnownManagedCommand(candidate.command, skillsPath);
+}
+if (desiredHooks.every((desired) => existingHooks.some((existing) => hooksEqual(existing, desired))) &&
+    existingHooks.filter(isManagedKimiHook).length === desiredHooks.length) {
+  console.log("All svc hooks already present in Kimi config. No changes needed.");
+  process.exit(0);
+}
+// Replace all previously wired SVC commands as one catalog. This removes
+// legacy direct commands as well as old wrapper versions without touching
+// foreign hook tables or their text.
+const managedRanges = existingHooks
+  .filter(isManagedKimiHook)
+  .map((hook) => [hook._lineStart, hook._lineEnd]);
+if (managedRanges.length) {
+  const lines = originalText.split(/\r?\n/);
+  const removed = new Set(managedRanges.flatMap(([start, end]) => Array.from({ length: end - start }, (_, offset) => start + offset)));
+  originalText = lines.filter((_, index) => !removed.has(index)).join("\n")
+    .replace(/\n?# svc framework hooks \(auto-wired by setup --host kimi\)\n?/g, "\n").trimEnd() + "\n";
+  existingHooks = parseToml(originalText);
+}
 const duplicateRanges = [];
 for (const desired of desiredHooks) {
   const matches = existingHooks.filter((hook) => hooksEqual(hook, desired));

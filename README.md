@@ -1,5 +1,9 @@
 # Serious Serious Vibe Engineering (SSVE)
 
+## Hooks advise by default
+
+SSVE runs its workflow hooks in **advisory mode by default**: findings remain visible while work continues. Opt into blocking behavior with `SVC_HOOK_MODE=enforce` or the owner policy in `~/.svc/hook-policy.json`. Refresh existing installations with `./setup --all-hosts`. Native permissions, foreign hooks, standalone validators, and GitHub required checks retain their own behavior. See [hook modes and migration](docs/hook-modes.md).
+
 <p align="center">
   <img src="assets/logo.png" alt="SSVE Logo" width="320" />
 </p>
@@ -772,10 +776,10 @@ The `setup` script symlinks all 105 skills + framework infrastructure
 (DOCTRINE.md, REPO_MODES.md, scripts/, etc.) into `~/.claude/skills/`.
 Symlinks mean `git pull && ./setup` updates everything in place.
 
-`setup` also wires the svc enforcement hooks into `~/.claude/settings.json`
-(global, applies to all projects). This includes the eval-gate hooks that
-enforce pillar assessment at task completion. Restart Claude Code after
-running setup to activate them.
+`setup` also wires SVC hooks into `~/.claude/settings.json`
+(global, applies to all projects). They advise by default, including findings
+about pillar assessment at task completion. Select enforce mode explicitly
+to make managed hooks block. Restart Claude Code after setup to activate the wiring.
 
 **For Codex:** `./setup --host codex` installs to `~/.codex/skills/`, wires hooks into `~/.codex/hooks.json`, and enables `[features] hooks = true` in `~/.codex/config.toml`.
 

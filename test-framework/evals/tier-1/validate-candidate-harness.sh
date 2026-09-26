@@ -339,7 +339,7 @@ NODE
   run_a --reject CAND-008 --reason --file >/dev/null
   rg -q '"rejection_reason": "--file"' "$REPO_A/docs/specs/candidates/pool.json" || fail "flag-like reason operand was misparsed"
   node - <<'NODE' "$SVC_CANDIDATE_DB" "$TEST_ROOT/lock-ready" &
-const {DatabaseSync}=require('node:sqlite');const fs=require('fs');const db=new DatabaseSync(process.argv[2]);db.exec('BEGIN IMMEDIATE');fs.writeFileSync(process.argv[3],'ready');Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,700);db.exec('COMMIT');db.close();
+const {DatabaseSync}=require('node:sqlite');const fs=require('fs');const db=new DatabaseSync(process.argv[2]);db.exec('PRAGMA busy_timeout = 5000');db.exec('BEGIN IMMEDIATE');fs.writeFileSync(process.argv[3],'ready');Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,700);db.exec('COMMIT');db.close();
 NODE
   LOCK_PID=$!
   while [[ ! -f "$TEST_ROOT/lock-ready" ]]; do sleep 0.02; done

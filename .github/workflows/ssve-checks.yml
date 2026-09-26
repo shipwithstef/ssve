@@ -1,13 +1,12 @@
-# DORMANT TEMPLATE — not a live GitHub Actions workflow.
-# Do not copy this file to .github/workflows/ until public conversion and
-# docs/ci/ACTIVATION.md have been followed. A recognized workflow path would
-# activate hosted CI. This repository remains private; hosted proof is pending.
+# Active SSVE free checks for pull requests and main pushes.
+# Public repository and active workflow observed 2026-09-26; see docs/ci/ACTIVATION.md.
+# Hosted results apply to the exact tested revision, not every open PR collectively.
 #
 # Pin verification (UTC 2026-09-16): see docs/plans/WI-FW-OSS-CI-PREP-01/evidence/pin-verification.json
 # Coverage comparison: docs/plans/WI-FW-OSS-CI-PREP-01/historical-coverage.md
-# Required-check name after hosted proof: "SSVE Required"
+# Required-check name: "SSVE Required"
 # No path filters: docs-only PRs must still produce SSVE Required.
-# No manual-only trigger: not a dormancy substitute; extra private-minute trigger.
+# No manual-only or scheduled trigger is configured.
 name: SSVE Checks
 
 on:

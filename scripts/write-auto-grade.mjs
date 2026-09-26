@@ -47,9 +47,12 @@ const entry = {
   grade: args.grade,
 };
 if (args.task_id) entry.task_id = args.task_id;
-if (args.iterations !== undefined) {
-  const n = Number.parseInt(args.iterations, 10);
-  if (Number.isFinite(n)) entry.iterations = n;
+if (Object.hasOwn(args, "iterations")) {
+  const n = Number(args.iterations);
+  if (!/^\d+$/.test(args.iterations || "") || !Number.isSafeInteger(n)) {
+    console.error("--iterations must be a non-negative safe integer in decimal notation"); process.exit(1);
+  }
+  entry.iterations = n;
 }
 if (args.findings) entry.findings = args.findings;
 if (args.verifier) entry.verifier = args.verifier;

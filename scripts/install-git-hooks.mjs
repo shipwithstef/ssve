@@ -23,8 +23,9 @@ import {
   unlinkSync,
   writeFileSync,
   chmodSync,
-  readdirSync,
   symlinkSync,
+  copyFileSync,
+  readFileSync,
 } from "node:fs";
 import { join, basename, resolve } from "node:path";
 
@@ -35,6 +36,13 @@ const EVENTS = ["pre-commit", "post-commit", "pre-push"];
 // boundaries); auto-receipt.mjs generates triad bodies instead of a git hook.
 // F-001a (WI-SSVE exec review r4): slot 21 is a REQUIRED installed slot.
 const REQUIRED_SLOTS = ["pre-commit.d/20-quick-fix-eligibility", "pre-commit.d/21-manifest-integrity"];
+// Package-owned slots only. A user may track a custom hook in this repo;
+// trackedness or an `svc-` basename is not ownership evidence.
+const SVC_SLOTS = {
+  "pre-commit": ["10-default-checkout-isolation", "15-lane-tasks-validate", "20-quick-fix-eligibility", "21-manifest-integrity", "00-svc-pre-commit-multi-host-check"],
+  "post-commit": ["10-receipt-promote"],
+  "pre-push": ["10-receipts-complete", "15-tier1-gate", "20-push-notes-ref"],
+};
 
 function git(args) {
   return execSync(`git ${args}`, { encoding: "utf8" }).trim();
@@ -47,6 +55,8 @@ function gitHooksPath() {
 }
 
 function makeDispatcher(event) {
+  const slotNames = SVC_SLOTS[event];
+  const svcCase = slotNames.map((name) => JSON.stringify(name)).join("|") || '"__no_svc_slots__"';
   const body = `#!/usr/bin/env bash
 # svc chain dispatcher for ${event} — installed by scripts/install-git-hooks.mjs
 # Runs every executable in hooks/git/${event}.d/ in lexical order.
@@ -55,6 +65,7 @@ function makeDispatcher(event) {
 set -u
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 SLOT_DIR="$REPO_ROOT/hooks/git/${event}.d"
+SVC_MODE="$(node "$REPO_ROOT/scripts/hook-mode.mjs" || printf advisory)"
 
 if [[ ! -d "$SLOT_DIR" ]]; then
   exit 0
@@ -69,10 +80,34 @@ cat > "$STDIN_CAPTURE" 2>/dev/null || true
 
 for slot in "$SLOT_DIR"/*; do
   [[ -x "$slot" ]] || continue
-  "$slot" "$@" < "$STDIN_CAPTURE"
+  if [[ "$SVC_MODE" != enforce ]]; then
+    case "${event}:$(basename "$slot")" in
+      pre-push:15-tier1-gate)
+        echo "[svc advisory ${event}] full Tier 1 is deferred; run bash test-framework/evals/run-all-evals.sh before landing" >&2
+        continue ;;
+      pre-commit:00-svc-pre-commit-multi-host-check)
+        echo "[svc advisory ${event}] multi-host setup is deferred; run ./setup --all-hosts and bash scripts/check-install-drift.sh --all-hosts" >&2
+        continue ;;
+    esac
+  fi
+  case "$(basename "$slot")" in
+    ${svcCase})
+      # Bound SVC hook work and its descendants before considering the result.
+      node "$REPO_ROOT/scripts/git-hook-slot.mjs" "$slot" "$@" < "$STDIN_CAPTURE"
+      ;;
+    *) "$slot" "$@" < "$STDIN_CAPTURE" ;;
+  esac
   code=$?
   if [[ $code -ne 0 ]]; then
-    echo "svc: ${event} slot $(basename "$slot") failed (exit $code)" >&2
+    case "$(basename "$slot")" in
+      ${svcCase})
+        if [[ "$SVC_MODE" != enforce ]]; then
+          echo "[svc advisory ${event}] slot $(basename "$slot") failed (exit $code); continuing" >&2
+          continue
+        fi
+        ;;
+    esac
+    echo "${event} slot $(basename "$slot") failed (exit $code)" >&2
     exit $code
   fi
 done
@@ -96,7 +131,7 @@ function migrateExistingHook(hooksPath, event) {
   // Read content to check if it's already the dispatcher
   let isDispatcher = false;
   try {
-    const content = execSync(`cat ${eventPath}`, { encoding: "utf8" });
+    const content = readFileSync(eventPath, "utf8");
     if (content.includes("svc chain dispatcher")) isDispatcher = true;
   } catch (e) {}
   if (isDispatcher) return "already-dispatcher";
@@ -110,6 +145,17 @@ function migrateExistingHook(hooksPath, event) {
     const slotPath = join(slotDir, slotName);
     if (!existsSync(slotPath)) {
       symlinkSync(resolvedTarget, slotPath);
+    }
+  }
+  if (!target) {
+    const slotPath = join(slotDir, `00-existing-${event}`);
+    if (existsSync(slotPath)) {
+      const oldBytes = readFileSync(eventPath);
+      const preservedBytes = readFileSync(slotPath);
+      if (!oldBytes.equals(preservedBytes)) throw new Error(`cannot preserve existing ${event} hook: ${slotPath} already differs`);
+    } else {
+      copyFileSync(eventPath, slotPath);
+      chmodSync(slotPath, lstatSync(eventPath).mode & 0o777);
     }
   }
   unlinkSync(eventPath);

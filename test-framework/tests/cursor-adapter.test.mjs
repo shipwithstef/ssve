@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { actualDelegatedCommand } from '../../scripts/lib/governed-routing.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const adapterPath = path.join(root, 'hooks/cursor/svc-cursor-ssve-adapter.mjs');
@@ -914,7 +915,8 @@ test('Claude imported hooks preserve explicit host and keep the native Claude de
     const probe = path.join(tmp, 'host.mjs');
     fs.writeFileSync(probe, 'process.stdout.write(process.env.SVC_HOST || "missing");');
     for (const [event, suffix] of [['PreToolUse', 'svc-codex-pretool-dispatcher.mjs'], ['PostToolUse', 'svc-codex-posttool-heartbeat.mjs']]) {
-      const original = entries[event].flatMap(e => e.hooks).find(h => h.command.endsWith(suffix)).command;
+      const original = actualDelegatedCommand(entries[event].flatMap(e => e.hooks)
+        .find(h => actualDelegatedCommand(h.command).endsWith(suffix)).command);
       const command = original.replace(path.join(root, 'hooks/codex', suffix), probe);
       for (const expected of ['claude', 'cursor', 'codex']) {
         const env = { ...process.env };
@@ -943,12 +945,13 @@ test('Cursor and imported Claude dispatcher share one v2 controller without iden
     assert.equal(loaded.status, 0, loaded.stderr);
     const listed = execFileSync(process.execPath, [path.join(root, 'scripts/wire-hooks.mjs'), '--skills-path', root, '--list-all'], { encoding: 'utf8' });
     const entries = JSON.parse(listed.slice(listed.indexOf('{'))).hooks;
-    const importedCommand = entries.PreToolUse.flatMap(e => e.hooks).find(h => h.command.endsWith('svc-codex-pretool-dispatcher.mjs')).command;
+    const importedCommand = entries.PreToolUse.flatMap(e => e.hooks)
+      .find(h => actualDelegatedCommand(h.command).endsWith('svc-codex-pretool-dispatcher.mjs')).command;
     const payload = { tool_name: 'Shell', tool_input: { command: 'node -e "process.stdout.write(123)"', workdir: f.target }, conversation_id: f.cursorSid, session_id: f.cursorSid, cwd: f.target };
     const native = runAdapter('--pretool', payload, env);
     assert.equal(native.json?.permission, 'allow');
     const before = readController(ctx);
-    const imported = spawnSync('/bin/sh', ['-c', importedCommand], { cwd: f.target, input: JSON.stringify(payload), encoding: 'utf8', env });
+    const imported = spawnSync('/bin/sh', ['-c', importedCommand], { cwd: f.target, input: JSON.stringify(payload), encoding: 'utf8', env: { ...env, SVC_HOOK_MODE: 'enforce' } });
     assert.equal(imported.status, 0, imported.stderr);
     const verdict = JSON.parse(imported.stdout.trim().split('\n').at(-1));
     assert.notEqual(verdict.permission || verdict.hookSpecificOutput?.permissionDecision, 'deny', imported.stdout);
@@ -956,7 +959,7 @@ test('Cursor and imported Claude dispatcher share one v2 controller without iden
     assert.equal(after.controller_principal, principal);
     assert.equal(after.generation, before.generation, 'importing the hook cannot transfer the controller');
     const foreign = { ...payload, session_id: 'foreign-session', conversation_id: 'foreign-session' };
-    const denied = spawnSync('/bin/sh', ['-c', importedCommand], { cwd: f.target, input: JSON.stringify(foreign), encoding: 'utf8', env: { ...env, CURSOR_CONVERSATION_ID: 'foreign-session', SVC_SESSION_ID: 'foreign-session' } });
+    const denied = spawnSync('/bin/sh', ['-c', importedCommand], { cwd: f.target, input: JSON.stringify(foreign), encoding: 'utf8', env: { ...env, SVC_HOOK_MODE: 'enforce', CURSOR_CONVERSATION_ID: 'foreign-session', SVC_SESSION_ID: 'foreign-session' } });
     const rejection = JSON.parse(denied.stdout.trim().split('\n').at(-1));
     assert.equal(rejection.permission || rejection.hookSpecificOutput?.permissionDecision, 'deny', denied.stdout);
     assert.equal(readController(ctx).controller_principal, principal);

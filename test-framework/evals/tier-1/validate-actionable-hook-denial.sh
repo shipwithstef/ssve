@@ -219,7 +219,7 @@ else
 fi
 # Now delete the ENTIRE source checkout and run the EXTRACTED host command.
 rm -rf "$SRC2"
-HP_OUT="$(echo '{}' | env -u SVC_BREAK_GLASS -u SVC_BREAK_GLASS_TTL_HOURS HOME="$FHOME5" bash -c "$STOP_CMD" 2>/tmp/wi487-hostpath-err.$$)"
+HP_OUT="$(echo '{}' | env -u SVC_BREAK_GLASS -u SVC_BREAK_GLASS_TTL_HOURS SVC_HOOK_MODE=enforce HOME="$FHOME5" bash -c "$STOP_CMD" 2>/tmp/wi487-hostpath-err.$$)"
 HP_RC=$?
 HP_ERR="$(cat /tmp/wi487-hostpath-err.$$ 2>/dev/null)"; rm -f /tmp/wi487-hostpath-err.$$
 [ "$HP_RC" -ne 0 ] && pass "F-001: installed host command fails closed (exit $HP_RC) after checkout deletion" || fail "F-001: installed host command DID NOT fail closed after checkout deletion (fail-OPEN)"

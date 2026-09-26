@@ -27,6 +27,8 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { MIGRATION_VERSION, resolveStateRoot, launcherRunnable } from "../hooks/lib/enforcement-core.mjs";
+import { wrapHookEntries } from "./lib/hook-command.mjs";
+import { isKnownManagedCommand } from "../hooks/lib/svc-ownership.mjs";
 
 const DISABLED = new Set(
   (process.env.SVC_DISABLED_HOOKS || "").split(",").map((s) => s.trim()).filter(Boolean)
@@ -351,7 +353,8 @@ function buildHookEntries(skillsPath) {
     });
   }
 
-  return entries;
+  return Object.fromEntries(Object.entries(entries).map(([event, hooks]) =>
+    [event, wrapHookEntries(hooks, { skillsPath, host: "gemini", event, outerTimeout: 30000 })]));
 }
 
 // ---------------------------------------------------------------------------
@@ -460,34 +463,56 @@ function isAlreadyWired(existingEntries, name) {
 // durable-launcher form when the launcher is materialized. isAlreadyWired is
 // name-keyed, so without this an existing install would keep the checkout-bound
 // command (fail-OPEN on checkout deletion).
-const hooksDirForMigrate = path.join(skillsPath, "hooks");
 let migratedGemini = 0;
-if (LAUNCHER_PATH) {
-  for (const event of Object.keys(settings.hooks)) {
-    if (!Array.isArray(settings.hooks[event])) continue;
-    for (const entry of settings.hooks[event]) {
-      for (const h of entry.hooks || []) {
-        if (h.name === "svc-task-completion-guard" && typeof h.command === "string" &&
-            h.command.includes("svc-task-completion-guard.sh") && !h.command.includes("svc-enforce")) {
-          h.command = `node ${LAUNCHER_PATH} svc-task-completion-guard`;
-          migratedGemini++;
-        }
-      }
-    }
-  }
+function delegatedCommand(command) {
+  const encoded = String(command || "").match(/--spec ([A-Za-z0-9_-]+)/)?.[1];
+  if (!encoded) return String(command || "");
+  try { return JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")).command || ""; }
+  catch { return ""; }
+}
+function isManagedGeminiHook(existing, desired) {
+  if (existing.name !== desired.name) return false;
+  const actual = delegatedCommand(existing.command);
+  const expected = delegatedCommand(desired.command);
+  if (actual === expected) return true;
+  const hooksRoot = path.join(skillsPath, "hooks") + path.sep;
+  if (!actual.includes(hooksRoot)) return false;
+  if (desired.name === "svc-task-completion-guard") return actual.includes("svc-task-completion-guard.sh");
+  const script = expected.match(/(?:\/hooks\/)(?:[^\s]+\/)?([^/\s]+\.(?:mjs|js|sh))/)?.[1];
+  return Boolean(script) && actual.includes(script);
 }
 
 const registry = buildHookEntries(skillsPath);
 const added = [];
 const skipped = [];
 
+// Disabled package hooks from an older install are still package-owned. Remove
+// their exact script identities while keeping same-name foreign hooks intact.
+for (const [event, entries] of Object.entries(settings.hooks)) {
+  if (!Array.isArray(entries)) continue;
+  settings.hooks[event] = entries.flatMap((entry) => {
+    if (!Array.isArray(entry.hooks)) return [entry];
+    const remaining = entry.hooks.filter((hook) =>
+      !(DISABLED.has(hook.name) && isKnownManagedCommand(hook.command, skillsPath)));
+    return remaining.length ? [{ ...entry, hooks: remaining }] : [];
+  });
+}
+
 for (const [event, newEntries] of Object.entries(registry)) {
   if (!settings.hooks[event]) settings.hooks[event] = [];
   for (const entry of newEntries) {
     const hookName = entry.hooks[0].name;
-    if (isAlreadyWired(settings.hooks[event], hookName)) {
-      skipped.push(`${event}/${hookName}`);
-    } else {
+    const existing = settings.hooks[event].find((candidate) =>
+      candidate.hooks?.some((hook) => isManagedGeminiHook(hook, entry.hooks[0])));
+    if (existing) {
+      if (JSON.stringify(existing) === JSON.stringify(entry)) skipped.push(`${event}/${hookName}`);
+      else {
+        existing.hooks = existing.hooks.map((hook) =>
+          isManagedGeminiHook(hook, entry.hooks[0]) ? entry.hooks[0] : hook);
+        if (existing.hooks.length === 1) existing.matcher = entry.matcher;
+        migratedGemini++;
+      }
+    } else if (!isAlreadyWired(settings.hooks[event], hookName)) {
       settings.hooks[event].push(entry);
       added.push(`${event}/${hookName}`);
     }

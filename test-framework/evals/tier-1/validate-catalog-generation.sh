@@ -53,6 +53,8 @@ let missing = [];
 for (const f of fs.readdirSync(hooksDir)) {
   const m = /^svc-[a-z0-9-]+\.mjs$/.exec(f);
   if (!m) continue;
+  // This launcher adapter is shared infrastructure, not a host event hook.
+  if (f === "svc-hook-boundary.mjs") continue;
   const base = f.replace(/\.mjs$/, "");
   // catalog ids use the script stem without common suffixes
   const candidates = [base, base.replace(/-(pre|post)$/, "")];
@@ -68,7 +70,18 @@ mkdir -p "$SPACE_HOME/.cursor/skills/hooks"
 echo ok >"$SPACE_HOME/.cursor/skills/hooks/svc-bash-guard.mjs"
 if HOME="$SPACE_HOME" node "$ROOT/scripts/wire-cursor-hooks.mjs" >/dev/null 2>&1; then
   check "cursor wires under space-bearing HOME" true
-  if grep -q "\"$SPACE_HOME/.cursor/skills/hooks/" "$SPACE_HOME/.cursor/hooks.json"; then
+  if HOME="$SPACE_HOME" node --input-type=module - "$ROOT" "$SPACE_HOME/.cursor/hooks.json" "$SPACE_HOME" <<'JS'
+import fs from 'node:fs';
+import path from 'node:path';
+import {pathToFileURL} from 'node:url';
+const [root, configPath, home] = process.argv.slice(2);
+const {actualDelegatedCommand} = await import(pathToFileURL(path.join(root,'scripts/lib/governed-routing.mjs')));
+const config = JSON.parse(fs.readFileSync(configPath,'utf8'));
+const prefix = `"${path.join(home,'.cursor/skills/hooks')}/`;
+const commands = Object.values(config.hooks || {}).flatMap((entries) => entries.map((entry) => actualDelegatedCommand(entry.command || '')));
+if (!commands.some((command) => command.includes(prefix))) process.exit(1);
+JS
+  then
     check "generated commands quote the interpolated path" true
   else
     check "generated commands quote the interpolated path" false

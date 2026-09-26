@@ -120,6 +120,21 @@ hooks = [
 [privacy]
 privacy_banner_acked = "test"
 EOF
+cat >> "$CONFIG" <<EOF
+
+[[hooks.PreToolUse]]
+matcher = "Bash"
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = "node $SKILLS/hooks/svc-workflow-guard.mjs"
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = "echo foreign-sibling"
+
+[[hooks.Stop]]
+matcher = "*"
+command = "bash $SKILLS/hooks/svc-custom.sh"
+EOF
 
 chmod 644 "$CONFIG"
 cp -a "$CONFIG" "$TMP/fixture-original.toml"
@@ -185,7 +200,9 @@ for token in \
   'echo \"quoted-keep\"' \
   "keep this user comment" \
   "not an svc-owned hook" \
-  "node ~/.grok/skills/hooks/user-keep.mjs"
+  "node ~/.grok/skills/hooks/user-keep.mjs" \
+  "echo foreign-sibling" \
+  "bash $SKILLS/hooks/svc-custom.sh"
 do
   if grep -Fq "$token" "$CONFIG"; then
     pass "preserved user text: $token"
@@ -196,10 +213,10 @@ done
 
 if grep -q '\[\[hooks\.SessionStart\]\]' "$CONFIG" \
   && grep -q 'svc-session-start-healthcheck' "$CONFIG" \
-  && grep -q 'timeout = 30' "$CONFIG"; then
-  pass "emits nested SessionStart healthcheck timeout 30"
+  && grep -q 'timeout = 330' "$CONFIG"; then
+  pass "emits nested SessionStart healthcheck timeout 330"
 else
-  fail "nested SessionStart healthcheck timeout 30 missing"
+  fail "nested SessionStart healthcheck timeout 330 missing"
 fi
 
 if grep -q 'matcher = "Shell|Write|Edit|Bash|run_terminal_command"' "$CONFIG"; then
@@ -227,17 +244,31 @@ else
 fi
 
 EXPECTED_SVC_COMMANDS="$(node --input-type=module -e 'import {buildGrokHookEntries} from "./scripts/wire-grok-hooks.mjs"; process.stdout.write(String(buildGrokHookEntries(process.argv[1]).length))' "$SKILLS")"
-ACTUAL_SVC_COMMANDS="$(grep -c '^command = "SVC_HOST=grok ' "$CONFIG")"
+ACTUAL_SVC_COMMANDS="$(grep -c '^command = ".*svc-hook-boundary.mjs' "$CONFIG" || true)"
 if [ "$ACTUAL_SVC_COMMANDS" -eq "$EXPECTED_SVC_COMMANDS" ] \
-  && awk -v prefix="$SKILLS/hooks/" '/^command = / && index($0,prefix)>0 && $0 !~ /^command = "SVC_HOST=grok / { bad=1 } END { exit bad ? 1 : 0 }' "$CONFIG"; then
+  && node - "$CONFIG" <<'NODE'
+const fs=require('fs');
+const text=fs.readFileSync(process.argv[2],'utf8');
+for(const line of text.split('\n').filter(line=>line.startsWith('command = ')&&line.includes('svc-hook-boundary.mjs'))){
+  const command=JSON.parse(line.slice('command = '.length));
+  const encoded=command.match(/--spec ([A-Za-z0-9_-]+)/)?.[1];
+  if(!encoded||!JSON.parse(Buffer.from(encoded,'base64url').toString()).command.startsWith('SVC_HOST=grok '))process.exit(1);
+}
+NODE
+then
   pass "every Grok-owned command carries SVC_HOST=grok"
 else
   fail "a Grok-owned command is missing or lacks SVC_HOST=grok"
 fi
 
 if [ "$(grep -c '^matcher = "Shell|Bash|run_terminal_command"$' "$CONFIG")" -eq 2 ] \
-  && grep -q 'svc-workflow-guard.mjs --bash-guard' "$CONFIG" \
-  && grep -q 'svc-phase-receipt-autoemit.mjs' "$CONFIG"; then
+  && grep -q 'svc-phase-receipt-autoemit.mjs' "$CONFIG" \
+  && node - "$CONFIG" <<'NODE'
+const fs=require('fs'); const text=fs.readFileSync(process.argv[2],'utf8');
+const specs=[...text.matchAll(/--spec ([A-Za-z0-9_-]+)/g)].map(m=>JSON.parse(Buffer.from(m[1],'base64url').toString()));
+process.exit(specs.some(s=>s.command.includes('svc-workflow-guard.mjs --bash-guard'))?0:1);
+NODE
+then
   pass "Grok bash guard and shell phase receipt include run_terminal_command"
 else
   fail "Grok bash guard or shell phase receipt omits run_terminal_command"

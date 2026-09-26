@@ -4,7 +4,7 @@ ROOT="$(git rev-parse --show-toplevel)"; TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"
 node --input-type=module - "$ROOT" <<'NODE'
 import assert from "node:assert/strict"; import path from "node:path"; import { pathToFileURL } from "node:url";
 const root=process.argv[2]; const {validatePlanContract}=await import(pathToFileURL(path.join(root,"scripts/validate-plan-contract.mjs")));
-const base={schema_version:1,manifest:"missing.md",ownership:[{task:"A",paths:["x"]}],resource_review:{verification:"changed-executable-census",denominator:0,disposition:"no-risky-resource-writers",evidence:"reviewed"},resource_writers:[],claims:[],executables:[]};
+const base={schema_version:1,manifest:"missing.md",ownership:[{task:"A",paths:["x"]}],resource_review:{verification:"changed-executable-census","denominator":0,"disposition":"no-risky-resource-writers","evidence":"reviewed"},resource_writers:[],claims:[],executables:[]};
 assert.ok(validatePlanContract({...base,ownership:[...base.ownership,{task:"B",paths:["x"]}]},{root}).some(e=>e.includes("ownership scopes overlap")));
 assert.ok(validatePlanContract({...base,ownership:[{task:"A",paths:["src/**"]},{task:"B",paths:["src/auth.ts"]}]},{root}).some(e=>e.includes("ownership scopes overlap")));
 assert.ok(validatePlanContract({...base,resource_writers:[{resource:"money",ordering:"",compensation:"",property_sweep:""}]},{root}).some(e=>e.includes("ordering")));
@@ -58,10 +58,40 @@ if node scripts/validate-plan-contract.mjs "$VOL_CONTRACT" "$VOL_ROOT" >"$TMP/vo
 grep -q 'volatile_paths entry outside the .svc/ session state root is not allowed: scripts' "$TMP/vol.out"
 grep -q 'changed path is undeclared in manifest ownership table: scripts/runtime.mjs' "$TMP/vol.out"
 node scripts/find-callers.mjs --identifier validate-plan-contract.mjs --root "$ROOT" > "$TMP/callers.json"
-node -e 'const r=require(process.argv[1]); if(r.scanned_files<1||r.denominator!==r.scanned_files||r.queries.length<5||r.matched_files<2)process.exit(1)' "$TMP/callers.json"
+# Discovered files include oversized/unreadable entries; they are not scanned files.
+node - "$TMP/callers.json" <<'NODE'
+const assert = require("node:assert/strict"); const r = require(process.argv[2]);
+assert.ok(Number.isInteger(r.scanned_files) && r.scanned_files >= 1);
+assert.ok(Number.isInteger(r.denominator) && r.denominator >= r.scanned_files);
+assert.ok(Array.isArray(r.queries) && r.queries.length >= 5);
+assert.ok(r.matched_files >= 2 && r.matched_files === r.matches.length);
+assert.ok(Array.isArray(r.skipped));
+assert.equal(r.scan_complete, r.skipped.length === 0);
+assert.equal(r.denominator, r.scanned_files + r.skipped.filter((entry) => entry.kind === "file").length);
+assert.equal(r.canonical_absence_proven, false); // Matching callers never prove absence.
+NODE
 mkdir -p "$TMP/census"; printf 'invokeValidatePlanContract();\n' > "$TMP/census/caller.mjs"
 node scripts/find-callers.mjs --identifier validate-plan-contract.mjs --root "$TMP/census" > "$TMP/variant.json"
 node -e 'const r=require(process.argv[1]);if(!r.matches.some(x=>x.queries.some(q=>q.query==="invokeValidatePlanContract")))process.exit(1)' "$TMP/variant.json"
 if node scripts/find-callers.mjs --identifier definitely-absent-route --root "$TMP/census" > "$TMP/absent.json"; then echo "FAIL: absent caller returned success" >&2; exit 1; fi
 node -e 'const r=require(process.argv[1]);if(!r.canonical_absence_proven||r.denominator!==1)process.exit(1)' "$TMP/absent.json"
+# Exercise the denominator gap deterministically, without depending on checkout contents.
+node - "$TMP/census" <<'NODE'
+const fs = require("node:fs"), path = require("node:path");
+fs.writeFileSync(path.join(process.argv[2], "oversized.txt"), Buffer.alloc(2_000_001, 120));
+NODE
+node scripts/find-callers.mjs --identifier validate-plan-contract.mjs --root "$TMP/census" > "$TMP/incomplete-match.json"
+if node scripts/find-callers.mjs --identifier definitely-absent-route --root "$TMP/census" > "$TMP/incomplete-absent.json"; then
+  echo "FAIL: incomplete absent scan returned success" >&2; exit 1
+fi
+node - "$TMP/incomplete-match.json" "$TMP/incomplete-absent.json" <<'NODE'
+const assert = require("node:assert/strict");
+for (const [file, matches] of [[process.argv[2], 1], [process.argv[3], 0]]) {
+  const r = require(file);
+  assert.equal(r.scanned_files, 1); assert.equal(r.denominator, 2);
+  assert.equal(r.matched_files, matches); assert.equal(r.matches.length, matches);
+  assert.equal(r.scan_complete, false); assert.equal(r.canonical_absence_proven, false);
+  assert.deepEqual(r.skipped, [{ path: "oversized.txt", reason: "size-limit", kind: "file" }]);
+}
+NODE
 echo "PASS: plan product safety blocks unsafe writers, unbounded claims, overlap, and inert executables"

@@ -1,5 +1,9 @@
 # The Serious Vibe Coding Doctrine
 
+## Advisory operation
+
+The default SVC hook mode is advisory: surface findings and continue work. Operators can explicitly select enforcement through `SVC_HOOK_MODE=enforce` or `~/.svc/hook-policy.json`. This separates methodological guidance from the reliability of its runtime hooks. Blocking-hook descriptions in this doctrine apply to enforce mode. Standalone validators, native permissions, third-party hooks, and GitHub release checks keep their own behavior. See [hook modes](docs/hook-modes.md).
+
 > Progressive Deterministic Development — a methodology for reliable agentic software engineering
 
 > A development methodology for the agentic era, grounded in the operational

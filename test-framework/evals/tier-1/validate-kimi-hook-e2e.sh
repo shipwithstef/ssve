@@ -47,7 +47,7 @@ echo "=== Tier 1: Kimi Hook End-to-End Validation ==="
 
 CONFIG_PAYLOAD='{"tool_name":"WriteFile","tool_input":{"path":"/home/user/project/package-lock.json","content":"{}"}}'
 CONFIG_RESULT=$(run_hook "--workflow-guard" "$CONFIG_PAYLOAD")
-if echo "$CONFIG_RESULT" | grep -q "BLOCKED"; then
+if grep -q "BLOCKED" <<<"$CONFIG_RESULT"; then
   pass "config-protection blocks package-lock.json"
 else
   fail "config-protection should block package-lock.json (output: $CONFIG_RESULT)"
@@ -58,7 +58,7 @@ fi
 # =============================================================================
 README_PAYLOAD='{"tool_name":"WriteFile","tool_input":{"path":"/home/user/project/README.md","content":"# Hello"}}'
 README_RESULT=$(run_hook "--workflow-guard" "$README_PAYLOAD")
-if echo "$README_RESULT" | grep -q "BLOCKED"; then
+if grep -q "BLOCKED" <<<"$README_RESULT"; then
   fail "config-protection should allow README.md (output: $README_RESULT)"
 else
   pass "config-protection allows README.md"
@@ -84,9 +84,11 @@ cat > "$TMP_DIR/.svc/capability-registry.json" <<'EOF'
 {"version": 1, "capabilities": {}}
 EOF
 
+printf -v DIAGNOSTIC_PADDING '\n%131072s' ''  # Catch early-match SIGPIPE without padding failure messages.
+
 PHASE_PAYLOAD='{"tool_name":"WriteFile","tool_input":{"path":"docs/specs/tech-design.md","content":"# Tech Design"}}'
 PHASE_RESULT=$(cd "$TMP_DIR" && echo "$PHASE_PAYLOAD" | SVC_FORCE_HOST=kimi bash "$WRAPPER" "--phase-boundary" 2>&1 || true)
-if echo "$PHASE_RESULT" | grep -q "BLOCKED"; then
+if grep -q "BLOCKED" <<<"${PHASE_RESULT}${DIAGNOSTIC_PADDING}"; then
   pass "phase-boundary blocks tech-design.md when design-ui is pending"
 else
   fail "phase-boundary should block tech-design.md when prerequisite pending (output: $PHASE_RESULT)"
@@ -109,7 +111,7 @@ cat > "$TMP_DIR/.svc/lane-tasks-WI-999.json" <<'EOF'
 EOF
 
 PHASE_ALLOW_RESULT=$(cd "$TMP_DIR" && echo "$PHASE_PAYLOAD" | SVC_FORCE_HOST=kimi bash "$WRAPPER" "--phase-boundary" 2>&1 || true)
-if echo "$PHASE_ALLOW_RESULT" | grep -q "BLOCKED"; then
+if grep -q "BLOCKED" <<<"${PHASE_ALLOW_RESULT}${DIAGNOSTIC_PADDING}"; then
   fail "phase-boundary should allow tech-design.md when design-ui is completed (output: $PHASE_ALLOW_RESULT)"
 else
   pass "phase-boundary allows tech-design.md when prerequisite completed"
@@ -120,7 +122,7 @@ fi
 # =============================================================================
 NOVERIFY_PAYLOAD='{"tool_name":"Shell","tool_input":{"command":"git commit -m test --no-verify"}}'
 NOVERIFY_RESULT=$(run_hook "--bash-guard" "$NOVERIFY_PAYLOAD")
-if echo "$NOVERIFY_RESULT" | grep -q "BLOCKED"; then
+if grep -q "BLOCKED" <<<"$NOVERIFY_RESULT"; then
   pass "bash-guard blocks git commit --no-verify"
 else
   fail "bash-guard should block --no-verify (output: $NOVERIFY_RESULT)"
@@ -131,7 +133,7 @@ fi
 # =============================================================================
 GOOD_COMMIT_PAYLOAD='{"tool_name":"Shell","tool_input":{"command":"git commit -m \"Add feature\" -m \"Co-Authored-By: Claude Opus 4.6 (1M context) <contact-cd29c5ac34@example.invalid>\""}}'
 GOOD_COMMIT_RESULT=$(run_hook "--bash-guard" "$GOOD_COMMIT_PAYLOAD")
-if echo "$GOOD_COMMIT_RESULT" | grep -q "BLOCKED"; then
+if grep -q "BLOCKED" <<<"$GOOD_COMMIT_RESULT"; then
   fail "bash-guard should allow commit with trailer (output: $GOOD_COMMIT_RESULT)"
 else
   pass "bash-guard allows commit with Co-Authored-By trailer"
@@ -142,7 +144,7 @@ fi
 # =============================================================================
 DEFAULT_PAYLOAD='{"tool_name":"WriteFile","tool_input":{"path":"src/utils.js","content":"export const x = 1;"}}'
 DEFAULT_RESULT=$(run_hook "" "$DEFAULT_PAYLOAD")
-if echo "$DEFAULT_RESULT" | grep -q "BLOCKED"; then
+if grep -q "BLOCKED" <<<"$DEFAULT_RESULT"; then
   fail "default mode should allow src/utils.js (output: $DEFAULT_RESULT)"
 else
   pass "default mode allows unregulated file write"

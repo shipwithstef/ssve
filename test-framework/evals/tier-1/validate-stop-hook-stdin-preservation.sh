@@ -49,7 +49,15 @@ CODEX_REGISTRY="$(node "$REPO_ROOT/scripts/wire-codex-hooks.mjs" --skills-path "
 if ! grep -Fq '"Stop"' <<<"$CODEX_REGISTRY"; then
   fail "Codex registry does not declare Stop hooks"
 fi
-if ! grep -Fq "$REPO_ROOT/hooks/codex/svc-codex-stop-firewall.mjs" <<<"$CODEX_REGISTRY"; then
+if ! node --input-type=module -e '
+  import path from "node:path";
+  import { pathToFileURL } from "node:url";
+  const [raw, root] = process.argv.slice(1);
+  const { actualDelegatedCommand } = await import(pathToFileURL(path.join(root, "scripts/lib/governed-routing.mjs")));
+  const config = JSON.parse(raw.slice(raw.indexOf("{")));
+  if (!(config.hooks.Stop || []).some((entry) => entry.hooks?.some((hook) =>
+    actualDelegatedCommand(hook.command || "").includes(`${root}/hooks/codex/svc-codex-stop-firewall.mjs`)))) process.exit(1);
+' "$CODEX_REGISTRY" "$REPO_ROOT"; then
   fail "Codex registry does not wire the composite Stop firewall"
 fi
 if grep -Fq "printf '%s' | bash $REPO_ROOT/hooks/svc-task-completion-guard.sh" <<<"$CODEX_REGISTRY"; then

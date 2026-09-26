@@ -213,12 +213,37 @@ node "$REPO_ROOT/scripts/wire-hooks.mjs" --skills-path "$REPO_ROOT" --settings "
 node "$REPO_ROOT/scripts/wire-hooks.mjs" --skills-path "$REPO_ROOT" --settings "$CLAUDE_SETTINGS" >/dev/null
 node "$REPO_ROOT/scripts/wire-gemini-hooks.mjs" --skills-path "$REPO_ROOT" --settings "$GEMINI_SETTINGS" >/dev/null
 node "$REPO_ROOT/scripts/wire-gemini-hooks.mjs" --skills-path "$REPO_ROOT" --settings "$GEMINI_SETTINGS" >/dev/null
-check node -e 'const d=JSON.parse(require("fs").readFileSync(process.argv[1])); const c=JSON.stringify(d); process.exit((c.match(/cos-briefing\.mjs/g)||[]).length===1&&(c.match(/svc-delta-preload\.mjs/g)||[]).length===1&&c.includes("user-hook.mjs")?0:1)' "$CLAUDE_SETTINGS"
-check node -e 'const d=JSON.parse(require("fs").readFileSync(process.argv[1])); const c=JSON.stringify(d); process.exit((c.match(/cos-briefing\.mjs/g)||[]).length===1&&(c.match(/svc-delta-preload\.mjs/g)||[]).length===1&&c.includes("user-hook.mjs")?0:1)' "$GEMINI_SETTINGS"
+for settings in "$CLAUDE_SETTINGS" "$GEMINI_SETTINGS"; do
+  check node --input-type=module - "$settings" "$REPO_ROOT" <<'JS'
+import fs from 'node:fs';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+const [settings, root] = process.argv.slice(2);
+const { actualDelegatedCommand } = await import(pathToFileURL(path.join(root, 'scripts/lib/governed-routing.mjs')));
+const config = JSON.parse(fs.readFileSync(settings, 'utf8'));
+const commands = Object.values(config.hooks || {}).flatMap((entries) => entries.flatMap((entry) =>
+  (entry.hooks || []).map((hook) => actualDelegatedCommand(hook.command || ''))));
+const count = (name) => commands.filter((command) => command.includes(`/hooks/${name}`)).length;
+if (count('cos-briefing.mjs') !== 1 || count('svc-delta-preload.mjs') !== 1 ||
+    !commands.includes('node /tmp/user-hook.mjs')) process.exit(1);
+JS
+done
 node "$REPO_ROOT/scripts/wire-hooks.mjs" --skills-path "$REPO_ROOT" --settings "$CLAUDE_SETTINGS" --remove-company-session-hooks >/dev/null
 node "$REPO_ROOT/scripts/wire-gemini-hooks.mjs" --skills-path "$REPO_ROOT" --settings "$GEMINI_SETTINGS" --remove-company-session-hooks >/dev/null
-check node -e 'const c=require("fs").readFileSync(process.argv[1],"utf8"); process.exit(!c.includes("cos-briefing.mjs")&&!c.includes("svc-delta-preload.mjs")&&c.includes("user-hook.mjs")?0:1)' "$CLAUDE_SETTINGS"
-check node -e 'const c=require("fs").readFileSync(process.argv[1],"utf8"); process.exit(!c.includes("cos-briefing.mjs")&&!c.includes("svc-delta-preload.mjs")&&c.includes("user-hook.mjs")?0:1)' "$GEMINI_SETTINGS"
+for settings in "$CLAUDE_SETTINGS" "$GEMINI_SETTINGS"; do
+  check node --input-type=module - "$settings" "$REPO_ROOT" <<'JS'
+import fs from 'node:fs';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+const [settings, root] = process.argv.slice(2);
+const { actualDelegatedCommand } = await import(pathToFileURL(path.join(root, 'scripts/lib/governed-routing.mjs')));
+const config = JSON.parse(fs.readFileSync(settings, 'utf8'));
+const commands = Object.values(config.hooks || {}).flatMap((entries) => entries.flatMap((entry) =>
+  (entry.hooks || []).map((hook) => actualDelegatedCommand(hook.command || ''))));
+if (commands.some((command) => /\/hooks\/(?:cos-briefing|svc-delta-preload)\.mjs/.test(command)) ||
+    !commands.includes('node /tmp/user-hook.mjs')) process.exit(1);
+JS
+done
 
 ABSENT_SKILLS="$FIXTURE_ROOT/absent-skills"
 mkdir -p "$ABSENT_SKILLS/hooks"

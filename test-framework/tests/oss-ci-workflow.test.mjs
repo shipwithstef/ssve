@@ -54,7 +54,7 @@ const wrapper = fs.readFileSync(wrapperPath, 'utf8');
 const activation = fs.readFileSync(activationPath, 'utf8');
 const workflowText = fs.readFileSync(workflowPath, 'utf8');
 
-test('dormant templates parse as YAML and keep recognized workflow paths empty or identical', () => {
+test('reference templates parse as YAML and keep live configuration equivalent', () => {
   assert.equal(typeof workflow, 'object');
   assert.equal(workflow.name, 'SSVE Checks');
   assert.match(workflowText, /DORMANT TEMPLATE/);
@@ -67,15 +67,15 @@ test('dormant templates parse as YAML and keep recognized workflow paths empty o
     return;
   }
   assert.deepEqual(liveFiles, ['ssve-checks.yml']);
-  assert.equal(
-    fs.readFileSync(liveWorkflowPath, 'utf8'),
-    fs.readFileSync(workflowPath, 'utf8'),
-    'activated workflow must stay byte-identical to the dormant template',
+  assert.deepEqual(
+    loadYaml(liveWorkflowPath),
+    workflow,
+    'activated workflow must preserve every template configuration value',
   );
-  assert.equal(
-    fs.readFileSync(liveDependabotPath, 'utf8'),
-    fs.readFileSync(dependabotPath, 'utf8'),
-    'activated Dependabot config must stay byte-identical to the dormant template',
+  assert.deepEqual(
+    loadYaml(liveDependabotPath),
+    dependabot,
+    'activated Dependabot config must preserve every template configuration value',
   );
 });
 

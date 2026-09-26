@@ -19,6 +19,7 @@
 import type { Plugin } from "@opencode-ai/plugin";
 import fs from "node:fs";
 import path from "node:path";
+import os from "node:os";
 import { execFileSync } from "node:child_process";
 
 // ---------------------------------------------------------------------------
@@ -35,6 +36,32 @@ function isDisabled(hookId: string): boolean {
     .map((s) => s.trim())
     .filter(Boolean);
   return disabled.includes(hookId);
+}
+
+function hookMode(): "advisory" | "enforce" {
+  const envMode = process.env.SVC_HOOK_MODE;
+  let raw: unknown = envMode;
+  if (envMode === undefined) {
+    try {
+      raw = JSON.parse(fs.readFileSync(path.join(process.env.HOME || os.homedir(), ".svc", "hook-policy.json"), "utf8")).mode;
+    } catch (error: any) {
+      if (error?.code === "ENOENT") return "advisory";
+      console.error(`[svc hook policy] invalid hook-policy.json (${error?.message || error}); using advisory`);
+      return "advisory";
+    }
+  }
+  const normalized = envMode === undefined ? raw : typeof raw === "string" ? raw.trim().toLowerCase() : raw;
+  if (normalized === "advisory" || normalized === "enforce") return normalized;
+  console.error(`[svc hook policy] invalid hook mode '${String(raw)}'; using advisory`);
+  return "advisory";
+}
+
+async function runSvcHook(label: string, action: () => Promise<void> | void): Promise<void> {
+  try { await action(); }
+  catch (error: any) {
+    if (hookMode() === "enforce") throw error;
+    console.error(`[svc advisory ${label}] ${error?.message || error}`);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -398,14 +425,14 @@ export const SvcPlugin: Plugin = async ({ project, directory, worktree }) => {
 
   return {
     // --- Inject svc environment variables into all shell execution ---
-    "shell.env": async (_input, output) => {
+    "shell.env": async (_input, output) => runSvcHook("shell.env", () => {
       if (isDisabled("svc-shell-env")) return;
       output.env.SVC_HOST = "opencode";
       output.env.SVC_HARNESS = "opencode";
-    },
+    }),
 
     // --- Block dangerous tool calls before execution ---
-    "tool.execute.before": async (input, output) => {
+    "tool.execute.before": async (input, output) => runSvcHook("tool.execute.before", () => {
       // Session-contract freshness
       if (!isDisabled("svc-session-contract-freshness")) {
         const tool = input.tool;
@@ -494,10 +521,10 @@ export const SvcPlugin: Plugin = async ({ project, directory, worktree }) => {
           }
         }
       }
-    },
+    }),
 
     // --- Validate lane-tasks files after write ---
-    "tool.execute.after": async (input, output) => {
+    "tool.execute.after": async (input, output) => runSvcHook("tool.execute.after", () => {
       if (isDisabled("svc-lane-tasks-validator")) return;
 
       const tool = input.tool;
@@ -521,27 +548,32 @@ export const SvcPlugin: Plugin = async ({ project, directory, worktree }) => {
           );
         }
       }
-    },
+    }),
 
     // --- Batch format + typecheck at session idle ---
-    "session.idle": async () => {
+    "session.idle": async () => runSvcHook("session.idle", () => {
       if (isDisabled("svc-stop-quality")) return;
       if (editedFiles.size === 0) return;
 
       // Run format+typecheck in the project directory
       const targetDir = worktree || directory;
+      if (hookMode() === "advisory") {
+        console.error(`[svc advisory session.idle] automatic format/typecheck deferred; run the project's format and typecheck scripts in ${targetDir} when ready`);
+        editedFiles.clear();
+        return;
+      }
       runBatchFormatTypecheck(targetDir);
       editedFiles.clear();
-    },
+    }),
 
     // --- Dangling symlink detection at session start ---
-    "session.created": async () => {
+    "session.created": async () => runSvcHook("session.created", () => {
       if (isDisabled("svc-session-healthcheck")) return;
       checkDanglingSymlinks(directory);
-    },
+    }),
 
     // --- Lane-tasks recovery after compaction ---
-    "session.compacted": async () => {
+    "session.compacted": async () => runSvcHook("session.compacted", () => {
       if (isDisabled("svc-compact-recovery")) return;
 
       // After compaction, re-read lane-tasks file as source of truth
@@ -558,7 +590,7 @@ export const SvcPlugin: Plugin = async ({ project, directory, worktree }) => {
           );
         }
       } catch { /* .svc dir not readable */ }
-    },
+    }),
   };
 };
 

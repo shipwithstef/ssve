@@ -27,7 +27,9 @@ import path from "node:path";
 import os from "node:os";
 import { fileURLToPath } from "node:url";
 import { MIGRATION_VERSION, resolveStateRoot, launcherRunnable } from "../hooks/lib/enforcement-core.mjs";
-import { isSvcOwnedCommand } from "../hooks/lib/svc-ownership.mjs"; // WI-562 IP-W2: shared ownership predicate
+import { wrapHookEntries } from "./lib/hook-command.mjs";
+import { isKnownManagedCommand } from "../hooks/lib/svc-ownership.mjs";
+import { actualDelegatedCommand } from "./lib/governed-routing.mjs";
 
 // ---------------------------------------------------------------------------
 // Profile control
@@ -457,7 +459,8 @@ function buildHookEntries(skillsPath) {
     });
   }
 
-  return entries;
+  return Object.fromEntries(Object.entries(entries).map(([event, hooks]) =>
+    [event, wrapHookEntries(hooks, { skillsPath, host: "claude", event })]));
 }
 
 // ---------------------------------------------------------------------------
@@ -563,7 +566,9 @@ function pruneCompanySessionHooks(removeAll = false) {
     const before = entry.hooks.length;
     entry.hooks = entry.hooks.filter((hook) => {
       const reservedId = entry.id === "svc-cos-briefing" ? "cos-briefing.mjs" : entry.id === "svc-delta-preload" ? "svc-delta-preload.mjs" : null;
-      const ownedFile = COMPANY_SESSION_HOOK_FILES.find((file) => reservedId === file || hook.command === `node ${path.join(skillsPath, "hooks", file)}` || (removeAll && hook.command?.includes(file)));
+      const delegated = actualDelegatedCommand(hook.command || "");
+      const ownedFile = COMPANY_SESSION_HOOK_FILES.find((file) => reservedId === file ||
+        (isKnownManagedCommand(hook.command, skillsPath) && delegated.includes(`/hooks/${file}`)));
       return !ownedFile || (!removeAll && fs.existsSync(path.join(skillsPath, "hooks", ownedFile)));
     });
     removed += before - entry.hooks.length;
@@ -595,17 +600,7 @@ if (args.removeCompanySessionHooks) {
 // Generic framework scripts do not use the svc- prefix: recognize only their
 // exact configured source path, never an arbitrary matching basename.
 function stripSvcOwnedHooks(hooks) {
-  const genericPaths = [
-    "scripts/eval-gate.mjs", "scripts/preflight.mjs", "hooks/cos-briefing.mjs",
-    "scripts/zombie-session-sweep.mjs",
-  ].map(rel => path.join(skillsPath, rel));
-  const owned = command => {
-    if (isSvcOwnedCommand(command)) return true;
-    const tokens = String(command || "").match(/"[^"\n]*"|'[^'\n]*'|[^\s]+/g) || [];
-    const argv = tokens.map(token => token.replace(/^(['"])(.*)\1$/, "$2"));
-    while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(argv[0] || "")) argv.shift();
-    return path.basename(argv[0] || "") === "node" && genericPaths.includes(argv[1]);
-  };
+  const owned = command => isKnownManagedCommand(command, skillsPath);
   for (const [event, entries] of Object.entries(hooks)) {
     if (!Array.isArray(entries)) continue;
     hooks[event] = entries.flatMap(entry => {

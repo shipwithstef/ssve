@@ -21,39 +21,23 @@
  */
 import path from "node:path";
 import process from "node:process";
+import { parseArgs } from "./lib/skill-router-args.mjs";
 import { compile } from "./compile-skill-router-index.mjs";
 import { loadIndex, verifyIndexFreshness, route, validateDecision, BUDGETS } from "./lib/skill-router.mjs";
 
-function usage() {
-  process.stderr.write(`usage:
+function usage(code = 2) {
+  (code === 0 ? process.stdout : process.stderr).write(`usage:
   node scripts/skill-router.mjs compile  [--root <dir>] [--check]
   node scripts/skill-router.mjs validate [--root <dir>]
   node scripts/skill-router.mjs route --intent "<text>" [options]
 `);
-  process.exit(2);
+  process.exit(code);
 }
 
-function parseArgs(argv) {
-  const args = { _: [] };
-  for (let i = 0; i < argv.length; i += 1) {
-    const a = argv[i];
-    if (a === "--root") args.root = argv[++i];
-    else if (a === "--check") args.check = true;
-    else if (a === "--intent") args.intent = argv[++i];
-    else if (a === "--files") args.files = String(argv[++i]).split(",").filter(Boolean);
-    else if (a === "--packages") args.packages = String(argv[++i]).split(",").filter(Boolean);
-    else if (a === "--env") args.env = String(argv[++i]).split(",").filter(Boolean);
-    else if (a === "--active-skill") args.activeSkill = argv[++i];
-    else if (a === "--next-skill") args.nextSkill = argv[++i];
-    else if (a === "--mode") args.mode = argv[++i];
-    else if (a === "--no-receipts") args.noReceipts = true;
-    else if (!a.startsWith("--")) args._.push(a);
-    else { process.stderr.write(`unknown flag: ${a}\n`); usage(); }
-  }
-  return args;
-}
-
-const args = parseArgs(process.argv.slice(2));
+let args;
+try { args = parseArgs(process.argv.slice(2)); }
+catch (error) { process.stderr.write(`skill-router: ${error.message}\n`); usage(); }
+if (args.help) usage(0);
 const command = args._[0];
 if (!command) usage();
 const root = path.resolve(args.root || process.cwd());

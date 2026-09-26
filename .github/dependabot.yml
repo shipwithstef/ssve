@@ -1,6 +1,5 @@
-# DORMANT TEMPLATE — not a live Dependabot config.
-# Install at .github/dependabot.yml only during public activation
-# (see docs/ci/ACTIVATION.md). This path is not a recognized Dependabot location.
+# Active Dependabot configuration at its recognized GitHub path.
+# See docs/ci/ACTIVATION.md for observed activation state.
 version: 2
 updates:
   - package-ecosystem: github-actions
