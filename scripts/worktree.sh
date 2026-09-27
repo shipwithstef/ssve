@@ -640,7 +640,7 @@ cmd_create() {
   done
 
   if [[ -z "$branch_name" ]]; then
-    echo "Usage: worktree.sh create <branch-name> [--from <base>]"
+    echo "Usage: worktree.sh create <branch-name> [--from <base>] [--wi WI-N]   (default base: origin/main)"
     exit 1
   fi
 
@@ -683,6 +683,7 @@ cmd_create() {
     _print_chain_policy "$ensured_path"
     echo ""
     echo "  [OK] Autonomous harness target ready: $ensured_path"
+    echo "  Next: cd $ensured_path"
     return 0
   fi
 
@@ -712,6 +713,7 @@ cmd_create() {
     _write_binding "$wt_path" "$session_id" "$wt_wi" "$role"
     echo ""
     echo "  [OK] Autonomous harness target ready: $wt_path"
+    echo "  Next: cd $wt_path"
     return 0
   fi
 
@@ -770,6 +772,7 @@ LANE_EOF
   echo "  Branch: $branch_name"
   echo ""
   echo "  [OK] Autonomous harness target ready: $wt_path"
+  echo "  Next: cd $wt_path"
   echo ""
 }
 
@@ -809,6 +812,7 @@ cmd_enter() {
 
   echo ""
   echo "  [OK] Autonomous harness target ready: $wt_path"
+  echo "  Next: cd $wt_path"
   echo "  Resolve via: node scripts/svc-ensure-worktree.mjs --branch $branch_name"
 }
 
@@ -1446,7 +1450,8 @@ Commands:
     --branch <name>  Branch name (from manifest, optional)
 
   create <branch>    Create a new worktree (idempotent — resumes if exists)
-    --from <ref>     Base on a specific ref (default: HEAD)
+    --from <ref>     Base ref (default: origin/main)
+    --wi <WI-N>      Work-item id (optional; otherwise derived from the branch name)
 
   enter <branch>     Show path to enter an existing worktree
 
@@ -1473,9 +1478,9 @@ Commands:
   preflight          Run safety checks without creating anything
 
 Worktree conditions:
-  ALWAYS:  execute-changeset, land-changeset, test-framework autopilot
-  NEVER:   spec writing, vision/persona, reviews/audits
-  OPTIONAL: plan-changeset (simulation), tech design (prototyping)
+  Any repository write (specs, plans, code, tests, .svc): linked worktree
+  Read-only discovery, review, or audit: default checkout is allowed
+  land-changeset merge and read-only verify-promotion: default checkout only
 
 Branch naming convention:
   feature-<name>     Greenfield / brownfield feature

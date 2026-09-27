@@ -43,7 +43,7 @@ for skill in $SKILLS; do
     [[ -z "$ipath" ]] && continue
     # Allow known path patterns
     if [[ ! "$ipath" =~ $VALID_INPUT_PATH_PATTERN ]]; then
-      ERRORS+="  FAIL: $skill — input path '$ipath' doesn't match expected patterns\n"
+      ERRORS+="  FAIL: skills/$skill/SKILL.md — input path '$ipath' doesn't match expected patterns. Rule: VALID_INPUT_PATH_PATTERN ($VALID_INPUT_PATH_PATTERN). next: edit skills/$skill/SKILL.md so that inputs path matches VALID_INPUT_PATH_PATTERN\n"
       FAIL=$((FAIL + 1))
     else
       PASS=$((PASS + 1))

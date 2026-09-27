@@ -156,7 +156,7 @@ Concern findings are CUMULATIVE with the existing 5-step protocol findings. A PR
 2. **SELF-JUDGMENT** — A re-argues each of its OWN findings (accept/reject w/ justification) — forces self-confrontation before anyone else sees the list.
 3. **CROSS-REVIEW** — a FRESH agent B independently (a) judges A's accepted findings and (b) hunts NEW findings under the no-agreement-bias rules; artifact = consolidated findings + gate checklist results.
 4. **CONVERGENCE CHECK** — all remaining ≤ medium → PASS; any critical/high → FIX and re-enter Step 1 (artifact + full findings history, iteration++); iteration 3 with critical/high remaining → ESCALATE to human with full history.
-5. **GATE DECISION** — `## Gate Decision: [G1-G7]` block: artifact, PASS|FAIL|ESCALATE, new state, iterations, resolved/remaining/escalated counts; FAIL ships fix tasks, ESCALATE ships the package.
+5. **GATE DECISION** — above the existing `## Gate Decision: [G1-G7]` block, three lines, then the same block unchanged: Outcome (PASS, FAIL, or ESCALATE, same rules), Blocking finding (id, severity, one-sentence evidence, or none), Next edit (that finding's suggested fix, or none). Keep the full history after that, under a History heading. The block itself stays: artifact, PASS|FAIL|ESCALATE, new state, iterations, resolved/remaining/escalated counts; FAIL ships fix tasks, ESCALATE ships the package.
 
 ## Gate Checklists
 

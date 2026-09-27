@@ -126,18 +126,20 @@ a{color:var(--active);text-decoration:none}
 </style></head><body><div class="wrap">
 <h1>Serious Vibe Coding — Plan &amp; Status</h1>
 <div class="sub">Generated ${esc(now)} · self-contained snapshot · open in any browser · expand any row for detail</div>
+<h2>Result</h2>
+<p>${idx.length} work items, ${counts.done || 0} shipped, ${active.length} open task lists, ${gaps.length} roadmap items still open.</p>
 
 <div class="metrics">
 <div class="metric"><div class="n">${idx.length}</div><div class="l">work items</div></div>
 <div class="metric"><div class="n" style="color:var(--done)">${counts.done || 0}</div><div class="l">shipped</div></div>
-<div class="metric"><div class="n" style="color:var(--active)">${active.length}</div><div class="l">active graphs</div></div>
-<div class="metric"><div class="n" style="color:var(--planned)">${gaps.length}</div><div class="l">roadmap items</div></div>
+<div class="metric"><div class="n" style="color:var(--active)">${active.length}</div><div class="l">open task lists</div></div>
+<div class="metric"><div class="n" style="color:var(--planned)">${gaps.length}</div><div class="l">roadmap items still open</div></div>
 </div>
 
-<h2>The Plan — roadmap (FRAMEWORK-STATE known gaps)</h2>
+<h2>Roadmap — still open</h2>
 ${gaps.map((g) => `<div class="card"><details><summary><span>${esc(g.gap.replace(/`/g, "").slice(0, 110))}</span>${pill(g.impact.split("(")[0].trim() || "—", impactCls(g.impact))}</summary><div class="body"><b>Why / status:</b> ${esc(g.why.replace(/`/g, ""))}<div class="row"><span>Effort</span><span>${esc(g.effort)}</span></div><div class="row"><span>Impact</span><span>${esc(g.impact)}</span></div></div></details></div>`).join("") || "<div class='sub'>No open roadmap items.</div>"}
 
-<h2>Greenfield lane — the pipeline flow</h2>
+<h2>Steps for a new product (greenfield lane)</h2>
 <div class="flow">${flow.map((s, i) => `<span class="step">${esc(s)}</span>${i < flow.length - 1 ? '<span class="arrow">→</span>' : ""}`).join("")}</div>
 
 <h2>Active task graphs</h2>

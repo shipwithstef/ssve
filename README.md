@@ -1,5 +1,7 @@
 # Serious Serious Vibe Engineering (SSVE)
 
+**Start here.** If this checkout is not installed, run `./setup` or `./setup --host <host>`. `./setup --all-hosts` refreshes every host; it is not the product step. The next command is `route-workflow`. It applies the mode check in `REPO_MODES.md`, then starts `write-vision` or `onboard-repo`.
+
 ## Hooks advise by default
 
 SSVE runs its workflow hooks in **advisory mode by default**: findings remain visible while work continues. Opt into blocking behavior with `SVC_HOOK_MODE=enforce` or the owner policy in `~/.svc/hook-policy.json`. Refresh existing installations with `./setup --all-hosts`. Native permissions, foreign hooks, standalone validators, and GitHub required checks retain their own behavior. See [hook modes and migration](docs/hook-modes.md).

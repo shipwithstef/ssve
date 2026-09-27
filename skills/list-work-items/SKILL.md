@@ -1,7 +1,7 @@
 ---
 name: list-work-items
 version: "1.0"
-description: List local svc work items ordered by dependency and priority. Use when you need to see the backlog, understand what to build next, and see why each item is needed without syncing to GitHub.
+description: List local svc work items ordered by dependency and priority. Use when you need to see the backlog, understand what to build next, and see why each item is needed without syncing to GitHub. Here "what to build next" means that ordered local backlog only, not a milestone roadmap.
 phases:
   - id: P1-WorkItemGlobRead
     trigger: always
@@ -89,7 +89,7 @@ checkout as a side effect of listing.
 
 ## Output contract
 
-- **Default stdout** is a single-screen table (~92 items fits comfortably). One line per WI: `ID | Status | Priority | Subject (truncated)`.
+- **Default stdout** is a single-screen table. One line per WI: `ID | Status | Pri | Next | Subject`. Status is the bucket token (`blocked`, `pending`, `in_progress`, …). Next is `after WI-…` when dependencies were parsed, otherwise the Hold line or the status remainder for `blocked`, `deferred`, and `pending`, otherwise `—`. Full status text stays on `--detail`. Order stays priority, then ID. The script already prints `Sorted by priority (critical → low), then ID.` under the heading; paste that line with the table.
 - **Execution context** follows the table as `WI | Worktree | Branch | Owner Session`, using the exact binding status values. Use `—` for an unbound read-only invocation; never infer an owner.
 - **`docs/specs/work-items/DONE.md`** is regenerated only by table mode from a bound linked worktree. Read-only/default-checkout inspection has no refresh side effect.
 - **`--detail WI-NNN`** prints the parsed metadata header followed by the raw file contents. Use this instead of opening the WI manually.

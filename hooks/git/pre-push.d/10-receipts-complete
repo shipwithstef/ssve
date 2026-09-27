@@ -16,14 +16,22 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   if [[ "$OK" != "true" ]]; then
     HAS_ISSUES="true"
     echo "svc chain: receipts incomplete for $local_sha" >&2
-    echo "$RESULT" >&2
+    if [[ -z "$RESULT" ]]; then
+      echo "svc chain: checker printed nothing." >&2
+      echo "svc chain: Next: node scripts/check-chain-receipts.mjs --sha $local_sha --consumer push" >&2
+    else
+      printf '%s\n' "$RESULT" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{try{const j=JSON.parse(s);const rows=(j.results||[]).filter(r=>r&&r.ok===false);if(!rows.length){console.log("(checker did not list a failing results row)");return;}for(const r of rows) console.log((r.sha||"?")+": "+((r.missing||[]).join("; ")||"(no missing list)"));}catch{console.log("(checker output was not JSON)");}})' >&2
+      echo "svc chain: Next: node scripts/check-chain-receipts.mjs --sha $local_sha --consumer push" >&2
+      echo "$RESULT" >&2
+    fi
   fi
 done
 if [[ "$HAS_ISSUES" == "true" ]]; then
   if [[ "$MODE" == "refuse" ]]; then
-    echo "svc chain: push refused. Run retroactive plan or use EMERGENCY_OVERRIDE." >&2
+    echo "svc chain: push refused. Receipts are still required." >&2
+    echo "svc chain: A capped waiver is not a receipt. Command: node scripts/log-waiver.mjs EMERGENCY_OVERRIDE <issue-url> <reason>" >&2
     exit 1
   fi
-  echo "svc chain: WARN-ONLY mode. Push proceeds." >&2
+  echo "svc chain: WARN-ONLY mode. Push proceeds. The missing list above is still unpaid." >&2
 fi
 exit 0

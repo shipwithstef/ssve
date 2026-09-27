@@ -334,7 +334,7 @@ echo "$NEW_ENV" | git notes --ref=svc-receipts add -f -F - <sha>
 | Path | Artifact |
 |---|---|
 | `.svc/receipts/<sha>/review-exec.json` | SHA-keyed receipt (schema-validated) |
-| `docs/specs/reviews/<name>-exec-cross-model.md` | Human-readable review (existing review-cross-model output) |
+| `docs/specs/reviews/<name>-exec-cross-model.md` | Human-readable review (existing review-cross-model output). Open it with three lines before the receipt and the round log: Outcome (pass, pass-with-acks, or escalated — same verdict rules), Blocking finding (id, severity, one line), Next edit (one concrete edit, or the existing round-3 disposition and its one-line justification). |
 | `refs/notes/svc-receipts` git note for <sha> | Consolidated envelope updated |
 
 ## Pipeline Continuation
