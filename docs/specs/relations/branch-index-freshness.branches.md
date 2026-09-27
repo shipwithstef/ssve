@@ -1,4 +1,4 @@
-Derived-at: aef570d3a2d3f8a7a2cf53b508bfe9576c438fda
+Derived-at: 1a0822e6b9deb5a6caaed7cabe4645b9f1ca1cea
 Scope-paths:
   - scripts/branch-index-freshness.mjs
   - scripts/check-branch-index.mjs

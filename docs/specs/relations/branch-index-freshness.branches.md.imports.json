@@ -1,5 +1,5 @@
 {
-  "stamped_at": "aef570d3a2d3f8a7a2cf53b508bfe9576c438fda",
+  "stamped_at": "1a0822e6b9deb5a6caaed7cabe4645b9f1ca1cea",
   "imports": {
     "scripts/branch-index-freshness.mjs": [
       "node:child_process",
