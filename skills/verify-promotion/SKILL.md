@@ -787,6 +787,16 @@ under identity `slot::verify-promotion::<WI>::<sha>`.
 Self-verify: `node scripts/check-chain-receipts.mjs --sha HEAD --wi $WI --consumer verify-promotion` shows this
 receipt type as present + schema-valid.
 
+### Optional issue close after G7
+
+After the local WI has actually reached `VERIFIED` and the matching PASS `verify-promotion` receipt is present in the durable `refs/notes/svc-receipts` note for `BASE_SHA`, inspect validated `issue_tracker` config and the shared map. If no mapped issue exists or mode is `local-only`, make no GitHub call. With `close_trigger: manual` (the default), print the exact retryable command and leave remote state unchanged:
+
+```bash
+node scripts/sync-github-issues.mjs --root <promoted-worktree> --close-wi "$WI" --commit "$BASE_SHA"
+```
+
+With `close_trigger: verify-promotion`, run that same command only after the durable note self-check. The CLI revalidates the WI, receipt, commit reachability, and remote marker; this skill never constructs its own PASS proof. A GitHub authentication, network, lock, or API failure records `close-pending` through the CLI and reports the exact retry command, but does not change the local `VERIFIED` status, verification verdict, or emitted receipt. Do not call the close command at `PROMOTED`, from `land-changeset`, or before G7 evidence exists.
+
 Only after that self-verification succeeds, append the promoted WI to shared
 memory. Run from the clean promoted primary checkout and bind the exact SHA:
 

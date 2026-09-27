@@ -1,23 +1,54 @@
 {
-  "stamped_at": "f24a7add94ea8f78a87f736dcc7cb8f9183eb59a",
+  "stamped_at": "ea67d08151031df80810e2782567d42f88ed185a",
   "imports": {
     ".svc/lane-tasks-WI-541.json": [],
     "hooks/codex/svc-codex-pretool-dispatcher.mjs": [
-      "node:fs"
+      "../lib/auto-provision-worktree.mjs",
+      "../lib/pretool-decision-engine.mjs",
+      "./lib/codex-hook-context.mjs",
+      "node:fs",
+      "node:path",
+      "node:url"
     ],
     "scripts/compile-delivery-graph.mjs": [
       "./lib/mandatory-delivery-chain.mjs",
+      "./lib/research-decision.mjs",
       "./state-io.mjs",
       "node:fs",
       "node:path"
     ],
+    "scripts/run-external-review.mjs": [
+      "../hooks/lib/wi-id.mjs",
+      "./lib/external-review-provenance.mjs",
+      "./lib/frozen-request-input.mjs",
+      "./lib/review-evidence-store.mjs",
+      "./lib/review-inputs.mjs",
+      "./lib/review-launch-preflight.mjs",
+      "./lib/review-report-recovery.mjs",
+      "./lib/reviewer-resources.mjs",
+      "./review-topology-v2.mjs",
+      "node:child_process",
+      "node:crypto",
+      "node:fs",
+      "node:fs/promises",
+      "node:os",
+      "node:path",
+      "node:process",
+      "node:url"
+    ],
     "scripts/svc-ensure-worktree.mjs": [
       "../hooks/codex/lib/bootstrap-marker.mjs",
       "../hooks/codex/lib/session-handoff.mjs",
+      "../hooks/lib/authoritative-binding.mjs",
+      "../hooks/lib/authority-store.mjs",
+      "../hooks/lib/literal-branch.mjs",
       "../hooks/lib/resolve-wi.mjs",
       "../hooks/lib/validate-task-graph-shape.mjs",
+      "../hooks/lib/wi-claim.mjs",
       "../hooks/lib/wi-id.mjs",
+      "../hooks/lib/worktree-policy.mjs",
       "./lib/chain-policy.mjs",
+      "./state-io.mjs",
       "node:child_process",
       "node:crypto",
       "node:fs",

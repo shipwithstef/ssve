@@ -103,7 +103,7 @@ Do **not** auto-implement. Do **not** auto-file WIs. Do **not** halt for missing
 - **Route:** `create-skill` draft only.
 - **Expected files this change:**
   - `proposals/2026-09-20-page-ux-improve-skill.md` (this file)
-  - `proposals/drafts/page-ux-improve/SKILL.md` (unregistered design draft; not an installable skill)
+  - `proposals/drafts/page-ux-improve/CONTRACT.md` (unregistered design draft; not an installable skill)
 - **Deferred until create-skill evals:** `skills-manifest.json`, README / EXTERNAL_ADDONS mirrors, `intent-routing.md`, `hot-path-operational-details.md`, installer, tier-1.5/tier-2 evals.
 - **Registration is a later change:** only then move the validated contract into `skills/page-ux-improve/SKILL.md`, update the registry/routing mirrors, run install and evals, and make it callable.
 - **live-evidence:** not-applicable — proposal + optional mock; nothing ships to a deployed product from this skill.

@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "wi": "WI-570",
+  "lane": "framework",
+  "status": "in_progress",
+  "created": "2026-09-26T15:05:54.913Z",
+  "tasks": [
+    {
+      "id": 1,
+      "status": "in_progress",
+      "skill": "execute-changeset",
+      "subject": "Integrate owner-authorized tracker and framework corrections; external findings dispositioned, formal v5 plan authority unissued",
+      "blocked_by": []
+    },
+    {
+      "id": 2,
+      "status": "pending",
+      "skill": "review-exec",
+      "subject": "Validate and independently review the integrated candidate",
+      "blocked_by": [
+        1
+      ]
+    },
+    {
+      "id": 3,
+      "status": "pending",
+      "skill": "land-changeset",
+      "subject": "Land through required GitHub checks",
+      "blocked_by": [
+        2
+      ]
+    },
+    {
+      "id": 4,
+      "status": "pending",
+      "skill": "verify-promotion",
+      "subject": "Verify main and install all provisioned hosts; close issues only with evidence",
+      "blocked_by": [
+        3
+      ]
+    }
+  ]
+}

@@ -67,18 +67,17 @@ Suggested baseline tasks:
 
 For smaller work, collapse tasks. For larger work, split by subsystem.
 
+### 4a. Approach Value
+
+Every plan must explain the user job and intended outcome, then compare its chosen approach with a simpler adequate existing pattern. Flag components, abstractions, dependencies, research, tests, or visual effects that add no distinct user or operational value. Generic promises such as “polish the UI” need concrete behavior and design decisions, not more adjectives. For UI work only, cite relevant real product screens serving the same job, explain which specific hierarchy, interaction, content, or visual choices improve this product, and name the rendered journey observation that will verify them. Retaining an effective existing pattern is valid; novelty, decoration, and competitor feature counts are not success criteria. For CLI, backend, or documentation work, require proof at its relevant boundary without imposing browser or marketing work.
+
 ### 5. AC-to-Task Mapping
 
 Every AC must map to one or more implementation tasks.
 
 ### 6. AC-to-Test Mapping
 
-Every AC must map to exactly one of:
-
-- `Unit`
-- `E2E`
-- `Manual`
-- `N/A` (with reason)
+Use the v5 `validation_plan` and its generated AC/task/test views as the single mapping. Every AC must link to sufficient proof; one validation entry may cover several ACs when the same observation genuinely proves them. Choose the cheapest sufficient observation for each AC, including an existing check or justified manual observation where appropriate. Add separate risk-specific observations only for material risks that the AC-linked proof does not already cover. Select `source`, `unit`, `browser`, `device`, `hosted`, or `performance` by the behavior being claimed; use multiple kinds only when they catch distinct failures. Do not independently author another AC-to-test table.
 
 ### 6a. Prerequisite Alignment Matrix
 
@@ -93,10 +92,7 @@ A matrix table that explicitly maps each planned task or file blueprint to its u
 
 ### 7. Validation Plan
 
-Include:
-
-- task-level validation commands
-- final branch-level validation commands
+Inventory existing coverage before adding tests. For each v5 validation entry, name the AC IDs, executable command, observation kind, externally grounded expected outcome, and `sufficiency`: the user behavior or material risk, the wrong result this check catches, why its oracle is independent of the implementation/mock, and why existing checks do not already suffice. Choose the least costly observation that proves the claim. Cover necessary negative and boundary behavior when it follows from the contract or a credible failure risk; exclude speculative bugs, mock echoes, private-helper assertions, and duplicate tests with no distinct failure sensitivity. Include task-level and final branch-level commands only where they provide distinct evidence.
 
 ### 7a. Execution Command Sequence
 

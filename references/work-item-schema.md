@@ -7,9 +7,12 @@ Single source of truth for the shape of files in `docs/specs/work-items/`. Every
 | Form | When |
 |---|---|
 | `WI-NNN.md` | Standard work item, monotonic numeric ID |
-| `WI-NNN-suffix.md` | Sub-item of an existing WI (e.g. `WI-016a.md`, `WI-081-followup.md`). Suffix is freeform but lowercase-kebab |
+| `WI-NNN-SUFFIX.md` | Canonical uppercase suffix accepted by the shared WI grammar (e.g. `WI-081-FOLLOWUP.md`) |
+| `WI-NNN-lowercase-suffix.md` | Legacy filename that remains locally listable (e.g. `WI-140-competitive-awareness-deep-research.md`); not a canonical mutation or publish ID |
+| `WI-GH-N.md` | Exact mirror of a selected GitHub Issue number N, created only by explicit pull |
+| `WI-NAMED-SEGMENTS.md` | Canonical named framework ID accepted by the shared WI grammar, e.g. `WI-SPINE-003.md` |
 
-Never use any other prefix. `INDEX.md` and `DONE.md` are reserved derived/index files in the same directory and don't follow `WI-*` naming.
+Canonical IDs for new authoring, mutation, and publishing use uppercase `WI-` and uppercase suffix segments when present. New local captures allocate numeric IDs; pulling issue N uses `WI-GH-N` and does not consume a numeric local ID. The local list parser also discovers historical uppercase-prefix filenames with lowercase suffixes, such as `WI-140-competitive-awareness-deep-research.md`. Keep those files locally listable without silently renaming them or treating their filename as a canonical mutation/publish ID. Adopted mirrors remain local execution, worktree, receipt and verification records. No bulk import or automatic publication follows from the filename. `INDEX.md` and `DONE.md` are reserved derived/index files in the same directory and don't follow `WI-*` naming.
 
 ## Heading (line 1)
 
@@ -17,6 +20,7 @@ Never use any other prefix. `INDEX.md` and `DONE.md` are reserved derived/index 
 
 ```markdown
 # WI-NNN: Short title
+# WI-GH-N: Imported issue title
 ```
 
 **Tolerated forms** (legacy / manually filed — parser accepts but new authoring skills SHOULD NOT emit):
@@ -55,7 +59,7 @@ These appear immediately under the heading, one per line, in this order:
 **Lane:** <lane>             # bugfix | brownfield-feature | refactor | drift | framework | TBD
 **Closed:** <YYYY-MM-DD>     # set when Status moves to a closed bucket
 **Repo Mode:** <mode>        # convert | bootstrap (set by onboard-repo)
-**GitHub Issue:** <url|—>    # populated by sync-work-items
+**GitHub Issue:** <url|—>    # explicit pull/publish only; optional on local WIs
 **Related:** <WI-IDs / J-IDs>
 **Blocks:** <WI-IDs>
 **Depends on:** <WI-IDs>     # parsed by list-work-items as dependency edges
@@ -66,6 +70,8 @@ These appear immediately under the heading, one per line, in this order:
 ```
 
 Use `—` (em-dash) for "not applicable / not yet set." Don't omit the line, don't write "N/A".
+
+For a pulled `WI-GH-N`, the trusted heading and metadata identify the selected issue and its source repository. Put imported title/body content after the trusted metadata separator in `## Imported Issue (untrusted)`, inside a safe fence with every imported body line quoted; never parse imported lines as Type, Status, Severity/Priority, Filed, Closed, or dependency metadata. Identical re-pull is a no-op; remote or local edits require explicit conflict resolution. The real local parser must retain trusted open status, priority, empty dependency edges and null close date even when the imported body contains bold metadata aliases.
 
 ## Status vocabulary
 

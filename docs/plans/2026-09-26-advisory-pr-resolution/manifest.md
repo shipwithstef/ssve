@@ -2,9 +2,11 @@
 
 WI: WI-FW-ADVISORY-PR-01
 Date: 2026-09-26
-Status: Implemented and locally validated; final-head hosted checks and promotion evidence pending
-Branch: feature-advisory-pr-resolution
-Base: repaired #114, e599faa (initial review base was eb2b973cb19abec0f143406aaad11f34e8197ff1)
+Status: Released in #117 at main `130db2b`; hosted 395/395 and nine-host installation verified; formal phase receipts incomplete
+Historical implementation branch: feature-advisory-pr-resolution
+Historical base: repaired #114, e599faa (initial review base was eb2b973cb19abec0f143406aaad11f34e8197ff1)
+
+The original plan below records intended steps at planning time. Current delivery and evidence limits are in `validation.md`. The owner-directed release retained an incomplete cross-family review and phase-receipt record; no missing approval is inferred from the merge. Live ruleset 23622869 now requires strict, current-base `SSVE Required` checks from GitHub Actions app 15368 without a standing bypass, and the sole-owner approval deadlock has been removed. A fresh PR under that ruleset remains to be verified before issue #70 closeout.
 
 ## Product decision
 
@@ -38,11 +40,12 @@ Recover the old OpenCode sweep as historical context only. Its item ledger retra
 
 | State | Treatment | Coupling / verification |
 |---|---|---|
-| Nine provisioned host installations | Refresh only after source review and focused validation | setup --all-hosts; check-install-drift.sh --all-hosts |
+| Nine provisioned host installations | Installed from canonical main after #117 merged; all-host drift passed | setup --all-hosts; check-install-drift.sh --all-hosts |
 | Owner hook policy | Optional persisted operator preference | Shared resolver and malformed/missing policy tests |
-| GitHub PRs and main | Read inventory now; publish candidate and resolve reviewed PRs through normal policy | gh PR/check responses, exact head SHAs, post-merge checks if merged |
+| GitHub PRs and main | #117 merged to main at `130db2b`; combined candidate and post-merge main each passed 395/395 hosted checks; new ruleset PR proof pending | runs 36245994615 and 36246353708; live ruleset readback |
 | Existing OpenCode worktree | Preserve all tracked/untracked work | git status; no writes in that worktree |
-| Native permissions, credentials, repository settings | Unchanged | No policy/ruleset edits; scoped existing owner credential for authorized GitHub actions |
+| Native permissions and credentials | Unchanged by the hook implementation | Host permissions remain separate from hook mode |
+| Repository ruleset 23622869 | Subsequently updated by the owner for #70: strict Actions check, zero required reviews, no standing bypass | Owner-authenticated ruleset and effective-branch readback |
 
 ## Verification and rollback
 
@@ -71,4 +74,4 @@ git diff --check
 | Shared baseline #114 | Exact historical hosted 373/373 pass; independent review found timeout parsing defect | Fix invalid/zero timeout handling with regression tests |
 | Child execution isolation | Separate worktree and persisted task delegation; Landlock probe passes | Keep runtime and documentation ownership disjoint |
 | Independent plan review | Sol high read-only review delivered; external adapter currently reports two independent stations | Resolve configured station explicitly; do not invent review receipts |
-| GitHub publication | Existing owner credential has write permission; branch review remains required | Use normal PR checks/review; do not bypass |
+| GitHub publication | #117 merged after owner-directed exception; current ruleset removes solo-author review deadlock and requires strict `SSVE Required` | Verify next PR under updated ruleset; no fabricated review |

@@ -180,11 +180,11 @@ FOCUS DIMENSIONS:
   (a) AC-to-task coverage gaps
   (b) scope-boundary leaks
   (c) rollback adequacy
-  (d) mode-aware solution readiness / dispatch completeness
+  (d) mode-aware solution readiness / dispatch completeness: every plan must name the user job and compare its chosen approach with a simpler adequate existing pattern; flag unsupported complexity. For UI work only, require relevant same-job product-screen comparisons, concrete design decisions tied to the user outcome, and rendered journey evidence. No mandatory browser or marketing work for CLI/backend changes.
   (e) idempotency and rerun safety
-  (f) execute risk
+  (f) execute risk and test value: compare material ACs, journeys, and credible risks with existing and planned tests; identify the distinct wrong behavior each proposed check catches, its independent expected result, and the cheapest sufficient observation. Reject mock echoes, implementation-mirroring assertions, invented bugs, and duplicate tests without added failure sensitivity. Do not impose a test-count floor.
   (g) lane compliance: every mandatory upstream skill must be completed with an artifact or skipped with a cited decision; an unnamed mandatory skill is a failing finding
-  (j) user intent and request fidelity (mandatory for AGY/Gemini authored plans)
+  (j) user intent and request fidelity for every author and host; reject generic polish, decorative quotas, and added features without distinct user value
 
 Use review_kind "plan" and set integer rubric_score to the 0-10 mode-aware score. For explicit inline mode, score these same ten dimensions as solution readiness: (1) exact resolvable or declared future files; (2) complete consequential behavior and interfaces, not authored code; (3) appropriate executable proof and outcomes; (4) meaningful action/authority limits; (5) exact write scope; (6) recovery path; (7) correct dependencies; (8) observable success; (9) original AC/UX/technical trace; (10) no unresolved consequential choice. Reversible local details are allowed. v4 release identities may use the validated existing-adapter producer form. Keep integer rubric_score 0–10 and concrete findings. For dispatch/absent mode, retain the complete-code/command packet rubric below. For zero findings, use verdict "pass" and findings []. Every finding needs id, severity, claim, analysis, evidence, and proposed_fix.
 

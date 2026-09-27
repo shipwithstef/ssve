@@ -2,9 +2,9 @@
 
 **Observed 2026-09-26:** the repository is public and `.github/workflows/ssve-checks.yml` is active. GitHub reports SSVE Checks, Dependabot Updates, and CodeQL as active; the API also retains a CI Repair Snapshot workflow entry whose source file is absent from the current main checkout. Do not infer an installed workflow file from that historical registration alone.
 
-Read-only evidence: `gh api repos/shipwithstef/ssve` reports `private: false`; `gh api repos/shipwithstef/ssve/actions/workflows` reports the workflow states. Current PR check identities are retained in `docs/plans/2026-09-26-advisory-pr-resolution/pr-inventory.json`. For example, [#114 run 35537943565](https://github.com/shipwithstef/ssve/actions/runs/35537943565) passed on its historical head. This does not certify main or subsequent changes.
+Read-only evidence: `gh api repos/shipwithstef/ssve` reports `private: false`; `gh api repos/shipwithstef/ssve/actions/workflows` reports the workflow states. The combined #117 candidate passed `SSVE Required` with 395/395 Tier-1 validators, zero failures/timeouts in [run 36245994615](https://github.com/shipwithstef/ssve/actions/runs/36245994615). It merged to `main` at `130db2bff74229348b1cf6db7892615ec9ca239d`; post-merge `main` passed 395/395 in [run 36246353708](https://github.com/shipwithstef/ssve/actions/runs/36246353708). The tested and merged trees match. All nine hosts were installed from canonical main and passed drift checks; the eight hook-capable hosts passed installed advisory/enforce callback probes.
 
-**Hosted proof pending for the complete release matrix:** individual same-repo PR runs are recorded above and in their PR checks, but current main, fork, and final candidate evidence must be verified separately. Do not call this a verified public release until that matrix and the required reviews are complete.
+The owner updated active default-branch ruleset [23622869](https://github.com/shipwithstef/ssve/rules/23622869): `SSVE Required` is strict and pinned to GitHub Actions app 15368, with no standing bypass actors. Pull requests and review-thread resolution remain required; the solo-maintainer approval requirement and required code-owner review were removed. Owner-authenticated readback and the effective main-branch rules confirm the setting. **Hosted proof pending for a fresh PR under this updated ruleset**, and fork-path proof remains separate. Do not call this a verified public release across all same-repo and fork PR paths until those paths have current evidence. No successful cross-family phase review or missing historical phase receipt is implied by the green runs or policy update.
 
 The dormant preparation instructions below are retained as historical setup guidance. Recognized `.github/` files are now active; templates under `docs/ci/workflows/` remain reference copies. This documentation update changes no billing, credentials, visibility, workflow triggers, runner selection, action pins, or repository settings.
 
@@ -17,7 +17,7 @@ The dormant preparation instructions below are retained as historical setup guid
 Do **not** create a `workflow_dispatch`-only file under `.github/workflows/` as a
 stand-in for dormancy. The dormant template has **no** `workflow_dispatch` and
 **no** `schedule`. Historical private-repo billing pressure came from many
-automatic GitHub workflows; this candidate keeps one `pull_request` + `push` to
+automatic GitHub workflows; the active SSVE workflow keeps one `pull_request` + `push` to
 `main` check. See `docs/plans/WI-FW-OSS-CI-PREP-01/historical-coverage.md`.
 
 ## Historical pre-activation observations (2026-09-16 UTC)

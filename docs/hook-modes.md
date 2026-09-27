@@ -2,7 +2,7 @@
 
 SSVE hooks advise by default. They still inspect operations and report findings, but their warnings do not stop the agent, a tool call, or a Git operation. This keeps unstable workflow checks from preventing the work needed to fix them.
 
-Native host permissions, sandbox rules, third-party hooks, standalone validation commands, and GitHub required checks retain their own behavior. A warning is not passing evidence or approval to merge.
+Native host permissions, sandbox rules, third-party hooks, standalone validation commands, and GitHub required checks retain their own behavior. This includes direct chain-receipt validation through `scripts/check-chain-receipts.mjs` and `scripts/svc-reconcile.mjs`; a managed pre-push warning does not make either validator pass. A warning is not passing evidence or approval to merge.
 
 ## Choose a mode
 
@@ -53,3 +53,5 @@ Setup migrates managed SVC entries idempotently. It does not rewrite foreign com
 Run free checks with `EVALS=0 bash scripts/ci/run-free-checks.sh`. Enforcement fixtures explicitly select enforce mode; default-mode fixtures leave mode unconfigured. Hosted check results apply to the tested commit, not later modifications.
 
 To recover from a regression, select advisory mode, repair the source and rerun setup. To restore the previous implementation, revert the source change and refresh installations from that revision. Keep evidence of failures visible throughout recovery.
+
+Routine skill-loader rewrites discarded by advisory mode are quiet: the original tool input runs, with no claim that the loader ran or that the operation must be retried. Missing post-tool receipts are quiet for advisory calls and proven read-only calls. Independent warnings and actual enforcement findings remain visible.

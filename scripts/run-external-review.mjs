@@ -29,6 +29,7 @@ import { candidateTreeIdentity, issueExternalReviewProvenance, externalReviewCyc
 import { relocateTree } from './lib/review-evidence-store.mjs';
 
 import { reviewerAvailability, recordReviewerFailure } from './lib/reviewer-resources.mjs';
+import { cursorCatalogDecision, cursorExactRouteEvidenceValid, resolveReviewTimeout } from './lib/review-launch-preflight.mjs';
 
 const LAUNCHER_VERSION = '2.5.8';
 export const EXTERNAL_REVIEW_LAUNCHER_VERSION = LAUNCHER_VERSION;
@@ -49,10 +50,10 @@ function reviewTransport(host) {
   return REVIEW_HOST_TRANSPORTS[host] || null;
 }
 const ELIGIBLE_FALLBACKS = new Set(['model_unavailable', 'model_entitlement', 'provider_overload']);
-const DEFAULT_TIMEOUT_SECONDS = 1200;
+const DEFAULT_TIMEOUT_SECONDS = 1800;
 const DEFAULT_REVIEW_BUDGET_USD = 50;
 const DEFAULT_GROK_MAX_TURNS = 100;
-const DEFAULT_LOCK_STALE_SECONDS = 2460;
+const DEFAULT_LOCK_STALE_SECONDS = 3660;
 const DEFAULT_CACHE_TTL_DAYS = 30;
 const HEARTBEAT_MS = 30_000;
 const MAX_OWNER_OVERRIDE_AGE_MS = 24 * 60 * 60 * 1000;
@@ -63,7 +64,7 @@ let emergencyReceipt;
 
 function usage(message = '') {
   const prefix = message ? `external-review: ${message}\n` : '';
-  return `${prefix}usage: run-external-review.mjs --orchestrator HOST --review-kind KIND --artifacts-dir DIR [--input-file FILE | stdin] [--context-root DIR] [--plan-file FILE] [--context-files JSON_FILE] [--preflight] [--reviewer-config FILE --reviewer-mode MODE --reviewer-phase plan|exec|design --reviewer-station ID] [--owner-override-file FILE] [--phase-binding FILE] [--phase-override-file FILE]\n       run-external-review.mjs --validate-capabilities --orchestrator HOST --artifacts-dir DIR [reviewer config options]\n       run-external-review.mjs --policy-status --orchestrator HOST\n       run-external-review.mjs --select-profile fable-high --reason TEXT [--expires-at ISO]\n       run-external-review.mjs --clear-profile-selection --reason TEXT\n       run-external-review.mjs --gc-cache [--artifacts-dir DIR]`;
+  return `${prefix}usage: run-external-review.mjs --orchestrator HOST --review-kind KIND --candidate-digest SHA256 --artifacts-dir DIR [--input-file FILE | stdin] [--context-root DIR] [--plan-file RELATIVE_PREPARED_PLAN_JSON] [--context-files RELATIVE_PATH_LIST_JSON] [--preflight] [--reviewer-config FILE --reviewer-mode MODE --reviewer-phase plan|exec|design --reviewer-station ID] [--owner-override-file FILE] [--phase-binding FILE] [--phase-override-file FILE]\n       run-external-review.mjs --validate-capabilities --orchestrator HOST --artifacts-dir DIR [reviewer config options]\n       run-external-review.mjs --policy-status --orchestrator HOST\n       run-external-review.mjs --select-profile fable-high --reason TEXT [--expires-at ISO]\n       run-external-review.mjs --clear-profile-selection --reason TEXT\n       run-external-review.mjs --gc-cache [--artifacts-dir DIR]\n\nInputs:\n  --input-file accepts an absolute or relative path to the complete review request; stdin is also accepted.\n  --plan-file is a repository-relative prepared plan .json under --context-root, not the Markdown manifest or the review request.\n  --context-files is a repository-relative JSON array of context paths; it must include the full Markdown plan manifest when --plan-file is used.\n  --candidate-digest is 64 lowercase hex characters and must appear in the review request. For plan review, use SHA-256 of the prepared plan JSON bytes. For exec review, use candidateTreeIdentity(contextRoot).candidate_digest from scripts/lib/external-review-provenance.mjs (not the 40-character Git tree hash).\n  --preflight validates prepared plan inputs without launching a reviewer. --help or -h prints this help and exits successfully.\n  Default reviewer deadline: 1800 seconds (30 minutes). Owner policy transport_options.<host>.timeout_seconds sets one host; SVC_EXTERNAL_REVIEW_TIMEOUT_SECONDS overrides it for one invocation (maximum 7200). The lock stale limit grows with the effective deadline unless explicitly set.`;
 }
 
 function parseArgs(argv) {
@@ -124,6 +125,7 @@ function sha256(value) {
 }
 
 async function buildReviewPackage(baseBytes, reviewKind, contextRoot, options = {}) {
+  if (options.planFile && (path.isAbsolute(options.planFile) || !options.planFile.endsWith('.json'))) throw Object.assign(new Error('--plan-file must be a repository-relative prepared plan .json under --context-root; supply the Markdown manifest through --context-files and review prose through --input-file or stdin'), { classification: 'input_invalid' });
   const prepared = prepareReviewInputs(contextRoot, options);
   if (options.planFile && reviewKind === 'plan' && options.candidateDigest
       && sha256(await readFile(path.resolve(contextRoot, options.planFile))) !== options.candidateDigest) {
@@ -506,11 +508,11 @@ export function validateExternalReviewReceiptSemantics(receipt) {
   if (receipt.status === 'success' && receipt.invocation_tuple?.host === 'cursor' && receipt.review_kind !== 'capability-probe') {
     const a = receipt.model_attestation;
     if (a?.requested_model !== receipt.invocation_tuple.model || a?.observed_models?.some(model => model !== receipt.invocation_tuple.model)) errors.push('Cursor model attestation mismatch');
-    if (receipt.route?.kind !== 'cache_hit' && receipt.invocation_tuple.model !== 'cursor-auto' && a?.evidence !== 'cursor_plan_mode_exact_model_argv_plus_successful_json_exit_no_server_model_echo') errors.push('Cursor exact-route evidence missing');
+    if (receipt.route?.kind !== 'cache_hit' && receipt.invocation_tuple.model !== 'cursor-auto' && !cursorExactRouteEvidenceValid(receipt)) errors.push('Cursor exact-route evidence missing');
   }
   if (receipt.policy?.source === 'schedule'  && receipt.route?.kind === 'explicit_profile_primary') errors.push('$.route.kind: scheduled policy cannot be explicit primary');
   if (receipt.policy?.source === 'explicit-selection' && receipt.route?.kind === 'scheduled_primary') errors.push('$.route.kind: explicit policy cannot be scheduled primary');
-  if (receipt.policy?.source === 'owner-config' && receipt.review_kind !== 'capability-probe' && !/^[a-f0-9]{64}$/.test(receipt.candidate_digest ?? '')) errors.push('$.candidate_digest: owner-configured review must bind the frozen candidate');
+  if (receipt.policy?.source === 'owner-config' && receipt.review_kind !== 'capability-probe' && !(receipt.status === 'failure' && receipt.classification === 'input_invalid' && receipt.attempts?.length === 0) && !/^[a-f0-9]{64}$/.test(receipt.candidate_digest ?? '')) errors.push('$.candidate_digest: owner-configured review must bind the frozen candidate');
   if (receipt.status === 'success' && receipt.review_kind !== 'capability-probe' && !/^[a-f0-9]{64}$/.test(receipt.findings_sha256 ?? '')) errors.push('$.findings_sha256: successful review must bind canonical findings bytes');
   if ((receipt.status === 'failure' || receipt.review_kind === 'capability-probe') && receipt.findings_sha256 !== null) errors.push('$.findings_sha256: failures and capability probes cannot claim findings');
   return errors;
@@ -566,7 +568,7 @@ function providerTerminalFailure(stdout) {
     typeof event.is_error === 'boolean' || ['error', 'success'].includes(event.status)));
   if (!event) return null;
   if (['turn.failed', 'response.failed'].includes(event.type)) return { ...event, type: 'error' };
-  return ((event.is_error === true && event.subtype !== 'success' && event.status !== 'success') || event.type === 'error' || event.status === 'error') ? event : null;
+  return ((event.is_error === true && event.status !== 'success') || event.type === 'error' || event.status === 'error') ? event : null;
 }
 
 export function classifyProviderFailure(stdout, stderr, timedOut) {
@@ -580,9 +582,10 @@ export function classifyProviderFailure(stdout, stderr, timedOut) {
       if (parsed?.error && typeof parsed.error === 'object' && (parsed.type === 'error' || parsed.is_error === true || parsed.status === 'error' || (!parsed.type && !parsed.status))) {
         for (const candidate of [parsed.error.code, parsed.error.type]) if (typeof candidate === 'string') structuredCodes.push(candidate.toLowerCase());
       }
-      if ((parsed?.is_error === true && parsed.subtype !== 'success' && parsed.status !== 'success') || parsed?.type === 'error' || parsed?.status === 'error') {
+      if ((parsed?.is_error === true && parsed.status !== 'success') || parsed?.type === 'error' || parsed?.status === 'error') {
         for (const message of [parsed.result, parsed.error?.message, parsed.message]) if (typeof message === 'string') terminalMessages.push(message);
       }
+      if (parsed?.is_error === true && parsed.terminal_reason === 'timeout') structuredTerminalClassification = 'timeout';
       if (parsed?.type === 'result' && parsed.is_error === true && parsed.terminal_reason === 'api_error' && parsed.api_error_status === 403 && typeof parsed.result === 'string' && /^Your organization has disabled Claude subscription access for Claude Code\b/.test(parsed.result)) structuredTerminalClassification = 'model_entitlement';
     } catch {}
   }
@@ -725,7 +728,7 @@ async function runProcess(binary, args, input, timeoutMs, env = process.env) {
   });
 }
 
-async function capabilityCheck(tuple, binary, timeoutMs) {
+async function capabilityCheck(tuple, binary, timeoutMs, authority = 'advisory') {
   if (!reviewTransport(tuple.host)) {
     return { ok: false, missing: [`no review transport for host ${tuple.host}`], output: '' };
   }
@@ -760,6 +763,17 @@ async function capabilityCheck(tuple, binary, timeoutMs) {
   if (parser.cancelled) return { ok: false, cancelled: true, missing: [], version: null, output: `${output}\n${parser.stdout}\n${parser.stderr}` };
   if (parser.code !== 0) missing.push(`configured argv parser exited ${parser.code}`);
   const version = `${parser.stdout.toString('utf8')}\n${parser.stderr.toString('utf8')}`.trim().split(/\r?\n/).find(Boolean) || null;
+  if (tuple.host === 'cursor' && missing.length === 0) {
+    let catalog;
+    try { catalog = await runProcess(binary, ['--list-models'], Buffer.alloc(0), Math.min(timeoutMs, 30_000)); }
+    catch (error) { return { ok: false, classification: 'capability', missing: [`Cursor model catalog failed: ${error.message}`], version, output }; }
+    const catalogOutput = catalog.stdout.toString('utf8');
+    if (catalog.cancelled) return { ok: false, cancelled: true, missing: [], version, output };
+    if (catalog.code !== 0) return { ok: false, classification: classifyProviderFailure(catalogOutput, catalog.stderr.toString('utf8'), catalog.timedOut), missing: [`Cursor model catalog exited ${catalog.code}`], version, output: `${output}\n${catalogOutput}\n${catalog.stderr}` };
+    const decision = cursorCatalogDecision(catalogOutput, tuple, authority);
+    if (!decision.ok) return { ok: false, classification: decision.classification, missing: [decision.detail], version, output: `${output}\n${catalogOutput}` };
+    return { ok: true, missing: [], version, output: `${output}\n${catalogOutput}` };
+  }
   return { ok: missing.length === 0, missing, version, output: `${output}\n${parser.stdout}\n${parser.stderr}` };
 }
 
@@ -1242,7 +1256,7 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
     const cursorModel = tuple.model === 'cursor-auto' ? 'auto' : tuple.model;
     const reviewInstruction = Buffer.from(`You are the independent SVC ${reviewKind} reviewer. Work read-only. Return exactly one raw JSON object and no markdown or commentary. It must match the following schema, which SVC validates fail-closed after transport. The reviewer object must use host=cursor, family=${tuple.family}, model=${tuple.model}, effort=${tuple.effort}.\nJSON_SCHEMA:\n${schemaBytes.toString('utf8')}\nEND_JSON_SCHEMA\n\n`);
     packageBytes = Buffer.concat([reviewInstruction, packageBytes]);
-    args = ['--print', '--mode', 'plan', '--output-format', 'json', '--model', cursorModel, '--sandbox', 'disabled', '--workspace', path.resolve(process.env.SVC_EXTERNAL_REVIEW_CONTEXT_ROOT || process.cwd()), '--trust'];
+    args = ['--print', '--mode', 'ask', '--output-format', 'json', '--model', cursorModel, '--sandbox', 'disabled', '--workspace', path.resolve(process.env.SVC_EXTERNAL_REVIEW_CONTEXT_ROOT || process.cwd()), '--trust'];
   } else if (tuple.host === 'grok') {
     const inlineSchema = JSON.stringify(JSON.parse(schemaBytes.toString('utf8')));
     const reviewInstruction = Buffer.from(`You are the independent SVC ${reviewKind} reviewer. Work read-only. The complete context and diff are already embedded in this prompt; do not return a loading, status, or intermediate response. Complete the review now and return the final JSON object required by the supplied schema. Set review_kind exactly to ${reviewKind}. The reviewer object must use host=grok, family=xai, model=${tuple.model}, effort=${tuple.effort}.\n\n`);
@@ -1267,12 +1281,14 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
   let modelAttestation = { level: 'none', requested_model: tuple.model, observed_models: [], evidence: null };
   let protocol = { process_invocations: 1, configured_turn_ceiling: turnCeiling, configured_budget_usd: tuple.host === 'claude' ? budgetUsd : null, reported_turns: null, stop_reason: null, terminal_reason: null, errors: [] };
   let classification = result.cancelled ? 'cancelled' : result.timedOut ? 'timeout' : result.code === 0 ? 'success' : classifyProviderFailure(result.stdout.toString('utf8'), result.stderr.toString('utf8'), false);
+  if (result.timedOut) protocol.terminal_reason = 'launcher_deadline';
   if (result.spawnError) classification = 'capability';
   if (!result.cancelled && !result.timedOut && !result.spawnError) {
     try {
       const terminal = providerTerminalFailure(result.stdout.toString('utf8'));
       if (terminal) {
         classification = classifyProviderFailure(JSON.stringify(terminal), result.stderr.toString('utf8'), false);
+        if (typeof terminal.terminal_reason === 'string') protocol.terminal_reason = terminal.terminal_reason;
       } else if (tuple.host === 'codex') {
         if (result.code === 0) findings = JSON.parse(await readFile(finalFile, 'utf8'));
         const observedModels = [];
@@ -1328,21 +1344,27 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
         usage = outer.usage && typeof outer.usage === 'object' ? outer.usage : {};
         protocol = { ...protocol, terminal_reason: typeof outer.subtype === 'string' ? outer.subtype : null };
         if (result.code === 0 && outer.subtype === 'success' && !outer.is_error) {
-          modelAttestation = { level: 'requested_accepted', requested_model: tuple.model, observed_models: typeof outer.model === 'string' ? [outer.model] : [], evidence: tuple.model === 'cursor-auto' ? 'cursor_plan_mode_auto_alias_plus_successful_json_exit_no_server_model_echo' : 'cursor_plan_mode_exact_model_argv_plus_successful_json_exit_no_server_model_echo' };
+          modelAttestation = { level: 'requested_accepted', requested_model: tuple.model, observed_models: typeof outer.model === 'string' ? [outer.model] : [], evidence: tuple.model === 'cursor-auto' ? 'cursor_catalog_auto_alias_plus_ask_mode_success_no_server_model_echo' : 'cursor_catalog_exact_model_plus_ask_mode_success_no_server_model_echo' };
           if (modelAttestation.observed_models.some(model => model !== tuple.model)) classification = 'model_mismatch';
         } else if (result.code === 0) classification = 'schema_invalid';
         if (findings) await writeJson(finalFile, findings);
       } else if (tuple.host === 'grok') {
         const outer = JSON.parse(result.stdout.toString('utf8'));
-        findings = outer.structuredOutput || (typeof outer.text === 'string' ? JSON.parse(outer.text) : null);
         const observedModels = Object.keys(outer.modelUsage || {});
         usage = { ...(outer.usage && typeof outer.usage === 'object' ? outer.usage : {}), modelUsage: outer.modelUsage || {}, total_cost_usd: outer.total_cost_usd ?? null };
-        protocol = { ...protocol, reported_turns: Number.isInteger(outer.num_turns) ? outer.num_turns : null, stop_reason: typeof outer.stopReason === 'string' ? outer.stopReason : null, terminal_reason: typeof outer.stopReason === 'string' ? outer.stopReason : null };
-        if (result.code === 0 && findings && observedModels.length > 0) {
-          modelAttestation = { level: 'server_observed', requested_model: tuple.model, observed_models: observedModels, evidence: 'grok_modelUsage' };
-          if (!observedModels.every((model) => model === tuple.model || model === `${tuple.model}-build`)) classification = 'model_mismatch';
-        } else if (result.code === 0) classification = 'schema_invalid';
-        if (findings) await writeJson(finalFile, findings);
+        protocol = { ...protocol, reported_turns: Number.isInteger(outer.num_turns) ? outer.num_turns : null, stop_reason: typeof outer.stopReason === 'string' ? outer.stopReason : null, terminal_reason: typeof outer.stopReason === 'string' ? outer.stopReason : null,
+          errors: typeof outer.structuredOutputError === 'string' ? [redactDiagnostic(outer.structuredOutputError)] : [] };
+        // A terminal cancellation is authoritative even if Grok leaves valid-looking
+        // JSON in text. It produced no structured result and must never enter repair.
+        if (outer.stopReason === 'cancelled') classification = 'cancelled';
+        else {
+          findings = outer.structuredOutput || (typeof outer.text === 'string' ? JSON.parse(outer.text) : null);
+          if (result.code === 0 && findings && observedModels.length > 0) {
+            modelAttestation = { level: 'server_observed', requested_model: tuple.model, observed_models: observedModels, evidence: 'grok_modelUsage' };
+            if (!observedModels.every((model) => model === tuple.model || model === `${tuple.model}-build`)) classification = 'model_mismatch';
+          } else if (result.code === 0) classification = 'schema_invalid';
+          if (findings) await writeJson(finalFile, findings);
+        }
       } else {
         const outer = JSON.parse(result.stdout.toString('utf8'));
         findings = outer.structured_output;
@@ -1392,6 +1414,7 @@ async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, arti
 async function main() {
   let options;
   try { options = parseArgs(process.argv.slice(2)); } catch (error) { process.stderr.write(`${usage(error.message)}\n`); process.exitCode = 2; return; }
+  if (options.help) { process.stdout.write(`${usage()}\n`); return; }
   // Planning candidates need the frozen, tool-free Two-Box transport. The
   // review package intentionally includes methodology and a competing candidate.
   if (['open_box', 'contract_box', 'contract_revise', 'scout_forward', 'scout_reverse', 'assessor'].includes(String(options.reviewKind || '').replaceAll('-', '_'))) {
@@ -1399,8 +1422,6 @@ async function main() {
     process.exitCode = 2;
     return;
   }
-  if (options.help) { process.stdout.write(`${usage()}\n`); return; }
-
   const fixture = process.env.SVC_EXTERNAL_REVIEW_FIXTURE === '1';
   const fixtureRoot = fixture ? process.env.SVC_EXTERNAL_REVIEW_FIXTURE_ROOT : null;
   let policy;
@@ -1482,21 +1503,24 @@ async function main() {
   }
   const cacheRoot = path.resolve(process.env.SVC_EXTERNAL_REVIEW_CACHE_DIR || path.join(ROOT, '.svc/external-review-cache/v1'));
   let timeoutSeconds;
+  let timeoutSource = 'framework-default';
   let staleSeconds;
   let ttlDays;
   let heartbeatMs;
   let reviewBudgetUsd;
   let configError = null;
   try {
-    timeoutSeconds = positiveInteger('SVC_EXTERNAL_REVIEW_TIMEOUT_SECONDS', DEFAULT_TIMEOUT_SECONDS);
+    const initialTimeout = resolveReviewTimeout({ host: null, environment: { SVC_EXTERNAL_REVIEW_TIMEOUT_SECONDS: process.env.SVC_EXTERNAL_REVIEW_TIMEOUT_SECONDS }, defaultSeconds: DEFAULT_TIMEOUT_SECONDS, defaultLockStaleSeconds: DEFAULT_LOCK_STALE_SECONDS });
+    timeoutSeconds = initialTimeout.seconds;
+    timeoutSource = initialTimeout.source;
     reviewBudgetUsd = positiveNumber('SVC_EXTERNAL_REVIEW_MAX_BUDGET_USD', DEFAULT_REVIEW_BUDGET_USD);
-    staleSeconds = positiveInteger('SVC_EXTERNAL_REVIEW_LOCK_STALE_SECONDS', DEFAULT_LOCK_STALE_SECONDS);
+    staleSeconds = positiveInteger('SVC_EXTERNAL_REVIEW_LOCK_STALE_SECONDS', initialTimeout.staleSeconds);
     ttlDays = positiveInteger('SVC_EXTERNAL_REVIEW_CACHE_TTL_DAYS', DEFAULT_CACHE_TTL_DAYS);
     heartbeatMs = fixture ? positiveInteger('SVC_EXTERNAL_REVIEW_HEARTBEAT_MS', HEARTBEAT_MS) : HEARTBEAT_MS;
-    if (staleSeconds < 2 * timeoutSeconds + 60) throw new Error(`SVC_EXTERNAL_REVIEW_LOCK_STALE_SECONDS must be at least ${2 * timeoutSeconds + 60}`);
   } catch (error) {
     configError = error;
     timeoutSeconds = DEFAULT_TIMEOUT_SECONDS;
+    timeoutSource = 'framework-default';
     reviewBudgetUsd = DEFAULT_REVIEW_BUDGET_USD;
     staleSeconds = DEFAULT_LOCK_STALE_SECONDS;
     ttlDays = DEFAULT_CACHE_TTL_DAYS;
@@ -1568,6 +1592,7 @@ async function main() {
   if (!options.validateCapabilities) await writeFile(packagePath, packageBytes, { mode: 0o600 });
   let resolvedPolicy = null;
   let resourcePolicy;
+  let transportOptions = {};
   let policyError = null;
   let resolvedReviewerConfigPath = options.reviewerConfig || null;
   try {
@@ -1593,6 +1618,7 @@ async function main() {
     const resourceSnapshot = loadReviewerPolicy(resolvedReviewerConfigPath);
     if (resourceSnapshot.sha256 !== external.topology.config_sha256) throw new Error('owner policy changed during resolution; retry with stable policy bytes');
     resourcePolicy = resourceSnapshot.policy.resource_policy;
+    transportOptions = resourceSnapshot.policy.transport_options || {};
     resolvedPolicy = {
       tuple: external.tuple,
       fallback: null,
@@ -1659,7 +1685,7 @@ async function main() {
     fallback: overrides.fallback || { eligible: false, used: false, reason: null },
     override,
     policy: resolvedPolicy?.metadata || { version: policy?.version || null, profile: null, source: null, resolved_at: now?.toISOString() || null, effective_window: null, cutover_utc: policy?.cutover_utc || null, cutover_local: policy?.cutover_local || null, timezone: policy?.timezone || null, selection_sha256: null, selection_expires_at: null, selection_authority: null },
-    protocol: overrides.protocol || { process_invocations: attempts.length, configured_turn_ceiling: reviewerTurnCeiling, configured_budget_usd: requestedTuple?.host === 'claude' ? reviewBudgetUsd : null, reported_turns: null, stop_reason: null, terminal_reason: null, errors: [] },
+    protocol: { configured_timeout_seconds: timeoutSeconds, configured_timeout_source: timeoutSource, configured_lock_stale_seconds: staleSeconds, ...(overrides.protocol || { process_invocations: attempts.length, configured_turn_ceiling: reviewerTurnCeiling, configured_budget_usd: requestedTuple?.host === 'claude' ? reviewBudgetUsd : null, reported_turns: null, stop_reason: null, terminal_reason: null, errors: [] }) },
     route: overrides.route || { kind: classification === 'cache_hit' ? 'cache_hit' : classification === 'success' ? (resolvedPolicy?.metadata.source === 'schedule' ? 'scheduled_primary' : resolvedPolicy?.metadata.source === 'explicit-selection' ? 'explicit_profile_primary' : resolvedPolicy?.metadata.source === 'owner-config' ? 'owner_config_primary' : 'exact_primary') : 'hard_failure', switching_enabled: requestedTuple?.model === 'claude-fable-5', cli_fallback_configured: false, evidence: classification === 'cache_hit' ? 'cache_receipt_replay' : classification === 'success' ? 'requested_primary' : 'failure' },
     effective_effort: overrides.effectiveEffort || (overrides.effectiveTuple?.host === 'cursor'
       ? { value: null, provenance: 'provider-managed' }
@@ -1718,11 +1744,18 @@ async function main() {
   const finishFailure = async (classification, overrides = {}) => {
     const receipt = makeReceipt(classification, overrides);
     await writeReceipt(receipt);
-    const detail = overrides.detail ? `; detail=${redactDiagnostic(overrides.detail).replace(/\s+/g, ' ')}` : '';
-    process.stderr.write(`external-review: ${classification}: ${actionableDiagnostic(classification)}${detail}; receipt=${receiptPath}\n`);
+    const timeoutDetail = classification === 'timeout' && receipt.protocol.terminal_reason === 'launcher_deadline' ? `; launcher deadline=${timeoutSeconds}s (${timeoutSource})` : '';
+    const timeoutAction = classification === 'timeout' && receipt.protocol.terminal_reason === 'timeout' ? 'provider reported a terminal timeout; inspect its diagnostic before retrying the same tuple' : null;
+    const detail = overrides.detail ? `; detail=${redactDiagnostic(overrides.detail).replace(/\s+/g, ' ')}` : timeoutDetail;
+    process.stderr.write(`external-review: ${classification}: ${overrides.action || timeoutAction || actionableDiagnostic(classification)}${detail}; receipt=${receiptPath}\n`);
     process.exitCode = 1;
   };
 
+  if (options.candidateDigest !== undefined && !/^[a-f0-9]{64}$/.test(options.candidateDigest)) {
+    options.candidateDigest = null; // Keep the failure receipt schema-valid.
+    await finishFailure('input_invalid', { detail: '--candidate-digest must be a 64-character lowercase SHA-256 digest; a 40-character Git tree hash is different. For exec, compute candidateTreeIdentity(contextRoot).candidate_digest with scripts/lib/external-review-provenance.mjs from the candidate worktree' });
+    return;
+  }
   if (inputError || !options.orchestrator || options.orchestrator === 'agy' || !options.artifactsDir || (!options.validateCapabilities && (!options.reviewKind || rawPackageBytes.length === 0))) {
     await finishFailure('input_invalid', inputError ? { detail: inputError.message } : {});
     return;
@@ -1734,7 +1767,7 @@ async function main() {
   if (options.reviewerStation && !options.validateCapabilities && options.reviewKind === 'exec') {
     try {
       const identity=candidateTreeIdentity(contextRoot);
-      if (identity.candidate_digest!==options.candidateDigest) { await finishFailure('input_invalid',{detail:`candidate digest must bind current git tree ${identity.tree_hash}`}); return; }
+      if (identity.candidate_digest!==options.candidateDigest) { await finishFailure('input_invalid',{detail:`candidate digest must equal ${identity.candidate_digest} (SHA-256 bound to Git tree ${identity.tree_hash}); compute candidateTreeIdentity(contextRoot).candidate_digest`}); return; }
     } catch(error) { await finishFailure('input_invalid',{detail:`cannot bind review candidate to git tree: ${error.message}`}); return; }
   }
   if (packageError) {
@@ -1758,9 +1791,13 @@ async function main() {
     requestedTuple = parsedOverride.tuple;
     override = parsedOverride.evidence;
     reviewerTurnCeiling = await configuredTurnCeiling(requestedTuple, resolvedReviewerConfigPath);
+    const selectedTimeout = resolveReviewTimeout({ host: requestedTuple.host, transportOptions, environment: process.env, defaultSeconds: DEFAULT_TIMEOUT_SECONDS, defaultLockStaleSeconds: DEFAULT_LOCK_STALE_SECONDS });
+    timeoutSeconds = selectedTimeout.seconds;
+    timeoutSource = selectedTimeout.source;
+    staleSeconds = selectedTimeout.staleSeconds;
   } catch (error) {
     if (error.overrideEvidence) override = error.overrideEvidence;
-    await finishFailure(error.classification || 'override_invalid');
+    await finishFailure(error.classification || (error.overrideEvidence ? 'override_invalid' : 'config_invalid'), { detail: error.message });
     return;
   }
 
@@ -1863,7 +1900,7 @@ async function main() {
       return;
     }
     if (cycleCapacity && !cycleCapacity.allowed) {
-      await finishFailure('budget_exhausted', { cacheKey, detail: `review cycle ${cycleCapacity.cycle_id} has reached its three-round cap; disposition existing findings before any further paid review` });
+      await finishFailure('budget_exhausted', { cacheKey, action: 'review cycle has reached its three-round cap; disposition existing findings before any further paid review', detail: `cycle ${cycleCapacity.cycle_id}` });
       return;
     }
     if (!options.validateCapabilities) {
@@ -1905,7 +1942,7 @@ async function main() {
       await finishFailure('capability', { cacheKey, cache: { disposition: 'miss', reusable: false, entry: entryDir } });
       return;
     }
-    const capabilities = await capabilityCheck(requestedTuple, binary, timeoutSeconds * 1000);
+    const capabilities = await capabilityCheck(requestedTuple, binary, timeoutSeconds * 1000, resolvedPolicy.stationContract.authority);
     capabilityArtifact = path.join(artifactsDir, 'capabilities.log');
     cliVersion = capabilities.version;
     await writeFile(capabilityArtifact, capabilities.output, { mode: 0o600 });
@@ -1915,7 +1952,7 @@ async function main() {
     }
     if (!capabilities.ok) {
       await writeFile(path.join(artifactsDir, 'capability-missing.txt'), `${capabilities.missing.join('\n')}\n`, { mode: 0o600 });
-      await finishFailure('capability', { cacheKey, detail: `missing ${capabilities.missing.join(', ')}`, artifacts: { capability_missing: path.join(artifactsDir, 'capability-missing.txt') }, cache: { disposition: 'miss', reusable: false, entry: entryDir } });
+      await finishFailure(capabilities.classification || 'capability', { cacheKey, detail: `missing ${capabilities.missing.join(', ')}`, artifacts: { capability_missing: path.join(artifactsDir, 'capability-missing.txt') }, cache: { disposition: 'miss', reusable: false, entry: entryDir } });
       return;
     }
     if (options.validateCapabilities) {

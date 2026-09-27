@@ -1,0 +1,112 @@
+{
+  "stamped_at": "ea67d08151031df80810e2782567d42f88ed185a",
+  "imports": {
+    "agents/svc-stage-plan.md": [],
+    "docs/specs/privacy/v4-bootstrap-snapshot.json": [],
+    "docs/specs/work-items/WI-FW-TWO-BOX-01.md": [],
+    "scripts/check-chain-receipts.mjs": [
+      "./derive-receipt-tier.mjs",
+      "./lib/cognitive-family.mjs",
+      "./lib/control-plan-validate.mjs",
+      "./lib/history-epoch.mjs",
+      "./lib/normalize-ac-table.mjs",
+      "./lib/receipt-issuance-epoch.mjs",
+      "./lib/reviewer-evidence.mjs",
+      "./lib/skill-coverage.mjs",
+      "./state-io.mjs",
+      "node:child_process",
+      "node:crypto",
+      "node:fs",
+      "node:os",
+      "node:path",
+      "node:url"
+    ],
+    "scripts/emit-receipt.mjs": [
+      "./lib/cognitive-family.mjs",
+      "./lib/receipt-issuance-epoch.mjs",
+      "./lib/reviewer-evidence.mjs",
+      "./state-io.mjs",
+      "./state-lock.mjs",
+      "node:child_process",
+      "node:crypto",
+      "node:fs",
+      "node:os",
+      "node:path",
+      "node:url"
+    ],
+    "scripts/lib/isolated-plan-analysis.mjs": [
+      "./frozen-request-input.mjs",
+      "./native-planning-request-capture.mjs",
+      "./review-evidence-store.mjs",
+      "./two-box-protocol.mjs",
+      "node:child_process",
+      "node:fs",
+      "node:os",
+      "node:path",
+      "node:url"
+    ],
+    "scripts/lib/receipt-issuance-epoch.mjs": [
+      "../state-io.mjs",
+      "./control-plan-validate.mjs",
+      "./evidence-schema.mjs",
+      "./normalize-ac-table.mjs",
+      "./plan-manifest-contract.mjs",
+      "./review-evidence-store.mjs",
+      "./reviewer-evidence.mjs",
+      "./transmutation-seal.mjs",
+      "./two-box-protocol.mjs",
+      "node:child_process",
+      "node:crypto",
+      "node:fs",
+      "node:path",
+      "node:url"
+    ],
+    "scripts/lib/research-decision.mjs": [],
+    "scripts/lib/review-inputs.mjs": [
+      "./control-plan-validate.mjs",
+      "./plan-manifest-contract.mjs",
+      "./receipt-issuance-epoch.mjs",
+      "./review-evidence-store.mjs",
+      "node:child_process",
+      "node:crypto",
+      "node:fs",
+      "node:path"
+    ],
+    "scripts/prepare-plan-handoff.mjs": [
+      "./lib/control-plan-validate.mjs",
+      "./lib/plan-manifest-contract.mjs",
+      "./lib/receipt-issuance-epoch.mjs",
+      "./lib/review-evidence-store.mjs",
+      "./lib/transmutation-seal.mjs",
+      "./state-io.mjs",
+      "node:child_process",
+      "node:fs",
+      "node:path"
+    ],
+    "scripts/stage-segment.mjs": [
+      "./lib/stage-registry.mjs",
+      "node:child_process",
+      "node:crypto",
+      "node:path",
+      "node:url",
+      "node:util"
+    ],
+    "scripts/two-box-plan.mjs": [
+      "./lib/control-plan-validate.mjs",
+      "./lib/isolated-plan-analysis.mjs",
+      "./lib/review-evidence-store.mjs",
+      "./lib/two-box-protocol.mjs",
+      "./lib/two-box-role-launch.mjs",
+      "./lib/two-box-scout-assign.mjs",
+      "./resolve-dispatch.mjs",
+      "./state-io.mjs",
+      "node:child_process",
+      "node:fs",
+      "node:path",
+      "node:url"
+    ],
+    "skills/plan-changeset/SKILL.md": [
+      "fs"
+    ]
+  }
+}

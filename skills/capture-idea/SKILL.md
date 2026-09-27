@@ -66,6 +66,8 @@ deduplicates against existing items, and persists it as a canonical backlog work
 
 **Announce at start:** "I'm using capture-idea to store your idea in the backlog without triggering validation."
 
+Capture always writes a local numeric `WI-NNN` and local index entry, regardless of `issue_tracker` mode. It does not create, update, or search GitHub Issues and never publishes the raw idea. An explicit later `sync-work-items --publish` requires a curated public title/body; `github-backed` accepts publication only for adopted `WI-GH-N`, while `hybrid-governed` also accepts local WIs. An existing GitHub Issue is adopted through `route-workflow`/`sync-work-items --pull`, not assigned the next local numeric ID.
+
 ## 1. Load Context (lightweight, non-blocking)
 
 Before structuring, silently peek at project context to inform the classification and deduplication —

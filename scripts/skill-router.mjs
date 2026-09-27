@@ -35,7 +35,18 @@ function usage(code = 2) {
 }
 
 let args;
-try { args = parseArgs(process.argv.slice(2)); }
+try {
+  const raw = process.argv.slice(2);
+  const projectAt = raw.indexOf("--project-root");
+  let projectRoot = null;
+  if (projectAt >= 0) {
+    projectRoot = raw[projectAt + 1];
+    if (!projectRoot || projectRoot.startsWith("--")) throw new Error("--project-root requires a value");
+    raw.splice(projectAt, 2);
+  }
+  args = parseArgs(raw);
+  args.projectRoot = projectRoot;
+}
 catch (error) { process.stderr.write(`skill-router: ${error.message}\n`); usage(); }
 if (args.help) usage(0);
 const command = args._[0];
@@ -106,6 +117,11 @@ try {
         mode = "off";
       }
     }
+    const profile = args.projectRoot ? (await import("./lib/project-skill-profile.mjs")).selectProjectSkills({
+      frameworkRoot: root, projectRoot: args.projectRoot, intent: args.intent,
+      files: args.files || [], activeSkill: args.activeSkill || null,
+      nextSkill: args.nextSkill || null,
+    }) : null;
     const decision = route({
       root,
       intent: args.intent,
@@ -116,6 +132,7 @@ try {
       nextSkill: args.nextSkill || null,
       mode: mode || "suggest",
       receipts: !args.noReceipts,
+      eligibleSkills: profile?.selected.map((item) => item.name) || null,
     });
     const errors = validateDecision(decision);
     if (errors.length > 0) {

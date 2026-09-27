@@ -139,6 +139,7 @@ node -e "process.stdout.write(JSON.stringify({response:process.argv[1],stats:{mo
 printf '%s\n' '#!/usr/bin/env bash' 'set -euo pipefail' '
 if [[ "${1:-}" == "--help" ]]; then if [[ "${SVC_FAKE_CURSOR_CAPABILITY_MISSING:-0}" == 1 ]]; then printf "%s\n" "--print --output-format --model --sandbox --workspace --trust"; else printf "%s\n" "--print --output-format --mode --model --sandbox --workspace --trust"; fi; exit 0; fi
 if [[ "${1:-}" == "--version" ]]; then printf "%s\n" "2026.08.25-fixture"; exit 0; fi
+if [[ "${1:-}" == "--list-models" ]]; then printf "%s\n" "Available models" "auto - Auto"; exit 0; fi
 mkdir -p "$SVC_FAKE_LOG"
 printf "%s\n" "$*" >> "$SVC_FAKE_LOG/cursor.argv"
 printf "%s\n" "cursor" >> "$SVC_FAKE_LOG/cursor.calls"
@@ -157,7 +158,7 @@ model="" effort="" prompt_file=""
 while [[ $# -gt 0 ]]; do if [[ "$1" == "--model" ]]; then model="$2"; shift 2; elif [[ "$1" == "--reasoning-effort" ]]; then effort="$2"; shift 2; elif [[ "$1" == "--prompt-file" ]]; then prompt_file="$2"; shift 2; else shift; fi; done
 test -r "$prompt_file"; cp "$prompt_file" "$SVC_FAKE_LOG/grok.prompt"
 finding="{\"schema_version\":1,\"review_kind\":\"${SVC_REVIEW_KIND:-generic}\",\"rubric_score\":10,\"rubric_failures\":null,\"dependencies_needing_read\":null,\"reviewer\":{\"host\":\"grok\",\"family\":\"xai\",\"model\":\"$model\",\"effort\":\"$effort\"},\"verdict\":\"pass\",\"summary\":\"fixture pass\",\"findings\":[],\"certifications\":[]}"
-node -e "const f=JSON.parse(process.argv[1]),m=process.argv[2];process.stdout.write(JSON.stringify({text:JSON.stringify(f),stopReason:\"end_turn\",usage:{input_tokens:10,output_tokens:5},num_turns:1,total_cost_usd:0.01,modelUsage:{[m+\"-build\"]:{modelCalls:1}},structuredOutput:f}))" "$finding" "$model"
+node -e "const f=JSON.parse(process.argv[1]),m=process.argv[2],cancelled=process.env.SVC_FAKE_GROK_CANCELLED===\"1\";process.stdout.write(JSON.stringify({text:JSON.stringify(f),stopReason:cancelled?\"cancelled\":\"end_turn\",usage:{input_tokens:10,output_tokens:5},num_turns:cancelled?18:1,total_cost_usd:cancelled?1.47388436:0.01,modelUsage:{[m+\"-build\"]:{modelCalls:1}},structuredOutput:cancelled?null:f,...(cancelled?{structuredOutputError:\"model did not produce structured output\"}:{})}))" "$finding" "$model"
 ' > "$TMP/bin/grok"
 chmod 700 "$TMP/bin/codex" "$TMP/bin/claude" "$TMP/bin/agy" "$TMP/bin/cursor-agent" "$TMP/bin/grok"
 
@@ -368,9 +369,9 @@ fi
 expect "launcher parses" node --check "$LAUNCHER"
 ln -s "$LAUNCHER" "$TMP/installed-launcher-link.mjs"
 expect "installed symlink path executes the canonical launcher" bash -c "node '$TMP/installed-launcher-link.mjs' --help | grep -q '^usage: run-external-review.mjs'"
-expect "production review and stale-lock defaults allow a complete 20-minute review" grep -q 'const DEFAULT_TIMEOUT_SECONDS = 1200;.*' "$LAUNCHER"
+expect "production review and stale-lock defaults allow a complete 30-minute review" grep -q 'const DEFAULT_TIMEOUT_SECONDS = 1800;.*' "$LAUNCHER"
 expect "production review budget defaults to fifty dollars for the whole launcher review" grep -q 'const DEFAULT_REVIEW_BUDGET_USD = 50;.*' "$LAUNCHER"
-expect "production stale-lock default preserves the two-attempt-plus-margin invariant" grep -q 'const DEFAULT_LOCK_STALE_SECONDS = 2460;.*' "$LAUNCHER"
+expect "production stale-lock default preserves the two-attempt-plus-margin invariant" grep -q 'const DEFAULT_LOCK_STALE_SECONDS = 3660;.*' "$LAUNCHER"
 expect "registry retains backward-compatible scheduled reviewer profiles" node -e 'const r=require(process.argv[1]),p=r.externalReviewPolicy;if(!p||p.version!==3||p.cutover_utc!=="2026-07-19T21:00:00Z"||p.cutover_local!=="2026-07-20 00:00:00 EEST"||p.profiles?.["fable-high"]?.tuple?.model!=="claude-fable-5"||p.profiles?.["opus-high"]?.tuple?.model!=="claude-opus-4-8")process.exit(1)' "$ROOT/references/model-registry.json"
 OLD_REVIEW_MODEL='gpt-5.6-'"codex"
 expect "active review policy surfaces contain no incorrect legacy model pin" bash -c "! rg -n '$OLD_REVIEW_MODEL' '$ROOT/scripts/run-external-review.mjs' '$ROOT/scripts/resolve-adversarial-reviewer.sh' '$ROOT/references/model-registry.json' '$ROOT/skills/review-plan/SKILL.md' '$ROOT/skills/review-exec/SKILL.md' '$ROOT/skills/review-cross-model/SKILL.md'"
@@ -505,11 +506,18 @@ expect "AGY review package crosses the canonical private-file bridge with the fa
 
 printf 'cursor independent candidate_digest=%s' "$CANDIDATE_DIGEST" | node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$CANDIDATE_DIGEST" --reviewer-config "$REVIEWER_CONFIG" --reviewer-mode fast --reviewer-phase plan --reviewer-station cursor-auto --artifacts-dir "$TMP/out/cursor-independent" > "$TMP/cursor-independent.summary"
 CURSOR_RECEIPT="$(receipt_from_summary "$TMP/cursor-independent.summary")"
-expect "owner-configured Cursor Auto extracts schema-valid JSON after prose and records provider-managed effort" node -e 'const fs=require("fs"),r=require(process.argv[1]),argv=fs.readFileSync(process.argv[2],"utf8");if(r.requested_tuple.host!=="cursor"||r.requested_tuple.family!=="multi"||r.requested_tuple.model!=="cursor-auto"||r.model_attestation.level!=="requested_accepted"||r.effective_effort.value!==null||r.effective_effort.provenance!=="provider-managed"||!argv.includes("--mode plan")||!argv.includes("--model auto")||!argv.includes("--sandbox disabled")||r.route.kind!=="owner_config_primary")process.exit(1)' "$CURSOR_RECEIPT" "$SVC_FAKE_LOG/cursor.argv"
+expect "owner-configured Cursor Auto extracts schema-valid JSON after prose and records provider-managed effort" node -e 'const fs=require("fs"),r=require(process.argv[1]),argv=fs.readFileSync(process.argv[2],"utf8");if(r.requested_tuple.host!=="cursor"||r.requested_tuple.family!=="multi"||r.requested_tuple.model!=="cursor-auto"||r.model_attestation.level!=="requested_accepted"||r.effective_effort.value!==null||r.effective_effort.provenance!=="provider-managed"||!argv.includes("--mode ask")||!argv.includes("--model auto")||!argv.includes("--sandbox disabled")||r.route.kind!=="owner_config_primary")process.exit(1)' "$CURSOR_RECEIPT" "$SVC_FAKE_LOG/cursor.argv"
 
 printf 'grok independent candidate_digest=%s' "$CANDIDATE_DIGEST" | node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$CANDIDATE_DIGEST" --reviewer-config "$REVIEWER_CONFIG" --reviewer-mode fast --reviewer-phase plan --reviewer-station grok-build --artifacts-dir "$TMP/out/grok-independent" > "$TMP/grok-independent.summary"
 GROK_RECEIPT="$(receipt_from_summary "$TMP/grok-independent.summary")"
 expect "owner-configured Grok Build runs with the configured bounded turn ceiling and final-response instruction" node -e 'const fs=require("fs"),r=require(process.argv[1]),argv=fs.readFileSync(process.argv[2],"utf8"),prompt=fs.readFileSync(process.argv[3],"utf8");if(r.requested_tuple.host!=="grok"||r.requested_tuple.family!=="xai"||r.requested_tuple.model!=="grok-4.6"||r.model_attestation.level!=="server_observed"||!r.model_attestation.observed_models.includes("grok-4.6-build")||r.protocol.configured_turn_ceiling!==100||!argv.includes("--permission-mode plan")||!argv.includes("--max-turns 100")||!argv.includes("--json-schema")||!prompt.includes("do not return a loading, status, or intermediate response")||!prompt.includes("Set review_kind exactly to plan")||r.route.kind!=="owner_config_primary")process.exit(1)' "$GROK_RECEIPT" "$SVC_FAKE_LOG/grok.argv" "$SVC_FAKE_LOG/grok.prompt"
+
+rm -f "$SVC_FAKE_LOG/grok.calls"
+set +e
+printf 'grok cancelled candidate_digest=%s' "$CANDIDATE_DIGEST" | SVC_FAKE_GROK_CANCELLED=1 node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$CANDIDATE_DIGEST" --reviewer-config "$REVIEWER_CONFIG" --reviewer-mode fast --reviewer-phase plan --reviewer-station grok-build --artifacts-dir "$TMP/out/grok-cancelled" > "$TMP/grok-cancelled.summary" 2> "$TMP/grok-cancelled.err"
+GROK_CANCEL_RC=$?
+set -e
+expect "Grok terminal cancellation preserves diagnostics and never launches repair despite valid JSON text" node -e 'const fs=require("fs"),r=require(process.argv[1]),calls=fs.readFileSync(process.argv[2],"utf8").trim().split("\n"),event=JSON.parse(fs.readFileSync(r.attempts[0].artifacts.events,"utf8"));if(Number(process.argv[3])===0||r.status!=="failure"||r.classification!=="cancelled"||r.attempts.length!==1||r.protocol.process_invocations!==1||r.protocol.stop_reason!=="cancelled"||r.protocol.terminal_reason!=="cancelled"||!r.protocol.errors.includes("model did not produce structured output")||r.attempts[0].classification!=="cancelled"||r.attempts[0].usage.total_cost_usd!==1.47388436||calls.length!==1||event.structuredOutput!==null||JSON.parse(event.text).verdict!=="pass"||fs.existsSync(process.argv[4]))process.exit(1)' "$TMP/out/grok-cancelled/receipt.json" "$SVC_FAKE_LOG/grok.calls" "$GROK_CANCEL_RC" "$TMP/out/grok-cancelled/report-repair-input.bin"
 
 rm -f "$SVC_FAKE_LOG/cursor.calls" "$SVC_FAKE_LOG/grok.calls"
 node "$LAUNCHER" --validate-capabilities --orchestrator codex --reviewer-config "$REVIEWER_CONFIG" --reviewer-mode fast --reviewer-phase plan --reviewer-station cursor-auto --artifacts-dir "$TMP/out/cursor-capability-only" > "$TMP/cursor-capability-only.summary"
@@ -863,7 +871,7 @@ cp "$ROOT/schemas/receipts/bounded-exit.schema.json" "$ROOT/schemas/receipts/bou
 cp "$ROOT/scripts/review-topology-v2.mjs" "$TMP/runtime-copy/scripts/review-topology-v2.mjs"
 cp "$ROOT/scripts/resolve-dispatch.mjs" "$TMP/runtime-copy/scripts/resolve-dispatch.mjs"
 cp "$ROOT/scripts/state-io.mjs" "$TMP/runtime-copy/scripts/state-io.mjs"
-cp "$ROOT/scripts/lib/reviewer-resources.mjs" "$TMP/runtime-copy/scripts/lib/reviewer-resources.mjs"
+cp "$ROOT/scripts/lib/reviewer-resources.mjs" "$ROOT/scripts/lib/review-launch-preflight.mjs" "$TMP/runtime-copy/scripts/lib/"
 cp "$ROOT/hooks/lib/process-liveness.mjs" "$TMP/runtime-copy/hooks/lib/process-liveness.mjs"
 cp "$ROOT/schemas/reviewer-policy-v2.schema.json" "$TMP/runtime-copy/schemas/reviewer-policy-v2.schema.json"
 cp "$ROOT/scripts/state-lock.mjs" "$TMP/runtime-copy/scripts/state-lock.mjs"

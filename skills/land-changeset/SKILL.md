@@ -395,6 +395,8 @@ docs/plans/<date>-<name>/manifest.md
 "
 ```
 
+For a WI mapped to a GitHub Issue under `github-backed` or `hybrid-governed`, add `Related to #<issue-number>` to the PR body after resolving the exact configured repository/map identity. Never use `Fixes`, `Resolves`, or `Closes` auto-close keywords for that issue: PR merge precedes G7 and cannot close it. An unmapped or `local-only` WI needs no issue reference. PR creation and merge never call `sync-github-issues.mjs --close-wi`; only the post-G7 path may do so.
+
 PR title convention:
 - `feat: <description>` for greenfield / brownfield features
 - `fix: <description>` for bugfix lane

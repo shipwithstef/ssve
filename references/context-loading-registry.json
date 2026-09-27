@@ -37,7 +37,9 @@
     {
       "id": "planning-and-execution",
       "skills": [
-        "craft-prompt", "blind-control-plan", "design-ux",
+        "craft-prompt",
+        "blind-control-plan",
+        "design-ux",
         "design-ui",
         "design-logo",
         "design-tech",
@@ -186,9 +188,21 @@
     {
       "id": "company-operations",
       "skills": [
-        "comms", "cos", "counsel", "customer-cs", "fin-analyst",
-        "growth-eng", "growth-lead", "infra-sre", "market-intel", "privacy-dpo",
-        "procurement", "product-lead", "revops", "security-ops", "tax-auditor"
+        "comms",
+        "cos",
+        "counsel",
+        "customer-cs",
+        "fin-analyst",
+        "growth-eng",
+        "growth-lead",
+        "infra-sre",
+        "market-intel",
+        "privacy-dpo",
+        "procurement",
+        "product-lead",
+        "revops",
+        "security-ops",
+        "tax-auditor"
       ],
       "start_from": [
         "company-link-or-local-state",
@@ -201,6 +215,22 @@
         "risk-domain-peer-review"
       ],
       "stop_condition": "Stop after all role-relevant operating evidence and declared risk reviews are loaded; do not bulk-read unrelated ledgers."
+    },
+    {
+      "id": "social-drafting",
+      "skills": [
+        "grow-social"
+      ],
+      "start_from": [
+        "user-request",
+        "relevant-session-passage"
+      ],
+      "dependency_expansion": [
+        "approved-writing-example-when-available",
+        "named-platform-official-rule-when-material",
+        "user-supplied-analytics-with-window-and-denominator"
+      ],
+      "stop_condition": "Stop when the draft has enough verified event, voice, privacy and format context; do not require a WI, account connection, stored profile or unrelated specs."
     }
   ]
 }

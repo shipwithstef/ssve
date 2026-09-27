@@ -177,7 +177,7 @@ visible in the task graph.
    └──────┬───────┘  proposes 1-2 week builds. Aspirational target only.
           │
           ▼
-   ┌──────────────┐  9 phases. 7 review gates. 105 skills.
+   ┌──────────────┐  9 phases. 7 review gates. 106 skills.
    │ Progressive   │  Vision → Personas → Spec → UX → UI →
    │ Narrowing     │  Tech Design → Code → Promote → Verify.
    └──────┬───────┘  Planning on the canonical checkout; execute in a worktree.
@@ -200,7 +200,7 @@ visible in the task graph.
 |---|---|
 | Builder profile mining | Built — financial, time, skills, team, social/distribution, tools, entity, goals, project history, failure patterns; updates after every project; persists globally |
 | Find what to build | Built — reverse-engineers current market winners, matches to builder skills/distribution, 1-2 week builds on free-tier infra, staging strategy for big ideas, $1K/mo target within month 1 |
-| Progressive narrowing (vision → verified merge) | Built — 9 delivery phases (16 pipeline stages), 7 review gates, 105 skills across 7 lanes |
+| Progressive narrowing (vision → verified merge) | Built — 9 delivery phases (16 pipeline stages), 7 review gates, 106 skills across 7 lanes |
 | One prompt to product (`--autorun`) | Built — P0 decides at human checkpoints; only hard stops are NO-SHIP, test failure, security, merge conflict |
 | Reject/pivot on infeasible intent | Built — 7 kill signals with evidence scoring; NO-SHIP produces structured rejection + alternative directions |
 | Multi-host universal runtime | Built — content-addressed zero-drift convergence across 9 hosts: Claude Code, Kimi CLI, OpenAI Codex CLI, Google Gemini CLI, OpenCode CLI, Google Antigravity (AGY), MiMo-Code, Cursor Agent, and Grok Build CLI |
@@ -732,6 +732,14 @@ the Linux home directory.
 | **GitHub CLI** (`gh`) | Optional | Install for `land-changeset` PR creation |
 | **Host account** | Per chosen host | Owner-configured; advisory model recipes below are dated 2026-09-15 and are not access or pricing promises |
 
+### Project controls
+
+- [Issue tracking](docs/issue-tracking.md): local-only by default, with explicit GitHub intake and curated per-item publication in GitHub-backed or hybrid mode.
+- [Project skill profiles](docs/project-skill-profiles.md): task-relevant selection, on-demand skill loading, and local usage reports. The optional Codex launch wrapper also narrows native discovery for that process.
+- [Communication and learning](docs/project-preferences.md): plain updates, adjustable explanation depth, and optional one-minute learning during natural waits.
+- [Review timeouts](docs/external-review-timeouts.md): 30 minutes by default, configurable per reviewer host or invocation.
+- `/grow-social`: explicitly draft useful posts from real work and approved voice examples, interpret pasted analytics, and prepare a practical 24-hour plan.
+
 ### Before Your First Product
 
 The pipeline builds and deploys. You handle payments and posting.
@@ -772,7 +780,7 @@ cd ~/.claude/skills/svc && ./setup
 cd your-project && claude
 ```
 
-The `setup` script symlinks all 105 skills + framework infrastructure
+The `setup` script symlinks all 106 skills + framework infrastructure
 (DOCTRINE.md, REPO_MODES.md, scripts/, etc.) into `~/.claude/skills/`.
 Symlinks mean `git pull && ./setup` updates everything in place.
 
@@ -894,6 +902,7 @@ Mode contract and detection logic: [`REPO_MODES.md`](REPO_MODES.md)
 - `fin-analyst` — Evidence-backed runway, unit-economics, and budget analysis.
 - `find-opportunity` — Reverse-engineer market winners, match to builder, score top 3
 - `generate-visuals` — Image/visual asset router. Takes one asset brief and routes it across image-gen providers (Codex CLI, Gemini Nano-Banana Pro / Imagen 4, Stitch MCP, Figma+Weave MCP, Claude Design, gpt-image-2 (with gpt-image-1.5 fallback), Storyset, Veo 3). License-gated; provenance log per candidate set.
+- `grow-social` — Draft useful organic posts from real sessions and approved voice examples; interpret pasted analytics and plan the next 24 hours. Explicit use only.
 - `growth-eng` — Growth instrumentation and measurement proposals; never deploys.
 - `growth-lead` — Growth strategy proposals for acquisition, activation, and retention.
 - `honest-diagnosis` — Evidence-graded "why haven't I shipped" answer with file/line citations; no platitudes
@@ -938,7 +947,7 @@ Mode contract and detection logic: [`REPO_MODES.md`](REPO_MODES.md)
 - `suno-architect` — Convert Suno song, album, and lyric briefs into copy-paste-ready generation recipes with structured style, lyrics, and phonetic guidance
 - `svc-advisor` — Q&A grounded in stored framework knowledge (svc capabilities, gaps, competitor comparisons)
 - `sync-spec-code` — Reconcile spec annotations against codebase
-- `sync-work-items` — Push repo-canonical work items to GitHub Issues
+- `sync-work-items` — Optional per-item GitHub Issues intake and curated publication; local backlog stays offline ([guide](docs/issue-tracking.md))
 - `tax-auditor` — Tax evidence and filing-readiness review; not tax advice or filing.
 - `teach-project` — Teach the builder what was built and how to manage it (owner guide)
 - `test-framework` — Benchmark the svc pipeline itself

@@ -509,8 +509,7 @@ and which steering rules were wired, for auditability.
 
 ## Tracker Integration
 
-After the repo-canonical work items exist, use `sync-work-items` to project them to GitHub Issues.
-GitHub is a projection. Repo files remain canonical.
+Onboarding writes local canonical work items and INDEX entries in every mode. It never infers a GitHub tracking mode from repository visibility, configures a repository, uploads a backlog, imports issues, or invokes `gh`. When external visibility is wanted, offer the explicit network-free `sync-work-items --configure` choice and a later per-item `--pull` or curated `--publish` operation. Without that owner choice, `local-only` stays the default. GitHub is public intake/projection; local WIs retain execution and receipt authority. See `docs/issue-tracking.md`.
 
 ## Phase Receipt Contract
 

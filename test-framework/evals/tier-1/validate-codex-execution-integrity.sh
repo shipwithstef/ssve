@@ -449,7 +449,7 @@ expect "recursive runtime scan contains no raw or encoded prompt/secret" bash -c
 HOOKS="$TMP/hooks.json"
 CONFIG="$TMP/config.toml"
 printf '[features]\ncodex_hooks = true\n' > "$CONFIG"
-node -e 'const fs=require("fs");fs.writeFileSync(process.argv[1],JSON.stringify({hooks:{Stop:[{matcher:"*",hooks:[{type:"command",command:"node svc-codex-stop-firewall.mjs"},{type:"command",command:"bash svc-task-completion-guard.sh"}]}]}},null,2)+"\n")' "$HOOKS"
+node -e 'const fs=require("fs");fs.writeFileSync(process.argv[1],JSON.stringify({hooks:{Stop:[{matcher:"*",hooks:[{type:"command",command:"node "+process.argv[2]+"/hooks/codex/svc-codex-stop-firewall.mjs"},{type:"command",command:"bash "+process.argv[2]+"/hooks/svc-task-completion-guard.sh"}]}]}},null,2)+"\n")' "$HOOKS" "$ROOT"
 WIRE_OUT="$(node "$ROOT/scripts/wire-codex-hooks.mjs" --skills-path "$ROOT" --hooks-file "$HOOKS" --config "$CONFIG")"
 expect "Codex wirer installs composite authority boundary" test -s "$HOOKS"
 expect "wirer reports four installed-state fields separately" node -e 'const lines=process.argv[1].split(/\n/);const j=JSON.parse(lines.find(x=>x.startsWith("{")));process.exit(j.configured===true&&j.effective_single_stop===true&&j.trusted==="unknown"&&j.runtime_observed===false?0:1)' "$WIRE_OUT"
@@ -461,7 +461,7 @@ expect "wirer is idempotent" node "$ROOT/scripts/wire-codex-hooks.mjs" --skills-
 HOOKS_INVERSE="$TMP/hooks-inverse.json"
 CONFIG_INVERSE="$TMP/config-inverse.toml"
 printf '[features]\nhooks = true\n' > "$CONFIG_INVERSE"
-node -e 'const fs=require("fs");fs.writeFileSync(process.argv[1],JSON.stringify({hooks:{Stop:[{matcher:"*",hooks:[{type:"command",command:"bash svc-task-completion-guard.sh"},{type:"command",command:"node svc-codex-stop-firewall.mjs"}]}]}},null,2)+"\n")' "$HOOKS_INVERSE"
+node -e 'const fs=require("fs");fs.writeFileSync(process.argv[1],JSON.stringify({hooks:{Stop:[{matcher:"*",hooks:[{type:"command",command:"bash "+process.argv[2]+"/hooks/svc-task-completion-guard.sh"},{type:"command",command:"node "+process.argv[2]+"/hooks/codex/svc-codex-stop-firewall.mjs"}]}]}},null,2)+"\n")' "$HOOKS_INVERSE" "$ROOT"
 expect "inverse nested duplicate Stop order reconciles to one firewall" node "$ROOT/scripts/wire-codex-hooks.mjs" --skills-path "$ROOT" --hooks-file "$HOOKS_INVERSE" --config "$CONFIG_INVERSE" >/dev/null
 expect "inverse config has one nested svc Stop command" node -e 'const j=require(process.argv[1]);const c=(j.hooks?.Stop||[]).flatMap(x=>x.hooks||[]).map(x=>x.command||"").filter(x=>x.includes("svc-"));process.exit(c.length===1&&c[0].includes("svc-codex-stop-firewall")?0:1)' "$HOOKS_INVERSE"
 
@@ -475,7 +475,7 @@ expect "failed wiring leaves config byte-identical" cmp -s "$BAD_CONFIG" "$TMP/i
 
 DUP_REPO="$TMP/duplicate-repo"
 mkdir -p "$DUP_REPO/.codex"
-node -e 'const fs=require("fs");fs.writeFileSync(process.argv[1],JSON.stringify({hooks:{Stop:[{matcher:"*",hooks:[{type:"command",command:"bash svc-task-completion-guard.sh"}]}]}},null,2)+"\n")' "$DUP_REPO/.codex/hooks.json"
+node -e 'const fs=require("fs");fs.writeFileSync(process.argv[1],JSON.stringify({hooks:{Stop:[{matcher:"*",hooks:[{type:"command",command:"bash "+process.argv[2]+"/hooks/svc-task-completion-guard.sh"}]}]}},null,2)+"\n")' "$DUP_REPO/.codex/hooks.json" "$ROOT"
 DUP_CONFIG="$TMP/duplicate-config.toml"
 DUP_HOOKS="$TMP/duplicate-user-hooks.json"
 printf '[features]\ncodex_hooks = false\n' > "$DUP_CONFIG"

@@ -5,6 +5,8 @@ import { actualDelegatedCommand } from "./governed-routing.mjs";
 export function commandKey(command) {
   const cmd = actualDelegatedCommand(command);
   if (cmd.includes("svc-codex-pretool-dispatcher")) return "svc-codex-pretool-dispatcher";
+  if (cmd.includes("svc-codex-posttool-heartbeat.mjs")) return "svc-codex-posttool-heartbeat";
+  if (cmd.includes("svc-codex-owner-recovery.mjs")) return "svc-codex-owner-recovery";
   if (cmd.includes("svc-worktree-isolation-guard.mjs")) return "svc-worktree-isolation-guard";
   if (cmd.includes("svc-workflow-guard.mjs --bash-guard")) return "svc-bash-guard";
   if (cmd.includes("svc-workflow-guard.mjs")) return "svc-edit-write-guard";

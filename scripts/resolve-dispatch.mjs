@@ -7,6 +7,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { validate } from './lib/json-schema-validator.mjs';
+import { cursorIndependentModelShape } from './lib/review-launch-preflight.mjs';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DISPATCH_SCHEMA = JSON.parse(fs.readFileSync(path.join(ROOT, 'schemas/dispatch-policy.schema.json'), 'utf8'));
@@ -127,13 +128,7 @@ function validateTuple(tuple, scope) {
 }
 
 export function cursorIndependentEligible(station) {
-  const t = station?.tuple;
-  if (station?.identity_requirement !== 'requested_accepted' || t?.host !== 'cursor') return false;
-  if (t.family === 'xai' && t.model === 'cursor-grok-4.6-high' && t.effort === 'high') return true;
-  if (t.family === 'xai' && t.model === 'cursor-grok-4.6-xhigh' && t.effort === 'xhigh') return true;
-  if (t.family === 'anthropic' && t.model === 'claude-fable-5-1-medium' && t.effort === 'medium') return true;
-  if (t.family === 'openai' && (t.model === 'gpt-5' || t.model.startsWith('o3')) && EFFORTS.has(t.effort)) return true;
-  return false;
+  return station?.identity_requirement === 'requested_accepted' && cursorIndependentModelShape(station.tuple);
 }
 
 function validateStation(station, scope) {

@@ -106,9 +106,9 @@ test('prompt restrictions pause recovery, status does not rearm, explicit contin
   }
  }finally{fs.rmSync(f.tmp,{recursive:true,force:true});}
 });
-test('missing heartbeat receipt is quiet for reads and visible for mutations',()=>{
- for(const [command,quiet] of [['git ls-remote origin',true],['touch changed',false]]){
- const r=spawnSync(process.execPath,[path.join(root,'hooks/codex/svc-codex-posttool-heartbeat.mjs')],{input:JSON.stringify({session_id:sid,tool_use_id:'missing-test',tool_name:'Bash',tool_input:{command},success:true}),encoding:'utf8'});assert.equal(r.status,0);assert.equal(Boolean(JSON.parse(r.stdout).systemMessage),!quiet);
+test('missing heartbeat receipt is quiet for advisory calls and proven reads',()=>{
+ for(const mode of ['advisory','enforce'])for(const command of ['pwd','git status','touch changed']){
+ const r=spawnSync(process.execPath,[path.join(root,'hooks/codex/svc-codex-posttool-heartbeat.mjs')],{env:{...process.env,SVC_HOOK_MODE:mode},input:JSON.stringify({session_id:sid,tool_use_id:'missing-test',tool_name:'Bash',tool_input:{command},success:true}),encoding:'utf8'});assert.equal(r.status,0);assert.equal(Boolean(JSON.parse(r.stdout).systemMessage),mode==='enforce' && command==='touch changed');
  }
 });
 

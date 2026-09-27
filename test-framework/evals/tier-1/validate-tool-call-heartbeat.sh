@@ -142,7 +142,7 @@ process.env.SVC_RUNTIME_DIR = runtime;
 function drive(payload, env = {}) {
   return spawnSync(process.execPath, [path.join(root, "hooks/codex/svc-codex-posttool-heartbeat.mjs")], {
     input: JSON.stringify(payload), encoding: "utf8",
-    env: { ...process.env, SVC_RUNTIME_DIR: runtime, ...env },
+    env: { ...process.env, SVC_RUNTIME_DIR: runtime, SVC_HOOK_MODE: "enforce", ...env },
   });
 }
 

@@ -1,5 +1,7 @@
 # Work Items Index
 
+- [WI-570](WI-570.md) — Local/GitHub/hybrid tracking and owner-requested harness, skill discovery, design and communication corrections — status:in_progress; integrated validation and review pending
+
 - [WI-FW-CROSS-REPO-ORCH-02](WI-FW-CROSS-REPO-ORCH-02.md) — Origin auto-bind for any onboarded svc project: name a WI or project from any folder, session binds and schedules PLAN xhigh → Fable → EXEC high; user never runs a CLI — status:planned
 - [WI-FW-CROSS-REPO-ORCH-01](WI-FW-CROSS-REPO-ORCH-01.md) — Cursor origin orchestrates any named WI/worktree (session migrates, Grok + Fable dispatch, no paste, no agy-only escape) — status:merged #66 `483e26b`
 

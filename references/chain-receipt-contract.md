@@ -1,8 +1,11 @@
 # Chain Receipt Contract (Mandatory Plan-Exec-Review Chain)
 
 Every chain skill must emit a SHA-keyed JSON receipt that proves the skill
-ran for a given commit. Receipts are the substrate of L2 (git hooks) and
-L3 (`svc-reconcile`) enforcement.
+ran for a given commit. Receipts feed L2 managed Git hooks and the standalone
+L3 `svc-reconcile` validator. L2 hook findings block only in explicit enforce
+mode; advisory warnings never count as passing receipts. Direct validation and
+GitHub required checks retain their own failure behavior. Hook-mode precedence
+is `SVC_HOOK_MODE`, then `~/.svc/hook-policy.json`, then advisory.
 
 ## Authoritative Storage
 
@@ -133,8 +136,8 @@ each receipt against its schema. Finalization consumers (`stop`,
 mirrors are not authority and must never be merged back into notes.
 Missing or invalid receipts are reported
 as `unaccounted` and surface at:
-- `hooks/git/pre-push.d/10-receipts-complete` (L2 enforcement)
-- `scripts/svc-reconcile.mjs` responsibility A (L3 enforcement)
+- `hooks/git/pre-push.d/10-receipts-complete` (through the installed L2 dispatcher: blocks in enforce mode and warns in advisory mode)
+- `scripts/svc-reconcile.mjs` responsibility A (standalone L3 validation, which still fails on missing receipts)
 
 ### Identity model (WI-550)
 
@@ -192,9 +195,11 @@ coverage, reviewer-independence, or zero-waiver failure blocks mutation.
 
 ## Bypass Path
 
-The only bypass is `EMERGENCY_OVERRIDE` (see this plan's Emergency
+The receipt-policy bypass is `EMERGENCY_OVERRIDE` (see this plan's Emergency
 Override Protocol). Logged via `scripts/log-waiver.mjs`. Capped at 4 per
-90 days. Auto-creates a retroactive-plan WI.
+90 days. Auto-creates a retroactive-plan WI. Advisory hook continuation is
+not a receipt-policy waiver and cannot turn a failed standalone validator or
+GitHub check green.
 
 ## Why This Contract Exists
 

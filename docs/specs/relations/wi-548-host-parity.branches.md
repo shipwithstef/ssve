@@ -1,6 +1,6 @@
 # Branch index — portable host-parity program
 
-Derived-at: edc2819f0bb9ccfdb5246478917ba01cdc0f0584
+Derived-at: ea67d08151031df80810e2782567d42f88ed185a
 Scope-paths:
   - docs/specs/architecture/wi-548-*.md
   - docs/specs/features/framework-portable-host-parity.md
@@ -52,17 +52,21 @@ Scope-paths:
 
 - Missing policy → refuse
 - Missing dispatch file → refuse
-- Invalid receipts → Stop/VERIFIED/final deny
+- Invalid receipts → standalone verification refuses; managed Stop findings follow hook mode
 - Missing fresh-session API → capability-limited blocker
 
-## Release
+## Historical planning and release record
 
 - Planning PR only for WI-548
 - Children 545/549-552/546 landed via PR #13 (`50a3440a`); WI-553 still review-then-land
 - PR #10 landed (`223436ab`); PR #11/#12 landed WI-547
 
-## Revalidation for session recovery
-Cited entry points and callers rechecked at the Derived-at source. ensure-worktree still owns bootstrap/recovery, with exact already-bound resume now consuming complete authority; launcher remains the governed review entry point and adds the reviewer-resources helper. Policy, receipt, generation and host-install boundaries remain in their cited owners. Earlier program outcome/child-status lines describe their historical scope, not a claim that the current full corpus is green. Current test census is recorded in `docs/specs/audit/session-recovery-analysis.md`.
+These bullets report the August WI-548 planning snapshot. They are not a current status claim for every child WI or a release receipt for WI-570.
 
-## Delivery report recovery revalidation
-The launcher still owns governed review and uses the existing receipt writer/checker and durable authority. Its added report-recovery helper classifies incomplete reports and preserves source judgment during a bounded correction; it introduces no new host, policy owner or receipt family. These source changes are reviewed and committed at the Derived-at SHA. The import sidecar records that inspected dependency; historical WI release statements above keep their original scope.
+## Current consumer navigation
+- IN: `scripts/resolve-dispatch.mjs:1` — owner policy route resolution; the legacy adversarial resolver remains compatibility-only.
+- IN: `scripts/run-external-review.mjs:1` — governed launcher, now including frozen review inputs and launch preflight.
+- IN: `scripts/emit-receipt.mjs:1` and `scripts/check-chain-receipts.mjs:1` — receipt issuance and checking, including current issuance-epoch validation.
+
+## Current failure semantics
+The shared chain policy defaults to `refuse` when no valid policy is found, and a missing owner dispatch file refuses route resolution. Standalone receipt validators and final verification consumers still fail on missing or invalid evidence. Managed Stop-hook findings follow hook mode: advisory by default, blocking in explicit enforce mode. An advisory finding is never passing receipt evidence.

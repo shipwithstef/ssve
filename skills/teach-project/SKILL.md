@@ -91,6 +91,19 @@ Without this skill, the builder is dependent on the pipeline for every change,
 can't debug production issues, can't onboard collaborators, and can't make
 informed decisions about what to build next.
 
+## Lightweight learning during ordinary work
+
+Read project preferences once with
+`node scripts/project-preferences.mjs --root <project-root>`.
+Default learning is off. In `opportunistic` mode,
+offer at most one unanswered, optional one-minute exercise during a natural
+wait, grounded in a real project file or decision and matched to configured
+difficulty. Keep the progress update first. A skip suppresses further offers
+for the session. Never wait for an answer, add a task-graph node, claim a
+learning achievement, or update the builder profile from an unanswered offer.
+The full Socratic mode below requires an explicit request. See
+`docs/project-preferences.md` for examples and preference rules.
+
 ## Process
 
 ### Step 0: Pick a Mode

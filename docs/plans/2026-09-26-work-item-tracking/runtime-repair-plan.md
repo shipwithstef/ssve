@@ -1,0 +1,29 @@
+# Observed runtime repairs and issue closeout
+
+Owner amendment September 26: fix review-launch failures, flexible model configuration, advisory hook noise, and issues #118/#70 in addition to tracker work.
+
+- #118: rename unregistered draft SKILL.md to CONTRACT.md and its proposal link; prove recursive draft discovery has no SKILL.md and draft remains unregistered (the separately requested grow-social addition takes the registry to 106).
+- #70: main `130db2b` passed 395/395 hosted checks. Applied and read back ruleset 23622869: strict current-base SSVE Required from GitHub Actions app 15368, PRs required, zero self approvals/code-owner requirement, bypass list empty. Preserve review thread resolution, linear history, deletion/forcepush protections. Update stale activation docs; prove on real final PR before closing.
+- Hook installer: two missing command identity keys caused direct/boundary duplicates and non-idempotent wiring. Add keys, prove 10->8 identities, then byte-stable second setup; preserve foreign hooks. Advisory input replacement must never retain messages falsely claiming a replacement ran. Quiet routine missing-heartbeat receipt no-op; preserve actionable findings and enforce behavior.
+- Review launcher: complete owner policy factory/preflight before paid calls; exact model tuple from user/current owner config and actual catalog, no dated model whitelist. Classify nested Claude authentication result correctly. Cursor read-only audit uses ask mode to avoid recursive planning. Exact catalog-listed model/family plus requested-accepted attestation is acceptable only when policy explicitly selects it; never claim server-observed provider identity.
+
+Sol high workers own separate worktrees with persisted task-specific delegations and passing Landlock containment probe. Shared source integration and live GitHub settings stay with controller. No unrelated provider-login, credentials, global model-policy or native hook trust changes.
+
+Focused behavioral regressions first, one integrated free Tier-1 suite before commit, post-commit relevant checks, final PR/main hosted proof and all-host installation/drift. False command-help invocations made by the orchestrator are corrected by checking the actual CLI source/help before dispatch, not by hiding errors.
+
+Owner follow-up: apply the existing plan value check to the whole solution on every host, not only test selection. Require the actual user job, comparison with a simpler adequate approach, and concrete value for additional complexity. UI-only obligations include same-job product-screen references and rendered journey proof. This is an amendment to the existing review prompt, not a new gate or skill. The captured-prompt regression proves transport wiring, not subjective visual quality.
+
+
+## Additional owner requests and validation scope
+
+The owner explicitly requested a 30-minute default external-review timeout. Use 1800 seconds by default, selected-host owner-policy overrides, then an invocation environment override. Derive a compatible stale-lock lifetime; validate invalid settings before spawning a provider. Record effective values in the receipt and explain the difference between a deadline and a provider terminal error. This does not authorize unlimited retries or change review-round caps. Prove precedence, policy schema compatibility, receipt fields, and real launcher fixture behavior.
+
+Project skill selection reuses the existing index/router and project signals. Select only relevant optional skills, retain explicit and required lane skills, provide on-demand loading, and report local recorded usage without claiming measured quality or token savings. Codex may hide unselected owned skills per process, preserving foreign skills and refusing conflicting native configuration; other hosts report unsupported native filtering honestly. Do not move global directories, install another router skill, run a daemon, or log prompt bodies. Validate two project types, explicit/required pins, native-argument preservation, conflicting configuration, and observed usage counts; capture a native Codex prompt inspection for catalog exposure.
+
+Plain, stepwise updates are the communication default. Optional project preferences enable short project-grounded learning during natural waits, with adjustable complexity, at most one unanswered offer, and no delivery dependency. Reuse teach-project for explicit deeper learning. Prove absent/invalid configuration defaults, project isolation, and nonblocking offer eligibility.
+
+UI skills require concrete user jobs, same-job product comparisons, and rendered journey/accessibility evidence. Marketing-only landing skills remain conditional. Remove arbitrary decoration, font, risk and animation quotas; do not replace them with another aesthetic template. Review an app-screen and a marketing-page example for routing and value.
+
+Add exactly one explicit terminal skill, grow-social, outside the default routing core. It drafts useful platform-adapted stories from actual evidence, learns only approved voice examples, interprets pasted analytics with denominators/confounds, and proposes feasible 24-hour actions. Publication requires explicit authority and an available connected capability. Qualitatively exercise three fictional scenarios for privacy/agency, analytics and cold-start claims; register before structure/lint checks. Fictional exercises are not paid host-eval or real performance evidence.
+
+Native-profile repair: match the canonical joined developer-message frame instead of looking up each text part against a message hash. Preserve strict input_text types and scan both parts and joined text for injected content. Validate native multipart acceptance, changed-part rejection, split-injection rejection, and the original configuration through no-inference inspection. This repairs a reproduced framework defect without weakening isolation or backfilling plan authority.

@@ -190,9 +190,15 @@ This section is hard-checked by `review-plan` (see its `external-state-uncoupled
 
 This skill produces the execution map, not reviewed code. Real surfaces: per-task `git diff --staged`; final `git diff <base>...HEAD`.
 
+## Test-value inventory
+
+Before freezing `validation_plan`, inventory the existing tests and planned proof for every material user promise and failure risk, including relevant journey states and rollback or external-state risks. For each planned test, state the observable behavior or risk, the specific wrong behavior it would catch, an expected result derived from the spec, interface, user journey, or independent system response, and why the chosen observation is the cheapest sufficient proof. Put the concrete result in v5 `expected_outcome` and the oracle, failure sensitivity, and necessity relative to existing coverage in `sufficiency`; use the existing AC and validation IDs, not a second free-form mapping. If a material risk has no applicable AC, reconcile the spec before binding a test to it.
+
+Remove tests that only repeat a mock's configured return value, mirror implementation branches or private helpers, duplicate existing proof without detecting a distinct failure, or exercise a speculative bug unsupported by the product contract or observed risk. Do not add an elaborate harness merely to make such tests pass. Source, unit, browser, device, hosted, and performance observations are alternatives chosen by the claim; a browser-visible or external-system promise needs evidence at that boundary. Record a reason when manual observation or no new automated test is the cheapest sufficient choice. See AP-14 and AP-17 in `references/anti-patterns.md`.
+
 ## TDD Rule
 
-Unit tests scheduled before the services/components they constrain; e2e after the relevant implementation exists.
+Schedule a useful unit test before the service/component it constrains when it has an independent behavioral oracle; schedule e2e after the relevant implementation exists. Test order does not justify speculative or implementation-mirroring tests.
 
 ## Checkpoints and Loop-Backs
 

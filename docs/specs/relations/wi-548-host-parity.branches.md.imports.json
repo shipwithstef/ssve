@@ -1,5 +1,5 @@
 {
-  "stamped_at": "edc2819f0bb9ccfdb5246478917ba01cdc0f0584",
+  "stamped_at": "ea67d08151031df80810e2782567d42f88ed185a",
   "imports": {
     "docs/plans/2026-08-17-wi548-host-parity-plan/manifest.md": [],
     "docs/specs/architecture/wi-548-contract-map.md": [],
@@ -21,8 +21,10 @@
     "scripts/check-chain-receipts.mjs": [
       "./derive-receipt-tier.mjs",
       "./lib/cognitive-family.mjs",
+      "./lib/control-plan-validate.mjs",
       "./lib/history-epoch.mjs",
       "./lib/normalize-ac-table.mjs",
+      "./lib/receipt-issuance-epoch.mjs",
       "./lib/reviewer-evidence.mjs",
       "./lib/skill-coverage.mjs",
       "./state-io.mjs",
@@ -35,6 +37,7 @@
     ],
     "scripts/emit-receipt.mjs": [
       "./lib/cognitive-family.mjs",
+      "./lib/receipt-issuance-epoch.mjs",
       "./lib/reviewer-evidence.mjs",
       "./state-io.mjs",
       "./state-lock.mjs",
@@ -48,14 +51,9 @@
     "scripts/resolve-adversarial-reviewer.sh": [
       "fs"
     ],
-    "scripts/run-external-review.mjs": [
-      "../hooks/lib/wi-id.mjs",
-      "./lib/external-review-provenance.mjs",
-      "./lib/review-evidence-store.mjs",
-      "./lib/review-report-recovery.mjs",
-      "./lib/reviewer-resources.mjs",
-      "./review-topology-v2.mjs",
-      "node:child_process",
+    "scripts/resolve-dispatch.mjs": [
+      "./lib/json-schema-validator.mjs",
+      "./lib/review-launch-preflight.mjs",
       "node:crypto",
       "node:fs",
       "node:os",
@@ -63,8 +61,28 @@
       "node:process",
       "node:url"
     ],
+    "scripts/run-external-review.mjs": [
+      "../hooks/lib/wi-id.mjs",
+      "./lib/external-review-provenance.mjs",
+      "./lib/frozen-request-input.mjs",
+      "./lib/review-evidence-store.mjs",
+      "./lib/review-inputs.mjs",
+      "./lib/review-launch-preflight.mjs",
+      "./lib/review-report-recovery.mjs",
+      "./lib/reviewer-resources.mjs",
+      "./review-topology-v2.mjs",
+      "node:child_process",
+      "node:crypto",
+      "node:fs",
+      "node:fs/promises",
+      "node:os",
+      "node:path",
+      "node:process",
+      "node:url"
+    ],
     "scripts/svc-reconcile.mjs": [
       "./lib/chain-policy.mjs",
+      "./lib/reconcile-core.mjs",
       "./state-io.mjs",
       "node:fs",
       "node:path",
