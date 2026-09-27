@@ -117,8 +117,8 @@ controller-only.
 # Create a worktree (idempotent — resumes if exists)
 scripts/worktree.sh create feature-notifications
 
-# Create from a specific base
-scripts/worktree.sh create bugfix-auth --from main
+# Create from a specific base (main must be named as the remote ref)
+scripts/worktree.sh create bugfix-auth --from origin/main
 
 # Check if you're in a worktree
 scripts/worktree.sh status
@@ -158,6 +158,13 @@ The helper returns the absolute worktree path plus WI, branch, owner session,
 base SHA, and whether it created or resumed the worktree. Change directory to
 that absolute path and pass the same identity baton to every mutating skill.
 Refuse a WI, branch, path, or owner mismatch instead of silently switching.
+
+One host session cannot acquire a second simultaneous mutating worktree binding.
+If `create` reports that the session is already bound elsewhere, finish or hand
+over the existing WI before starting another worktree. For a follow-up to the
+same WI, continue in its bound worktree and base the new branch on the merged
+`origin/main` after preserving any live state. Advisory hook mode does not turn
+the worktree helper's explicit ownership check into a warning.
 
 The flow is: **read-only default checkout → ensured worktree (all mutation and
 validation) → policy-approved default checkout merge/read-only verification**.
