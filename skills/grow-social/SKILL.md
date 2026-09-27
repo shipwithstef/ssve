@@ -32,7 +32,7 @@ chain:
 
 **Announce at start:** "I'm using grow-social to turn your actual work into a useful draft and a 24-hour plan."
 
-Write organic social content that earns attention through a concrete observation, useful method, or honest result. Be the user's editor and evidence checker. Do not turn a normal task into a marketing campaign. Draft in chat unless the user requests a private saved draft. Treat the user's supplied facts and explicit corrections as the source of truth.
+Write organic social content that earns attention through a concrete observation, useful method, or honest result. Be the user's editor and evidence checker. Do not turn a normal task into a marketing campaign. Draft in chat unless the user requests a private saved draft. Treat the user's explicit corrections as the strongest evidence of what they mean; still verify factual claims.
 
 ## Preflight
 
@@ -40,7 +40,7 @@ Classify the request as an organic draft, voice edit, analytics read, or explici
 
 ## Before Starting
 
-Start with the user's actual request and the relevant session passage. Follow only references that can change this draft's facts, voice, privacy or platform format: approved writing examples, the named platform's current official rules when material, and the user's supplied analytics with their time windows and denominators. Read a work-item graph only when this request is already inside one; do not load unrelated product specs or a full account history. If facts are missing, make the narrower draft and label the gap.
+Start with the user's actual request, corrections, and the relevant session passage. Follow only references that can change this draft's meaning, facts, voice, privacy or platform format: approved writing examples, the named platform's current official rules when material, and the user's supplied analytics with their time windows and denominators. Read a work-item graph only when this request is already inside one; do not load unrelated product specs or a full account history. If facts are missing, make the narrower draft and label the gap.
 
 ## Boundary and inputs
 
@@ -66,6 +66,10 @@ Extract a small evidence ledger before writing:
 | Reusable lesson | A step or decision a reader can use. |
 | Shareability | Secrets, private data, customer details, unlaunched plans, and third-party material to remove or generalize. |
 
+Before drafting, write a one-sentence internal intent brief: **"The user wants [reader] to understand [point] because [why now], and possibly [do or reconsider what]."** Infer it from the whole request and corrections, not the most recent isolated phrase. Separate the user's central claim from supporting facts, conditions, and caveats. When the user proposes a comparison or timely recommendation, preserve the decision and its trigger; do not replace it with generic caution. If the intended point is genuinely ambiguous, make a grounded best-effort draft and ask one focused question only when the answer would change the claim.
+
+Improve the idea beyond copyediting: find the concrete stake or mechanism a reader would otherwise miss, check and correct the facts, and add only context that helps the intended point land. Distinguish what happened from what is recommended and what remains conditional. A caveat should calibrate the claim without taking over the post. Before delivery, restate the draft's takeaway in one sentence and compare it with the intent brief; rewrite if the reader would leave with a different conclusion.
+
 A session struggle is a candidate, not automatically a story. Prefer one that changed a decision or produced a working method. If no outcome is verified, write "we tried" or "the next check is" rather than a victory narrative. Never attribute an assistant's work to the user or write a first-person experience the user did not have. Paraphrase private session content only to the degree needed for the lesson; do not quote another person without permission. If the event cannot be made safe and useful, choose another angle or provide a private outline.
 
 When a post claims that other people share the pain, decide whether that claim matters. If it does, search for recent independent first-hand accounts or reliable research, record direct URLs and dates, and distinguish repeated anecdotes from representative evidence. Search current sources when the topic is volatile. If research is unavailable or weak, keep the claim personal ("I ran into...") or label it a hypothesis ("I suspect..."). Never invent quotes, users, market demand, benchmarks, results, or source URLs.
@@ -78,7 +82,7 @@ Optional private memory lives under ~/.svc/social/<profile>/, outside the tracke
 
 ## 3. Write for the reader and the platform
 
-First choose one reader and one concrete payoff. Make the opening specific to the event; explain the mechanism, decision, or steps; end when the lesson is complete. A question or CTA is optional and must serve the reader. Remove generic hooks, artificial suspense, inflated claims, contrived vulnerability, emoji or hashtags added for engagement, and "AI wrote this" cadence. Preserve the user's actual degree of certainty. When an audience would benefit, include a short example or a directly usable checklist.
+Use the intent brief to choose one reader and one concrete payoff. Make the opening specific to the event or timely trigger; explain the mechanism, decision, or steps; end when the intended point is clear. A question or CTA is optional and must serve the reader. Remove generic hooks, artificial suspense, inflated claims, contrived vulnerability, emoji or hashtags added for engagement, and "AI wrote this" cadence. Preserve the user's actual degree of certainty. When an audience would benefit, include a short example or a directly usable checklist.
 
 Adapt presentation to the named platform's current affordances and the user's format preference: text, thread, carousel outline, short video outline, or another available format. Keep the underlying facts and voice consistent across variants. If a character limit, feature, ranking rule, or model/harness recommendation is material, verify it from current official documentation before claiming it. Otherwise offer flexible format choices and avoid fixed limits, algorithm lore, or stale model names. For model or harness advice, consult the current builder capability registry when available, then recommend by task and available tools; verify any named product behavior before claiming it. Never hardcode a dated winner.
 
@@ -90,7 +94,7 @@ For pasted analytics, restate platform, post, date range, exposure denominator, 
 
 Default output is compact and reviewable:
 
-1. **Angle and evidence:** one sentence on the event and reader payoff; cite any external source near the claim it supports. Note a material missing fact.
+1. **Angle and evidence:** one sentence on what the user wants readers to take away, why it matters now, and the reader payoff; cite any external source near the claim it supports. Note a material missing fact.
 2. **Draft:** one publishable candidate in the user's evidenced voice, clearly marked DRAFT. Provide a variant only when a distinct platform or user request warrants it.
 3. **Why this works:** one or two concrete editorial choices, without promising reach.
 4. **Next 24 hours:** actions with a realistic order: verify the sensitive fact or source, revise and approve the exact draft, choose account/format/time, publish only if explicitly authorized, then inspect relevant replies and post analytics when available. Include one useful follow-up interaction or next story idea that does not require mass outreach. If no post is ready, plan the evidence-gathering step instead.
@@ -107,12 +111,13 @@ All output is DRAFT by default. Writing or saving a draft is not approval to pub
 | # | Check | How | PASS/FAIL |
 |---|---|---|---|
 | 1 | Real event and agency | Trace friction, action, and outcome to supplied evidence; distinguish user from assistant. | |
-| 2 | Claim strength matches evidence | Verify sources for shared-pain/current claims; label unverified hypotheses and unmeasured outcomes. | |
-| 3 | Reader gets a useful takeaway | Identify the concrete step, decision, or example in the draft. | |
-| 4 | Voice and privacy hold | Compare to approved examples or label provisional; remove sensitive and third-party detail. | |
-| 5 | Analytics are interpretable | Check matched windows and denominators; name confounds and uncertainty. | |
-| 6 | Next day is actionable | Give feasible actions within 24 hours without growth guarantees. | |
-| 7 | External action has exact authority | Confirm approved content, account, time, available capability, and receipt for any publication; otherwise keep DRAFT. | |
+| 2 | Intended meaning survives editing | Compare the draft's likely reader takeaway with the user's intent brief and corrections; keep the trigger and recommendation central. | |
+| 3 | Claim strength matches evidence | Verify sources for shared-pain/current claims; label unverified hypotheses and unmeasured outcomes. | |
+| 4 | Reader gets a useful takeaway | Identify the concrete step, decision, or example in the draft. | |
+| 5 | Voice and privacy hold | Compare to approved examples or label provisional; remove sensitive and third-party detail. | |
+| 6 | Analytics are interpretable | Check matched windows and denominators; name confounds and uncertainty. | |
+| 7 | Next day is actionable | Give feasible actions within 24 hours without growth guarantees. | |
+| 8 | External action has exact authority | Confirm approved content, account, time, available capability, and receipt for any publication; otherwise keep DRAFT. | |
 
 ## Pipeline Continuation
 
