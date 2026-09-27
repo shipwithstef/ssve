@@ -1,5 +1,9 @@
 # Framework State
 
+## Grow-social intent fidelity — 2026-09-27
+
+The `grow-social` skill now makes the writer identify the user's intended reader takeaway and why-now trigger before drafting, then compare the finished copy against that intent. This corrects a real failure where a sound quota caveat displaced the owner's recommendation about raising a per-session agent ceiling before an announced reset when independent work is ready. The skill still verifies factual claims and keeps publication draft-only. A fictional tier-2 scenario tests the distinction between an observed three-subagent session limit, a configured ten-subagent ceiling, and extra quota.
+
 ## Owner-requested framework corrections — WI-570 (merged 2026-09-27)
 
 PR #119 merged at `1a0822e6b9deb5a6caaed7cabe4645b9f1ca1cea` after exact-head hosted checks, self-review, and an actual passing Grok High source review. It adds local-only/GitHub-backed/hybrid issue tracking, quiet advisory hook recovery, a configurable 30-minute review deadline, whole-plan value/test checks, project-specific skill selection, plain communication and optional learning preferences, evidence-based UI guidance, and the terminal `grow-social` skill. The merged tree matched the reviewed candidate; hosted free checks passed 402/402 and the required aggregate was green. Canonical main was installed across all nine provisioned hosts on 2026-09-27 with zero install drift, and the active hook mode resolved to advisory. Earlier Opus/Grok plan reviews and the Opus cleanup audit are dispositioned in `docs/plans/2026-09-26-work-item-tracking/`; the later Opus execution-review attempt failed provider quota and is not approval.
@@ -866,4 +870,3 @@ The Codex skill-load and recovery paths now recognize explicit `process_skill` d
 ## Cursor CLI SSVE integration and authority recovery — WI-546
 
 The Cursor CLI SSVE integration now wires flat command hooks per Cursor CLI documentation, avoiding `190.index.js` parser failures. A dedicated `hooks/cursor/svc-cursor-ssve-adapter.mjs` provides prompt authority recording via `beforeSubmitPrompt` and safe mutation delegation via `preToolUse` with native `{ permission, user_message, updated_input }` output protocol. Worktree resolution in `svc-ensure-worktree.mjs` and `svc-codex-pretool-dispatcher.mjs` defensively ignores missing or unpruned paths, and external worktrees with active `controller-lease-v2` (`v2_present`) are approved and recovered cleanly without generation drift. Review topology verification (`scripts/review-topology-v2.mjs`) restores strict selection config hash binding and canonical station receipt checks, rejecting mismatched review configurations and unauthorized local station receipts. Comprehensive unit and lifecycle tests in `test-framework/tests/cursor-adapter.test.mjs` verify adapter fail-closed behavior on malformed input, child errors, observation fast-path, and full Cursor session execution.
-
