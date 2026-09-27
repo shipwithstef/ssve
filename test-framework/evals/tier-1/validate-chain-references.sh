@@ -46,7 +46,7 @@ for (const skill of m.includedSkills) {
   if (fm === null) continue;
   for (const ref of chainRefs(fm)) {
     if (included.has(ref)) pass += 1;
-    else failMsg(`${skill} — chain references '${ref}' which is not in includedSkills`);
+    else failMsg(`${skill} — chain references '${ref}' which is not in includedSkills. File: skills/${skill}/SKILL.md and skills-manifest.json. next: edit skills/${skill}/SKILL.md so chain.lanes prev/next is in includedSkills, or add '${ref}' to skills-manifest.json includedSkills`);
   }
 }
 
@@ -58,7 +58,7 @@ for (const lane of lanes) {
     const fm = frontmatter(laneSkill);
     if (fm === null) continue;
     if (fm.includes(`${lane}:`)) pass += 1;
-    else failMsg(`${laneSkill} listed in manifest lane '${lane}' but doesn't declare that lane in frontmatter`);
+    else failMsg(`${laneSkill} listed in manifest lane '${lane}' but doesn't declare that lane in frontmatter. Files: skills/${laneSkill}/SKILL.md and skills-manifest.json. next: edit skills/${laneSkill}/SKILL.md so chain.lanes includes '${lane}:', or remove ${laneSkill} from skills-manifest.json laneDefinitions.${lane}.skills`);
   }
   // Reverse check: skills declaring this lane but absent from manifest list.
   // Pre-lane entry points (route-workflow) are exempt — they route INTO lanes
@@ -69,7 +69,7 @@ for (const lane of lanes) {
     if (!fm.includes(`    ${lane}:`)) continue;
     if (skill === "route-workflow") { pass += 1; continue; }
     if (!laneMembers.get(lane).has(skill)) {
-      failMsg(`${skill} declares lane '${lane}' in frontmatter but is not in manifest laneDefinitions.${lane}.skills`);
+      failMsg(`${skill} declares lane '${lane}' in frontmatter but is not in manifest laneDefinitions.${lane}.skills. Files: skills/${skill}/SKILL.md and skills-manifest.json. next: add ${skill} to skills-manifest.json laneDefinitions.${lane}.skills, or remove '${lane}:' from skills/${skill}/SKILL.md`);
     } else {
       pass += 1;
     }

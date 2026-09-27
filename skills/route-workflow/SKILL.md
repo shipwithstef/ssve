@@ -7,7 +7,8 @@ description: >
   "build this", "I want to", "help me with", "make me a", "ship this", "fix this",
   or ANY freeform description of work; also handles explicit routing questions like
   "what should I do next", "which skill do I run", "what's the right order", and
-  "what lane is this".
+  "what lane is this". Here "what should I do next" means only which skill and
+  lane to run in this repo.
 phases:
   - { id: P1-SessionContextLoad, trigger: always, reads: [".svc/session-contract.jsonl", "docs/specs/project-state.md", "~/.svc/builder-profile.md", "docs/specs/domain-profile.md"], writes: [".svc/session-contract.jsonl when needed", ".svc/orchestrator-state.json when initializing"], evidence_kind: command_output, required_for_completion: true }
   - { id: P2-IntentNormalizationAndCorrection, trigger: always, reads: ["user request", "references/intent-normalization.md", "references/intent-classification.md", ".svc/session-contract.jsonl"], writes: [".svc/pipeline-decisions.jsonl when route-relevant"], evidence_kind: command_output, required_for_completion: true }
@@ -37,7 +38,7 @@ chain:
   human_checkpoint: false
 ---
 
-**Announce at start:** "I'm using the route-workflow skill to route your request to the right svc skill and lane."
+**Announce at start:** once the route is known, lead with four lines before any prompt package. Chosen skill: the same next skill. Why: one sentence, the same evidence as "Why this skill now". What happens next: "I am starting <skill> in this turn" or "Send the prompt below to run <skill>". Your answer: none, or the one existing question verbatim. Do not change which skill runs.
 
 # Workflow Compass
 
@@ -196,7 +197,7 @@ Before declaring routing complete, verify:
 |---|-------|-----|-----------|
 | 1 | Lane matched to change type | Routing decision references one of the 7 lane definitions and the change-type detection signal that triggered it | |
 | 2 | Skip conditions evaluated | For each lane skill listed in `<SKILLS_PATH>/references/skip-conditions.json`, state whether the skip applies and log the registry-backed justification in `.svc/pipeline-decisions.jsonl` | |
-| 2b | `na` is evidence, not a shrug | Ran the `## Conditional Stage Activation (P3, WI-521 Batch C — closes WI-519)` block above (`node scripts/stage-activation.mjs --diff main..HEAD`) and pasted its output; for a conditionally-active STAGE (not a lane skill), `na` is valid ONLY when a cited condition evaluation accompanies it (`{stage, condition, evaluated_against, result:"na"}`) from that output — a bare "n/a" sentence with no evaluation is not a valid skip | |
+| 2b | `na` is evidence, not a shrug | Ran the `## Conditional Stage Activation (P3, WI-521 Batch C — closes WI-519)` block above (`node scripts/stage-activation.mjs --diff main..HEAD`) and pasted its output; for a conditionally-active STAGE (not a lane skill), `na` is valid ONLY when a cited condition evaluation accompanies it (`{stage, condition, evaluated_against, result:"na"}`) from that output — a bare "n/a" sentence with no evaluation is not a valid skip. When showing that record to a human, also say: skipped \<stage\> because its condition was not met ("\<condition\>", result na). Essential stages still ran. This is not a quick-fix bypass. quick-fix stays retired; the replacement is `route-workflow`. | |
 | 3 | New-lane necessity checked | If no existing lane fits, respond with `**Proposal:** New lane <name> needed because <reason>` | |
 | 4 | Task graph and WI claim initialized | `.svc/lane-tasks-<WI>.json` and `.svc/claims/<WI>.claim.json` exist | |
 | 5 | Next trailer is valid | The `**Next:**` trailer references a skill in `includedSkills` and the current lane position, or in human prompt-composer mode points to the copy-paste prompt/continuation primitive while naming the target skill | |

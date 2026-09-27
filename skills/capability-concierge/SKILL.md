@@ -19,7 +19,8 @@ description: >
   capabilities. Use when: "what should I do next", "what's my best move",
   "route my resources", "what am I under-using", "how do I ship Example Marketplace",
   or when any session wants a cross-resource + cross-project view of what
-  to deploy where.
+  to deploy where. Here "what should I do next" means only the cited
+  three-lens ranking, not which skill and lane to run.
 inputs:
   required: []
   optional:

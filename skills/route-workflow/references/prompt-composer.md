@@ -46,6 +46,12 @@ artifacts, skip rules, validators, or proof gates.
 Return this structure:
 
 ```markdown
+**Operator lead**
+- Chosen skill: <the same value as Next skill>
+- Why: <one sentence, the same evidence as Why this skill now>
+- What happens next: I am starting <skill> in this turn, or Send the prompt below to run <skill>
+- Your answer: none, or the one existing question verbatim
+
 **Routing Result**
 - Normalized intent:
 - Mode: human_prompt_composer | internal_continuation | explicit_autorun
@@ -111,6 +117,9 @@ above. A response that only says `**Next:** run <skill>` fails this contract.
   lane or risk flags require it.
 - Include exactly one `**Next:**` trailer that names the immediate next action
   and preserves the prompt package as the source of truth.
+- Put the operator lead above the package. It does not add or drop a skill.
+  Your answer is none, or the one question this route already requires. Keep
+  that question out of Prompt To Send.
 - Never hide uncertainty. If the next prompt depends on an unverified artifact,
   tell the downstream agent to read or produce that artifact before mutating.
 - Never fabricate platform capabilities. If a continuation primitive is not

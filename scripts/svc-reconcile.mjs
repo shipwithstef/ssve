@@ -290,17 +290,24 @@ function main() {
   if (respA.unaccounted.length) {
     console.error(`svc-reconcile: ${respA.unaccounted.length} unaccounted commits on ${respA.main}`);
     for (const row of respA.unaccounted) {
+      const fullSha = /^[0-9a-f]{40}$/.test(row.sha);
       const label = row.infrastructure === true ? "receipt validation unavailable" : "missing";
-      console.error(`  ${row.sha.substring(0, 7)}: ${label} ${row.missing.join(", ")}`);
+      console.error(`  ${row.sha}: ${label} ${row.missing.join(", ")}`);
+      if (row.sha === "git-log") {
+        console.error(`  commit discovery failed (${row.missing.join(", ")}). Next: node scripts/svc-reconcile.mjs`);
+      } else if (fullSha && row.infrastructure !== true) {
+        console.error(`  Next: node scripts/check-chain-receipts.mjs --sha ${row.sha} --consumer reconcile`);
+      }
     }
     const unavailableCount = respA.unaccounted.filter((row) => row.infrastructure === true).length;
     if (unavailableCount > 0) {
       console.error("Receipt validation was unavailable: re-run the whole reconcile command; do not edit the checkpoint or file retroactive receipt debt.");
     }
-    if (unavailableCount < respA.unaccounted.length) {
+    const realDebt = respA.unaccounted.filter((row) => row.sha !== "git-log" && row.infrastructure !== true);
+    if (realDebt.length) {
       console.error("Receipt-debt options:");
-      console.error("  1. Retroactive plan: claude /plan-changeset --retroactive <sha>");
-      console.error("  2. Explicit reviewed recovery; waivers remain policy-limited exceptions");
+      console.error("  1. Produce the missing receipt types named on that full SHA. The push check uses the same list.");
+      console.error("  2. A capped waiver is not a receipt. Command: node scripts/log-waiver.mjs EMERGENCY_OVERRIDE <issue-url> <reason>");
     }
   }
   writeJsonAtomic(CHECKPOINT_PATH, {

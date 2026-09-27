@@ -100,6 +100,7 @@ function readWorkItem(file) {
     ['dependencies', 'depends_on', 'blocked_by']
   );
   const dependencies = dependencyRaw ? (dependencyRaw.match(/WI-[\w-]+/g) ?? []) : [];
+  const holdRaw = fieldValue(content, frontmatter, ['Hold'], ['hold']);
 
   // Filed / Closed dates — useful for ordering done items.
   const filedRaw = fieldValue(content, frontmatter, ['Filed'], ['filed']);
@@ -115,6 +116,7 @@ function readWorkItem(file) {
     priority: priorityKey,
     priorityWeight,
     dependencies,
+    holdRaw: holdRaw ?? null,
     filed: filedRaw?.match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? null,
     closed: closedRaw?.match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? null,
     raw: content
@@ -139,36 +141,33 @@ function sortDone(items) {
   });
 }
 
-function pad(s, n) {
-  // Pad to width n without ever truncating — short strings get spaces,
-  // long strings are returned as-is so metadata is never lost.
-  s = String(s ?? '');
-  return s.length >= n ? s : s + ' '.repeat(n - s.length);
-}
-
 function truncate(s, n) {
   s = String(s ?? '');
   return s.length <= n ? s : s.slice(0, n - 1) + '…';
 }
 
-const STATUS_DISPLAY_MAX = 28;
 const SUBJECT_DISPLAY_MAX = 80;
+const NEXT_DISPLAY_MAX = 80;
+const WAITING_STATUS = new Set(['blocked', 'deferred', 'pending']);
+
+function nextCell(it) {
+  if (it.dependencies.length) return `after ${it.dependencies.join(', ')}`;
+  if (WAITING_STATUS.has(it.statusKey)) {
+    if (it.holdRaw) return it.holdRaw;
+    const rest = String(it.statusRaw).replace(/^[^\s—–\-(,]+[\s—–\-(,]*/, '').trim();
+    if (rest) return rest;
+  }
+  return '—';
+}
 
 function renderTable(items) {
-  // Compute column widths from actual content so nothing gets clipped — except
-  // status, which is capped to keep the table readable. Full status is always
-  // available via --detail and in DONE.md.
-  const idW = Math.max(2, ...items.map(i => i.id.length));
-  const statusW = Math.min(
-    STATUS_DISPLAY_MAX,
-    Math.max(6, ...items.map(i => i.statusRaw.length))
-  );
-  const priW = Math.max(3, ...items.map(i => i.priority.length));
+  // Status is the bucket token. The hold or dependency reason is the Next cell.
+  // Full status text stays on --detail and in DONE.md. Order is unchanged.
   const lines = [];
-  lines.push(`| ${pad('ID', idW)} | ${pad('Status', statusW)} | ${pad('Pri', priW)} | Subject`);
-  lines.push(`|${'-'.repeat(idW + 2)}|${'-'.repeat(statusW + 2)}|${'-'.repeat(priW + 2)}|${'-'.repeat(SUBJECT_DISPLAY_MAX + 2)}`);
+  lines.push('| ID | Status | Pri | Next | Subject |');
+  lines.push('|----|--------|-----|------|---------|');
   for (const it of items) {
-    lines.push(`| ${pad(it.id, idW)} | ${pad(truncate(it.statusRaw, statusW), statusW)} | ${pad(it.priority, priW)} | ${truncate(it.subject, SUBJECT_DISPLAY_MAX)}`);
+    lines.push(`| ${it.id} | ${it.statusKey} | ${it.priority} | ${truncate(nextCell(it), NEXT_DISPLAY_MAX)} | ${truncate(it.subject, SUBJECT_DISPLAY_MAX)} |`);
   }
   return lines.join('\n');
 }
@@ -195,6 +194,7 @@ function renderDetail(item) {
     `**Status:** ${item.statusRaw}\n` +
     `**Priority:** ${item.priority}\n` +
     (item.dependencies.length ? `**Dependencies:** ${item.dependencies.join(', ')}\n` : '') +
+    (item.holdRaw ? `**Hold:** ${item.holdRaw}\n` : '') +
     (item.filed ? `**Filed:** ${item.filed}\n` : '') +
     (item.closed ? `**Closed:** ${item.closed}\n` : '') +
     `\n---\n\n${item.raw}`;

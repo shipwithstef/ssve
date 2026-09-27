@@ -347,7 +347,7 @@ async function check() {
   // --- Report ---
   if (warnings.length > 0) {
     process.stderr.write(
-      `\n[svc-stop-quality] Format/lint warnings (${files.length} files checked):\n` +
+      `\n[svc-stop-quality] You can continue — these format/lint findings do not block Stop (${files.length} files checked). You must fix only a separate type-error block if this check prints one. Format findings are not merge approval.\n` +
         warnings.join("\n") +
         "\n\n"
     );
