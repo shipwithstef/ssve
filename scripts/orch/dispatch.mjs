@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { StringDecoder } from 'node:string_decoder';
 import { stateRoot, init, atomicJson, readJson, taskPath, options, number, canonicalWorktree, lockPath, procIdentity, sameProcess, iso, sleep, ingestLines, isMain, bootId } from './common.mjs';
 import { admitTask } from './goals.mjs';
+import { updateTaskRecord } from './interruption.mjs';
 const self = fileURLToPath(import.meta.url);
 
 export function workerCommand(task, prompt, resume = false) {
@@ -82,12 +83,24 @@ async function supervise(request) {
     if (!existing.recovery.from_boot_id || existing.recovery.from_boot_id === autoRecovery.boot_id || existing.goal_generation == null) throw new Error('Auto-recovery requires changed boot and persisted goal generation');
   }
   const attempt = randomUUID();
-  Object.assign(task, { attempt_id: attempt, unit: `orch-${attempt}.scope`, state: 'queued', started_at: iso(), finished_at: null, exit_code: null, exit_signal: null, stop_requested: false, completion_report: null, usage: null, session_id: resume ? task.session_id : null, supervisor_identity: procIdentity(process.pid), supervisor_pid: process.pid, process_identity: null, pid: null, process_group: null, log_path: path.join(root, 'logs', `${task.id}-${attempt}.jsonl`), stderr_path: path.join(root, 'logs', `${task.id}-${attempt}.stderr`), events_path: path.join(root, 'logs', `${task.id}-${attempt}.events.jsonl`) });
+  Object.assign(task, { attempt_id: attempt, unit: `orch-${attempt}.scope`, state: 'queued', started_at: iso(), finished_at: null, exit_code: null, exit_signal: null, exit_recorded_boot_id: null, interruption: null, owner_stop_requested: false, stop_requested: false, completion_report: null, usage: null, session_id: resume ? task.session_id : null, supervisor_identity: procIdentity(process.pid), supervisor_pid: process.pid, process_identity: null, pid: null, process_group: null, log_path: path.join(root, 'logs', `${task.id}-${attempt}.jsonl`), stderr_path: path.join(root, 'logs', `${task.id}-${attempt}.stderr`), events_path: path.join(root, 'logs', `${task.id}-${attempt}.events.jsonl`) });
   task.deadline_at = new Date(Date.parse(task.started_at) + task.hard_timeout_ms).toISOString();
   const version = spawnSync(task.executor.cli === 'cursor' ? 'cursor-agent' : task.executor.cli, ['--version'], { encoding: 'utf8', timeout: 3000 });
   task.executor.cli_version = version.status === 0 ? version.stdout.trim() : null;
   let sequence = 0;
-  const persist = (kind, extra = {}) => { atomicJson(file, task); atomicJson(`${lockPath(task.worktree, root)}.owner.json`, { task_id: task.id, attempt_id: attempt, supervisor_identity: task.supervisor_identity, process_identity: task.process_identity, state: task.state }); const fd = fs.openSync(task.events_path, 'a', 0o600); try { fs.writeSync(fd, JSON.stringify({ attempt_id: attempt, sequence: ++sequence, at: iso(), kind, ...extra }) + '\n'); fs.fsyncSync(fd); } finally { fs.closeSync(fd); } };
+  const syncInterruption = latest => {
+    if (latest?.attempt_id !== attempt) return;
+    if (latest.owner_stop_requested) task.owner_stop_requested = true;
+    if (latest.interruption?.attempt_id === attempt) task.interruption = latest.interruption;
+    if (task.interruption && !task.finished_at) task.state = task.stop_requested ? 'interrupted' : 'interrupting';
+  };
+  const persist = (kind, extra = {}) => updateTaskRecord(task.id, root, latest => {
+    syncInterruption(latest);
+    if (task.finished_at && task.interruption && !task.owner_stop_requested) task.state = 'interrupted';
+    atomicJson(file, task); atomicJson(`${lockPath(task.worktree, root)}.owner.json`, { task_id: task.id, attempt_id: attempt, supervisor_identity: task.supervisor_identity, process_identity: task.process_identity, state: task.state });
+    const fd = fs.openSync(task.events_path, 'a', 0o600);
+    try { fs.writeSync(fd, JSON.stringify({ attempt_id: attempt, sequence: ++sequence, at: iso(), kind, ...extra, state: task.state }) + '\n'); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
+  });
   await admitTask(task, root, () => persist('queued'), { recovery: !!autoRecovery });
   const out = fs.createWriteStream(task.log_path, { flags: 'a', mode: 0o600 });
   const err = fs.createWriteStream(task.stderr_path, { flags: 'a', mode: 0o600 });
@@ -105,8 +118,13 @@ async function supervise(request) {
   });
   child.stderr.on('data', data => err.write(data));
   let stopping = false; let stopAt = null;
-  function terminate() {
-    if (stopping) return; stopping = true; stopAt = Date.now(); task.stop_requested = true; persist('stop_requested');
+  function terminate(signal) {
+    if (stopping) return; stopping = true; stopAt = Date.now();
+    syncInterruption(readJson(file));
+    task.stop_requested = true;
+    if (signal === 'SIGTERM' && !task.owner_stop_requested) task.interruption = { attempt_id: attempt, boot_id: task.supervisor_identity.boot_id, at: iso(), reason: 'Supervisor SIGTERM' };
+    else task.owner_stop_requested = true;
+    task.state = task.owner_stop_requested ? 'stopped' : 'interrupted'; persist('stop_requested', { signal });
     if (sameProcess(task.process_identity)) {
       // Scope membership additionally contains descendants which changed groups.
       spawnSync('systemctl', ['--user', 'kill', '--kill-whom=all', '--signal=TERM', task.unit], { timeout: 3000 });
@@ -136,8 +154,9 @@ async function supervise(request) {
     for (;;) await sleep(60000);
   }
   await Promise.all([new Promise(resolve => out.end(resolve)), new Promise(resolve => err.end(resolve))]);
-  Object.assign(task, { finished_at: iso(), exit_code: result.code, exit_signal: result.signal, error: result.error || null, completion_report: cache.completion_report || null, usage: cache.usage || null });
-  task.state = task.stop_requested ? 'failed' : result.code === 124 || (result.code === 137 && Date.now() >= Date.parse(task.deadline_at)) ? 'timeout' : result.code === 0 && cache.terminal !== 'failed' ? 'done' : 'failed';
+  Object.assign(task, { finished_at: iso(), exit_recorded_boot_id: bootId(), exit_code: result.code, exit_signal: result.signal, error: result.error || null, completion_report: cache.completion_report || null, usage: cache.usage || null });
+  if (!task.owner_stop_requested && ['SIGTERM', 'SIGKILL', 'SIGINT'].includes(result.signal) && Date.now() < Date.parse(task.deadline_at)) task.interruption ||= { attempt_id: attempt, boot_id: task.supervisor_identity.boot_id, at: task.finished_at, reason: `Worker exited with ${result.signal}` };
+  task.state = task.owner_stop_requested ? 'stopped' : task.interruption ? 'interrupted' : result.code === 124 || (result.code === 137 && Date.now() >= Date.parse(task.deadline_at)) ? 'timeout' : result.code === 0 && cache.terminal !== 'failed' ? 'done' : 'failed';
   persist('exit', { exit_code: result.code, exit_signal: result.signal, state: task.state });
 }
 export async function stopTask(id) {
@@ -148,6 +167,10 @@ export async function stopTask(id) {
     return task;
   }
   if (!task.supervisor_identity.cmdline.includes(self) || !task.supervisor_identity.cmdline.includes('__supervise')) throw new Error('Supervisor cmdline mismatch');
+  updateTaskRecord(id, stateRoot(), latest => {
+    if (latest.attempt_id !== task.attempt_id) throw new Error('Stop attempt changed');
+    latest.owner_stop_requested = true; atomicJson(taskPath(id), latest);
+  });
   process.kill(task.supervisor_pid, 'SIGTERM');
   for (let i = 0; i < 300; i++) { if (!sameProcess(task.supervisor_identity) && !sameProcess(task.process_identity)) return readJson(taskPath(id)); await sleep(100); }
   throw new Error('Stop not confirmed; lease retained');

@@ -39,10 +39,11 @@ export function classify(task, observation, now = Date.now(), stalledMinutes = 5
   // exec()/process-title changes do not end an attempt. Observation never grants
   // signal authority; a matching live process always outranks terminal metadata.
   if (observation.alive) {
+    if (task.state === 'interrupting' || task.state === 'interrupted') return task.state;
     if (now - Date.parse(observation.last_progress_at || task.started_at) >= stalledMinutes * 60000) return 'stalled';
     return 'running';
   }
-  if (task.state === 'needs_owner' || task.state === 'interrupted') return task.state;
+  if (['needs_owner', 'interrupted', 'interrupting', 'stopped'].includes(task.state)) return task.state;
   if (task.exit_code == null) return observation.completion_report ? 'done (unverified exit)' : 'exited (unknown)';
   if (task.state === 'timeout' || [124, 137].includes(task.exit_code) && now >= Date.parse(task.deadline_at)) return 'timeout';
   if (task.finished_at) return task.exit_code === 0 && task.state === 'done' && observation.terminal !== 'failed' ? 'done' : 'failed';
