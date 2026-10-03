@@ -14,7 +14,8 @@
     "verdict",
     "summary",
     "findings",
-    "certifications"
+    "certifications",
+    "inspected_paths"
   ],
   "properties": {
     "schema_version": { "type": "integer", "enum": [1] },
@@ -22,6 +23,7 @@
     "rubric_score": { "type": ["integer", "null"], "enum": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, null] },
     "rubric_failures": { "type": ["array", "null"], "items": { "type": "integer" } },
     "dependencies_needing_read": { "type": ["array", "null"], "items": { "type": "string" } },
+    "inspected_paths": { "type": "array", "items": { "type": "string" } },
     "reviewer": {
       "type": "object",
       "additionalProperties": false,
@@ -40,13 +42,20 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "severity", "claim", "analysis", "evidence", "proposed_fix"],
+        "required": ["id", "severity", "claim", "analysis", "evidence", "proposed_fix", "confidence", "location", "blocking", "disposition", "proof", "raw_finding", "downgrade_reason"],
         "properties": {
           "id": { "type": "string" },
           "severity": { "type": "string", "enum": ["critical", "high", "medium", "low", "info"] },
           "claim": { "type": "string" },
           "analysis": { "type": "string" },
           "evidence": { "type": "array", "items": { "type": "string" } },
+          "confidence": {"type": "string", "enum": ["high", "medium", "low", "unknown"]},
+          "location": {"type": "string"},
+          "blocking": {"type": "boolean"},
+          "disposition": {"type": "string"},
+          "proof": {"type": ["object", "null"], "properties": {"kind": {"type": "string", "enum": ["failing-test", "input-output", "call-path"]}, "command": {"type": ["string", "null"]}, "result": {"type": ["string", "null"]}, "input": {"type": ["string", "null"]}, "actual": {"type": ["string", "null"]}, "expected": {"type": ["string", "null"]}, "path": {"type": ["string", "null"]}, "violation": {"type": ["string", "null"]}}, "additionalProperties": false, "required": ["kind", "command", "result", "input", "actual", "expected", "path", "violation"]},
+          "raw_finding": {"type": ["string", "null"]},
+          "downgrade_reason": {"type": ["string", "null"]},
           "proposed_fix": { "type": "string" }
         }
       }

@@ -20,7 +20,7 @@ expect() { local label="$1"; shift; if "$@"; then ok "$label"; else bad "$label"
 printf '%s\n' '#!/usr/bin/env bash' 'set -euo pipefail' '
 if [[ "${1:-}" == "exec" && "${2:-}" == "--help" ]]; then
   if [[ "${SVC_FAKE_CAPABILITY_MISSING:-0}" == 1 ]]; then printf "%s\n" "--model"; exit 0; fi
-  printf "%s\n" "stdin --config --strict-config --model --sandbox read-only --skip-git-repo-check --ephemeral --ignore-user-config --ignore-rules --output-schema --json --output-last-message --color"
+  printf "%s\n" "stdin --config --strict-config --model --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check --ephemeral --ignore-user-config --ignore-rules --output-schema --json --output-last-message --color"
   exit 0
 fi
 for arg in "$@"; do if [[ "$arg" == "--version" ]]; then printf "%s\n" "codex-cli-exec 0.144.4"; exit 0; fi; done
@@ -171,7 +171,14 @@ export SVC_EXTERNAL_REVIEW_CURSOR_BIN="$TMP/bin/cursor-agent"
 export SVC_EXTERNAL_REVIEW_GROK_BIN="$TMP/bin/grok"
 export SVC_EXTERNAL_REVIEW_CACHE_DIR="$TMP/cache"
 export SVC_EXTERNAL_REVIEW_POLICY_DIR="$TMP/policy"
-export SVC_EXTERNAL_REVIEW_CONTEXT_ROOT="$ROOT"
+# Other tier-1 validators may temporarily edit the source checkout in parallel.
+# Keep the fake reviewer candidate private so real read-only checks remain active.
+mkdir -p "$TMP/review-context"
+cp "$ROOT/AGENTS.md" "$ROOT/CLAUDE.md" "$TMP/review-context/"
+git -C "$TMP/review-context" init -q
+git -C "$TMP/review-context" add .
+git -C "$TMP/review-context" -c user.name=Fixture -c user.email=fixture@example.test -c commit.gpgsign=false commit -qm fixture
+export SVC_EXTERNAL_REVIEW_CONTEXT_ROOT="$TMP/review-context"
 export SVC_FAKE_LOG="$TMP/log"
 export CODEX_HOME="$TMP/codex-home"
 export SVC_EXTERNAL_REVIEW_NOW="2026-07-19T20:59:59Z"
@@ -233,7 +240,7 @@ export SVC_REVIEWER_POLICY="$TMP/policy-home/reviewer-policy-v2.json"
 # WI-558: owner-configured reviews must bind the frozen candidate (receipt
 # semantics: $.candidate_digest must be a 64-hex binding). Compute the context
 # tree identity once and pass it on every launcher invocation.
-LAUNCHER_CANDIDATE="$(node --input-type=module -e 'import {candidateTreeIdentity} from "./scripts/lib/external-review-provenance.mjs"; process.stdout.write(candidateTreeIdentity(process.cwd()).candidate_digest)')"
+LAUNCHER_CANDIDATE="$(node --input-type=module -e 'import {candidateTreeIdentity} from "./scripts/lib/external-review-provenance.mjs"; process.stdout.write(candidateTreeIdentity(process.env.SVC_EXTERNAL_REVIEW_CONTEXT_ROOT).candidate_digest)')"
 
 run_review() {
   local orchestrator="$1" package="$2" out="$3"
@@ -381,12 +388,12 @@ SVC_FAKE_MODE=success run_review claude "package-one" "$TMP/out/codex-1" > "$TMP
 expect "Claude orchestration succeeds through Codex" test -s "$TMP/codex-1.summary"
 expect "Codex package includes hashed worktree rules and the byte-exact review request" bash -c "grep -q '^SVC_REVIEW_CONTEXT_MANIFEST_V1 ' '$SVC_FAKE_LOG/codex.stdin' && grep -q 'target:AGENTS.md' '$SVC_FAKE_LOG/codex.stdin' && grep -q 'framework:skills/review-plan/SKILL.md' '$SVC_FAKE_LOG/codex.stdin' && grep -q 'package-one' '$SVC_FAKE_LOG/codex.stdin'"
 expect "Codex exact gpt-5.6-sol model and high effort pinned" grep -q -- '--model gpt-5.6-sol.*model_reasoning_effort="high"' "$SVC_FAKE_LOG/codex.argv"
-expect "Codex is read-only and isolated" grep -q -- '--sandbox read-only.*--ephemeral.*--ignore-user-config.*--ignore-rules.*--strict-config' "$SVC_FAKE_LOG/codex.argv"
+expect "Codex uses the VM bypass with isolated configuration" grep -q -- '--dangerously-bypass-approvals-and-sandbox.*--ephemeral.*--ignore-user-config.*--ignore-rules.*--strict-config' "$SVC_FAKE_LOG/codex.argv"
 expect "Codex output is schema/stream separated" grep -q -- '--output-schema .*--json.*--output-last-message .*--color never -' "$SVC_FAKE_LOG/codex.argv"
 expect "CODEX_HOME authentication path preserved" grep -qx "$CODEX_HOME" "$SVC_FAKE_LOG/codex.home"
 FIRST_RECEIPT="$(receipt_from_summary "$TMP/codex-1.summary")"
 expect "success receipt records exact tuples, CLI version, hashed worktree context, and cache provenance" node -e 'const fs=require("fs"),r=require(process.argv[1]);if(r.status!=="success"||r.classification!=="success"||r.requested_tuple.model!=="gpt-5.6-sol"||JSON.stringify(r.requested_tuple)!==JSON.stringify(r.invocation_tuple)||JSON.stringify(r.requested_tuple)!==JSON.stringify(r.effective_tuple)||r.cli_version!=="codex-cli-exec 0.144.4"||!r.artifacts.capabilities||!fs.existsSync(r.artifacts.capabilities)||!r.cache.reusable||r.fallback.used||r.attempts.length!==1||!r.package_context?.files?.some(f=>f.path==="target:AGENTS.md")||!r.package_context?.files?.some(f=>f.path==="framework:skills/review-plan/SKILL.md"))process.exit(1)' "$FIRST_RECEIPT"
-expect "provider diagnostics never contaminate event stream" bash -c "! grep -q 'codex diagnostic stream' '$TMP/out/codex-1/attempt-1-events.jsonl' && grep -q 'codex diagnostic stream' '$TMP/out/codex-1/attempt-1-stderr.log'"
+expect "provider diagnostics never contaminate event stream" node -e 'const fs=require("fs"),a=require(process.argv[1]).attempts[0].artifacts;if(fs.readFileSync(a.events,"utf8").includes("codex diagnostic stream")||!fs.readFileSync(a.stderr,"utf8").includes("codex diagnostic stream"))process.exit(1)' "$TMP/out/codex-1/receipt.json"
 
 SVC_FAKE_MODE=success run_review claude "package-one" "$TMP/out/codex-2" > "$TMP/codex-2.summary"
 expect "exact primary receipt is reusable" test "$(grep -c '^codex$' "$SVC_FAKE_LOG/calls")" -eq 1
@@ -406,7 +413,7 @@ expect "Codex orchestration succeeds through Fable" grep -qx 'claude-fable-5' "$
 expect "Claude package includes hashed worktree rules and the byte-exact review request" bash -c "grep -q '^SVC_REVIEW_CONTEXT_MANIFEST_V1 ' '$SVC_FAKE_LOG/claude.stdin' && grep -q 'target:AGENTS.md' '$SVC_FAKE_LOG/claude.stdin' && grep -q 'framework:skills/review-plan/SKILL.md' '$SVC_FAKE_LOG/claude.stdin' && grep -q 'claude-package' '$SVC_FAKE_LOG/claude.stdin'"
 expect "Fable exact high tuple pinned" grep -q -- '--model claude-fable-5.*--effort high' "$SVC_FAKE_LOG/claude.argv"
 expect "Fable primary receives the full fifty-dollar review ceiling" grep -q -- '--max-budget-usd 50' "$SVC_FAKE_LOG/claude.argv"
-expect "Claude safe auth-compatible isolation pins four agentic turns" grep -q -- '--safe-mode.*--tools .*--strict-mcp-config.*--permission-mode plan.*--no-session-persistence.*--max-turns 4' "$SVC_FAKE_LOG/claude.argv"
+expect "Claude safe auth-compatible isolation allows bounded read-only exploration" grep -q -- '--safe-mode.*--tools Read,Grep,Glob,Bash.*--strict-mcp-config.*--permission-mode plan.*--no-session-persistence.*--max-turns 100' "$SVC_FAKE_LOG/claude.argv"
 expect "Claude disables slash commands/browser and bounds budget" grep -q -- '--disable-slash-commands.*--no-chrome.*--json-schema .*--output-format json.*--max-budget-usd' "$SVC_FAKE_LOG/claude.argv"
 expect "Claude never uses bare or hidden fallback" bash -c "! grep -q -- '--bare\\|--fallback-model' '$SVC_FAKE_LOG/claude.argv'"
 expect "Fable enables safeguard routing and actually scrubs injected inherited model controls" bash -c "grep -q -- '--settings {\"switchModelsOnFlag\":true}' '$SVC_FAKE_LOG/claude.argv' && grep -qx '<unset>' '$SVC_FAKE_LOG/claude.refusal-env' && grep -qx '<unset>|<unset>|<unset>' '$SVC_FAKE_LOG/claude.model-env' && grep -qx 'control-survives' '$SVC_FAKE_LOG/claude.passthrough-env'"
@@ -497,7 +504,7 @@ node "$LAUNCHER" --clear-profile-selection --reason "explicit invocation fixture
 
 REVIEWER_CONFIG="$TMP/reviewer-policy-v2.json"
 node -e 'const fs=require("fs");const ext=(id,host,family,model,required=false,authority="independent")=>({id,kind:"external",required,authority,tuple:{host,family,model,effort:"high"}});const self={id:"self",kind:"inline-self",required:true,authority:"advisory",tuple:{host:"current",family:"openai",model:"current",effort:"high"}};const p={release_authority:false,stations:[self,ext("agy","agy","google","Gemini 3.6 Flash (High)"),ext("opus","claude","anthropic","claude-opus-4-6"),ext("cursor-auto","cursor","multi","cursor-auto",false,"advisory"),ext("grok-build","grok","xai","grok-4.6")]};fs.writeFileSync(process.argv[1],JSON.stringify({schema_version:2,authority:"repository-owner",default_mode:"fast",transport_options:{grok:{max_turns:100}},modes:{fast:{orchestrators:{codex:{plan:p,exec:p}}}}},null,2),{mode:0o600})' "$REVIEWER_CONFIG"
-CANDIDATE_DIGEST="$(node --input-type=module -e 'import {candidateTreeIdentity} from "./scripts/lib/external-review-provenance.mjs"; process.stdout.write(candidateTreeIdentity(process.cwd()).candidate_digest)')"
+CANDIDATE_DIGEST="$(node --input-type=module -e 'import {candidateTreeIdentity} from "./scripts/lib/external-review-provenance.mjs"; process.stdout.write(candidateTreeIdentity(process.env.SVC_EXTERNAL_REVIEW_CONTEXT_ROOT).candidate_digest)')"
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
 printf 'agy-independent candidate_digest=%s' "$CANDIDATE_DIGEST" | SVC_EXTERNAL_REVIEW_NOW=2026-07-19T21:00:00Z node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$CANDIDATE_DIGEST" --reviewer-config "$REVIEWER_CONFIG" --reviewer-mode fast --reviewer-phase plan --reviewer-station agy --artifacts-dir "$TMP/out/agy-independent" > "$TMP/agy-independent.summary"
 AGY_RECEIPT="$(receipt_from_summary "$TMP/agy-independent.summary")"
@@ -510,7 +517,7 @@ expect "owner-configured Cursor Auto extracts schema-valid JSON after prose and 
 
 printf 'grok independent candidate_digest=%s' "$CANDIDATE_DIGEST" | node "$LAUNCHER" --orchestrator codex --review-kind plan --candidate-digest "$CANDIDATE_DIGEST" --reviewer-config "$REVIEWER_CONFIG" --reviewer-mode fast --reviewer-phase plan --reviewer-station grok-build --artifacts-dir "$TMP/out/grok-independent" > "$TMP/grok-independent.summary"
 GROK_RECEIPT="$(receipt_from_summary "$TMP/grok-independent.summary")"
-expect "owner-configured Grok Build runs with the configured bounded turn ceiling and final-response instruction" node -e 'const fs=require("fs"),r=require(process.argv[1]),argv=fs.readFileSync(process.argv[2],"utf8"),prompt=fs.readFileSync(process.argv[3],"utf8");if(r.requested_tuple.host!=="grok"||r.requested_tuple.family!=="xai"||r.requested_tuple.model!=="grok-4.6"||r.model_attestation.level!=="server_observed"||!r.model_attestation.observed_models.includes("grok-4.6-build")||r.protocol.configured_turn_ceiling!==100||!argv.includes("--permission-mode plan")||!argv.includes("--max-turns 100")||!argv.includes("--json-schema")||!prompt.includes("do not return a loading, status, or intermediate response")||!prompt.includes("Set review_kind exactly to plan")||r.route.kind!=="owner_config_primary")process.exit(1)' "$GROK_RECEIPT" "$SVC_FAKE_LOG/grok.argv" "$SVC_FAKE_LOG/grok.prompt"
+expect "owner-configured Grok Build runs with the configured bounded turn ceiling and final-response instruction" node -e 'const fs=require("fs"),r=require(process.argv[1]),argv=fs.readFileSync(process.argv[2],"utf8"),prompt=fs.readFileSync(process.argv[3],"utf8");if(r.requested_tuple.host!=="grok"||r.requested_tuple.family!=="xai"||r.requested_tuple.model!=="grok-4.6"||r.model_attestation.level!=="server_observed"||!r.model_attestation.observed_models.includes("grok-4.6-build")||r.protocol.configured_turn_ceiling!==100||!argv.includes("--permission-mode plan")||!argv.includes("--max-turns 100")||!argv.includes("--json-schema")||!prompt.includes("callers outside the diff")||prompt.includes("complete context and diff are already embedded")||!prompt.includes("Set review_kind exactly to plan")||r.route.kind!=="owner_config_primary")process.exit(1)' "$GROK_RECEIPT" "$SVC_FAKE_LOG/grok.argv" "$SVC_FAKE_LOG/grok.prompt"
 
 rm -f "$SVC_FAKE_LOG/grok.calls"
 set +e
@@ -1334,7 +1341,7 @@ set -e
 expect "adapter fails closed when the branch WI does not appear in the plan (stale/reused branch)" bash -c "test '$ADAPTER_WIMISMATCH_RC' -eq 4 && test ! -e '$SVC_FAKE_LOG/calls' && grep -q 'does not appear in the plan' '$TMP/adapter-wimismatch.err'"
 
 rm -rf "$SVC_FAKE_LOG" "$TMP/cache"; mkdir -p "$SVC_FAKE_LOG" "$TMP/cache"
-export SVC_EXTERNAL_REVIEW_CONTEXT_ROOT="$ROOT"
+export SVC_EXTERNAL_REVIEW_CONTEXT_ROOT="$TMP/review-context"
 
 if [[ "$RUNTIME_ONLY" != true ]]; then
   expect "active review sources have no obsolete codex profile/output-format example" bash -c "! rg -n 'codex -p .*--output-format|codex -p \"\\$\\(cat review-package' '$ROOT/review-cross-model' '$ROOT/review-plan' '$ROOT/review-exec'"

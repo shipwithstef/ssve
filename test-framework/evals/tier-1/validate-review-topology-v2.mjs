@@ -38,7 +38,7 @@ const externalReceipt = (mode, station, status, classification) => {
   const success = status === 'success';
   const findings = success ? {
     schema_version: 1, review_kind: 'exec', rubric_score: 10, rubric_failures: null, dependencies_needing_read: null,
-    reviewer: station.tuple, verdict: 'pass', summary: 'fixture pass', findings: [], certifications: [],
+    reviewer: station.tuple, verdict: 'pass', summary: 'fixture pass', inspected_paths: ["fixture:candidate"], findings: [], certifications: [],
   } : null;
   const findingsBytes = findings ? Buffer.from(`${JSON.stringify(findings)}\n`) : null;
   if (findingsBytes) fs.writeFileSync(findingsFile, findingsBytes, { mode: 0o600 });
@@ -114,7 +114,7 @@ assert.throws(() => aggregateReviewTopology(forgedFindings), /findings digest mi
 const launderedFailure = input('production');
 const launderedReceiptPath = launderedFailure.stations[2].receipt_path;
 const launderedReceipt = JSON.parse(fs.readFileSync(launderedReceiptPath));
-const failedFindings = { schema_version: 1, review_kind: 'exec', rubric_score: 0, rubric_failures: null, dependencies_needing_read: null, reviewer: launderedFailure.stations[2].reviewer, verdict: 'fail', summary: 'critical', findings: [{ id: 'C1', severity: 'critical', claim: 'blocked', analysis: 'blocked', evidence: ['fixture'], proposed_fix: 'fix' }], certifications: [] };
+const failedFindings = { schema_version: 1, review_kind: 'exec', rubric_score: 0, rubric_failures: null, dependencies_needing_read: null, reviewer: launderedFailure.stations[2].reviewer, verdict: 'fail', summary: 'critical', inspected_paths: ['fixture:candidate'], findings: [{ id: 'C1', severity: 'critical', confidence:'high', location:'fixture:1', blocking:true, disposition:'blocking', proof:null, raw_finding:null, downgrade_reason:null, claim: 'blocked', analysis: 'blocked', evidence: ['fixture'], proposed_fix: 'fix' }], certifications: [] };
 const failedBytes = Buffer.from(`${JSON.stringify(failedFindings)}\n`); fs.writeFileSync(launderedReceipt.artifacts.findings, failedBytes, { mode: 0o600 });
 launderedReceipt.findings_sha256 = digest(failedBytes); const launderedBytes = Buffer.from(`${JSON.stringify(launderedReceipt)}\n`); fs.writeFileSync(launderedReceiptPath, launderedBytes, { mode: 0o600 }); launderedFailure.stations[2].receipt_digest = digest(launderedBytes);
 assert.throws(() => aggregateReviewTopology(launderedFailure), /report counts do not match canonical findings|report status does not match canonical findings verdict/);
