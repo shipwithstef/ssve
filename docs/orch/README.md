@@ -19,6 +19,126 @@ node scripts/orch/serve.mjs --bind 127.0.0.1 --port 8787
 node --test scripts/orch/*.test.mjs
 ```
 
+## HO1-B sessions and Monitor wakes (v1)
+
+`sessions.mjs launch` is a persistent, zero-model supervisor. It reserves the
+role/session kernel leases, checks current parent/goal authority and a positive
+Claude turn cap, persists a nonce before spawning, then launches exactly:
+`claude --bg --effort low --name orch-<role>-<goal> --session-id <full-id> <brief>`.
+The cwd is the registry's canonical planning Git root and the prompt references
+an absolute immutable contract and the LOW parent/child brief. Only parent
+callers may launch roles; children and workers cannot create orchestrators.
+The supervisor retains its leases until stopped, writing file heartbeats every
+15 seconds. Heartbeats are observations, never Claude prompts or model progress.
+
+Live transport is disabled unless the owner explicitly supplies
+`--live-verified true` after transport smoke evidence. That assertion is a trusted
+same-account protocol input, not proof supplied by this card. A fake subprocess,
+schema or help output does not verify Pro authentication, native restart
+ownership, effective LOW after resume, attach/detach or inbox delivery. Paid/API
+fallback remains disabled. No real Claude processes were used for HO1-B tests.
+
+Bind the parent first using the sole authority writer:
+`node scripts/orch/goals.mjs bind-parent --id <planning-goal> --parent-session <full-UUID> --expected-revision <N>`.
+It creates `contracts/parent-v<generation>.json` and records the parent planning
+goal. Bind a child through HO1-A's quiescent `set-state --child-session <full-UUID>
+--child-principal <stable-principal>` transaction, which creates its next contract.
+Use a new UUID for a new transcript; never copy a live/stopped transcript ID into
+another role. The `--session-id` combination with native `--bg` is still a live
+gate; a refusal is held rather than retried with a different transport.
+
+All session commands use the same exact binding options:
+
+```text
+--role parent|child --goal <id> --generation <N> --principal <bound-principal>
+--session-id <full-id> --worktree <canonical-planning-root>
+--contract <absolute-versioned-contract>
+```
+
+`node scripts/orch/sessions.mjs verify-live --dry-run <binding-options>` reads
+authority only and prints shell-quoted cwd, exact background launch and bare
+`claude --resume <full-id>` commands for the owner to execute once. This standalone
+smoke asks Claude to report actual identity/cwd/model/effort and idle; it grants
+no dispatch and creates no supervisor receipt. Reconcile/stop that smoke before
+allocating a fresh ID for supervised operation. `verify-live` without `--dry-run`
+refuses. Native Remote Control/inbox checks remain separate owner evidence.
+
+For a supervised launch, keep `sessions.mjs launch <binding-options>
+--live-verified true` running in a persistent user process/terminal. The initial
+Claude turn must inspect its actual native session ID, model/effort and process
+identity (not the PID of its helper shell) and write a private observation JSON:
+
+```json
+{"role":"child","goal_id":"example","generation":2,"session_id":"full-id","launch_nonce":"reserved-nonce","contract":"/absolute/contract.json","worktree":"/absolute/planning-root","effort":"low","model":"actual-effective-model","pid":1234,"boot_id":"actual-boot-id","start_ticks":"actual-proc-start-ticks"}
+```
+
+The supervisor passes `ORCH_LAUNCH_NONCE`, `ORCH_ACK_FILE`, `ORCH_CONTRACT` and
+binding fields in the native launch environment. The session runs
+`node <absolute-repo>/scripts/orch/sessions.mjs acknowledge --file "$ORCH_ACK_FILE"
+--observation <absolute-observation.json>` once. The observation must match exact
+nonce/ID/generation/contract/cwd and a live native executable/PID/start-ticks/boot.
+Acknowledgement is an explicit file handshake, not an assumed Claude stdout
+format or installed plugin. Failure/refused trust/lost ack retains `needs_owner`;
+timeout never clears intent or allows a replacement launch. Dispatch by a bound
+child additionally requires this live observation and known count usage.
+If the acknowledgement arrives after supervisor loss, `sessions.mjs reconcile
+<binding-options> --nonce <held-nonce> --live-verified true` reattaches observation
+under the same lease after proving the prior supervisor dead and validating the
+original live acknowledgement. It never executes another Claude launch. Unknown
+native ownership or mismatching acknowledgement remains held.
+
+After readiness, add `--nonce <recorded-launch-nonce>` to binding options.
+`sessions.mjs attach --dry-run <binding-options>` previews cwd and bare resume;
+`attach <binding-options>` executes it with inherited interactive stdio and a
+single attach lease. It refuses stale IDs/generations/nonces, dead identities and
+stopped transcripts. No pipes, `-p` or configuration flags accompany live attach.
+`sessions.mjs observe <binding-options> --turns <cumulative-session-count>` writes
+a private count checkpoint request; only the supervisor updates its session
+record. Replays count once; regressing/malformed counts hold admission. Usage
+stays unknown until actual observation, including at launch.
+
+Children wake by using native **Monitor** to run
+`node <absolute-repo>/scripts/orch/events.mjs watch <binding-options> --minutes 5`.
+Watch the state directory so collector atomic renames of `status.json` are seen.
+The bridge emits short JSON only for that goal's actionable authority/task changes,
+debounces a burst, and persists one queued event ID. Parent watches project-wide
+authority/conflicts, not routine worker progress. Heartbeat timestamps, elapsed
+time, raw stream progress and another child's task changes produce no wake.
+Reconcile files/BOARD first, then run `events.mjs ack <binding-options> --event <id>`.
+Busy changes remain in status and emit one follow-up after ack. Reconnect/reload
+or overflow rescans once; duplicate IDs do not repeat effects. A restart replays
+an unhandled ID, so goal/card/attempt side effects must remain idempotent.
+
+Monitor waits are 5 minutes by default and at most 30 minutes. Expiry stops the
+bridge with a durable attention blocker, never renews it or invokes Claude.
+Monitor is not restored on resume: recreate it once for pending/actionable work.
+No plugin consumes events while Monitor is absent; v1 does not claim unattended
+long-idle wakes. Heartbeat changes alone must not prompt a session to renew it.
+Watcher errors/unreadable status retain the last cursor and attention; unreadable
+registry or lost native identity holds dispatch admission. Restore the watcher
+after repair, with one rescan rather than timer retries. An exclusive Monitor
+lease rejects simultaneous watchers for one role. Event pending
+state is in `events/<role-id>.json` and mirrored in supervisor `wake_cursor`;
+collector/web/local presentation of that blocker belongs to HO1-C.
+
+`events.mjs receiveMessage` is the bounded reconciliation/dedup helper for native
+inbox hints, not a new message transport. Its <=1 KiB/10-line envelope checks exact
+direction, sender binding, goal generation and committed registry revision. The
+caller must prove the durable BOARD/decision reference before marking queued ->
+handled; reconcile idempotently after a crash. Stale/foreign/duplicate hints are
+ignored. Refused inboxes and expired <=12-hour one-shot idle notifications persist
+attention, with no automatic retry or notification renewal. No hint grants consent.
+
+Stopping the supervisor leaves `needs_owner`, preserves IDs and never kills or
+restarts an ambiguous native transcript. Before handoff, reconcile native
+background-supervisor ownership and prove the old identities dead; then run
+`sessions.mjs release <binding-options> --native-stopped true`. This owner assertion
+is required even with stale/dead PIDs. Child rebinding requires a released session
+and drained, quiescent goal; parent rebinding also requires released children and
+invalidates their bindings for explicit regrant. A new generation archives old
+event receipts. No lock file is unlinked, no stopped transcript is auto-resumed,
+and SR1 remains the sole worker recovery loop. HO1-C adds recovery owner commands.
+
 `--task-id` aliases `--id`. Hard timeout is **seconds**, estimate is **minutes**;
 resource caps accept positive bytes or K/M/G/T. A launch acknowledges registration
 and supervisor startup; inspect collected status for subsequent CLI startup errors.
