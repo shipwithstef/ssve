@@ -10,15 +10,17 @@ function scratchTarget(value, cwd, env) {
   try {
     const target = canonicalTarget(value, cwd).canonical;
     const roots = ['/tmp', env.SVC_SESSION_SCRATCHPAD, path.join(env.HOME || '', '.local/state/orch')].filter(Boolean);
-    const allowed = roots.some(root => {
+    const allowed = roots.map(root => {
       const canonical = canonicalTarget(root, cwd).canonical;
-      return within(target, canonical);
-    });
-    if (!allowed) return false;
-    // A repository hosted under /tmp is still governed, as is a symlink into it.
+      return within(target, canonical) ? canonical : null;
+    }).filter(Boolean).sort((a, b) => b.length - a.length)[0];
+    if (!allowed || target.split(path.sep).includes('.git')) return false;
+    // Explicit scratch roots override an enclosing HOME/dotfiles repository.
+    // Repositories inside that root (and symlinks into them) remain governed.
     let cursor = path.dirname(target);
     while (cursor !== path.dirname(cursor)) {
-      if (fs.existsSync(path.join(cursor, '.git')) && cursor !== '/tmp') return false;
+      if (fs.existsSync(path.join(cursor, '.git'))) return false;
+      if (cursor === allowed) break;
       cursor = path.dirname(cursor);
     }
     return true;

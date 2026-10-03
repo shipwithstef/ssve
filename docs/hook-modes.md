@@ -60,8 +60,19 @@ Routine skill-loader rewrites discarded by advisory mode are quiet: the original
 
 Proven observations bypass mutation hooks before contract IO, self-heal, receipts or denial counters. This includes compound literal reads, native Codex `exec_command`, and the bounded literal `functions.exec` wrapper grammar. Unknown JavaScript, shell substitutions, executable flags and mixed read/write commands remain governed. Read-command output may redirect to `/tmp`, `SVC_SESSION_SCRATCHPAD`, or `~/.local/state/orch`; canonical targets inside repositories or symlink escapes remain governed.
 
+An explicit scratch root remains allowed when HOME itself is a Git/dotfiles repository. Stop the repository walk at the most specific allowed root; repositories nested inside it and Git metadata targets remain governed. Post-tool observations also exit before child hooks and receipt IO; only pre-tool observations can propose an input normalization.
+
 Code-mode proof consumes the entire envelope, including whitespace in JSON argument objects, parenthesized result output and bounded batch renderers. It never evaluates JavaScript or trusts calls extracted from an otherwise unknown program. Proven reads exit before branch recovery, so a missing `origin/main` cannot emit a recovery advisory for them. Regression fixtures include the failed installed payload and native log-derived syntax; replay the durable launcher as well as the dispatcher when verifying activation.
 
 Tool advisories apply to mutations in repositories with `.svc`. Emit a finding class once per stable session, repository and check; private runtime markers atomically suppress concurrent duplicates in stderr and host context. Explicit enforcement decisions remain visible on every denial. Advisory proposals never increment the deny-storm counter or trigger its circuit-breaker message. Sessions without stable identity cannot share a suppression record.
 
 Freshness checks select the current session's contract row rather than another session's last row. No matching contract is silent; an active matching stale contract still fails validation and mutation authority remains independently enforced. Rules are delivered once per stable session across worktrees, including overflow pointers; read-only shell commands do not trigger command-keyword rules. These changes take effect after the owner refreshes installed hooks from the reviewed source.
+
+Before activation, freeze private real inputs and run the offline installer replay:
+
+```bash
+node scripts/sample-hook-replays.mjs --prepared <50-real-envelopes.json> --out <private-frozen-samples.json>
+node scripts/replay-installed-hooks.mjs --samples <private-frozen-samples.json> --out <private-evidence-dir>
+```
+
+The sampler adds 200 recent calls across Claude/Codex/Cursor and preserves unproven programs as a separate governed category. Replay uses the official materialize/wire/finalize entrypoints in a temporary Git-backed HOME, verifies receipts and bundle bytes, exercises all read fixtures and every frozen sample through configured commands in both hook modes, and retains exact command/payload/stdout/stderr evidence. It executes no submitted tool command and never activates the live installation. Read expectations are frozen; failures cannot be relabeled or omitted to pass. Require `replay-summary.json` to report PASS, no failures, 50 prepared and 200 additional inputs, and stable source/sample hashes before switching hooks.

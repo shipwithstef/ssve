@@ -239,9 +239,10 @@ async function main() {
   let original;
   try { original = JSON.parse(input.toString("utf8")); } catch {}
   const pretool = /^(?:PreToolUse|BeforeTool|preToolUse|beforeShellExecution)$/i.test(spec.event);
+  const toolEvent = pretool || /^(?:PostToolUse|AfterTool|postToolUse|afterShellExecution)$/i.test(spec.event);
   const hasTool = original?.tool_name || original?.toolName || original?.command;
   let evaluatePreToolObservation = null, resolveOperationScope = null;
-  if (pretool && hasTool) {
+  if (toolEvent && hasTool) {
     const runtimeSource = await boundaryRuntimeSource();
     if (runtimeSource) {
       ({ evaluatePreToolObservation } = await import(pathToFileURL(path.join(runtimeSource, "lib/pretool-decision-engine.mjs"))));
@@ -251,7 +252,7 @@ async function main() {
   const observation = evaluatePreToolObservation?.(original);
   if (observation) {
     // Observation never runs children, self-heal, contract IO or denial counters.
-    if (mode.mode === "enforce" && observation.execution_input) {
+    if (pretool && mode.mode === "enforce" && observation.execution_input) {
       const output = spec.host === "cursor" ? { permission: "allow", updated_input: observation.execution_input }
         : { hookSpecificOutput: { hookEventName: spec.event, permissionDecision: "allow", updatedInput: observation.execution_input } };
       process.stdout.write(JSON.stringify(output) + "\n");

@@ -398,7 +398,7 @@ function isSafeGit(argv) {
   const subcommand = tokens[index];
   const args = tokens.slice(index + 1);
   if (subcommand === "ls-remote" && args.some(token => token.startsWith("-u") || token.startsWith("--upload-pack") || token.startsWith("--exec") || token.includes("::"))) return false;
-  const alwaysRead = new Set(["status", "log", "diff", "show", "rev-parse", "ls-files", "ls-tree", "ls-remote"]);
+  const alwaysRead = new Set(["status", "log", "diff", "show", "rev-parse", "ls-files", "ls-tree", "ls-remote", "check-ignore"]);
   const branchRead = subcommand === "branch" && (args.length === 0 || args.some(token =>
     ["--show-current", "--list", "-a", "-r", "--all", "--remotes", "--contains", "--merged", "--no-contains", "--no-merged", "--points-at"].includes(token) || /^--(?:list|contains|merged|no-contains|no-merged|points-at)=/.test(token))) &&
     observationOptions(["branch", ...args], new Set(["--show-current", "--list", "-a", "-r", "--all", "--remotes", "-v", "-vv", "--verbose", "--no-color", "--ignore-case", "--omit-empty", "--column", "--no-column"]), new Set(["--format", "--sort", "--contains", "--merged", "--no-contains", "--no-merged", "--points-at", "--color"]), () => true);
@@ -649,6 +649,9 @@ export function isReadOnlyTool(ctx, env = process.env) {
     if (!readArgv.length) return false;
     const decoded = readArgv.join(" ");
     if (TRIVIAL_SAFE_SEGMENTS.has(decoded)) return true;
+    // Literal echo arguments only produce stdout. The lexer and redirection
+    // proof above still reject substitutions and governed output targets.
+    if (readArgv[0] === "echo") return true;
     if (readArgv[0] === "cd") return readArgv.length === 2 && !readArgv[1].startsWith("-");
     return isSafeGit(readArgv) || isSafeRg(decoded, env) || isSafeFind(decoded)
       || isSafeSort(readArgv) || isSafeUniq(readArgv) || isSafeFile(readArgv)

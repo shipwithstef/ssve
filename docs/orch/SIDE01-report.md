@@ -1,33 +1,35 @@
-# SIDE-01 — quiet, session-scoped hooks
+# SIDE-01 — offline activation replay
 
-Candidate: `feature/side01-quiet-hooks`; follow-up baseline `e5606f4`; Codex/Sol 6.1 high.
-Owner activation from `4a6ab7a` failed and was rolled back; previous synthetic coverage was insufficient.
+Candidate: `feature/side01-quiet-hooks`; baseline `7cf11c7`; Codex worker.
+Activation attempt 3 was rolled back. This report covers offline verification only.
 
-Root cause and correction:
-- Native spaced JSON keys after commas were rejected; compact synthetic JSON passed.
-- The exact recorded payload yielded zero parsed calls before this fix, one afterward.
-- Consume key whitespace first; preserve literal command proof for the entire envelope.
-- Cover native parenthesized/bound output, stringify/slice, optional fields and bounded batch renderers.
-- Keep dynamic inputs, mutating callbacks, shadowed globals, executable flags and substitutions governed.
-- Reads bypass branch recovery, including the missing `origin/main` check; genuine mutations still advise/deny.
+Fix:
+- HOME is a dotfiles Git repo; its enclosing `.git` incorrectly vetoed orch output.
+- Stop scratch ancestry checks at the explicit allowed root; retain nested-repo, metadata and symlink denials.
+- The exact Claude `cat input.txt > /home/dianast/.local/state/orch/output` envelope is silent.
+- Post-tool reads bypass receipt IO and cannot rewrite a completed command.
+- Literal `echo` separators and `git check-ignore` in real Cursor status calls are proven reads.
+- Unknown programs, substitutions, executable flags and mixed mutations remain governed.
 
-Regression fixtures: `test-framework/evals/fixtures/side01/`.
-- Preserve the exact failed installed command, payload, stdout and stderr.
-- Inventory all 25 distinct recorded managed Claude/Codex/Cursor hook command shapes.
-- Sample 120 recent Codex logs (2026-09-30 through 2026-10-03); retain 16 native renderer/transport forms.
-- Native sample redacts only literal command/workdir values; syntax/whitespace and source record hashes remain.
-- The sample contained `exec` with nested `tools.exec_command`; no top-level shell/exec_command occurred.
-- Replay boundary → durable launcher → dispatcher in disposable HOME; the earlier test skipped the launcher.
+Accepted offline gate:
+- Official materialize → wire → finalize into a Git-backed temporary HOME for Claude/Codex/Cursor.
+- Verify receipts, durable bundle bytes and actual configured installed commands; execute no submitted tool command.
+- 1,056 fixture envelopes: 1,000 generated + 32 native forms + 22 recorded reads + two exact activation failures.
+- Replay all 50 prepared inputs plus 200 additional recent calls: Codex 80, Claude 60, Cursor 60.
+- Frozen real corpus: 96 reads, 20 typed writes, 134 unproven programs; omit no selected input.
+- Cursor transcripts omit hook identity/workspace metadata; reconstruct that envelope and retain original tool inputs.
+- Both modes: 1,152 read envelopes / 9,550 installed calls, zero advisories, denials or repository/runtime writes.
+- 250 governed controls (20 writes + 134 unproven + 96 paired mutations) / 1,388 calls advise or deny as required.
+- Total: 10,938/10,938 installed calls passed; zero failures; 576 source hashes and frozen sample hash stayed stable.
 
 Validation:
-- Targeted goal-delivery-hooks: 7/7 passed (previously 5/5).
-- 1,000 engine probes, 108 original boundary replays, exact failure replay in advisory/enforce modes passed.
-- 32 native read replays: zero advisories or repository/runtime writes; 64 paired mutation controls passed.
-- All 13 shell-applicable recorded host hook command/event shapes are quiet; manifest lint passed.
-- Final full Tier 1: 403/403 passed, zero failures/timeouts; `TIER1_JOBS=4 VALIDATOR_TIMEOUT_SEC=300`.
-- Delta: two additional goal tests; aggregate validator count remains 403. Final sweep follows parser hardening.
-- Full command: `bash test-framework/evals/run-all-evals.sh`; tiers 1.5–3 are not requested.
+- Goal-delivery-hooks: 8/8 passed; dedupe, circuit breaker, no-contract, stale-contract and rule-once controls retained.
+- Full Tier 1: 403/403 passed, zero failures/timeouts; manifest lint passed.
+- Initial sweep: 400/403; corrected receipt fixture/state IO. Final timing: 69 ms against the unchanged 100 ms budget.
+- Delta: one additional goal test (7 → 8); aggregate validator count remains 403.
+- Gate: `node scripts/replay-installed-hooks.mjs --samples <frozen-json> --out <private-evidence-dir>`.
+- Sweep: `EVALS=0 TIER1_JOBS=4 VALIDATOR_TIMEOUT_SEC=300 SVC_TIER1_MODE=full bash test-framework/evals/run-all-evals.sh`.
 
-Evidence: `test-framework/results/side01-activation-fix-20261003/` (ignored).
-Fixtures also preserve the owner's failed live evidence; temporary-home results do not claim live activation.
-No global install/activation and no push. Owner-supplied untracked side plan is untouched.
+Accepted evidence: `test-framework/results/side01-offline-20261003/replay-release/`; `full-tier1-release.log` beside it (ignored).
+Raw private samples remain ignored. Live boundary/manifest/three host configs match pre-run hashes.
+No global install/activation or push. Owner-supplied untracked side plan is untouched.

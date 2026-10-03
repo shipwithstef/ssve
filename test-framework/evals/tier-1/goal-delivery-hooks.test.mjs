@@ -16,6 +16,9 @@ const foreign = path.join(home, 'foreign');
 const installed = path.join(home, 'installed');
 // Materialize the candidate into a disposable home; no live wiring/activation.
 fs.mkdirSync(installed);
+// Real activation HOME is a dotfiles Git worktree. Scratch output remains an
+// explicit exception to that enclosing repository, with nested repos denied.
+assert.equal(spawnSync('git', ['init', '-q', home]).status, 0);
 fs.cpSync(path.join(source, 'hooks'), path.join(installed, 'hooks'), { recursive: true });
 fs.cpSync(path.join(source, 'scripts'), path.join(installed, 'scripts'), { recursive: true });
 const { evaluatePreToolObservation: installedObservation } = await import(path.join(installed, 'hooks/lib/pretool-decision-engine.mjs'));
@@ -143,14 +146,27 @@ test('every recorded applicable Codex/Cursor/Claude hook command stays quiet on 
   }
 });
 
+test('post-tool reads bypass receipt IO and never propose a completed input rewrite', () => {
+  const shape = installedShapes.find(s => s.host === 'codex' && s.event === 'PostToolUse');
+  const before = snapshot(env.SVC_CODEX_RUNTIME_DIR);
+  const result = recordedBoundary(shape, payload('git status --short'), { SVC_HOOK_MODE: 'enforce' });
+  assert.equal(result.status, 0); assert.equal(result.stderr, '');
+  assert.deepEqual(JSON.parse(result.stdout), {});
+  assert.deepEqual(snapshot(env.SVC_CODEX_RUNTIME_DIR), before);
+});
+
 test('negative controls: mixed mutation, shell substitution, executable flags and scratch symlink escapes stay governed', () => {
   assert.ok(evaluatePreToolObservation(payload('cat input.txt > ~/.local/state/orch/output'), env));
+  assert.ok(evaluatePreToolObservation(payload("git status --short && echo '---' && git diff && echo '---LOG---' && git log -5 --format='%s'"), env));
+  assert.ok(evaluatePreToolObservation(payload("git status --short && echo '---' && git log -5 --oneline && echo '---' && git check-ignore -v input.txt || true"), env));
   assert.ok(evaluatePreToolObservation({ ...payload(''), tool_name: 'functions.exec', tool_input:
     'const rs=await Promise.allSettled([tools.exec_command({cmd:"cat input.txt"}),tools.exec_command({cmd:"ls"})]);rs.forEach((r,i)=>text({i,...r}));' }, env));
   const escape = path.join(home, 'scratch', 'escape');
   fs.symlinkSync(repo, escape);
+  const nested = path.join(home, 'scratch', 'nested-repo');
+  fs.mkdirSync(nested); assert.equal(spawnSync('git', ['init', '-q', nested]).status, 0);
   for (const cmd of ['cat input.txt; touch changed', 'cat $(touch changed)', 'rg --pre touch input.txt', "sed -n '1w changed' input.txt",
-    'git log --output=changed', 'cat input.txt > changed', "cat input.txt > '~/.local/state/orch/output'", 'cd /tmp; cat input.txt > changed', `cat input.txt > ${escape}/changed`, `cat input.txt > ${repo}/changed`]) {
+    'git log --output=changed', 'echo literal > changed', 'echo $(touch changed)', 'echo literal; touch changed', 'cat input.txt > changed', "cat input.txt > '~/.local/state/orch/output'", 'cd /tmp; cat input.txt > changed', `cat input.txt > ${escape}/changed`, `cat input.txt > ${repo}/changed`, `cat input.txt > ${nested}/changed`, `cat input.txt > ${home}/scratch/.git/config`]) {
     assert.equal(evaluatePreToolObservation(payload(cmd), env), null, cmd);
     const result = run('hooks/codex/svc-codex-pretool-dispatcher.mjs', payload(cmd, 'negative-' + cmd), { SVC_HOOK_MODE: 'enforce' });
     assert.equal(result.status, 0, result.error?.message || result.stderr);
