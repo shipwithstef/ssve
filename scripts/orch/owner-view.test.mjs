@@ -24,6 +24,12 @@ test('web fixture: priority goal groups, empty goal, counts/unknowns, recovery c
   });
   vm.runInContext(html.match(/<script>([\s\S]*)<\/script>/)[1], context);
   await vm.runInContext('refresh()', context);
+  const steered = structuredClone(fixture);
+  for (const goal of steered.goals) for (const lane of goal.lanes) for (const task of lane.tasks) {
+    task.steering = { mode: 'queue' }; task.queued_steers = [{ id: 'one', text: '<script>owner literal</script>' }];
+  }
+  vm.runInContext(`renderStatus(${JSON.stringify(steered)})`, context);
+  assert.match(elements.tree.text, /queued_steers/); assert.match(elements.tree.text, /<script>owner literal<\/script>/);
   assert.equal(elements.tree.children.length, 2);
   assert.match(elements.tree.children[0].firstChild.text, /#1 Empty goal.*paused.*LOW/);
   assert.match(elements.tree.children[1].firstChild.text, /#2 novisenti.*needs_owner.*native_ownership_unverified.*child-exact/);

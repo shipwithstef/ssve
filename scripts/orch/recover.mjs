@@ -50,7 +50,7 @@ export function reconcileTask(file, root, currentBoot, shutdownWindows = []) {
   if (task.adopted || task.read_only) return hold('Adopted worker has no dispatcher ownership');
   if (!Number.isInteger(count) || count < 0 || !Number.isInteger(limit) || limit < 0) return hold('Invalid auto-resume budget');
   if (count >= limit) return hold('Auto-resume limit reached');
-  if (!task.session_id || typeof task.resume_text !== 'string' || !task.resume_text.trim() || !['codex', 'cursor', 'agy'].includes(task.executor?.cli)) return hold('No exact resumable session/continuation');
+  if (!task.session_id || typeof task.resume_text !== 'string' || !task.resume_text.trim() || !['codex', 'cursor', 'agy', 'claude'].includes(task.executor?.cli)) return hold('No exact resumable session/continuation');
   try { checkTaskGrant(task, root, true); } catch (e) { return hold(`Goal recovery denied: ${e.message}`); }
   task.auto_resume_count = count + 1;
   task.recovery = { boot_id: currentBoot, from_boot_id: oldBoot, at: iso(), attempt_id: task.attempt_id, status: 'reserved' };
