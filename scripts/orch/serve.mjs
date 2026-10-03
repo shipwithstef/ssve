@@ -5,13 +5,14 @@ import http from 'node:http';
 import { stateRoot, options, isMain } from './common.mjs';
 export const html = `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Orchestrator OS</title>
 <style>body{font:16px system-ui;margin:2rem auto;padding:0 1rem;max-width:1100px;background:#111827;color:#e5e7eb}summary{cursor:pointer;padding:.65rem}details{border-left:2px solid #374151;margin:.5rem;padding-left:.8rem}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:14px monospace}.running{color:#60a5fa}.done{color:#a3e635}.stalled{color:#fbbf24}.failed,.timeout{color:#fb7185}small{color:#9ca3af}#error{color:#fbbf24}</style>
-<h1>Orchestrator OS</h1><p><small id="stamp">Loading…</small></p><p id="error" role="status"></p><main id="tree"></main>
+<h1>Orchestrator OS</h1><p><small id="stamp">Loading…</small></p><p id="error" role="status"></p><pre id="recovery"></pre><main id="tree"></main>
 <script>
 const expanded=new Set();const tree=document.getElementById('tree');
 function text(tag,value,parent){const el=document.createElement(tag);el.textContent=value;parent.append(el);return el}
 function box(key,label,parent){const d=document.createElement('details');d.open=expanded.has(key);d.addEventListener('toggle',()=>d.open?expanded.add(key):expanded.delete(key));text('summary',label,d);parent.append(d);return d}
 function minutes(ms){return ms==null?'unknown':Math.round(ms/60000)+'m'}
 async function refresh(){try{const r=await fetch('/status.json',{cache:'no-store'});if(!r.ok)throw Error('Status unavailable ('+r.status+')');const s=await r.json();tree.replaceChildren();const age=Date.now()-Date.parse(s.collector_heartbeat_at);document.getElementById('stamp').textContent='Updated '+s.generated_at+' · revision '+s.revision+' · refresh 60s · read-only';document.getElementById('error').textContent=age>90000?'Collector stale: '+Math.round(age/1000)+' seconds since heartbeat':s.warnings.map(w=>w.description).join('; ');
+document.getElementById('recovery').textContent=s.recovery?'Boot recovery: '+s.recovery.boot_id+'\\nOwner attach: '+(s.recovery.parent?.resume_command||s.recovery.parent?.reason||'Configure parent session')+'\\n'+s.recovery.tasks.map(t=>t.id+': '+t.action+(t.reason?' · '+t.reason:'')).join('\\n'):'';
 for(const g of s.goals){const gd=box('g:'+g.id,g.title,tree);for(const l of g.lanes){const ld=box('l:'+g.id+':'+l.id,l.title+' · '+l.tasks.length+' tasks',gd);for(const t of l.tasks){const key='t:'+g.id+':'+t.id;const d=box(key,t.id+' · '+t.title+' · '+t.state+' · '+minutes(t.elapsed_ms)+' / est '+minutes(t.estimate_ms.high),ld);d.firstChild.className=t.state;d.firstChild.title=t.description+' · '+(t.acceptance[0]||'Acceptance unrecorded');text('p',t.description,d);text('p','Executor: '+[t.executor.cli,t.executor.model,t.executor.effort].filter(Boolean).join(' / ')+' · '+t.verification_state,d);text('pre',JSON.stringify({session_id:t.session_id,deadline:t.deadline_at,health:t.health,last_progress:t.last_progress_at,events:t.events_last_3,blockers:t.blockers,artifacts:t.artifacts,git:{branch:t.branch,ahead:t.ahead,behind:t.behind,status:t.status,diffstat:t.diffstat},completion_report:t.completion_report,cost:t.cost_so_far},null,2),d)}}}
 }catch(e){document.getElementById('error').textContent=e.message+'; showing last snapshot'}}refresh();setInterval(refresh,60000);
 </script></html>`;
@@ -28,5 +29,5 @@ export function createServer(root = stateRoot()) {
   });
 }
 if (isMain(import.meta.url)) {
-  try { const o = options(process.argv.slice(2)); const port = Number(o.port || 8787); if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid port'); const bind = o.bind || '127.0.0.1'; const server = createServer(); server.on('error', e => { console.error(e.message); process.exitCode = 1; }); server.listen(port, bind, () => console.log('Read-only Orchestrator OS at http://' + bind + ':' + port)); } catch (e) { console.error(e.message); process.exitCode = 1; }
+  try { const o = options(process.argv.slice(2)); const port = Number(o.port || process.env.ORCH_SERVE_PORT || 8787); if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid port'); const bind = o.bind || process.env.ORCH_SERVE_BIND || '127.0.0.1'; const server = createServer(); server.on('error', e => { console.error(e.message); process.exitCode = 1; }); server.listen(port, bind, () => console.log('Read-only Orchestrator OS at http://' + bind + ':' + port)); } catch (e) { console.error(e.message); process.exitCode = 1; }
 }

@@ -3,7 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { stateRoot, init, atomicJson, readJson, taskPath, options, number, canonicalWorktree, procIdentity, git, digest, ingestLines, iso, sleep, isMain, redact } from './common.mjs';
+import { stateRoot, init, atomicJson, readJson, taskPath, options, number, canonicalWorktree, procIdentity, git, digest, ingestLines, iso, isMain, redact, withLocks, bootId } from './common.mjs';
+import { readRegistry, goalUsage, reportedUsage } from './goals.mjs';
 const self = fileURLToPath(import.meta.url);
 const CHUNK = 1024 * 1024;
 
@@ -39,6 +40,7 @@ export function classify(task, observation, now = Date.now(), stalledMinutes = 5
     if (now - Date.parse(observation.last_progress_at || task.started_at) >= stalledMinutes * 60000) return 'stalled';
     return 'running';
   }
+  if (task.state === 'needs_owner' || task.state === 'interrupted') return task.state;
   if (task.exit_code == null) return observation.completion_report ? 'done (unverified exit)' : 'exited (unknown)';
   if (task.state === 'timeout' || [124, 137].includes(task.exit_code) && now >= Date.parse(task.deadline_at)) return 'timeout';
   if (task.finished_at) return task.exit_code === 0 && task.state === 'done' && observation.terminal !== 'failed' ? 'done' : 'failed';
@@ -92,6 +94,7 @@ export function adopt(o, root = stateRoot()) {
 export function collect(root = stateRoot(), stalledMinutes = 5) {
   init(root);
   const prior = readJson(path.join(root, 'status.json'), { revision: 0, tasks: [], deltas: [] });
+  const registry = readRegistry(root); // Fail closed; preserve last valid status on corrupt authority.
   const now = Date.now(); const warnings = []; const tasks = [];
   for (const name of fs.readdirSync(path.join(root, 'tasks')).filter(x => x.endsWith('.json')).sort()) {
     try {
@@ -110,24 +113,47 @@ export function collect(root = stateRoot(), stalledMinutes = 5) {
       if (state === 'stalled') blockers.push({ code: 'stale_progress', description: `No log growth for ${stalledMinutes} minutes`, source: 'log_mtime', at: iso() });
       if (state === 'timeout') blockers.push({ code: 'hard_timeout', description: 'Hard deadline reached', source: 'dispatcher', at: task.deadline_at });
       if (task.stop_requested) blockers.push({ code: 'stopped', description: 'Owner stopped this attempt', source: 'dispatcher', at: task.finished_at });
+      if (task.state === 'needs_owner' || task.state === 'interrupted') blockers.push({ code: 'recovery_hold', description: task.recovery?.reason || 'Interrupted attempt; resume reservation requires reconciliation if no worker appears', source: 'recovery', at: task.recovery?.at });
       if (cache.terminal === 'failed') blockers.push({ code: 'worker_error', description: cache.events_last_3?.at(-1) || 'Worker reported error', source: 'worker_stream', at: cache.last_progress_at });
       const g = gitSnapshot(task.worktree);
       if (g.status === null) blockers.push({ code: 'git_unavailable', description: 'Git inspection failed or exceeded bounds', source: task.worktree, at: iso() });
-      const publicTask = { ...task };
-      delete publicTask.resume_text;
+      const publicKeys = ['schema_version', 'id', 'title', 'goal_id', 'lane', 'description', 'depends_on', 'acceptance', 'executor', 'worktree', 'session_id', 'adopted', 'read_only', 'state', 'attempt_id', 'started_at', 'finished_at', 'deadline_at', 'expected_minutes', 'hard_timeout_ms', 'memory_cap', 'exit_code', 'exit_signal', 'stop_requested', 'unit', 'pid', 'process_group', 'supervisor_pid', 'process_identity', 'supervisor_identity', 'log_path', 'stderr_path', 'events_path', 'last_heartbeat_at', 'goal_generation', 'registry_revision'];
+      const publicTask = Object.fromEntries(publicKeys.filter(key => key in task).map(key => [key, task[key]]));
+      publicTask.attempt_history = (task.attempt_history || []).map(a => ({ attempt_id: a.attempt_id, started_at: a.started_at, finished_at: a.finished_at, state: a.state, log_path: a.log_path, exit_code: a.exit_code, usage: reportedUsage(a.usage) }));
+      for (const key of ['title', 'description']) publicTask[key] = redact(publicTask[key], 16000);
       for (const key of ['process_identity', 'supervisor_identity']) if (publicTask[key]) { publicTask[key] = { ...publicTask[key] }; delete publicTask[key].cmdline; }
       tasks.push({ ...publicTask, ...g, state, design_state: alive ? state : state.startsWith('done') ? 'awaiting_verification' : task.exit_code == null ? 'unknown' : task.stop_requested ? 'stopped' : state === 'timeout' ? 'timed_out' : state, session_id: task.session_id || cache.session_id || null, elapsed_ms: Math.max(0, (!alive && task.finished_at ? Date.parse(task.finished_at) : now) - Date.parse(task.started_at)), elapsed_basis: 'wall_clock_approximate', estimate_ms: { low: task.expected_minutes === null ? null : task.expected_minutes * 60000, high: task.expected_minutes === null ? null : task.expected_minutes * 60000, basis: task.expected_minutes === null ? 'unknown' : 'owner_estimate' }, last_progress_at: cache.last_progress_at || null, last_event_summary: cache.events_last_3?.at(-1) || null, events_last_3: cache.events_last_3 || [], blockers, artifacts: report ? [{ path: report.path, kind: 'completion_report', digest: report.digest, digest_basis: report.truncated ? 'first_16KiB' : 'entire_file' }] : [], completion_report_ref: report?.path || null, completion_report: report ? report.text : cache.completion_report || task.completion_report || null, completion_report_provenance: report ? 'worker_file_reported' : 'worker_stream_reported', verification_state: 'unverified', health: state === 'stalled' ? 'stale_progress' : alive ? 'live_process' : 'not_running', usage: cache.usage || task.usage || { input_tokens: null, output_tokens: null, cached_tokens: null, source: 'unknown' }, cost_so_far: { known_amount: null, currency: null, unknown_components: ['subscription attribution', 'provider billing'], source: 'unknown', as_of: iso() }, stream: { offset: cache.offset || 0, backlog_bytes: cache.backlog_bytes || 0, malformed_lines: cache.malformed_lines || 0, rotated: cache.rotated || false } });
     } catch (e) { warnings.push({ code: 'task_read_error', path: name, description: e.message }); }
   }
-  const goals = [];
+  const goals = (registry?.goals || []).map(goal => {
+    const child = { session_id: goal.child.session_id, generation: goal.generation, effort: goal.child.effort, state: goal.child.session_id ? 'unobserved' : 'needs_owner' };
+    const usage = goalUsage(goal.id, root, tasks);
+    return { id: goal.id, title: redact(goal.title), priority: goal.priority, desired_state: goal.desired_state,
+      observed_state: goal.desired_state === 'active' ? 'needs_owner' : goal.desired_state, child, budget: goal.budget, usage,
+      remaining: { claude_turns: goal.budget.claude_turn_cap == null || usage.claude.turns == null ? null : Math.max(0, goal.budget.claude_turn_cap - usage.claude.turns),
+        worker_runs: Object.fromEntries(['codex', 'cursor', 'agy'].map(cli => [cli, goal.budget.worker_caps[cli]?.runs == null ? null : Math.max(0, goal.budget.worker_caps[cli].runs - usage.workers[cli].attempts)])) },
+      blockers: [], lanes: [] };
+  });
   for (const task of tasks) {
-    let goal = goals.find(x => x.id === task.goal_id); if (!goal) { goal = { id: task.goal_id, title: task.goal_id, lanes: [] }; goals.push(goal); }
+    let goal = goals.find(x => x.id === task.goal_id);
+    if (!goal) {
+      goal = { id: task.goal_id, title: task.goal_id, priority: null, desired_state: null, observed_state: 'orphan', child: null, budget: null, usage: goalUsage(task.goal_id, root, tasks),
+        blockers: [{ code: 'goal_ownership_missing', description: 'Task goal is absent from goals.json' }], lanes: [] }; goals.push(goal);
+    }
     let lane = goal.lanes.find(x => x.id === task.lane); if (!lane) { lane = { id: task.lane, title: task.lane, tasks: [] }; goal.lanes.push(lane); } lane.tasks.push(task);
   }
+  goals.sort((a, b) => (a.priority ?? Number.MAX_SAFE_INTEGER) - (b.priority ?? Number.MAX_SAFE_INTEGER) || a.id.localeCompare(b.id));
+  // Elapsed wall time is display-only and must not cause a goal change/wake every tick.
+  const signature = g => JSON.stringify({ id: g.id, title: g.title, priority: g.priority, desired_state: g.desired_state, observed_state: g.observed_state, child: g.child, budget: g.budget, blockers: g.blockers,
+    claude: g.usage.claude, attempts: Object.fromEntries(Object.entries(g.usage.workers).map(([cli, w]) => [cli, w.attempts])) });
+  const changed_goal_ids = goals.filter(g => { const old = prior.goals?.find(x => x.id === g.id); return !old || !old.usage || signature(old) !== signature(g); }).map(g => g.id);
+  for (const old of prior.goals || []) if (!goals.some(g => g.id === old.id)) changed_goal_ids.push(old.id);
   const changed_task_ids = tasks.filter(t => { const p = prior.tasks.find(x => x.id === t.id); return !p || p.state !== t.state || p.attempt_id !== t.attempt_id || p.last_progress_at !== t.last_progress_at || p.head_sha !== t.head_sha || p.status !== t.status; }).map(t => t.id);
   const revision = prior.revision + 1;
-  const delta = { revision, at: iso(), task_ids: changed_task_ids };
-  const status = { schema_version: 1, goal_id: goals.length === 1 ? goals[0].id : 'all', run_id: prior.run_id || `collector-${now}`, revision, generated_at: iso(), collector_heartbeat_at: iso(), plan: { path: null, revision: null, hash: null, specs_path: null, specs_hash: null }, goals, tasks, changed_task_ids, changes_since_revision: prior.revision, deltas: [...(prior.deltas || []), delta].slice(-200), warnings };
+  const delta = { revision, at: iso(), task_ids: changed_task_ids, goal_ids: changed_goal_ids };
+  const recovery = readJson(path.join(root, `recovery-${bootId()}.json`));
+  const checkpoint = readJson(path.join(root, 'checkpoint.json'));
+  const status = { schema_version: 1, goal_id: goals.length === 1 ? goals[0].id : 'all', run_id: prior.run_id || `collector-${now}`, revision, registry_revision: registry?.revision ?? null, changed_goal_ids, generated_at: iso(), collector_heartbeat_at: iso(), recovery, checkpoint, plan: { path: null, revision: null, hash: null, specs_path: null, specs_hash: null }, goals, tasks, changed_task_ids, changes_since_revision: prior.revision, deltas: [...(prior.deltas || []), delta].slice(-200), warnings };
   atomicJson(path.join(root, 'status.json'), status);
   return status;
 }
@@ -141,6 +167,25 @@ export async function main(args = process.argv.slice(2)) {
   if (args[0] === '__locked') { const o = JSON.parse(args[1]); if (o.adopt) adopt(o); const status = collect(stateRoot(), number(o.stalled_minutes, 'stalled minutes', 5)); console.log(JSON.stringify({ revision: status.revision, tasks: status.tasks.length, warnings: status.warnings })); return; }
   const o = options(args);
   if (o.watch && o.adopt) throw new Error('Adopt once before starting watch');
-  do { await lockedInvocation(o); if (!o.watch) break; await sleep(number(o.watch, 'watch seconds') * 1000); } while (true);
+  if (!o.watch) { await lockedInvocation(o); return; }
+  const root = stateRoot(); init(root);
+  const interval = number(o.watch, 'watch seconds') * 1000;
+  let wake, stopping = false, pendingFlush = false;
+  const flush = () => { pendingFlush = true; wake?.(); };
+  const stop = () => { stopping = true; wake?.(); };
+  process.on('SIGUSR1', flush); process.on('SIGTERM', stop); process.on('SIGINT', stop);
+  try {
+    await withLocks([path.join(root, 'locks', 'collector.lock')], async () => {
+      atomicJson(path.join(root, 'collector.json'), { identity: procIdentity(process.pid), started_at: iso() });
+      do {
+        pendingFlush = false;
+        const status = collect(root, number(o.stalled_minutes, 'stalled minutes', 5));
+        console.log(JSON.stringify({ revision: status.revision, tasks: status.tasks.length, warnings: status.warnings }));
+        if (stopping) break;
+        await new Promise(resolve => { const timer = setTimeout(done, pendingFlush ? 0 : interval); function done() { clearTimeout(timer); wake = null; resolve(); } wake = done; });
+      } while (!stopping);
+      collect(root, number(o.stalled_minutes, 'stalled minutes', 5));
+    });
+  } finally { process.off('SIGUSR1', flush); process.off('SIGTERM', stop); process.off('SIGINT', stop); }
 }
 if (isMain(import.meta.url)) main().catch(e => { console.error(e.message); process.exitCode = 1; });

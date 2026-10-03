@@ -80,8 +80,8 @@ browser, remote requests or LLM calls. Set `--bind` to the owner's Tailscale add
 for exposure; this script does not configure Tailscale or authentication.
 
 Not implemented in CP1: PLAN parser/dependency admission, acceptance receipts,
-semantic Q&A and direct pane controls, billing attribution, Spot recovery/fencing, or automatic
-restart/reconciliation of a dead supervisor. These are separate cards; unknown
+semantic Q&A and direct pane controls, billing attribution, or cross-VM fencing.
+SR1 below adds same-VM boot recovery. Other fields remain explicit; unknown
 fields are explicit. agy/Cursor live paid launch/resume remain unverified; their
 stream parsing is proven against the recorded sanitized fixtures. The real systemd
 integration test substitutes a local fake Codex executable, with no inference.
@@ -121,3 +121,134 @@ web/mobile receive no pane drawing; use the CP1 read-only web view remotely.
 Tests exercise host UI contracts, not actual terminal paint. No Q&A, watcher,
 instant terminal-event refresh, direct stop/steer or acceptance receipt support in
 this card. The mod must be loaded from this checkout so sibling scripts resolve.
+
+## SR1 Spot boot recovery
+
+```bash
+# If Linger=no, the owner must run this once; installer only prints it:
+sudo loginctl enable-linger "$USER"
+mkdir -p ~/.config/orch
+printf 'ORCH_SERVE_BIND=100.126.92.3\nORCH_SERVE_PORT=8790\n' > ~/.config/orch/serve.env
+printf '%s\n' '<exact-parent-Claude-session-id>' > ~/.config/orch/parent-session
+bash scripts/orch/install-units.sh
+node scripts/orch/recover.mjs
+systemctl --user status orch-{recover,collect,serve,preempt}.service
+```
+
+The installer renders four user units using this checkout, Node executable and
+current CLI PATH. It enables recovery for boot and starts collect/serve/preempt;
+stop pre-existing manually launched collect/serve processes first. Linger starts
+the user manager without login. Keep this checkout on the persistent OS disk.
+The user manager's network target does not ensure Tailscale is ready: serve retries
+every five seconds until its configured address is available.
+
+Recovery requires a different recorded boot ID, then acquires the dispatcher's
+task/worktree/session locks before marking the previous attempt interrupted and
+reserving one continuation. Dispatch rechecks the reservation under its lifetime
+locks and resumes the exact session with its recorded `resume_text`. A reservation
+is durably consumed before launch: repeated invocations in the same boot cannot
+launch it twice, including acknowledgement loss. Each task permits at most two
+automatic attempts over its lifetime (`max_auto_resume` may lower that cap).
+Paid/live cards (`paid: true`, also `card.paid: true`) become `needs_owner`; supply
+`--paid true` when registering such a card. Adopted workers, absent boot/session
+identity, invalid state and failed/ambiguous launches require owner reconciliation.
+Terminal and same-boot records are never automatically relaunched. Busy locks
+preserve the task and are reported as held. Manual resume remains an owner action.
+
+`recovery-<boot-id>.json` records decisions and the exact `claude --resume <id>`
+command from `parent-session`; Claude is never auto-started. The collector exposes
+this summary and recovery holds in `status.json`, and the web view displays them.
+The preemption watcher polls IMDS every five seconds, matches the local VM's
+Preempt/Terminate events and fsyncs deduplicated checkpoint markers before sending
+SIGUSR1 to the verified collector. The collector holds its singleton lock throughout
+watch mode and publishes immediately on the signal. `preempt-health.json` records
+poll failures; no event approval is sent. [Azure Scheduled Events](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/scheduled-events)
+notice delivery is best effort; this is a bounded checkpoint opportunity.
+
+SR1 restores guest processes **after Azure starts the VM**. It cannot restart a
+deallocated guest or fence a replacement VM; external capacity recovery, off-VM
+backup and cross-VM leases remain separate work. Tests use fake sessions/dispatch
+and a local fake worker in real user scopes; actual eviction and paid CLI resume
+are not exercised.
+
+## HO1-A registry authority and count budgets
+
+`goals.mjs` is the sole `goals.json` writer. Desired policy is separate from the
+collector's observed `status.json`. Every mutation requires `--expected-revision`
+(the absent registry starts at 0), uses the stable `locks/goals.lock` kernel lock,
+and fsyncs a 0600 temporary file, renames atomically, then fsyncs its directory.
+Concurrent/stale transactions fail; reread before deciding whether to retry.
+Never edit the registry or remove lock files manually. The parent principal is
+`ORCH_PRINCIPAL` (initially `owner`); `ORCH_ROLE=child` or `ORCH_DEPTH>0` refuses
+registry writes. These are trusted local protocol assertions, not a sandbox for
+hostile processes with the same Unix account. Native session fencing and actual
+worker filesystem containment remain separate live release gates.
+
+```bash
+node scripts/orch/goals.mjs list
+node scripts/orch/goals.mjs create --id example --title Example --objective Ship \
+  --plan /existing/linked/planning-worktree/PLAN.md --priority 10 \
+  --claude-turn-cap 12 --codex-runs 4 --cursor-runs 2 --agy-runs 1 \
+  --expected-revision 0
+node scripts/orch/goals.mjs grant-worktree --id example --lane build \
+  --worktree /existing/worker-worktree --paths '["src","tests"]' --expected-revision 1
+node scripts/orch/goals.mjs set-priority --id example --priority 1 --expected-revision 2
+node scripts/orch/goals.mjs set-state --id example --state active --expected-revision 3
+```
+
+Create resolves the existing plan's Git root into `planning_worktree`; no new
+planning checkout is created. Worker slots require explicit canonical Git roots;
+`worktree_roots` is an allocation restriction, not a wildcard grant. Planning and
+worker slots cannot overlap across goals, include nested roots, or reuse aliases.
+Path grants refuse reserved/escaping paths and observed escaping symlinks. Existing
+whole-worktree task/session locks remain the final writer exclusion; path grants
+do not replace those locks or provide filesystem containment for bypass-mode CLIs.
+
+Dispatch start/resume requires an active registered goal and an exact worktree/lane
+grant. A short registry lock covers policy validation, count cap validation and the
+durable queued task reservation before spawn. Each attempted launch consumes a run,
+including interrupted/failed launches and resumes. Closing/paused/blocked goals deny
+new admission while admitted workers retain their original hard limits.
+Stop remains available without goal admission. Dispatcher never writes goals.json.
+
+`set-state` may also configure `--claude-turn-cap`, `--codex-runs`, `--cursor-runs`,
+`--agy-runs`; null caps are unknown and zero explicitly denies new runs. Binding a
+child uses `--child-session <exact-id> --child-principal <stable-id>` while the goal
+is registered/paused/blocked and workers are drained. This increments generation
+and emits immutable `contracts/<goal>-v<generation>.json` before the registry commit.
+A child dispatch adds `--goal-generation N --child-session ID --child-principal ID
+--child-depth 1`; stale/foreign/deeper bindings fail, and missing Claude turn
+allowance/observations hold admission. Child contracts allow only the existing
+plan/board, LOW, depth 1 and no orchestration delegation. Launch/attach are HO1-B.
+
+V1 accounting is **counts only**. The collector projects Claude turn counts from
+`sessions/*.events.jsonl`: `{type:"turn.completed",goal_id,session_id,turn_id,usage}`.
+Stable session+turn IDs deduplicate replay/resume. Supervisor `sessions/*.json`
+`usage.turns` is a cumulative count checkpoint; repeated checkpoints use the maximum
+per session, reconciled with that session's event count rather than added to it.
+Event streams must retain the full turn history or a complete count checkpoint;
+there is no token journal. No observations means unknown, not zero.
+Per CLI, goal usage reports distinct task+attempt counts, approximate elapsed wall
+clock time, and each attempt's latest known usage snapshot. Reported provider token
+fields remain snapshots; they are never summed as fresh charges. Paid admission
+is disabled. Cumulative token journals and quota-share estimates are future work;
+the earlier design's token/quota requirements do not apply to counts-v1. A dated
+owner subscription percentage is not a live quota or an admission allowance.
+
+The collector includes empty/paused/closed registry goals sorted by priority,
+`registry_revision`, `changed_goal_ids`, child/budget/usage/blockers, and the existing
+`tasks[]` / `goals[].lanes[].tasks[]` shape. Orphan tasks remain visible with a goal
+ownership blocker. Corrupt authority preserves the last valid snapshot and denies
+admission. Public projection omits raw contracts, principals, prompts and argv;
+acceptance never follows from worker exit. Goal headers/live observations are HO1-C.
+
+The initial Novisenti and Orchestrator OS goals reuse the owner-specified plans.
+They start registered with unknown caps and no worker grants; registration alone
+does not allocate spending or launch sessions. `seed-goals.mjs` calls only the
+canonical writer and refuses to overwrite mismatching existing seeds. It may be
+rerun to reconcile a partial seed; it never writes goals.json directly.
+
+```bash
+node scripts/orch/seed-goals.mjs
+node --test scripts/orch/*.test.mjs
+```
