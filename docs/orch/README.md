@@ -219,7 +219,8 @@ claude plugin test mods/orchestrator-pane
 
 The mod reads `~/.local/state/orch/status.json` through `$.fs`, initially and every
 60 seconds on `$.clock`; `ORCH_STATE_DIR` follows the collector override. Run the
-collector independently with `--watch 60`. `/orch` opens goals → lanes → tasks;
+collector independently with `--watch 60`. `/orch` opens plain-language goal cards;
+Details expands the existing goals → lanes → tasks tree;
 keyed buttons expand descriptions, executor, elapsed/estimate, dependencies,
 acceptance, last three events and blockers. AbovePrompt is one line (yields to
 surveys); the status counter flags snapshots older than 90 seconds. A failed read
@@ -441,8 +442,8 @@ Missing/stale grants and corrupt accounting hold `needs_owner`; no paid replay.
 Recovery receipts add `orchestrators[]` with exact binding commands and
 `auto_start:false`. The collector projects current-generation commands into
 `status.orchestrators[]`; a mismatched legacy parent-session holds parent commands.
-Both web and `/orch` show priority/state, child health/session/LOW, count budgets,
-unknowns, needs_owner and pending Monitor blockers, including empty goals.
+The Details view in both web and `/orch` shows priority/state, child
+health/session/LOW, count budgets, unknowns and Monitor blockers, including empty goals.
 Active worker reservations are already included in attempt counts; Claude turn
 reservation remains unknown in counts-v1. Heartbeat timestamps do not create
 routine goal-change wakes. Clipboard actions refuse stale/revised bindings.
@@ -510,3 +511,38 @@ validate agy/Claude input envelopes; fake CLIs verify transport and ordering.
 Validation: `node --test scripts/orch/*.test.mjs`,
 `claude plugin validate mods/orchestrator-pane`, and
 `claude plugin test mods/orchestrator-pane`.
+
+## CP4 human overview
+
+Web and `/orch` default to one card per goal: title, headline, milestone strip
+(✓ done / ● now / ○ next), a bold Needs you box for explicit owner actions,
+up to three Working now entries and three Next milestones. Task codes are removed
+from work labels; worker CLI names become Codex, Claude, Cursor or Antigravity.
+The footer counts distinct tasks with a completion timestamp today (UTC), including
+a completed earlier attempt, rather than all historical tasks or all attempts.
+Unknown completion dates do not count. Details expands the existing technical tree,
+updates, informational notes, budgets and recovery commands; controls are unchanged.
+The pane wraps within its supplied width, including 80 columns. Refresh preserves
+expansion. The prompt band shows the first owner action or a headline.
+
+The parent writes all three summary fields atomically at key moments (approval,
+milestone completion, deployment, new work). Rendering uses no model calls and
+never turns a technical blocker or informational note into an owner action.
+Legacy goals without a summary say “Waiting for a progress update.”
+
+```bash
+node scripts/orch/goals.mjs set-summary --id orchestrator-os \
+  --headline "Running. Redesigning the view so it's readable." \
+  --milestones '[{"name":"Whole-window view (redesign)","state":"now"},{"name":"Measure","state":"next"}]' \
+  --owner-actions '[]' --expected-revision <current-revision>
+node scripts/orch/seed-goals.mjs
+```
+
+`set-summary` requires headline, milestones and owner-actions together; an empty
+owner-actions array clears the box. Each owner action has `{text,since}` with an
+ISO timestamp. It uses the existing parent-principal/depth/revision guard and lock;
+no grants, budgets, desired state or session bindings change. The collector copies
+validated, redacted summary fields to status.json. Seed reruns fill only missing
+summaries, preserving later orchestrator updates. The initial Novisenti seed states
+that AI is off, the issuer job needs approval, the Opus gate is ~23:00 UTC, and the
+paid test is ≤$10; these are display facts and do not authorize paid admission.

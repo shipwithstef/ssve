@@ -49,8 +49,20 @@
       ],
       "allOf": [
         {
-          "if": { "properties": { "session_id": { "type": "string" } } },
-          "then": { "required": ["goal_id", "planning_worktree", "contract_ref"] }
+          "if": {
+            "properties": {
+              "session_id": {
+                "type": "string"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "goal_id",
+              "planning_worktree",
+              "contract_ref"
+            ]
+          }
         }
       ]
     },
@@ -251,6 +263,59 @@
               "string",
               "null"
             ]
+          },
+          "headline": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1200,
+            "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+          },
+          "milestones": {
+            "type": "array",
+            "maxItems": 32,
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "state": {
+                  "enum": [
+                    "done",
+                    "now",
+                    "next"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "state"
+              ]
+            }
+          },
+          "owner_actions": {
+            "type": "array",
+            "maxItems": 16,
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1200
+                },
+                "since": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "text",
+                "since"
+              ]
+            }
           }
         },
         "required": [
@@ -269,7 +334,21 @@
           "budget",
           "acceptance_refs",
           "last_decision_id"
-        ]
+        ],
+        "dependentRequired": {
+          "headline": [
+            "milestones",
+            "owner_actions"
+          ],
+          "milestones": [
+            "headline",
+            "owner_actions"
+          ],
+          "owner_actions": [
+            "headline",
+            "milestones"
+          ]
+        }
       }
     }
   },

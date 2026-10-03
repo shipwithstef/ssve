@@ -3,6 +3,8 @@ export type OrchTask = {
   state: string; attempt_id: string; adopted: boolean; session_id: string | null;
   executor: { cli: string; model: string | null; effort: string | null };
   elapsed_ms: number; estimate_ms: { low: number | null; high: number | null };
+  finished_at?: string | null;
+  attempt_history?: { state: string; finished_at?: string | null }[];
   steering?: { mode: string; reason?: string };
   queued_steers?: { id: string; at: string; text: string }[];
   info?: { code: string; description: string }[];
@@ -27,6 +29,9 @@ export type OrchRecoverySession = {
 };
 export type OrchGoal = {
   id: string; title: string; priority?: number | null; desired_state?: string | null; observed_state?: string;
+  headline?: string;
+  milestones?: { name: string; state: 'done' | 'now' | 'next' }[];
+  owner_actions?: { text: string; since: string }[];
   child?: { session_id: string | null; state: string; health?: string; effort: string; generation: number; attention_pending?: boolean } | null;
   budget?: { mode: string; claude_turn_cap: number | null; worker_caps: Record<string, { runs: number | null }> } | null;
   usage?: { claude: { turns: number | null }; workers: Record<string, { attempts: number }> };

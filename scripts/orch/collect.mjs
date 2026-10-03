@@ -272,7 +272,9 @@ export function collect(root = stateRoot(), stalledMinutes = 5, config = configR
       if (cap == null) blockers.push({ code: 'budget_unknown', description: `${cli} run allowance unknown; parent must configure cap` });
       else if (cap > 0 && usage.workers[cli].attempts >= cap) blockers.push({ code: 'budget_exhausted', description: `${cli} run cap exhausted; parent allocation required` });
     }
-    return { id: goal.id, title: redact(goal.title), priority: goal.priority, desired_state: goal.desired_state,
+    return { id: goal.id, title: redact(goal.title), headline: goal.headline && redact(goal.headline, 1200),
+      milestones: (goal.milestones || []).map(m => ({ name: redact(m.name, 160), state: m.state })),
+      owner_actions: (goal.owner_actions || []).map(a => ({ text: redact(a.text, 1200), since: a.since })), priority: goal.priority, desired_state: goal.desired_state,
       observed_state: goal.desired_state === 'active' ? parentOrchestrated || child.state === 'idle' ? 'active' : 'needs_owner' : goal.desired_state, child, budget: goal.budget, usage,
       reserved: { claude_turns: null, worker_runs: Object.fromEntries(['codex', 'cursor', 'agy'].map(cli => [cli, tasks.filter(t => t.goal_id === goal.id && t.executor.cli === cli && t.reservation_active).length])) },
       remaining: { claude_turns: goal.budget.claude_turn_cap == null || usage.claude.turns == null ? null : Math.max(0, goal.budget.claude_turn_cap - usage.claude.turns),
@@ -289,7 +291,7 @@ export function collect(root = stateRoot(), stalledMinutes = 5, config = configR
   }
   goals.sort((a, b) => (a.priority ?? Number.MAX_SAFE_INTEGER) - (b.priority ?? Number.MAX_SAFE_INTEGER) || a.id.localeCompare(b.id));
   // Elapsed wall time is display-only and must not cause a goal change/wake every tick.
-  const signature = g => JSON.stringify({ id: g.id, title: g.title, priority: g.priority, desired_state: g.desired_state, observed_state: g.observed_state, child: g.child && { session_id: g.child.session_id, generation: g.child.generation, effort: g.child.effort, state: g.child.state, health: g.child.health, attention_pending: g.child.attention_pending }, budget: g.budget, blockers: g.blockers,
+  const signature = g => JSON.stringify({ id: g.id, title: g.title, headline: g.headline, milestones: g.milestones, owner_actions: g.owner_actions, priority: g.priority, desired_state: g.desired_state, observed_state: g.observed_state, child: g.child && { session_id: g.child.session_id, generation: g.child.generation, effort: g.child.effort, state: g.child.state, health: g.child.health, attention_pending: g.child.attention_pending }, budget: g.budget, blockers: g.blockers,
     claude: g.usage.claude, attempts: Object.fromEntries(Object.entries(g.usage.workers).map(([cli, w]) => [cli, w.attempts])) });
   const changed_goal_ids = goals.filter(g => { const old = prior.goals?.find(x => x.id === g.id); return !old || !old.usage || signature(old) !== signature(g); }).map(g => g.id);
   for (const old of prior.goals || []) if (!goals.some(g => g.id === old.id)) changed_goal_ids.push(old.id);

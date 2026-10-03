@@ -183,3 +183,47 @@ test('parent-orchestrated unbound child and unknown Claude allowance are info; b
   assert.equal(bound.observed_state, 'needs_owner');
   assert.ok(bound.blockers.some(b => b.description === 'Child has no supervised session observation'));
 });
+
+test('set-summary is atomic, revision-bound, parent-only and projected without changing grants or caps', async t => {
+  const f = fixture(t); await f.create();
+  const before = readRegistry(f.root).goals[0];
+  const summary = { headline: 'Built. Waiting for your approval.', milestones: [{ name: 'Build', state: 'done' }, { name: 'Review', state: 'now' }, { name: 'Report', state: 'next' }], owner_actions: [{ text: 'Approve the issuer job (no spend)', since: '2026-10-03T21:00:00.000Z' }] };
+  await transact('set-summary', { id: 'one', ...summary, milestones: JSON.stringify(summary.milestones), owner_actions: JSON.stringify(summary.owner_actions), expected_revision: 1 }, f.root);
+  const after = readRegistry(f.root).goals[0];
+  for (const key of ['grants', 'budget', 'child', 'generation', 'desired_state']) assert.deepEqual(after[key], before[key]);
+  const projected = collect(f.root).goals[0];
+  for (const key of ['headline', 'milestones', 'owner_actions']) assert.deepEqual(projected[key], summary[key]);
+  assert.ok(collect(f.root).changed_goal_ids.length === 0); // display-only clocks do not cause changes
+  for (const extra of [{ expected_revision: 1 }, { role: 'child' }, { principal: 'foreign' }, { depth: 1 }, { milestones: [{ name: 'Bad', state: 'unknown' }] }, { owner_actions: [{ text: 'Approve', since: 'yesterday' }] }, { headline: 'two\nlines' }, { owner_actions: null }]) {
+    await assert.rejects(transact('set-summary', { id: 'one', ...summary, expected_revision: 2, ...extra }, f.root));
+    assert.equal(readRegistry(f.root).revision, 2);
+  }
+  await transact('set-summary', { id: 'one', ...summary, headline: 'Finished.', owner_actions: [], expected_revision: 2 }, f.root);
+  assert.deepEqual(readRegistry(f.root).goals[0].owner_actions, []);
+  assert.deepEqual(collect(f.root).changed_goal_ids, ['one']);
+});
+
+test('real summary seeds use the writer once and preserve subsequent orchestrator updates', async t => {
+  const { seedSummaries, summaries } = await import('./seed-goals.mjs');
+  const f = fixture(t); await f.create('novisenti');
+  const second = f.repo('second-plan'); fs.writeFileSync(path.join(second, 'PLAN.md'), '# plan');
+  await transact('create', { id: 'orchestrator-os', title: 'Orchestrator OS', objective: 'ship', plan: path.join(second, 'PLAN.md'), expected_revision: 1 }, f.root);
+  await seedSummaries(f.root); assert.equal(readRegistry(f.root).revision, 4);
+  const goal = readRegistry(f.root).goals[0];
+  assert.equal(goal.headline, summaries.novisenti.headline);
+  assert.equal(goal.milestones[4].state, 'now'); assert.equal(goal.owner_actions[0].text, summaries.novisenti.owner_actions[0].text);
+  assert.ok(Number.isFinite(Date.parse(goal.owner_actions[0].since)));
+  await transact('set-summary', { id: goal.id, headline: 'Approved.', milestones: [], owner_actions: [], expected_revision: 4 }, f.root);
+  await seedSummaries(f.root); assert.equal(readRegistry(f.root).revision, 5);
+  assert.equal(readRegistry(f.root).goals[0].headline, 'Approved.');
+});
+
+test('set-summary CLI accepts named JSON fields and rejects malformed input without revision changes', async t => {
+  const f = fixture(t); await f.create();
+  const args = ['set-summary', '--id', 'one', '--headline', 'Running.', '--milestones', '[{"name":"Build","state":"now"}]', '--owner-actions', '[]', '--expected-revision', '1'];
+  const run = values => spawnSync(process.execPath, [new URL('./goals.mjs', import.meta.url).pathname, ...values], { encoding: 'utf8', env: { ...process.env, ORCH_STATE_DIR: f.root, ORCH_ROLE: 'parent', ORCH_DEPTH: '0', ORCH_PRINCIPAL: 'owner' } });
+  const good = run(args); assert.equal(good.status, 0, good.stderr);
+  assert.equal(JSON.parse(good.stdout).revision, 2); assert.equal(readRegistry(f.root).goals[0].headline, 'Running.');
+  const bad = run(['set-summary', '--id', 'one', '--headline', 'Running.', '--milestones', 'broken', '--owner-actions', '[]', '--expected-revision', '2']);
+  assert.notEqual(bad.status, 0); assert.equal(readRegistry(f.root).revision, 2);
+});

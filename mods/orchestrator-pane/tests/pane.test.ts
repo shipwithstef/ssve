@@ -58,7 +58,7 @@ test('recorded snapshot: /orch, goal/lane/task expansion, joins, counters and 60
   expect(seen.registered).toEqual(['orch']);
   expect(await $.command.run({ command: 'orch', args: '' })).toEqual({});
   expect(seen.opens).toBe(1);
-  const ui = await $.ui.mount(PANE);
+  const ui = await $.ui.mount(PANE); await ui.press({ key: 'orch-details' });
   expect(await ui.find({ key: 'task-p1c-r' })).toBeDefined();
   expect(await ui.find({ key: 'description-p1c-r' })).toBeUndefined();
   await ui.press({ key: `goal-${owned.goal_id}` });
@@ -83,7 +83,7 @@ test('recorded snapshot: /orch, goal/lane/task expansion, joins, counters and 60
 
 test('details are bounded helper reads; stop confirms dispatch and steer retains shell-safe copy fallback', async ($, on) => {
   const { seen, snapshot } = setup(on); await start($);
-  const ui = await $.ui.mount(PANE); await ui.press({ key: 'task-p1c-r' });
+  const ui = await $.ui.mount(PANE); await ui.press({ key: 'orch-details' }); await ui.press({ key: 'task-p1c-r' });
   await ui.press({ key: 'details-p1c-r' });
   expect((await ui.find({ key: 'log-p1c-r' }))?.text).toBe('token=[redacted]\nlast event');
   expect(seen.processes.length).toBe(1);
@@ -105,14 +105,14 @@ test('details are bounded helper reads; stop confirms dispatch and steer retains
 
 test('stale, malformed/missing snapshots retain last view and disable control buttons', async ($, on) => {
   const { clock, seen, control } = setup(on); await start($);
-  const ui = await $.ui.mount(PANE); await ui.press({ key: 'task-p1c-r' });
+  const ui = await $.ui.mount(PANE); await ui.press({ key: 'orch-details' }); await ui.press({ key: 'task-p1c-r' });
   await clock.advance(120000);
   expect(await ui.find({ key: 'orch-stale' })).toBeDefined();
   expect(await ui.find({ key: 'stop-p1c-r' })).toBeUndefined();
   control.raw = '{broken'; await ui.press({ key: 'orch-refresh' });
   expect(await ui.find({ key: 'orch-error' })).toBeDefined();
   expect(await ui.find({ key: 'task-p1c-r' })).toBeDefined();
-  expect(seen.counters.at(-1)).toContain('STALE');
+  expect(seen.counters.at(-1)).toContain('updates delayed');
   control.missing = true; await ui.press({ key: 'orch-refresh' });
   expect((await ui.find({ key: 'orch-error' }))?.text).toContain('ENOENT');
   control.missing = false; control.raw = '{"schema_version":2}'; await ui.press({ key: 'orch-refresh' });
@@ -139,7 +139,7 @@ test('one-line band respects width/survey; other surfaces receive no custom pane
 
 test('changed attempt and clipboard failure cannot run a command; clear cancels timer', async ($, on) => {
   const { snapshot, clock, seen, control } = setup(on); await start($);
-  const ui = await $.ui.mount(PANE); await ui.press({ key: 'task-p1c-r' });
+  const ui = await $.ui.mount(PANE); await ui.press({ key: 'orch-details' }); await ui.press({ key: 'task-p1c-r' });
   control.clipboard = false; await ui.press({ key: 'steer-p1c-r' }); await ui.input({ key: 'orch-steer-text', text: 'continue' }); await ui.press({ key: 'orch-steer-copy' });
   expect(seen.toasts.at(-1)).toContain('Clipboard unavailable');
   snapshot.tasks.find((t: { id: string }) => t.id === 'p1c-r').attempt_id = 'new-attempt';
@@ -157,7 +157,7 @@ test('500 tasks page at 100 rows and shrink back to page one; polling stays free
   const base = snapshot.tasks.find((t: { id: string }) => t.id === 'p1c-r');
   snapshot.tasks = Array.from({ length: 500 }, (_, i) => ({ ...base, id: 'load-' + i }));
   snapshot.goals = [{ id: base.goal_id, title: base.goal_id, lanes: [{ id: base.lane, title: base.lane, tasks: snapshot.tasks }] }];
-  await start($); const ui = await $.ui.mount(PANE);
+  await start($); const ui = await $.ui.mount(PANE); await ui.press({ key: 'orch-details' });
   expect(await ui.find({ key: 'task-load-99' })).toBeDefined();
   expect(await ui.find({ key: 'task-load-100' })).toBeUndefined();
   await ui.press({ key: 'orch-next' });
@@ -175,7 +175,7 @@ test('500 tasks page at 100 rows and shrink back to page one; polling stays free
 
 test('HO1 goal headers, empty paused goal, partial counts, blockers and owner-only session commands', async ($, on) => {
   const { snapshot, clock, seen } = setup(on); await start($);
-  const ui = await $.ui.mount(PANE);
+  const ui = await $.ui.mount(PANE); await ui.press({ key: 'orch-details' });
   expect((await ui.find({ key: 'goal-empty' }))?.text).toContain('#1 Empty goal · paused');
   expect((await ui.find({ key: 'goal-empty' }))?.text).toContain('LOW');
   expect((await ui.find({ key: 'goal-novisenti' }))?.text).toContain('active / needs_owner');
@@ -208,23 +208,23 @@ test('UPD1 updates and ST1 queued steering coexist without executing commands', 
   snapshot.updates = ['12:00 demo/build: merge check done'];
   task.steering = { mode: 'queue' };
   task.queued_steers = [{ id: 'first', at: snapshot.generated_at, text: 'first owner message' }];
-  await start($); const ui = await $.ui.mount(PANE); await ui.press({ key: 'task-p1c-r' });
+  await start($); const ui = await $.ui.mount(PANE); await ui.press({ key: 'orch-details' }); await ui.press({ key: 'task-p1c-r' });
   expect((await ui.find({ key: 'steer-queued-p1c-r-first' }))?.text).toContain('first owner message');
   expect((await ui.find({ key: 'orch-updates' }))?.text).toContain('merge check done');
   expect(seen.processes.length).toBe(0); noEffects(seen);
 });
 
-test('UPD1: pane shows last 20 updates and one-line band shows newest, without model calls', async ($, on) => {
+test('UPD1: pane shows last 20 updates and one-line band hides raw updates, without model calls', async ($, on) => {
   const { snapshot, seen } = setup(on);
   snapshot.updates = Array.from({ length: 25 }, (_, i) => `12:00 demo/build: task ${i} done`);
   await start($);
-  const ui = await $.ui.mount(PANE);
+  const ui = await $.ui.mount(PANE); await ui.press({ key: 'orch-details' });
   const updates = (await ui.find({ key: 'orch-updates' }))?.text ?? '';
   expect(updates).toContain('task 5 done');
   expect(updates).toContain('task 24 done');
   expect(updates).not.toContain('task 4 done');
   const band = await $.ui.mount({ plugin: PLUGIN, surface: 'terminal', component: 'AbovePrompt', props: { ...bandProps, bodyColumns: 100 } });
-  expect((await band.find({ key: 'orch-band' }))?.text).toContain('task 24 done');
+  expect((await band.find({ key: 'orch-band' }))?.text).not.toContain('task 24 done');
   noEffects(seen);
 });
 
@@ -234,7 +234,7 @@ test('UPD1 channel opt-out hides pane/band updates; parent orchestration notes a
   snapshot.updates = ['12:00 demo/build: secret update done'];
   snapshot.update_channels = { web: true, pane: false };
   snapshot.goals.find((g: { id: string }) => g.id === 'novisenti').info = [{ code: 'parent_orchestrated', description: 'No child bound' }];
-  await start($); const ui = await $.ui.mount(PANE);
+  await start($); const ui = await $.ui.mount(PANE); await ui.press({ key: 'orch-details' });
   expect((await ui.find({ key: 'orch-updates' }))?.text ?? '').not.toContain('secret update');
   expect((await ui.find({ key: 'goal-info-novisenti-0' }))?.text).toContain('Info: parent_orchestrated');
   const band = await $.ui.mount({ plugin: PLUGIN, surface: 'terminal', component: 'AbovePrompt', props: { ...bandProps, bodyColumns: 100 } });
@@ -249,11 +249,11 @@ test('adopted observations are informational and do not inflate the prompt block
   snapshot.tasks = [{ ...base, id: 'p1b', adopted: true, state: 'stalled', blockers: [], info: [{ code: 'unknown_exit', description: 'Legacy observation only' }] }];
   snapshot.goals = [{ ...snapshot.goals[0], lanes: [{ id: base.lane, title: base.lane, tasks: snapshot.tasks }] }];
   snapshot.updates = [];
-  await start($); const ui = await $.ui.mount(PANE);
+  await start($); const ui = await $.ui.mount(PANE); await ui.press({ key: 'orch-details' });
   await ui.press({ key: 'task-p1b' });
   expect((await ui.find({ key: 'info-p1b-0' }))?.text).toContain('Info: unknown_exit');
   const band = await $.ui.mount({ plugin: PLUGIN, surface: 'terminal', component: 'AbovePrompt', props: { ...bandProps, bodyColumns: 100 } });
-  expect((await band.find({ key: 'orch-band' }))?.text).toContain('0 block');
+  expect((await band.find({ key: 'orch-band' }))?.text).toContain('0 need you');
   noEffects(seen);
 });
 
@@ -264,7 +264,7 @@ test('CP3 bound parent defaults on, requests maximum size without focus, and hid
   expect(seen.opens).toBe(1);
   expect(seen.openArgs[0].rows).toBe(10000); expect(seen.openArgs[0].columns).toBe(10000);
   expect(seen.openArgs[0].focus).toBeUndefined();
-  const ui = await $.ui.mount(PANE);
+  const ui = await $.ui.mount(PANE); await ui.press({ key: 'orch-details' });
   const chat = await $.ui.mount({ plugin: PLUGIN, surface: 'terminal', component: 'AssistantMessage', requestId: 'reply', props: { text: 'original assistant text', isFirstOfReply: true } });
   expect(await chat.find({ key: 'host-chat' })).toBeUndefined();
   await ui.press({ key: 'orch-chat' }); expect((await chat.find({ key: 'host-chat' }))?.text).toBe('original assistant text');
@@ -287,7 +287,7 @@ test('CP3 unplaced auto-open keeps chat visible, parent binding can arrive later
   const { control, seen, snapshot } = setup(on); control.placed = false;
   on('ui.render', () => ({ type: 'Box', props: { key: 'host-chat' }, children: [{ type: 'Text', children: ['host text'] }] }));
   await start($); expect(seen.opens).toBe(0);
-  const ui = await $.ui.mount(PANE);
+  const ui = await $.ui.mount(PANE); await ui.press({ key: 'orch-details' });
   const chat = await $.ui.mount({ plugin: PLUGIN, surface: 'terminal', component: 'AssistantMessage', requestId: 'reply', props: { text: 'host text', isFirstOfReply: false } });
   control.sessionId = 'parent-exact';
   snapshot.registry_revision++; // mismatched bindings must not auto-enable
@@ -307,7 +307,7 @@ test('CP3 unplaced auto-open keeps chat visible, parent binding can arrive later
 
 test('CP3 confirms exact argv once; cancel submits nothing; queued/live and --now semantics are separate', async ($, on) => {
   const { seen, snapshot } = setup(on); await start($);
-  const ui = await $.ui.mount(PANE); await ui.press({ key: 'task-p1c-r' });
+  const ui = await $.ui.mount(PANE); await ui.press({ key: 'orch-details' }); await ui.press({ key: 'task-p1c-r' });
   await ui.press({ key: 'stop-p1c-r' }); await ui.press({ key: 'orch-cancel' });
   expect(seen.processes.length).toBe(0);
   await ui.press({ key: 'steer-p1c-r' });
@@ -328,7 +328,7 @@ test('CP3 confirms exact argv once; cancel submits nothing; queued/live and --no
 for (const changed of ['attempt', 'session', 'stale', 'adopted', 'missing', 'stopped'] as const) {
   test(`CP3 pending stop rejects ${changed} target before dispatch`, async ($, on) => {
     const { snapshot, seen } = setup(on); await start($);
-    const ui = await $.ui.mount(PANE); await ui.press({ key: 'task-p1c-r' }); await ui.press({ key: 'stop-p1c-r' });
+    const ui = await $.ui.mount(PANE); await ui.press({ key: 'orch-details' }); await ui.press({ key: 'task-p1c-r' }); await ui.press({ key: 'stop-p1c-r' });
     const task = snapshot.tasks.find((t: { id: string }) => t.id === 'p1c-r');
     if (changed === 'attempt') task.attempt_id = 'replacement';
     if (changed === 'session') task.session_id = 'replacement';
@@ -344,10 +344,46 @@ for (const changed of ['attempt', 'session', 'stale', 'adopted', 'missing', 'sto
 
 test('CP3 dispatcher failure is surfaced without retry; blank steering sends nothing', async ($, on) => {
   const { seen, control } = setup(on); await start($);
-  const ui = await $.ui.mount(PANE); await ui.press({ key: 'task-p1c-r' });
+  const ui = await $.ui.mount(PANE); await ui.press({ key: 'orch-details' }); await ui.press({ key: 'task-p1c-r' });
   await ui.press({ key: 'steer-p1c-r' }); await ui.press({ key: 'orch-steer-review' });
   expect(await ui.find({ key: 'orch-confirmation' })).toBeUndefined(); expect(seen.processes.length).toBe(0);
   control.processCode = 1; await ui.press({ key: 'stop-p1c-r' }); await ui.press({ key: 'orch-confirm' });
   expect(seen.toasts.at(-1)).toContain('Control failed: Error: Control attempt changed');
   expect(seen.processes.length).toBe(1); noEffects(seen);
+});
+
+test('CP4 default at 80 columns: owner-only cards, bounded work/next, hidden jargon; Details survives refresh', async ($, on) => {
+  const { snapshot, clock, seen } = setup(on);
+  const goal = snapshot.goals.find((g: { id: string }) => g.id === 'novisenti');
+  goal.title = 'Novisenti'; goal.headline = 'Product built and deployed (AI off). Waiting for you: approve Azure issuer job.';
+  goal.milestones = [{ name: 'Plan', state: 'done' }, { name: 'Issuer job', state: 'now' }, { name: 'Opus gate (~23:00 UTC)', state: 'next' }, { name: 'Paid test ≤$10', state: 'next' }, { name: 'Report', state: 'next' }, { name: 'Later', state: 'next' }];
+  goal.owner_actions = [{ text: 'Approve creating the Azure issuer job (create-only, no spend)', since: snapshot.generated_at }];
+  const base = snapshot.tasks.find((t: { id: string }) => t.id === 'p1c-r');
+  base.title = 'CP4 plain-language overview'; base.elapsed_ms = 720000; base.estimate_ms = { low: 5400000, high: 5400000 };
+  snapshot.tasks.push(...Array.from({ length: 5 }, (_, i) => ({ ...base, id: 'working-' + i, state: 'running' })));
+  await start($);
+  const ui = await $.ui.mount({ ...PANE, props: { ...props, bodyColumns: 80 } });
+  expect((await ui.find({ key: 'headline-novisenti' }))?.text).toContain('Product built and deployed');
+  expect((await ui.find({ key: 'owner-actions-novisenti' }))?.text).toContain('Needs you');
+  expect((await ui.find({ key: 'owner-action-novisenti-0' }))?.text).toBe(goal.owner_actions[0].text);
+  expect((await ui.find({ key: 'milestones-novisenti' }))?.text).toContain('✓ Plan');
+  expect((await ui.find({ key: 'milestones-novisenti' }))?.text).toContain('● Issuer job');
+  expect((await ui.find({ key: 'working-novisenti-0' }))?.text).toContain('Codex is working on plain-language overview · 12m/90m');
+  expect(await ui.find({ key: 'working-novisenti-3' })).toBeUndefined();
+  expect(await ui.find({ key: 'next-novisenti-3' })).toBeUndefined();
+  for (const key of ['orch-tree', 'task-p1c-r', 'budget-novisenti', 'goal-blocker-novisenti-0', 'orch-updates', 'session-parent-novisenti']) expect(await ui.find({ key })).toBeUndefined();
+  expect((await ui.find({ key: 'overview-details-novisenti' }))?.text).toContain('tasks done today · Details');
+  const band = await $.ui.mount({ plugin: PLUGIN, surface: 'terminal', component: 'AbovePrompt', props: { ...bandProps, bodyColumns: 100 } });
+  expect((await band.find({ key: 'orch-band' }))?.text).toContain('Needs you: Approve');
+  await ui.press({ key: 'overview-details-novisenti' });
+  expect(await ui.find({ key: 'task-p1c-r' })).toBeDefined();
+  expect((await ui.find({ key: 'budget-novisenti' }))?.text).toContain('Counts-v1');
+  goal.headline = 'Approved. Preparing the test.'; goal.owner_actions = [];
+  snapshot.collector_heartbeat_at = new Date(clock.now() + 60000).toISOString();
+  await clock.advance(60000);
+  expect((await ui.find({ key: 'headline-novisenti' }))?.text).toBe(goal.headline);
+  expect(await ui.find({ key: 'owner-actions-novisenti' })).toBeUndefined();
+  expect(await ui.find({ key: 'task-p1c-r' })).toBeDefined();
+  await ui.press({ key: 'orch-details' }); expect(await ui.find({ key: 'task-p1c-r' })).toBeUndefined();
+  expect(seen.processes.length).toBe(0); noEffects(seen);
 });

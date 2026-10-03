@@ -8,6 +8,15 @@ export const goalLock = root => path.join(root, 'locks', 'goals.lock');
 const clis = ['codex', 'cursor', 'agy', 'claude'];
 const states = ['registered', 'active', 'paused', 'blocked', 'closing', 'closed'];
 const safeId = value => typeof value === 'string' && /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,95}$/.test(value);
+export function validateSummary(summary) {
+  const line = (value, max) => typeof value === 'string' && value.trim().length > 0 && value.length <= max && !/[\x00-\x1f\x7f]/.test(value);
+  if (!line(summary.headline, 1200) || !Array.isArray(summary.milestones) || summary.milestones.length > 32
+    || !summary.milestones.every(m => line(m?.name, 160) && ['done', 'now', 'next'].includes(m.state))
+    || !Array.isArray(summary.owner_actions) || summary.owner_actions.length > 16
+    || !summary.owner_actions.every(a => line(a?.text, 1200) && typeof a.since === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(a.since) && Number.isFinite(Date.parse(a.since)))) throw new Error('Invalid goal summary');
+  return { headline: summary.headline, milestones: summary.milestones.map(({ name, state }) => ({ name, state })),
+    owner_actions: summary.owner_actions.map(({ text, since }) => ({ text, since })) };
+}
 function count(value, label, nullable = false) {
   if (nullable && value == null) return null;
   const n = Number(value);
@@ -67,6 +76,7 @@ export function validateRegistry(registry) {
     if (!safeId(goal.id) || ids.has(goal.id) || !states.includes(goal.desired_state) || !Number.isSafeInteger(goal.priority) || !Number.isSafeInteger(goal.generation) || goal.generation < 1 || !Array.isArray(goal.grants) || !Array.isArray(goal.worktree_roots)) throw new Error('Invalid goal schema');
     ids.add(goal.id);
     if (goal.child?.effort !== 'low' || typeof goal.title !== 'string' || typeof goal.objective !== 'string') throw new Error('Invalid goal contract');
+    if (['headline', 'milestones', 'owner_actions'].some(key => goal[key] !== undefined)) validateSummary(goal);
     const bound = goal.child.session_id !== null;
     if (bound ? !safeId(goal.child.session_id) || !safeId(goal.child.principal) || goal.child.contract_ref !== `contracts/${goal.id}-v${goal.generation}.json` : goal.child.principal !== null || goal.child.contract_ref !== null) throw new Error('Invalid child binding');
     const configured = planning(goal.plan);
@@ -154,6 +164,9 @@ export async function transact(command, o, root = stateRoot()) {
       if (command === 'grant-worktree') {
         const wt = canonicalWorktree(o.worktree);
         goal.grants.push({ lane: o.lane, worktree: wt, paths: grantPaths(wt, o.paths) });
+      } else if (command === 'set-summary') {
+        const parse = value => typeof value === 'string' ? JSON.parse(value) : value;
+        Object.assign(goal, validateSummary({ headline: o.headline, milestones: parse(o.milestones), owner_actions: parse(o.owner_actions) }));
       } else if (command === 'set-priority') goal.priority = count(o.priority, 'priority');
       else if (command === 'set-state') {
         if (!states.includes(o.state)) throw new Error('Invalid desired state');
@@ -170,7 +183,7 @@ export async function transact(command, o, root = stateRoot()) {
         if (o.claude_turn_cap != null) goal.budget.claude_turn_cap = count(o.claude_turn_cap, 'Claude turn cap');
         for (const cli of clis) if (o[`${cli}_runs`] != null) goal.budget.worker_caps[cli] = { runs: count(o[`${cli}_runs`], `${cli} run cap`) };
         goal.desired_state = o.state;
-      } else throw new Error('Expected create, grant-worktree, set-priority, set-state or list');
+      } else throw new Error('Expected create, grant-worktree, set-priority, set-state, set-summary or list');
     }
     validateRegistry(registry);
     registry.revision++; registry.updated_at = iso();
