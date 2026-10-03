@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { parseManagedCommand, isBlockingPayload } from '../hooks/svc-hook-boundary.mjs';
-import { evaluatePreToolObservation } from '../hooks/lib/pretool-decision-engine.mjs';
+import { evaluatePreToolObservation, evaluateAdvisoryObservation } from '../hooks/lib/pretool-decision-engine.mjs';
 import { writeJsonAtomic, writeJsonlAtomic, appendJsonlLine } from './state-io.mjs';
 const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const argv = process.argv.slice(2);
@@ -37,7 +37,7 @@ fs.mkdirSync(path.join(repo, '.svc'));
 fs.writeFileSync(path.join(repo, 'input.txt'), 'read me\n');
 const logFile = path.join(out, 'installed-replays.jsonl');
 writeJsonlAtomic(logFile, []); fs.chmodSync(logFile, 0o600);
-const failures = [], counts = { fixtures: 0, prepared: 0, additional: 0, read_envelopes: 0, read_hook_calls: 0, mutation_envelopes: 0, unproven_envelopes: 0, mutation_hook_calls: 0, paired_mutation_envelopes: 0, successful_hook_calls: 0 };
+const failures = [], counts = { fixtures: 0, prepared: 0, additional: 0, read_envelopes: 0, advisory_only_read_envelopes: 0, read_hook_calls: 0, mutation_envelopes: 0, unproven_envelopes: 0, mutation_hook_calls: 0, paired_mutation_envelopes: 0, successful_hook_calls: 0 };
 const digest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 function inputFiles(dir) {
   return fs.readdirSync(path.join(source, dir), { withFileTypes: true }).flatMap(d => {
@@ -145,7 +145,7 @@ try {
   }
   const bundle = path.join(home, '.svc/enforcement/1');
   assert.equal(JSON.parse(fs.readFileSync(path.join(bundle, 'manifest.json'))).effective_source, source);
-  for (const rel of ['hooks/svc-hook-boundary.mjs', 'hooks/lib/hook-policy.mjs', 'hooks/lib/session-findings.mjs', 'hooks/lib/svc-runtime-root.mjs', 'hooks/codex/lib/argv-lex.mjs']) assert.equal(digest(fs.readFileSync(path.join(bundle, rel))), digest(fs.readFileSync(path.join(source, rel))));
+  for (const rel of ['hooks/svc-hook-boundary.mjs', 'hooks/lib/hook-policy.mjs', 'hooks/lib/advisory-diagnostic.mjs', 'hooks/lib/session-findings.mjs', 'hooks/lib/svc-runtime-root.mjs', 'hooks/codex/lib/argv-lex.mjs']) assert.equal(digest(fs.readFileSync(path.join(bundle, rel))), digest(fs.readFileSync(path.join(source, rel))));
   process.stdout.write('Official materialize/wire/finalize + receipt/bundle verification: PASS (3 hosts)\n');
   const fixtureRoot = path.join(source, 'test-framework/evals/fixtures/side01');
   const reads = [];
@@ -171,37 +171,51 @@ try {
   // it to one historical session would invalidate sibling orch output paths.
   for (const f of JSON.parse(fs.readFileSync(path.join(fixtureRoot, 'installed-read-replays.json')))) reads.push({ id: 'recorded-' + reads.length, group: 'fixtures', host: f.host, expected: 'read', payload: f.payload });
   reads.push(...samples.rows.filter(r => r.expected === 'read'));
+  // Keep the original strict labels/sample bytes frozen. The owner's new
+  // effects policy adds a separate advisory-only expectation, with the original
+  // strict enforcement denial retained for EVERY newly recognized read.
+  const effectReads = samples.rows.filter(r => r.expected === 'unproven' && evaluateAdvisoryObservation(r.payload, env))
+    .map(r => ({ ...r, advisory_only_read: true }));
+  for (const f of JSON.parse(fs.readFileSync(path.join(fixtureRoot, 'installed-native-read-failures.json')))) {
+    effectReads.push({ id: 'native-failed-' + f.source_line, group: 'fixtures', host: 'claude', expected: 'advisory-read',
+      advisory_only_read: true, payload: f.original_payload });
+  }
+  reads.push(...effectReads);
   const before = { repo: snapshot(repo), runtime: snapshot(env.SVC_RUNTIME_DIR), codex: snapshot(env.SVC_CODEX_RUNTIME_DIR) };
   // Real samples stay unchanged, including original paths. No tool command is
   // executed, and the proof precondition prevents recovery touching real repos.
   await batch(reads, async row => {
-    assert.ok(evaluatePreToolObservation(row.payload, { ...env, ...(row.scratchpad ? { SVC_SESSION_SCRATCHPAD: row.scratchpad } : {}) }), 'Frozen expected read is not proven; do not relabel or drop it');
-    for (const mode of ['advisory', 'enforce']) {
+    const readEnv = { ...env, ...(row.scratchpad ? { SVC_SESSION_SCRATCHPAD: row.scratchpad } : {}) };
+    assert.ok(row.advisory_only_read ? evaluateAdvisoryObservation(row.payload, readEnv) : evaluatePreToolObservation(row.payload, readEnv), 'Expected read is not recognized; do not relabel or drop it');
+    for (const mode of row.advisory_only_read ? ['advisory'] : ['advisory', 'enforce']) {
       const results = await invoke(row, mode);
       for (const r of results) { assert.equal(r.exit, 0); assert.equal(r.stderr, ''); assert.equal(warning.test(r.stdout), false); assert.equal(denial(r), false); counts.successful_hook_calls++; }
     }
     counts[row.group]++; counts.read_envelopes++;
+    if (row.advisory_only_read) counts.advisory_only_read_envelopes++;
   });
   assert.deepEqual(snapshot(repo), before.repo); assert.deepEqual(snapshot(env.SVC_RUNTIME_DIR), before.runtime); assert.deepEqual(snapshot(env.SVC_CODEX_RUNTIME_DIR), before.codex);
   process.stdout.write(`Read replay: ${counts.read_envelopes} envelopes / ${counts.read_hook_calls} installed calls; ${failures.length} failures\n`);
-  const controls = samples.rows.filter(r => r.expected !== 'read');
+  const effectsIds = new Set(effectReads.map(r => r.id));
+  const controls = samples.rows.filter(r => r.expected !== 'read' && !effectsIds.has(r.id));
+  controls.push(...effectReads.map(r => ({ ...r, id: 'strict-' + r.id, group: 'strict-preserved', enforce_only: true })));
   // Every real read also receives a clearly marked mutation counterpart.
-  for (const r of samples.rows.filter(r => r.expected === 'read')) {
+  for (const r of [...samples.rows.filter(r => r.expected === 'read'), ...effectReads]) {
     const p = structuredClone(r.payload);
     if (['exec', 'functions.exec'].includes(p.tool_name)) p.tool_input += '; await tools.exec_command({cmd:"touch side01-mutation"});';
     else { p.tool_name = r.host === 'claude' ? 'Bash' : 'Shell'; p.tool_input = { command: 'touch side01-mutation' }; delete p.command; }
     controls.push({ ...r, id: 'paired-' + r.id, group: 'paired', expected: 'mutation', payload: p });
   }
   await batch(controls, async row => {
-    for (const mode of ['advisory', 'enforce']) {
+    for (const mode of row.enforce_only ? ['enforce'] : ['advisory', 'enforce']) {
       const isolated = relocated(row, mode);
       const results = await invoke(isolated, mode, true);
-      if (mode === 'advisory') { assert.ok(results.some(r => /\[svc advisory\b/.test(r.stderr)), 'Governed input lacked advisory'); assert.ok(results.every(r => r.exit === 0 && !denial(r))); }
+      if (mode === 'advisory') { assert.ok(results.some(r => /\[svc advisory\b/.test(r.stderr) && /Next step:/.test(r.stderr)), 'Governed input lacked advisory/next step'); assert.ok(results.every(r => r.exit === 0 && !denial(r))); }
       else assert.ok(results.some(denial), 'Governed input lacked enforce denial');
       counts.successful_hook_calls += results.length;
     }
     if (row.group === 'paired') counts.paired_mutation_envelopes++;
-    else { counts[row.group]++; if (row.expected === 'unproven') counts.unproven_envelopes++; else counts.mutation_envelopes++; }
+    else if (!row.enforce_only) { counts[row.group]++; if (row.expected === 'unproven') counts.unproven_envelopes++; else counts.mutation_envelopes++; }
   });
   assert.equal(fs.existsSync(path.join(repo, 'side01-mutation')), false);
   // Includes every remaining inline negative/dedupe/contract/rule fixture.

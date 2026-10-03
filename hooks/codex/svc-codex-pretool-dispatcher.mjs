@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 import { resolveHookMode } from "../lib/hook-policy.mjs";
+import { diagnosticReason } from "../lib/advisory-diagnostic.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { runtimeRoot, atomicWriteJson, sessionId, hookContext } from "./lib/codex-hook-context.mjs";
-import { renewSlidingPromptAuthority } from "../lib/pretool-decision-engine.mjs";
+import { renewSlidingPromptAuthority, evaluatePreToolObservation, evaluateAdvisoryObservation } from "../lib/pretool-decision-engine.mjs";
 import { autoProvisionMissingBinding, isPreProvisionIsolationDenial, rebindMutationPayload } from "../lib/auto-provision-worktree.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -71,6 +72,8 @@ function resetDenial(sid, env = process.env) {
 
 function deny(reason, host = "") {
   let finalReason = String(reason);
+  if (resolveHookMode().mode === "advisory") finalReason = diagnosticReason(finalReason, payload,
+    currentHookContext?.repo_root || payload.cwd || process.cwd());
   let halt = false;
   if (resolveHookMode().mode === "enforce" && currentSessionId && !isPreProvisionIsolationDenial(finalReason) && trackDenial(finalReason, currentSessionId, process.env)) {
     halt = true;
@@ -253,4 +256,7 @@ writeToolCallReceipt({session_id:sid,tool_use_id:toolUseId,host:hostId,original_
 }catch{}
 allow(effective!==payload?effective[key]:null,hostId);}catch(e){deny(`Codex preflight failed closed: ${e.message}`,hostId);}
 }
-governed().catch((error) => deny(`Codex preflight failed closed: ${error.message}`,hostIdentity(payload)));
+// Existing strict reads retain their normalizations (e.g. Git optional locks).
+// The effects path applies only to newly recognized advisory reads.
+if (resolveHookMode().mode === "advisory" && !evaluatePreToolObservation(payload) && evaluateAdvisoryObservation(payload)) allow(null, hostIdentity(payload), { observation: true });
+else governed().catch((error) => deny(`Codex preflight failed closed: ${error.message}`,hostIdentity(payload)));

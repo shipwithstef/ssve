@@ -7,7 +7,7 @@ import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { test, after } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { evaluatePreToolObservation } from '../../../hooks/lib/pretool-decision-engine.mjs';
+import { evaluatePreToolObservation, evaluateAdvisoryObservation } from '../../../hooks/lib/pretool-decision-engine.mjs';
 
 const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const home = fs.mkdtempSync(path.join(os.tmpdir(), 'side01-hooks-'));
@@ -42,6 +42,7 @@ const fixtureRoot = path.join(source, 'test-framework/evals/fixtures/side01');
 const recordedFailure = JSON.parse(fs.readFileSync(path.join(fixtureRoot, 'installed-failure.json')));
 const nativeEnvelopes = JSON.parse(fs.readFileSync(path.join(fixtureRoot, 'native-code-envelopes.json')));
 const installedShapes = JSON.parse(fs.readFileSync(path.join(fixtureRoot, 'installed-hook-shapes.json')));
+const nativeReadFailures = JSON.parse(fs.readFileSync(path.join(fixtureRoot, 'installed-native-read-failures.json')));
 after(() => fs.rmSync(home, { recursive: true, force: true }));
 const payload = (cmd, sid = 'read-session') => ({ session_id: sid, cwd: repo, tool_name: 'exec_command', tool_input: { cmd, workdir: repo } });
 function run(script, p, extra = {}, args = []) {
@@ -49,7 +50,7 @@ function run(script, p, extra = {}, args = []) {
     env: { ...env, ...extra }, encoding: 'utf8', timeout: 30000 });
 }
 function boundary(p, host = 'codex', extra = {}, script = 'hooks/codex/svc-codex-pretool-dispatcher.mjs', args = []) {
-  const spec = Buffer.from(JSON.stringify({ command: `${process.execPath} ${path.join(installed, script)} ${args.join(' ')}`.trim(),
+  const spec = Buffer.from(JSON.stringify({ command: `${process.execPath} ${path.isAbsolute(script) ? script : path.join(installed, script)} ${args.join(' ')}`.trim(),
     host, event: 'PreToolUse', timeoutMs: 20000 })).toString('base64url');
   return run(durableBoundary, p, extra, ['svc-side01', '--spec', spec]);
 }
@@ -194,6 +195,7 @@ test('governed mutations advise once per finding class/session; advisory never t
   const p = payload('touch changed', 'dedupe-session');
   const first = boundary(p);
   assert.match(first.stderr, /svc advisory/);
+  assert.match(first.stderr, /Next step:.*svc-ensure-worktree/);
   for (let i = 0; i < 5; i++) {
     const next = boundary(payload('touch other-' + i, 'dedupe-session'));
     assert.equal(next.stderr, ''); assert.doesNotMatch(next.stdout, /advisory|CIRCUIT|AUTH_BINDING/);
@@ -205,6 +207,67 @@ test('governed mutations advise once per finding class/session; advisory never t
   assert.equal(fs.existsSync(tracker) ? fs.readFileSync(tracker, 'utf8') : null, beforeTracker);
   const enforced = boundary(p, 'codex', { SVC_HOOK_MODE: 'enforce' });
   assert.match(enforced.stdout, /deny/);
+});
+
+test('three exact installed Claude read failures are silent in advisory; strict enforcement is unchanged', () => {
+  for (const f of nativeReadFailures) {
+    const p = { ...f.original_payload, cwd: repo };
+    assert.equal(evaluatePreToolObservation(p, env), null);
+    assert.ok(evaluateAdvisoryObservation(p, env));
+    const beforeRepo = snapshot(repo), beforeRuntime = snapshot(env.SVC_CODEX_RUNTIME_DIR);
+    for (const host of ['claude', 'codex', 'cursor']) {
+      const result = boundary(p, host, { SVC_HOST: host });
+      assert.equal(result.status, 0); assert.equal(result.stderr, ''); assert.deepEqual(JSON.parse(result.stdout), {});
+    }
+    assert.deepEqual(snapshot(repo), beforeRepo); assert.deepEqual(snapshot(env.SVC_CODEX_RUNTIME_DIR), beforeRuntime);
+    const enforced = boundary({ ...p, session_id: 'native-enforce-' + f.source_line }, 'claude', { SVC_HOOK_MODE: 'enforce', SVC_HOST: 'claude' });
+    assert.match(enforced.stdout, /deny/);
+    assert.match(boundary({ ...p, session_id: 'native-mutation-' + f.source_line,
+      tool_input: { command: p.tool_input.command + '; touch changed' } }, 'claude', { SVC_HOST: 'claude' }).stderr, /svc advisory.*Next step:/);
+  }
+});
+
+test('advisory effects cover quoted escapes, safe globs, xargs readers and trusted scratch outputs; possible mutations steer once', () => {
+  const tmp = path.join(home, 'custom-tmp'); fs.mkdirSync(tmp);
+  const extra = { ...env, TMPDIR: tmp, SVC_SESSION_SCRATCHPAD: path.join(home, 'scratch') };
+  for (const command of ['cat ~/input.txt', "grep -E 'alpha|beta' ~/input.txt", 'ls ~/logs/* | xargs tail -3',
+    'cat *.md', 'rg --no-config needle ./docs/*.md', 'xargs -n 1 cat', 'xargs -I {} cat {}',
+    'cat "a\\\"b.txt"', 'cat a\\ b.txt', 'cat input.txt > $TMPDIR/output', 'cat input.txt > "$TMPDIR/output"',
+    'cat input.txt > /tmp/claude-1000/output', 'cat input.txt > ~/.local/state/orch/output',
+    `cat input.txt > ${home}/scratch/output`]) {
+    assert.ok(evaluateAdvisoryObservation(payload(command), extra), command);
+    const r = boundary(payload(command), 'codex', { TMPDIR: tmp, SVC_SESSION_SCRATCHPAD: extra.SVC_SESSION_SCRATCHPAD });
+    assert.equal(r.stderr, '', command); assert.doesNotMatch(r.stdout, /advisory|deny|origin\/main|ENOENT|CIRCUIT/);
+  }
+  for (const command of ['xargs rm', 'xargs sed -n 1wchanged', 'xargs sh -c "cat input.txt"', 'xargs -I {} {}',
+    'uniq ./*', 'git -C /tmp/r* log', 'rg --pre touch ./docs/*', 'rg --no-config needle *',
+    'sort -o changed ./docs/*', 'cat ~/input.txt; touch changed', 'cat $(touch changed)',
+    'cat "a\\\"b"; touch changed', 'cat input.txt > changed', 'cat input.txt > "$UNKNOWN/output"']) {
+    assert.equal(evaluateAdvisoryObservation(payload(command), extra), null, command);
+    const p = payload(command, 'uncertain-' + command);
+    assert.match(boundary(p, 'codex', { TMPDIR: tmp }).stderr, /svc advisory.*Next step:/, command);
+    assert.equal(boundary(p, 'codex', { TMPDIR: tmp }).stderr, '', command);
+  }
+});
+
+test('optional-contract ENOENT is absent from advisory diagnostics; mutation authority and opted-in/enforce output remain visible', () => {
+  const message = `Codex preflight failed closed: ENOENT: no such file or directory, open '${contract}'`;
+  const denial = { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: message } };
+  const child = path.join(installed, 'missing-contract.mjs');
+  fs.writeFileSync(child, `process.stdout.write(${JSON.stringify(JSON.stringify(denial) + '\n')});`);
+  fs.rmSync(contract, { force: true });
+  const p = payload('touch changed', 'missing-contract-unbound');
+  const result = boundary(p, 'codex', {}, child);
+  assert.doesNotMatch(result.stdout + result.stderr, /ENOENT|preflight failed closed|session-contract\.jsonl/);
+  assert.match(result.stderr, /AUTH_BINDING_MISSING.*Next step:/);
+  assert.equal(boundary(p, 'codex', {}, child).stderr, '');
+  fs.writeFileSync(contract, JSON.stringify({ session_id: 'foreign-contract', wi: 'WI-OTHER' }) + '\n');
+  assert.doesNotMatch(boundary({ ...p, session_id: 'other-unbound' }, 'codex', {}, child).stdout, /ENOENT/);
+  fs.writeFileSync(contract, JSON.stringify({ session_id: 'contract-opted', wi: 'WI-OWN' }) + '\n');
+  assert.match(boundary({ ...p, session_id: 'contract-opted' }, 'codex', {}, child).stderr, /ENOENT.*Next step:/);
+  const enforced = boundary(p, 'codex', { SVC_HOOK_MODE: 'enforce' }, child);
+  assert.deepEqual(JSON.parse(enforced.stdout), denial); assert.equal(enforced.stderr, '');
+  fs.rmSync(contract, { force: true });
 });
 
 test('no-contract and foreign-contract freshness is silent; own stale contract still denies', () => {

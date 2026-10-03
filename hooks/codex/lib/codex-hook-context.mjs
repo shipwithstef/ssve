@@ -576,6 +576,10 @@ export function splitUnquoted(command) {
   let quote = null; // "'" | '"' | null
   for (let i = 0; i < command.length; i++) {
     const ch = command[i];
+    if (ch === "\\" && quote !== "'" && i + 1 < command.length) {
+      current += ch + command[++i];
+      continue;
+    }
     if (quote) {
       current += ch;
       if (ch === quote) quote = null;
@@ -610,6 +614,23 @@ export function stripDevNullRedirections(segment) {
   const suffix = /(?:^|\s)(?:(?:[012]?>|&>)\s*\/dev\/null|[012]?>&[012])\s*$/;
   while (suffix.test(value)) value = value.replace(suffix, "").trim();
   return value;
+}
+
+// Shared side-effect model: advisory effects proof and strict argv proof use
+// identical option checks. Stdout-only utilities cannot acquire write/exec
+// effects from filename expansion or xargs-appended arguments.
+export const STDOUT_READ_COMMANDS = new Set(["ls", "pwd", "cat", "head", "tail", "wc", "sha256sum", "stat", "realpath", "readlink", "dirname", "basename", "cut", "tr", "grep", "echo"]);
+export function isObservationArgv(readArgv, env = process.env, effects = false) {
+  if (!readArgv.length) return false;
+  const decoded = readArgv.join(" ");
+  if (TRIVIAL_SAFE_SEGMENTS.has(decoded)) return true;
+  if (readArgv[0] === "echo" || effects && STDOUT_READ_COMMANDS.has(readArgv[0])) return true;
+  if (readArgv[0] === "cd") return readArgv.length === 2 && !readArgv[1].startsWith("-");
+  return isSafeGit(readArgv) || isSafeRg(decoded, env) || isSafeFind(decoded)
+    || isSafeSort(readArgv) || isSafeUniq(readArgv) || isSafeFile(readArgv)
+    || isSafeSed(readArgv) || isSafeJq(readArgv) || isSafeVersionProbe(readArgv)
+    || isSafeAz(readArgv) || isSafeSystemObservation(readArgv)
+    || SAFE_BASH.some(pattern => pattern.test(decoded));
 }
 
 export function isReadOnlyTool(ctx, env = process.env) {
@@ -647,17 +668,7 @@ export function isReadOnlyTool(ctx, env = process.env) {
     // Safe direction: over-rejection costs a receipt, under-rejection is a bypass.
     const readArgv = lexed.argv[0] === "SVC_SUBAGENT=1" ? lexed.argv.slice(1) : lexed.argv;
     if (!readArgv.length) return false;
-    const decoded = readArgv.join(" ");
-    if (TRIVIAL_SAFE_SEGMENTS.has(decoded)) return true;
-    // Literal echo arguments only produce stdout. The lexer and redirection
-    // proof above still reject substitutions and governed output targets.
-    if (readArgv[0] === "echo") return true;
-    if (readArgv[0] === "cd") return readArgv.length === 2 && !readArgv[1].startsWith("-");
-    return isSafeGit(readArgv) || isSafeRg(decoded, env) || isSafeFind(decoded)
-      || isSafeSort(readArgv) || isSafeUniq(readArgv) || isSafeFile(readArgv)
-      || isSafeSed(readArgv) || isSafeJq(readArgv) || isSafeVersionProbe(readArgv)
-      || isSafeAz(readArgv) || isSafeSystemObservation(readArgv)
-      || SAFE_BASH.some((pattern) => pattern.test(decoded));
+    return isObservationArgv(readArgv, env);
   });
 }
 

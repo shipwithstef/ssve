@@ -1,0 +1,110 @@
+[
+  {
+    "source_line": 3818,
+    "original_payload": {
+      "source_line": 3818,
+      "session_id": "6f0343ba-6f5e-4731-a94d-1256048ae265",
+      "cwd": "/home/dianast/app-workspaces/novisenti",
+      "tool_use_id": "toolu_01WeAPUQeLbDrMJdbbh4q7eN",
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "cat /tmp/claude-1000/-home-dianast-app-workspaces-novisenti/459e8c12-1901-4d1b-820a-f874e31e7119/tasks/b8qlbx5b0.output; head -12 ~/worktrees/orchestrator-os-runs/side01-activate-out.md"
+      },
+      "hook_event_name": "PreToolUse",
+      "permission_mode": "default",
+      "transcript_path": "/home/dianast/.claude/projects/-home-dianast-app-workspaces-novisenti/6f0343ba-6f5e-4731-a94d-1256048ae265.jsonl"
+    },
+    "replay_payload": {
+      "session_id": "6f0343ba-6f5e-4731-a94d-1256048ae265",
+      "cwd": "/tmp/side01-native-hL08LF",
+      "tool_use_id": "toolu_01WeAPUQeLbDrMJdbbh4q7eN",
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "cat /tmp/claude-1000/-home-dianast-app-workspaces-novisenti/459e8c12-1901-4d1b-820a-f874e31e7119/tasks/b8qlbx5b0.output; head -12 ~/worktrees/orchestrator-os-runs/side01-activate-out.md"
+      },
+      "hook_event_name": "PreToolUse",
+      "permission_mode": "default",
+      "transcript_path": "/home/dianast/.claude/projects/-home-dianast-app-workspaces-novisenti/6f0343ba-6f5e-4731-a94d-1256048ae265.jsonl"
+    },
+    "cwd_relocated_for_isolation": true,
+    "tool_input_exact": true,
+    "scratchpad_env_unset": true,
+    "installed_command": "'/usr/bin/node' '/home/dianast/.svc/enforcement/1/hooks/svc-hook-boundary.mjs' svc-codex-pretool-dispatcher.mjs --spec eyJjb21tYW5kIjoiU1ZDX0hPU1Q9XCIke1NWQ19IT1NUOi1jbGF1ZGV9XCIgbm9kZSAvaG9tZS9kaWFuYXN0Ly5jbGF1ZGUvc2tpbGxzL2hvb2tzL2NvZGV4L3N2Yy1jb2RleC1wcmV0b29sLWRpc3BhdGNoZXIubWpzIiwiaG9zdCI6ImNsYXVkZSIsImV2ZW50IjoiUHJlVG9vbFVzZSIsInRpbWVvdXRNcyI6MjAwMDB9",
+    "exit": 0,
+    "stdout": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"[svc advisory svc-codex-pretool-dispatcher.mjs] would have blocked this call; the original tool input continues unchanged. Finding: mutation requires a bound WI worktree (AUTH_BINDING_MISSING_SELF_HEAL_INELIGIBLE: PROMPT_AUTHORITY_ABSENT; EXACT_WORKTREE_RECOVERY: NOT_ATTEMPTED; SELF_PROVISION_ATTEMPTED: origin/main is missing; fetch origin before ensuring a worktree)\"}}\n",
+    "stderr": "[svc advisory svc-codex-pretool-dispatcher.mjs] would have blocked this call; the original tool input continues unchanged. Finding: mutation requires a bound WI worktree (AUTH_BINDING_MISSING_SELF_HEAL_INELIGIBLE: PROMPT_AUTHORITY_ABSENT; EXACT_WORKTREE_RECOVERY: NOT_ATTEMPTED; SELF_PROVISION_ATTEMPTED: origin/main is missing; fetch origin before ensuring a worktree)\n",
+    "warning": true
+  },
+  {
+    "source_line": 3832,
+    "original_payload": {
+      "source_line": 3832,
+      "session_id": "6f0343ba-6f5e-4731-a94d-1256048ae265",
+      "cwd": "/home/dianast/app-workspaces/novisenti",
+      "tool_use_id": "toolu_018LmxatWUMkD5wc8WNZPot1",
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "grep -A3 -E \"^\\*\\*1\\. Not fixed\" /tmp/claude-1000/p4r2.md | cut -c200-900; grep -iE \"verdict\" /tmp/claude-1000/p4r2.md | tail -2 | cut -c1-300"
+      },
+      "hook_event_name": "PreToolUse",
+      "permission_mode": "default",
+      "transcript_path": "/home/dianast/.claude/projects/-home-dianast-app-workspaces-novisenti/6f0343ba-6f5e-4731-a94d-1256048ae265.jsonl"
+    },
+    "replay_payload": {
+      "session_id": "6f0343ba-6f5e-4731-a94d-1256048ae265",
+      "cwd": "/tmp/side01-native-hL08LF",
+      "tool_use_id": "toolu_018LmxatWUMkD5wc8WNZPot1",
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "grep -A3 -E \"^\\*\\*1\\. Not fixed\" /tmp/claude-1000/p4r2.md | cut -c200-900; grep -iE \"verdict\" /tmp/claude-1000/p4r2.md | tail -2 | cut -c1-300"
+      },
+      "hook_event_name": "PreToolUse",
+      "permission_mode": "default",
+      "transcript_path": "/home/dianast/.claude/projects/-home-dianast-app-workspaces-novisenti/6f0343ba-6f5e-4731-a94d-1256048ae265.jsonl"
+    },
+    "cwd_relocated_for_isolation": true,
+    "tool_input_exact": true,
+    "scratchpad_env_unset": true,
+    "installed_command": "'/usr/bin/node' '/home/dianast/.svc/enforcement/1/hooks/svc-hook-boundary.mjs' svc-codex-pretool-dispatcher.mjs --spec eyJjb21tYW5kIjoiU1ZDX0hPU1Q9XCIke1NWQ19IT1NUOi1jbGF1ZGV9XCIgbm9kZSAvaG9tZS9kaWFuYXN0Ly5jbGF1ZGUvc2tpbGxzL2hvb2tzL2NvZGV4L3N2Yy1jb2RleC1wcmV0b29sLWRpc3BhdGNoZXIubWpzIiwiaG9zdCI6ImNsYXVkZSIsImV2ZW50IjoiUHJlVG9vbFVzZSIsInRpbWVvdXRNcyI6MjAwMDB9",
+    "exit": 0,
+    "stdout": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"[svc advisory svc-codex-pretool-dispatcher.mjs] would have blocked this call; the original tool input continues unchanged. Finding: mutation requires a bound WI worktree (AUTH_BINDING_MISSING_SELF_HEAL_INELIGIBLE: PROMPT_AUTHORITY_ABSENT; EXACT_WORKTREE_RECOVERY: NOT_ATTEMPTED; SELF_PROVISION_ATTEMPTED: origin/main is missing; fetch origin before ensuring a worktree)\"}}\n",
+    "stderr": "[svc advisory svc-codex-pretool-dispatcher.mjs] would have blocked this call; the original tool input continues unchanged. Finding: mutation requires a bound WI worktree (AUTH_BINDING_MISSING_SELF_HEAL_INELIGIBLE: PROMPT_AUTHORITY_ABSENT; EXACT_WORKTREE_RECOVERY: NOT_ATTEMPTED; SELF_PROVISION_ATTEMPTED: origin/main is missing; fetch origin before ensuring a worktree)\n",
+    "warning": true
+  },
+  {
+    "source_line": 3894,
+    "original_payload": {
+      "source_line": 3894,
+      "session_id": "6f0343ba-6f5e-4731-a94d-1256048ae265",
+      "cwd": "/home/dianast/app-workspaces/novisenti",
+      "tool_use_id": "toolu_01QPH9ob3ZJPDiezVbBZiB31",
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "jq -c '.parent, (.tasks|length), .holds // .held // empty' ~/.local/state/orch/recovery-49282aa8-0885-4c3f-bd75-a2d592213cc7.json | cut -c1-700; jq -r '.state, .finished_at, .exit_code // empty' ~/.local/state/orch/tasks/p4-fix.json; ls -t ~/.local/state/orch/logs/p4-fix-*events* | head -1 | xargs tail -3 | cut -c1-200"
+      },
+      "hook_event_name": "PreToolUse",
+      "permission_mode": "default",
+      "transcript_path": "/home/dianast/.claude/projects/-home-dianast-app-workspaces-novisenti/6f0343ba-6f5e-4731-a94d-1256048ae265.jsonl"
+    },
+    "replay_payload": {
+      "session_id": "6f0343ba-6f5e-4731-a94d-1256048ae265",
+      "cwd": "/tmp/side01-native-hL08LF",
+      "tool_use_id": "toolu_01QPH9ob3ZJPDiezVbBZiB31",
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "jq -c '.parent, (.tasks|length), .holds // .held // empty' ~/.local/state/orch/recovery-49282aa8-0885-4c3f-bd75-a2d592213cc7.json | cut -c1-700; jq -r '.state, .finished_at, .exit_code // empty' ~/.local/state/orch/tasks/p4-fix.json; ls -t ~/.local/state/orch/logs/p4-fix-*events* | head -1 | xargs tail -3 | cut -c1-200"
+      },
+      "hook_event_name": "PreToolUse",
+      "permission_mode": "default",
+      "transcript_path": "/home/dianast/.claude/projects/-home-dianast-app-workspaces-novisenti/6f0343ba-6f5e-4731-a94d-1256048ae265.jsonl"
+    },
+    "cwd_relocated_for_isolation": true,
+    "tool_input_exact": true,
+    "scratchpad_env_unset": true,
+    "installed_command": "'/usr/bin/node' '/home/dianast/.svc/enforcement/1/hooks/svc-hook-boundary.mjs' svc-codex-pretool-dispatcher.mjs --spec eyJjb21tYW5kIjoiU1ZDX0hPU1Q9XCIke1NWQ19IT1NUOi1jbGF1ZGV9XCIgbm9kZSAvaG9tZS9kaWFuYXN0Ly5jbGF1ZGUvc2tpbGxzL2hvb2tzL2NvZGV4L3N2Yy1jb2RleC1wcmV0b29sLWRpc3BhdGNoZXIubWpzIiwiaG9zdCI6ImNsYXVkZSIsImV2ZW50IjoiUHJlVG9vbFVzZSIsInRpbWVvdXRNcyI6MjAwMDB9",
+    "exit": 0,
+    "stdout": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"[svc advisory svc-codex-pretool-dispatcher.mjs] would have blocked this call; the original tool input continues unchanged. Finding: mutation requires a bound WI worktree (AUTH_BINDING_MISSING_SELF_HEAL_INELIGIBLE: PROMPT_AUTHORITY_ABSENT; EXACT_WORKTREE_RECOVERY: NOT_ATTEMPTED; SELF_PROVISION_ATTEMPTED: origin/main is missing; fetch origin before ensuring a worktree)\"}}\n",
+    "stderr": "[svc advisory svc-codex-pretool-dispatcher.mjs] would have blocked this call; the original tool input continues unchanged. Finding: mutation requires a bound WI worktree (AUTH_BINDING_MISSING_SELF_HEAL_INELIGIBLE: PROMPT_AUTHORITY_ABSENT; EXACT_WORKTREE_RECOVERY: NOT_ATTEMPTED; SELF_PROVISION_ATTEMPTED: origin/main is missing; fetch origin before ensuring a worktree)\n",
+    "warning": true
+  }
+]

@@ -14,6 +14,7 @@ stage_governed_bash_hooks() {
   cp "$STAGE_HOOKS_REPO/hooks/svc-hook-boundary.mjs" "$src/hooks/"
   cp "$STAGE_HOOKS_REPO/hooks/lib/hook-policy.mjs" "$src/hooks/lib/"
   cp "$STAGE_HOOKS_REPO/hooks/lib/session-findings.mjs" "$src/hooks/lib/"
+  cp "$STAGE_HOOKS_REPO/hooks/lib/advisory-diagnostic.mjs" "$src/hooks/lib/"
   cp "$STAGE_HOOKS_REPO/hooks/lib/svc-runtime-root.mjs" "$src/hooks/lib/"
   cp "$STAGE_HOOKS_REPO/hooks/codex/lib/argv-lex.mjs" "$src/hooks/codex/lib/"
   cp "$STAGE_HOOKS_REPO/hooks/svc-task-completion-guard.sh" "$src/hooks/"

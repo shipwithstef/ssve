@@ -7,6 +7,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawn } from "node:child_process";
 import { lexSimpleCommand } from "./codex/lib/argv-lex.mjs";
 import { resolveHookMode, hookPolicyWarning } from "./lib/hook-policy.mjs";
+import { diagnosticReason, steeringReason } from "./lib/advisory-diagnostic.mjs";
 
 const MAX_INPUT = 8 * 1024 * 1024;
 const MAX_OUTPUT = 1024 * 1024;
@@ -86,7 +87,10 @@ export function advisoryPayload(payload, message, { rewritten = false } = {}) {
 }
 
 function warning(id, reason) {
-  return `[svc advisory ${id}] ${String(reason || "SVC hook requested a block").replace(/\s+/g, " ").slice(0, 1200)}`;
+  const text = String(reason || "SVC hook requested a block").replace(/\s+/g, " ");
+  const hint = text.lastIndexOf(" Next step:");
+  const bounded = hint < 0 ? text.slice(0, 1200) : text.slice(0, Math.min(hint, 1000)) + text.slice(hint, hint + 250);
+  return `[svc advisory ${id}] ${bounded}`;
 }
 
 function deferredAdvisoryCommand(spec) {
@@ -241,15 +245,15 @@ async function main() {
   const pretool = /^(?:PreToolUse|BeforeTool|preToolUse|beforeShellExecution)$/i.test(spec.event);
   const toolEvent = pretool || /^(?:PostToolUse|AfterTool|postToolUse|afterShellExecution)$/i.test(spec.event);
   const hasTool = original?.tool_name || original?.toolName || original?.command;
-  let evaluatePreToolObservation = null, resolveOperationScope = null;
+  let evaluatePreToolObservation = null, evaluateAdvisoryObservation = null, resolveOperationScope = null;
   if (toolEvent && hasTool) {
     const runtimeSource = await boundaryRuntimeSource();
     if (runtimeSource) {
-      ({ evaluatePreToolObservation } = await import(pathToFileURL(path.join(runtimeSource, "lib/pretool-decision-engine.mjs"))));
+      ({ evaluatePreToolObservation, evaluateAdvisoryObservation } = await import(pathToFileURL(path.join(runtimeSource, "lib/pretool-decision-engine.mjs"))));
       ({ resolveOperationScope } = await import(pathToFileURL(path.join(runtimeSource, "lib/operation-scope.mjs"))));
     }
   }
-  const observation = evaluatePreToolObservation?.(original);
+  const observation = evaluatePreToolObservation?.(original) || (mode.mode === "advisory" && evaluateAdvisoryObservation?.(original));
   if (observation) {
     // Observation never runs children, self-heal, contract IO or denial counters.
     if (pretool && mode.mode === "enforce" && observation.execution_input) {
@@ -272,6 +276,8 @@ async function main() {
   try { ({ firstSessionFinding, findingClass } = await import("./lib/session-findings.mjs")); }
   catch { /* Legacy partial fixture: enforcement still delegates to its launcher. */ }
   const visible = reason => firstSessionFinding(original, repository, marker, findingClass(reason));
+  const steering = reason => steeringReason(reason, original, repository);
+  const diagnostic = reason => diagnosticReason(reason, original, repository);
   let result;
   try { result = await runChild(spec, input, deadline); }
   catch (error) { process.stderr.write(warning(marker, error.message) + "\n"); process.exitCode = mode.mode === "enforce" ? 2 : 0; return; }
@@ -292,8 +298,8 @@ async function main() {
   }
   if (result.timedOut || result.oversized || result.spawnError || result.code !== 0) {
     const cause = result.timedOut ? "timed out" : result.oversized ? "output limit exceeded" : result.spawnError ? result.spawnError.message : `exited ${result.code}`;
-    if (!visible(result.stderr.toString("utf8") || cause)) return;
-    process.stderr.write(warning(marker, cause) + "\n");
+    if (!visible(diagnostic(result.stderr.toString("utf8") || cause))) return;
+    process.stderr.write(warning(marker, steering(cause)) + "\n");
     if (result.stdout.length) {
       let advice = result.stdout.toString("utf8").slice(0, 4096);
       try {
@@ -303,9 +309,9 @@ async function main() {
             payload.stopReason || payload.hookSpecificOutput?.additionalContext || payload.systemMessage || "";
         }
       } catch {}
-      if (advice) process.stderr.write(warning(marker, advice) + "\n");
+      if (advice) process.stderr.write(warning(marker, steering(advice)) + "\n");
     }
-    if (result.stderr.length) process.stderr.write(result.stderr.subarray(0, 4096));
+    if (result.stderr.length) process.stderr.write(diagnostic(result.stderr.subarray(0, 4096).toString("utf8")));
     return;
   }
   let payload;
@@ -325,19 +331,24 @@ async function main() {
     return;
   }
   if (payload && typeof payload === "object") {
+    for (const object of [payload, payload.hookSpecificOutput].filter(Boolean)) {
+      for (const key of ["systemMessage", "user_message", "reason", "stopReason", "permissionDecisionReason", "additionalContext"]) {
+        if (typeof object[key] === "string" && diagnostic(object[key]) !== object[key]) object[key] = steering(object[key]);
+      }
+    }
     const blocked = isBlockingPayload(payload);
     const rewritten = payload.updatedInput !== undefined || payload.updated_input !== undefined ||
       payload.hookSpecificOutput?.updatedInput !== undefined || payload.hookSpecificOutput?.updated_input !== undefined;
     const reason = blocked
-      ? `would have blocked this call; the original tool input continues unchanged. Finding: ${payload.hookSpecificOutput?.permissionDecisionReason || payload.reason || payload.user_message || payload.stopReason || "SVC hook requested a block"}`
+      ? `would have blocked this call; the original tool input continues unchanged. Finding: ${steering(payload.hookSpecificOutput?.permissionDecisionReason || payload.reason || payload.user_message || payload.stopReason || "SVC hook requested a block")}`
       : "";
-    const informational = payload.systemMessage || payload.user_message || payload.hookSpecificOutput?.additionalContext || result.stderr.toString("utf8");
+    const informational = payload.systemMessage || payload.user_message || payload.hookSpecificOutput?.additionalContext || diagnostic(result.stderr.toString("utf8"));
     const show = reason ? visible(reason) : !informational || /svc-rule-injector/.test(spec.command) || visible(informational);
     if (!show) { process.stdout.write("{}\n"); return; }
     const message = reason ? warning(marker, reason) : "";
     if (message) process.stderr.write(message + "\n");
     process.stdout.write(JSON.stringify(advisoryPayload(payload, message, { rewritten })) + "\n");
-    if (result.stderr.length) process.stderr.write(result.stderr);
+    if (result.stderr.length) process.stderr.write(diagnostic(result.stderr.toString("utf8")));
     return;
   }
   process.stdout.write(result.stdout);
