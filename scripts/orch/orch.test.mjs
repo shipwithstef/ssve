@@ -259,3 +259,22 @@ test('UPD1 task changes wake a 60s collector without a status-file feedback loop
   await new Promise(resolve => setTimeout(resolve, 300));
   assert.equal(JSON.parse(fs.readFileSync(file)).revision, snapshot.revision);
 });
+
+test('adopted p1b/D1a recovery holds are informational, with observed completion or unknown exit', t => {
+  const root = temp(t); init(root); const wt = repo(root);
+  for (const [id, reported] of [['p1b', true], ['d1a', false]]) {
+    const log = path.join(root, `${id}.jsonl`); fs.writeFileSync(log, reported ? fixture('cursor') : '');
+    const record = adopt({ adopt: id, pid: 2147483647, worktree: wt, log }, root);
+    atomicJson(taskPath(id, root), { ...record, state: 'needs_owner', recovery: { reason: 'Adopted worker has no dispatcher ownership' } });
+  }
+  const snapshot = collect(root, 5, root);
+  assert.equal(snapshot.tasks.find(t => t.id === 'p1b').state, 'done (unverified exit)');
+  assert.equal(snapshot.tasks.find(t => t.id === 'd1a').state, 'exited (unknown)');
+  for (const row of snapshot.tasks) {
+    assert.deepEqual(row.blockers, []); assert.ok(row.info.some(b => b.code === 'unknown_exit'));
+    assert.ok(row.info.some(b => b.code === 'recovery_hold')); assert.equal(row.exit_code, null);
+  }
+  assert.ok(!snapshot.goals[0].blockers.some(b => b.code === 'needs_owner'));
+  assert.ok(!snapshot.updates.some(line => /(?:p1b|d1a).*blocked$/.test(line)));
+  assert.ok(snapshot.updates.some(line => /p1b \(unverified exit\) done$/.test(line)));
+});

@@ -44,6 +44,8 @@ export function classify(task, observation, now = Date.now(), stalledMinutes = 5
     if (now - Date.parse(observation.last_progress_at || task.started_at) >= stalledMinutes * 60000) return 'stalled';
     return 'running';
   }
+  // Adopted pre-dispatcher observations cannot acquire dispatcher recovery holds.
+  if (task.adopted && task.exit_code == null) return observation.completion_report ? 'done (unverified exit)' : 'exited (unknown)';
   if (['needs_owner', 'interrupted', 'interrupting', 'stopped'].includes(task.state)) return task.state;
   if (task.exit_code == null) return observation.completion_report ? 'done (unverified exit)' : 'exited (unknown)';
   if (task.state === 'timeout' || [124, 137].includes(task.exit_code) && now >= Date.parse(task.deadline_at)) return 'timeout';
@@ -96,7 +98,9 @@ export function adopt(o, root = stateRoot()) {
   return task;
 }
 const updateText = value => redact(value, 240).replace(/\s+/g, ' ').trim();
-function updateState(state) {
+function updateState(state, adopted = false) {
+  if (adopted && state === 'done (unverified exit)') return 'done';
+  if (adopted && ['blocked', 'needs_owner', 'stalled', 'exited (unknown)'].includes(state)) return null;
   if (['running', 'queued'].includes(state)) return 'started';
   if (state === 'done') return 'done';
   if (['failed', 'timeout'].includes(state)) return 'failed';
@@ -142,10 +146,10 @@ export function publishUpdates(status, root = stateRoot(), config = configRoot()
     lines.push(`${stamp} ${updateText(goal)}/${updateText(lane)}: ${updateText(title)} ${state}`);
   };
   for (const task of status.tasks) {
-    const state = updateState(task.state), old = cursor.tasks[task.id];
+    const state = updateState(task.state, task.adopted), old = cursor.tasks[task.id];
     // Short tasks can finish between scans; their durable start is still an event.
-    if (task.started_at && (!old || old.attempt !== task.attempt_id) && state !== 'started') emit(task.goal_id, task.lane, task.title, 'started');
-    if (state && (!old || old.attempt !== task.attempt_id || old.state !== state || !!old.needs_owner !== (task.state === 'needs_owner'))) emit(task.goal_id, task.lane, task.title, state, task.state === 'needs_owner' ? 'needs_owner' : state);
+    if (state && task.started_at && (!old || old.attempt !== task.attempt_id) && state !== 'started') emit(task.goal_id, task.lane, task.title, 'started');
+    if (state && (!old || old.attempt !== task.attempt_id || old.state !== state || !!old.needs_owner !== (task.state === 'needs_owner'))) emit(task.goal_id, task.lane, task.adopted && task.state === 'done (unverified exit)' ? `${task.title} (unverified exit)` : task.title, state, task.state === 'needs_owner' ? 'needs_owner' : state);
     cursor.tasks[task.id] = { attempt: task.attempt_id, state, needs_owner: task.state === 'needs_owner' };
   }
   for (const goal of status.goals) {
@@ -174,7 +178,10 @@ export function publishUpdates(status, root = stateRoot(), config = configRoot()
   for (const id of Object.keys(cursor.goals)) if (!status.goals.some(g => g.id === id)) {
     emit(id, 'goal', 'Goal removed', 'interrupted', 'goal_state'); delete cursor.goals[id]; delete cursor.digests[id];
   }
-  cursor.recent = [...cursor.recent, ...lines].slice(-20);
+  // Retire incorrect legacy adopted-task blocker labels from retained views.
+  // Preserve the append-only log and record corrected observations normally.
+  const adoptedBlockLabels = new Set(status.tasks.filter(t => t.adopted).map(t => `${updateText(t.goal_id)}/${updateText(t.lane)}: ${updateText(t.title)} blocked`));
+  cursor.recent = [...cursor.recent.filter(line => !adoptedBlockLabels.has(line.slice(6))), ...lines].slice(-20);
   if (lines.length && settings.channels.log) cursor.pending = { offset: fs.existsSync(logFile) ? fs.statSync(logFile).size : 0, text: lines.join('\n') + '\n' };
   atomicJson(cursorFile, cursor); finishBatch();
   if (!inQuietHours(settings, now)) for (const line of lines) Promise.resolve().then(() => notify(line, config, undefined, settings.channels.ntfy_topic)).catch(() => {});
@@ -212,7 +219,8 @@ export function collect(root = stateRoot(), stalledMinutes = 5, config = configR
       publicTask.attempt_history = (task.attempt_history || []).map(a => ({ attempt_id: a.attempt_id, started_at: a.started_at, finished_at: a.finished_at, state: a.state, log_path: a.log_path, exit_code: a.exit_code, usage: reportedUsage(a.usage) }));
       for (const key of ['title', 'description']) publicTask[key] = redact(publicTask[key], 16000);
       for (const key of ['process_identity', 'supervisor_identity']) if (publicTask[key]) { publicTask[key] = { ...publicTask[key] }; delete publicTask[key].cmdline; }
-      tasks.push({ ...publicTask, ...g, state, design_state: alive ? state : state.startsWith('done') ? 'awaiting_verification' : task.exit_code == null ? 'unknown' : task.stop_requested ? 'stopped' : state === 'timeout' ? 'timed_out' : state, session_id: task.session_id || cache.session_id || null, elapsed_ms: Math.max(0, (!alive && task.finished_at ? Date.parse(task.finished_at) : now) - Date.parse(task.started_at)), elapsed_basis: 'wall_clock_approximate', estimate_ms: { low: task.expected_minutes === null ? null : task.expected_minutes * 60000, high: task.expected_minutes === null ? null : task.expected_minutes * 60000, basis: task.expected_minutes === null ? 'unknown' : 'owner_estimate' }, last_progress_at: cache.last_progress_at || null, last_event_summary: cache.events_last_3?.at(-1) || null, events_last_3: cache.events_last_3 || [], blockers, artifacts: report ? [{ path: report.path, kind: 'completion_report', digest: report.digest, digest_basis: report.truncated ? 'first_16KiB' : 'entire_file' }] : [], completion_report_ref: report?.path || null, completion_report: report ? report.text : cache.completion_report || task.completion_report || null, completion_report_provenance: report ? 'worker_file_reported' : 'worker_stream_reported', verification_state: 'unverified', health: state === 'stalled' ? 'stale_progress' : alive ? 'live_process' : 'not_running', usage: cache.usage || task.usage || { input_tokens: null, output_tokens: null, cached_tokens: null, source: 'unknown' }, cost_so_far: { known_amount: null, currency: null, unknown_components: ['subscription attribution', 'provider billing'], source: 'unknown', as_of: iso() }, stream: { offset: cache.offset || 0, backlog_bytes: cache.backlog_bytes || 0, malformed_lines: cache.malformed_lines || 0, rotated: cache.rotated || false } });
+      const info = task.adopted ? blockers.splice(0) : [];
+      tasks.push({ ...publicTask, ...g, state, design_state: alive ? state : state.startsWith('done') ? 'awaiting_verification' : task.exit_code == null ? 'unknown' : task.stop_requested ? 'stopped' : state === 'timeout' ? 'timed_out' : state, session_id: task.session_id || cache.session_id || null, elapsed_ms: Math.max(0, (!alive && task.finished_at ? Date.parse(task.finished_at) : now) - Date.parse(task.started_at)), elapsed_basis: 'wall_clock_approximate', estimate_ms: { low: task.expected_minutes === null ? null : task.expected_minutes * 60000, high: task.expected_minutes === null ? null : task.expected_minutes * 60000, basis: task.expected_minutes === null ? 'unknown' : 'owner_estimate' }, last_progress_at: cache.last_progress_at || null, last_event_summary: cache.events_last_3?.at(-1) || null, events_last_3: cache.events_last_3 || [], blockers, info, artifacts: report ? [{ path: report.path, kind: 'completion_report', digest: report.digest, digest_basis: report.truncated ? 'first_16KiB' : 'entire_file' }] : [], completion_report_ref: report?.path || null, completion_report: report ? report.text : cache.completion_report || task.completion_report || null, completion_report_provenance: report ? 'worker_file_reported' : 'worker_stream_reported', verification_state: 'unverified', health: state === 'stalled' ? 'stale_progress' : alive ? 'live_process' : 'not_running', usage: cache.usage || task.usage || { input_tokens: null, output_tokens: null, cached_tokens: null, source: 'unknown' }, cost_so_far: { known_amount: null, currency: null, unknown_components: ['subscription attribution', 'provider billing'], source: 'unknown', as_of: iso() }, stream: { offset: cache.offset || 0, backlog_bytes: cache.backlog_bytes || 0, malformed_lines: cache.malformed_lines || 0, rotated: cache.rotated || false } });
     } catch (e) { warnings.push({ code: 'task_read_error', path: name, description: e.message }); }
   }
   const orchestrators = recoverySessions(root, registry);

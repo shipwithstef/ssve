@@ -1,10 +1,10 @@
-# UPD1 + follow-up
-Private ~/.config/orch/updates.json defaults created; settings hot-reload every cycle.
-Event/goal filters, channel switches, quiet hours, configurable changed-only digest interval.
-Default summary none makes zero LLM calls; cheap uses Cursor/Grok for digests only, never Claude.
-Cheap calls: durable rolling-hour cap ≤2, 15s/4KiB bounds; quota/errors retain deterministic digest.
-Deduped updates.log; web/pane last 20; prompt band newest; optional bounded ntfy push.
-Unbound parent-orchestrated child and unknown Claude turn allowance are info; bound-child loss stays blocked.
-Validation: node --test scripts/orch/*.test.mjs 99/99; plugin tests 9/9; syntax/persistence/diff checks pass.
-Both services restarted/active; live HTTP 200 verifies fresh channels, mode none and 2 parent-orchestrated goals.
-Local commits only, no push; unrelated edits preserved; cheap provider mocked; settings guide: docs/orch/updates.md.
+# UPD1 + follow-ups
+Private ~/.config/orch/updates.json defaults exist; settings hot-reload every cycle.
+Config controls event/goal filters, channels, quiet hours, digest timing/change policy; views show recent updates.
+Default summary none = deterministic, zero LLM; cheap uses Cursor/Grok for digests only, never Claude.
+Cheap: durable hourly cap ≤2, 15s/4KiB bounds; quota/errors retain deterministic digest; optional ntfy push.
+Adopted p1b/D1a project observed completion/unknown exit with info, not blockers; false legacy labels leave views.
+Parent-orchestrated unbound children/unknown Claude allowance remain info; dispatcher admission/control stays unchanged.
+Validation: node --test scripts/orch/*.test.mjs 102/102; pane 10/10; syntax/persistence/diff checks pass.
+Services restarted/active; live HTTP 200 verifies both adopted tasks done (unverified exit), zero blockers, mode none.
+Local commits only, no push; unrelated edits preserved; cheap provider mocked; guide: docs/orch/updates.md.
