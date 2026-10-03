@@ -1,6 +1,6 @@
 import { atom, read, update } from 'claude-code';
 import type { Register, EngineInterface, Timer } from 'claude-code';
-import type { OrchStatus, OrchTask, OrchView, OrchExpansion, OrchDetail, OrchDraft, OrchGoal, OrchRecoverySession } from '../types/index';
+import type { OrchStatus, OrchTask, OrchView, OrchExpansion, OrchDetail, OrchDraft, OrchGoal, OrchRecoverySession, OrchMode, OrchAction } from '../types/index';
 
 const PANE = 'orch';
 const view = atom<OrchView>({ plugin: 'orchestrator-pane', key: 'view' }, { snapshot: null, error: 'Waiting for collector', readAt: 0 });
@@ -8,6 +8,10 @@ const expanded = atom<OrchExpansion>({ plugin: 'orchestrator-pane', key: 'expand
 const detail = atom<OrchDetail>({ plugin: 'orchestrator-pane', key: 'detail' }, null);
 const draft = atom<OrchDraft>({ plugin: 'orchestrator-pane', key: 'draft' }, null);
 const page = atom<number>({ plugin: 'orchestrator-pane', key: 'page' }, 0);
+const mode = atom<OrchMode>({ plugin: 'orchestrator-pane', key: 'mode' }, { sessionId: '', enabled: null, showChat: false, placed: false });
+const action = atom<OrchAction>({ plugin: 'orchestrator-pane', key: 'action' }, null);
+// Size requests are clamped by the host; there is no whole-window pane seat.
+const MAX_SIZE = 10000;
 
 export function clean(value: unknown, limit = 1200): string {
   return String(value ?? '').replace(/\x1b\[[0-9;]*[A-Za-z]/g, '').replace(/[\x00-\x08\x0b-\x1f\x7f]/g, '')
@@ -56,6 +60,8 @@ let timer: Timer | undefined;
 let refreshing = false;
 let stateDir = '';
 let scriptRoot = '';
+let controlling = false;
+let actionSequence = 0;
 async function paths($: EngineInterface) {
   stateDir = (await $.env.get('ORCH_STATE_DIR')) || `${await $.env.get('HOME')}/.local/state/orch`;
   // Resolve from the loaded source folder, independent of the session cwd.
@@ -78,6 +84,19 @@ async function refresh($: EngineInterface) {
       await update($, view, old => ({ ...old, error: clean(String(error)), readAt: now }));
     }
     await $.ui.status(count(await read($, view), now));
+    const sessionId = await $.session.id();
+    await update($, mode, old => old.sessionId === sessionId ? old : { sessionId, enabled: null, showChat: false, placed: false });
+    const current = await read($, view);
+    const parent = !stale(current, now) && current.snapshot?.orchestrators?.some(entry => entry.role === 'parent' && entry.session_id === sessionId && entry.registry_revision === current.snapshot?.registry_revision);
+    const settings = await read($, mode);
+    if (settings.enabled === null && parent && (await $.session.surfaces()).includes('terminal')) {
+      await update($, mode, old => ({ ...old, enabled: true }));
+      await place($);
+    } else if (settings.enabled) {
+      const pane = (await $.ui.panes()).find(entry => entry.id === PANE);
+      if (!pane && (await $.session.surfaces()).includes('terminal')) await place($);
+      else await update($, mode, old => ({ ...old, placed: !!pane?.isShown && pane.isPlaced }));
+    }
     $.ui.invalidate('ui.render');
   } finally { refreshing = false; }
 }
@@ -87,7 +106,22 @@ async function start($: EngineInterface) {
 }
 async function open($: EngineInterface) {
   await start($);
-  await $.ui.open({ id: PANE, title: 'Orchestrator', focus: true });
+  await update($, mode, old => ({ ...old, enabled: true }));
+  await place($);
+}
+async function place($: EngineInterface) {
+  // Leave the keyboard with the global composer; ctrl+x tab enters the pane.
+  const result = await $.ui.open({ id: PANE, title: 'Orchestrator', rows: MAX_SIZE, columns: MAX_SIZE });
+  await update($, mode, old => ({ ...old, placed: result.isPlaced }));
+  if (!result.isPlaced) await $.ui.toast(`Orchestrator pane waiting: ${clean(result.reason)}. Use /orch on to request it.`);
+  $.ui.invalidate('ui.render');
+}
+async function off($: EngineInterface) {
+  await update($, mode, old => ({ ...old, enabled: false, showChat: false, placed: false }));
+  await update($, action, () => null);
+  await update($, draft, () => null);
+  await $.ui.close({ id: PANE });
+  $.ui.invalidate('ui.render');
 }
 async function toggle($: EngineInterface, key: string, defaultValue = false) {
   await update($, expanded, old => ({ ...old, [key]: !(old[key] ?? defaultValue) }));
@@ -116,6 +150,42 @@ async function copySession($: EngineInterface, entry: OrchRecoverySession, kind:
   const result = await $.ui.copy({ text: latest[kind], surface });
   await $.ui.toast(result.isCopied ? 'Owner command copied. Verify native ownership before running; parent first.' : 'Clipboard unavailable; copy the command shown in the pane.');
 }
+async function prepare($: EngineInterface, task: OrchTask, text?: string, now = false) {
+  if (controlling) { await $.ui.toast('A worker control is still pending.'); return; }
+  if (text !== undefined && !text.trim()) { await $.ui.toast('Enter a steering message first.'); return; }
+  await update($, action, () => ({ nonce: ++actionSequence, kind: text === undefined ? 'stop' : 'steer', taskId: task.id, attemptId: task.attempt_id, sessionId: task.session_id, text, now }));
+}
+async function confirm($: EngineInterface) {
+  if (controlling) return;
+  controlling = true;
+  try {
+    const pending = await read($, action);
+    if (!pending) return;
+    await refresh($);
+    if ((await read($, action))?.nonce !== pending.nonce) return;
+    const current = await read($, view);
+    const task = current.snapshot?.tasks.find(t => t.id === pending.taskId && t.attempt_id === pending.attemptId && t.session_id === pending.sessionId);
+    if (stale(current, await $.clock.now()) || !task || task.adopted || (pending.kind === 'stop' && !live(task)) || (pending.kind === 'steer' && !task.session_id)) {
+      await $.ui.toast('Task changed, stale, or read-only; control cancelled.'); return;
+    }
+    // Clear before dispatch; repeated clicks cannot submit the same action twice.
+    await update($, action, () => null);
+    const argv = ['node', `${scriptRoot}/dispatch.mjs`, pending.kind, task.id];
+    if (pending.kind === 'steer') argv.push(pending.text!, ...(pending.now ? ['--now'] : []));
+    argv.push('--expected-attempt', task.attempt_id);
+    if (task.session_id) argv.push('--expected-session', task.session_id);
+    const result = await $.process.run(argv, { env: { ORCH_STATE_DIR: stateDir }, timeoutMs: 45000 });
+    if (result.exitCode !== 0) throw new Error(result.stderr || 'Dispatcher refused the action');
+    await update($, draft, () => null);
+    await $.ui.toast(pending.kind === 'stop' ? 'Stop confirmed by dispatcher.' : 'Steer accepted by dispatcher; delivery/resume status follows the collector.');
+  } catch (error) {
+    await $.ui.toast(`Control failed: ${clean(String(error))}`);
+  } finally {
+    await update($, action, () => null);
+    controlling = false;
+    await refresh($);
+  }
+}
 async function details($: EngineInterface, task: OrchTask) {
   try {
     if (!task.log_path?.startsWith('/')) throw new Error('No registered absolute log path');
@@ -129,19 +199,38 @@ async function details($: EngineInterface, task: OrchTask) {
 }
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
-    await $.command.register({ name: 'orch', description: 'Open local worker status (no model calls)' });
+    await $.command.register({ name: 'orch', description: 'Orchestrator mode: /orch on|off (local terminal)' });
     await start($);
     return next(e);
   });
   on('session.end', async ($, e, next) => {
     timer?.cancel(); timer = undefined;
+    await off($);
+    await update($, mode, () => ({ sessionId: '', enabled: null, showChat: false, placed: false }));
     await $.ui.status(undefined);
     return next(e);
   });
   on('command.run', { command: 'orch' }, async ($, e) => {
-    if ((await $.session.surfaces()).includes('terminal')) await open($);
+    const arg = e.args.trim().toLowerCase();
+    if (arg && !['on', 'off'].includes(arg)) { await $.ui.toast('Usage: /orch on|off'); return {}; }
+    if (arg === 'off') await off($);
+    else if ((await $.session.surfaces()).includes('terminal')) await open($);
     else await $.ui.toast('Orchestrator pane is local-terminal only. Use the read-only CP1 web view remotely.');
     return {};
+  });
+  on('ui.close', { id: PANE }, async ($, e, next) => {
+    await update($, mode, old => ({ ...old, enabled: e.origin.kind === 'unload' ? old.enabled : false, placed: false }));
+    await update($, action, () => null);
+    await update($, draft, () => null);
+    $.ui.invalidate('ui.render');
+    return next(e);
+  });
+  on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
+    const settings = await read($, mode);
+    if (e.surface !== 'terminal' || !settings.enabled || !settings.placed || settings.showChat) return next(e);
+    const { Box } = $.ui.resolve(e);
+    // Drawing only: never rewrite session.append or intercept prompt.submit.
+    return <Box display="none" />;
   });
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     if (e.surface !== 'terminal' || e.props.hasSurvey || e.props.maxRows < 1 || e.props.bodyColumns < 10) return next(e);
@@ -157,6 +246,8 @@ export const register: Register = on => {
     const expansion = await read($, expanded);
     const log = await read($, detail);
     const steer = await read($, draft);
+    const settings = await read($, mode);
+    const pending = await read($, action);
     const requestedPage = await read($, page);
     const isStale = stale(current, await $.clock.now());
     const tasks = current.snapshot?.tasks ?? [];
@@ -164,9 +255,13 @@ export const register: Register = on => {
     const visible = new Set(tasks.slice(index * 100, (index + 1) * 100).map(t => t.id));
     const currentSteer = tasks.find(t => t.id === steer?.taskId && t.attempt_id === steer?.attemptId);
     return <Box flexDirection="column" width={e.props.bodyColumns}>
+      <Text>Orchestrator · global steering stays in the prompt · ctrl+x tab / Esc changes focus</Text>
+      <Text dimColor>Largest supported pane; host keeps transcript/prompt and may cap or retain your size.</Text>
+      <Button key="orch-chat" label={settings.showChat ? 'Hide chat' : 'Show chat'} onPress={() => update($, mode, old => ({ ...old, showChat: !old.showChat }))} />
+      <Button key="orch-off" label="Orchestrator off" onPress={() => off($)} />
       <Box key="orch-updates" flexDirection="column">{(current.snapshot?.update_channels?.pane === false ? [] : current.snapshot?.updates)?.slice(-20).map((line, i) => <Text key={`update-${i}`}>{clean(line)}</Text>)}</Box>
       <Box key="orch-count"><Text>{count(current, await $.clock.now())}</Text></Box>
-      <Text dimColor>Local view · refresh 60s · commands are copied for you to run</Text>
+      <Text dimColor>Local view · refresh 60s · worker controls require confirmation</Text>
       {current.error && <Box key="orch-error"><Text color="yellow">{current.error}</Text></Box>}
       {isStale && <Box key="orch-stale"><Text color="yellow">Collector stale/unavailable · last update {current.snapshot?.collector_heartbeat_at ?? 'unknown'}</Text></Box>}
       <Button key="orch-refresh" label="Refresh" onPress={() => refresh($)} />
@@ -206,8 +301,8 @@ export const register: Register = on => {
               {task.blockers.map((blocker, i) => <Box key={`blocker-${task.id}-${i}`}><Text color="yellow">Blocker: {clean(blocker.code)} · {clean(blocker.description)}</Text></Box>)}
               <Button key={`details-${task.id}`} label="Details (log tail)" onPress={() => details($, task)} />
               {task.adopted ? <Text>Read-only adopted task · owner controls unavailable</Text> : <Box flexDirection="column">
-                {!isStale && live(task) && <Button key={`stop-${task.id}`} label="Stop: copy command" onPress={() => copy($, task.id, task.attempt_id, e.surface)} />}
-                {!isStale && task.session_id && <Button key={`steer-${task.id}`} label="Steer: draft command" onPress={() => update($, draft, () => ({ taskId: task.id, attemptId: task.attempt_id, text: '' }))} />}
+                {!isStale && live(task) && <Button key={`stop-${task.id}`} label="Stop…" onPress={() => prepare($, task)} />}
+                {!isStale && task.session_id && <Button key={`steer-${task.id}`} label="Steer…" onPress={() => update($, draft, () => ({ taskId: task.id, attemptId: task.attempt_id, text: '' }))} />}
                 {live(task) && <Box key={`stop-command-${task.id}`}><Text>{command(task)}</Text></Box>}
                 {!task.session_id && <Text>Steer unavailable: session ID unknown</Text>}
               </Box>}
@@ -225,12 +320,20 @@ export const register: Register = on => {
         <Button key="orch-next" label="Next" onPress={() => update($, page, p => Math.min(Math.ceil(tasks.length / 100) - 1, p + 1))} />
       </Box>}
       {steer && <Box flexDirection="column">
-        <Text>Steer {clean(steer.taskId)} · exact owner text; run the copied command yourself.</Text>
-        {currentSteer && live(currentSteer) && <Text color="yellow">This command stops the worker before resuming its recorded session.</Text>}
+        <Text>Steer {clean(steer.taskId)} · exact owner text · {currentSteer?.steering?.mode === 'stdin' ? 'live delivery' : 'queue until exit'}</Text>
         <Input key="orch-steer-text" label="Message" value={steer.text} onInput={text => update($, draft, old => old ? { ...old, text: text.slice(0, 8192) } : null)} onSubmit={text => update($, draft, old => old ? { ...old, text: text.slice(0, 8192) } : null)} />
         {currentSteer && <Box key="orch-steer-command"><Text>{command(currentSteer, steer.text)}</Text></Box>}
         <Button key="orch-steer-copy" label="Copy steer command" onPress={() => copy($, steer.taskId, steer.attemptId, e.surface, steer.text)} />
+        {!isStale && currentSteer && <Button key="orch-steer-review" label="Review steer…" onPress={() => prepare($, currentSteer, steer.text)} />}
+        {!isStale && currentSteer && live(currentSteer) && <Button key="orch-steer-now" label="Stop then steer now…" onPress={() => prepare($, currentSteer, steer.text, true)} />}
         <Button key="orch-steer-cancel" label="Cancel" onPress={() => update($, draft, () => null)} />
+      </Box>}
+      {pending && <Box key="orch-confirmation" flexDirection="column">
+        <Text color="yellow">Confirm {pending.kind} {clean(pending.taskId)} · attempt {clean(pending.attemptId)} · session {clean(pending.sessionId ?? 'unknown')}</Text>
+        {pending.kind === 'stop' ? <Text>Stops this owned worker; queued messages stay queued.</Text> : <Text>{pending.now ? 'Stops the worker, verifies exit, then resumes the exact recorded session.' : 'Delivers live when supported; otherwise queues for exact-session resume after exit.'}</Text>}
+        {pending.text !== undefined && <Text>{clean(pending.text, 8192)}</Text>}
+        <Button key="orch-confirm" label="Confirm" onPress={() => confirm($)} />
+        <Button key="orch-cancel" label="Cancel" onPress={() => update($, action, () => null)} />
       </Box>}
     </Box>;
   });

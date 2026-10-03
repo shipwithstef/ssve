@@ -106,6 +106,25 @@ test('owner stop retains queued messages and never auto-resumes', async t => {
   const f = await fixture(t); await f.start(); await f.steer('pending'); assert.equal((await f.call(['stop', 'one'])).code, 0); await f.idle();
   assert.equal(f.lines('calls').length, 1); assert.equal(f.load().state, 'stopped'); assert.equal(f.load().steer_queue[0].text, 'pending');
 });
+for (const kind of ['stop', 'steer']) test(`CP3 ${kind}: changed confirmation attempt/session refuses before mutation`, async t => {
+  const f = await fixture(t); await f.start();
+  const original = f.load();
+  for (const flags of [
+    ['--expected-attempt', 'old-attempt', '--expected-session', original.session_id],
+    ['--expected-attempt', original.attempt_id, '--expected-session', 'old-session']
+  ]) {
+    const result = await f.call([kind, 'one', ...(kind === 'steer' ? ['must not deliver'] : []), ...flags]);
+    assert.equal(result.code, 1); assert.match(result.err, /Control (attempt|session) changed/);
+    assert.equal(f.load().owner_stop_requested, false); assert.equal(f.load().steer_queue.length, 0);
+    assert.equal(f.load().attempt_id, original.attempt_id); assert.equal(f.lines('calls').length, 1);
+  }
+  const unknown = await f.call([kind, 'one', ...(kind === 'steer' ? ['must not deliver'] : []), '--unknown', 'bad']);
+  assert.equal(unknown.code, 1); assert.match(unknown.err, /Unknown control option/);
+  const flags = ['--expected-attempt', original.attempt_id, '--expected-session', original.session_id];
+  assert.equal((await f.call([kind, 'one', ...(kind === 'steer' ? ['accepted'] : []), ...flags])).code, 0);
+  if (kind === 'steer') assert.equal(f.load().steer_queue[0].text, 'accepted');
+  else { await f.idle(); assert.equal(f.load().state, 'stopped'); }
+});
 for (const hold of ['limit', 'goal', 'cap']) test(`queued auto-resume respects ${hold} and preserves undelivered messages`, async t => {
   const f = await fixture(t, 'codex', hold === 'cap' ? { codex_runs: 1 } : {}); await f.start(); await f.steer('pending');
   if (hold === 'limit') f.change(task => task.max_auto_resume = 0);

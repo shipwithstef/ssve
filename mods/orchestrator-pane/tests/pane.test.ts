@@ -11,8 +11,8 @@ function setup(on: On) {
   const snapshot = JSON.parse(JSON.stringify(recorded));
   const clock = mock.clock(on, { now: Date.parse(snapshot.collector_heartbeat_at) });
   mock.env(on, { HOME: '/recorded/home' });
-  const seen = { reads: 0, models: 0, prompts: 0, appends: 0, writes: 0, processes: [] as unknown[], copies: [] as string[], counters: [] as (string | undefined)[], registered: [] as string[], opens: 0, toasts: [] as string[] };
-  const control = { raw: null as string | null, clipboard: true, missing: false };
+  const seen = { reads: 0, models: 0, prompts: 0, appends: 0, writes: 0, processes: [] as unknown[], copies: [] as string[], counters: [] as (string | undefined)[], registered: [] as string[], opens: 0, closes: 0, openArgs: [] as any[], toasts: [] as string[] };
+  const control = { raw: null as string | null, clipboard: true, missing: false, sessionId: 'unbound-test', placed: true, opened: false, processCode: 0 };
   on('fs.stat', () => { if (control.missing) return { deny: 'ENOENT status.json' }; return { value: { kind: 'file', size: 10000, mtimeMs: clock.now(), isLink: false } }; });
   on('fs.read', ($, e) => { seen.reads++; expect(e.path).toBe('/recorded/home/.local/state/orch/status.json'); return { value: control.raw ?? JSON.stringify(snapshot) }; });
   on('fs.write', () => { seen.writes++; throw new Error('Unexpected write'); });
@@ -23,7 +23,10 @@ function setup(on: On) {
   on('session.start', ($, e) => ({ cwd: e.cwd }));
   on('session.end', ($, e) => ({ sessionId: e.sessionId }));
   on('session.surfaces', () => ({ value: ['terminal'] }));
-  on('ui.open', () => { seen.opens++; return { value: { isPlaced: true } }; });
+  on('session.id', () => ({ value: control.sessionId }));
+  on('ui.open', ($, e) => { seen.opens++; seen.openArgs.push(e); control.opened = true; return { value: control.placed ? { isPlaced: true } : { isPlaced: false, reason: 'below 144 columns' } }; });
+  on('ui.panes', () => ({ value: control.opened ? [{ id: 'orch', title: 'Orchestrator', isShown: true, isFocused: false, isPlaced: control.placed }] : [] }));
+  on('ui.close', () => { seen.closes++; control.opened = false; return { value: undefined }; });
   on('ui.copy', ($, e) => { seen.copies.push(e.text); return { value: control.clipboard ? { isCopied: true } : { isCopied: false, reason: 'no-clipboard' } }; });
   on('model.complete', () => { seen.models++; throw new Error('Unexpected model'); });
   on('model.fork', () => { seen.models++; throw new Error('Unexpected model'); });
@@ -31,6 +34,11 @@ function setup(on: On) {
   on('session.append', () => { seen.appends++; throw new Error('Unexpected context'); });
   on('process.run', ($, e) => {
     seen.processes.push(e.argv);
+    if (e.argv[1].endsWith('/dispatch.mjs')) {
+      expect(e.init?.env).toEqual({ ORCH_STATE_DIR: '/recorded/home/.local/state/orch' });
+      expect(e.init?.timeoutMs).toBe(45000);
+      return { value: { exitCode: control.processCode, stdout: '{}', stderr: control.processCode ? 'Control attempt changed' : '' } };
+    }
     expect(e.argv[0]).toBe('node'); expect(e.argv[1]).toContain('/scripts/orch/tail.mjs');
     expect(e.argv[2]).toBe('/recorded/logs/p1c-r.jsonl'); expect(e.init?.timeoutMs).toBe(5000);
     return { value: { exitCode: 0, stdout: JSON.stringify({ text: 'token=private\nlast event', at: '2026-10-03T00:00:00Z', truncated: true }), stderr: '' } };
@@ -73,21 +81,23 @@ test('recorded snapshot: /orch, goal/lane/task expansion, joins, counters and 60
   expect(seen.processes.length).toBe(0); noEffects(seen);
 });
 
-test('details are bounded helper reads; stop/steer copy exact shell-safe commands only', async ($, on) => {
-  const { seen } = setup(on); await start($);
+test('details are bounded helper reads; stop confirms dispatch and steer retains shell-safe copy fallback', async ($, on) => {
+  const { seen, snapshot } = setup(on); await start($);
   const ui = await $.ui.mount(PANE); await ui.press({ key: 'task-p1c-r' });
   await ui.press({ key: 'details-p1c-r' });
   expect((await ui.find({ key: 'log-p1c-r' }))?.text).toBe('token=[redacted]\nlast event');
   expect(seen.processes.length).toBe(1);
   await ui.press({ key: 'stop-p1c-r' });
-  expect(seen.copies[0]).toMatch(/node '.*\/scripts\/orch\/dispatch.mjs' stop 'p1c-r'$/);
+  expect(seen.processes.length).toBe(1);
+  await ui.press({ key: 'orch-confirm' });
+  expect(seen.processes[1]).toEqual(['node', expect.stringContaining('/scripts/orch/dispatch.mjs'), 'stop', 'p1c-r', '--expected-attempt', snapshot.tasks.find((t: { id: string }) => t.id === 'p1c-r').attempt_id, '--expected-session', 'recorded-session-p1c-r']);
   await ui.press({ key: 'steer-p1c-r' });
   const message = "owner's $() `literal`\nsecond line";
   await ui.input({ key: 'orch-steer-text', text: message });
   await ui.press({ key: 'orch-steer-copy' });
-  expect(seen.copies[1]).not.toContain(" && ");
-  expect(seen.copies[1]).toContain("steer 'p1c-r' 'owner'\\''s $() `literal`\nsecond line'");
-  expect(seen.processes.length).toBe(1); noEffects(seen);
+  expect(seen.copies[0]).not.toContain(" && ");
+  expect(seen.copies[0]).toContain("steer 'p1c-r' 'owner'\\''s $() `literal`\nsecond line'");
+  expect(seen.processes.length).toBe(2); noEffects(seen);
   await ui.press({ key: 'task-d1a' });
   expect(await ui.find({ key: 'stop-d1a' })).toBeUndefined();
   expect(await ui.find({ key: 'steer-d1a' })).toBeUndefined();
@@ -130,9 +140,8 @@ test('one-line band respects width/survey; other surfaces receive no custom pane
 test('changed attempt and clipboard failure cannot run a command; clear cancels timer', async ($, on) => {
   const { snapshot, clock, seen, control } = setup(on); await start($);
   const ui = await $.ui.mount(PANE); await ui.press({ key: 'task-p1c-r' });
-  control.clipboard = false; await ui.press({ key: 'stop-p1c-r' });
+  control.clipboard = false; await ui.press({ key: 'steer-p1c-r' }); await ui.input({ key: 'orch-steer-text', text: 'continue' }); await ui.press({ key: 'orch-steer-copy' });
   expect(seen.toasts.at(-1)).toContain('Clipboard unavailable');
-  await ui.press({ key: 'steer-p1c-r' }); await ui.input({ key: 'orch-steer-text', text: 'continue' });
   snapshot.tasks.find((t: { id: string }) => t.id === 'p1c-r').attempt_id = 'new-attempt';
   await ui.press({ key: 'orch-refresh' }); await ui.press({ key: 'orch-steer-copy' });
   expect(seen.copies.length).toBe(1);
@@ -246,4 +255,99 @@ test('adopted observations are informational and do not inflate the prompt block
   const band = await $.ui.mount({ plugin: PLUGIN, surface: 'terminal', component: 'AbovePrompt', props: { ...bandProps, bodyColumns: 100 } });
   expect((await band.find({ key: 'orch-band' }))?.text).toContain('0 block');
   noEffects(seen);
+});
+
+test('CP3 bound parent defaults on, requests maximum size without focus, and hides assistant drawing only', async ($, on) => {
+  const { control, seen } = setup(on); control.sessionId = 'parent-exact';
+  on('ui.render', () => ({ type: 'Box', props: { key: 'host-chat' }, children: [{ type: 'Text', children: ['original assistant text'] }] }));
+  await start($);
+  expect(seen.opens).toBe(1);
+  expect(seen.openArgs[0].rows).toBe(10000); expect(seen.openArgs[0].columns).toBe(10000);
+  expect(seen.openArgs[0].focus).toBeUndefined();
+  const ui = await $.ui.mount(PANE);
+  const chat = await $.ui.mount({ plugin: PLUGIN, surface: 'terminal', component: 'AssistantMessage', requestId: 'reply', props: { text: 'original assistant text', isFirstOfReply: true } });
+  expect(await chat.find({ key: 'host-chat' })).toBeUndefined();
+  await ui.press({ key: 'orch-chat' }); expect((await chat.find({ key: 'host-chat' }))?.text).toBe('original assistant text');
+  await ui.press({ key: 'orch-chat' }); expect(await chat.find({ key: 'host-chat' })).toBeUndefined();
+  for (const surface of ['desktop', 'vscode', 'mobile'] as const) {
+    const remote = await $.ui.mount({ plugin: PLUGIN, surface, component: 'AssistantMessage', requestId: 'remote-' + surface, props: { text: 'original assistant text', isFirstOfReply: true } });
+    expect(await remote.find({ key: 'host-chat' })).toBeDefined();
+  }
+  await $.command.run({ command: 'orch', args: 'off' }); expect(seen.closes).toBe(1);
+  expect(await chat.find({ key: 'host-chat' })).toBeDefined();
+  await ui.press({ key: 'orch-refresh' }); expect(seen.opens).toBe(1); // explicit off survives refresh
+  await $.command.run({ command: 'orch', args: 'on' }); expect(seen.opens).toBe(2);
+  expect(await chat.find({ key: 'host-chat' })).toBeUndefined();
+  await ui.press({ key: 'orch-off' }); expect(await chat.find({ key: 'host-chat' })).toBeDefined();
+  await ui.press({ key: 'orch-refresh' }); expect(seen.opens).toBe(2);
+  expect(seen.processes.length).toBe(0); noEffects(seen);
+});
+
+test('CP3 unplaced auto-open keeps chat visible, parent binding can arrive later, clear resets preference', async ($, on) => {
+  const { control, seen, snapshot } = setup(on); control.placed = false;
+  on('ui.render', () => ({ type: 'Box', props: { key: 'host-chat' }, children: [{ type: 'Text', children: ['host text'] }] }));
+  await start($); expect(seen.opens).toBe(0);
+  const ui = await $.ui.mount(PANE);
+  const chat = await $.ui.mount({ plugin: PLUGIN, surface: 'terminal', component: 'AssistantMessage', requestId: 'reply', props: { text: 'host text', isFirstOfReply: false } });
+  control.sessionId = 'parent-exact';
+  snapshot.registry_revision++; // mismatched bindings must not auto-enable
+  await ui.press({ key: 'orch-refresh' }); expect(seen.opens).toBe(0);
+  snapshot.registry_revision--;
+  await ui.press({ key: 'orch-refresh' }); expect(seen.opens).toBe(1);
+  expect(await chat.find({ key: 'host-chat' })).toBeDefined();
+  expect(seen.toasts.at(-1)).toContain('waiting');
+  control.placed = true; await ui.press({ key: 'orch-refresh' });
+  expect(await chat.find({ key: 'host-chat' })).toBeUndefined();
+  await $.session.end({ reason: 'clear', sessionId: 'parent-exact', resume: { id: 'parent-exact' } });
+  control.sessionId = 'new-unbound'; await $.command.run({ command: 'orch', args: 'off' });
+  expect(await chat.find({ key: 'host-chat' })).toBeDefined();
+  await $.command.run({ command: 'orch', args: 'invalid' }); expect(seen.toasts.at(-1)).toContain('Usage');
+  noEffects(seen);
+});
+
+test('CP3 confirms exact argv once; cancel submits nothing; queued/live and --now semantics are separate', async ($, on) => {
+  const { seen, snapshot } = setup(on); await start($);
+  const ui = await $.ui.mount(PANE); await ui.press({ key: 'task-p1c-r' });
+  await ui.press({ key: 'stop-p1c-r' }); await ui.press({ key: 'orch-cancel' });
+  expect(seen.processes.length).toBe(0);
+  await ui.press({ key: 'steer-p1c-r' });
+  const text = "owner's $() `literal`\nsecond line";
+  await ui.input({ key: 'orch-steer-text', text }); await ui.press({ key: 'orch-steer-review' });
+  expect((await ui.find({ key: 'orch-confirmation' }))?.text).toContain('otherwise queues');
+  await Promise.allSettled([ui.press({ key: 'orch-confirm' }), ui.press({ key: 'orch-confirm' })]);
+  const task = snapshot.tasks.find((t: { id: string }) => t.id === 'p1c-r');
+  expect(seen.processes.length).toBe(1);
+  expect(seen.processes[0]).toEqual(['node', expect.stringContaining('/scripts/orch/dispatch.mjs'), 'steer', task.id, text, '--expected-attempt', task.attempt_id, '--expected-session', task.session_id]);
+  await ui.press({ key: 'steer-p1c-r' }); await ui.input({ key: 'orch-steer-text', text: 'now' });
+  await ui.press({ key: 'orch-steer-now' });
+  expect((await ui.find({ key: 'orch-confirmation' }))?.text).toContain('verifies exit');
+  await ui.press({ key: 'orch-confirm' }); expect((seen.processes[1] as string[])[5]).toBe('--now');
+  expect(seen.processes.length).toBe(2); noEffects(seen);
+});
+
+for (const changed of ['attempt', 'session', 'stale', 'adopted', 'missing', 'stopped'] as const) {
+  test(`CP3 pending stop rejects ${changed} target before dispatch`, async ($, on) => {
+    const { snapshot, seen } = setup(on); await start($);
+    const ui = await $.ui.mount(PANE); await ui.press({ key: 'task-p1c-r' }); await ui.press({ key: 'stop-p1c-r' });
+    const task = snapshot.tasks.find((t: { id: string }) => t.id === 'p1c-r');
+    if (changed === 'attempt') task.attempt_id = 'replacement';
+    if (changed === 'session') task.session_id = 'replacement';
+    if (changed === 'stale') snapshot.collector_heartbeat_at = '2000-01-01T00:00:00Z';
+    if (changed === 'adopted') task.adopted = true;
+    if (changed === 'missing') snapshot.tasks = snapshot.tasks.filter((t: { id: string }) => t.id !== task.id);
+    if (changed === 'stopped') task.state = 'stopped';
+    await ui.press({ key: 'orch-confirm' });
+    expect(seen.processes.length).toBe(0); expect(seen.toasts.at(-1)).toContain('control cancelled');
+    expect(await ui.find({ key: 'orch-confirmation' })).toBeUndefined(); noEffects(seen);
+  });
+}
+
+test('CP3 dispatcher failure is surfaced without retry; blank steering sends nothing', async ($, on) => {
+  const { seen, control } = setup(on); await start($);
+  const ui = await $.ui.mount(PANE); await ui.press({ key: 'task-p1c-r' });
+  await ui.press({ key: 'steer-p1c-r' }); await ui.press({ key: 'orch-steer-review' });
+  expect(await ui.find({ key: 'orch-confirmation' })).toBeUndefined(); expect(seen.processes.length).toBe(0);
+  control.processCode = 1; await ui.press({ key: 'stop-p1c-r' }); await ui.press({ key: 'orch-confirm' });
+  expect(seen.toasts.at(-1)).toContain('Control failed: Error: Control attempt changed');
+  expect(seen.processes.length).toBe(1); noEffects(seen);
 });

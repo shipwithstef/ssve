@@ -224,25 +224,64 @@ keyed buttons expand descriptions, executor, elapsed/estimate, dependencies,
 acceptance, last three events and blockers. AbovePrompt is one line (yields to
 surveys); the status counter flags snapshots older than 90 seconds. A failed read
 retains the last snapshot with a visible stale/error label. Task rows page at 100.
-Expansion survives snapshot refreshes through host state. Reopen `/orch` after
-clear/reload to refresh immediately and restart the timer if needed.
+Expansion survives snapshot refreshes through host state. The module's
+`session.start` restarts polling after hot reload; `/orch on` opens it explicitly.
 
 Details runs the Node stdlib `scripts/orch/tail.mjs` helper on the registered log
 path only, with a 5-second limit, ≤64 KiB / 200 lines and credential/control-code
 redaction. This avoids the mod filesystem API's 4 MiB whole-file read limit.
-Stop copies the exact dispatch stop command. Steer previews exact owner text and
-copies `dispatch.mjs steer`, which selects live delivery or queued continuation. Shell single quotes
-preserve quotes, newlines, dollar signs and backticks. Commands include the state
-root; the owner runs them. No command execution, model calls, prompt submission,
-context append or filesystem writes occur in the pane. Adopted tasks have no
-control buttons; stale snapshots and changed attempts refuse control copying.
-The dispatcher rechecks ownership and the recorded exact session when commands run.
+Stop and steer now have explicit review/confirm/cancel controls (CP3).
+Confirmation rereads status and calls `dispatch.mjs` with argv, `ORCH_STATE_DIR`,
+and expected attempt/session IDs; the dispatcher checks those identities before
+mutation, including inside the task record lock. The pane serializes submissions
+and never retries a failed acknowledgement automatically. Ordinary steer uses
+ST1 live delivery or queued continuation; “Stop then steer now” explicitly adds
+`--now`, verifies exit and resumes the exact session. Steer also retains a
+shell-quoted copy fallback. Refresh/details/stop make no model calls; steering
+may resume the worker through ST1. No pane prompt submission, context append or
+direct filesystem writes occur. Adopted/stale/changed targets reject controls.
 
 Custom drawing is **local terminal only**. Desktop, VS Code and Remote Control
 web/mobile receive no pane drawing; use the CP1 read-only web view remotely.
 Tests exercise host UI contracts, not actual terminal paint. No Q&A, watcher,
-instant terminal-event refresh, pane-executed stop/steer or acceptance receipt support in
-this card. The mod must be loaded from this checkout so sibling scripts resolve.
+instant terminal-event refresh or acceptance receipt support in this card.
+The mod must be loaded from this checkout so sibling scripts resolve.
+
+## CP3 orchestrator mode and engine limits
+
+`/orch on` (or `/orch`) enables orchestrator mode; `/orch off`, the pane's Off
+button or the host's close mark disables it. A fresh snapshot matching
+`$.session.id()` to a parent entry at the snapshot's registry revision enables
+it by default. Unbound/child sessions stay off until requested; explicit Off
+survives refresh/reload, and `/clear` resets the preference for the new session.
+Missing/error/stale binding evidence never auto-enables it. Hot reload retains
+the mode and restarts polling; unload closes the drawing, not worker processes.
+
+The supplied `PaneOpenArgs` supports **size requests only**: CP3 asks for 10000
+rows inline and 10000 columns docked so the host clamps it to its largest allowed
+pane. These are not a fullscreen seat or a layout override. `Pane.placement`
+and `bodyColumns` are read-only; the host docks beside the fullscreen transcript
+from 110 columns, otherwise seats inline above the prompt. User-adjusted sizes
+win over requests. An unasked auto-open waits undrawn below 144 columns (110
+after that pane was explicitly requested); `/orch on` requests placement at any
+width. AbovePrompt is capped at half the terminal including the prompt, so it
+cannot replace the window either. CP3 never requests focus: global owner input
+continues through the native prompt, and ctrl+x tab / Esc moves pane focus.
+
+While the last placement observation says the pane is placed and shown, terminal
+`AssistantMessage` render hooks return a hidden Box. Placement is observed on
+open and each refresh. “Show chat” restores the original rendering; Off or an
+observation of a hidden tab/unplaced pane also keeps chat visible. This
+changes **drawing only**, preserving stored assistant content and model context.
+There is no transcript-container hide/collapse API: user rows, tool rows, command
+output, host chrome and the prompt remain under host layout control. Remote
+surfaces retain original chat. The tree, last 20 owner updates, blockers and
+`needs_owner` refresh every 60 seconds (or immediately on Refresh/control);
+sub-second event delivery and actual terminal paint are unverified.
+
+`node --test scripts/orch/pane-parse.test.mjs` uses `claude plugin validate` as
+the real TSX parser and proves an extra `<` is rejected. It explicitly skips
+only when Claude is unavailable; release validation here requires Claude.
 
 ## SR1 Spot boot recovery
 
@@ -424,7 +463,7 @@ private FIFO-ordered `steer_queue` (100 messages, 8192 bytes each). The supervis
 is the sole transport writer; its heartbeat merges externally queued entries
 under the task record lock. Status/web/pane expose redacted `queued_steers`,
 `steering.mode`, delivery receipt metadata and `steering_hold` blockers. The pane
-copies a steer command for the owner to run; it performs no dispatch itself.
+offers confirmed dispatch and a copy fallback; see CP3 above.
 
 | Worker CLI | Recorded mode | Delivery |
 | --- | --- | --- |
