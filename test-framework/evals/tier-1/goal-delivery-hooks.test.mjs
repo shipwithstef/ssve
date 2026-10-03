@@ -35,6 +35,10 @@ assert.equal(materialized.status, 0, materialized.stderr);
 const bundle = JSON.parse(materialized.stdout.trim().split('\n').at(-1)).hosts[0];
 assert.equal(bundle.status, 'ok');
 const durableBoundary = path.join(path.dirname(path.dirname(bundle.launcher_path)), 'hooks/svc-hook-boundary.mjs');
+const fixtureRoot = path.join(source, 'test-framework/evals/fixtures/side01');
+const recordedFailure = JSON.parse(fs.readFileSync(path.join(fixtureRoot, 'installed-failure.json')));
+const nativeEnvelopes = JSON.parse(fs.readFileSync(path.join(fixtureRoot, 'native-code-envelopes.json')));
+const installedShapes = JSON.parse(fs.readFileSync(path.join(fixtureRoot, 'installed-hook-shapes.json')));
 after(() => fs.rmSync(home, { recursive: true, force: true }));
 const payload = (cmd, sid = 'read-session') => ({ session_id: sid, cwd: repo, tool_name: 'exec_command', tool_input: { cmd, workdir: repo } });
 function run(script, p, extra = {}, args = []) {
@@ -45,6 +49,11 @@ function boundary(p, host = 'codex', extra = {}, script = 'hooks/codex/svc-codex
   const spec = Buffer.from(JSON.stringify({ command: `${process.execPath} ${path.join(installed, script)} ${args.join(' ')}`.trim(),
     host, event: 'PreToolUse', timeoutMs: 20000 })).toString('base64url');
   return run(durableBoundary, p, extra, ['svc-side01', '--spec', spec]);
+}
+function recordedBoundary(shape, p, extra = {}) {
+  const command = shape.command.replaceAll('@SOURCE@', installed).replaceAll('@LAUNCHER@', bundle.launcher_path);
+  const spec = Buffer.from(JSON.stringify({ command, host: shape.host, event: shape.event, timeoutMs: 20000 })).toString('base64url');
+  return run(durableBoundary, { ...p, hook_event_name: shape.event }, { SVC_HOST: shape.host, ...extra }, [shape.marker, '--spec', spec]);
 }
 function snapshot(root) {
   if (!fs.existsSync(root)) return [];
@@ -69,7 +78,7 @@ test('1,000 installed engine envelopes and 108 Claude/Codex/Cursor boundary repl
       const host = ['codex', 'claude', 'cursor'][i % 3];
       let p = payload(commands[i % commands.length]);
       if (host === 'claude') p = { ...p, tool_name: 'Bash', tool_input: { command: p.tool_input.cmd } };
-      if (i % 7 === 0 && host === 'codex') p = { ...p, tool_name: 'functions.exec', tool_input: `text(await tools.exec_command(${JSON.stringify(p.tool_input)}));` };
+      if (i % 7 === 0 && host === 'codex') p = { ...p, tool_name: 'functions.exec', tool_input: `text(await tools.exec_command(${JSON.stringify(p.tool_input, null, i % 2 ? 2 : 0)}));` };
       if (host === 'cursor') p = { conversation_id: 'read-session', workspace_roots: [repo], command: p.tool_input.cmd };
       assert.ok(installedObservation(p, { ...env, ...scratchEnv }), `${state}/${host}/${i}`);
       if (i - (state === 'absent' ? 0 : state === 'stale' ? 334 : 667) >= 36) continue;
@@ -80,6 +89,57 @@ test('1,000 installed engine envelopes and 108 Claude/Codex/Cursor boundary repl
     }
     assert.deepEqual(snapshot(repo), beforeRepo);
     assert.deepEqual(snapshot(env.SVC_CODEX_RUNTIME_DIR), beforeRuntime);
+  }
+});
+
+test('exact activation failure and log-derived envelopes are silent through the installed boundary AND durable launcher', () => {
+  fs.rmSync(contract, { force: true });
+  const shape = installedShapes.find(s => s.host === 'codex' && s.event === 'PreToolUse');
+  assert.match(shape.command, /@LAUNCHER@/); // The old test skipped this layer.
+  assert.match(recordedFailure.stderr, /AUTH_BINDING_MISSING_SELF_HEAL_INELIGIBLE.*origin\/main is missing/);
+  const beforeRepo = snapshot(repo), beforeRuntime = snapshot(env.SVC_CODEX_RUNTIME_DIR);
+  // Replay the EXACT recorded payload without changing spaces, keys or paths.
+  for (const mode of ['advisory', 'enforce']) {
+    const exact = recordedBoundary(shape, recordedFailure.payload, { SVC_HOOK_MODE: mode });
+    assert.equal(exact.status, 0, exact.stderr);
+    assert.equal(exact.stderr, '');
+    assert.doesNotMatch(exact.stdout, /advisory|AUTH_BINDING|origin\/main|CIRCUIT|deny/);
+  }
+  for (const fixture of nativeEnvelopes) {
+    for (const name of ['exec', 'functions.exec']) {
+      const p = { ...payload(''), tool_name: name, tool_input: fixture.tool_input.replaceAll('@REPO@', repo) };
+      assert.ok(installedObservation(p, env), fixture.shape);
+      const read = recordedBoundary(shape, p);
+      assert.equal(read.status, 0, read.stderr); assert.equal(read.stderr, '', fixture.shape);
+      assert.doesNotMatch(read.stdout, /advisory|AUTH_BINDING|origin\/main|CIRCUIT|deny/, fixture.shape);
+    }
+  }
+  assert.deepEqual(snapshot(repo), beforeRepo);
+  assert.deepEqual(snapshot(env.SVC_CODEX_RUNTIME_DIR), beforeRuntime);
+  for (const fixture of nativeEnvelopes) {
+    for (const name of ['exec', 'functions.exec']) {
+      const p = { ...payload(''), tool_name: name, tool_input: fixture.tool_input.replaceAll('@REPO@', repo) };
+      // Change just one nested literal command in the SAME transport/renderer.
+      const mutation = { ...p, session_id: 'native-mutation-' + fixture.shape + name,
+        tool_input: p.tool_input.replace('cat input.txt', 'touch changed') };
+      assert.equal(installedObservation(mutation, env), null, fixture.shape);
+      assert.match(recordedBoundary(shape, mutation).stderr, /svc advisory/, fixture.shape);
+      assert.match(recordedBoundary(shape, mutation, { SVC_HOOK_MODE: 'enforce' }).stdout, /deny/, fixture.shape);
+    }
+  }
+  assert.equal(fs.existsSync(path.join(repo, 'changed')), false);
+});
+
+test('every recorded applicable Codex/Cursor/Claude hook command stays quiet on native read envelopes', () => {
+  for (const shape of installedShapes) {
+    const name = shape.host === 'claude' ? 'Bash' : shape.host === 'cursor' ? 'Shell' : 'exec_command';
+    if (shape.matcher !== '*' && !new RegExp(shape.matcher).test('Bash')) continue;
+    const p = shape.host === 'cursor'
+      ? { conversation_id: 'recorded-shapes', workspace_roots: [repo], command: 'cat input.txt' }
+      : { ...payload('cat input.txt', 'recorded-shapes'), tool_name: name, tool_input: { command: 'cat input.txt', workdir: repo } };
+    const read = recordedBoundary(shape, p);
+    assert.equal(read.status, 0, read.stderr); assert.equal(read.stderr, '', `${shape.host}/${shape.event}/${shape.marker}`);
+    assert.doesNotMatch(read.stdout, /advisory|AUTH_BINDING|origin\/main|CIRCUIT|deny/);
   }
 });
 
@@ -98,7 +158,16 @@ test('negative controls: mixed mutation, shell substitution, executable flags an
   }
   for (const code of ['text(await tools.exec_command({cmd:"cat input.txt; touch changed"}));',
     'text(await tools.exec_command({cmd:"cat input.txt"})); await tools.apply_patch("bad");',
-    'text(await tools.exec_command({cmd:compute()}));', 'text(await tools.exec_command({cmd:`cat input.txt ${evil()}`}));']) {
+    'text(await tools.exec_command({cmd:compute()}));', 'text(await tools.exec_command({cmd:`cat input.txt ${evil()}`}));',
+    'const r=await tools.exec_command({cmd:"cat input.txt"});text(r.constructor("touch changed")());',
+    'const r=await tools.exec_command({cmd:"cat input.txt"});r["constructor"]["constructor"]("return tools.exec_command({cmd: \'touch changed\'})")(1);',
+    'const r=await tools.exec_command({cmd:"cat input.txt"});const key=r.output;r[key]("touch changed");',
+    'const r=await tools.exec_command({cmd:"cat input.txt"});text(r.output)\n("touch changed");',
+    'const tools=await tools.exec_command({cmd:"cat input.txt"});text(tools);',
+    'const rs=await Promise.allSettled([tools.exec_command({cmd:"cat input.txt"})]);rs.forEach((r,i)=>text(await tools.exec_command({cmd:"touch changed"})));',
+    'const r=await tools.exec_command({cmd:"cat input.txt"});text(`${tools.exec_command({cmd:"touch changed"})}`);',
+    'const r=await tools.exec_command({cmd:"cat input.txt"}); /* output */ await tools.apply_patch("bad");',
+    ...['\r', '\u2028', '\u2029'].map(end => 'text(await tools.exec_command({cmd:"cat input.txt"})); // read' + end + 'await tools.apply_patch("bad");')]) {
     assert.equal(evaluatePreToolObservation({ ...payload(''), tool_name: 'functions.exec', tool_input: code }, env), null);
   }
 });

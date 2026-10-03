@@ -1,32 +1,33 @@
 # SIDE-01 — quiet, session-scoped hooks
 
-Candidate: `feature/side01-quiet-hooks`; baseline `a2272de`; executor Codex/Sol 6.1 high.
+Candidate: `feature/side01-quiet-hooks`; follow-up baseline `e5606f4`; Codex/Sol 6.1 high.
+Owner activation from `4a6ab7a` failed and was rolled back; previous synthetic coverage was insufficient.
 
-- Proven reads bypass contract IO, self-heal, ownership state and denial counters.
-- Recognize native Codex shell aliases and bounded literal code-mode wrappers.
-- Permit read-command output only in `/tmp`, `SVC_SESSION_SCRATCHPAD`, or `~/.local/state/orch`.
-- Keep executable flags, substitutions, mixed mutations, quoted tilde paths and symlink escapes governed.
-- Advisory output is atomic once per session/repository/check/finding class, including host context.
-- Advisory proposals do not increment the enforced-denial circuit breaker.
-- Freshness selects matching session rows; absent/foreign contracts are silent; own stale contracts deny.
-- Rules, including overflow pointers, arrive once per stable session across repositories/worktrees.
-- Cursor reads exit before alias, context and event-log writes.
-- Durable boundaries resolve runtime policy through the validated existing install manifest.
-- Package the small output memo with the durable bundle; preserve deleted-source denial receipts.
+Root cause and correction:
+- Native spaced JSON keys after commas were rejected; compact synthetic JSON passed.
+- The exact recorded payload yielded zero parsed calls before this fix, one afterward.
+- Consume key whitespace first; preserve literal command proof for the entire envelope.
+- Cover native parenthesized/bound output, stringify/slice, optional fields and bounded batch renderers.
+- Keep dynamic inputs, mutating callbacks, shadowed globals, executable flags and substitutions governed.
+- Reads bypass branch recovery, including the missing `origin/main` check; genuine mutations still advise/deny.
+
+Regression fixtures: `test-framework/evals/fixtures/side01/`.
+- Preserve the exact failed installed command, payload, stdout and stderr.
+- Inventory all 25 distinct recorded managed Claude/Codex/Cursor hook command shapes.
+- Sample 120 recent Codex logs (2026-09-30 through 2026-10-03); retain 16 native renderer/transport forms.
+- Native sample redacts only literal command/workdir values; syntax/whitespace and source record hashes remain.
+- The sample contained `exec` with nested `tools.exec_command`; no top-level shell/exec_command occurred.
+- Replay boundary → durable launcher → dispatcher in disposable HOME; the earlier test skipped the launcher.
 
 Validation:
-- `node --test test-framework/evals/tier-1/goal-delivery-hooks.test.mjs`: 5/5 passed.
-- 1,000 installed-engine payloads + 108 materialized Claude/Codex/Cursor envelope replays: zero advisories or state writes.
-- Mutation, finding-class/session dedupe, no-contract, own-stale-contract and rule-pointer controls passed.
-- All-host install migration: 57/57; actionable denial: 67/67; manifest lint passed.
-- Full baseline: 401/402 passed; native read-hook p95 failed under contention (179ms vs 153ms adjusted ceiling).
-- Final full candidate suite: 403/403 passed, zero timeouts.
-- Command: `TIER1_JOBS=4 VALIDATOR_TIMEOUT_SEC=300 bash test-framework/evals/run-all-evals.sh`.
-- Delta: one new validator; final failure count zero. Baseline used default eight jobs/180s; latency is not a causal SIDE-01 claim.
-- Two-Box isolated rerun: 131/131 passed; earlier default sweep timed out under contention.
+- Targeted goal-delivery-hooks: 7/7 passed (previously 5/5).
+- 1,000 engine probes, 108 original boundary replays, exact failure replay in advisory/enforce modes passed.
+- 32 native read replays: zero advisories or repository/runtime writes; 64 paired mutation controls passed.
+- All 13 shell-applicable recorded host hook command/event shapes are quiet; manifest lint passed.
+- Final full Tier 1: 403/403 passed, zero failures/timeouts; `TIER1_JOBS=4 VALIDATOR_TIMEOUT_SEC=300`.
+- Delta: two additional goal tests; aggregate validator count remains 403. Final sweep follows parser hardening.
+- Full command: `bash test-framework/evals/run-all-evals.sh`; tiers 1.5–3 are not requested.
 
-Evidence: ignored local logs under `test-framework/results/side01-20261003/`.
-Payload fixtures are synthetic native envelopes; no private transcript or redacted ENOENT stack was supplied.
-Reported ENOENT is not attributed to the freshness reader, which already catches read errors.
-Source/installed Claude digests differ; global hook installations were neither refreshed nor activated.
-Owner review and activation remain pending. No push. Owner-supplied untracked side plan is untouched.
+Evidence: `test-framework/results/side01-activation-fix-20261003/` (ignored).
+Fixtures also preserve the owner's failed live evidence; temporary-home results do not claim live activation.
+No global install/activation and no push. Owner-supplied untracked side plan is untouched.
