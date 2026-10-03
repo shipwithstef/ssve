@@ -372,3 +372,31 @@ rerun to reconcile a partial seed; it never writes goals.json directly.
 node scripts/orch/seed-goals.mjs
 node --test scripts/orch/*.test.mjs
 ```
+
+## HO1-C recovery and owner goal groups
+
+See [RUNBOOK.md](RUNBOOK.md) for a portable Azure Spot/user-unit/Tailscale setup and
+parent-first owner recovery. SR1 checks active goal generation, child contract,
+exact worktree/lane grants and remaining known count budgets before reserving a
+worker continuation; dispatcher rechecks them under the same admission lock.
+Only a validated SR1 reservation may recover a child's worker without its live
+Claude supervisor. Ordinary child dispatch retains the live acknowledgement gate.
+Missing/stale grants and corrupt accounting hold `needs_owner`; no paid replay.
+
+Recovery receipts add `orchestrators[]` with exact binding commands and
+`auto_start:false`. The collector projects current-generation commands into
+`status.orchestrators[]`; a mismatched legacy parent-session holds parent commands.
+Both web and `/orch` show priority/state, child health/session/LOW, count budgets,
+unknowns, needs_owner and pending Monitor blockers, including empty goals.
+Active worker reservations are already included in attempt counts; Claude turn
+reservation remains unknown in counts-v1. Heartbeat timestamps do not create
+routine goal-change wakes. Clipboard actions refuse stale/revised bindings.
+
+Owner-only `sessions.mjs resume <exact-binding-options> --native-stopped true
+--live-verified true` restores an existing stopped transcript through a new launch
+nonce and fresh LOW acknowledgement, contract/binding environment and local pane
+plugin. These flags assert owner verification, never automatic recovery consent.
+Live attach still executes bare `claude --resume <id>`. Neither command changes
+goals.json. No native restart/LOW/terminal/Remote Control live gate is cleared by
+mock tests. After resume explicitly restore Monitor for actionable work; there is
+no event plugin or unattended wake after expiry in HO1 v1.

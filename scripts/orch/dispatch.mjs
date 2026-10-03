@@ -79,6 +79,7 @@ async function supervise(request) {
   if (autoRecovery) {
     if (existing.paid === true || existing.card?.paid === true || existing.read_only || existing.state !== 'interrupted' || existing.recovery?.status !== 'reserved' || existing.recovery.boot_id !== autoRecovery.boot_id || autoRecovery.boot_id !== bootId() || existing.attempt_id !== autoRecovery.attempt_id || !Number.isInteger(existing.auto_resume_count) || existing.auto_resume_count < 1 || existing.auto_resume_count > Math.min(2, existing.max_auto_resume ?? 2)) throw new Error('Auto-recovery reservation invalid or owner required');
     task.recovery = { ...existing.recovery, status: 'dispatched' };
+    if (!existing.recovery.from_boot_id || existing.recovery.from_boot_id === autoRecovery.boot_id || existing.goal_generation == null) throw new Error('Auto-recovery requires changed boot and persisted goal generation');
   }
   const attempt = randomUUID();
   Object.assign(task, { attempt_id: attempt, unit: `orch-${attempt}.scope`, state: 'queued', started_at: iso(), finished_at: null, exit_code: null, exit_signal: null, stop_requested: false, completion_report: null, usage: null, session_id: resume ? task.session_id : null, supervisor_identity: procIdentity(process.pid), supervisor_pid: process.pid, process_identity: null, pid: null, process_group: null, log_path: path.join(root, 'logs', `${task.id}-${attempt}.jsonl`), stderr_path: path.join(root, 'logs', `${task.id}-${attempt}.stderr`), events_path: path.join(root, 'logs', `${task.id}-${attempt}.events.jsonl`) });
@@ -87,7 +88,7 @@ async function supervise(request) {
   task.executor.cli_version = version.status === 0 ? version.stdout.trim() : null;
   let sequence = 0;
   const persist = (kind, extra = {}) => { atomicJson(file, task); atomicJson(`${lockPath(task.worktree, root)}.owner.json`, { task_id: task.id, attempt_id: attempt, supervisor_identity: task.supervisor_identity, process_identity: task.process_identity, state: task.state }); const fd = fs.openSync(task.events_path, 'a', 0o600); try { fs.writeSync(fd, JSON.stringify({ attempt_id: attempt, sequence: ++sequence, at: iso(), kind, ...extra }) + '\n'); fs.fsyncSync(fd); } finally { fs.closeSync(fd); } };
-  await admitTask(task, root, () => persist('queued'));
+  await admitTask(task, root, () => persist('queued'), { recovery: !!autoRecovery });
   const out = fs.createWriteStream(task.log_path, { flags: 'a', mode: 0o600 });
   const err = fs.createWriteStream(task.stderr_path, { flags: 'a', mode: 0o600 });
   const argv = scopeCommand(task, workerCommand(task, prompt, resume));

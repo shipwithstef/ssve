@@ -13,6 +13,13 @@ function ledger(o, root) {
   const old = readJson(fileFor(o, root));
   let current = old;
   if (old && (old.generation !== Number(o.generation) || old.session_id !== o.session_id || old.launch_nonce !== o.nonce)) {
+    const session = checkedSession(o, root, true);
+    if (old.generation === Number(o.generation) && old.session_id === o.session_id && session.resume_nonce_history?.includes(old.launch_nonce)) {
+      // An owner-restored SAME transcript preserves handled/queued event IDs;
+      // only the supervisor nonce rotates. Replaying a pending ID is idempotent.
+      current = { ...old, launch_nonce: o.nonce }; atomicJson(fileFor(o, root), current);
+      return current;
+    }
     if (old.generation >= Number(o.generation)) throw new Error('Event cursor belongs to conflicting binding');
     // checkedSession has already proved the NEW live lease. Supervisor launch
     // only permits this after explicit old-writer/native release and handoff.
@@ -27,9 +34,10 @@ function ledger(o, root) {
 // Exclude heartbeat, elapsed, stream and usage snapshots. Only actionable state
 // wakes children; parent sees authority/blockers, not every worker completion.
 export function actionable(status, o) {
+  const blockers = rows => (rows || []).map(b => ({ code: b.code, description: b.description }));
   const selectGoal = g => ({ id: g.id, priority: g.priority, desired_state: g.desired_state, child: g.child && { session_id: g.child.session_id, generation: g.child.generation },
-    budget: g.budget, blockers: g.blockers, acceptance_refs: g.acceptance_refs,
-    tasks: o.role === 'child' ? (status.tasks || []).filter(t => t.goal_id === g.id).map(t => ({ id: t.id, attempt_id: t.attempt_id, state: t.state, verification_state: t.verification_state, blockers: t.blockers, artifacts: t.artifacts })) : undefined });
+    budget: g.budget, blockers: blockers(g.blockers), acceptance_refs: g.acceptance_refs,
+    tasks: o.role === 'child' ? (status.tasks || []).filter(t => t.goal_id === g.id).map(t => ({ id: t.id, attempt_id: t.attempt_id, state: t.state, verification_state: t.verification_state, blockers: blockers(t.blockers), artifacts: t.artifacts })) : undefined });
   return o.role === 'child' ? (status.goals || []).filter(g => g.id === o.goal).map(selectGoal) : (status.goals || []).map(selectGoal);
 }
 export async function reconcileWake(o, root = stateRoot()) {
