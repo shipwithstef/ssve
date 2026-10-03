@@ -192,3 +192,18 @@ test('HO1 goal headers, empty paused goal, partial counts, blockers and owner-on
   expect(await ui.find({ key: 'resume-child-novisenti' })).toBeUndefined();
   expect(seen.processes.length).toBe(0); noEffects(seen);
 });
+
+
+test('UPD1: pane shows last 20 updates and one-line band shows newest, without model calls', async ($, on) => {
+  const { snapshot, seen } = setup(on);
+  snapshot.updates = Array.from({ length: 25 }, (_, i) => `12:00 demo/build: task ${i} done`);
+  await start($);
+  const ui = await $.ui.mount(PANE);
+  const updates = (await ui.find({ key: 'orch-updates' }))?.text ?? '';
+  expect(updates).toContain('task 5 done');
+  expect(updates).toContain('task 24 done');
+  expect(updates).not.toContain('task 4 done');
+  const band = await $.ui.mount({ plugin: PLUGIN, surface: 'terminal', component: 'AbovePrompt', props: { ...bandProps, bodyColumns: 100 } });
+  expect((await band.find({ key: 'orch-band' }))?.text).toContain('task 24 done');
+  noEffects(seen);
+});

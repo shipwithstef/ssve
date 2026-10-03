@@ -148,7 +148,7 @@ export const register: Register = on => {
     if (e.surface !== 'terminal' || e.props.hasSurvey || e.props.maxRows < 1 || e.props.bodyColumns < 10) return next(e);
     const { Box, Text, Button } = $.ui.resolve(e);
     const current = await read($, view);
-    const label = count(current, await $.clock.now());
+    const label = current.snapshot?.updates?.at(-1) ? clean(current.snapshot.updates.at(-1)) : count(current, await $.clock.now());
     return <Box width={e.props.bodyColumns}><Box key="orch-band"><Text wrap="truncate-end">{label.slice(0, Math.max(1, e.props.bodyColumns - 9))} </Text></Box><Button key="orch-open" label="Open" onPress={() => open($)} /></Box>;
   });
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e, next) => {
@@ -165,6 +165,7 @@ export const register: Register = on => {
     const visible = new Set(tasks.slice(index * 100, (index + 1) * 100).map(t => t.id));
     const currentSteer = tasks.find(t => t.id === steer?.taskId && t.attempt_id === steer?.attemptId);
     return <Box flexDirection="column" width={e.props.bodyColumns}>
+      <Box key="orch-updates" flexDirection="column">{current.snapshot?.updates?.slice(-20).map((line, i) => <Text key={`update-${i}`}>{clean(line)}</Text>)}</Box>
       <Box key="orch-count"><Text>{count(current, await $.clock.now())}</Text></Box>
       <Text dimColor>Local view · refresh 60s · commands are copied for you to run</Text>
       {current.error && <Box key="orch-error"><Text color="yellow">{current.error}</Text></Box>}
