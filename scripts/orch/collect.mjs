@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { stateRoot, init, atomicJson, readJson, taskPath, options, number, canonicalWorktree, procIdentity, git, digest, ingestLines, iso, isMain, redact, withLocks, bootId, sameProcess, configRoot } from './common.mjs';
 import { readRegistry, goalUsage, reportedUsage } from './goals.mjs';
 import { recoverySessions, binding } from './sessions.mjs';
+import { readUpdatesConfig, inQuietHours, selectedGoal, cheapDigest } from './updates-config.mjs';
 import { parentResume } from './recover.mjs';
 const self = fileURLToPath(import.meta.url);
 const CHUNK = 1024 * 1024;
@@ -43,6 +44,8 @@ export function classify(task, observation, now = Date.now(), stalledMinutes = 5
     if (now - Date.parse(observation.last_progress_at || task.started_at) >= stalledMinutes * 60000) return 'stalled';
     return 'running';
   }
+  // Adopted pre-dispatcher observations cannot acquire dispatcher recovery holds.
+  if (task.adopted && task.exit_code == null) return observation.completion_report ? 'done (unverified exit)' : 'exited (unknown)';
   if (['needs_owner', 'interrupted', 'interrupting', 'stopped'].includes(task.state)) return task.state;
   if (task.exit_code == null) return observation.completion_report ? 'done (unverified exit)' : 'exited (unknown)';
   if (task.state === 'timeout' || [124, 137].includes(task.exit_code) && now >= Date.parse(task.deadline_at)) return 'timeout';
@@ -94,6 +97,96 @@ export function adopt(o, root = stateRoot()) {
   atomicJson(file, task);
   return task;
 }
+const updateText = value => redact(value, 240).replace(/\s+/g, ' ').trim();
+function updateState(state, adopted = false) {
+  if (adopted && state === 'done (unverified exit)') return 'done';
+  if (adopted && ['blocked', 'needs_owner', 'stalled', 'exited (unknown)'].includes(state)) return null;
+  if (['running', 'queued'].includes(state)) return 'started';
+  if (state === 'done') return 'done';
+  if (['failed', 'timeout'].includes(state)) return 'failed';
+  if (['interrupting', 'interrupted', 'stopped'].includes(state)) return 'interrupted';
+  if (['blocked', 'needs_owner', 'stalled', 'exited (unknown)', 'done (unverified exit)'].includes(state)) return 'blocked';
+  return null;
+}
+// Best-effort, bounded HTTP only; never invoke a CLI/model or retry a push.
+export async function pushUpdate(line, config = configRoot(), request = fetch, topicOverride = null) {
+  let topic = topicOverride;
+  if (!topic) { try { topic = fs.readFileSync(path.join(config, 'ntfy-topic'), 'utf8').trim(); } catch { return; } }
+  if (!/^[a-zA-Z0-9_-]{1,128}$/.test(topic)) return;
+  try { await request(`https://ntfy.sh/${topic}`, { method: 'POST', body: line, signal: AbortSignal.timeout(5000) }); } catch { /* optional push cannot stop collection */ }
+}
+// Caller holds collector.lock. A write-ahead batch makes log append idempotent
+// even if collection stops between append and cursor commit.
+export function publishUpdates(status, root = stateRoot(), config = configRoot(), now = Date.now(), notify = pushUpdate, summarize = cheapDigest) {
+  const settings = readUpdatesConfig(config);
+  status.update_channels = { web: settings.channels.web, pane: settings.channels.pane };
+  const cursorFile = path.join(root, 'updates-cursor.json'), logFile = path.join(root, 'updates.log');
+  let cursor = readJson(cursorFile, { tasks: {}, goals: {}, digests: {}, recent: [] });
+  const finishBatch = () => {
+    if (!cursor.pending) return;
+    const { offset, text } = cursor.pending;
+    const bytes = Buffer.from(text);
+    const fd = fs.openSync(logFile, 'a+', 0o600);
+    try {
+      const size = fs.fstatSync(fd).size;
+      if (size < offset || size > offset + bytes.length) throw new Error('Update log changed outside collector');
+      const present = Buffer.alloc(size - offset);
+      fs.readSync(fd, present, 0, present.length, offset);
+      if (!bytes.subarray(0, present.length).equals(present)) throw new Error('Update log batch mismatch');
+      fs.writeSync(fd, bytes.subarray(present.length)); fs.fsyncSync(fd);
+    } finally { fs.closeSync(fd); }
+    delete cursor.pending; atomicJson(cursorFile, cursor);
+  };
+  finishBatch();
+  const stamp = new Date(now).toISOString().slice(11, 16); // UTC, like collector timestamps.
+  const lines = [], changed = new Set();
+  const emit = (goal, lane, title, state, event = state) => {
+    changed.add(goal);
+    if (!selectedGoal(settings, goal) || !settings.events.includes(event)) return;
+    lines.push(`${stamp} ${updateText(goal)}/${updateText(lane)}: ${updateText(title)} ${state}`);
+  };
+  for (const task of status.tasks) {
+    const state = updateState(task.state, task.adopted), old = cursor.tasks[task.id];
+    // Short tasks can finish between scans; their durable start is still an event.
+    if (state && task.started_at && (!old || old.attempt !== task.attempt_id) && state !== 'started') emit(task.goal_id, task.lane, task.title, 'started');
+    if (state && (!old || old.attempt !== task.attempt_id || old.state !== state || !!old.needs_owner !== (task.state === 'needs_owner'))) emit(task.goal_id, task.lane, task.adopted && task.state === 'done (unverified exit)' ? `${task.title} (unverified exit)` : task.title, state, task.state === 'needs_owner' ? 'needs_owner' : state);
+    cursor.tasks[task.id] = { attempt: task.attempt_id, state, needs_owner: task.state === 'needs_owner' };
+  }
+  for (const goal of status.goals) {
+    const state = JSON.stringify([goal.desired_state, goal.observed_state]);
+    if (cursor.goals[goal.id] !== state) {
+      const event = goal.observed_state === 'needs_owner' ? 'blocked' : ['registered', 'active', 'closing'].includes(goal.observed_state) ? 'started' : ['done', 'closed'].includes(goal.observed_state) ? 'done' : ['paused', 'stopped'].includes(goal.observed_state) ? 'interrupted' : 'blocked';
+      emit(goal.id, 'goal', `${goal.title} (${goal.observed_state || goal.desired_state || 'unknown'})`, event, goal.observed_state === 'needs_owner' && !settings.events.includes('goal_state') ? 'needs_owner' : 'goal_state');
+      cursor.goals[goal.id] = state;
+    }
+    if (goal.desired_state !== 'active' || !selectedGoal(settings, goal.id)) { delete cursor.digests[goal.id]; continue; }
+    const tasks = status.tasks.filter(t => t.goal_id === goal.id);
+    const today = new Date(now).toISOString().slice(0, 10);
+    const attempts = tasks.flatMap(t => [...(t.attempt_history || []), t]);
+    const done = new Set(attempts.filter(t => t.state === 'done' && t.finished_at?.slice(0, 10) === today).map(t => t.attempt_id)).size;
+    const running = tasks.filter(t => ['running', 'stalled'].includes(t.state)).length;
+    const blockers = [...new Set([...(goal.blockers || []).map(b => updateText(b.description || b.code)), ...tasks.flatMap(t => (t.blockers || []).map(b => `${updateText(t.title)}: ${updateText(b.description || b.code)}`))])].sort();
+    const summary = `${updateText(goal.id)}: ${running} running, ${done} done today, blockers: ${updateText(blockers.join('; ') || 'none')}`;
+    const prior = cursor.digests[goal.id] || { at: now, summary, dirty: false };
+    prior.dirty ||= changed.has(goal.id) || prior.summary !== summary;
+    if (now - prior.at >= settings.digest_minutes * 60000) {
+      if (prior.dirty || !settings.digest_only_on_change) lines.push(`${stamp} ${summarize(summary, settings, cursor, cursorFile, now)}`);
+      prior.at = now; prior.summary = summary; prior.dirty = false;
+    }
+    cursor.digests[goal.id] = prior;
+  }
+  for (const id of Object.keys(cursor.goals)) if (!status.goals.some(g => g.id === id)) {
+    emit(id, 'goal', 'Goal removed', 'interrupted', 'goal_state'); delete cursor.goals[id]; delete cursor.digests[id];
+  }
+  // Retire incorrect legacy adopted-task blocker labels from retained views.
+  // Preserve the append-only log and record corrected observations normally.
+  const adoptedBlockLabels = new Set(status.tasks.filter(t => t.adopted).map(t => `${updateText(t.goal_id)}/${updateText(t.lane)}: ${updateText(t.title)} blocked`));
+  cursor.recent = [...cursor.recent.filter(line => !adoptedBlockLabels.has(line.slice(6))), ...lines].slice(-20);
+  if (lines.length && settings.channels.log) cursor.pending = { offset: fs.existsSync(logFile) ? fs.statSync(logFile).size : 0, text: lines.join('\n') + '\n' };
+  atomicJson(cursorFile, cursor); finishBatch();
+  if (!inQuietHours(settings, now)) for (const line of lines) Promise.resolve().then(() => notify(line, config, undefined, settings.channels.ntfy_topic)).catch(() => {});
+  return cursor.recent.filter(line => settings.goals === 'all' || (Array.isArray(settings.goals) ? settings.goals : [settings.goals]).some(id => line.includes(` ${id}/`) || line.includes(` ${id}:`)));
+}
 export function collect(root = stateRoot(), stalledMinutes = 5, config = configRoot()) {
   init(root);
   const prior = readJson(path.join(root, 'status.json'), { revision: 0, tasks: [], deltas: [] });
@@ -130,7 +223,8 @@ export function collect(root = stateRoot(), stalledMinutes = 5, config = configR
       publicTask.attempt_history = (task.attempt_history || []).map(a => ({ attempt_id: a.attempt_id, started_at: a.started_at, finished_at: a.finished_at, state: a.state, log_path: a.log_path, exit_code: a.exit_code, usage: reportedUsage(a.usage) }));
       for (const key of ['title', 'description']) publicTask[key] = redact(publicTask[key], 16000);
       for (const key of ['process_identity', 'supervisor_identity']) if (publicTask[key]) { publicTask[key] = { ...publicTask[key] }; delete publicTask[key].cmdline; }
-      tasks.push({ ...publicTask, ...g, state, design_state: alive ? state : state.startsWith('done') ? 'awaiting_verification' : task.exit_code == null ? 'unknown' : task.stop_requested ? 'stopped' : state === 'timeout' ? 'timed_out' : state, session_id: task.session_id || cache.session_id || null, elapsed_ms: Math.max(0, (!alive && task.finished_at ? Date.parse(task.finished_at) : now) - Date.parse(task.started_at)), elapsed_basis: 'wall_clock_approximate', estimate_ms: { low: task.expected_minutes === null ? null : task.expected_minutes * 60000, high: task.expected_minutes === null ? null : task.expected_minutes * 60000, basis: task.expected_minutes === null ? 'unknown' : 'owner_estimate' }, last_progress_at: cache.last_progress_at || null, last_event_summary: cache.events_last_3?.at(-1) || null, events_last_3: cache.events_last_3 || [], blockers, artifacts: report ? [{ path: report.path, kind: 'completion_report', digest: report.digest, digest_basis: report.truncated ? 'first_16KiB' : 'entire_file' }] : [], completion_report_ref: report?.path || null, completion_report: report ? report.text : cache.completion_report || task.completion_report || null, completion_report_provenance: report ? 'worker_file_reported' : 'worker_stream_reported', verification_state: 'unverified', health: state === 'stalled' ? 'stale_progress' : alive ? 'live_process' : 'not_running', usage: cache.usage || task.usage || { input_tokens: null, output_tokens: null, cached_tokens: null, source: 'unknown' }, cost_so_far: { known_amount: null, currency: null, unknown_components: ['subscription attribution', 'provider billing'], source: 'unknown', as_of: iso() }, stream: { offset: cache.offset || 0, backlog_bytes: cache.backlog_bytes || 0, malformed_lines: cache.malformed_lines || 0, rotated: cache.rotated || false } });
+      const info = task.adopted ? blockers.splice(0) : [];
+      tasks.push({ ...publicTask, ...g, state, design_state: alive ? state : state.startsWith('done') ? 'awaiting_verification' : task.exit_code == null ? 'unknown' : task.stop_requested ? 'stopped' : state === 'timeout' ? 'timed_out' : state, session_id: task.session_id || cache.session_id || null, elapsed_ms: Math.max(0, (!alive && task.finished_at ? Date.parse(task.finished_at) : now) - Date.parse(task.started_at)), elapsed_basis: 'wall_clock_approximate', estimate_ms: { low: task.expected_minutes === null ? null : task.expected_minutes * 60000, high: task.expected_minutes === null ? null : task.expected_minutes * 60000, basis: task.expected_minutes === null ? 'unknown' : 'owner_estimate' }, last_progress_at: cache.last_progress_at || null, last_event_summary: cache.events_last_3?.at(-1) || null, events_last_3: cache.events_last_3 || [], blockers, info, artifacts: report ? [{ path: report.path, kind: 'completion_report', digest: report.digest, digest_basis: report.truncated ? 'first_16KiB' : 'entire_file' }] : [], completion_report_ref: report?.path || null, completion_report: report ? report.text : cache.completion_report || task.completion_report || null, completion_report_provenance: report ? 'worker_file_reported' : 'worker_stream_reported', verification_state: 'unverified', health: state === 'stalled' ? 'stale_progress' : alive ? 'live_process' : 'not_running', usage: cache.usage || task.usage || { input_tokens: null, output_tokens: null, cached_tokens: null, source: 'unknown' }, cost_so_far: { known_amount: null, currency: null, unknown_components: ['subscription attribution', 'provider billing'], source: 'unknown', as_of: iso() }, stream: { offset: cache.offset || 0, backlog_bytes: cache.backlog_bytes || 0, malformed_lines: cache.malformed_lines || 0, rotated: cache.rotated || false } });
     } catch (e) { warnings.push({ code: 'task_read_error', path: name, description: e.message }); }
   }
   const orchestrators = recoverySessions(root, registry);
@@ -145,8 +239,12 @@ export function collect(root = stateRoot(), stalledMinutes = 5, config = configR
   }
   const goals = (registry?.goals || []).map(goal => {
     const child = { session_id: goal.child.session_id, generation: goal.generation, effort: goal.child.effort, state: 'needs_owner', health: 'unobserved', last_heartbeat_at: null, attention_pending: false };
-    const blockers = [];
-    try {
+    const blockers = [], info = [];
+    const parentOrchestrated = goal.child.session_id === null;
+    if (parentOrchestrated) {
+      child.state = 'parent_orchestrated'; child.health = 'parent_orchestrated';
+      info.push({ code: 'parent_orchestrated', description: 'Child has no supervised session observation; goal is intentionally parent-orchestrated' });
+    } else try {
       const session = readJson(path.join(root, 'sessions', `child-${goal.id}.json`));
       if (!session) throw new Error('Child has no supervised session observation');
       binding({ role: 'child', goal: goal.id, generation: session.generation, session_id: session.session_id, principal: session.principal, worktree: session.worktree, contract: session.contract }, root);
@@ -167,7 +265,7 @@ export function collect(root = stateRoot(), stalledMinutes = 5, config = configR
     } catch (e) { blockers.push({ code: 'needs_owner', description: redact(e.message, 1200) }); }
     for (const task of tasks.filter(t => t.goal_id === goal.id)) for (const b of task.blockers.filter(b => b.code === 'recovery_hold')) blockers.push({ code: 'needs_owner', description: `${task.id}: ${b.description}` });
     const usage = goalUsage(goal.id, root, tasks);
-    if (goal.budget.claude_turn_cap == null || usage.claude.turns == null) blockers.push({ code: 'budget_unknown', description: 'Claude turn allowance/usage unknown; reconcile before new child dispatch' });
+    if (goal.budget.claude_turn_cap == null || usage.claude.turns == null) info.push({ code: 'budget_unknown', description: 'Claude turn allowance/usage unknown; reconcile before new child dispatch' });
     else if (usage.claude.turns >= goal.budget.claude_turn_cap) blockers.push({ code: 'budget_exhausted', description: 'Claude turn cap exhausted; parent allocation required' });
     for (const cli of ['codex', 'cursor', 'agy', ...(goal.budget.worker_caps.claude ? ['claude'] : [])]) {
       const cap = goal.budget.worker_caps[cli]?.runs;
@@ -175,11 +273,11 @@ export function collect(root = stateRoot(), stalledMinutes = 5, config = configR
       else if (cap > 0 && usage.workers[cli].attempts >= cap) blockers.push({ code: 'budget_exhausted', description: `${cli} run cap exhausted; parent allocation required` });
     }
     return { id: goal.id, title: redact(goal.title), priority: goal.priority, desired_state: goal.desired_state,
-      observed_state: goal.desired_state === 'active' ? child.state === 'idle' ? 'active' : 'needs_owner' : goal.desired_state, child, budget: goal.budget, usage,
+      observed_state: goal.desired_state === 'active' ? parentOrchestrated || child.state === 'idle' ? 'active' : 'needs_owner' : goal.desired_state, child, budget: goal.budget, usage,
       reserved: { claude_turns: null, worker_runs: Object.fromEntries(['codex', 'cursor', 'agy'].map(cli => [cli, tasks.filter(t => t.goal_id === goal.id && t.executor.cli === cli && t.reservation_active).length])) },
       remaining: { claude_turns: goal.budget.claude_turn_cap == null || usage.claude.turns == null ? null : Math.max(0, goal.budget.claude_turn_cap - usage.claude.turns),
         worker_runs: Object.fromEntries(['codex', 'cursor', 'agy'].map(cli => [cli, goal.budget.worker_caps[cli]?.runs == null ? null : Math.max(0, goal.budget.worker_caps[cli].runs - usage.workers[cli].attempts)])) },
-      blockers, recovery: orchestrators.find(s => s.role === 'child' && s.goal_id === goal.id) || null, lanes: [] };
+      blockers, info, recovery: orchestrators.find(s => s.role === 'child' && s.goal_id === goal.id) || null, lanes: [] };
   });
   for (const task of tasks) {
     let goal = goals.find(x => x.id === task.goal_id);
@@ -203,6 +301,7 @@ export function collect(root = stateRoot(), stalledMinutes = 5, config = configR
   if (recovery && registry) recovery.parent = recovery.orchestrators.find(s => s.role === 'parent') || { state: 'needs_owner', resume_command: null, auto_start: false, reason: 'Parent not bound in registry' };
   const checkpoint = readJson(path.join(root, 'checkpoint.json'));
   const status = { schema_version: 1, goal_id: goals.length === 1 ? goals[0].id : 'all', run_id: prior.run_id || `collector-${now}`, revision, registry_revision: registry?.revision ?? null, changed_goal_ids, generated_at: iso(), collector_heartbeat_at: iso(), recovery, orchestrators: recovery?.orchestrators || orchestrators, checkpoint, plan: { path: null, revision: null, hash: null, specs_path: null, specs_hash: null }, goals, tasks, changed_task_ids, changes_since_revision: prior.revision, deltas: [...(prior.deltas || []), delta].slice(-200), warnings };
+  status.updates = publishUpdates(status, root, config, now);
   atomicJson(path.join(root, 'status.json'), status);
   return status;
 }
@@ -219,12 +318,25 @@ export async function main(args = process.argv.slice(2)) {
   if (!o.watch) { await lockedInvocation(o); return; }
   const root = stateRoot(); init(root);
   const interval = number(o.watch, 'watch seconds') * 1000;
-  let wake, stopping = false, pendingFlush = false;
+  let wake, stopping = false, pendingFlush = false, debounce;
+  const watchers = [];
   const flush = () => { pendingFlush = true; wake?.(); };
   const stop = () => { stopping = true; wake?.(); };
   process.on('SIGUSR1', flush); process.on('SIGTERM', stop); process.on('SIGINT', stop);
   try {
     await withLocks([path.join(root, 'locks', 'collector.lock')], async () => {
+      // Key file events wake the deterministic collector; polling remains the fallback.
+      for (const dir of [root, path.join(root, 'tasks'), path.join(root, 'sessions')]) {
+        if (!fs.existsSync(dir)) continue;
+        try {
+          const watcher = fs.watch(dir, (_, name) => {
+            if (dir === root ? name?.toString() !== 'goals.json' : name && !name.toString().endsWith('.json')) return;
+            clearTimeout(debounce); debounce = setTimeout(flush, 100);
+          });
+          watcher.on('error', e => { console.error(`Update watcher: ${e.message}; using polling`); watcher.close(); });
+          watchers.push(watcher);
+        } catch (e) { console.error(`Update watcher: ${e.message}; using polling`); }
+      }
       atomicJson(path.join(root, 'collector.json'), { identity: procIdentity(process.pid), started_at: iso() });
       do {
         pendingFlush = false;
@@ -235,6 +347,6 @@ export async function main(args = process.argv.slice(2)) {
       } while (!stopping);
       collect(root, number(o.stalled_minutes, 'stalled minutes', 5));
     });
-  } finally { process.off('SIGUSR1', flush); process.off('SIGTERM', stop); process.off('SIGINT', stop); }
+  } finally { clearTimeout(debounce); for (const watcher of watchers) watcher.close(); process.off('SIGUSR1', flush); process.off('SIGTERM', stop); process.off('SIGINT', stop); }
 }
 if (isMain(import.meta.url)) main().catch(e => { console.error(e.message); process.exitCode = 1; });

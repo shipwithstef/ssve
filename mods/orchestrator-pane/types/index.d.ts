@@ -5,12 +5,15 @@ export type OrchTask = {
   elapsed_ms: number; estimate_ms: { low: number | null; high: number | null };
   steering?: { mode: string; reason?: string };
   queued_steers?: { id: string; at: string; text: string }[];
+  info?: { code: string; description: string }[];
   events_last_3: string[]; blockers: { code: string; description: string }[];
   depends_on: string[]; acceptance: string[]; log_path: string;
   completion_report_ref: string | null; verification_state: string;
 };
 export type OrchStatus = {
   schema_version: 1; revision: number; generated_at: string; collector_heartbeat_at: string;
+  updates?: string[];
+  update_channels?: { web: boolean; pane: boolean };
   tasks: OrchTask[]; warnings: { code: string; description: string }[];
   registry_revision?: number | null;
   orchestrators?: OrchRecoverySession[];
@@ -29,6 +32,7 @@ export type OrchGoal = {
   usage?: { claude: { turns: number | null }; workers: Record<string, { attempts: number }> };
   reserved?: { claude_turns: number | null; worker_runs: Record<string, number> };
   remaining?: { claude_turns: number | null; worker_runs: Record<string, number | null> };
+  info?: { code: string; description: string }[];
   blockers?: { code: string; description: string }[];
   lanes: { id: string; title: string; tasks: OrchTask[] }[];
 };

@@ -318,7 +318,8 @@ test('collector goal health, pending cursor and count blockers; heartbeat-only u
     const file = sessionFile('child', 'one', f.root);
     let status = collect(f.root);
     assert.equal(status.goals[0].child.health, 'live'); assert.equal(status.goals[0].observed_state, 'active');
-    assert.ok(status.goals[0].blockers.some(b => b.code === 'budget_unknown'));
+    assert.ok(status.goals[0].info.some(b => b.code === 'budget_unknown'));
+    assert.ok(!status.goals[0].blockers.some(b => b.code === 'budget_unknown' && b.description.startsWith('Claude')));
     const saved = readJson(file); saved.last_heartbeat_at = new Date().toISOString(); atomicJson(file, saved);
     status = collect(f.root); assert.deepEqual(status.changed_goal_ids, []);
     atomicJson(path.join(f.root, 'events', 'child-one.json'), { generation: record.generation, session_id: record.session_id, launch_nonce: record.launch_nonce, attention_pending: true, blocker: 'Monitor expired' });
