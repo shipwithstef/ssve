@@ -8,10 +8,9 @@ handles_concerns:
   - security-cross-family-review
 description: >
   Adversarial code review using the canonical deterministic external-review launcher.
-  Sends diff + goals + spec to the second model, gets findings back, then
-  Claude evaluates each finding: accept with justification or reject with
-  justification. Back and forth until all remaining findings are medium
-  severity max. Use when "cross-model review", "second opinion", "codex
+  Uses task card + decided solution + acceptance + diff as an entry point.
+  The reviewer explores connected repository code read-only and returns all
+  proof-bearing findings in one pass; at most two rounds per feature WI. Use when "cross-model review", "second opinion", "codex
   review", "adversarial review", or when `review-gate` leaves residual risk
   on changes involving new data models or integrations.
 phases:
@@ -95,10 +94,29 @@ This skill runs **inside the worktree** where the code lives.
 
 ### Step 1: Prepare the Review Package
 
-Gather context for the second model:
+Choose the reviewer by the actual code author, never the orchestrator host:
+
+| Author / responsibility | Reviewer | Host / effort |
+|---|---|---|
+| Grok-authored | Sol 6.1 | Codex / high |
+| Sol-authored | Grok 4.7 | Cursor / high |
+| Claude-authored | Sol 6.1 | Codex / high |
+| Milestone holistic | Claude Opus 5.5 (`claude-opus-5-5-high`) | agy / high; never Claude Pro |
+
+Never assign Astra or max effort. Resolve the exact tuple through owner policy;
+refuse a mismatched tuple rather than silently substituting. Milestone holistic
+review is once per milestone and distinct from feature correction rounds.
+
+Gather an ENTRY POINT for the second model, with read-only repository access:
 
 ```markdown
 ## Review Package
+
+### Task Card and Decided Solution
+<accepted task card, feature/WI identity, plan revision and decided solution>
+
+### Acceptance Commands and Results
+<exact commands, observed results and candidate digest>
 
 ### Goal
 <one paragraph from the feature spec: what this feature does and for whom>
@@ -151,7 +169,14 @@ You are reviewing a code change. Here is the context:
 
 <review package>
 
-Review this diff for:
+This packet is an ENTRY POINT, not the complete evidence. Open whole touched
+files, callers/callees (including unchanged callers outside the diff), config/routes,
+related tests and the actual cost path, including unchanged defaults, fan-out,
+retries and token caps. Record inspected paths and unread required dependencies.
+Use read-only shell reads; no edits, installs, Git mutations or artifact-producing
+tests in the source tree. Missing access or required exploration is INCOMPLETE.
+
+Return ALL findings in one pass. Trace the connected feature for:
 1. Bugs — logic errors, off-by-one, null handling, race conditions
 2. AC violations — does the code actually satisfy each acceptance criterion?
 3. Security — injection, auth bypass, data leaks, insecure defaults
@@ -160,9 +185,12 @@ Review this diff for:
 
 For each finding, provide:
 - Severity: Critical / High / Medium / Low
+- Confidence: high / medium / low
 - Location: file:line
 - Finding: what's wrong
-- Evidence: why you believe this
+- Proof for blockers: failing test command/result, concrete input → actual wrong
+  output plus expected output, or reachable call path demonstrating the violation.
+  Without proof, downgrade to advisory; retain the raw finding and downgrade reason.
 - Proposal: how to fix it
 
 Be specific. "Error handling could be better" is not a finding.
@@ -217,10 +245,9 @@ After first evaluation pass:
 
 ### One discovery batch; corrections stay on the finding branch
 
-Run one full review of the frozen branch. If the owner topology requires two
-reviewers, launch them in parallel on the same snapshot: both cover the complete
-branch, with different emphasis (correctness/data/authority versus
-integration/failure paths/operability). Collect both results before changing code.
+Run one full cross-family review of the frozen feature branch using the author
+routing table. Collect its complete findings before changing code. A second paid
+invocation is reserved for fix verification, not another discovery reviewer.
 Do not run a second full discovery pass after seeing the first reviewer output.
 Deduplicate findings into one numbered list, verify factual claims against source
 and tests, then implement the accepted fixes in one batch.
@@ -234,19 +261,28 @@ An unrelated new idea goes to a separate post-delivery refinement list; it does 
 restart this gate. A newly proven imminent security/data-loss defect is escalated
 with concrete evidence, not used to authorize another broad review loop.
 
-The three-round limit is a ceiling on necessary corrective exchanges, never a target
-and never permission for three full reviews. Preserve the original finding census,
+The two-round feature-wide limit is a ceiling on necessary corrective exchanges, never a target
+and never permission for two full reviews. Preserve the original finding census,
 reviewer receipts, dispositions and patch/test evidence. Before another dispatch,
 record `discovery_batches: 1` and `unlinked_followup_findings: 0` in the review log
-and run the round-cap guard with `--branch-once`. Count a parallel panel as one
-batch; record each reviewer's calls and cost separately. A declined or unnecessary
+and run the round-cap guard with `--branch-once`. Each external dispatch consumes a feature round; batch the feature into one
+required cross-family review. Record calls and cost separately. A declined or unnecessary
 recheck spends zero additional model calls. Owner spending limits take precedence.
 
 
 
-### HARD 3-round cap and bounded exit (WI-491)
+### HARD 2-round cap per feature and bounded exit (RV1)
 
-**Never run more than 3 adversarial rounds.** An adversarial reviewer prompted to
+Persist one stable feature ID (default: WI); pass `--feature-id` unchanged across
+related WI aliases/cards, sessions, candidate digests, review kinds and reviewers.
+The launcher atomically reserves each round before dispatch; incomplete attempts
+count, zero-call cache replays do not. Returning the spec never resets the ledger.
+Round 2 supplies original finding IDs, dispositions, patch delta and focused
+acceptance results; verify fixes and adjacent breakage only. No new discovery.
+After round 2 return unresolved proof to the orchestrator or record each residual
+and rationale. An unresolved proven blocker never becomes PASS.
+
+**Never run more than 2 adversarial rounds.** An adversarial reviewer prompted to
 find flaws does not run dry on a genuinely complex change — it keeps producing
 new High-severity concerns every round. "Loop until zero High" is therefore an
 **unreachable** stopping condition and MUST NOT be used. Convergence is defined by
@@ -259,8 +295,8 @@ The loop is CONVERGED (terminates, change proceeds) as soon as **both** hold:
   `reject-with-justification`.
 
 Hard cap by round:
-- **Round 1:** one full discovery batch. **Rounds 2–3 only if needed:** fix verification tied to original findings, never another full discovery pass.
-- **After round 3** (do NOT start a round 4):
+- **Round 1:** one full discovery batch. **Round 2 only if needed:** fix verification tied to original findings, never another full discovery pass.
+- **After round 2** (do NOT start a round 3):
   - **Unresolved Critical remain →** ESCALATE to the user/owner. Criticals always block; never auto-accept a Critical.
   - **Only High/Medium/Low remain →** the loop TERMINATES. Each remaining High MUST be dispositioned NOW (accept-with-justification as a logged execution-time risk, or reject-with-justification) and the change PROCEEDS. Do not run another round.
 
@@ -269,17 +305,16 @@ reached diminishing returns, not a signal to keep looping — apply the cap.
 
 **Mechanical enforcement (wire it into the loop).** Record `rounds_run` and, when
 you terminate, a `bounded_exit` (or escalation) block in the review-log. BEFORE
-starting any new round, if you have already completed round 3, STOP — do not
-dispatch a 4th round; disposition instead. The loop is guarded by
-`node scripts/check-review-round-cap.mjs --branch-once --log <review-log>`, which FAILS a run
-with `rounds_run > 3`, an unresolved Critical without escalation, or any remaining
+starting any new round, if you have already completed round 2, STOP — do not
+dispatch a 3rd round; disposition instead. The loop is guarded by
+`node scripts/check-review-round-cap.mjs --branch-once --log <review-log>`, which rejects `rounds_run > 2`, an unresolved Critical without escalation, or any remaining
 High lacking a documented disposition. A convergence/exec review is not complete
 until this check passes.
 
 > Anti-pattern (WI-491 origin): running 9 review rounds because 6 High findings
 > persisted with 0 Critical. That is the exact unbounded-loop bug this cap fixes.
-> High-only persistence AT round 3 is a DISPOSITION event, not a re-review event —
-> you never reach round 4.
+> High-only persistence AT round 2 is a DISPOSITION event, not a re-review event —
+> you never reach round 3.
 
 **Schema-current receipt handoff (WI-566).** When the final immutable reviewer
 object remains raw `fail` after a compliant bounded exit, return every ordered
@@ -288,7 +323,7 @@ review skill. The caller emits `pass-with-acks` with
 `reviewer_evidence.bounded_exit` per
 `schemas/receipts/bounded-exit.schema.json`. Never normalize the raw verdict or
 discard earlier round identities. This path is admissible only for zero
-Critical, at most three rounds, an unchanged candidate, and evidence-bound High
+Critical, at most two rounds, an unchanged candidate, and evidence-bound High
 dispositions. Terminal rubric failures additionally require an exact census
 mapped to dispositioned terminal finding IDs with hash-verified repository
 evidence; unread dependencies and failed certifications remain blocking.
@@ -335,7 +370,7 @@ Save to `docs/specs/reviews/<feature-name>-cross-model.md`:
 - Rejected: <count> (with justification for each)
 - Fixed: <count>
 - Remaining: <count> (each remaining High individually dispositioned — accept-with-justification as a logged risk, or reject-with-justification; unresolved Critical escalates and blocks)
-- rounds_run: <count> (HARD cap 3)
+- rounds_run: <count> (HARD cap 2)
 - review_family: cross | same (§4g — per round; drives the drain queue when a single-vendor window ends)
 
 ## Round 1
@@ -349,7 +384,7 @@ Save to `docs/specs/reviews/<feature-name>-cross-model.md`:
 ...
 
 ## Verdict
-<PROMOTED (rounds_run<=3, 0 unresolved Critical, every remaining High dispositioned) / ESCALATED_TO_USER (unresolved Critical — blocks)>
+<PROMOTED (rounds_run<=2, 0 unresolved Critical, every remaining High dispositioned) / ESCALATED_TO_USER (unresolved Critical — blocks)>
 ```
 
 ## When To Skip
@@ -365,7 +400,7 @@ capability is an actionable hard failure, never a skip or waiver substitute.
 - Accepting all findings without reading the code ("the other model must be right")
 - Rejecting all findings without evidence ("I wrote it so it's fine")
 - Stopping after round 1 with unresolved Critical findings
-- Sending the entire codebase instead of just the diff + context
+- Don’t paste the codebase — give read access and an entry point.
 
 ## Phase Receipt Contract
 
@@ -416,7 +451,7 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 | 1 | Review doc exists | `test -f docs/specs/reviews/<name>-cross-model.md` | |
 | 2 | No unresolved Critical | grep for `Critical` in accepted + not fixed; any unresolved Critical must be `terminal_state: ESCALATED_TO_USER` (blocks, never promotes) | |
 | 3 | Every remaining High dispositioned (NOT "no High remains") | each remaining High has accept-with-justification (logged risk) or reject-with-justification — Highs need not disappear | |
-| 4 | Round record + cap gate ran | `rounds_run<=3` recorded; `node scripts/check-review-round-cap.mjs --branch-once --log <review-log>` exits 0 (or 3 = escalated Critical, which blocks) — capture its output before the verdict | |
+| 4 | Round record + cap gate ran | `rounds_run<=2` recorded; `node scripts/check-review-round-cap.mjs --branch-once --log <review-log>` exits 0 (or 3 = escalated Critical, which blocks) — capture its output before the verdict | |
 | 5 | Every rejection has evidence | each REJECT has a code citation | |
 
 ### Chaining
@@ -488,8 +523,8 @@ receipt type as present + schema-valid.
 Reference: `references/chain-receipt-contract.md`.
 
 ## Automatic report recovery
-The canonical launcher permits at most one same-model report-repair attempt inside the original timeout. Claude repair requires trustworthy observed spend and uses the remaining enforced dollar ceiling. Other transports report no enforced dollar ceiling; if an explicit dollar cap was requested, they cannot retry automatically. Without such a cap, the bound is one correction and the remaining timeout, not a claimed dollar limit. It preserves both raw attempts and signs only the final validated report. Incomplete/malformed reports require normal validation after repair; parsed negative findings, failed certifications, rubric failures or unread dependencies prevent automatic completion. Certification-scope repair may only remove unbound false entries; verdict, findings, dependencies, summary and every bound certification remain identical. An actual negative source observation must remain and block; no local rewriting of reviewer output is allowed. Authorization, provider safety, model mismatch, missing proof and substantive defects are not recovery bypasses.
-A zero-invocation verified cache replay retains its signed issuance history but consumes no new adversarial round. The three-substantive-round cap remains; historical notes and counters are not erased. Grok receives the whole prompt with --verbatim. Do not ask the owner to authorize these mechanical recoveries.
+The canonical launcher permits at most one same-model report-repair attempt inside the original timeout. Claude repair requires trustworthy observed spend and uses the remaining enforced dollar ceiling. Other transports report no enforced dollar ceiling; if an explicit dollar cap was requested, they cannot retry automatically. Without such a cap, the bound is one correction and the remaining timeout, not a claimed dollar limit. It preserves both raw attempts and signs only the final validated report. Incomplete/malformed reports require normal validation after repair; parsed negative findings, failed certifications, rubric failures or unread dependencies prevent automatic completion. Certification-scope repair may only remove unbound false entries; verdict, findings, dependencies, summary and every bound certification remain identical. An actual proven negative source observation must remain and block. Preserve raw provider output; canonical output may only record the required proof-or-advisory downgrade. Authorization, provider safety, model mismatch, missing proof and substantive defects are not recovery bypasses.
+A zero-invocation verified cache replay retains its signed issuance history but consumes no new adversarial round. The two-substantive-round cap remains; historical notes and counters are not erased. Grok receives the whole prompt with --verbatim. Do not ask the owner to authorize these mechanical recoveries.
 
 ## Automatic input recovery
 Persist the review request and pass `--input-file` to both preflight and review. Interactive stdin fails immediately; incomplete pipes stop after 30 seconds (configurable up to 60 seconds). On a zero-provider `input_invalid` failure, recover the exact saved request, verify the current candidate and reviewer policy still match, and retry once using the file. Preserve the failed attempt; never invent a replacement prompt or accept partial input. If an old launcher is still waiting, verify its command, worktree and zero-provider state before stopping that exact process. Keep this recovery internal and continue the existing task; ask the owner only when the request or authority cannot be recovered.

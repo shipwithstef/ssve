@@ -8,7 +8,7 @@ import { validateEvidenceSchema } from "./evidence-schema.mjs";
 import { externalReviewCycleId, externalReviewCycleIdFromReceipt, listExternalReviewCycleProvenance } from "./external-review-provenance.mjs";
 import { getObject, lookupRelocation, reviewEvidenceStoreRoot } from "./review-evidence-store.mjs";
 
-export const BOUNDED_EXIT_HARD_CAP = 3;
+export const BOUNDED_EXIT_HARD_CAP = 2;
 export function isPlanCertificationCloseout(reviewKind, findings) {
   return reviewKind === 'plan' && ['pass', 'pass-with-findings'].includes(findings?.verdict)
     && Array.isArray(findings?.certifications) && findings.certifications.some(row => row?.certified !== true);
@@ -278,7 +278,7 @@ export function validateBoundedExitAdjudication({ root, reviewKind, body, identi
   const failedCertifications = certifications.filter((certification) => certification?.certified !== true);
   const certificationCensus = adjudication.certification_failure_census || [];
   if (failedCertifications.length && (reviewKind !== "plan" || rounds.length !== BOUNDED_EXIT_HARD_CAP)) {
-    reasons.push("bounded-exit cannot admit failed reviewer certifications outside plan round three");
+    reasons.push("bounded-exit cannot admit failed reviewer certifications outside plan round two");
   }
   if (!failedCertifications.length && Object.hasOwn(adjudication, "certification_failure_census")) {
     reasons.push("bounded-exit certification census supplied without failed certifications");
