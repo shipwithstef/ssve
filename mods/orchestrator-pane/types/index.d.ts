@@ -10,6 +10,7 @@ export type OrchTask = {
 export type OrchStatus = {
   schema_version: 1; revision: number; generated_at: string; collector_heartbeat_at: string;
   updates?: string[];
+  update_channels?: { web: boolean; pane: boolean };
   tasks: OrchTask[]; warnings: { code: string; description: string }[];
   registry_revision?: number | null;
   orchestrators?: OrchRecoverySession[];
@@ -28,6 +29,7 @@ export type OrchGoal = {
   usage?: { claude: { turns: number | null }; workers: Record<string, { attempts: number }> };
   reserved?: { claude_turns: number | null; worker_runs: Record<string, number> };
   remaining?: { claude_turns: number | null; worker_runs: Record<string, number | null> };
+  info?: { code: string; description: string }[];
   blockers?: { code: string; description: string }[];
   lanes: { id: string; title: string; tasks: OrchTask[] }[];
 };

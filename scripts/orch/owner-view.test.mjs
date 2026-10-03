@@ -46,3 +46,14 @@ test('web fixture: priority goal groups, empty goal, counts/unknowns, recovery c
   vm.runInContext(`renderStatus(${JSON.stringify({ ...fixture, goals: [{ ...fixture.goals[1], title: '<script>unsafe</script>' }] })})`, context);
   assert.match(elements.tree.children[0].firstChild.textContent, /<script>unsafe<\/script>/); // textContent, never HTML.
 });
+
+
+test('web hot-reloaded channel opt-out hides updates and informational goal notes render safely', async () => {
+  const elements = Object.fromEntries(['tree', 'stamp', 'error', 'recovery', 'updates'].map(id => [id, new Element(id)]));
+  const snapshot = { ...fixture, updates: ['12:00 goal/build: task done'], update_channels: { web: false, pane: true }, goals: [{ ...fixture.goals[0], info: [{ code: 'parent_orchestrated', description: 'No child bound' }] }] };
+  const context = vm.createContext({ document: { getElementById: id => elements[id], createElement: tag => new Element(tag) }, Date, fetch: async () => ({ ok: true, json: async () => snapshot }), setInterval: () => {} });
+  vm.runInContext(html.match(/<script>([\s\S]*)<\/script>/)[1], context);
+  await vm.runInContext('refresh()', context);
+  assert.equal(elements.updates.textContent, ''); assert.match(elements.tree.text, /Info: parent_orchestrated.*No child bound/);
+  snapshot.update_channels.web = true; await vm.runInContext('refresh()', context); assert.match(elements.updates.textContent, /task done/);
+});
