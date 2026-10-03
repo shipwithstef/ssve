@@ -10,6 +10,7 @@ import { ingestLines, procIdentity, sameProcess, lockPath, lockBusy, init, atomi
 import { workerCommand, scopeCommand } from './dispatch.mjs';
 import { readStream, classify, collect, adopt, observedAlive } from './collect.mjs';
 import { createServer } from './serve.mjs';
+import { transact } from './goals.mjs';
 const dir = path.dirname(fileURLToPath(import.meta.url));
 function fixture(cli) { return fs.readFileSync(path.join(dir, 'fixtures', `${cli}.jsonl`), 'utf8'); }
 function temp(t) { const root = fs.mkdtempSync(path.join(os.tmpdir(), 'orch-test-')); t.after(() => fs.rmSync(root, { recursive: true, force: true })); return root; }
@@ -109,6 +110,11 @@ if(prompt==='complete'){console.log(JSON.stringify({type:'turn.completed',usage:
 const child=cp.spawn('/bin/sleep',['1000'],{stdio:'ignore'});fs.writeFileSync(process.env.FAKE_DESCENDANT,String(child.pid));
 setInterval(()=>{},1000);
 `, { mode: 0o700 });
+  const planning = path.join(root, 'planning'); fs.mkdirSync(planning); spawnSync('git', ['init', '-q', planning]);
+  const plan = path.join(planning, 'PLAN.md'); fs.writeFileSync(plan, '# Fake plan');
+  await transact('create', { id: 'test', title: 'test', objective: 'fake worker', plan, codex_runs: 4, expected_revision: 0 }, root);
+  await transact('grant-worktree', { id: 'test', worktree: wt, lane: 'cp1', expected_revision: 1 }, root);
+  await transact('set-state', { id: 'test', state: 'active', expected_revision: 2 }, root);
   const promptFile = path.join(root, 'prompt'); fs.writeFileSync(promptFile, 'wait');
   const env = { ...process.env, ORCH_STATE_DIR: root, PATH: bin + path.delimiter + process.env.PATH, FAKE_ARGS: path.join(root, 'args'), FAKE_DESCENDANT: path.join(root, 'descendant') };
   const call = async args => {

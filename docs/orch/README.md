@@ -170,3 +170,85 @@ deallocated guest or fence a replacement VM; external capacity recovery, off-VM
 backup and cross-VM leases remain separate work. Tests use fake sessions/dispatch
 and a local fake worker in real user scopes; actual eviction and paid CLI resume
 are not exercised.
+
+## HO1-A registry authority and count budgets
+
+`goals.mjs` is the sole `goals.json` writer. Desired policy is separate from the
+collector's observed `status.json`. Every mutation requires `--expected-revision`
+(the absent registry starts at 0), uses the stable `locks/goals.lock` kernel lock,
+and fsyncs a 0600 temporary file, renames atomically, then fsyncs its directory.
+Concurrent/stale transactions fail; reread before deciding whether to retry.
+Never edit the registry or remove lock files manually. The parent principal is
+`ORCH_PRINCIPAL` (initially `owner`); `ORCH_ROLE=child` or `ORCH_DEPTH>0` refuses
+registry writes. These are trusted local protocol assertions, not a sandbox for
+hostile processes with the same Unix account. Native session fencing and actual
+worker filesystem containment remain separate live release gates.
+
+```bash
+node scripts/orch/goals.mjs list
+node scripts/orch/goals.mjs create --id example --title Example --objective Ship \
+  --plan /existing/linked/planning-worktree/PLAN.md --priority 10 \
+  --claude-turn-cap 12 --codex-runs 4 --cursor-runs 2 --agy-runs 1 \
+  --expected-revision 0
+node scripts/orch/goals.mjs grant-worktree --id example --lane build \
+  --worktree /existing/worker-worktree --paths '["src","tests"]' --expected-revision 1
+node scripts/orch/goals.mjs set-priority --id example --priority 1 --expected-revision 2
+node scripts/orch/goals.mjs set-state --id example --state active --expected-revision 3
+```
+
+Create resolves the existing plan's Git root into `planning_worktree`; no new
+planning checkout is created. Worker slots require explicit canonical Git roots;
+`worktree_roots` is an allocation restriction, not a wildcard grant. Planning and
+worker slots cannot overlap across goals, include nested roots, or reuse aliases.
+Path grants refuse reserved/escaping paths and observed escaping symlinks. Existing
+whole-worktree task/session locks remain the final writer exclusion; path grants
+do not replace those locks or provide filesystem containment for bypass-mode CLIs.
+
+Dispatch start/resume requires an active registered goal and an exact worktree/lane
+grant. A short registry lock covers policy validation, count cap validation and the
+durable queued task reservation before spawn. Each attempted launch consumes a run,
+including interrupted/failed launches and resumes. Closing/paused/blocked goals deny
+new admission while admitted workers retain their original hard limits.
+Stop remains available without goal admission. Dispatcher never writes goals.json.
+
+`set-state` may also configure `--claude-turn-cap`, `--codex-runs`, `--cursor-runs`,
+`--agy-runs`; null caps are unknown and zero explicitly denies new runs. Binding a
+child uses `--child-session <exact-id> --child-principal <stable-id>` while the goal
+is registered/paused/blocked and workers are drained. This increments generation
+and emits immutable `contracts/<goal>-v<generation>.json` before the registry commit.
+A child dispatch adds `--goal-generation N --child-session ID --child-principal ID
+--child-depth 1`; stale/foreign/deeper bindings fail, and missing Claude turn
+allowance/observations hold admission. Child contracts allow only the existing
+plan/board, LOW, depth 1 and no orchestration delegation. Launch/attach are HO1-B.
+
+V1 accounting is **counts only**. The collector projects Claude turn counts from
+`sessions/*.events.jsonl`: `{type:"turn.completed",goal_id,session_id,turn_id,usage}`.
+Stable session+turn IDs deduplicate replay/resume. Supervisor `sessions/*.json`
+`usage.turns` is a cumulative count checkpoint; repeated checkpoints use the maximum
+per session, reconciled with that session's event count rather than added to it.
+Event streams must retain the full turn history or a complete count checkpoint;
+there is no token journal. No observations means unknown, not zero.
+Per CLI, goal usage reports distinct task+attempt counts, approximate elapsed wall
+clock time, and each attempt's latest known usage snapshot. Reported provider token
+fields remain snapshots; they are never summed as fresh charges. Paid admission
+is disabled. Cumulative token journals and quota-share estimates are future work;
+the earlier design's token/quota requirements do not apply to counts-v1. A dated
+owner subscription percentage is not a live quota or an admission allowance.
+
+The collector includes empty/paused/closed registry goals sorted by priority,
+`registry_revision`, `changed_goal_ids`, child/budget/usage/blockers, and the existing
+`tasks[]` / `goals[].lanes[].tasks[]` shape. Orphan tasks remain visible with a goal
+ownership blocker. Corrupt authority preserves the last valid snapshot and denies
+admission. Public projection omits raw contracts, principals, prompts and argv;
+acceptance never follows from worker exit. Goal headers/live observations are HO1-C.
+
+The initial Novisenti and Orchestrator OS goals reuse the owner-specified plans.
+They start registered with unknown caps and no worker grants; registration alone
+does not allocate spending or launch sessions. `seed-goals.mjs` calls only the
+canonical writer and refuses to overwrite mismatching existing seeds. It may be
+rerun to reconcile a partial seed; it never writes goals.json directly.
+
+```bash
+node scripts/orch/seed-goals.mjs
+node --test scripts/orch/*.test.mjs
+```

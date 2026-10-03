@@ -6,6 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { StringDecoder } from 'node:string_decoder';
 import { stateRoot, init, atomicJson, readJson, taskPath, options, number, canonicalWorktree, lockPath, procIdentity, sameProcess, iso, sleep, ingestLines, isMain, bootId } from './common.mjs';
+import { admitTask } from './goals.mjs';
 const self = fileURLToPath(import.meta.url);
 
 export function workerCommand(task, prompt, resume = false) {
@@ -33,6 +34,8 @@ export function makeTask(o) {
   const task = { schema_version: 1, id: o.id, title: required(o, 'title'), goal_id: required(o, 'goal'), lane: required(o, 'lane'), description: o.title, depends_on: [], acceptance: [], executor: { cli: required(o, 'cli'), model: required(o, 'model'), effort: required(o, 'effort'), cli_version: null }, worktree, prompt_file: fs.realpathSync(required(o, 'prompt_file')), expected_minutes: number(o.expected_minutes, 'expected minutes'), hard_timeout_ms: number(o.hard_timeout, 'hard timeout seconds') * 1000, resume_text: required(o, 'resume_text'), memory_cap, session_id: null, attempt_history: [], adopted: false };
   if (o.paid !== undefined && !['true', 'false'].includes(o.paid)) throw new Error('--paid must be true or false');
   task.paid = o.paid === 'true';
+  for (const key of ['goal_generation', 'child_depth']) if (o[key] != null) { task[key] = Number(o[key]); if (!Number.isSafeInteger(task[key])) throw new Error(`Invalid ${key}`); }
+  for (const key of ['child_session', 'child_principal']) if (o[key] != null) task[key] = o[key];
   if (!['low', 'medium', 'high', 'xhigh', 'max', 'ultra'].includes(task.executor.effort)) throw new Error('Invalid effort');
   const command = workerCommand(task, 'validate');
   task.executor.requested_model = task.executor.model;
@@ -84,7 +87,7 @@ async function supervise(request) {
   task.executor.cli_version = version.status === 0 ? version.stdout.trim() : null;
   let sequence = 0;
   const persist = (kind, extra = {}) => { atomicJson(file, task); atomicJson(`${lockPath(task.worktree, root)}.owner.json`, { task_id: task.id, attempt_id: attempt, supervisor_identity: task.supervisor_identity, process_identity: task.process_identity, state: task.state }); const fd = fs.openSync(task.events_path, 'a', 0o600); try { fs.writeSync(fd, JSON.stringify({ attempt_id: attempt, sequence: ++sequence, at: iso(), kind, ...extra }) + '\n'); fs.fsyncSync(fd); } finally { fs.closeSync(fd); } };
-  persist('queued');
+  await admitTask(task, root, () => persist('queued'));
   const out = fs.createWriteStream(task.log_path, { flags: 'a', mode: 0o600 });
   const err = fs.createWriteStream(task.stderr_path, { flags: 'a', mode: 0o600 });
   const argv = scopeCommand(task, workerCommand(task, prompt, resume));
@@ -96,6 +99,7 @@ async function supervise(request) {
     if (end >= 0) { cache = ingestLines(partial.slice(0, end), task.executor.cli, cache); partial = partial.slice(end + 1); }
     if (partial.length > 1024 * 1024) partial = '';
     if (cache.session_id && !task.session_id) { task.session_id = cache.session_id; persist('session', { session_id: task.session_id }); }
+    if (cache.usage) task.usage = cache.usage;
     task.last_progress_at = iso();
   });
   child.stderr.on('data', data => err.write(data));
@@ -157,7 +161,7 @@ export async function main(args = process.argv.slice(2)) {
     const previous = readJson(taskPath(args[1]));
     if (!previous || previous.adopted || !previous.session_id) throw new Error('No owned resumable task/session');
     if (sameProcess(previous.supervisor_identity) || sameProcess(previous.process_identity)) throw new Error('Worker still running; stop and verify exit before resume');
-    const task = { ...previous, attempt_history: [...previous.attempt_history, { attempt_id: previous.attempt_id, started_at: previous.started_at, finished_at: previous.finished_at, state: previous.state, log_path: previous.log_path, exit_code: previous.exit_code }] };
+    const task = { ...previous, attempt_history: [...previous.attempt_history, { attempt_id: previous.attempt_id, started_at: previous.started_at, finished_at: previous.finished_at, state: previous.state, log_path: previous.log_path, exit_code: previous.exit_code, usage: previous.usage || null }] };
     const flags = options(args.slice(3));
     const autoRecovery = flags.auto_recover ? { boot_id: flags.auto_recover, attempt_id: flags.expected_attempt } : null;
     console.log(JSON.stringify(await launch(task, args[2] || task.resume_text, true, autoRecovery))); return;

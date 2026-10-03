@@ -1,0 +1,270 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "parent": {
+      "type": "object",
+      "properties": {
+        "principal": {
+          "type": "string"
+        },
+        "session_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "depth": {
+          "const": 0
+        },
+        "effort": {
+          "const": "low"
+        }
+      },
+      "required": [
+        "principal",
+        "session_id",
+        "generation",
+        "depth",
+        "effort"
+      ]
+    },
+    "goals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,95}$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "objective": {
+            "type": "string"
+          },
+          "plan": {
+            "type": "string"
+          },
+          "board": {
+            "type": "string"
+          },
+          "planning_worktree": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "desired_state": {
+            "enum": [
+              "registered",
+              "active",
+              "paused",
+              "blocked",
+              "closing",
+              "closed"
+            ]
+          },
+          "generation": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "child": {
+            "type": "object",
+            "properties": {
+              "session_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "principal": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "effort": {
+                "const": "low"
+              },
+              "contract_ref": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "session_id",
+              "principal",
+              "effort",
+              "contract_ref"
+            ]
+          },
+          "worktree_roots": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "grants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "lane": {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,95}$"
+                },
+                "worktree": {
+                  "type": "string"
+                },
+                "paths": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "lane",
+                "worktree",
+                "paths"
+              ]
+            }
+          },
+          "budget": {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "const": "counts-v1"
+              },
+              "claude_turn_cap": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "paid_usd_cap": {
+                "const": 0
+              },
+              "worker_caps": {
+                "type": "object",
+                "properties": {
+                  "codex": {
+                    "type": "object",
+                    "properties": {
+                      "runs": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 0
+                      }
+                    },
+                    "required": [
+                      "runs"
+                    ]
+                  },
+                  "cursor": {
+                    "type": "object",
+                    "properties": {
+                      "runs": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 0
+                      }
+                    },
+                    "required": [
+                      "runs"
+                    ]
+                  },
+                  "agy": {
+                    "type": "object",
+                    "properties": {
+                      "runs": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 0
+                      }
+                    },
+                    "required": [
+                      "runs"
+                    ]
+                  }
+                },
+                "required": [
+                  "codex",
+                  "cursor",
+                  "agy"
+                ]
+              }
+            },
+            "required": [
+              "mode",
+              "claude_turn_cap",
+              "paid_usd_cap",
+              "worker_caps"
+            ]
+          },
+          "acceptance_refs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "last_decision_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "objective",
+          "plan",
+          "board",
+          "planning_worktree",
+          "priority",
+          "desired_state",
+          "generation",
+          "child",
+          "worktree_roots",
+          "grants",
+          "budget",
+          "acceptance_refs",
+          "last_decision_id"
+        ]
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "revision",
+    "parent",
+    "goals"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HO1-A counts-v1 goal registry",
+  "description": "goals.mjs additionally verifies existing canonical Git paths, disjoint ownership and revision authority."
+}
