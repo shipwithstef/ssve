@@ -40,6 +40,8 @@ export type OrchView = { snapshot: OrchStatus | null; error: string | null; read
 export type OrchExpansion = Record<string, boolean>;
 export type OrchDetail = { taskId: string; attemptId: string; path: string; text: string; at: string; truncated: boolean } | null;
 export type OrchDraft = { taskId: string; attemptId: string; text: string } | null;
+export type OrchMode = { sessionId: string; enabled: boolean | null; showChat: boolean; placed: boolean };
+export type OrchAction = { nonce: number; kind: 'stop' | 'steer'; taskId: string; attemptId: string; sessionId: string | null; text?: string; now?: boolean } | null;
 
 declare module 'claude-code' {
   interface PluginState {
@@ -49,6 +51,8 @@ declare module 'claude-code' {
       detail: OrchDetail;
       draft: OrchDraft;
       page: number;
+      mode: OrchMode;
+      action: OrchAction;
     };
   }
 }

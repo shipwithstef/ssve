@@ -257,10 +257,15 @@ const sessionLock = (task, root) => path.join(root, 'locks', `session-${task.exe
 function resumedTask(previous) {
   return { ...previous, attempt_history: [...previous.attempt_history, { attempt_id: previous.attempt_id, started_at: previous.started_at, finished_at: previous.finished_at, state: previous.state, log_path: previous.log_path, exit_code: previous.exit_code, usage: previous.usage || null }] };
 }
-export async function steerTask(id, text, now = false) {
+function assertControlTarget(task, expected) {
+  if (expected.attempt && task?.attempt_id !== expected.attempt) throw new Error('Control attempt changed');
+  if (expected.session && task?.session_id !== expected.session) throw new Error('Control session changed');
+}
+export async function steerTask(id, text, now = false, expected = {}) {
   const root = stateRoot();
   let previous;
   updateTaskRecord(id, root, latest => {
+    assertControlTarget(latest, expected);
     if (!latest || latest.adopted || latest.read_only) throw new Error('No owned steerable task');
     if (!latest.session_id && latest.finished_at) throw new Error('No owned resumable task/session');
     enqueueSteer(latest, text);
@@ -269,14 +274,16 @@ export async function steerTask(id, text, now = false) {
   });
   const running = !previous.finished_at && (sameProcess(previous.supervisor_identity) || sameProcess(previous.process_identity));
   if (running && !now) return { id, steering_mode: previous.steering?.mode || 'queue', queued: previous.steer_queue.length };
-  if (running) await stopTask(id);
+  if (running) await stopTask(id, { attempt: previous.attempt_id, session: previous.session_id });
   const latest = readJson(taskPath(id, root));
+  assertControlTarget(latest, { attempt: previous.attempt_id, session: previous.session_id });
   if (sameProcess(latest.process_identity) || sameProcess(latest.supervisor_identity)) throw new Error('Worker still running; steer retained');
   if (!latest.session_id) throw new Error('No exact session; steer retained');
   return launch(resumedTask(latest), '', true, null, true);
 }
-export async function stopTask(id) {
+export async function stopTask(id, expected = {}) {
   const task = readJson(taskPath(id));
+  assertControlTarget(task, expected);
   if (!task || task.adopted) throw new Error('Task is missing or read-only adopted; stop unavailable');
   if (!sameProcess(task.supervisor_identity)) {
     if (sameProcess(task.process_identity)) throw new Error('Lost supervision: owned worker remains live; reconcile manually');
@@ -285,6 +292,7 @@ export async function stopTask(id) {
   if (task.supervisor_pid !== task.supervisor_identity.pid) throw new Error('Supervisor PID/identity mismatch');
   if (!task.supervisor_identity.cmdline.includes(self) || !task.supervisor_identity.cmdline.includes('__supervise')) throw new Error('Supervisor cmdline mismatch');
   updateTaskRecord(id, stateRoot(), latest => {
+    assertControlTarget(latest, expected);
     if (latest.attempt_id !== task.attempt_id) throw new Error('Stop attempt changed');
     latest.owner_stop_requested = true; atomicJson(taskPath(id), latest);
   });
@@ -298,10 +306,12 @@ export async function main(args = process.argv.slice(2)) {
     return;
   }
   if (args[0] === 'steer') {
-    if (args.length < 3 || args.slice(3).some(arg => arg !== '--now') || args.length > 4) throw new Error('Usage: steer <id> <message> [--now]');
-    console.log(JSON.stringify(await steerTask(args[1], args[2], args[3] === '--now'))); return;
+    if (args.length < 3) throw new Error('Usage: steer <id> <message> [--now] [--expected-attempt id] [--expected-session id]');
+    const rest = args.slice(3), now = rest[0] === '--now';
+    const flags = controlOptions(now ? rest.slice(1) : rest);
+    console.log(JSON.stringify(await steerTask(args[1], args[2], now, flags))); return;
   }
-  if (args[0] === 'stop') { console.log(JSON.stringify(await stopTask(args[1]))); return; }
+  if (args[0] === 'stop') { console.log(JSON.stringify(await stopTask(args[1], controlOptions(args.slice(2))))); return; }
   if (args[0] === 'resume') {
     const previous = readJson(taskPath(args[1]));
     if (!previous || previous.adopted || !previous.session_id) throw new Error('No owned resumable task/session');
@@ -315,5 +325,10 @@ export async function main(args = process.argv.slice(2)) {
   if (o.task_id) o.id = o.task_id;
   const task = makeTask(o);
   console.log(JSON.stringify(await launch(task, fs.readFileSync(task.prompt_file, 'utf8'), false)));
+}
+function controlOptions(args) {
+  const flags = options(args);
+  if (Object.keys(flags).some(key => !['expected_attempt', 'expected_session'].includes(key))) throw new Error('Unknown control option');
+  return { attempt: flags.expected_attempt, session: flags.expected_session };
 }
 if (isMain(import.meta.url)) main().catch(e => { console.error(e.message); process.exitCode = 1; });
