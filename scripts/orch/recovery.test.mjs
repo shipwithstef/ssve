@@ -28,6 +28,24 @@ async function fixture(t) {
   await transact('grant-worktree', { id: 'orch', lane: 'recovery', worktree, expected_revision: 1 }, root);
   await transact('set-state', { id: 'orch', state: 'active', expected_revision: 2 }, root);
   const config = path.join(root, 'config'); fs.mkdirSync(config); fs.writeFileSync(path.join(config, 'parent-session'), 'parent-exact-id\n');
+  const bin = path.join(root, 'claude-bin'); fs.mkdirSync(bin);
+  fs.writeFileSync(path.join(bin, 'claude'), `#!${process.execPath}
+import fs from 'node:fs';import path from 'node:path';
+const root=process.env.FAKE_CLAUDE_ROOT,args=process.argv.slice(2);
+fs.appendFileSync(path.join(root,'claude-calls.jsonl'),JSON.stringify(args)+'\\n');
+if(args[0]==='agents') {
+  if(fs.existsSync(path.join(root,'query-fail')))process.exit(1);
+  console.log(fs.existsSync(path.join(root,'agents.json'))?fs.readFileSync(path.join(root,'agents.json'),'utf8'):'[]');
+} else {
+  const receipt=JSON.parse(fs.readFileSync(path.join(root,'recovery-'+process.env.FAKE_BOOT+'.json')));
+  if(!receipt.parent_auto_resume?.reserved_at)process.exit(2);
+  fs.writeFileSync(path.join(root,'parent-launch-tasks.json'),JSON.stringify(receipt.tasks));
+  if(fs.existsSync(path.join(root,'claude-fail')))process.exit(1);
+  console.log('background session parent-exact-id');
+}`, { mode: 0o700 });
+  // An extensionless Node script inherits this fixture's explicit ESM package.
+  fs.writeFileSync(path.join(bin, 'package.json'), '{"type":"module"}');
+  const claudeEnv = { ...process.env, PATH: `${bin}:${process.env.PATH}`, FAKE_CLAUDE_ROOT: root };
   const dispatch = path.join(root, 'fake-dispatch.mjs');
   fs.writeFileSync(dispatch, `import fs from 'node:fs';import path from 'node:path';
 const args=process.argv.slice(2), root=process.env.ORCH_STATE_DIR;
@@ -41,9 +59,87 @@ task.supervisor_identity=null;task.recovery.status='dispatched';fs.writeFileSync
   const task = extra => ({ schema_version: 1, id: 'work', state: 'running', goal_id: 'orch', goal_generation: 1, lane: 'recovery', title: 'Work', description: 'Fake work', executor: { cli: 'codex', model: 'gpt-6.1-sol', effort: 'high' }, worktree, session_id: 'exact-session', resume_text: 'Reconcile first; continue exactly.', process_identity: { pid: 2147483647, boot_id: 'boot-old', start_ticks: '0' }, attempt_id: 'first', attempt_history: [], log_path: path.join(root, 'log'), started_at: new Date().toISOString(), exit_code: null, finished_at: null, expected_minutes: null, acceptance: [], depends_on: [], ...extra });
   const put = record => atomicJson(taskPath(record.id, root), record);
   const calls = () => fs.existsSync(path.join(root, 'calls.jsonl')) ? fs.readFileSync(path.join(root, 'calls.jsonl'), 'utf8').trim().split('\n').map(JSON.parse) : [];
-  const run = currentBoot => recover({ root, config, dispatch, currentBoot, restart: async () => {} });
-  return { root, worktree, planning, config, task, put, calls, run };
+  const claudeCalls = () => fs.existsSync(path.join(root, 'claude-calls.jsonl')) ? fs.readFileSync(path.join(root, 'claude-calls.jsonl'), 'utf8').trim().split('\n').map(JSON.parse).filter(args => args[0] === '--bg') : [];
+  const run = currentBoot => recover({ root, config, dispatch, currentBoot, claudeEnv: { ...claudeEnv, FAKE_BOOT: currentBoot }, restart: async () => {} });
+  return { root, worktree, planning, config, task, put, calls, claudeCalls, claudeEnv, run };
 }
+
+test('SR2 resumes exact parent LOW after workers, once per boot despite concurrent recovery and changed config', async t => {
+  const f = await fixture(t); f.put(f.task());
+  // Native listings can exceed the normal command-log tail size.
+  atomicJson(path.join(f.root, 'agents.json'), [{ sessionId: 'parent-exact-id', pid: 2147483647 }, ...Array.from({ length: 80 }, (_, i) => ({ sessionId: `different-parent-${i}`, pid: process.pid, kind: 'interactive' }))]);
+  const results = await Promise.allSettled([f.run('boot-new'), f.run('boot-new')]);
+  assert.ok(results.some(result => result.status === 'fulfilled'));
+  await f.run('boot-new');
+  assert.deepEqual(f.claudeCalls(), [['--bg', '--resume', 'parent-exact-id', '--effort', 'low', 'Spot recovery: reconcile ~/.local/state/orch/status.json and continue the active goals; report only blockers.']]);
+  assert.equal(readJson(path.join(f.root, 'parent-launch-tasks.json'))[0].action, 'resumed');
+  const receipt = readJson(path.join(f.root, 'recovery-boot-new.json')).parent_auto_resume;
+  assert.equal(receipt.state, 'resume_requested'); assert.equal(receipt.auto_start, true);
+  assert.equal(receipt.attach_command, 'claude attach parent-exact-id'); assert.ok(receipt.reserved_at);
+  fs.writeFileSync(path.join(f.config, 'parent-session'), 'replacement-parent');
+  await f.run('boot-new'); assert.equal(f.claudeCalls().length, 1);
+  fs.writeFileSync(path.join(f.config, 'parent-session'), 'parent-exact-id');
+  await f.run('boot-later'); assert.equal(f.claudeCalls().length, 2);
+});
+
+test('SR2 failed or ambiguous launch consumes the boot reservation, including recovery after a crash', async t => {
+  const f = await fixture(t); fs.writeFileSync(path.join(f.root, 'claude-fail'), 'true');
+  const first = await f.run('boot-new'); assert.equal(first.parent_auto_resume.state, 'needs_owner');
+  assert.match(first.parent_auto_resume.reason, /no retry this boot/);
+  fs.unlinkSync(path.join(f.root, 'claude-fail')); await f.run('boot-new');
+  assert.equal(f.claudeCalls().length, 1);
+  atomicJson(path.join(f.root, 'recovery-boot-crash.json'), { schema_version: 1, boot_id: 'boot-crash', tasks: [], parent_auto_resume: { state: 'reserved', reserved_at: new Date().toISOString() } });
+  await f.run('boot-crash'); assert.equal(f.claudeCalls().length, 1);
+});
+
+test('SR2 native interactive/background owners, opt-out, missing/invalid ID and ambiguous discovery never launch', async t => {
+  const f = await fixture(t);
+  for (const kind of ['interactive', 'background']) {
+    atomicJson(path.join(f.root, 'agents.json'), [{ sessionId: 'parent-exact-id', pid: process.pid, kind }]);
+    const result = await f.run(`boot-${kind}`); assert.equal(result.parent_auto_resume.state, 'already_live');
+  }
+  fs.unlinkSync(path.join(f.root, 'agents.json'));
+  fs.writeFileSync(path.join(f.config, 'no-claude-autoresume'), '');
+  assert.match((await f.run('boot-optout')).parent_auto_resume.reason, /opted out/);
+  fs.unlinkSync(path.join(f.config, 'no-claude-autoresume'));
+  fs.writeFileSync(path.join(f.config, 'parent-session'), 'id; touch /bad');
+  assert.match((await f.run('boot-invalid')).parent_auto_resume.reason, /Invalid/);
+  fs.unlinkSync(path.join(f.config, 'parent-session'));
+  assert.match((await f.run('boot-missing')).parent_auto_resume.reason, /Configure/);
+  fs.writeFileSync(path.join(f.config, 'parent-session'), 'parent-exact-id');
+  fs.writeFileSync(path.join(f.root, 'query-fail'), 'true');
+  assert.match((await f.run('boot-query')).parent_auto_resume.reason, /held/);
+  fs.unlinkSync(path.join(f.root, 'query-fail')); fs.writeFileSync(path.join(f.root, 'agents.json'), '{}');
+  assert.match((await f.run('boot-json')).parent_auto_resume.reason, /Invalid Claude/);
+  atomicJson(path.join(f.root, 'agents.json'), [{ sessionId: 'parent-exact-id' }]);
+  assert.match((await f.run('boot-unknown-pid')).parent_auto_resume.reason, /PID unknown/);
+  assert.deepEqual(f.claudeCalls(), []);
+});
+
+test('SR2 shares native lease and excludes an unregistered Claude launcher by exact argv', async t => {
+  const f = await fixture(t);
+  await withLocks([path.join(f.root, 'locks', 'claude-parent-exact-id.lock')], async () => {
+    assert.match((await f.run('boot-lock')).parent_auto_resume.reason, /lock busy/);
+    assert.deepEqual(f.claudeCalls(), []);
+  });
+  const native = path.join(f.root, 'native', 'claude'); fs.mkdirSync(path.dirname(native));
+  fs.writeFileSync(native, `#!${process.execPath}\nsetInterval(()=>{},1000);`, { mode: 0o700 });
+  const child = spawn(native, ['--resume', 'parent-exact-id'], { stdio: 'ignore' });
+  const exited = new Promise(resolve => child.once('exit', resolve));
+  t.after(async () => { child.kill(); await exited; });
+  const result = await f.run('boot-native');
+  assert.equal(result.parent_auto_resume.state, 'already_live'); assert.equal(result.parent_auto_resume.owner.pid, child.pid);
+  assert.equal(result.parent_auto_resume.owner.source, '/proc'); assert.deepEqual(f.claudeCalls(), []);
+});
+
+test('SR2 registry binding mismatch holds auto-resume without rebinding authority', async t => {
+  const f = await fixture(t);
+  await transact('bind-parent', { id: 'orch', parent_session: 'bound-parent', expected_revision: 3 }, f.root);
+  const before = fs.readFileSync(path.join(f.root, 'goals.json'), 'utf8');
+  assert.match((await f.run('boot-new')).parent_auto_resume.reason, /binding/);
+  assert.deepEqual(f.claudeCalls(), []);
+  assert.equal(fs.readFileSync(path.join(f.root, 'goals.json'), 'utf8'), before);
+});
 
 test('changed boot resumes each supported CLI once, with exact recorded text; repeated/concurrent boots never duplicate', async t => {
   const f = await fixture(t);
@@ -171,7 +267,7 @@ test('installer requires linger without sudo and renders systemd-verifiable unit
   assert.ok(!recoverUnit.includes('@ORCH_')); assert.match(recoverUnit, /Type=oneshot/); assert.match(recoverUnit, /After=network-online.target/);
 });
 
-test('HO1 reboot twice: persisted child grant resumes one worker; Claude and paid/live attempts stay held', async t => {
+test('HO1 reboot twice: resumes one worker and parent once; child and paid/live attempts stay held', async t => {
   const f = await fixture(t);
   await transact('bind-parent', { id: 'orch', parent_session: 'parent-exact-id', expected_revision: 3 }, f.root);
   await transact('set-state', { id: 'orch', state: 'paused', expected_revision: 4 }, f.root);
@@ -189,6 +285,7 @@ test('HO1 reboot twice: persisted child grant resumes one worker; Claude and pai
   const before = fs.readFileSync(path.join(f.root, 'goals.json'), 'utf8');
   const sessionsBefore = fs.readFileSync(sessionFile('child', 'orch', f.root), 'utf8');
   await f.run('boot-new'); const result = await f.run('boot-new');
+  assert.equal(f.claudeCalls().length, 1); assert.equal(result.parent_auto_resume.state, 'resume_requested');
   assert.equal(f.calls().length, 1); assert.equal(f.calls()[0][1], 'work');
   assert.equal(readJson(taskPath('paid', f.root)).state, 'needs_owner');
   assert.equal(fs.readFileSync(path.join(f.root, 'goals.json'), 'utf8'), before);
