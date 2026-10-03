@@ -167,3 +167,19 @@ test('provider usage keeps known native fields as latest snapshots without cumul
   assert.equal(parsed.usage.input_tokens, 200); assert.equal(parsed.usage.total_tokens, 201);
   assert.equal(parsed.usage.subscription_units, 2); assert.equal(parsed.usage.known_charge, 0.5);
 });
+
+test('parent-orchestrated unbound child and unknown Claude allowance are info; bound missing child stays blocked', async t => {
+  const f = fixture(t); await f.create('one', { claude_turn_cap: null });
+  await transact('set-state', { id: 'one', state: 'active', expected_revision: 1 }, f.root);
+  const goal = collect(f.root, 5, f.root).goals[0];
+  assert.equal(goal.observed_state, 'active'); assert.equal(goal.child.state, 'parent_orchestrated');
+  assert.ok(goal.info.some(b => b.code === 'parent_orchestrated'));
+  assert.ok(goal.info.some(b => b.code === 'budget_unknown' && b.description.startsWith('Claude')));
+  assert.ok(!goal.blockers.some(b => b.code === 'needs_owner' || b.description.startsWith('Claude')));
+  // Existing binding authority is never downgraded just because observation is missing.
+  await transact('set-state', { id: 'one', state: 'paused', expected_revision: 2 }, f.root);
+  await transact('set-state', { id: 'one', state: 'active', child_session: 'child-one', child_principal: 'child-owner', expected_revision: 3 }, f.root);
+  const bound = collect(f.root, 5, f.root).goals[0];
+  assert.equal(bound.observed_state, 'needs_owner');
+  assert.ok(bound.blockers.some(b => b.description === 'Child has no supervised session observation'));
+});

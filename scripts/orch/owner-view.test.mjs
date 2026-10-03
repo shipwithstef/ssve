@@ -15,7 +15,8 @@ class Element {
   get text() { return this.textContent + this.children.map(el => el.text).join('\n'); }
 }
 test('web fixture: priority goal groups, empty goal, counts/unknowns, recovery commands, stale/error retention and safe text', async () => {
-  const elements = Object.fromEntries(['tree', 'stamp', 'error', 'recovery'].map(id => [id, new Element(id)]));
+  const elements = Object.fromEntries(['tree', 'stamp', 'error', 'recovery', 'updates'].map(id => [id, new Element(id)]));
+  fixture.updates = Array.from({ length: 25 }, (_, i) => `12:00 demo/build: task ${i} done`);
   let broken = false, clock = Date.parse(fixture.collector_heartbeat_at);
   const context = vm.createContext({ document: { getElementById: id => elements[id], createElement: tag => new Element(tag) },
     Date: class extends Date { static now() { return clock; } },
@@ -30,6 +31,8 @@ test('web fixture: priority goal groups, empty goal, counts/unknowns, recovery c
   }
   vm.runInContext(`renderStatus(${JSON.stringify(steered)})`, context);
   assert.match(elements.tree.text, /queued_steers/); assert.match(elements.tree.text, /<script>owner literal<\/script>/);
+  assert.equal(elements.updates.textContent.split('\n').length, 20);
+  assert.ok(elements.updates.textContent.endsWith('task 24 done'));
   assert.equal(elements.tree.children.length, 2);
   assert.match(elements.tree.children[0].firstChild.text, /#1 Empty goal.*paused.*LOW/);
   assert.match(elements.tree.children[1].firstChild.text, /#2 novisenti.*needs_owner.*native_ownership_unverified.*child-exact/);
@@ -48,4 +51,15 @@ test('web fixture: priority goal groups, empty goal, counts/unknowns, recovery c
   await vm.runInContext('refresh()', context); assert.match(elements.error.text, /last snapshot/); assert.equal(elements.tree.text, before);
   vm.runInContext(`renderStatus(${JSON.stringify({ ...fixture, goals: [{ ...fixture.goals[1], title: '<script>unsafe</script>' }] })})`, context);
   assert.match(elements.tree.children[0].firstChild.textContent, /<script>unsafe<\/script>/); // textContent, never HTML.
+});
+
+
+test('web hot-reloaded channel opt-out hides updates and informational goal notes render safely', async () => {
+  const elements = Object.fromEntries(['tree', 'stamp', 'error', 'recovery', 'updates'].map(id => [id, new Element(id)]));
+  const snapshot = { ...fixture, updates: ['12:00 goal/build: task done'], update_channels: { web: false, pane: true }, goals: [{ ...fixture.goals[0], info: [{ code: 'parent_orchestrated', description: 'No child bound' }] }] };
+  const context = vm.createContext({ document: { getElementById: id => elements[id], createElement: tag => new Element(tag) }, Date, fetch: async () => ({ ok: true, json: async () => snapshot }), setInterval: () => {} });
+  vm.runInContext(html.match(/<script>([\s\S]*)<\/script>/)[1], context);
+  await vm.runInContext('refresh()', context);
+  assert.equal(elements.updates.textContent, ''); assert.match(elements.tree.text, /Info: parent_orchestrated.*No child bound/);
+  snapshot.update_channels.web = true; await vm.runInContext('refresh()', context); assert.match(elements.updates.textContent, /task done/);
 });

@@ -193,12 +193,57 @@ test('HO1 goal headers, empty paused goal, partial counts, blockers and owner-on
   expect(seen.processes.length).toBe(0); noEffects(seen);
 });
 
-test('queued steering and capability are visible without executing commands', async ($, on) => {
+test('UPD1 updates and ST1 queued steering coexist without executing commands', async ($, on) => {
   const { snapshot, seen } = setup(on);
   const task = snapshot.tasks.find((t: { id: string }) => t.id === 'p1c-r');
+  snapshot.updates = ['12:00 demo/build: merge check done'];
   task.steering = { mode: 'queue' };
   task.queued_steers = [{ id: 'first', at: snapshot.generated_at, text: 'first owner message' }];
   await start($); const ui = await $.ui.mount(PANE); await ui.press({ key: 'task-p1c-r' });
   expect((await ui.find({ key: 'steer-queued-p1c-r-first' }))?.text).toContain('first owner message');
+  expect((await ui.find({ key: 'orch-updates' }))?.text).toContain('merge check done');
   expect(seen.processes.length).toBe(0); noEffects(seen);
+});
+
+test('UPD1: pane shows last 20 updates and one-line band shows newest, without model calls', async ($, on) => {
+  const { snapshot, seen } = setup(on);
+  snapshot.updates = Array.from({ length: 25 }, (_, i) => `12:00 demo/build: task ${i} done`);
+  await start($);
+  const ui = await $.ui.mount(PANE);
+  const updates = (await ui.find({ key: 'orch-updates' }))?.text ?? '';
+  expect(updates).toContain('task 5 done');
+  expect(updates).toContain('task 24 done');
+  expect(updates).not.toContain('task 4 done');
+  const band = await $.ui.mount({ plugin: PLUGIN, surface: 'terminal', component: 'AbovePrompt', props: { ...bandProps, bodyColumns: 100 } });
+  expect((await band.find({ key: 'orch-band' }))?.text).toContain('task 24 done');
+  noEffects(seen);
+});
+
+
+test('UPD1 channel opt-out hides pane/band updates; parent orchestration notes are info', async ($, on) => {
+  const { snapshot, seen } = setup(on);
+  snapshot.updates = ['12:00 demo/build: secret update done'];
+  snapshot.update_channels = { web: true, pane: false };
+  snapshot.goals.find((g: { id: string }) => g.id === 'novisenti').info = [{ code: 'parent_orchestrated', description: 'No child bound' }];
+  await start($); const ui = await $.ui.mount(PANE);
+  expect((await ui.find({ key: 'orch-updates' }))?.text ?? '').not.toContain('secret update');
+  expect((await ui.find({ key: 'goal-info-novisenti-0' }))?.text).toContain('Info: parent_orchestrated');
+  const band = await $.ui.mount({ plugin: PLUGIN, surface: 'terminal', component: 'AbovePrompt', props: { ...bandProps, bodyColumns: 100 } });
+  expect((await band.find({ key: 'orch-band' }))?.text).not.toContain('secret update');
+  noEffects(seen);
+});
+
+
+test('adopted observations are informational and do not inflate the prompt blocker count', async ($, on) => {
+  const { snapshot, seen } = setup(on);
+  const base = snapshot.tasks.find((t: { id: string }) => t.id === 'p1c-r');
+  snapshot.tasks = [{ ...base, id: 'p1b', adopted: true, state: 'stalled', blockers: [], info: [{ code: 'unknown_exit', description: 'Legacy observation only' }] }];
+  snapshot.goals = [{ ...snapshot.goals[0], lanes: [{ id: base.lane, title: base.lane, tasks: snapshot.tasks }] }];
+  snapshot.updates = [];
+  await start($); const ui = await $.ui.mount(PANE);
+  await ui.press({ key: 'task-p1b' });
+  expect((await ui.find({ key: 'info-p1b-0' }))?.text).toContain('Info: unknown_exit');
+  const band = await $.ui.mount({ plugin: PLUGIN, surface: 'terminal', component: 'AbovePrompt', props: { ...bandProps, bodyColumns: 100 } });
+  expect((await band.find({ key: 'orch-band' }))?.text).toContain('0 block');
+  noEffects(seen);
 });
