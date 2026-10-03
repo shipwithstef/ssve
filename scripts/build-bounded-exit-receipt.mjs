@@ -75,7 +75,7 @@ const rubricFailureCensus = (terminal.findings.rubric_failures || []).map((rubri
 let certificationFailureCensus;
 const failedCertifications = (terminal.findings.certifications || []).filter((row) => row?.certified !== true);
 if (failedCertifications.length || Object.hasOwn(config, "certification_dispositions")) {
-  if (config.review_kind !== "plan" || rounds.length !== 3 || !failedCertifications.length) throw new Error("certification dispositions require failed plan certifications at round three");
+  if (config.review_kind !== "plan" || rounds.length !== 2 || !failedCertifications.length) throw new Error("certification dispositions require failed plan certifications at round two");
   const declared = config.certification_dispositions;
   if (!Array.isArray(declared) || declared.length !== failedCertifications.length) throw new Error("certification dispositions must cover the exact failed certification count");
   const allowedKeys = new Set(["key", "finding_ids", "disposition", "justification", "evidence"]);
@@ -134,7 +134,7 @@ const body = {
       candidate_digest: identity.candidate_digest,
       cycle_id: cycleId,
       rounds_run: rounds.length,
-      hard_cap: 3,
+      hard_cap: 2,
       round_identities: rounds.map((round, index) => ({ round: index + 1, review_target_digest: round.receipt.candidate_digest, launcher_receipt_sha256: round.receiptArtifact.sha256, findings_sha256: round.findingsArtifact.sha256 })),
       terminal_launcher_receipt_sha256: terminal.receiptArtifact.sha256,
       terminal_findings_sha256: terminal.findingsArtifact.sha256,

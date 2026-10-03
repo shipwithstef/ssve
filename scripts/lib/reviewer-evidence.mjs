@@ -21,7 +21,7 @@ const EXTERNAL_FINDINGS_SCHEMA = JSON.parse(fs.readFileSync(path.join(SCHEMA_DIR
 // provenance checks below; version strings alone never grant authority.
 // Resolve after module initialization: review input preparation now shares the
 // issuance gate, which also consumes this verifier.
-const supportedLauncherVersions = () => new Set([EXTERNAL_REVIEW_LAUNCHER_VERSION, "2.5.7", "2.5.6", "2.5.5", "2.5.4"]);
+const supportedLauncherVersions = () => new Set([EXTERNAL_REVIEW_LAUNCHER_VERSION, "2.5.8", "2.5.7", "2.5.6", "2.5.5", "2.5.4"]);
 
 function localCheckoutArtifact(root, value, { externalOnly = true } = {}) {
   const absolute = path.isAbsolute(value.path) ? path.resolve(value.path) : path.resolve(root, value.path);

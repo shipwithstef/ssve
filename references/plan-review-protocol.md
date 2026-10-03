@@ -169,10 +169,10 @@ responses:
 - All findings have documented ACCEPT/REJECT/PARTIAL responses with
   justifications and any disputed product/security authority has an owner ruling.
 
-**HARD 3-round cap.** Convergence is by DISPOSITION, never by the adversarial
+**HARD 2-round cap.** Convergence is by DISPOSITION, never by the adversarial
 reviewer running out of findings — an adversarial reviewer does not run dry on a
 complex plan, so "loop until zero High" is unreachable and forbidden. Run at most
-**3** adversarial rounds. After round 3 (never start round 4):
+**2** adversarial rounds. After round 2 (never start round 3):
 - **Unresolved Critical remain →** escalate to the owner; Criticals always block.
 - **Only High/Medium/Low remain →** the loop TERMINATES. Every remaining High is
   dispositioned now (`fixed` with candidate-bound proof, `accept-with-justification` = logged execution-time risk in
@@ -182,14 +182,14 @@ complex plan, so "loop until zero High" is unreachable and forbidden. Run at mos
   Critical — the exact bug this cap closes.) This bounded exit is enforced
   mechanically by `scripts/check-review-round-cap.mjs`; `review-log.yaml` MUST
   record machine-readable `rounds_run`, `unresolved_critical`, and
-  `remaining_high` integers, and — when `rounds_run == 3` and High findings
+  `remaining_high` integers, and — when `rounds_run == 2` and High findings
   remain — a `bounded_exit` block that enumerates one `residual_highs` entry per
   remaining High plus an allowed `disposition` (a bare `bounded_exit` mention
   proves nothing; the checker fails closed on missing/ambiguous evidence). An
   unresolved Critical is never dispositioned: it requires an exact
   `terminal_state: ESCALATED_TO_USER` and the checker HALTS (exit 3, blocking) —
   the change never promotes until the owner rules. A 4th round is forbidden, so
-  `bounded_exit` is recorded at `rounds_run == 3`, never `> 3`.
+  `bounded_exit` is recorded at `rounds_run == 2`, never `> 2`.
 
 **Audit trail:** all findings + responses persisted to `docs/plans/<date>-<name>/review-log.yaml`. Review log is part of the plan deliverable and lands with it into `docs/plans/done/`.
 

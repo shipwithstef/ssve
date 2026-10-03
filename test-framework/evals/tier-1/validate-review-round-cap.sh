@@ -26,7 +26,7 @@ node --check "$CHECK" 2>/dev/null && ok "enforcement script parses" || bad "enfo
 # Fixed log dispositions are syntactically valid; admission still requires the
 # candidate-bound bounded-exit verifier. Critical/cap failures remain below.
 cat > "$TMP/fixed.yaml" <<'EOF'
-rounds_run: 3
+rounds_run: 2
 unresolved_critical: 0
 remaining_high: 1
 bounded_exit:
@@ -41,23 +41,23 @@ EOF
 [ "$(rc_of node "$CHECK" --rounds 9 --remaining-high 6 --dispositioned-high 6 --unresolved-critical 0)" = 1 ] \
   && ok "9-round loop rejected even when dispositioned (HARD cap — the WI-486 bug)" || bad "9-round loop NOT rejected"
 [ "$(rc_of node "$CHECK" --rounds 4 --remaining-high 0 --dispositioned-high 0 --unresolved-critical 0)" = 1 ] \
-  && ok "4th round rejected (hard cap is exactly 3)" || bad "4th round NOT rejected"
-# Boundary: rounds 0/1/3 with nothing outstanding pass.
-for r in 0 1 3; do
+  && ok "4th round rejected (hard cap is exactly 2)" || bad "4th round NOT rejected"
+# Boundary: rounds 0/1/2 with nothing outstanding pass.
+for r in 0 1 2; do
   [ "$(rc_of node "$CHECK" --rounds $r --remaining-high 0 --dispositioned-high 0 --unresolved-critical 0)" = 0 ] \
     && ok "rounds=$r clean state passes (boundary)" || bad "rounds=$r clean state wrongly rejected"
 done
 # Within cap AND every High dispositioned MUST pass.
-[ "$(rc_of node "$CHECK" --rounds 3 --remaining-high 6 --dispositioned-high 6 --unresolved-critical 0)" = 0 ] \
-  && ok "3 rounds, every remaining High dispositioned passes" || bad "compliant bounded exit wrongly rejected"
+[ "$(rc_of node "$CHECK" --rounds 2 --remaining-high 6 --dispositioned-high 6 --unresolved-critical 0)" = 0 ] \
+  && ok "2 rounds, every remaining High dispositioned passes" || bad "compliant bounded exit wrongly rejected"
 # Un-dispositioned High -> violation.
-[ "$(rc_of node "$CHECK" --rounds 3 --remaining-high 6 --dispositioned-high 2 --unresolved-critical 0)" = 1 ] \
+[ "$(rc_of node "$CHECK" --rounds 2 --remaining-high 6 --dispositioned-high 2 --unresolved-critical 0)" = 1 ] \
   && ok "un-dispositioned High rejected within the cap" || bad "un-dispositioned High NOT rejected"
 # Unresolved Critical without escalation -> violation (exit 1).
-[ "$(rc_of node "$CHECK" --rounds 3 --remaining-high 0 --dispositioned-high 0 --unresolved-critical 1 --escalated false)" = 1 ] \
+[ "$(rc_of node "$CHECK" --rounds 2 --remaining-high 0 --dispositioned-high 0 --unresolved-critical 1 --escalated false)" = 1 ] \
   && ok "unresolved Critical w/o escalation rejected (never auto-accepted)" || bad "unresolved Critical w/o escalation NOT rejected"
 # EXEC-002: escalated unresolved Critical must BLOCK (exit 3), never promote (exit 0).
-CRIT_RC="$(rc_of node "$CHECK" --rounds 3 --remaining-high 0 --dispositioned-high 0 --unresolved-critical 1 --escalated true)"
+CRIT_RC="$(rc_of node "$CHECK" --rounds 2 --remaining-high 0 --dispositioned-high 0 --unresolved-critical 1 --escalated true)"
 [ "$CRIT_RC" = 3 ] && ok "escalated Critical HALTS with blocking exit 3 (BRL-03: Criticals never promote)" \
   || bad "escalated Critical did not block with exit 3 (got rc=$CRIT_RC)"
 [ "$CRIT_RC" != 0 ] && ok "escalated Critical never returns success exit 0" || bad "escalated Critical wrongly returned exit 0"
@@ -71,7 +71,7 @@ mklog() { printf '%s\n' "$1" > "$TMP/log.yaml"; }
 # Valid: rounds_run 3, remaining_high 2 enumerated in bounded_exit -> pass.
 cat > "$TMP/valid.yaml" <<'YAML'
 review_log:
-  rounds_run: 3
+  rounds_run: 2
   unresolved_critical: 0
   remaining_high: 2
   bounded_exit:
@@ -81,7 +81,7 @@ review_log:
       - "execution-time risk B"
 YAML
 [ "$(rc_of node "$CHECK" --log "$TMP/valid.yaml")" = 0 ] \
-  && ok "valid log (rounds_run:3 + enumerated bounded_exit) passes" || bad "compliant log wrongly rejected"
+  && ok "valid log (rounds_run:2 + enumerated bounded_exit) passes" || bad "compliant log wrongly rejected"
 
 # Missing rounds_run -> fail closed.
 cat > "$TMP/f1.yaml" <<'YAML'
@@ -95,7 +95,7 @@ YAML
 cat > "$TMP/f2.yaml" <<'YAML'
 review_log:
   rounds_run: 2
-  rounds_run: 3
+  rounds_run: 2
   unresolved_critical: 0
   remaining_high: 0
 YAML
@@ -113,7 +113,7 @@ YAML
 # remaining_high > 0 but no bounded_exit -> violation.
 cat > "$TMP/f4.yaml" <<'YAML'
 review_log:
-  rounds_run: 3
+  rounds_run: 2
   unresolved_critical: 0
   remaining_high: 3
 YAML
@@ -122,7 +122,7 @@ YAML
 # bounded_exit present but residual_highs shorter than remaining_high -> violation.
 cat > "$TMP/f5.yaml" <<'YAML'
 review_log:
-  rounds_run: 3
+  rounds_run: 2
   unresolved_critical: 0
   remaining_high: 3
   bounded_exit:
@@ -135,7 +135,7 @@ YAML
 # empty bounded_exit residual list with remaining_high>0 -> violation.
 cat > "$TMP/f6.yaml" <<'YAML'
 review_log:
-  rounds_run: 3
+  rounds_run: 2
   unresolved_critical: 0
   remaining_high: 2
   bounded_exit:
@@ -147,7 +147,7 @@ YAML
 # unresolved Critical with negated escalation PROSE (no exact terminal_state) -> violation, not credit.
 cat > "$TMP/f7.yaml" <<'YAML'
 review_log:
-  rounds_run: 3
+  rounds_run: 2
   unresolved_critical: 1
   remaining_high: 0
   note: "the author did not escalate to owner this round"
@@ -157,7 +157,7 @@ YAML
 # unresolved Critical WITH exact terminal_state -> HALT (exit 3, blocking).
 cat > "$TMP/f8.yaml" <<'YAML'
 review_log:
-  rounds_run: 3
+  rounds_run: 2
   unresolved_critical: 1
   remaining_high: 0
   terminal_state: ESCALATED_TO_USER
@@ -167,7 +167,7 @@ YAML
 # EXEC-005: a fabricated rounds_run cannot mask a completed 4th round record.
 cat > "$TMP/f9.yaml" <<'YAML'
 review_log:
-  rounds_run: 3
+  rounds_run: 2
   unresolved_critical: 0
   remaining_high: 0
   round_1: {reviewer: x}
@@ -175,7 +175,7 @@ review_log:
   round_3: {reviewer: x}
   round_4: {reviewer: x}
 YAML
-[ "$(rc_of node "$CHECK" --log "$TMP/f9.yaml")" = 1 ] && ok "declared rounds_run:3 with a round_4 record is rejected (EXEC-005)" || bad "round_4 record slipped past a rounds_run:3 counter"
+[ "$(rc_of node "$CHECK" --log "$TMP/f9.yaml")" = 1 ] && ok "declared rounds_run:2 with a round_4 record is rejected (EXEC-005)" || bad "round_4 record slipped past a rounds_run:2 counter"
 
 # EXEC-005: declared counter must equal the number of actual round_N records.
 cat > "$TMP/f10.yaml" <<'YAML'
@@ -192,7 +192,7 @@ YAML
 # EXEC-005: a round still marked PENDING cannot certify a terminal pass.
 cat > "$TMP/f11.yaml" <<'YAML'
 review_log:
-  rounds_run: 3
+  rounds_run: 2
   unresolved_critical: 0
   remaining_high: 0
   round_1: {reviewer: x}
@@ -206,29 +206,28 @@ YAML
 # EXEC-005: a consistent 3-round record with matching counter passes.
 cat > "$TMP/f12.yaml" <<'YAML'
 review_log:
-  rounds_run: 3
+  rounds_run: 2
   unresolved_critical: 0
   remaining_high: 0
   round_1: {reviewer: x}
   round_2: {reviewer: x}
-  round_3: {reviewer: x}
 YAML
-[ "$(rc_of node "$CHECK" --log "$TMP/f12.yaml")" = 0 ] && ok "consistent 3-round record (counter == records) passes" || bad "consistent 3-round record wrongly rejected"
+[ "$(rc_of node "$CHECK" --log "$TMP/f12.yaml")" = 0 ] && ok "consistent 2-round record (counter == records) passes" || bad "consistent 2-round record wrongly rejected"
 
 # EXEC-006: review-exec must NOT re-execute/re-plan an unresolved Critical past the cap.
 grep -q "terminal_state: ESCALATED_TO_USER" "$ROOT/skills/review-exec/SKILL.md" && ok "review-exec Failure Modes escalates unresolved Critical (exit 3), not re-loop" || bad "review-exec missing exit-3 escalation in Failure Modes"
 
 # ---------- Contract normalization (EXEC-003) ----------
-grep -q "HARD 3-round cap" "$ROOT/references/plan-review-protocol.md" && ok "plan-review-protocol documents the 3-round cap" || bad "protocol missing the cap"
-grep -q "3-round cap" "$ROOT/skills/review-cross-model/SKILL.md" && ok "review-cross-model documents the cap" || bad "review-cross-model missing the cap"
+grep -q "HARD 2-round cap" "$ROOT/references/plan-review-protocol.md" && ok "plan-review-protocol documents the 3-round cap" || bad "protocol missing the cap"
+grep -q "2-round cap" "$ROOT/skills/review-cross-model/SKILL.md" && ok "review-cross-model documents the cap" || bad "review-cross-model missing the cap"
 # Obsolete "loop until High disappears" language must be gone from review-cross-model.
 if grep -qiE "No High findings remaining|CONVERGED at Medium max|all Medium or lower" "$ROOT/skills/review-cross-model/SKILL.md"; then
   bad "review-cross-model still carries obsolete 'High must disappear / Medium max' convergence language"
 else ok "review-cross-model free of obsolete High-must-disappear language"; fi
 # The protocol must not tie bounded_exit to '>3' (a 4th round is forbidden).
 if grep -qE "bounded_exit.*when >3|record .*when >3" "$ROOT/references/plan-review-protocol.md"; then
-  bad "protocol still ties bounded_exit to rounds_run>3 (forbidden 4th round)"
-else ok "protocol records bounded_exit at rounds_run==3, not >3"; fi
+  bad "protocol still ties bounded_exit to rounds_run>2 (forbidden 4th round)"
+else ok "protocol records bounded_exit at rounds_run==2, not >3"; fi
 
 # One discovery batch can contain parallel reviewers; follow-ups cannot restart it.
 for variant in good restart unrelated missing duplicate; do

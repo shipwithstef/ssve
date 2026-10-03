@@ -80,6 +80,7 @@ const findings = {
   rubric_score: 10,
   rubric_failures: [],
   dependencies_needing_read: [],
+  inspected_paths: ["fixture:candidate"],
   reviewer: { host: "agy", family: "google", model: "Gemini 3.6 Flash (High)", effort: "high" },
   verdict: "pass",
   summary: "pass",
