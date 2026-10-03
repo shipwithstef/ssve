@@ -24,7 +24,7 @@ function stale(current: OrchView, now: number): boolean {
 function count(current: OrchView, now: number): string {
   const tasks = current.snapshot?.tasks ?? [];
   const running = tasks.filter(task => live(task)).length;
-  const blocked = tasks.filter(task => task.blockers.length || ['blocked', 'stalled'].includes(task.state)).length;
+  const blocked = tasks.filter(task => !task.adopted && (task.blockers.length || ['blocked', 'stalled'].includes(task.state))).length;
   const done = tasks.filter(task => task.state.startsWith('done')).length;
   return `${running} run / ${blocked} block / ${done} done (unverified)${stale(current, now) ? ' · STALE' : ''}`;
 }
@@ -201,6 +201,7 @@ export const register: Register = on => {
               <Box key={`needs-${task.id}`}><Text>Needs: {task.depends_on.length ? task.depends_on.map(id => clean(id)).join(' + ') : 'none'}</Text></Box>
               {task.acceptance.map((ac, i) => <Box key={`ac-${task.id}-${i}`}><Text>Acceptance: {clean(ac)}</Text></Box>)}
               {task.events_last_3.slice(-3).map((event, i) => <Box key={`event-${task.id}-${i}`}><Text>Event: {clean(event)}</Text></Box>)}
+              {task.info?.map((note, i) => <Box key={`info-${task.id}-${i}`}><Text dimColor>Info: {clean(note.code)} · {clean(note.description)}</Text></Box>)}
               {task.blockers.map((blocker, i) => <Box key={`blocker-${task.id}-${i}`}><Text color="yellow">Blocker: {clean(blocker.code)} · {clean(blocker.description)}</Text></Box>)}
               <Button key={`details-${task.id}`} label="Details (log tail)" onPress={() => details($, task)} />
               {task.adopted ? <Text>Read-only adopted task · owner controls unavailable</Text> : <Box flexDirection="column">

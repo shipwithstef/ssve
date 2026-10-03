@@ -221,3 +221,18 @@ test('UPD1 channel opt-out hides pane/band updates; parent orchestration notes a
   expect((await band.find({ key: 'orch-band' }))?.text).not.toContain('secret update');
   noEffects(seen);
 });
+
+
+test('adopted observations are informational and do not inflate the prompt blocker count', async ($, on) => {
+  const { snapshot, seen } = setup(on);
+  const base = snapshot.tasks.find((t: { id: string }) => t.id === 'p1c-r');
+  snapshot.tasks = [{ ...base, id: 'p1b', adopted: true, state: 'stalled', blockers: [], info: [{ code: 'unknown_exit', description: 'Legacy observation only' }] }];
+  snapshot.goals = [{ ...snapshot.goals[0], lanes: [{ id: base.lane, title: base.lane, tasks: snapshot.tasks }] }];
+  snapshot.updates = [];
+  await start($); const ui = await $.ui.mount(PANE);
+  await ui.press({ key: 'task-p1b' });
+  expect((await ui.find({ key: 'info-p1b-0' }))?.text).toContain('Info: unknown_exit');
+  const band = await $.ui.mount({ plugin: PLUGIN, surface: 'terminal', component: 'AbovePrompt', props: { ...bandProps, bodyColumns: 100 } });
+  expect((await band.find({ key: 'orch-band' }))?.text).toContain('0 block');
+  noEffects(seen);
+});

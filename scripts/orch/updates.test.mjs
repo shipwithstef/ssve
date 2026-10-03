@@ -116,3 +116,25 @@ test('digest interval/change policy hot reload; quiet hours suppress push but re
   publishUpdates(status, root, root, now + 180000, (...args) => pushes.push(args));
   await new Promise(resolve => setImmediate(resolve)); assert.equal(pushes[0][3], 'test-topic');
 });
+
+test('adopted observations never emit blocked or enter digest blockers, but durable tasks still do', t => {
+  const { root, status, now, publish, log } = fixture(t);
+  status.tasks[0] = { ...status.tasks[0], id: 'p1b', title: 'p1b', adopted: true, state: 'done (unverified exit)', info: [{ code: 'unknown_exit', description: 'Observed only' }] };
+  publish(); assert.ok(log().some(line => /p1b \(unverified exit\) done$/.test(line)));
+  for (const state of ['needs_owner', 'stalled', 'exited (unknown)']) { status.tasks[0].state = state; publish(); }
+  assert.ok(!log().some(line => /p1b.*blocked$/.test(line)));
+  publish(now + 30 * 60000); assert.match(log().at(-1), /blockers: none$/);
+  status.tasks[0].adopted = false; status.tasks[0].state = 'needs_owner'; publish();
+  assert.match(log().at(-1), /p1b blocked$/);
+});
+
+
+test('legacy adopted blocker labels leave retained views while append-only history is preserved', t => {
+  const { root, status, publish, log } = fixture(t);
+  status.tasks[0].title = 'p1b'; status.tasks[0].state = 'needs_owner'; publish();
+  const legacy = log()[0]; assert.match(legacy, /p1b blocked$/);
+  status.tasks[0].adopted = true; status.tasks[0].state = 'done (unverified exit)';
+  const recent = publish();
+  assert.ok(!recent.includes(legacy)); assert.ok(log().includes(legacy));
+  assert.ok(recent.some(line => /p1b \(unverified exit\) done$/.test(line)));
+});
