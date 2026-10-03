@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { stateRoot, init, atomicJson, readJson, taskPath, options, number, canonicalWorktree, procIdentity, sameProcess, git, digest, ingestLines, iso, sleep, isMain, redact } from './common.mjs';
+import { stateRoot, init, atomicJson, readJson, taskPath, options, number, canonicalWorktree, procIdentity, git, digest, ingestLines, iso, sleep, isMain, redact } from './common.mjs';
 const self = fileURLToPath(import.meta.url);
 const CHUNK = 1024 * 1024;
 
@@ -33,13 +33,21 @@ function recentTail(file, cli) {
   return ingestLines(data.subarray(begin, end).toString('utf8'), cli);
 }
 export function classify(task, observation, now = Date.now(), stalledMinutes = 5) {
+  // exec()/process-title changes do not end an attempt. Observation never grants
+  // signal authority; a matching live process always outranks terminal metadata.
+  if (observation.alive) {
+    if (now - Date.parse(observation.last_progress_at || task.started_at) >= stalledMinutes * 60000) return 'stalled';
+    return 'running';
+  }
+  if (task.exit_code == null) return observation.completion_report ? 'done (unverified exit)' : 'exited (unknown)';
   if (task.state === 'timeout' || [124, 137].includes(task.exit_code) && now >= Date.parse(task.deadline_at)) return 'timeout';
   if (task.finished_at) return task.exit_code === 0 && task.state === 'done' && observation.terminal !== 'failed' ? 'done' : 'failed';
-  if (!observation.alive) return 'failed';
-  // Adopted observers cannot establish an exit or enforce a deadline.
-  if (!task.adopted && task.deadline_at && now >= Date.parse(task.deadline_at)) return 'timeout';
-  if (now - Date.parse(observation.last_progress_at || task.started_at) >= stalledMinutes * 60000) return 'stalled';
-  return 'running';
+  return task.exit_code === 0 && observation.terminal !== 'failed' ? 'done' : 'failed';
+}
+export function observedAlive(identity) {
+  if (!identity) return false;
+  const live = procIdentity(identity.pid);
+  return !!live && live.boot_id === identity.boot_id && live.start_ticks === identity.start_ticks;
 }
 function gitSnapshot(worktree) {
   const status = git(worktree, ['status', '--porcelain=v1']);
@@ -95,20 +103,20 @@ export function collect(root = stateRoot(), stalledMinutes = 5) {
       try { cache = readStream(task.log_path, task.executor.cli, cache);
         if (cache.backlog_bytes > 0) { const tail = recentTail(task.log_path, task.executor.cli); for (const key of ['session_id', 'completion_report', 'terminal', 'usage', 'resolved_model', 'events_last_3']) if (tail[key]?.length || tail[key] && key !== 'events_last_3') cache[key] = tail[key]; }
         atomicJson(cacheFile, cache); } catch (e) { blockers.push({ code: 'log_unavailable', description: e.message, source: task.log_path, at: iso() }); }
-      const alive = sameProcess(task.process_identity);
-      const state = classify(task, { ...cache, alive }, now, stalledMinutes);
-      if (!alive && !task.finished_at) blockers.push({ code: 'unknown_exit', description: 'No matching live process or durable exit record; outcome unknown', source: 'proc_identity', at: iso() });
+      const alive = observedAlive(task.process_identity);
+      const report = completionFile(task);
+      const state = classify(task, { ...cache, alive, completion_report: report?.text || cache.completion_report || task.completion_report || (report ? 'Reported completion' : null) }, now, stalledMinutes);
+      if (!alive && task.exit_code == null) blockers.push({ code: 'unknown_exit', description: 'No matching live process or durable exit code; outcome unverified', source: 'proc_identity', at: iso() });
       if (state === 'stalled') blockers.push({ code: 'stale_progress', description: `No log growth for ${stalledMinutes} minutes`, source: 'log_mtime', at: iso() });
       if (state === 'timeout') blockers.push({ code: 'hard_timeout', description: 'Hard deadline reached', source: 'dispatcher', at: task.deadline_at });
       if (task.stop_requested) blockers.push({ code: 'stopped', description: 'Owner stopped this attempt', source: 'dispatcher', at: task.finished_at });
       if (cache.terminal === 'failed') blockers.push({ code: 'worker_error', description: cache.events_last_3?.at(-1) || 'Worker reported error', source: 'worker_stream', at: cache.last_progress_at });
-      const report = completionFile(task);
       const g = gitSnapshot(task.worktree);
       if (g.status === null) blockers.push({ code: 'git_unavailable', description: 'Git inspection failed or exceeded bounds', source: task.worktree, at: iso() });
       const publicTask = { ...task };
       delete publicTask.resume_text;
       for (const key of ['process_identity', 'supervisor_identity']) if (publicTask[key]) { publicTask[key] = { ...publicTask[key] }; delete publicTask[key].cmdline; }
-      tasks.push({ ...publicTask, ...g, state, design_state: !alive && !task.finished_at ? 'unknown' : state === 'done' ? 'awaiting_verification' : task.stop_requested ? 'stopped' : state === 'timeout' ? 'timed_out' : state, session_id: task.session_id || cache.session_id || null, elapsed_ms: Math.max(0, (task.finished_at ? Date.parse(task.finished_at) : now) - Date.parse(task.started_at)), elapsed_basis: 'wall_clock_approximate', estimate_ms: { low: task.expected_minutes === null ? null : task.expected_minutes * 60000, high: task.expected_minutes === null ? null : task.expected_minutes * 60000, basis: task.expected_minutes === null ? 'unknown' : 'owner_estimate' }, last_progress_at: cache.last_progress_at || null, last_event_summary: cache.events_last_3?.at(-1) || null, events_last_3: cache.events_last_3 || [], blockers, artifacts: report ? [{ path: report.path, kind: 'completion_report', digest: report.digest, digest_basis: report.truncated ? 'first_16KiB' : 'entire_file' }] : [], completion_report_ref: report?.path || null, completion_report: report ? report.text : cache.completion_report || task.completion_report || null, completion_report_provenance: report ? 'worker_file_reported' : 'worker_stream_reported', verification_state: 'unverified', health: state === 'stalled' ? 'stale_progress' : alive ? 'live_process' : 'not_running', usage: cache.usage || task.usage || { input_tokens: null, output_tokens: null, cached_tokens: null, source: 'unknown' }, cost_so_far: { known_amount: null, currency: null, unknown_components: ['subscription attribution', 'provider billing'], source: 'unknown', as_of: iso() }, stream: { offset: cache.offset || 0, backlog_bytes: cache.backlog_bytes || 0, malformed_lines: cache.malformed_lines || 0, rotated: cache.rotated || false } });
+      tasks.push({ ...publicTask, ...g, state, design_state: alive ? state : state.startsWith('done') ? 'awaiting_verification' : task.exit_code == null ? 'unknown' : task.stop_requested ? 'stopped' : state === 'timeout' ? 'timed_out' : state, session_id: task.session_id || cache.session_id || null, elapsed_ms: Math.max(0, (!alive && task.finished_at ? Date.parse(task.finished_at) : now) - Date.parse(task.started_at)), elapsed_basis: 'wall_clock_approximate', estimate_ms: { low: task.expected_minutes === null ? null : task.expected_minutes * 60000, high: task.expected_minutes === null ? null : task.expected_minutes * 60000, basis: task.expected_minutes === null ? 'unknown' : 'owner_estimate' }, last_progress_at: cache.last_progress_at || null, last_event_summary: cache.events_last_3?.at(-1) || null, events_last_3: cache.events_last_3 || [], blockers, artifacts: report ? [{ path: report.path, kind: 'completion_report', digest: report.digest, digest_basis: report.truncated ? 'first_16KiB' : 'entire_file' }] : [], completion_report_ref: report?.path || null, completion_report: report ? report.text : cache.completion_report || task.completion_report || null, completion_report_provenance: report ? 'worker_file_reported' : 'worker_stream_reported', verification_state: 'unverified', health: state === 'stalled' ? 'stale_progress' : alive ? 'live_process' : 'not_running', usage: cache.usage || task.usage || { input_tokens: null, output_tokens: null, cached_tokens: null, source: 'unknown' }, cost_so_far: { known_amount: null, currency: null, unknown_components: ['subscription attribution', 'provider billing'], source: 'unknown', as_of: iso() }, stream: { offset: cache.offset || 0, backlog_bytes: cache.backlog_bytes || 0, malformed_lines: cache.malformed_lines || 0, rotated: cache.rotated || false } });
     } catch (e) { warnings.push({ code: 'task_read_error', path: name, description: e.message }); }
   }
   const goals = [];

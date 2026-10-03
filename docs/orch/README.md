@@ -62,14 +62,16 @@ are bounded to 16 KiB, labelled reported, and linked as artifacts. Upstream coun
 and costs are null when unknown. Raw command lines/resume text are excluded from
 web snapshots; event/report text strips common credentials/control characters.
 
-CP1 states are running/done/failed/timeout/stalled. `done` means a recorded clean
-exit awaiting verification, **not acceptance**. A disappeared PID without an exit
-record displays failed + `unknown_exit` and `design_state: unknown`, even with a
-successful stream result. Stalled means no log-size progress for the configured
-minutes. A terminal stream while the PID is live still counts as running. Adopted
-workers have no trustworthy exit code/deadline; an already exited PID is registered
-with unknown process identity/exit, retaining its reported result and report file. Historical timed-out attempts are
-retained when resumed. Elapsed reconstruction uses approximate wall-clock time.
+States are running/done/failed/timeout/stalled plus `done (unverified exit)`
+and `exited (unknown)`. A matching live PID (boot ID + start ticks) always projects
+running/stalled, even after exec or a process-title change, a terminal stream, an
+expired deadline, or conflicting terminal metadata. Control ownership retains its
+stricter command-line check. A missing process with no durable exit code projects
+`done (unverified exit)` when a completion report exists, otherwise `exited (unknown)`;
+adopted unknown exits never imply failure. All done states await verification,
+**not acceptance**. Reports and stream results retain their reported provenance.
+Historical timed-out attempts survive resume; adopted workers have no trustworthy
+exit code/deadline. Elapsed reconstruction uses approximate wall-clock time.
 
 The static web tree refreshes every 60 seconds, retains expansion, exposes hover
 and keyboard-accessible detail, and flags collector staleness after 90 seconds.
@@ -78,8 +80,44 @@ browser, remote requests or LLM calls. Set `--bind` to the owner's Tailscale add
 for exposure; this script does not configure Tailscale or authentication.
 
 Not implemented in CP1: PLAN parser/dependency admission, acceptance receipts,
-Claude mod pane/controls/Q&A, billing attribution, Spot recovery/fencing, or automatic
+semantic Q&A and direct pane controls, billing attribution, Spot recovery/fencing, or automatic
 restart/reconciliation of a dead supervisor. These are separate cards; unknown
 fields are explicit. agy/Cursor live paid launch/resume remain unverified; their
 stream parsing is proven against the recorded sanitized fixtures. The real systemd
 integration test substitutes a local fake Codex executable, with no inference.
+
+## CP2 local terminal mod
+
+```bash
+claude --plugin-dir "$PWD/mods/orchestrator-pane"
+# In the local Claude terminal: /orch
+claude plugin validate mods/orchestrator-pane
+claude plugin test mods/orchestrator-pane
+```
+
+The mod reads `~/.local/state/orch/status.json` through `$.fs`, initially and every
+60 seconds on `$.clock`; `ORCH_STATE_DIR` follows the collector override. Run the
+collector independently with `--watch 60`. `/orch` opens goals → lanes → tasks;
+keyed buttons expand descriptions, executor, elapsed/estimate, dependencies,
+acceptance, last three events and blockers. AbovePrompt is one line (yields to
+surveys); the status counter flags snapshots older than 90 seconds. A failed read
+retains the last snapshot with a visible stale/error label. Task rows page at 100.
+Expansion survives snapshot refreshes through host state. Reopen `/orch` after
+clear/reload to refresh immediately and restart the timer if needed.
+
+Details runs the Node stdlib `scripts/orch/tail.mjs` helper on the registered log
+path only, with a 5-second limit, ≤64 KiB / 200 lines and credential/control-code
+redaction. This avoids the mod filesystem API's 4 MiB whole-file read limit.
+Stop copies the exact dispatch stop command. Steer previews exact owner text and
+copies resume, prefixed by stop + `&&` when currently live. Shell single quotes
+preserve quotes, newlines, dollar signs and backticks. Commands include the state
+root; the owner runs them. No command execution, model calls, prompt submission,
+context append or filesystem writes occur in the pane. Adopted tasks have no
+control buttons; stale snapshots and changed attempts refuse control copying.
+The dispatcher rechecks ownership and the recorded exact session when commands run.
+
+Custom drawing is **local terminal only**. Desktop, VS Code and Remote Control
+web/mobile receive no pane drawing; use the CP1 read-only web view remotely.
+Tests exercise host UI contracts, not actual terminal paint. No Q&A, watcher,
+instant terminal-event refresh, direct stop/steer or acceptance receipt support in
+this card. The mod must be loaded from this checkout so sibling scripts resolve.

@@ -8,7 +8,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { ingestLines, procIdentity, sameProcess, lockPath, lockBusy, init, atomicJson, taskPath, sleep, digest } from './common.mjs';
 import { workerCommand, scopeCommand } from './dispatch.mjs';
-import { readStream, classify, collect, adopt } from './collect.mjs';
+import { readStream, classify, collect, adopt, observedAlive } from './collect.mjs';
 import { createServer } from './serve.mjs';
 const dir = path.dirname(fileURLToPath(import.meta.url));
 function fixture(cli) { return fs.readFileSync(path.join(dir, 'fixtures', `${cli}.jsonl`), 'utf8'); }
@@ -44,9 +44,9 @@ test('classification requires durable exit; timeout and stale activity independe
   assert.equal(classify(base, { alive: true, terminal: 'done', last_progress_at: new Date(now).toISOString() }, now), 'running');
   assert.equal(classify({ ...base, expected_minutes: 0.01 }, { alive: true, last_progress_at: new Date(now).toISOString() }, now), 'running');
   assert.equal(classify(base, { alive: true, last_progress_at: new Date(now - 301000).toISOString() }, now), 'stalled');
-  assert.equal(classify({ ...base, deadline_at: new Date(now - 1).toISOString() }, { alive: true }, now), 'timeout');
+  assert.equal(classify({ ...base, deadline_at: new Date(now - 1).toISOString() }, { alive: true }, now), 'running');
   assert.equal(classify({ ...base, finished_at: new Date(now).toISOString(), exit_code: 0, state: 'done' }, { alive: false }, now), 'done');
-  assert.equal(classify(base, { alive: false, terminal: 'done' }, now), 'failed');
+  assert.equal(classify(base, { alive: false, terminal: 'done' }, now), 'exited (unknown)');
   assert.equal(classify({ ...base, adopted: true, deadline_at: new Date(now - 1).toISOString() }, { alive: true, last_progress_at: new Date(now).toISOString() }, now), 'running');
 });
 test('resume commands use exact session, model/effort and original workspace; VM bypass and limits', () => {
@@ -77,7 +77,7 @@ test('status schema groups goals/lanes/tasks, unknown cost, redacted identity an
   const root = temp(t); init(root); const wt = repo(root); const log_path = path.join(root, 'worker.jsonl'); fs.writeFileSync(log_path, fixture('codex'));
   atomicJson(taskPath('cp1', root), task(wt, { log_path, process_identity: { ...procIdentity(process.pid), start_ticks: '0' }, resume_text: 'private instructions' }));
   const s = collect(root); assert.equal(s.schema_version, 1); assert.equal(s.goals[0].lanes[0].tasks[0].id, 'cp1'); const row = s.tasks[0];
-  assert.equal(row.state, 'failed'); assert.equal(row.design_state, 'unknown'); assert.ok(row.blockers.some(b => b.code === 'unknown_exit')); assert.equal(row.cost_so_far.known_amount, null); assert.ok(row.events_last_3.length <= 3); assert.equal(row.process_identity.cmdline, undefined); assert.equal(row.resume_text, undefined); assert.equal(row.estimate_ms.high, 600000);
+  assert.equal(row.state, 'done (unverified exit)'); assert.equal(row.design_state, 'awaiting_verification'); assert.ok(row.blockers.some(b => b.code === 'unknown_exit')); assert.equal(row.cost_so_far.known_amount, null); assert.ok(row.events_last_3.length <= 3); assert.equal(row.process_identity.cmdline, undefined); assert.equal(row.resume_text, undefined); assert.equal(row.estimate_ms.high, 600000);
   assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root, 'status.json'))), s);
   const s2 = collect(root); assert.equal(s2.revision, 2); assert.deepEqual(s2.changed_task_ids, []); assert.equal(s2.tasks[0].stream.offset, row.stream.offset);
   fs.writeFileSync(path.join(root, 'tasks', 'bad.json'), '{'); assert.equal(collect(root).warnings[0].code, 'task_read_error');
@@ -141,7 +141,7 @@ test('adoption of already exited PID retains report but cannot invent success', 
   const root = temp(t); init(root); const wt = repo(root); const log = path.join(root, 'log'); fs.writeFileSync(log, fixture('cursor'));
   fs.mkdirSync(path.join(wt, '.worker')); fs.writeFileSync(path.join(wt, '.worker', 'P1b-report.md'), 'Worker reported tests passed');
   const adopted = adopt({ adopt: 'p1b', pid: 2147483647, worktree: wt, log }, root); assert.equal(adopted.process_identity, null);
-  const row = collect(root).tasks[0]; assert.equal(row.state, 'failed'); assert.equal(row.design_state, 'unknown'); assert.equal(row.artifacts[0].kind, 'completion_report'); assert.ok(row.completion_report.includes('Worker reported')); assert.equal(row.exit_code, null);
+  const row = collect(root).tasks[0]; assert.equal(row.state, 'done (unverified exit)'); assert.equal(row.design_state, 'awaiting_verification'); assert.equal(row.artifacts[0].kind, 'completion_report'); assert.ok(row.completion_report.includes('Worker reported')); assert.equal(row.exit_code, null);
 });
 test('oversized lines stay bounded and never parse a discarded remainder as JSON', t => {
   const file = path.join(temp(t), 'log'); fs.writeFileSync(file, 'x'.repeat(1024 * 1024 + 100) + '\n' + fixture('codex'));
@@ -162,4 +162,46 @@ test('status exposes recent stream tail while an incremental backlog catches up'
   fs.writeFileSync(log_path, fixture('codex').split('\n')[0] + '\n' + 'x'.repeat(1024 * 1024 + 100) + '\n' + fixture('codex'));
   atomicJson(taskPath('cp1', root), task(wt, { log_path })); const row = collect(root).tasks[0];
   assert.ok(row.stream.backlog_bytes > 0); assert.equal(row.events_last_3.at(-1), 'turn.completed'); assert.ok(row.completion_report.includes('Reported:')); assert.equal(row.state, 'running');
+});
+
+test('regression: exec/title changes keep dispatched and adopted live rows running across ticks', async t => {
+  const root = temp(t); init(root); const wt = repo(root); const log = path.join(root, 'live.jsonl');
+  fs.writeFileSync(log, fixture('codex'));
+  const child = spawn(process.execPath, ['-e', "console.log('ready');process.stdin.once('data',()=>{process.title='orch-exec-regression';console.log('changed')});setInterval(()=>{},1000)"], { stdio: ['pipe', 'pipe', 'ignore'] });
+  const exited = new Promise(resolve => child.on('exit', resolve));
+  t.after(async () => { child.kill(); await exited; });
+  let output = ''; child.stdout.on('data', bytes => { output += bytes; });
+  await waitFor(() => output.includes('ready'));
+  const identity = procIdentity(child.pid);
+  const dispatched = task(wt, { id: 'p1c-r', pid: child.pid, process_identity: identity, log_path: log, state: 'running' });
+  atomicJson(taskPath('p1c-r', root), dispatched);
+  adopt({ adopt: 'd1a', pid: child.pid, worktree: wt, log }, root);
+  child.stdin.write('exec'); await waitFor(() => output.includes('changed'));
+  assert.equal(sameProcess(identity), false); assert.equal(observedAlive(identity), true);
+  for (let tick = 0; tick < 3; tick++) {
+    fs.appendFileSync(log, '{"type":"turn.started"}\n');
+    const snapshot = collect(root);
+    assert.equal(snapshot.tasks.length, 2);
+    for (const row of snapshot.tasks) { assert.equal(row.state, 'running'); assert.equal(row.health, 'live_process'); assert.ok(!row.blockers.some(b => b.code === 'unknown_exit')); }
+  }
+  for (const change of [{ boot_id: 'other' }, { start_ticks: '0' }]) assert.equal(observedAlive({ ...identity, ...change }), false);
+});
+test('regression: live identity outranks terminal records and unknown adopted exits never fail', () => {
+  const now = Date.now(); const base = task('/example');
+  for (const state of ['failed', 'timeout', 'done']) {
+    const record = { ...base, state, finished_at: new Date(now).toISOString(), exit_code: 1 };
+    assert.equal(classify(record, { alive: true, last_progress_at: new Date(now).toISOString() }, now), 'running');
+    assert.equal(classify(record, { alive: true, last_progress_at: new Date(now - 301000).toISOString() }, now), 'stalled');
+  }
+  for (const finished_at of [null, new Date(now).toISOString()]) {
+    const record = { ...base, adopted: true, state: 'failed', finished_at };
+    assert.equal(classify(record, { alive: false, terminal: 'failed' }, now), 'exited (unknown)');
+    assert.equal(classify(record, { alive: false, completion_report: 'Reported completion' }, now), 'done (unverified exit)');
+  }
+});
+test('adopted exit without completion report is unknown even after a stream error', t => {
+  const root = temp(t); init(root); const wt = repo(root); const log = path.join(root, 'log');
+  fs.writeFileSync(log, '{"type":"turn.failed","error":{"message":"reported error"}}\n');
+  adopt({ adopt: 'no-report', pid: 2147483647, worktree: wt, log }, root);
+  const row = collect(root).tasks[0]; assert.equal(row.state, 'exited (unknown)'); assert.equal(row.design_state, 'unknown'); assert.equal(row.exit_code, null);
 });
