@@ -3,13 +3,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { stateRoot, configRoot, bootId, init, atomicJson, readJson, taskPath, lockPath, withLocks, iso, isMain } from './common.mjs';
+import { stateRoot, configRoot, bootId, init, atomicJson, readJson, taskPath, lockPath, withLocks, procIdentity, iso, isMain } from './common.mjs';
 import { checkTaskGrant, goalLock, readRegistry } from './goals.mjs';
 import { recoverySessions } from './sessions.mjs';
 
 const dispatchFile = fileURLToPath(new URL('./dispatch.mjs', import.meta.url));
 const terminal = new Set(['done', 'failed', 'timeout', 'cancelled', 'stopped', 'needs_owner', 'done (unverified exit)', 'exited (unknown)']);
 const recoverable = new Set(['running', 'queued', 'stalled', 'interrupted']);
+const parentPrompt = 'Spot recovery: reconcile ~/.local/state/orch/status.json and continue the active goals; report only blockers.';
 export const taskLocks = (task, root) => [path.join(root, 'locks', `task-${task.id}.lock`), lockPath(task.worktree, root), ...(task.session_id ? [path.join(root, 'locks', `session-${task.executor.cli}-${task.session_id.replace(/[^a-zA-Z0-9_-]/g, '_')}.lock`)] : [])];
 
 export function parentResume(config = configRoot()) {
@@ -54,18 +55,71 @@ export function reconcileTask(file, root, currentBoot) {
   return { id: task.id, action: 'resume', attempt_id: task.attempt_id, resume_text: task.resume_text, auto_resume_count: task.auto_resume_count };
 }
 
-export async function runCommand(command, args, env = process.env) {
+export async function runCommand(command, args, env = process.env, timeout = 0, outputLimit = 4096) {
   return await new Promise((resolve, reject) => {
-    const child = spawn(command, args, { env, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(command, args, { env, stdio: ['ignore', 'pipe', 'pipe'], ...(timeout ? { signal: AbortSignal.timeout(timeout) } : {}) });
     let out = '', err = '';
-    child.stdout.on('data', data => { out = (out + data).slice(-4096); });
+    child.stdout.on('data', data => { out = (out + data).slice(-outputLimit); });
     child.stderr.on('data', data => { err = (err + data).slice(-4096); });
     child.once('error', reject);
     child.once('close', code => code === 0 ? resolve(out.trim()) : reject(new Error(err.trim() || `Command failed (${code})`)));
   });
 }
 
-export async function recover({ root = stateRoot(), currentBoot = bootId(), config = configRoot(), dispatch = dispatchFile, restart = () => runCommand('systemctl', ['--user', '--no-block', 'restart', 'orch-collect.service', 'orch-serve.service']) } = {}) {
+async function liveClaudeOwner(id, env) {
+  // agents --json includes interactive owners whose argv no longer carries an
+  // ID. Query failure is ambiguous ownership, never permission to start a copy.
+  const agents = JSON.parse(await runCommand('claude', ['agents', '--json'], env, 15000, 1024 * 1024));
+  if (!Array.isArray(agents)) throw new Error('Invalid Claude agents response');
+  for (const owner of agents.filter(agent => agent?.sessionId === id)) {
+    if (!Number.isSafeInteger(owner.pid) || owner.pid <= 0) throw new Error('Claude owner PID unknown');
+    if (procIdentity(owner.pid)) return { pid: owner.pid, source: 'claude agents --json' };
+  }
+  // Also exclude an in-flight native launcher not yet registered by Claude.
+  for (const pid of fs.readdirSync('/proc').filter(name => /^\d+$/.test(name))) {
+    const live = procIdentity(pid), args = live?.cmdline;
+    if (!args || !args.slice(0, 3).some(arg => path.basename(arg) === 'claude')) continue;
+    if (args.some((arg, i) => (['--resume', '-r', '--session-id'].includes(arg) && args[i + 1] === id) || ['--resume=', '--session-id='].some(flag => arg === flag + id))) return { pid: live.pid, source: '/proc' };
+  }
+  return null;
+}
+
+async function autoResumeParent(summary, file, { root, config, currentBoot, claudeEnv }) {
+  // Preserve reservation even after failure/crash or parent-session changes.
+  if (summary.parent_auto_resume?.reserved_at) return;
+  const parent = parentResume(config);
+  const hold = reason => { summary.parent_auto_resume = { state: 'needs_owner', auto_start: false, session_id: parent.session_id ?? null, reason }; };
+  if (fs.existsSync(path.join(config, 'no-claude-autoresume'))) { hold('Claude auto-resume opted out'); return; }
+  if (!parent.session_id) { hold(parent.reason); return; }
+  try {
+    // Share the native-session lease with sessions.mjs; the outer recovery
+    // lease serializes boot summaries. No goal/session authority is rebound.
+    await withLocks([path.join(root, 'locks', 'orchestrator-parent.lock'), path.join(root, 'locks', `claude-${parent.session_id}.lock`), goalLock(root)], async () => {
+      const registry = readRegistry(root);
+      if (registry?.parent.session_id && (registry.parent.session_id !== parent.session_id || !summary.parent.resume_command)) throw new Error('Parent registry/session binding requires owner reconciliation');
+      const owner = await liveClaudeOwner(parent.session_id, claudeEnv);
+      if (owner) { summary.parent_auto_resume = { state: 'already_live', auto_start: false, session_id: parent.session_id, owner }; return; }
+      const args = ['--bg', '--resume', parent.session_id, '--effort', 'low', parentPrompt];
+      summary.parent_auto_resume = { state: 'reserved', auto_start: true, boot_id: currentBoot, session_id: parent.session_id, reserved_at: iso(), command: ['claude', ...args], attach_command: `claude attach ${parent.session_id}` };
+      atomicJson(file, summary); // Ambiguous launch consumes this boot's attempt.
+      try {
+        summary.parent_auto_resume.output = await runCommand('claude', args, claudeEnv, 15000);
+        summary.parent_auto_resume.state = 'resume_requested';
+      } catch (e) {
+        summary.parent_auto_resume.state = 'needs_owner';
+        summary.parent_auto_resume.reason = `Claude resume unconfirmed; no retry this boot: ${e.message}`;
+      }
+      atomicJson(file, summary);
+    });
+  } catch (e) {
+    if (summary.parent_auto_resume?.reserved_at) {
+      summary.parent_auto_resume.state = 'needs_owner';
+      summary.parent_auto_resume.reason = `Claude resume unconfirmed; no retry this boot: ${e.message}`;
+    } else hold(`Claude auto-resume held: ${e.message}`);
+  }
+}
+
+export async function recover({ root = stateRoot(), currentBoot = bootId(), config = configRoot(), dispatch = dispatchFile, claudeEnv = process.env, restart = () => runCommand('systemctl', ['--user', '--no-block', 'restart', 'orch-collect.service', 'orch-serve.service']) } = {}) {
   init(root);
   if (!/^[a-zA-Z0-9_-]+$/.test(currentBoot)) throw new Error('Invalid boot id');
   return await withLocks([path.join(root, 'locks', 'recovery.lock')], async () => {
@@ -122,6 +176,7 @@ export async function recover({ root = stateRoot(), currentBoot = bootId(), conf
       } catch (e) { result = { id: name.slice(0, -5), action: 'held', reason: e.message }; }
       summary.tasks = [...summary.tasks.filter(item => item.id !== result.id), result]; atomicJson(file, summary);
     }
+    await autoResumeParent(summary, file, { root, config, currentBoot, claudeEnv });
     try { await restart(); summary.services = 'restart_requested'; } catch (e) { summary.services = e.message; }
     summary.finished_at = iso(); atomicJson(file, summary);
     return summary;
