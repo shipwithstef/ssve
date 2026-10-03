@@ -389,7 +389,7 @@ run_row_driver() {
       assert_row_denial "$hid" "$OUT" "$RC" hard "$RHOME"; rm -rf "$P" ;;
     svc-session-contract-freshness)
       RHOME="$(mktemp -d)"; P="$(mktemp -d)"; mkdir -p "$P/.git" "$P/.svc"
-      printf '{"ts":"2020-01-01T00:00:00Z","wi":"WI-1","skill":null}\n' > "$P/.svc/session-contract.jsonl"
+      printf '{"ts":"2020-01-01T00:00:00Z","wi":"WI-1","skill":null,"session_id":"%s"}\n' "$H_SESS" > "$P/.svc/session-contract.jsonl"
       OUT="$(printf '{"tool_name":"Edit","tool_input":{"file_path":"%s/target.txt"}}' "$P" \
         | ( cd "$P" && HOME="$RHOME" SVC_SESSION_ID="$H_SESS" node "$REPO_ROOT/hooks/svc-session-contract-freshness.mjs" ) 2>&1)"; RC=$?
       assert_row_denial "$hid" "$OUT" "$RC" hard "$RHOME"; rm -rf "$P" ;;

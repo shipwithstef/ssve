@@ -216,6 +216,7 @@ test('ZB-004: Deny-storm circuit breaker halts consecutive identical denials aft
   try {
     const env = isolatedSubprocessEnv({
       SVC_HOST: 'cursor',
+      SVC_HOOK_MODE: 'enforce',
       SVC_CODEX_RUNTIME_DIR: tmp,
       NODE_ENV: 'test',
     });

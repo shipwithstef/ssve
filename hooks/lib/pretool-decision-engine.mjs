@@ -13,6 +13,9 @@
 //     survive an encoder/lexer round trip byte-exactly (`--no-optional-locks`
 //     is inserted as a Git top-level option, never as an `export VAR=...;`
 //     prefix that sibling classifiers would re-read as a mutation).
+import { stripObservationRedirections } from "./observation-redirections.mjs";
+import { unwrapObservationEnvelope } from "./observation-envelope.mjs";
+import { lexObservationArgv } from "./observation-argv.mjs";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -21,7 +24,7 @@ import { lexSimpleCommand } from "../codex/lib/argv-lex.mjs";
 import { encodeSimpleCommand, assertArgvRoundTrip } from "../codex/lib/argv-encode.mjs";
 import { isShellTool } from "./shell-tools.mjs";
 import {
-  isReadOnlyTool, toolName, splitUnquoted, stripDevNullRedirections,
+  isReadOnlyTool, isObservationArgv, STDOUT_READ_COMMANDS, toolName, splitUnquoted, stripDevNullRedirections,
   hookContext, authorityPath, atomicWriteJson,
 } from "../codex/lib/codex-hook-context.mjs";
 import { resolveWI, resolveAuthorityHost } from "./resolve-wi.mjs";
@@ -115,7 +118,7 @@ function normalizeGitArgv(argv) {
 // execution input). Any structural doubt keeps the original command untouched
 // and still allows the read — normalization must never be load-bearing for
 // safety, only for avoiding Git's optional index refresh.
-export function normalizeObservationCommand(command) {
+export function normalizeObservationCommand(command, cwd = process.cwd(), env = process.env) {
   const source = String(command ?? "");
   const segments = splitUnquoted(source);
   if (!segments.length) return null;
@@ -126,7 +129,7 @@ export function normalizeObservationCommand(command) {
     const index = normalized.indexOf(rawSegment, cursor);
     if (index < 0) return null;
     cursor = index + rawSegment.length;
-    const classified = stripDevNullRedirections(rawSegment);
+    const classified = stripObservationRedirections(rawSegment, cwd, env);
     if (!classified) continue;
     // EXTREV-EXEC-007: normalization must not change command semantics. The
     // stripped diagnostic-redirection suffix (2>/dev/null, 2>&1, …) is
@@ -404,7 +407,17 @@ function normalizeServiceCommand(command) {
 }
 
 export function evaluatePreToolObservation(payload, env = process.env) {
-  void env;
+  if (!toolName(payload) && typeof payload?.command === "string") {
+    return evaluatePreToolObservation({ ...payload, tool_name: "Shell", tool_input: { command: payload.command },
+      cwd: payload.cwd || payload.workingDirectory || payload.working_directory || payload.workspace_roots?.[0] }, env);
+  }
+  const nested = unwrapObservationEnvelope(payload);
+  if (nested !== null) {
+    if (!nested.length || !nested.every(call => evaluatePreToolObservation(call, env))) return null;
+    return { schema_version: DECISION_ENGINE_SCHEMA_VERSION, decision: "allow", classification: "observation",
+      reason_code: "OBSERVATION_PROVEN", original_digest: digestPayload(payload), execution_input: null,
+      authority: null, renewal: { status: "not_applicable" }, policy_findings: [] };
+  }
   const started = Date.now();
   const originalShell = bashCommandOf(payload);
   const commandField = originalShell.input && Object.hasOwn(originalShell.input, "command") ? "command" : "cmd";
@@ -415,7 +428,7 @@ export function evaluatePreToolObservation(payload, env = process.env) {
   const classifiedPayload = serviceCommand && originalShell.key
     ? { ...payload, [originalShell.key]: { ...originalShell.input, [commandField]: serviceCommand } }
     : payload;
-  if (!isReadOnlyTool(classifiedPayload)) return null;
+  if (!isReadOnlyTool(classifiedPayload, env)) return null;
   const name = toolName(payload);
   const originalDigest = digestPayload(payload);
   const base = {
@@ -440,7 +453,7 @@ export function evaluatePreToolObservation(payload, env = process.env) {
   // optional diagnostic redirection. Anything ambiguous falls through to the
   // complete argv-aware normalization below.
   if (!ULTRA_HOT_READ.test(command.trim())) {
-    const normalized = normalizeObservationCommand(command);
+    const normalized = normalizeObservationCommand(command, input.workdir || payload.cwd || process.cwd(), env);
     const finalCommand = normalized || command;
     const nextInput = finalCommand !== originalShell.command ? { ...input, [commandField]: finalCommand } : null;
     if (nextInput && Object.hasOwn(input, "command") && Object.hasOwn(input, "cmd")) {
@@ -456,6 +469,61 @@ export function evaluatePreToolObservation(payload, env = process.env) {
     };
   }
   return { ...base, execution_input: null, operation: { repo_id: null, worktree_root: null, targets: [] }, latency_ms: Date.now() - started };
+}
+
+// Advisory-only effects proof: preserve strict enforcement and execution bytes.
+// Never resolve globs or execute xargs; its fixed child must stay read-only for
+// EVERY appended argument. Programs with write/exec options cannot be children.
+export function evaluateAdvisoryObservation(payload, env = process.env) {
+  const nested = unwrapObservationEnvelope(payload);
+  if (nested !== null) {
+    if (!nested.length || !nested.every(call => evaluatePreToolObservation(call, env) || evaluateAdvisoryObservation(call, env))) return null;
+  } else {
+    const input = payload?.tool_input ?? payload?.toolInput ?? payload?.arguments ?? payload?.args;
+    const name = toolName(payload) || (typeof payload?.command === "string" ? "Shell" : "");
+    if (!isShellTool(name)) return null;
+    if (input?.command !== undefined && input?.cmd !== undefined && input.command !== input.cmd) return null;
+    const command = input?.command ?? input?.cmd ?? payload?.command;
+    if (typeof command !== "string") return null;
+    const segments = splitUnquoted(command);
+    if (!segments.length) return null;
+    for (const segment of segments) {
+      const stripped = stripObservationRedirections(segment, input?.workdir || input?.working_directory || payload?.cwd || payload?.workspace_roots?.[0] || process.cwd(), env, true);
+      const parsed = lexObservationArgv(stripped, env);
+      if (!parsed || parsed.globs[0] !== null) return null;
+      let { argv, globs } = parsed;
+      if (argv[0] === "xargs") {
+        let i = 1, replacement = null;
+        for (; i < argv.length && argv[i].startsWith('-'); i++) {
+          if (argv[i] === '--') { i++; break; }
+          if (['-0', '--null', '-r', '--no-run-if-empty', '-t', '--verbose'].includes(argv[i])) continue;
+          if (['-n', '--max-args', '-P', '--max-procs', '-s', '--max-chars', '-L', '--max-lines', '-d', '--delimiter', '-E', '--eof', '-a', '--arg-file', '-I', '--replace'].includes(argv[i])) {
+            const option = argv[i], value = argv[++i];
+            if (!value || globs[i] !== null) return null;
+            if (['-I', '--replace'].includes(option)) replacement = value;
+            continue;
+          }
+          return null;
+        }
+        argv = argv.slice(i); globs = globs.slice(i);
+        if (!STDOUT_READ_COMMANDS.has(argv[0]) || globs[0] !== null || replacement && argv[0].includes(replacement)) return null;
+      }
+      // A glob may inject options when its expansion begins with '-'. Stdout
+      // utilities remain reads even then; other readers require a fixed prefix
+      // (./*, /path/*, file*) or an explicit option terminator before that glob.
+      if (!STDOUT_READ_COMMANDS.has(argv[0]) && globs.some((prefix, i) => prefix !== null &&
+        (!prefix || prefix.startsWith('-')) && !argv.slice(1, i).includes('--'))) return null;
+      if (argv[0] === "uniq" && globs.some(prefix => prefix !== null)) return null; // A second input is an OUTPUT operand.
+      if (argv[0] === "git") {
+        const subcommand = gitSubcommandIndex(argv);
+        if (subcommand < 0 || globs.slice(0, subcommand + 1).some(prefix => prefix !== null)) return null;
+      }
+      if (!isObservationArgv(argv, env, true)) return null;
+    }
+  }
+  return { schema_version: DECISION_ENGINE_SCHEMA_VERSION, decision: "allow", classification: "observation",
+    reason_code: "ADVISORY_OBSERVATION_EFFECTS", original_digest: digestPayload(payload), execution_input: null,
+    authority: null, renewal: { status: "not_applicable" }, policy_findings: [] };
 }
 
 export function renewSlidingPromptAuthority(ctx) {

@@ -1,0 +1,146 @@
+[
+  {
+    "shape": "batch-indexed-field-settled",
+    "source_file": "rollout-2026-09-30T04-36-07-01a0f099-362f-7182-bd1f-a625dd67a938.jsonl",
+    "source_line": 15,
+    "source_sha256": "a07544377f1b66da1233c6fc02a94d9a09b62d00338bb9d55bcc8234c1a8397e",
+    "tool_name": "exec",
+    "tool_input": "const results=await Promise.allSettled([tools.exec_command({cmd:\"cat input.txt\",\"workdir\":\"@REPO@\",\"max_output_tokens\":1500}),tools.exec_command({cmd:\"cat input.txt\",\"max_output_tokens\":10000}),tools.exec_command({cmd:\"cat input.txt\",\"max_output_tokens\":10000}),tools.exec_command({cmd:\"cat input.txt\",\"workdir\":\"@REPO@\",\"max_output_tokens\":4000})]);for(let i=0;i<results.length;i++)text({i,result:results[i]});\n",
+    "expected": "observation"
+  },
+  {
+    "shape": "text-await",
+    "source_file": "rollout-2026-09-30T04-36-07-01a0f099-362f-7182-bd1f-a625dd67a938.jsonl",
+    "source_line": 40,
+    "source_sha256": "50d52f5ff00d46130bc97e7eecf61af1dcd829721d34622df37014d7f117ed54",
+    "tool_name": "exec",
+    "tool_input": "text(await tools.exec_command({cmd:\"cat input.txt\",\"workdir\":\"@REPO@\",\"max_output_tokens\":2000}));\n",
+    "expected": "observation"
+  },
+  {
+    "shape": "bound-output",
+    "source_file": "rollout-2026-09-30T04-36-07-01a0f099-362f-7182-bd1f-a625dd67a938.jsonl",
+    "source_line": 1216,
+    "source_sha256": "d05dfa5c4d17012a488fa3ab73faf1eafe9ac0a6b4261eed06c346c8a38d6c59",
+    "tool_name": "exec",
+    "tool_input": "const r = await tools.exec_command({cmd:\"cat input.txt\",max_output_tokens:2000});text(r.output);\nconst c=await tools.exec_command({cmd:\"cat input.txt\",workdir:\"@REPO@\",max_output_tokens:1000});text(c.output);\n",
+    "expected": "observation"
+  },
+  {
+    "shape": "batch-direct-renderer-settled",
+    "source_file": "rollout-2026-09-30T04-36-07-01a0f099-362f-7182-bd1f-a625dd67a938.jsonl",
+    "source_line": 1696,
+    "source_sha256": "6cbebdc195886619af4c196a1720864a3912b7384e7c624995360cbc56a9e4af",
+    "tool_name": "exec",
+    "tool_input": "const results=await Promise.allSettled([\ntools.exec_command({cmd:\"cat input.txt\",\"workdir\":\"@REPO@\",\"max_output_tokens\":1500}),\ntools.exec_command({cmd:\"cat input.txt\",\"workdir\":\"@REPO@\",\"max_output_tokens\":1000})\n]);results.forEach(text);\n",
+    "expected": "observation"
+  },
+  {
+    "shape": "bound-result",
+    "source_file": "rollout-2026-09-30T04-36-07-01a0f099-362f-7182-bd1f-a625dd67a938.jsonl",
+    "source_line": 2070,
+    "source_sha256": "420a5ae23222181c820d6b28a4a3330b2d21e1e026cabbaac1e827089897ec96",
+    "tool_name": "exec",
+    "tool_input": "const r = await tools.exec_command({cmd:\"cat input.txt\",workdir:\"@REPO@\",max_output_tokens:5000});text(r);\ntext(await tools.exec_command({cmd:\"cat input.txt\",workdir:\"@REPO@\",max_output_tokens:5000}));\n",
+    "expected": "observation"
+  },
+  {
+    "shape": "batch-callback-spread-settled",
+    "source_file": "rollout-2026-09-30T05-13-20-01a0f0bb-4934-70a2-a479-d1cf0630fa6a.jsonl",
+    "source_line": 15,
+    "source_sha256": "ce46d176fae0b70f8971532181692a6edf95f5138b7a424ee11a12018dad6ac5",
+    "tool_name": "exec",
+    "tool_input": "const results = await Promise.allSettled([\ntools.exec_command({cmd:\"cat input.txt\",workdir:\"@REPO@\",max_output_tokens:2000}),\ntools.exec_command({cmd:\"cat input.txt\",max_output_tokens:8000}),\ntools.exec_command({cmd:\"cat input.txt\",max_output_tokens:5000}),\ntools.exec_command({cmd:\"cat input.txt\",workdir:\"@REPO@\",max_output_tokens:5000})\n]); results.forEach((r,i)=>text({i,...r}));\n",
+    "expected": "observation"
+  },
+  {
+    "shape": "parenthesized-output",
+    "source_file": "rollout-2026-09-30T06-54-23-01a0f117-cad5-74a2-9dba-0beef3c7d035.jsonl",
+    "source_line": 30,
+    "source_sha256": "df406d069f6b909cdb62ab7f6ddd117d127268a3578a9a07b2b4d385506b1d35",
+    "tool_name": "exec",
+    "tool_input": "text((await tools.exec_command({cmd:\"cat input.txt\",\"max_output_tokens\":7000})).output);\n",
+    "expected": "observation"
+  },
+  {
+    "shape": "batch-indexed-spread-settled",
+    "source_file": "rollout-2026-09-30T06-54-23-01a0f117-cad5-74a2-9dba-0beef3c7d035.jsonl",
+    "source_line": 1519,
+    "source_sha256": "7f6e12d35609834ed35b22cf9eedaa348f2381c332fe8ce029614a307b916967",
+    "tool_name": "exec",
+    "tool_input": "const rs=await Promise.allSettled([tools.exec_command({cmd:\"cat input.txt\",\"workdir\":\"@REPO@\",\"max_output_tokens\":3600}),tools.exec_command({cmd:\"cat input.txt\",\"workdir\":\"@REPO@\",\"max_output_tokens\":1400})]); for(let i=0;i<rs.length;i++)text({i,...rs[i]});\n",
+    "expected": "observation"
+  },
+  {
+    "shape": "batch-callback-field-settled",
+    "source_file": "rollout-2026-09-30T11-49-11-01a0f225-b031-72d1-9478-08bad399dc46.jsonl",
+    "source_line": 29,
+    "source_sha256": "6108cdc222f128013903c517e59372e9ea41aa21774a702c9bbafc882f5c3bd6",
+    "tool_name": "exec",
+    "tool_input": "const results = await Promise.allSettled([\ntools.exec_command({cmd:\"cat input.txt\",workdir:\"@REPO@\",max_output_tokens:6500}),\ntools.exec_command({cmd:\"cat input.txt\",max_output_tokens:5000}),\ntools.exec_command({cmd:\"cat input.txt\",max_output_tokens:4500})\n]); results.forEach((r,i)=>text({i,status:r.status,result:r.value?.output??r.reason}));\n",
+    "expected": "observation"
+  },
+  {
+    "shape": "batch-callback-ternary-settled",
+    "source_file": "rollout-2026-09-30T13-38-30-01a0f289-c5b8-7883-9805-65711c94a6ac.jsonl",
+    "source_line": 22,
+    "source_sha256": "b5e1c5cdda677b59faee7b2c16fed97f9de3976fd21ea61ac0a9119e77cd4f37",
+    "tool_name": "exec",
+    "tool_input": "const rs=await Promise.allSettled([\ntools.exec_command({cmd:\"cat input.txt\",\"max_output_tokens\":7000}),\ntools.exec_command({cmd:\"cat input.txt\",\"max_output_tokens\":20000}),\ntools.exec_command({cmd:\"cat input.txt\",\"max_output_tokens\":12000})\n]);rs.forEach((r,i)=>text({i,result:r.status===\"fulfilled\"?r.value.output:r.reason}));\n",
+    "expected": "observation"
+  },
+  {
+    "shape": "batch-for-of-settled",
+    "source_file": "rollout-2026-09-30T11-20-29-01a0f20b-6953-7081-ab01-6de841e7c779.jsonl",
+    "source_line": 1722,
+    "source_sha256": "c336c2529618fbce43951c5203105795510af8ff9f3da6397b99722128887209",
+    "tool_name": "exec",
+    "tool_input": "const r=await Promise.allSettled([\ntools.exec_command({cmd:\"cat input.txt\",\"workdir\":\"@REPO@\",\"max_output_tokens\":2600}),\ntools.exec_command({cmd:\"cat input.txt\",\"max_output_tokens\":600})]);for(const x of r)text(x);\n",
+    "expected": "observation"
+  },
+  {
+    "shape": "stringify",
+    "source_file": "rollout-2026-10-01T03-58-31-01a0f59d-232c-74c3-88f9-e892e1c536d0.jsonl",
+    "source_line": 2256,
+    "source_sha256": "2dcb0e986888e10b6042f8a39d5632b0a832f371351d63219856ec4be444337c",
+    "tool_name": "exec",
+    "tool_input": "const r=await tools.exec_command({cmd:\"cat input.txt\",\"workdir\":\"@REPO@\",\"max_output_tokens\":1000});text(JSON.stringify(r));\n",
+    "expected": "observation"
+  },
+  {
+    "shape": "stringify-slice",
+    "source_file": "rollout-2026-10-01T03-58-31-01a0f59d-232c-74c3-88f9-e892e1c536d0.jsonl",
+    "source_line": 2461,
+    "source_sha256": "c7393b23a39e821773ff1de3a964c0a9f0f81a97870ebf1f2637da3cfd5d3118",
+    "tool_name": "exec",
+    "tool_input": "const r=await tools.exec_command({cmd:\"cat input.txt\",\"workdir\":\"@REPO@\",\"yield_time_ms\":30000,\"max_output_tokens\":2500});text(JSON.stringify({exit_code:r.exit_code,output:r.output.slice(-6000)}));\n",
+    "expected": "observation"
+  },
+  {
+    "shape": "batch-for-of-all",
+    "source_file": "rollout-2026-10-01T05-06-02-01a0f5da-f52d-7ad0-8324-875cc77518c1.jsonl",
+    "source_line": 679,
+    "source_sha256": "6524c79907cd15278dac56c611c963cd3bead2b0280e9e53b3e64c061d2cf06e",
+    "tool_name": "exec",
+    "tool_input": "const results = await Promise.all([\n  tools.exec_command({cmd:\"cat input.txt\",workdir:\"@REPO@\",max_output_tokens:4000}),\n  tools.exec_command({cmd:\"cat input.txt\",workdir:\"@REPO@\",max_output_tokens:5000}),\n  tools.exec_command({cmd:\"cat input.txt\",workdir:\"@REPO@\",max_output_tokens:6000}),\n  tools.exec_command({cmd:\"cat input.txt\",workdir:\"@REPO@\",max_output_tokens:5000}),\n  tools.exec_command({cmd:\"cat input.txt\",workdir:\"@REPO@\",max_output_tokens:5000})\n]);\nfor (const r of results) text(r.output);\n",
+    "expected": "observation"
+  },
+  {
+    "shape": "batch-indexed-field-all",
+    "source_file": "rollout-2026-10-01T05-06-24-01a0f5db-4c35-7fa2-b2a6-2af3185f53a8.jsonl",
+    "source_line": 1830,
+    "source_sha256": "ab7ce099abf07c21fedb68d380f0f85e195002a964025a1c2868899885a2c3d6",
+    "tool_name": "exec",
+    "tool_input": "const res = await Promise.all([\n  tools.exec_command({cmd:\"cat input.txt\",workdir:\"@REPO@\",max_output_tokens:2500,yield_time_ms:10000}),\n  tools.exec_command({cmd:\"cat input.txt\",workdir:\"@REPO@\",max_output_tokens:10000,yield_time_ms:10000}),\n  tools.exec_command({cmd:\"cat input.txt\",workdir:\"@REPO@\",max_output_tokens:10000,yield_time_ms:10000}),\n  tools.exec_command({cmd:\"cat input.txt\",workdir:\"@REPO@\",max_output_tokens:11000,yield_time_ms:10000})\n]);\nfor (let i=0;i<res.length;i++) text(`---${i+1}---\\n${res[i].output}`);\n",
+    "expected": "observation"
+  },
+  {
+    "shape": "batch-indexed-spread-all",
+    "source_file": "rollout-2026-10-01T14-29-32-01a0f7de-d9dc-7551-a966-06f8f72505b1.jsonl",
+    "source_line": 393,
+    "source_sha256": "570d7c32b91acaa7e15b1f5b5fa26f577b0edb24f26e2eeb105b0de753053178",
+    "tool_name": "exec",
+    "tool_input": "const r = await Promise.all([\n  tools.exec_command({cmd:\"cat input.txt\",workdir:\"@REPO@\",max_output_tokens:1500}),\n  tools.exec_command({cmd:\"cat input.txt\",workdir:\"@REPO@\",max_output_tokens:1600}),\n  tools.exec_command({cmd:\"cat input.txt\",workdir:\"@REPO@\",max_output_tokens:1800})\n]);\nfor (let i=0;i<r.length;i++) text(JSON.stringify({i,...r[i]}));\n",
+    "expected": "observation"
+  }
+]

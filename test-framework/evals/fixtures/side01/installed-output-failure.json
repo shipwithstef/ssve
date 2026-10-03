@@ -1,0 +1,18 @@
+{
+  "host": "claude",
+  "event": "PreToolUse",
+  "installed_command": "'/usr/bin/node' '/home/dianast/.svc/enforcement/1/hooks/svc-hook-boundary.mjs' svc-codex-pretool-dispatcher.mjs --spec eyJjb21tYW5kIjoiU1ZDX0hPU1Q9XCIke1NWQ19IT1NUOi1jbGF1ZGV9XCIgbm9kZSAvaG9tZS9kaWFuYXN0Ly5jbGF1ZGUvc2tpbGxzL2hvb2tzL2NvZGV4L3N2Yy1jb2RleC1wcmV0b29sLWRpc3BhdGNoZXIubWpzIiwiaG9zdCI6ImNsYXVkZSIsImV2ZW50IjoiUHJlVG9vbFVzZSIsInRpbWVvdXRNcyI6MjAwMDB9",
+  "payload": {
+    "session_id": "side01-read",
+    "cwd": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "cat input.txt > /home/dianast/.local/state/orch/output"
+    },
+    "hook_event_name": "PreToolUse"
+  },
+  "mode": "configured-default",
+  "exit": 0,
+  "stdout": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"[svc advisory svc-codex-pretool-dispatcher.mjs] would have blocked this call; the original tool input continues unchanged. Finding: invalid mutation operation scope (output-redirection-cross-root)\"}}\n",
+  "stderr": "[svc advisory svc-codex-pretool-dispatcher.mjs] would have blocked this call; the original tool input continues unchanged. Finding: invalid mutation operation scope (output-redirection-cross-root)\n"
+}

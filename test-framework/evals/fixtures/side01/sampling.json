@@ -1,0 +1,18 @@
+{
+  "files_sampled": 120,
+  "first": "rollout-2026-09-30T04-36-07-01a0f099-362f-7182-bd1f-a625dd67a938.jsonl",
+  "last": "rollout-2026-10-03T16-39-27-01a102a2-83f0-7bd1-a86a-63b6541f6c18.jsonl",
+  "tool_names": {
+    "exec": 8840,
+    "send_message": 1912,
+    "sleep": 736,
+    "wait_agent": 267,
+    "wait": 189,
+    "list_agents": 15,
+    "spawn_agent": 2,
+    "followup_task": 3,
+    "request_user_input_async": 4
+  },
+  "fixtures": 16,
+  "redaction": "Literal cmd/workdir values only; renderer syntax preserved. No shell/exec_command top-level calls occurred in this recent sample; those host aliases have explicit controls."
+}

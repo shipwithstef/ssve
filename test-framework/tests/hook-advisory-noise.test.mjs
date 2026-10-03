@@ -70,7 +70,8 @@ function runBoundary(home, output, mode = "advisory", fixtureStderr = "") {
     command: `${process.execPath} ${fixture}`, host: "codex", event: "PreToolUse", timeoutMs: 5000,
   })).toString("base64url");
   return runNode("hooks/svc-hook-boundary.mjs", ["svc-test", "--spec", spec], {
-    env: { ...process.env, HOME: home, SVC_HOOK_MODE: mode, SVC_FIXTURE_JSON: JSON.stringify(output), SVC_FIXTURE_STDERR: fixtureStderr },
+    env: { ...process.env, HOME: home, SVC_RUNTIME_DIR: path.join(home, "runtime"), SVC_CODEX_RUNTIME_DIR: path.join(home, "codex-runtime"),
+      SVC_HOOK_MODE: mode, SVC_FIXTURE_JSON: JSON.stringify(output), SVC_FIXTURE_STDERR: fixtureStderr },
     input: "{}",
   });
 }
@@ -103,7 +104,7 @@ test("advisory recovery stays quiet when its skill-loader substitution is discar
 
 test("missing post-tool receipt is quiet for advisory calls and proven reads", () => temporaryHome((home) => {
   const payload = { session_id: "session-quiet-noise", tool_use_id: "call-quiet-noise", tool_name: "Bash",
-    tool_input: { command: "echo hello" }, tool_response: { exit_code: 0 } };
+    tool_input: { command: "touch changed" }, tool_response: { exit_code: 0 } };
   const env = { ...process.env, HOME: home, SVC_CODEX_RUNTIME_DIR: path.join(home, "runtime") };
   const advisory = runNode("hooks/codex/svc-codex-posttool-heartbeat.mjs", [], {
     env: { ...env, SVC_HOOK_MODE: "advisory" }, input: JSON.stringify(payload),
@@ -114,11 +115,14 @@ test("missing post-tool receipt is quiet for advisory calls and proven reads", (
     env: { ...env, SVC_HOOK_MODE: "enforce" }, input: JSON.stringify(payload),
   });
   assert.match(JSON.parse(enforce.stdout).systemMessage, /heartbeat no-op \(receipt_missing\)/);
-  const read = runNode("hooks/codex/svc-codex-posttool-heartbeat.mjs", [], {
-    env: { ...env, SVC_HOOK_MODE: "enforce" },
-    input: JSON.stringify({ ...payload, tool_input: { command: "git status" } }),
-  });
-  assert.deepEqual(JSON.parse(read.stdout), {});
+  for (const command of ["git status", "echo hello"]) {
+    const read = runNode("hooks/codex/svc-codex-posttool-heartbeat.mjs", [], {
+      env: { ...env, SVC_HOOK_MODE: "enforce" },
+      input: JSON.stringify({ ...payload, tool_input: { command } }),
+    });
+    assert.deepEqual(JSON.parse(read.stdout), {});
+    assert.equal(read.stderr, "");
+  }
 }));
 
 test("Codex wiring keeps foreign lookalikes and removes stale managed commands", () => temporaryHome((home) => {
