@@ -2,6 +2,20 @@
 
 Design: 2026-10-03. Scope: GOAL item 2, compatible with CP1/CP2 and SR1. Implementation: Sol 6.1 high; no runtime changes in this card.
 
+**Binding HO1-B v1 correction (2026-10-03):** no event plugin in this release.
+`sessions.mjs` supervises independent background sessions; `events.mjs watch`
+is the zero-model Monitor source watching atomic `status.json` replacements for
+the recipient's goal. One bounded wait (default 5 min, max 30 min) expires without
+renewal; resume/actionable work explicitly recreates it. No unattended delivery
+after expiry is claimed. Messages reconcile/deduplicate through durable helper
+state; native inbox transport remains unverified. Fake Claude tests cover the
+transport/fencing contract; `sessions.mjs verify-live --dry-run` prints owner-only
+one-time launch/attach smoke commands. No real Claude sessions are launched for
+this card, and no mock evidence clears live rollout gates. Counts-v1 accounting
+from HO1-A supersedes the cumulative-token/quota proposals below. This correction
+supersedes plugin creation, plugin validation and plugin wake requirements in
+the original design text; HO1-C owner surfaces/recovery are a separate card.
+
 ## Evidence and decisions
 - Local inputs: [goal, item 2](../GOAL-orchestrator-os.md), [Phase R corrections](../claude-corrections-phaseR.md), [runtime contract](README.md), and all current `scripts/orch/*.mjs`.
 - The requested domain files are absent here. Read sibling `/home/dianast/worktrees/ssve-orchestrator-os/references/knowledge/domains/claude-code/CAPABILITIES.md` and `agent-orchestration/{CAPABILITIES,benchmarks,social-impressions}.md`; preserve this provenance, not an implied local copy.

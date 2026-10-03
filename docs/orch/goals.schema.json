@@ -29,6 +29,15 @@
         },
         "effort": {
           "const": "low"
+        },
+        "goal_id": {
+          "type": "string"
+        },
+        "planning_worktree": {
+          "type": "string"
+        },
+        "contract_ref": {
+          "type": "string"
         }
       },
       "required": [
@@ -37,6 +46,12 @@
         "generation",
         "depth",
         "effort"
+      ],
+      "allOf": [
+        {
+          "if": { "properties": { "session_id": { "type": "string" } } },
+          "then": { "required": ["goal_id", "planning_worktree", "contract_ref"] }
+        }
       ]
     },
     "goals": {

@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { init, atomicJson, taskPath } from './common.mjs';
+import { init, atomicJson, taskPath, procIdentity } from './common.mjs';
 import { transact, readRegistry, admitTask, childContract, validateChild, goalUsage } from './goals.mjs';
 import { collect } from './collect.mjs';
 function fixture(t) {
@@ -78,9 +78,13 @@ test('bound child admission checks session, generation, depth and known turn all
   assert.equal(goal.generation, 2); assert.deepEqual(JSON.parse(fs.readFileSync(path.join(f.root, goal.child.contract_ref))).allowed_writes, ['PLAN.md', 'BOARD.md']);
   const task = { id: 'one-build', attempt_id: 'a', goal_id: 'one', lane: 'build', worktree: wt, executor: { cli: 'codex' }, goal_generation: 2, child_session: 'exact-child', child_principal: 'child-one', child_depth: 1 };
   for (const extra of [{ child_depth: 2 }, { child_session: 'foreign' }, { goal_generation: 1 }]) await assert.rejects(admitTask({ ...task, ...extra }, f.root));
-  await assert.rejects(admitTask(task, f.root), /unknown/);
   fs.mkdirSync(path.join(f.root, 'sessions'));
-  atomicJson(path.join(f.root, 'sessions', 'child.json'), { goal_id: 'one', session_id: 'exact-child', usage: { turns: 0 } });
+  await assert.rejects(admitTask(task, f.root), /acknowledged/);
+  const observation = { goal_id: 'one', session_id: 'exact-child', principal: 'child-one', generation: 2, launch_nonce: 'fake-launch', state: 'idle', effort: 'low',
+    worktree: f.planning, contract: path.join(f.root, goal.child.contract_ref), supervisor_identity: procIdentity(process.pid), process_identity: procIdentity(process.pid), usage: { turns: null } };
+  atomicJson(path.join(f.root, 'sessions', 'child-one.json'), observation);
+  await assert.rejects(admitTask(task, f.root), /unknown/);
+  atomicJson(path.join(f.root, 'sessions', 'child-one.json'), { ...observation, usage: { turns: 0 } });
   await admitTask(task, f.root);
   await transact('set-state', { id: 'one', state: 'paused', expected_revision: 3 }, f.root);
   await assert.rejects(admitTask({ ...task, id: 'one-next' }, f.root), /active/);

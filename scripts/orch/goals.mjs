@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
-import { stateRoot, init, atomicJson, readJson, taskPath, canonicalWorktree, git, withLocks, iso, options, isMain } from './common.mjs';
+import { stateRoot, init, atomicJson, readJson, taskPath, canonicalWorktree, git, withLocks, iso, options, isMain, sameProcess } from './common.mjs';
 
 export const goalLock = root => path.join(root, 'locks', 'goals.lock');
 const clis = ['codex', 'cursor', 'agy'];
@@ -77,6 +77,10 @@ export function validateRegistry(registry) {
     }
   }
   for (let i = 0; i < slots.length; i++) for (let j = i + 1; j < slots.length; j++) if (overlaps(slots[i].worktree, slots[j].worktree)) throw new Error('Worktree grant conflict (canonical, alias or nested ownership)');
+  if (registry.parent.session_id !== null) {
+    const parentGoal = registry.goals.find(g => g.id === registry.parent.goal_id);
+    if (!safeId(registry.parent.session_id) || !parentGoal || registry.parent.planning_worktree !== parentGoal.planning_worktree || registry.parent.contract_ref !== `contracts/parent-v${registry.parent.generation}.json`) throw new Error('Invalid parent session/planning binding');
+  }
   return registry;
 }
 export function readRegistry(root = stateRoot()) {
@@ -105,7 +109,27 @@ export async function transact(command, o, root = stateRoot()) {
     if (o.expected_revision == null || count(o.expected_revision, 'expected revision') !== registry.revision) throw new Error('Registry revision conflict');
     if (!safeId(o.id)) throw new Error('Invalid goal id');
     let goal = registry.goals.find(x => x.id === o.id);
-    if (command === 'create') {
+    if (command === 'bind-parent') {
+      if (!goal || !safeId(o.parent_session)) throw new Error('Parent binding requires goal and exact session');
+      const session = readJson(path.join(root, 'sessions', 'parent.json'));
+      if (session && (sameProcess(session.supervisor_identity) || sameProcess(session.process_identity) || session.state !== 'released')) throw new Error('Parent handoff requires explicit reconciled release');
+      for (const g of registry.goals.filter(g => g.child.session_id)) {
+        const child = readJson(path.join(root, 'sessions', `child-${g.id}.json`));
+        const tasks = fs.readdirSync(path.join(root, 'tasks')).filter(n => n.endsWith('.json')).map(n => readJson(path.join(root, 'tasks', n)));
+        if (!['registered', 'paused', 'blocked'].includes(g.desired_state) || child?.state !== 'released' || sameProcess(child.supervisor_identity) || sameProcess(child.process_identity) || tasks.some(t => t.goal_id === g.id && !t.finished_at)) throw new Error('Parent handoff requires released children and quiescent/drained goals');
+        g.generation++; g.child = { session_id: null, principal: null, effort: 'low', contract_ref: null };
+      }
+      registry.parent = { ...registry.parent, session_id: o.parent_session, generation: registry.parent.generation + 1,
+        goal_id: goal.id, planning_worktree: goal.planning_worktree, contract_ref: `contracts/parent-v${registry.parent.generation + 1}.json` };
+      fs.mkdirSync(path.join(root, 'contracts'), { recursive: true, mode: 0o700 });
+      const contract = { schema_version: 1, role: 'parent', goal_id: goal.id, generation: registry.parent.generation,
+        principal: registry.parent.principal, session_id: registry.parent.session_id, planning_worktree: goal.planning_worktree,
+        depth: 0, max_orchestrator_depth: 1, effort: 'low', report_max_lines: 10, spawn_orchestrators: true };
+      const file = path.join(root, registry.parent.contract_ref);
+      if (fs.existsSync(file)) {
+        if (JSON.stringify(readJson(file)) !== JSON.stringify(contract)) throw new Error('Immutable parent contract conflict');
+      } else atomicJson(file, contract);
+    } else if (command === 'create') {
       if (goal) throw new Error('Goal already exists');
       if (!o.title || !o.objective || !o.plan) throw new Error('Create requires title, objective and plan');
       const roots = o.worktree_roots ? (typeof o.worktree_roots === 'string' ? JSON.parse(o.worktree_roots) : o.worktree_roots) : [];
@@ -123,6 +147,8 @@ export async function transact(command, o, root = stateRoot()) {
       else if (command === 'set-state') {
         if (!states.includes(o.state)) throw new Error('Invalid desired state');
         if (o.child_session || o.child_principal) {
+          const session = readJson(path.join(root, 'sessions', `child-${goal.id}.json`));
+          if (session && (sameProcess(session.supervisor_identity) || sameProcess(session.process_identity) || session.state !== 'released')) throw new Error('Child handoff requires explicit reconciled release');
           if (!['registered', 'paused', 'blocked'].includes(goal.desired_state)) throw new Error('Child handoff requires quiescent goal');
           if (!safeId(o.child_session) || !safeId(o.child_principal)) throw new Error('Child binding requires exact session and principal');
           const live = fs.readdirSync(path.join(root, 'tasks')).filter(x => x.endsWith('.json')).map(x => readJson(path.join(root, 'tasks', x)));
@@ -201,6 +227,8 @@ export async function admitTask(task, root = stateRoot(), persist = t => atomicJ
     if (task.child_session != null || task.child_depth != null || task.child_principal != null) {
       if (!goal.child.session_id || task.child_session !== goal.child.session_id || task.child_principal !== goal.child.principal || task.child_depth !== 1 || task.goal_generation !== goal.generation) throw new Error('Stale, foreign or grandchild dispatch denied');
       validateChild(goal, readJson(path.join(root, goal.child.contract_ref)));
+      const session = readJson(path.join(root, 'sessions', `child-${goal.id}.json`));
+      if (!session?.launch_nonce || session.state !== 'idle' || session.effort !== 'low' || session.session_id !== goal.child.session_id || session.principal !== goal.child.principal || session.generation !== goal.generation || session.worktree !== goal.planning_worktree || session.contract !== fs.realpathSync(path.join(root, goal.child.contract_ref)) || !sameProcess(session.supervisor_identity) || !sameProcess(session.process_identity)) throw new Error('Child launch not acknowledged/live; dispatch held');
     }
     if (!safeId(task.id) || !safeId(task.attempt_id)) throw new Error('Invalid task/attempt id');
     const wt = canonicalWorktree(task.worktree);
