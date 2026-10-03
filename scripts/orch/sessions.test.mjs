@@ -7,7 +7,7 @@ import { spawnSync } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { init, readJson, atomicJson, procIdentity, withLocks } from './common.mjs';
 import { transact, readRegistry, goalUsage, admitTask } from './goals.mjs';
-import { launchSession, attachSession, releaseSession, sessionFile, launchCommand, verifyLive, checkedSession } from './sessions.mjs';
+import { launchSession, attachSession, releaseSession, sessionFile, launchCommand, verifyLive, checkedSession, recoverySessions } from './sessions.mjs';
 import { reconcileWake, acknowledgeWake, watchStatus, receiveMessage, deliveryBlocker, actionable } from './events.mjs';
 
 async function fixture(t, role = 'child') {
@@ -20,7 +20,7 @@ async function fixture(t, role = 'child') {
 import fs from 'node:fs';
 const root=process.env.FAKE_ROOT, args=process.argv.slice(2);
 fs.appendFileSync(root+'/calls.jsonl',JSON.stringify({args,cwd:process.cwd()})+'\\n');
-if(args[0]==='--resume'){if(process.env.FAKE_ATTACH_HOLD)setInterval(()=>{},1000);else process.exit(0);}
+if(args[0]==='--resume' && args.length===2){if(process.env.FAKE_ATTACH_HOLD)setInterval(()=>{},1000);else process.exit(0);}
 else {
 const mode=process.env.FAKE_MODE;
 if(mode==='trust')process.exit(7);
@@ -271,4 +271,62 @@ test('lost ack reconciles same nonce/session without another Claude launch', asy
   const result = await launchSession({ ...f.o, reconcile: 'true', nonce: old.launch_nonce }, { root: f.root, signal: controller.signal, ackTimeout: 250,
     onReady: record => { ready = true; assert.equal(record.session_id, old.session_id); assert.equal(record.launch_nonce, old.launch_nonce); controller.abort(); } });
   assert.ok(ready); assert.equal(result.state, 'needs_owner'); assert.equal(f.calls().length, 1);
+});
+
+for (const role of ['parent', 'child']) test(`HO1 owner ${role} commands: live bare attach; stopped exact transcript with restored LOW/plugin/contract`, async t => {
+  const f = await fixture(t, role);
+  let pending;
+  await f.live(async () => {
+    f.status(); pending = await reconcileWake(f.o, f.root);
+    const entry = recoverySessions(f.root).find(s => s.role === role);
+    assert.equal(entry.auto_start, false);
+    const attach = spawnSync('bash', ['-c', entry.attach_command], { encoding: 'utf8', timeout: 5000 });
+    assert.equal(attach.status, 0, attach.stderr);
+    assert.deepEqual(f.calls()[1], { args: ['--resume', f.o.session_id], cwd: f.planning });
+    // A living native transcript/supervisor excludes any second writer.
+    await assert.rejects(launchSession({ ...f.o, resume: 'true', native_stopped: 'true' }, { root: f.root }), /busy/);
+  });
+  const file = sessionFile(role, 'one', f.root), old = readJson(file);
+  process.kill(old.process_identity.pid, 'SIGTERM'); await delay(50);
+  old.supervisor_identity = { pid: 2147483647 }; atomicJson(file, old);
+  const o = { ...f.o, resume: 'true', nonce: old.launch_nonce };
+  await assert.rejects(launchSession(o, { root: f.root }), /owner-verified/);
+  await assert.rejects(launchSession({ ...o, nonce: 'foreign', native_stopped: 'true' }, { root: f.root }), /exact/);
+  const controller = new AbortController(); let restored = false, wakeError;
+  const result = await launchSession({ ...o, native_stopped: 'true' }, { root: f.root, signal: controller.signal, ackTimeout: 1000,
+    onReady: async record => {
+      restored = true; assert.equal(record.session_id, old.session_id); assert.equal(record.generation, old.generation);
+      assert.equal(record.worktree, old.worktree); assert.equal(record.contract, old.contract); assert.equal(record.principal, old.principal);
+      assert.notEqual(record.launch_nonce, old.launch_nonce); assert.equal(record.resume_from_nonce, old.launch_nonce);
+      try {
+        const rebound = { ...f.o, nonce: record.launch_nonce };
+        const replay = await reconcileWake(rebound, f.root); assert.equal(replay.id, pending.id);
+        await acknowledgeWake(rebound, pending.id, f.root); assert.equal(await reconcileWake(rebound, f.root), null);
+      } catch (e) { wakeError = e; } finally { controller.abort(); }
+    } });
+  assert.ifError(wakeError); assert.ok(restored, result.blocker);
+  const call = f.calls().at(-1);
+  assert.deepEqual(call.args.slice(0, 5), ['--resume', old.session_id, '--effort', 'low', '--plugin-dir']);
+  assert.ok(call.args[5].endsWith('/mods/orchestrator-pane')); assert.ok(call.args.includes('--bg')); assert.equal(call.args[call.args.indexOf('--model') + 1], old.model); assert.equal(call.cwd, f.planning);
+  assert.ok(call.args.at(-1).includes(old.contract)); assert.ok(call.args.at(-1).includes('SR1 recovery receipt'));
+});
+
+test('collector goal health, pending cursor and count blockers; heartbeat-only updates do not change goals', async t => {
+  const f = await fixture(t);
+  const { collect } = await import('./collect.mjs');
+  await f.live(async record => {
+    const file = sessionFile('child', 'one', f.root);
+    let status = collect(f.root);
+    assert.equal(status.goals[0].child.health, 'live'); assert.equal(status.goals[0].observed_state, 'active');
+    assert.ok(status.goals[0].blockers.some(b => b.code === 'budget_unknown'));
+    const saved = readJson(file); saved.last_heartbeat_at = new Date().toISOString(); atomicJson(file, saved);
+    status = collect(f.root); assert.deepEqual(status.changed_goal_ids, []);
+    atomicJson(path.join(f.root, 'events', 'child-one.json'), { generation: record.generation, session_id: record.session_id, launch_nonce: record.launch_nonce, attention_pending: true, blocker: 'Monitor expired' });
+    status = collect(f.root); assert.equal(status.goals[0].child.attention_pending, true);
+    assert.ok(status.goals[0].blockers.some(b => b.description === 'Monitor expired'));
+    saved.last_heartbeat_at = new Date(Date.now() - 60000).toISOString(); atomicJson(file, saved);
+    status = collect(f.root); assert.equal(status.goals[0].child.health, 'suspected_loss'); assert.equal(status.goals[0].observed_state, 'needs_owner');
+    saved.generation++; atomicJson(file, saved); status = collect(f.root);
+    assert.equal(status.goals[0].child.state, 'needs_owner'); assert.equal(status.orchestrators.find(s => s.role === 'child').resume_command, null);
+  });
 });

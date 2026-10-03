@@ -3,8 +3,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { stateRoot, init, atomicJson, readJson, taskPath, options, number, canonicalWorktree, procIdentity, git, digest, ingestLines, iso, isMain, redact, withLocks, bootId } from './common.mjs';
+import { stateRoot, init, atomicJson, readJson, taskPath, options, number, canonicalWorktree, procIdentity, git, digest, ingestLines, iso, isMain, redact, withLocks, bootId, sameProcess, configRoot } from './common.mjs';
 import { readRegistry, goalUsage, reportedUsage } from './goals.mjs';
+import { recoverySessions, binding } from './sessions.mjs';
+import { parentResume } from './recover.mjs';
 const self = fileURLToPath(import.meta.url);
 const CHUNK = 1024 * 1024;
 
@@ -91,7 +93,7 @@ export function adopt(o, root = stateRoot()) {
   atomicJson(file, task);
   return task;
 }
-export function collect(root = stateRoot(), stalledMinutes = 5) {
+export function collect(root = stateRoot(), stalledMinutes = 5, config = configRoot()) {
   init(root);
   const prior = readJson(path.join(root, 'status.json'), { revision: 0, tasks: [], deltas: [] });
   const registry = readRegistry(root); // Fail closed; preserve last valid status on corrupt authority.
@@ -119,20 +121,60 @@ export function collect(root = stateRoot(), stalledMinutes = 5) {
       if (g.status === null) blockers.push({ code: 'git_unavailable', description: 'Git inspection failed or exceeded bounds', source: task.worktree, at: iso() });
       const publicKeys = ['schema_version', 'id', 'title', 'goal_id', 'lane', 'description', 'depends_on', 'acceptance', 'executor', 'worktree', 'session_id', 'adopted', 'read_only', 'state', 'attempt_id', 'started_at', 'finished_at', 'deadline_at', 'expected_minutes', 'hard_timeout_ms', 'memory_cap', 'exit_code', 'exit_signal', 'stop_requested', 'unit', 'pid', 'process_group', 'supervisor_pid', 'process_identity', 'supervisor_identity', 'log_path', 'stderr_path', 'events_path', 'last_heartbeat_at', 'goal_generation', 'registry_revision'];
       const publicTask = Object.fromEntries(publicKeys.filter(key => key in task).map(key => [key, task[key]]));
+      publicTask.reservation_active = !task.adopted && (alive || !task.finished_at && ['queued', 'running', 'stalled'].includes(task.state));
       publicTask.attempt_history = (task.attempt_history || []).map(a => ({ attempt_id: a.attempt_id, started_at: a.started_at, finished_at: a.finished_at, state: a.state, log_path: a.log_path, exit_code: a.exit_code, usage: reportedUsage(a.usage) }));
       for (const key of ['title', 'description']) publicTask[key] = redact(publicTask[key], 16000);
       for (const key of ['process_identity', 'supervisor_identity']) if (publicTask[key]) { publicTask[key] = { ...publicTask[key] }; delete publicTask[key].cmdline; }
       tasks.push({ ...publicTask, ...g, state, design_state: alive ? state : state.startsWith('done') ? 'awaiting_verification' : task.exit_code == null ? 'unknown' : task.stop_requested ? 'stopped' : state === 'timeout' ? 'timed_out' : state, session_id: task.session_id || cache.session_id || null, elapsed_ms: Math.max(0, (!alive && task.finished_at ? Date.parse(task.finished_at) : now) - Date.parse(task.started_at)), elapsed_basis: 'wall_clock_approximate', estimate_ms: { low: task.expected_minutes === null ? null : task.expected_minutes * 60000, high: task.expected_minutes === null ? null : task.expected_minutes * 60000, basis: task.expected_minutes === null ? 'unknown' : 'owner_estimate' }, last_progress_at: cache.last_progress_at || null, last_event_summary: cache.events_last_3?.at(-1) || null, events_last_3: cache.events_last_3 || [], blockers, artifacts: report ? [{ path: report.path, kind: 'completion_report', digest: report.digest, digest_basis: report.truncated ? 'first_16KiB' : 'entire_file' }] : [], completion_report_ref: report?.path || null, completion_report: report ? report.text : cache.completion_report || task.completion_report || null, completion_report_provenance: report ? 'worker_file_reported' : 'worker_stream_reported', verification_state: 'unverified', health: state === 'stalled' ? 'stale_progress' : alive ? 'live_process' : 'not_running', usage: cache.usage || task.usage || { input_tokens: null, output_tokens: null, cached_tokens: null, source: 'unknown' }, cost_so_far: { known_amount: null, currency: null, unknown_components: ['subscription attribution', 'provider billing'], source: 'unknown', as_of: iso() }, stream: { offset: cache.offset || 0, backlog_bytes: cache.backlog_bytes || 0, malformed_lines: cache.malformed_lines || 0, rotated: cache.rotated || false } });
     } catch (e) { warnings.push({ code: 'task_read_error', path: name, description: e.message }); }
   }
+  const orchestrators = recoverySessions(root, registry);
+  // Recheck compatibility on every projection, including a binding changed
+  // since the last boot receipt. Never expose a stale parent's executable hint.
+  const legacy = parentResume(config);
+  if (registry && fs.existsSync(path.join(config, 'parent-session')) && (!legacy.session_id || legacy.session_id !== registry.parent.session_id)) {
+    for (const entry of orchestrators.filter(s => s.role === 'parent')) {
+      entry.attach_command = null; entry.resume_command = null;
+      entry.reason = 'parent-session differs from goals.json; reconcile owner binding, do not rebind';
+    }
+  }
   const goals = (registry?.goals || []).map(goal => {
-    const child = { session_id: goal.child.session_id, generation: goal.generation, effort: goal.child.effort, state: goal.child.session_id ? 'unobserved' : 'needs_owner' };
+    const child = { session_id: goal.child.session_id, generation: goal.generation, effort: goal.child.effort, state: 'needs_owner', health: 'unobserved', last_heartbeat_at: null, attention_pending: false };
+    const blockers = [];
+    try {
+      const session = readJson(path.join(root, 'sessions', `child-${goal.id}.json`));
+      if (!session) throw new Error('Child has no supervised session observation');
+      binding({ role: 'child', goal: goal.id, generation: session.generation, session_id: session.session_id, principal: session.principal, worktree: session.worktree, contract: session.contract }, root);
+      if (session.session_id !== child.session_id || session.generation !== child.generation || session.effort !== 'low' || session.state === 'released') throw new Error('Stale/released child observation or LOW mismatch');
+      child.last_heartbeat_at = session.last_heartbeat_at;
+      const alive = sameProcess(session.supervisor_identity) && sameProcess(session.process_identity);
+      const age = now - Date.parse(session.last_heartbeat_at);
+      child.health = !alive ? 'native_ownership_unverified' : !Number.isFinite(age) || age > 45000 || age < -60000 ? 'suspected_loss' : 'live';
+      child.state = alive && child.health === 'live' && session.state === 'idle' ? 'idle' : 'needs_owner';
+      if (child.state === 'needs_owner') blockers.push({ code: 'needs_owner', description: redact(session.blocker || 'Reconcile child native ownership; heartbeat alone never authorizes restart', 1200) });
+      // Read the durable cursor directly even when its supervisor was lost.
+      const cursor = readJson(path.join(root, 'events', `child-${goal.id}.json`));
+      const wake = cursor?.generation === goal.generation && cursor.session_id === child.session_id && cursor.launch_nonce === session.launch_nonce ? cursor : session.wake_cursor;
+      child.attention_pending = !!wake?.attention_pending;
+      // Pending delivery is health metadata, not a new actionable blocker that
+      // would feed its own enqueue/ack transitions back into another wake.
+      if (wake?.blocker) blockers.push({ code: 'attention_pending', description: redact(wake.blocker, 1200) });
+    } catch (e) { blockers.push({ code: 'needs_owner', description: redact(e.message, 1200) }); }
+    for (const task of tasks.filter(t => t.goal_id === goal.id)) for (const b of task.blockers.filter(b => b.code === 'recovery_hold')) blockers.push({ code: 'needs_owner', description: `${task.id}: ${b.description}` });
     const usage = goalUsage(goal.id, root, tasks);
+    if (goal.budget.claude_turn_cap == null || usage.claude.turns == null) blockers.push({ code: 'budget_unknown', description: 'Claude turn allowance/usage unknown; reconcile before new child dispatch' });
+    else if (usage.claude.turns >= goal.budget.claude_turn_cap) blockers.push({ code: 'budget_exhausted', description: 'Claude turn cap exhausted; parent allocation required' });
+    for (const cli of ['codex', 'cursor', 'agy']) {
+      const cap = goal.budget.worker_caps[cli]?.runs;
+      if (cap == null) blockers.push({ code: 'budget_unknown', description: `${cli} run allowance unknown; parent must configure cap` });
+      else if (cap > 0 && usage.workers[cli].attempts >= cap) blockers.push({ code: 'budget_exhausted', description: `${cli} run cap exhausted; parent allocation required` });
+    }
     return { id: goal.id, title: redact(goal.title), priority: goal.priority, desired_state: goal.desired_state,
-      observed_state: goal.desired_state === 'active' ? 'needs_owner' : goal.desired_state, child, budget: goal.budget, usage,
+      observed_state: goal.desired_state === 'active' ? child.state === 'idle' ? 'active' : 'needs_owner' : goal.desired_state, child, budget: goal.budget, usage,
+      reserved: { claude_turns: null, worker_runs: Object.fromEntries(['codex', 'cursor', 'agy'].map(cli => [cli, tasks.filter(t => t.goal_id === goal.id && t.executor.cli === cli && t.reservation_active).length])) },
       remaining: { claude_turns: goal.budget.claude_turn_cap == null || usage.claude.turns == null ? null : Math.max(0, goal.budget.claude_turn_cap - usage.claude.turns),
         worker_runs: Object.fromEntries(['codex', 'cursor', 'agy'].map(cli => [cli, goal.budget.worker_caps[cli]?.runs == null ? null : Math.max(0, goal.budget.worker_caps[cli].runs - usage.workers[cli].attempts)])) },
-      blockers: [], lanes: [] };
+      blockers, recovery: orchestrators.find(s => s.role === 'child' && s.goal_id === goal.id) || null, lanes: [] };
   });
   for (const task of tasks) {
     let goal = goals.find(x => x.id === task.goal_id);
@@ -144,16 +186,18 @@ export function collect(root = stateRoot(), stalledMinutes = 5) {
   }
   goals.sort((a, b) => (a.priority ?? Number.MAX_SAFE_INTEGER) - (b.priority ?? Number.MAX_SAFE_INTEGER) || a.id.localeCompare(b.id));
   // Elapsed wall time is display-only and must not cause a goal change/wake every tick.
-  const signature = g => JSON.stringify({ id: g.id, title: g.title, priority: g.priority, desired_state: g.desired_state, observed_state: g.observed_state, child: g.child, budget: g.budget, blockers: g.blockers,
+  const signature = g => JSON.stringify({ id: g.id, title: g.title, priority: g.priority, desired_state: g.desired_state, observed_state: g.observed_state, child: g.child && { session_id: g.child.session_id, generation: g.child.generation, effort: g.child.effort, state: g.child.state, health: g.child.health, attention_pending: g.child.attention_pending }, budget: g.budget, blockers: g.blockers,
     claude: g.usage.claude, attempts: Object.fromEntries(Object.entries(g.usage.workers).map(([cli, w]) => [cli, w.attempts])) });
   const changed_goal_ids = goals.filter(g => { const old = prior.goals?.find(x => x.id === g.id); return !old || !old.usage || signature(old) !== signature(g); }).map(g => g.id);
   for (const old of prior.goals || []) if (!goals.some(g => g.id === old.id)) changed_goal_ids.push(old.id);
   const changed_task_ids = tasks.filter(t => { const p = prior.tasks.find(x => x.id === t.id); return !p || p.state !== t.state || p.attempt_id !== t.attempt_id || p.last_progress_at !== t.last_progress_at || p.head_sha !== t.head_sha || p.status !== t.status; }).map(t => t.id);
   const revision = prior.revision + 1;
   const delta = { revision, at: iso(), task_ids: changed_task_ids, goal_ids: changed_goal_ids };
-  const recovery = readJson(path.join(root, `recovery-${bootId()}.json`));
+  const receipt = readJson(path.join(root, `recovery-${bootId()}.json`));
+  const recovery = receipt && { ...receipt, orchestrators };
+  if (recovery && registry) recovery.parent = recovery.orchestrators.find(s => s.role === 'parent') || { state: 'needs_owner', resume_command: null, auto_start: false, reason: 'Parent not bound in registry' };
   const checkpoint = readJson(path.join(root, 'checkpoint.json'));
-  const status = { schema_version: 1, goal_id: goals.length === 1 ? goals[0].id : 'all', run_id: prior.run_id || `collector-${now}`, revision, registry_revision: registry?.revision ?? null, changed_goal_ids, generated_at: iso(), collector_heartbeat_at: iso(), recovery, checkpoint, plan: { path: null, revision: null, hash: null, specs_path: null, specs_hash: null }, goals, tasks, changed_task_ids, changes_since_revision: prior.revision, deltas: [...(prior.deltas || []), delta].slice(-200), warnings };
+  const status = { schema_version: 1, goal_id: goals.length === 1 ? goals[0].id : 'all', run_id: prior.run_id || `collector-${now}`, revision, registry_revision: registry?.revision ?? null, changed_goal_ids, generated_at: iso(), collector_heartbeat_at: iso(), recovery, orchestrators: recovery?.orchestrators || orchestrators, checkpoint, plan: { path: null, revision: null, hash: null, specs_path: null, specs_hash: null }, goals, tasks, changed_task_ids, changes_since_revision: prior.revision, deltas: [...(prior.deltas || []), delta].slice(-200), warnings };
   atomicJson(path.join(root, 'status.json'), status);
   return status;
 }

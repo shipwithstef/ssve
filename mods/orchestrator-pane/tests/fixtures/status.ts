@@ -1,4 +1,4 @@
-// Same recorded snapshot as status.json; TS imports are supported by the isolated test host.
+// Same sanitized fixture as status.json; no credentials or live bindings.
 export const recorded = {
   "schema_version": 1,
   "revision": 22,
@@ -251,8 +251,127 @@ export const recorded = {
             }
           ]
         }
+      ],
+      "priority": 2,
+      "desired_state": "active",
+      "observed_state": "needs_owner",
+      "child": {
+        "session_id": "child-exact",
+        "generation": 2,
+        "effort": "low",
+        "state": "needs_owner",
+        "health": "native_ownership_unverified"
+      },
+      "budget": {
+        "mode": "counts-v1",
+        "claude_turn_cap": 8,
+        "worker_caps": {
+          "codex": {
+            "runs": 4
+          },
+          "cursor": {
+            "runs": null
+          },
+          "agy": {
+            "runs": 0
+          }
+        }
+      },
+      "usage": {
+        "claude": {
+          "turns": 2
+        },
+        "workers": {
+          "codex": {
+            "attempts": 1
+          },
+          "cursor": {
+            "attempts": 2
+          },
+          "agy": {
+            "attempts": 0
+          }
+        }
+      },
+      "reserved": {
+        "claude_turns": null,
+        "worker_runs": {
+          "codex": 1,
+          "cursor": 0,
+          "agy": 0
+        }
+      },
+      "remaining": {
+        "claude_turns": 6,
+        "worker_runs": {
+          "codex": 3,
+          "cursor": null,
+          "agy": 0
+        }
+      },
+      "blockers": [
+        {
+          "code": "needs_owner",
+          "description": "Reconcile native restart ownership"
+        },
+        {
+          "code": "attention_pending",
+          "description": "Monitor expired; restore explicitly"
+        }
+      ]
+    },
+    {
+      "id": "empty",
+      "title": "Empty goal",
+      "priority": 1,
+      "desired_state": "paused",
+      "observed_state": "paused",
+      "child": {
+        "session_id": null,
+        "generation": 1,
+        "effort": "low",
+        "state": "needs_owner",
+        "health": "unobserved"
+      },
+      "lanes": [],
+      "blockers": [
+        {
+          "code": "needs_owner",
+          "description": "Child unbound; budget unknown"
+        }
       ]
     }
   ],
-  "warnings": []
+  "warnings": [],
+  "registry_revision": 6,
+  "orchestrators": [
+    {
+      "role": "parent",
+      "goal_id": "novisenti",
+      "session_id": "parent-exact",
+      "generation": 2,
+      "registry_revision": 6,
+      "state": "needs_owner",
+      "effort": "low",
+      "auto_start": false,
+      "cwd": "/recorded/planning",
+      "attach_command": "cd '/recorded/planning' && 'env' 'ORCH_STATE_DIR=/recorded/state' 'node' '/recorded/scripts/orch/sessions.mjs' 'attach' '--role' 'parent' '--session-id' 'parent-exact' '--generation' '2'",
+      "resume_command": "cd '/recorded/planning' && 'env' 'ORCH_STATE_DIR=/recorded/state' 'node' '/recorded/scripts/orch/sessions.mjs' 'resume' '--role' 'parent' '--session-id' 'parent-exact' '--generation' '2' '--native-stopped' 'true' '--live-verified' 'true'",
+      "reason": "Owner must verify native stopped and LOW; parent first"
+    },
+    {
+      "role": "child",
+      "goal_id": "novisenti",
+      "session_id": "child-exact",
+      "generation": 2,
+      "registry_revision": 6,
+      "state": "needs_owner",
+      "effort": "low",
+      "auto_start": false,
+      "cwd": "/recorded/planning",
+      "attach_command": "cd '/recorded/planning' && 'env' 'ORCH_STATE_DIR=/recorded/state' 'node' '/recorded/scripts/orch/sessions.mjs' 'attach' '--role' 'child' '--session-id' 'child-exact' '--generation' '2'",
+      "resume_command": "cd '/recorded/planning' && 'env' 'ORCH_STATE_DIR=/recorded/state' 'node' '/recorded/scripts/orch/sessions.mjs' 'resume' '--role' 'child' '--session-id' 'child-exact' '--generation' '2' '--native-stopped' 'true' '--live-verified' 'true'",
+      "reason": "Owner must verify native stopped and LOW; parent first"
+    }
+  ]
 };

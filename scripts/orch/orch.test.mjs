@@ -138,7 +138,7 @@ setInterval(()=>{},1000);
   const stopped = await call(['stop', 'live']); assert.equal(stopped.code, 0, stopped.stderr); assert.equal(load('live').stop_requested, true); assert.equal(sameProcess(liveDescendant), false);
   const previous = load('live');
   const recoveryArgs = ['resume', 'live', 'complete', '--auto-recover', bootId(), '--expected-attempt', previous.attempt_id];
-  atomicJson(taskPath('live', root), { ...previous, paid: true, state: 'interrupted', auto_resume_count: 1, recovery: { boot_id: bootId(), status: 'reserved' } });
+  atomicJson(taskPath('live', root), { ...previous, paid: true, state: 'interrupted', auto_resume_count: 1, recovery: { boot_id: bootId(), from_boot_id: 'prior-boot', status: 'reserved' } });
   const paidResume = await call(recoveryArgs); assert.equal(paidResume.code, 1); assert.match(paidResume.stderr, /owner required/);
   const held = load('live'); assert.equal(held.paid, true); assert.equal(held.attempt_id, previous.attempt_id);
   atomicJson(taskPath('live', root), { ...held, paid: false });

@@ -163,3 +163,32 @@ test('500 tasks page at 100 rows and shrink back to page one; polling stays free
   expect(await ui.find({ key: 'task-p1c-r' })).toBeDefined();
   expect(seen.processes.length).toBe(0); noEffects(seen);
 });
+
+test('HO1 goal headers, empty paused goal, partial counts, blockers and owner-only session commands', async ($, on) => {
+  const { snapshot, clock, seen } = setup(on); await start($);
+  const ui = await $.ui.mount(PANE);
+  expect((await ui.find({ key: 'goal-empty' }))?.text).toContain('#1 Empty goal · paused');
+  expect((await ui.find({ key: 'goal-empty' }))?.text).toContain('LOW');
+  expect((await ui.find({ key: 'goal-novisenti' }))?.text).toContain('active / needs_owner');
+  expect((await ui.find({ key: 'goal-novisenti' }))?.text).toContain('native_ownership_unverified');
+  expect((await ui.find({ key: 'budget-novisenti' }))?.text).toContain('Claude turns used 2 / cap 8 · reserved unknown · remaining 6');
+  expect((await ui.find({ key: 'budget-novisenti' }))?.text).toContain('codex attempts used 1 / cap 4 · reserved active 1 · remaining 3');
+  expect((await ui.find({ key: 'budget-novisenti' }))?.text).toContain('cursor attempts used 2 / cap unknown');
+  expect((await ui.find({ key: 'goal-blocker-novisenti-0' }))?.text).toContain('needs_owner');
+  expect((await ui.find({ key: 'goal-blocker-novisenti-1' }))?.text).toContain('Monitor expired');
+  expect(await ui.find({ key: 'goal-empty-empty' })).toBeDefined();
+  await ui.press({ key: 'goal-empty' }); expect(await ui.find({ key: 'goal-empty-empty' })).toBeUndefined();
+  await ui.press({ key: 'orch-refresh' }); expect(await ui.find({ key: 'goal-empty-empty' })).toBeUndefined();
+  await ui.press({ key: 'attach-parent-novisenti' });
+  expect(seen.copies[0]).toBe(snapshot.orchestrators[0].attach_command);
+  await ui.press({ key: 'resume-child-novisenti' });
+  expect(seen.copies[1]).toBe(snapshot.orchestrators[1].resume_command);
+  // Revision change holds command copying until freshly projected commands arrive.
+  snapshot.registry_revision++;
+  await ui.press({ key: 'orch-refresh' }); await ui.press({ key: 'attach-parent-novisenti' });
+  expect(seen.copies.length).toBe(2); expect(seen.toasts.at(-1)).toContain('binding changed');
+  await clock.advance(120000);
+  expect(await ui.find({ key: 'attach-parent-novisenti' })).toBeUndefined();
+  expect(await ui.find({ key: 'resume-child-novisenti' })).toBeUndefined();
+  expect(seen.processes.length).toBe(0); noEffects(seen);
+});

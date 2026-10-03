@@ -1,6 +1,6 @@
 import { atom, read, update } from 'claude-code';
 import type { Register, EngineInterface, Timer } from 'claude-code';
-import type { OrchStatus, OrchTask, OrchView, OrchExpansion, OrchDetail, OrchDraft } from '../types/index';
+import type { OrchStatus, OrchTask, OrchView, OrchExpansion, OrchDetail, OrchDraft, OrchGoal, OrchRecoverySession } from '../types/index';
 
 const PANE = 'orch';
 const view = atom<OrchView>({ plugin: 'orchestrator-pane', key: 'view' }, { snapshot: null, error: 'Waiting for collector', readAt: 0 });
@@ -29,6 +29,16 @@ function count(current: OrchView, now: number): string {
   return `${running} run / ${blocked} block / ${done} done (unverified)${stale(current, now) ? ' · STALE' : ''}`;
 }
 function minutes(ms: number | null): string { return ms === null ? '?' : `${Math.round(ms / 60000)}m`; }
+const known = (value: number | null | undefined): string => value == null ? 'unknown' : String(value);
+export function goalLabel(goal: OrchGoal): string {
+  return `#${known(goal.priority)} ${clean(goal.title)} · ${clean(goal.desired_state ?? 'unregistered')} / ${clean(goal.observed_state ?? 'unknown')} · child ${clean(goal.child?.health ?? 'unobserved')} (${clean(goal.child?.state ?? 'needs_owner')}) · ${goal.child?.effort === 'low' ? 'LOW' : 'effort unknown'} · session ${clean(goal.child?.session_id ?? 'unbound')}`;
+}
+export function budgetLabel(goal: OrchGoal): string {
+  const lines = [`Counts-v1 · Claude turns used ${known(goal.usage?.claude?.turns)} / cap ${known(goal.budget?.claude_turn_cap)} · reserved ${known(goal.reserved?.claude_turns)} · remaining ${known(goal.remaining?.claude_turns)}`];
+  for (const cli of ['codex', 'cursor', 'agy']) lines.push(`${cli} attempts used ${known(goal.usage?.workers?.[cli]?.attempts)} / cap ${known(goal.budget?.worker_caps?.[cli]?.runs)} · reserved active ${known(goal.reserved?.worker_runs?.[cli])} · remaining ${known(goal.remaining?.worker_runs?.[cli])}`);
+  lines.push('Active reservations are included in attempts used. Token/quota attribution unknown.');
+  return lines.join('\n');
+}
 function timing(task: OrchTask): string {
   const estimate = task.estimate_ms;
   return `${minutes(task.elapsed_ms)} / est ${minutes(estimate.low)}${estimate.high !== estimate.low ? '–' + minutes(estimate.high) : ''}`;
@@ -98,6 +108,15 @@ async function copy($: EngineInterface, id: string, attempt: string, surface: 't
   const result = await $.ui.copy({ text: command(task, text), surface });
   await $.ui.toast(result.isCopied ? 'Command copied. Run it in your terminal.' : 'Clipboard unavailable; copy the command shown in the pane.');
 }
+async function copySession($: EngineInterface, entry: OrchRecoverySession, kind: 'attach_command' | 'resume_command', surface: 'terminal') {
+  const current = await read($, view);
+  const latest = current.snapshot?.orchestrators?.find(s => s.role === entry.role && s.goal_id === entry.goal_id && s.session_id === entry.session_id && s.generation === entry.generation);
+  if (stale(current, await $.clock.now()) || latest?.registry_revision !== current.snapshot?.registry_revision || latest?.[kind] !== entry[kind] || !latest?.[kind]) {
+    await $.ui.toast('Session binding changed, stale, or held; refresh before copying.'); return;
+  }
+  const result = await $.ui.copy({ text: latest[kind], surface });
+  await $.ui.toast(result.isCopied ? 'Owner command copied. Verify native ownership before running; parent first.' : 'Clipboard unavailable; copy the command shown in the pane.');
+}
 async function details($: EngineInterface, task: OrchTask) {
   try {
     if (!task.log_path?.startsWith('/')) throw new Error('No registered absolute log path');
@@ -152,9 +171,23 @@ export const register: Register = on => {
       {isStale && <Box key="orch-stale"><Text color="yellow">Collector stale/unavailable · last update {current.snapshot?.collector_heartbeat_at ?? 'unknown'}</Text></Box>}
       <Button key="orch-refresh" label="Refresh" onPress={() => refresh($)} />
       {current.snapshot?.warnings.map((warning, i) => <Box key={`warning-${i}`}><Text color="yellow">{clean(warning.code)}: {clean(warning.description)}</Text></Box>)}
+      {current.snapshot?.orchestrators?.length ? <Text>Owner sessions · parent first, then children · verify native ownership and LOW · no automatic launch</Text> : null}
+      {current.snapshot?.orchestrators?.map(entry => <Box key={`session-${entry.role}-${entry.goal_id}`} flexDirection="column">
+        <Text>{clean(entry.role)} {clean(entry.goal_id)} · {clean(entry.session_id)} · generation {entry.generation} · {clean(entry.state)} · auto_start=false</Text>
+        <Text>{clean(entry.reason)}</Text>
+        <Text>Live attach: {entry.attach_command ?? 'held'}</Text>
+        <Text>Stopped resume (verify native supervisor stopped): {entry.resume_command ?? 'held'}</Text>
+        {!isStale && entry.attach_command && <Button key={`attach-${entry.role}-${entry.goal_id}`} label="Copy live attach" onPress={() => copySession($, entry, 'attach_command', e.surface)} />}
+        {!isStale && entry.resume_command && <Button key={`resume-${entry.role}-${entry.goal_id}`} label="Copy stopped resume" onPress={() => copySession($, entry, 'resume_command', e.surface)} />}
+      </Box>)}
+      {!current.snapshot?.orchestrators?.length && current.snapshot?.recovery?.parent && <Text>Owner attach: {current.snapshot.recovery.parent.resume_command ?? current.snapshot.recovery.parent.reason ?? 'held'}</Text>}
+      {current.snapshot?.recovery?.tasks.map(entry => <Box key={`recovery-${entry.id}`}><Text>Recovery {clean(entry.id)}: {clean(entry.action)} {clean(entry.reason)}</Text></Box>)}
       {!tasks.length && <Box key="orch-empty"><Text>No registered tasks.</Text></Box>}
-      {current.snapshot?.goals.map(goal => <Box key={`goal-box-${goal.id}`} flexDirection="column">
-        <Button key={`goal-${goal.id}`} label={`${expansion['goal-' + goal.id] === false ? '▸' : '▾'} ${clean(goal.title)}`} onPress={() => toggle($, 'goal-' + goal.id, true)} />
+      {[...(current.snapshot?.goals ?? [])].sort((a, b) => (a.priority ?? Number.MAX_SAFE_INTEGER) - (b.priority ?? Number.MAX_SAFE_INTEGER) || a.id.localeCompare(b.id)).map(goal => <Box key={`goal-box-${goal.id}`} flexDirection="column">
+        <Button key={`goal-${goal.id}`} label={`${expansion['goal-' + goal.id] === false ? '▸' : '▾'} ${goalLabel(goal)}`} onPress={() => toggle($, 'goal-' + goal.id, true)} />
+        <Box key={`budget-${goal.id}`}><Text>{budgetLabel(goal)}</Text></Box>
+        {goal.blockers?.map((b, i) => <Box key={`goal-blocker-${goal.id}-${i}`}><Text color="yellow">Blocker: {clean(b.code)} · {clean(b.description)}</Text></Box>)}
+        {expansion['goal-' + goal.id] !== false && !goal.lanes.length && <Box key={`goal-empty-${goal.id}`}><Text>No lanes or tasks registered.</Text></Box>}
         {expansion['goal-' + goal.id] !== false && goal.lanes.map(lane => <Box key={`lane-box-${goal.id}-${lane.id}`} flexDirection="column" paddingLeft={1}>
           <Button key={`lane-${goal.id}-${lane.id}`} label={`${expansion['lane-' + goal.id + '-' + lane.id] === false ? '▸' : '▾'} ${clean(lane.title)} · ${lane.tasks.length} tasks`} onPress={() => toggle($, 'lane-' + goal.id + '-' + lane.id, true)} />
           {expansion['lane-' + goal.id + '-' + lane.id] !== false && tasks.filter(t => t.goal_id === goal.id && t.lane === lane.id && visible.has(t.id)).map(task => <Box key={`task-box-${task.id}`} flexDirection="column" paddingLeft={1}>

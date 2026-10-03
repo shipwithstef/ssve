@@ -218,31 +218,40 @@ export function goalUsage(id, root = stateRoot(), tasks = null) {
   return { mode: 'counts-v1', claude: { turns: observed ? [...sessions].reduce((n, s) => n + Math.max(turns.get(s)?.size || 0, snapshots.get(s) || 0), 0) : null, source: observed ? 'session_events' : 'unknown', reported_usage: [...reported.values()] }, workers,
     future: ['cumulative_token_journals', 'quota_share_estimates'] };
 }
-export async function admitTask(task, root = stateRoot(), persist = t => atomicJson(taskPath(t.id, root), t)) {
-  init(root);
-  return withLocks([goalLock(root)], () => {
-    const registry = readRegistry(root), goal = registry?.goals.find(x => x.id === task.goal_id);
-    if (!goal || goal.desired_state !== 'active') throw new Error('Task goal must exist and be active');
-    if (task.goal_generation != null && task.goal_generation !== goal.generation) throw new Error('Stale goal generation');
-    if (task.child_session != null || task.child_depth != null || task.child_principal != null) {
-      if (!goal.child.session_id || task.child_session !== goal.child.session_id || task.child_principal !== goal.child.principal || task.child_depth !== 1 || task.goal_generation !== goal.generation) throw new Error('Stale, foreign or grandchild dispatch denied');
-      validateChild(goal, readJson(path.join(root, goal.child.contract_ref)));
+// SR1 alone supplies a validated old-attempt reservation. A dead child after a
+// reboot cannot revoke its parent's persisted grant, but ordinary dispatch still
+// requires the live acknowledged child. Both paths share admission and its lock.
+export function checkTaskGrant(task, root = stateRoot(), recovery = false) {
+  const registry = readRegistry(root), goal = registry?.goals.find(x => x.id === task.goal_id);
+  if (!goal || goal.desired_state !== 'active') throw new Error('Task goal must exist and be active');
+  if (recovery ? task.goal_generation !== goal.generation : task.goal_generation != null && task.goal_generation !== goal.generation) throw new Error('Stale or missing goal generation');
+  if (task.child_session != null || task.child_depth != null || task.child_principal != null) {
+    if (!goal.child.session_id || task.child_session !== goal.child.session_id || task.child_principal !== goal.child.principal || task.child_depth !== 1 || task.goal_generation !== goal.generation) throw new Error('Stale, foreign or grandchild dispatch denied');
+    validateChild(goal, readJson(path.join(root, goal.child.contract_ref)));
+    if (!recovery) {
       const session = readJson(path.join(root, 'sessions', `child-${goal.id}.json`));
       if (!session?.launch_nonce || session.state !== 'idle' || session.effort !== 'low' || session.session_id !== goal.child.session_id || session.principal !== goal.child.principal || session.generation !== goal.generation || session.worktree !== goal.planning_worktree || session.contract !== fs.realpathSync(path.join(root, goal.child.contract_ref)) || !sameProcess(session.supervisor_identity) || !sameProcess(session.process_identity)) throw new Error('Child launch not acknowledged/live; dispatch held');
     }
+  }
+  const wt = canonicalWorktree(task.worktree);
+  const grant = goal.grants.find(g => g.worktree === wt && g.lane === task.lane);
+  if (!grant) throw new Error('Worktree/lane is not granted to this goal');
+  grantPaths(wt, grant.paths);
+  const usage = goalUsage(goal.id, root), cli = task.executor.cli, cap = goal.budget.worker_caps[cli]?.runs;
+  if (cap == null) throw new Error('Worker run allowance unknown; parent must configure cap');
+  if (usage.workers[cli].attempts >= cap) throw new Error('Worker run cap exhausted');
+  if (task.child_session) {
+    if (goal.budget.claude_turn_cap == null || usage.claude.turns == null) throw new Error('Claude turn allowance/usage unknown');
+    if (usage.claude.turns >= goal.budget.claude_turn_cap) throw new Error('Claude turn cap exhausted');
+  }
+  if (task.paid || task.card?.paid) throw new Error('Paid admission disabled in counts-v1');
+  return { registry, goal };
+}
+export async function admitTask(task, root = stateRoot(), persist = t => atomicJson(taskPath(t.id, root), t), { recovery = false } = {}) {
+  init(root);
+  return withLocks([goalLock(root)], () => {
+    const { registry, goal } = checkTaskGrant(task, root, recovery);
     if (!safeId(task.id) || !safeId(task.attempt_id)) throw new Error('Invalid task/attempt id');
-    const wt = canonicalWorktree(task.worktree);
-    if (!goal.grants.some(g => g.worktree === wt && g.lane === task.lane)) throw new Error('Worktree/lane is not granted to this goal');
-    grantPaths(wt, goal.grants.find(g => g.worktree === wt && g.lane === task.lane).paths);
-    const usage = goalUsage(goal.id, root), cli = task.executor.cli;
-    const cap = goal.budget.worker_caps[cli]?.runs;
-    if (cap == null) throw new Error('Worker run allowance unknown; parent must configure cap');
-    if (usage.workers[cli].attempts >= cap) throw new Error('Worker run cap exhausted');
-    if (task.child_session) {
-      if (goal.budget.claude_turn_cap == null || usage.claude.turns == null) throw new Error('Claude turn allowance/usage unknown');
-      if (usage.claude.turns >= goal.budget.claude_turn_cap) throw new Error('Claude turn cap exhausted');
-    }
-    if (task.paid || task.card?.paid) throw new Error('Paid admission disabled in counts-v1');
     task.goal_generation = goal.generation; task.registry_revision = registry.revision;
     persist(task); // Durable queued attempt is the reservation; goals.json has one writer.
     return task;

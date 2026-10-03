@@ -4,6 +4,8 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { stateRoot, configRoot, bootId, init, atomicJson, readJson, taskPath, lockPath, withLocks, iso, isMain } from './common.mjs';
+import { checkTaskGrant, goalLock, readRegistry } from './goals.mjs';
+import { recoverySessions } from './sessions.mjs';
 
 const dispatchFile = fileURLToPath(new URL('./dispatch.mjs', import.meta.url));
 const terminal = new Set(['done', 'failed', 'timeout', 'cancelled', 'stopped', 'needs_owner', 'done (unverified exit)', 'exited (unknown)']);
@@ -45,6 +47,7 @@ export function reconcileTask(file, root, currentBoot) {
   if (!Number.isInteger(count) || count < 0 || !Number.isInteger(limit) || limit < 0) return hold('Invalid auto-resume budget');
   if (count >= limit) return hold('Auto-resume limit reached');
   if (!task.session_id || typeof task.resume_text !== 'string' || !task.resume_text.trim() || !['codex', 'cursor', 'agy'].includes(task.executor?.cli)) return hold('No exact resumable session/continuation');
+  try { checkTaskGrant(task, root, true); } catch (e) { return hold(`Goal recovery denied: ${e.message}`); }
   task.auto_resume_count = count + 1;
   task.recovery = { boot_id: currentBoot, from_boot_id: oldBoot, at: iso(), attempt_id: task.attempt_id, status: 'reserved' };
   atomicJson(file, task);
@@ -69,6 +72,20 @@ export async function recover({ root = stateRoot(), currentBoot = bootId(), conf
     const file = path.join(root, `recovery-${currentBoot}.json`);
     const summary = readJson(file, { schema_version: 1, boot_id: currentBoot, started_at: iso(), tasks: [] });
     summary.parent = parentResume(config);
+    try {
+      const registry = readRegistry(root);
+      summary.orchestrators = recoverySessions(root, registry);
+      if (registry) {
+        const parent = summary.orchestrators.find(s => s.role === 'parent');
+        if ((summary.parent.session_id && summary.parent.session_id !== registry.parent.session_id) || (fs.existsSync(path.join(config, 'parent-session')) && !summary.parent.session_id)) {
+          summary.parent = { ...summary.parent, resume_command: null, reason: 'parent-session differs from goals.json; reconcile owner binding, do not rebind' };
+          if (parent) { parent.resume_command = null; parent.attach_command = null; parent.reason = summary.parent.reason; }
+        } else if (parent) summary.parent = parent;
+        else summary.parent = { state: 'needs_owner', resume_command: null, auto_start: false, reason: 'Parent is not bound in goals.json' };
+      }
+    } catch (e) {
+      summary.orchestrators = []; summary.parent = { state: 'needs_owner', resume_command: null, auto_start: false, reason: `Registry/session recovery held: ${e.message}` };
+    }
     atomicJson(file, summary);
     for (const name of fs.readdirSync(path.join(root, 'tasks')).filter(name => name.endsWith('.json')).sort()) {
       let result;
@@ -78,7 +95,7 @@ export async function recover({ root = stateRoot(), currentBoot = bootId(), conf
         // Fast reads avoid contending with active writers on this boot.
         if (terminal.has(task.state) || task.finished_at || task.supervisor_identity?.boot_id === currentBoot || task.process_identity?.boot_id === currentBoot) continue;
         const locks = taskLocks(task, root);
-        result = await withLocks(locks, () => {
+        result = await withLocks([...locks, goalLock(root)], () => {
           if (JSON.stringify(taskLocks(readJson(taskFile), root)) !== JSON.stringify(locks)) throw new Error('Task ownership changed before locking');
           return reconcileTask(taskFile, root, currentBoot);
         });

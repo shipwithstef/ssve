@@ -8,6 +8,7 @@ import { stateRoot, init, readJson, atomicJson, canonicalWorktree, withLocks, pr
 import { readRegistry, validateChild, goalLock } from './goals.mjs';
 
 const self = fileURLToPath(import.meta.url);
+const pane = fileURLToPath(new URL('../../mods/orchestrator-pane', import.meta.url));
 const safe = value => typeof value === 'string' && /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,95}$/.test(value);
 function claudeExecutable() {
   for (const dir of (process.env.PATH || '').split(path.delimiter)) {
@@ -91,9 +92,15 @@ export async function launchSession(o, { root = stateRoot(), signal, onReady = (
       if (['closing', 'closed'].includes(b.goal.desired_state)) throw new Error('Goal closing/closed');
       if (b.goal.budget.claude_turn_cap == null || b.goal.budget.claude_turn_cap <= 0) throw new Error('Explicit positive Claude turn allowance required');
       const old = readJson(file);
-      if (o.reconcile === 'true') {
+      if (o.reconcile === 'true' || o.resume === 'true') {
         if (!old || old.state === 'released' || old.generation !== b.authority.generation || old.session_id !== o.session_id || old.principal !== o.principal || old.launch_nonce !== o.nonce || old.worktree !== b.worktree || old.contract !== b.contract_file || sameProcess(old.supervisor_identity)) throw new Error('Reconcile requires exact held nonce and dead prior supervisor');
+        if (o.resume === 'true' && (sameProcess(old.process_identity) || o.native_stopped !== 'true')) throw new Error('Resume requires dead native identity AND owner-verified native supervisor/transcript stopped');
         record = { ...old, state: 'starting', blocker: null, supervisor_identity: procIdentity(process.pid), boot_id: bootId(), pid: process.pid, start_ticks: procIdentity(process.pid).start_ticks };
+        if (o.resume === 'true') {
+          record.launch_nonce = randomUUID(); record.process_identity = null; record.effort = 'low';
+          record.resume_from_nonce = old.launch_nonce; record.resume_nonce_history = [...(old.resume_nonce_history || []), old.launch_nonce].slice(-64);
+          record.plugin_dirs = [pane]; record.wake_cursor = null;
+        }
         atomicJson(file, record); return;
       }
       if (old && (old.state !== 'released' || old.generation >= b.authority.generation || old.session_id === o.session_id)) throw new Error('Existing launch nonce/session held; reconcile before new generation');
@@ -118,7 +125,7 @@ export async function launchSession(o, { root = stateRoot(), signal, onReady = (
       const acknowledgement = waitAck(ackFile, ackTimeout, signal ? AbortSignal.any([signal, ackController.signal]) : ackController.signal);
       acknowledgement.catch(() => {}); // Also handled if synchronous spawn setup fails.
       if (o.reconcile !== 'true') {
-        const command = launchCommand(o, record.launch_nonce);
+        const command = o.resume === 'true' ? resumeCommand({ ...o, model: record.model }, record.launch_nonce) : launchCommand(o, record.launch_nonce);
         const errfd = fs.openSync(path.join(root, 'logs', `${record.launch_nonce}.launch.log`), 'a', 0o600);
         launcher = spawn(command[0], command.slice(1), { cwd: record.worktree,
           env: { ...process.env, ORCH_LAUNCH_NONCE: record.launch_nonce, ORCH_ACK_FILE: ackFile, ORCH_CONTRACT: record.contract,
@@ -203,6 +210,37 @@ export async function releaseSession(o, root = stateRoot()) {
   });
 }
 const quote = value => `'${String(value).replaceAll("'", "'\\''")}'`;
+export function resumeCommand(o, nonce) {
+  const prompt = launchCommand(o, nonce).at(-1) + ' Read the current SR1 recovery receipt and existing attempts before any dispatch. Restore Monitor only for actionable work; never renew an idle wait.';
+  return ['claude', '--resume', o.session_id, '--effort', 'low', '--plugin-dir', pane, '--bg', ...(o.model ? ['--model', o.model] : []), prompt];
+}
+// Pure command projection; never launch, rebind or change session/goal files.
+export function recoverySessions(root = stateRoot(), registry = readRegistry(root)) {
+  if (!registry) return [];
+  const entries = [{ role: 'parent', goal: registry.parent.goal_id, authority: registry.parent },
+    ...[...registry.goals].sort((a, b) => a.priority - b.priority || a.id.localeCompare(b.id)).map(g => ({ role: 'child', goal: g.id, authority: { ...g.child, generation: g.generation } }))];
+  return entries.filter(e => e.authority.session_id).map(({ role, goal, authority }) => {
+    const result = { role, goal_id: goal, session_id: authority.session_id, generation: authority.generation,
+      registry_revision: registry.revision, state: 'needs_owner', effort: 'low', auto_start: false,
+      cwd: null, contract_ref: authority.contract_ref, plugin_dirs: [pane], attach_command: null, resume_command: null,
+      reason: 'Resume parent first; verify native restart ownership and LOW; restore Monitor explicitly' };
+    try {
+      const worktree = registry.goals.find(g => g.id === goal)?.planning_worktree;
+      const o = { role, goal, generation: authority.generation, session_id: authority.session_id, principal: authority.principal,
+        worktree, contract: path.resolve(root, authority.contract_ref) };
+      const b = binding(o, root), record = readJson(sessionFile(role, goal, root));
+      result.cwd = b.worktree;
+      if (!record?.launch_nonce || record.state === 'released') throw new Error('No held launch nonce; reconcile native session before creating a binding');
+      o.nonce = record.launch_nonce; checkedSession(o, root);
+      const base = ['env', `ORCH_STATE_DIR=${root}`, 'ORCH_ROLE=parent', 'ORCH_DEPTH=0', `ORCH_PRINCIPAL=${registry.parent.principal}`, process.execPath, self];
+      const args = Object.entries(o).flatMap(([k, v]) => ['--' + k.replaceAll('_', '-'), String(v)]);
+      const shell = argv => `cd ${quote(b.worktree)} && ${argv.map(quote).join(' ')}`;
+      result.attach_command = shell([...base, 'attach', ...args]);
+      result.resume_command = shell([...base, 'resume', ...args, '--native-stopped', 'true', '--live-verified', 'true']);
+    } catch (e) { result.reason = e.message; }
+    return result;
+  });
+}
 export function verifyLive(o, root = stateRoot()) {
   const b = binding(o, root), nonce = randomUUID(), ack = path.join(root, 'requests', `${nonce}.session-ack.json`);
   const command = launchCommand(o, nonce);
@@ -235,8 +273,9 @@ export async function main(args = process.argv.slice(2)) {
     atomicJson(path.join(root, 'requests', `${record.launch_nonce}.observation.json`), { launch_nonce: record.launch_nonce, session_id: record.session_id, generation: record.generation, turns }); return;
   }
   if (command === 'release') { console.log(JSON.stringify(await releaseSession(o))); return; }
-  if (!['launch', 'reconcile'].includes(command)) throw new Error('Expected launch, reconcile, attach, release, observe, acknowledge or verify-live');
+  if (!['launch', 'reconcile', 'resume'].includes(command)) throw new Error('Expected launch, reconcile, resume, attach, release, observe, acknowledge or verify-live');
   if (command === 'reconcile') o.reconcile = 'true';
+  if (command === 'resume') o.resume = 'true';
   const controller = new AbortController();
   for (const event of ['SIGINT', 'SIGTERM']) process.once(event, () => controller.abort());
   console.log(JSON.stringify(await launchSession(o, { signal: controller.signal, onReady: record => console.log(JSON.stringify({ state: record.state, session_id: record.session_id, launch_nonce: record.launch_nonce, attach_command: attachCommand(record).join(' ') })) })));

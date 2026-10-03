@@ -10,7 +10,25 @@ export type OrchTask = {
 export type OrchStatus = {
   schema_version: 1; revision: number; generated_at: string; collector_heartbeat_at: string;
   tasks: OrchTask[]; warnings: { code: string; description: string }[];
-  goals: { id: string; title: string; lanes: { id: string; title: string; tasks: OrchTask[] }[] }[];
+  registry_revision?: number | null;
+  orchestrators?: OrchRecoverySession[];
+  recovery?: { boot_id: string; parent?: { resume_command?: string | null; reason?: string }; tasks: { id: string; action: string; reason?: string }[] } | null;
+  goals: OrchGoal[];
+};
+export type OrchRecoverySession = {
+  role: string; goal_id: string; session_id: string; generation: number; registry_revision: number;
+  state: string; auto_start: false; cwd: string | null; effort: string;
+  attach_command: string | null; resume_command: string | null; reason?: string;
+};
+export type OrchGoal = {
+  id: string; title: string; priority?: number | null; desired_state?: string | null; observed_state?: string;
+  child?: { session_id: string | null; state: string; health?: string; effort: string; generation: number; attention_pending?: boolean } | null;
+  budget?: { mode: string; claude_turn_cap: number | null; worker_caps: Record<string, { runs: number | null }> } | null;
+  usage?: { claude: { turns: number | null }; workers: Record<string, { attempts: number }> };
+  reserved?: { claude_turns: number | null; worker_runs: Record<string, number> };
+  remaining?: { claude_turns: number | null; worker_runs: Record<string, number | null> };
+  blockers?: { code: string; description: string }[];
+  lanes: { id: string; title: string; tasks: OrchTask[] }[];
 };
 export type OrchView = { snapshot: OrchStatus | null; error: string | null; readAt: number };
 export type OrchExpansion = Record<string, boolean>;
