@@ -207,3 +207,17 @@ test('UPD1: pane shows last 20 updates and one-line band shows newest, without m
   expect((await band.find({ key: 'orch-band' }))?.text).toContain('task 24 done');
   noEffects(seen);
 });
+
+
+test('UPD1 channel opt-out hides pane/band updates; parent orchestration notes are info', async ($, on) => {
+  const { snapshot, seen } = setup(on);
+  snapshot.updates = ['12:00 demo/build: secret update done'];
+  snapshot.update_channels = { web: true, pane: false };
+  snapshot.goals.find((g: { id: string }) => g.id === 'novisenti').info = [{ code: 'parent_orchestrated', description: 'No child bound' }];
+  await start($); const ui = await $.ui.mount(PANE);
+  expect((await ui.find({ key: 'orch-updates' }))?.text ?? '').not.toContain('secret update');
+  expect((await ui.find({ key: 'goal-info-novisenti-0' }))?.text).toContain('Info: parent_orchestrated');
+  const band = await $.ui.mount({ plugin: PLUGIN, surface: 'terminal', component: 'AbovePrompt', props: { ...bandProps, bodyColumns: 100 } });
+  expect((await band.find({ key: 'orch-band' }))?.text).not.toContain('secret update');
+  noEffects(seen);
+});

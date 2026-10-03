@@ -84,3 +84,35 @@ test('goal registry lifecycle maps registered/closing/closed to truthful event l
   }
   assert.deepEqual(log().map(x => x.split(' ').at(-1)), ['started', 'started', 'interrupted', 'blocked', 'started', 'done']);
 });
+
+test('hot reload applies event/goal/channel filters without replay; absent config creates zero-LLM defaults', t => {
+  const { root, status, publish, now, log } = fixture(t);
+  publish();
+  const file = path.join(root, 'updates.json'); const settings = JSON.parse(fs.readFileSync(file));
+  assert.equal(settings.summary.mode, 'none'); assert.equal(settings.summary.model, 'grok-4.7-medium');
+  assert.equal(fs.statSync(file).mode & 0o777, 0o600);
+  settings.events = ['failed']; settings.channels.log = false; settings.channels.web = false; settings.channels.pane = false;
+  fs.writeFileSync(file, JSON.stringify(settings)); status.tasks[0].state = 'failed'; publish(now + 60000);
+  assert.equal(log().length, 2); assert.match(publish(now + 60000).at(-1), /failed$/);
+  assert.deepEqual(status.update_channels, { web: false, pane: false });
+  settings.channels.log = true; settings.goals = ['other']; fs.writeFileSync(file, JSON.stringify(settings));
+  status.tasks[0].attempt_id = 'next'; assert.deepEqual(publish(), []); assert.equal(log().length, 2);
+  settings.goals = 'all'; settings.events = ['needs_owner']; fs.writeFileSync(file, JSON.stringify(settings));
+  status.tasks[0].state = 'blocked'; publish(); assert.equal(log().length, 2);
+  status.tasks[0].state = 'needs_owner'; publish(); assert.equal(log().length, 3);
+  publish(); assert.equal(log().length, 3);
+});
+
+test('digest interval/change policy hot reload; quiet hours suppress push but retain local lines', async t => {
+  const { root, status, now, publish, log } = fixture(t); publish();
+  const file = path.join(root, 'updates.json'); const settings = JSON.parse(fs.readFileSync(file));
+  settings.digest_minutes = 1; settings.digest_only_on_change = false; settings.quiet_hours = { start: '23:00', end: '13:00', timezone: 'UTC' };
+  fs.writeFileSync(file, JSON.stringify(settings)); const pushes = [];
+  publishUpdates(status, root, root, now + 60000, line => pushes.push(line));
+  publishUpdates(status, root, root, now + 120000, line => pushes.push(line));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(pushes.length, 0); assert.equal(log().filter(x => x.includes('done today')).length, 2);
+  settings.quiet_hours = null; settings.channels.ntfy_topic = 'test-topic'; fs.writeFileSync(file, JSON.stringify(settings));
+  publishUpdates(status, root, root, now + 180000, (...args) => pushes.push(args));
+  await new Promise(resolve => setImmediate(resolve)); assert.equal(pushes[0][3], 'test-topic');
+});

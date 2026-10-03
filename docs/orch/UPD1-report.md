@@ -1,10 +1,10 @@
-# UPD1
-Implemented deterministic UTC one-line task/goal/needs_owner updates; zero LLM.
-Append-only ~/.local/state/orch/updates.log; durable dedup with partial-write recovery.
-Task/goal/session file events wake collection; 60s polling remains fallback.
-Changed-only active-goal digests every 30m; UTC done-today counts include attempt history.
-Web and /orch show last 20; compact prompt band shows newest update.
-Optional ntfy.sh POST: bounded 5s, no retries, skipped here (topic absent).
-Validation: Node suite 93/93; plugin tests 8/8; syntax, persistence, diff checks pass.
-Restarted orch-collect/orch-serve: active; live HTTP 200, fresh snapshot matches log tail.
-Local commit only; unrelated pre-existing edits preserved; terminal paint not manually checked.
+# UPD1 + follow-up
+Private ~/.config/orch/updates.json defaults created; settings hot-reload every cycle.
+Event/goal filters, channel switches, quiet hours, configurable changed-only digest interval.
+Default summary none makes zero LLM calls; cheap uses Cursor/Grok for digests only, never Claude.
+Cheap calls: durable rolling-hour cap ≤2, 15s/4KiB bounds; quota/errors retain deterministic digest.
+Deduped updates.log; web/pane last 20; prompt band newest; optional bounded ntfy push.
+Unbound parent-orchestrated child and unknown Claude turn allowance are info; bound-child loss stays blocked.
+Validation: node --test scripts/orch/*.test.mjs 99/99; plugin tests 9/9; syntax/persistence/diff checks pass.
+Both services restarted/active; live HTTP 200 verifies fresh channels, mode none and 2 parent-orchestrated goals.
+Local commits only, no push; unrelated edits preserved; cheap provider mocked; settings guide: docs/orch/updates.md.
