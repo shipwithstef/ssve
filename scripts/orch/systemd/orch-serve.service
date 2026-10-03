@@ -1,0 +1,18 @@
+[Unit]
+Description=Orchestrator OS read-only status view
+Wants=network-online.target
+After=network-online.target orch-recover.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+WorkingDirectory=@ORCH_ROOT@
+Environment=PATH=@ORCH_PATH@
+EnvironmentFile=%h/.config/orch/serve.env
+UMask=0077
+ExecStart=@ORCH_NODE@ @ORCH_ROOT@/scripts/orch/serve.mjs
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

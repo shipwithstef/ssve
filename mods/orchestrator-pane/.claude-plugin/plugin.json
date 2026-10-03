@@ -1,0 +1,9 @@
+{
+  "name": "orchestrator-pane",
+  "version": "0.2.0",
+  "description": "Terminal orchestrator mode, collapsed assistant chat and confirmed worker controls.",
+  "author": {
+    "name": "SSVE"
+  },
+  "types": "./types/index.d.ts"
+}

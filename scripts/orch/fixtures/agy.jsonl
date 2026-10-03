@@ -1,0 +1,3 @@
+{"event":"init","conversation_id":"00000000-0000-4000-8000-000000000003","init":{"cwd":"/example/worktree","tools":["view_file","run_command"],"permission_mode":"always-proceed"}}
+{"event":"step_update","step_update":{"conversation_id":"00000000-0000-4000-8000-000000000003","step_index":59,"state":"ACTIVE","step_type":"agent_response","text_delta":"Reported: wrote docs/example-report.md."}}
+{"event":"result","result":{"conversation_id":"00000000-0000-4000-8000-000000000003","status":"SUCCESS","response":"Reported: local checks passed.","duration_seconds":198.845212335,"num_turns":1,"usage":{"input_tokens":261964,"output_tokens":31017,"thinking_tokens":20628,"cache_read_tokens":1603802,"total_tokens":292981}}}
