@@ -70,7 +70,7 @@ expect "explicit turn id remains unchanged and absent Grok turn falls back to se
 expect "all supported shell aliases share one canonical classifier" node --input-type=module -e '
   import assert from "node:assert/strict";
   import { SHELL_TOOLS, isShellTool } from "./hooks/lib/shell-tools.mjs";
-  const expected = ["Bash", "Shell", "run_shell_command", "shell", "run_terminal_command"];
+  const expected = ["Bash", "exec_command", "functions.exec_command", "Shell", "run_shell_command", "shell", "run_terminal_command"];
   assert.deepEqual([...SHELL_TOOLS], expected);
   for (const name of expected) assert.equal(isShellTool(name), true);
   assert.equal(isShellTool("terminal"), false);
@@ -960,6 +960,8 @@ cp "$ROOT/hooks/codex/lib/codex-hook-context.mjs" "$WI494_MUT/boot/hooks/codex/l
 cp "$ROOT/hooks/codex/lib/session-handoff.mjs" "$WI494_MUT/boot/hooks/codex/lib/session-handoff.mjs"
 cp "$ROOT/hooks/lib/resolve-wi.mjs" "$WI494_MUT/boot/hooks/lib/resolve-wi.mjs"
 cp "$ROOT/hooks/lib/operation-scope.mjs" "$WI494_MUT/boot/hooks/lib/operation-scope.mjs"
+cp "$ROOT/hooks/lib/observation-redirections.mjs" "$WI494_MUT/boot/hooks/lib/observation-redirections.mjs"
+cp "$ROOT/hooks/lib/observation-envelope.mjs" "$WI494_MUT/boot/hooks/lib/observation-envelope.mjs"
 cp "$ROOT/hooks/lib/shell-tools.mjs" "$WI494_MUT/boot/hooks/lib/shell-tools.mjs"
 cp "$ROOT/hooks/lib/pretool-decision-engine.mjs" "$WI494_MUT/boot/hooks/lib/pretool-decision-engine.mjs"
 cp "$ROOT/hooks/lib/validate-task-graph-shape.mjs" "$WI494_MUT/boot/hooks/lib/validate-task-graph-shape.mjs"
@@ -1027,6 +1029,8 @@ cp "$ROOT/hooks/codex/lib/session-handoff.mjs" "$WI494_MUT/marker/hooks/codex/li
 cp "$ROOT/hooks/codex/svc-codex-skill-load-enforcer.mjs" "$WI494_MUT/marker/hooks/codex/svc-codex-skill-load-enforcer.mjs"
 cp "$ROOT/hooks/lib/resolve-wi.mjs" "$WI494_MUT/marker/hooks/lib/resolve-wi.mjs"
 cp "$ROOT/hooks/lib/operation-scope.mjs" "$WI494_MUT/marker/hooks/lib/operation-scope.mjs"
+cp "$ROOT/hooks/lib/observation-redirections.mjs" "$WI494_MUT/marker/hooks/lib/observation-redirections.mjs"
+cp "$ROOT/hooks/lib/observation-envelope.mjs" "$WI494_MUT/marker/hooks/lib/observation-envelope.mjs"
 cp "$ROOT/hooks/lib/shell-tools.mjs" "$WI494_MUT/marker/hooks/lib/shell-tools.mjs"
 cp "$ROOT/hooks/lib/pretool-decision-engine.mjs" "$WI494_MUT/marker/hooks/lib/pretool-decision-engine.mjs"
 cp "$ROOT/hooks/lib/validate-task-graph-shape.mjs" "$WI494_MUT/marker/hooks/lib/validate-task-graph-shape.mjs"

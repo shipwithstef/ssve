@@ -35,6 +35,7 @@ if(scenario==='large'){
 }else process.stdout.write(process.env.SVC_FIXTURE_JSON||'{}');
 `);
 const quote = (value) => `'${String(value).replace(/'/g, "'\\''")}'`;
+let fixtureSession = 0;
 function run({ payload = {}, scenario = "json", mode, policy, host = "claude", event = "PreToolUse", timeoutMs = 5000, fixtureExit = 0, command, pidFile } = {}) {
   const policyDir = path.join(home, ".svc");
   fs.mkdirSync(policyDir, { recursive: true });
@@ -45,7 +46,7 @@ function run({ payload = {}, scenario = "json", mode, policy, host = "claude", e
     command: command || `${quote(process.execPath)} ${quote(fixture)}`,
     host, event, timeoutMs,
   })).toString("base64url");
-  const env = { ...process.env, HOME: home, SVC_FIXTURE_SCENARIO: scenario, SVC_FIXTURE_JSON: JSON.stringify(payload), SVC_FIXTURE_EXIT: String(fixtureExit), SVC_PID_FILE: pidFile || "" };
+  const env = { ...process.env, HOME: home, SVC_SESSION_ID: `boundary-fixture-${fixtureSession++}`, SVC_FIXTURE_SCENARIO: scenario, SVC_FIXTURE_JSON: JSON.stringify(payload), SVC_FIXTURE_EXIT: String(fixtureExit), SVC_PID_FILE: pidFile || "" };
   delete env.SVC_HOOK_MODE;
   if (mode !== undefined) env.SVC_HOOK_MODE = mode;
   return spawnSync(process.execPath, [path.join(repo, "hooks", "svc-hook-boundary.mjs"), "svc-fixture", "--spec", spec], {
@@ -153,7 +154,7 @@ try {
   fs.symlinkSync(path.join(repo, "hooks"), path.join(spaced, "hooks"), "dir");
   const spacedSpec = Buffer.from(JSON.stringify({ command: `${quote(process.execPath)} ${quote(fixture)}`, host: "claude", event: "PreToolUse", timeoutMs: 5000 })).toString("base64url");
   const spacedRun = spawnSync(process.execPath, [path.join(spaced, "hooks", "svc-hook-boundary.mjs"), "svc-fixture", "--spec", spacedSpec], {
-    env: { ...process.env, HOME: home, SVC_FIXTURE_JSON: '{"decision":"deny"}' }, input: "{}", encoding: "utf8",
+    env: { ...process.env, HOME: home, SVC_SESSION_ID: `boundary-fixture-${fixtureSession++}`, SVC_FIXTURE_JSON: '{"decision":"deny"}' }, input: "{}", encoding: "utf8",
   });
   assert.equal(spacedRun.status, 0);
   assert.match(spacedRun.stderr, /svc advisory/);
@@ -161,7 +162,7 @@ try {
   fs.symlinkSync(process.execPath, customNode);
   const customSpec = Buffer.from(JSON.stringify({ command: `${quote(customNode)} ${quote(fixture)}`, host: "claude", event: "PreToolUse", timeoutMs: 5000 })).toString("base64url");
   const customRun = spawnSync(process.execPath, [path.join(repo, "hooks", "svc-hook-boundary.mjs"), "svc-fixture", "--spec", customSpec], {
-    env: { ...process.env, HOME: home, SVC_FIXTURE_JSON: '{"decision":"deny"}' }, input: "{}", encoding: "utf8",
+    env: { ...process.env, HOME: home, SVC_SESSION_ID: `boundary-fixture-${fixtureSession++}`, SVC_FIXTURE_JSON: '{"decision":"deny"}' }, input: "{}", encoding: "utf8",
   });
   assert.equal(customRun.status, 0);
   assert.match(customRun.stderr, /svc advisory/);

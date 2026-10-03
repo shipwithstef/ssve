@@ -104,7 +104,7 @@ OUT6=$(payload PreToolUse Edit file_path src/bridge-target/x.js wi361s5 |   SVC_
 printf '%s' "$OUT6" > "$TMP/o6.json"
 check "I10 bridge-ONLY injection (no direct signals possible)" grep -q "post-fix-evidence" "$TMP/o6.json"
 
-# I11 (PLAN-003): pointer-state rules stay eligible for FULL injection later
+# I11 (PLAN-003): pointer-state rules count as delivered for the session
 rm -f .svc/rule-injections-wi361s6.json
 python3 - "$TMP" <<'PY'
 import json,sys,os
@@ -121,7 +121,7 @@ printf '%s' "$O1" > "$TMP/o7.json"
 check "I11a first big rule full, second pointered" bash -c "grep -q 'AAAA' '$TMP/o7.json' && grep -q 'rules/big-b.md' '$TMP/o7.json' && ! grep -q 'BBBB' '$TMP/o7.json'"
 O2=$(payload PreToolUse Edit file_path src/overflow-target/b.js wi361s6 |   SVC_RULES_MANIFEST="$TMP/fixture-overflow.json" SVC_RULES_ROOT="$TMP/bigrules" run_inj)
 printf '%s' "$O2" > "$TMP/o8.json"
-check "I11b pointered rule arrives FULL on next touch" grep -q "BBBB" "$TMP/o8.json"
+check "I11b pointered rule stays silent on next touch" test -z "$O2"
 
 # cleanup memo fixtures
 rm -f .svc/rule-injections-wi361s*.json

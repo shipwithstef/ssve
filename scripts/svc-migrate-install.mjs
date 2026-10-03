@@ -171,6 +171,8 @@ function materializeLauncher(stateRoot, repoRoot, effectiveSource, registry) {
   for (const [source, target, mode] of [
     ["hooks/svc-hook-boundary.mjs", "hooks/svc-hook-boundary.mjs", 0o700],
     ["hooks/lib/hook-policy.mjs", "hooks/lib/hook-policy.mjs", 0o600],
+    ["hooks/lib/session-findings.mjs", "hooks/lib/session-findings.mjs", 0o600],
+    ["hooks/lib/svc-runtime-root.mjs", "hooks/lib/svc-runtime-root.mjs", 0o600],
     ["hooks/codex/lib/argv-lex.mjs", "hooks/codex/lib/argv-lex.mjs", 0o600],
   ]) {
     changed = copyVerified(path.join(repoRoot, source), path.join(dir, target), mode, stateRoot) || changed;

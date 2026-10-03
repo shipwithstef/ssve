@@ -55,3 +55,11 @@ Run free checks with `EVALS=0 bash scripts/ci/run-free-checks.sh`. Enforcement f
 To recover from a regression, select advisory mode, repair the source and rerun setup. To restore the previous implementation, revert the source change and refresh installations from that revision. Keep evidence of failures visible throughout recovery.
 
 Routine skill-loader rewrites discarded by advisory mode are quiet: the original tool input runs, with no claim that the loader ran or that the operation must be retried. Missing post-tool receipts are quiet for advisory calls and proven read-only calls. Independent warnings and actual enforcement findings remain visible.
+
+## Quiet session output (SIDE-01)
+
+Proven observations bypass mutation hooks before contract IO, self-heal, receipts or denial counters. This includes compound literal reads, native Codex `exec_command`, and the bounded literal `functions.exec` wrapper grammar. Unknown JavaScript, shell substitutions, executable flags and mixed read/write commands remain governed. Read-command output may redirect to `/tmp`, `SVC_SESSION_SCRATCHPAD`, or `~/.local/state/orch`; canonical targets inside repositories or symlink escapes remain governed.
+
+Tool advisories apply to mutations in repositories with `.svc`. Emit a finding class once per stable session, repository and check; private runtime markers atomically suppress concurrent duplicates in stderr and host context. Explicit enforcement decisions remain visible on every denial. Advisory proposals never increment the deny-storm counter or trigger its circuit-breaker message. Sessions without stable identity cannot share a suppression record.
+
+Freshness checks select the current session's contract row rather than another session's last row. No matching contract is silent; an active matching stale contract still fails validation and mutation authority remains independently enforced. Rules are delivered once per stable session across worktrees, including overflow pointers; read-only shell commands do not trigger command-keyword rules. These changes take effect after the owner refreshes installed hooks from the reviewed source.

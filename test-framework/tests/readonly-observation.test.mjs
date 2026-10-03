@@ -66,7 +66,7 @@ const writes = [
   'journalctl --cursor-file=/tmp/cursor',
   "journalctl --cursor'-file' /tmp/cursor",
   'journalctl --image=/tmp/disk',
-  'journalctl --no-pager > /tmp/log',
+  'journalctl --no-pager > /var/svc-protected-log',
   'journalctl -f',
   'journalctl --no-pager -fu x',
   'journalctl --no-pager --pager=cat',

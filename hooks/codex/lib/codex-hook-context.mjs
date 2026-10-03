@@ -1,3 +1,4 @@
+import { stripObservationRedirections } from "../../lib/observation-redirections.mjs";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -368,7 +369,7 @@ export function continuationIntent(text, { distinguishNegative = false } = {}) {
 
 const READ_ONLY_TOOLS = new Set(["Read", "Glob", "Grep", "Search", "View", "view_image", "readToolCall", "grepToolCall", "fileSearchToolCall", "findToolCall"]);
 const SAFE_BASH = [
-  /^(ls|pwd|cat|head|tail|wc|sha256sum|stat|realpath|readlink|dirname|basename|cut|tr)(?:\s+[^;&|`$<>]*)?$/,
+  /^(ls|pwd|cat|head|tail|wc|sha256sum|stat|realpath|readlink|dirname|basename|cut|tr|grep)(?:\s+[^;&|`$<>]*)?$/,
   /^test(?:\s+[^;&|`$<>]*)+$/,
 ];
 
@@ -611,7 +612,7 @@ export function stripDevNullRedirections(segment) {
   return value;
 }
 
-export function isReadOnlyTool(ctx) {
+export function isReadOnlyTool(ctx, env = process.env) {
   const name = toolName(ctx);
   if (READ_ONLY_TOOLS.has(name)) return true;
   if (!isShellTool(name)) return false;
@@ -637,7 +638,7 @@ export function isReadOnlyTool(ctx) {
     // (expansion, substitution, redirect, glob, brace, tilde, history, comment,
     // escape, control char) and otherwise returns decoded argv, so an accepted
     // segment's runtime argv is provably identical to what we classify here.
-    const classifiedSegment = stripDevNullRedirections(segment);
+    const classifiedSegment = stripObservationRedirections(segment, ctx.tool_input?.workdir || ctx.toolInput?.workdir || ctx.cwd || process.cwd(), env);
     if (!classifiedSegment) return false;
     const lexed = lexSimpleCommand(classifiedSegment);
     if (!lexed || lexed.ok !== true || !Array.isArray(lexed.argv) || !lexed.argv.length) return false;
@@ -648,7 +649,8 @@ export function isReadOnlyTool(ctx) {
     if (!readArgv.length) return false;
     const decoded = readArgv.join(" ");
     if (TRIVIAL_SAFE_SEGMENTS.has(decoded)) return true;
-    return isSafeGit(readArgv) || isSafeRg(decoded) || isSafeFind(decoded)
+    if (readArgv[0] === "cd") return readArgv.length === 2 && !readArgv[1].startsWith("-");
+    return isSafeGit(readArgv) || isSafeRg(decoded, env) || isSafeFind(decoded)
       || isSafeSort(readArgv) || isSafeUniq(readArgv) || isSafeFile(readArgv)
       || isSafeSed(readArgv) || isSafeJq(readArgv) || isSafeVersionProbe(readArgv)
       || isSafeAz(readArgv) || isSafeSystemObservation(readArgv)

@@ -258,6 +258,15 @@ function handlePreTool(payload, { isShellExecEvent = false } = {}) {
     : (payload?.tool_input || payload?.toolInput || payload?.arguments || payload?.args || extractedToolInput || {});
   const toolInput = initialInput && typeof initialInput === "object" ? { ...initialInput } : {};
 
+  // Observation exits before identity aliases, context directories or event logs.
+  const observed = evaluatePreToolObservation({ ...payload, tool_name: rawToolName, tool_input: toolInput,
+    cwd: payload.cwd || payload.workingDirectory || payload.working_directory || payload.workspace_roots?.[0] || process.cwd() });
+  if (observed) {
+    process.stdout.write(JSON.stringify({ permission: "allow", ...(!isShellExecEvent && observed.execution_input
+      ? { updated_input: observed.execution_input } : {}) }) + "\n");
+    process.exit(0);
+  }
+
   // Payload identity first. conversation_id takes precedence over child session_id.
   // Child session_id is resolved via aliases if conversation_id is omitted.
   const payloadConvo = String(

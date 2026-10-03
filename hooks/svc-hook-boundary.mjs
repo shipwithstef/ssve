@@ -3,7 +3,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawn } from "node:child_process";
 import { lexSimpleCommand } from "./codex/lib/argv-lex.mjs";
 import { resolveHookMode, hookPolicyWarning } from "./lib/hook-policy.mjs";
@@ -189,6 +189,38 @@ async function runChild(spec, input, deadline) {
   });
 }
 
+// The durable boundary is intentionally small. Runtime classification comes
+// from its receipt-bound source, just as the durable launcher delegates policy.
+// A deleted/insecure source never prevents the child launcher from reporting its
+// own fail-closed decision and durable denial receipt.
+async function boundaryRuntimeSource() {
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  if (fs.existsSync(path.join(here, "lib/pretool-decision-engine.mjs"))) return here;
+  const bundle = path.dirname(here);
+  const state = path.join(fs.realpathSync(process.env.HOME || os.homedir()), ".svc");
+  if (!bundle.startsWith(path.join(state, "enforcement") + path.sep)) return null;
+  try {
+    for (let dir = bundle; ; dir = path.dirname(dir)) {
+      const stat = fs.lstatSync(dir);
+      if (!stat.isDirectory() || stat.isSymbolicLink() || stat.mode & 0o022 ||
+          (typeof process.getuid === "function" && stat.uid !== process.getuid())) return null;
+      if (dir === state) break;
+      if (dir === path.dirname(dir)) return null;
+    }
+    const corePath = path.join(bundle, "lib/enforcement-core.mjs");
+    const stat = fs.lstatSync(corePath);
+    if (!stat.isFile() || stat.isSymbolicLink() || stat.mode & 0o022 ||
+        (typeof process.getuid === "function" && stat.uid !== process.getuid())) return null;
+    const core = await import(pathToFileURL(corePath));
+    const manifest = core.validateReceiptFile(path.join(bundle, "manifest.json"), {
+      boundary: state, requiredFields: ["effective_source"], fieldTypes: { effective_source: "string" }, identity: { schema_version: 1 },
+    });
+    if (!manifest || core.classifySource(manifest.effective_source) !== "durable-canonical") return null;
+    const hooks = path.join(manifest.effective_source, "hooks");
+    return fs.existsSync(path.join(hooks, "lib/pretool-decision-engine.mjs")) ? hooks : null;
+  } catch { return null; }
+}
+
 async function main() {
   const mode = resolveHookMode();
   hookPolicyWarning(mode);
@@ -204,6 +236,41 @@ async function main() {
   let input;
   try { input = await readInputBounded(deadline); }
   catch (error) { process.stderr.write(warning(marker, `cannot read hook payload: ${error.message}`) + "\n"); process.exitCode = mode.mode === "enforce" ? 2 : 0; return; }
+  let original;
+  try { original = JSON.parse(input.toString("utf8")); } catch {}
+  const pretool = /^(?:PreToolUse|BeforeTool|preToolUse|beforeShellExecution)$/i.test(spec.event);
+  const hasTool = original?.tool_name || original?.toolName || original?.command;
+  let evaluatePreToolObservation = null, resolveOperationScope = null;
+  if (pretool && hasTool) {
+    const runtimeSource = await boundaryRuntimeSource();
+    if (runtimeSource) {
+      ({ evaluatePreToolObservation } = await import(pathToFileURL(path.join(runtimeSource, "lib/pretool-decision-engine.mjs"))));
+      ({ resolveOperationScope } = await import(pathToFileURL(path.join(runtimeSource, "lib/operation-scope.mjs"))));
+    }
+  }
+  const observation = evaluatePreToolObservation?.(original);
+  if (observation) {
+    // Observation never runs children, self-heal, contract IO or denial counters.
+    if (mode.mode === "enforce" && observation.execution_input) {
+      const output = spec.host === "cursor" ? { permission: "allow", updated_input: observation.execution_input }
+        : { hookSpecificOutput: { hookEventName: spec.event, permissionDecision: "allow", updatedInput: observation.execution_input } };
+      process.stdout.write(JSON.stringify(output) + "\n");
+    } else process.stdout.write("{}\n");
+    return;
+  }
+  let repository = original?.cwd || original?.working_directory || process.cwd();
+  if (mode.mode === "advisory" && pretool && hasTool && resolveOperationScope) {
+    const scope = resolveOperationScope(original, { host: spec.host });
+    const roots = [scope.operation_repository?.worktree_root, scope.session_repository?.worktree_root,
+      ...(scope.targets || []).map(t => t.worktree_root)].filter(Boolean);
+    const governed = roots.filter(root => fs.existsSync(path.join(root, ".svc")));
+    if (!governed.length) { process.stdout.write("{}\n"); return; }
+    repository = governed[0];
+  }
+  let firstSessionFinding = () => true, findingClass = value => String(value);
+  try { ({ firstSessionFinding, findingClass } = await import("./lib/session-findings.mjs")); }
+  catch { /* Legacy partial fixture: enforcement still delegates to its launcher. */ }
+  const visible = reason => firstSessionFinding(original, repository, marker, findingClass(reason));
   let result;
   try { result = await runChild(spec, input, deadline); }
   catch (error) { process.stderr.write(warning(marker, error.message) + "\n"); process.exitCode = mode.mode === "enforce" ? 2 : 0; return; }
@@ -224,6 +291,7 @@ async function main() {
   }
   if (result.timedOut || result.oversized || result.spawnError || result.code !== 0) {
     const cause = result.timedOut ? "timed out" : result.oversized ? "output limit exceeded" : result.spawnError ? result.spawnError.message : `exited ${result.code}`;
+    if (!visible(result.stderr.toString("utf8") || cause)) return;
     process.stderr.write(warning(marker, cause) + "\n");
     if (result.stdout.length) {
       let advice = result.stdout.toString("utf8").slice(0, 4096);
@@ -262,10 +330,13 @@ async function main() {
     const reason = blocked
       ? `would have blocked this call; the original tool input continues unchanged. Finding: ${payload.hookSpecificOutput?.permissionDecisionReason || payload.reason || payload.user_message || payload.stopReason || "SVC hook requested a block"}`
       : "";
+    const informational = payload.systemMessage || payload.user_message || payload.hookSpecificOutput?.additionalContext || result.stderr.toString("utf8");
+    const show = reason ? visible(reason) : !informational || /svc-rule-injector/.test(spec.command) || visible(informational);
+    if (!show) { process.stdout.write("{}\n"); return; }
     const message = reason ? warning(marker, reason) : "";
     if (message) process.stderr.write(message + "\n");
     process.stdout.write(JSON.stringify(advisoryPayload(payload, message, { rewritten })) + "\n");
-    process.stderr.write(result.stderr);
+    if (result.stderr.length) process.stderr.write(result.stderr);
     return;
   }
   process.stdout.write(result.stdout);

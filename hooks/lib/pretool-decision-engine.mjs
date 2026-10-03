@@ -13,6 +13,8 @@
 //     survive an encoder/lexer round trip byte-exactly (`--no-optional-locks`
 //     is inserted as a Git top-level option, never as an `export VAR=...;`
 //     prefix that sibling classifiers would re-read as a mutation).
+import { stripObservationRedirections } from "./observation-redirections.mjs";
+import { unwrapObservationEnvelope } from "./observation-envelope.mjs";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -115,7 +117,7 @@ function normalizeGitArgv(argv) {
 // execution input). Any structural doubt keeps the original command untouched
 // and still allows the read — normalization must never be load-bearing for
 // safety, only for avoiding Git's optional index refresh.
-export function normalizeObservationCommand(command) {
+export function normalizeObservationCommand(command, cwd = process.cwd(), env = process.env) {
   const source = String(command ?? "");
   const segments = splitUnquoted(source);
   if (!segments.length) return null;
@@ -126,7 +128,7 @@ export function normalizeObservationCommand(command) {
     const index = normalized.indexOf(rawSegment, cursor);
     if (index < 0) return null;
     cursor = index + rawSegment.length;
-    const classified = stripDevNullRedirections(rawSegment);
+    const classified = stripObservationRedirections(rawSegment, cwd, env);
     if (!classified) continue;
     // EXTREV-EXEC-007: normalization must not change command semantics. The
     // stripped diagnostic-redirection suffix (2>/dev/null, 2>&1, …) is
@@ -404,7 +406,17 @@ function normalizeServiceCommand(command) {
 }
 
 export function evaluatePreToolObservation(payload, env = process.env) {
-  void env;
+  if (!toolName(payload) && typeof payload?.command === "string") {
+    return evaluatePreToolObservation({ ...payload, tool_name: "Shell", tool_input: { command: payload.command },
+      cwd: payload.cwd || payload.workingDirectory || payload.working_directory || payload.workspace_roots?.[0] }, env);
+  }
+  const nested = unwrapObservationEnvelope(payload);
+  if (nested !== null) {
+    if (!nested.length || !nested.every(call => evaluatePreToolObservation(call, env))) return null;
+    return { schema_version: DECISION_ENGINE_SCHEMA_VERSION, decision: "allow", classification: "observation",
+      reason_code: "OBSERVATION_PROVEN", original_digest: digestPayload(payload), execution_input: null,
+      authority: null, renewal: { status: "not_applicable" }, policy_findings: [] };
+  }
   const started = Date.now();
   const originalShell = bashCommandOf(payload);
   const commandField = originalShell.input && Object.hasOwn(originalShell.input, "command") ? "command" : "cmd";
@@ -415,7 +427,7 @@ export function evaluatePreToolObservation(payload, env = process.env) {
   const classifiedPayload = serviceCommand && originalShell.key
     ? { ...payload, [originalShell.key]: { ...originalShell.input, [commandField]: serviceCommand } }
     : payload;
-  if (!isReadOnlyTool(classifiedPayload)) return null;
+  if (!isReadOnlyTool(classifiedPayload, env)) return null;
   const name = toolName(payload);
   const originalDigest = digestPayload(payload);
   const base = {
@@ -440,7 +452,7 @@ export function evaluatePreToolObservation(payload, env = process.env) {
   // optional diagnostic redirection. Anything ambiguous falls through to the
   // complete argv-aware normalization below.
   if (!ULTRA_HOT_READ.test(command.trim())) {
-    const normalized = normalizeObservationCommand(command);
+    const normalized = normalizeObservationCommand(command, input.workdir || payload.cwd || process.cwd(), env);
     const finalCommand = normalized || command;
     const nextInput = finalCommand !== originalShell.command ? { ...input, [commandField]: finalCommand } : null;
     if (nextInput && Object.hasOwn(input, "command") && Object.hasOwn(input, "cmd")) {

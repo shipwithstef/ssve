@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { resolveHookMode } from "../lib/hook-policy.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -71,7 +72,7 @@ function resetDenial(sid, env = process.env) {
 function deny(reason, host = "") {
   let finalReason = String(reason);
   let halt = false;
-  if (currentSessionId && !isPreProvisionIsolationDenial(finalReason) && trackDenial(finalReason, currentSessionId, process.env)) {
+  if (resolveHookMode().mode === "enforce" && currentSessionId && !isPreProvisionIsolationDenial(finalReason) && trackDenial(finalReason, currentSessionId, process.env)) {
     halt = true;
     finalReason = `[SSVE CIRCUIT BREAKER] Deny storm halted: consecutive identical denial detected. Recovery: invoke node scripts/svc-ensure-worktree.mjs for the bound WI (harness self-heal). (${finalReason})`;
   }
