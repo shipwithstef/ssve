@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { stateRoot, init, atomicJson, readJson, taskPath, canonicalWorktree, git, withLocks, iso, options, isMain, sameProcess } from './common.mjs';
 
 export const goalLock = root => path.join(root, 'locks', 'goals.lock');
@@ -37,9 +38,18 @@ function grantPaths(wt, value = ['.']) {
     if (!inside(wt, fs.realpathSync(target))) throw new Error('Linked path escapes grant');
   }
   // Check tracked and untracked links without walking ignored dependency trees.
-  const files = git(wt, ['ls-files', '-z', '--cached', '--others', '--exclude-standard']);
-  if (files == null) throw new Error('Cannot inspect grant paths');
-  for (const file of files.split('\0').filter(Boolean)) {
+  // Enumeration needs more space than the small metadata queries in git().
+  // Keep a finite cap and reject failures before inspecting any partial output.
+  // Do not trim: whitespace can be part of a NUL-delimited filename.
+  const listing = spawnSync('git', ['-C', wt, 'ls-files', '-z', '--cached', '--others', '--exclude-standard'], {
+    encoding: 'utf8', timeout: 5000, maxBuffer: 8 * 1024 * 1024,
+    env: { ...process.env, GIT_OPTIONAL_LOCKS: '0' }
+  });
+  if (listing.error || listing.status !== 0) {
+    const detail = [listing.error?.message, listing.stderr?.trim(), listing.signal ? `signal ${listing.signal}` : `exit ${listing.status}`].filter(Boolean).join('; ');
+    throw new Error(`Cannot inspect grant paths in ${wt}: ${detail}`, { cause: listing.error });
+  }
+  for (const file of listing.stdout.split('\0').filter(Boolean)) {
     if (!paths.some(p => inside(path.resolve(wt, p), path.resolve(wt, file)))) continue;
     const target = path.join(wt, file);
     try { if (fs.lstatSync(target).isSymbolicLink() && !inside(wt, fs.realpathSync(target))) throw new Error('Linked file escapes grant'); }

@@ -10,6 +10,10 @@ Activation attempt 3 exposed an enclosing HOME Git repository incorrectly vetoin
 
 Activation attempt 5 exposed native tilde paths, quoted escapes and glob/xargs reads rejected by strict argv proof. Advisory mode now has a separate effects check for stdout readers and trusted scratch outputs, preserving strict enforcement. Unbound mutations and uncertain calls continue to steer once per session/finding class with a concrete next step. Missing optional-contract ENOENT is omitted without hiding independent mutation authority; matching/corrupt own contract diagnostics remain visible. The offline gate retains original frozen strict labels and adds explicit advisory-only read/enforcement control expectations plus all three recorded failures.
 
+## Orchestrator grant inspection buffer — 2026-10-03
+
+`scripts/orch/goals.mjs` now enumerates grant files with a dedicated bounded 8 MiB Git buffer instead of the metadata helper's 128 KiB cap. SSVE worktrees exceeded that cap and failed with hidden `ENOBUFS` errors. Inspection preserves NUL-delimited filename whitespace and reports underlying Git errors, stderr and termination details; failed or truncated inspection never writes a grant. Regression tests cover large listings, tracked/untracked escaping links, leading-space filenames, Git failures and buffer overflow.
+
 ## Grow-social intent fidelity — 2026-09-27
 
 The `grow-social` skill now makes the writer identify the user's intended reader takeaway and why-now trigger before drafting, then compare the finished copy against that intent. This corrects a real failure where a sound quota caveat displaced the owner's recommendation about raising a per-session agent ceiling before an announced reset when independent work is ready. The skill still verifies factual claims and keeps publication draft-only. A fictional tier-2 scenario tests the distinction between an observed three-subagent session limit, a configured ten-subagent ceiling, and extra quota.

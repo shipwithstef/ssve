@@ -37,6 +37,58 @@ test('canonical grants deny aliases, nested paths and planning ownership; child 
   fs.writeFileSync(path.join(f.planning, 'outside'), ''); fs.symlinkSync(path.join(f.planning, 'outside'), path.join(wt, 'linked'));
   await assert.rejects(transact('grant-worktree', { id: 'one', worktree: wt, lane: 'other', paths: '["linked"]', expected_revision: 2 }, f.root));
 });
+test('large grant listings succeed and still reject tracked and untracked escaping links', async t => {
+  const f = fixture(t); await f.create(); const wt = f.repo('large-worker');
+  fs.mkdirSync(path.join(wt, 'scripts'));
+  for (let i = 0; i < 800; i++) fs.writeFileSync(path.join(wt, 'scripts', `${String(i).padStart(4, '0')}-${'x'.repeat(180)}`), '');
+  const listing = spawnSync('git', ['-C', wt, 'ls-files', '-z', '--cached', '--others', '--exclude-standard'], { maxBuffer: 1024 * 1024 });
+  assert.equal(listing.status, 0); assert.ok(listing.stdout.length > 128 * 1024);
+  const args = { id: 'one', worktree: wt, lane: 'build', paths: '["scripts"]', expected_revision: 1 };
+  const before = fs.readFileSync(path.join(f.root, 'goals.json'), 'utf8');
+  const escape = path.join(wt, 'scripts', 'zz-escape');
+  fs.symlinkSync(path.join(f.planning, 'PLAN.md'), escape);
+  await assert.rejects(transact('grant-worktree', args, f.root), /Linked file escapes grant/);
+  assert.equal(spawnSync('git', ['-C', wt, 'add', 'scripts/zz-escape']).status, 0);
+  await assert.rejects(transact('grant-worktree', args, f.root), /Linked file escapes grant/);
+  assert.equal(spawnSync('git', ['-C', wt, 'rm', '--cached', 'scripts/zz-escape']).status, 0);
+  fs.unlinkSync(escape);
+  // A leading space in the first filename must survive enumeration unchanged.
+  const first = path.join(wt, ' leading-escape');
+  fs.symlinkSync(path.join(f.planning, 'PLAN.md'), first);
+  await assert.rejects(transact('grant-worktree', { ...args, paths: '["."]' }, f.root), /Linked file escapes grant/);
+  fs.unlinkSync(first);
+  assert.equal(fs.readFileSync(path.join(f.root, 'goals.json'), 'utf8'), before);
+  const registry = await transact('grant-worktree', args, f.root);
+  assert.equal(registry.revision, 2);
+  assert.deepEqual(readRegistry(f.root).goals[0].grants[0].paths, ['scripts']);
+});
+test('grant inspection reports Git failures and buffer overflow without writing the registry', async t => {
+  const f = fixture(t); await f.create(); const wt = f.repo('worker');
+  const bin = path.join(f.root, 'bin'); fs.mkdirSync(bin);
+  const realGit = spawnSync('which', ['git'], { encoding: 'utf8' }).stdout.trim();
+  fs.writeFileSync(path.join(bin, 'git'), `#!/bin/sh
+for arg do
+  if [ "$arg" = ls-files ]; then
+    if [ "$GRANTFIX_OVERFLOW" = yes ]; then
+      exec "$GRANTFIX_NODE" -e 'process.stdout.write(Buffer.alloc(9 * 1024 * 1024))'
+    fi
+    echo 'grant inspection fixture failure' >&2
+    exit 73
+  fi
+done
+exec "$GRANTFIX_REAL_GIT" "$@"
+`, { mode: 0o700 });
+  const before = fs.readFileSync(path.join(f.root, 'goals.json'), 'utf8');
+  for (const overflow of ['no', 'yes']) {
+    const result = spawnSync(process.execPath, [path.resolve('scripts/orch/goals.mjs'), 'grant-worktree', '--id', 'one', '--lane', 'build', '--worktree', wt, '--expected-revision', '1'], {
+      encoding: 'utf8', env: { ...process.env, ORCH_STATE_DIR: f.root, PATH: `${bin}${path.delimiter}${process.env.PATH}`, GRANTFIX_REAL_GIT: realGit, GRANTFIX_NODE: process.execPath, GRANTFIX_OVERFLOW: overflow }
+    });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /Cannot inspect grant paths/);
+    assert.match(result.stderr, overflow === 'yes' ? /ENOBUFS/ : /grant inspection fixture failure; exit 73/);
+    assert.equal(fs.readFileSync(path.join(f.root, 'goals.json'), 'utf8'), before);
+  }
+});
 test('admission requires active granted goal; concurrent attempts reserve the last run safely', async t => {
   const f = fixture(t); await f.create('one', { codex_runs: 1 }); const wt = f.repo('worker'), wt2 = f.repo('worker2');
   const task = (id, worktree = wt, extra = {}) => ({ id, goal_id: 'one', lane: 'build', worktree, executor: { cli: 'codex' }, attempt_id: id, started_at: new Date().toISOString(), ...extra });
