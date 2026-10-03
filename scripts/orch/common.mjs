@@ -10,6 +10,8 @@ export const stateRoot = () => path.resolve(process.env.ORCH_STATE_DIR || path.j
 export const digest = value => createHash('sha256').update(value).digest('hex');
 export const iso = () => new Date().toISOString();
 export const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+export const bootId = () => fs.readFileSync('/proc/sys/kernel/random/boot_id', 'utf8').trim();
+export const configRoot = () => path.resolve(process.env.ORCH_CONFIG_DIR || path.join(os.homedir(), '.config/orch'));
 export const isMain = url => process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(url);
 export function init(root = stateRoot()) {
   for (const dir of ['', 'tasks', 'logs', 'locks', 'requests', 'cache']) fs.mkdirSync(path.join(root, dir), { recursive: true, mode: 0o700 });
@@ -61,6 +63,20 @@ export function lockBusy(file) {
   const result = spawnSync('flock', ['-n', '-E', '75', file, 'true'], { timeout: 2000 });
   if (result.error || ![0, 75].includes(result.status)) throw new Error('Cannot verify kernel lock');
   return result.status === 75;
+}
+// flock(2) owns the shared open-file description. The child locks inherited
+// fd 3; this process retains the original fd until the operation completes.
+// Stable inodes are never deleted; crash/reboot closes descriptors automatically.
+export async function withLocks(files, operation) {
+  const descriptors = [];
+  try {
+    for (const file of files) {
+      const fd = fs.openSync(file, 'a', 0o600); descriptors.push(fd);
+      const result = spawnSync('flock', ['-n', '-E', '75', '3'], { stdio: ['ignore', 'ignore', 'pipe', fd], timeout: 2000 });
+      if (result.error || result.status !== 0) throw new Error(result.status === 75 ? 'Writer lock busy' : 'Cannot acquire kernel lock');
+    }
+    return await operation();
+  } finally { for (const fd of descriptors.reverse()) fs.closeSync(fd); }
 }
 export function git(worktree, args) {
   const r = spawnSync('git', ['-C', worktree, ...args], { encoding: 'utf8', timeout: 5000, maxBuffer: 128 * 1024, env: { ...process.env, GIT_OPTIONAL_LOCKS: '0' } });

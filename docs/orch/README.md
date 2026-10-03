@@ -80,8 +80,8 @@ browser, remote requests or LLM calls. Set `--bind` to the owner's Tailscale add
 for exposure; this script does not configure Tailscale or authentication.
 
 Not implemented in CP1: PLAN parser/dependency admission, acceptance receipts,
-semantic Q&A and direct pane controls, billing attribution, Spot recovery/fencing, or automatic
-restart/reconciliation of a dead supervisor. These are separate cards; unknown
+semantic Q&A and direct pane controls, billing attribution, or cross-VM fencing.
+SR1 below adds same-VM boot recovery. Other fields remain explicit; unknown
 fields are explicit. agy/Cursor live paid launch/resume remain unverified; their
 stream parsing is proven against the recorded sanitized fixtures. The real systemd
 integration test substitutes a local fake Codex executable, with no inference.
@@ -121,3 +121,52 @@ web/mobile receive no pane drawing; use the CP1 read-only web view remotely.
 Tests exercise host UI contracts, not actual terminal paint. No Q&A, watcher,
 instant terminal-event refresh, direct stop/steer or acceptance receipt support in
 this card. The mod must be loaded from this checkout so sibling scripts resolve.
+
+## SR1 Spot boot recovery
+
+```bash
+# If Linger=no, the owner must run this once; installer only prints it:
+sudo loginctl enable-linger "$USER"
+mkdir -p ~/.config/orch
+printf 'ORCH_SERVE_BIND=100.126.92.3\nORCH_SERVE_PORT=8790\n' > ~/.config/orch/serve.env
+printf '%s\n' '<exact-parent-Claude-session-id>' > ~/.config/orch/parent-session
+bash scripts/orch/install-units.sh
+node scripts/orch/recover.mjs
+systemctl --user status orch-{recover,collect,serve,preempt}.service
+```
+
+The installer renders four user units using this checkout, Node executable and
+current CLI PATH. It enables recovery for boot and starts collect/serve/preempt;
+stop pre-existing manually launched collect/serve processes first. Linger starts
+the user manager without login. Keep this checkout on the persistent OS disk.
+The user manager's network target does not ensure Tailscale is ready: serve retries
+every five seconds until its configured address is available.
+
+Recovery requires a different recorded boot ID, then acquires the dispatcher's
+task/worktree/session locks before marking the previous attempt interrupted and
+reserving one continuation. Dispatch rechecks the reservation under its lifetime
+locks and resumes the exact session with its recorded `resume_text`. A reservation
+is durably consumed before launch: repeated invocations in the same boot cannot
+launch it twice, including acknowledgement loss. Each task permits at most two
+automatic attempts over its lifetime (`max_auto_resume` may lower that cap).
+Paid/live cards (`paid: true`, also `card.paid: true`) become `needs_owner`; supply
+`--paid true` when registering such a card. Adopted workers, absent boot/session
+identity, invalid state and failed/ambiguous launches require owner reconciliation.
+Terminal and same-boot records are never automatically relaunched. Busy locks
+preserve the task and are reported as held. Manual resume remains an owner action.
+
+`recovery-<boot-id>.json` records decisions and the exact `claude --resume <id>`
+command from `parent-session`; Claude is never auto-started. The collector exposes
+this summary and recovery holds in `status.json`, and the web view displays them.
+The preemption watcher polls IMDS every five seconds, matches the local VM's
+Preempt/Terminate events and fsyncs deduplicated checkpoint markers before sending
+SIGUSR1 to the verified collector. The collector holds its singleton lock throughout
+watch mode and publishes immediately on the signal. `preempt-health.json` records
+poll failures; no event approval is sent. [Azure Scheduled Events](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/scheduled-events)
+notice delivery is best effort; this is a bounded checkpoint opportunity.
+
+SR1 restores guest processes **after Azure starts the VM**. It cannot restart a
+deallocated guest or fence a replacement VM; external capacity recovery, off-VM
+backup and cross-VM leases remain separate work. Tests use fake sessions/dispatch
+and a local fake worker in real user scopes; actual eviction and paid CLI resume
+are not exercised.

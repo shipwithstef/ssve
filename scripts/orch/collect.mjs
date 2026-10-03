@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { stateRoot, init, atomicJson, readJson, taskPath, options, number, canonicalWorktree, procIdentity, git, digest, ingestLines, iso, sleep, isMain, redact } from './common.mjs';
+import { stateRoot, init, atomicJson, readJson, taskPath, options, number, canonicalWorktree, procIdentity, git, digest, ingestLines, iso, isMain, redact, withLocks, bootId } from './common.mjs';
 const self = fileURLToPath(import.meta.url);
 const CHUNK = 1024 * 1024;
 
@@ -39,6 +39,7 @@ export function classify(task, observation, now = Date.now(), stalledMinutes = 5
     if (now - Date.parse(observation.last_progress_at || task.started_at) >= stalledMinutes * 60000) return 'stalled';
     return 'running';
   }
+  if (task.state === 'needs_owner' || task.state === 'interrupted') return task.state;
   if (task.exit_code == null) return observation.completion_report ? 'done (unverified exit)' : 'exited (unknown)';
   if (task.state === 'timeout' || [124, 137].includes(task.exit_code) && now >= Date.parse(task.deadline_at)) return 'timeout';
   if (task.finished_at) return task.exit_code === 0 && task.state === 'done' && observation.terminal !== 'failed' ? 'done' : 'failed';
@@ -110,6 +111,7 @@ export function collect(root = stateRoot(), stalledMinutes = 5) {
       if (state === 'stalled') blockers.push({ code: 'stale_progress', description: `No log growth for ${stalledMinutes} minutes`, source: 'log_mtime', at: iso() });
       if (state === 'timeout') blockers.push({ code: 'hard_timeout', description: 'Hard deadline reached', source: 'dispatcher', at: task.deadline_at });
       if (task.stop_requested) blockers.push({ code: 'stopped', description: 'Owner stopped this attempt', source: 'dispatcher', at: task.finished_at });
+      if (task.state === 'needs_owner' || task.state === 'interrupted') blockers.push({ code: 'recovery_hold', description: task.recovery?.reason || 'Interrupted attempt; resume reservation requires reconciliation if no worker appears', source: 'recovery', at: task.recovery?.at });
       if (cache.terminal === 'failed') blockers.push({ code: 'worker_error', description: cache.events_last_3?.at(-1) || 'Worker reported error', source: 'worker_stream', at: cache.last_progress_at });
       const g = gitSnapshot(task.worktree);
       if (g.status === null) blockers.push({ code: 'git_unavailable', description: 'Git inspection failed or exceeded bounds', source: task.worktree, at: iso() });
@@ -127,7 +129,9 @@ export function collect(root = stateRoot(), stalledMinutes = 5) {
   const changed_task_ids = tasks.filter(t => { const p = prior.tasks.find(x => x.id === t.id); return !p || p.state !== t.state || p.attempt_id !== t.attempt_id || p.last_progress_at !== t.last_progress_at || p.head_sha !== t.head_sha || p.status !== t.status; }).map(t => t.id);
   const revision = prior.revision + 1;
   const delta = { revision, at: iso(), task_ids: changed_task_ids };
-  const status = { schema_version: 1, goal_id: goals.length === 1 ? goals[0].id : 'all', run_id: prior.run_id || `collector-${now}`, revision, generated_at: iso(), collector_heartbeat_at: iso(), plan: { path: null, revision: null, hash: null, specs_path: null, specs_hash: null }, goals, tasks, changed_task_ids, changes_since_revision: prior.revision, deltas: [...(prior.deltas || []), delta].slice(-200), warnings };
+  const recovery = readJson(path.join(root, `recovery-${bootId()}.json`));
+  const checkpoint = readJson(path.join(root, 'checkpoint.json'));
+  const status = { schema_version: 1, goal_id: goals.length === 1 ? goals[0].id : 'all', run_id: prior.run_id || `collector-${now}`, revision, generated_at: iso(), collector_heartbeat_at: iso(), recovery, checkpoint, plan: { path: null, revision: null, hash: null, specs_path: null, specs_hash: null }, goals, tasks, changed_task_ids, changes_since_revision: prior.revision, deltas: [...(prior.deltas || []), delta].slice(-200), warnings };
   atomicJson(path.join(root, 'status.json'), status);
   return status;
 }
@@ -141,6 +145,25 @@ export async function main(args = process.argv.slice(2)) {
   if (args[0] === '__locked') { const o = JSON.parse(args[1]); if (o.adopt) adopt(o); const status = collect(stateRoot(), number(o.stalled_minutes, 'stalled minutes', 5)); console.log(JSON.stringify({ revision: status.revision, tasks: status.tasks.length, warnings: status.warnings })); return; }
   const o = options(args);
   if (o.watch && o.adopt) throw new Error('Adopt once before starting watch');
-  do { await lockedInvocation(o); if (!o.watch) break; await sleep(number(o.watch, 'watch seconds') * 1000); } while (true);
+  if (!o.watch) { await lockedInvocation(o); return; }
+  const root = stateRoot(); init(root);
+  const interval = number(o.watch, 'watch seconds') * 1000;
+  let wake, stopping = false, pendingFlush = false;
+  const flush = () => { pendingFlush = true; wake?.(); };
+  const stop = () => { stopping = true; wake?.(); };
+  process.on('SIGUSR1', flush); process.on('SIGTERM', stop); process.on('SIGINT', stop);
+  try {
+    await withLocks([path.join(root, 'locks', 'collector.lock')], async () => {
+      atomicJson(path.join(root, 'collector.json'), { identity: procIdentity(process.pid), started_at: iso() });
+      do {
+        pendingFlush = false;
+        const status = collect(root, number(o.stalled_minutes, 'stalled minutes', 5));
+        console.log(JSON.stringify({ revision: status.revision, tasks: status.tasks.length, warnings: status.warnings }));
+        if (stopping) break;
+        await new Promise(resolve => { const timer = setTimeout(done, pendingFlush ? 0 : interval); function done() { clearTimeout(timer); wake = null; resolve(); } wake = done; });
+      } while (!stopping);
+      collect(root, number(o.stalled_minutes, 'stalled minutes', 5));
+    });
+  } finally { process.off('SIGUSR1', flush); process.off('SIGTERM', stop); process.off('SIGINT', stop); }
 }
 if (isMain(import.meta.url)) main().catch(e => { console.error(e.message); process.exitCode = 1; });
