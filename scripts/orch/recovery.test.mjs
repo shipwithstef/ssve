@@ -15,6 +15,7 @@ import { collect, classify } from './collect.mjs';
 import { html } from './serve.mjs';
 import { transact, readRegistry } from './goals.mjs';
 import { recoverySessions, sessionFile } from './sessions.mjs';
+import { journalShutdownWindows } from './interruption.mjs';
 const here = path.dirname(fileURLToPath(import.meta.url));
 
 async function fixture(t) {
@@ -60,9 +61,84 @@ task.supervisor_identity=null;task.recovery.status='dispatched';fs.writeFileSync
   const put = record => atomicJson(taskPath(record.id, root), record);
   const calls = () => fs.existsSync(path.join(root, 'calls.jsonl')) ? fs.readFileSync(path.join(root, 'calls.jsonl'), 'utf8').trim().split('\n').map(JSON.parse) : [];
   const claudeCalls = () => fs.existsSync(path.join(root, 'claude-calls.jsonl')) ? fs.readFileSync(path.join(root, 'claude-calls.jsonl'), 'utf8').trim().split('\n').map(JSON.parse).filter(args => args[0] === '--bg') : [];
-  const run = currentBoot => recover({ root, config, dispatch, currentBoot, claudeEnv: { ...claudeEnv, FAKE_BOOT: currentBoot }, restart: async () => {} });
+  const run = (currentBoot, extra = {}) => recover({ root, config, dispatch, currentBoot, claudeEnv: { ...claudeEnv, FAKE_BOOT: currentBoot }, restart: async () => {}, ...extra });
   return { root, worktree, planning, config, task, put, calls, claudeCalls, claudeEnv, run };
 }
+
+test('SR3 exact 19:07 incident: exit 1 during shutdown resumes both attempts and generation-2 bound parent without nonce', async t => {
+  const f = await fixture(t);
+  await transact('bind-parent', { id: 'orch', parent_session: 'parent-exact-id', expected_revision: 3 }, f.root);
+  assert.equal(readRegistry(f.root).parent.generation, 2);
+  const before = fs.readFileSync(path.join(f.root, 'goals.json'), 'utf8');
+  const oldBoot = 'f6cfc804-72df-4bb6-b1d7-4e7e94d8c5df';
+  const notice = { _BOOT_ID: oldBoot.replaceAll('-', ''), __REALTIME_TIMESTAMP: '1791054431466993', SYSLOG_IDENTIFIER: 'python3', MESSAGE: JSON.stringify({ event: 'scheduled-shutdown', azure_event: { EventType: 'Preempt' } }) };
+  const bin = path.join(f.root, 'journal-bin'); fs.mkdirSync(bin);
+  fs.writeFileSync(path.join(bin, 'journalctl'), `#!${process.execPath}\nconsole.log(${JSON.stringify(JSON.stringify(notice))});`, { mode: 0o700 });
+  const shutdownJournal = boot => journalShutdownWindows(boot, { ...process.env, PATH: `${bin}:${process.env.PATH}` });
+  assert.equal(shutdownJournal(oldBoot).length, 1);
+  const exits = { 'p4-fix': '2026-10-03T19:07:11.930Z', 'side01-activate': '2026-10-03T19:07:11.787Z' };
+  for (const [id, finished_at] of Object.entries(exits)) f.put(f.task({ id, state: 'failed', finished_at, exit_code: 1, exit_signal: null, stop_requested: false, process_identity: { pid: 2147483647, boot_id: oldBoot } }));
+  f.put(f.task({ id: 'ordinary-failure', state: 'failed', finished_at: '2026-10-03T18:57:11.500Z', exit_code: 1, process_identity: { boot_id: oldBoot } }));
+  const result = await f.run('boot-new', { shutdownJournal });
+  await f.run('boot-new', { shutdownJournal });
+  assert.deepEqual(f.calls().map(args => args[1]).sort(), ['p4-fix', 'side01-activate']);
+  for (const id of ['p4-fix', 'side01-activate']) {
+    const task = readJson(taskPath(id, f.root));
+    assert.equal(task.attempt_history[0].state, 'interrupted');
+    assert.equal(task.interrupted_attempt.exit_code, 1);
+    assert.equal(task.interrupted_attempt.finished_at, exits[id]);
+    assert.match(task.interrupted_attempt.reason, /journal shutdown/);
+  }
+  assert.equal(result.tasks.filter(task => task.action === 'resumed').length, 2);
+  assert.equal(result.parent_auto_resume.state, 'resume_requested'); assert.equal(f.claudeCalls().length, 1);
+  assert.equal(fs.readFileSync(path.join(f.root, 'goals.json'), 'utf8'), before);
+  assert.equal(readJson(taskPath('ordinary-failure', f.root)).state, 'failed');
+});
+
+test('SR3 finished interrupted, signal failures and lost clean exit recover; owner stops, timeout and ordinary failure stay terminal', async t => {
+  const f = await fixture(t);
+  for (const [id, extra] of [
+    ['interrupted', { state: 'interrupted', finished_at: new Date().toISOString(), exit_code: 1 }],
+    ['signal', { state: 'failed', finished_at: new Date().toISOString(), exit_signal: 'SIGTERM', exit_code: 1 }],
+    ['lost-supervisor', { state: 'failed', finished_at: null }],
+    ['owner-stop', { state: 'failed', owner_stop_requested: true, exit_signal: 'SIGTERM', finished_at: new Date().toISOString() }],
+    ['timeout', { state: 'timeout', exit_signal: 'SIGKILL', finished_at: new Date().toISOString() }],
+    ['failure', { state: 'failed', exit_code: 1, finished_at: new Date().toISOString() }]
+  ]) f.put(f.task({ id, ...extra }));
+  await f.run('boot-new'); await f.run('boot-new');
+  assert.deepEqual(f.calls().map(args => args[1]).sort(), ['interrupted', 'lost-supervisor', 'signal']);
+});
+
+test('SR3 Preempt/Terminate marks only current running attempts interrupting and exit 1 remains recoverable', async t => {
+  const f = await fixture(t);
+  for (const id of ['p4-fix', 'side01-activate']) f.put(f.task({ id }));
+  f.put(f.task({ id: 'finished', state: 'done', finished_at: new Date().toISOString() }));
+  f.put(f.task({ id: 'foreign-boot', process_identity: { boot_id: 'other-boot' } }));
+  const event = { EventId: 'preempt-incident', EventType: 'Preempt', EventStatus: 'Scheduled', Resources: ['vm'] };
+  const opts = { root: f.root, currentBoot: 'boot-old', vmName: 'vm', signal: () => {} };
+  checkpointEvents({ Events: [event] }, opts);
+  for (const id of ['p4-fix', 'side01-activate']) {
+    const task = readJson(taskPath(id, f.root)); assert.equal(task.state, 'interrupting');
+    f.put({ ...task, state: 'failed', exit_code: 1, finished_at: new Date().toISOString() });
+  }
+  assert.equal(readJson(taskPath('finished', f.root)).state, 'done');
+  assert.equal(readJson(taskPath('foreign-boot', f.root)).state, 'running');
+  await f.run('boot-new');
+  for (const id of ['p4-fix', 'side01-activate']) assert.equal(readJson(taskPath(id, f.root)).interrupted_attempt.reason, 'Preempt');
+  f.put(f.task({ id: 'terminate', state: 'running' }));
+  checkpointEvents({ Events: [{ ...event, EventId: 'terminate-incident', EventType: 'Terminate' }] }, opts);
+  assert.equal(readJson(taskPath('terminate', f.root)).state, 'interrupting');
+});
+
+test('SR3 an ambiguous interrupted launch remains needs_owner on later boots', async t => {
+  const f = await fixture(t);
+  f.put(f.task({ state: 'interrupted', finished_at: new Date().toISOString(), interruption: { attempt_id: 'first', boot_id: 'boot-old', reason: 'Preempt' } }));
+  fs.writeFileSync(path.join(f.root, 'fail'), 'true');
+  await f.run('boot-new');
+  fs.unlinkSync(path.join(f.root, 'fail'));
+  await f.run('boot-later');
+  assert.equal(f.calls().length, 1); assert.equal(readJson(taskPath('work', f.root)).state, 'needs_owner');
+});
 
 test('SR2 resumes exact parent LOW after workers, once per boot despite concurrent recovery and changed config', async t => {
   const f = await fixture(t); f.put(f.task());

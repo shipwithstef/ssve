@@ -272,14 +272,28 @@ automatic attempts over its lifetime (`max_auto_resume` may lower that cap).
 Paid/live cards (`paid: true`, also `card.paid: true`) become `needs_owner`; supply
 `--paid true` when registering such a card. Adopted workers, absent boot/session
 identity, invalid state and failed/ambiguous launches require owner reconciliation.
-Terminal and same-boot records are never automatically relaunched. Busy locks
+Shutdown attempts become `interrupting` on local Preempt/Terminate notices and
+`interrupted` on supervisor SIGTERM, including launcher exit code 1. Metadata
+updates preserve the attempt's interruption marker under a short record lock.
+Prior-boot failures with termination signals, missing clean exit, or an exit in
+the journal/checkpoint shutdown window (30 seconds before through 120 seconds
+after the notice) reconcile as interrupted. Ordinary failures, owner-requested
+stops, timeouts and `needs_owner` holds remain terminal. Same-boot records are
+never automatically relaunched. Busy locks
 preserve the task and are reported as held. Manual resume remains an owner action.
 
 `recovery-<boot-id>.json` records decisions and the exact `claude --resume <id>`
-command from `parent-session`; Claude is never auto-started. The collector exposes
+command from `parent-session`. Native parent recovery requests
+`claude --bg --resume <exact-id> --effort low` once per boot after worker recovery;
+the configured ID must match a bound registry parent, whose generation is preserved.
+A legacy bound parent needs no sessions.mjs launch nonce for this native request.
+Native owner discovery and shared leases exclude duplicate writers; ambiguous
+launches consume the boot reservation. `no-claude-autoresume` opts out.
+The collector exposes
 this summary and recovery holds in `status.json`, and the web view displays them.
 The preemption watcher polls IMDS every five seconds, matches the local VM's
-Preempt/Terminate events and fsyncs deduplicated checkpoint markers before sending
+Preempt/Terminate events, fsyncs deduplicated checkpoint markers and marks running
+attempts interrupting before sending
 SIGUSR1 to the verified collector. The collector holds its singleton lock throughout
 watch mode and publishes immediately on the signal. `preempt-health.json` records
 poll failures; no event approval is sent. [Azure Scheduled Events](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/scheduled-events)

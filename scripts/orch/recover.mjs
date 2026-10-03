@@ -6,10 +6,11 @@ import { fileURLToPath } from 'node:url';
 import { stateRoot, configRoot, bootId, init, atomicJson, readJson, taskPath, lockPath, withLocks, procIdentity, iso, isMain } from './common.mjs';
 import { checkTaskGrant, goalLock, readRegistry } from './goals.mjs';
 import { recoverySessions } from './sessions.mjs';
+import { interruptionReason, journalShutdownWindows } from './interruption.mjs';
 
 const dispatchFile = fileURLToPath(new URL('./dispatch.mjs', import.meta.url));
 const terminal = new Set(['done', 'failed', 'timeout', 'cancelled', 'stopped', 'needs_owner', 'done (unverified exit)', 'exited (unknown)']);
-const recoverable = new Set(['running', 'queued', 'stalled', 'interrupted']);
+const recoverable = new Set(['running', 'queued', 'stalled', 'interrupting', 'interrupted']);
 const parentPrompt = 'Spot recovery: reconcile ~/.local/state/orch/status.json and continue the active goals; report only blockers.';
 export const taskLocks = (task, root) => [path.join(root, 'locks', `task-${task.id}.lock`), lockPath(task.worktree, root), ...(task.session_id ? [path.join(root, 'locks', `session-${task.executor.cli}-${task.session_id.replace(/[^a-zA-Z0-9_-]/g, '_')}.lock`)] : [])];
 
@@ -23,24 +24,26 @@ export function parentResume(config = configRoot()) {
 
 // Called only while task/worktree/session locks are held. Reserve durably BEFORE
 // dispatch; an ambiguous launch is never retried in the same boot.
-export function reconcileTask(file, root, currentBoot) {
+export function reconcileTask(file, root, currentBoot, shutdownWindows = []) {
   const task = readJson(file);
   if (taskPath(task.id, root) !== file || task.schema_version !== 1) throw new Error('Invalid task record');
-  if (terminal.has(task.state) || task.finished_at) return { id: task.id, action: 'terminal' };
   if (task.recovery?.boot_id === currentBoot) return { id: task.id, action: 'already_reconciled' };
   const identities = [task.supervisor_identity, task.process_identity].filter(Boolean);
   const oldBoot = identities[0]?.boot_id || task.boot_id;
+  const interrupted = interruptionReason(task, root, oldBoot, shutdownWindows);
+  if ((terminal.has(task.state) || task.finished_at) && !interrupted) return { id: task.id, action: 'terminal' };
   if (oldBoot === currentBoot || identities.some(identity => identity.boot_id === currentBoot)) return { id: task.id, action: 'same_boot' };
   const hold = reason => {
     task.state = 'needs_owner'; task.recovery = { ...task.recovery, boot_id: currentBoot, at: iso(), reason };
     atomicJson(file, task); return { id: task.id, action: 'needs_owner', reason };
   };
   if (typeof oldBoot !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(oldBoot) || identities.some(identity => !identity.boot_id || identity.boot_id !== oldBoot)) return hold('Missing or conflicting boot identity');
-  if (!recoverable.has(task.state)) return hold('Unrecognized nonterminal task state');
+  if (!recoverable.has(task.state) && !interrupted) return hold('Unrecognized nonterminal task state');
   // Changed boot proves the previous local processes no longer exist. Preserve
   // the interrupted attempt for dispatch's normal history append.
-  task.state = 'interrupted'; task.finished_at = iso();
-  task.interrupted_attempt = { attempt_id: task.attempt_id, state: 'interrupted', boot_id: oldBoot, finished_at: task.finished_at, log_path: task.log_path };
+  const previousState = task.state;
+  task.state = 'interrupted'; task.finished_at ||= iso();
+  task.interrupted_attempt = { attempt_id: task.attempt_id, state: 'interrupted', previous_state: previousState, reason: interrupted || 'Boot changed before clean exit was recorded', boot_id: oldBoot, finished_at: task.finished_at, log_path: task.log_path, exit_code: task.exit_code, exit_signal: task.exit_signal };
   const count = task.auto_resume_count ?? 0;
   const limit = Math.min(2, task.max_auto_resume ?? 2);
   if (task.paid === true || task.card?.paid === true) return hold('Paid/live card requires owner reconciliation');
@@ -96,7 +99,9 @@ async function autoResumeParent(summary, file, { root, config, currentBoot, clau
     // lease serializes boot summaries. No goal/session authority is rebound.
     await withLocks([path.join(root, 'locks', 'orchestrator-parent.lock'), path.join(root, 'locks', `claude-${parent.session_id}.lock`), goalLock(root)], async () => {
       const registry = readRegistry(root);
-      if (registry?.parent.session_id && (registry.parent.session_id !== parent.session_id || !summary.parent.resume_command)) throw new Error('Parent registry/session binding requires owner reconciliation');
+      // A registry-bound parent can predate sessions.mjs supervision. A missing
+      // launch nonce holds that helper's commands, not native exact-ID recovery.
+      if (registry?.parent.session_id && registry.parent.session_id !== parent.session_id) throw new Error('Parent registry/session binding requires owner reconciliation');
       const owner = await liveClaudeOwner(parent.session_id, claudeEnv);
       if (owner) { summary.parent_auto_resume = { state: 'already_live', auto_start: false, session_id: parent.session_id, owner }; return; }
       const args = ['--bg', '--resume', parent.session_id, '--effort', 'low', parentPrompt];
@@ -119,7 +124,7 @@ async function autoResumeParent(summary, file, { root, config, currentBoot, clau
   }
 }
 
-export async function recover({ root = stateRoot(), currentBoot = bootId(), config = configRoot(), dispatch = dispatchFile, claudeEnv = process.env, restart = () => runCommand('systemctl', ['--user', '--no-block', 'restart', 'orch-collect.service', 'orch-serve.service']) } = {}) {
+export async function recover({ root = stateRoot(), currentBoot = bootId(), config = configRoot(), dispatch = dispatchFile, claudeEnv = process.env, shutdownJournal = journalShutdownWindows, restart = () => runCommand('systemctl', ['--user', '--no-block', 'restart', 'orch-collect.service', 'orch-serve.service']) } = {}) {
   init(root);
   if (!/^[a-zA-Z0-9_-]+$/.test(currentBoot)) throw new Error('Invalid boot id');
   return await withLocks([path.join(root, 'locks', 'recovery.lock')], async () => {
@@ -141,17 +146,22 @@ export async function recover({ root = stateRoot(), currentBoot = bootId(), conf
       summary.orchestrators = []; summary.parent = { state: 'needs_owner', resume_command: null, auto_start: false, reason: `Registry/session recovery held: ${e.message}` };
     }
     atomicJson(file, summary);
+    const shutdownByBoot = new Map();
     for (const name of fs.readdirSync(path.join(root, 'tasks')).filter(name => name.endsWith('.json')).sort()) {
       let result;
       try {
         const taskFile = path.join(root, 'tasks', name), task = readJson(taskFile);
         if (taskPath(task.id, root) !== taskFile) throw new Error('Task id/path mismatch');
         // Fast reads avoid contending with active writers on this boot.
-        if (terminal.has(task.state) || task.finished_at || task.supervisor_identity?.boot_id === currentBoot || task.process_identity?.boot_id === currentBoot) continue;
+        if (task.supervisor_identity?.boot_id === currentBoot || task.process_identity?.boot_id === currentBoot || task.boot_id === currentBoot) continue;
+        const oldBoot = task.supervisor_identity?.boot_id || task.process_identity?.boot_id || task.boot_id;
+        if (task.state === 'failed' && !shutdownByBoot.has(oldBoot)) shutdownByBoot.set(oldBoot, shutdownJournal(oldBoot));
+        const shutdownWindows = shutdownByBoot.get(oldBoot) || [];
+        if ((terminal.has(task.state) || task.finished_at) && !interruptionReason(task, root, oldBoot, shutdownWindows)) continue;
         const locks = taskLocks(task, root);
         result = await withLocks([...locks, goalLock(root)], () => {
           if (JSON.stringify(taskLocks(readJson(taskFile), root)) !== JSON.stringify(locks)) throw new Error('Task ownership changed before locking');
-          return reconcileTask(taskFile, root, currentBoot);
+          return reconcileTask(taskFile, root, currentBoot, shutdownWindows);
         });
         if (result.action === 'already_reconciled') continue;
         if (result.action === 'resume') {
