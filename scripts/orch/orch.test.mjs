@@ -104,6 +104,7 @@ test('live systemd scope with fake CLI: launch, exclusion, stop, exact resume, t
   fs.writeFileSync(path.join(bin, 'codex'), `#!${process.execPath}
 const fs=require('node:fs');const cp=require('node:child_process');
 if(process.argv.includes('--version')){console.log('fake-codex 1');process.exit(0)}
+if(process.argv[2]==='app-server'){console.log('experimental');process.exit(0)}
 fs.appendFileSync(process.env.FAKE_ARGS,JSON.stringify(process.argv.slice(2))+'\\n');
 console.log(JSON.stringify({type:'thread.started',thread_id:'fake-exact-session'}));
 const prompt=process.argv.at(-1);

@@ -12,6 +12,8 @@ node scripts/orch/dispatch.mjs start --id cp1 --title 'Implement collector' \
   --expected-minutes 180 --hard-timeout 10800 \
   --resume-text 'Continue the same card; reconcile files first.' --memory-cap 4G
 node scripts/orch/dispatch.mjs resume cp1 'Exact owner continuation text'
+node scripts/orch/dispatch.mjs steer cp1 'Owner follow-up in the same session'
+node scripts/orch/dispatch.mjs steer cp1 'Apply this immediately' --now
 node scripts/orch/dispatch.mjs stop cp1
 node scripts/orch/collect.mjs
 node scripts/orch/collect.mjs --watch 60 --stalled-minutes 5
@@ -154,7 +156,7 @@ and checkpoints liveness every 15 seconds. Stable kernel flock inodes serialize
 task IDs, worktrees, and resumed session IDs; PID/boot/start-ticks/cmdline metadata
 verifies process identity. Stop only signals a verified owned supervisor, which
 terminates its scope/group and verifies scope shutdown before releasing its lease.
-A live task must be stopped before resume; stop does not delete files or worktrees.
+Manual resume requires a stopped task. Steer uses its recorded transport; `--now` verifies and stops the owned supervisor before exact-session resume. Stop preserves files and worktrees.
 Unconfirmed teardown holds the lock for manual reconciliation. Launch refusals
 preserve existing task records. Logs and prior attempt references survive resume.
 
@@ -229,7 +231,7 @@ Details runs the Node stdlib `scripts/orch/tail.mjs` helper on the registered lo
 path only, with a 5-second limit, ≤64 KiB / 200 lines and credential/control-code
 redaction. This avoids the mod filesystem API's 4 MiB whole-file read limit.
 Stop copies the exact dispatch stop command. Steer previews exact owner text and
-copies resume, prefixed by stop + `&&` when currently live. Shell single quotes
+copies `dispatch.mjs steer`, which selects live delivery or queued continuation. Shell single quotes
 preserve quotes, newlines, dollar signs and backticks. Commands include the state
 root; the owner runs them. No command execution, model calls, prompt submission,
 context append or filesystem writes occur in the pane. Adopted tasks have no
@@ -239,7 +241,7 @@ The dispatcher rechecks ownership and the recorded exact session when commands r
 Custom drawing is **local terminal only**. Desktop, VS Code and Remote Control
 web/mobile receive no pane drawing; use the CP1 read-only web view remotely.
 Tests exercise host UI contracts, not actual terminal paint. No Q&A, watcher,
-instant terminal-event refresh, direct stop/steer or acceptance receipt support in
+instant terminal-event refresh, pane-executed stop/steer or acceptance receipt support in
 this card. The mod must be loaded from this checkout so sibling scripts resolve.
 
 ## SR1 Spot boot recovery
@@ -414,3 +416,58 @@ Live attach still executes bare `claude --resume <id>`. Neither command changes
 goals.json. No native restart/LOW/terminal/Remote Control live gate is cleared by
 mock tests. After resume explicitly restore Monitor for actionable work; there is
 no event plugin or unattended wake after expiry in HO1 v1.
+
+## ST1 worker steering
+
+`dispatch.mjs steer <id> "<message>" [--now]` stores exact text in the task's
+private FIFO-ordered `steer_queue` (100 messages, 8192 bytes each). The supervisor
+is the sole transport writer; its heartbeat merges externally queued entries
+under the task record lock. Status/web/pane expose redacted `queued_steers`,
+`steering.mode`, delivery receipt metadata and `steering_hold` blockers. The pane
+copies a steer command for the owner to run; it performs no dispatch itself.
+
+| Worker CLI | Recorded mode | Delivery |
+| --- | --- | --- |
+| agy | `stdin` | `-p --input-format stream-json --output-format stream-json`, private attempt FIFO kept open by supervisor |
+| Claude | `stdin` | Same flags, plus `--verbose`; exact `--resume` on later attempts |
+| Codex | `queue` | Exact `codex exec resume` after exit; app-server help availability recorded |
+| Cursor | `queue` | Exact `cursor-agent --resume` after exit |
+
+Stream messages are one NDJSON user envelope per steer:
+`{"type":"user","session_id":"<observed-id>","message":{"role":"user","content":"<literal-text>"},"parent_tool_use_id":null}`.
+The initial prompt also enters stdin; the FIFO remains open across turn results.
+Live steering retains PID/session/attempt and rechecks current goal grants under
+the admission lock. Claude workers require an explicit `--claude-runs` allowance
+on goal create/set-state, separate from orchestrator Claude turn accounting.
+Legacy registries remain readable; missing Claude worker allowance denies launch.
+
+Queued fallback automatically continues only after verified scope teardown and a
+`done`/`failed` exit. All queued messages concatenate with two newlines and resume
+the exact session under retained task/worktree and session leases. Every new
+attempt rechecks goal generation, live child authority and remaining run grants.
+Steer auto-resumes and boot recovery share the lifetime `auto_resume_count` and
+maximum two; `--max-auto-resume 0|1|2` can lower it. Owner stop, timeout and
+interruption never trigger this exit continuation. A held queue remains visible.
+When idle, steer resumes with pending text; `--now` pauses live delivery, verifies
+supervisor cmdline/PID, stops the scope, then manually resumes all pending text.
+
+Delivery IDs are consumed and fsynced before stdin write or resume spawn. A crash
+in that window leaves a `claimed` receipt: delivery is **at most once**, potentially
+unconfirmed, and never automatically replayed. `sent` means FIFO bytes submitted,
+not worker acceptance. Reboot recovery combines still-pending messages with the
+recorded recovery prompt, and excludes all already claimed IDs. A supervisor
+crash after terminal exit can leave pending text for owner resume; no new daemon
+or same-boot recovery loop is introduced. FIFO write errors retain a visible
+unconfirmed-delivery blocker and receipt; they do not risk duplicate fallback.
+
+On 2026-10-03, local `codex app-server --help` reported experimental daemon/proxy
+and stdio/unix/ws transports; daemon/proxy help also succeeded. Help alone does
+not prove that a `codex exec` worker's live thread/turn belongs to that daemon or
+that an external follow-up can safely acquire its writer. This implementation
+records the probe and uses the owner-authorized queue fallback; it neither starts
+nor alters the live daemon/remote-control service. No live inference was used to
+validate agy/Claude input envelopes; fake CLIs verify transport and ordering.
+
+Validation: `node --test scripts/orch/*.test.mjs`,
+`claude plugin validate mods/orchestrator-pane`, and
+`claude plugin test mods/orchestrator-pane`.

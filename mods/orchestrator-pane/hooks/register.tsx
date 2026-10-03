@@ -96,8 +96,7 @@ function command(task: OrchTask, text?: string): string {
   const base = `env ORCH_STATE_DIR=${quote(stateDir)} node ${quote(scriptRoot + '/dispatch.mjs')}`;
   const stop = `${base} stop ${quote(task.id)}`;
   if (text === undefined) return stop;
-  const resume = `${base} resume ${quote(task.id)} ${quote(text)}`;
-  return live(task) ? `${stop} && ${resume}` : resume;
+  return `${base} steer ${quote(task.id)} ${quote(text)}`;
 }
 async function copy($: EngineInterface, id: string, attempt: string, surface: 'terminal', text?: string) {
   const current = await read($, view);
@@ -199,6 +198,8 @@ export const register: Register = on => {
               <Box key={`needs-${task.id}`}><Text>Needs: {task.depends_on.length ? task.depends_on.map(id => clean(id)).join(' + ') : 'none'}</Text></Box>
               {task.acceptance.map((ac, i) => <Box key={`ac-${task.id}-${i}`}><Text>Acceptance: {clean(ac)}</Text></Box>)}
               {task.events_last_3.slice(-3).map((event, i) => <Box key={`event-${task.id}-${i}`}><Text>Event: {clean(event)}</Text></Box>)}
+              <Text>Steering: {task.steering?.mode ?? 'queue'} · queued {task.queued_steers?.length ?? 0}</Text>
+              {task.queued_steers?.map(entry => <Box key={`steer-queued-${task.id}-${entry.id}`}><Text>Queued steer: {clean(entry.text)}</Text></Box>)}
               {task.blockers.map((blocker, i) => <Box key={`blocker-${task.id}-${i}`}><Text color="yellow">Blocker: {clean(blocker.code)} · {clean(blocker.description)}</Text></Box>)}
               <Button key={`details-${task.id}`} label="Details (log tail)" onPress={() => details($, task)} />
               {task.adopted ? <Text>Read-only adopted task · owner controls unavailable</Text> : <Box flexDirection="column">

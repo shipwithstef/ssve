@@ -121,7 +121,11 @@ export function collect(root = stateRoot(), stalledMinutes = 5, config = configR
       const g = gitSnapshot(task.worktree);
       if (g.status === null) blockers.push({ code: 'git_unavailable', description: 'Git inspection failed or exceeded bounds', source: task.worktree, at: iso() });
       const publicKeys = ['schema_version', 'id', 'title', 'goal_id', 'lane', 'description', 'depends_on', 'acceptance', 'executor', 'worktree', 'session_id', 'adopted', 'read_only', 'state', 'attempt_id', 'started_at', 'finished_at', 'deadline_at', 'expected_minutes', 'hard_timeout_ms', 'memory_cap', 'exit_code', 'exit_signal', 'stop_requested', 'unit', 'pid', 'process_group', 'supervisor_pid', 'process_identity', 'supervisor_identity', 'log_path', 'stderr_path', 'events_path', 'last_heartbeat_at', 'goal_generation', 'registry_revision'];
+      if (task.steering_blocker) blockers.push({ code: 'steering_hold', description: redact(task.steering_blocker, 1200), source: 'dispatcher' });
       const publicTask = Object.fromEntries(publicKeys.filter(key => key in task).map(key => [key, task[key]]));
+      publicTask.steering = task.steering || { mode: 'queue', reason: 'Legacy attempt; stdin unavailable' };
+      publicTask.queued_steers = (task.steer_queue || []).map(e => ({ id: e.id, at: e.at, text: redact(e.text, 8192) }));
+      publicTask.steer_deliveries = (task.steer_deliveries || []).map(e => ({ id: e.id, attempt_id: e.attempt_id, mode: e.mode, state: e.state, claimed_at: e.claimed_at }));
       publicTask.reservation_active = !task.adopted && (alive || !task.finished_at && ['queued', 'running', 'stalled'].includes(task.state));
       publicTask.attempt_history = (task.attempt_history || []).map(a => ({ attempt_id: a.attempt_id, started_at: a.started_at, finished_at: a.finished_at, state: a.state, log_path: a.log_path, exit_code: a.exit_code, usage: reportedUsage(a.usage) }));
       for (const key of ['title', 'description']) publicTask[key] = redact(publicTask[key], 16000);
@@ -165,7 +169,7 @@ export function collect(root = stateRoot(), stalledMinutes = 5, config = configR
     const usage = goalUsage(goal.id, root, tasks);
     if (goal.budget.claude_turn_cap == null || usage.claude.turns == null) blockers.push({ code: 'budget_unknown', description: 'Claude turn allowance/usage unknown; reconcile before new child dispatch' });
     else if (usage.claude.turns >= goal.budget.claude_turn_cap) blockers.push({ code: 'budget_exhausted', description: 'Claude turn cap exhausted; parent allocation required' });
-    for (const cli of ['codex', 'cursor', 'agy']) {
+    for (const cli of ['codex', 'cursor', 'agy', ...(goal.budget.worker_caps.claude ? ['claude'] : [])]) {
       const cap = goal.budget.worker_caps[cli]?.runs;
       if (cap == null) blockers.push({ code: 'budget_unknown', description: `${cli} run allowance unknown; parent must configure cap` });
       else if (cap > 0 && usage.workers[cli].attempts >= cap) blockers.push({ code: 'budget_exhausted', description: `${cli} run cap exhausted; parent allocation required` });

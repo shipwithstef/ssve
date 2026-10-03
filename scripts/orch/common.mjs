@@ -95,7 +95,7 @@ export function redact(value, limit = 240) {
 export function streamEvent(e, cli) {
   if (!e || typeof e !== 'object') return null;
   const type = e.type || e.event || 'unknown';
-  const session_id = cli === 'codex' ? e.thread_id : cli === 'cursor' ? e.session_id : e.conversation_id || e.step_update?.conversation_id || e.result?.conversation_id;
+  const session_id = cli === 'codex' ? e.thread_id : cli === 'cursor' ? e.session_id : cli === 'claude' ? e.session_id : e.conversation_id || e.step_update?.conversation_id || e.result?.conversation_id;
   let summary = type;
   let completion_report = null, terminal = null, usage = null;
   if (e.item?.type === 'command_execution') summary = `command ${e.type === 'item.completed' ? `exited ${e.item.exit_code ?? 'unknown'}` : 'started'}: ${redact(e.item.command, 160)}`;

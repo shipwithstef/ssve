@@ -3,6 +3,8 @@ export type OrchTask = {
   state: string; attempt_id: string; adopted: boolean; session_id: string | null;
   executor: { cli: string; model: string | null; effort: string | null };
   elapsed_ms: number; estimate_ms: { low: number | null; high: number | null };
+  steering?: { mode: string; reason?: string };
+  queued_steers?: { id: string; at: string; text: string }[];
   events_last_3: string[]; blockers: { code: string; description: string }[];
   depends_on: string[]; acceptance: string[]; log_path: string;
   completion_report_ref: string | null; verification_state: string;

@@ -85,8 +85,8 @@ test('details are bounded helper reads; stop/steer copy exact shell-safe command
   const message = "owner's $() `literal`\nsecond line";
   await ui.input({ key: 'orch-steer-text', text: message });
   await ui.press({ key: 'orch-steer-copy' });
-  expect(seen.copies[1]).toContain(" && env ORCH_STATE_DIR='/recorded/home/.local/state/orch' node ");
-  expect(seen.copies[1]).toContain("resume 'p1c-r' 'owner'\\''s $() `literal`\nsecond line'");
+  expect(seen.copies[1]).not.toContain(" && ");
+  expect(seen.copies[1]).toContain("steer 'p1c-r' 'owner'\\''s $() `literal`\nsecond line'");
   expect(seen.processes.length).toBe(1); noEffects(seen);
   await ui.press({ key: 'task-d1a' });
   expect(await ui.find({ key: 'stop-d1a' })).toBeUndefined();
@@ -190,5 +190,15 @@ test('HO1 goal headers, empty paused goal, partial counts, blockers and owner-on
   await clock.advance(120000);
   expect(await ui.find({ key: 'attach-parent-novisenti' })).toBeUndefined();
   expect(await ui.find({ key: 'resume-child-novisenti' })).toBeUndefined();
+  expect(seen.processes.length).toBe(0); noEffects(seen);
+});
+
+test('queued steering and capability are visible without executing commands', async ($, on) => {
+  const { snapshot, seen } = setup(on);
+  const task = snapshot.tasks.find((t: { id: string }) => t.id === 'p1c-r');
+  task.steering = { mode: 'queue' };
+  task.queued_steers = [{ id: 'first', at: snapshot.generated_at, text: 'first owner message' }];
+  await start($); const ui = await $.ui.mount(PANE); await ui.press({ key: 'task-p1c-r' });
+  expect((await ui.find({ key: 'steer-queued-p1c-r-first' }))?.text).toContain('first owner message');
   expect(seen.processes.length).toBe(0); noEffects(seen);
 });

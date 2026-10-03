@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { stateRoot, init, atomicJson, readJson, taskPath, canonicalWorktree, git, withLocks, iso, options, isMain, sameProcess } from './common.mjs';
 
 export const goalLock = root => path.join(root, 'locks', 'goals.lock');
-const clis = ['codex', 'cursor', 'agy'];
+const clis = ['codex', 'cursor', 'agy', 'claude'];
 const states = ['registered', 'active', 'paused', 'blocked', 'closing', 'closed'];
 const safeId = value => typeof value === 'string' && /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,95}$/.test(value);
 function count(value, label, nullable = false) {
@@ -77,6 +77,7 @@ export function validateRegistry(registry) {
     count(goal.budget.claude_turn_cap, 'Claude turn cap', true);
     for (const cli of clis) {
       const cap = goal.budget.worker_caps[cli]?.runs;
+      if (cli === 'claude' && cap === undefined) continue; // Legacy registries have no Claude worker grant.
       if (cap !== null && !Number.isSafeInteger(cap)) throw new Error(`Invalid ${cli} run cap`);
       count(cap, `${cli} run cap`, true);
     }
@@ -167,7 +168,7 @@ export async function transact(command, o, root = stateRoot()) {
           goal.child = { session_id: o.child_session, principal: o.child_principal, effort: 'low', contract_ref: `contracts/${goal.id}-v${goal.generation}.json` };
         }
         if (o.claude_turn_cap != null) goal.budget.claude_turn_cap = count(o.claude_turn_cap, 'Claude turn cap');
-        for (const cli of clis) if (o[`${cli}_runs`] != null) goal.budget.worker_caps[cli].runs = count(o[`${cli}_runs`], `${cli} run cap`);
+        for (const cli of clis) if (o[`${cli}_runs`] != null) goal.budget.worker_caps[cli] = { runs: count(o[`${cli}_runs`], `${cli} run cap`) };
         goal.desired_state = o.state;
       } else throw new Error('Expected create, grant-worktree, set-priority, set-state or list');
     }
@@ -231,7 +232,7 @@ export function goalUsage(id, root = stateRoot(), tasks = null) {
 // SR1 alone supplies a validated old-attempt reservation. A dead child after a
 // reboot cannot revoke its parent's persisted grant, but ordinary dispatch still
 // requires the live acknowledged child. Both paths share admission and its lock.
-export function checkTaskGrant(task, root = stateRoot(), recovery = false) {
+export function checkTaskGrant(task, root = stateRoot(), recovery = false, ongoing = false) {
   const registry = readRegistry(root), goal = registry?.goals.find(x => x.id === task.goal_id);
   if (!goal || goal.desired_state !== 'active') throw new Error('Task goal must exist and be active');
   if (recovery ? task.goal_generation !== goal.generation : task.goal_generation != null && task.goal_generation !== goal.generation) throw new Error('Stale or missing goal generation');
@@ -249,7 +250,7 @@ export function checkTaskGrant(task, root = stateRoot(), recovery = false) {
   grantPaths(wt, grant.paths);
   const usage = goalUsage(goal.id, root), cli = task.executor.cli, cap = goal.budget.worker_caps[cli]?.runs;
   if (cap == null) throw new Error('Worker run allowance unknown; parent must configure cap');
-  if (usage.workers[cli].attempts >= cap) throw new Error('Worker run cap exhausted');
+  if (!usage.workers[cli] || usage.workers[cli].attempts - (ongoing ? 1 : 0) >= cap) throw new Error('Worker run cap exhausted');
   if (task.child_session) {
     if (goal.budget.claude_turn_cap == null || usage.claude.turns == null) throw new Error('Claude turn allowance/usage unknown');
     if (usage.claude.turns >= goal.budget.claude_turn_cap) throw new Error('Claude turn cap exhausted');
