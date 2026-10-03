@@ -15,7 +15,8 @@ class Element {
   get text() { return this.textContent + this.children.map(el => el.text).join('\n'); }
 }
 test('web fixture: priority goal groups, empty goal, counts/unknowns, recovery commands, stale/error retention and safe text', async () => {
-  const elements = Object.fromEntries(['tree', 'stamp', 'error', 'recovery'].map(id => [id, new Element(id)]));
+  const elements = Object.fromEntries(['tree', 'stamp', 'error', 'recovery', 'updates'].map(id => [id, new Element(id)]));
+  fixture.updates = Array.from({ length: 25 }, (_, i) => `12:00 demo/build: task ${i} done`);
   let broken = false, clock = Date.parse(fixture.collector_heartbeat_at);
   const context = vm.createContext({ document: { getElementById: id => elements[id], createElement: tag => new Element(tag) },
     Date: class extends Date { static now() { return clock; } },
@@ -24,6 +25,8 @@ test('web fixture: priority goal groups, empty goal, counts/unknowns, recovery c
   });
   vm.runInContext(html.match(/<script>([\s\S]*)<\/script>/)[1], context);
   await vm.runInContext('refresh()', context);
+  assert.equal(elements.updates.textContent.split('\n').length, 20);
+  assert.ok(elements.updates.textContent.endsWith('task 24 done'));
   assert.equal(elements.tree.children.length, 2);
   assert.match(elements.tree.children[0].firstChild.text, /#1 Empty goal.*paused.*LOW/);
   assert.match(elements.tree.children[1].firstChild.text, /#2 novisenti.*needs_owner.*native_ownership_unverified.*child-exact/);

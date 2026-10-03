@@ -94,6 +94,89 @@ export function adopt(o, root = stateRoot()) {
   atomicJson(file, task);
   return task;
 }
+const HALF_HOUR = 30 * 60000;
+const updateText = value => redact(value, 240).replace(/\s+/g, ' ').trim();
+function updateState(state) {
+  if (['running', 'queued'].includes(state)) return 'started';
+  if (state === 'done') return 'done';
+  if (['failed', 'timeout'].includes(state)) return 'failed';
+  if (['interrupting', 'interrupted', 'stopped'].includes(state)) return 'interrupted';
+  if (['blocked', 'needs_owner', 'stalled', 'exited (unknown)', 'done (unverified exit)'].includes(state)) return 'blocked';
+  return null;
+}
+// Best-effort, bounded HTTP only; never invoke a CLI/model or retry a push.
+export async function pushUpdate(line, config = configRoot(), request = fetch) {
+  let topic;
+  try { topic = fs.readFileSync(path.join(config, 'ntfy-topic'), 'utf8').trim(); } catch { return; }
+  if (!/^[a-zA-Z0-9_-]{1,128}$/.test(topic)) return;
+  try { await request(`https://ntfy.sh/${topic}`, { method: 'POST', body: line, signal: AbortSignal.timeout(5000) }); } catch { /* optional push cannot stop collection */ }
+}
+// Caller holds collector.lock. A write-ahead batch makes log append idempotent
+// even if collection stops between append and cursor commit.
+export function publishUpdates(status, root = stateRoot(), config = configRoot(), now = Date.now(), notify = pushUpdate) {
+  const cursorFile = path.join(root, 'updates-cursor.json'), logFile = path.join(root, 'updates.log');
+  let cursor = readJson(cursorFile, { tasks: {}, goals: {}, digests: {}, recent: [] });
+  const finishBatch = () => {
+    if (!cursor.pending) return;
+    const { offset, text } = cursor.pending;
+    const bytes = Buffer.from(text);
+    const fd = fs.openSync(logFile, 'a+', 0o600);
+    try {
+      const size = fs.fstatSync(fd).size;
+      if (size < offset || size > offset + bytes.length) throw new Error('Update log changed outside collector');
+      const present = Buffer.alloc(size - offset);
+      fs.readSync(fd, present, 0, present.length, offset);
+      if (!bytes.subarray(0, present.length).equals(present)) throw new Error('Update log batch mismatch');
+      fs.writeSync(fd, bytes.subarray(present.length)); fs.fsyncSync(fd);
+    } finally { fs.closeSync(fd); }
+    delete cursor.pending; atomicJson(cursorFile, cursor);
+  };
+  finishBatch();
+  const stamp = new Date(now).toISOString().slice(11, 16); // UTC, like collector timestamps.
+  const lines = [], changed = new Set();
+  const emit = (goal, lane, title, state) => {
+    lines.push(`${stamp} ${updateText(goal)}/${updateText(lane)}: ${updateText(title)} ${state}`);
+    changed.add(goal);
+  };
+  for (const task of status.tasks) {
+    const state = updateState(task.state), old = cursor.tasks[task.id];
+    // Short tasks can finish between scans; their durable start is still an event.
+    if (task.started_at && (!old || old.attempt !== task.attempt_id) && state !== 'started') emit(task.goal_id, task.lane, task.title, 'started');
+    if (state && (!old || old.attempt !== task.attempt_id || old.state !== state)) emit(task.goal_id, task.lane, task.title, state);
+    cursor.tasks[task.id] = { attempt: task.attempt_id, state };
+  }
+  for (const goal of status.goals) {
+    const state = JSON.stringify([goal.desired_state, goal.observed_state]);
+    if (cursor.goals[goal.id] !== state) {
+      const event = goal.observed_state === 'needs_owner' ? 'blocked' : ['registered', 'active', 'closing'].includes(goal.observed_state) ? 'started' : ['done', 'closed'].includes(goal.observed_state) ? 'done' : ['paused', 'stopped'].includes(goal.observed_state) ? 'interrupted' : 'blocked';
+      emit(goal.id, 'goal', `${goal.title} (${goal.observed_state || goal.desired_state || 'unknown'})`, event);
+      cursor.goals[goal.id] = state;
+    }
+    if (goal.desired_state !== 'active') { delete cursor.digests[goal.id]; continue; }
+    const tasks = status.tasks.filter(t => t.goal_id === goal.id);
+    const today = new Date(now).toISOString().slice(0, 10);
+    const attempts = tasks.flatMap(t => [...(t.attempt_history || []), t]);
+    const done = new Set(attempts.filter(t => t.state === 'done' && t.finished_at?.slice(0, 10) === today).map(t => t.attempt_id)).size;
+    const running = tasks.filter(t => ['running', 'stalled'].includes(t.state)).length;
+    const blockers = [...new Set([...(goal.blockers || []).map(b => updateText(b.description || b.code)), ...tasks.flatMap(t => (t.blockers || []).map(b => `${updateText(t.title)}: ${updateText(b.description || b.code)}`))])].sort();
+    const summary = `${updateText(goal.id)}: ${running} running, ${done} done today, blockers: ${updateText(blockers.join('; ') || 'none')}`;
+    const prior = cursor.digests[goal.id] || { at: now, summary, dirty: false };
+    prior.dirty ||= changed.has(goal.id) || prior.summary !== summary;
+    if (now - prior.at >= HALF_HOUR) {
+      if (prior.dirty) lines.push(`${stamp} ${summary}`);
+      prior.at = now; prior.summary = summary; prior.dirty = false;
+    }
+    cursor.digests[goal.id] = prior;
+  }
+  for (const id of Object.keys(cursor.goals)) if (!status.goals.some(g => g.id === id)) {
+    emit(id, 'goal', 'Goal removed', 'interrupted'); delete cursor.goals[id]; delete cursor.digests[id];
+  }
+  cursor.recent = [...cursor.recent, ...lines].slice(-20);
+  if (lines.length) cursor.pending = { offset: fs.existsSync(logFile) ? fs.statSync(logFile).size : 0, text: lines.join('\n') + '\n' };
+  atomicJson(cursorFile, cursor); finishBatch();
+  for (const line of lines) Promise.resolve().then(() => notify(line, config)).catch(() => {});
+  return cursor.recent;
+}
 export function collect(root = stateRoot(), stalledMinutes = 5, config = configRoot()) {
   init(root);
   const prior = readJson(path.join(root, 'status.json'), { revision: 0, tasks: [], deltas: [] });
@@ -199,6 +282,7 @@ export function collect(root = stateRoot(), stalledMinutes = 5, config = configR
   if (recovery && registry) recovery.parent = recovery.orchestrators.find(s => s.role === 'parent') || { state: 'needs_owner', resume_command: null, auto_start: false, reason: 'Parent not bound in registry' };
   const checkpoint = readJson(path.join(root, 'checkpoint.json'));
   const status = { schema_version: 1, goal_id: goals.length === 1 ? goals[0].id : 'all', run_id: prior.run_id || `collector-${now}`, revision, registry_revision: registry?.revision ?? null, changed_goal_ids, generated_at: iso(), collector_heartbeat_at: iso(), recovery, orchestrators: recovery?.orchestrators || orchestrators, checkpoint, plan: { path: null, revision: null, hash: null, specs_path: null, specs_hash: null }, goals, tasks, changed_task_ids, changes_since_revision: prior.revision, deltas: [...(prior.deltas || []), delta].slice(-200), warnings };
+  status.updates = publishUpdates(status, root, config, now);
   atomicJson(path.join(root, 'status.json'), status);
   return status;
 }
@@ -215,12 +299,25 @@ export async function main(args = process.argv.slice(2)) {
   if (!o.watch) { await lockedInvocation(o); return; }
   const root = stateRoot(); init(root);
   const interval = number(o.watch, 'watch seconds') * 1000;
-  let wake, stopping = false, pendingFlush = false;
+  let wake, stopping = false, pendingFlush = false, debounce;
+  const watchers = [];
   const flush = () => { pendingFlush = true; wake?.(); };
   const stop = () => { stopping = true; wake?.(); };
   process.on('SIGUSR1', flush); process.on('SIGTERM', stop); process.on('SIGINT', stop);
   try {
     await withLocks([path.join(root, 'locks', 'collector.lock')], async () => {
+      // Key file events wake the deterministic collector; polling remains the fallback.
+      for (const dir of [root, path.join(root, 'tasks'), path.join(root, 'sessions')]) {
+        if (!fs.existsSync(dir)) continue;
+        try {
+          const watcher = fs.watch(dir, (_, name) => {
+            if (dir === root ? name?.toString() !== 'goals.json' : name && !name.toString().endsWith('.json')) return;
+            clearTimeout(debounce); debounce = setTimeout(flush, 100);
+          });
+          watcher.on('error', e => { console.error(`Update watcher: ${e.message}; using polling`); watcher.close(); });
+          watchers.push(watcher);
+        } catch (e) { console.error(`Update watcher: ${e.message}; using polling`); }
+      }
       atomicJson(path.join(root, 'collector.json'), { identity: procIdentity(process.pid), started_at: iso() });
       do {
         pendingFlush = false;
@@ -231,6 +328,6 @@ export async function main(args = process.argv.slice(2)) {
       } while (!stopping);
       collect(root, number(o.stalled_minutes, 'stalled minutes', 5));
     });
-  } finally { process.off('SIGUSR1', flush); process.off('SIGTERM', stop); process.off('SIGINT', stop); }
+  } finally { clearTimeout(debounce); for (const watcher of watchers) watcher.close(); process.off('SIGUSR1', flush); process.off('SIGTERM', stop); process.off('SIGINT', stop); }
 }
 if (isMain(import.meta.url)) main().catch(e => { console.error(e.message); process.exitCode = 1; });

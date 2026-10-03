@@ -242,3 +242,20 @@ test('adopted exit without completion report is unknown even after a stream erro
   adopt({ adopt: 'no-report', pid: 2147483647, worktree: wt, log }, root);
   const row = collect(root).tasks[0]; assert.equal(row.state, 'exited (unknown)'); assert.equal(row.design_state, 'unknown'); assert.equal(row.exit_code, null);
 });
+
+
+test('UPD1 task changes wake a 60s collector without a status-file feedback loop', async t => {
+  const root = temp(t); init(root);
+  const child = spawn(process.execPath, [path.join(dir, 'collect.mjs'), '--watch', '60'], { env: { ...process.env, ORCH_STATE_DIR: root }, stdio: 'ignore' });
+  const exited = new Promise(resolve => child.on('exit', resolve));
+  t.after(async () => { child.kill('SIGTERM'); await exited; });
+  const file = path.join(root, 'status.json');
+  await waitFor(() => fs.existsSync(file));
+  const revision = JSON.parse(fs.readFileSync(file)).revision;
+  atomicJson(path.join(root, 'tasks', 'invalid.json'), { id: 'invalid' });
+  await waitFor(() => JSON.parse(fs.readFileSync(file)).revision > revision);
+  const snapshot = JSON.parse(fs.readFileSync(file));
+  assert.equal(snapshot.warnings[0].code, 'task_read_error');
+  await new Promise(resolve => setTimeout(resolve, 300));
+  assert.equal(JSON.parse(fs.readFileSync(file)).revision, snapshot.revision);
+});

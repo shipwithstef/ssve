@@ -9,6 +9,7 @@ export type OrchTask = {
 };
 export type OrchStatus = {
   schema_version: 1; revision: number; generated_at: string; collector_heartbeat_at: string;
+  updates?: string[];
   tasks: OrchTask[]; warnings: { code: string; description: string }[];
   registry_revision?: number | null;
   orchestrators?: OrchRecoverySession[];
