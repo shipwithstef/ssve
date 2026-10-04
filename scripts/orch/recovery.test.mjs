@@ -32,6 +32,7 @@ async function fixture(t) {
   const bin = path.join(root, 'claude-bin'); fs.mkdirSync(bin);
   fs.writeFileSync(path.join(bin, 'claude'), `#!${process.execPath}
 import fs from 'node:fs';import path from 'node:path';
+import { atomicJson } from ${JSON.stringify(new URL('./common.mjs', import.meta.url).href)};
 const root=process.env.FAKE_CLAUDE_ROOT,args=process.argv.slice(2);
 fs.appendFileSync(path.join(root,'claude-calls.jsonl'),JSON.stringify(args)+'\\n');
 if(args[0]==='agents') {
@@ -40,7 +41,7 @@ if(args[0]==='agents') {
 } else {
   const receipt=JSON.parse(fs.readFileSync(path.join(root,'recovery-'+process.env.FAKE_BOOT+'.json')));
   if(!receipt.parent_auto_resume?.reserved_at)process.exit(2);
-  fs.writeFileSync(path.join(root,'parent-launch-tasks.json'),JSON.stringify(receipt.tasks));
+  atomicJson(path.join(root,'parent-launch-tasks.json'),receipt.tasks);
   if(fs.existsSync(path.join(root,'claude-fail')))process.exit(1);
   console.log('background session parent-exact-id');
 }`, { mode: 0o700 });
@@ -317,12 +318,9 @@ test('status publishes owner attachment and holds; generated web script parses',
   assert.equal(status.tasks[0].state, 'needs_owner');
   assert.ok(status.tasks[0].blockers.some(b => b.code === 'recovery_hold'));
   assert.equal(classify({ state: 'interrupted' }, { alive: false }), 'interrupted');
-  // HTML tag names are case-insensitive. Check the complete script body in
-  // both spellings rather than silently missing an uppercase tag.
-  for (const markup of [html, html.replaceAll('<script>', '<SCRIPT>').replaceAll('</script>', '</SCRIPT>')]) {
-    const script = markup.match(/<script>([\s\S]*?)<\/script>/i);
-    assert.ok(script, 'generated page contains its script');
-    assert.doesNotThrow(() => new vm.Script(script[1]));
+  for (const tag of ['script', 'SCRIPT', 'ScRiPt']) {
+    const page = html.replaceAll('<script>', `<${tag}>`).replaceAll('</script>', `</${tag}>`);
+    assert.doesNotThrow(() => new vm.Script(page.match(/<script>([\s\S]*)<\/script>/i)[1]));
   }
   fs.unlinkSync(path.join(f.root, 'goals.json')); // Legacy SR1 installation still exposes its parent output.
   assert.equal(collect(f.root).recovery.parent.resume_command, 'claude --resume parent-exact-id');

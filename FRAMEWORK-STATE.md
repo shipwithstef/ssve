@@ -10,6 +10,10 @@ Activation attempt 3 exposed an enclosing HOME Git repository incorrectly vetoin
 
 Activation attempt 5 exposed native tilde paths, quoted escapes and glob/xargs reads rejected by strict argv proof. Advisory mode now has a separate effects check for stdout readers and trusted scratch outputs, preserving strict enforcement. Unbound mutations and uncertain calls continue to steer once per session/finding class with a concrete next step. Missing optional-contract ENOENT is omitted without hiding independent mutation authority; matching/corrupt own contract diagnostics remain visible. The offline gate retains original frozen strict labels and adds explicit advisory-only read/enforcement control expectations plus all three recorded failures.
 
+## PR125 CI corrections — 2026-10-04
+
+Orchestrator web test harnesses extract scripts with case-insensitive HTML tags and cover uppercase/mixed-case variants. The recovery fixture writes its launch observation through the existing atomic JSON writer. The original goal and Phase R documents referenced by HO1 are now included. The expired page-UX proposal deferral now belongs to unfinished backlog item `WI-FW-PAGE-UX-REGISTRATION-01`; registration and evals remain pending. These are test/documentation corrections; hosted verification is recorded in `docs/orch/PR125-ci.md`.
+
 ## Orchestrator human overview — CP4, 2026-10-03
 
 Web and terminal `/orch` now open plain-language goal cards with milestone progress, explicit owner actions and bounded work/next lists. The existing technical tree and controls live behind Details. The parent updates headline, milestones and owner actions through revision-guarded `goals.mjs set-summary`; both renderers share deterministic formatting with no model calls. Summary seeding preserves later orchestrator updates. See `docs/orch/README.md` and `docs/orch/CP4-report.md`.

@@ -5,6 +5,15 @@ import vm from 'node:vm';
 import { html } from './serve.mjs';
 
 const fixture = JSON.parse(fs.readFileSync(new URL('../../mods/orchestrator-pane/tests/fixtures/status.json', import.meta.url)));
+const inlineScript = /<script>([\s\S]*)<\/script>/i;
+test('web script extraction preserves source for upper and mixed-case HTML tags', () => {
+  const source = html.match(inlineScript)[1];
+  for (const tag of ['SCRIPT', 'ScRiPt']) {
+    const page = html.replaceAll('<script>', `<${tag}>`).replaceAll('</script>', `</${tag}>`);
+    assert.equal(page.match(inlineScript)[1], source);
+    assert.doesNotThrow(() => new vm.Script(page.match(inlineScript)[1]));
+  }
+});
 class Element {
   children = []; textContent = ''; listeners = {}; open = false;
   constructor(tag) { this.tag = tag; }
@@ -23,7 +32,7 @@ test('web fixture: priority goal groups, empty goal, counts/unknowns, recovery c
     fetch: async (url, options) => { assert.equal(url, '/status.json'); assert.equal(options.cache, 'no-store'); if (broken) throw Error('offline'); return { ok: true, json: async () => structuredClone(fixture) }; },
     setInterval: (_, ms) => { assert.equal(ms, 60000); },
   });
-  vm.runInContext(html.match(/<script>([\s\S]*)<\/script>/)[1], context);
+  vm.runInContext(html.match(inlineScript)[1], context);
   await vm.runInContext('refresh()', context);
   const steered = structuredClone(fixture);
   for (const goal of steered.goals) for (const lane of goal.lanes) for (const task of lane.tasks) {
@@ -58,7 +67,7 @@ test('web hot-reloaded channel opt-out hides updates and informational goal note
   const elements = Object.fromEntries(['tree', 'stamp', 'error', 'recovery', 'updates', 'overview', 'diagnostics'].map(id => [id, new Element(id)]));
   const snapshot = { ...fixture, updates: ['12:00 goal/build: task done'], update_channels: { web: false, pane: true }, goals: [{ ...fixture.goals[0], info: [{ code: 'parent_orchestrated', description: 'No child bound' }] }] };
   const context = vm.createContext({ document: { getElementById: id => elements[id], createElement: tag => new Element(tag) }, Date, fetch: async () => ({ ok: true, json: async () => snapshot }), setInterval: () => {} });
-  vm.runInContext(html.match(/<script>([\s\S]*)<\/script>/)[1], context);
+  vm.runInContext(html.match(inlineScript)[1], context);
   await vm.runInContext('refresh()', context);
   assert.equal(elements.updates.textContent, ''); assert.match(elements.tree.text, /Info: parent_orchestrated.*No child bound/);
   snapshot.update_channels.web = true; await vm.runInContext('refresh()', context); assert.match(elements.updates.textContent, /task done/);
@@ -70,7 +79,7 @@ test('CP4 web defaults to human cards, keeps technical tree behind Details and p
   const snapshot = structuredClone(fixture);
   snapshot.goals = [{ ...snapshot.goals[1], ...summaries.novisenti, title: 'Novisenti', owner_actions: [{ text: '<script>Approve creating the Azure issuer job (create-only, no spend)</script>', since: snapshot.generated_at }] }];
   const context = vm.createContext({ document: { getElementById: id => elements[id], createElement: tag => new Element(tag) }, Date, fetch: async () => ({ ok: true, json: async () => snapshot }), setInterval: () => {} });
-  vm.runInContext(html.match(/<script>([\s\S]*)<\/script>/)[1], context); await vm.runInContext('refresh()', context);
+  vm.runInContext(html.match(inlineScript)[1], context); await vm.runInContext('refresh()', context);
   assert.equal(elements.diagnostics.open, false);
   const card = elements.overview.children[0];
   assert.match(card.text, /Product built and deployed \(AI off\)/);
