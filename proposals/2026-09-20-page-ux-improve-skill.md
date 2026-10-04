@@ -2,8 +2,8 @@
 
 **Status:** DRAFT
 
-deferred_until: 2026-10-03
-reason: Preserve the reviewed page-level design outside the installable package; registration and routing evals are a separate follow-up after the PR baseline is repaired.
+backlog_wi: WI-571
+reason: WI-571 preserves the reviewed page-level draft outside the installable package and owns the separate registration and routing-evaluation follow-up; no implementation or release is claimed.
 **Date:** 2026-09-20
 **Severity:** medium — missing capability (founder-named)
 **Category:** missing capability

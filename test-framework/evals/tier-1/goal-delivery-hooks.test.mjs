@@ -55,7 +55,11 @@ function boundary(p, host = 'codex', extra = {}, script = 'hooks/codex/svc-codex
   return run(durableBoundary, p, extra, ['svc-side01', '--spec', spec]);
 }
 function recordedBoundary(shape, p, extra = {}) {
-  const command = shape.command.replaceAll('@SOURCE@', installed).replaceAll('@LAUNCHER@', bundle.launcher_path);
+  // The captured host used /usr/bin/node; CI selects Node via setup-node.
+  // Relocate only that executable, keeping the recorded payload and hook intact.
+  const runtime = `'${process.execPath.replaceAll("'", "'\\''")}'`;
+  const command = shape.command.replaceAll("'/usr/bin/node'", runtime)
+    .replaceAll('@SOURCE@', installed).replaceAll('@LAUNCHER@', bundle.launcher_path);
   const spec = Buffer.from(JSON.stringify({ command, host: shape.host, event: shape.event, timeoutMs: 20000 })).toString('base64url');
   return run(durableBoundary, { ...p, hook_event_name: shape.event }, { SVC_HOST: shape.host, ...extra }, [shape.marker, '--spec', spec]);
 }
@@ -128,7 +132,9 @@ test('exact activation failure and log-derived envelopes are silent through the 
         tool_input: p.tool_input.replace('cat input.txt', 'touch changed') };
       assert.equal(installedObservation(mutation, env), null, fixture.shape);
       assert.match(recordedBoundary(shape, mutation).stderr, /svc advisory/, fixture.shape);
-      assert.match(recordedBoundary(shape, mutation, { SVC_HOOK_MODE: 'enforce' }).stdout, /deny/, fixture.shape);
+      const enforced = recordedBoundary(shape, mutation, { SVC_HOOK_MODE: 'enforce' });
+      assert.equal(enforced.status, 0, `${fixture.shape}: ${enforced.stderr}`);
+      assert.match(enforced.stdout, /deny/, `${fixture.shape}: ${enforced.stderr}`);
     }
   }
   assert.equal(fs.existsSync(path.join(repo, 'changed')), false);

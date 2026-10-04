@@ -136,7 +136,13 @@ test('status publishes owner attachment and holds; generated web script parses',
   assert.equal(status.tasks[0].state, 'needs_owner');
   assert.ok(status.tasks[0].blockers.some(b => b.code === 'recovery_hold'));
   assert.equal(classify({ state: 'interrupted' }, { alive: false }), 'interrupted');
-  assert.doesNotThrow(() => new vm.Script(html.match(/<script>([\s\S]*)<\/script>/)[1]));
+  // HTML tag names are case-insensitive. Check the complete script body in
+  // both spellings rather than silently missing an uppercase tag.
+  for (const markup of [html, html.replaceAll('<script>', '<SCRIPT>').replaceAll('</script>', '</SCRIPT>')]) {
+    const script = markup.match(/<script>([\s\S]*?)<\/script>/i);
+    assert.ok(script, 'generated page contains its script');
+    assert.doesNotThrow(() => new vm.Script(script[1]));
+  }
 });
 test('installer requires linger without sudo and renders systemd-verifiable units before enabling services', t => {
   const f = fixture(t), bin = path.join(f.root, 'bin'); fs.mkdirSync(bin);
