@@ -1,6 +1,6 @@
 # Framework Improvement: page-ux-improve skill (page-scoped competitive look)
 
-**Status:** DRAFT
+**Status:** BACKLOG
 
 backlog_wi: WI-571
 reason: WI-571 preserves the reviewed page-level draft outside the installable package and owns the separate registration and routing-evaluation follow-up; no implementation or release is claimed.

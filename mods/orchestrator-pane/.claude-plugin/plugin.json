@@ -1,7 +1,7 @@
 {
   "name": "orchestrator-pane",
-  "version": "0.1.0",
-  "description": "Local terminal worker status, with owner-run clipboard commands.",
+  "version": "0.2.0",
+  "description": "Terminal orchestrator mode, collapsed assistant chat and confirmed worker controls.",
   "author": {
     "name": "SSVE"
   },

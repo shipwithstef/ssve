@@ -10,6 +10,8 @@ import { ingestLines, procIdentity, sameProcess, lockPath, lockBusy, init, atomi
 import { workerCommand, scopeCommand } from './dispatch.mjs';
 import { readStream, classify, collect, adopt, observedAlive } from './collect.mjs';
 import { createServer } from './serve.mjs';
+import { transact } from './goals.mjs';
+import { checkpointEvents } from './preempt-watch.mjs';
 const dir = path.dirname(fileURLToPath(import.meta.url));
 function fixture(cli) { return fs.readFileSync(path.join(dir, 'fixtures', `${cli}.jsonl`), 'utf8'); }
 function temp(t) { const root = fs.mkdtempSync(path.join(os.tmpdir(), 'orch-test-')); t.after(() => fs.rmSync(root, { recursive: true, force: true })); return root; }
@@ -102,13 +104,20 @@ test('live systemd scope with fake CLI: launch, exclusion, stop, exact resume, t
   fs.writeFileSync(path.join(bin, 'codex'), `#!${process.execPath}
 const fs=require('node:fs');const cp=require('node:child_process');
 if(process.argv.includes('--version')){console.log('fake-codex 1');process.exit(0)}
+if(process.argv[2]==='app-server'){console.log('experimental');process.exit(0)}
 fs.appendFileSync(process.env.FAKE_ARGS,JSON.stringify(process.argv.slice(2))+'\\n');
 console.log(JSON.stringify({type:'thread.started',thread_id:'fake-exact-session'}));
 const prompt=process.argv.at(-1);
 if(prompt==='complete'){console.log(JSON.stringify({type:'turn.completed',usage:{input_tokens:1,output_tokens:1}}));process.exit(0)}
 const child=cp.spawn('/bin/sleep',['1000'],{stdio:'ignore'});fs.writeFileSync(process.env.FAKE_DESCENDANT,String(child.pid));
+process.on('SIGTERM',()=>process.exit(1));
 setInterval(()=>{},1000);
 `, { mode: 0o700 });
+  const planning = path.join(root, 'planning'); fs.mkdirSync(planning); spawnSync('git', ['init', '-q', planning]);
+  const plan = path.join(planning, 'PLAN.md'); fs.writeFileSync(plan, '# Fake plan');
+  await transact('create', { id: 'test', title: 'test', objective: 'fake worker', plan, codex_runs: 6, expected_revision: 0 }, root);
+  await transact('grant-worktree', { id: 'test', worktree: wt, lane: 'cp1', expected_revision: 1 }, root);
+  await transact('set-state', { id: 'test', state: 'active', expected_revision: 2 }, root);
   const promptFile = path.join(root, 'prompt'); fs.writeFileSync(promptFile, 'wait');
   const env = { ...process.env, ORCH_STATE_DIR: root, PATH: bin + path.delimiter + process.env.PATH, FAKE_ARGS: path.join(root, 'args'), FAKE_DESCENDANT: path.join(root, 'descendant') };
   const call = async args => {
@@ -119,7 +128,7 @@ setInterval(()=>{},1000);
   };
   const startArgs = (id, seconds) => ['start', '--id', id, '--title', 'Fake worker', '--goal', 'test', '--lane', 'cp1', '--cli', 'codex', '--model', 'fake', '--effort', 'high', '--worktree', wt, '--prompt-file', promptFile, '--expected-minutes', '1', '--hard-timeout', String(seconds), '--resume-text', 'complete', '--memory-cap', '512M'];
   const load = id => JSON.parse(fs.readFileSync(taskPath(id, root), 'utf8'));
-  t.after(async () => { for (const id of ['live', 'timeout']) { if (fs.existsSync(taskPath(id, root)) && sameProcess(load(id).supervisor_identity)) await call(['stop', id]); } });
+  t.after(async () => { for (const id of ['live', 'timeout', 'shutdown', 'preempt']) { if (fs.existsSync(taskPath(id, root)) && sameProcess(load(id).supervisor_identity)) await call(['stop', id]); } });
   const observedLog = path.join(root, 'observed.jsonl'); fs.writeFileSync(observedLog, fixture('cursor'));
   adopt({ adopt: 'external', pid: process.pid, worktree: wt, log: observedLog }, root);
   const adoptedConflict = await call(startArgs('live', 30)); assert.equal(adoptedConflict.code, 1); assert.match(adoptedConflict.stderr, /live writer/);
@@ -130,9 +139,10 @@ setInterval(()=>{},1000);
   const second = await call(startArgs('second', 30)); assert.equal(second.code, 1); assert.match(second.stderr, /live writer/); assert.equal(fs.existsSync(taskPath('second', root)), false);
   const resumeLive = await call(['resume', 'live', 'complete']); assert.equal(resumeLive.code, 1); assert.match(resumeLive.stderr, /still running/);
   const stopped = await call(['stop', 'live']); assert.equal(stopped.code, 0, stopped.stderr); assert.equal(load('live').stop_requested, true); assert.equal(sameProcess(liveDescendant), false);
+  assert.equal(load('live').state, 'stopped');
   const previous = load('live');
   const recoveryArgs = ['resume', 'live', 'complete', '--auto-recover', bootId(), '--expected-attempt', previous.attempt_id];
-  atomicJson(taskPath('live', root), { ...previous, paid: true, state: 'interrupted', auto_resume_count: 1, recovery: { boot_id: bootId(), status: 'reserved' } });
+  atomicJson(taskPath('live', root), { ...previous, paid: true, state: 'interrupted', auto_resume_count: 1, recovery: { boot_id: bootId(), from_boot_id: 'prior-boot', status: 'reserved' } });
   const paidResume = await call(recoveryArgs); assert.equal(paidResume.code, 1); assert.match(paidResume.stderr, /owner required/);
   const held = load('live'); assert.equal(held.paid, true); assert.equal(held.attempt_id, previous.attempt_id);
   atomicJson(taskPath('live', root), { ...held, paid: false });
@@ -144,6 +154,26 @@ setInterval(()=>{},1000);
   const timeoutDescendant = await waitFor(() => { const identity = procIdentity(Number(fs.readFileSync(env.FAKE_DESCENDANT, 'utf8'))); return identity && identity.start_ticks !== liveDescendant.start_ticks ? identity : null; });
   await waitFor(() => load('timeout').finished_at, 15000); assert.equal(load('timeout').state, 'timeout'); assert.equal(sameProcess(timeoutDescendant), false);
   await waitFor(() => !lockBusy(lockPath(wt, root))); assert.equal(collect(root).tasks.find(x => x.id === 'timeout').state, 'timeout');
+  // SIGTERM from host shutdown has no owner-stop marker. Killing the native
+  // launcher by signal must never be persisted as failed.
+  assert.equal((await call(startArgs('shutdown', 30))).code, 0);
+  await waitFor(() => load('shutdown').session_id === 'fake-exact-session');
+  process.kill(load('shutdown').supervisor_pid, 'SIGTERM');
+  await waitFor(() => load('shutdown').finished_at, 20000);
+  assert.equal(load('shutdown').state, 'interrupted');
+  assert.ok(load('shutdown').exit_code === 1 || ['SIGTERM', 'SIGKILL'].includes(load('shutdown').exit_signal), JSON.stringify(load('shutdown')));
+  assert.equal(load('shutdown').interruption.reason, 'Supervisor SIGTERM');
+  await waitFor(() => !lockBusy(lockPath(wt, root)));
+  assert.equal((await call(startArgs('preempt', 30))).code, 0);
+  await waitFor(() => load('preempt').session_id === 'fake-exact-session');
+  checkpointEvents({ Events: [{ EventId: 'fake-shutdown', EventType: 'Preempt', EventStatus: 'Started', Resources: ['fake-vm'] }] }, { root, vmName: 'fake-vm', signal: () => {} });
+  assert.equal(load('preempt').state, 'interrupting');
+  assert.equal(collect(root).tasks.find(task => task.id === 'preempt').state, 'interrupting');
+  assert.equal(spawnSync('systemctl', ['--user', 'stop', load('preempt').unit]).status, 0);
+  await waitFor(() => load('preempt').finished_at);
+  assert.equal(load('preempt').exit_code, 1); assert.equal(load('preempt').state, 'interrupted');
+  assert.equal(load('preempt').interruption.event_id, 'fake-shutdown');
+  assert.equal(collect(root).tasks.find(task => task.id === 'preempt').state, 'interrupted');
 });
 test('adoption of already exited PID retains report but cannot invent success', t => {
   const root = temp(t); init(root); const wt = repo(root); const log = path.join(root, 'log'); fs.writeFileSync(log, fixture('cursor'));
@@ -212,4 +242,40 @@ test('adopted exit without completion report is unknown even after a stream erro
   fs.writeFileSync(log, '{"type":"turn.failed","error":{"message":"reported error"}}\n');
   adopt({ adopt: 'no-report', pid: 2147483647, worktree: wt, log }, root);
   const row = collect(root).tasks[0]; assert.equal(row.state, 'exited (unknown)'); assert.equal(row.design_state, 'unknown'); assert.equal(row.exit_code, null);
+});
+
+
+test('UPD1 task changes wake a 60s collector without a status-file feedback loop', async t => {
+  const root = temp(t); init(root);
+  const child = spawn(process.execPath, [path.join(dir, 'collect.mjs'), '--watch', '60'], { env: { ...process.env, ORCH_STATE_DIR: root }, stdio: 'ignore' });
+  const exited = new Promise(resolve => child.on('exit', resolve));
+  t.after(async () => { child.kill('SIGTERM'); await exited; });
+  const file = path.join(root, 'status.json');
+  await waitFor(() => fs.existsSync(file));
+  const revision = JSON.parse(fs.readFileSync(file)).revision;
+  atomicJson(path.join(root, 'tasks', 'invalid.json'), { id: 'invalid' });
+  await waitFor(() => JSON.parse(fs.readFileSync(file)).revision > revision);
+  const snapshot = JSON.parse(fs.readFileSync(file));
+  assert.equal(snapshot.warnings[0].code, 'task_read_error');
+  await new Promise(resolve => setTimeout(resolve, 300));
+  assert.equal(JSON.parse(fs.readFileSync(file)).revision, snapshot.revision);
+});
+
+test('adopted p1b/D1a recovery holds are informational, with observed completion or unknown exit', t => {
+  const root = temp(t); init(root); const wt = repo(root);
+  for (const [id, reported] of [['p1b', true], ['d1a', false]]) {
+    const log = path.join(root, `${id}.jsonl`); fs.writeFileSync(log, reported ? fixture('cursor') : '');
+    const record = adopt({ adopt: id, pid: 2147483647, worktree: wt, log }, root);
+    atomicJson(taskPath(id, root), { ...record, state: 'needs_owner', recovery: { reason: 'Adopted worker has no dispatcher ownership' } });
+  }
+  const snapshot = collect(root, 5, root);
+  assert.equal(snapshot.tasks.find(t => t.id === 'p1b').state, 'done (unverified exit)');
+  assert.equal(snapshot.tasks.find(t => t.id === 'd1a').state, 'exited (unknown)');
+  for (const row of snapshot.tasks) {
+    assert.deepEqual(row.blockers, []); assert.ok(row.info.some(b => b.code === 'unknown_exit'));
+    assert.ok(row.info.some(b => b.code === 'recovery_hold')); assert.equal(row.exit_code, null);
+  }
+  assert.ok(!snapshot.goals[0].blockers.some(b => b.code === 'needs_owner'));
+  assert.ok(!snapshot.updates.some(line => /(?:p1b|d1a).*blocked$/.test(line)));
+  assert.ok(snapshot.updates.some(line => /p1b \(unverified exit\) done$/.test(line)));
 });

@@ -95,7 +95,7 @@ export function redact(value, limit = 240) {
 export function streamEvent(e, cli) {
   if (!e || typeof e !== 'object') return null;
   const type = e.type || e.event || 'unknown';
-  const session_id = cli === 'codex' ? e.thread_id : cli === 'cursor' ? e.session_id : e.conversation_id || e.step_update?.conversation_id || e.result?.conversation_id;
+  const session_id = cli === 'codex' ? e.thread_id : cli === 'cursor' ? e.session_id : cli === 'claude' ? e.session_id : e.conversation_id || e.step_update?.conversation_id || e.result?.conversation_id;
   let summary = type;
   let completion_report = null, terminal = null, usage = null;
   if (e.item?.type === 'command_execution') summary = `command ${e.type === 'item.completed' ? `exited ${e.item.exit_code ?? 'unknown'}` : 'started'}: ${redact(e.item.command, 160)}`;
@@ -111,7 +111,7 @@ export function streamEvent(e, cli) {
     completion_report = r?.response || r?.result; usage = r?.usage; summary = `result ${terminal} (reported)`;
   }
   if (type === 'thinking' || type === 'user') summary = null;
-  if (usage) usage = { input_tokens: usage.input_tokens ?? usage.inputTokens ?? null, output_tokens: usage.output_tokens ?? usage.outputTokens ?? null, cached_tokens: usage.cached_input_tokens ?? usage.cache_read_tokens ?? usage.cacheReadTokens ?? null, source: 'worker_stream' };
+  if (usage) usage = { ...Object.fromEntries(['total_tokens', 'cache_write_tokens', 'subscription_units', 'known_charge'].filter(k => typeof usage[k] === 'number' && Number.isFinite(usage[k]) && usage[k] >= 0).map(k => [k, usage[k]])), input_tokens: usage.input_tokens ?? usage.inputTokens ?? null, output_tokens: usage.output_tokens ?? usage.outputTokens ?? null, cached_tokens: usage.cached_input_tokens ?? usage.cache_read_tokens ?? usage.cacheReadTokens ?? null, source: 'worker_stream' };
   return { session_id: session_id || null, summary, completion_report: completion_report ? redact(completion_report, 16000) : null, terminal, usage, resolved_model: e.model || null };
 }
 export function ingestLines(text, cli, cache = {}) {

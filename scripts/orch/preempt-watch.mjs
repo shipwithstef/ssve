@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import http from 'node:http';
 import { stateRoot, init, bootId, readJson, atomicJson, digest, procIdentity, withLocks, iso, isMain } from './common.mjs';
+import { markInterrupting } from './interruption.mjs';
 
 export const eventsURL = 'http://169.254.169.254/metadata/scheduledevents?api-version=2020-07-01';
 const instanceURL = 'http://169.254.169.254/metadata/instance?api-version=2021-02-01';
@@ -35,9 +36,10 @@ export function checkpointEvents(payload, { root = stateRoot(), vmName, currentB
   for (const event of payload.Events) {
     if (!['Preempt', 'Terminate'].includes(event.EventType) || !['Scheduled', 'Started'].includes(event.EventStatus) || !Array.isArray(event.Resources) || !event.Resources.includes(vmName) || typeof event.EventId !== 'string') continue;
     const marker = path.join(root, `checkpoint-${currentBoot}-${digest(event.EventId)}.json`);
-    if (fs.existsSync(marker)) continue;
+    if (fs.existsSync(marker)) { markInterrupting(root, currentBoot, event, readJson(marker).requested_at); continue; }
     const checkpoint = { boot_id: currentBoot, requested_at: iso(), event, collector_signal: 'pending' };
     atomicJson(marker, checkpoint); atomicJson(path.join(root, 'checkpoint.json'), checkpoint);
+    checkpoint.interrupting_tasks = markInterrupting(root, currentBoot, event, checkpoint.requested_at);
     try { signal(); checkpoint.collector_signal = 'sent'; } catch (e) { checkpoint.collector_signal = e.message; }
     atomicJson(marker, checkpoint); atomicJson(path.join(root, 'checkpoint.json'), checkpoint);
     recorded.push(checkpoint);
