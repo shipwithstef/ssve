@@ -1,0 +1,177 @@
+[
+  {
+    "host": "claude",
+    "event": "PreToolUse",
+    "matcher": "Bash|Edit|Write|MultiEdit|StrReplaceFile|NotebookEdit|apply_patch",
+    "marker": "svc-codex-pretool-dispatcher.mjs",
+    "command": "SVC_HOST=\"${SVC_HOST:-claude}\" node @SOURCE@/hooks/codex/svc-codex-pretool-dispatcher.mjs"
+  },
+  {
+    "host": "claude",
+    "event": "PreToolUse",
+    "matcher": "TaskUpdate",
+    "marker": "svc-impact-triad-guard.mjs",
+    "command": "node @SOURCE@/hooks/svc-impact-triad-guard.mjs"
+  },
+  {
+    "host": "claude",
+    "event": "PreToolUse",
+    "matcher": "Agent",
+    "marker": "svc-loop-guard.mjs",
+    "command": "node @SOURCE@/hooks/svc-loop-guard.mjs"
+  },
+  {
+    "host": "claude",
+    "event": "PreToolUse",
+    "matcher": "TaskUpdate",
+    "marker": "svc-hook",
+    "command": "node @SOURCE@/scripts/eval-gate.mjs pre"
+  },
+  {
+    "host": "claude",
+    "event": "PreToolUse",
+    "matcher": "*",
+    "marker": "svc-hook",
+    "command": "node @SOURCE@/scripts/preflight.mjs --hook --fail-closed"
+  },
+  {
+    "host": "claude",
+    "event": "PreToolUse",
+    "matcher": "Edit|Write",
+    "marker": "svc-rule-injector.mjs",
+    "command": "node @SOURCE@/hooks/svc-rule-injector.mjs"
+  },
+  {
+    "host": "claude",
+    "event": "PreToolUse",
+    "matcher": "Bash",
+    "marker": "svc-rule-injector.mjs",
+    "command": "node @SOURCE@/hooks/svc-rule-injector.mjs"
+  },
+  {
+    "host": "claude",
+    "event": "PreToolUse",
+    "matcher": "Edit|Write|Bash",
+    "marker": "svc-learning-inject.mjs",
+    "command": "node @SOURCE@/hooks/svc-learning-inject.mjs"
+  },
+  {
+    "host": "claude",
+    "event": "PreToolUse",
+    "matcher": "Edit|Write|Bash",
+    "marker": "svc-owner-inject.mjs",
+    "command": "node @SOURCE@/hooks/svc-owner-inject.mjs"
+  },
+  {
+    "host": "claude",
+    "event": "PostToolUse",
+    "matcher": "Bash|Edit|Write|MultiEdit|StrReplaceFile|NotebookEdit|apply_patch",
+    "marker": "svc-codex-posttool-heartbeat.mjs",
+    "command": "SVC_HOST=\"${SVC_HOST:-claude}\" node @SOURCE@/hooks/codex/svc-codex-posttool-heartbeat.mjs"
+  },
+  {
+    "host": "claude",
+    "event": "PostToolUse",
+    "matcher": "TaskUpdate",
+    "marker": "svc-hook",
+    "command": "node @SOURCE@/scripts/eval-gate.mjs post"
+  },
+  {
+    "host": "claude",
+    "event": "PostToolUse",
+    "matcher": "Edit|Write",
+    "marker": "svc-stop-quality.js",
+    "command": "node @SOURCE@/hooks/svc-stop-quality.js --accumulate"
+  },
+  {
+    "host": "claude",
+    "event": "PostToolUse",
+    "matcher": "Edit|Write",
+    "marker": "svc-phase-receipt-autoemit.mjs",
+    "command": "node @SOURCE@/hooks/svc-phase-receipt-autoemit.mjs"
+  },
+  {
+    "host": "claude",
+    "event": "PostToolUse",
+    "matcher": "Bash",
+    "marker": "svc-phase-receipt-autoemit.mjs",
+    "command": "node @SOURCE@/hooks/svc-phase-receipt-autoemit.mjs"
+  },
+  {
+    "host": "claude",
+    "event": "PostToolUse",
+    "matcher": "Read|Grep|Glob",
+    "marker": "svc-rule-injector.mjs",
+    "command": "node @SOURCE@/hooks/svc-rule-injector.mjs"
+  },
+  {
+    "host": "claude",
+    "event": "PostToolUse",
+    "matcher": "Edit|Write",
+    "marker": "svc-vibe-auditor.js",
+    "command": "node @SOURCE@/hooks/svc-vibe-auditor.js"
+  },
+  {
+    "host": "claude",
+    "event": "PostToolUse",
+    "matcher": "Edit|Write",
+    "marker": "svc-lane-tasks-validator.mjs",
+    "command": "node @SOURCE@/hooks/svc-lane-tasks-validator.mjs"
+  },
+  {
+    "host": "claude",
+    "event": "PostToolUse",
+    "matcher": "Edit|Write",
+    "marker": "svc-wi-pillars-check.sh",
+    "command": "bash @SOURCE@/hooks/svc-wi-pillars-check.sh"
+  },
+  {
+    "host": "claude",
+    "event": "PostToolUse",
+    "matcher": "Edit|Write",
+    "marker": "svc-auto-capture-learnings.mjs",
+    "command": "node @SOURCE@/hooks/svc-auto-capture-learnings.mjs --trigger post-tool-use"
+  },
+  {
+    "host": "codex",
+    "event": "PreToolUse",
+    "matcher": "Bash|apply_patch|Edit|Write|mcp__.*",
+    "marker": "svc-enforce svc-codex-pretool-dispatcher",
+    "command": "SVC_HOST=codex '/usr/bin/node' '@LAUNCHER@' svc-codex-pretool-dispatcher"
+  },
+  {
+    "host": "codex",
+    "event": "PostToolUse",
+    "matcher": "Bash|apply_patch|Edit|Write",
+    "marker": "svc-codex-posttool-heartbeat.mjs",
+    "command": "SVC_HOST=codex '/usr/bin/node' '@SOURCE@/hooks/codex/svc-codex-posttool-heartbeat.mjs'"
+  },
+  {
+    "host": "cursor",
+    "event": "beforeShellExecution",
+    "matcher": "*",
+    "marker": "svc-worktree-isolation-guard.mjs",
+    "command": "'/usr/bin/node' \"@SOURCE@/hooks/svc-worktree-isolation-guard.mjs\""
+  },
+  {
+    "host": "cursor",
+    "event": "beforeShellExecution",
+    "matcher": "*",
+    "marker": "svc-workflow-guard.mjs",
+    "command": "'/usr/bin/node' \"@SOURCE@/hooks/svc-workflow-guard.mjs\" --bash-guard"
+  },
+  {
+    "host": "cursor",
+    "event": "beforeShellExecution",
+    "matcher": "*",
+    "marker": "svc-impact-triad-guard.mjs",
+    "command": "'/usr/bin/node' \"@SOURCE@/hooks/svc-impact-triad-guard.mjs\""
+  },
+  {
+    "host": "cursor",
+    "event": "preToolUse",
+    "matcher": "*",
+    "marker": "svc-cursor-ssve-adapter.mjs",
+    "command": "env SVC_HOST=cursor '/usr/bin/node' \"@SOURCE@/hooks/cursor/svc-cursor-ssve-adapter.mjs\" --pretool"
+  }
+]

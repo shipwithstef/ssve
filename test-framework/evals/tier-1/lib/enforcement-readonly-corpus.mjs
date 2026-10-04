@@ -29,7 +29,7 @@ const DENY = [
   ["tilde expansion",                    "cat ~/secret"],
   ["backtick substitution",              "cat a`id`"],
   ["command substitution",               "echo $(rm -rf /tmp/x)"],
-  ["redirect",                           "cat README.md > /tmp/out"],
+  ["redirect",                           "cat README.md > /var/svc-protected-output"],
   ["plain rm",                           "rm -rf /tmp/x"],
   ["read chained into rm",               "pwd && rm -rf /tmp/x"],
   ["touch",                              "touch /tmp/newfile"],

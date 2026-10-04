@@ -13,12 +13,15 @@
  *     additionalContext } }  — allow + inject in one response, 10K-char cap.
  * PostToolUse responds { hookSpecificOutput: { hookEventName, additionalContext } }.
  *
- * Cost model: memo hit = one JSON parse + Set lookup, no further work.
- * Memo: .svc/rule-injections-<session_id>.json (gitignored .svc/*.json class).
+ * Cost model: matched rules use atomic session markers before loading rule text.
+ * Memo: private runtime session-findings; atomic once per session and rule.
  * Fail-open: ANY error → exit 0 with no output (never blocks tooling).
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { firstSessionFinding, findingSession } from "./lib/session-findings.mjs";
+import { isShellTool } from "./lib/shell-tools.mjs";
+import { evaluatePreToolObservation } from "./lib/pretool-decision-engine.mjs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 // G2 PLAN-002: the established payload normalizer (conf-10 stdin-first learning)
@@ -80,10 +83,11 @@ function loadConcernBridge(paths) {
 function main() {
   const call = readHookPayload();              // {toolName, toolInput, sessionId, cwd, raw} (PLAN-002)
   if (!call) process.exit(0);
+  if (evaluatePreToolObservation(call.raw) && isShellTool(call.toolName)) process.exit(0);
   const event = call.raw.hook_event_name || call.raw.hookEventName || "";
   const tool = call.toolName;
   const input = call.toolInput || {};
-  const session = (call.sessionId || "nosession").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 48);
+  if (!findingSession(call.raw)) process.exit(0);
 
   // Extract match subjects per trigger (helper-first per host-variant contract)
   let paths = [];
@@ -95,7 +99,7 @@ function main() {
     content = String(input.new_string || input.content || "");
   } else if (tool === "Read") paths = [extractFilePath(input)].filter(Boolean);
   else if (tool === "Grep" || tool === "Glob") paths = [input.path || input.pattern || ""].filter(Boolean);
-  else if (tool === "Bash") bashCmd = extractCommand(input);
+  else if (isShellTool(tool)) bashCmd = extractCommand(input);
   if (paths.length === 0 && !bashCmd && !content) process.exit(0);
 
   // Repo-relative-ize vs payload cwd first (PLAN-002)
@@ -141,16 +145,9 @@ function main() {
   }
   if (matched.length === 0) process.exit(0);
 
-  // Memo (PLAN-003): two-state — "full" suppresses forever; "pointer" rules
-  // stay eligible for FULL injection on later touches (overflow must not
-  // permanently downgrade a rule to a one-line pointer).
-  const memoPath = path.join(svcDir, `rule-injections-${session}.json`);
-  let memoRaw = {};
-  if (existsSync(memoPath)) {
-    const m = safeJson(readFileSync(memoPath, "utf8"));
-    memoRaw = Array.isArray(m) ? Object.fromEntries(m.map((k) => [k, "full"])) : (m || {});
-  }
-  const fresh = matched.filter((e) => memoRaw[e.path] !== "full");
+  // The memo follows the stable session across worktrees. A pointer also
+  // counts as delivery: repeating it spends context without new information.
+  const fresh = matched.filter(e => firstSessionFinding(call.raw, "rules", "rule-injector", e.path));
   if (fresh.length === 0) process.exit(0);
 
   // Cap-aware packing: corrections first (full text), then steering; overflow → pointer lines
@@ -163,21 +160,14 @@ function main() {
     try { text = readFileSync(path.join(rulesRoot, e.path), "utf8"); } catch { continue; }
     if (ctx.length + text.length + 64 <= BUDGET) {
       ctx += `\n--- ${e.path} ---\n${text}\n`;
-      memoRaw[e.path] = "full";
     } else {
       pointers.push(e.path);
-      if (memoRaw[e.path] !== "pointer") memoRaw[e.path] = "pointer";  // re-eligible for full later
     }
   }
   if (pointers.length) {
     ctx += `\nAlso applicable (Read before relying): ${pointers.join(", ")}\n`;
   }
   ctx = ctx.slice(0, CAP);
-
-  try {
-    mkdirSync(path.dirname(memoPath), { recursive: true });
-    writeFileSync(memoPath, JSON.stringify(memoRaw));
-  } catch { /* fail-open */ }
 
   const out = { hookSpecificOutput: { hookEventName: event, additionalContext: ctx } };
   if (event === "PreToolUse") out.hookSpecificOutput.permissionDecision = "allow";

@@ -451,3 +451,5 @@
 - [WI-FW-PROMPT-INSPECTION-01](WI-FW-PROMPT-INSPECTION-01.md) — Complete large-input planning transport through 1 MiB with inspect/execute on the same frozen bytes (severity:high) — status:CLOSED; delivered by the same PR62 Two-Box implementation; foreign PI worktree not mutated
 
 - [WI-FW-OSS-READINESS-01](WI-FW-OSS-READINESS-01.md) — Open-source early-release preparation: privacy, history inventory, and known issues; broader framework repairs remain follow-ups — status:in-progress
+
+- [WI-571](WI-571.md) — Evaluate and register the preserved page-UX improvement draft — status:backlog
