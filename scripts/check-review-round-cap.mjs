@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 // check-review-round-cap.mjs — WI-491: mechanically enforce the bounded review loop.
 //
-// The adversarial plan/exec review loop is HARD-CAPPED at 3 rounds. Convergence is by
-// DISPOSITION (done AT round <=3), NOT by the reviewer running out of High findings (it
+// The adversarial plan/exec review loop is HARD-CAPPED at 2 rounds. Convergence is by
+// DISPOSITION (done AT round <=2), NOT by the reviewer running out of High findings (it
 // never does on a complex change). This script FAILS unbounded looping AND fail-closes
 // on missing / fabricated / ambiguous evidence (WI-491 review EXEC-001..004).
 //
 // Enforced invariant (strict, fail-closed):
-//   1. rounds_run is an integer in [0,3]. rounds_run > 3 is a VIOLATION regardless of any
-//      later disposition — the disposition must be made AT round 3 to terminate.
+//   1. rounds_run is an integer in [0,2]. rounds_run > 2 is a VIOLATION regardless of any
+//      later disposition — the disposition must be made AT round 2 to terminate.
 //   2. A Critical finding is NEVER auto-accepted and NEVER promotes. An unresolved Critical
 //      WITHOUT an exact escalation record is a VIOLATION (exit 1). An unresolved Critical
 //      WITH an exact `terminal_state: ESCALATED_TO_USER` record HALTS (exit 3, blocking) —
@@ -38,7 +38,7 @@ function usage(msg) { process.stderr.write(`check-review-round-cap: usage: ${msg
 function halt(msg) { process.stderr.write(`check-review-round-cap: ESCALATED (halt): ${msg}\n`); process.exit(3); }
 function ok(msg) { process.stdout.write(`check-review-round-cap: OK — ${msg}\n`); process.exit(0); }
 
-const CAP = 3;
+const CAP = 2;
 const ALLOWED_DISPOSITIONS = new Set(["fixed", "accept-with-justification", "reject-with-justification"]);
 
 // Parse an integer that MUST appear exactly once as `key: <int>` on its own line.
@@ -135,7 +135,7 @@ if (logPath) {
   escalated = escalationExact;
 
   // 1. HARD cap — always first.
-  if (rounds > CAP) fail(`rounds_run=${rounds} exceeds the HARD ${CAP}-round cap. Terminate AT round ${CAP} by dispositioning remaining High findings or escalating Criticals — never start a 4th round.`);
+  if (rounds > CAP) fail(`rounds_run=${rounds} exceeds the HARD ${CAP}-round cap. Terminate AT round ${CAP} by dispositioning remaining High findings or escalating Criticals — never start a 3rd round.`);
 
   // 2. Criticals never promote. Escalated -> HALT (exit 3); un-escalated -> VIOLATION.
   if (unresolvedCritical > 0) {
@@ -166,7 +166,7 @@ if (logPath) {
   }
 
   // 1. HARD cap.
-  if (rounds > CAP) fail(`${rounds} rounds exceeds the HARD ${CAP}-round cap. Terminate AT round ${CAP} by dispositioning remaining High findings or escalating Criticals — never start a 4th round.`);
+  if (rounds > CAP) fail(`${rounds} rounds exceeds the HARD ${CAP}-round cap. Terminate AT round ${CAP} by dispositioning remaining High findings or escalating Criticals — never start a 3rd round.`);
   // 2. Criticals never promote.
   if (unresolvedCritical > 0) {
     if (!escalated) fail(`${unresolvedCritical} unresolved Critical without an owner-escalation record. Criticals always block and escalate; they are never dispositioned/accepted.`);

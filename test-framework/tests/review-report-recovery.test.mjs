@@ -7,7 +7,7 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { reportRepairKind, isIncompleteReviewReport, validateReportRepair, isZeroCallReviewReplay, hasNegativeReviewEvidence, remainingReportRepairBudget } from '../../scripts/lib/review-report-recovery.mjs';
 import { createExternalReviewFixture } from '../evals/tier-1/fixtures/external-review-fixture.mjs';
-import { issueExternalReviewProvenance, externalReviewCycleCapacity, verifyExternalReviewProvenance, listExternalReviewCycleProvenance, externalReviewCycleIdFromReceipt } from '../../scripts/lib/external-review-provenance.mjs';
+import { issueExternalReviewProvenance, externalReviewCycleCapacity, reserveExternalReviewRound, verifyExternalReviewProvenance, listExternalReviewCycleProvenance, externalReviewCycleIdFromReceipt } from '../../scripts/lib/external-review-provenance.mjs';
 const frameworkRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const digest = 'a'.repeat(64);
 const source = () => ({ verdict:'pass', summary:'Source review complete; install is downstream.', findings:[], dependencies_needing_read:[], certifications:[{key:'source',certified:true,for_content_sha:digest},{key:'installation',certified:false,for_content_sha:null}] });
@@ -54,14 +54,14 @@ test('signed cache replays preserve history without consuming substantive round 
   };
   replay('replay-one');replay('replay-two');
   assert.equal(externalReviewCycleCapacity(r,{receiptPath:first.receiptPath}).issued,1);
-  make('second');make('third');
+  make('second');
   assert.equal(externalReviewCycleCapacity(r,{receiptPath:first.receiptPath}).allowed,false);
-  assert.throws(()=>make('fourth'),/hard cap/);
+  assert.throws(()=>make('third'),/hard cap/);
   replay('replay-at-cap');
-  assert.equal(externalReviewCycleCapacity(r,{receiptPath:first.receiptPath}).issued,3);
+  assert.equal(externalReviewCycleCapacity(r,{receiptPath:first.receiptPath}).issued,2);
   const rows=listExternalReviewCycleProvenance({receiptPath:first.receiptPath,wi:'WI-REPLAY-TEST',reviewKind:r.review_kind,cycleId:externalReviewCycleIdFromReceipt(r)});
-  assert.deepEqual(rows.map(row=>row.cycle_sequence),[1,2,3,4,5,6],'raw issuance order survives zero-call filtering');
-  assert.deepEqual(rows.map(row=>row.counts_as_round),[true,false,false,true,true,false]);
+  assert.deepEqual(rows.map(row=>row.cycle_sequence),[1,2,3,4,5],'raw issuance order survives zero-call filtering');
+  assert.deepEqual(rows.map(row=>row.counts_as_round),[true,false,false,true,false]);
   assert.deepEqual(fs.readFileSync(first.receiptPath),raw,'historical signed source is never rewritten');
  } finally { for(const k of keys)if(old[k]===undefined)delete process.env[k];else process.env[k]=old[k];fs.rmSync(repo,{recursive:true,force:true}); }
 });
@@ -94,4 +94,23 @@ test('observed unscored Loading responses complete once without hiding negative 
  assert.equal(isIncompleteReviewReport(progress),true);
  assert.equal(reportRepairKind(progress),'incomplete');
  for(const change of [{rubric_score:0},{findings:[{severity:'high'}]},{certifications:[{certified:false}]},{rubric_failures:[1]},{dependencies_needing_read:['source.mjs']},{summary:'Loading failed because source is missing.'}])assert.equal(reportRepairKind({...progress,...change}),null);
+});
+
+
+test('two feature reservations survive digest, kind, reviewer, session and WI aliases; incomplete counts', () => {
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'rv1-feature-rounds-'));
+ const keys=['SVC_EXTERNAL_REVIEW_PROVENANCE_FIXTURE','SVC_EXTERNAL_REVIEW_ISSUANCE_ROOT'];
+ const old=Object.fromEntries(keys.map(key=>[key,process.env[key]]));
+ process.env.SVC_EXTERNAL_REVIEW_PROVENANCE_FIXTURE='1';process.env.SVC_EXTERNAL_REVIEW_ISSUANCE_ROOT=path.join(dir,'authority');
+ try {
+  const make=(wi,kind,digestChar,host)=>({request_id:crypto.randomUUID(),phase_guard:{wi},protocol:{feature_id:'feature-RV1'},review_kind:kind,candidate_digest:digestChar.repeat(64),effective_tuple:{orchestrator:'codex',host,family:host==='cursor'?'xai':'anthropic'}});
+  const first=make('WI-RV1','exec','a','cursor');
+  assert.equal(reserveExternalReviewRound(first).round,1); // No result issued: incomplete still consumes a round.
+  const second=make('WI-RV1-ALIAS','design','b','agy');
+  assert.equal(reserveExternalReviewRound(second).round,2);
+  const third=make('WI-RV1','plan','c','cursor');
+  assert.equal(externalReviewCycleCapacity(third).allowed,false);
+  assert.throws(()=>reserveExternalReviewRound(third),/hard cap/);
+  assert.throws(()=>reserveExternalReviewRound({...first,request_id:crypto.randomUUID(),protocol:{feature_id:'new-cycle'}}),/cannot be reset/);
+ } finally {for(const key of keys)if(old[key]===undefined)delete process.env[key];else process.env[key]=old[key];fs.rmSync(dir,{recursive:true,force:true});}
 });
