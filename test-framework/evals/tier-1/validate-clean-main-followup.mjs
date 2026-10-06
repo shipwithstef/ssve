@@ -507,9 +507,11 @@ test('aggregate runner records isolated failures and duration without GNU date n
   const source = fs.readFileSync(path.join(frameworkRoot, 'test-framework/evals/run-all-evals.sh'), 'utf8');
   const definition = source.match(/^_tier1_run_one\(\) \{[\s\S]*?^\}/m)?.[0];
   assert.ok(definition);
+  const timeoutDefinition = source.match(/^_tier1_timeout_for\(\) \{[\s\S]*?^\}/m)?.[0];
+  assert.ok(timeoutDefinition);
   const result = spawnSync('bash', ['-s', '--', script], {
-    input: `set -euo pipefail\n${definition}\n_tier1_run_one "$1"\n`,
-    env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, TIER1_RESULTS_DIR: results, VALIDATOR_TIMEOUT_SEC: '10', SCRIPT_DIR: path.join(frameworkRoot, 'test-framework/evals') }, encoding: 'utf8',
+    input: `set -euo pipefail\n${timeoutDefinition}\n${definition}\n_tier1_run_one "$1"\n`,
+    env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, TIER1_RESULTS_DIR: results, VALIDATOR_TIMEOUT_SEC: '10', TWO_BOX_VALIDATOR_TIMEOUT_SEC: '20', SCRIPT_DIR: path.join(frameworkRoot, 'test-framework/evals') }, encoding: 'utf8',
   });
   assert.equal(result.status, 0, result.stderr);
   assert.equal(fs.readFileSync(path.join(results, 'validator.sh.rc'), 'utf8'), '23');
@@ -653,4 +655,29 @@ test('a placeholder with unread proof cannot be published when automatic complet
  assert.notEqual(result.status,0);
  const receipt=JSON.parse(fs.readFileSync(path.join(invocation.out,'receipt.json')));
  assert.equal(receipt.classification,'schema_invalid');assert.equal(receipt.protocol.process_invocations,1);
+});
+
+
+test('skill portability ignores runtime fixtures and still catches an uncommitted skill violation', t => {
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'svc-portability-source-'));
+  t.after(() => fs.rmSync(repo, { recursive: true, force: true }));
+  execFileSync('git', ['init', '-q', repo]);
+  const validator = path.join(repo, 'test-framework/evals/tier-1/validate-skill-host-portability-paths.sh');
+  fs.mkdirSync(path.dirname(validator), { recursive: true });
+  fs.copyFileSync(path.join(frameworkRoot, 'test-framework/evals/tier-1/validate-skill-host-portability-paths.sh'), validator);
+  fs.writeFileSync(path.join(repo, '.gitignore'), 'test-framework/results/\n');
+  const transient = path.join(repo, 'test-framework/results/temporary-home/skills/noise');
+  fs.mkdirSync(transient, { recursive: true });
+  fs.writeFileSync(path.join(transient, 'SKILL.md'), 'node ~/.claude/skills/fake.mjs\n');
+  const clean = spawnSync('bash', [validator], { encoding: 'utf8' });
+  assert.equal(clean.status, 0, clean.stderr + clean.stdout);
+  const skill = path.join(repo, 'skills/new-skill');
+  fs.mkdirSync(skill, { recursive: true });
+  fs.writeFileSync(path.join(skill, 'SKILL.md'), 'node ~/.claude/skills/fake.mjs\n');
+  const violation = spawnSync('bash', [validator], { encoding: 'utf8' });
+  assert.equal(violation.status, 1, violation.stderr + violation.stdout);
+  assert.match(violation.stdout, /skills\/new-skill\/SKILL.md:1/);
+  fs.writeFileSync(path.join(skill, 'SKILL.md'), 'node <SKILLS_PATH>/scripts/fake.mjs\n');
+  const repaired = spawnSync('bash', [validator], { encoding: 'utf8' });
+  assert.equal(repaired.status, 0, repaired.stderr + repaired.stdout);
 });

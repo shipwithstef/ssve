@@ -7,21 +7,16 @@ REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 node - "$REPO_ROOT" <<'NODE'
 const fs = require("fs");
 const path = require("path");
+const { execFileSync } = require("child_process");
 
 const repoRoot = process.argv[2];
 const violations = [];
 
-function walk(dir) {
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === ".git" || entry.name === ".worktrees" || entry.name === "node_modules") continue;
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      walk(full);
-    } else if (entry.name === "SKILL.md") {
-      checkSkill(full);
-    }
-  }
-}
+// Inspect declared source, including new unignored skills. Parallel validators
+// create and remove ignored fixture homes; those are not skill contracts.
+const skillFiles = execFileSync('git', ['-C', repoRoot, 'ls-files', '-z',
+  '--cached', '--others', '--exclude-standard', '--', 'SKILL.md', '**/SKILL.md'],
+  { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }).split('\0').filter(Boolean);
 
 function isTableLine(line) {
   return /^\s*\|/.test(line);
@@ -46,7 +41,7 @@ function checkSkill(file) {
   });
 }
 
-walk(repoRoot);
+for (const file of [...new Set(skillFiles)]) checkSkill(path.join(repoRoot, file));
 
 console.log("=== Tier 1: Skill Host-Portability Paths ===");
 if (violations.length) {
