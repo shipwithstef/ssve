@@ -8,7 +8,7 @@ import {
   rearmExpiredController, rearmReleasedController, releaseController, repositoryId, resumeController, rollbackV1Migration, takeoverController, finalizeHandover,
 } from "../hooks/lib/authority-store.mjs";
 import { resolveAuthorityHost } from "../hooks/lib/resolve-wi.mjs";
-import { writeSessionBinding, releaseAssociatedCompatibilityBindings } from "../hooks/lib/wi-claim.mjs";
+import { withSessionControllerTransition, releaseAssociatedCompatibilityBindings } from "../hooks/lib/wi-claim.mjs";
 
 function parseArgs(argv) {
   const positional = [];
@@ -52,21 +52,13 @@ function emit(value) {
   process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
 }
 
-function syncBinding(ctx, actor, env = process.env) {
-  if (!ctx.worktreeRoot || !fs.existsSync(path.join(ctx.worktreeRoot, ".svc"))) return;
-  const lease = readController(ctx);
-  const written = writeSessionBinding({
-    worktree_root: ctx.worktreeRoot,
-    session_id: actor.session_id,
-    role: "mutating",
-    wi: ctx.wi,
-    host: actor.host,
-    agent_id: actor.agent_id,
-    transfer_authorized: true,
-    controller_lease: lease && lease.state === "active" ? lease : null,
-    env,
-  });
-  if (!written.ok) throw new Error(written.warning || "session binding sync failed");
+function transitionAndSync(ctx, actor, env, operation) {
+  if (!fs.existsSync(path.join(ctx.worktreeRoot, ".svc"))) return operation(ctx);
+  return withSessionControllerTransition({
+    worktree_root: ctx.worktreeRoot, wi: ctx.wi, repo_id: ctx.repoId,
+    state_root: ctx.stateRoot, session_id: actor.session_id,
+    host: actor.host, agent_id: actor.agent_id, env,
+  }, operation).result;
 }
 
 function releaseCompatibility(ctx, actor, lease, env = process.env) {
@@ -92,25 +84,23 @@ export function run(argv = process.argv.slice(2), env = process.env) {
   const actor = identity(flags, env);
   if (command === "bootstrap") {
     const current = readController(ctx);
-    const res = current?.state === "released"
+    const res = transitionAndSync(ctx, actor, env, () => current?.state === "released"
       ? rearmReleasedController({
         ...ctx, principal: actor.principal,
         expectedGeneration: Number(current.generation), expectedLeaseId: current.lease_id,
       })
-      : bootstrapController({ ...ctx, principal: actor.principal });
-    syncBinding(ctx, actor, env);
+      : bootstrapController({ ...ctx, principal: actor.principal }));
     return emit(res);
   }
   if (command === "resume" || command === "renew") {
     const current = readController(ctx);
     const expired = current && Number.isFinite(Date.parse(current.expires_at)) && Date.parse(current.expires_at) <= Date.now();
-    const res = expired
+    const res = transitionAndSync(ctx, actor, env, () => expired
       ? rearmExpiredController({
         ...ctx, principal: actor.principal,
         expectedGeneration: Number(current.generation), expectedLeaseId: current.lease_id,
       })
-      : resumeController({ ...ctx, principal: actor.principal });
-    syncBinding(ctx, actor, env);
+      : resumeController({ ...ctx, principal: actor.principal }));
     return emit(res);
   }
   if (command === "handover prepare") {
@@ -120,26 +110,28 @@ export function run(argv = process.argv.slice(2), env = process.env) {
     return emit(prepareHandover({ ...ctx, principal: actor.principal, intendedPrincipal: intended }));
   }
   if (command === "handover accept") {
-    const res = acceptHandover({ ...ctx, principal: actor.principal, token: required(flags, "--token") });
-    syncBinding(ctx, actor, env);
+    const token = required(flags, "--token");
+    const res = transitionAndSync(ctx, actor, env,
+      () => acceptHandover({ ...ctx, principal: actor.principal, token }));
     return emit(res);
   }
   if (command === "handover finalize") {
     return emit(finalizeHandover(ctx));
   }
   if (command === "takeover") {
-    const res = takeoverController({ ...ctx, principal: actor.principal,
+    const takeoverArgs = { ...ctx, principal: actor.principal,
       expectedPrincipal: required(flags, "--expected-principal"),
       expectedGeneration: Number(required(flags, "--expected-generation")), reason: required(flags, "--reason"),
-      ttlMs: Math.min(30 * 60_000, Math.max(1, Number(flags["--ttl-min"] || 15)) * 60_000) });
-    syncBinding(ctx, actor, env);
+      ttlMs: Math.min(30 * 60_000, Math.max(1, Number(flags["--ttl-min"] || 15)) * 60_000) };
+    const res = transitionAndSync(ctx, actor, env, () => takeoverController(takeoverArgs));
     return emit(res);
   }
   if (command === "recover") {
     const evidencePath = required(flags, "--evidence");
     const evidence = JSON.parse(fs.readFileSync(path.resolve(evidencePath), "utf8"));
-    const res = recoverController({ ...ctx, principal: actor.principal, reason: required(flags, "--reason"), evidence });
-    syncBinding(ctx, actor, env);
+    const reason = required(flags, "--reason");
+    const res = transitionAndSync(ctx, actor, env,
+      () => recoverController({ ...ctx, principal: actor.principal, reason, evidence }));
     return emit(res);
   }
   if (command === "migrate") {

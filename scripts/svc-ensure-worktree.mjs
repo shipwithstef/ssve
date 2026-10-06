@@ -2,7 +2,7 @@
 
 import crypto from "node:crypto";
 import { appendJsonlLine } from "./state-io.mjs";
-import { authorityStateRoot, repositoryId, readController, recoverController, resumeController, rearmReleasedController, rearmExpiredController, principalId, processIsAlive } from '../hooks/lib/authority-store.mjs';
+import { authorityStateRoot, repositoryId, readController, recoverController, resumeController, rearmReleasedController, rearmExpiredController, principalId, processIsAlive, completeRecordedV1MigrationReceipt } from '../hooks/lib/authority-store.mjs';
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -22,6 +22,7 @@ import {
   authorityLockRef,
   withExclusiveLock,
   writeSessionBinding,
+  withSessionControllerTransition,
   migrateSessionBindingToV2,
 } from "../hooks/lib/wi-claim.mjs";
 import { isAuthoritativeMutatingBinding } from "../hooks/lib/authoritative-binding.mjs";
@@ -635,34 +636,33 @@ export function adoptExistingWorktree(options = {}, env = process.env) {
   const controller = readController(v2ctx);
   if (controller) {
     const principal = principalId({ host: resolveAuthorityHost({}, env), session_id: owner, agent_id: env.SVC_AGENT_ID || null });
-    let lease;
+    const { lease } = withSessionControllerTransition({
+      worktree_root: target.path, repo_root: repo.root, session_id: owner,
+      wi, branch: target.branch, host: resolveAuthorityHost({}, env),
+      pid: ownerPid(env), env,
+    }, () => {
     if (controller.state === "released") {
       if (controller.worktree_root !== target.path) throw new Error("released controller worktree mismatch");
       if (controller.controller_principal !== principal) {
         throw new Error("released lease belongs to a different principal; explicit handover required");
       }
-      lease = rearmReleasedController({
+      return rearmReleasedController({
         ...v2ctx, worktreeRoot: target.path, principal,
         expectedGeneration: Number(controller.generation), expectedLeaseId: controller.lease_id,
       });
     } else if (controller.controller_principal === principal && controller.worktree_root === target.path) {
-      lease = Date.parse(controller.expires_at) <= Date.now()
+      return Date.parse(controller.expires_at) <= Date.now()
         ? rearmExpiredController({
           ...v2ctx, worktreeRoot: target.path, principal,
           expectedGeneration: Number(controller.generation), expectedLeaseId: controller.lease_id,
         })
         : resumeController({ ...v2ctx, principal, worktreeRoot: target.path });
     } else {
-      lease = recoverController({ ...v2ctx, principal, worktreeRoot: target.path, expectedGeneration: controller.generation,
+      return recoverController({ ...v2ctx, principal, worktreeRoot: target.path, expectedGeneration: controller.generation,
           reason: 'Authorized resume of the unique registered WI worktree',
-          evidence: { expired: Date.parse(controller.expires_at) <= Date.now(), same_host_dead: processIsAlive(controller.owner_process) === false } }).lease;
+          evidence: { expired: Date.parse(controller.expires_at) <= Date.now(), same_host_dead: processIsAlive(controller.owner_process) === false } });
     }
-    const bound = writeSessionBinding({
-      worktree_root: target.path, session_id: owner, role: "mutating", wi, branch: target.branch,
-      repo_root: repo.root, host: resolveAuthorityHost({}, env),
-      pid: ownerPid(env), transfer_authorized: true, env, controller_lease: lease,
     });
-    if (!bound.ok) throw new Error(bound.warning || "failed to rebind session after controller recovery");
     const verified = verifyCompleteTuple({ repo, wi, branch: target.branch, owner, worktree: target.path, graphP: graphPathFor(target), marker: null, env });
     if (!verified.ok) throw new Error(`recovery tuple verification failed: ${verified.reason}`);
     return { wi, branch: target.branch, absolute_worktree: target.path, owner_session: owner, graph_path: graphPathFor(target), resumed: true, authority_v2: { lease } };
@@ -912,7 +912,10 @@ function resumeExisting({ repo, wi, branch, from, owner, host, env, worktree, ma
     const controller = tuple.controller || readController(v2ctx);
     if (controller) {
       const principal = principalId({ host: resolveAuthorityHost({}, env), session_id: owner, agent_id: env.SVC_AGENT_ID || null });
-      let lease;
+      const { lease } = withSessionControllerTransition({
+        worktree_root: worktree, repo_root: repo.root, session_id: owner,
+        wi, branch, host: resolveAuthorityHost({}, env), pid: ownerPid(env), env,
+      }, () => {
       if (controller.state === "released") {
         if (fs.realpathSync(controller.worktree_root) !== worktree) {
           throw new Error("released controller worktree mismatch");
@@ -920,12 +923,12 @@ function resumeExisting({ repo, wi, branch, from, owner, host, env, worktree, ma
         if (controller.controller_principal !== principal) {
           throw new Error("released lease belongs to a different principal; explicit handover required");
         }
-        lease = rearmReleasedController({
+        return rearmReleasedController({
           ...v2ctx, worktreeRoot: worktree, principal,
           expectedGeneration: Number(controller.generation), expectedLeaseId: controller.lease_id,
         });
       } else if (controller.controller_principal === principal && controller.worktree_root === worktree) {
-        lease = Date.parse(controller.expires_at) <= Date.now()
+        return Date.parse(controller.expires_at) <= Date.now()
           ? rearmExpiredController({
             ...v2ctx, worktreeRoot: worktree, principal,
             expectedGeneration: Number(controller.generation), expectedLeaseId: controller.lease_id,
@@ -938,22 +941,17 @@ function resumeExisting({ repo, wi, branch, from, owner, host, env, worktree, ma
           throw new Error("existing worktree authority conflict (active v2 controller lease held by foreign principal)");
         }
         try {
-          lease = recoverController({
+          return recoverController({
             ...v2ctx, principal, worktreeRoot: worktree, expectedGeneration: controller.generation,
             reason: 'Authorized resume of the unique registered WI worktree',
             evidence: { expired, same_host_dead: ownerAlive === false },
-          }).lease;
+          });
         } catch (err) {
           throw new Error(`existing worktree authority conflict (${err.message})`);
         }
       }
-      const graph = ensureGraph(worktree, wi, branch);
-      const bound = writeSessionBinding({
-        worktree_root: worktree, session_id: owner, role: "mutating", wi, branch,
-        repo_root: repo.root, host: resolveAuthorityHost({}, env),
-        pid: ownerPid(env), transfer_authorized: true, env, controller_lease: lease,
       });
-      if (!bound.ok) throw new Error(bound.warning || "failed to rebind session after controller recovery");
+      const graph = ensureGraph(worktree, wi, branch);
       const verified = verifyCompleteTuple({ repo, wi, branch, owner, worktree, graphP: graph.path, marker: null, env });
       if (!verified.ok) throw new Error(`recovery tuple verification failed: ${verified.reason}`);
       return result({ wi, branch, baseSha, worktree, owner, graphPath: graph.path, generation: Number(lease.generation), created: false, resumed: true, authority_v2: { lease } });
@@ -1174,16 +1172,24 @@ async function main() {
       repoId: repositoryId(worktreeRoot),
       wi: args.wi,
     });
-    const binding = readSessionBinding(worktreeRoot, value.owner_session);
-    if (existingLease?.state === "active" && binding && !binding.released_at && binding.role === "mutating" && binding.claim_path) {
-      value.authority_v2 = await migrateSessionBindingToV2({
-        worktree_root: worktreeRoot,
-        session_id: value.owner_session,
-        host: authorityHost,
-        env: process.env,
+    if (existingLease?.state === "active") {
+      const checked = verifyCompleteTuple({
+        repo: repository(worktreeRoot), wi: args.wi, branch: value.branch,
+        owner: value.owner_session, worktree: worktreeRoot,
+        graphP: value.graph_path || value.absolute_graph, marker: null, env: process.env,
       });
-    } else if (existingLease?.state === "active") {
-      value.authority_v2 = { lease: existingLease, preexisting_controller: true, receipt_path: null };
+      if (!checked.ok) throw new Error(`active v2 controller tuple is incomplete: ${checked.reason}`);
+      const binding = readSessionBinding(worktreeRoot, value.owner_session);
+      const recorded = completeRecordedV1MigrationReceipt({
+        stateRoot: authorityStateRoot(worktreeRoot, process.env), repoId: repositoryId(worktreeRoot),
+        wi: args.wi, worktreeRoot, principal: principalId({
+          host: authorityHost, session_id: value.owner_session, agent_id: process.env.SVC_AGENT_ID || null,
+        }), claimPath: binding.claim_path, host: authorityHost,
+        sessionId: value.owner_session, agentId: process.env.SVC_AGENT_ID || null,
+      });
+      value.authority_v2 = recorded || { lease: existingLease, preexisting_controller: true, receipt_path: null };
+    } else if (existingLease) {
+      throw new Error(`v2 controller is ${existingLease.state}; explicit recovery is required`);
     } else {
       value.authority_v2 = await migrateSessionBindingToV2({
         worktree_root: worktreeRoot,

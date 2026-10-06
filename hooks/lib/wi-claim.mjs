@@ -13,6 +13,9 @@ import {
   readController,
   repositoryId,
   withControllerLeaseLock,
+  inspectControllerForSession,
+  inspectPrincipalControllers,
+  withCurrentControllerProjection,
 } from "./authority-store.mjs";
 import { isAuthoritativeMutatingBinding } from "./authoritative-binding.mjs";
 import { normalizeClaimOwner, sessionShaped } from "./claim-owner.mjs";
@@ -429,6 +432,15 @@ function repoRootFor(worktreeRoot) {
   } catch {
     return fs.realpathSync(worktreeRoot);
   }
+}
+
+
+function canonicalBindingRepoRoot(worktreeRoot, suppliedRoot) {
+  const repoRoot = repoRootFor(worktreeRoot);
+  if (suppliedRoot && repoRootFor(fs.realpathSync(path.resolve(suppliedRoot))) !== repoRoot) {
+    throw new Error('binding repository identity mismatch');
+  }
+  return repoRoot;
 }
 
 function conflictingBindingInSibling(worktreeRoot, sessionId, env = process.env, identity = {}) {
@@ -935,7 +947,7 @@ function controllerLeaseAuthorizesClaim(opts, wi, worktreeRoot) {
   let live;
   try {
     live = readController({
-      stateRoot: authorityStateRoot(worktreeRoot, opts.env || process.env),
+      stateRoot: opts.authority_state_root || authorityStateRoot(worktreeRoot, opts.env || process.env),
       repoId: repositoryId(worktreeRoot),
       wi,
     });
@@ -995,9 +1007,11 @@ function claimWIUnlocked(wi, opts = {}) {
   }
   const now = new Date().toISOString();
   const repoRoot = path.resolve(opts.repo_root || repoRootFor(worktreeRoot));
-  const generation = existing && normalizeClaimOwner(existing).session_id === requestedSession
-    ? Math.max(1, Number(existing.generation || 1))
-    : Math.max(1, Number(existing?.generation || 0) + 1);
+  const controllingLease = controllerLeaseAuthorizesClaim(opts, wi, worktreeRoot);
+  const generation = controllingLease ? Number(controllingLease.generation)
+    : existing && normalizeClaimOwner(existing).session_id === requestedSession
+      ? Math.max(1, Number(existing.generation || 1))
+      : Math.max(1, Number(existing?.generation || 0) + 1);
   const claim = {
     schema_version: 1,
     wi,
@@ -1242,6 +1256,102 @@ export function releaseClaim(wi, opts = {}) {
   }, path.dirname(path.dirname(claimPath)));
 }
 
+// One session can hold only one mutating worktree. Inspect every sibling before
+// a v2 transition commits, under the same repository-shared binding lock used
+// by ordinary binding writes. No lifecycle reconciliation runs in this read.
+function preflightSessionControllerSibling({ worktreeRoot, repoRoot, sessionId, principal, host, agentId, env, stateRoot }) {
+  const output = execFileSync('git', ['-C', repoRoot, 'worktree', 'list', '--porcelain'], { encoding: 'utf8' });
+  const rows = output.split(/\r?\n/).filter(line => line.startsWith('worktree '));
+  if (!rows.some(line => fs.realpathSync(line.slice(9)) === worktreeRoot)) {
+    throw new Error('target is not a registered worktree');
+  }
+  stateRoot ||= authorityStateRoot(worktreeRoot, env);
+  const repoId = repositoryId(worktreeRoot);
+  for (const lease of inspectPrincipalControllers({ stateRoot, repoId, principal })) {
+    if (lease.state === 'released') continue;
+    const sibling = fs.realpathSync(lease.worktree_root);
+    if (sibling !== worktreeRoot) {
+      throw new Error(`session already has controller authority at ${sibling} (${lease.wi}, generation ${lease.generation})`);
+    }
+  }
+  for (const line of rows) {
+    const sibling = fs.realpathSync(line.slice(9));
+    if (sibling === worktreeRoot) continue;
+    const dir = path.join(sibling, '.svc', 'bindings');
+    if (!fs.existsSync(dir)) continue;
+    if (!secureContainedDirectoryForRead(sibling, dir)) throw new Error(`insecure sibling binding directory: ${dir}`);
+    const file = bindingPath(sibling, sessionId);
+    if (!fs.existsSync(file)) continue;
+    const evidence = secureJsonEvidence(file);
+    if (!evidence.ok) throw new Error(`unreadable sibling binding: ${evidence.reason}`);
+    const binding = evidence.value;
+    if (binding.session_id !== sessionId || path.resolve(String(binding.worktree_root || '')) !== sibling) {
+      throw new Error(`ambiguous sibling binding at ${sibling}`);
+    }
+    if (READ_ONLY_ROLES.has(binding.role)) continue;
+    if (binding.role !== 'mutating' || !WI_ID_RE.test(String(binding.wi || ''))) {
+      throw new Error(`ambiguous sibling binding at ${sibling}`);
+    }
+    if (binding.released_at) continue;
+    const observed = inspectControllerForSession({ stateRoot, repoId, wi: binding.wi });
+    if (observed.lease?.state === 'released') continue;
+    throw new Error(`session already bound to ${binding.wi} at ${sibling}`);
+  }
+  void host; void agentId;
+}
+
+// The v2 lease transition is durable authority; claim/binding are recoverable
+// projections. This synchronous callback must not launch a provider or Promise.
+export function withSessionControllerTransition(opts = {}, transition) {
+  if (typeof transition !== 'function') throw new Error('controller transition callback is required');
+  const worktreeRoot = fs.realpathSync(path.resolve(opts.worktree_root || process.cwd()));
+  const repoRoot = canonicalBindingRepoRoot(worktreeRoot, opts.repo_root);
+  const wi = String(opts.wi || '');
+  const sessionId = String(opts.session_id || '');
+  const host = String(opts.host || '');
+  const env = opts.env || process.env;
+  if (!WI_ID_RE.test(wi) || !sessionShaped(sessionId) || !host) throw new Error('exact WI, host and session are required');
+  const branch = String(opts.branch || branchFor(worktreeRoot));
+  if (!branch || branchFor(worktreeRoot) !== branch) throw new Error('target branch is not the registered branch');
+  const principal = principalId({ host, session_id: sessionId, agent_id: opts.agent_id || env.SVC_AGENT_ID || null });
+  const actualRepoId = repositoryId(worktreeRoot);
+  if (opts.repo_id && opts.repo_id !== actualRepoId) throw new Error('controller repository identity mismatch');
+  const ctx = { stateRoot: opts.state_root ? path.resolve(opts.state_root) : authorityStateRoot(worktreeRoot, env), repoId: actualRepoId, wi };
+  const claimPath = claimPathFor(worktreeRoot, wi);
+  const run = () => {
+    const claimed = withExclusiveLock(`claim:${claimPath}`, () => {
+    preflightSessionControllerSibling({ worktreeRoot, repoRoot, sessionId, principal, host, agentId: opts.agent_id, env, stateRoot: ctx.stateRoot });
+    const targetClaim = fs.existsSync(claimPath) ? secureJsonEvidence(claimPath) : null;
+    if (targetClaim && !targetClaim.ok) throw new Error(`target claim is insecure: ${targetClaim.reason}`);
+    if (targetClaim?.ok && normalizeClaimOwner(targetClaim.value).ambiguous) throw new Error('target claim owner is ambiguous');
+    const file = bindingPath(worktreeRoot, sessionId);
+    const targetBinding = fs.existsSync(file) ? secureJsonEvidence(file) : null;
+    if (targetBinding && !targetBinding.ok) throw new Error(`target binding is insecure: ${targetBinding.reason}`);
+    if (targetBinding?.ok && !targetBinding.value.released_at &&
+        (targetBinding.value.session_id !== sessionId || targetBinding.value.role !== 'mutating' || targetBinding.value.wi !== wi
+          || path.resolve(String(targetBinding.value.worktree_root || '')) !== worktreeRoot || targetBinding.value.branch !== branch)) {
+      throw new Error('target binding conflicts with requested WI/worktree');
+    }
+    const changed = transition({ ...ctx, worktreeRoot, principal });
+    if (changed && typeof changed.then === 'function') throw new Error('controller transition must be synchronous');
+    const lease = changed?.lease || changed;
+    const bound = withCurrentControllerProjection({ ...ctx, expectedLease: lease, principal, worktreeRoot }, current =>
+      writeSessionBindingUnlocked({ ...opts, worktree_root: worktreeRoot, repo_root: repoRoot, session_id: sessionId,
+        wi, branch, host, env, role: 'mutating', transfer_authorized: true, controller_lease: current,
+        authority_state_root: ctx.stateRoot },
+      { worktreeRoot, repoRoot, role: 'mutating', sessionId, wi, branch },
+      { claimLockHeld: true, siblingPreflightDone: true }));
+    if (!bound.ok) throw new Error(bound.warning || 'controller compatibility projection failed');
+    return { result: changed, lease, binding: bound.binding };
+    }, repoRoot);
+    if (claimed?.lock_busy || claimed?.lock_error) throw new Error(claimed.warning || 'claim lock failed');
+    return claimed;
+  };
+  const wrapped = withExclusiveLock(`session-binding:${repoRoot}:${sessionId}`, run, repoRoot);
+  if (wrapped?.lock_busy || wrapped?.lock_error) throw new Error(wrapped.warning || 'session binding lock failed');
+  return wrapped;
+}
+
 export function writeSessionBinding(opts = {}) {
   const worktreeRoot = fs.realpathSync(path.resolve(opts.worktree_root || process.cwd()));
   const role = String(opts.role || "mutating");
@@ -1252,9 +1362,13 @@ export function writeSessionBinding(opts = {}) {
   if (role === "mutating" && !WI_ID_RE.test(wi)) return { ok: false, warning: "mutating binding requires WI-N" };
   const branch = String(opts.branch || branchFor(worktreeRoot));
   if (!branch) return { ok: false, warning: "binding requires a named branch; detached HEAD is not authoritative" };
-  const repoRoot = path.resolve(opts.repo_root || repoRootFor(worktreeRoot));
-  return withExclusiveLock(`session-binding:${repoRoot}:${sessionId}`, () => {
-    const sibling = conflictingBindingInSibling(worktreeRoot, sessionId, opts.env || process.env, {
+  const repoRoot = canonicalBindingRepoRoot(worktreeRoot, opts.repo_root);
+  return withExclusiveLock(`session-binding:${repoRoot}:${sessionId}`,
+    () => writeSessionBindingUnlocked(opts, { worktreeRoot, role, sessionId, wi, branch, repoRoot }), repoRoot);
+}
+
+function writeSessionBindingUnlocked(opts, { worktreeRoot, role, sessionId, wi, branch, repoRoot }, internal = {}) {
+    const sibling = internal.siblingPreflightDone === true ? null : conflictingBindingInSibling(worktreeRoot, sessionId, opts.env || process.env, {
       host: opts.host, agentId: opts.agent_id,
     });
     if (sibling) return { ok: false, warning: `session already bound to ${sibling.wi || "read-only"} at ${sibling.worktree_root}` };
@@ -1269,7 +1383,7 @@ export function writeSessionBinding(opts = {}) {
     let claimPath = "";
     let generation = Math.max(1, Number(existing?.generation || 1));
     if (role === "mutating") {
-      const claimed = claimWI(wi, {
+      const claimOpts = {
         session_id: sessionId,
         worktree_root: worktreeRoot,
         repo_root: repoRoot,
@@ -1281,8 +1395,11 @@ export function writeSessionBinding(opts = {}) {
         ttl_hours: opts.ttl_hours,
         transfer_authorized: opts.transfer_authorized ?? false,
         controller_lease: opts.controller_lease || null,
+        authority_state_root: opts.authority_state_root || null,
         env: opts.env || process.env,
-      });
+      };
+      const claimed = internal.claimLockHeld === true
+        ? claimWIUnlocked(wi, claimOpts) : claimWI(wi, claimOpts);
       if (!claimed.ok) return claimed;
       claimPath = claimed.claim_path;
       generation = claimed.claim.generation;
@@ -1303,7 +1420,6 @@ export function writeSessionBinding(opts = {}) {
     };
     atomicWriteJson(file, binding);
     return { ok: true, binding, binding_path: file };
-  }, repoRoot);
 }
 
 // Explicit compatibility bridge only. Reading or writing a v1 claim never invokes

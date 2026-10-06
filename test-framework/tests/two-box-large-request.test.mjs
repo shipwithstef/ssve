@@ -880,3 +880,89 @@ test('retained native 1MiB qualification evidence is complete and never claims i
   assert.equal(evidence.token_budget.checked, true);
   assert.equal(Number.isInteger(evidence.token_budget.contextWindow), true);
 });
+
+
+test('observed native 0.160.1 character cap is conservative and independent of UTF-8 bytes',()=>{
+ const cap=isolation.nativePromptCharacterBudget('codex-cli 0.160.1','a'.repeat(64),'😀'.repeat(524289));
+ assert.equal(cap.max_chars,1048576);
+ assert.equal(cap.count_kind,'conservative_utf16_code_units');
+ assert.equal(cap.actual_chars_upper_bound,1048578);
+ assert.equal(cap.utf8_bytes,2097156);
+ assert.equal(isolation.nativePromptCharacterBudget('codex-cli 0.160.1','a'.repeat(64),'x'.repeat(1048576)).actual_chars_upper_bound,1048576);
+ assert.equal(isolation.nativePromptCharacterBudget('codex-cli 0.160.2','a'.repeat(64),'x'.repeat(1048577)).max_chars,null);
+});
+
+test('no-request native failure retains typed bounded input limit diagnostic without paid-attempt fields',async()=>{
+ await withTemp(async(dir)=>{
+  const frozen=freeze.freezeRequestBytes({bytes:Buffer.from('frozen prompt'),dir});
+  const schemaPath=path.join(dir,'schema.json');fs.writeFileSync(schemaPath,'{}');
+  const fake=path.join(dir,'native-too-large.mjs');
+  fs.writeFileSync(fake,`#!/usr/bin/env node
+process.stdout.write('FAKE_NATIVE_EXECUTED\\n');
+process.stderr.write('SVC_API_KEY=abcdefghijklmnopqrstuvwxyz0123456789\\n');
+process.stderr.write('Error: turn/start failed: Input exceeds maximum length. data: {"input_error_code":"input_too_large","max_chars":1048576,"actual_chars":1434929}\\n');
+process.exit(1);
+`);fs.chmodSync(fake,0o700);
+  const {spawnSync}=await import('node:child_process');
+  assert.equal(spawnSync(process.execPath,['--check',fake]).status,0);
+  const execArgs=isolation.buildCodexExecArgs({tuple:execTuple,outputSchemaPath:schemaPath,disabledSkills:[]});
+  await assert.rejects(capture.capturePlanningRequest({binary:fake,cwd:dir,env:process.env,execArgs,
+   frozenPath:frozen.path,expectedSha256:frozen.sha256,timeoutMs:3000,qualificationPhase:'full'}),error=>{
+    const d=error.preflight_diagnostic;
+    assert.equal(d.kind,'native_capture_failure');assert.equal(d.qualification_phase,'full');
+    assert.equal(d.input_error_code,'input_too_large');assert.equal(d.max_chars,1048576);assert.equal(d.actual_chars,1434929);
+    assert.equal(d.responses_hits,0);assert.equal(d.exit_code,1);
+    assert.match(d.summary,/FAKE_NATIVE_EXECUTED/);
+    assert.doesNotMatch(JSON.stringify(d),/abcdefghijklmnopqrstuvwxyz0123456789/);
+    assert.match(d.summary,/REDACTED:env-secret/);
+    assert.equal('rawStdout' in error,false);assert.equal('rawStderr' in error,false);
+    assert.ok(JSON.stringify(d).length<4096);return true;
+  });
+  const helper=new URL('../../scripts/lib/native-planning-request-capture.mjs',import.meta.url);
+  const result=spawnSync(process.execPath,[fs.realpathSync(helper.pathname)],{
+    cwd:dir,encoding:'utf8',input:JSON.stringify({mode:'capture',binary:fake,cwd:dir,
+      env:process.env,execArgs,frozenPath:frozen.path,expectedSha256:frozen.sha256,
+      timeoutMs:3000,qualificationPhase:'full'})+'\n',timeout:8000,
+  });
+  assert.equal(result.status,2);
+  const envelope=JSON.parse(result.stderr.trim());
+  assert.equal(envelope.kind,'native_planning_preflight_error');
+  assert.equal(envelope.preflight_diagnostic.input_error_code,'input_too_large');
+  assert.equal(envelope.preflight_diagnostic.responses_hits,0);
+  assert.doesNotMatch(result.stderr,/abcdefghijklmnopqrstuvwxyz0123456789/);
+  assert.equal('rawStdout' in envelope,false);assert.equal('rawStderr' in envelope,false);
+  assert.ok(result.stderr.length<4096);
+ });
+});
+
+
+test('native capture overflow omits partial child output and reaps the process',async()=>{
+ await withTemp(async(dir)=>{
+  const frozen=freeze.freezeRequestBytes({bytes:Buffer.from('overflow probe'),dir});
+  const schemaPath=path.join(dir,'schema.json');fs.writeFileSync(schemaPath,'{}');
+  const pidPath=path.join(dir,'native.pid');
+  const noisy=path.join(dir,'native-overflow.mjs');
+  fs.writeFileSync(noisy,`#!/usr/bin/env node
+import fs from 'node:fs';
+fs.writeFileSync(${JSON.stringify(pidPath)},String(process.pid));
+process.stderr.write('SVC_API_KEY=abcdefghijklmnopqrstuvwxyz0123456789\\n');
+setTimeout(()=>{process.stderr.write('X'.repeat(4096));setInterval(()=>{},1000)},15);
+`);fs.chmodSync(noisy,0o700);
+  const {spawnSync}=await import('node:child_process');
+  assert.equal(spawnSync(process.execPath,['--check',noisy]).status,0);
+  const execArgs=isolation.buildCodexExecArgs({tuple:execTuple,outputSchemaPath:schemaPath,disabledSkills:[]});
+  await assert.rejects(capture.capturePlanningRequest({binary:noisy,cwd:dir,env:process.env,execArgs,
+    frozenPath:frozen.path,expectedSha256:frozen.sha256,timeoutMs:3000,maxChildBytes:128,
+    killGraceMs:100,qualificationPhase:'full'}),error=>{
+   const d=error.preflight_diagnostic;
+   assert.equal(d.kind,'native_capture_failure');assert.equal(d.qualification_phase,'full');
+   assert.equal(d.responses_hits,0);assert.equal(d.child_output_overflow,true);
+   assert.equal(d.summary,'Capture child output exceeded byte limit; partial output is omitted.');
+   assert.doesNotMatch(JSON.stringify(d),/abcdefghijklmnopqrstuvwxyz0123456789/);
+   assert.ok(JSON.stringify(d).length<4096);return true;
+  });
+  const pid=Number(fs.readFileSync(pidPath,'utf8'));
+  assert.ok(pid>0);
+  assert.throws(()=>process.kill(pid,0),error=>error.code==='ESRCH');
+ });
+});

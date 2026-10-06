@@ -39,6 +39,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { redactSecrets } from "./secret-redaction.mjs";
 import {
   IsolationUnsupported,
   sha256Bytes,
@@ -621,6 +622,61 @@ function runCodex(bin, argv, { cwd, env, timeout = 30000, maxBuffer = MAX_BYTES 
   return r.stdout ?? "";
 }
 
+// Codex 0.160.1 was observed to reject turn/start input above this native
+// character limit before any HTTP request. UTF-16 code units are a conservative
+// bound for both scalar-value and UTF-16 character interpretations; bytes and
+// model tokens remain separate metrics. Unknown versions retain native capture
+// qualification rather than inheriting this observed limit.
+export function nativePromptCharacterBudget(versionRaw, binarySha256, prompt) {
+  const rawVersion = String(versionRaw || "").trim();
+  const version = redactSecrets(rawVersion).slice(0, 256);
+  const max_chars = /^(?:codex(?:-cli)?\s+)?0\.160\.1$/.test(rawVersion) ? 1048576 : null;
+  return {
+    version, binary_sha256: binarySha256,
+    count_kind: "conservative_utf16_code_units",
+    actual_chars_upper_bound: String(prompt).length,
+    utf8_bytes: Buffer.byteLength(String(prompt), "utf8"),
+    max_chars, capability_source: max_chars == null ? "unknown_native_version" : "observed_codex_0.160.1_turn_start",
+  };
+}
+
+function helperFailureDiagnostic(stderr) {
+  const envelopeKeys = ["kind", "message", "preflight_diagnostic", "schema_version"];
+  const strings = {kind:64,qualification_phase:16,signal:32,spawn_code:128,
+    prompt_sha256:64,schema_sha256:64,binary_sha256:64,input_error_code:64,
+    summary:2048,cleanup_summary:256};
+  const numbers = new Set(["exit_code","models_hits","responses_hits","retry_hits","max_chars","actual_chars"]);
+  const flags = new Set(["timed_out","child_output_overflow","body_overflow"]);
+  const lines = String(stderr || "").trim().split(/\r?\n/);
+  for (const line of lines.reverse()) {
+    try {
+      const parsed = JSON.parse(line);
+      if (parsed?.schema_version === 1 && parsed.kind === "native_planning_preflight_error"
+          && Object.keys(parsed).sort().join() === envelopeKeys.join()
+          && parsed.preflight_diagnostic && typeof parsed.message === "string") {
+        const input = parsed.preflight_diagnostic;
+        if (typeof input !== "object" || Array.isArray(input)
+            || !["native_capture_failure","native_capture_helper_failure"].includes(input.kind)) continue;
+        const safe = {};
+        let invalid = false;
+        for (const [key, value] of Object.entries(input)) {
+          if (Object.hasOwn(strings,key)) {
+            if (value !== null && typeof value !== "string") { invalid = true; break; }
+            safe[key] = value == null ? null : redactSecrets(value).slice(0,strings[key]);
+          } else if (numbers.has(key)) {
+            if (value !== null && (!Number.isSafeInteger(value) || value < 0)) { invalid = true; break; }
+            safe[key] = value;
+          } else if (flags.has(key) && typeof value === "boolean") safe[key] = value;
+          else { invalid = true; break; }
+        }
+        if (invalid || (safe.qualification_phase != null && !["probe","full"].includes(safe.qualification_phase))) continue;
+        return {...parsed,message:redactSecrets(parsed.message).slice(0,512),preflight_diagnostic:safe};
+      }
+    } catch { /* native helper may return a plain diagnostic */ }
+  }
+  return null;
+}
+
 function runNativeCaptureHelper({ binary, cwd, env, execArgs, frozenPath, frozenSha256, tuple, schema, binarySha256 }) {
   const helper = fileURLToPath(new URL("./native-planning-request-capture.mjs", import.meta.url));
   const packet = {
@@ -646,7 +702,15 @@ function runNativeCaptureHelper({ binary, cwd, env, execArgs, frozenPath, frozen
     maxBuffer: 8 * 1024 * 1024,
   });
   if (r.error) fail(`native capture helper failed: ${r.error.message}`);
-  if (r.status !== 0) fail(`native capture helper: ${(r.stderr || "").trim() || `exit ${r.status}`}`);
+  if (r.status !== 0) {
+    const reported = helperFailureDiagnostic(r.stderr);
+    const error = new IsolationUnsupported(`native capture helper: ${reported?.message || `exit ${r.status}`}`);
+    error.preflight_diagnostic = reported?.preflight_diagnostic || {
+      kind: "native_capture_helper_failure", exit_code: r.status,
+      summary: redactSecrets(String(r.stderr || "")).slice(0, 2048),
+    };
+    throw error;
+  }
   let parsed;
   try { parsed = JSON.parse((r.stdout || "").trim()); }
   catch { fail("native capture helper did not return JSON"); }
@@ -803,6 +867,16 @@ export function assertEffectiveIsolation({
       resolved = resolveCodexExecutable();
       binary = { path: resolved, sha256: sha256Bytes(fs.readFileSync(resolved)) };
       versionRaw = runCodex(resolved, ["--version"], { env, timeout: 30000 }).trim();
+      const nativeChars = nativePromptCharacterBudget(versionRaw, binary.sha256, prompt);
+      if (nativeChars.max_chars != null && nativeChars.actual_chars_upper_bound > nativeChars.max_chars) {
+        const error = new IsolationUnsupported(
+          `native turn/start input exceeds observed ${nativeChars.max_chars} character limit: `
+          + `${nativeChars.actual_chars_upper_bound} conservative UTF-16 units for ${role}`,
+        );
+        error.preflight_diagnostic = { kind: "native_prompt_character_limit", role, ...nativeChars,
+          prompt_sha256: frozen.sha256, schema_sha256 };
+        throw error;
+      }
       execHelp = runCodex(resolved, ["exec", "--help"], { env, timeout: 30000 });
       debugHelp = runCodex(resolved, ["debug", "prompt-input", "--help"], { env, timeout: 30000 });
       featuresText = runCodex(resolved, ["features", "list"], { env, timeout: 30000 });

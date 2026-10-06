@@ -25,8 +25,8 @@ import {
   outputSchemaForCall,
 } from "./two-box-protocol.mjs";
 import { buildCodexConfigFlags, buildCodexExecArgs, diagnosePromptContamination, assertIsolationAuthority } from "./isolated-plan-analysis.mjs";
-import { assignDualPass, assignmentCoverage, constraintSources } from "./two-box-scout-assign.mjs";
-import { buildRolePrompt, parseCodexJsonl } from "./two-box-role-launch.mjs";
+import { assignDualPass, assignmentCoverage, constraintSources, frozenScoutExposure } from "./two-box-scout-assign.mjs";
+import { renderRolePrompt, assertCompleteRequestBudget, parseCodexJsonl } from "./two-box-role-launch.mjs";
 
 const SCHEMA = JSON.parse(
   fs.readFileSync(new URL("../../schemas/receipts/control-plan.schema.json", import.meta.url), "utf8"),
@@ -116,7 +116,7 @@ export function collectRetainedStageProofErrors(env, { consumerRoot, fixture = f
   }
   if (callerFlag(proof) || callerFlag(proof.effective)) fail(`${role}: proof verified/effective is not authority`);
   let proofPrompt;
-  try { proofPrompt = buildRolePrompt({role, payload: env.input}); } catch (err) { fail(`${role}: prompt reconstruction ${err.message}`); proofPrompt = ""; }
+  try { proofPrompt = renderRolePrompt({role, payload: env.input}); } catch (err) { fail(`${role}: prompt reconstruction ${err.message}`); proofPrompt = ""; }
   if (typeof proof.prompt !== "string") fail(`${role}: proof/payload prompt required`);
   else if (proof.prompt !== proofPrompt) fail(`${role}: proof prompt differs from exact role input`);
   const proofCwd = launch.invocation?.cwd;
@@ -506,8 +506,26 @@ function validateControlPlanCore({
   if (assignments.scout_forward && assignments.scout_reverse && snapshot && stages.contract_box) {
     try {
       const facts = JSON.parse(factsGot.bytes.toString("utf8"));
-      const computed = assignDualPass({sourceSnapshot:snapshot,initialContract:stages.contract_box.output,consumerRoot,constraints,changeArchetype:facts.annotations?.change_archetype || "feature"});
+      const scoutExposure = frozenScoutExposure(facts);
+      const expectedVersion = scoutExposure ? 2 : null;
+      for (const role of ["scout_forward", "scout_reverse"])
+        if ((assignments[role].exposure_version ?? null) !== expectedVersion) fail(`${role}: exposure derivation version differs from frozen facts`);
+      const computed = assignDualPass({sourceSnapshot:snapshot,initialContract:stages.contract_box.output,consumerRoot,constraints,changeArchetype:facts.annotations?.change_archetype || "feature",scoutExposure});
       for (const role of ["scout_forward","scout_reverse"]) if (canonicalJson(assignments[role]) !== canonicalJson(computed[role])) fail(`${role}: assignment not derived from actual source snapshot`);
+      if (scoutExposure) {
+        for (const role of ROLES) if (stages[role]) {
+          const proof = stages[role].launch.proof;
+          const recorded = proof?.limits?.request_bytes;
+          try {
+            if (Number.isSafeInteger(recorded) && recorded > 0) {
+              const promptBytes = Buffer.byteLength(renderRolePrompt({role, payload: stages[role].input}), "utf8");
+              const cap = Math.min(scoutExposure.request_max_bytes, scoutExposure.framework_request_max_bytes, recorded);
+              if (promptBytes > cap) fail(`${role}: full prompt ${promptBytes} bytes exceeds configured cap ${cap}`);
+            }
+            assertCompleteRequestBudget(proof, Math.min(scoutExposure.request_max_bytes, scoutExposure.framework_request_max_bytes));
+          } catch (err) { fail(`${role}: ${err.message}`); }
+        }
+      }
       const exposure = facts.source_exposure;
       if (!exposure || exposure.base_sha !== snapshot.base_sha || exposure.tree !== snapshot.tree || exposure.gitCommonDir !== identity.gitCommonDir || exposure.repoRoot !== identity.repoRoot) fail("factual source exposure differs from actual snapshot");
       const expectedFiles = snapshot.scoped_files.map(sf=>({path:sf.path,sha256:sf.sha256,truncated:sf.truncated,ranges:sf.ranges,text:getObject(sf.object_ref.sha256,{start:consumerRoot}).bytes.toString("utf8")}));

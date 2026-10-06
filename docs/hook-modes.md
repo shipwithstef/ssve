@@ -4,6 +4,10 @@ SSVE hooks advise by default. They still inspect operations and report findings,
 
 Native host permissions, sandbox rules, third-party hooks, standalone validation commands, and GitHub required checks retain their own behavior. This includes direct chain-receipt validation through `scripts/check-chain-receipts.mjs` and `scripts/svc-reconcile.mjs`; a managed pre-push warning does not make either validator pass. A warning is not passing evidence or approval to merge.
 
+## Direct repair under owner instructions
+
+When the owner authorizes a code repair without historical backfills, proceed with the scoped worktree change, regression tests, code review and required GitHub checks. Keep missing historical receipts visible as historical gaps; do not manufacture them or label warnings as passing evidence. Standalone validators retain their diagnostic behavior, but an old workflow-record failure must not be silently promoted into a prerequisite for every source edit. Report actual merge and installation separately from implementation.
+
 ## Choose a mode
 
 The hook boundary resolves the mode for each invocation, in this order:
